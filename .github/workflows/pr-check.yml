@@ -83,7 +83,6 @@ jobs:
 
       - name: Run tests
         run: mvn test
-        continue-on-error: true
 
       - name: Validate JAR size
         run: |
@@ -732,4 +731,3 @@ jobs:
             echo "📝 **说明**: 打包测试确保应用在目标平台能正常启动运行" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
-

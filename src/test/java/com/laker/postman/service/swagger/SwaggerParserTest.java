@@ -6,7 +6,6 @@ import com.laker.postman.model.RequestGroup;
 import com.laker.postman.service.common.CollectionParseResult;
 import com.laker.postman.service.common.TreeNodeBuilder;
 import org.testng.annotations.Test;
-import com.laker.postman.service.EnvironmentService;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 
@@ -320,30 +319,25 @@ public class SwaggerParserTest {
             throw new RuntimeException("读取zfile.openapi.json文件时发生错误", e);
         }
 
-        System.out.println("开始解析OpenAPI文件...");
         CollectionParseResult parseResult = SwaggerParser.parseSwagger(openapiJson);
         assertNotNull(parseResult);
 
         DefaultMutableTreeNode collectionNode = TreeNodeBuilder.buildFromParseResult(parseResult);
+        assertNotNull(collectionNode);
 
-        if (collectionNode != null) {
-            System.out.println("OpenAPI解析成功！");
-        } else {
-            System.out.println("OpenAPI解析失败！");
-            return;
-        }
-
-        // 检查环境变量是否被创建
-        System.out.println("\n检查创建的环境变量：");
-        List<Environment> environments = EnvironmentService.getAllEnvironments();
+        // 验证解析结果中创建了环境，并且每个环境都包含 baseUrl 变量
+        List<Environment> environments = parseResult.getEnvironments();
+        assertNotNull(environments);
+        assertFalse(environments.isEmpty(), "Expected environments parsed from OpenAPI servers");
         for (Environment env : environments) {
-            System.out.println("\n环境名称：" + env.getName());
-            System.out.println("环境ID：" + env.getId());
-            System.out.println("是否激活：" + env.isActive());
-            System.out.println("变量列表：");
-            for (var var : env.getVariables().entrySet()) {
-                System.out.println("  " + var.getKey() + " = " + var.getValue());
-            }
+            assertNotNull(env.getName());
+            assertFalse(env.getName().isBlank());
+            assertNotNull(env.getVariableList());
+            assertFalse(env.getVariableList().isEmpty());
+            assertTrue(
+                    env.getVariableList().stream().anyMatch(v -> "baseUrl".equals(v.getKey())),
+                    "Environment should contain baseUrl variable"
+            );
         }
     }
 
@@ -421,4 +415,3 @@ public class SwaggerParserTest {
         System.out.println("✅ URL 使用变量引用: " + requestItem.getUrl());
     }
 }
-

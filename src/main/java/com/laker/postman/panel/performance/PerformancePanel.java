@@ -1074,8 +1074,8 @@ public class PerformancePanel extends SingletonBasePanel {
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
         ExecutorService executor = Executors.newCachedThreadPool();
 
-        // 已启动的线程数
-        AtomicInteger startedThreads = new AtomicInteger(0);
+        // 当前活跃线程数（用于并发调度，不是累计启动数）
+        AtomicInteger activeWorkerThreads = new AtomicInteger(0);
 
         // 每秒检查并启动新线程
         scheduler.scheduleAtFixedRate(() -> {
@@ -1098,9 +1098,15 @@ public class PerformancePanel extends SingletonBasePanel {
                 targetThreads = Math.min(targetThreads, endThreads); // 不超过最大线程数
 
                 // 启动新线程
-                while (startedThreads.get() < targetThreads && running) {
+                while (running) {
+                    int current = activeWorkerThreads.get();
+                    if (current >= targetThreads) {
+                        break;
+                    }
+                    if (!activeWorkerThreads.compareAndSet(current, current + 1)) {
+                        continue;
+                    }
                     executor.submit(() -> {
-                        startedThreads.incrementAndGet();
                         activeThreads.incrementAndGet();
                         SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
                         try {
@@ -1109,6 +1115,7 @@ public class PerformancePanel extends SingletonBasePanel {
                                 runTaskIteration(groupNode);
                             }
                         } finally {
+                            activeWorkerThreads.decrementAndGet();
                             activeThreads.decrementAndGet();
                             SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
                         }
@@ -1154,7 +1161,7 @@ public class PerformancePanel extends SingletonBasePanel {
 
         // 创建线程池
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-        AtomicInteger startedThreads = new AtomicInteger(minThreads);
+        AtomicInteger activeWorkerThreads = new AtomicInteger(0);
 
         // 使用ConcurrentHashMap跟踪线程及其预期结束时间
         ConcurrentHashMap<Thread, Long> threadEndTimes = new ConcurrentHashMap<>();
@@ -1170,6 +1177,7 @@ public class PerformancePanel extends SingletonBasePanel {
             if (!running) {
                 return;
             }
+            activeWorkerThreads.incrementAndGet();
             Thread thread = new Thread(() -> {
                 activeThreads.incrementAndGet();
                 SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
@@ -1181,6 +1189,7 @@ public class PerformancePanel extends SingletonBasePanel {
                         runTaskIteration(groupNode);
                     }
                 } finally {
+                    activeWorkerThreads.decrementAndGet();
                     activeThreads.decrementAndGet();
                     SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
                     // 从跟踪Map中移除此线程
@@ -1213,13 +1222,13 @@ public class PerformancePanel extends SingletonBasePanel {
                 double progress = (double) elapsedSeconds / adjustedRampUpTime;
                 targetThreads = minThreads + (int) (progress * (maxThreads - minThreads));
                 // 增加线程
-                adjustSpikeThreadCount(groupNode, startedThreads, targetThreads, totalTime, progressLabel, totalThreads, threadEndTimes);
+                adjustSpikeThreadCount(groupNode, tg, activeWorkerThreads, targetThreads, totalTime, progressLabel, totalThreads, threadEndTimes);
             }
             // 保持阶段
             else if (elapsedSeconds < adjustedRampUpTime + adjustedHoldTime) {
                 targetThreads = maxThreads;
                 // 保持线程数
-                adjustSpikeThreadCount(groupNode, startedThreads, targetThreads, totalTime, progressLabel, totalThreads, threadEndTimes);
+                adjustSpikeThreadCount(groupNode, tg, activeWorkerThreads, targetThreads, totalTime, progressLabel, totalThreads, threadEndTimes);
             }
             // 下降阶段
             else {
@@ -1228,7 +1237,7 @@ public class PerformancePanel extends SingletonBasePanel {
                 targetThreads = Math.max(targetThreads, minThreads); // 不低于最小线程数
 
                 // 在下降阶段，通过设置线程结束时间来减少活跃线程数
-                int threadsToRemove = startedThreads.get() - targetThreads;
+                int threadsToRemove = activeWorkerThreads.get() - targetThreads;
                 if (threadsToRemove > 0) {
                     // 找出可以终止的线程
                     threadEndTimes.keySet().stream()
@@ -1238,7 +1247,7 @@ public class PerformancePanel extends SingletonBasePanel {
                 }
 
                 // 仍然需要增加线程的情况
-                adjustSpikeThreadCount(groupNode, startedThreads, targetThreads, totalTime, progressLabel, totalThreads, threadEndTimes);
+                adjustSpikeThreadCount(groupNode, tg, activeWorkerThreads, targetThreads, totalTime, progressLabel, totalThreads, threadEndTimes);
             }
 
             // 更新UI显示实际活跃线程数而不是理论目标数
@@ -1292,7 +1301,7 @@ public class PerformancePanel extends SingletonBasePanel {
 
         // 创建线程池
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-        AtomicInteger startedThreads = new AtomicInteger(startThreads);
+        AtomicInteger activeWorkerThreads = new AtomicInteger(0);
 
         // 使用ConcurrentHashMap跟踪线程及其预期结束时间
         ConcurrentHashMap<Thread, Long> threadEndTimes = new ConcurrentHashMap<>();
@@ -1309,6 +1318,7 @@ public class PerformancePanel extends SingletonBasePanel {
             if (!running) {
                 return;
             }
+            activeWorkerThreads.incrementAndGet();
             Thread thread = new Thread(() -> {
                 activeThreads.incrementAndGet();
                 SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
@@ -1320,6 +1330,7 @@ public class PerformancePanel extends SingletonBasePanel {
                         runTaskIteration(groupNode);
                     }
                 } finally {
+                    activeWorkerThreads.decrementAndGet();
                     activeThreads.decrementAndGet();
                     SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
                     // 从跟踪Map中移除此线程
@@ -1365,7 +1376,7 @@ public class PerformancePanel extends SingletonBasePanel {
             }
 
             // 调整线程数
-            adjustStairsThreadCount(groupNode, startedThreads, targetThreads, totalTime, progressLabel, totalThreads, threadEndTimes);
+            adjustStairsThreadCount(groupNode, activeWorkerThreads, targetThreads, totalTime, progressLabel, totalThreads, threadEndTimes);
 
             // 更新UI显示实际活跃线程数
             SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
@@ -1410,10 +1421,11 @@ public class PerformancePanel extends SingletonBasePanel {
 
     // 专用于尖刺模式的线程数调整方法
     private void adjustSpikeThreadCount(DefaultMutableTreeNode groupNode,
-                                        AtomicInteger startedThreads, int targetThreads,
+                                        ThreadGroupData tg,
+                                        AtomicInteger activeWorkerThreads, int targetThreads,
                                         int totalTime, JLabel progressLabel, int totalThreads,
                                         ConcurrentHashMap<Thread, Long> threadEndTimes) {
-        int current = startedThreads.get();
+        int current = activeWorkerThreads.get();
 
         // 需要增加线程
         if (current < targetThreads) {
@@ -1421,8 +1433,8 @@ public class PerformancePanel extends SingletonBasePanel {
             for (int i = 0; i < threadsToAdd; i++) {
                 if (!running) return;
 
+                activeWorkerThreads.incrementAndGet();
                 Thread thread = new Thread(() -> {
-                    startedThreads.incrementAndGet();
                     activeThreads.incrementAndGet();
                     SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
                     try {
@@ -1433,6 +1445,7 @@ public class PerformancePanel extends SingletonBasePanel {
                             runTaskIteration(groupNode);
                         }
                     } finally {
+                        activeWorkerThreads.decrementAndGet();
                         activeThreads.decrementAndGet();
                         SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
                         // 从跟踪Map中移除此线程
@@ -1457,21 +1470,11 @@ public class PerformancePanel extends SingletonBasePanel {
 
             // 如果有可终止的线程，则设置它们分散结束
             if (!availableThreads.isEmpty()) {
-                // 获取当前所处阶段信息 - 从runSpikeThreads方法推算
-                ThreadGroupData tg = null;
-                DefaultMutableTreeNode node = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
-                if (node != null) {
-                    Object userObj = node.getUserObject();
-                    if (userObj instanceof JMeterTreeNode jtNode && jtNode.threadGroupData != null) {
-                        tg = jtNode.threadGroupData;
-                    }
-                }
-
                 // 计算下降阶段的总时间
-                int rampDownTime = (tg != null) ? tg.spikeRampDownTime : 10; // 默认10秒
-                int totalSpikeTime = (tg != null) ? tg.spikeDuration : 60;   // 默认60秒
-                int rampUpTime = (tg != null) ? tg.spikeRampUpTime : 10;     // 默认10秒
-                int holdTime = (tg != null) ? tg.spikeHoldTime : 20;         // 默认20秒
+                int rampDownTime = tg.spikeRampDownTime;
+                int totalSpikeTime = tg.spikeDuration;
+                int rampUpTime = tg.spikeRampUpTime;
+                int holdTime = tg.spikeHoldTime;
 
                 // 计算实际的下降时间（按比例）
                 int phaseSum = rampUpTime + holdTime + rampDownTime;
@@ -1496,10 +1499,10 @@ public class PerformancePanel extends SingletonBasePanel {
 
     // 专用于阶梯模式的线程数调整方法
     private void adjustStairsThreadCount(DefaultMutableTreeNode groupNode,
-                                         AtomicInteger startedThreads, int targetThreads,
+                                         AtomicInteger activeWorkerThreads, int targetThreads,
                                          int totalTime, JLabel progressLabel, int totalThreads,
                                          ConcurrentHashMap<Thread, Long> threadEndTimes) {
-        int current = startedThreads.get();
+        int current = activeWorkerThreads.get();
 
         // 需要增加线程 阶梯模式下，不需要减少线程，只增加
         if (current < targetThreads) {
@@ -1507,8 +1510,8 @@ public class PerformancePanel extends SingletonBasePanel {
             for (int i = 0; i < threadsToAdd; i++) {
                 if (!running) return;
 
+                activeWorkerThreads.incrementAndGet();
                 Thread thread = new Thread(() -> {
-                    startedThreads.incrementAndGet();
                     activeThreads.incrementAndGet();
                     SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
                     try {
@@ -1519,6 +1522,7 @@ public class PerformancePanel extends SingletonBasePanel {
                             runTaskIteration(groupNode);
                         }
                     } finally {
+                        activeWorkerThreads.decrementAndGet();
                         activeThreads.decrementAndGet();
                         SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
                         // 从跟踪Map中移除此线程
@@ -1726,6 +1730,16 @@ public class PerformancePanel extends SingletonBasePanel {
                     ScriptExecutionResult postResult = pipeline.executePostScript(resp);
                     if (postResult.hasTestResults()) {
                         testResults.addAll(postResult.getTestResults());
+                        // Bug修复：pm.test()断言失败时 postResult.isSuccess() 仍为 true（脚本正常执行完毕）
+                        // 必须额外用 allTestsPassed() 判断测试断言是否全部通过
+                        if (!postResult.allTestsPassed()) {
+                            success = false;
+                            errorMsg = postResult.getTestResults().stream()
+                                    .filter(t -> !t.passed)
+                                    .map(t -> t.name)
+                                    .findFirst()
+                                    .orElse("pm.test assertion failed");
+                        }
                     }
                     if (!postResult.isSuccess()) {
                         log.error("后置脚本执行失败: {}", postResult.getErrorMessage());
@@ -2452,4 +2466,3 @@ public class PerformancePanel extends SingletonBasePanel {
         return new TreePath(newPath.toArray());
     }
 }
-

@@ -9,14 +9,14 @@
 
     <!-- 控制台输出配置 - 将日志信息输出到控制台 -->
     <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- 立即刷新输出，确保实时显示 -->
+        <immediateFlush>true</immediateFlush>
         <!-- 日志输出格式编码器 -->
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
             <!-- 输出格式：时间(HH:mm:ss.SSS) [线程名] 日志级别 类名:行号 - 消息内容 -->
             <!-- 使用 ANSI 颜色代码的日志格式 -->
             <pattern>%cyan(%d{HH:mm:ss.SSS}) %white([%thread]) %highlight(%-5level) %magenta(%logger{36}) %white(:%line) %msg%n
             </pattern>
-            <!-- 立即刷新输出，确保实时显示 -->
-            <immediateFlush>true</immediateFlush>
         </encoder>
         <!-- 控制台日志级别过滤器：只输出 INFO 及以上级别的日志 (INFO, WARN, ERROR) -->
 <!--        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">-->

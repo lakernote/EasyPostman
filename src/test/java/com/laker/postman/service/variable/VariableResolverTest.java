@@ -8,6 +8,8 @@ import org.testng.annotations.Test;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static org.testng.Assert.*;
 
@@ -17,9 +19,21 @@ import static org.testng.Assert.*;
 public class VariableResolverTest {
 
     private Environment testEnv;
+    private String originalDataFilePath;
+    private Path tempEnvFile;
 
     @BeforeMethod
     public void setUp() {
+        // 隔离测试数据：切换到临时环境文件，避免污染本机真实环境变量
+        originalDataFilePath = EnvironmentService.getDataFilePath();
+        try {
+            tempEnvFile = Files.createTempFile("easy-postman-env-test-", ".json");
+            Files.writeString(tempEnvFile, "[]");
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to initialize temporary environment file", e);
+        }
+        EnvironmentService.setDataFilePath(tempEnvFile.toString());
+
         // 清空临时变量
         VariableResolver.clearTemporaryVariables();
 
@@ -40,11 +54,25 @@ public class VariableResolverTest {
 
     @AfterMethod
     public void tearDown() {
-        // 清理环境
-        if (testEnv != null && testEnv.getId() != null) {
-            EnvironmentService.deleteEnvironment(testEnv.getId());
+        try {
+            // 清理测试环境
+            if (testEnv != null && testEnv.getId() != null) {
+                EnvironmentService.deleteEnvironment(testEnv.getId());
+            }
+            VariableResolver.clearTemporaryVariables();
+        } finally {
+            // 恢复原始环境文件路径
+            if (originalDataFilePath != null && !originalDataFilePath.isBlank()) {
+                EnvironmentService.setDataFilePath(originalDataFilePath);
+            }
+            if (tempEnvFile != null) {
+                try {
+                    Files.deleteIfExists(tempEnvFile);
+                } catch (Exception ignored) {
+                    // ignore cleanup failures
+                }
+            }
         }
-        VariableResolver.clearTemporaryVariables();
     }
 
     /**

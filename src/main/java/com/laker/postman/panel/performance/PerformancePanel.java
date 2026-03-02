@@ -1603,11 +1603,11 @@ public class PerformancePanel extends SingletonBasePanel {
             // 注册API元数据（集中管理，避免重复存储）
             ApiMetadata.register(apiId, apiName);
 
-            boolean success = true;
             PreparedRequest req;
             HttpResponse resp = null;
             String errorMsg = "";
             List<TestResult> testResults = new ArrayList<>();
+            boolean executionFailed = false; // 执行层面失败：前置脚本崩溃 / HTTP异常 / 后置脚本崩溃
 
             // 清理上次的临时变量
             VariableResolver.clearTemporaryVariables();
@@ -1643,7 +1643,7 @@ public class PerformancePanel extends SingletonBasePanel {
             if (!preOk) {
                 log.error("前置脚本: {}", preResult.getErrorMessage());
                 errorMsg = I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_PRE_SCRIPT_FAILED, preResult.getErrorMessage());
-                success = false;
+                executionFailed = true;
             }
 
             // 前置脚本执行完后再次检查是否已停止
@@ -1681,7 +1681,7 @@ public class PerformancePanel extends SingletonBasePanel {
                         // 真正的错误
                         log.error("请求执行失败: {}", ex.getMessage(), ex);
                         errorMsg = I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_REQUEST_FAILED, ex.getMessage());
-                        success = false;
+                        executionFailed = true;
                     }
                 } finally {
                     costMs = System.currentTimeMillis() - requestStartTime;
@@ -1718,7 +1718,6 @@ public class PerformancePanel extends SingletonBasePanel {
                             pass = Objects.equals(actual, expect);
                         }
                         if (!pass) {
-                            success = false;
                             errorMsg = I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_ASSERTION_FAILED, type, assertion.content);
                         }
                         testResults.add(new TestResult(type, pass, pass ? null : "断言失败"));
@@ -1730,10 +1729,8 @@ public class PerformancePanel extends SingletonBasePanel {
                     ScriptExecutionResult postResult = pipeline.executePostScript(resp);
                     if (postResult.hasTestResults()) {
                         testResults.addAll(postResult.getTestResults());
-                        // Bug修复：pm.test()断言失败时 postResult.isSuccess() 仍为 true（脚本正常执行完毕）
-                        // 必须额外用 allTestsPassed() 判断测试断言是否全部通过
+                        // 取第一条失败的断言名作为 errorMsg（展示用）
                         if (!postResult.allTestsPassed()) {
-                            success = false;
                             errorMsg = postResult.getTestResults().stream()
                                     .filter(t -> !t.passed)
                                     .map(t -> t.name)
@@ -1744,7 +1741,7 @@ public class PerformancePanel extends SingletonBasePanel {
                     if (!postResult.isSuccess()) {
                         log.error("后置脚本执行失败: {}", postResult.getErrorMessage());
                         errorMsg = postResult.getErrorMessage();
-                        success = false;
+                        executionFailed = true;
                     }
                 }
             } else {
@@ -1761,18 +1758,6 @@ public class PerformancePanel extends SingletonBasePanel {
 
             // 如果请求被中断（压测停止），跳过统计，不计入成功或失败
             if (!interrupted) {
-                // 使用statsLock保护统计数据写入，确保与读取的一致性
-                synchronized (statsLock) {
-                    allRequestResults.add(new RequestResult(requestStartTime, endTime, success, apiId));
-
-                    apiCostMap.computeIfAbsent(apiId, k -> Collections.synchronizedList(new ArrayList<>())).add(cost);
-                    if (success) {
-                        apiSuccessMap.merge(apiId, 1, Integer::sum);
-                    } else {
-                        apiFailMap.merge(apiId, 1, Integer::sum);
-                    }
-                }
-
                 // ✨ 优化：简化 req 和 resp 对象，移除渲染时不需要的字段
                 req.simplify();  // 移除 id, body, bodyType, headersList, paramsList
                 if (resp != null) {
@@ -1782,8 +1767,26 @@ public class PerformancePanel extends SingletonBasePanel {
                     }
                 }
 
+                // 统一用 ResultNodeInfo.isActuallySuccessful() 判断成功/失败
+                // 确保趋势图、报表、结果表格三处使用完全一致的判断逻辑：
+                //   有断言 → 以断言结果为准；无断言 → 以 HTTP 状态码（2xx/3xx）为准
+                ResultNodeInfo resultNodeInfo = new ResultNodeInfo(apiName, errorMsg, req, resp, testResults, executionFailed);
+                boolean actualSuccess = resultNodeInfo.isActuallySuccessful();
+
+                // 使用statsLock保护统计数据写入，确保与读取的一致性
+                synchronized (statsLock) {
+                    allRequestResults.add(new RequestResult(requestStartTime, endTime, actualSuccess, apiId));
+
+                    apiCostMap.computeIfAbsent(apiId, k -> Collections.synchronizedList(new ArrayList<>())).add(cost);
+                    if (actualSuccess) {
+                        apiSuccessMap.merge(apiId, 1, Integer::sum);
+                    } else {
+                        apiFailMap.merge(apiId, 1, Integer::sum);
+                    }
+                }
+
                 performanceResultTablePanel.addResult(
-                        new ResultNodeInfo(apiName, errorMsg, req, resp, testResults),
+                        resultNodeInfo,
                         efficientMode,
                         getJmeterSlowRequestThreshold()
                 );

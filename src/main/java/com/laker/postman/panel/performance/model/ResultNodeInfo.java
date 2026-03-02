@@ -29,6 +29,12 @@ public class ResultNodeInfo {
     /** HTTP响应状态码 */
     public final int responseCode;
 
+    /**
+     * 执行层面是否明确失败（前置脚本崩溃 / HTTP 请求异常 / 后置脚本崩溃）。
+     * 与断言失败区分：断言失败由 testResults 体现，执行失败由此字段体现。
+     */
+    public final boolean executionFailed;
+
     public ResultNodeInfo(
             String name,
             String errorMsg,
@@ -36,11 +42,23 @@ public class ResultNodeInfo {
             HttpResponse resp,
             List<TestResult> testResults
     ) {
+        this(name, errorMsg, req, resp, testResults, false);
+    }
+
+    public ResultNodeInfo(
+            String name,
+            String errorMsg,
+            PreparedRequest req,
+            HttpResponse resp,
+            List<TestResult> testResults,
+            boolean executionFailed
+    ) {
         this.name = name;
         this.errorMsg = errorMsg;
         this.req = req;
         this.resp = resp;
         this.testResults = testResults;
+        this.executionFailed = executionFailed;
 
         // ✅ 统一在这里算 ms（不依赖 costNs）
         this.costMs = resp != null ? (int) resp.costMs : 0;
@@ -59,24 +77,29 @@ public class ResultNodeInfo {
     }
 
     /**
-     * 智能判断是否成功
-     * 优先级：
-     * 1. 如果有断言，以断言结果为准
-     * 2. 如果没有断言，以 HTTP 状态码为准（2xx/3xx 为成功）
-     * 3. 如果没有响应，返回 false
+     * 统一的成功/失败判断，三处（趋势图、报表、结果表格）共用：
+     * 1. 执行层面明确失败（前置脚本崩溃、HTTP异常、后置脚本崩溃）→ false
+     * 2. 有断言结果 → 以断言为准（断言全通过才算成功）
+     * 3. 无断言 → 以 HTTP 状态码为准（2xx/3xx 为成功）
+     * 4. 无响应 → false
      */
     public boolean isActuallySuccessful() {
-        // 1. 如果有断言结果，以断言为准
+        // 1. 执行层面明确失败，直接返回 false
+        if (executionFailed) {
+            return false;
+        }
+
+        // 2. 如果有断言结果，以断言为准
         if (testResults != null && !testResults.isEmpty()) {
             return !hasAssertionFailed();
         }
 
-        // 2. 如果没有断言，以 HTTP 状态码为准
+        // 3. 如果没有断言，以 HTTP 状态码为准
         if (resp != null && resp.code > 0) {
             return resp.code >= 200 && resp.code < 400;
         }
 
-        // 3. 兜底：没有响应则返回 false
+        // 4. 兜底：没有响应则返回 false
         return false;
     }
 }

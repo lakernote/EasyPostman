@@ -47,6 +47,7 @@ public class ElasticsearchPanel extends JPanel {
     private JSpinner replicaSpinner;
 
     // ===== DSL 编辑器 =====
+    private JComboBox<String> templateCombo;
     private JComboBox<String> methodCombo;
     private JTextField pathField;
     private RSyntaxTextArea dslEditor;
@@ -398,25 +399,12 @@ public class ElasticsearchPanel extends JPanel {
         toolBar.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0,
                 UIManager.getColor(SEPARATOR_FG)));
 
-        JComboBox<String> templateCombo = new JComboBox<>();
+        templateCombo = new JComboBox<>();
         for (String[] t : DSL_TEMPLATES) templateCombo.addItem(I18nUtil.getMessage(t[0]));
         templateCombo.setPreferredSize(new Dimension(180, 28));
         SecondaryButton loadTplBtn = new SecondaryButton(
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_LOAD_TEMPLATE), "icons/load.svg");
-        loadTplBtn.addActionListener(e -> {
-            int idx = templateCombo.getSelectedIndex();
-            if (idx >= 0 && idx < DSL_TEMPLATES.length) {
-                String selectedIndex = indexList.getSelectedValue();
-                String path = DSL_TEMPLATES[idx][2];
-                if (selectedIndex != null && !selectedIndex.isBlank()) {
-                    path = path.replace("{index}", selectedIndex);
-                }
-                methodCombo.setSelectedItem(DSL_TEMPLATES[idx][1]);
-                pathField.setText(path);
-                dslEditor.setText(DSL_TEMPLATES[idx][3]);
-                dslEditor.setCaretPosition(0);
-            }
-        });
+        loadTplBtn.addActionListener(e -> applyTemplate(templateCombo.getSelectedIndex()));
         FormatButton formatBtn = new FormatButton();
         formatBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_FORMAT_JSON));
         formatBtn.addActionListener(e -> formatDsl());
@@ -679,6 +667,10 @@ public class ElasticsearchPanel extends JPanel {
                     filterIndices("");
                     if (indexListModel.isEmpty()) {
                         NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_INDEX_LIST_EMPTY));
+                    } else {
+                        // 自动选中第一个索引并加载第一个模版
+                        indexList.setSelectedIndex(0);
+                        applyTemplate(0);
                     }
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
@@ -689,6 +681,19 @@ public class ElasticsearchPanel extends JPanel {
             }
         };
         worker.execute();
+    }
+
+    private void applyTemplate(int idx) {
+        if (idx < 0 || idx >= DSL_TEMPLATES.length) return;
+        String selectedIndex = indexList.getSelectedValue();
+        String path = DSL_TEMPLATES[idx][2];
+        if (selectedIndex != null && !selectedIndex.isBlank()) {
+            path = path.replace("{index}", selectedIndex);
+        }
+        methodCombo.setSelectedItem(DSL_TEMPLATES[idx][1]);
+        pathField.setText(path);
+        dslEditor.setText(DSL_TEMPLATES[idx][3]);
+        dslEditor.setCaretPosition(0);
     }
 
     private void createIndex() {

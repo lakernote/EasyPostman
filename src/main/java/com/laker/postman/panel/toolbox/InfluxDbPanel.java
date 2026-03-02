@@ -801,6 +801,8 @@ public class InfluxDbPanel extends JPanel {
                             loadFieldKeys(db, measurement);
                             loadTagKeys(db, measurement);
                         }
+                        // 连接后 measurement 确定，自动刷新模版变量
+                        loadTemplate();
                     }
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();

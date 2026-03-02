@@ -1850,7 +1850,50 @@ public final class MessageKeys {
     public static final String TOOLBOX_ES_ERR_PATH_REQUIRED = "toolbox.es.err.path_required";
     public static final String TOOLBOX_ES_ERR_NOT_CONNECTED = "toolbox.es.err.not_connected";
     public static final String TOOLBOX_ES_ERR_CONNECT_FAILED = "toolbox.es.err.connect_failed";
-    public static final String TOOLBOX_ES_TITLE = "toolbox.es.title";
+
+    // ============ InfluxDB 工具相关 ============
+    public static final String TOOLBOX_INFLUXDB = "toolbox.influxdb";
+    public static final String TOOLBOX_INFLUX_HOST = "toolbox.influx.host";
+    public static final String TOOLBOX_INFLUX_HOST_PLACEHOLDER = "toolbox.influx.host.placeholder";
+    public static final String TOOLBOX_INFLUX_MODE = "toolbox.influx.mode";
+    public static final String TOOLBOX_INFLUX_MODE_V1 = "toolbox.influx.mode.v1";
+    public static final String TOOLBOX_INFLUX_MODE_V2 = "toolbox.influx.mode.v2";
+    public static final String TOOLBOX_INFLUX_TOKEN = "toolbox.influx.token";
+    public static final String TOOLBOX_INFLUX_TOKEN_PLACEHOLDER = "toolbox.influx.token.placeholder";
+    public static final String TOOLBOX_INFLUX_ORG = "toolbox.influx.org";
+    public static final String TOOLBOX_INFLUX_ORG_PLACEHOLDER = "toolbox.influx.org.placeholder";
+    public static final String TOOLBOX_INFLUX_DB = "toolbox.influx.db";
+    public static final String TOOLBOX_INFLUX_MEASUREMENT = "toolbox.influx.measurement";
+    public static final String TOOLBOX_INFLUX_USER = "toolbox.influx.user";
+    public static final String TOOLBOX_INFLUX_USER_PLACEHOLDER = "toolbox.influx.user.placeholder";
+    public static final String TOOLBOX_INFLUX_PASS = "toolbox.influx.pass";
+    public static final String TOOLBOX_INFLUX_PASS_PLACEHOLDER = "toolbox.influx.pass.placeholder";
+    public static final String TOOLBOX_INFLUX_CONNECT = "toolbox.influx.connect";
+    public static final String TOOLBOX_INFLUX_STATUS_NOT_CONNECTED = "toolbox.influx.status.not_connected";
+    public static final String TOOLBOX_INFLUX_STATUS_CONNECTED = "toolbox.influx.status.connected";
+    public static final String TOOLBOX_INFLUX_CONNECT_SUCCESS = "toolbox.influx.connect.success";
+    public static final String TOOLBOX_INFLUX_STATUS_REQUESTING = "toolbox.influx.status.requesting";
+    public static final String TOOLBOX_INFLUX_STATUS_OK = "toolbox.influx.status.ok";
+    public static final String TOOLBOX_INFLUX_STATUS_ERROR = "toolbox.influx.status.error";
+    public static final String TOOLBOX_INFLUX_EXECUTE = "toolbox.influx.execute";
+    public static final String TOOLBOX_INFLUX_EXECUTE_V1 = "toolbox.influx.execute.v1";
+    public static final String TOOLBOX_INFLUX_EXECUTE_V2 = "toolbox.influx.execute.v2";
+    public static final String TOOLBOX_INFLUX_RELOAD_META = "toolbox.influx.reload_meta";
+    public static final String TOOLBOX_INFLUX_LOAD_TEMPLATE = "toolbox.influx.load_template";
+    public static final String TOOLBOX_INFLUX_FIELD = "toolbox.influx.field";
+    public static final String TOOLBOX_INFLUX_QUERY_TITLE = "toolbox.influx.query.title";
+    public static final String TOOLBOX_INFLUX_QUERY_TITLE_V1 = "toolbox.influx.query.title.v1";
+    public static final String TOOLBOX_INFLUX_QUERY_TITLE_V2 = "toolbox.influx.query.title.v2";
+    public static final String TOOLBOX_INFLUX_RESPONSE_TITLE = "toolbox.influx.response.title";
+    public static final String TOOLBOX_INFLUX_COPY_RESULT = "toolbox.influx.copy_result";
+    public static final String TOOLBOX_INFLUX_RESULT_COPIED = "toolbox.influx.result.copied";
+    public static final String TOOLBOX_INFLUX_CLEAR = "toolbox.influx.clear";
+    public static final String TOOLBOX_INFLUX_ERR_HOST_REQUIRED = "toolbox.influx.err.host_required";
+    public static final String TOOLBOX_INFLUX_ERR_DB_REQUIRED = "toolbox.influx.err.db_required";
+    public static final String TOOLBOX_INFLUX_ERR_ORG_REQUIRED = "toolbox.influx.err.org_required";
+    public static final String TOOLBOX_INFLUX_ERR_QUERY_REQUIRED = "toolbox.influx.err.query_required";
+    public static final String TOOLBOX_INFLUX_ERR_NOT_CONNECTED = "toolbox.influx.err.not_connected";
+    public static final String TOOLBOX_INFLUX_ERR_CONNECT_FAILED = "toolbox.influx.err.connect_failed";
 
     public static final String TOOLBOX_CRON = "toolbox.cron";
     public static final String TOOLBOX_CRON_EXPRESSION = "toolbox.cron.expression";
@@ -2008,8 +2051,14 @@ public final class MessageKeys {
     public static final String TABLE_CONTEXT_COPY_CELL        = "table.context.copy_cell";
     public static final String TABLE_CONTEXT_COPY_ROW         = "table.context.copy_row";
     public static final String TABLE_CONTEXT_COPIED           = "table.context.copied";
+    public static final String TABLE_CONTEXT_VIEW_CELL        = "table.context.view_cell";
     public static final String TABLE_EMPTY_NO_DATA            = "table.empty.no_data";
     public static final String TABLE_EMPTY_NO_MATCH           = "table.empty.no_match";
+    public static final String TABLE_CELL_DETAIL_TITLE        = "table.cell_detail.title";
+    public static final String TABLE_CELL_DETAIL_COPY         = "table.cell_detail.copy";
+    public static final String TABLE_CELL_DETAIL_FORMAT_JSON  = "table.cell_detail.format_json";
+    public static final String TABLE_CELL_DETAIL_CLOSE        = "table.cell_detail.close";
+    public static final String TABLE_CELL_DETAIL_LENGTH       = "table.cell_detail.length";
 
     // ==================== Notification Toast ====================
     public static final String NOTIFICATION_TYPE_SUCCESS = "notification.type.success";

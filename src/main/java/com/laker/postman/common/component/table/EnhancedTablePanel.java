@@ -2,12 +2,12 @@ package com.laker.postman.common.component.table;
 
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.component.SearchTextField;
-import com.laker.postman.util.FontsUtil;
-import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.SearchableTextArea;
+import com.laker.postman.util.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -60,8 +60,17 @@ public class EnhancedTablePanel extends JPanel {
     private int hoveredRow = -1;
 
     // ── UI 常量 ───────────────────────────────────────────────────────────
-    private static final String SEPARATOR_FG    = "Separator.foreground";
-    private static final String LABEL_DISABLED  = "Label.disabledForeground";
+    private static final String SEPARATOR_FG = "Separator.foreground";
+    private static final String LABEL_DISABLED = "Label.disabledForeground";
+
+    /**
+     * 超过此字符数时，单元格显示截断文字 + 省略号，并启用 tooltip
+     */
+    private static final int LARGE_CELL_THRESHOLD = 100;
+    /**
+     * Tooltip 最多显示的字符数
+     */
+    private static final int TOOLTIP_MAX_LEN = 300;
 
     // ── 分页大小选项 ───────────────────────────────────────────────────────
     private static final int[] PAGE_SIZES = {20, 50, 100, 0};
@@ -183,26 +192,41 @@ public class EnhancedTablePanel extends JPanel {
                 I18nUtil.getMessage(MessageKeys.TABLE_SEARCH_PLACEHOLDER_ALL));
         searchField.setPreferredSize(new Dimension(220, 28));
         searchField.getDocument().addDocumentListener(new DocumentListener() {
-            public void insertUpdate(DocumentEvent e) { onSearch(); }
-            public void removeUpdate(DocumentEvent e) { onSearch(); }
-            public void changedUpdate(DocumentEvent e) { onSearch(); }
+            public void insertUpdate(DocumentEvent e) {
+                onSearch();
+            }
+
+            public void removeUpdate(DocumentEvent e) {
+                onSearch();
+            }
+
+            public void changedUpdate(DocumentEvent e) {
+                onSearch();
+            }
         });
 
         // 监听大小写 / 整词切换 → 重新过滤
         searchField.addPropertyChangeListener("caseSensitive", e -> {
             caseSensitive = searchField.isCaseSensitive();
-            if (!filterText.isEmpty()) { currentPage = 0; applyFilterAndSort(); }
+            if (!filterText.isEmpty()) {
+                currentPage = 0;
+                applyFilterAndSort();
+            }
         });
         searchField.addPropertyChangeListener("wholeWord", e -> {
             wholeWord = searchField.isWholeWord();
-            if (!filterText.isEmpty()) { currentPage = 0; applyFilterAndSort(); }
+            if (!filterText.isEmpty()) {
+                currentPage = 0;
+                applyFilterAndSort();
+            }
         });
 
         // Escape 清空搜索框
         searchField.getInputMap(WHEN_FOCUSED).put(
                 KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "clearSearch");
         searchField.getActionMap().put("clearSearch", new AbstractAction() {
-            @Override public void actionPerformed(ActionEvent e) {
+            @Override
+            public void actionPerformed(ActionEvent e) {
                 if (!searchField.getText().isEmpty()) searchField.setText("");
             }
         });
@@ -286,8 +310,8 @@ public class EnhancedTablePanel extends JPanel {
 
         JPanel linkRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         linkRow.setOpaque(false);
-        JButton btnAll  = makeLinkBtn(I18nUtil.getMessage(MessageKeys.TABLE_COL_FILTER_SELECT_ALL));
-        JLabel  sep     = new JLabel(" | ");
+        JButton btnAll = makeLinkBtn(I18nUtil.getMessage(MessageKeys.TABLE_COL_FILTER_SELECT_ALL));
+        JLabel sep = new JLabel(" | ");
         sep.setForeground(UIManager.getColor(LABEL_DISABLED));
         sep.setFont(sep.getFont().deriveFont(Font.PLAIN, 11f));
         JButton btnNone = makeLinkBtn(I18nUtil.getMessage(MessageKeys.TABLE_COL_FILTER_DESELECT_ALL));
@@ -300,17 +324,23 @@ public class EnhancedTablePanel extends JPanel {
         btnOk.setFocusPainted(false);
 
         footer.add(linkRow, BorderLayout.WEST);
-        footer.add(btnOk,   BorderLayout.EAST);
+        footer.add(btnOk, BorderLayout.EAST);
         popup.add(footer, BorderLayout.SOUTH);
 
-        btnAll .addActionListener(e -> { for (JCheckBox cb : colFilterBoxes) cb.setSelected(true);  });
-        btnNone.addActionListener(e -> { for (JCheckBox cb : colFilterBoxes) cb.setSelected(false); });
-        btnOk  .addActionListener(e -> applyColFilter(popup));
+        btnAll.addActionListener(e -> {
+            for (JCheckBox cb : colFilterBoxes) cb.setSelected(true);
+        });
+        btnNone.addActionListener(e -> {
+            for (JCheckBox cb : colFilterBoxes) cb.setSelected(false);
+        });
+        btnOk.addActionListener(e -> applyColFilter(popup));
 
         return popup;
     }
 
-    /** 链接风格的小按钮（无边框、无背景、字体 11f） */
+    /**
+     * 链接风格的小按钮（无边框、无背景、字体 11f）
+     */
     private static JButton makeLinkBtn(String text) {
         JButton b = new JButton(text);
         b.setFont(b.getFont().deriveFont(Font.PLAIN, 11f));
@@ -424,6 +454,24 @@ public class EnhancedTablePanel extends JPanel {
         table.getTableHeader().addMouseListener(buildHeaderMouseListener());
         table.addMouseMotionListener(buildTableMotionListener());
         table.addMouseListener(buildTableMouseListener());
+        // 双击单元格 → 大内容弹出详情对话框
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
+                    int row = table.rowAtPoint(e.getPoint());
+                    int col = table.columnAtPoint(e.getPoint());
+                    if (row >= 0 && col >= 0) {
+                        Object val = table.getValueAt(row, col);
+                        String text = val == null ? "" : val.toString();
+                        if (text.length() > LARGE_CELL_THRESHOLD) {
+                            String colName = table.getColumnName(col);
+                            showCellDetailDialog(colName, text);
+                        }
+                    }
+                }
+            }
+        });
     }
 
     private JScrollPane buildTableScroll() {
@@ -678,6 +726,21 @@ public class EnhancedTablePanel extends JPanel {
 
     private void showContextMenu(MouseEvent e) {
         JPopupMenu menu = new JPopupMenu();
+        int r = table.getSelectedRow();
+        int c = table.getSelectedColumn();
+
+        // "查看单元格内容" 仅在单元格内容超过阈值时显示
+        if (r >= 0 && c >= 0) {
+            Object val = table.getValueAt(r, c);
+            String text = val == null ? "" : val.toString();
+            if (text.length() > LARGE_CELL_THRESHOLD) {
+                JMenuItem viewCell = new JMenuItem(I18nUtil.getMessage(MessageKeys.TABLE_CONTEXT_VIEW_CELL));
+                viewCell.addActionListener(ev -> showCellDetailDialog(table.getColumnName(c), text));
+                menu.add(viewCell);
+                menu.addSeparator();
+            }
+        }
+
         JMenuItem copyCell = new JMenuItem(I18nUtil.getMessage(MessageKeys.TABLE_CONTEXT_COPY_CELL));
         copyCell.addActionListener(ev -> {
             copySelectedCell();
@@ -868,13 +931,142 @@ public class EnhancedTablePanel extends JPanel {
         return l;
     }
 
+    // ═══════════════════ 单元格详情对话框 ═════════════════════════════════
+
+    /**
+     * 弹出单元格详情对话框（支持语法高亮、JSON 格式化、Cmd/Ctrl+F 搜索、复制）
+     */
+    private void showCellDetailDialog(String colName, String text) {
+        Window owner = SwingUtilities.getWindowAncestor(this);
+        JDialog dialog = (owner instanceof Frame f)
+                ? new JDialog(f, I18nUtil.getMessage(MessageKeys.TABLE_CELL_DETAIL_TITLE) + " — " + colName, true)
+                : new JDialog((Dialog) owner, I18nUtil.getMessage(MessageKeys.TABLE_CELL_DETAIL_TITLE) + " — " + colName, true);
+        dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        dialog.setLayout(new BorderLayout(0, 0));
+
+        // ── RSyntaxTextArea ─────────────────────────────────────────────
+        RSyntaxTextArea textArea = new RSyntaxTextArea();
+        textArea.setEditable(false);
+        textArea.setCodeFoldingEnabled(true);
+        textArea.setLineWrap(true);
+        textArea.setWrapStyleWord(true);
+        textArea.setHighlightCurrentLine(false);
+        EditorThemeUtil.loadTheme(textArea);
+        textArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+
+        // 判断是否是 JSON
+        boolean isJson = JsonUtil.isTypeJSON(text);
+        textArea.setSyntaxEditingStyle(isJson
+                ? SyntaxConstants.SYNTAX_STYLE_JSON
+                : SyntaxConstants.SYNTAX_STYLE_NONE);
+
+        // ── SearchableTextArea 包装（仅搜索，禁用替换）──────────────────
+        SearchableTextArea searchableTextArea = new SearchableTextArea(textArea, false);
+
+        // ── 顶部信息栏 ──────────────────────────────────────────────────
+        JLabel lenLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TABLE_CELL_DETAIL_LENGTH,
+                String.valueOf(text.length())));
+        lenLabel.setForeground(UIManager.getColor(LABEL_DISABLED));
+        lenLabel.setFont(lenLabel.getFont().deriveFont(Font.PLAIN, 11f));
+        lenLabel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+
+        // ── 底部按钮栏 ──────────────────────────────────────────────────
+        JButton btnFormatJson = new JButton(I18nUtil.getMessage(MessageKeys.TABLE_CELL_DETAIL_FORMAT_JSON));
+        JButton btnCopy = new JButton(I18nUtil.getMessage(MessageKeys.TABLE_CELL_DETAIL_COPY));
+        JButton btnClose = new JButton(I18nUtil.getMessage(MessageKeys.TABLE_CELL_DETAIL_CLOSE));
+
+        btnFormatJson.setEnabled(isJson);
+        if (!isJson) btnFormatJson.setToolTipText("Content is not valid JSON");
+
+        // 格式化 / 还原 JSON 切换
+        final boolean[] formatted = {false};
+        btnFormatJson.addActionListener(ev -> {
+            if (!formatted[0]) {
+                try {
+                    String pretty = JsonUtil.toJsonPrettyStr(text);
+                    textArea.setText(pretty);
+                    textArea.setCaretPosition(0);
+                    formatted[0] = true;
+                    btnFormatJson.setText("⟲ " + I18nUtil.getMessage(MessageKeys.TABLE_CELL_DETAIL_FORMAT_JSON));
+                } catch (Exception ex) {
+                    log.warn("JSON format failed", ex);
+                }
+            } else {
+                textArea.setText(text);
+                textArea.setCaretPosition(0);
+                formatted[0] = false;
+                btnFormatJson.setText(I18nUtil.getMessage(MessageKeys.TABLE_CELL_DETAIL_FORMAT_JSON));
+            }
+        });
+
+        btnCopy.addActionListener(ev -> {
+            String selected = textArea.getSelectedText();
+            clip(selected != null && !selected.isEmpty() ? selected : textArea.getText());
+            NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.TABLE_CONTEXT_COPIED));
+        });
+        btnClose.addActionListener(ev -> dialog.dispose());
+
+        // JSON 自动格式化展示
+        if (isJson) {
+            try {
+                String pretty = JsonUtil.toJsonPrettyStr(text);
+                textArea.setText(pretty);
+                textArea.setCaretPosition(0);
+                formatted[0] = true;
+                btnFormatJson.setText("⟲ " + I18nUtil.getMessage(MessageKeys.TABLE_CELL_DETAIL_FORMAT_JSON));
+            } catch (Exception ex) {
+                log.warn("auto JSON format failed", ex);
+                textArea.setText(text);
+                textArea.setCaretPosition(0);
+            }
+        } else {
+            textArea.setText(text);
+            textArea.setCaretPosition(0);
+        }
+
+        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 4));
+        footer.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 0, 0, UIManager.getColor(SEPARATOR_FG)),
+                BorderFactory.createEmptyBorder(2, 4, 2, 4)));
+        footer.add(btnFormatJson);
+        footer.add(btnCopy);
+        footer.add(btnClose);
+
+        dialog.add(lenLabel, BorderLayout.NORTH);
+        dialog.add(searchableTextArea, BorderLayout.CENTER);
+        dialog.add(footer, BorderLayout.SOUTH);
+
+        // Escape 关闭
+        dialog.getRootPane().registerKeyboardAction(
+                ev -> dialog.dispose(),
+                KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
+                JComponent.WHEN_IN_FOCUSED_WINDOW);
+
+        dialog.setSize(720, 500);
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
+    }
+
     // ═══════════════════ Renderer ═════════════════════════════════════════
 
     private class HoverRenderer extends DefaultTableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(
                 JTable t, Object value, boolean sel, boolean focus, int row, int col) {
-            super.getTableCellRendererComponent(t, value, sel, focus, row, col);
+            // 对大内容进行截断展示
+            String display = value == null ? "" : value.toString();
+            String tooltip = null;
+            if (display.length() > LARGE_CELL_THRESHOLD) {
+                tooltip = "<html><body style='width:380px;font-family:monospace;font-size:11px;white-space:pre-wrap'>"
+                        + escapeHtml(display.length() > TOOLTIP_MAX_LEN
+                        ? display.substring(0, TOOLTIP_MAX_LEN) + "…" : display)
+                        + "<br><br><i style='color:gray'>"
+                        + I18nUtil.getMessage(MessageKeys.TABLE_CELL_DETAIL_LENGTH, String.valueOf(display.length()))
+                        + " — double-click to view</i></body></html>";
+                display = display.substring(0, LARGE_CELL_THRESHOLD) + " …";
+            }
+            super.getTableCellRendererComponent(t, display, sel, focus, row, col);
+            setToolTipText(tooltip);
             setBorder(BorderFactory.createEmptyBorder(0, 6, 0, 6));
             if (!sel) {
                 if (row == hoveredRow) {
@@ -889,6 +1081,18 @@ public class EnhancedTablePanel extends JPanel {
             }
             return this;
         }
+    }
+
+    /**
+     * 转义 HTML 特殊字符，用于 tooltip
+     */
+    private static String escapeHtml(String text) {
+        return text.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("\n", "<br>")
+                .replace(" ", "&nbsp;");
     }
 }
 

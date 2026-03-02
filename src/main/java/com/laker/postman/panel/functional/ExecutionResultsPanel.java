@@ -420,25 +420,54 @@ public class ExecutionResultsPanel extends JPanel {
     private void showIterationDetail(IterationNodeData iterationData) {
         IterationResult iteration = iterationData.iteration;
 
-        // 迭代概览
         JPanel iterationPanel = new JPanel(new BorderLayout());
         iterationPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // 迭代信息
-        JPanel infoPanel = new JPanel(new GridLayout(0, 2, 10, 5));
-        infoPanel.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_DETAIL_ITERATION_INFO)));
+        // 迭代信息 - 改用 GridBagLayout 精确控制 key/value 对齐
+        JPanel infoPanel = new JPanel(new GridBagLayout());
+        infoPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_DETAIL_ITERATION_INFO)),
+                BorderFactory.createEmptyBorder(4, 8, 8, 8)
+        ));
 
-        infoPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_ITERATION_ROUND) + ":"));
-        infoPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_ITERATION_ROUND_FORMAT, iteration.getIterationIndex() + 1)));
+        String[][] rows = {
+                {I18nUtil.getMessage(MessageKeys.FUNCTIONAL_ITERATION_ROUND),
+                        I18nUtil.getMessage(MessageKeys.FUNCTIONAL_ITERATION_ROUND_FORMAT, iteration.getIterationIndex() + 1)},
+                {I18nUtil.getMessage(MessageKeys.FUNCTIONAL_ITERATION_START_TIME),
+                        formatTimestamp(iteration.getStartTime())},
+                {I18nUtil.getMessage(MessageKeys.FUNCTIONAL_ITERATION_EXECUTION_TIME),
+                        TimeDisplayUtil.formatElapsedTime(iteration.getExecutionTime())},
+                {I18nUtil.getMessage(MessageKeys.FUNCTIONAL_ITERATION_REQUEST_COUNT),
+                        String.valueOf(iteration.getRequestResults().size())},
+        };
 
-        infoPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_ITERATION_START_TIME) + ":"));
-        infoPanel.add(new JLabel(formatTimestamp(iteration.getStartTime())));
+        GridBagConstraints kc = new GridBagConstraints();
+        kc.anchor = GridBagConstraints.WEST;
+        kc.insets = new Insets(3, 0, 3, 16);
 
-        infoPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_ITERATION_EXECUTION_TIME) + ":"));
-        infoPanel.add(new JLabel(TimeDisplayUtil.formatElapsedTime(iteration.getExecutionTime())));
+        GridBagConstraints vc = new GridBagConstraints();
+        vc.anchor = GridBagConstraints.WEST;
+        vc.weightx = 1.0;
+        vc.fill = GridBagConstraints.HORIZONTAL;
+        vc.gridwidth = GridBagConstraints.REMAINDER;
+        vc.insets = new Insets(3, 0, 3, 0);
 
-        infoPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_ITERATION_REQUEST_COUNT) + ":"));
-        infoPanel.add(new JLabel(String.valueOf(iteration.getRequestResults().size())));
+        for (String[] row : rows) {
+            JLabel keyLabel = new JLabel(row[0] + ":");
+            keyLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+            keyLabel.setForeground(ModernColors.getTextHint());
+            JLabel valLabel = new JLabel(row[1]);
+            valLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
+
+            kc.gridx = 0; kc.gridy = GridBagConstraints.RELATIVE;
+            infoPanel.add(keyLabel, kc);
+            vc.gridx = 1;
+            infoPanel.add(valLabel, vc);
+        }
+        // 底部弹性填充
+        GridBagConstraints filler = new GridBagConstraints();
+        filler.weighty = 1.0; filler.gridwidth = GridBagConstraints.REMAINDER;
+        infoPanel.add(new JLabel(), filler);
 
         iterationPanel.add(infoPanel, BorderLayout.NORTH);
 
@@ -638,36 +667,48 @@ public class ExecutionResultsPanel extends JPanel {
     }
 
     private JPanel createWelcomePanel() {
-        JPanel welcomePanel = new JPanel(new BorderLayout());
-        JLabel welcomeLabel = new JLabel("<html><div style='text-align: center;'>" +
-                "<br><br><br>" +
-                "<span style='font-size: 16px; color: #666;'>" + I18nUtil.getMessage(MessageKeys.FUNCTIONAL_DETAIL_WELCOME_MESSAGE) + "</span>" +
-                "<br><br>" +
-                "<span style='font-size: 12px; color: #999;'>" + I18nUtil.getMessage(MessageKeys.FUNCTIONAL_DETAIL_WELCOME_SUBTITLE) + "</span>" +
-                "</div></html>");
-        welcomeLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        welcomePanel.add(welcomeLabel, BorderLayout.CENTER);
+        JPanel welcomePanel = new JPanel(new GridBagLayout());
+        JPanel inner = new JPanel();
+        inner.setLayout(new BoxLayout(inner, BoxLayout.Y_AXIS));
+        inner.setOpaque(false);
+
+        // 大图标
+        JLabel iconLabel = new JLabel(IconUtil.createThemed("icons/functional.svg", 48, 48));
+        iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        inner.add(iconLabel);
+        inner.add(Box.createVerticalStrut(16));
+
+        // 主提示文字 - 跟随主题颜色
+        JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_DETAIL_WELCOME_MESSAGE));
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +2));
+        titleLabel.setForeground(ModernColors.getTextPrimary());
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        inner.add(titleLabel);
+        inner.add(Box.createVerticalStrut(8));
+
+        // 副提示文字
+        JLabel subtitleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_DETAIL_WELCOME_SUBTITLE));
+        subtitleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        subtitleLabel.setForeground(ModernColors.getTextHint());
+        subtitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        inner.add(subtitleLabel);
+
+        welcomePanel.add(inner);
         return welcomePanel;
     }
 
     private JPanel createStatsPanel() {
-        JPanel statsPanel = new JPanel(new GridLayout(2, 4, 15, 5));
-        statsPanel.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_DETAIL_EXECUTION_STATS)));
-
         // 计算统计数据
         int totalIterations = executionHistory.getIterations().size();
         int totalRequests = executionHistory.getIterations().stream()
                 .mapToInt(iter -> iter.getRequestResults().size())
                 .sum();
         long totalTime = executionHistory.getExecutionTime();
-
         String skippedText = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SKIPPED);
-
         long passedTests = executionHistory.getIterations().stream()
                 .flatMap(iter -> iter.getRequestResults().stream())
                 .filter(req -> AssertionResult.PASS.equals(req.getAssertion()))
                 .count();
-
         long failedTests = executionHistory.getIterations().stream()
                 .flatMap(iter -> iter.getRequestResults().stream())
                 .filter(req -> AssertionResult.FAIL.equals(req.getAssertion()) ||
@@ -676,21 +717,67 @@ public class ExecutionResultsPanel extends JPanel {
                                 !AssertionResult.NO_TESTS.equals(req.getAssertion()) &&
                                 !skippedText.equals(req.getStatus())))
                 .count();
-
         long totalTestsWithAssertions = passedTests + failedTests;
         double successRate = totalTestsWithAssertions > 0 ? (double) passedTests / totalTestsWithAssertions * 100 : 0;
+        long avgTime = totalRequests > 0 ? totalTime / totalRequests : 0;
 
-        statsPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_TOTAL_ITERATIONS) + ": " + totalIterations));
-        statsPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_TOTAL_REQUESTS) + ": " + totalRequests));
-        statsPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_TOTAL_TIME) + ": " + TimeDisplayUtil.formatElapsedTime(totalTime)));
-        statsPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_SUCCESS_RATE) + ": " + String.format("%.1f%%", successRate)));
+        // 使用 GridBagLayout 实现4列卡片，自适应宽度
+        JPanel statsPanel = new JPanel(new GridBagLayout());
+        statsPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_DETAIL_EXECUTION_STATS)),
+                BorderFactory.createEmptyBorder(4, 8, 8, 8)
+        ));
 
-        statsPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_START_TIME) + ": " + formatTimestamp(executionHistory.getStartTime())));
-        statsPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_END_TIME) + ": " + formatTimestamp(executionHistory.getEndTime())));
-        statsPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_AVERAGE_TIME) + ": " + (totalRequests > 0 ? totalTime / totalRequests : 0) + "ms"));
-        statsPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_STATUS) + ": " + I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_STATUS_COMPLETED)));
+        // 定义卡片数据：[数值, 标签, 颜色(null=主色)]
+        Object[][] cards = {
+                {String.valueOf(totalIterations), I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_TOTAL_ITERATIONS), null},
+                {String.valueOf(totalRequests), I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_TOTAL_REQUESTS), null},
+                {String.format("%.1f%%", successRate), I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_SUCCESS_RATE),
+                        successRate >= 100 ? ModernColors.SUCCESS_DARK : (successRate >= 80 ? ModernColors.WARNING_DARKER : ModernColors.ERROR_DARK)},
+                {TimeDisplayUtil.formatElapsedTime(totalTime), I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_TOTAL_TIME), null},
+                {formatTimestamp(executionHistory.getStartTime()), I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_START_TIME), null},
+                {formatTimestamp(executionHistory.getEndTime()), I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_END_TIME), null},
+                {avgTime + " ms", I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_AVERAGE_TIME), null},
+                {I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_STATUS_COMPLETED), I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_STATUS),
+                        ModernColors.SUCCESS_DARK},
+        };
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.weightx = 1.0;
+        gbc.insets = new Insets(4, 6, 4, 6);
+
+        for (int i = 0; i < cards.length; i++) {
+            gbc.gridx = i % 4;
+            gbc.gridy = i / 4;
+            statsPanel.add(createStatCard((String) cards[i][0], (String) cards[i][1], (Color) cards[i][2]), gbc);
+        }
 
         return statsPanel;
+    }
+
+    /**
+     * 创建单个统计卡片：数值大号粗体在上，标签小号灰色在下
+     */
+    private JPanel createStatCard(String value, String label, Color valueColor) {
+        JPanel card = new JPanel();
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setOpaque(false);
+
+        JLabel valueLabel = new JLabel(value);
+        valueLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +2));
+        valueLabel.setForeground(valueColor != null ? valueColor : ModernColors.getTextPrimary());
+        valueLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JLabel nameLabel = new JLabel(label);
+        nameLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        nameLabel.setForeground(ModernColors.getTextHint());
+        nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        card.add(valueLabel);
+        card.add(Box.createVerticalStrut(2));
+        card.add(nameLabel);
+        return card;
     }
 
     private JTable createSummaryTable() {
@@ -861,32 +948,32 @@ public class ExecutionResultsPanel extends JPanel {
             public Component getTableCellRendererComponent(JTable table, Object value,
                                                            boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-
-                // 获取状态列的值
-                String status = "";
-                try {
-                    Object statusValue = table.getValueAt(row, 3);
-                    if (statusValue != null) {
-                        status = statusValue.toString();
-                    }
-                } catch (Exception e) {
-                    // 忽略
-                }
+                setHorizontalAlignment(CENTER);
 
                 String skippedText = I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATUS_SKIPPED);
+                // 取 Status 列值判断是否跳过
+                String status = "";
+                try {
+                    Object sv = table.getValueAt(row, 3);
+                    if (sv != null) status = sv.toString();
+                } catch (Exception ignored) { /* ignore */ }
 
-                if (value != null && !"-".equals(value)) {
-                    if (skippedText.equals(status)) {
-                        // status是跳过状态
-                        setText("💨");
-                        c.setForeground(ModernColors.getTextHint());
-                    } else if (value instanceof AssertionResult assertionResult) {
-                        setText(assertionResult.getDisplayValue());
+                if (skippedText.equals(status)) {
+                    setText("-");
+                    c.setForeground(ModernColors.getTextHint());
+                } else if (value instanceof AssertionResult ar) {
+                    setText(ar.getDisplayValue());
+                    if (AssertionResult.PASS.equals(ar)) {
+                        c.setForeground(isSelected ? c.getForeground() : ModernColors.SUCCESS_DARK);
+                    } else if (AssertionResult.FAIL.equals(ar)) {
+                        c.setForeground(isSelected ? c.getForeground() : ModernColors.ERROR_DARK);
+                    } else {
+                        c.setForeground(isSelected ? c.getForeground() : ModernColors.getTextSecondary());
                     }
                 } else {
+                    setText("-");
                     c.setForeground(ModernColors.getTextDisabled());
                 }
-                setHorizontalAlignment(CENTER);
                 return c;
             }
         };

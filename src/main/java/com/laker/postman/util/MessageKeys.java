@@ -619,6 +619,10 @@ public final class MessageKeys {
     public static final String FUNCTIONAL_TABLE_COLUMN_RESULT = "functional.table.column.result";
     public static final String FUNCTIONAL_MENU_VIEW_DETAIL = "functional.menu.view_detail";
     public static final String FUNCTIONAL_MENU_REMOVE = "functional.menu.remove";
+    public static final String FUNCTIONAL_MENU_CHECK = "functional.menu.check";
+    public static final String FUNCTIONAL_MENU_UNCHECK = "functional.menu.uncheck";
+    public static final String FUNCTIONAL_MENU_MOVE_UP = "functional.menu.move_up";
+    public static final String FUNCTIONAL_MENU_MOVE_DOWN = "functional.menu.move_down";
     public static final String FUNCTIONAL_MSG_REFRESH_SUCCESS = "functional.msg.refresh_success";
     public static final String FUNCTIONAL_MSG_REFRESH_WARNING = "functional.msg.refresh_warning";
 

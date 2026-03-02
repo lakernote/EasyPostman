@@ -63,14 +63,14 @@ public class FunctionalPanel extends SingletonBasePanel {
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
-        setPreferredSize(new Dimension(700, 400));
+        // 移除硬编码 setPreferredSize，改用最小尺寸约束，让父容器自适应分配
+        setMinimumSize(new Dimension(500, 300));
 
         // 创建主选项卡面板
         mainTabbedPane = new JTabbedPane();
         mainTabbedPane.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1));
 
         JPanel executionPanel = new JPanel(new BorderLayout());
-        // 添加内边距
         executionPanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         executionPanel.add(createTopPanel(), BorderLayout.NORTH);
         executionPanel.add(createTablePanel(), BorderLayout.CENTER);
@@ -87,65 +87,51 @@ public class FunctionalPanel extends SingletonBasePanel {
 
         add(mainTabbedPane, BorderLayout.CENTER);
 
-        // 加载保存的配置
         this.persistenceService = SingletonFactory.getInstance(FunctionalPersistenceService.class);
         loadSaved();
     }
 
     private JPanel createTopPanel() {
-        JPanel topPanel = new JPanel(new BorderLayout());
+        // 改用 FlowLayout 弹性布局，避免固定高度
+        JPanel topPanel = new JPanel(new BorderLayout(6, 0));
         topPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
+        topPanel.setOpaque(false);
 
         // 初始化 CSV 数据面板
         csvDataPanel = new CsvDataPanel();
 
-        // 左侧按钮面板
+        // 左侧按钮组
         topPanel.add(createButtonPanel(), BorderLayout.WEST);
 
-        // 中间 CSV 状态面板
+        // 中间 CSV 状态面板（无数据时自然折叠）
         topPanel.add(csvDataPanel, BorderLayout.CENTER);
 
-        // 创建右侧信息面板，包含执行时间和进度显示
-        JPanel rightPanel = new JPanel();
-        // 使用更紧凑的布局
-        rightPanel.setLayout(new BoxLayout(rightPanel, BoxLayout.X_AXIS));
-        rightPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+        // 右侧：执行时间 + 进度（紧凑排列）
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         rightPanel.setOpaque(false);
 
-        // 创建执行时间显示面板
-        JPanel timePanel = new JPanel();
-        timePanel.setLayout(new BoxLayout(timePanel, BoxLayout.X_AXIS));
-        timePanel.setOpaque(false);
-        JLabel timeIcon = new JLabel(new FlatSVGIcon("icons/time.svg", 20, 20).setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))));
+        // 执行时间
         timeLabel = new JLabel("0 ms");
         timeLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
-        timePanel.add(timeIcon);
-        timePanel.add(Box.createHorizontalStrut(3));
-        timePanel.add(timeLabel);
+        JLabel timeIcon = new JLabel(new FlatSVGIcon("icons/time.svg", 16, 16)
+                .setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))));
+        rightPanel.add(timeIcon);
+        rightPanel.add(timeLabel);
 
-        // 创建任务进度显示面板
-        JPanel taskPanel = new JPanel();
-        taskPanel.setLayout(new BoxLayout(taskPanel, BoxLayout.X_AXIS));
-        taskPanel.setOpaque(false);
-        JLabel taskIcon = new JLabel(new FlatSVGIcon("icons/functional.svg", 20, 20).setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))));
+        // 分隔符
+        JSeparator sep = new JSeparator(SwingConstants.VERTICAL);
+        sep.setPreferredSize(new Dimension(1, 16));
+        rightPanel.add(sep);
 
-        // 创建进度文本标签
+        // 进度
         progressLabel = new JLabel("0/0");
         progressLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
-
-        taskPanel.add(taskIcon);
-        taskPanel.add(Box.createHorizontalStrut(3));
-        taskPanel.add(progressLabel);
-
-        // 添加到右侧面板，并设置间距
-        rightPanel.add(timePanel);
-        rightPanel.add(Box.createHorizontalStrut(10));
-        rightPanel.add(taskPanel);
+        JLabel taskIcon = new JLabel(new FlatSVGIcon("icons/functional.svg", 16, 16)
+                .setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))));
+        rightPanel.add(taskIcon);
+        rightPanel.add(progressLabel);
 
         topPanel.add(rightPanel, BorderLayout.EAST);
-
-        // 固定顶部面板高度，避免挤压表格区域
-        topPanel.setPreferredSize(new Dimension(700, 40));
         return topPanel;
     }
 
@@ -160,11 +146,11 @@ public class FunctionalPanel extends SingletonBasePanel {
         runBtn = new StartButton();
         runBtn.addActionListener(e -> {
             runSelectedRequests();
-            stopBtn.setEnabled(true);
         });
         btnPanel.add(runBtn);
 
         stopBtn = new StopButton();
+        stopBtn.setEnabled(false); // 初始禁用，执行时才启用
         stopBtn.addActionListener(e -> {
             isStopped = true;
             stopBtn.setEnabled(false);
@@ -182,7 +168,6 @@ public class FunctionalPanel extends SingletonBasePanel {
             stopBtn.setEnabled(false);
             resetProgress();
             resultsPanel.updateExecutionHistory(null);
-            // 清除持久化的配置
             persistenceService.clear();
         });
         btnPanel.add(clearBtn);
@@ -192,7 +177,7 @@ public class FunctionalPanel extends SingletonBasePanel {
 
     // 批量运行
     private void runSelectedRequests() {
-        isStopped = false; // 开始运行时重置停止标志
+        isStopped = false;
         int rowCount = tableModel.getRowCount();
         int selectedCount = (int) IntStream.range(0, rowCount).mapToObj(i -> tableModel.getRow(i)).filter(row -> row != null && row.selected).count();
         if (selectedCount == 0) {
@@ -209,11 +194,10 @@ public class FunctionalPanel extends SingletonBasePanel {
                     I18nUtil.getMessage(MessageKeys.FUNCTIONAL_MSG_CSV_TITLE),
                     JOptionPane.YES_NO_OPTION);
             if (response != JOptionPane.YES_OPTION) {
-                iterations = 1; // 用户选择不使用 CSV 数据
+                iterations = 1;
             }
         }
 
-        // 创建新的执行历史记录
         final int totalExecutions = selectedCount * iterations;
         executionHistory = new BatchExecutionHistory();
         executionHistory.setTotalIterations(iterations);
@@ -221,12 +205,14 @@ public class FunctionalPanel extends SingletonBasePanel {
 
         clearRunResults(rowCount);
         runBtn.setEnabled(false);
+        stopBtn.setEnabled(true); // 开始执行时启用 Stop
 
         progressLabel.setText("0/" + totalExecutions);
 
-        startTime = System.currentTimeMillis(); // 记录开始时间
+
+        startTime = System.currentTimeMillis();
         executionTimer = new Timer(100, e -> updateExecutionTime());
-        executionTimer.start(); // 启动计时器
+        executionTimer.start();
 
         final int finalIterations = iterations;
         new Thread(() -> executeBatchRequestsWithCsv(rowCount, selectedCount, finalIterations)).start();
@@ -522,7 +508,9 @@ public class FunctionalPanel extends SingletonBasePanel {
 
         table.setDragEnabled(true);
         table.setDropMode(DropMode.INSERT_ROWS);
-        table.setTransferHandler(new TableRowTransferHandler(table));
+        TableRowTransferHandler transferHandler = new TableRowTransferHandler(table);
+        transferHandler.setOnRowOrderChanged(this::save); // 拖拽完成后自动持久化
+        table.setTransferHandler(transferHandler);
 
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setBorder(BorderFactory.createEmptyBorder(0, 5, 5, 5));
@@ -639,15 +627,20 @@ public class FunctionalPanel extends SingletonBasePanel {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                if (value != null && !"-".equals(value)) {
-                    if (value instanceof AssertionResult assertionResult) {
-                        setText(assertionResult.getDisplayValue());
+                setHorizontalAlignment(CENTER);
+                if (value instanceof AssertionResult ar) {
+                    setText(ar.getDisplayValue());
+                    if (AssertionResult.PASS.equals(ar)) {
+                        c.setForeground(isSelected ? c.getForeground() : ModernColors.SUCCESS_DARK);
+                    } else if (AssertionResult.FAIL.equals(ar)) {
+                        c.setForeground(isSelected ? c.getForeground() : ModernColors.ERROR_DARK);
+                    } else {
+                        c.setForeground(isSelected ? c.getForeground() : ModernColors.getTextSecondary());
                     }
                 } else {
+                    setText("-");
                     c.setForeground(ModernColors.getTextDisabled());
                 }
-
-                setHorizontalAlignment(CENTER);
                 return c;
             }
         };
@@ -695,28 +688,63 @@ public class FunctionalPanel extends SingletonBasePanel {
      */
     private void showTableContextMenu(java.awt.event.MouseEvent e, int rowIndex) {
         JPopupMenu menu = new JPopupMenu();
+        RunnerRowData row = tableModel.getRow(rowIndex);
 
         // 查看详情
         JMenuItem viewItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_MENU_VIEW_DETAIL));
-        viewItem.setIcon(new FlatSVGIcon("icons/detail.svg", 16, 16));
         viewItem.addActionListener(evt -> showRequestDetail(rowIndex));
         menu.add(viewItem);
 
         menu.addSeparator();
 
+        // 勾选 / 取消勾选
+        if (row != null) {
+            String toggleText = row.selected
+                    ? I18nUtil.getMessage(MessageKeys.FUNCTIONAL_MENU_UNCHECK)
+                    : I18nUtil.getMessage(MessageKeys.FUNCTIONAL_MENU_CHECK);
+            JMenuItem toggleItem = new JMenuItem(toggleText);
+            toggleItem.addActionListener(evt -> {
+                row.selected = !row.selected;
+                tableModel.fireTableRowsUpdated(rowIndex, rowIndex);
+                save();
+            });
+            menu.add(toggleItem);
+        }
+
+        menu.addSeparator();
+
+        // 上移
+        JMenuItem upItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_MENU_MOVE_UP));
+        upItem.setEnabled(rowIndex > 0);
+        upItem.addActionListener(evt -> {
+            tableModel.moveRow(rowIndex, rowIndex - 1);
+            table.setRowSelectionInterval(rowIndex - 1, rowIndex - 1);
+            save();
+        });
+        menu.add(upItem);
+
+        // 下移
+        JMenuItem downItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_MENU_MOVE_DOWN));
+        downItem.setEnabled(rowIndex < tableModel.getRowCount() - 1);
+        downItem.addActionListener(evt -> {
+            tableModel.moveRow(rowIndex, rowIndex + 1);
+            table.setRowSelectionInterval(rowIndex + 1, rowIndex + 1);
+            save();
+        });
+        menu.add(downItem);
+
+        menu.addSeparator();
+
         // 移除当前行
         JMenuItem deleteItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_MENU_REMOVE));
-        deleteItem.setIcon(new FlatSVGIcon("icons/close.svg", 16, 16));
         deleteItem.addActionListener(evt -> {
             tableModel.removeRow(rowIndex);
             if (tableModel.getRowCount() == 0) {
                 runBtn.setEnabled(false);
             }
-            // 删除行后保存配置
             save();
         });
         menu.add(deleteItem);
-
 
         menu.show(e.getComponent(), e.getX(), e.getY());
     }
@@ -877,3 +905,8 @@ public class FunctionalPanel extends SingletonBasePanel {
         }
     }
 }
+
+
+
+
+

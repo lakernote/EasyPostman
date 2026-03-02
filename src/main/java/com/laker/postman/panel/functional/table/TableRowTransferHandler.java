@@ -14,9 +14,15 @@ public class TableRowTransferHandler extends TransferHandler {
     private int[] rows = null;
     private int addIndex = -1; // 新插入的行索引
     private int addCount = 0; // 插入的行数
+    /** 拖拽完成后的回调（用于持久化） */
+    private transient Runnable onRowOrderChanged;
 
     public TableRowTransferHandler(JTable table) {
         this.table = table;
+    }
+
+    public void setOnRowOrderChanged(Runnable callback) {
+        this.onRowOrderChanged = callback;
     }
 
     @Override
@@ -89,6 +95,10 @@ public class TableRowTransferHandler extends TransferHandler {
                         defModel.removeRow(rows[i] + addCount);
                     }
                 }
+            }
+            // 拖拽完成后触发持久化回调
+            if (onRowOrderChanged != null) {
+                SwingUtilities.invokeLater(onRowOrderChanged);
             }
         }
         rows = null;

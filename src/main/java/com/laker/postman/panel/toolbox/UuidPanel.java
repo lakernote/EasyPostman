@@ -8,6 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import javax.swing.Timer;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
@@ -23,6 +25,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -44,6 +47,15 @@ public class UuidPanel extends JPanel {
 
     // UUID 正则表达式
     private static final Pattern UUID_NO_HYPHEN_PATTERN = Pattern.compile("^[0-9a-fA-F]{32}$");
+    private static final Pattern UUID_FLEXIBLE_PATTERN = Pattern.compile("(?i)[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}");
+    private static final long UUID_EPOCH_OFFSET_100NS = 0x01b21dd213814000L;
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private static final DateTimeFormatter LOCAL_DATE_TIME_FORMATTER = DateTimeFormatter
+            .ofPattern("yyyy-MM-dd HH:mm:ss.SSS z")
+            .withZone(ZoneId.systemDefault());
+    private static final DateTimeFormatter UTC_DATE_TIME_FORMATTER = DateTimeFormatter
+            .ofPattern("yyyy-MM-dd HH:mm:ss.SSS 'UTC'")
+            .withZone(ZoneId.of("UTC"));
 
     // 预定义命名空间
     private static final UUID NAMESPACE_DNS = UUID.fromString("6ba7b810-9dad-11d1-80b4-00c04fd430c8");
@@ -107,9 +119,13 @@ public class UuidPanel extends JPanel {
 
         row1.add(Box.createHorizontalStrut(10));
         row1.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_COUNT) + ":"));
-        SpinnerNumberModel spinnerModel = new SpinnerNumberModel(1, 1, 10000, 1);
+        SpinnerNumberModel spinnerModel = new SpinnerNumberModel(5, 1, 10000, 1);
         countSpinner = new JSpinner(spinnerModel);
         countSpinner.setPreferredSize(new Dimension(80, 28));
+        countSpinner.setToolTipText("1 - 10000");
+        if (countSpinner.getEditor() instanceof JSpinner.DefaultEditor editor) {
+            editor.getTextField().setHorizontalAlignment(SwingConstants.CENTER);
+        }
         row1.add(countSpinner);
         configPanel.add(row1);
 
@@ -262,6 +278,7 @@ public class UuidPanel extends JPanel {
             int selectedIndex = versionComboBox.getSelectedIndex();
             // v3 和 v5 需要显示命名空间和名称输入框
             row3.setVisible(selectedIndex == 2 || selectedIndex == 3);
+            refreshIfNotEmpty();
             configPanel.revalidate();
             configPanel.repaint();
         });
@@ -283,13 +300,18 @@ public class UuidPanel extends JPanel {
                 };
                 namespaceField.setText(namespace.toString());
             }
+            refreshIfNameBasedAndNotEmpty();
         });
+
+        countSpinner.addChangeListener(e -> refreshIfNotEmpty());
+        bindAutoGenerateListener(namespaceField, true);
+        bindAutoGenerateListener(nameField, true);
 
         // 初始化命名空间字段
         namespaceField.setText(NAMESPACE_DNS.toString());
 
-        // 初始生成一个UUID
-        generateUuid(1);
+        // 初始生成 UUID（默认数量）
+        generateUuid((Integer) countSpinner.getValue());
 
         return panel;
     }
@@ -391,14 +413,13 @@ public class UuidPanel extends JPanel {
      */
     private String generateUuidV1() {
         long timestamp = System.currentTimeMillis();
-        long time = timestamp * 10000 + 0x01b21dd213814000L;
+        long time = timestamp * 10000 + UUID_EPOCH_OFFSET_100NS;
 
         long timeLow = time & 0xFFFFFFFFL;
         long timeMid = (time >> 32) & 0xFFFFL;
         long timeHi = ((time >> 48) & 0x0FFFL) | 0x1000; // Version 1
 
-        SecureRandom random = new SecureRandom();
-        long clockSeq = random.nextInt(0x3FFF) | 0x8000; // Variant
+        long clockSeq = SECURE_RANDOM.nextInt(0x3FFF) | 0x8000; // Variant
         long node = getNodeId();
 
         return String.format("%08x-%04x-%04x-%04x-%012x",
@@ -556,10 +577,10 @@ public class UuidPanel extends JPanel {
             return;
         }
 
-        // 移除可能的分隔符
-        String uuid = input.replace("-", "").replace(" ", "").trim();
+        // 允许粘贴多种格式（带/不带连字符，包含前后缀，甚至一段文本中的 UUID）
+        String uuid = extractFirstUuidHex(input);
 
-        if (!UUID_NO_HYPHEN_PATTERN.matcher(uuid).matches()) {
+        if (uuid == null || !UUID_NO_HYPHEN_PATTERN.matcher(uuid).matches()) {
             parseArea.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_PARSE_INVALID));
             return;
         }
@@ -587,8 +608,8 @@ public class UuidPanel extends JPanel {
         result.append("   ").append(uuid).append("\n\n");
 
         // 解析版本和变体
-        int version = Integer.parseInt(uuid.substring(12, 13), 16) >> 4;
-        int variant = Integer.parseInt(uuid.substring(16, 17), 16) >> 4;
+        int version = Integer.parseInt(uuid.substring(12, 13), 16);
+        int variantNibble = Integer.parseInt(uuid.substring(16, 17), 16);
 
         result.append("ℹ️  ").append(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_VERSION)).append(": ");
         result.append(version).append("\n");
@@ -599,39 +620,18 @@ public class UuidPanel extends JPanel {
             case 3: result.append("(Name-based MD5)"); break;
             case 4: result.append("(Random)"); break;
             case 5: result.append("(Name-based SHA-1)"); break;
+            case 6: result.append("(Reordered Time-based)"); break;
+            case 7: result.append("(Unix Time-based)"); break;
+            case 8: result.append("(Custom)"); break;
             default: result.append("(Unknown)"); break;
         }
         result.append("\n\n");
 
         result.append("🔀 ").append(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_VARIANT)).append(": ");
-        if ((variant & 0x8) == 0x8) {
-            result.append("RFC 4122\n");
-        } else {
-            result.append("Reserved\n");
-        }
+        result.append(resolveVariantName(variantNibble)).append("\n");
         result.append("\n");
 
-        // 如果是 v1，解析时间戳
-        if (version == 1) {
-            try {
-                long timeLow = Long.parseLong(uuid.substring(0, 8), 16);
-                long timeMid = Long.parseLong(uuid.substring(8, 12), 16);
-                long timeHi = Long.parseLong(uuid.substring(12, 16), 16) & 0x0FFF;
-
-                long timestamp = (timeHi << 48) | (timeMid << 32) | timeLow;
-                long unixTime = (timestamp - 0x01b21dd213814000L) / 10000;
-
-                Instant instant = Instant.ofEpochMilli(unixTime);
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
-                        .withZone(ZoneId.systemDefault());
-
-                result.append("⏰ ").append(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_TIMESTAMP)).append(":\n");
-                result.append("   ").append(formatter.format(instant)).append("\n");
-                result.append("   (").append(unixTime).append(" ms)\n");
-            } catch (Exception e) {
-                log.warn("Failed to parse timestamp: {}", e.getMessage());
-            }
-        }
+        appendTimeInfoIfAvailable(result, uuid, version);
 
         // 如果是 v3 或 v5，提示这是基于名称的 UUID
         if (version == 3 || version == 5) {
@@ -642,6 +642,79 @@ public class UuidPanel extends JPanel {
 
         parseArea.setText(result.toString());
         parseArea.setCaretPosition(0);
+    }
+
+    private String extractFirstUuidHex(String input) {
+        String normalized = input.trim();
+        if (normalized.isEmpty()) return null;
+
+        Matcher matcher = UUID_FLEXIBLE_PATTERN.matcher(normalized);
+        if (matcher.find()) {
+            return matcher.group().replace("-", "").toLowerCase(Locale.ROOT);
+        }
+
+        // 兜底：支持 urn:uuid:{...} 这类场景
+        normalized = normalized.replace("urn:uuid:", "")
+                .replace("URN:UUID:", "")
+                .replace("{", "")
+                .replace("}", "")
+                .replace("-", "")
+                .replace(" ", "")
+                .trim();
+        if (UUID_NO_HYPHEN_PATTERN.matcher(normalized).matches()) {
+            return normalized.toLowerCase(Locale.ROOT);
+        }
+        return null;
+    }
+
+    private String resolveVariantName(int variantNibble) {
+        if ((variantNibble & 0x8) == 0x0) return "NCS (Reserved)";
+        if ((variantNibble & 0xC) == 0x8) return "RFC 4122";
+        if ((variantNibble & 0xE) == 0xC) return "Microsoft (Reserved)";
+        return "Future (Reserved)";
+    }
+
+    private void appendTimeInfoIfAvailable(StringBuilder result, String uuidHex, int version) {
+        try {
+            switch (version) {
+                case 1 -> {
+                    long timeLow = Long.parseLong(uuidHex.substring(0, 8), 16);
+                    long timeMid = Long.parseLong(uuidHex.substring(8, 12), 16);
+                    long timeHi = Long.parseLong(uuidHex.substring(13, 16), 16);
+                    long timestamp100ns = (timeHi << 48) | (timeMid << 32) | timeLow;
+                    appendDecodedTime(result, timestamp100nsToUnixMs(timestamp100ns), "v1");
+                }
+                case 6 -> {
+                    long timeHigh = Long.parseLong(uuidHex.substring(0, 8), 16);
+                    long timeMid = Long.parseLong(uuidHex.substring(8, 12), 16);
+                    long timeLow = Long.parseLong(uuidHex.substring(13, 16), 16);
+                    long timestamp100ns = (timeHigh << 28) | (timeMid << 12) | timeLow;
+                    appendDecodedTime(result, timestamp100nsToUnixMs(timestamp100ns), "v6");
+                }
+                case 7 -> {
+                    long unixTimeMs = Long.parseLong(uuidHex.substring(0, 12), 16);
+                    appendDecodedTime(result, unixTimeMs, "v7");
+                }
+                default -> {
+                    // 非时间型 UUID 无时间信息
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to parse UUID timestamp: {}", e.getMessage());
+        }
+    }
+
+    private void appendDecodedTime(StringBuilder result, long unixTimeMs, String source) {
+        if (unixTimeMs < 0) return;
+        Instant instant = Instant.ofEpochMilli(unixTimeMs);
+        result.append("⏰ ").append(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_TIMESTAMP)).append(" (").append(source).append("):\n");
+        result.append("   Local: ").append(LOCAL_DATE_TIME_FORMATTER.format(instant)).append("\n");
+        result.append("   UTC  : ").append(UTC_DATE_TIME_FORMATTER.format(instant)).append("\n");
+        result.append("   Epoch: ").append(unixTimeMs).append(" ms\n\n");
+    }
+
+    private long timestamp100nsToUnixMs(long timestamp100ns) {
+        return (timestamp100ns - UUID_EPOCH_OFFSET_100NS) / 10000;
     }
 
     /**
@@ -730,6 +803,40 @@ public class UuidPanel extends JPanel {
             int count = (Integer) countSpinner.getValue();
             generateUuid(count);
         }
+    }
+
+    private void refreshIfNameBasedAndNotEmpty() {
+        int selectedIndex = versionComboBox.getSelectedIndex();
+        if (selectedIndex == 2 || selectedIndex == 3) {
+            refreshIfNotEmpty();
+        }
+    }
+
+    private void bindAutoGenerateListener(JTextField textField, boolean onlyForNameBased) {
+        textField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                trigger();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                trigger();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                trigger();
+            }
+
+            private void trigger() {
+                if (onlyForNameBased) {
+                    refreshIfNameBasedAndNotEmpty();
+                } else {
+                    refreshIfNotEmpty();
+                }
+            }
+        });
     }
 
     /**

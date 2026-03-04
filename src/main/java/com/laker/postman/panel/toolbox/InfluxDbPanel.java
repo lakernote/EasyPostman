@@ -6,10 +6,12 @@ import cn.hutool.core.text.csv.CsvRow;
 import cn.hutool.core.text.csv.CsvUtil;
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.component.EasyComboBox;
+import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.button.ClearButton;
 import com.laker.postman.common.component.button.CopyButton;
 import com.laker.postman.common.component.button.PrimaryButton;
+import com.laker.postman.common.component.button.RefreshButton;
 import com.laker.postman.common.component.table.EnhancedTablePanel;
 import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
@@ -59,6 +61,10 @@ public class InfluxDbPanel extends JPanel {
 
     private EasyComboBox<String> dbCombo;
     private EasyComboBox<String> measurementCombo;
+    private DefaultListModel<String> measurementListModel;
+    private DefaultListModel<String> measurementFilteredModel;
+    private JList<String> measurementList;
+    private SearchTextField measurementSearchField;
     private JTextField userField;
     private JPasswordField passwordField;
 
@@ -90,6 +96,7 @@ public class InfluxDbPanel extends JPanel {
     private String baseUrl = "http://localhost:8086";
     private boolean connected = false;
     private String lastResponseBody = "";
+    private boolean suppressMeasurementSync = false;
 
     private static final String LABEL_DISABLED_FG = "Label.disabledForeground";
     private static final String SEPARATOR_FG = "Separator.foreground";
@@ -217,8 +224,266 @@ public class InfluxDbPanel extends JPanel {
         setLayout(new BorderLayout(0, 0));
         setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         add(buildConnectionPanel(), BorderLayout.NORTH);
-        add(buildMainPanel(), BorderLayout.CENTER);
+        JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, buildMeasurementPanel(), buildMainPanel());
+        mainSplit.setDividerLocation(240);
+        mainSplit.setDividerSize(5);
+        mainSplit.setResizeWeight(0.25);
+        mainSplit.setContinuousLayout(true);
+        add(mainSplit, BorderLayout.CENTER);
         switchMode(getSelectedMode());
+    }
+
+    private JPanel buildMeasurementPanel() {
+        JPanel panel = new JPanel(new BorderLayout(0, 0));
+        panel.setPreferredSize(new Dimension(230, 0));
+        panel.setBorder(BorderFactory.createEmptyBorder());
+
+        JPanel titleBar = new JPanel(new BorderLayout());
+        titleBar.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)),
+                BorderFactory.createEmptyBorder(4, 8, 4, 4)));
+        JLabel titleLbl = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_MEASUREMENT_MANAGEMENT));
+        titleLbl.setFont(titleLbl.getFont().deriveFont(Font.BOLD, 12f));
+        RefreshButton refreshBtn = new RefreshButton();
+        refreshBtn.addActionListener(e -> {
+            if (!connected || getSelectedMode() != QueryMode.INFLUXQL_V1) return;
+            String db = getSelectedDatabase();
+            if (!db.isBlank()) {
+                loadMeasurements(db);
+            }
+        });
+        titleBar.add(titleLbl, BorderLayout.CENTER);
+        titleBar.add(refreshBtn, BorderLayout.EAST);
+
+        measurementSearchField = new SearchTextField();
+        measurementSearchField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT,
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_MEASUREMENT_SEARCH_PLACEHOLDER));
+        measurementSearchField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
+        JPanel searchBox = new JPanel(new BorderLayout());
+        searchBox.setBorder(BorderFactory.createEmptyBorder(4, 6, 2, 6));
+        searchBox.add(measurementSearchField, BorderLayout.CENTER);
+
+        measurementListModel = new DefaultListModel<>();
+        measurementFilteredModel = new DefaultListModel<>();
+        measurementList = new JList<>(measurementFilteredModel);
+        measurementList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        measurementList.addListSelectionListener(e -> {
+            if (e.getValueIsAdjusting() || suppressMeasurementSync) return;
+            List<String> selectedValues = measurementList.getSelectedValuesList();
+            if (selectedValues.size() == 1) {
+                String selected = selectedValues.get(0);
+                if (selected != null && !selected.isBlank()) {
+                    selectMeasurementFromList(selected);
+                }
+            }
+        });
+        measurementList.addMouseListener(buildMeasurementListMouseListener());
+
+        JScrollPane listScroll = new JScrollPane(measurementList);
+        listScroll.setBorder(BorderFactory.createEmptyBorder());
+
+        measurementSearchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                filterMeasurements(measurementSearchField.getText());
+            }
+
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                filterMeasurements(measurementSearchField.getText());
+            }
+
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                filterMeasurements(measurementSearchField.getText());
+            }
+        });
+
+        JPanel topArea = new JPanel(new BorderLayout());
+        topArea.add(titleBar, BorderLayout.NORTH);
+        topArea.add(searchBox, BorderLayout.CENTER);
+
+        panel.add(topArea, BorderLayout.NORTH);
+        panel.add(listScroll, BorderLayout.CENTER);
+        return panel;
+    }
+
+    private java.awt.event.MouseAdapter buildMeasurementListMouseListener() {
+        return new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                if (SwingUtilities.isLeftMouseButton(evt) && evt.getClickCount() == 2) {
+                    int idx = measurementList.locationToIndex(evt.getPoint());
+                    if (idx >= 0) {
+                        measurementList.setSelectedIndex(idx);
+                        String measurement = measurementList.getSelectedValue();
+                        executeMeasurementQuickQuery(measurement);
+                    }
+                }
+            }
+
+            @Override
+            public void mousePressed(java.awt.event.MouseEvent evt) {
+                if (evt.isPopupTrigger()) maybeShowMeasurementPopup(evt);
+            }
+
+            @Override
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                if (evt.isPopupTrigger()) maybeShowMeasurementPopup(evt);
+            }
+        };
+    }
+
+    private void executeMeasurementQuickQuery(String measurement) {
+        if (measurement == null || measurement.isBlank()) return;
+        if (!connected) {
+            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_ERR_NOT_CONNECTED));
+            return;
+        }
+        if (getSelectedMode() != QueryMode.INFLUXQL_V1) return;
+        String db = getSelectedDatabase();
+        if (db.isBlank()) {
+            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_ERR_DB_REQUIRED));
+            return;
+        }
+
+        // 双击即查询：优先沿用当前模板并注入 measurement；无模板时回退到默认查询
+        if (templateCombo != null && templateCombo.getSelectedIndex() >= 0) {
+            loadTemplate();
+        } else {
+            queryEditor.setText("SELECT * FROM " + quoteIdentifier(measurement) + " ORDER BY time DESC LIMIT 100");
+            queryEditor.setCaretPosition(0);
+        }
+        executeQuery();
+    }
+
+    private void maybeShowMeasurementPopup(java.awt.event.MouseEvent evt) {
+        if (getSelectedMode() != QueryMode.INFLUXQL_V1) return;
+
+        int idx = measurementList.locationToIndex(evt.getPoint());
+        if (idx >= 0 && !measurementList.isSelectedIndex(idx)) {
+            measurementList.setSelectedIndex(idx);
+        }
+
+        List<String> measurements = new ArrayList<>(measurementList.getSelectedValuesList());
+        String db = getSelectedDatabase();
+
+        JPopupMenu menu = new JPopupMenu();
+        JMenuItem deleteItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_MEASUREMENT_DELETE));
+        deleteItem.setEnabled(connected && !measurements.isEmpty() && !db.isBlank());
+        deleteItem.addActionListener(e -> deleteMeasurements(db, measurements));
+        menu.add(deleteItem);
+
+        JMenuItem clearItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_MEASUREMENT_CLEAR));
+        clearItem.setEnabled(connected && !measurements.isEmpty() && !db.isBlank());
+        clearItem.addActionListener(e -> clearMeasurementsData(db, measurements));
+        menu.add(clearItem);
+
+        menu.show(measurementList, evt.getX(), evt.getY());
+    }
+
+    private void deleteMeasurements(String db, List<String> measurements) {
+        List<String> valid = normalizeMeasurementTargets(measurements);
+        if (!connected || db.isBlank() || valid.isEmpty()) return;
+
+        String confirmMsg = valid.size() == 1
+                ? MessageFormat.format(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_MEASUREMENT_DELETE_CONFIRM), valid.get(0))
+                : MessageFormat.format(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_MEASUREMENT_DELETE_BATCH_CONFIRM), valid.size());
+        int opt = JOptionPane.showConfirmDialog(this,
+                confirmMsg,
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_MEASUREMENT_DELETE_CONFIRM_TITLE),
+                JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+        if (opt != JOptionPane.YES_OPTION) return;
+
+        runMeasurementMutation(db, valid,
+                true,
+                MessageKeys.TOOLBOX_INFLUX_MEASUREMENT_DELETE_SUCCESS,
+                MessageKeys.TOOLBOX_INFLUX_MEASUREMENT_DELETE_BATCH_SUCCESS,
+                MessageKeys.TOOLBOX_INFLUX_MEASUREMENT_DELETE_FAILED);
+    }
+
+    private void clearMeasurementsData(String db, List<String> measurements) {
+        List<String> valid = normalizeMeasurementTargets(measurements);
+        if (!connected || db.isBlank() || valid.isEmpty()) return;
+
+        String confirmMsg = valid.size() == 1
+                ? MessageFormat.format(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_MEASUREMENT_CLEAR_CONFIRM), valid.get(0))
+                : MessageFormat.format(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_MEASUREMENT_CLEAR_BATCH_CONFIRM), valid.size());
+        int opt = JOptionPane.showConfirmDialog(this,
+                confirmMsg,
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_MEASUREMENT_CLEAR_CONFIRM_TITLE),
+                JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+        if (opt != JOptionPane.YES_OPTION) return;
+
+        runMeasurementMutation(db, valid,
+                false,
+                MessageKeys.TOOLBOX_INFLUX_MEASUREMENT_CLEAR_SUCCESS,
+                MessageKeys.TOOLBOX_INFLUX_MEASUREMENT_CLEAR_BATCH_SUCCESS,
+                MessageKeys.TOOLBOX_INFLUX_MEASUREMENT_CLEAR_FAILED);
+    }
+
+    private List<String> normalizeMeasurementTargets(List<String> measurements) {
+        if (measurements == null || measurements.isEmpty()) return List.of();
+        LinkedHashSet<String> set = new LinkedHashSet<>();
+        for (String measurement : measurements) {
+            if (measurement != null) {
+                String trimmed = measurement.trim();
+                if (!trimmed.isBlank()) set.add(trimmed);
+            }
+        }
+        return new ArrayList<>(set);
+    }
+
+    private void runMeasurementMutation(String db, List<String> measurements, boolean dropMeasurement,
+                                        String singleSuccessMsgKey, String batchSuccessMsgKey, String failedMsgKey) {
+        List<String> targets = new ArrayList<>(measurements);
+        SwingWorker<HttpResult, Void> worker = new SwingWorker<>() {
+            @Override
+            protected HttpResult doInBackground() throws Exception {
+                HttpResult lastResult = null;
+                for (String measurement : targets) {
+                    String query = dropMeasurement
+                            ? ("DROP MEASUREMENT " + quoteIdentifier(measurement))
+                            : ("DELETE FROM " + quoteIdentifier(measurement));
+                    String path = "/query?db=" + enc(db) + "&q=" + enc(query);
+                    HttpResult result = callHttp("GET", path, null, null, "application/json", QueryMode.INFLUXQL_V1);
+                    if (result.code() < 200 || result.code() >= 300) {
+                        throw new IOException("[" + measurement + "] HTTP " + result.code() + "\n" + result.body());
+                    }
+                    String influxError = extractInfluxError(result.body());
+                    if (!influxError.isBlank()) {
+                        throw new IOException("[" + measurement + "] " + influxError);
+                    }
+                    lastResult = result;
+                }
+                return lastResult;
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    HttpResult result = get();
+                    if (result != null) {
+                        renderResponse(result.body());
+                    }
+                    loadMeasurements(db);
+                    if (targets.size() == 1) {
+                        NotificationUtil.showSuccess(MessageFormat.format(
+                                I18nUtil.getMessage(singleSuccessMsgKey), targets.get(0)));
+                    } else {
+                        NotificationUtil.showSuccess(MessageFormat.format(
+                                I18nUtil.getMessage(batchSuccessMsgKey), targets.size()));
+                    }
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    log.warn("measurement mutation interrupted", ex);
+                } catch (Exception ex) {
+                    NotificationUtil.showError(MessageFormat.format(
+                            I18nUtil.getMessage(failedMsgKey), ex.getMessage()));
+                }
+            }
+        };
+        worker.execute();
     }
 
     private JPanel buildConnectionPanel() {
@@ -307,6 +572,8 @@ public class InfluxDbPanel extends JPanel {
             String db = getSelectedDatabase();
             if (!db.isBlank() && connected) {
                 loadMeasurements(db);
+            } else if (db.isBlank()) {
+                clearMeasurementList();
             }
         });
 
@@ -316,6 +583,7 @@ public class InfluxDbPanel extends JPanel {
             if (getSelectedMode() != QueryMode.INFLUXQL_V1) return;
             String db = getSelectedDatabase();
             String measurement = getSelectedMeasurement();
+            syncMeasurementListSelection(measurement);
             if (!db.isBlank() && !measurement.isBlank() && connected) {
                 loadFieldKeys(db, measurement);
                 loadTagKeys(db, measurement);
@@ -541,6 +809,7 @@ public class InfluxDbPanel extends JPanel {
 
     private void switchMode(QueryMode mode) {
         connected = false;
+        clearMeasurementList();
         connectionStatusLabel.setForeground(UIManager.getColor(LABEL_DISABLED_FG));
         connectionStatusLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_STATUS_NOT_CONNECTED));
 
@@ -562,6 +831,7 @@ public class InfluxDbPanel extends JPanel {
             executeBtn.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_EXECUTE_V2));
             queryEditor.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
             if (v1QueryBuilderPanel != null) v1QueryBuilderPanel.setVisible(false);
+            clearMeasurementList();
             setTemplates(FLUX_TEMPLATES);
         }
         revalidate();
@@ -663,6 +933,7 @@ public class InfluxDbPanel extends JPanel {
                     log.warn("influx connect interrupted", ex);
                 } catch (Exception ex) {
                     connected = false;
+                    clearMeasurementList();
                     connectionStatusLabel.setForeground(Color.RED);
                     connectionStatusLabel.setToolTipText(
                             I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_STATUS_NOT_CONNECTED));
@@ -799,6 +1070,7 @@ public class InfluxDbPanel extends JPanel {
                         List<String> measurements = parseInfluxColumnValues(result.body(), 0);
                         String previous = getSelectedMeasurement();
                         setComboOptions(measurementCombo, measurements, previous);
+                        updateMeasurementList(measurements, getSelectedMeasurement());
 
                         String measurement = getSelectedMeasurement();
                         if (!db.isBlank() && !measurement.isBlank()) {
@@ -947,6 +1219,99 @@ public class InfluxDbPanel extends JPanel {
             log.warn("parseInfluxColumnValues failed: {}", ex.getMessage());
         }
         return values;
+    }
+
+    private String extractInfluxError(String json) {
+        if (json == null || json.isBlank()) return "";
+        try {
+            JsonNode root = JsonUtil.readTree(json);
+            if (root.has("error") && !root.get("error").isNull()) {
+                return root.get("error").asText("");
+            }
+            JsonNode results = root.get("results");
+            if (results != null && results.isArray()) {
+                for (JsonNode result : results) {
+                    if (result.has("error") && !result.get("error").isNull()) {
+                        return result.get("error").asText("");
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+            // 非 JSON 或解析失败时忽略
+        }
+        return "";
+    }
+
+    private void updateMeasurementList(List<String> measurements, String preferredSelection) {
+        if (measurementListModel == null) return;
+        measurementListModel.clear();
+        for (String measurement : measurements) {
+            measurementListModel.addElement(measurement);
+        }
+        filterMeasurements(measurementSearchField == null ? "" : measurementSearchField.getText());
+        if (!preferredSelection.isBlank()) {
+            syncMeasurementListSelection(preferredSelection);
+        } else if (!measurementFilteredModel.isEmpty()) {
+            measurementList.setSelectedIndex(0);
+        }
+    }
+
+    private void clearMeasurementList() {
+        if (measurementListModel != null) measurementListModel.clear();
+        if (measurementFilteredModel != null) measurementFilteredModel.clear();
+    }
+
+    private void filterMeasurements(String keyword) {
+        if (measurementFilteredModel == null || measurementListModel == null) return;
+        String lower = keyword == null ? "" : keyword.trim().toLowerCase();
+        String selected = measurementList == null ? "" : measurementList.getSelectedValue();
+        measurementFilteredModel.clear();
+        for (int i = 0; i < measurementListModel.size(); i++) {
+            String name = measurementListModel.get(i);
+            if (lower.isEmpty() || name.toLowerCase().contains(lower)) {
+                measurementFilteredModel.addElement(name);
+            }
+        }
+        if (selected != null && !selected.isBlank()) {
+            syncMeasurementListSelection(selected);
+        }
+    }
+
+    private void syncMeasurementListSelection(String measurement) {
+        if (measurementList == null || measurement == null || measurement.isBlank()) return;
+        suppressMeasurementSync = true;
+        try {
+            for (int i = 0; i < measurementFilteredModel.size(); i++) {
+                if (measurement.equals(measurementFilteredModel.get(i))) {
+                    measurementList.setSelectedIndex(i);
+                    measurementList.ensureIndexIsVisible(i);
+                    break;
+                }
+            }
+        } finally {
+            suppressMeasurementSync = false;
+        }
+    }
+
+    private void selectMeasurementFromList(String measurement) {
+        String current = getSelectedMeasurement();
+        if (measurement == null || measurement.isBlank() || measurement.equals(current)) return;
+
+        suppressComboEvents = true;
+        measurementCombo.setSelectedItem(measurement);
+        if (measurementCombo.getEditor().getEditorComponent() instanceof JTextField editor) {
+            editor.setText(measurement);
+        }
+        suppressComboEvents = false;
+
+        String db = getSelectedDatabase();
+        if (!db.isBlank() && connected) {
+            loadFieldKeys(db, measurement);
+            loadTagKeys(db, measurement);
+            if (templateCombo != null && templateCombo.getSelectedIndex() >= 0) {
+                loadTemplate();
+            }
+        }
     }
 
     private void renderResponse(String body) {

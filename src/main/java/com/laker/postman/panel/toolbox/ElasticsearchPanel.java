@@ -215,11 +215,13 @@ public class ElasticsearchPanel extends JPanel {
         indexListModel = new DefaultListModel<>();
         indexFilteredModel = new DefaultListModel<>();
         indexList = new JList<>(indexFilteredModel);
-        indexList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        indexList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         indexList.addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
-                String selected = indexList.getSelectedValue();
-                if (selected != null) pathField.setText("/" + selected + "/_search");
+                List<String> selected = indexList.getSelectedValuesList();
+                if (selected.size() == 1) {
+                    pathField.setText("/" + selected.get(0) + "/_search");
+                }
             }
         });
         indexList.addMouseListener(buildIndexListMouseListener());
@@ -299,6 +301,17 @@ public class ElasticsearchPanel extends JPanel {
     private java.awt.event.MouseAdapter buildIndexListMouseListener() {
         return new java.awt.event.MouseAdapter() {
             @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                if (SwingUtilities.isLeftMouseButton(evt) && evt.getClickCount() == 2) {
+                    int idx = indexList.locationToIndex(evt.getPoint());
+                    if (idx >= 0) {
+                        indexList.setSelectedIndex(idx);
+                        executeIndexQuickQuery(indexList.getSelectedValue());
+                    }
+                }
+            }
+
+            @Override
             public void mousePressed(java.awt.event.MouseEvent evt) {
                 if (evt.isPopupTrigger()) maybeShowIndexPopup(evt);
             }
@@ -312,24 +325,39 @@ public class ElasticsearchPanel extends JPanel {
 
     private void maybeShowIndexPopup(java.awt.event.MouseEvent evt) {
         int idx = indexList.locationToIndex(evt.getPoint());
-        if (idx >= 0) indexList.setSelectedIndex(idx);
-        String sel = indexList.getSelectedValue();
+        if (idx >= 0 && !indexList.isSelectedIndex(idx)) {
+            indexList.setSelectedIndex(idx);
+        }
+        List<String> selectedIndices = new ArrayList<>(indexList.getSelectedValuesList());
+        String primarySelected = indexList.getSelectedValue();
 
         JPopupMenu menu = new JPopupMenu();
         JMenuItem deleteItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_INDEX_DELETE));
-        deleteItem.setEnabled(sel != null);
-        deleteItem.addActionListener(e -> deleteIndex(sel));
+        deleteItem.setEnabled(!selectedIndices.isEmpty());
+        deleteItem.addActionListener(e -> deleteIndices(selectedIndices));
         menu.add(deleteItem);
 
         JMenuItem clearItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_INDEX_CLEAR));
-        clearItem.setEnabled(sel != null);
-        clearItem.addActionListener(e -> clearIndex(sel));
+        clearItem.setEnabled(!selectedIndices.isEmpty());
+        clearItem.addActionListener(e -> clearIndices(selectedIndices));
         menu.add(clearItem);
 
         menu.addSeparator();
-        menu.add(buildViewMappingItem(sel));
-        menu.add(buildViewSettingsItem(sel));
+        menu.add(buildViewMappingItem(selectedIndices.size() == 1 ? primarySelected : null));
+        menu.add(buildViewSettingsItem(selectedIndices.size() == 1 ? primarySelected : null));
         menu.show(indexList, evt.getX(), evt.getY());
+    }
+
+    private void executeIndexQuickQuery(String indexName) {
+        if (!connected || indexName == null || indexName.isBlank()) return;
+        methodCombo.setSelectedItem("GET");
+        pathField.setText("/" + indexName + "/_search");
+        String body = dslEditor.getText().trim();
+        if (body.isEmpty()) {
+            dslEditor.setText("{\n  \"query\": {\n    \"match_all\": {}\n  },\n  \"size\": 60\n}");
+            dslEditor.setCaretPosition(0);
+        }
+        executeRequest();
     }
 
     private JMenuItem buildViewMappingItem(String sel) {
@@ -536,21 +564,74 @@ public class ElasticsearchPanel extends JPanel {
 
     // ===== 核心功能方法 =====
 
-    /**
-     * 删除索引（右键菜单触发）
-     */
-    private void deleteIndex(String indexName) {
-        if (!connected || indexName == null) return;
+    private void deleteIndices(List<String> indices) {
+        List<String> targets = normalizeIndexTargets(indices);
+        if (!connected || targets.isEmpty()) return;
+
+        String confirm = targets.size() == 1
+                ? MessageFormat.format(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_INDEX_DELETE_CONFIRM), targets.get(0))
+                : MessageFormat.format(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_INDEX_DELETE_BATCH_CONFIRM), targets.size());
         int opt = JOptionPane.showConfirmDialog(this,
-                MessageFormat.format(
-                        I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_INDEX_DELETE_CONFIRM), indexName),
+                confirm,
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_INDEX_DELETE_CONFIRM_TITLE),
                 JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
         if (opt != JOptionPane.YES_OPTION) return;
+
+        runIndexMutation(targets,
+                true,
+                MessageKeys.TOOLBOX_ES_INDEX_DELETE_SUCCESS,
+                MessageKeys.TOOLBOX_ES_INDEX_DELETE_BATCH_SUCCESS,
+                MessageKeys.TOOLBOX_ES_INDEX_DELETE_FAILED);
+    }
+
+    private void clearIndices(List<String> indices) {
+        List<String> targets = normalizeIndexTargets(indices);
+        if (!connected || targets.isEmpty()) return;
+
+        String confirm = targets.size() == 1
+                ? MessageFormat.format(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_INDEX_CLEAR_CONFIRM), targets.get(0))
+                : MessageFormat.format(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_INDEX_CLEAR_BATCH_CONFIRM), targets.size());
+        int opt = JOptionPane.showConfirmDialog(this,
+                confirm,
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_INDEX_CLEAR_CONFIRM_TITLE),
+                JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+        if (opt != JOptionPane.YES_OPTION) return;
+
+        runIndexMutation(targets,
+                false,
+                MessageKeys.TOOLBOX_ES_INDEX_CLEAR_SUCCESS,
+                MessageKeys.TOOLBOX_ES_INDEX_CLEAR_BATCH_SUCCESS,
+                MessageKeys.TOOLBOX_ES_INDEX_CLEAR_FAILED);
+    }
+
+    private List<String> normalizeIndexTargets(List<String> indices) {
+        if (indices == null || indices.isEmpty()) return List.of();
+        LinkedHashSet<String> set = new LinkedHashSet<>();
+        for (String idx : indices) {
+            if (idx != null) {
+                String trimmed = idx.trim();
+                if (!trimmed.isBlank()) set.add(trimmed);
+            }
+        }
+        return new ArrayList<>(set);
+    }
+
+    private void runIndexMutation(List<String> targets, boolean deleteIndex,
+                                  String singleSuccessKey, String batchSuccessKey, String failedKey) {
+        List<String> finalTargets = new ArrayList<>(targets);
         new SwingWorker<String, Void>() {
             @Override
             protected String doInBackground() throws Exception {
-                return doDelete("/" + indexName, "");
+                String lastResp = "";
+                for (String indexName : finalTargets) {
+                    if (deleteIndex) {
+                        lastResp = doDelete("/" + indexName, "");
+                    } else {
+                        String body = "{\n  \"query\": {\n    \"match_all\": {}\n  }\n}";
+                        lastResp = doPost("/" + indexName + "/_delete_by_query", body);
+                    }
+                }
+                return lastResp;
             }
 
             @Override
@@ -560,52 +641,19 @@ public class ElasticsearchPanel extends JPanel {
                     resultArea.setText(JsonUtil.toJsonPrettyStr(resp));
                     resultArea.setCaretPosition(0);
                     loadIndices();
-                    NotificationUtil.showSuccess(
-                            MessageFormat.format(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_INDEX_DELETE_SUCCESS), indexName));
+                    if (finalTargets.size() == 1) {
+                        NotificationUtil.showSuccess(
+                                MessageFormat.format(I18nUtil.getMessage(singleSuccessKey), finalTargets.get(0)));
+                    } else {
+                        NotificationUtil.showSuccess(
+                                MessageFormat.format(I18nUtil.getMessage(batchSuccessKey), finalTargets.size()));
+                    }
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
-                    log.warn("deleteIndex interrupted", ex);
+                    log.warn("runIndexMutation interrupted", ex);
                 } catch (Exception ex) {
                     NotificationUtil.showError(MessageFormat.format(
-                            I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_INDEX_DELETE_FAILED),
-                            ex.getMessage()));
-                }
-            }
-        }.execute();
-    }
-
-    /**
-     * 清空索引数据（delete_by_query match_all，保留索引结构）
-     */
-    private void clearIndex(String indexName) {
-        if (!connected || indexName == null) return;
-        int opt = JOptionPane.showConfirmDialog(this,
-                MessageFormat.format(
-                        I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_INDEX_CLEAR_CONFIRM), indexName),
-                I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_INDEX_CLEAR_CONFIRM_TITLE),
-                JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-        if (opt != JOptionPane.YES_OPTION) return;
-        String body = "{\n  \"query\": {\n    \"match_all\": {}\n  }\n}";
-        new SwingWorker<String, Void>() {
-            @Override
-            protected String doInBackground() throws Exception {
-                return doPost("/" + indexName + "/_delete_by_query", body);
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    String resp = get();
-                    resultArea.setText(JsonUtil.toJsonPrettyStr(resp));
-                    resultArea.setCaretPosition(0);
-                    NotificationUtil.showSuccess(
-                            MessageFormat.format(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_INDEX_CLEAR_SUCCESS), indexName));
-                } catch (InterruptedException ex) {
-                    Thread.currentThread().interrupt();
-                    log.warn("clearIndex interrupted", ex);
-                } catch (Exception ex) {
-                    NotificationUtil.showError(MessageFormat.format(
-                            I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_INDEX_CLEAR_FAILED),
+                            I18nUtil.getMessage(failedKey),
                             ex.getMessage()));
                 }
             }

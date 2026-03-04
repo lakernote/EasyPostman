@@ -7,6 +7,7 @@ import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
+import net.miginfocom.swing.MigLayout;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -107,31 +108,20 @@ public class RemoteConfigDialog extends JDialog {
                 FontsUtil.getDefaultFont(Font.BOLD)
         ));
 
-        // 基本配置
-        JPanel basicPanel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 8, 8, 8);
-        gbc.anchor = GridBagConstraints.WEST;
+        // MigLayout 表单模板：左侧标签，右侧输入框自适应拉伸
+        JPanel basicPanel = new JPanel(new MigLayout(
+                "insets 8, fillx, wrap 2",
+                "[right][grow,fill]",
+                "[]8[]"
+        ));
 
         // 远程仓库URL
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        basicPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_URL) + ":"), gbc);
-        gbc.gridx = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 1.0;
-        basicPanel.add(remoteUrlField, gbc);
+        basicPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_URL) + ":"));
+        basicPanel.add(remoteUrlField, "growx");
 
         // 远程分支
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.fill = GridBagConstraints.NONE;
-        gbc.weightx = 0;
-        basicPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_DETAIL_REMOTE_BRANCH) + ":"), gbc);
-        gbc.gridx = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 1.0;
-        basicPanel.add(remoteBranchField, gbc);
+        basicPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_DETAIL_REMOTE_BRANCH) + ":"));
+        basicPanel.add(remoteBranchField, "growx");
 
         panel.add(basicPanel, BorderLayout.NORTH);
 
@@ -166,16 +156,16 @@ public class RemoteConfigDialog extends JDialog {
                 if (evt.getPropertyName().equals("progress")) {
                     progressPanel.getProgressBar().setValue((Integer) evt.getNewValue());
                 } else if (evt.getPropertyName().equals("state") && SwingWorker.StateValue.DONE == evt.getNewValue()) {
-                        try {
-                            worker.get();
-                            onOperationSuccess();
-                        } catch (Exception ex) {
-                            if (ex instanceof InterruptedException) {
-                                Thread.currentThread().interrupt();
-                            }
-                            onOperationFailure(ex);
+                    try {
+                        worker.get();
+                        onOperationSuccess();
+                    } catch (Exception ex) {
+                        if (ex instanceof InterruptedException) {
+                            Thread.currentThread().interrupt();
                         }
+                        onOperationFailure(ex);
                     }
+                }
 
             });
             worker.execute();

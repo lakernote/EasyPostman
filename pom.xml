@@ -17,6 +17,7 @@
         <mainClass>com.laker.postman.App</mainClass>
         <!-- 依赖版本号 -->
         <flatlaf.version>3.7</flatlaf.version>
+        <miglayout.version>11.4.2</miglayout.version>
         <hutool.version>5.8.41</hutool.version>
         <jiconfont-swing.version>1.0.1</jiconfont-swing.version>
         <jiconfont-font_awesome.version>4.7.0.1</jiconfont-font_awesome.version>
@@ -43,6 +44,13 @@
             <groupId>com.formdev</groupId>
             <artifactId>flatlaf-extras</artifactId>
             <version>${flatlaf.version}</version>
+        </dependency>
+
+        <!-- MigLayout 布局管理器 -->
+        <dependency>
+            <groupId>com.miglayout</groupId>
+            <artifactId>miglayout-swing</artifactId>
+            <version>${miglayout.version}</version>
         </dependency>
 
         <!-- 工具类集合 - 模块化依赖以减小包体积 -->

@@ -75,7 +75,7 @@ public class InfluxDbPanel extends JPanel {
     private JLabel respStatusLabel;
     private JLabel queryLabel;
 
-    private EasyComboBox<String> templateCombo;
+    private JComboBox<String> templateCombo;
     private TemplateItem[] currentTemplates = new TemplateItem[]{};
 
     private JPanel v1QueryBuilderPanel;
@@ -229,11 +229,13 @@ public class InfluxDbPanel extends JPanel {
 
         JPanel baseRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         hostField = new JTextField(baseUrl, 22);
+        hostField.setPreferredSize(new Dimension(hostField.getPreferredSize().width, 32));
         hostField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT,
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_HOST_PLACEHOLDER));
         hostField.addActionListener(e -> doConnect());
 
         modeCombo = new JComboBox<>(QueryMode.values());
+        modeCombo.setPreferredSize(new Dimension(180, 32));
         modeCombo.setRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index,
@@ -360,9 +362,11 @@ public class InfluxDbPanel extends JPanel {
         JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 4));
         toolbar.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)));
 
-        templateCombo = new EasyComboBox<>(EasyComboBox.WidthMode.DYNAMIC);
+        templateCombo = new JComboBox<>();
+        templateCombo.setPreferredSize(new Dimension(180, 32));
 
         JButton loadTemplateBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_LOAD_TEMPLATE));
+        loadTemplateBtn.setPreferredSize(new Dimension(loadTemplateBtn.getPreferredSize().width, 32));
         loadTemplateBtn.addActionListener(e -> loadTemplate());
 
         executeBtn = new PrimaryButton(

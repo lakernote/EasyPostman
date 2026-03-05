@@ -1,40 +1,29 @@
 package com.laker.postman.panel.toolbox;
 
 import com.formdev.flatlaf.FlatClientProperties;
-import com.laker.postman.common.component.SearchableTextArea;
+import com.laker.postman.common.component.PlaceholderTextArea;
 import com.laker.postman.common.component.SearchTextField;
-import com.laker.postman.common.component.button.ClearButton;
-import com.laker.postman.common.component.button.PrimaryButton;
-import com.laker.postman.common.component.button.RefreshButton;
-import com.laker.postman.common.component.button.SecondaryButton;
-import com.laker.postman.common.component.button.StopButton;
+import com.laker.postman.common.component.SearchableTextArea;
+import com.laker.postman.common.component.button.*;
 import com.laker.postman.common.component.table.EnhancedTablePanel;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.util.EditorThemeUtil;
-import com.laker.postman.util.FontsUtil;
-import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
 import net.miginfocom.swing.MigLayout;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.ListTopicsOptions;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.consumer.OffsetAndTimestamp;
+import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.internals.RecordHeader;
-import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
@@ -49,15 +38,8 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -129,8 +111,10 @@ public class KafkaPanel extends JPanel {
 
     private JTextField producerTopicField;
     private JTextField producerKeyField;
-    /** Headers 多行文本区：每行一条，格式 key: value */
-    private JTextArea producerHeadersArea;
+    /**
+     * Headers 多行文本区：每行一条，格式 key: value
+     */
+    private PlaceholderTextArea producerHeadersArea;
     private JSpinner producerPartitionSpinner;
     private RSyntaxTextArea producerPayloadArea;
     private PrimaryButton sendBtn;
@@ -162,13 +146,13 @@ public class KafkaPanel extends JPanel {
 
     private void initUI() {
         setLayout(new BorderLayout(0, 0));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         add(buildConnectionPanel(), BorderLayout.NORTH);
 
         JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, buildTopicPanel(), buildWorkPanel());
         mainSplit.setDividerLocation(240);
-        mainSplit.setDividerSize(5);
+        mainSplit.setDividerSize(3);
         mainSplit.setResizeWeight(0.23);
         mainSplit.setContinuousLayout(true);
         add(mainSplit, BorderLayout.CENTER);
@@ -178,7 +162,7 @@ public class KafkaPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)),
-                BorderFactory.createEmptyBorder(8, 10, 8, 10)));
+                BorderFactory.createEmptyBorder(2, 2, 2, 2)));
 
         // ── 所有行合并到一个 MigLayout，避免子面板裁剪 FlatLaf focus 高亮边框 ──
         // 列布局：4组 标签+输入，最后一行为 startValue + 按钮区
@@ -308,11 +292,19 @@ public class KafkaPanel extends JPanel {
         topicSearchField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
         topicSearchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
             @Override
-            public void insertUpdate(javax.swing.event.DocumentEvent e) { applyTopicFilter(); }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                applyTopicFilter();
+            }
+
             @Override
-            public void removeUpdate(javax.swing.event.DocumentEvent e) { applyTopicFilter(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                applyTopicFilter();
+            }
+
             @Override
-            public void changedUpdate(javax.swing.event.DocumentEvent e) { applyTopicFilter(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                applyTopicFilter();
+            }
         });
 
         JPanel searchBox = new JPanel(new BorderLayout());
@@ -420,11 +412,10 @@ public class KafkaPanel extends JPanel {
         headersLbl.setFont(headersLbl.getFont().deriveFont(Font.BOLD, 11f));
         headersHeader.add(headersLbl);
 
-        producerHeadersArea = new JTextArea(3, 0);
+        producerHeadersArea = new PlaceholderTextArea(2, 0);
         producerHeadersArea.setLineWrap(false);
-        producerHeadersArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
-        producerHeadersArea.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT,
-                t(MessageKeys.TOOLBOX_KAFKA_HEADERS_PLACEHOLDER));
+        producerHeadersArea.setBackground(ModernColors.getInputBackgroundColor());
+        producerHeadersArea.setPlaceholder(t(MessageKeys.TOOLBOX_KAFKA_HEADERS_PLACEHOLDER));
         JScrollPane headersScroll = new JScrollPane(producerHeadersArea);
         headersScroll.setBorder(BorderFactory.createEmptyBorder());
 
@@ -436,7 +427,7 @@ public class KafkaPanel extends JPanel {
         JPanel payloadHeader = new JPanel(new MigLayout("insets 4 8 4 8, fillx", "[]push[]", "[]"));
         payloadHeader.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)));
         JLabel payloadLbl = new JLabel(t(MessageKeys.TOOLBOX_KAFKA_PAYLOAD));
-        payloadLbl.setFont(payloadLbl.getFont().deriveFont(Font.BOLD, 11f));
+        payloadLbl.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         ClearButton clearButton = new ClearButton();
         clearButton.setToolTipText(t(MessageKeys.TOOLBOX_KAFKA_CLEAR_PAYLOAD));
         clearButton.addActionListener(e -> producerPayloadArea.setText(""));
@@ -452,7 +443,9 @@ public class KafkaPanel extends JPanel {
         producerPayloadArea.getInputMap().put(KeyStroke.getKeyStroke("meta ENTER"), "kafka-send");
         producerPayloadArea.getActionMap().put("kafka-send", new AbstractAction() {
             @Override
-            public void actionPerformed(java.awt.event.ActionEvent e) { sendMessage(); }
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                sendMessage();
+            }
         });
         EditorThemeUtil.loadTheme(producerPayloadArea);
         updateEditorFont();
@@ -951,13 +944,13 @@ public class KafkaPanel extends JPanel {
                 Topic: %s
                 Partition: %s
                 Offset: %s
-
+                
                 Key:
                 %s
-
+                
                 Headers:
                 %s
-
+                
                 Value:
                 %s
                 """.formatted(time, recordTime, topic, partition, offset, key, headers, value);

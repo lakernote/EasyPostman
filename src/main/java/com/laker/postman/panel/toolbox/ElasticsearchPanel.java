@@ -168,7 +168,7 @@ public class ElasticsearchPanel extends JPanel {
 
     private void initUI() {
         setLayout(new BorderLayout(0, 0));
-        setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         // 顶部连接栏
         add(buildConnectionPanel(), BorderLayout.NORTH);
@@ -177,7 +177,7 @@ public class ElasticsearchPanel extends JPanel {
         JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
                 buildLeftPanel(), buildDslPanel());
         mainSplit.setDividerLocation(240);
-        mainSplit.setDividerSize(5);
+        mainSplit.setDividerSize(3);
         mainSplit.setContinuousLayout(true);
         add(mainSplit, BorderLayout.CENTER);
     }
@@ -187,7 +187,7 @@ public class ElasticsearchPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)),
-                BorderFactory.createEmptyBorder(6, 8, 6, 8)));
+                BorderFactory.createEmptyBorder(2, 2, 2, 2)));
 
         // Host: 带历史记录的可编辑下拉框
         hostCombo = new JComboBox<>();

@@ -8,11 +8,7 @@ import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.SearchableTextArea;
-import com.laker.postman.common.component.button.ClearButton;
-import com.laker.postman.common.component.button.CopyButton;
-import com.laker.postman.common.component.button.PrimaryButton;
-import com.laker.postman.common.component.button.RefreshButton;
-import com.laker.postman.common.component.button.SecondaryButton;
+import com.laker.postman.common.component.button.*;
 import com.laker.postman.common.component.table.EnhancedTablePanel;
 import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
@@ -29,10 +25,7 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.LinkedHashSet;
+import java.util.*;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -250,11 +243,11 @@ public class InfluxDbPanel extends JPanel {
 
     private void initUI() {
         setLayout(new BorderLayout(0, 0));
-        setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         add(buildConnectionPanel(), BorderLayout.NORTH);
         JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, buildLeftPanel(), buildMainPanel());
         mainSplit.setDividerLocation(240);
-        mainSplit.setDividerSize(5);
+        mainSplit.setDividerSize(3);
         mainSplit.setResizeWeight(0.25);
         mainSplit.setContinuousLayout(true);
         add(mainSplit, BorderLayout.CENTER);
@@ -636,7 +629,7 @@ public class InfluxDbPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)),
-                BorderFactory.createEmptyBorder(6, 8, 6, 8)));
+                BorderFactory.createEmptyBorder(2, 2, 2, 2)));
 
         // 使用 MigLayout 实现连接配置基础行（insets 留出空间避免 FlatLaf focus 高亮被裁剪）
         JPanel baseRow = new JPanel(new MigLayout(

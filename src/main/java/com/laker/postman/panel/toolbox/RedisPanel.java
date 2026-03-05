@@ -8,6 +8,7 @@ import com.laker.postman.util.EditorThemeUtil;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.JsonUtil;
+import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
 import lombok.extern.slf4j.Slf4j;
 import net.miginfocom.swing.MigLayout;
@@ -54,14 +55,14 @@ public class RedisPanel extends JPanel {
     };
 
     private static final String[][] TEMPLATES = {
-            {"toolbox.redis.tpl.get", CMD_GET, "user:1", "", ""},
-            {"toolbox.redis.tpl.set_json", CMD_SET, "user:1", "", "{\n  \"name\": \"alice\",\n  \"age\": 18\n}"},
-            {"toolbox.redis.tpl.hgetall", CMD_HGETALL, "user:100", "", ""},
-            {"toolbox.redis.tpl.lrange", CMD_LRANGE, "queue:jobs", "0 20", ""},
-            {"toolbox.redis.tpl.smembers", CMD_SMEMBERS, "tag:online", "", ""},
-            {"toolbox.redis.tpl.zrange", CMD_ZRANGE, "rank:score", "0 20", ""},
-            {"toolbox.redis.tpl.ttl", CMD_TTL, "session:token", "", ""},
-            {"toolbox.redis.tpl.del", CMD_DEL, "tmp:key", "", ""}
+            {MessageKeys.TOOLBOX_REDIS_TPL_GET, CMD_GET, "user:1", "", ""},
+            {MessageKeys.TOOLBOX_REDIS_TPL_SET_JSON, CMD_SET, "user:1", "", "{\n  \"name\": \"alice\",\n  \"age\": 18\n}"},
+            {MessageKeys.TOOLBOX_REDIS_TPL_HGETALL, CMD_HGETALL, "user:100", "", ""},
+            {MessageKeys.TOOLBOX_REDIS_TPL_LRANGE, CMD_LRANGE, "queue:jobs", "0 20", ""},
+            {MessageKeys.TOOLBOX_REDIS_TPL_SMEMBERS, CMD_SMEMBERS, "tag:online", "", ""},
+            {MessageKeys.TOOLBOX_REDIS_TPL_ZRANGE, CMD_ZRANGE, "rank:score", "0 20", ""},
+            {MessageKeys.TOOLBOX_REDIS_TPL_TTL, CMD_TTL, "session:token", "", ""},
+            {MessageKeys.TOOLBOX_REDIS_TPL_DEL, CMD_DEL, "tmp:key", "", ""}
     };
 
     private static final Pattern ARG_PATTERN = Pattern.compile("\"([^\"]*)\"|'([^']*)'|(\\S+)");
@@ -115,6 +116,7 @@ public class RedisPanel extends JPanel {
     private DefaultListModel<HistoryEntry> historyListModel;
     private JList<HistoryEntry> historyList;
 
+    private JSplitPane mainSplit;
     private transient JedisPooled jedis;
     private boolean connected = false;
 
@@ -132,11 +134,15 @@ public class RedisPanel extends JPanel {
 
         add(buildConnectionPanel(), BorderLayout.NORTH);
 
-        JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, buildLeftPanel(), buildMainPanel());
+        mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, buildLeftPanel(), buildMainPanel());
         mainSplit.setDividerLocation(240);
-        mainSplit.setDividerSize(3);
-        mainSplit.setResizeWeight(0.24);
+        mainSplit.setDividerSize(5);
+        mainSplit.setResizeWeight(0.0);
         mainSplit.setContinuousLayout(true);
+        mainSplit.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, e -> {
+            int loc = (int) e.getNewValue();
+            if (loc > 10) mainSplit.putClientProperty("savedDividerLocation", loc);
+        });
         add(mainSplit, BorderLayout.CENTER);
     }
 
@@ -157,7 +163,7 @@ public class RedisPanel extends JPanel {
         hostCombo.addItem("localhost");
         hostCombo.setPreferredSize(new Dimension(170, 32));
         JTextField hostEditor = (JTextField) hostCombo.getEditor().getEditorComponent();
-        hostEditor.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, t("toolbox.redis.host.placeholder"));
+        hostEditor.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, t(MessageKeys.TOOLBOX_REDIS_HOST_PLACEHOLDER));
         hostEditor.addActionListener(e -> doConnect());
 
         portSpinner = new JSpinner(new SpinnerNumberModel(6379, 1, 65535, 1));
@@ -167,18 +173,18 @@ public class RedisPanel extends JPanel {
         dbSpinner.setPreferredSize(new Dimension(70, 32));
 
         usernameField = new JTextField("");
-        usernameField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, t("toolbox.redis.user.placeholder"));
+        usernameField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, t(MessageKeys.TOOLBOX_REDIS_USER_PLACEHOLDER));
         usernameField.setPreferredSize(new Dimension(160, 32));
 
         passwordField = new JPasswordField("");
-        passwordField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, t("toolbox.redis.pass.placeholder"));
+        passwordField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, t(MessageKeys.TOOLBOX_REDIS_PASS_PLACEHOLDER));
         passwordField.setPreferredSize(new Dimension(160, 32));
         passwordField.addActionListener(e -> doConnect());
 
-        connectBtn = new PrimaryButton(t("toolbox.redis.connect"), "icons/connect.svg");
+        connectBtn = new PrimaryButton(t(MessageKeys.TOOLBOX_REDIS_CONNECT), "icons/connect.svg");
         connectBtn.addActionListener(e -> doConnect());
 
-        disconnectBtn = new SecondaryButton(t("toolbox.redis.disconnect"), "icons/ws-close.svg");
+        disconnectBtn = new SecondaryButton(t(MessageKeys.TOOLBOX_REDIS_DISCONNECT), "icons/ws-close.svg");
         disconnectBtn.addActionListener(e -> doDisconnect());
 
         btnCardLayout = new CardLayout();
@@ -191,22 +197,22 @@ public class RedisPanel extends JPanel {
         connectionStatusLabel = new JLabel("●");
         connectionStatusLabel.setForeground(UIManager.getColor(LABEL_DISABLED_FG));
         connectionStatusLabel.setFont(connectionStatusLabel.getFont().deriveFont(Font.BOLD, 14f));
-        connectionStatusLabel.setToolTipText(t("toolbox.redis.status.not_connected"));
+        connectionStatusLabel.setToolTipText(t(MessageKeys.TOOLBOX_REDIS_STATUS_NOT_CONNECTED));
 
         // 第一行：连接核心参数 + 按钮
-        form.add(new JLabel(t("toolbox.redis.host")));
+        form.add(new JLabel(t(MessageKeys.TOOLBOX_REDIS_HOST)));
         form.add(hostCombo, "growx");
-        form.add(new JLabel(t("toolbox.redis.port")));
+        form.add(new JLabel(t(MessageKeys.TOOLBOX_REDIS_PORT)));
         form.add(portSpinner, "w 85!");
-        form.add(new JLabel(t("toolbox.redis.db")));
+        form.add(new JLabel(t(MessageKeys.TOOLBOX_REDIS_DB)));
         form.add(dbSpinner, "w 65!");
         form.add(btnCard);
         form.add(connectionStatusLabel, "wrap");
 
         // 第二行：认证参数
-        form.add(new JLabel(t("toolbox.redis.user")));
+        form.add(new JLabel(t(MessageKeys.TOOLBOX_REDIS_USER)));
         form.add(usernameField, "growx");
-        form.add(new JLabel(t("toolbox.redis.pass")));
+        form.add(new JLabel(t(MessageKeys.TOOLBOX_REDIS_PASS)));
         form.add(passwordField, "growx, span 3");
 
         panel.add(form, BorderLayout.CENTER);
@@ -215,11 +221,12 @@ public class RedisPanel extends JPanel {
 
     private JComponent buildLeftPanel() {
         JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setMinimumSize(new Dimension(120, 0));
         wrapper.setPreferredSize(new Dimension(240, 0));
 
         JTabbedPane leftTabs = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
-        leftTabs.addTab(t("toolbox.redis.keys.management"), buildKeyPanel());
-        leftTabs.addTab(t("toolbox.redis.history"), buildHistoryPanel());
+        leftTabs.addTab(t(MessageKeys.TOOLBOX_REDIS_KEYS_MANAGEMENT), buildKeyPanel());
+        leftTabs.addTab(t(MessageKeys.TOOLBOX_REDIS_HISTORY), buildHistoryPanel());
         wrapper.add(leftTabs, BorderLayout.CENTER);
         return wrapper;
     }
@@ -231,16 +238,16 @@ public class RedisPanel extends JPanel {
         titleBar.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)),
                 BorderFactory.createEmptyBorder(4, 8, 4, 4)));
-        JLabel titleLbl = new JLabel(t("toolbox.redis.keys.management"));
+        JLabel titleLbl = new JLabel(t(MessageKeys.TOOLBOX_REDIS_KEYS_MANAGEMENT));
         titleLbl.setFont(titleLbl.getFont().deriveFont(Font.BOLD, 12f));
         RefreshButton refreshBtn = new RefreshButton();
-        refreshBtn.setToolTipText(t("toolbox.redis.keys.refresh"));
+        refreshBtn.setToolTipText(t(MessageKeys.TOOLBOX_REDIS_KEYS_REFRESH));
         refreshBtn.addActionListener(e -> loadKeysAsync());
         titleBar.add(titleLbl, BorderLayout.CENTER);
         titleBar.add(refreshBtn, BorderLayout.EAST);
 
         keySearchField = new SearchTextField();
-        keySearchField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, t("toolbox.redis.keys.search.placeholder"));
+        keySearchField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, t(MessageKeys.TOOLBOX_REDIS_KEYS_SEARCH_PLACEHOLDER));
         keySearchField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
         keySearchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
             public void insertUpdate(javax.swing.event.DocumentEvent e) {
@@ -281,18 +288,12 @@ public class RedisPanel extends JPanel {
         JScrollPane listScroll = new JScrollPane(keyList);
         listScroll.setBorder(BorderFactory.createEmptyBorder());
 
-        JLabel tipLbl = new JLabel("<html><center><small>" + t("toolbox.redis.keys.empty") + "</small></center></html>");
-        tipLbl.setHorizontalAlignment(SwingConstants.CENTER);
-        tipLbl.setForeground(UIManager.getColor(LABEL_DISABLED_FG));
-        tipLbl.setBorder(BorderFactory.createEmptyBorder(8, 4, 8, 4));
-
         JPanel top = new JPanel(new BorderLayout());
         top.add(titleBar, BorderLayout.NORTH);
         top.add(searchBox, BorderLayout.CENTER);
 
         panel.add(top, BorderLayout.NORTH);
         panel.add(listScroll, BorderLayout.CENTER);
-        panel.add(tipLbl, BorderLayout.SOUTH);
         return panel;
     }
 
@@ -303,10 +304,10 @@ public class RedisPanel extends JPanel {
         titleBar.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)),
                 BorderFactory.createEmptyBorder(4, 8, 4, 4)));
-        JLabel titleLbl = new JLabel(t("toolbox.redis.history"));
+        JLabel titleLbl = new JLabel(t(MessageKeys.TOOLBOX_REDIS_HISTORY));
         titleLbl.setFont(titleLbl.getFont().deriveFont(Font.BOLD, 12f));
         ClearButton clearHistBtn = new ClearButton();
-        clearHistBtn.setToolTipText(t("toolbox.redis.history.clear"));
+        clearHistBtn.setToolTipText(t(MessageKeys.TOOLBOX_REDIS_HISTORY_CLEAR));
         clearHistBtn.addActionListener(e -> {
             requestHistory.clear();
             historyListModel.clear();
@@ -330,7 +331,7 @@ public class RedisPanel extends JPanel {
         JScrollPane scroll = new JScrollPane(historyList);
         scroll.setBorder(BorderFactory.createEmptyBorder());
 
-        JLabel tipLbl = new JLabel("<html><center><small>" + t("toolbox.redis.history.empty") + "</small></center></html>");
+        JLabel tipLbl = new JLabel("<html><center><small>" + t(MessageKeys.TOOLBOX_REDIS_HISTORY_EMPTY) + "</small></center></html>");
         tipLbl.setHorizontalAlignment(SwingConstants.CENTER);
         tipLbl.setForeground(UIManager.getColor(LABEL_DISABLED_FG));
         tipLbl.setBorder(BorderFactory.createEmptyBorder(8, 4, 8, 4));
@@ -343,6 +344,7 @@ public class RedisPanel extends JPanel {
 
     private JComponent buildMainPanel() {
         JPanel panel = new JPanel(new BorderLayout(0, 0));
+        panel.setMinimumSize(new Dimension(0, 0));
         panel.add(buildActionBar(), BorderLayout.NORTH);
 
         JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, buildValuePanel(), buildResultPanel());
@@ -379,7 +381,7 @@ public class RedisPanel extends JPanel {
             }
         });
 
-        SecondaryButton loadTplBtn = new SecondaryButton(t("toolbox.redis.load_template"), "icons/load.svg");
+        SecondaryButton loadTplBtn = new SecondaryButton(t(MessageKeys.TOOLBOX_REDIS_LOAD_TEMPLATE), "icons/load.svg");
         loadTplBtn.addActionListener(e -> loadTemplate(templateCombo.getSelectedIndex()));
 
         commandCombo = new JComboBox<>(COMMANDS);
@@ -387,13 +389,13 @@ public class RedisPanel extends JPanel {
         commandCombo.addActionListener(e -> updateArgsPlaceholder());
 
         keyField = new JTextField();
-        keyField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, t("toolbox.redis.key.placeholder"));
+        keyField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, t(MessageKeys.TOOLBOX_REDIS_KEY_PLACEHOLDER));
         keyField.addActionListener(e -> executeCommand());
 
         argsField = new JTextField();
         argsField.addActionListener(e -> executeCommand());
 
-        executeBtn = new PrimaryButton(t("toolbox.redis.execute"), "icons/send.svg");
+        executeBtn = new PrimaryButton(t(MessageKeys.TOOLBOX_REDIS_EXECUTE), "icons/send.svg");
         executeBtn.addActionListener(e -> executeCommand());
 
         JPanel row1 = new JPanel(new MigLayout(
@@ -402,7 +404,7 @@ public class RedisPanel extends JPanel {
                 "[]"
         ));
         row1.setOpaque(false);
-        row1.add(new JLabel(t("toolbox.redis.load_template")));
+        row1.add(new JLabel(t(MessageKeys.TOOLBOX_REDIS_LOAD_TEMPLATE)));
         row1.add(templateCombo, "growx");
         row1.add(loadTplBtn);
 
@@ -412,11 +414,11 @@ public class RedisPanel extends JPanel {
                 "[]"
         ));
         row2.setOpaque(false);
-        row2.add(new JLabel(t("toolbox.redis.command")));
+        row2.add(new JLabel(t(MessageKeys.TOOLBOX_REDIS_COMMAND)));
         row2.add(commandCombo, "w 120!");
-        row2.add(new JLabel(t("toolbox.redis.key")));
+        row2.add(new JLabel(t(MessageKeys.TOOLBOX_REDIS_KEY)));
         row2.add(keyField, "growx");
-        row2.add(new JLabel(t("toolbox.redis.args")));
+        row2.add(new JLabel(t(MessageKeys.TOOLBOX_REDIS_ARGS)));
         row2.add(argsField, "growx");
         row2.add(executeBtn);
 
@@ -431,12 +433,12 @@ public class RedisPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout());
         JPanel header = new JPanel(new MigLayout("insets 2 4 2 4, fillx", "[]push[]", "[]"));
         header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)));
-        JLabel title = new JLabel(t("toolbox.redis.value.title"));
+        JLabel title = new JLabel(t(MessageKeys.TOOLBOX_REDIS_VALUE_TITLE));
         title.setFont(title.getFont().deriveFont(Font.BOLD, 11f));
         header.add(title);
 
         FormatButton formatBtn = new FormatButton();
-        formatBtn.setToolTipText(t("toolbox.redis.format_json"));
+        formatBtn.setToolTipText(t(MessageKeys.TOOLBOX_REDIS_FORMAT_JSON));
         formatBtn.addActionListener(e -> formatValueJson());
         header.add(formatBtn);
 
@@ -451,16 +453,20 @@ public class RedisPanel extends JPanel {
 
     private JPanel buildResultPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        JPanel header = new JPanel(new MigLayout("insets 2 4 2 4, fillx", "[]push[][]", "[]"));
+        panel.setMinimumSize(new Dimension(0, 0));
+        // title 固定, keyMetaLabel 可伸缩但有最大宽, respStatusLabel 固定右侧
+        JPanel header = new JPanel(new MigLayout("insets 2 4 2 4, fillx", "[]8[grow,fill]push[]", "[]"));
         header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)));
-        JLabel title = new JLabel(t("toolbox.redis.response.title"));
+        JLabel title = new JLabel(t(MessageKeys.TOOLBOX_REDIS_RESPONSE_TITLE));
         title.setFont(title.getFont().deriveFont(Font.BOLD, 11f));
         keyMetaLabel = new JLabel("");
         keyMetaLabel.setForeground(new Color(80, 130, 200));
+        // 超长 key 名用省略号截断，不撑开面板
+        keyMetaLabel.setMinimumSize(new Dimension(0, 0));
         respStatusLabel = new JLabel("");
         respStatusLabel.setForeground(UIManager.getColor(LABEL_DISABLED_FG));
         header.add(title);
-        header.add(keyMetaLabel);
+        header.add(keyMetaLabel, "growx, wmax 400");
         header.add(respStatusLabel);
 
         resultArea = createJsonEditor(false);
@@ -540,7 +546,7 @@ public class RedisPanel extends JPanel {
         String selected = keyList.getSelectedValue();
 
         JPopupMenu menu = new JPopupMenu();
-        JMenuItem copyNameItem = new JMenuItem(t("toolbox.redis.key.copy"));
+        JMenuItem copyNameItem = new JMenuItem(t(MessageKeys.TOOLBOX_REDIS_KEY_COPY));
         copyNameItem.setEnabled(selected != null);
         copyNameItem.addActionListener(e -> {
             if (selected != null) {
@@ -550,7 +556,7 @@ public class RedisPanel extends JPanel {
         });
         menu.add(copyNameItem);
 
-        JMenuItem quickReadItem = new JMenuItem(t("toolbox.redis.key.quick_read"));
+        JMenuItem quickReadItem = new JMenuItem(t(MessageKeys.TOOLBOX_REDIS_KEY_QUICK_READ));
         quickReadItem.setEnabled(selected != null);
         quickReadItem.addActionListener(e -> {
             if (selected != null) {
@@ -560,7 +566,7 @@ public class RedisPanel extends JPanel {
         });
         menu.add(quickReadItem);
 
-        JMenuItem deleteItem = new JMenuItem(t("toolbox.redis.key.delete"));
+        JMenuItem deleteItem = new JMenuItem(t(MessageKeys.TOOLBOX_REDIS_KEY_DELETE));
         deleteItem.setEnabled(!selectedKeys.isEmpty());
         deleteItem.addActionListener(e -> deleteKeys(selectedKeys));
         menu.add(deleteItem);
@@ -571,13 +577,13 @@ public class RedisPanel extends JPanel {
     private void doConnect() {
         String hostInput = getHostText();
         if (hostInput.isBlank()) {
-            NotificationUtil.showError(t("toolbox.redis.err.host_required"));
+            NotificationUtil.showError(t(MessageKeys.TOOLBOX_REDIS_ERR_HOST_REQUIRED));
             return;
         }
         ParsedHostPort parsed = parseHostAndPort(hostInput, ((Number) portSpinner.getValue()).intValue());
         String host = parsed.host();
         if (host.isBlank()) {
-            NotificationUtil.showError(t("toolbox.redis.err.host_required"));
+            NotificationUtil.showError(t(MessageKeys.TOOLBOX_REDIS_ERR_HOST_REQUIRED));
             return;
         }
         int port = parsed.port();
@@ -587,7 +593,7 @@ public class RedisPanel extends JPanel {
         String pass = new String(passwordField.getPassword());
 
         connectBtn.setEnabled(false);
-        respStatusLabel.setText(t("toolbox.redis.status.connecting"));
+        respStatusLabel.setText(t(MessageKeys.TOOLBOX_REDIS_STATUS_CONNECTING));
 
         SwingWorker<JedisPooled, Void> worker = new SwingWorker<>() {
             @Override
@@ -626,17 +632,17 @@ public class RedisPanel extends JPanel {
                     rememberHostHistory(host);
                     btnCardLayout.show(btnCard, "disconnect");
                     connectionStatusLabel.setForeground(new Color(40, 167, 69));
-                    connectionStatusLabel.setToolTipText(t("toolbox.redis.status.connected", host, port, db));
-                    respStatusLabel.setText(t("toolbox.redis.status.connected.simple"));
-                    NotificationUtil.showSuccess(t("toolbox.redis.connect.success", host, port, db));
+                    connectionStatusLabel.setToolTipText(t(MessageKeys.TOOLBOX_REDIS_STATUS_CONNECTED, host, port, db));
+                    respStatusLabel.setText(t(MessageKeys.TOOLBOX_REDIS_STATUS_CONNECTED_SIMPLE));
+                    NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_REDIS_CONNECT_SUCCESS, host, port, db));
                     loadKeysAsync();
                 } catch (Exception ex) {
                     connected = false;
                     btnCardLayout.show(btnCard, "connect");
                     connectionStatusLabel.setForeground(UIManager.getColor(LABEL_DISABLED_FG));
-                    connectionStatusLabel.setToolTipText(t("toolbox.redis.status.not_connected"));
-                    respStatusLabel.setText(t("toolbox.redis.status.connect_failed"));
-                    NotificationUtil.showError(t("toolbox.redis.err.connect_failed", extractErr(ex)));
+                    connectionStatusLabel.setToolTipText(t(MessageKeys.TOOLBOX_REDIS_STATUS_NOT_CONNECTED));
+                    respStatusLabel.setText(t(MessageKeys.TOOLBOX_REDIS_STATUS_CONNECT_FAILED));
+                    NotificationUtil.showError(t(MessageKeys.TOOLBOX_REDIS_ERR_CONNECT_FAILED, extractErr(ex)));
                     log.warn("Redis connect failed", ex);
                 }
             }
@@ -649,14 +655,14 @@ public class RedisPanel extends JPanel {
         connected = false;
         btnCardLayout.show(btnCard, "connect");
         connectionStatusLabel.setForeground(UIManager.getColor(LABEL_DISABLED_FG));
-        connectionStatusLabel.setToolTipText(t("toolbox.redis.status.not_connected"));
+        connectionStatusLabel.setToolTipText(t(MessageKeys.TOOLBOX_REDIS_STATUS_NOT_CONNECTED));
         keyListModel.clear();
         keyFilteredModel.clear();
         keyTypeMap.clear();
         keyTtlMap.clear();
         keyMetaLabel.setText("");
         respStatusLabel.setText("");
-        NotificationUtil.showSuccess(t("toolbox.redis.disconnect.success"));
+        NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_REDIS_DISCONNECT_SUCCESS));
     }
 
     private void closeJedisQuietly() {
@@ -671,7 +677,7 @@ public class RedisPanel extends JPanel {
 
     private void loadKeysAsync() {
         if (!connected || jedis == null) return;
-        respStatusLabel.setText(t("toolbox.redis.status.loading_keys"));
+        respStatusLabel.setText(t(MessageKeys.TOOLBOX_REDIS_STATUS_LOADING_KEYS));
 
         SwingWorker<KeyLoadResult, Void> worker = new SwingWorker<>() {
             @Override
@@ -719,10 +725,14 @@ public class RedisPanel extends JPanel {
                     keyTtlMap.clear();
                     keyTtlMap.putAll(result.ttls);
                     applyKeyFilter();
-                    respStatusLabel.setText(t("toolbox.redis.status.keys_loaded", result.keys.size()));
+                    respStatusLabel.setText(t(MessageKeys.TOOLBOX_REDIS_STATUS_KEYS_LOADED, result.keys.size()));
+                    Object saved = mainSplit.getClientProperty("savedDividerLocation");
+                    if (saved instanceof Integer loc) {
+                        SwingUtilities.invokeLater(() -> mainSplit.setDividerLocation(loc));
+                    }
                 } catch (Exception ex) {
-                    respStatusLabel.setText(t("toolbox.redis.status.error", "-"));
-                    NotificationUtil.showError(t("toolbox.redis.err.execute_failed", extractErr(ex)));
+                    respStatusLabel.setText(t(MessageKeys.TOOLBOX_REDIS_STATUS_ERROR, "-"));
+                    NotificationUtil.showError(t(MessageKeys.TOOLBOX_REDIS_ERR_EXECUTE_FAILED, extractErr(ex)));
                     log.warn("Load Redis keys failed", ex);
                 }
             }
@@ -746,10 +756,10 @@ public class RedisPanel extends JPanel {
         if (!connected || jedis == null || keys == null || keys.isEmpty()) return;
 
         String msg = keys.size() == 1
-                ? MessageFormat.format(t("toolbox.redis.key.delete.confirm"), keys.get(0))
-                : MessageFormat.format(t("toolbox.redis.key.delete.batch.confirm"), keys.size());
+                ? MessageFormat.format(t(MessageKeys.TOOLBOX_REDIS_KEY_DELETE_CONFIRM), keys.get(0))
+                : MessageFormat.format(t(MessageKeys.TOOLBOX_REDIS_KEY_DELETE_BATCH_CONFIRM), keys.size());
         int opt = JOptionPane.showConfirmDialog(this, msg,
-                t("toolbox.redis.key.delete.confirm.title"),
+                t(MessageKeys.TOOLBOX_REDIS_KEY_DELETE_CONFIRM_TITLE),
                 JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
         if (opt != JOptionPane.YES_OPTION) return;
 
@@ -763,10 +773,10 @@ public class RedisPanel extends JPanel {
             protected void done() {
                 try {
                     long deleted = get();
-                    NotificationUtil.showSuccess(t("toolbox.redis.key.delete.success", deleted));
+                    NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_REDIS_KEY_DELETE_SUCCESS, deleted));
                     loadKeysAsync();
                 } catch (Exception ex) {
-                    NotificationUtil.showError(t("toolbox.redis.err.execute_failed", extractErr(ex)));
+                    NotificationUtil.showError(t(MessageKeys.TOOLBOX_REDIS_ERR_EXECUTE_FAILED, extractErr(ex)));
                 }
             }
         };
@@ -775,7 +785,7 @@ public class RedisPanel extends JPanel {
 
     private void executeCommand() {
         if (!connected || jedis == null) {
-            NotificationUtil.showError(t("toolbox.redis.err.not_connected"));
+            NotificationUtil.showError(t(MessageKeys.TOOLBOX_REDIS_ERR_NOT_CONNECTED));
             return;
         }
 
@@ -785,12 +795,12 @@ public class RedisPanel extends JPanel {
         String value = valueEditor.getText();
 
         if (commandNeedsKey(command) && key.isBlank()) {
-            NotificationUtil.showError(t("toolbox.redis.err.key_required"));
+            NotificationUtil.showError(t(MessageKeys.TOOLBOX_REDIS_ERR_KEY_REQUIRED));
             return;
         }
 
         final long start = System.currentTimeMillis();
-        respStatusLabel.setText(t("toolbox.redis.status.executing"));
+        respStatusLabel.setText(t(MessageKeys.TOOLBOX_REDIS_STATUS_EXECUTING));
         executeBtn.setEnabled(false);
 
         SwingWorker<String, Void> worker = new SwingWorker<>() {
@@ -808,15 +818,15 @@ public class RedisPanel extends JPanel {
                     String text = get();
                     resultArea.setText(text == null ? "" : text);
                     resultArea.setCaretPosition(0);
-                    respStatusLabel.setText(t("toolbox.redis.status.ok", cost));
+                    respStatusLabel.setText(t(MessageKeys.TOOLBOX_REDIS_STATUS_OK, cost));
                     addHistory(command, key, args, value);
                     loadKeyMeta(key, true);
                     if (isMutatingCommand(command)) {
                         loadKeysAsync();
                     }
                 } catch (Exception ex) {
-                    respStatusLabel.setText(t("toolbox.redis.status.error", cost));
-                    NotificationUtil.showError(t("toolbox.redis.err.execute_failed", extractErr(ex)));
+                    respStatusLabel.setText(t(MessageKeys.TOOLBOX_REDIS_STATUS_ERROR, cost));
+                    NotificationUtil.showError(t(MessageKeys.TOOLBOX_REDIS_ERR_EXECUTE_FAILED, extractErr(ex)));
                 }
             }
         };
@@ -833,7 +843,7 @@ public class RedisPanel extends JPanel {
                     actualValue = String.join(" ", argList).strip();
                 }
                 if (actualValue.isBlank()) {
-                    throw new IllegalArgumentException(t("toolbox.redis.err.set_value_required"));
+                    throw new IllegalArgumentException(t(MessageKeys.TOOLBOX_REDIS_ERR_SET_VALUE_REQUIRED));
                 }
                 yield jedis.set(key, actualValue);
             }
@@ -843,7 +853,7 @@ public class RedisPanel extends JPanel {
             case CMD_TTL -> jedis.ttl(key);
             case CMD_HGET -> {
                 if (argList.isEmpty()) {
-                    throw new IllegalArgumentException(t("toolbox.redis.err.arg_required"));
+                    throw new IllegalArgumentException(t(MessageKeys.TOOLBOX_REDIS_ERR_ARG_REQUIRED));
                 }
                 yield jedis.hget(key, argList.get(0));
             }
@@ -859,7 +869,7 @@ public class RedisPanel extends JPanel {
                 long end = argList.size() < 2 ? 99L : parseLongOrThrow(argList.get(1), "end");
                 yield jedis.zrange(key, start, end);
             }
-            default -> throw new IllegalArgumentException("Unsupported command: " + command);
+            default -> throw new IllegalArgumentException(t(MessageKeys.TOOLBOX_REDIS_ERR_UNSUPPORTED_COMMAND, command));
         };
     }
 
@@ -923,7 +933,7 @@ public class RedisPanel extends JPanel {
         String placeholder = switch (cmd) {
             case CMD_HGET -> "field";
             case CMD_LRANGE, CMD_ZRANGE -> "start end";
-            default -> t("toolbox.redis.args.placeholder");
+            default -> t(MessageKeys.TOOLBOX_REDIS_ARGS_PLACEHOLDER);
         };
         argsField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, placeholder);
     }
@@ -935,7 +945,7 @@ public class RedisPanel extends JPanel {
             valueEditor.setText(JsonUtil.toJsonPrettyStr(text));
             valueEditor.setCaretPosition(0);
         } catch (Exception e) {
-            NotificationUtil.showError(t("toolbox.redis.err.invalid_json"));
+            NotificationUtil.showError(t(MessageKeys.TOOLBOX_REDIS_ERR_INVALID_JSON));
         }
     }
 
@@ -979,7 +989,7 @@ public class RedisPanel extends JPanel {
         if (key == null || key.isBlank() || !connected || jedis == null) return;
 
         if (!forceRefresh && keyTypeMap.containsKey(key) && keyTtlMap.containsKey(key)) {
-            keyMetaLabel.setText(formatKeyMeta(key, keyTypeMap.get(key), keyTtlMap.get(key)));
+            keyMetaLabel.setText(formatKeyMeta(keyTypeMap.get(key), keyTtlMap.get(key)));
             return;
         }
 
@@ -998,9 +1008,16 @@ public class RedisPanel extends JPanel {
                     Map<String, Object> map = get();
                     String type = Objects.toString(map.get("type"), "-");
                     long ttl = ((Number) map.get("ttl")).longValue();
-                    keyTypeMap.put(key, type);
-                    keyTtlMap.put(key, ttl);
-                    keyMetaLabel.setText(formatKeyMeta(key, type, ttl));
+                    if ("none".equals(type)) {
+                        // key 已不存在，清除过期缓存
+                        keyTypeMap.remove(key);
+                        keyTtlMap.remove(key);
+                        keyMetaLabel.setText("");
+                    } else {
+                        keyTypeMap.put(key, type);
+                        keyTtlMap.put(key, ttl);
+                        keyMetaLabel.setText(formatKeyMeta(type, ttl));
+                    }
                     keyList.repaint();
                 } catch (Exception ignore) {
                     // ignore metadata failures
@@ -1012,17 +1029,40 @@ public class RedisPanel extends JPanel {
 
     private void executeKeyQuickRead(String key) {
         if (key == null || key.isBlank()) return;
-        String type = keyTypeMap.get(key);
-        if (type == null && connected && jedis != null) {
-            try {
-                type = jedis.type(key);
-                keyTypeMap.put(key, type);
-            } catch (Exception ignore) {
-                type = null;
-            }
+        String cachedType = keyTypeMap.get(key);
+        if (cachedType != null) {
+            applyQuickReadCommand(cachedType);
+            return;
         }
-        if (type == null) type = "string";
+        if (!connected || jedis == null) {
+            applyQuickReadCommand("string");
+            return;
+        }
+        // 异步获取 type，避免在 EDT 上阻塞
+        new SwingWorker<String, Void>() {
+            @Override
+            protected String doInBackground() {
+                try {
+                    return jedis.type(key);
+                } catch (Exception ignore) {
+                    return "string";
+                }
+            }
 
+            @Override
+            protected void done() {
+                try {
+                    String resolvedType = get();
+                    keyTypeMap.put(key, resolvedType);
+                    applyQuickReadCommand(resolvedType);
+                } catch (Exception ignore) {
+                    applyQuickReadCommand("string");
+                }
+            }
+        }.execute();
+    }
+
+    private void applyQuickReadCommand(String type) {
         switch (type) {
             case "hash" -> {
                 commandCombo.setSelectedItem(CMD_HGETALL);
@@ -1048,15 +1088,27 @@ public class RedisPanel extends JPanel {
         executeCommand();
     }
 
-    private String formatKeyMeta(String key, String type, Long ttl) {
-        return key + "  [" + type + "]  TTL=" + ttlDisplay(ttl);
+    private String formatKeyMeta(String type, Long ttl) {
+        return "[" + type + "]  TTL: " + ttlDisplay(ttl);
     }
 
     private String ttlDisplay(Long ttl) {
         if (ttl == null) return "-";
-        if (ttl == -1L) return "∞";
-        if (ttl == -2L) return "-";
-        return ttl + "s";
+        if (ttl == -1L) return t(MessageKeys.TOOLBOX_REDIS_TTL_PERMANENT);
+        if (ttl == -2L) return t(MessageKeys.TOOLBOX_REDIS_TTL_EXPIRED);
+        long s = ttl;
+        long d = s / 86400;
+        s %= 86400;
+        long h = s / 3600;
+        s %= 3600;
+        long m = s / 60;
+        s %= 60;
+        StringBuilder sb = new StringBuilder();
+        if (d > 0) sb.append(d).append("d ");
+        if (h > 0) sb.append(h).append("h ");
+        if (m > 0) sb.append(m).append("m ");
+        sb.append(s).append("s");
+        return sb.toString().trim();
     }
 
     private String getHostText() {
@@ -1138,12 +1190,10 @@ public class RedisPanel extends JPanel {
                                                       boolean isSelected, boolean cellHasFocus) {
             JLabel lbl = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
             if (value instanceof String key) {
-                String type = keyTypeMap.get(key);
                 Long ttl = keyTtlMap.get(key);
-                if (type != null || ttl != null) {
+                if (ttl != null) {
                     String metaColor = isSelected ? "#cce0ff" : "#888888";
-                    lbl.setText("<html><b>" + escapeHtml(key) + "</b>&nbsp;<font color='" + metaColor + "'>[" +
-                            (type == null ? "-" : type) + "] TTL=" + ttlDisplay(ttl) + "</font></html>");
+                    lbl.setText("<html>" + escapeHtml(key) + "&nbsp;<font color='" + metaColor + "'>TTL: " + ttlDisplay(ttl) + "</font></html>");
                 } else {
                     lbl.setText(key);
                 }

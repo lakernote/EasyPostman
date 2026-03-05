@@ -2008,10 +2008,6 @@ public final class MessageKeys {
     public static final String TOOLBOX_KAFKA_TOPIC_SEARCH_PLACEHOLDER = "toolbox.kafka.topic.search.placeholder";
     public static final String TOOLBOX_KAFKA_USER = "toolbox.kafka.user";
     public static final String TOOLBOX_KAFKA_USER_PLACEHOLDER = "toolbox.kafka.user.placeholder";
-
-    // ============ Redis 工具相关 ============
-    public static final String TOOLBOX_REDIS = "toolbox.redis";
-
     public static final String TOOLBOX_CRON = "toolbox.cron";
     public static final String TOOLBOX_CRON_EXPRESSION = "toolbox.cron.expression";
     public static final String TOOLBOX_CRON_PARSE = "toolbox.cron.parse";
@@ -2184,5 +2180,76 @@ public final class MessageKeys {
     public static final String NOTIFICATION_TYPE_ERROR = "notification.type.error";
     public static final String NOTIFICATION_EXPAND = "notification.expand";
     public static final String NOTIFICATION_COLLAPSE = "notification.collapse";
+
+    // ==================== Toolbox - Redis ====================
+    public static final String TOOLBOX_REDIS = "toolbox.redis";
+    public static final String TOOLBOX_REDIS_HOST = "toolbox.redis.host";
+    public static final String TOOLBOX_REDIS_HOST_PLACEHOLDER = "toolbox.redis.host.placeholder";
+    public static final String TOOLBOX_REDIS_PORT = "toolbox.redis.port";
+    public static final String TOOLBOX_REDIS_DB = "toolbox.redis.db";
+    public static final String TOOLBOX_REDIS_USER = "toolbox.redis.user";
+    public static final String TOOLBOX_REDIS_USER_PLACEHOLDER = "toolbox.redis.user.placeholder";
+    public static final String TOOLBOX_REDIS_PASS = "toolbox.redis.pass";
+    public static final String TOOLBOX_REDIS_PASS_PLACEHOLDER = "toolbox.redis.pass.placeholder";
+    public static final String TOOLBOX_REDIS_CONNECT = "toolbox.redis.connect";
+    public static final String TOOLBOX_REDIS_DISCONNECT = "toolbox.redis.disconnect";
+    public static final String TOOLBOX_REDIS_CONNECT_SUCCESS = "toolbox.redis.connect.success";
+    public static final String TOOLBOX_REDIS_DISCONNECT_SUCCESS = "toolbox.redis.disconnect.success";
+    public static final String TOOLBOX_REDIS_STATUS_NOT_CONNECTED = "toolbox.redis.status.not_connected";
+    public static final String TOOLBOX_REDIS_STATUS_CONNECTED = "toolbox.redis.status.connected";
+    public static final String TOOLBOX_REDIS_STATUS_CONNECTED_SIMPLE = "toolbox.redis.status.connected.simple";
+    public static final String TOOLBOX_REDIS_STATUS_CONNECTING = "toolbox.redis.status.connecting";
+    public static final String TOOLBOX_REDIS_STATUS_CONNECT_FAILED = "toolbox.redis.status.connect_failed";
+    public static final String TOOLBOX_REDIS_STATUS_LOADING_KEYS = "toolbox.redis.status.loading_keys";
+    public static final String TOOLBOX_REDIS_STATUS_KEYS_LOADED = "toolbox.redis.status.keys_loaded";
+    public static final String TOOLBOX_REDIS_STATUS_EXECUTING = "toolbox.redis.status.executing";
+    public static final String TOOLBOX_REDIS_STATUS_OK = "toolbox.redis.status.ok";
+    public static final String TOOLBOX_REDIS_STATUS_ERROR = "toolbox.redis.status.error";
+    public static final String TOOLBOX_REDIS_KEYS_MANAGEMENT = "toolbox.redis.keys.management";
+    public static final String TOOLBOX_REDIS_KEYS_SEARCH_PLACEHOLDER = "toolbox.redis.keys.search.placeholder";
+    public static final String TOOLBOX_REDIS_KEYS_EMPTY = "toolbox.redis.keys.empty";
+    public static final String TOOLBOX_REDIS_KEYS_REFRESH = "toolbox.redis.keys.refresh";
+    public static final String TOOLBOX_REDIS_KEY_COPY = "toolbox.redis.key.copy";
+    public static final String TOOLBOX_REDIS_KEY_QUICK_READ = "toolbox.redis.key.quick_read";
+    public static final String TOOLBOX_REDIS_KEY_DELETE = "toolbox.redis.key.delete";
+    public static final String TOOLBOX_REDIS_KEY_DELETE_CONFIRM = "toolbox.redis.key.delete.confirm";
+    public static final String TOOLBOX_REDIS_KEY_DELETE_BATCH_CONFIRM = "toolbox.redis.key.delete.batch.confirm";
+    public static final String TOOLBOX_REDIS_KEY_DELETE_CONFIRM_TITLE = "toolbox.redis.key.delete.confirm.title";
+    public static final String TOOLBOX_REDIS_KEY_DELETE_SUCCESS = "toolbox.redis.key.delete.success";
+    public static final String TOOLBOX_REDIS_HISTORY = "toolbox.redis.history";
+    public static final String TOOLBOX_REDIS_HISTORY_CLEAR = "toolbox.redis.history.clear";
+    public static final String TOOLBOX_REDIS_HISTORY_EMPTY = "toolbox.redis.history.empty";
+    public static final String TOOLBOX_REDIS_LOAD_TEMPLATE = "toolbox.redis.load_template";
+    public static final String TOOLBOX_REDIS_EXECUTE = "toolbox.redis.execute";
+    public static final String TOOLBOX_REDIS_COMMAND = "toolbox.redis.command";
+    public static final String TOOLBOX_REDIS_KEY = "toolbox.redis.key";
+    public static final String TOOLBOX_REDIS_ARGS = "toolbox.redis.args";
+    public static final String TOOLBOX_REDIS_KEY_PLACEHOLDER = "toolbox.redis.key.placeholder";
+    public static final String TOOLBOX_REDIS_ARGS_PLACEHOLDER = "toolbox.redis.args.placeholder";
+    public static final String TOOLBOX_REDIS_VALUE_TITLE = "toolbox.redis.value.title";
+    public static final String TOOLBOX_REDIS_RESPONSE_TITLE = "toolbox.redis.response.title";
+    public static final String TOOLBOX_REDIS_COPY_RESULT = "toolbox.redis.copy_result";
+    public static final String TOOLBOX_REDIS_RESULT_COPIED = "toolbox.redis.result.copied";
+    public static final String TOOLBOX_REDIS_CLEAR = "toolbox.redis.clear";
+    public static final String TOOLBOX_REDIS_FORMAT_JSON = "toolbox.redis.format_json";
+    public static final String TOOLBOX_REDIS_ERR_HOST_REQUIRED = "toolbox.redis.err.host_required";
+    public static final String TOOLBOX_REDIS_ERR_KEY_REQUIRED = "toolbox.redis.err.key_required";
+    public static final String TOOLBOX_REDIS_ERR_NOT_CONNECTED = "toolbox.redis.err.not_connected";
+    public static final String TOOLBOX_REDIS_ERR_CONNECT_FAILED = "toolbox.redis.err.connect_failed";
+    public static final String TOOLBOX_REDIS_ERR_EXECUTE_FAILED = "toolbox.redis.err.execute_failed";
+    public static final String TOOLBOX_REDIS_ERR_SET_VALUE_REQUIRED = "toolbox.redis.err.set_value_required";
+    public static final String TOOLBOX_REDIS_ERR_ARG_REQUIRED = "toolbox.redis.err.arg_required";
+    public static final String TOOLBOX_REDIS_ERR_INVALID_JSON = "toolbox.redis.err.invalid_json";
+    public static final String TOOLBOX_REDIS_ERR_UNSUPPORTED_COMMAND = "toolbox.redis.err.unsupported_command";
+    public static final String TOOLBOX_REDIS_TPL_GET = "toolbox.redis.tpl.get";
+    public static final String TOOLBOX_REDIS_TPL_SET_JSON = "toolbox.redis.tpl.set_json";
+    public static final String TOOLBOX_REDIS_TPL_HGETALL = "toolbox.redis.tpl.hgetall";
+    public static final String TOOLBOX_REDIS_TPL_LRANGE = "toolbox.redis.tpl.lrange";
+    public static final String TOOLBOX_REDIS_TPL_SMEMBERS = "toolbox.redis.tpl.smembers";
+    public static final String TOOLBOX_REDIS_TPL_ZRANGE = "toolbox.redis.tpl.zrange";
+    public static final String TOOLBOX_REDIS_TPL_TTL = "toolbox.redis.tpl.ttl";
+    public static final String TOOLBOX_REDIS_TPL_DEL = "toolbox.redis.tpl.del";
+    public static final String TOOLBOX_REDIS_TTL_PERMANENT = "toolbox.redis.ttl.permanent";
+    public static final String TOOLBOX_REDIS_TTL_EXPIRED = "toolbox.redis.ttl.expired";
 
 }

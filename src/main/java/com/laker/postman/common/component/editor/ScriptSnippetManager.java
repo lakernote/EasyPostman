@@ -121,6 +121,7 @@ public class ScriptSnippetManager {
         addPmInfo(provider);
         addPmSendRequest(provider);
         addPmExecution(provider);
+        addPmDataStoreApis(provider);
 
         // ===== Chai 断言库 =====
         addChaiAssertions(provider);
@@ -685,6 +686,64 @@ public class ScriptSnippetManager {
         provider.addCompletion(new BasicCompletion(provider, "pm.execution", "Execution context"));
         provider.addCompletion(new BasicCompletion(provider, "pm.execution.skipRequest", "Skip current request"));
         provider.addCompletion(new BasicCompletion(provider, "pm.execution.setNextRequest", "Set next request"));
+    }
+
+    /**
+     * Add data store APIs - pm.kafka / pm.redis / pm.es
+     */
+    private static void addPmDataStoreApis(DefaultCompletionProvider provider) {
+        provider.addCompletion(new BasicCompletion(provider, "pm.kafka", "Kafka script API"));
+        provider.addCompletion(new BasicCompletion(provider, "pm.kafka.listTopics", "pm.kafka.listTopics(options)"));
+        provider.addCompletion(new BasicCompletion(provider, "pm.kafka.send", "pm.kafka.send(options)"));
+        provider.addCompletion(new BasicCompletion(provider, "pm.kafka.poll", "pm.kafka.poll(options)"));
+        provider.addCompletion(new ShorthandCompletion(provider, "kafka.poll",
+                """
+                const records = pm.kafka.poll({
+                  bootstrapServers: "localhost:9092",
+                  topic: "demo-topic",
+                  groupId: "easy-postman-script",
+                  autoOffsetReset: "earliest",
+                  pollTimeoutMs: 1000
+                });
+                pm.test("Kafka has records", function () {
+                  pm.expect(records.length).to.be.above(0);
+                });""",
+                "Kafka poll + assert"));
+
+        provider.addCompletion(new BasicCompletion(provider, "pm.redis", "Redis script API"));
+        provider.addCompletion(new BasicCompletion(provider, "pm.redis.execute", "pm.redis.execute(options)"));
+        provider.addCompletion(new BasicCompletion(provider, "pm.redis.query", "pm.redis.query(options)"));
+        provider.addCompletion(new ShorthandCompletion(provider, "redis.get",
+                """
+                const value = pm.redis.execute({
+                  host: "localhost",
+                  port: 6379,
+                  db: 0,
+                  command: "GET",
+                  key: "user:1"
+                });
+                pm.test("Redis key exists", function () {
+                  pm.expect(value).to.exist();
+                });""",
+                "Redis query + assert"));
+
+        provider.addCompletion(new BasicCompletion(provider, "pm.es", "Elasticsearch script API"));
+        provider.addCompletion(new BasicCompletion(provider, "pm.elasticsearch", "Elasticsearch script API"));
+        provider.addCompletion(new BasicCompletion(provider, "pm.es.request", "pm.es.request(options)"));
+        provider.addCompletion(new BasicCompletion(provider, "pm.es.query", "pm.es.query(options)"));
+        provider.addCompletion(new BasicCompletion(provider, "pm.elasticsearch.request", "pm.elasticsearch.request(options)"));
+        provider.addCompletion(new ShorthandCompletion(provider, "es.query",
+                """
+                const resp = pm.es.request({
+                  baseUrl: "http://localhost:9200",
+                  method: "GET",
+                  path: "/orders/_search",
+                  body: JSON.stringify({ query: { match_all: {} }, size: 1 })
+                });
+                pm.test("ES query success", function () {
+                  pm.expect(resp.code).to.equal(200);
+                });""",
+                "Elasticsearch query + assert"));
     }
 
     // ========================================

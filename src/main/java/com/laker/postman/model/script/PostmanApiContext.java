@@ -87,6 +87,22 @@ public class PostmanApiContext {
     public TestApi test;
 
     /**
+     * Kafka API - 对应 pm.kafka
+     */
+    public ScriptKafkaApi kafka;
+
+    /**
+     * Redis API - 对应 pm.redis
+     */
+    public ScriptRedisApi redis;
+
+    /**
+     * Elasticsearch API - 对应 pm.elasticsearch / pm.es
+     */
+    public ScriptElasticsearchApi elasticsearch;
+    public ScriptElasticsearchApi es;
+
+    /**
      * 构造 Postman API 上下文
      *
      * @param environment 当前激活的环境对象
@@ -96,6 +112,10 @@ public class PostmanApiContext {
         this.env = environment; // Postman 中 env 和 environment 是同一个对象
         this.cookies = new CookieApi(); // 初始化 cookies
         this.test = new TestApi(this); // 初始化 test API
+        this.kafka = new ScriptKafkaApi();
+        this.redis = new ScriptRedisApi();
+        this.elasticsearch = new ScriptElasticsearchApi();
+        this.es = this.elasticsearch;
     }
 
     /**

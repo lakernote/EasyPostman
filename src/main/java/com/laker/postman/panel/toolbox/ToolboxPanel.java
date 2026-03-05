@@ -130,6 +130,7 @@ public class ToolboxPanel extends SingletonBasePanel {
         // 数据库
         reg("es", MessageKeys.TOOLBOX_ELASTICSEARCH, "icons/database.svg", GRP_DB, new ElasticsearchPanel());
         reg("influxdb", MessageKeys.TOOLBOX_INFLUXDB, "icons/database.svg", GRP_DB, new InfluxDbPanel());
+        reg("kafka", MessageKeys.TOOLBOX_KAFKA, "icons/database.svg", GRP_DB, new KafkaPanel());
         // 开发
         reg("diff", MessageKeys.TOOLBOX_DIFF, "icons/file.svg", GRP_DEV, new DiffPanel());
         reg("decompiler", MessageKeys.TOOLBOX_DECOMPILER, "icons/decompile.svg", GRP_DEV, new DecompilerPanel());

@@ -24,6 +24,7 @@
         <logback-classic.version>1.5.20</logback-classic.version>
         <jfreechart.version>1.5.5</jfreechart.version>
         <okhttp.version>4.12.0</okhttp.version>
+        <kafka.version>3.9.1</kafka.version>
         <polyglot.version>24.2.1</polyglot.version>
         <org.eclipse.jgit.version>7.3.0.202506031305-r</org.eclipse.jgit.version>
         <jackson.version>3.0.2</jackson.version>
@@ -158,6 +159,12 @@
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp-sse</artifactId>
             <version>${okhttp.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>${kafka.version}</version>
         </dependency>
 
         <!-- JGit for Git operations -->

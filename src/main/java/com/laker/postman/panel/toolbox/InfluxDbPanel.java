@@ -12,13 +12,14 @@ import com.laker.postman.common.component.button.ClearButton;
 import com.laker.postman.common.component.button.CopyButton;
 import com.laker.postman.common.component.button.PrimaryButton;
 import com.laker.postman.common.component.button.RefreshButton;
+import com.laker.postman.common.component.button.SecondaryButton;
 import com.laker.postman.common.component.table.EnhancedTablePanel;
 import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
+import net.miginfocom.swing.MigLayout;
 import okhttp3.*;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
-import org.fife.ui.rtextarea.RTextScrollPane;
 import tools.jackson.databind.JsonNode;
 
 import javax.swing.*;
@@ -28,7 +29,9 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -53,7 +56,7 @@ public class InfluxDbPanel extends JPanel {
         EasyComboBox<String> valueCombo;
     }
 
-    private JTextField hostField;
+    private JComboBox<String> hostCombo;
     private JComboBox<QueryMode> modeCombo;
 
     private JTextField tokenField;
@@ -69,14 +72,17 @@ public class InfluxDbPanel extends JPanel {
     private JPasswordField passwordField;
 
     private PrimaryButton connectBtn;
+    private SecondaryButton disconnectBtn;
     private JLabel connectionStatusLabel;
+    private CardLayout btnCardLayout;
+    private JPanel btnCard;
 
     private RSyntaxTextArea queryEditor;
     private RSyntaxTextArea resultArea;
     private SearchableTextArea searchableResultArea;
+    private SearchableTextArea searchableQueryArea;
     private EnhancedTablePanel resultTablePanel;
-    private JPanel resultViewPanel;
-    private CardLayout resultViewLayout;
+    private JTabbedPane resultTabs;
     private PrimaryButton executeBtn;
     private JLabel respStatusLabel;
     private JLabel queryLabel;
@@ -98,12 +104,34 @@ public class InfluxDbPanel extends JPanel {
     private String lastResponseBody = "";
     private boolean suppressMeasurementSync = false;
 
+    private static final int MAX_HOST_HISTORY = 5;
+    private static final int MAX_HISTORY = 20;
+    private final Deque<HistoryEntry> requestHistory = new ArrayDeque<>();
+    private DefaultListModel<HistoryEntry> historyListModel;
+    private JList<HistoryEntry> historyList;
+
     private static final String LABEL_DISABLED_FG = "Label.disabledForeground";
     private static final String SEPARATOR_FG = "Separator.foreground";
     private static final String AUTHORIZATION = "Authorization";
     private static final String TOKEN_PREFIX = "Token ";
     private static final String APPLICATION_VND_FLUX = "application/vnd.flux";
     private static final String TEXT_CSV = "text/csv";
+
+    private static class HistoryEntry {
+        final QueryMode mode;
+        final String db;
+        final String org;
+        final String measurement;
+        final String query;
+
+        HistoryEntry(QueryMode mode, String db, String org, String measurement, String query) {
+            this.mode = mode;
+            this.db = db;
+            this.org = org;
+            this.measurement = measurement;
+            this.query = query;
+        }
+    }
 
     private static final TemplateItem[] FLUX_TEMPLATES = {
             new TemplateItem("Latest 100 Points",
@@ -224,13 +252,25 @@ public class InfluxDbPanel extends JPanel {
         setLayout(new BorderLayout(0, 0));
         setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         add(buildConnectionPanel(), BorderLayout.NORTH);
-        JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, buildMeasurementPanel(), buildMainPanel());
+        JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, buildLeftPanel(), buildMainPanel());
         mainSplit.setDividerLocation(240);
         mainSplit.setDividerSize(5);
         mainSplit.setResizeWeight(0.25);
         mainSplit.setContinuousLayout(true);
         add(mainSplit, BorderLayout.CENTER);
         switchMode(getSelectedMode());
+    }
+
+    private JPanel buildLeftPanel() {
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setPreferredSize(new Dimension(230, 0));
+
+        JTabbedPane leftTabs = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
+        leftTabs.addTab(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_MEASUREMENT_MANAGEMENT), buildMeasurementPanel());
+        leftTabs.addTab(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_HISTORY), buildHistoryPanel());
+
+        wrapper.add(leftTabs, BorderLayout.CENTER);
+        return wrapper;
     }
 
     private JPanel buildMeasurementPanel() {
@@ -306,6 +346,112 @@ public class InfluxDbPanel extends JPanel {
         panel.add(topArea, BorderLayout.NORTH);
         panel.add(listScroll, BorderLayout.CENTER);
         return panel;
+    }
+
+    private JPanel buildHistoryPanel() {
+        JPanel panel = new JPanel(new BorderLayout(0, 0));
+
+        JPanel titleBar = new JPanel(new BorderLayout());
+        titleBar.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)),
+                BorderFactory.createEmptyBorder(4, 8, 4, 4)));
+        JLabel titleLbl = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_HISTORY));
+        titleLbl.setFont(titleLbl.getFont().deriveFont(Font.BOLD, 12f));
+        ClearButton clearHistBtn = new ClearButton();
+        clearHistBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_HISTORY_CLEAR));
+        clearHistBtn.addActionListener(e -> {
+            requestHistory.clear();
+            historyListModel.clear();
+        });
+        titleBar.add(titleLbl, BorderLayout.CENTER);
+        titleBar.add(clearHistBtn, BorderLayout.EAST);
+
+        historyListModel = new DefaultListModel<>();
+        historyList = new JList<>(historyListModel);
+        historyList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        historyList.setCellRenderer(new HistoryCellRenderer());
+        historyList.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (SwingUtilities.isLeftMouseButton(e) && e.getClickCount() == 2) {
+                    int idx = historyList.locationToIndex(e.getPoint());
+                    if (idx >= 0) applyHistory(historyListModel.get(idx));
+                }
+            }
+        });
+
+        JScrollPane scroll = new JScrollPane(historyList);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+
+        JLabel tipLbl = new JLabel("<html><center><small>" +
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_HISTORY_EMPTY) + "</small></center></html>");
+        tipLbl.setHorizontalAlignment(SwingConstants.CENTER);
+        tipLbl.setForeground(UIManager.getColor(LABEL_DISABLED_FG));
+        tipLbl.setBorder(BorderFactory.createEmptyBorder(8, 4, 8, 4));
+
+        panel.add(titleBar, BorderLayout.NORTH);
+        panel.add(scroll, BorderLayout.CENTER);
+        panel.add(tipLbl, BorderLayout.SOUTH);
+        return panel;
+    }
+
+    private static class HistoryCellRenderer extends DefaultListCellRenderer {
+        @Override
+        public Component getListCellRendererComponent(JList<?> list, Object value,
+                                                      int index, boolean isSelected, boolean cellHasFocus) {
+            JLabel lbl = (JLabel) super.getListCellRendererComponent(
+                    list, value, index, isSelected, cellHasFocus);
+            if (value instanceof HistoryEntry h) {
+                String modeColor = h.mode == QueryMode.INFLUXQL_V1 ? "#2a7ec8" : "#28a745";
+                String modeText = h.mode == QueryMode.INFLUXQL_V1 ? "InfluxQL" : "Flux";
+                String query = h.query == null ? "" : h.query.strip();
+                String firstLine = query.split("\\R", 2)[0];
+                if (firstLine.length() > 38) firstLine = firstLine.substring(0, 37) + "…";
+                lbl.setText("<html><b><font color='" + modeColor + "'>" + modeText + "</font></b> " + firstLine + "</html>");
+                lbl.setToolTipText(query);
+            }
+            return lbl;
+        }
+    }
+
+    private void applyHistory(HistoryEntry entry) {
+        if (entry == null) return;
+        modeCombo.setSelectedItem(entry.mode);
+        if (entry.mode == QueryMode.INFLUXQL_V1) {
+            setComboEditorText(dbCombo, entry.db);
+            setComboEditorText(measurementCombo, entry.measurement);
+            if (!entry.db.isBlank() && connected) {
+                loadMeasurements(entry.db);
+            }
+        } else {
+            orgField.setText(entry.org);
+        }
+        queryEditor.setText(entry.query);
+        queryEditor.setCaretPosition(0);
+    }
+
+    private void addToHistory(QueryMode mode, String db, String org, String measurement, String query) {
+        String dbVal = db == null ? "" : db;
+        String orgVal = org == null ? "" : org;
+        String measurementVal = measurement == null ? "" : measurement;
+        String queryVal = query == null ? "" : query;
+        for (HistoryEntry e : requestHistory) {
+            if (e.mode == mode && e.db.equals(dbVal) && e.org.equals(orgVal)
+                    && e.measurement.equals(measurementVal) && e.query.equals(queryVal)) {
+                requestHistory.remove(e);
+                requestHistory.addFirst(e);
+                rebuildHistoryListModel();
+                return;
+            }
+        }
+        requestHistory.addFirst(new HistoryEntry(mode, dbVal, orgVal, measurementVal, queryVal));
+        while (requestHistory.size() > MAX_HISTORY) requestHistory.removeLast();
+        rebuildHistoryListModel();
+    }
+
+    private void rebuildHistoryListModel() {
+        historyListModel.clear();
+        for (HistoryEntry e : requestHistory) historyListModel.addElement(e);
     }
 
     private java.awt.event.MouseAdapter buildMeasurementListMouseListener() {
@@ -492,12 +638,20 @@ public class InfluxDbPanel extends JPanel {
                 BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)),
                 BorderFactory.createEmptyBorder(6, 8, 6, 8)));
 
-        JPanel baseRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
-        hostField = new JTextField(baseUrl, 22);
-        hostField.setPreferredSize(new Dimension(hostField.getPreferredSize().width, 32));
-        hostField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT,
+        // 使用 MigLayout 实现连接配置基础行（insets 留出空间避免 FlatLaf focus 高亮被裁剪）
+        JPanel baseRow = new JPanel(new MigLayout(
+                "insets 4 0 4 0, fillx",
+                "[][grow,fill]8[][grow,fill]8[]8[]",
+                "[]"
+        ));
+        hostCombo = new JComboBox<>();
+        hostCombo.setEditable(true);
+        hostCombo.setPreferredSize(new Dimension(240, 32));
+        hostCombo.addItem(baseUrl);
+        JTextField hostEditor = (JTextField) hostCombo.getEditor().getEditorComponent();
+        hostEditor.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT,
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_HOST_PLACEHOLDER));
-        hostField.addActionListener(e -> doConnect());
+        hostEditor.addActionListener(e -> doConnect());
 
         modeCombo = new JComboBox<>(QueryMode.values());
         modeCombo.setPreferredSize(new Dimension(180, 32));
@@ -519,6 +673,17 @@ public class InfluxDbPanel extends JPanel {
         connectBtn = new PrimaryButton(
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_CONNECT), "icons/connect.svg");
         connectBtn.addActionListener(e -> doConnect());
+        disconnectBtn = new SecondaryButton(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_DISCONNECT), "icons/ws-close.svg");
+        disconnectBtn.addActionListener(e -> doDisconnect());
+
+        // 用 CardLayout 叠放，切换时不留空白
+        btnCardLayout = new CardLayout();
+        btnCard = new JPanel(btnCardLayout);
+        btnCard.setOpaque(false);
+        btnCard.add(connectBtn, "connect");
+        btnCard.add(disconnectBtn, "disconnect");
+        btnCardLayout.show(btnCard, "connect");
 
         connectionStatusLabel = new JLabel("●");
         connectionStatusLabel.setForeground(UIManager.getColor(LABEL_DISABLED_FG));
@@ -526,10 +691,10 @@ public class InfluxDbPanel extends JPanel {
         connectionStatusLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_STATUS_NOT_CONNECTED));
 
         baseRow.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_HOST)));
-        baseRow.add(hostField);
+        baseRow.add(hostCombo);
         baseRow.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_MODE)));
         baseRow.add(modeCombo);
-        baseRow.add(connectBtn);
+        baseRow.add(btnCard);
         baseRow.add(connectionStatusLabel);
 
         JPanel modeFields = new JPanel(new CardLayout());
@@ -543,7 +708,7 @@ public class InfluxDbPanel extends JPanel {
     }
 
     private JPanel buildV2FieldsPanel() {
-        JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        JPanel row = new JPanel(new MigLayout("insets 4 0 4 0, fillx", "[][grow,fill]8[][grow,fill]", "[]"));
 
         tokenField = new JTextField("", 26);
         tokenField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT,
@@ -563,9 +728,14 @@ public class InfluxDbPanel extends JPanel {
     }
 
     private JPanel buildV1FieldsPanel() {
-        JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        JPanel row = new JPanel(new MigLayout(
+                "insets 4 0 4 0, fillx",
+                "[]8[grow,fill]8[]8[grow,fill]8[]8[grow,fill]8[]8[grow,fill]8[]",
+                "[]"
+        ));
 
         dbCombo = new EasyComboBox<>(EasyComboBox.WidthMode.DYNAMIC);
+        dbCombo.setPreferredSize(new Dimension(180, 32));
         dbCombo.addActionListener(e -> {
             if (suppressComboEvents) return;
             if (getSelectedMode() != QueryMode.INFLUXQL_V1) return;
@@ -578,6 +748,7 @@ public class InfluxDbPanel extends JPanel {
         });
 
         measurementCombo = new EasyComboBox<>(EasyComboBox.WidthMode.DYNAMIC);
+        measurementCombo.setPreferredSize(new Dimension(180, 32));
         measurementCombo.addActionListener(e -> {
             if (suppressComboEvents) return;
             if (getSelectedMode() != QueryMode.INFLUXQL_V1) return;
@@ -593,7 +764,7 @@ public class InfluxDbPanel extends JPanel {
             }
         });
 
-        JButton reloadMetaBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_RELOAD_META));
+        SecondaryButton reloadMetaBtn = new SecondaryButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_RELOAD_META));
         reloadMetaBtn.addActionListener(e -> {
             String db = getSelectedDatabase();
             loadDatabases(() -> {
@@ -627,13 +798,15 @@ public class InfluxDbPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout(0, 4));
         panel.setBorder(BorderFactory.createEmptyBorder(4, 0, 0, 0));
 
-        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 4));
+        // ---- 工具栏（MigLayout）----
+        JPanel toolbar = new JPanel(new MigLayout("insets 4, fillx", "[][][]8[][][]push", "[]"));
         toolbar.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)));
 
         templateCombo = new JComboBox<>();
         templateCombo.setPreferredSize(new Dimension(180, 32));
 
-        JButton loadTemplateBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_LOAD_TEMPLATE));
+        SecondaryButton loadTemplateBtn = new SecondaryButton(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_LOAD_TEMPLATE), "icons/load.svg");
         loadTemplateBtn.setPreferredSize(new Dimension(loadTemplateBtn.getPreferredSize().width, 32));
         loadTemplateBtn.addActionListener(e -> loadTemplate());
 
@@ -658,10 +831,10 @@ public class InfluxDbPanel extends JPanel {
 
         toolbar.add(templateCombo);
         toolbar.add(loadTemplateBtn);
-        toolbar.add(new JSeparator(SwingConstants.VERTICAL));
-        toolbar.add(executeBtn);
-        toolbar.add(copyBtn);
+        toolbar.add(new JSeparator(SwingConstants.VERTICAL), "growy, gap 2 2");
         toolbar.add(clearBtn);
+        toolbar.add(copyBtn);
+        toolbar.add(executeBtn);
 
         v1QueryBuilderPanel = buildV1QueryBuilderPanel();
         v1QueryBuilderPanel.setVisible(false);
@@ -678,57 +851,57 @@ public class InfluxDbPanel extends JPanel {
         editorSplit.setResizeWeight(0.2);
         editorSplit.setBorder(BorderFactory.createEmptyBorder());
 
+        // 查询编辑器 - 参考 RequestBodyPanel，可编辑，用 SearchableTextArea 包装（启用搜索替换）
         JPanel queryPanel = new JPanel(new BorderLayout());
+        // 查询编辑器顶部标题 + 工具按钮（MigLayout）
+        JPanel queryHeaderBar = new JPanel(new MigLayout("insets 2 4 2 4, fillx", "[]push", "[]"));
+        queryHeaderBar.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)));
         queryLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_QUERY_TITLE));
         queryLabel.setFont(queryLabel.getFont().deriveFont(Font.BOLD, 11f));
-        queryLabel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)),
-                BorderFactory.createEmptyBorder(2, 4, 2, 4)));
-        queryEditor = createEditor(true);
+        queryHeaderBar.add(queryLabel);
+
+        queryEditor = createQueryEditor();
         registerCtrlEnterShortcut(executeBtn);
+        // 参考 RequestBodyPanel：可编辑编辑器使用 SearchableTextArea(area) 包装（启用搜索替换）
+        searchableQueryArea = new SearchableTextArea(queryEditor);
+        queryPanel.add(queryHeaderBar, BorderLayout.NORTH);
+        queryPanel.add(searchableQueryArea, BorderLayout.CENTER);
 
-        RTextScrollPane queryScroll = new RTextScrollPane(queryEditor);
-        queryScroll.setLineNumbersEnabled(true);
-        queryScroll.setBorder(BorderFactory.createEmptyBorder());
-        queryPanel.add(queryLabel, BorderLayout.NORTH);
-        queryPanel.add(queryScroll, BorderLayout.CENTER);
-
+        // 结果区
         JPanel resultPanel = new JPanel(new BorderLayout());
-        JPanel respHeader = new JPanel(new BorderLayout());
-        respHeader.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)),
-                BorderFactory.createEmptyBorder(2, 4, 2, 4)));
+        // 响应标题栏（MigLayout）
+        JPanel respHeader = new JPanel(new MigLayout("insets 2 4 2 4, fillx", "[]push[]", "[]"));
+        respHeader.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)));
         JLabel respLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_RESPONSE_TITLE));
         respLabel.setFont(respLabel.getFont().deriveFont(Font.BOLD, 11f));
         respStatusLabel = new JLabel("");
         respStatusLabel.setFont(respStatusLabel.getFont().deriveFont(Font.PLAIN, 11f));
         respStatusLabel.setForeground(UIManager.getColor(LABEL_DISABLED_FG));
-        respHeader.add(respLabel, BorderLayout.WEST);
-        respHeader.add(respStatusLabel, BorderLayout.EAST);
+        respHeader.add(respLabel);
+        respHeader.add(respStatusLabel);
 
-        resultArea = createEditor(false);
+        // 参考 ResponseBodyPanel：不可编辑编辑器使用 SearchableTextArea(area, false) 包装（仅搜索）
+        resultArea = createResponseEditor();
         searchableResultArea = new SearchableTextArea(resultArea, false);
         resultTablePanel = new EnhancedTablePanel(new String[]{});
-        resultViewLayout = new CardLayout();
-        resultViewPanel = new JPanel(resultViewLayout);
-        resultViewPanel.add(resultTablePanel, "table");
-        resultViewPanel.add(searchableResultArea, "raw");
-        showRawResult();
+        resultTabs = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
+        resultTabs.addTab(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_TAB_TABLE), resultTablePanel);
+        resultTabs.addTab(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_TAB_RAW), searchableResultArea);
+        resultTabs.setSelectedIndex(1);
         resultPanel.add(respHeader, BorderLayout.NORTH);
-        resultPanel.add(resultViewPanel, BorderLayout.CENTER);
+        resultPanel.add(resultTabs, BorderLayout.CENTER);
 
         editorSplit.setTopComponent(queryPanel);
         editorSplit.setBottomComponent(resultPanel);
         queryPanel.setMinimumSize(new Dimension(0, 80));
         resultPanel.setMinimumSize(new Dimension(0, 140));
-        // setResizeWeight 只影响后续 resize；这里显式设置初始位置
         SwingUtilities.invokeLater(() -> editorSplit.setDividerLocation(0.2));
         panel.add(editorSplit, BorderLayout.CENTER);
         return panel;
     }
 
     private JPanel buildV1QueryBuilderPanel() {
-        JPanel wrapper = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
+        JPanel wrapper = new JPanel(new MigLayout("insets 4 6 4 6, fillx", "[][fill]8[][][fill]push", "[]"));
         wrapper.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)));
 
         // Fields 只读浏览
@@ -736,11 +909,11 @@ public class InfluxDbPanel extends JPanel {
         wrapper.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_FIELD)));
         wrapper.add(fieldCombo);
 
-        wrapper.add(new JSeparator(SwingConstants.VERTICAL));
+        wrapper.add(new JSeparator(SwingConstants.VERTICAL), "growy, gap 2 2");
 
         // Tag 浏览区
         wrapper.add(new JLabel("Tags:"));
-        tagRowsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        tagRowsPanel = new JPanel(new MigLayout("insets 0, fillx", "[][fill][]", "[]"));
         wrapper.add(tagRowsPanel);
 
         addTagConditionRow();
@@ -749,7 +922,7 @@ public class InfluxDbPanel extends JPanel {
 
     private void addTagConditionRow() {
         TagConditionRow row = new TagConditionRow();
-        row.panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 0));
+        row.panel = new JPanel(new MigLayout("insets 0", "[][][]", "[]"));
 
         row.keyCombo = new EasyComboBox<>(EasyComboBox.WidthMode.DYNAMIC);
         row.keyCombo.addActionListener(e -> {
@@ -786,7 +959,7 @@ public class InfluxDbPanel extends JPanel {
     }
 
 
-    private RSyntaxTextArea createEditor(boolean editable) {
+    private RSyntaxTextArea createQueryEditor() {
         RSyntaxTextArea textArea = new RSyntaxTextArea(10, 40);
         textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
         textArea.setCodeFoldingEnabled(true);
@@ -797,9 +970,29 @@ public class InfluxDbPanel extends JPanel {
         textArea.setMarkOccurrences(true);
         textArea.setPaintTabLines(true);
         textArea.setAnimateBracketMatching(true);
-        textArea.setEditable(editable);
+        textArea.setEditable(true);
         EditorThemeUtil.loadTheme(textArea);
+        updateEditorFont(textArea);
         return textArea;
+    }
+
+    private RSyntaxTextArea createResponseEditor() {
+        RSyntaxTextArea textArea = new RSyntaxTextArea(10, 40);
+        textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+        textArea.setCodeFoldingEnabled(true);
+        textArea.setAntiAliasingEnabled(true);
+        textArea.setLineWrap(false);
+        textArea.setHighlightCurrentLine(false);
+        textArea.setEditable(false);
+        EditorThemeUtil.loadTheme(textArea);
+        updateEditorFont(textArea);
+        return textArea;
+    }
+
+    private void updateEditorFont(RSyntaxTextArea editor) {
+        if (editor != null) {
+            editor.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        }
     }
 
     private QueryMode getSelectedMode() {
@@ -812,6 +1005,7 @@ public class InfluxDbPanel extends JPanel {
         clearMeasurementList();
         connectionStatusLabel.setForeground(UIManager.getColor(LABEL_DISABLED_FG));
         connectionStatusLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_STATUS_NOT_CONNECTED));
+        btnCardLayout.show(btnCard, "connect");
 
         JPanel connectionPanel = (JPanel) getComponent(0);
         JPanel modeFields = (JPanel) connectionPanel.getClientProperty("modeFields");
@@ -887,7 +1081,7 @@ public class InfluxDbPanel extends JPanel {
     }
 
     private void doConnect() {
-        String inputHost = hostField.getText().trim();
+        String inputHost = getCurrentHost();
         if (inputHost.isEmpty()) {
             NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_ERR_HOST_REQUIRED));
             return;
@@ -920,6 +1114,8 @@ public class InfluxDbPanel extends JPanel {
                     connectionStatusLabel.setForeground(new Color(0, 180, 0));
                     connectionStatusLabel.setToolTipText(MessageFormat.format(
                             I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_STATUS_CONNECTED), finalBaseUrl));
+                    btnCardLayout.show(btnCard, "disconnect");
+                    addHostHistory(finalBaseUrl);
                     NotificationUtil.showSuccess(MessageFormat.format(
                             I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_CONNECT_SUCCESS), finalBaseUrl));
                     if (mode == QueryMode.INFLUXQL_V1) {
@@ -937,6 +1133,7 @@ public class InfluxDbPanel extends JPanel {
                     connectionStatusLabel.setForeground(Color.RED);
                     connectionStatusLabel.setToolTipText(
                             I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_STATUS_NOT_CONNECTED));
+                    btnCardLayout.show(btnCard, "connect");
                     NotificationUtil.showError(MessageFormat.format(
                             I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_ERR_CONNECT_FAILED),
                             ex.getMessage()));
@@ -944,6 +1141,35 @@ public class InfluxDbPanel extends JPanel {
             }
         };
         worker.execute();
+    }
+
+    private void doDisconnect() {
+        connected = false;
+        clearMeasurementList();
+        connectionStatusLabel.setForeground(UIManager.getColor(LABEL_DISABLED_FG));
+        connectionStatusLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_STATUS_NOT_CONNECTED));
+        btnCardLayout.show(btnCard, "connect");
+        respStatusLabel.setText("");
+        NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_DISCONNECT_SUCCESS));
+    }
+
+    private String getCurrentHost() {
+        Object selected = hostCombo.getEditor().getItem();
+        return selected == null ? "" : selected.toString().trim();
+    }
+
+    private void addHostHistory(String host) {
+        for (int i = 0; i < hostCombo.getItemCount(); i++) {
+            if (host.equals(hostCombo.getItemAt(i))) {
+                hostCombo.removeItemAt(i);
+                break;
+            }
+        }
+        hostCombo.insertItemAt(host, 0);
+        while (hostCombo.getItemCount() > MAX_HOST_HISTORY) {
+            hostCombo.removeItemAt(hostCombo.getItemCount() - 1);
+        }
+        hostCombo.setSelectedItem(host);
     }
 
     private void executeQuery() {
@@ -971,6 +1197,7 @@ public class InfluxDbPanel extends JPanel {
             }
         }
 
+        addToHistory(mode, getSelectedDatabase(), orgField.getText().trim(), getSelectedMeasurement(), query);
         executeBtn.setEnabled(false);
         respStatusLabel.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_STATUS_REQUESTING));
         respStatusLabel.setForeground(UIManager.getColor(LABEL_DISABLED_FG));
@@ -986,10 +1213,7 @@ public class InfluxDbPanel extends JPanel {
                         .append(enc(getSelectedDatabase()))
                         .append("&q=").append(enc(query))
                         .append("&epoch=ms");
-                String user = userField.getText().trim();
-                String pass = new String(passwordField.getPassword()).trim();
-                if (!user.isBlank()) path.append("&u=").append(enc(user));
-                if (!pass.isBlank()) path.append("&p=").append(enc(pass));
+                appendV1AuthQueryParams(path);
                 return callHttp("GET", path.toString(), null, null, "application/json", mode);
             }
 
@@ -1000,16 +1224,22 @@ public class InfluxDbPanel extends JPanel {
                     HttpResult result = get();
                     lastResponseBody = result.body();
                     renderResponse(lastResponseBody);
-                    if (result.code() >= 200 && result.code() < 300) {
-                        respStatusLabel.setText(MessageFormat.format(
-                                I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_STATUS_OK),
-                                String.valueOf(result.costMs())));
-                        respStatusLabel.setForeground(new Color(0, 160, 0));
-                    } else {
-                        respStatusLabel.setText(MessageFormat.format(
-                                I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_STATUS_ERROR),
-                                String.valueOf(result.costMs())));
-                        respStatusLabel.setForeground(Color.RED);
+                    String influxError = extractInfluxError(lastResponseBody);
+                    boolean logicalError = !influxError.isBlank();
+                    int code = result.code();
+                    boolean success = code >= 200 && code < 300 && !logicalError;
+                    String text = success
+                            ? I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_STATUS_OK)
+                            : I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_STATUS_ERROR);
+                    String codePrefix = code > 0 ? code + " · " : "";
+                    respStatusLabel.setText(codePrefix + MessageFormat.format(text, String.valueOf(result.costMs())));
+                    Color statusColor;
+                    if (success) statusColor = new Color(0, 160, 0);
+                    else if (code >= 500) statusColor = new Color(200, 50, 50);
+                    else statusColor = new Color(210, 130, 0);
+                    respStatusLabel.setForeground(statusColor);
+                    if (logicalError) {
+                        NotificationUtil.showError(influxError);
                     }
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
@@ -1029,7 +1259,9 @@ public class InfluxDbPanel extends JPanel {
         SwingWorker<HttpResult, Void> worker = new SwingWorker<>() {
             @Override
             protected HttpResult doInBackground() throws Exception {
-                return callHttp("GET", "/query?q=" + enc("SHOW DATABASES"), null, null, "application/json", QueryMode.INFLUXQL_V1);
+                StringBuilder path = new StringBuilder("/query?q=").append(enc("SHOW DATABASES"));
+                appendV1AuthQueryParams(path);
+                return callHttp("GET", path.toString(), null, null, "application/json", QueryMode.INFLUXQL_V1);
             }
 
             @Override
@@ -1058,8 +1290,12 @@ public class InfluxDbPanel extends JPanel {
             @Override
             protected HttpResult doInBackground() throws Exception {
                 String q = "SHOW MEASUREMENTS LIMIT 500";
-                String path = "/query?db=" + enc(db) + "&q=" + enc(q);
-                return callHttp("GET", path, null, null, "application/json", QueryMode.INFLUXQL_V1);
+                StringBuilder path = new StringBuilder("/query?db=")
+                        .append(enc(db))
+                        .append("&q=")
+                        .append(enc(q));
+                appendV1AuthQueryParams(path);
+                return callHttp("GET", path.toString(), null, null, "application/json", QueryMode.INFLUXQL_V1);
             }
 
             @Override
@@ -1096,8 +1332,12 @@ public class InfluxDbPanel extends JPanel {
             @Override
             protected HttpResult doInBackground() throws Exception {
                 String q = "SHOW FIELD KEYS FROM " + quoteIdentifier(measurement);
-                String path = "/query?db=" + enc(db) + "&q=" + enc(q);
-                return callHttp("GET", path, null, null, "application/json", QueryMode.INFLUXQL_V1);
+                StringBuilder path = new StringBuilder("/query?db=")
+                        .append(enc(db))
+                        .append("&q=")
+                        .append(enc(q));
+                appendV1AuthQueryParams(path);
+                return callHttp("GET", path.toString(), null, null, "application/json", QueryMode.INFLUXQL_V1);
             }
 
             @Override
@@ -1125,8 +1365,12 @@ public class InfluxDbPanel extends JPanel {
             @Override
             protected HttpResult doInBackground() throws Exception {
                 String q = "SHOW TAG KEYS FROM " + quoteIdentifier(measurement);
-                String path = "/query?db=" + enc(db) + "&q=" + enc(q);
-                return callHttp("GET", path, null, null, "application/json", QueryMode.INFLUXQL_V1);
+                StringBuilder path = new StringBuilder("/query?db=")
+                        .append(enc(db))
+                        .append("&q=")
+                        .append(enc(q));
+                appendV1AuthQueryParams(path);
+                return callHttp("GET", path.toString(), null, null, "application/json", QueryMode.INFLUXQL_V1);
             }
 
             @Override
@@ -1171,8 +1415,12 @@ public class InfluxDbPanel extends JPanel {
             protected HttpResult doInBackground() throws Exception {
                 String q = "SHOW TAG VALUES FROM " + quoteIdentifier(measurement)
                         + " WITH KEY = " + quoteIdentifier(tagKey) + " LIMIT 200";
-                String path = "/query?db=" + enc(db) + "&q=" + enc(q);
-                return callHttp("GET", path, null, null, "application/json", QueryMode.INFLUXQL_V1);
+                StringBuilder path = new StringBuilder("/query?db=")
+                        .append(enc(db))
+                        .append("&q=")
+                        .append(enc(q));
+                appendV1AuthQueryParams(path);
+                return callHttp("GET", path.toString(), null, null, "application/json", QueryMode.INFLUXQL_V1);
             }
 
             @Override
@@ -1315,7 +1563,11 @@ public class InfluxDbPanel extends JPanel {
     }
 
     private void renderResponse(String body) {
-        resultArea.setText(body == null ? "" : body);
+        String text = body == null ? "" : body;
+        if (!text.isBlank() && JsonUtil.isTypeJSON(text)) {
+            text = JsonUtil.toJsonPrettyStr(text);
+        }
+        resultArea.setText(text);
         resultArea.setCaretPosition(0);
 
         if (body == null || body.isBlank()) {
@@ -1402,13 +1654,20 @@ public class InfluxDbPanel extends JPanel {
             List<CsvRow> rows = csvData.getRows();
             if (rows == null || rows.isEmpty()) return false;
 
-            List<String> headers = rows.get(0);
+            int headerIndex = 0;
+            while (headerIndex < rows.size() && isFluxAnnotationRow(rows.get(headerIndex))) {
+                headerIndex++;
+            }
+            if (headerIndex >= rows.size()) return false;
+
+            List<String> headers = rows.get(headerIndex);
             if (headers == null || headers.isEmpty()) return false;
 
             String[] columns = headers.toArray(new String[0]);
             List<Object[]> dataRows = new ArrayList<>();
-            for (int i = 1; i < rows.size(); i++) {
+            for (int i = headerIndex + 1; i < rows.size(); i++) {
                 List<String> row = rows.get(i);
+                if (isFluxAnnotationRow(row)) continue;
                 Object[] arr = new Object[columns.length];
                 for (int c = 0; c < columns.length; c++) {
                     arr[c] = c < row.size() ? row.get(c) : "";
@@ -1423,6 +1682,12 @@ public class InfluxDbPanel extends JPanel {
         }
     }
 
+    private boolean isFluxAnnotationRow(List<String> row) {
+        if (row == null || row.isEmpty()) return false;
+        String firstCell = row.get(0);
+        return firstCell != null && firstCell.startsWith("#");
+    }
+
     private Object nodeToValue(JsonNode node) {
         if (node == null || node.isNull()) return "";
         if (node.isTextual()) return node.asText();
@@ -1432,14 +1697,14 @@ public class InfluxDbPanel extends JPanel {
     }
 
     private void showTableResult() {
-        if (resultViewLayout != null && resultViewPanel != null) {
-            resultViewLayout.show(resultViewPanel, "table");
+        if (resultTabs != null && resultTabs.getTabCount() >= 2) {
+            resultTabs.setSelectedIndex(0);
         }
     }
 
     private void showRawResult() {
-        if (resultViewLayout != null && resultViewPanel != null) {
-            resultViewLayout.show(resultViewPanel, "raw");
+        if (resultTabs != null && resultTabs.getTabCount() >= 2) {
+            resultTabs.setSelectedIndex(1);
         }
     }
 
@@ -1458,6 +1723,20 @@ public class InfluxDbPanel extends JPanel {
             selected = combo.getSelectedItem();
         }
         return selected == null ? "" : selected.toString().trim();
+    }
+
+    private void setComboEditorText(JComboBox<String> combo, String text) {
+        if (combo == null) return;
+        String value = text == null ? "" : text.trim();
+        suppressComboEvents = true;
+        combo.setSelectedItem(value);
+        if (combo.getEditor().getEditorComponent() instanceof JTextField editor) {
+            editor.setText(value);
+            editor.setCaretPosition(editor.getText().length());
+        } else {
+            combo.getEditor().setItem(value);
+        }
+        suppressComboEvents = false;
     }
 
     private void setComboOptions(JComboBox<String> combo, List<String> options, String preferredSelection) {
@@ -1531,6 +1810,14 @@ public class InfluxDbPanel extends JPanel {
 
     private String enc(String value) {
         return URLEncoder.encode(value, StandardCharsets.UTF_8);
+    }
+
+    private void appendV1AuthQueryParams(StringBuilder path) {
+        if (path == null) return;
+        String user = userField == null ? "" : userField.getText().trim();
+        String pass = passwordField == null ? "" : new String(passwordField.getPassword()).trim();
+        if (!user.isBlank()) path.append("&u=").append(enc(user));
+        if (!pass.isBlank()) path.append("&p=").append(enc(pass));
     }
 
     private String quoteIdentifier(String name) {

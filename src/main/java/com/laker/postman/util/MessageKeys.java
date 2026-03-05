@@ -2009,6 +2009,9 @@ public final class MessageKeys {
     public static final String TOOLBOX_KAFKA_USER = "toolbox.kafka.user";
     public static final String TOOLBOX_KAFKA_USER_PLACEHOLDER = "toolbox.kafka.user.placeholder";
 
+    // ============ Redis 工具相关 ============
+    public static final String TOOLBOX_REDIS = "toolbox.redis";
+
     public static final String TOOLBOX_CRON = "toolbox.cron";
     public static final String TOOLBOX_CRON_EXPRESSION = "toolbox.cron.expression";
     public static final String TOOLBOX_CRON_PARSE = "toolbox.cron.parse";

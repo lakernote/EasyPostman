@@ -24,13 +24,41 @@
         <logback-classic.version>1.5.20</logback-classic.version>
         <jfreechart.version>1.5.5</jfreechart.version>
         <okhttp.version>4.12.0</okhttp.version>
-        <kafka.version>3.9.1</kafka.version>
+        <kafka.version>3.9.2</kafka.version>
         <polyglot.version>24.2.1</polyglot.version>
         <org.eclipse.jgit.version>7.3.0.202506031305-r</org.eclipse.jgit.version>
         <jackson.version>3.0.2</jackson.version>
         <lombok.version>1.18.42</lombok.version>
         <twelvemonkeys.version>3.12.0</twelvemonkeys.version>
+        <kotlin.version>1.9.25</kotlin.version>
     </properties>
+
+    <!-- 强制统一传递依赖版本，解决 okhttp/okio 引入的 kotlin-stdlib 版本冲突 -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.jetbrains.kotlin</groupId>
+                <artifactId>kotlin-stdlib</artifactId>
+                <version>${kotlin.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jetbrains.kotlin</groupId>
+                <artifactId>kotlin-stdlib-common</artifactId>
+                <version>${kotlin.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jetbrains.kotlin</groupId>
+                <artifactId>kotlin-stdlib-jdk7</artifactId>
+                <version>${kotlin.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jetbrains.kotlin</groupId>
+                <artifactId>kotlin-stdlib-jdk8</artifactId>
+                <version>${kotlin.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
 
         <!-- 现代UI主题 -->
@@ -144,11 +172,27 @@
             <version>3.3.2</version>
         </dependency>
 
+
         <!-- OkHttp3 -->
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp</artifactId>
             <version>${okhttp.version}</version>
+            <exclusions>
+                <!-- 排除 okhttp/okio 硬编码的 kotlin 版本，由 dependencyManagement 统一管控 -->
+                <exclusion>
+                    <groupId>org.jetbrains.kotlin</groupId>
+                    <artifactId>kotlin-stdlib-jdk8</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.jetbrains.kotlin</groupId>
+                    <artifactId>kotlin-stdlib-jdk7</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.jetbrains.kotlin</groupId>
+                    <artifactId>kotlin-stdlib-common</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
@@ -165,6 +209,11 @@
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-clients</artifactId>
             <version>${kafka.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+            <version>5.2.0</version>
         </dependency>
 
         <!-- JGit for Git operations -->
@@ -234,6 +283,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.2</version>
                 <configuration>
                     <archive>
                         <manifest>

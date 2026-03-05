@@ -128,9 +128,10 @@ public class ToolboxPanel extends SingletonBasePanel {
         reg("hash", MessageKeys.TOOLBOX_HASH, "icons/hash.svg", GRP_GEN, new HashPanel());
         reg("cron", MessageKeys.TOOLBOX_CRON, "icons/time.svg", GRP_GEN, new CronPanel());
         // 数据库
-        reg("es", MessageKeys.TOOLBOX_ELASTICSEARCH, "icons/database.svg", GRP_DB, new ElasticsearchPanel());
-        reg("influxdb", MessageKeys.TOOLBOX_INFLUXDB, "icons/database.svg", GRP_DB, new InfluxDbPanel());
-        reg("kafka", MessageKeys.TOOLBOX_KAFKA, "icons/database.svg", GRP_DB, new KafkaPanel());
+        reg("es", MessageKeys.TOOLBOX_ELASTICSEARCH, "icons/elasticsearch.svg", GRP_DB, new ElasticsearchPanel());
+        reg("redis", MessageKeys.TOOLBOX_REDIS, "icons/redis.svg", GRP_DB, new RedisPanel());
+        reg("influxdb", MessageKeys.TOOLBOX_INFLUXDB, "icons/influxdb.svg", GRP_DB, new InfluxDbPanel());
+        reg("kafka", MessageKeys.TOOLBOX_KAFKA, "icons/kafka.svg", GRP_DB, new KafkaPanel());
         // 开发
         reg("diff", MessageKeys.TOOLBOX_DIFF, "icons/file.svg", GRP_DEV, new DiffPanel());
         reg("decompiler", MessageKeys.TOOLBOX_DECOMPILER, "icons/decompile.svg", GRP_DEV, new DecompilerPanel());

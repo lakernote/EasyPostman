@@ -812,9 +812,37 @@ jobs:
           RELEASE_BODY="${{ github.event.release.body }}"
           
           if [ -z "$RELEASE_BODY" ]; then
-            RELEASE_BODY="EasyPostman ${VERSION} 发布版本，支持 Windows、macOS 和 Linux。详情：https://github.com/lakernote/easy-postman"
+            RELEASE_BODY="EasyPostman ${VERSION} 发布版本，支持 Windows、macOS 和 Linux。"
           fi
           
+          # 拼接 GitHub Release 下载地址（超过 100MB 的文件无法上传 Gitee，请前往 GitHub 下载）
+          GITHUB_RELEASE_URL="https://github.com/lakernote/easy-postman/releases/tag/${TAG_NAME}"
+          GITHUB_ASSETS_BASE="https://github.com/lakernote/easy-postman/releases/download/${TAG_NAME}"
+          
+          # 把 body 写入临时文件，方便处理特殊字符
+          BODY_FILE="/tmp/release_body.txt"
+          printf '%s\n' "${RELEASE_BODY}" > "$BODY_FILE"
+          printf '\n---\n\n' >> "$BODY_FILE"
+          printf '## GitHub 下载地址（部分大文件仅在 GitHub 提供）\n\n' >> "$BODY_FILE"
+          printf 'Gitee 单文件上传限制为 100MB，超过限制的安装包请前往 GitHub Release 下载：\n' >> "$BODY_FILE"
+          printf '%s\n\n' "${GITHUB_RELEASE_URL}" >> "$BODY_FILE"
+          printf '| 平台 | 文件 | 链接 |\n' >> "$BODY_FILE"
+          printf '|------|------|------|\n' >> "$BODY_FILE"
+          printf '| Windows 绿色版 (x64) | EasyPostman-%s-windows-x64-portable.zip | [下载](%s/EasyPostman-%s-windows-x64-portable.zip) |\n' \
+            "${VERSION}" "${GITHUB_ASSETS_BASE}" "${VERSION}" >> "$BODY_FILE"
+          printf '| Windows 安装包 (x64) | EasyPostman-%s-windows-x64.exe | [下载](%s/EasyPostman-%s-windows-x64.exe) |\n' \
+            "${VERSION}" "${GITHUB_ASSETS_BASE}" "${VERSION}" >> "$BODY_FILE"
+          printf '| macOS Apple Silicon (arm64) | EasyPostman-%s-macos-arm64.dmg | [下载](%s/EasyPostman-%s-macos-arm64.dmg) |\n' \
+            "${VERSION}" "${GITHUB_ASSETS_BASE}" "${VERSION}" >> "$BODY_FILE"
+          printf '| macOS Intel (x86_64) | EasyPostman-%s-macos-x86_64.dmg | [下载](%s/EasyPostman-%s-macos-x86_64.dmg) |\n' \
+            "${VERSION}" "${GITHUB_ASSETS_BASE}" "${VERSION}" >> "$BODY_FILE"
+          printf '| 跨平台 JAR | easy-postman-%s.jar | [下载](%s/easy-postman-%s.jar) |\n' \
+            "${VERSION}" "${GITHUB_ASSETS_BASE}" "${VERSION}" >> "$BODY_FILE"
+          printf '| Ubuntu DEB | easypostman_%s_amd64.deb | [下载](%s/easypostman_%s_amd64.deb) |\n' \
+            "${VERSION}" "${GITHUB_ASSETS_BASE}" "${VERSION}" >> "$BODY_FILE"
+          
+          RELEASE_BODY=$(cat "$BODY_FILE")
+
           echo "🚀 Creating Gitee Release for tag: $TAG_NAME"
           
           # 重试机制
@@ -840,7 +868,7 @@ jobs:
               -F "access_token=${{ secrets.GITEE_TOKEN }}" \
               -F "tag_name=$TAG_NAME" \
               -F "name=$TAG_NAME" \
-              -F "body=$RELEASE_BODY" \
+              -F "body=<${BODY_FILE}" \
               -F "prerelease=false" \
               -F "target_commitish=master" \
               "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases" \
@@ -920,6 +948,17 @@ jobs:
             exit 1
           fi
           
+          # 检查文件大小（单位：字节），超过 100MB 则跳过上传
+          FILE_SIZE=$(stat -c%s "$FILE" 2>/dev/null || stat -f%z "$FILE")
+          FILE_SIZE_MB=$(echo "scale=2; $FILE_SIZE/1048576" | bc)
+          echo "📏 File size: ${FILE_SIZE_MB} MB"
+          
+          if [ "$FILE_SIZE" -gt 104857600 ]; then
+            echo "⚠️ File size ${FILE_SIZE_MB} MB exceeds Gitee 100MB limit, skipping upload."
+            echo "💡 Please download from GitHub Release (link already added to Gitee release body)."
+            exit 0
+          fi
+          
           echo "📦 Uploading $(basename $FILE) to Gitee..."
           
           MAX_RETRIES=3
@@ -965,6 +1004,17 @@ jobs:
             exit 1
           fi
           
+          # 检查文件大小（单位：字节），超过 100MB 则跳过上传
+          FILE_SIZE=$(stat -c%s "$FILE" 2>/dev/null || stat -f%z "$FILE")
+          FILE_SIZE_MB=$(echo "scale=2; $FILE_SIZE/1048576" | bc)
+          echo "📏 File size: ${FILE_SIZE_MB} MB"
+          
+          if [ "$FILE_SIZE" -gt 104857600 ]; then
+            echo "⚠️ File size ${FILE_SIZE_MB} MB exceeds Gitee 100MB limit, skipping upload."
+            echo "💡 Please download from GitHub Release (link already added to Gitee release body)."
+            exit 0
+          fi
+          
           echo "📦 Uploading $(basename $FILE) to Gitee..."
           
           MAX_RETRIES=3
@@ -1008,6 +1058,17 @@ jobs:
           if [ -z "$FILE" ]; then
             echo "❌ macOS ARM DMG file not found!"
             exit 1
+          fi
+          
+          # 检查文件大小（单位：字节），超过 100MB 则跳过上传
+          FILE_SIZE=$(stat -c%s "$FILE" 2>/dev/null || stat -f%z "$FILE")
+          FILE_SIZE_MB=$(echo "scale=2; $FILE_SIZE/1048576" | bc)
+          echo "📏 File size: ${FILE_SIZE_MB} MB"
+          
+          if [ "$FILE_SIZE" -gt 104857600 ]; then
+            echo "⚠️ File size ${FILE_SIZE_MB} MB exceeds Gitee 100MB limit, skipping upload."
+            echo "💡 Please download from GitHub Release (link already added to Gitee release body)."
+            exit 0
           fi
           
           echo "🍎 Uploading $(basename $FILE) to Gitee..."
@@ -1061,6 +1122,8 @@ jobs:
           echo "  🪟 Windows EXE (安装包) - ${{ needs.sync-windows-exe-to-gitee.result }}"
           echo "  🍎 macOS Apple Silicon (ARM64) - ${{ needs.sync-macos-to-gitee.result }}"
           echo ""
+          echo "💡 注意：超过 100MB 的文件会自动跳过 Gitee 上传（Gitee 限制），"
+          echo "   但 Gitee Release 说明中已包含 GitHub 各平台下载链接，用户可直接跳转 GitHub 下载。"
           echo "💡 其他平台（Standalone JAR、macOS Intel、Ubuntu DEB）仅在 GitHub Release 提供"
           echo ""
           
@@ -1079,7 +1142,8 @@ jobs:
             echo "❌ 所有构建都失败，未创建 Gitee Release"
             exit 1
           elif [ $SUCCESS_COUNT -eq 0 ] && [ "$RELEASE_STATUS" == "success" ]; then
-            echo "⚠️  Gitee Release 已创建，但所有文件上传失败"
+            echo "⚠️  Gitee Release 已创建，所有文件超过 100MB 限制或上传失败，请前往 GitHub Release 下载"
+            echo "🔗 GitHub Release: https://github.com/lakernote/easy-postman/releases/tag/${{ needs.create-gitee-release.outputs.tag_name }}"
           elif [ $SUCCESS_COUNT -gt 0 ]; then
             echo "✅ Gitee Release 创建成功，已上传 $SUCCESS_COUNT 个平台的文件"
           fi

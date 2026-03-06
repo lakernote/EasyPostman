@@ -369,17 +369,37 @@ public class EasyHttpHeadersTablePanel extends AbstractTablePanel<Map<String, Ob
      * Set all rows from a list of maps
      */
     public void setRows(List<Map<String, Object>> rows) {
+        stopCellEditing();
+
+        if (SwingUtilities.isEventDispatchThread()) {
+            setRowsInternal(rows);
+        } else {
+            try {
+                SwingUtilities.invokeAndWait(() -> setRowsInternal(rows));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.warn("Interrupted while setting header rows", e);
+            } catch (java.lang.reflect.InvocationTargetException e) {
+                log.error("Error setting header rows", e);
+            }
+        }
+    }
+
+    private void setRowsInternal(List<Map<String, Object>> rows) {
+        RowSorter<? extends javax.swing.table.TableModel> originalSorter = table.getRowSorter();
         suppressAutoAppendRow = true;
         try {
-            // Clear existing data
+            if (originalSorter != null) {
+                table.setRowSorter(null);
+            }
+
             tableModel.setRowCount(0);
 
-            // Add new rows
             if (rows != null && !rows.isEmpty()) {
                 for (Map<String, Object> row : rows) {
                     Object enabled = row.get("Enabled");
                     if (enabled == null) {
-                        enabled = true; // Default to enabled
+                        enabled = true;
                     }
                     Object key = row.get("Key");
                     Object value = row.get("Value");
@@ -388,9 +408,11 @@ public class EasyHttpHeadersTablePanel extends AbstractTablePanel<Map<String, Ob
                 }
             }
 
-            // Ensure there's always an empty row at the end
             ensureEmptyLastRow();
         } finally {
+            if (originalSorter != null) {
+                table.setRowSorter(originalSorter);
+            }
             suppressAutoAppendRow = false;
         }
     }

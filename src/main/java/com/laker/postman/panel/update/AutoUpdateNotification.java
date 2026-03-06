@@ -19,9 +19,17 @@ import java.util.function.Consumer;
 
 /**
  * 自动更新通知弹窗 - 位于主窗口右下角，自动淡入淡出
+ * <p>支持两种模式：</p>
+ * <ul>
+ *   <li>NORMAL  - 蓝色左侧条，info 图标，「查看详情」→ ModernUpdateDialog</li>
+ *   <li>NO_ASSET - 橙色左侧条，warning 图标，「前往 GitHub」→ NoAssetDialog</li>
+ * </ul>
  */
 @Slf4j
 public class AutoUpdateNotification {
+
+    /** 通知变体 */
+    public enum Variant { NORMAL, NO_ASSET }
 
     private static final int NOTIFICATION_WIDTH = 400;
     private static final int MARGIN = 20;
@@ -38,12 +46,11 @@ public class AutoUpdateNotification {
     private Timer fadeTimer;
     private Timer autoCloseTimer;
     private float opacity = 0f;
-    // 跟随父窗口移动的监听器，便于销毁时移除
     private ComponentAdapter parentMoveListener;
-    // hover 高亮层透明度（0=无高亮，30=高亮）
     private int hoverAlpha = 0;
 
-    private AutoUpdateNotification(JFrame parent, UpdateInfo updateInfo, Consumer<UpdateInfo> onViewDetails) {
+    private AutoUpdateNotification(JFrame parent, UpdateInfo updateInfo,
+                                   Consumer<UpdateInfo> onAction, Variant variant) {
         this.parent = parent;
         dialog = new JDialog(parent, false);
         dialog.setUndecorated(true);
@@ -51,9 +58,8 @@ public class AutoUpdateNotification {
         dialog.setType(Window.Type.UTILITY);
         dialog.setOpacity(0f);
 
-        JPanel contentPanel = createNotificationPanel(updateInfo, onViewDetails);
+        JPanel contentPanel = createNotificationPanel(updateInfo, onAction, variant);
         dialog.setContentPane(contentPanel);
-        // 高度自适应内容
         dialog.pack();
         dialog.setSize(NOTIFICATION_WIDTH, dialog.getHeight());
 
@@ -61,7 +67,20 @@ public class AutoUpdateNotification {
         registerParentMoveListener();
     }
 
+    // ─── Public factory methods ───────────────────────────────────────────────
+
+    /** 普通更新通知（蓝色） */
     public static void show(JFrame parent, UpdateInfo updateInfo, Consumer<UpdateInfo> onViewDetails) {
+        showInternal(parent, updateInfo, onViewDetails, Variant.NORMAL);
+    }
+
+    /** 有新版本但无安装包通知（橙色） */
+    public static void showNoAsset(JFrame parent, UpdateInfo updateInfo, Consumer<UpdateInfo> onAction) {
+        showInternal(parent, updateInfo, onAction, Variant.NO_ASSET);
+    }
+
+    private static void showInternal(JFrame parent, UpdateInfo updateInfo,
+                                     Consumer<UpdateInfo> onAction, Variant variant) {
         SwingUtilities.invokeLater(() -> {
             if (parent == null || !parent.isVisible()) {
                 log.debug("Parent window is not visible, skip showing notification");
@@ -71,8 +90,7 @@ public class AutoUpdateNotification {
                 log.debug("Parent window is not active, skip showing notification");
                 return;
             }
-            AutoUpdateNotification notification = new AutoUpdateNotification(parent, updateInfo, onViewDetails);
-            notification.display();
+            new AutoUpdateNotification(parent, updateInfo, onAction, variant).display();
         });
     }
 
@@ -161,15 +179,16 @@ public class AutoUpdateNotification {
         dialog.setLocation(x, y);
     }
 
-    private JPanel createNotificationPanel(UpdateInfo updateInfo, Consumer<UpdateInfo> onViewDetails) {
-        // 外层：左侧彩色指示条 + 半透明 hover 背景（需 setOpaque(false) 才能画 alpha）
+    private JPanel createNotificationPanel(UpdateInfo updateInfo,
+                                            Consumer<UpdateInfo> onAction, Variant variant) {
+        boolean isNoAsset = variant == Variant.NO_ASSET;
+        Color indicatorColor = isNoAsset ? ModernColors.WARNING : ModernColors.INFO;
+
         JPanel root = new JPanel(new BorderLayout()) {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
-                // 正常背景（跟随主题）
                 g2.setColor(UIManager.getColor("Panel.background"));
                 g2.fillRect(0, 0, getWidth(), getHeight());
-                // hover 高亮层（由 hoverAlpha 控制，0 = 无）
                 if (hoverAlpha > 0) {
                     Color sel = UIManager.getColor("List.selectionBackground");
                     if (sel != null) {
@@ -177,21 +196,16 @@ public class AutoUpdateNotification {
                         g2.fillRect(0, 0, getWidth(), getHeight());
                     }
                 }
-                // 左侧彩色指示条（实时取主题色）
-                g2.setColor(ModernColors.INFO);
+                g2.setColor(indicatorColor);
                 g2.fillRect(0, 0, INDICATOR_WIDTH, getHeight());
-                // 外边框（实时取主题色）
                 g2.setColor(ModernColors.getBorderLightColor());
                 g2.drawRect(0, 0, getWidth() - 1, getHeight() - 1);
                 g2.dispose();
             }
         };
-        // setOpaque(false) 使自定义 paintComponent 完全接管背景绘制
         root.setOpaque(false);
         root.setBorder(BorderFactory.createEmptyBorder(14, 14 + INDICATOR_WIDTH, 14, 14));
 
-        // 鼠标悬停：暂停倒计时 + 高亮背景
-        // 用 hoverAlpha 字段控制透明度，通过 repaint 触发，避免直接 setBackground
         root.addMouseListener(new MouseAdapter() {
             @Override public void mouseEntered(MouseEvent e) {
                 stopAutoCloseTimer();
@@ -199,9 +213,7 @@ public class AutoUpdateNotification {
                 root.repaint();
             }
             @Override public void mouseExited(MouseEvent e) {
-                // 判断鼠标是否真的离开了 root（移到子组件时也会触发 mouseExited，需过滤）
-                Component dest = SwingUtilities.getDeepestComponentAt(
-                        root, e.getX(), e.getY());
+                Component dest = SwingUtilities.getDeepestComponentAt(root, e.getX(), e.getY());
                 if (dest != null && SwingUtilities.isDescendingFrom(dest, root)) return;
                 hoverAlpha = 0;
                 root.repaint();
@@ -210,7 +222,8 @@ public class AutoUpdateNotification {
         });
 
         // 左侧图标
-        JLabel iconLabel = new JLabel(IconUtil.createThemed("icons/info.svg", 32, 32));
+        String iconPath = isNoAsset ? "icons/warning.svg" : "icons/info.svg";
+        JLabel iconLabel = new JLabel(IconUtil.createThemed(iconPath, 32, 32));
         iconLabel.setVerticalAlignment(SwingConstants.TOP);
         iconLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 10));
         root.add(iconLabel, BorderLayout.WEST);
@@ -220,25 +233,38 @@ public class AutoUpdateNotification {
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
         contentPanel.setOpaque(false);
 
-        JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.UPDATE_NEW_VERSION_AVAILABLE));
+        // 标题
+        String titleText = isNoAsset
+                ? I18nUtil.getMessage(MessageKeys.UPDATE_AVAILABLE_NO_ASSET_TITLE, updateInfo.getLatestVersion())
+                : I18nUtil.getMessage(MessageKeys.UPDATE_NEW_VERSION_AVAILABLE);
+        JLabel titleLabel = new JLabel(titleText);
         titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 1));
+        if (isNoAsset) titleLabel.setForeground(ModernColors.WARNING);
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        String versionText = updateInfo.getCurrentVersion() + "  →  " + updateInfo.getLatestVersion();
-        JLabel versionLabel = new JLabel(versionText);
+        // 版本行
+        String currentV = updateInfo.getCurrentVersion() != null ? updateInfo.getCurrentVersion() : "-";
+        JLabel versionLabel = new JLabel(currentV + "  →  " + updateInfo.getLatestVersion());
         versionLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         versionLabel.setForeground(ModernColors.getTextSecondary());
         versionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        String description = extractDescription(updateInfo);
+        // 描述行
+        String description = isNoAsset
+                ? (I18nUtil.isChinese()
+                    ? "安装包尚未上传，请前往 GitHub 手动下载"
+                    : "Installer not yet available, please download from GitHub")
+                : extractDescription(updateInfo);
         JLabel descLabel = new JLabel("<html><body style='width:220px'>" + description + "</body></html>");
         descLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         descLabel.setForeground(ModernColors.getTextHint());
         descLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // 底部「查看详情」链接按钮（同 IDEA 通知底部操作区风格）
-        JButton viewButton = createViewDetailsButton(updateInfo, onViewDetails);
-        viewButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+        // 操作按钮
+        JButton actionButton = isNoAsset
+                ? createNoAssetActionButton(updateInfo, onAction)
+                : createViewDetailsButton(updateInfo, onAction);
+        actionButton.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         contentPanel.add(titleLabel);
         contentPanel.add(Box.createVerticalStrut(3));
@@ -246,7 +272,7 @@ public class AutoUpdateNotification {
         contentPanel.add(Box.createVerticalStrut(6));
         contentPanel.add(descLabel);
         contentPanel.add(Box.createVerticalStrut(8));
-        contentPanel.add(viewButton);
+        contentPanel.add(actionButton);
 
         root.add(contentPanel, BorderLayout.CENTER);
 
@@ -259,6 +285,27 @@ public class AutoUpdateNotification {
 
         return root;
     }
+
+    /** 「前往 GitHub 下载」链接按钮（橙色，用于 NO_ASSET 变体） */
+    private JButton createNoAssetActionButton(UpdateInfo updateInfo, Consumer<UpdateInfo> onAction) {
+        JButton button = new JButton(
+                "<html><u>" + I18nUtil.getMessage(MessageKeys.UPDATE_AVAILABLE_NO_ASSET_GO_GITHUB) + "</u></html>");
+        button.setForeground(ModernColors.WARNING);
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setContentAreaFilled(false);
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        button.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        button.setMargin(new Insets(0, 0, 0, 0));
+        button.addActionListener(e -> {
+            fadeOut();
+            Timer delayTimer = new Timer(FADE_DURATION, evt -> onAction.accept(updateInfo));
+            delayTimer.setRepeats(false);
+            delayTimer.start();
+        });
+        return button;
+    }
+
 
     private JButton createCloseButton() {
         JButton button = new JButton("×");

@@ -7,6 +7,7 @@ import com.laker.postman.model.UpdateInfo;
 import com.laker.postman.panel.update.AutoUpdateNotification;
 import com.laker.postman.panel.update.ModernProgressDialog;
 import com.laker.postman.panel.update.ModernUpdateDialog;
+import com.laker.postman.panel.update.NoAssetDialog;
 import com.laker.postman.service.update.asset.PlatformDownloadUrlResolver;
 import com.laker.postman.service.update.source.UpdateSource;
 import com.laker.postman.service.update.source.UpdateSourceSelector;
@@ -65,6 +66,42 @@ public class UpdateUIManager {
     }
 
     /**
+     * 显示有新版本但无安装包的提示对话框（手动检查时直接弹出）
+     */
+    public void showNoAssetDialog(UpdateInfo updateInfo) {
+        SwingUtilities.invokeLater(() -> {
+            MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
+            boolean goToGitHub = NoAssetDialog.show(mainFrame, updateInfo);
+            if (goToGitHub) {
+                openGitHubReleasePage(updateInfo.getLatestVersion());
+            }
+        });
+    }
+
+    /**
+     * 后台检查发现新版本但无安装包时，先显示右下角 toast；
+     * 用户点击「前往 GitHub」后再弹 NoAssetDialog
+     */
+    public void showNoAssetNotification(UpdateInfo updateInfo) {
+        MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
+        AutoUpdateNotification.showNoAsset(mainFrame, updateInfo, this::showNoAssetDialog);
+    }
+
+    /**
+     * 打开 GitHub 发布页（指定版本）
+     */
+    private void openGitHubReleasePage(String version) {
+        try {
+            String url = "https://github.com/lakernote/easy-postman/releases/tag/" + version;
+            log.info("Opening GitHub release page: {}", url);
+            Desktop.getDesktop().browse(new URI(url));
+        } catch (Exception ex) {
+            log.error("Failed to open GitHub release page", ex);
+            NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.ERROR_OPEN_LINK_FAILED, ex.getMessage()));
+        }
+    }
+
+    /**
      * 打开手动下载页面 - 动态选择最佳更新源
      */
     private void openManualDownloadPage() {
@@ -99,7 +136,13 @@ public class UpdateUIManager {
         String installerUrl = downloadUrlResolver.resolveDownloadUrl(assets);
 
         if (installerUrl == null) {
-            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.UPDATE_NO_INSTALLER_FOUND));
+            // 安装包暂不可用，用现代化对话框引导用户去 GitHub 手动下载
+            log.warn("No installer URL found for current platform, showing NoAssetDialog");
+            boolean goToGitHub = NoAssetDialog.show(
+                    SingletonFactory.getInstance(MainFrame.class), updateInfo);
+            if (goToGitHub) {
+                openGitHubReleasePage(updateInfo.getLatestVersion());
+            }
             return;
         }
 
@@ -109,6 +152,16 @@ public class UpdateUIManager {
 
     /**
      * 启动自动更新 - 使用现代化进度对话框
+     *
+     * <p>关键顺序：
+     * <ol>
+     *   <li>先在后台线程启动下载（downloader.downloadAsync），此时进度回调已就绪</li>
+     *   <li>注册 cancelListener（在 show() 阻塞 EDT 之前完成）</li>
+     *   <li>最后调用 progressDialog.show()，它会在 EDT 上 modal-block，
+     *       直到 hide() 被下载回调调用才解除</li>
+     * </ol>
+     * 这样进度回调的 invokeLater 就能正常排进 EDT 队列，进度条才会滚动。
+     * </p>
      *
      * @param downloadUrl 下载链接
      */
@@ -120,39 +173,41 @@ public class UpdateUIManager {
 
         ModernProgressDialog progressDialog = new ModernProgressDialog(
                 SingletonFactory.getInstance(MainFrame.class));
-        progressDialog.show();
 
+        // 1. 先注册取消回调（在 show() 阻塞 EDT 之前）
+        progressDialog.setOnCancelListener(downloader::cancel);
+
+        // 2. 先在后台线程启动下载
         downloader.downloadAsync(downloadUrl, new UpdateDownloader.DownloadProgressCallback() {
             @Override
             public void onProgress(int percentage, long downloaded, long total, double speed) {
-                SwingUtilities.invokeLater(() -> progressDialog.updateProgress(percentage, downloaded, total, speed));
+                // show() 阻塞 EDT，invokeLater 排队后等 EDT 空出来就会执行
+                progressDialog.updateProgress(percentage, downloaded, total, speed);
             }
 
             @Override
             public void onCompleted(File downloadedFile) {
-                SwingUtilities.invokeLater(() -> {
-                    progressDialog.hide();
-                    showInstallPrompt(downloadedFile);
-                });
+                progressDialog.hide(); // 解除 modal 阻塞
+                SwingUtilities.invokeLater(() -> showInstallPrompt(downloadedFile));
             }
 
             @Override
             public void onError(String errorMessage) {
-                SwingUtilities.invokeLater(() -> {
-                    progressDialog.hide();
-                    NotificationUtil.showError(errorMessage);
-                });
+                progressDialog.hide(); // 解除 modal 阻塞
+                SwingUtilities.invokeLater(() -> NotificationUtil.showError(errorMessage));
             }
 
             @Override
             public void onCancelled() {
-                SwingUtilities.invokeLater(() -> progressDialog.hide());
-                NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOAD_CANCELLED));
+                // triggerCancel() 已经调了 hideNow()，这里只需通知
+                SwingUtilities.invokeLater(() ->
+                        NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOAD_CANCELLED)));
             }
         });
 
-        // 设置取消按钮的回调
-        progressDialog.setOnCancelListener(downloader::cancel);
+        // 3. 最后 show() — modal 阻塞 EDT，直到 hide() 被调用才返回
+        //    此方法本身已经在 EDT 上（由 showUpdateTypeSelectionAndStart -> SwingUtilities.invokeLater 保证）
+        progressDialog.show();
     }
 
     /**

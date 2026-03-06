@@ -10,9 +10,10 @@ import lombok.Data;
 public class UpdateInfo {
 
     public enum Status {
-        UPDATE_AVAILABLE,    // 有新版本可用
-        NO_UPDATE,          // 没有更新
-        CHECK_FAILED        // 检查失败
+        UPDATE_AVAILABLE,           // 有新版本可用（且有对应平台的安装包）
+        UPDATE_AVAILABLE_NO_ASSET,  // 有新版本可用，但无对应平台的安装包（资源尚未上传）
+        NO_UPDATE,                  // 没有更新
+        CHECK_FAILED                // 检查失败
     }
 
     private final Status status;
@@ -38,6 +39,14 @@ public class UpdateInfo {
     }
 
     /**
+     * 创建有更新可用但无平台安装包的信息（资源尚未上传或不支持当前平台）
+     */
+    public static UpdateInfo updateAvailableNoAsset(String currentVersion, String latestVersion, JSONObject releaseInfo) {
+        return new UpdateInfo(Status.UPDATE_AVAILABLE_NO_ASSET, currentVersion, latestVersion,
+                "New version available (no asset yet): " + latestVersion, releaseInfo);
+    }
+
+    /**
      * 创建无更新的信息
      */
     public static UpdateInfo noUpdateAvailable(String message) {
@@ -56,6 +65,13 @@ public class UpdateInfo {
      */
     public boolean isUpdateAvailable() {
         return status == Status.UPDATE_AVAILABLE;
+    }
+
+    /**
+     * 是否有更新可用但无安装包（资源尚未上传）
+     */
+    public boolean isUpdateAvailableNoAsset() {
+        return status == Status.UPDATE_AVAILABLE_NO_ASSET;
     }
 
     /**

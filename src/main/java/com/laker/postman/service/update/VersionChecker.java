@@ -61,9 +61,15 @@ public class VersionChecker {
                 return UpdateInfo.noUpdateAvailable(I18nUtil.getMessage(MessageKeys.UPDATE_NO_VERSION_INFO));
             }
 
-            if (VersionComparator.isNewer(latestVersion, currentVersion) &&
-                    CharSequenceUtil.isNotBlank(getDownloadUrl(releaseInfo))) {
-                return UpdateInfo.updateAvailable(currentVersion, latestVersion, releaseInfo);
+            if (VersionComparator.isNewer(latestVersion, currentVersion)) {
+                String downloadUrl = getDownloadUrl(releaseInfo);
+                if (CharSequenceUtil.isNotBlank(downloadUrl)) {
+                    return UpdateInfo.updateAvailable(currentVersion, latestVersion, releaseInfo);
+                } else {
+                    // 有新版本，但当前平台没有对应的安装包（可能还在上传中）
+                    log.info("Newer version {} found, but no download asset available for current platform", latestVersion);
+                    return UpdateInfo.updateAvailableNoAsset(currentVersion, latestVersion, releaseInfo);
+                }
             } else {
                 return UpdateInfo.noUpdateAvailable(I18nUtil.getMessage(MessageKeys.UPDATE_ALREADY_LATEST, currentVersion));
             }

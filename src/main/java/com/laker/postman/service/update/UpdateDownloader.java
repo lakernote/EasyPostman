@@ -39,6 +39,10 @@ public class UpdateDownloader {
     }
 
     private volatile boolean cancelled = false;
+    /**
+     * 当前活跃连接，cancel() 可以直接 disconnect() 中断 socket 阻塞
+     */
+    private volatile HttpURLConnection activeConnection = null;
 
     /**
      * 异步下载文件（支持多源切换）
@@ -53,26 +57,27 @@ public class UpdateDownloader {
                 log.info("Attempting to download from: {}", downloadUrl);
                 return downloadFile(downloadUrl, callback);
             } catch (Exception e) {
-                if (!cancelled) {
-                    log.warn("Download failed from primary source: {}", e.getMessage());
+                // 被取消时 downloadFile 内部已处理，这里直接返回
+                if (cancelled) {
+                    return null;
+                }
+                log.warn("Download failed from primary source: {}", e.getMessage());
 
-                    // 尝试切换到备用源
-                    String alternativeUrl = getAlternativeDownloadUrl(downloadUrl);
-                    if (alternativeUrl != null && !alternativeUrl.equals(downloadUrl)) {
-                        log.info("Trying alternative source: {}", alternativeUrl);
-                        callback.onProgress(0, 0, 0, 0); // 重置进度
+                // 尝试切换到备用源
+                String alternativeUrl = getAlternativeDownloadUrl(downloadUrl);
+                if (alternativeUrl != null && !alternativeUrl.equals(downloadUrl)) {
+                    log.info("Trying alternative source: {}", alternativeUrl);
+                    callback.onProgress(0, 0, 0, 0); // 重置进度
 
-                        try {
-                            return downloadFile(alternativeUrl, callback);
-                        } catch (Exception e2) {
-                            log.error("Download failed from alternative source: {}", e2.getMessage());
-                            String friendlyError = getFriendlyErrorMessage(e2);
-                            callback.onError(friendlyError);
-                        }
-                    } else {
-                        String friendlyError = getFriendlyErrorMessage(e);
-                        callback.onError(friendlyError);
+                    try {
+                        return downloadFile(alternativeUrl, callback);
+                    } catch (Exception e2) {
+                        if (cancelled) return null;
+                        log.error("Download failed from alternative source: {}", e2.getMessage());
+                        callback.onError(getFriendlyErrorMessage(e2));
                     }
+                } else {
+                    callback.onError(getFriendlyErrorMessage(e));
                 }
                 return null;
             }
@@ -114,10 +119,20 @@ public class UpdateDownloader {
     }
 
     /**
-     * 取消下载
+     * 取消下载。
+     * 同时 disconnect() 活跃连接，强制中断阻塞在 getResponseCode() / read() 的线程，
+     * 而不是只靠 volatile boolean 等下一次循环检查。
      */
     public void cancel() {
         cancelled = true;
+        HttpURLConnection conn = activeConnection;
+        if (conn != null) {
+            try {
+                conn.disconnect(); // 强制关闭 socket，立即中断所有阻塞调用
+            } catch (Exception e) {
+                log.debug("Error disconnecting on cancel: {}", e.getMessage());
+            }
+        }
     }
 
     /**
@@ -131,28 +146,48 @@ public class UpdateDownloader {
         HttpURLConnection conn = null;
         try {
             conn = (HttpURLConnection) url.openConnection();
-            conn.setConnectTimeout(15000);  // 连接超时 15 秒
-            conn.setReadTimeout(30000);     // 读取超时 30 秒（下载大文件需要更长时间）
-            conn.setInstanceFollowRedirects(true);  // 自动跟随 HTTP 重定向
+            conn.setConnectTimeout(5000);  // 连接超时 5000 秒
+            conn.setReadTimeout(10000);     // 单次 read() 超时 10 秒（网速慢但连上时不超时）
+            conn.setInstanceFollowRedirects(true);
             conn.setRequestProperty("User-Agent", "Mozilla/5.0 (compatible; EasyPostman-Updater)");
             conn.setRequestProperty("Accept", "*/*");
 
-            // 检查响应码
-            int responseCode = conn.getResponseCode();
+            // 暴露给 cancel()，使其能 disconnect() 中断阻塞的 getResponseCode()/read()
+            activeConnection = conn;
+
+            // 如果在建立连接前就已取消，提前退出
+            if (cancelled) {
+                cleanupTempFile(tempFile);
+                callback.onCancelled();
+                return null;
+            }
+
+            // 检查响应码（网络差时会阻塞，cancel() 通过 disconnect() 中断）
+            int responseCode;
+            try {
+                responseCode = conn.getResponseCode();
+            } catch (IOException e) {
+                // disconnect() 触发的 SocketException / IOException
+                if (cancelled) {
+                    cleanupTempFile(tempFile);
+                    callback.onCancelled();
+                    return null;
+                }
+                throw e;
+            }
+
             if (responseCode != HttpURLConnection.HTTP_OK) {
                 throw new IOException("HTTP error code: " + responseCode);
             }
 
-            long totalSize = conn.getContentLengthLong();  // 使用 Long 版本支持大文件
+            long totalSize = conn.getContentLengthLong();
             log.info("Starting download: {} bytes from {}", totalSize, downloadUrl);
 
-            // 使用 try-with-resources 自动管理流资源
             try (InputStream in = new BufferedInputStream(conn.getInputStream());
                  FileOutputStream out = new FileOutputStream(tempFile)) {
 
                 long downloaded = performDownload(in, out, totalSize, callback);
 
-                // 如果下载被取消
                 if (cancelled) {
                     cleanupTempFile(tempFile);
                     callback.onCancelled();
@@ -162,14 +197,23 @@ public class UpdateDownloader {
                 log.info("Download completed: {} bytes", downloaded);
                 callback.onCompleted(tempFile);
                 return tempFile;
+            } catch (IOException e) {
+                // disconnect() 触发的流读取中断
+                if (cancelled) {
+                    cleanupTempFile(tempFile);
+                    callback.onCancelled();
+                    return null;
+                }
+                throw e;
             }
 
         } finally {
+            activeConnection = null; // 清空，避免野指针
             if (conn != null) {
                 try {
                     conn.disconnect();
                 } catch (Exception e) {
-                    log.warn("Failed to disconnect connection: {}", e.getMessage());
+                    log.debug("Failed to disconnect connection: {}", e.getMessage());
                 }
             }
         }
@@ -316,7 +360,6 @@ public class UpdateDownloader {
         }
         return false;
     }
-
 
 
     /**

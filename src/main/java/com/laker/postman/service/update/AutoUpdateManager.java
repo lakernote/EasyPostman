@@ -159,6 +159,17 @@ public class AutoUpdateManager {
                         uiManager.showUpdateNotification(updateInfo);
                     }
                 }
+                case UPDATE_AVAILABLE_NO_ASSET -> {
+                    log.info("Update available but no asset for current platform: {} -> {}",
+                            updateInfo.getCurrentVersion(), updateInfo.getLatestVersion());
+                    if (isManual) {
+                        // 手动检查：直接显示 NoAsset 对话框
+                        uiManager.showNoAssetDialog(updateInfo);
+                    } else {
+                        // 后台检查：先显示右下角 toast，点击后再弹对话框
+                        uiManager.showNoAssetNotification(updateInfo);
+                    }
+                }
                 case NO_UPDATE -> {
                     if (isManual) {
                         // 只有手动检查时才显示"已是最新版本"

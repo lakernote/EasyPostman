@@ -68,6 +68,9 @@ public final class MessageKeys {
     public static final String UPDATE_FETCH_RELEASE_FAILED = "update.fetch_release_failed";
     public static final String UPDATE_NO_VERSION_INFO = "update.no_version_info";
     public static final String UPDATE_ALREADY_LATEST = "update.already_latest";
+    public static final String UPDATE_AVAILABLE_NO_ASSET = "update.available_no_asset";
+    public static final String UPDATE_AVAILABLE_NO_ASSET_TITLE = "update.available_no_asset.title";
+    public static final String UPDATE_AVAILABLE_NO_ASSET_GO_GITHUB = "update.available_no_asset.go_github";
     // ============ 更新日志相关 ============
     public static final String CHANGELOG_TITLE = "changelog.title";
     public static final String CHANGELOG_CURRENT_VERSION = "changelog.current_version";

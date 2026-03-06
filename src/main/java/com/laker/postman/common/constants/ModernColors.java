@@ -478,6 +478,15 @@ public final class ModernColors {
     // ==================== 工具方法 ====================
 
     /**
+     * 获取带透明度的警告色
+     *
+     * @param alpha 透明度 (0-255)
+     */
+    public static Color warningWithAlpha(int alpha) {
+        return new Color(WARNING.getRed(), WARNING.getGreen(), WARNING.getBlue(), alpha);
+    }
+
+    /**
      * 获取带透明度的主色
      *
      * @param alpha 透明度 (0-255)

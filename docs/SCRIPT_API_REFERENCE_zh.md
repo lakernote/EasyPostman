@@ -14,6 +14,7 @@
 - [pm.cookies - Cookie 管理](#pmcookies---cookie-管理)
 - [pm.expect - 断言](#pmexpect---断言)
 - [pm.test - 测试](#pmtest---测试)
+- [外部数据源脚本 API](#外部数据源脚本-api)
 - [console - 控制台](#console---控制台)
 - [内置 JavaScript 库](#内置-javascript-库)
 - [完整示例](#完整示例)
@@ -47,6 +48,15 @@
 | `pm.setGlobalVariable(key, value)` | 设置全局变量（实际存储在环境变量中） | `pm.setGlobalVariable('baseUrl', 'https://api.com')` |
 | `pm.getGlobalVariable(key)`        | 获取全局变量（实际从环境变量读取）  | `pm.getGlobalVariable('baseUrl')`                    |
 | `pm.getResponseCookie(name)`       | 获取响应中的 Cookie      | `pm.getResponseCookie('sessionId')`                  |
+
+### 外部数据源对象
+
+| 对象 | 说明 | 常用方法 |
+|------|------|----------|
+| `pm.redis` | Redis 读写与查询 | `execute(options)`、`query(options)` |
+| `pm.kafka` | Kafka 查询、发消息、消费消息 | `listTopics(options)`、`send(options)`、`poll(options)` |
+| `pm.es` / `pm.elasticsearch` | Elasticsearch 请求与查询 | `request(options)`、`query(options)` |
+| `pm.influx` / `pm.influxdb` | InfluxDB Flux / InfluxQL 查询与写入 | `query(options)`、`write(options)`、`request(options)` |
 
 ---
 
@@ -515,6 +525,179 @@ results.forEach(function (result) {
 :
     null           // 错误信息（passed 为 false 时有值）
 }
+```
+
+---
+
+## 外部数据源脚本 API
+
+可以在 Pre-request Script 或 Test Script 中直接访问 Redis、Kafka、Elasticsearch、InfluxDB，并结合 `pm.test()` / `pm.expect()` 进行断言。
+
+### pm.redis
+
+#### 方法列表
+
+| 方法 | 参数 | 返回值 | 说明 |
+|------|------|--------|------|
+| `execute(options)` | `host`、`port`、`db`、`command`、`key`、`args`、`value` | Any | 执行一次 Redis 命令 |
+| `query(options)` | 同 `execute(options)` | Any | `execute()` 的别名 |
+
+#### 示例：写入并断言 Redis
+
+```javascript
+pm.redis.execute({
+    host: 'localhost',
+    port: 6379,
+    db: 0,
+    command: 'SET',
+    key: 'user:1001',
+    value: JSON.stringify({id: 1001, name: 'Alice'})
+});
+
+const redisValue = pm.redis.query({
+    host: 'localhost',
+    port: 6379,
+    db: 0,
+    command: 'GET',
+    key: 'user:1001'
+});
+
+pm.test('Redis 写入成功', function () {
+    pm.expect(redisValue).to.include('Alice');
+});
+```
+
+### pm.kafka
+
+#### 方法列表
+
+| 方法 | 参数 | 返回值 | 说明 |
+|------|------|--------|------|
+| `listTopics(options)` | `bootstrapServers` 等 | `Array<String>` | 获取 topic 列表 |
+| `send(options)` | `bootstrapServers`、`topic`、`key`、`value`、`headers` | Object | 发送消息 |
+| `poll(options)` | `bootstrapServers`、`topic`、`groupId`、`pollTimeoutMs` 等 | Array | 拉取消息 |
+
+#### 示例：发消息并断言 Kafka
+
+```javascript
+const sendResp = pm.kafka.send({
+    bootstrapServers: 'localhost:9092',
+    topic: 'orders',
+    key: 'order-1001',
+    value: JSON.stringify({orderId: 1001, status: 'CREATED'})
+});
+
+pm.test('Kafka 发送成功', function () {
+    pm.expect(sendResp.topic).to.equal('orders');
+    pm.expect(sendResp.offset).to.be.least(0);
+});
+```
+
+### pm.es / pm.elasticsearch
+
+#### 方法列表
+
+| 方法 | 参数 | 返回值 | 说明 |
+|------|------|--------|------|
+| `request(options)` | `baseUrl`、`method`、`path`、`body`、`headers` | Object | 执行一次 ES HTTP 请求 |
+| `query(options)` | 同 `request(options)` | Object | `request()` 的别名 |
+
+#### 示例：写入并断言 Elasticsearch
+
+```javascript
+const indexResp = pm.es.request({
+    baseUrl: 'http://localhost:9200',
+    method: 'POST',
+    path: '/orders/_doc/order-1001',
+    body: JSON.stringify({orderId: 1001, status: 'CREATED'})
+});
+
+pm.test('ES 写入成功', function () {
+    pm.expect(indexResp.code).to.be.within(200, 201);
+});
+```
+
+### pm.influx / pm.influxdb
+
+支持两种模式：
+
+- `version: 'v1'` 或 `mode: 'influxql'`：使用 InfluxQL（默认走 `/query`、`/write`）
+- `version: 'v2'` 或 `mode: 'flux'`：使用 Flux / InfluxDB 2.x（走 `/api/v2/query`、`/api/v2/write`）
+
+#### 方法列表
+
+| 方法 | 参数 | 返回值 | 说明 |
+|------|------|--------|------|
+| `query(options)` | `baseUrl`、`version`、`db/org`、`query`、`token` 等 | Object | 查询 InfluxDB |
+| `write(options)` | `baseUrl`、`version`、`db/org/bucket`、`lineProtocol`、`precision` | Object | 写入 line protocol 数据 |
+| `request(options)` | `baseUrl`、`path`、`method`、`body`、`headers` | Object | 发送原始 HTTP 请求 |
+
+#### 常用参数
+
+| 参数 | 适用版本 | 说明 |
+|------|----------|------|
+| `baseUrl` | v1 / v2 | InfluxDB 地址，默认 `http://localhost:8086` |
+| `version` / `mode` | v1 / v2 | `v1` / `influxql` 或 `v2` / `flux` |
+| `db` / `database` | v1 | 数据库名 |
+| `org` | v2 | 组织名 |
+| `bucket` | v2 写入 | bucket 名 |
+| `token` | v2 | `Authorization: Token xxx` |
+| `username` / `password` | v1 | 通过 `u/p` 参数传递 |
+| `query` | v1 / v2 | InfluxQL 或 Flux 查询语句 |
+| `lineProtocol` | v1 / v2 写入 | 写入的 line protocol 文本 |
+| `precision` | v1 / v2 写入 | 时间精度，默认 `ms` |
+
+#### 示例：InfluxDB 1.x 查询并断言
+
+```javascript
+const queryResp = pm.influx.query({
+    baseUrl: 'http://localhost:8086',
+    version: 'v1',
+    db: 'metrics',
+    username: 'root',
+    password: 'root',
+    query: 'SELECT * FROM cpu ORDER BY time DESC LIMIT 1'
+});
+
+pm.test('InfluxQL 查询成功', function () {
+    pm.expect(queryResp.code).to.equal(200);
+    pm.expect(queryResp.json).to.exist();
+});
+```
+
+#### 示例：InfluxDB 1.x 写入并断言
+
+```javascript
+const writeResp = pm.influxdb.write({
+    baseUrl: 'http://localhost:8086',
+    version: 'v1',
+    db: 'metrics',
+    username: 'root',
+    password: 'root',
+    precision: 'ms',
+    lineProtocol: 'api_requests,service=order count=1i ' + Date.now()
+});
+
+pm.test('Influx 写入成功', function () {
+    pm.expect(writeResp.code).to.equal(204);
+});
+```
+
+#### 示例：InfluxDB 2.x Flux 查询
+
+```javascript
+const resp = pm.influx.query({
+    baseUrl: 'http://localhost:8086',
+    version: 'v2',
+    org: 'demo-org',
+    token: pm.environment.get('influxToken'),
+    query: 'from(bucket: "metrics") |> range(start: -5m) |> limit(n: 1)'
+});
+
+pm.test('Influx Flux 查询成功', function () {
+    pm.expect(resp.code).to.equal(200);
+    pm.expect(resp.body).to.include('_value');
+});
 ```
 
 ---
@@ -2822,4 +3005,3 @@ var moment = require('moment')
 
 - [Postman 官方文档](https://learning.postman.com/docs/writing-scripts/intro-to-scripts/)
 - [ChaiJS 断言库](https://www.chaijs.com/api/bdd/)
-

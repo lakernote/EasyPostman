@@ -51,6 +51,12 @@
 - [设置 Cookie](#设置-cookie)
 - [跨域 Cookie 管理](#跨域-cookie-管理)
 
+### 外部数据源
+- [Redis 读写断言](#redis-读写断言)
+- [Kafka 发消息断言](#kafka-发消息断言)
+- [Elasticsearch 写入断言](#elasticsearch-写入断言)
+- [InfluxDB 查询与写入断言](#influxdb-查询与写入断言)
+
 ### 实用工具
 - [生成随机数据](#生成随机数据)
 - [数据验证](#数据验证)
@@ -553,6 +559,94 @@ jar.get('https://api.example.com', 'token', function(error, cookie) {
 
 ---
 
+## 外部数据源
+
+### Redis 读写断言
+```javascript
+pm.redis.execute({
+    host: 'localhost',
+    port: 6379,
+    db: 0,
+    command: 'SET',
+    key: 'order:1001',
+    value: '{"id":1001,"status":"CREATED"}'
+});
+
+const value = pm.redis.query({
+    host: 'localhost',
+    port: 6379,
+    db: 0,
+    command: 'GET',
+    key: 'order:1001'
+});
+
+pm.test('Redis value exists', function () {
+    pm.expect(value).to.include('CREATED');
+});
+```
+
+### Kafka 发消息断言
+```javascript
+const resp = pm.kafka.send({
+    bootstrapServers: 'localhost:9092',
+    topic: 'orders',
+    key: 'order-1001',
+    value: '{"id":1001,"status":"CREATED"}'
+});
+
+pm.test('Kafka send success', function () {
+    pm.expect(resp.topic).to.equal('orders');
+    pm.expect(resp.offset).to.be.least(0);
+});
+```
+
+### Elasticsearch 写入断言
+```javascript
+const resp = pm.es.request({
+    baseUrl: 'http://localhost:9200',
+    method: 'POST',
+    path: '/orders/_doc/order-1001',
+    body: JSON.stringify({id: 1001, status: 'CREATED'})
+});
+
+pm.test('ES index success', function () {
+    pm.expect(resp.code).to.be.within(200, 201);
+});
+```
+
+### InfluxDB 查询与写入断言
+```javascript
+const writeResp = pm.influxdb.write({
+    baseUrl: 'http://localhost:8086',
+    version: 'v1',
+    db: 'metrics',
+    username: 'root',
+    password: 'root',
+    precision: 'ms',
+    lineProtocol: 'api_requests,service=order count=1i ' + Date.now()
+});
+
+pm.test('Influx write success', function () {
+    pm.expect(writeResp.code).to.equal(204);
+});
+
+const queryResp = pm.influx.query({
+    baseUrl: 'http://localhost:8086',
+    version: 'v1',
+    db: 'metrics',
+    username: 'root',
+    password: 'root',
+    query: 'SELECT * FROM cpu ORDER BY time DESC LIMIT 1'
+});
+
+pm.test('Influx query success', function () {
+    pm.expect(queryResp.code).to.equal(200);
+    pm.expect(queryResp.json).to.exist();
+});
+```
+
+---
+
 ## 实用工具
 
 ### 生成随机数据
@@ -855,4 +949,3 @@ console.log('✓ Post-request 完成');
 ---
 
 **更多详细信息请参考：** [SCRIPT_API_REFERENCE_zh.md](./SCRIPT_API_REFERENCE_zh.md)
-

@@ -103,6 +103,12 @@ public class PostmanApiContext {
     public ScriptElasticsearchApi es;
 
     /**
+     * InfluxDB API - 对应 pm.influxdb / pm.influx
+     */
+    public ScriptInfluxDbApi influxdb;
+    public ScriptInfluxDbApi influx;
+
+    /**
      * 构造 Postman API 上下文
      *
      * @param environment 当前激活的环境对象
@@ -116,6 +122,8 @@ public class PostmanApiContext {
         this.redis = new ScriptRedisApi();
         this.elasticsearch = new ScriptElasticsearchApi();
         this.es = this.elasticsearch;
+        this.influxdb = new ScriptInfluxDbApi();
+        this.influx = this.influxdb;
     }
 
     /**

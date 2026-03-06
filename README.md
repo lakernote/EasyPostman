@@ -68,8 +68,9 @@ EasyPostman provides developers with a **local, privacy-first** API debugging ex
 - **Batch Requests** - Simplified JMeter-style testing
 
 ### 📝 Advanced Features
-- **Pre-request Scripts** - JavaScript execution before requests
-- **Test Scripts** - Assertions and response validation
+- **Pre-request Scripts** - JavaScript execution before requests with Redis/Kafka/Elasticsearch/InfluxDB access
+- **Test Scripts** - Assertions for HTTP responses and external data-store query/write results
+- **Data Store Script APIs** - Read, write, and validate Redis, Kafka, Elasticsearch, and InfluxDB directly in scripts
 - **Request Chaining** - Extract data and pass to next request
 - **Network Event Log** - Detailed request/response analysis
 - **Import/Export** - Postman v2.1, cURL, HAR (in progress)
@@ -190,8 +191,8 @@ Every PR triggers automated checks: build, tests, code quality, and format valid
 | 🏗️ [Architecture](docs/ARCHITECTURE.md) | Technical stack and design |
 | 🚀 [Build Guide](docs/BUILD.md) | Build from source & generate installers |
 | 🖼️ [Screenshots](docs/SCREENSHOTS.md) | All application screenshots |
-| 📝 [Script API Reference](docs/SCRIPT_API_REFERENCE_zh.md) | Pre-request & test script API |
-| 📝 [Script Snippets](docs/SCRIPT_SNIPPETS_QUICK_REFERENCE.md) | Built-in code snippet reference |
+| 📝 [Script API Reference](docs/SCRIPT_API_REFERENCE_zh.md) | Pre-request & test script API, including Redis/Kafka/ES/InfluxDB |
+| 📝 [Script Snippets](docs/SCRIPT_SNIPPETS_QUICK_REFERENCE.md) | Built-in snippets, including data-store read/write/assert examples |
 | 🔐 [Client Certificates](docs/CLIENT_CERTIFICATES.md) | mTLS configuration |
 | 🐧 [Linux Build](docs/LINUX_BUILD.md) | Building on Linux |
 | ❓ [FAQ](docs/FQA.MD) | Frequently asked questions |

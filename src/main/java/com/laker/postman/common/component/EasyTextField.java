@@ -49,6 +49,7 @@ public class EasyTextField extends FlatTextField {
     private static final Color POPUP_SELECTION_BG = new Color(232, 242, 252);
 
     private final UndoManager undoManager = new UndoManager();
+    private final boolean headless = GraphicsEnvironment.isHeadless();
 
     // 自动补全相关
     private JWindow autocompleteWindow;
@@ -172,6 +173,10 @@ public class EasyTextField extends FlatTextField {
      * 初始化自动补全功能
      */
     private void initAutocomplete() {
+        if (headless) {
+            return;
+        }
+
         // 创建弹出窗口（使用JWindow替代JPopupMenu以获得更好的控制）
         autocompleteWindow = new JWindow(SwingUtilities.getWindowAncestor(this));
         autocompleteWindow.setFocusableWindowState(false);
@@ -373,7 +378,7 @@ public class EasyTextField extends FlatTextField {
         addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
-                if (autocompleteWindow.isVisible()) {
+                if (autocompleteWindow != null && autocompleteWindow.isVisible()) {
                     switch (e.getKeyCode()) {
                         case KeyEvent.VK_DOWN:
                             int currentIndex = autocompleteList.getSelectedIndex();
@@ -525,7 +530,7 @@ public class EasyTextField extends FlatTextField {
      * 显示自动补全弹出窗口
      */
     private void showAutocomplete() {
-        if (autocompleteModel.getSize() == 0) {
+        if (autocompleteWindow == null || autocompleteModel.getSize() == 0) {
             return;
         }
 

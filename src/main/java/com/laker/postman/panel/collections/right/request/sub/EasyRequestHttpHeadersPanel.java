@@ -312,16 +312,10 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
      * Set headers from list (including enabled state) for loading from persistence
      */
     public void setHeadersList(List<HttpHeader> headersList) {
-        if (headersList == null || headersList.isEmpty()) {
-            // 清空并恢复默认请求头
-            tablePanel.clear();
-            initializeTableWithDefaults();
-            applyCurrentFilter();
-            return;
-        }
+        List<HttpHeader> normalizedHeaders = headersList == null ? Collections.emptyList() : headersList;
 
         // Build sorted list with default headers first
-        List<HttpHeader> sortedList = buildSortedHeadersList(headersList);
+        List<HttpHeader> sortedList = buildSortedHeadersList(normalizedHeaders);
 
         // Set rows in table
         List<Map<String, Object>> rows = new ArrayList<>();

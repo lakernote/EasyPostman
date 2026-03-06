@@ -26,6 +26,7 @@ public class AutoCompleteEasyTextField extends EasyTextField {
     private List<String> suggestions;
     private boolean autoCompleteEnabled = false;
     private boolean isUpdatingSuggestions = false;
+    private final boolean headless = GraphicsEnvironment.isHeadless();
 
     public AutoCompleteEasyTextField(int columns) {
         super(columns);
@@ -72,6 +73,11 @@ public class AutoCompleteEasyTextField extends EasyTextField {
         this.suggestions = Collections.emptyList();
         this.listModel = new DefaultListModel<>();
         this.suggestionList = new JList<>(listModel);
+
+        if (headless) {
+            return;
+        }
+
         this.popup = new JWindow();
 
         popup.setFocusableWindowState(false);
@@ -131,7 +137,7 @@ public class AutoCompleteEasyTextField extends EasyTextField {
         addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
-                if (!popup.isVisible() || !autoCompleteEnabled) {
+                if (popup == null || !popup.isVisible() || !autoCompleteEnabled) {
                     return;
                 }
                 handleKeyboardNavigation(e);
@@ -153,7 +159,7 @@ public class AutoCompleteEasyTextField extends EasyTextField {
             @Override
             public void focusLost(FocusEvent e) {
                 SwingUtilities.invokeLater(() -> {
-                    if (!popup.isActive()) {
+                    if (popup == null || !popup.isActive()) {
                         hidePopup();
                     }
                 });
@@ -283,6 +289,10 @@ public class AutoCompleteEasyTextField extends EasyTextField {
     }
 
     private void updatePopupVisibility() {
+        if (popup == null) {
+            return;
+        }
+
         if (listModel.isEmpty()) {
             hidePopup();
         } else {
@@ -292,6 +302,10 @@ public class AutoCompleteEasyTextField extends EasyTextField {
     }
 
     private void showPopup() {
+        if (popup == null) {
+            return;
+        }
+
         if (!isShowing()) {
             hidePopup();
             return;

@@ -409,7 +409,7 @@ public class RedisPanel extends JPanel {
         row1.add(loadTplBtn);
 
         JPanel row2 = new JPanel(new MigLayout(
-                "insets 0, fillx",
+                "insets 2, fillx",
                 "[]8[120!]8[]8[grow,fill]8[]8[grow,fill]8[]",
                 "[]"
         ));

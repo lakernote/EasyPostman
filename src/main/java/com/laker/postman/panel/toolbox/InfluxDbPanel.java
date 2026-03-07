@@ -971,7 +971,7 @@ public class InfluxDbPanel extends JPanel {
 
     private RSyntaxTextArea createResponseEditor() {
         RSyntaxTextArea textArea = new RSyntaxTextArea(10, 40);
-        textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+        textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
         textArea.setCodeFoldingEnabled(true);
         textArea.setAntiAliasingEnabled(true);
         textArea.setLineWrap(false);

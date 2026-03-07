@@ -686,7 +686,7 @@ public class ElasticsearchPanel extends JPanel {
         toolBar.add(clearBtn);
 
         // ---- 请求行（MigLayout）----
-        JPanel requestRow = new JPanel(new MigLayout("insets 0 0 4 0, fillx", "[90!][grow,fill][]", "[]"));
+        JPanel requestRow = new JPanel(new MigLayout("insets 4 2 4 2, fillx", "[90!][grow,fill][]", "[]"));
         methodCombo = new JComboBox<>(new String[]{"GET", "POST", "PUT", HTTP_DELETE, "HEAD"});
         methodCombo.setPreferredSize(new Dimension(90, 32));
         // Method 颜色渲染

@@ -168,6 +168,32 @@ public class EnhancedTablePanel extends JPanel {
         return allRows.size();
     }
 
+    /**
+     * 增量追加单行数据（无需重排序/重过滤，性能优于全量 setData）。
+     * 若当前有过滤条件则回退到全量刷新以保证过滤正确性。
+     */
+    public void addRow(Object[] row) {
+        if (row == null) return;
+        allRows.add(row);
+        updateHintLabel();
+        if (filterText != null && !filterText.isBlank()) {
+            // 有过滤条件时全量刷新保证正确性
+            applyFilterAndSort();
+            return;
+        }
+        filteredRows.add(row);
+        // 若当前在最后一页（或 All），直接追加到 tableModel
+        boolean isAll = (pageSize == 0);
+        int totalFiltered = filteredRows.size();
+        int totalPages = isAll ? 1 : (int) Math.ceil((double) totalFiltered / pageSize);
+        boolean onLastPage = (currentPage >= totalPages - 1);
+        if ((isAll || onLastPage) && (isAll || tableModel.getRowCount() < pageSize)) {
+            tableModel.addRow(row);
+        }
+        updatePaginationControls();
+        updateEmptyState();
+    }
+
     // ═══════════════════ UI Build ════════════════════════════════════════
 
     private void buildUI() {

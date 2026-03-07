@@ -96,6 +96,7 @@ public class InfluxDbPanel extends JPanel {
     private boolean connected = false;
     private String lastResponseBody = "";
     private boolean suppressMeasurementSync = false;
+    private boolean suppressModeSwitch = false;
 
     private static final int MAX_HOST_HISTORY = 5;
     private static final int MAX_HISTORY = 20;
@@ -366,9 +367,11 @@ public class InfluxDbPanel extends JPanel {
         historyList.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
-                if (SwingUtilities.isLeftMouseButton(e) && e.getClickCount() == 2) {
-                    int idx = historyList.locationToIndex(e.getPoint());
-                    if (idx >= 0) applyHistory(historyListModel.get(idx));
+                if (!SwingUtilities.isLeftMouseButton(e)) return;
+                if (e.getClickCount() != 2) return;
+                int idx = historyList.locationToIndex(e.getPoint());
+                if (idx >= 0) {
+                    applyHistory(historyListModel.get(idx));
                 }
             }
         });
@@ -398,29 +401,83 @@ public class InfluxDbPanel extends JPanel {
                 String modeColor = h.mode == QueryMode.INFLUXQL_V1 ? "#2a7ec8" : "#28a745";
                 String modeText = h.mode == QueryMode.INFLUXQL_V1 ? "InfluxQL" : "Flux";
                 String query = h.query == null ? "" : h.query.strip();
-                String firstLine = query.split("\\R", 2)[0];
-                if (firstLine.length() > 38) firstLine = firstLine.substring(0, 37) + "…";
-                lbl.setText("<html><b><font color='" + modeColor + "'>" + modeText + "</font></b> " + firstLine + "</html>");
-                lbl.setToolTipText(query);
+                // Collapse all whitespace/newlines into a single space for the preview
+                String queryPreview = query.replaceAll("\\s+", " ").trim();
+                if (queryPreview.length() > 60) queryPreview = queryPreview.substring(0, 59) + "…";
+                // Context info: db/measurement for V1, org for V2
+                String context;
+                if (h.mode == QueryMode.INFLUXQL_V1) {
+                    String db = h.db == null || h.db.isBlank() ? "-" : h.db;
+                    String ms = h.measurement == null || h.measurement.isBlank() ? "-" : h.measurement;
+                    context = escapeHtml(db) + " / " + escapeHtml(ms);
+                } else {
+                    String org = h.org == null || h.org.isBlank() ? "-" : h.org;
+                    context = escapeHtml(org);
+                }
+                lbl.setText("<html>"
+                        + "<b><font color='" + modeColor + "'>" + modeText + "</font></b>"
+                        + " <font color='gray'><small>" + context + "</small></font><br>"
+                        + "<small>" + escapeHtml(queryPreview) + "</small>"
+                        + "</html>");
+                // Full query in tooltip
+                lbl.setToolTipText("<html><pre style='font-size:11px'>" + escapeHtml(query) + "</pre></html>");
             }
             return lbl;
         }
+
+        private static String escapeHtml(String text) {
+            if (text == null) return "";
+            return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+        }
     }
+
 
     private void applyHistory(HistoryEntry entry) {
         if (entry == null) return;
+        // suppressModeSwitch 防止 setSelectedItem 触发 switchMode 重置连接状态
+        suppressModeSwitch = true;
         modeCombo.setSelectedItem(entry.mode);
+        suppressModeSwitch = false;
+        // 只更新 UI 外观，不碰连接状态
+        updateModeUI(entry.mode);
         if (entry.mode == QueryMode.INFLUXQL_V1) {
             setComboEditorText(dbCombo, entry.db);
             setComboEditorText(measurementCombo, entry.measurement);
             if (!entry.db.isBlank() && connected) {
-                loadMeasurements(entry.db);
+                // fromHistory=true：跳过 measurementCombo model 替换（防闪烁）和模板刷新（防覆盖 query）
+                loadMeasurements(entry.db, true);
             }
         } else {
             orgField.setText(entry.org);
         }
         queryEditor.setText(entry.query);
         queryEditor.setCaretPosition(0);
+    }
+
+    /**
+     * Update mode-specific UI elements (query label, button text, syntax, panels, templates)
+     * WITHOUT touching the connection state. Used when restoring history entries.
+     */
+    private void updateModeUI(QueryMode mode) {
+        JPanel connectionPanel = (JPanel) getComponent(0);
+        JPanel modeFields = (JPanel) connectionPanel.getClientProperty("modeFields");
+        if (modeFields != null) {
+            CardLayout card = (CardLayout) modeFields.getLayout();
+            card.show(modeFields, mode.name());
+        }
+        if (mode == QueryMode.INFLUXQL_V1) {
+            queryLabel.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_QUERY_TITLE_V1));
+            executeBtn.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_EXECUTE_V1));
+            queryEditor.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_SQL);
+            if (v1QueryBuilderPanel != null) v1QueryBuilderPanel.setVisible(true);
+        } else {
+            queryLabel.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_QUERY_TITLE_V2));
+            executeBtn.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_EXECUTE_V2));
+            queryEditor.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+            if (v1QueryBuilderPanel != null) v1QueryBuilderPanel.setVisible(false);
+        }
+        revalidate();
+        repaint();
     }
 
     private void addToHistory(QueryMode mode, String db, String org, String measurement, String query) {
@@ -994,6 +1051,7 @@ public class InfluxDbPanel extends JPanel {
     }
 
     private void switchMode(QueryMode mode) {
+        if (suppressModeSwitch) return;
         connected = false;
         clearMeasurementList();
         connectionStatusLabel.setForeground(UIManager.getColor(LABEL_DISABLED_FG));
@@ -1279,6 +1337,10 @@ public class InfluxDbPanel extends JPanel {
     }
 
     private void loadMeasurements(String db) {
+        loadMeasurements(db, false);
+    }
+
+    private void loadMeasurements(String db, boolean fromHistory) {
         SwingWorker<HttpResult, Void> worker = new SwingWorker<>() {
             @Override
             protected HttpResult doInBackground() throws Exception {
@@ -1297,8 +1359,13 @@ public class InfluxDbPanel extends JPanel {
                     HttpResult result = get();
                     if (result.code() >= 200 && result.code() < 300) {
                         List<String> measurements = parseInfluxColumnValues(result.body(), 0);
-                        String previous = getSelectedMeasurement();
-                        setComboOptions(measurementCombo, measurements, previous);
+                        if (!fromHistory) {
+                            // 正常场景：同步更新 measurementCombo 的下拉选项
+                            String previous = getSelectedMeasurement();
+                            setComboOptions(measurementCombo, measurements, previous);
+                        }
+                        // 历史回填场景：跳过 setComboOptions 避免 model 替换导致下拉框闪烁
+                        // 左侧列表始终刷新
                         updateMeasurementList(measurements, getSelectedMeasurement());
 
                         String measurement = getSelectedMeasurement();
@@ -1306,8 +1373,8 @@ public class InfluxDbPanel extends JPanel {
                             loadFieldKeys(db, measurement);
                             loadTagKeys(db, measurement);
                         }
-                        // 连接后 measurement 确定，自动刷新模版变量
-                        loadTemplate();
+                        // 历史回填时跳过 loadTemplate，避免覆盖回填的 query
+                        if (!fromHistory) loadTemplate();
                     }
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();

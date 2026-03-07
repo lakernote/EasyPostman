@@ -1461,14 +1461,34 @@ public class KafkaPanel extends JPanel {
             return;
         }
         if (consumeStartMode == ConsumeStartMode.OFFSET) {
-            long offset = consumeStartValue == null ? 0L : consumeStartValue;
+            final long offset = consumeStartValue == null ? 0L : consumeStartValue;
+            Map<TopicPartition, Long> beginningOffsets = consumer.beginningOffsets(partitions);
+            Map<TopicPartition, Long> endOffsets = consumer.endOffsets(partitions);
             for (TopicPartition partition : partitions) {
-                consumer.seek(partition, offset);
+                long beginOffset = beginningOffsets.getOrDefault(partition, 0L);
+                long endOffset = endOffsets.getOrDefault(partition, 0L);
+                long seekOffset = offset;
+                if (offset < beginOffset) {
+                    seekOffset = beginOffset;
+                    final long adjusted = seekOffset;
+                    final String msg = t(MessageKeys.TOOLBOX_KAFKA_WARN_OFFSET_OUT_OF_RANGE,
+                            offset, partition.partition(), beginOffset, endOffset, adjusted);
+                    SwingUtilities.invokeLater(() -> NotificationUtil.showWarning(msg));
+                    log.warn("Offset {} is before beginning offset {} for {}, seeking to {}", offset, beginOffset, partition, adjusted);
+                } else if (offset > endOffset) {
+                    seekOffset = endOffset;
+                    final long adjusted = seekOffset;
+                    final String msg = t(MessageKeys.TOOLBOX_KAFKA_WARN_OFFSET_OUT_OF_RANGE,
+                            offset, partition.partition(), beginOffset, endOffset, adjusted);
+                    SwingUtilities.invokeLater(() -> NotificationUtil.showWarning(msg));
+                    log.warn("Offset {} is after end offset {} for {}, seeking to {}", offset, endOffset, partition, adjusted);
+                }
+                consumer.seek(partition, seekOffset);
             }
             return;
         }
         if (consumeStartMode == ConsumeStartMode.TIMESTAMP) {
-            long timestamp = consumeStartValue == null ? 0L : consumeStartValue;
+            final long timestamp = consumeStartValue == null ? 0L : consumeStartValue;
             Map<TopicPartition, Long> targetTimestamps = new HashMap<>();
             for (TopicPartition partition : partitions) {
                 targetTimestamps.put(partition, timestamp);
@@ -1477,7 +1497,12 @@ public class KafkaPanel extends JPanel {
             for (TopicPartition partition : partitions) {
                 OffsetAndTimestamp offsetAndTimestamp = offsetsByTimestamp.get(partition);
                 if (offsetAndTimestamp == null) {
+                    // 没有消息的时间戳 >= 用户指定的时间戳，说明时间戳超出了分区最新消息的范围
                     consumer.seekToEnd(Collections.singletonList(partition));
+                    final String msg = t(MessageKeys.TOOLBOX_KAFKA_WARN_TIMESTAMP_OUT_OF_RANGE,
+                            timestamp, partition.partition());
+                    SwingUtilities.invokeLater(() -> NotificationUtil.showWarning(msg));
+                    log.warn("Timestamp {} has no matching offset in {}, seeking to end", timestamp, partition);
                 } else {
                     consumer.seek(partition, offsetAndTimestamp.offset());
                 }

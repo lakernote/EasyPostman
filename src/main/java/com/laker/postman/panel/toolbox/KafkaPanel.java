@@ -352,12 +352,19 @@ public class KafkaPanel extends JPanel {
     }
 
     private JComponent buildWorkPanel() {
-        JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, buildProducerPanel(), buildConsumerPanel());
-        split.setDividerLocation(300);
-        split.setDividerSize(5);
-        split.setResizeWeight(0.38);
-        split.setContinuousLayout(true);
-        return split;
+        JTabbedPane workTabs = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
+        workTabs.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1));
+        workTabs.addTab(
+                t(MessageKeys.TOOLBOX_KAFKA_PRODUCER_TITLE),
+                IconUtil.createThemed("icons/send.svg", 16, 16),
+                buildProducerPanel(),
+                t(MessageKeys.TOOLBOX_KAFKA_PRODUCER_TITLE));
+        workTabs.addTab(
+                t(MessageKeys.TOOLBOX_KAFKA_CONSUMER_TITLE),
+                IconUtil.createThemed("icons/start.svg", 16, 16),
+                buildConsumerPanel(),
+                t(MessageKeys.TOOLBOX_KAFKA_CONSUMER_TITLE));
+        return workTabs;
     }
 
     private JPanel buildProducerPanel() {

@@ -2011,6 +2011,10 @@ public final class MessageKeys {
     public static final String TOOLBOX_KAFKA_TOPIC_SEARCH_PLACEHOLDER = "toolbox.kafka.topic.search.placeholder";
     public static final String TOOLBOX_KAFKA_USER = "toolbox.kafka.user";
     public static final String TOOLBOX_KAFKA_USER_PLACEHOLDER = "toolbox.kafka.user.placeholder";
+    public static final String TOOLBOX_KAFKA_ADVANCED_OPTIONS = "toolbox.kafka.advanced.options";
+    public static final String TOOLBOX_KAFKA_COPY_VALUE = "toolbox.kafka.copy.value";
+    public static final String TOOLBOX_KAFKA_CLOSE_DETAIL = "toolbox.kafka.close.detail";
+    public static final String TOOLBOX_KAFKA_VALUE_COPIED = "toolbox.kafka.value.copied";
     public static final String TOOLBOX_CRON = "toolbox.cron";
     public static final String TOOLBOX_CRON_EXPRESSION = "toolbox.cron.expression";
     public static final String TOOLBOX_CRON_PARSE = "toolbox.cron.parse";

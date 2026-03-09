@@ -25,14 +25,13 @@ import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
+import javax.swing.Timer;
 import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.IntStream;
 
 @Slf4j
@@ -769,11 +768,30 @@ public class FunctionalPanel extends SingletonBasePanel {
 
     // 加载选中的请求到表格
     public void loadRequests(List<HttpRequestItem> requests) {
+        // 构建已有请求的 ID 集合，用于去重
+        Set<String> existingIds = tableModel.getAllRows().stream()
+                .filter(r -> r != null && r.requestItem != null && r.requestItem.getId() != null)
+                .map(r -> r.requestItem.getId())
+                .collect(java.util.stream.Collectors.toSet());
+
+        int skippedCount = 0;
         for (HttpRequestItem item : requests) {
+            if (item.getId() != null && existingIds.contains(item.getId())) {
+                skippedCount++;
+                continue; // 跳过已存在的请求，避免重复
+            }
             // build() 会自动应用 group 继承
             PreparedRequest req = PreparedRequestBuilder.build(item);
             tableModel.addRow(new RunnerRowData(item, req));
+            if (item.getId() != null) {
+                existingIds.add(item.getId()); // 同批次中也去重
+            }
         }
+
+        if (skippedCount > 0) {
+            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_MSG_DUPLICATE_SKIPPED, skippedCount));
+        }
+
         table.setEnabled(true);
         runBtn.setEnabled(true);
         // 加载请求后保存配置

@@ -88,6 +88,7 @@ public class ScriptExecutionPipeline {
                     .build();
 
             executeScript(context);
+            syncTemporaryVariablesFromPm();
             return ScriptExecutionResult.success();
 
         } catch (ScriptExecutionException ex) {
@@ -172,6 +173,29 @@ public class ScriptExecutionPipeline {
             if (pm != null && pm.testResults != null) {
                 pm.testResults.clear();
             }
+        }
+    }
+
+    /**
+     * Keep pm.variables and the placeholder resolver in sync so {{tempVar}}
+     * can be used in headers, params, and body after the pre-request script runs.
+     */
+    private void syncTemporaryVariablesFromPm() {
+        VariableResolver.clearTemporaryVariables();
+
+        if (bindings == null) {
+            return;
+        }
+
+        PostmanApiContext pm = (PostmanApiContext) bindings.get("pm");
+        if (pm == null || pm.variables == null) {
+            return;
+        }
+
+        Map<String, String> tempVariables = pm.variables.toObject();
+        if (tempVariables != null && !tempVariables.isEmpty()) {
+            VariableResolver.setAllTemporaryVariables(tempVariables);
+            log.debug("Synced {} temporary variables from pm.variables", tempVariables.size());
         }
     }
 
@@ -309,4 +333,3 @@ public class ScriptExecutionPipeline {
         bindings.put("statusCode", response.code);
     }
 }
-

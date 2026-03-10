@@ -9,6 +9,9 @@ import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import javax.swing.*;
 import java.awt.*;
@@ -155,7 +158,6 @@ public class JsonToolPanel extends JPanel {
         textArea.setTabSize(2); // Tab大小为2个空格
         textArea.setTabsEmulated(true); // 用空格模拟Tab
         textArea.setMarkOccurrences(true); // 标记相同内容
-        textArea.setPaintTabLines(true); // 显示缩进线
         textArea.setAnimateBracketMatching(true); // 括号匹配动画
         EditorThemeUtil.loadTheme(textArea);
         return textArea;
@@ -324,26 +326,7 @@ public class JsonToolPanel extends JPanel {
         }
 
         try {
-            // 反转义
-            String unescaped = input
-                    .replace("\\\"", "\"")
-                    .replace("\\\\", "\\")
-                    .replace("\\n", "\n")
-                    .replace("\\r", "\r")
-                    .replace("\\t", "\t");
-
-            // 处理Unicode转义
-            Pattern pattern = Pattern.compile("\\\\u([0-9a-fA-F]{4})");
-            Matcher matcher = pattern.matcher(unescaped);
-            StringBuilder sb = new StringBuilder();
-            while (matcher.find()) {
-                String unicode = matcher.group(1);
-                char ch = (char) Integer.parseInt(unicode, 16);
-                matcher.appendReplacement(sb, String.valueOf(ch));
-            }
-            matcher.appendTail(sb);
-
-            outputArea.setText(sb.toString());
+            outputArea.setText(unescapeJsonContent(input));
             updateStatus(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_STATUS_UNESCAPED), true);
         } catch (Exception ex) {
             log.error("Unescape error", ex);
@@ -466,6 +449,106 @@ public class JsonToolPanel extends JPanel {
         inputArea.setText("");
         outputArea.setText("");
         updateStatus(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_STATUS_CLEARED), true);
+    }
+
+    /**
+     * 智能反转义：
+     * 1. 如果输入本身是 JSON，对其中嵌套的 JSON 字符串递归展开
+     * 2. 如果输入是被转义的 JSON 字符串，优先还原成 JSON
+     * 3. 兜底再按普通文本反转义
+     */
+    private String unescapeJsonContent(String input) {
+        JsonNode root = tryReadJson(input);
+        if (root != null) {
+            JsonNode expanded = expandEscapedJson(root);
+            if (expanded.isTextual()) {
+                String text = expanded.asText();
+                JsonNode nestedJson = tryReadJsonContainer(text);
+                return nestedJson != null ? JsonUtil.toJsonPrettyStr(nestedJson) : text;
+            }
+            return JsonUtil.toJsonPrettyStr(expanded);
+        }
+
+        String unescaped = unescapePlainText(input);
+        JsonNode nestedJson = tryReadJsonContainer(unescaped);
+        return nestedJson != null ? JsonUtil.toJsonPrettyStr(nestedJson) : unescaped;
+    }
+
+    private JsonNode expandEscapedJson(JsonNode node) {
+        if (node == null || node.isNull()) {
+            return node;
+        }
+        if (node.isObject()) {
+            ObjectNode objectNode = JsonUtil.createJsonNode();
+            for (java.util.Map.Entry<String, JsonNode> entry : node.properties()) {
+                objectNode.set(entry.getKey(), expandEscapedJson(entry.getValue()));
+            }
+            return objectNode;
+        }
+        if (node.isArray()) {
+            ArrayNode arrayNode = JsonUtil.createArrayNode();
+            for (JsonNode item : node) {
+                arrayNode.add(expandEscapedJson(item));
+            }
+            return arrayNode;
+        }
+        if (!node.isTextual()) {
+            return node;
+        }
+
+        String text = node.asText();
+        JsonNode nestedJson = tryReadJsonContainer(text);
+        if (nestedJson != null) {
+            return expandEscapedJson(nestedJson);
+        }
+
+        String unescaped = unescapePlainText(text);
+        JsonNode nestedUnescapedJson = tryReadJsonContainer(unescaped);
+        if (nestedUnescapedJson != null) {
+            return expandEscapedJson(nestedUnescapedJson);
+        }
+
+        return !text.equals(unescaped) ? JsonUtil.readTree(JsonUtil.toJsonStr(unescaped)) : node;
+    }
+
+    private JsonNode tryReadJson(String text) {
+        try {
+            return JsonUtil.readTree(text);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private JsonNode tryReadJsonContainer(String text) {
+        JsonNode jsonNode = tryReadJson(text);
+        if (jsonNode != null && (jsonNode.isObject() || jsonNode.isArray())) {
+            return jsonNode;
+        }
+        return null;
+    }
+
+    private String unescapePlainText(String input) {
+        return decodeEscapedText(input);
+    }
+
+    private String decodeEscapedText(String input) {
+        String unescaped = input
+                .replace("\\\"", "\"")
+                .replace("\\\\", "\\")
+                .replace("\\n", "\n")
+                .replace("\\r", "\r")
+                .replace("\\t", "\t");
+
+        Pattern pattern = Pattern.compile("\\\\u([0-9a-fA-F]{4})");
+        Matcher matcher = pattern.matcher(unescaped);
+        StringBuilder sb = new StringBuilder();
+        while (matcher.find()) {
+            String unicode = matcher.group(1);
+            char ch = (char) Integer.parseInt(unicode, 16);
+            matcher.appendReplacement(sb, String.valueOf(ch));
+        }
+        matcher.appendTail(sb);
+        return sb.toString();
     }
 
     /**

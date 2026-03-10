@@ -37,16 +37,15 @@ public class ScriptSnippetManager {
             @Override
             public boolean isAutoActivateOkay(JTextComponent tc) {
                 Document doc = tc.getDocument();
-                int docLength = doc.getLength();
+                int caret = tc.getCaretPosition();
 
-                if (docLength == 0) {
+                if (caret <= 0) {
                     return false;
                 }
 
                 try {
-                    char ch = doc.getText(docLength - 1, 1).charAt(0);
-                    // 字母、数字、下划线、点号都触发自动补全
-                    return Character.isLetterOrDigit(ch) || ch == '_' || ch == '.';
+                    char ch = doc.getText(caret - 1, 1).charAt(0);
+                    return isCompletionTriggerChar(ch);
                 } catch (BadLocationException e) {
                     return false;
                 }
@@ -54,8 +53,7 @@ public class ScriptSnippetManager {
 
             @Override
             protected boolean isValidChar(char ch) {
-                // 点号也是有效字符，这样 pm. 会被当作一个整体
-                return Character.isLetterOrDigit(ch) || ch == '_' || ch == '.';
+                return isCompletionTriggerChar(ch);
             }
 
             @Override
@@ -87,6 +85,11 @@ public class ScriptSnippetManager {
         addAllCompletions(provider);
 
         return provider;
+    }
+
+    private static boolean isCompletionTriggerChar(char ch) {
+        // 点号也是有效字符，这样 pm. 会被当作一个整体
+        return Character.isLetterOrDigit(ch) || ch == '_' || ch == '.';
     }
 
     /**

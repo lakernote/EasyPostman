@@ -21,6 +21,8 @@ import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.text.SimpleDateFormat;
@@ -142,6 +144,13 @@ public class WorkspacePanel extends SingletonBasePanel {
         workspaceList.addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 updateInfoPanel();
+            }
+        });
+
+        workspaceList.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                handleListKeyPressed(e);
             }
         });
 
@@ -399,14 +408,34 @@ public class WorkspacePanel extends SingletonBasePanel {
             // 重命名
             JMenuItem renameItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_RENAME));
             renameItem.setIcon(IconUtil.createThemed("icons/refresh.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+            renameItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F2, 0));
             renameItem.addActionListener(e -> renameWorkspace(workspace));
             menu.add(renameItem);
 
             // 删除
             JMenuItem deleteItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_DELETE));
             deleteItem.setIcon(IconUtil.createThemed("icons/close.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+            deleteItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0));
             deleteItem.addActionListener(e -> deleteWorkspace(workspace));
             menu.add(deleteItem);
+        }
+    }
+
+    private void handleListKeyPressed(KeyEvent e) {
+        Workspace workspace = workspaceList.getSelectedValue();
+        if (workspace == null || WorkspaceStorageUtil.isDefaultWorkspace(workspace)) {
+            return;
+        }
+
+        if (e.getKeyCode() == KeyEvent.VK_F2) {
+            renameWorkspace(workspace);
+            e.consume();
+            return;
+        }
+
+        if (e.getKeyCode() == KeyEvent.VK_DELETE || e.getKeyCode() == KeyEvent.VK_BACK_SPACE) {
+            deleteWorkspace(workspace);
+            e.consume();
         }
     }
 

@@ -96,7 +96,7 @@ public class KafkaPanel extends JPanel {
     private static final String MIG_GROWX = "growx";
     private static final String MIG_GROWX_WRAP = "growx, wrap";
     private static final String ACTION_KAFKA_SEND = "kafka-send";
-    private static final String TIMEOUT_MS = "10000";
+    private static final String TIMEOUT_MS = "3000";
 
     private JTextField bootstrapField;
     private JTextField clientIdField;
@@ -137,17 +137,25 @@ public class KafkaPanel extends JPanel {
     private JLabel consumerStatusLabel;
     private EnhancedTablePanel messageTablePanel;
     private RSyntaxTextArea detailArea;
-    /** 消息详情分割面板（垂直，表格上 + 详情下） */
+    /**
+     * 消息详情分割面板（垂直，表格上 + 详情下）
+     */
     private JSplitPane consumerDetailSplit;
-    /** 详情面板是否显示 */
+    /**
+     * 详情面板是否显示
+     */
     private boolean detailPanelVisible = false;
-    /** 详情面板头部元数据标签 */
+    /**
+     * 详情面板头部元数据标签
+     */
     private JLabel detailTopicLabel;
     private JLabel detailPartitionLabel;
     private JLabel detailOffsetLabel;
     private JLabel detailKeyLabel;
     private JLabel detailTimeLabel;
-    /** 高级选项折叠面板 */
+    /**
+     * 高级选项折叠面板
+     */
     private JPanel advancedPanel;
     private boolean advancedVisible = false;
 
@@ -837,8 +845,8 @@ public class KafkaPanel extends JPanel {
                 props.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, TIMEOUT_MS);
                 props.put(AdminClientConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, TIMEOUT_MS);
                 try (AdminClient adminClient = AdminClient.create(props)) {
-                    ListTopicsOptions options = new ListTopicsOptions().listInternal(false).timeoutMs(10000);
-                    List<String> topics = new ArrayList<>(adminClient.listTopics(options).names().get(10, TimeUnit.SECONDS));
+                    ListTopicsOptions options = new ListTopicsOptions().listInternal(false).timeoutMs(Integer.parseInt(TIMEOUT_MS));
+                    List<String> topics = new ArrayList<>(adminClient.listTopics(options).names().get(Integer.parseInt(TIMEOUT_MS), TimeUnit.MILLISECONDS));
                     Collections.sort(topics);
                     return topics;
                 }
@@ -1253,7 +1261,9 @@ public class KafkaPanel extends JPanel {
         }
     }
 
-    /** 展开消息详情面板（底部抽屉，约40%高度） */
+    /**
+     * 展开消息详情面板（底部抽屉，约40%高度）
+     */
     private void showDetailPanel() {
         detailPanelVisible = true;
         int total = consumerDetailSplit.getHeight();
@@ -1261,7 +1271,9 @@ public class KafkaPanel extends JPanel {
         consumerDetailSplit.setDividerLocation(loc);
     }
 
-    /** 折叠消息详情面板 */
+    /**
+     * 折叠消息详情面板
+     */
     private void hideDetailPanel() {
         detailPanelVisible = false;
         consumerDetailSplit.setDividerLocation(1.0);

@@ -1,6 +1,7 @@
 package com.laker.postman.panel.toolbox;
 
 import cn.hutool.json.JSONUtil;
+import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.util.EditorThemeUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.JsonUtil;
@@ -8,7 +9,6 @@ import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
-import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.*;
 import java.awt.*;
@@ -98,9 +98,9 @@ public class JsonToolPanel extends JPanel {
 
         inputArea = createJsonTextArea();
         inputArea.setEditable(true);
-        RTextScrollPane inputScrollPane = new RTextScrollPane(inputArea);
-        inputScrollPane.setLineNumbersEnabled(true); // 显示行号
-        inputPanel.add(inputScrollPane, BorderLayout.CENTER);
+        SearchableTextArea searchableInputArea = new SearchableTextArea(inputArea);
+        searchableInputArea.setLineNumbersEnabled(true);
+        inputPanel.add(searchableInputArea, BorderLayout.CENTER);
 
         // 输出区域 - 使用RSyntaxTextArea
         JPanel outputPanel = new JPanel(new BorderLayout(5, 5));
@@ -109,9 +109,9 @@ public class JsonToolPanel extends JPanel {
 
         outputArea = createJsonTextArea();
         outputArea.setEditable(false);
-        RTextScrollPane outputScrollPane = new RTextScrollPane(outputArea);
-        outputScrollPane.setLineNumbersEnabled(true); // 显示行号
-        outputPanel.add(outputScrollPane, BorderLayout.CENTER);
+        SearchableTextArea searchableOutputArea = new SearchableTextArea(outputArea, false);
+        searchableOutputArea.setLineNumbersEnabled(true);
+        outputPanel.add(searchableOutputArea, BorderLayout.CENTER);
 
         splitPane.setTopComponent(inputPanel);
         splitPane.setBottomComponent(outputPanel);

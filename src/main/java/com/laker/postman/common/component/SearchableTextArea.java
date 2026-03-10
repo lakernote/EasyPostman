@@ -194,4 +194,11 @@ public class SearchableTextArea extends JPanel {
         searchPanel.showReplace();
         updateSearchPanelPosition();
     }
+
+    /**
+     * 配置是否显示行号，便于保留原始编辑器体验
+     */
+    public void setLineNumbersEnabled(boolean enabled) {
+        scrollPane.setLineNumbersEnabled(enabled);
+    }
 }

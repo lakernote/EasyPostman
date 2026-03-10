@@ -60,6 +60,86 @@ public class JsonUtil {
     }
 
     /**
+     * 将普通文本转成可嵌入 JSON 字符串内容的转义文本，不包含外层双引号
+     *
+     * @param text 原始文本
+     * @return 转义后的文本内容
+     */
+    public static String escapeJsonStringContent(String text) {
+        if (text == null) {
+            return null;
+        }
+        String json = mapper.writeValueAsString(text);
+        return json.length() >= 2 ? json.substring(1, json.length() - 1) : json;
+    }
+
+    /**
+     * 对 JSON 字符串内容做单层反转义，不要求包含外层双引号
+     *
+     * @param text 被转义的文本内容
+     * @return 反转义后的文本
+     */
+    public static String unescapeJsonStringContent(String text) {
+        if (text == null || text.isEmpty()) {
+            return text;
+        }
+
+        StringBuilder sb = new StringBuilder(text.length());
+        for (int i = 0; i < text.length(); i++) {
+            char ch = text.charAt(i);
+            if (ch != '\\' || i == text.length() - 1) {
+                sb.append(ch);
+                continue;
+            }
+
+            char next = text.charAt(++i);
+            switch (next) {
+                case '"':
+                    sb.append('"');
+                    break;
+                case '\\':
+                    sb.append('\\');
+                    break;
+                case '/':
+                    sb.append('/');
+                    break;
+                case 'b':
+                    sb.append('\b');
+                    break;
+                case 'f':
+                    sb.append('\f');
+                    break;
+                case 'n':
+                    sb.append('\n');
+                    break;
+                case 'r':
+                    sb.append('\r');
+                    break;
+                case 't':
+                    sb.append('\t');
+                    break;
+                case 'u':
+                    if (i + 4 < text.length()) {
+                        String hex = text.substring(i + 1, i + 5);
+                        try {
+                            sb.append((char) Integer.parseInt(hex, 16));
+                            i += 4;
+                            break;
+                        } catch (NumberFormatException ignored) {
+                            // 保留原样
+                        }
+                    }
+                    sb.append('\\').append('u');
+                    break;
+                default:
+                    sb.append('\\').append(next);
+                    break;
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
      * json 字符串美化
      *
      * @param json 待转换的 json 字符串

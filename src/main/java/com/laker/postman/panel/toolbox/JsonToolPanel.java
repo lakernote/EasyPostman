@@ -19,8 +19,6 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * JSON工具面板 - 使用RSyntaxTextArea提供语法高亮和更好的编辑体验
@@ -299,13 +297,7 @@ public class JsonToolPanel extends JPanel {
         }
 
         try {
-            // 转义引号、反斜杠、换行符等
-            String escaped = input
-                    .replace("\\", "\\\\")
-                    .replace("\"", "\\\"")
-                    .replace("\n", "\\n")
-                    .replace("\r", "\\r")
-                    .replace("\t", "\\t");
+            String escaped = JsonUtil.escapeJsonStringContent(input);
             outputArea.setText(escaped);
             updateStatus(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_STATUS_ESCAPED), true);
         } catch (Exception ex) {
@@ -528,27 +520,7 @@ public class JsonToolPanel extends JPanel {
     }
 
     private String unescapePlainText(String input) {
-        return decodeEscapedText(input);
-    }
-
-    private String decodeEscapedText(String input) {
-        String unescaped = input
-                .replace("\\\"", "\"")
-                .replace("\\\\", "\\")
-                .replace("\\n", "\n")
-                .replace("\\r", "\r")
-                .replace("\\t", "\t");
-
-        Pattern pattern = Pattern.compile("\\\\u([0-9a-fA-F]{4})");
-        Matcher matcher = pattern.matcher(unescaped);
-        StringBuilder sb = new StringBuilder();
-        while (matcher.find()) {
-            String unicode = matcher.group(1);
-            char ch = (char) Integer.parseInt(unicode, 16);
-            matcher.appendReplacement(sb, String.valueOf(ch));
-        }
-        matcher.appendTail(sb);
-        return sb.toString();
+        return JsonUtil.unescapeJsonStringContent(input);
     }
 
     /**

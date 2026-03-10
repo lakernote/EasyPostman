@@ -47,6 +47,10 @@ public class DefaultRequestsFactory {
                 Request 1 sets environment variables in script.
                 Request 2 reuses them in query params, headers, body, and test script.
                 Request 2 also creates temporary variables for the current request.
+                
+                Scope:
+                - pm.environment: shared across requests and can be reused later
+                - pm.variables: only available in the current request lifecycle
                 """);
         DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(new Object[]{"group", group});
         rootTreeNode.add(groupNode);
@@ -138,6 +142,10 @@ public class DefaultRequestsFactory {
                 请求 1 在脚本里设置环境变量。
                 请求 2 在请求参数、请求头、请求体和测试脚本里复用这些变量。
                 请求 2 还会创建当前请求可用的临时变量。
+                
+                作用域说明：
+                - pm.environment：可跨请求复用，后续请求也能继续使用
+                - pm.variables：只在当前这一次请求生命周期内有效
                 """);
         DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(new Object[]{"group", group});
         rootTreeNode.add(groupNode);

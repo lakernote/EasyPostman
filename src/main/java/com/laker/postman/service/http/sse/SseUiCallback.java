@@ -8,6 +8,9 @@ public interface SseUiCallback {
 
     void onEvent(String id, String type, String data);
 
+    default void onRetryChange(long retryMs) {
+    }
+
     void onClosed(HttpResponse resp);
 
     void onFailure(String errorMsg, HttpResponse resp);

@@ -91,10 +91,24 @@ public class OkHttpResponseHandler {
             handleSseResponse(response);
             if (callback != null) {
                 ResponseBody body = okResponse.body();
+                callback.onOpen(response);
+                boolean failed = false;
                 if (body != null) {
                     var reader = new ServerSentEventReader(body.source(), callback);
-                    callback.onOpen(response);
-                    while (reader.processNextEvent()) ;
+                    try {
+                        while (reader.processNextEvent()) {
+                            // 持续读取直到流结束
+                        }
+                    } catch (RuntimeException ex) {
+                        failed = true;
+                        callback.onFailure(ex.getMessage(), response);
+                    } catch (IOException ex) {
+                        failed = true;
+                        callback.onFailure(ex.getMessage(), response);
+                    }
+                }
+                if (!failed) {
+                    callback.onClosed(response);
                 }
             }
         } else if (FileExtensionUtil.isBinaryType(contentType)) {

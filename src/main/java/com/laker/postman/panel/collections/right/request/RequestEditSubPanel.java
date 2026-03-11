@@ -50,6 +50,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.io.InterruptedIOException;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -108,6 +109,8 @@ public class RequestEditSubPanel extends JPanel {
     private transient volatile SwingWorker<Void, Void> currentWorker;
     // 当前 SSE 事件源, 用于取消 SSE 请求
     private transient volatile EventSource currentEventSource;
+    // HTTP 请求自动识别为 SSE 后，用于在取消时保持 SSE 视图
+    private transient volatile boolean httpSseStreamOpened;
     // WebSocket连接对象
     private transient volatile WebSocket currentWebSocket;
     // WebSocket连接ID，用于防止过期连接的回调
@@ -786,43 +789,66 @@ public class RequestEditSubPanel extends JPanel {
 
     // 普通HTTP请求处理
     private void handleHttpRequest(PreparedRequest req, ScriptExecutionPipeline pipeline) {
+        httpSseStreamOpened = false;
         currentWorker = new SwingWorker<>() {
             HttpResponse resp;
+            final boolean expectedSse = HttpUtil.isSSERequest(req);
+            final StringBuilder sseBodyBuilder = new StringBuilder();
+            final long sseStartTime = System.currentTimeMillis();
 
             @Override
             protected Void doInBackground() {
                 try {
                     responsePanel.setResponseTabButtonsEnable(true);
-                    responsePanel.switchTabButtonHttpOrSse("http");
+                    responsePanel.switchTabButtonHttpOrSse(expectedSse ? "sse" : "http");
                     resp = RedirectHandler.executeWithRedirects(req, MAX_REDIRECT_COUNT, new SseResEventListener() {
                         @Override
                         public void onOpen(HttpResponse response) {
                             SwingUtilities.invokeLater(() -> {
+                                httpSseStreamOpened = true;
                                 responsePanel.switchTabButtonHttpOrSse("sse");
                                 updateUIForResponse(response);
-                                // 添加连接成功消息
-                                if (responsePanel.getSseResponsePanel() != null) {
-                                    String timestamp = LocalTime.now().format(TIME_FORMATTER);
-                                    responsePanel.getSseResponsePanel().addMessage(MessageType.CONNECTED, timestamp, "Connected to SSE stream", null);
-                                }
+                                appendSseMessage(MessageType.CONNECTED, null, "open", null,
+                                        I18nUtil.getMessage(MessageKeys.SSE_STREAM_CONNECTED), null);
                             });
                         }
 
                         @Override
                         public void onEvent(String id, String type, String data) {
+                            appendSseRawEvent(sseBodyBuilder, id, type, data);
                             SwingUtilities.invokeLater(() -> {
-                                // 使用 SSEResponsePanel 来显示 SSE 消息
-                                if (responsePanel.getSseResponsePanel() != null) {
-                                    String timestamp = LocalTime.now().format(TIME_FORMATTER);
-                                    List<TestResult> testResults = handleStreamMessage(pipeline, data);
-                                    responsePanel.getSseResponsePanel().addMessage(MessageType.RECEIVED, timestamp, data, testResults);
-                                }
+                                List<TestResult> testResults = handleStreamMessage(pipeline, data);
+                                appendSseMessage(MessageType.RECEIVED, id, type, null, data, testResults);
                             });
                         }
 
                         @Override
-                        public void onRetryChange(long l) {
-                            // ignored
+                        public void onRetryChange(long retryMs) {
+                            SwingUtilities.invokeLater(() -> appendSseMessage(MessageType.INFO, null, "retry", retryMs,
+                                    I18nUtil.getMessage(MessageKeys.SSE_RETRY_UPDATED, retryMs), null));
+                        }
+
+                        @Override
+                        public void onClosed(HttpResponse response) {
+                            finalizeSseResponse(response, sseBodyBuilder, sseStartTime);
+                            SwingUtilities.invokeLater(() -> {
+                                httpSseStreamOpened = false;
+                                updateUIForResponse(response);
+                                appendSseMessage(MessageType.CLOSED, null, "closed", null,
+                                        I18nUtil.getMessage(MessageKeys.SSE_STREAM_CLOSED), null);
+                            });
+                        }
+
+                        @Override
+                        public void onFailure(String errorMsg, HttpResponse response) {
+                            finalizeSseResponse(response, sseBodyBuilder, sseStartTime);
+                            SwingUtilities.invokeLater(() -> {
+                                httpSseStreamOpened = false;
+                                NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.SSE_FAILED, errorMsg));
+                                updateUIForResponse(response);
+                                appendSseMessage(MessageType.WARNING, null, "failure", null,
+                                        I18nUtil.getMessage(MessageKeys.SSE_STREAM_FAILED, errorMsg), null);
+                            });
                         }
                     });
                 } catch (DownloadCancelledException ex) {
@@ -841,9 +867,26 @@ public class RequestEditSubPanel extends JPanel {
 
             @Override
             protected void done() {
+                boolean keepSseView = (resp != null && resp.isSse) || (isCancelled() && httpSseStreamOpened);
+                responsePanel.switchTabButtonHttpOrSse(keepSseView ? "sse" : "http");
                 updateUIForResponse(resp);
                 if (resp != null && !resp.isSse) {
                     handleResponse(pipeline, req, resp);
+                } else if (resp != null) {
+                    lastRequest = req;
+                    lastResponse = resp;
+                    responsePanel.setRequestDetails(req);
+                    responsePanel.setResponseDetails(resp);
+                    try {
+                        SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(req, resp);
+                    } catch (Exception ex) {
+                        log.error("Error saving SSE response to history: {}", ex.getMessage(), ex);
+                        ConsolePanel.appendLog("[Warning] Failed to save SSE request to history: " + ex.getMessage(),
+                                ConsolePanel.LogType.WARN);
+                    }
+                }
+                if (!keepSseView) {
+                    httpSseStreamOpened = false;
                 }
                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
                 currentWorker = null;
@@ -870,24 +913,23 @@ public class RequestEditSubPanel extends JPanel {
                         public void onOpen(HttpResponse r, String headersText) {
                             SwingUtilities.invokeLater(() -> {
                                 updateUIForResponse(r);
-                                // 添加连接成功消息
-                                if (responsePanel.getSseResponsePanel() != null) {
-                                    String timestamp = LocalTime.now().format(TIME_FORMATTER);
-                                    responsePanel.getSseResponsePanel().addMessage(MessageType.CONNECTED, timestamp, "Connected to SSE stream", null);
-                                }
+                                appendSseMessage(MessageType.CONNECTED, null, "open", null,
+                                        I18nUtil.getMessage(MessageKeys.SSE_STREAM_CONNECTED), null);
                             });
                         }
 
                         @Override
                         public void onEvent(String id, String type, String data) {
                             SwingUtilities.invokeLater(() -> {
-                                // 使用 SSEResponsePanel 来显示 SSE 消息
-                                if (responsePanel.getSseResponsePanel() != null) {
-                                    String timestamp = LocalTime.now().format(TIME_FORMATTER);
-                                    List<TestResult> testResults = handleStreamMessage(pipeline, data);
-                                    responsePanel.getSseResponsePanel().addMessage(MessageType.RECEIVED, timestamp, data, testResults);
-                                }
+                                List<TestResult> testResults = handleStreamMessage(pipeline, data);
+                                appendSseMessage(MessageType.RECEIVED, id, type, null, data, testResults);
                             });
+                        }
+
+                        @Override
+                        public void onRetryChange(long retryMs) {
+                            SwingUtilities.invokeLater(() -> appendSseMessage(MessageType.INFO, null, "retry", retryMs,
+                                    I18nUtil.getMessage(MessageKeys.SSE_RETRY_UPDATED, retryMs), null));
                         }
 
                         @Override
@@ -895,12 +937,8 @@ public class RequestEditSubPanel extends JPanel {
                             SwingUtilities.invokeLater(() -> {
                                 updateUIForResponse(r);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
-                                // 添加连接关闭消息
-                                if (responsePanel.getSseResponsePanel() != null) {
-                                    String timestamp = LocalTime.now().format(TIME_FORMATTER);
-                                    responsePanel.getSseResponsePanel().addMessage(MessageType.CLOSED, timestamp, "SSE stream closed", null);
-                                }
-                                // 在UI线程内清理资源，确保线程安全
+                                appendSseMessage(MessageType.CLOSED, null, "closed", null,
+                                        I18nUtil.getMessage(MessageKeys.SSE_STREAM_CLOSED), null);
                                 currentEventSource = null;
                                 currentWorker = null;
                             });
@@ -909,17 +947,11 @@ public class RequestEditSubPanel extends JPanel {
                         @Override
                         public void onFailure(String errorMsg, HttpResponse r) {
                             SwingUtilities.invokeLater(() -> {
-                                // 通过通知显示错误信息
                                 NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.SSE_FAILED, errorMsg));
-
                                 updateUIForResponse(r);
                                 requestLinePanel.setSendButtonToSend(RequestEditSubPanel.this::sendRequest);
-                                // 添加错误消息
-                                if (responsePanel.getSseResponsePanel() != null) {
-                                    String timestamp = LocalTime.now().format(TIME_FORMATTER);
-                                    responsePanel.getSseResponsePanel().addMessage(MessageType.WARNING, timestamp, "Error: " + errorMsg, null);
-                                }
-                                // 在UI线程内清理资源，确保线程安全
+                                appendSseMessage(MessageType.WARNING, null, "failure", null,
+                                        I18nUtil.getMessage(MessageKeys.SSE_STREAM_FAILED, errorMsg), null);
                                 currentEventSource = null;
                                 currentWorker = null;
                             });
@@ -1122,6 +1154,42 @@ public class RequestEditSubPanel extends JPanel {
             String timestamp = LocalTime.now().format(TIME_FORMATTER);
             responsePanel.getWebSocketResponsePanel().addMessage(type, timestamp, text, testResults);
         }
+    }
+
+    private void appendSseMessage(MessageType type, String eventId, String eventType, Long retryMs,
+                                  String text, List<TestResult> testResults) {
+        if (responsePanel.getSseResponsePanel() == null) {
+            return;
+        }
+        String timestamp = LocalTime.now().format(TIME_FORMATTER);
+        responsePanel.getSseResponsePanel().addMessage(type, timestamp, eventId, eventType, retryMs, text, testResults);
+    }
+
+    private void appendSseRawEvent(StringBuilder sseBodyBuilder, String id, String type, String data) {
+        if (data == null) {
+            return;
+        }
+        if (id != null && !id.isBlank()) {
+            sseBodyBuilder.append("id: ").append(id).append('\n');
+        }
+        if (type != null && !type.isBlank()) {
+            sseBodyBuilder.append("event: ").append(type).append('\n');
+        }
+        for (String line : data.split("\\R", -1)) {
+            sseBodyBuilder.append("data: ").append(line).append('\n');
+        }
+        sseBodyBuilder.append('\n');
+    }
+
+    private void finalizeSseResponse(HttpResponse response, StringBuilder sseBodyBuilder, long startTime) {
+        if (response == null) {
+            return;
+        }
+        response.isSse = true;
+        response.body = sseBodyBuilder.toString();
+        response.bodySize = response.body.getBytes(StandardCharsets.UTF_8).length;
+        response.costMs = System.currentTimeMillis() - startTime;
+        response.endTime = System.currentTimeMillis();
     }
 
     /**
@@ -1403,7 +1471,9 @@ public class RequestEditSubPanel extends JPanel {
         // 清空WebSocket连接ID，使过期的连接回调失效
         currentWebSocketConnectionId = null;
 
-        currentWorker.cancel(true);
+        if (currentWorker != null) {
+            currentWorker.cancel(true);
+        }
         requestLinePanel.setSendButtonToSend(this::sendRequest);
         currentWorker = null;
 
@@ -1413,6 +1483,10 @@ public class RequestEditSubPanel extends JPanel {
         // 为WebSocket连接添加取消消息
         if (protocol.isWebSocketProtocol()) {
             appendWebSocketMessage(MessageType.WARNING, "User canceled");
+        }
+        if (protocol.isHttpProtocol() && httpSseStreamOpened) {
+            responsePanel.switchTabButtonHttpOrSse("sse");
+            appendSseMessage(MessageType.CLOSED, null, "closed", null, "User canceled", null);
         }
     }
 

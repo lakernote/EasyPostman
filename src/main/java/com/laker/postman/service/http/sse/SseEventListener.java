@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
 
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 
 // SSE事件监听器
@@ -30,6 +31,7 @@ public class SseEventListener extends EventSourceListener {
         }
         resp.code = response.code();
         resp.protocol = response.protocol().toString();
+        resp.isSse = true;
         callback.onOpen(resp, buildResponseHeadersTextStatic(resp));
     }
 
@@ -37,8 +39,9 @@ public class SseEventListener extends EventSourceListener {
     public void onClosed(EventSource eventSource) {
         long cost = System.currentTimeMillis() - startTime;
         resp.body = sseBodyBuilder.toString();
-        resp.bodySize = resp.body.getBytes().length;
+        resp.bodySize = resp.body.getBytes(StandardCharsets.UTF_8).length;
         resp.costMs = cost;
+        resp.endTime = System.currentTimeMillis();
         callback.onClosed(resp);
     }
 
@@ -49,21 +52,45 @@ public class SseEventListener extends EventSourceListener {
         } else {
             log.error("sse onFailure,response is null", throwable);
         }
+        if (response != null) {
+            if (resp.headers == null) {
+                resp.headers = new LinkedHashMap<>();
+            }
+            for (String name : response.headers().names()) {
+                resp.addHeader(name, response.headers(name));
+            }
+            resp.code = response.code();
+            resp.protocol = response.protocol().toString();
+        }
+        resp.isSse = true;
         String errorMsg = throwable != null ? throwable.getMessage() : "未知错误";
         long cost = System.currentTimeMillis() - startTime;
         resp.body = sseBodyBuilder.toString();
-        resp.bodySize = resp.body.getBytes().length;
+        resp.bodySize = resp.body.getBytes(StandardCharsets.UTF_8).length;
         resp.costMs = cost;
+        resp.endTime = System.currentTimeMillis();
         callback.onFailure(errorMsg, resp);
     }
 
     @Override
     public void onEvent(EventSource eventSource, String id, String type, String data) {
         if (data != null && !data.isBlank()) {
-            // 累积到 builder 用于最终的完整响应体
-            sseBodyBuilder.append(data).append("\n");
+            appendRawEvent(id, type, data);
             callback.onEvent(id, type, data);
         }
+    }
+
+    private void appendRawEvent(String id, String type, String data) {
+        if (id != null && !id.isBlank()) {
+            sseBodyBuilder.append("id: ").append(id).append('\n');
+        }
+        if (type != null && !type.isBlank()) {
+            sseBodyBuilder.append("event: ").append(type).append('\n');
+        }
+        for (String line : data.split("\\R", -1)) {
+            sseBodyBuilder.append("data: ").append(line).append('\n');
+        }
+        sseBodyBuilder.append('\n');
     }
 
     // 静态方法，避免内部类访问外部实例

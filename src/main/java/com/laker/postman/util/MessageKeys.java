@@ -268,6 +268,21 @@ public final class MessageKeys {
     // ============ SSE相关 ============
     public static final String SSE_FAILED = "sse.failed";
     public static final String SSE_ERROR = "sse.error";
+    public static final String SSE_COLUMN_EVENT_ID = "sse.column.event_id";
+    public static final String SSE_COLUMN_EVENT_TYPE = "sse.column.event_type";
+    public static final String SSE_COLUMN_RETRY = "sse.column.retry";
+    public static final String SSE_DETAIL_TITLE = "sse.detail.title";
+    public static final String SSE_DETAIL_TYPE = "sse.detail.type";
+    public static final String SSE_DETAIL_TIME = "sse.detail.time";
+    public static final String SSE_DETAIL_EVENT_ID = "sse.detail.event_id";
+    public static final String SSE_DETAIL_EVENT_TYPE = "sse.detail.event_type";
+    public static final String SSE_DETAIL_RETRY = "sse.detail.retry";
+    public static final String SSE_DETAIL_CONTENT = "sse.detail.content";
+    public static final String SSE_VALUE_NONE = "sse.value.none";
+    public static final String SSE_RETRY_UPDATED = "sse.retry.updated";
+    public static final String SSE_STREAM_CONNECTED = "sse.stream.connected";
+    public static final String SSE_STREAM_CLOSED = "sse.stream.closed";
+    public static final String SSE_STREAM_FAILED = "sse.stream.failed";
 
     // ============ 脚本相关 ============
     public static final String SCRIPT_BUTTON_SNIPPETS = "script.button.snippets";

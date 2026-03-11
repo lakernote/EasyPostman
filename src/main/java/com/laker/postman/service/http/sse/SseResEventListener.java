@@ -5,4 +5,10 @@ import okhttp3.internal.sse.ServerSentEventReader;
 
 public interface SseResEventListener extends ServerSentEventReader.Callback {
     void onOpen(HttpResponse response);
+
+    default void onClosed(HttpResponse response) {
+    }
+
+    default void onFailure(String errorMsg, HttpResponse response) {
+    }
 }

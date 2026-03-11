@@ -321,39 +321,52 @@ public class CsvDataPanel extends JPanel {
 
     /**
      * 增强的 CSV 文件管理对话框
+     * 布局：标题固定 → 说明文字可滚动 → 当前状态+操作按钮固定 → 关闭按钮固定
      */
     private void showEnhancedCsvManagementDialog() {
         JDialog dialog = new JDialog(SingletonFactory.getInstance(MainFrame.class),
                 I18nUtil.getMessage(MessageKeys.CSV_DIALOG_MANAGEMENT_TITLE), true);
-        dialog.setSize(600, 480);
+        dialog.setSize(480, 520);
+        dialog.setResizable(false);
         dialog.setLocationRelativeTo(SingletonFactory.getInstance(MainFrame.class));
         dialog.setLayout(new BorderLayout());
 
-        // 顶部说明面板
+        // ── NORTH：标题 + 可滚动说明文字 ──
         JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 10, 15));
+        topPanel.setBorder(BorderFactory.createEmptyBorder(14, 16, 0, 16));
 
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_DATA_DRIVEN_TEST));
-        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +4)); // 比标准字体大4号
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +2));
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
         topPanel.add(titleLabel, BorderLayout.NORTH);
 
+        // 说明文字只读区域，超出高度出现滚动条
         JTextArea descArea = new JTextArea(I18nUtil.getMessage(MessageKeys.CSV_DIALOG_DESCRIPTION));
-        descArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用标准字体大小
+        descArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         descArea.setEditable(false);
         descArea.setOpaque(false);
         descArea.setLineWrap(true);
         descArea.setWrapStyleWord(true);
-        topPanel.add(descArea, BorderLayout.CENTER);
+        JScrollPane descScroll = new JScrollPane(descArea,
+                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        descScroll.setBorder(BorderFactory.createEmptyBorder());
+        descScroll.setPreferredSize(new Dimension(0, 180));
+        descScroll.getVerticalScrollBar().setUnitIncrement(10);
+        topPanel.add(descScroll, BorderLayout.CENTER);
 
         dialog.add(topPanel, BorderLayout.NORTH);
 
-        // 中间内容面板
-        JPanel contentPanel = new JPanel(new BorderLayout());
-        contentPanel.setBorder(BorderFactory.createEmptyBorder(0, 15, 15, 15));
+        // ── CENTER：当前状态 + 操作按钮（固定，始终可见）──
+        JPanel fixedPanel = new JPanel();
+        fixedPanel.setLayout(new BoxLayout(fixedPanel, BoxLayout.Y_AXIS));
+        fixedPanel.setBorder(BorderFactory.createEmptyBorder(8, 16, 4, 16));
 
-        // 当前状态显示
-        JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        // 当前状态
+        JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
         statusPanel.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.CSV_CURRENT_STATUS)));
+        statusPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        statusPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
 
         JLabel currentStatusLabel = new JLabel();
         if (csvData == null || csvData.isEmpty()) {
@@ -366,55 +379,57 @@ public class CsvDataPanel extends JPanel {
             currentStatusLabel.setForeground(ModernColors.getTextSecondary());
         }
         statusPanel.add(currentStatusLabel);
-        contentPanel.add(statusPanel, BorderLayout.NORTH);
+        fixedPanel.add(statusPanel);
+        fixedPanel.add(Box.createVerticalStrut(6));
 
-        // 操作按钮面板 - 改为4行
-        JPanel actionPanel = new JPanel(new GridLayout(4, 1, 5, 10));
+        // 操作按钮区（BoxLayout，按钮全宽自适应，不受语言影响）
+        JPanel actionPanel = new JPanel();
+        actionPanel.setLayout(new BoxLayout(actionPanel, BoxLayout.Y_AXIS));
         actionPanel.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.CSV_OPERATIONS)));
+        actionPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // 选择文件按钮
         JButton selectFileBtn = new JButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_SELECT_FILE));
         selectFileBtn.setIcon(IconUtil.createThemed("icons/file.svg", 16, 16));
-        selectFileBtn.setPreferredSize(new Dimension(200, 35));
+        selectFileBtn.setHorizontalAlignment(SwingConstants.LEFT);
+        selectFileBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        selectFileBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
 
-        // 手动创建按钮
         JButton createManualBtn = new JButton(I18nUtil.getMessage(MessageKeys.CSV_MENU_CREATE_MANUAL));
         createManualBtn.setIcon(new FlatSVGIcon("icons/plus.svg", 16, 16));
-        createManualBtn.setPreferredSize(new Dimension(200, 35));
+        createManualBtn.setHorizontalAlignment(SwingConstants.LEFT);
+        createManualBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        createManualBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
 
-        // 管理数据按钮
         JButton manageDataBtn = new JButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_MANAGE_DATA));
         manageDataBtn.setIcon(IconUtil.createThemed("icons/code.svg", 16, 16));
-        manageDataBtn.setPreferredSize(new Dimension(200, 35));
+        manageDataBtn.setHorizontalAlignment(SwingConstants.LEFT);
+        manageDataBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        manageDataBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
         manageDataBtn.setEnabled(csvData != null && !csvData.isEmpty());
 
-        // 清除数据按钮
         JButton clearBtn = new JButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_CLEAR_DATA));
         clearBtn.setIcon(IconUtil.createThemed("icons/clear.svg", 16, 16));
-        clearBtn.setPreferredSize(new Dimension(200, 35));
+        clearBtn.setHorizontalAlignment(SwingConstants.LEFT);
+        clearBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        clearBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
         clearBtn.setEnabled(csvData != null && !csvData.isEmpty());
 
-        // 为按钮添加事件监听器，并确保状态更新
+        // 事件
         selectFileBtn.addActionListener(e -> {
             if (selectCsvFile()) {
                 currentStatusLabel.setText(I18nUtil.getMessage(MessageKeys.CSV_STATUS_LOADED, csvData.size()));
                 currentStatusLabel.setIcon(IconUtil.createThemed("icons/check.svg", 16, 16));
                 currentStatusLabel.setForeground(ModernColors.getTextSecondary());
                 updateCsvStatus();
-
-                // 立即更新按钮状态
-                manageDataBtn.setEnabled(csvData != null && !csvData.isEmpty());
-                clearBtn.setEnabled(csvData != null && !csvData.isEmpty());
+                manageDataBtn.setEnabled(true);
+                clearBtn.setEnabled(true);
             }
         });
-
         createManualBtn.addActionListener(e -> {
             dialog.dispose();
             showManualCreateDialog();
         });
-
         manageDataBtn.addActionListener(e -> showCsvDataManageDialog());
-
         clearBtn.addActionListener(e -> {
             clearCsvData();
             currentStatusLabel.setText(I18nUtil.getMessage(MessageKeys.CSV_STATUS_NO_DATA));
@@ -424,16 +439,22 @@ public class CsvDataPanel extends JPanel {
             clearBtn.setEnabled(false);
         });
 
+        actionPanel.add(Box.createVerticalStrut(4));
         actionPanel.add(selectFileBtn);
+        actionPanel.add(Box.createVerticalStrut(6));
         actionPanel.add(createManualBtn);
+        actionPanel.add(Box.createVerticalStrut(6));
         actionPanel.add(manageDataBtn);
+        actionPanel.add(Box.createVerticalStrut(6));
         actionPanel.add(clearBtn);
+        actionPanel.add(Box.createVerticalStrut(4));
 
-        contentPanel.add(actionPanel, BorderLayout.CENTER);
-        dialog.add(contentPanel, BorderLayout.CENTER);
+        fixedPanel.add(actionPanel);
+        dialog.add(fixedPanel, BorderLayout.CENTER);
 
-        // 底部按钮
-        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        // ── SOUTH：关闭按钮（固定，始终可见）──
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 8));
+        bottomPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.getDividerBorderColor()));
         JButton closeBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLOSE));
         closeBtn.addActionListener(e -> dialog.dispose());
         bottomPanel.add(closeBtn);

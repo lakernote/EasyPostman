@@ -488,6 +488,10 @@ public class PerformanceResultTablePanel extends JPanel {
             }
 
             // 2. 无断言测试
+            if (!r.isActuallySuccessful()) {
+                return "❌";
+            }
+
             return "💨";
         }
 
@@ -552,11 +556,15 @@ public class PerformanceResultTablePanel extends JPanel {
 
             super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
+            setFont(table.getFont());
+
             // 获取列索引
             int modelColumn = table.convertColumnIndexToModel(column);
+            ResultNodeInfo info = getRowInfo(table, row);
 
-            // 重置前景色为默认值（避免颜色污染其他列）
+            setBorder(createCellBorder(modelColumn, info, isSelected));
             if (!isSelected) {
+                setBackground(table.getBackground());
                 setForeground(table.getForeground());
             }
 
@@ -564,6 +572,10 @@ public class PerformanceResultTablePanel extends JPanel {
             switch (modelColumn) {
                 case 0: // 接口名称 - 左对齐
                     setHorizontalAlignment(SwingConstants.LEFT);
+                    if (!isSelected && info != null && !info.isActuallySuccessful()) {
+                        setForeground(ModernColors.ERROR_DARK);
+                        setFont(table.getFont().deriveFont(Font.BOLD));
+                    }
                     break;
                 case 1: // 状态码 - 居中对齐，带颜色
                     setHorizontalAlignment(SwingConstants.CENTER);
@@ -583,6 +595,31 @@ public class PerformanceResultTablePanel extends JPanel {
             }
 
             return this;
+        }
+
+        private ResultNodeInfo getRowInfo(JTable table, int viewRow) {
+            int modelRow = table.convertRowIndexToModel(viewRow);
+            if (modelRow < 0) {
+                return null;
+            }
+            if (!(table.getModel() instanceof ResultTableModel model)) {
+                return null;
+            }
+            return model.getRow(modelRow);
+        }
+
+        private javax.swing.border.Border createCellBorder(int modelColumn, ResultNodeInfo info, boolean isSelected) {
+            int leftInset = modelColumn == 0 ? 8 : 6;
+
+            if (modelColumn == 0 && info != null && !isSelected) {
+                Color stripeColor = info.isActuallySuccessful() ? ModernColors.SUCCESS_DARK : ModernColors.ERROR_DARK;
+                return BorderFactory.createCompoundBorder(
+                        BorderFactory.createMatteBorder(0, 4, 0, 0, stripeColor),
+                        BorderFactory.createEmptyBorder(0, leftInset, 0, 6)
+                );
+            }
+
+            return BorderFactory.createEmptyBorder(0, leftInset, 0, 6);
         }
 
         /**

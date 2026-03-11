@@ -111,8 +111,10 @@ public class PerformancePanel extends SingletonBasePanel {
 
     // CSV 数据管理面板
     private CsvDataPanel csvDataPanel;
-    // CSV行索引分配器
-    private final AtomicInteger csvRowIndex = new AtomicInteger(0);
+    // 虚拟用户（线程）编号分配器，每个线程启动时分配一个唯一编号
+    private final AtomicInteger virtualUserCounter = new AtomicInteger(0);
+    // 每个线程持有自己的虚拟用户编号，用于绑定 CSV 行
+    private final transient ThreadLocal<Integer> threadVirtualUserIndex = new ThreadLocal<>();
 
     // 持久化服务
     private transient PerformancePersistenceService persistenceService;
@@ -576,8 +578,8 @@ public class PerformancePanel extends SingletonBasePanel {
         apiFailMap.clear();
         allRequestResults.clear();
         ApiMetadata.clear(); // 清理API元数据
-        // CSV行索引重置
-        csvRowIndex.set(0);
+        // 虚拟用户编号重置（每次测试重新从0分配）
+        virtualUserCounter.set(0);
 
         // 启动所有定时器（趋势图采样 + 报表刷新）
         timerManager.startAll();
@@ -1026,7 +1028,9 @@ public class PerformancePanel extends SingletonBasePanel {
                 executor.shutdownNow();
                 return;
             }
+            final int vuIndex = virtualUserCounter.getAndIncrement();
             executor.submit(() -> {
+                threadVirtualUserIndex.set(vuIndex);
                 activeThreads.incrementAndGet();
                 SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
                 try {
@@ -1043,6 +1047,7 @@ public class PerformancePanel extends SingletonBasePanel {
                 } finally {
                     activeThreads.decrementAndGet();
                     SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
+                    threadVirtualUserIndex.remove();
                 }
             });
         }
@@ -1132,7 +1137,9 @@ public class PerformancePanel extends SingletonBasePanel {
                     if (!activeWorkerThreads.compareAndSet(current, current + 1)) {
                         continue;
                     }
+                    final int vuIndex = virtualUserCounter.getAndIncrement();
                     executor.submit(() -> {
+                        threadVirtualUserIndex.set(vuIndex);
                         activeThreads.incrementAndGet();
                         SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
                         try {
@@ -1144,6 +1151,7 @@ public class PerformancePanel extends SingletonBasePanel {
                             activeWorkerThreads.decrementAndGet();
                             activeThreads.decrementAndGet();
                             SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
+                            threadVirtualUserIndex.remove();
                         }
                     });
                 }
@@ -1204,7 +1212,9 @@ public class PerformancePanel extends SingletonBasePanel {
                 return;
             }
             activeWorkerThreads.incrementAndGet();
+            final int vuIndex = virtualUserCounter.getAndIncrement();
             Thread thread = new Thread(() -> {
+                threadVirtualUserIndex.set(vuIndex);
                 activeThreads.incrementAndGet();
                 SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
                 try {
@@ -1220,6 +1230,7 @@ public class PerformancePanel extends SingletonBasePanel {
                     SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
                     // 从跟踪Map中移除此线程
                     threadEndTimes.remove(Thread.currentThread());
+                    threadVirtualUserIndex.remove();
                 }
             });
             // 将线程添加到跟踪Map
@@ -1345,7 +1356,9 @@ public class PerformancePanel extends SingletonBasePanel {
                 return;
             }
             activeWorkerThreads.incrementAndGet();
+            final int vuIndex = virtualUserCounter.getAndIncrement();
             Thread thread = new Thread(() -> {
+                threadVirtualUserIndex.set(vuIndex);
                 activeThreads.incrementAndGet();
                 SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
                 try {
@@ -1361,6 +1374,7 @@ public class PerformancePanel extends SingletonBasePanel {
                     SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
                     // 从跟踪Map中移除此线程
                     threadEndTimes.remove(Thread.currentThread());
+                    threadVirtualUserIndex.remove();
                 }
             });
             // 将线程添加到跟踪Map
@@ -1460,7 +1474,9 @@ public class PerformancePanel extends SingletonBasePanel {
                 if (!running) return;
 
                 activeWorkerThreads.incrementAndGet();
+                final int vuIndex = virtualUserCounter.getAndIncrement();
                 Thread thread = new Thread(() -> {
+                    threadVirtualUserIndex.set(vuIndex);
                     activeThreads.incrementAndGet();
                     SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
                     try {
@@ -1476,6 +1492,7 @@ public class PerformancePanel extends SingletonBasePanel {
                         SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
                         // 从跟踪Map中移除此线程
                         threadEndTimes.remove(Thread.currentThread());
+                        threadVirtualUserIndex.remove();
                     }
                 });
                 // 将线程添加到跟踪Map
@@ -1537,7 +1554,9 @@ public class PerformancePanel extends SingletonBasePanel {
                 if (!running) return;
 
                 activeWorkerThreads.incrementAndGet();
+                final int vuIndex = virtualUserCounter.getAndIncrement();
                 Thread thread = new Thread(() -> {
+                    threadVirtualUserIndex.set(vuIndex);
                     activeThreads.incrementAndGet();
                     SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
                     try {
@@ -1553,6 +1572,7 @@ public class PerformancePanel extends SingletonBasePanel {
                         SwingUtilities.invokeLater(() -> progressLabel.setText(activeThreads.get() + "/" + totalThreads));
                         // 从跟踪Map中移除此线程
                         threadEndTimes.remove(Thread.currentThread());
+                        threadVirtualUserIndex.remove();
                     }
                 });
                 // 将线程添加到跟踪Map
@@ -1643,7 +1663,10 @@ public class PerformancePanel extends SingletonBasePanel {
             if (csvDataPanel != null && csvDataPanel.hasData()) {
                 int rowCount = csvDataPanel.getRowCount();
                 if (rowCount > 0) {
-                    int rowIdx = csvRowIndex.getAndIncrement() % rowCount;
+                    // 每个虚拟用户（线程）绑定固定的CSV行：threadVirtualUserIndex % rowCount
+                    // 保证同一个虚拟用户在整个测试过程中始终使用同一行CSV数据
+                    Integer vuIndex = threadVirtualUserIndex.get();
+                    int rowIdx = (vuIndex != null ? vuIndex : 0) % rowCount;
                     csvRow = csvDataPanel.getRowData(rowIdx);
                 }
             }
@@ -2370,7 +2393,7 @@ public class PerformancePanel extends SingletonBasePanel {
         apiFailMap.clear();
         allRequestResults.clear();
         ApiMetadata.clear(); // 清理API元数据
-        csvRowIndex.set(0);
+        virtualUserCounter.set(0);
 
         // 主动触发GC，及时释放清除的缓存数据占用的内存
         System.gc();

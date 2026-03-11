@@ -30,6 +30,7 @@ public class CsvDataPanel extends JPanel {
     private List<String> csvHeaders; // 保存CSV列标题的顺序
     private JPanel csvStatusPanel;  // CSV 状态显示面板
     private JLabel csvStatusLabel;  // CSV 状态标签
+    private String contextHelpText; // 调用方注入的场景说明
 
 
     public CsvDataPanel() {
@@ -157,6 +158,16 @@ public class CsvDataPanel extends JPanel {
     }
 
     /**
+     * 设置调用场景专属说明，仅在说明面板中追加展示。
+     */
+    public void setContextHelpText(String contextHelpText) {
+        this.contextHelpText = contextHelpText;
+        if (csvStatusLabel != null) {
+            csvStatusLabel.setToolTipText(buildStatusTooltip());
+        }
+    }
+
+    /**
      * 清除 CSV 数据
      */
     public void clearCsvData() {
@@ -176,10 +187,28 @@ public class CsvDataPanel extends JPanel {
         } else {
             csvStatusLabel.setText(I18nUtil.getMessage(MessageKeys.CSV_STATUS_LOADED, csvData.size()));
             csvStatusLabel.setForeground(ModernColors.getTextSecondary()); // 使用次要文本颜色
+            csvStatusLabel.setToolTipText(buildStatusTooltip());
             csvStatusPanel.setVisible(true);
         }
         revalidate();
         repaint();
+    }
+
+    private String buildStatusTooltip() {
+        if (CharSequenceUtil.isBlank(contextHelpText)) {
+            return I18nUtil.getMessage(MessageKeys.CSV_MENU_MANAGE_DATA);
+        }
+        return "<html>" + I18nUtil.getMessage(MessageKeys.CSV_MENU_MANAGE_DATA)
+                + "<br><br>"
+                + contextHelpText.replace("\n", "<br>")
+                + "</html>";
+    }
+
+    private String buildHelpText(String baseText) {
+        if (CharSequenceUtil.isBlank(contextHelpText)) {
+            return baseText;
+        }
+        return baseText + "\n\n" + contextHelpText;
     }
 
     /**
@@ -341,7 +370,7 @@ public class CsvDataPanel extends JPanel {
         topPanel.add(titleLabel, BorderLayout.NORTH);
 
         // 说明文字只读区域，超出高度出现滚动条
-        JTextArea descArea = new JTextArea(I18nUtil.getMessage(MessageKeys.CSV_DIALOG_DESCRIPTION));
+        JTextArea descArea = new JTextArea(buildHelpText(I18nUtil.getMessage(MessageKeys.CSV_DIALOG_DESCRIPTION)));
         descArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         descArea.setEditable(false);
         descArea.setOpaque(false);
@@ -723,7 +752,7 @@ public class CsvDataPanel extends JPanel {
         // 使用说明
         JPanel helpPanel = new JPanel(new BorderLayout());
         helpPanel.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.CSV_USAGE_INSTRUCTIONS)));
-        JTextArea helpText = new JTextArea(I18nUtil.getMessage(MessageKeys.CSV_USAGE_TEXT));
+        JTextArea helpText = new JTextArea(buildHelpText(I18nUtil.getMessage(MessageKeys.CSV_USAGE_TEXT)));
         helpText.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         helpText.setEditable(false);
         helpText.setOpaque(false);

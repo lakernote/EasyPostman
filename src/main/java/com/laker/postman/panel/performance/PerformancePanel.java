@@ -263,6 +263,7 @@ public class PerformancePanel extends SingletonBasePanel {
         });
         btnPanel.add(efficientCheckBox);
         csvDataPanel = new CsvDataPanel();
+        csvDataPanel.setContextHelpText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_CSV_USAGE_NOTE));
         btnPanel.add(csvDataPanel);
         topPanel.add(btnPanel, BorderLayout.WEST);
         // ========== 执行进度指示器 ==========

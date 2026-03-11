@@ -22,6 +22,9 @@ import java.util.Map;
 @UtilityClass
 public class CsvDataUtil {
 
+    public record CsvTextData(List<String> headers, List<List<String>> rows) {
+    }
+
     /**
      * 读取 CSV 文件数据
      *
@@ -41,22 +44,17 @@ public class CsvDataUtil {
                 return new ArrayList<>();
             }
 
-            CsvReader reader = CsvUtil.getReader();
-            CsvData csvData = reader.readFromStr(content);
-            List<CsvRow> rows = csvData.getRows();
-
-            if (rows.isEmpty()) {
+            CsvTextData csvTextData = parseCsvText(content);
+            List<String> headers = csvTextData.headers();
+            List<List<String>> rows = csvTextData.rows();
+            if (headers.isEmpty()) {
                 log.warn("CSV 文件没有数据行: {}", csvFile.getAbsolutePath());
                 return new ArrayList<>();
             }
 
-            // 第一行作为列头
-            List<String> headers = rows.get(0);
             List<Map<String, String>> dataList = new ArrayList<>();
 
-            // 从第二行开始处理数据
-            for (int i = 1; i < rows.size(); i++) {
-                List<String> row = rows.get(i);
+            for (List<String> row : rows) {
                 // 使用LinkedHashMap保持列的顺序
                 Map<String, String> rowData = new LinkedHashMap<>();
 
@@ -122,18 +120,35 @@ public class CsvDataUtil {
                 return new ArrayList<>();
             }
 
-            CsvReader reader = CsvUtil.getReader();
-            CsvData csvData = reader.readFromStr(content);
-            List<CsvRow> rows = csvData.getRows();
-
-            if (rows.isEmpty()) {
-                return new ArrayList<>();
-            }
-
-            return rows.get(0);
+            return parseCsvText(content).headers();
         } catch (Exception e) {
             log.error("获取 CSV 列头失败: {}", csvFile.getAbsolutePath(), e);
             return new ArrayList<>();
         }
+    }
+
+    /**
+     * 解析标准逗号分隔的 CSV 文本。
+     * 第一行作为列头，后续各行为数据行。
+     */
+    public static CsvTextData parseCsvText(String content) {
+        if (content == null || content.trim().isEmpty()) {
+            return new CsvTextData(new ArrayList<>(), new ArrayList<>());
+        }
+
+        CsvReader reader = CsvUtil.getReader();
+        CsvData csvData = reader.readFromStr(content);
+        List<CsvRow> parsedRows = csvData.getRows();
+
+        if (parsedRows.isEmpty()) {
+            return new CsvTextData(new ArrayList<>(), new ArrayList<>());
+        }
+
+        List<String> headers = new ArrayList<>(parsedRows.get(0));
+        List<List<String>> rows = new ArrayList<>();
+        for (int i = 1; i < parsedRows.size(); i++) {
+            rows.add(new ArrayList<>(parsedRows.get(i)));
+        }
+        return new CsvTextData(headers, rows);
     }
 }

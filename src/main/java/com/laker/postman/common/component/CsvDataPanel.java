@@ -921,15 +921,10 @@ public class CsvDataPanel extends JPanel {
         // 清空现有数据
         tableModel.setRowCount(0);
 
-        String[] lines = text.split("\n");
-        for (String line : lines) {
-            line = line.trim();
-            if (line.isEmpty()) {
-                continue; // 忽略空行
+        for (List<String> values : CsvDataUtil.parseCsvText(buildBulkEditCsvText(headers, text)).rows()) {
+            if (values.isEmpty()) {
+                continue;
             }
-
-            // 解析 CSV 行，支持引号包裹的值
-            List<String> values = parseCsvLine(line);
 
             // 创建新行
             Object[] rowData = new Object[headers.size()];
@@ -951,41 +946,32 @@ public class CsvDataPanel extends JPanel {
         }
     }
 
-    /**
-     * 解析 CSV 行，支持引号包裹的值
-     * 只支持逗号作为分隔符（标准 CSV 格式）
-     */
-    private List<String> parseCsvLine(String line) {
-        List<String> values = new ArrayList<>();
+    private String buildBulkEditCsvText(List<String> headers, String text) {
+        StringBuilder csvText = new StringBuilder();
+        csvText.append(buildCsvHeaderLine(headers)).append('\n');
+        csvText.append(text);
+        return csvText.toString();
+    }
 
-        StringBuilder currentValue = new StringBuilder();
-        boolean inQuotes = false;
-
-        for (int i = 0; i < line.length(); i++) {
-            char c = line.charAt(i);
-
-            if (c == '"') {
-                if (inQuotes && i + 1 < line.length() && line.charAt(i + 1) == '"') {
-                    // 转义的引号（""）
-                    currentValue.append('"');
-                    i++; // 跳过下一个引号
-                } else {
-                    // 开始或结束引号包裹
-                    inQuotes = !inQuotes;
-                }
-            } else if (c == ',' && !inQuotes) {
-                // 逗号分隔符，且不在引号内
-                values.add(currentValue.toString().trim());
-                currentValue = new StringBuilder();
-            } else {
-                currentValue.append(c);
+    private String buildCsvHeaderLine(List<String> headers) {
+        StringBuilder headerLine = new StringBuilder();
+        for (int i = 0; i < headers.size(); i++) {
+            if (i > 0) {
+                headerLine.append(',');
             }
+            headerLine.append(escapeCsvValue(headers.get(i)));
         }
+        return headerLine.toString();
+    }
 
-        // 添加最后一个值
-        values.add(currentValue.toString().trim());
-
-        return values;
+    private String escapeCsvValue(String value) {
+        if (value == null) {
+            return "";
+        }
+        if (value.contains(",") || value.contains("\n") || value.contains("\"")) {
+            return "\"" + value.replace("\"", "\"\"") + "\"";
+        }
+        return value;
     }
 
     /**

@@ -42,8 +42,7 @@ public class TreeNodeTransferHandler extends TransferHandler {
             if (userObj instanceof JMeterTreeNode jtNode) {
                 if (jtNode.type == NodeType.ROOT
                         || jtNode.type == NodeType.SSE_CONNECT
-                        || jtNode.type == NodeType.SSE_AWAIT
-                        || jtNode.type == NodeType.SSE_CLOSE) {
+                        || jtNode.type == NodeType.SSE_AWAIT) {
                     return NONE;
                 }
             }
@@ -117,8 +116,7 @@ public class TreeNodeTransferHandler extends TransferHandler {
         }
         return dragJtNode.type != NodeType.ROOT
                 && dragJtNode.type != NodeType.SSE_CONNECT
-                && dragJtNode.type != NodeType.SSE_AWAIT
-                && dragJtNode.type != NodeType.SSE_CLOSE;
+                && dragJtNode.type != NodeType.SSE_AWAIT;
     }
 
     @Override

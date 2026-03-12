@@ -28,7 +28,7 @@ public class JMeterTreeNode {
             case REQUEST -> this.httpRequestItem = (HttpRequestItem) data;
             case ASSERTION -> this.assertionData = (AssertionData) data;
             case TIMER -> this.timerData = (TimerData) data;
-            case SSE_CONNECT, SSE_AWAIT, SSE_CLOSE, ROOT -> {
+            case SSE_CONNECT, SSE_AWAIT, ROOT -> {
             }
         }
     }
@@ -39,7 +39,7 @@ public class JMeterTreeNode {
             case REQUEST -> httpRequestItem;
             case ASSERTION -> assertionData;
             case TIMER -> timerData;
-            case SSE_CONNECT, SSE_AWAIT, SSE_CLOSE, ROOT -> null;
+            case SSE_CONNECT, SSE_AWAIT, ROOT -> null;
             default -> null;
         };
     }
@@ -50,7 +50,7 @@ public class JMeterTreeNode {
             case REQUEST -> this.httpRequestItem = (com.laker.postman.model.HttpRequestItem) data;
             case ASSERTION -> this.assertionData = (AssertionData) data;
             case TIMER -> this.timerData = (TimerData) data;
-            case SSE_CONNECT, SSE_AWAIT, SSE_CLOSE, ROOT -> {
+            case SSE_CONNECT, SSE_AWAIT, ROOT -> {
             }
         }
     }

@@ -145,7 +145,7 @@ public class PerformancePersistenceService {
                     jsonNode.set("timerData", serializeTimerData(jmNode.timerData));
                 }
             }
-            case SSE_CONNECT, SSE_AWAIT, SSE_CLOSE, ROOT -> {
+            case SSE_CONNECT, SSE_AWAIT, ROOT -> {
             }
         }
 
@@ -332,6 +332,9 @@ public class PerformancePersistenceService {
                 return null;
             }
 
+            if ("SSE_CLOSE".equals(typeStr)) {
+                return null;
+            }
             NodeType nodeType = NodeType.valueOf(typeStr);
             JMeterTreeNode jmNode = new JMeterTreeNode(name, nodeType);
             jmNode.enabled = enabled;
@@ -372,7 +375,7 @@ public class PerformancePersistenceService {
                         jmNode.timerData = deserializeTimerData(timerData);
                     }
                 }
-                case SSE_CONNECT, SSE_AWAIT, SSE_CLOSE, ROOT -> {
+                case SSE_CONNECT, SSE_AWAIT, ROOT -> {
                 }
             }
 

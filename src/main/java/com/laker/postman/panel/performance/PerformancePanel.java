@@ -78,7 +78,6 @@ public class PerformancePanel extends SingletonBasePanel {
     public static final String TIMER = "timer";
     public static final String SSE_CONNECT = "sseConnect";
     public static final String SSE_AWAIT = "sseAwait";
-    public static final String SSE_CLOSE = "sseClose";
     private JTree jmeterTree;
     private DefaultTreeModel treeModel;
     private JPanel propertyPanel; // 右侧属性区（CardLayout）
@@ -89,7 +88,6 @@ public class PerformancePanel extends SingletonBasePanel {
     private TimerPropertyPanel timerPanel;
     private SseStagePropertyPanel sseConnectPanel;
     private SseStagePropertyPanel sseAwaitPanel;
-    private SseStagePropertyPanel sseClosePanel;
     private RequestEditSubPanel requestEditSubPanel;
     private JPanel requestEditorHost;
     private RequestItemProtocolEnum currentRequestEditorProtocol = RequestItemProtocolEnum.HTTP;
@@ -198,8 +196,6 @@ public class PerformancePanel extends SingletonBasePanel {
         propertyPanel.add(sseConnectPanel, SSE_CONNECT);
         sseAwaitPanel = new SseStagePropertyPanel(SseStagePropertyPanel.Stage.AWAIT);
         propertyPanel.add(sseAwaitPanel, SSE_AWAIT);
-        sseClosePanel = new SseStagePropertyPanel(SseStagePropertyPanel.Stage.CLOSE);
-        propertyPanel.add(sseClosePanel, SSE_CLOSE);
         propertyCardLayout.show(propertyPanel, EMPTY);
 
         // 3. 结果区
@@ -481,8 +477,6 @@ public class PerformancePanel extends SingletonBasePanel {
         boolean isSse = isSsePerfRequest(requestData.httpRequestItem);
         DefaultMutableTreeNode connectNode = findChildNode(requestNode, NodeType.SSE_CONNECT);
         DefaultMutableTreeNode awaitNode = findChildNode(requestNode, NodeType.SSE_AWAIT);
-        DefaultMutableTreeNode closeNode = findChildNode(requestNode, NodeType.SSE_CLOSE);
-
         if (isSse) {
             if (requestData.ssePerformanceData == null) {
                 requestData.ssePerformanceData = new SsePerformanceData();
@@ -490,9 +484,7 @@ public class PerformancePanel extends SingletonBasePanel {
             connectNode = ensureFixedChildNode(requestNode, NodeType.SSE_CONNECT,
                     I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_NODE_CONNECT), 0);
             awaitNode = ensureFixedChildNode(requestNode, NodeType.SSE_AWAIT,
-                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_NODE_AWAIT), 1);
-            closeNode = ensureFixedChildNode(requestNode, NodeType.SSE_CLOSE,
-                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_NODE_CLOSE), 2);
+                    buildSseAwaitNodeTitle(requestData.ssePerformanceData), 1);
             moveChildrenByType(requestNode, awaitNode, NodeType.ASSERTION);
         } else {
             if (awaitNode != null) {
@@ -504,10 +496,65 @@ public class PerformancePanel extends SingletonBasePanel {
             if (awaitNode != null) {
                 treeModel.removeNodeFromParent(awaitNode);
             }
-            if (closeNode != null) {
-                treeModel.removeNodeFromParent(closeNode);
+        }
+    }
+
+    private String buildSseAwaitNodeTitle(SsePerformanceData data) {
+        if (data == null) {
+            return I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_NODE_AWAIT);
+        }
+        StringJoiner joiner = new StringJoiner(" | ",
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_NODE_AWAIT) + " [",
+                "]");
+        joiner.add(getSseCompletionModeLabel(data.completionMode));
+        switch (data.completionMode) {
+            case FIRST_MESSAGE -> joiner.add(formatSseDuration(data.firstMessageTimeoutMs));
+            case MESSAGE_COUNT -> {
+                joiner.add(String.valueOf(Math.max(1, data.targetMessageCount)));
+                joiner.add(formatSseDuration(data.holdConnectionMs));
+            }
+            case FIXED_DURATION -> joiner.add(formatSseDuration(data.holdConnectionMs));
+        }
+        if (CharSequenceUtil.isNotBlank(data.eventNameFilter)) {
+            joiner.add("event=" + data.eventNameFilter.trim());
+        }
+        return joiner.toString();
+    }
+
+    private String getSseCompletionModeLabel(SsePerformanceData.CompletionMode mode) {
+        if (mode == null) {
+            mode = SsePerformanceData.CompletionMode.FIRST_MESSAGE;
+        }
+        return switch (mode) {
+            case FIRST_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_FIRST_MESSAGE);
+            case FIXED_DURATION -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_FIXED_DURATION);
+            case MESSAGE_COUNT -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_MESSAGE_COUNT);
+        };
+    }
+
+    private String formatSseDuration(int durationMs) {
+        if (durationMs >= 1000 && durationMs % 1000 == 0) {
+            return (durationMs / 1000) + "s";
+        }
+        return durationMs + "ms";
+    }
+
+    private void saveSseStageNode(DefaultMutableTreeNode stageNode) {
+        if (stageNode == null || !(stageNode.getUserObject() instanceof JMeterTreeNode stageJtNode)) {
+            return;
+        }
+        DefaultMutableTreeNode requestNode = getParentRequestNode(stageNode);
+        if (requestNode == null || !(requestNode.getUserObject() instanceof JMeterTreeNode requestJtNode)) {
+            return;
+        }
+        switch (stageJtNode.type) {
+            case SSE_CONNECT -> sseConnectPanel.saveData();
+            case SSE_AWAIT -> sseAwaitPanel.saveData();
+            default -> {
+                return;
             }
         }
+        syncSseRequestStructure(requestNode, requestJtNode);
     }
 
     private void syncAllSseRequestStructures(DefaultMutableTreeNode node) {
@@ -670,6 +717,8 @@ public class PerformancePanel extends SingletonBasePanel {
     private void handleSaveShortcut() {
         // 1. 强制提交所有 EasyJSpinner 的值
         threadGroupPanel.forceCommitAllSpinners();
+        sseConnectPanel.forceCommitAllSpinners();
+        sseAwaitPanel.forceCommitAllSpinners();
 
         // 2. 保存所有属性面板数据
         saveAllPropertyPanelData();
@@ -694,9 +743,7 @@ public class PerformancePanel extends SingletonBasePanel {
                 }
                 case ASSERTION -> assertionPanel.saveAssertionData();
                 case TIMER -> timerPanel.saveTimerData();
-                case SSE_CONNECT -> sseConnectPanel.saveData();
-                case SSE_AWAIT -> sseAwaitPanel.saveData();
-                case SSE_CLOSE -> sseClosePanel.saveData();
+                case SSE_CONNECT, SSE_AWAIT -> saveSseStageNode(selectedNode);
                 default -> {
                 }
             }
@@ -2360,9 +2407,7 @@ public class PerformancePanel extends SingletonBasePanel {
                             case REQUEST -> saveRequestNodeData(lastNode);
                             case ASSERTION -> assertionPanel.saveAssertionData();
                             case TIMER -> timerPanel.saveTimerData();
-                            case SSE_CONNECT -> sseConnectPanel.saveData();
-                            case SSE_AWAIT -> sseAwaitPanel.saveData();
-                            case SSE_CLOSE -> sseClosePanel.saveData();
+                            case SSE_CONNECT, SSE_AWAIT -> saveSseStageNode(lastNode);
                             default -> {
                                 // 其他类型节点不需要保存数据
                             }
@@ -2423,16 +2468,6 @@ public class PerformancePanel extends SingletonBasePanel {
                         if (requestNode != null && requestNode.getUserObject() instanceof JMeterTreeNode requestJtNode) {
                             propertyCardLayout.show(propertyPanel, SSE_AWAIT);
                             sseAwaitPanel.setRequestNode(requestJtNode);
-                        } else {
-                            propertyCardLayout.show(propertyPanel, EMPTY);
-                        }
-                        currentRequestNode = null;
-                    }
-                    case SSE_CLOSE -> {
-                        DefaultMutableTreeNode requestNode = getParentRequestNode(node);
-                        if (requestNode != null && requestNode.getUserObject() instanceof JMeterTreeNode requestJtNode) {
-                            propertyCardLayout.show(propertyPanel, SSE_CLOSE);
-                            sseClosePanel.setRequestNode(requestJtNode);
                         } else {
                             propertyCardLayout.show(propertyPanel, EMPTY);
                         }
@@ -2714,8 +2749,7 @@ public class PerformancePanel extends SingletonBasePanel {
                                 || jtNode.type == NodeType.SSE_AWAIT);
                         addTimer.setVisible(jtNode.type == NodeType.REQUEST);
                         boolean structuralSseNode = jtNode.type == NodeType.SSE_CONNECT
-                                || jtNode.type == NodeType.SSE_AWAIT
-                                || jtNode.type == NodeType.SSE_CLOSE;
+                                || jtNode.type == NodeType.SSE_AWAIT;
                         renameNode.setVisible(!structuralSseNode);
                         deleteNode.setVisible(!structuralSseNode);
                         // 根据当前启用状态显示启用或停用菜单

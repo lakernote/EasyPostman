@@ -1,5 +1,6 @@
 package com.laker.postman.panel.performance;
 
+import com.laker.postman.common.component.EasyJSpinner;
 import com.laker.postman.common.component.EasyTextField;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.SsePerformanceData;
@@ -8,6 +9,8 @@ import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * SSE 生命周期节点属性面板。
@@ -16,18 +19,18 @@ public class SseStagePropertyPanel extends JPanel {
 
     public enum Stage {
         CONNECT,
-        AWAIT,
-        CLOSE
+        AWAIT
     }
 
     private final Stage stage;
-    private final JSpinner connectTimeoutSpinner;
+    private final EasyJSpinner connectTimeoutSpinner;
     private final JComboBox<SsePerformanceData.CompletionMode> completionModeBox;
-    private final JSpinner awaitTimeoutSpinner;
-    private final JSpinner holdConnectionSpinner;
-    private final JSpinner targetMessageCountSpinner;
+    private final EasyJSpinner awaitTimeoutSpinner;
+    private final EasyJSpinner holdConnectionSpinner;
+    private final EasyJSpinner targetMessageCountSpinner;
     private final EasyTextField eventNameFilterField;
     private JLabel awaitTimeoutLabel;
+    private JLabel holdConnectionLabel;
     private JLabel targetMessageCountLabel;
     private JLabel fixedDurationHintLabel;
     private JMeterTreeNode requestNode;
@@ -45,12 +48,16 @@ public class SseStagePropertyPanel extends JPanel {
         gbc.gridy = 0;
         gbc.weightx = 0;
 
-        connectTimeoutSpinner = new JSpinner(new SpinnerNumberModel(10000, 100, 600000, 100));
+        connectTimeoutSpinner = new EasyJSpinner(new SpinnerNumberModel(10000, 100, 600000, 100));
         completionModeBox = new JComboBox<>(SsePerformanceData.CompletionMode.values());
-        awaitTimeoutSpinner = new JSpinner(new SpinnerNumberModel(10000, 100, 600000, 100));
-        holdConnectionSpinner = new JSpinner(new SpinnerNumberModel(30000, 100, 3600000, 1000));
-        targetMessageCountSpinner = new JSpinner(new SpinnerNumberModel(1, 1, 100000, 1));
+        awaitTimeoutSpinner = new EasyJSpinner(new SpinnerNumberModel(10000, 100, 600000, 100));
+        holdConnectionSpinner = new EasyJSpinner(new SpinnerNumberModel(30000, 100, 3600000, 1000));
+        targetMessageCountSpinner = new EasyJSpinner(new SpinnerNumberModel(1, 1, 100000, 1));
         eventNameFilterField = new EasyTextField(20);
+
+        for (EasyJSpinner spinner : getAllSpinners()) {
+            spinner.setPreferredSize(new Dimension(100, 28));
+        }
 
         completionModeBox.setRenderer(new DefaultListCellRenderer() {
             @Override
@@ -71,7 +78,6 @@ public class SseStagePropertyPanel extends JPanel {
         switch (stage) {
             case CONNECT -> buildConnectPanel(gbc);
             case AWAIT -> buildAwaitPanel(gbc);
-            case CLOSE -> buildClosePanel(gbc);
         }
 
         completionModeBox.addActionListener(e -> updateAwaitModeState());
@@ -86,6 +92,7 @@ public class SseStagePropertyPanel extends JPanel {
 
     private void buildAwaitPanel(GridBagConstraints gbc) {
         awaitTimeoutLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_AWAIT_TIMEOUT));
+        holdConnectionLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_HOLD_CONNECTION));
         targetMessageCountLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_TARGET_MESSAGE_COUNT));
         addFormRow(gbc,
                 new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_AWAIT_MODE)),
@@ -94,6 +101,7 @@ public class SseStagePropertyPanel extends JPanel {
                 new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_EVENT_FILTER)),
                 eventNameFilterField);
         addFormRow(gbc, awaitTimeoutLabel, awaitTimeoutSpinner);
+        addFormRow(gbc, holdConnectionLabel, holdConnectionSpinner);
         addFormRow(gbc, targetMessageCountLabel, targetMessageCountSpinner);
 
         gbc.gridx = 0;
@@ -102,12 +110,6 @@ public class SseStagePropertyPanel extends JPanel {
         fixedDurationHintLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_FIXED_DURATION_HINT));
         fixedDurationHintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
         add(fixedDurationHintLabel, gbc);
-    }
-
-    private void buildClosePanel(GridBagConstraints gbc) {
-        addFormRow(gbc,
-                new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_HOLD_CONNECTION)),
-                holdConnectionSpinner);
     }
 
     public void setRequestNode(JMeterTreeNode requestNode) {
@@ -128,32 +130,49 @@ public class SseStagePropertyPanel extends JPanel {
         if (requestNode == null) {
             return;
         }
+        forceCommitAllSpinners();
         SsePerformanceData data = requestNode.ssePerformanceData != null ? requestNode.ssePerformanceData : new SsePerformanceData();
         switch (stage) {
             case CONNECT -> data.connectTimeoutMs = (Integer) connectTimeoutSpinner.getValue();
             case AWAIT -> {
                 data.completionMode = (SsePerformanceData.CompletionMode) completionModeBox.getSelectedItem();
                 data.firstMessageTimeoutMs = (Integer) awaitTimeoutSpinner.getValue();
+                data.holdConnectionMs = (Integer) holdConnectionSpinner.getValue();
                 data.targetMessageCount = (Integer) targetMessageCountSpinner.getValue();
                 data.eventNameFilter = eventNameFilterField.getText().trim();
             }
-            case CLOSE -> data.holdConnectionMs = (Integer) holdConnectionSpinner.getValue();
         }
         requestNode.ssePerformanceData = data;
     }
 
+    public void forceCommitAllSpinners() {
+        getAllSpinners().forEach(EasyJSpinner::forceCommit);
+    }
+
     private void updateAwaitModeState() {
-        if (stage != Stage.AWAIT || awaitTimeoutLabel == null || targetMessageCountLabel == null || fixedDurationHintLabel == null) {
+        if (stage != Stage.AWAIT || awaitTimeoutLabel == null || holdConnectionLabel == null
+                || targetMessageCountLabel == null || fixedDurationHintLabel == null) {
             return;
         }
         SsePerformanceData.CompletionMode mode = (SsePerformanceData.CompletionMode) completionModeBox.getSelectedItem();
         boolean showAwaitTimeout = mode == SsePerformanceData.CompletionMode.FIRST_MESSAGE
                 || mode == SsePerformanceData.CompletionMode.MESSAGE_COUNT;
+        boolean showHoldConnection = mode == SsePerformanceData.CompletionMode.FIXED_DURATION
+                || mode == SsePerformanceData.CompletionMode.MESSAGE_COUNT;
         boolean showTargetCount = mode == SsePerformanceData.CompletionMode.MESSAGE_COUNT;
         boolean showFixedHint = mode == SsePerformanceData.CompletionMode.FIXED_DURATION;
 
+        awaitTimeoutLabel.setText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_FIRST_MESSAGE_TIMEOUT));
+        holdConnectionLabel.setText(I18nUtil.getMessage(
+                mode == SsePerformanceData.CompletionMode.MESSAGE_COUNT
+                        ? MessageKeys.PERFORMANCE_SSE_MAX_WAIT_DURATION
+                        : MessageKeys.PERFORMANCE_SSE_OBSERVE_DURATION
+        ));
+
         awaitTimeoutLabel.setVisible(showAwaitTimeout);
         awaitTimeoutSpinner.setVisible(showAwaitTimeout);
+        holdConnectionLabel.setVisible(showHoldConnection);
+        holdConnectionSpinner.setVisible(showHoldConnection);
         targetMessageCountLabel.setVisible(showTargetCount);
         targetMessageCountSpinner.setVisible(showTargetCount);
         fixedDurationHintLabel.setVisible(showFixedHint);
@@ -174,5 +193,9 @@ public class SseStagePropertyPanel extends JPanel {
         gbc.gridx = 0;
         gbc.gridy++;
         gbc.weightx = 0;
+    }
+
+    private List<EasyJSpinner> getAllSpinners() {
+        return Arrays.asList(connectTimeoutSpinner, awaitTimeoutSpinner, holdConnectionSpinner, targetMessageCountSpinner);
     }
 }

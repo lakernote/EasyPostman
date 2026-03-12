@@ -560,6 +560,10 @@ public final class MessageKeys {
     public static final String PERFORMANCE_WS_NODE_CLOSE = "performance.ws.node.close";
     public static final String PERFORMANCE_WS_CONNECT_TIMEOUT = "performance.ws.connect_timeout";
     public static final String PERFORMANCE_WS_SEND_MODE = "performance.ws.send_mode";
+    public static final String PERFORMANCE_WS_SEND_CONTENT_SOURCE = "performance.ws.send_content_source";
+    public static final String PERFORMANCE_WS_SEND_CONTENT_REQUEST_BODY = "performance.ws.send_content.request_body";
+    public static final String PERFORMANCE_WS_SEND_CONTENT_CUSTOM_TEXT = "performance.ws.send_content.custom_text";
+    public static final String PERFORMANCE_WS_SEND_CUSTOM_BODY = "performance.ws.send_custom_body";
     public static final String PERFORMANCE_WS_SEND_NONE = "performance.ws.send.none";
     public static final String PERFORMANCE_WS_SEND_REQUEST_BODY = "performance.ws.send.request_body";
     public static final String PERFORMANCE_WS_SEND_REQUEST_BODY_REPEAT = "performance.ws.send.request_body_repeat";

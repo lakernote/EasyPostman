@@ -11,6 +11,11 @@ public class WebSocketPerformanceData {
         REQUEST_BODY_REPEAT
     }
 
+    public enum SendContentSource {
+        REQUEST_BODY,
+        CUSTOM_TEXT
+    }
+
     public enum CompletionMode {
         FIRST_MESSAGE,
         MATCHED_MESSAGE,
@@ -20,6 +25,8 @@ public class WebSocketPerformanceData {
 
     public int connectTimeoutMs = 10000;
     public SendMode sendMode = SendMode.REQUEST_BODY_ON_CONNECT;
+    public SendContentSource sendContentSource = SendContentSource.REQUEST_BODY;
+    public String customSendBody = "";
     public int sendCount = 1;
     public int sendIntervalMs = 1000;
     public CompletionMode completionMode = CompletionMode.FIRST_MESSAGE;

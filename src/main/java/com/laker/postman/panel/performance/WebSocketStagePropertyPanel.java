@@ -2,6 +2,7 @@ package com.laker.postman.panel.performance;
 
 import com.laker.postman.common.component.EasyJSpinner;
 import com.laker.postman.common.component.EasyTextField;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import com.laker.postman.util.I18nUtil;
@@ -27,6 +28,7 @@ public class WebSocketStagePropertyPanel extends JPanel {
     private final Stage stage;
     private final EasyJSpinner connectTimeoutSpinner;
     private final JComboBox<WebSocketPerformanceData.SendMode> sendModeBox;
+    private final JComboBox<WebSocketPerformanceData.SendContentSource> sendContentSourceBox;
     private final EasyJSpinner sendCountSpinner;
     private final EasyJSpinner sendIntervalSpinner;
     private final JComboBox<WebSocketPerformanceData.CompletionMode> completionModeBox;
@@ -34,8 +36,11 @@ public class WebSocketStagePropertyPanel extends JPanel {
     private final EasyJSpinner holdConnectionSpinner;
     private final EasyJSpinner targetMessageCountSpinner;
     private final EasyTextField messageFilterField;
+    private final JTextArea customSendBodyArea;
     private JLabel sendCountLabel;
     private JLabel sendIntervalLabel;
+    private JLabel sendContentSourceLabel;
+    private JLabel customSendBodyLabel;
     private JLabel awaitTimeoutLabel;
     private JLabel holdConnectionLabel;
     private JLabel targetMessageCountLabel;
@@ -59,6 +64,7 @@ public class WebSocketStagePropertyPanel extends JPanel {
 
         connectTimeoutSpinner = new EasyJSpinner(new SpinnerNumberModel(10000, 100, 600000, 100));
         sendModeBox = new JComboBox<>(WebSocketPerformanceData.SendMode.values());
+        sendContentSourceBox = new JComboBox<>(WebSocketPerformanceData.SendContentSource.values());
         sendCountSpinner = new EasyJSpinner(new SpinnerNumberModel(3, 1, 100000, 1));
         sendIntervalSpinner = new EasyJSpinner(new SpinnerNumberModel(1000, 0, 3600000, 100));
         completionModeBox = new JComboBox<>(WebSocketPerformanceData.CompletionMode.values());
@@ -66,6 +72,12 @@ public class WebSocketStagePropertyPanel extends JPanel {
         holdConnectionSpinner = new EasyJSpinner(new SpinnerNumberModel(30000, 100, 3600000, 1000));
         targetMessageCountSpinner = new EasyJSpinner(new SpinnerNumberModel(1, 1, 100000, 1));
         messageFilterField = new EasyTextField(20);
+        customSendBodyArea = new JTextArea(6, 32);
+        customSendBodyArea.setBackground(ModernColors.getInputBackgroundColor());
+        customSendBodyArea.setForeground(ModernColors.getTextPrimary());
+        customSendBodyArea.setCaretColor(ModernColors.PRIMARY);
+        customSendBodyArea.setLineWrap(true);
+        customSendBodyArea.setWrapStyleWord(true);
 
         for (EasyJSpinner spinner : getAllSpinners()) {
             spinner.setPreferredSize(new Dimension(100, 28));
@@ -83,6 +95,20 @@ public class WebSocketStagePropertyPanel extends JPanel {
                                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_SEND_REQUEST_BODY);
                         case REQUEST_BODY_REPEAT ->
                                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_SEND_REQUEST_BODY_REPEAT);
+                    };
+                }
+                return super.getListCellRendererComponent(list, displayValue, index, isSelected, cellHasFocus);
+            }
+        });
+        sendContentSourceBox.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index,
+                                                          boolean isSelected, boolean cellHasFocus) {
+                Object displayValue = value;
+                if (value instanceof WebSocketPerformanceData.SendContentSource source) {
+                    displayValue = switch (source) {
+                        case REQUEST_BODY -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_SEND_CONTENT_REQUEST_BODY);
+                        case CUSTOM_TEXT -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_SEND_CONTENT_CUSTOM_TEXT);
                     };
                 }
                 return super.getListCellRendererComponent(list, displayValue, index, isSelected, cellHasFocus);
@@ -113,6 +139,7 @@ public class WebSocketStagePropertyPanel extends JPanel {
         }
 
         sendModeBox.addActionListener(e -> updateSendModeState());
+        sendContentSourceBox.addActionListener(e -> updateSendModeState());
         completionModeBox.addActionListener(e -> updateAwaitModeState());
         updateSendModeState();
         updateAwaitModeState();
@@ -128,10 +155,14 @@ public class WebSocketStagePropertyPanel extends JPanel {
         addFormRow(gbc,
                 new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_SEND_MODE)),
                 sendModeBox);
+        sendContentSourceLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_SEND_CONTENT_SOURCE));
+        addFormRow(gbc, sendContentSourceLabel, sendContentSourceBox);
         sendCountLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_SEND_COUNT));
         sendIntervalLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_SEND_INTERVAL));
         addFormRow(gbc, sendCountLabel, sendCountSpinner);
         addFormRow(gbc, sendIntervalLabel, sendIntervalSpinner);
+        customSendBodyLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_SEND_CUSTOM_BODY));
+        addTextAreaRow(gbc, customSendBodyLabel, new JScrollPane(customSendBodyArea));
 
         gbc.gridx = 0;
         gbc.gridwidth = 2;
@@ -180,6 +211,7 @@ public class WebSocketStagePropertyPanel extends JPanel {
                 : new WebSocketPerformanceData();
         connectTimeoutSpinner.setValue(data.connectTimeoutMs);
         sendModeBox.setSelectedItem(data.sendMode);
+        sendContentSourceBox.setSelectedItem(data.sendContentSource);
         sendCountSpinner.setValue(data.sendCount);
         sendIntervalSpinner.setValue(data.sendIntervalMs);
         completionModeBox.setSelectedItem(data.completionMode);
@@ -187,6 +219,7 @@ public class WebSocketStagePropertyPanel extends JPanel {
         holdConnectionSpinner.setValue(data.holdConnectionMs);
         targetMessageCountSpinner.setValue(data.targetMessageCount);
         messageFilterField.setText(data.messageFilter == null ? "" : data.messageFilter);
+        customSendBodyArea.setText(data.customSendBody == null ? "" : data.customSendBody);
         updateSendModeState();
         updateAwaitModeState();
     }
@@ -203,6 +236,8 @@ public class WebSocketStagePropertyPanel extends JPanel {
             case CONNECT -> data.connectTimeoutMs = (Integer) connectTimeoutSpinner.getValue();
             case SEND -> {
                 data.sendMode = (WebSocketPerformanceData.SendMode) sendModeBox.getSelectedItem();
+                data.sendContentSource = (WebSocketPerformanceData.SendContentSource) sendContentSourceBox.getSelectedItem();
+                data.customSendBody = customSendBodyArea.getText();
                 data.sendCount = (Integer) sendCountSpinner.getValue();
                 data.sendIntervalMs = (Integer) sendIntervalSpinner.getValue();
             }
@@ -229,11 +264,23 @@ public class WebSocketStagePropertyPanel extends JPanel {
             return;
         }
         WebSocketPerformanceData.SendMode mode = (WebSocketPerformanceData.SendMode) sendModeBox.getSelectedItem();
+        WebSocketPerformanceData.SendContentSource contentSource =
+                (WebSocketPerformanceData.SendContentSource) sendContentSourceBox.getSelectedItem();
+        boolean showContentFields = mode != WebSocketPerformanceData.SendMode.NONE;
         boolean showRepeatFields = mode == WebSocketPerformanceData.SendMode.REQUEST_BODY_REPEAT;
+        boolean showCustomContent = showContentFields && contentSource == WebSocketPerformanceData.SendContentSource.CUSTOM_TEXT;
+        sendContentSourceLabel.setVisible(showContentFields);
+        sendContentSourceBox.setVisible(showContentFields);
         sendCountLabel.setVisible(showRepeatFields);
         sendCountSpinner.setVisible(showRepeatFields);
         sendIntervalLabel.setVisible(showRepeatFields);
         sendIntervalSpinner.setVisible(showRepeatFields);
+        customSendBodyLabel.setVisible(showCustomContent);
+        customSendBodyArea.setVisible(showCustomContent);
+        Container scrollPane = customSendBodyArea.getParent() instanceof JViewport viewport ? viewport.getParent() : null;
+        if (scrollPane != null) {
+            scrollPane.setVisible(showCustomContent);
+        }
         sendHintLabel.setVisible(mode == WebSocketPerformanceData.SendMode.REQUEST_BODY_ON_CONNECT
                 || mode == WebSocketPerformanceData.SendMode.REQUEST_BODY_REPEAT);
         revalidate();
@@ -285,6 +332,27 @@ public class WebSocketStagePropertyPanel extends JPanel {
         gbc.gridx = 0;
         gbc.gridy++;
         gbc.weightx = 0;
+    }
+
+    private void addTextAreaRow(GridBagConstraints gbc, JComponent label, JComponent field) {
+        gbc.gridx = 0;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0;
+        gbc.anchor = GridBagConstraints.NORTHWEST;
+        add(label, gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        gbc.weighty = 1;
+        gbc.fill = GridBagConstraints.BOTH;
+        add(field, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy++;
+        gbc.weightx = 0;
+        gbc.weighty = 0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.WEST;
     }
 
     private List<EasyJSpinner> getAllSpinners() {

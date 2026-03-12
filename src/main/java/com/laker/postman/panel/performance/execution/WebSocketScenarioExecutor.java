@@ -182,7 +182,13 @@ public class WebSocketScenarioExecutor {
                                     ? stepNode.webSocketPerformanceData
                                     : copyData(requestCfg);
                             lastStepCfgRef.set(stepCfg);
-                            if (stepCfg.sendMode == WebSocketPerformanceData.SendMode.NONE || CharSequenceUtil.isBlank(req.body)) {
+                            String payload = resolveSendPayload(req, stepCfg);
+                            WebSocketPerformanceData.SendContentSource contentSource = stepCfg.sendContentSource != null
+                                    ? stepCfg.sendContentSource
+                                    : WebSocketPerformanceData.SendContentSource.REQUEST_BODY;
+                            if (stepCfg.sendMode == WebSocketPerformanceData.SendMode.NONE
+                                    || (contentSource == WebSocketPerformanceData.SendContentSource.REQUEST_BODY
+                                    && CharSequenceUtil.isBlank(payload))) {
                                 completionReasonRef.set("send_skipped");
                                 break;
                             }
@@ -191,7 +197,7 @@ public class WebSocketScenarioExecutor {
                                     : 1;
                             int intervalMs = Math.max(0, stepCfg.sendIntervalMs);
                             for (int sendIndex = 0; sendIndex < sendTimes && runningSupplier.getAsBoolean() && !failed.get() && !interrupted.get(); sendIndex++) {
-                                boolean sent = webSocket.send(req.body);
+                                boolean sent = webSocket.send(payload == null ? "" : payload);
                                 if (sent) {
                                     sentMessageCount.incrementAndGet();
                                     completionReasonRef.set("sent");
@@ -342,6 +348,10 @@ public class WebSocketScenarioExecutor {
 
         WebSocketPerformanceData headerCfg = lastStepCfgRef.get() != null ? lastStepCfgRef.get() : requestCfg;
         resp.addHeader("X-Easy-WS-Send-Mode", Collections.singletonList(headerCfg.sendMode.name()));
+        WebSocketPerformanceData.SendContentSource contentSource = headerCfg.sendContentSource != null
+                ? headerCfg.sendContentSource
+                : WebSocketPerformanceData.SendContentSource.REQUEST_BODY;
+        resp.addHeader("X-Easy-WS-Send-Content-Source", Collections.singletonList(contentSource.name()));
         resp.addHeader("X-Easy-WS-Send-Count-Configured", Collections.singletonList(String.valueOf(Math.max(1, headerCfg.sendCount))));
         resp.addHeader("X-Easy-WS-Send-Interval-Ms", Collections.singletonList(String.valueOf(Math.max(0, headerCfg.sendIntervalMs))));
         resp.addHeader("X-Easy-WS-Mode", Collections.singletonList(headerCfg.completionMode.name()));
@@ -363,6 +373,16 @@ public class WebSocketScenarioExecutor {
         return CharSequenceUtil.isBlank(filter) || CharSequenceUtil.contains(payload, filter.trim());
     }
 
+    private String resolveSendPayload(PreparedRequest req, WebSocketPerformanceData cfg) {
+        WebSocketPerformanceData.SendContentSource contentSource = cfg.sendContentSource != null
+                ? cfg.sendContentSource
+                : WebSocketPerformanceData.SendContentSource.REQUEST_BODY;
+        if (contentSource == WebSocketPerformanceData.SendContentSource.CUSTOM_TEXT) {
+            return cfg.customSendBody == null ? "" : cfg.customSendBody;
+        }
+        return req.body;
+    }
+
     private void appendMessage(StringBuffer buffer, String payload) {
         String value = payload == null ? "" : payload;
         buffer.append(value).append("\n\n");
@@ -375,6 +395,10 @@ public class WebSocketScenarioExecutor {
         }
         target.connectTimeoutMs = source.connectTimeoutMs;
         target.sendMode = source.sendMode;
+        target.sendContentSource = source.sendContentSource != null
+                ? source.sendContentSource
+                : WebSocketPerformanceData.SendContentSource.REQUEST_BODY;
+        target.customSendBody = source.customSendBody;
         target.sendCount = source.sendCount;
         target.sendIntervalMs = source.sendIntervalMs;
         target.completionMode = source.completionMode;

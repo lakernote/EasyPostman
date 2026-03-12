@@ -596,6 +596,8 @@ public class PerformancePanel extends SingletonBasePanel {
         }
         target.connectTimeoutMs = source.connectTimeoutMs;
         target.sendMode = source.sendMode;
+        target.sendContentSource = source.sendContentSource;
+        target.customSendBody = source.customSendBody;
         target.sendCount = source.sendCount;
         target.sendIntervalMs = source.sendIntervalMs;
         target.completionMode = source.completionMode;
@@ -748,6 +750,13 @@ public class PerformancePanel extends SingletonBasePanel {
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_SEND) + " [",
                 "]");
         joiner.add(modeLabel);
+        WebSocketPerformanceData.SendContentSource contentSource = data.sendContentSource != null
+                ? data.sendContentSource
+                : WebSocketPerformanceData.SendContentSource.REQUEST_BODY;
+        if (data.sendMode != WebSocketPerformanceData.SendMode.NONE
+                && contentSource == WebSocketPerformanceData.SendContentSource.CUSTOM_TEXT) {
+            joiner.add(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_SEND_CONTENT_CUSTOM_TEXT));
+        }
         if (data.sendMode == WebSocketPerformanceData.SendMode.REQUEST_BODY_REPEAT) {
             joiner.add(Math.max(1, data.sendCount) + "x");
             joiner.add(formatSseDuration(Math.max(0, data.sendIntervalMs)));

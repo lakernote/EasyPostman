@@ -42,7 +42,8 @@ public class TreeNodeTransferHandler extends TransferHandler {
             if (userObj instanceof JMeterTreeNode jtNode) {
                 if (jtNode.type == NodeType.ROOT
                         || jtNode.type == NodeType.SSE_CONNECT
-                        || jtNode.type == NodeType.SSE_AWAIT) {
+                        || jtNode.type == NodeType.SSE_AWAIT
+                        || jtNode.type == NodeType.WS_CONNECT) {
                     return NONE;
                 }
             }
@@ -98,7 +99,9 @@ public class TreeNodeTransferHandler extends TransferHandler {
         }
         // 断言、定时器只能在请求下
         if (dragJtNode.type == NodeType.ASSERTION) {
-            if (jtNode.type != NodeType.REQUEST && jtNode.type != NodeType.SSE_AWAIT) {
+            if (jtNode.type != NodeType.REQUEST
+                    && jtNode.type != NodeType.SSE_AWAIT
+                    && jtNode.type != NodeType.WS_AWAIT) {
                 return false;
             }
         }
@@ -106,6 +109,15 @@ public class TreeNodeTransferHandler extends TransferHandler {
             if (jtNode.type != NodeType.REQUEST) {
                 return false;
             }
+        }
+        if (dragJtNode.type == NodeType.WS_SEND
+                || dragJtNode.type == NodeType.WS_AWAIT
+                || dragJtNode.type == NodeType.WS_CLOSE) {
+            if (jtNode.type != NodeType.REQUEST) {
+                return false;
+            }
+            return jtNode.httpRequestItem != null && jtNode.httpRequestItem.getProtocol() != null
+                    && jtNode.httpRequestItem.getProtocol().isWebSocketProtocol();
         }
         // 不允许拖到自己或子孙节点
         if (nodeToRemove == targetNode) {
@@ -116,7 +128,8 @@ public class TreeNodeTransferHandler extends TransferHandler {
         }
         return dragJtNode.type != NodeType.ROOT
                 && dragJtNode.type != NodeType.SSE_CONNECT
-                && dragJtNode.type != NodeType.SSE_AWAIT;
+                && dragJtNode.type != NodeType.SSE_AWAIT
+                && dragJtNode.type != NodeType.WS_CONNECT;
     }
 
     @Override

@@ -132,10 +132,10 @@ public class HttpService {
     /**
      * 发送 WebSocket 请求，支持动态 eventListenerFactory 和超时配置
      */
-    public static void sendWebSocket(PreparedRequest req, WebSocketListener listener) {
+    public static WebSocket sendWebSocket(PreparedRequest req, WebSocketListener listener) {
         OkHttpClient customClient = buildCustomClient(req);
         Request request = buildRequestByType(req);
-        customClient.newWebSocket(request, new LogWebSocketListener(listener));
+        return customClient.newWebSocket(request, new LogWebSocketListener(listener));
     }
 
 

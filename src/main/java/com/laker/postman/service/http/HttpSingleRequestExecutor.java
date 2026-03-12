@@ -5,6 +5,7 @@ import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.service.http.sse.SseResEventListener;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
@@ -25,7 +26,7 @@ public class HttpSingleRequestExecutor {
         return HttpService.sendSseRequest(req, listener);
     }
 
-    public static void executeWebSocket(PreparedRequest req, WebSocketListener listener) {
-        HttpService.sendWebSocket(req, listener);
+    public static WebSocket executeWebSocket(PreparedRequest req, WebSocketListener listener) {
+        return HttpService.sendWebSocket(req, listener);
     }
 }

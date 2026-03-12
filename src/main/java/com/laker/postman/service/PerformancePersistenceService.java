@@ -12,6 +12,7 @@ import com.laker.postman.panel.performance.assertion.AssertionData;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.SsePerformanceData;
+import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
 import com.laker.postman.panel.performance.timer.TimerData;
 import com.laker.postman.service.collections.RequestCollectionsService;
@@ -134,6 +135,9 @@ public class PerformancePersistenceService {
                 if (jmNode.ssePerformanceData != null) {
                     jsonNode.set("ssePerformanceData", serializeSsePerformanceData(jmNode.ssePerformanceData));
                 }
+                if (jmNode.webSocketPerformanceData != null) {
+                    jsonNode.set("webSocketPerformanceData", serializeWebSocketPerformanceData(jmNode.webSocketPerformanceData));
+                }
             }
             case ASSERTION -> {
                 if (jmNode.assertionData != null) {
@@ -145,7 +149,7 @@ public class PerformancePersistenceService {
                     jsonNode.set("timerData", serializeTimerData(jmNode.timerData));
                 }
             }
-            case SSE_CONNECT, SSE_AWAIT, ROOT -> {
+            case SSE_CONNECT, SSE_AWAIT, WS_CONNECT, WS_SEND, WS_AWAIT, WS_CLOSE, ROOT -> {
             }
         }
 
@@ -222,6 +226,20 @@ public class PerformancePersistenceService {
         json.set("holdConnectionMs", data.holdConnectionMs);
         json.set("targetMessageCount", data.targetMessageCount);
         json.set("eventNameFilter", data.eventNameFilter);
+        return json;
+    }
+
+    private JSONObject serializeWebSocketPerformanceData(WebSocketPerformanceData data) {
+        JSONObject json = new JSONObject();
+        json.set("connectTimeoutMs", data.connectTimeoutMs);
+        json.set("sendMode", data.sendMode != null ? data.sendMode.name() : WebSocketPerformanceData.SendMode.REQUEST_BODY_ON_CONNECT.name());
+        json.set("sendCount", data.sendCount);
+        json.set("sendIntervalMs", data.sendIntervalMs);
+        json.set("completionMode", data.completionMode != null ? data.completionMode.name() : WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE.name());
+        json.set("firstMessageTimeoutMs", data.firstMessageTimeoutMs);
+        json.set("holdConnectionMs", data.holdConnectionMs);
+        json.set("targetMessageCount", data.targetMessageCount);
+        json.set("messageFilter", data.messageFilter);
         return json;
     }
 
@@ -362,6 +380,10 @@ public class PerformancePersistenceService {
                     if (sseData != null) {
                         jmNode.ssePerformanceData = deserializeSsePerformanceData(sseData);
                     }
+                    JSONObject wsData = jsonNode.getJSONObject("webSocketPerformanceData");
+                    if (wsData != null) {
+                        jmNode.webSocketPerformanceData = deserializeWebSocketPerformanceData(wsData);
+                    }
                 }
                 case ASSERTION -> {
                     JSONObject assertionData = jsonNode.getJSONObject("assertionData");
@@ -375,7 +397,7 @@ public class PerformancePersistenceService {
                         jmNode.timerData = deserializeTimerData(timerData);
                     }
                 }
-                case SSE_CONNECT, SSE_AWAIT, ROOT -> {
+                case SSE_CONNECT, SSE_AWAIT, WS_CONNECT, WS_SEND, WS_AWAIT, WS_CLOSE, ROOT -> {
                 }
             }
 
@@ -464,6 +486,30 @@ public class PerformancePersistenceService {
             data.eventNameFilter = json.getStr("eventNameFilter", data.eventNameFilter);
         } catch (Exception e) {
             log.warn("Failed to deserialize SSE performance data: {}", e.getMessage());
+        }
+        return data;
+    }
+
+    private WebSocketPerformanceData deserializeWebSocketPerformanceData(JSONObject json) {
+        WebSocketPerformanceData data = new WebSocketPerformanceData();
+        try {
+            data.connectTimeoutMs = json.getInt("connectTimeoutMs", data.connectTimeoutMs);
+            String sendMode = json.getStr("sendMode");
+            if (sendMode != null) {
+                data.sendMode = WebSocketPerformanceData.SendMode.valueOf(sendMode);
+            }
+            data.sendCount = json.getInt("sendCount", data.sendCount);
+            data.sendIntervalMs = json.getInt("sendIntervalMs", data.sendIntervalMs);
+            String completionMode = json.getStr("completionMode");
+            if (completionMode != null) {
+                data.completionMode = WebSocketPerformanceData.CompletionMode.valueOf(completionMode);
+            }
+            data.firstMessageTimeoutMs = json.getInt("firstMessageTimeoutMs", data.firstMessageTimeoutMs);
+            data.holdConnectionMs = json.getInt("holdConnectionMs", data.holdConnectionMs);
+            data.targetMessageCount = json.getInt("targetMessageCount", data.targetMessageCount);
+            data.messageFilter = json.getStr("messageFilter", data.messageFilter);
+        } catch (Exception e) {
+            log.warn("Failed to deserialize WebSocket performance data: {}", e.getMessage());
         }
         return data;
     }

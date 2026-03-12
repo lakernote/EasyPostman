@@ -96,7 +96,7 @@ public class ResultNodeInfo {
 
         // 3. 如果没有断言，以 HTTP 状态码为准
         if (resp != null && resp.code > 0) {
-            return resp.code >= 200 && resp.code < 400;
+            return resp.code == 101 || (resp.code >= 200 && resp.code < 400);
         }
 
         // 4. 兜底：没有响应则返回 false

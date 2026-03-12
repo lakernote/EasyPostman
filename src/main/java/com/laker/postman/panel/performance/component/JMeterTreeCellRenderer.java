@@ -31,6 +31,10 @@ public class JMeterTreeCellRenderer extends DefaultTreeCellRenderer {
                 case TIMER -> label.setIcon(IconUtil.createThemed("icons/time.svg", SIZE, SIZE));
                 case SSE_CONNECT -> label.setIcon(IconUtil.createThemed("icons/connect.svg", SIZE, SIZE));
                 case SSE_AWAIT -> label.setIcon(new FlatSVGIcon("icons/time.svg", SIZE, SIZE));
+                case WS_CONNECT -> label.setIcon(IconUtil.createThemed("icons/connect.svg", SIZE, SIZE));
+                case WS_SEND -> label.setIcon(IconUtil.createThemed("icons/ws-send.svg", SIZE, SIZE));
+                case WS_AWAIT -> label.setIcon(new FlatSVGIcon("icons/time.svg", SIZE, SIZE));
+                case WS_CLOSE -> label.setIcon(IconUtil.createThemed("icons/ws-close.svg", SIZE, SIZE));
                 case ROOT -> label.setIcon(new FlatSVGIcon("icons/computer.svg", SIZE, SIZE));
             }
 

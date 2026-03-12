@@ -11,15 +11,15 @@ import com.laker.postman.common.component.button.StartButton;
 import com.laker.postman.common.component.button.StopButton;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.model.script.TestResult;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
-import com.laker.postman.panel.performance.assertion.AssertionData;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
 import com.laker.postman.panel.performance.component.JMeterTreeCellRenderer;
 import com.laker.postman.panel.performance.component.TreeNodeTransferHandler;
+import com.laker.postman.panel.performance.execution.PerformanceRequestExecutionResult;
+import com.laker.postman.panel.performance.execution.PerformanceRequestExecutor;
+import com.laker.postman.panel.performance.execution.PerformanceResultRecorder;
 import com.laker.postman.panel.performance.model.*;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
@@ -29,14 +29,10 @@ import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
 import com.laker.postman.panel.performance.timer.TimerPropertyPanel;
 import com.laker.postman.service.PerformancePersistenceService;
 import com.laker.postman.service.collections.RequestCollectionsService;
-import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.http.okhttp.OkHttpClientManager;
-import com.laker.postman.service.js.ScriptExecutionPipeline;
-import com.laker.postman.service.js.ScriptExecutionResult;
 import com.laker.postman.service.setting.SettingManager;
-import com.laker.postman.service.variable.VariableResolver;
 import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.jfree.data.time.Second;
@@ -51,20 +47,15 @@ import javax.swing.tree.TreeSelectionModel;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.nio.charset.StandardCharsets;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-
-import okhttp3.Response;
+import okhttp3.WebSocket;
 import okhttp3.sse.EventSource;
-import okhttp3.sse.EventSourceListener;
 
 /**
  * 左侧多层级树（用户组-请求-断言-定时器），右侧属性区，底部Tab结果区
@@ -78,6 +69,10 @@ public class PerformancePanel extends SingletonBasePanel {
     public static final String TIMER = "timer";
     public static final String SSE_CONNECT = "sseConnect";
     public static final String SSE_AWAIT = "sseAwait";
+    public static final String WS_CONNECT = "wsConnect";
+    public static final String WS_SEND = "wsSend";
+    public static final String WS_AWAIT = "wsAwait";
+    public static final String WS_CLOSE = "wsClose";
     private JTree jmeterTree;
     private DefaultTreeModel treeModel;
     private JPanel propertyPanel; // 右侧属性区（CardLayout）
@@ -88,6 +83,10 @@ public class PerformancePanel extends SingletonBasePanel {
     private TimerPropertyPanel timerPanel;
     private SseStagePropertyPanel sseConnectPanel;
     private SseStagePropertyPanel sseAwaitPanel;
+    private WebSocketStagePropertyPanel wsConnectPanel;
+    private WebSocketStagePropertyPanel wsSendPanel;
+    private WebSocketStagePropertyPanel wsAwaitPanel;
+    private WebSocketStagePropertyPanel wsClosePanel;
     private RequestEditSubPanel requestEditSubPanel;
     private JPanel requestEditorHost;
     private RequestItemProtocolEnum currentRequestEditorProtocol = RequestItemProtocolEnum.HTTP;
@@ -137,6 +136,9 @@ public class PerformancePanel extends SingletonBasePanel {
     // 当前选中的请求节点
     private DefaultMutableTreeNode currentRequestNode;
     private final transient Set<EventSource> activeSseSources = ConcurrentHashMap.newKeySet();
+    private final transient Set<WebSocket> activeWebSockets = ConcurrentHashMap.newKeySet();
+    private transient PerformanceRequestExecutor requestExecutor;
+    private transient PerformanceResultRecorder resultRecorder;
 
     @Override
     protected void initUI() {
@@ -196,6 +198,14 @@ public class PerformancePanel extends SingletonBasePanel {
         propertyPanel.add(sseConnectPanel, SSE_CONNECT);
         sseAwaitPanel = new SseStagePropertyPanel(SseStagePropertyPanel.Stage.AWAIT);
         propertyPanel.add(sseAwaitPanel, SSE_AWAIT);
+        wsConnectPanel = new WebSocketStagePropertyPanel(WebSocketStagePropertyPanel.Stage.CONNECT);
+        propertyPanel.add(wsConnectPanel, WS_CONNECT);
+        wsSendPanel = new WebSocketStagePropertyPanel(WebSocketStagePropertyPanel.Stage.SEND);
+        propertyPanel.add(wsSendPanel, WS_SEND);
+        wsAwaitPanel = new WebSocketStagePropertyPanel(WebSocketStagePropertyPanel.Stage.AWAIT);
+        propertyPanel.add(wsAwaitPanel, WS_AWAIT);
+        wsClosePanel = new WebSocketStagePropertyPanel(WebSocketStagePropertyPanel.Stage.CLOSE);
+        propertyPanel.add(wsClosePanel, WS_CLOSE);
         propertyCardLayout.show(propertyPanel, EMPTY);
 
         // 3. 结果区
@@ -210,6 +220,21 @@ public class PerformancePanel extends SingletonBasePanel {
         resultTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_TREND), performanceTrendPanel);
         resultTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_REPORT), performanceReportPanel);
         resultTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_RESULT_TREE), performanceResultTablePanel);
+        requestExecutor = new PerformanceRequestExecutor(
+                () -> running,
+                this::isCancelledOrInterrupted,
+                activeSseSources,
+                activeWebSockets
+        );
+        resultRecorder = new PerformanceResultRecorder(
+                allRequestResults,
+                apiCostMap,
+                apiSuccessMap,
+                apiFailMap,
+                statsLock,
+                performanceResultTablePanel,
+                PerformancePanel::getJmeterSlowRequestThreshold
+        );
 
         // 主分割（左树-右属性）
         JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, treeScroll, propertyPanel);
@@ -303,7 +328,7 @@ public class PerformancePanel extends SingletonBasePanel {
         topPanel.add(progressPanel, BorderLayout.EAST);
         add(topPanel, BorderLayout.NORTH);
 
-        syncAllSseRequestStructures((DefaultMutableTreeNode) treeModel.getRoot());
+        syncAllRequestStructures((DefaultMutableTreeNode) treeModel.getRoot());
 
         runBtn.addActionListener(e -> startRun(progressLabel));
         stopBtn.addActionListener(e -> stopRun());
@@ -408,6 +433,11 @@ public class PerformancePanel extends SingletonBasePanel {
         return protocol.isSseProtocol() || (protocol.isHttpProtocol() && HttpUtil.isSSERequest(req));
     }
 
+    private boolean isWebSocketPerfRequest(HttpRequestItem item) {
+        RequestItemProtocolEnum protocol = resolveRequestProtocol(item);
+        return protocol.isWebSocketProtocol();
+    }
+
     private DefaultMutableTreeNode getParentRequestNode(DefaultMutableTreeNode node) {
         DefaultMutableTreeNode current = node;
         while (current != null) {
@@ -469,34 +499,200 @@ public class PerformancePanel extends SingletonBasePanel {
         }
     }
 
-    private void syncSseRequestStructure(DefaultMutableTreeNode requestNode, JMeterTreeNode requestData) {
+    private void syncRequestStructure(DefaultMutableTreeNode requestNode, JMeterTreeNode requestData) {
         if (requestNode == null || requestData == null || requestData.httpRequestItem == null) {
             return;
         }
 
         boolean isSse = isSsePerfRequest(requestData.httpRequestItem);
-        DefaultMutableTreeNode connectNode = findChildNode(requestNode, NodeType.SSE_CONNECT);
-        DefaultMutableTreeNode awaitNode = findChildNode(requestNode, NodeType.SSE_AWAIT);
+        boolean isWebSocket = isWebSocketPerfRequest(requestData.httpRequestItem);
+
+        cleanupSseRequestStructure(requestNode, !isSse);
+        cleanupWebSocketRequestStructure(requestNode, !isWebSocket);
+
         if (isSse) {
             if (requestData.ssePerformanceData == null) {
                 requestData.ssePerformanceData = new SsePerformanceData();
             }
-            connectNode = ensureFixedChildNode(requestNode, NodeType.SSE_CONNECT,
+            DefaultMutableTreeNode connectNode = ensureFixedChildNode(requestNode, NodeType.SSE_CONNECT,
                     I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_NODE_CONNECT), 0);
-            awaitNode = ensureFixedChildNode(requestNode, NodeType.SSE_AWAIT,
+            DefaultMutableTreeNode awaitNode = ensureFixedChildNode(requestNode, NodeType.SSE_AWAIT,
                     buildSseAwaitNodeTitle(requestData.ssePerformanceData), 1);
             moveChildrenByType(requestNode, awaitNode, NodeType.ASSERTION);
-        } else {
-            if (awaitNode != null) {
-                moveChildrenByType(awaitNode, requestNode, NodeType.ASSERTION);
+            treeModel.nodeChanged(connectNode);
+            treeModel.nodeChanged(awaitNode);
+        } else if (isWebSocket) {
+            if (requestData.webSocketPerformanceData == null) {
+                requestData.webSocketPerformanceData = new WebSocketPerformanceData();
             }
-            if (connectNode != null) {
-                treeModel.removeNodeFromParent(connectNode);
-            }
-            if (awaitNode != null) {
-                treeModel.removeNodeFromParent(awaitNode);
+            DefaultMutableTreeNode connectNode = ensureFixedChildNode(requestNode, NodeType.WS_CONNECT,
+                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_CONNECT), 0);
+            refreshWebSocketStepTitles(requestNode);
+            treeModel.nodeChanged(connectNode);
+        }
+    }
+
+    private void cleanupSseRequestStructure(DefaultMutableTreeNode requestNode, boolean removeNodes) {
+        DefaultMutableTreeNode connectNode = findChildNode(requestNode, NodeType.SSE_CONNECT);
+        DefaultMutableTreeNode awaitNode = findChildNode(requestNode, NodeType.SSE_AWAIT);
+        if (removeNodes && awaitNode != null) {
+            moveChildrenByType(awaitNode, requestNode, NodeType.ASSERTION);
+        }
+        if (removeNodes && connectNode != null) {
+            treeModel.removeNodeFromParent(connectNode);
+        }
+        if (removeNodes && awaitNode != null) {
+            treeModel.removeNodeFromParent(awaitNode);
+        }
+    }
+
+    private void cleanupWebSocketRequestStructure(DefaultMutableTreeNode requestNode, boolean removeNodes) {
+        DefaultMutableTreeNode connectNode = findChildNode(requestNode, NodeType.WS_CONNECT);
+        List<DefaultMutableTreeNode> wsStepNodes = new ArrayList<>();
+        for (int i = 0; i < requestNode.getChildCount(); i++) {
+            DefaultMutableTreeNode child = (DefaultMutableTreeNode) requestNode.getChildAt(i);
+            Object userObj = child.getUserObject();
+            if (userObj instanceof JMeterTreeNode jtNode) {
+                if (jtNode.type == NodeType.WS_AWAIT) {
+                    moveChildrenByType(child, requestNode, NodeType.ASSERTION);
+                }
+                if (jtNode.type == NodeType.WS_SEND || jtNode.type == NodeType.WS_AWAIT || jtNode.type == NodeType.WS_CLOSE) {
+                    wsStepNodes.add(child);
+                }
             }
         }
+        if (removeNodes && connectNode != null) {
+            treeModel.removeNodeFromParent(connectNode);
+        }
+        if (removeNodes) {
+            for (DefaultMutableTreeNode wsStepNode : wsStepNodes) {
+                treeModel.removeNodeFromParent(wsStepNode);
+            }
+        }
+    }
+
+    private void refreshWebSocketStepTitles(DefaultMutableTreeNode requestNode) {
+        for (int i = 0; i < requestNode.getChildCount(); i++) {
+            DefaultMutableTreeNode child = (DefaultMutableTreeNode) requestNode.getChildAt(i);
+            Object userObj = child.getUserObject();
+            if (!(userObj instanceof JMeterTreeNode jtNode)) {
+                continue;
+            }
+            switch (jtNode.type) {
+                case WS_SEND -> jtNode.name = buildWebSocketSendNodeTitle(jtNode.webSocketPerformanceData);
+                case WS_AWAIT -> jtNode.name = buildWebSocketAwaitNodeTitle(jtNode.webSocketPerformanceData);
+                case WS_CLOSE -> jtNode.name = I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_CLOSE);
+                default -> {
+                }
+            }
+            treeModel.nodeChanged(child);
+        }
+    }
+
+    private WebSocketPerformanceData copyWebSocketData(WebSocketPerformanceData source) {
+        WebSocketPerformanceData target = new WebSocketPerformanceData();
+        if (source == null) {
+            return target;
+        }
+        target.connectTimeoutMs = source.connectTimeoutMs;
+        target.sendMode = source.sendMode;
+        target.sendCount = source.sendCount;
+        target.sendIntervalMs = source.sendIntervalMs;
+        target.completionMode = source.completionMode;
+        target.firstMessageTimeoutMs = source.firstMessageTimeoutMs;
+        target.holdConnectionMs = source.holdConnectionMs;
+        target.targetMessageCount = source.targetMessageCount;
+        target.messageFilter = source.messageFilter;
+        return target;
+    }
+
+    private boolean isWebSocketStepNode(NodeType type) {
+        return type == NodeType.WS_SEND || type == NodeType.WS_AWAIT || type == NodeType.WS_CLOSE;
+    }
+
+    private DefaultMutableTreeNode resolveWebSocketStepParent(DefaultMutableTreeNode selectedNode) {
+        if (selectedNode == null || !(selectedNode.getUserObject() instanceof JMeterTreeNode jtNode)) {
+            return null;
+        }
+        if (jtNode.type == NodeType.REQUEST && isWebSocketPerfRequest(jtNode.httpRequestItem)) {
+            return selectedNode;
+        }
+        if (jtNode.type == NodeType.WS_CONNECT || isWebSocketStepNode(jtNode.type)) {
+            return getParentRequestNode(selectedNode);
+        }
+        return null;
+    }
+
+    private DefaultMutableTreeNode createWebSocketStepNode(NodeType type, WebSocketPerformanceData requestDefaults) {
+        JMeterTreeNode nodeData;
+        switch (type) {
+            case WS_SEND -> {
+                nodeData = new JMeterTreeNode(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_SEND), NodeType.WS_SEND);
+                WebSocketPerformanceData stepData = copyWebSocketData(requestDefaults);
+                stepData.sendMode = WebSocketPerformanceData.SendMode.REQUEST_BODY_ON_CONNECT;
+                stepData.sendCount = 1;
+                stepData.sendIntervalMs = 1000;
+                nodeData.webSocketPerformanceData = stepData;
+                nodeData.name = buildWebSocketSendNodeTitle(stepData);
+            }
+            case WS_AWAIT -> {
+                nodeData = new JMeterTreeNode(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_AWAIT), NodeType.WS_AWAIT);
+                WebSocketPerformanceData stepData = copyWebSocketData(requestDefaults);
+                stepData.completionMode = WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE;
+                stepData.firstMessageTimeoutMs = Math.max(100, stepData.firstMessageTimeoutMs);
+                stepData.targetMessageCount = 1;
+                nodeData.webSocketPerformanceData = stepData;
+                nodeData.name = buildWebSocketAwaitNodeTitle(stepData);
+            }
+            case WS_CLOSE -> {
+                nodeData = new JMeterTreeNode(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_CLOSE), NodeType.WS_CLOSE);
+                nodeData.webSocketPerformanceData = copyWebSocketData(requestDefaults);
+            }
+            default -> throw new IllegalArgumentException("Unsupported WebSocket step type: " + type);
+        }
+        return new DefaultMutableTreeNode(nodeData);
+    }
+
+    private void addWebSocketStepNode(NodeType type) {
+        DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
+        DefaultMutableTreeNode requestNode = resolveWebSocketStepParent(selectedNode);
+        if (requestNode == null || !(requestNode.getUserObject() instanceof JMeterTreeNode requestJtNode)) {
+            return;
+        }
+        WebSocketPerformanceData defaults = requestJtNode.webSocketPerformanceData != null
+                ? requestJtNode.webSocketPerformanceData
+                : new WebSocketPerformanceData();
+        DefaultMutableTreeNode newNode = createWebSocketStepNode(type, defaults);
+        int insertIndex = requestNode.getChildCount();
+        if (selectedNode != null && selectedNode.getParent() == requestNode) {
+            insertIndex = requestNode.getIndex(selectedNode) + 1;
+        }
+        insertIndex = Math.max(1, insertIndex);
+        treeModel.insertNodeInto(newNode, requestNode, Math.min(insertIndex, requestNode.getChildCount()));
+        refreshWebSocketStepTitles(requestNode);
+        jmeterTree.expandPath(new TreePath(requestNode.getPath()));
+        jmeterTree.setSelectionPath(new TreePath(newNode.getPath()));
+        saveConfig();
+    }
+
+    private void addTimerNode() {
+        DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
+        if (selectedNode == null) {
+            return;
+        }
+        DefaultMutableTreeNode parentNode = selectedNode;
+        int insertIndex = parentNode.getChildCount();
+        DefaultMutableTreeNode wsParent = resolveWebSocketStepParent(selectedNode);
+        if (wsParent != null) {
+            parentNode = wsParent;
+            insertIndex = selectedNode.getParent() == wsParent ? wsParent.getIndex(selectedNode) + 1 : wsParent.getChildCount();
+            insertIndex = Math.max(1, insertIndex);
+        }
+        DefaultMutableTreeNode timer = new DefaultMutableTreeNode(new JMeterTreeNode("Timer", NodeType.TIMER));
+        treeModel.insertNodeInto(timer, parentNode, Math.min(insertIndex, parentNode.getChildCount()));
+        jmeterTree.expandPath(new TreePath(parentNode.getPath()));
+        jmeterTree.setSelectionPath(new TreePath(timer.getPath()));
+        saveConfig();
     }
 
     private String buildSseAwaitNodeTitle(SsePerformanceData data) {
@@ -539,6 +735,61 @@ public class PerformancePanel extends SingletonBasePanel {
         return durationMs + "ms";
     }
 
+    private String buildWebSocketSendNodeTitle(WebSocketPerformanceData data) {
+        if (data == null) {
+            return I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_SEND);
+        }
+        String modeLabel = switch (data.sendMode) {
+            case NONE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_SEND_NONE);
+            case REQUEST_BODY_ON_CONNECT -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_SEND_REQUEST_BODY);
+            case REQUEST_BODY_REPEAT -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_SEND_REQUEST_BODY_REPEAT);
+        };
+        StringJoiner joiner = new StringJoiner(" | ",
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_SEND) + " [",
+                "]");
+        joiner.add(modeLabel);
+        if (data.sendMode == WebSocketPerformanceData.SendMode.REQUEST_BODY_REPEAT) {
+            joiner.add(Math.max(1, data.sendCount) + "x");
+            joiner.add(formatSseDuration(Math.max(0, data.sendIntervalMs)));
+        }
+        return joiner.toString();
+    }
+
+    private String buildWebSocketAwaitNodeTitle(WebSocketPerformanceData data) {
+        if (data == null) {
+            return I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_AWAIT);
+        }
+        StringJoiner joiner = new StringJoiner(" | ",
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_AWAIT) + " [",
+                "]");
+        joiner.add(getWebSocketCompletionModeLabel(data.completionMode));
+        switch (data.completionMode) {
+            case FIRST_MESSAGE -> joiner.add(formatSseDuration(data.firstMessageTimeoutMs));
+            case MATCHED_MESSAGE -> joiner.add(formatSseDuration(data.firstMessageTimeoutMs));
+            case MESSAGE_COUNT -> {
+                joiner.add(String.valueOf(Math.max(1, data.targetMessageCount)));
+                joiner.add(formatSseDuration(data.holdConnectionMs));
+            }
+            case FIXED_DURATION -> joiner.add(formatSseDuration(data.holdConnectionMs));
+        }
+        if (CharSequenceUtil.isNotBlank(data.messageFilter)) {
+            joiner.add("contains=" + data.messageFilter.trim());
+        }
+        return joiner.toString();
+    }
+
+    private String getWebSocketCompletionModeLabel(WebSocketPerformanceData.CompletionMode mode) {
+        if (mode == null) {
+            mode = WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE;
+        }
+        return switch (mode) {
+            case FIRST_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_COMPLETION_FIRST_MESSAGE);
+            case MATCHED_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_COMPLETION_MATCHED_MESSAGE);
+            case FIXED_DURATION -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_COMPLETION_FIXED_DURATION);
+            case MESSAGE_COUNT -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_COMPLETION_MESSAGE_COUNT);
+        };
+    }
+
     private void saveSseStageNode(DefaultMutableTreeNode stageNode) {
         if (stageNode == null || !(stageNode.getUserObject() instanceof JMeterTreeNode stageJtNode)) {
             return;
@@ -554,16 +805,39 @@ public class PerformancePanel extends SingletonBasePanel {
                 return;
             }
         }
-        syncSseRequestStructure(requestNode, requestJtNode);
+        syncRequestStructure(requestNode, requestJtNode);
     }
 
-    private void syncAllSseRequestStructures(DefaultMutableTreeNode node) {
+    private void saveWebSocketStageNode(DefaultMutableTreeNode stageNode) {
+        if (stageNode == null || !(stageNode.getUserObject() instanceof JMeterTreeNode stageJtNode)) {
+            return;
+        }
+        DefaultMutableTreeNode requestNode = getParentRequestNode(stageNode);
+        if (requestNode == null || !(requestNode.getUserObject() instanceof JMeterTreeNode requestJtNode)) {
+            return;
+        }
+        switch (stageJtNode.type) {
+            case WS_CONNECT -> {
+                wsConnectPanel.saveData();
+                treeModel.nodeChanged(stageNode);
+            }
+            case WS_SEND -> wsSendPanel.saveData();
+            case WS_AWAIT -> wsAwaitPanel.saveData();
+            case WS_CLOSE -> wsClosePanel.saveData();
+            default -> {
+                return;
+            }
+        }
+        syncRequestStructure(requestNode, requestJtNode);
+    }
+
+    private void syncAllRequestStructures(DefaultMutableTreeNode node) {
         Object userObj = node.getUserObject();
         if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.REQUEST) {
-            syncSseRequestStructure(node, jtNode);
+            syncRequestStructure(node, jtNode);
         }
         for (int i = 0; i < node.getChildCount(); i++) {
-            syncAllSseRequestStructures((DefaultMutableTreeNode) node.getChildAt(i));
+            syncAllRequestStructures((DefaultMutableTreeNode) node.getChildAt(i));
         }
     }
 
@@ -594,7 +868,7 @@ public class PerformancePanel extends SingletonBasePanel {
         Object userObj = node.getUserObject();
         if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.REQUEST) {
             jtNode.httpRequestItem = requestEditSubPanel.getCurrentRequest();
-            syncSseRequestStructure(node, jtNode);
+            syncRequestStructure(node, jtNode);
         }
     }
 
@@ -654,7 +928,7 @@ public class PerformancePanel extends SingletonBasePanel {
 
         // 更新节点中的请求数据
         jmNode.httpRequestItem = latestRequestItem;
-        syncSseRequestStructure(currentRequestNode, jmNode);
+        syncRequestStructure(currentRequestNode, jmNode);
         jmNode.name = latestRequestItem.getName();
         treeModel.nodeChanged(currentRequestNode);
         // 清除 InheritanceCache，防止下次执行时 PreparedRequestBuilder.build() 拿到旧缓存
@@ -719,6 +993,9 @@ public class PerformancePanel extends SingletonBasePanel {
         threadGroupPanel.forceCommitAllSpinners();
         sseConnectPanel.forceCommitAllSpinners();
         sseAwaitPanel.forceCommitAllSpinners();
+        wsConnectPanel.forceCommitAllSpinners();
+        wsSendPanel.forceCommitAllSpinners();
+        wsAwaitPanel.forceCommitAllSpinners();
 
         // 2. 保存所有属性面板数据
         saveAllPropertyPanelData();
@@ -744,6 +1021,7 @@ public class PerformancePanel extends SingletonBasePanel {
                 case ASSERTION -> assertionPanel.saveAssertionData();
                 case TIMER -> timerPanel.saveTimerData();
                 case SSE_CONNECT, SSE_AWAIT -> saveSseStageNode(selectedNode);
+                case WS_CONNECT, WS_SEND, WS_AWAIT, WS_CLOSE -> saveWebSocketStageNode(selectedNode);
                 default -> {
                 }
             }
@@ -1306,8 +1584,8 @@ public class PerformancePanel extends SingletonBasePanel {
             if (!terminated || !running) {
                 log.warn("线程池未能在预期时间内完成，强制关闭剩余线程");
 
-                // 取消所有正在执行的 HTTP 请求
-                cancelAllHttpCalls();
+                // 取消所有正在执行的网络请求
+                cancelAllNetworkCalls();
 
                 // 强制关闭线程池
                 List<Runnable> pendingTasks = executor.shutdownNow();
@@ -1869,273 +2147,6 @@ public class PerformancePanel extends SingletonBasePanel {
         return isCancelledOrInterrupted(ex.getCause());
     }
 
-    private static final class SseExecutionOutcome {
-        private final HttpResponse response;
-        private final String errorMsg;
-        private final boolean executionFailed;
-        private final boolean interrupted;
-
-        private SseExecutionOutcome(HttpResponse response, String errorMsg, boolean executionFailed, boolean interrupted) {
-            this.response = response;
-            this.errorMsg = errorMsg;
-            this.executionFailed = executionFailed;
-            this.interrupted = interrupted;
-        }
-    }
-
-    private SseExecutionOutcome executeSseSample(PreparedRequest req, JMeterTreeNode jtNode) {
-        long requestStartTime = System.currentTimeMillis();
-        HttpResponse resp = new HttpResponse();
-        resp.isSse = true;
-
-        SsePerformanceData cfg = jtNode.ssePerformanceData != null ? jtNode.ssePerformanceData : new SsePerformanceData();
-        AtomicBoolean interrupted = new AtomicBoolean(false);
-        AtomicBoolean failed = new AtomicBoolean(false);
-        AtomicBoolean closingSource = new AtomicBoolean(false);
-        AtomicReference<String> errorRef = new AtomicReference<>("");
-        AtomicReference<String> completionReasonRef = new AtomicReference<>("pending");
-        AtomicReference<String> lastEventIdRef = new AtomicReference<>("");
-        AtomicReference<String> lastEventTypeRef = new AtomicReference<>("");
-        AtomicReference<String> lastEventDataRef = new AtomicReference<>("");
-        StringBuffer matchedEventBody = new StringBuffer();
-        AtomicLong firstMessageLatencyMs = new AtomicLong(-1);
-        AtomicInteger matchedMessageCount = new AtomicInteger(0);
-        CountDownLatch openLatch = new CountDownLatch(1);
-        CountDownLatch firstMessageLatch = new CountDownLatch(1);
-        CountDownLatch completionLatch = new CountDownLatch(1);
-
-        EventSourceListener listener = new EventSourceListener() {
-            @Override
-            public void onOpen(EventSource eventSource, Response response) {
-                resp.headers = new LinkedHashMap<>();
-                for (String name : response.headers().names()) {
-                    resp.addHeader(name, response.headers(name));
-                }
-                resp.code = response.code();
-                resp.protocol = response.protocol().toString();
-                resp.isSse = true;
-                openLatch.countDown();
-            }
-
-            @Override
-            public void onClosed(EventSource eventSource) {
-                completionReasonRef.compareAndSet("pending", "closed");
-                openLatch.countDown();
-                firstMessageLatch.countDown();
-                completionLatch.countDown();
-            }
-
-            @Override
-            public void onFailure(EventSource eventSource, Throwable throwable, Response response) {
-                if (response != null) {
-                    if (resp.headers == null) {
-                        resp.headers = new LinkedHashMap<>();
-                    }
-                    for (String name : response.headers().names()) {
-                        resp.addHeader(name, response.headers(name));
-                    }
-                    resp.code = response.code();
-                    resp.protocol = response.protocol().toString();
-                }
-                String message = throwable != null ? throwable.getMessage() : "";
-                if (closingSource.get()) {
-                    completionReasonRef.compareAndSet("pending", "closed");
-                } else if (failed.get()) {
-                    completionReasonRef.compareAndSet("pending", "failure");
-                } else if (!running || isCancelledOrInterrupted(throwable)) {
-                    interrupted.set(true);
-                    completionReasonRef.set("interrupted");
-                } else {
-                    failed.set(true);
-                    errorRef.set(CharSequenceUtil.blankToDefault(message, "SSE request failed"));
-                    completionReasonRef.set("failure");
-                }
-                openLatch.countDown();
-                firstMessageLatch.countDown();
-                completionLatch.countDown();
-            }
-
-            @Override
-            public void onEvent(EventSource eventSource, String id, String type, String data) {
-                String eventType = CharSequenceUtil.blankToDefault(type, "message");
-                if (matchesSseEvent(cfg, eventType)) {
-                    if (matchedMessageCount.incrementAndGet() == 1) {
-                        firstMessageLatencyMs.compareAndSet(-1, System.currentTimeMillis() - requestStartTime);
-                        completionReasonRef.compareAndSet("pending", "first_message");
-                        firstMessageLatch.countDown();
-                    }
-                    lastEventIdRef.set(id == null ? "" : id);
-                    lastEventTypeRef.set(eventType);
-                    lastEventDataRef.set(data == null ? "" : data);
-                    appendSseEvent(matchedEventBody, id, eventType, data);
-
-                    if (cfg.completionMode == SsePerformanceData.CompletionMode.FIRST_MESSAGE) {
-                        completionLatch.countDown();
-                    } else if (cfg.completionMode == SsePerformanceData.CompletionMode.MESSAGE_COUNT
-                            && matchedMessageCount.get() >= Math.max(1, cfg.targetMessageCount)) {
-                        completionReasonRef.set("message_target");
-                        completionLatch.countDown();
-                    }
-                }
-            }
-        };
-
-        EventSource eventSource = HttpSingleRequestExecutor.executeSSE(req, listener);
-        activeSseSources.add(eventSource);
-
-        try {
-            switch (cfg.completionMode) {
-                case FIRST_MESSAGE -> {
-                    boolean opened = openLatch.await(Math.max(100, cfg.connectTimeoutMs), TimeUnit.MILLISECONDS);
-                    if (!opened && !failed.get() && !interrupted.get()) {
-                        failed.set(true);
-                        errorRef.set("SSE connection timeout");
-                        completionReasonRef.set("connect_timeout");
-                        closingSource.set(true);
-                        eventSource.cancel();
-                    }
-                    boolean gotFirstMessage = !failed.get() && !interrupted.get()
-                            && firstMessageLatch.await(Math.max(100, cfg.firstMessageTimeoutMs), TimeUnit.MILLISECONDS);
-                    if ((!gotFirstMessage || matchedMessageCount.get() == 0) && !failed.get() && !interrupted.get()) {
-                        failed.set(true);
-                        errorRef.set("SSE first message timeout");
-                        completionReasonRef.compareAndSet("pending", "first_message_timeout");
-                        closingSource.set(true);
-                        eventSource.cancel();
-                    }
-                }
-                case FIXED_DURATION -> {
-                    boolean opened = openLatch.await(Math.max(100, cfg.connectTimeoutMs), TimeUnit.MILLISECONDS);
-                    if (!opened && !failed.get() && !interrupted.get()) {
-                        failed.set(true);
-                        errorRef.set("SSE connection timeout");
-                        completionReasonRef.set("connect_timeout");
-                        closingSource.set(true);
-                        eventSource.cancel();
-                    } else if (!failed.get() && !interrupted.get()) {
-                        boolean terminated = completionLatch.await(Math.max(100, cfg.holdConnectionMs), TimeUnit.MILLISECONDS);
-                        if (terminated && !failed.get() && !interrupted.get()) {
-                            failed.set(true);
-                            errorRef.set("SSE connection closed before hold duration finished");
-                            completionReasonRef.set("closed_early");
-                        } else if (!terminated) {
-                            completionReasonRef.set("hold_complete");
-                        }
-                    }
-                }
-                case MESSAGE_COUNT -> {
-                    boolean opened = openLatch.await(Math.max(100, cfg.connectTimeoutMs), TimeUnit.MILLISECONDS);
-                    if (!opened && !failed.get() && !interrupted.get()) {
-                        failed.set(true);
-                        errorRef.set("SSE connection timeout");
-                        completionReasonRef.set("connect_timeout");
-                        closingSource.set(true);
-                        eventSource.cancel();
-                    }
-                    boolean gotFirstMessage = !failed.get() && !interrupted.get()
-                            && firstMessageLatch.await(Math.max(100, cfg.firstMessageTimeoutMs), TimeUnit.MILLISECONDS);
-                    if ((!gotFirstMessage || matchedMessageCount.get() == 0) && !failed.get() && !interrupted.get()) {
-                        failed.set(true);
-                        errorRef.set("SSE first message timeout");
-                        completionReasonRef.compareAndSet("pending", "first_message_timeout");
-                        closingSource.set(true);
-                        eventSource.cancel();
-                    } else if (!failed.get() && !interrupted.get()
-                            && matchedMessageCount.get() < Math.max(1, cfg.targetMessageCount)) {
-                        boolean reachedTarget = completionLatch.await(Math.max(100, cfg.holdConnectionMs), TimeUnit.MILLISECONDS);
-                        if (!reachedTarget && matchedMessageCount.get() < Math.max(1, cfg.targetMessageCount)
-                                && !failed.get() && !interrupted.get()) {
-                            failed.set(true);
-                            errorRef.set("SSE target message count timeout");
-                            completionReasonRef.set("message_target_timeout");
-                            closingSource.set(true);
-                            eventSource.cancel();
-                        }
-                    }
-                }
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            interrupted.set(true);
-            completionReasonRef.set("interrupted");
-        } finally {
-            closingSource.set(true);
-            eventSource.cancel();
-            activeSseSources.remove(eventSource);
-        }
-
-        long endTime = System.currentTimeMillis();
-        resp.endTime = endTime;
-        resp.costMs = endTime - requestStartTime;
-        resp.body = matchedEventBody.toString();
-        resp.bodySize = resp.body.getBytes(StandardCharsets.UTF_8).length;
-        if (resp.headers == null) {
-            resp.headers = new LinkedHashMap<>();
-        }
-        enrichSseResponseHeaders(resp, cfg, matchedMessageCount.get(), firstMessageLatencyMs.get(),
-                completionReasonRef.get(), lastEventIdRef.get(), lastEventTypeRef.get(), errorRef.get());
-
-        return new SseExecutionOutcome(resp, errorRef.get(), failed.get(), interrupted.get());
-    }
-
-    private boolean matchesSseEvent(SsePerformanceData cfg, String eventType) {
-        String filter = cfg.eventNameFilter;
-        return CharSequenceUtil.isBlank(filter) || CharSequenceUtil.equals(filter.trim(), eventType);
-    }
-
-    private void appendSseEvent(StringBuffer buffer, String id, String type, String data) {
-        if (id != null && !id.isBlank()) {
-            buffer.append("id: ").append(id).append('\n');
-        }
-        if (type != null && !type.isBlank()) {
-            buffer.append("event: ").append(type).append('\n');
-        }
-        String eventData = data == null ? "" : data;
-        for (String line : eventData.split("\\R", -1)) {
-            buffer.append("data: ").append(line).append('\n');
-        }
-        buffer.append('\n');
-    }
-
-    private void enrichSseResponseHeaders(HttpResponse resp,
-                                          SsePerformanceData cfg,
-                                          int matchedMessageCount,
-                                          long firstMessageLatencyMs,
-                                          String completionReason,
-                                          String lastEventId,
-                                          String lastEventType,
-                                          String errorMsg) {
-        resp.addHeader("X-Easy-SSE-Mode", Collections.singletonList(cfg.completionMode.name()));
-        resp.addHeader("X-Easy-SSE-Event-Filter", Collections.singletonList(CharSequenceUtil.blankToDefault(cfg.eventNameFilter, "")));
-        resp.addHeader("X-Easy-SSE-Message-Count", Collections.singletonList(String.valueOf(matchedMessageCount)));
-        resp.addHeader("X-Easy-SSE-First-Message-Latency-Ms", Collections.singletonList(firstMessageLatencyMs >= 0 ? String.valueOf(firstMessageLatencyMs) : ""));
-        resp.addHeader("X-Easy-SSE-Completion-Reason", Collections.singletonList(CharSequenceUtil.blankToDefault(completionReason, "")));
-        resp.addHeader("X-Easy-SSE-Event-Id", Collections.singletonList(CharSequenceUtil.blankToDefault(lastEventId, "")));
-        resp.addHeader("X-Easy-SSE-Event-Type", Collections.singletonList(CharSequenceUtil.blankToDefault(lastEventType, "")));
-        if (CharSequenceUtil.isNotBlank(errorMsg)) {
-            resp.addHeader("X-Easy-SSE-Error", Collections.singletonList(errorMsg));
-        }
-    }
-
-    private List<DefaultMutableTreeNode> getAssertionNodesForExecution(DefaultMutableTreeNode requestNode, boolean sseRequest) {
-        List<DefaultMutableTreeNode> nodes = new ArrayList<>();
-        DefaultMutableTreeNode parent = requestNode;
-        if (sseRequest) {
-            DefaultMutableTreeNode awaitNode = findChildNode(requestNode, NodeType.SSE_AWAIT);
-            if (awaitNode != null) {
-                parent = awaitNode;
-            }
-        }
-        for (int i = 0; i < parent.getChildCount(); i++) {
-            DefaultMutableTreeNode child = (DefaultMutableTreeNode) parent.getChildAt(i);
-            Object userObj = child.getUserObject();
-            if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.ASSERTION) {
-                nodes.add(child);
-            }
-        }
-        return nodes;
-    }
-
     // 执行单个请求节点
     private void executeRequestNode(Object userObj, DefaultMutableTreeNode child) {
         // 如果测试已停止，立即返回，不执行请求
@@ -2144,217 +2155,12 @@ public class PerformancePanel extends SingletonBasePanel {
         }
 
         if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.REQUEST && jtNode.httpRequestItem != null) {
-            // 使用 ID 而不是 Name，避免重名问题
-            String apiId = jtNode.httpRequestItem.getId();
-            String apiName = jtNode.httpRequestItem.getName();
-            boolean sseRequest = isSsePerfRequest(jtNode.httpRequestItem);
-
-            // 注册API元数据（集中管理，避免重复存储）
-            ApiMetadata.register(apiId, apiName);
-
-            PreparedRequest req;
-            HttpResponse resp = null;
-            String errorMsg = "";
-            List<TestResult> testResults = new ArrayList<>();
-            boolean executionFailed = false; // 执行层面失败：前置脚本崩溃 / HTTP异常 / 后置脚本崩溃
-
-            // 清理上次的临时变量
-            VariableResolver.clearTemporaryVariables();
-
-            // ====== CSV变量注入 ======
-            Map<String, String> csvRow = null;
-            if (csvDataPanel != null && csvDataPanel.hasData()) {
-                int rowCount = csvDataPanel.getRowCount();
-                if (rowCount > 0) {
-                    // 每个虚拟用户（线程）绑定固定的CSV行：threadVirtualUserIndex % rowCount
-                    // 保证同一个虚拟用户在整个测试过程中始终使用同一行CSV数据
-                    Integer vuIndex = threadVirtualUserIndex.get();
-                    int rowIdx = (vuIndex != null ? vuIndex : 0) % rowCount;
-                    csvRow = csvDataPanel.getRowData(rowIdx);
-                }
-            }
-            // ====== 前置脚本 ======
-            // build() 会自动应用 group 继承，并将合并后的脚本存储在 req 中
-            req = PreparedRequestBuilder.build(jtNode.httpRequestItem);
-
-            // 创建脚本执行流水线（使用 req 中合并后的脚本）
-            ScriptExecutionPipeline pipeline = ScriptExecutionPipeline.builder()
-                    .request(req)
-                    .preScript(req.prescript)
-                    .postScript(req.postscript)
-                    .build();
-
-            // 注入 CSV 变量
-            if (csvRow != null) {
-                pipeline.addCsvDataBindings(csvRow);
-            }
-
-            // 执行前置脚本
-            ScriptExecutionResult preResult = pipeline.executePreScript();
-            boolean preOk = preResult.isSuccess();
-            if (!preOk) {
-                log.error("前置脚本: {}", preResult.getErrorMessage());
-                errorMsg = I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_PRE_SCRIPT_FAILED, preResult.getErrorMessage());
-                executionFailed = true;
-            }
-
-            // 前置脚本执行完后再次检查是否已停止
-            if (!running) {
+            PerformanceRequestExecutionResult executionResult = requestExecutor.execute(child, jtNode, resolveCsvRowForCurrentThread());
+            if (executionResult == null) {
                 return;
             }
-
-            // 前置脚本执行完成后，进行变量替换
-            if (preOk) {
-                PreparedRequestBuilder.replaceVariablesAfterPreScript(req);
-            }
-
-            long requestStartTime = System.currentTimeMillis();
-            long costMs = 0;
-            boolean interrupted = false; // 标记是否被中断
-
-            if (preOk && running) {  // 执行请求前再次检查running状态
-                try {
-                    req.collectBasicInfo = true; // 始终收集基本信息（headers、body），用于结果展示
-                    req.collectEventInfo = SettingManager.isPerformanceEventLoggingEnabled(); // 根据设置决定是否收集完整事件信息
-                    req.enableNetworkLog = false; // 压测场景不输出 NetworkLog，避免 UI 线程阻塞
-
-                    sseRequest = isSsePerfRequest(jtNode.httpRequestItem, req);
-                    if (sseRequest) {
-                        SseExecutionOutcome outcome = executeSseSample(req, jtNode);
-                        resp = outcome.response;
-                        errorMsg = CharSequenceUtil.blankToDefault(outcome.errorMsg, errorMsg);
-                        executionFailed = outcome.executionFailed;
-                        interrupted = outcome.interrupted;
-                    } else {
-                        resp = HttpSingleRequestExecutor.executeHttp(req);
-                    }
-                } catch (Exception ex) {
-                    // 检查是否是被取消/中断的请求
-                    // 注意：cancelAllHttpCalls() 只在停止时调用，所以 Canceled 异常就是停止导致的
-                    boolean isCancelled = isCancelledOrInterrupted(ex);
-
-                    if (isCancelled) {
-                        // 被取消/中断的请求，不算作失败
-                        log.debug("请求被取消/中断（压测已停止）: {}", ex.getMessage());
-                        interrupted = true; // 标记为中断
-                    } else {
-                        // 真正的错误
-                        log.error("请求执行失败: {}", ex.getMessage(), ex);
-                        errorMsg = I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_REQUEST_FAILED, ex.getMessage());
-                        executionFailed = true;
-                    }
-                } finally {
-                    costMs = System.currentTimeMillis() - requestStartTime;
-                }
-                // 断言处理（JMeter树断言）
-                List<DefaultMutableTreeNode> assertionNodes = getAssertionNodesForExecution(child, sseRequest);
-                for (DefaultMutableTreeNode sub : assertionNodes) {
-                    if (resp == null || !running) {
-                        break;
-                    }
-                    Object subObj = sub.getUserObject();
-                    if (subObj instanceof JMeterTreeNode subNode && subNode.type == NodeType.ASSERTION && subNode.assertionData != null) {
-                        // 跳过已停用的断言
-                        if (!subNode.enabled) {
-                            continue;
-                        }
-                        AssertionData assertion = subNode.assertionData;
-                        String type = assertion.type;
-                        boolean pass = false;
-                        if ("Response Code".equals(type)) {
-                            String op = assertion.operator;
-                            String valStr = assertion.value;
-                            try {
-                                int expect = Integer.parseInt(valStr);
-                                if ("=".equals(op)) pass = (resp.code == expect);
-                                else if (">".equals(op)) pass = (resp.code > expect);
-                                else if ("<".equals(op)) pass = (resp.code < expect);
-                            } catch (Exception ignored) {
-                                log.warn("断言响应码格式错误: {}", valStr);
-                            }
-                        } else if ("Contains".equals(type)) {
-                            pass = resp.body.contains(assertion.content);
-                        } else if ("JSONPath".equals(type)) {
-                            String jsonPath = assertion.value;
-                            String expect = assertion.content;
-                            String actual = JsonPathUtil.extractJsonPath(resp.body, jsonPath);
-                            pass = Objects.equals(actual, expect);
-                        }
-                        if (!pass) {
-                            errorMsg = I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_ASSERTION_FAILED, type, assertion.content);
-                        }
-                        testResults.add(new TestResult(type, pass, pass ? null : "断言失败"));
-                    }
-                }
-                // ====== 后置脚本 ======
-                if (resp != null && running) {  // 执行后置脚本前检查是否已停止
-                    // 执行后置脚本（自动处理响应绑定和测试结果收集）
-                    ScriptExecutionResult postResult = pipeline.executePostScript(resp);
-                    if (postResult.hasTestResults()) {
-                        testResults.addAll(postResult.getTestResults());
-                        // 取第一条失败的断言名作为 errorMsg（展示用）
-                        if (!postResult.allTestsPassed()) {
-                            errorMsg = postResult.getTestResults().stream()
-                                    .filter(t -> !t.passed)
-                                    .map(t -> t.name)
-                                    .findFirst()
-                                    .orElse("pm.test assertion failed");
-                        }
-                    }
-                    if (!postResult.isSuccess()) {
-                        log.error("后置脚本执行失败: {}", postResult.getErrorMessage());
-                        errorMsg = postResult.getErrorMessage();
-                        executionFailed = true;
-                    }
-                }
-            } else {
-                // 前置脚本失败的情况，也需要记录costMs
-                costMs = System.currentTimeMillis() - requestStartTime;
-            }
-
-            // ====== 统计请求结果（断言和后置脚本后，sleep前） ======
-            long cost = resp == null ? costMs : resp.costMs;
-            long endTime = requestStartTime + cost; // 如果响应时间有记录，则使用，否则使用计算的cost
-            if (resp != null) {
-                endTime = resp.endTime > 0 ? resp.endTime : requestStartTime + cost;
-            }
-
-            // 如果请求被中断（压测停止），跳过统计，不计入成功或失败
-            if (!interrupted) {
-                // ✨ 优化：简化 req 和 resp 对象，移除渲染时不需要的字段
-                req.simplify();  // 移除 id, body, bodyType, headersList, paramsList
-                if (resp != null) {
-                    resp.simplify();  // 移除 filePath, fileName
-                    if (!req.collectEventInfo) {
-                        resp.httpEventInfo = null;
-                    }
-                }
-
-                // 统一用 ResultNodeInfo.isActuallySuccessful() 判断成功/失败
-                // 确保趋势图、报表、结果表格三处使用完全一致的判断逻辑：
-                //   有断言 → 以断言结果为准；无断言 → 以 HTTP 状态码（2xx/3xx）为准
-                ResultNodeInfo resultNodeInfo = new ResultNodeInfo(apiName, errorMsg, req, resp, testResults, executionFailed);
-                boolean actualSuccess = resultNodeInfo.isActuallySuccessful();
-
-                // 使用statsLock保护统计数据写入，确保与读取的一致性
-                synchronized (statsLock) {
-                    allRequestResults.add(new RequestResult(requestStartTime, endTime, actualSuccess, apiId));
-
-                    apiCostMap.computeIfAbsent(apiId, k -> Collections.synchronizedList(new ArrayList<>())).add(cost);
-                    if (actualSuccess) {
-                        apiSuccessMap.merge(apiId, 1, Integer::sum);
-                    } else {
-                        apiFailMap.merge(apiId, 1, Integer::sum);
-                    }
-                }
-
-                performanceResultTablePanel.addResult(
-                        resultNodeInfo,
-                        efficientMode,
-                        getJmeterSlowRequestThreshold()
-                );
-            } else {
-                // 被中断的请求，记录日志但不计入统计
+            resultRecorder.record(executionResult, efficientMode);
+            if (executionResult.interrupted) {
                 log.debug("跳过被中断请求的统计: {}", jtNode.httpRequestItem.getName());
             }
 
@@ -2364,7 +2170,7 @@ public class PerformancePanel extends SingletonBasePanel {
                 return;
             }
 
-            for (int j = 0; j < child.getChildCount() && running; j++) {
+            for (int j = 0; j < child.getChildCount() && running && !executionResult.webSocketRequest; j++) {
                 DefaultMutableTreeNode sub = (DefaultMutableTreeNode) child.getChildAt(j);
                 Object subObj = sub.getUserObject();
                 if (subObj instanceof JMeterTreeNode subNode2 && subNode2.type == NodeType.TIMER && subNode2.timerData != null) {
@@ -2383,75 +2189,75 @@ public class PerformancePanel extends SingletonBasePanel {
         }
     }
 
+    private Map<String, String> resolveCsvRowForCurrentThread() {
+        if (csvDataPanel == null || !csvDataPanel.hasData()) {
+            return null;
+        }
+        int rowCount = csvDataPanel.getRowCount();
+        if (rowCount <= 0) {
+            return null;
+        }
+        Integer vuIndex = threadVirtualUserIndex.get();
+        int rowIdx = (vuIndex != null ? vuIndex : 0) % rowCount;
+        return csvDataPanel.getRowData(rowIdx);
+    }
+
     @Override
     protected void registerListeners() {
-        // 节点选中切换属性区
         jmeterTree.addTreeSelectionListener(new TreeSelectionListener() {
             private DefaultMutableTreeNode lastNode = null;
 
             @Override
             public void valueChanged(TreeSelectionEvent e) {
-                // 检查是否多选
                 TreePath[] selectedPaths = jmeterTree.getSelectionPaths();
                 if (selectedPaths != null && selectedPaths.length > 1) {
-                    // 多选模式：不切换属性面板，保持当前显示
                     return;
                 }
 
-                // 保存上一个节点的数据
-                if (lastNode != null) {
-                    Object userObj = lastNode.getUserObject();
-                    if (userObj instanceof JMeterTreeNode jtNode) {
-                        switch (jtNode.type) {
-                            case THREAD_GROUP -> threadGroupPanel.saveThreadGroupData();
-                            case REQUEST -> saveRequestNodeData(lastNode);
-                            case ASSERTION -> assertionPanel.saveAssertionData();
-                            case TIMER -> timerPanel.saveTimerData();
-                            case SSE_CONNECT, SSE_AWAIT -> saveSseStageNode(lastNode);
-                            default -> {
-                                // 其他类型节点不需要保存数据
-                            }
+                if (lastNode != null && lastNode.getUserObject() instanceof JMeterTreeNode jtNode) {
+                    switch (jtNode.type) {
+                        case THREAD_GROUP -> threadGroupPanel.saveThreadGroupData();
+                        case REQUEST -> saveRequestNodeData(lastNode);
+                        case ASSERTION -> assertionPanel.saveAssertionData();
+                        case TIMER -> timerPanel.saveTimerData();
+                        case SSE_CONNECT, SSE_AWAIT -> saveSseStageNode(lastNode);
+                        case WS_CONNECT, WS_SEND, WS_AWAIT, WS_CLOSE -> saveWebSocketStageNode(lastNode);
+                        default -> {
                         }
                     }
                 }
-                // 回填当前节点数据
+
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
-                if (node == null) {
+                if (node == null || !(node.getUserObject() instanceof JMeterTreeNode jtNode)) {
                     propertyCardLayout.show(propertyPanel, EMPTY);
-                    currentRequestNode = null; // 清空当前请求节点引用
-                    lastNode = null;
-                    return;
-                }
-                Object userObj = node.getUserObject();
-                if (!(userObj instanceof JMeterTreeNode jtNode)) {
-                    propertyCardLayout.show(propertyPanel, EMPTY);
-                    currentRequestNode = null; // 清空当前请求节点引用
+                    currentRequestNode = null;
                     lastNode = node;
                     return;
                 }
+
                 switch (jtNode.type) {
                     case THREAD_GROUP -> {
                         propertyCardLayout.show(propertyPanel, THREAD_GROUP);
                         threadGroupPanel.setThreadGroupData(jtNode);
-                        currentRequestNode = null; // 清空当前请求节点引用
+                        currentRequestNode = null;
                     }
                     case REQUEST -> {
                         propertyCardLayout.show(propertyPanel, REQUEST);
-                        currentRequestNode = node; // 记录当前请求节点
+                        currentRequestNode = node;
                         if (jtNode.httpRequestItem != null) {
-                            syncSseRequestStructure(node, jtNode);
+                            syncRequestStructure(node, jtNode);
                             switchRequestEditor(jtNode.httpRequestItem);
                         }
                     }
                     case ASSERTION -> {
                         propertyCardLayout.show(propertyPanel, ASSERTION);
                         assertionPanel.setAssertionData(jtNode);
-                        currentRequestNode = null; // 清空当前请求节点引用
+                        currentRequestNode = null;
                     }
                     case TIMER -> {
                         propertyCardLayout.show(propertyPanel, TIMER);
                         timerPanel.setTimerData(jtNode);
-                        currentRequestNode = null; // 清空当前请求节点引用
+                        currentRequestNode = null;
                     }
                     case SSE_CONNECT -> {
                         DefaultMutableTreeNode requestNode = getParentRequestNode(node);
@@ -2473,19 +2279,46 @@ public class PerformancePanel extends SingletonBasePanel {
                         }
                         currentRequestNode = null;
                     }
+                    case WS_CONNECT -> {
+                        DefaultMutableTreeNode requestNode = getParentRequestNode(node);
+                        if (requestNode != null && requestNode.getUserObject() instanceof JMeterTreeNode requestJtNode) {
+                            propertyCardLayout.show(propertyPanel, WS_CONNECT);
+                            wsConnectPanel.setNode(requestJtNode);
+                        } else {
+                            propertyCardLayout.show(propertyPanel, EMPTY);
+                        }
+                        currentRequestNode = null;
+                    }
+                    case WS_SEND -> {
+                        propertyCardLayout.show(propertyPanel, WS_SEND);
+                        wsSendPanel.setNode(jtNode);
+                        currentRequestNode = null;
+                    }
+                    case WS_AWAIT -> {
+                        propertyCardLayout.show(propertyPanel, WS_AWAIT);
+                        wsAwaitPanel.setNode(jtNode);
+                        currentRequestNode = null;
+                    }
+                    case WS_CLOSE -> {
+                        propertyCardLayout.show(propertyPanel, WS_CLOSE);
+                        wsClosePanel.setNode(jtNode);
+                        currentRequestNode = null;
+                    }
                     default -> {
                         propertyCardLayout.show(propertyPanel, EMPTY);
-                        currentRequestNode = null; // 清空当前请求节点引用
+                        currentRequestNode = null;
                     }
                 }
                 lastNode = node;
             }
         });
 
-        // 右键菜单
         JPopupMenu treeMenu = new JPopupMenu();
         JMenuItem addThreadGroup = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_THREAD_GROUP));
         JMenuItem addRequest = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_REQUEST));
+        JMenuItem addWsSend = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_WS_SEND));
+        JMenuItem addWsAwait = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_WS_AWAIT));
+        JMenuItem addWsClose = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_WS_CLOSE));
         JMenuItem addAssertion = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_ASSERTION));
         JMenuItem addTimer = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_TIMER));
         JMenuItem renameNode = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_RENAME));
@@ -2495,12 +2328,14 @@ public class PerformancePanel extends SingletonBasePanel {
         renameNode.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F2, 0));
         deleteNode.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_DELETE, 0));
 
-        // 创建两个分割线，以便可以单独控制显示
         JSeparator separator1 = new JSeparator();
         JSeparator separator2 = new JSeparator();
 
         treeMenu.add(addThreadGroup);
         treeMenu.add(addRequest);
+        treeMenu.add(addWsSend);
+        treeMenu.add(addWsAwait);
+        treeMenu.add(addWsClose);
         treeMenu.add(addAssertion);
         treeMenu.add(addTimer);
         treeMenu.add(separator1);
@@ -2512,6 +2347,7 @@ public class PerformancePanel extends SingletonBasePanel {
 
         Runnable updateMenuSeparators = () -> {
             boolean hasAddGroup = addThreadGroup.isVisible() || addRequest.isVisible()
+                    || addWsSend.isVisible() || addWsAwait.isVisible() || addWsClose.isVisible()
                     || addAssertion.isVisible() || addTimer.isVisible();
             boolean hasToggleGroup = enableNode.isVisible() || disableNode.isVisible();
             boolean hasEditGroup = renameNode.isVisible() || deleteNode.isVisible();
@@ -2519,7 +2355,6 @@ public class PerformancePanel extends SingletonBasePanel {
             separator2.setVisible(hasToggleGroup && hasEditGroup);
         };
 
-        // 添加用户组（仅根节点可添加）
         addThreadGroup.addActionListener(e -> {
             DefaultMutableTreeNode root1 = (DefaultMutableTreeNode) treeModel.getRoot();
             DefaultMutableTreeNode group = new DefaultMutableTreeNode(new JMeterTreeNode("Thread Group", NodeType.THREAD_GROUP));
@@ -2527,7 +2362,6 @@ public class PerformancePanel extends SingletonBasePanel {
             jmeterTree.expandPath(new TreePath(root1.getPath()));
             saveConfig();
         });
-        // 添加请求
         addRequest.addActionListener(e -> {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
             if (node == null) return;
@@ -2536,20 +2370,18 @@ public class PerformancePanel extends SingletonBasePanel {
                 JOptionPane.showMessageDialog(PerformancePanel.this, I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_SELECT_THREAD_GROUP), I18nUtil.getMessage(MessageKeys.GENERAL_INFO), JOptionPane.WARNING_MESSAGE);
                 return;
             }
-            // 多选请求弹窗
             RequestCollectionsService.showMultiSelectRequestDialog(selectedList -> {
                 if (selectedList == null || selectedList.isEmpty()) return;
 
-                // 过滤只保留 HTTP / SSE 类型的请求
                 List<HttpRequestItem> supportedList = selectedList.stream()
                         .filter(reqItem -> {
                             RequestItemProtocolEnum protocol = resolveRequestProtocol(reqItem);
-                            return protocol.isHttpProtocol() || protocol.isSseProtocol();
+                            return protocol.isHttpProtocol() || protocol.isSseProtocol() || protocol.isWebSocketProtocol();
                         })
                         .toList();
 
                 if (supportedList.isEmpty()) {
-                    NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.MSG_ONLY_HTTP_SSE_SUPPORTED));
+                    NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.MSG_ONLY_HTTP_SSE_WS_SUPPORTED));
                     return;
                 }
 
@@ -2557,11 +2389,10 @@ public class PerformancePanel extends SingletonBasePanel {
                 for (HttpRequestItem reqItem : supportedList) {
                     DefaultMutableTreeNode req = new DefaultMutableTreeNode(new JMeterTreeNode(reqItem.getName(), NodeType.REQUEST, reqItem));
                     treeModel.insertNodeInto(req, node, node.getChildCount());
-                    syncSseRequestStructure(req, (JMeterTreeNode) req.getUserObject());
+                    syncRequestStructure(req, (JMeterTreeNode) req.getUserObject());
                     newNodes.add(req);
                 }
                 jmeterTree.expandPath(new TreePath(node.getPath()));
-                // 选中第一个新加的请求节点
                 TreePath newPath = new TreePath(newNodes.get(0).getPath());
                 jmeterTree.setSelectionPath(newPath);
                 propertyCardLayout.show(propertyPanel, REQUEST);
@@ -2570,13 +2401,16 @@ public class PerformancePanel extends SingletonBasePanel {
                 saveConfig();
             });
         });
-        // 添加断言
+        addWsSend.addActionListener(e -> addWebSocketStepNode(NodeType.WS_SEND));
+        addWsAwait.addActionListener(e -> addWebSocketStepNode(NodeType.WS_AWAIT));
+        addWsClose.addActionListener(e -> addWebSocketStepNode(NodeType.WS_CLOSE));
         addAssertion.addActionListener(e -> {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
             if (node == null) return;
             DefaultMutableTreeNode parentNode = node;
             Object userObj = node.getUserObject();
-            if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.SSE_AWAIT) {
+            if (userObj instanceof JMeterTreeNode jtNode
+                    && (jtNode.type == NodeType.SSE_AWAIT || jtNode.type == NodeType.WS_AWAIT)) {
                 parentNode = node;
             }
             DefaultMutableTreeNode assertion = new DefaultMutableTreeNode(new JMeterTreeNode("Assertion", NodeType.ASSERTION));
@@ -2584,15 +2418,10 @@ public class PerformancePanel extends SingletonBasePanel {
             jmeterTree.expandPath(new TreePath(parentNode.getPath()));
             saveConfig();
         });
-        // 添加定时器
         addTimer.addActionListener(e -> {
-            DefaultMutableTreeNode node = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
-            if (node == null) return;
-            DefaultMutableTreeNode timer = new DefaultMutableTreeNode(new JMeterTreeNode("Timer", NodeType.TIMER));
-            treeModel.insertNodeInto(timer, node, node.getChildCount());
-            jmeterTree.expandPath(new TreePath(node.getPath()));
-            saveConfig();
+            addTimerNode();
         });
+
         Action renameAction = new AbstractAction() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
@@ -2600,7 +2429,11 @@ public class PerformancePanel extends SingletonBasePanel {
                 if (node == null) return;
                 Object userObj = node.getUserObject();
                 if (!(userObj instanceof JMeterTreeNode jtNode)) return;
-                if (jtNode.type == NodeType.ROOT || jtNode.type == NodeType.SSE_CONNECT || jtNode.type == NodeType.SSE_AWAIT) {
+                if (jtNode.type == NodeType.ROOT
+                        || jtNode.type == NodeType.SSE_CONNECT
+                        || jtNode.type == NodeType.SSE_AWAIT
+                        || jtNode.type == NodeType.WS_CONNECT
+                        || isWebSocketStepNode(jtNode.type)) {
                     return;
                 }
                 String oldName = jtNode.name;
@@ -2608,7 +2441,6 @@ public class PerformancePanel extends SingletonBasePanel {
                         I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_RENAME_NODE), oldName);
                 if (newName != null && !newName.trim().isEmpty()) {
                     jtNode.name = newName.trim();
-                    // 同步更新 request 类型的 httpRequestItem name 字段
                     if (jtNode.type == NodeType.REQUEST && jtNode.httpRequestItem != null) {
                         jtNode.httpRequestItem.setName(newName.trim());
                         switchRequestEditor(jtNode.httpRequestItem);
@@ -2619,14 +2451,13 @@ public class PerformancePanel extends SingletonBasePanel {
             }
         };
         renameNode.addActionListener(renameAction);
-        // 删除（自动支持单个和批量操作）
+
         Action deleteAction = new AbstractAction() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
                 TreePath[] selectedPaths = jmeterTree.getSelectionPaths();
                 if (selectedPaths == null || selectedPaths.length == 0) return;
 
-                // 收集要删除的节点（过滤掉ROOT节点）
                 List<DefaultMutableTreeNode> nodesToDelete = new ArrayList<>();
                 for (TreePath path : selectedPaths) {
                     DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
@@ -2634,16 +2465,15 @@ public class PerformancePanel extends SingletonBasePanel {
                     if (userObj instanceof JMeterTreeNode jtNode
                             && jtNode.type != NodeType.ROOT
                             && jtNode.type != NodeType.SSE_CONNECT
-                            && jtNode.type != NodeType.SSE_AWAIT) {
+                            && jtNode.type != NodeType.SSE_AWAIT
+                            && jtNode.type != NodeType.WS_CONNECT) {
                         nodesToDelete.add(node);
                     }
                 }
 
                 if (nodesToDelete.isEmpty()) return;
 
-                // 批量删除节点
                 for (DefaultMutableTreeNode node : nodesToDelete) {
-                    // 如果删除的是当前选中的请求节点，清空引用
                     if (node == currentRequestNode) {
                         currentRequestNode = null;
                     }
@@ -2660,7 +2490,7 @@ public class PerformancePanel extends SingletonBasePanel {
         treeActionMap.put("renamePerformanceNode", renameAction);
         treeInputMap.put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_DELETE, 0), "deletePerformanceNode");
         treeActionMap.put("deletePerformanceNode", deleteAction);
-        // 启用（自动支持单个和批量操作）
+
         enableNode.addActionListener(e -> {
             TreePath[] selectedPaths = jmeterTree.getSelectionPaths();
             if (selectedPaths == null || selectedPaths.length == 0) return;
@@ -2674,7 +2504,6 @@ public class PerformancePanel extends SingletonBasePanel {
             }
             saveConfig();
         });
-        // 停用（自动支持单个和批量操作）
         disableNode.addActionListener(e -> {
             TreePath[] selectedPaths = jmeterTree.getSelectionPaths();
             if (selectedPaths == null || selectedPaths.length == 0) return;
@@ -2689,7 +2518,6 @@ public class PerformancePanel extends SingletonBasePanel {
             saveConfig();
         });
 
-        // 右键弹出逻辑
         jmeterTree.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
@@ -2697,7 +2525,6 @@ public class PerformancePanel extends SingletonBasePanel {
                     int row = jmeterTree.getClosestRowForLocation(e.getX(), e.getY());
                     if (row < 0) return;
 
-                    // 如果右键点击的节点不在选中列表中，则只选中该节点
                     TreePath clickedPath = jmeterTree.getPathForLocation(e.getX(), e.getY());
                     if (clickedPath != null) {
                         TreePath[] selectedPaths = jmeterTree.getSelectionPaths();
@@ -2721,20 +2548,19 @@ public class PerformancePanel extends SingletonBasePanel {
 
                     TreePath[] selectedPaths = jmeterTree.getSelectionPaths();
                     if (selectedPaths == null || selectedPaths.length == 0) return;
-
-                    // 判断是单选还是多选
                     boolean isMultiSelection = selectedPaths.length > 1;
 
                     if (isMultiSelection) {
-                        // 多选模式：只显示批量操作相关菜单
                         addThreadGroup.setVisible(false);
                         addRequest.setVisible(false);
+                        addWsSend.setVisible(false);
+                        addWsAwait.setVisible(false);
+                        addWsClose.setVisible(false);
                         addAssertion.setVisible(false);
                         addTimer.setVisible(false);
                         renameNode.setVisible(false);
-                        deleteNode.setVisible(true); // 允许批量删除
+                        deleteNode.setVisible(true);
 
-                        // 检查选中节点的启用状态，智能显示启用/停用
                         boolean hasDisabled = false;
                         boolean hasEnabled = false;
                         for (TreePath path : selectedPaths) {
@@ -2752,7 +2578,6 @@ public class PerformancePanel extends SingletonBasePanel {
                         disableNode.setVisible(hasEnabled);
                         updateMenuSeparators.run();
                     } else {
-                        // 单选模式：显示常规菜单
                         DefaultMutableTreeNode node = (DefaultMutableTreeNode) selectedPaths[0].getLastPathComponent();
                         Object userObj = node.getUserObject();
                         if (!(userObj instanceof JMeterTreeNode jtNode)) return;
@@ -2760,6 +2585,9 @@ public class PerformancePanel extends SingletonBasePanel {
                         if (jtNode.type == NodeType.ROOT) {
                             addThreadGroup.setVisible(true);
                             addRequest.setVisible(false);
+                            addWsSend.setVisible(false);
+                            addWsAwait.setVisible(false);
+                            addWsClose.setVisible(false);
                             addAssertion.setVisible(false);
                             addTimer.setVisible(false);
                             renameNode.setVisible(false);
@@ -2773,23 +2601,28 @@ public class PerformancePanel extends SingletonBasePanel {
                         addThreadGroup.setVisible(false);
                         addRequest.setVisible(jtNode.type == NodeType.THREAD_GROUP);
                         boolean isSseRequestNode = jtNode.type == NodeType.REQUEST && isSsePerfRequest(jtNode.httpRequestItem);
-                        addAssertion.setVisible((jtNode.type == NodeType.REQUEST && !isSseRequestNode)
-                                || jtNode.type == NodeType.SSE_AWAIT);
-                        addTimer.setVisible(jtNode.type == NodeType.REQUEST);
-                        boolean structuralSseNode = jtNode.type == NodeType.SSE_CONNECT
-                                || jtNode.type == NodeType.SSE_AWAIT;
-                        renameNode.setVisible(!structuralSseNode);
-                        deleteNode.setVisible(!structuralSseNode);
-                        // 根据当前启用状态显示启用或停用菜单
-                        enableNode.setVisible(!structuralSseNode && !jtNode.enabled);
-                        disableNode.setVisible(!structuralSseNode && jtNode.enabled);
+                        boolean isWebSocketRequestNode = jtNode.type == NodeType.REQUEST && isWebSocketPerfRequest(jtNode.httpRequestItem);
+                        boolean canManageWsSteps = resolveWebSocketStepParent(node) != null;
+                        addWsSend.setVisible(canManageWsSteps);
+                        addWsAwait.setVisible(canManageWsSteps);
+                        addWsClose.setVisible(canManageWsSteps);
+                        addAssertion.setVisible((jtNode.type == NodeType.REQUEST && !isSseRequestNode && !isWebSocketRequestNode)
+                                || jtNode.type == NodeType.SSE_AWAIT
+                                || jtNode.type == NodeType.WS_AWAIT);
+                        addTimer.setVisible(jtNode.type == NodeType.REQUEST || canManageWsSteps);
+                        boolean structuralNode = jtNode.type == NodeType.SSE_CONNECT
+                                || jtNode.type == NodeType.SSE_AWAIT
+                                || jtNode.type == NodeType.WS_CONNECT;
+                        renameNode.setVisible(!structuralNode && !isWebSocketStepNode(jtNode.type));
+                        deleteNode.setVisible(!structuralNode);
+                        enableNode.setVisible(!structuralNode && !jtNode.enabled);
+                        disableNode.setVisible(!structuralNode && jtNode.enabled);
                         updateMenuSeparators.run();
                     }
                     treeMenu.show(jmeterTree, e.getX(), e.getY());
                 }
             }
         });
-
     }
 
     private void stopRun() {
@@ -2800,7 +2633,7 @@ public class PerformancePanel extends SingletonBasePanel {
 
         // 立即取消所有正在执行的 OkHttp 请求
         // 这会中断所有网络 I/O，让线程快速退出
-        cancelAllHttpCalls();
+        cancelAllNetworkCalls();
 
         runBtn.setEnabled(true);
         stopBtn.setEnabled(false);
@@ -2845,10 +2678,10 @@ public class PerformancePanel extends SingletonBasePanel {
     }
 
     /**
-     * 取消所有正在执行的 HTTP / SSE 请求
-     * HTTP 通过 Dispatcher 中的 Call 中断，SSE 通过 EventSource.cancel() 中断。
+     * 取消所有正在执行的 HTTP / SSE / WebSocket 请求
+     * HTTP 通过 Dispatcher 中的 Call 中断，SSE 通过 EventSource.cancel() 中断，WebSocket 通过 close/cancel 中断。
      */
-    private void cancelAllHttpCalls() {
+    private void cancelAllNetworkCalls() {
         OkHttpClientManager.cancelAllCalls();
         for (EventSource eventSource : new ArrayList<>(activeSseSources)) {
             try {
@@ -2858,6 +2691,18 @@ public class PerformancePanel extends SingletonBasePanel {
             }
         }
         activeSseSources.clear();
+        for (WebSocket webSocket : new ArrayList<>(activeWebSockets)) {
+            try {
+                webSocket.close(1000, "Performance stopped");
+            } catch (Exception ignored) {
+            }
+            try {
+                webSocket.cancel();
+            } catch (Exception e) {
+                log.debug("取消 WebSocket 失败", e);
+            }
+        }
+        activeWebSockets.clear();
     }
 
     private static int getJmeterMaxIdleConnections() {
@@ -2922,7 +2767,7 @@ public class PerformancePanel extends SingletonBasePanel {
                 && jtNode.httpRequestItem != null
                 && item.getId().equals(jtNode.httpRequestItem.getId())) {
             jtNode.httpRequestItem = item;
-            syncSseRequestStructure(node, jtNode);
+            syncRequestStructure(node, jtNode);
             jtNode.name = item.getName();
             treeModel.nodeChanged(node);
             // 如果当前正在编辑面板里展示的就是这个请求，也同步更新面板
@@ -3124,7 +2969,7 @@ public class PerformancePanel extends SingletonBasePanel {
                                 latestRequestItem.getName(), latestRequestItem.getUrl());
                         // 更新请求数据
                         jmNode.httpRequestItem = latestRequestItem;
-                        syncSseRequestStructure(treeNode, jmNode);
+                        syncRequestStructure(treeNode, jmNode);
                         jmNode.name = latestRequestItem.getName();
                         treeModel.nodeChanged(treeNode);
                         // 清除 InheritanceCache，防止执行时 PreparedRequestBuilder.build() 拿到旧缓存

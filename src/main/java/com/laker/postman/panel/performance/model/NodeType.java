@@ -8,5 +8,9 @@ public enum NodeType {
     ASSERTION,
     TIMER,
     SSE_CONNECT,
-    SSE_AWAIT
+    SSE_AWAIT,
+    WS_CONNECT,
+    WS_SEND,
+    WS_AWAIT,
+    WS_CLOSE
 }

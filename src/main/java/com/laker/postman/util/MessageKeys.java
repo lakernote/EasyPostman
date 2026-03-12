@@ -534,7 +534,23 @@ public final class MessageKeys {
     public static final String PERFORMANCE_MSG_REQUEST_NOT_FOUND_IN_COLLECTIONS = "performance.msg.request_not_found_in_collections";
     public static final String PERFORMANCE_MSG_REQUEST_REFRESHED = "performance.msg.request_refreshed";
     public static final String PERFORMANCE_CSV_USAGE_NOTE = "performance.csv.usage_note";
+    public static final String PERFORMANCE_SSE_TITLE = "performance.sse.title";
+    public static final String PERFORMANCE_SSE_EVENT_FILTER = "performance.sse.event_filter";
+    public static final String PERFORMANCE_SSE_COMPLETION_FIRST_MESSAGE = "performance.sse.completion.first_message";
+    public static final String PERFORMANCE_SSE_COMPLETION_FIXED_DURATION = "performance.sse.completion.fixed_duration";
+    public static final String PERFORMANCE_SSE_COMPLETION_MESSAGE_COUNT = "performance.sse.completion.message_count";
+    public static final String PERFORMANCE_SSE_NODE_CONNECT = "performance.sse.node.connect";
+    public static final String PERFORMANCE_SSE_NODE_AWAIT = "performance.sse.node.await";
+    public static final String PERFORMANCE_SSE_NODE_CLOSE = "performance.sse.node.close";
+    public static final String PERFORMANCE_SSE_CONNECT_TIMEOUT = "performance.sse.connect_timeout";
+    public static final String PERFORMANCE_SSE_AWAIT_MODE = "performance.sse.await_mode";
+    public static final String PERFORMANCE_SSE_AWAIT_TIMEOUT = "performance.sse.await_timeout";
+    public static final String PERFORMANCE_SSE_FIXED_DURATION_HINT = "performance.sse.fixed_duration_hint";
+    public static final String PERFORMANCE_SSE_FIRST_MESSAGE_TIMEOUT = "performance.sse.first_message_timeout";
+    public static final String PERFORMANCE_SSE_HOLD_CONNECTION = "performance.sse.hold_connection";
+    public static final String PERFORMANCE_SSE_TARGET_MESSAGE_COUNT = "performance.sse.target_message_count";
     public static final String MSG_ONLY_HTTP_SUPPORTED = "msg.only_http_supported";
+    public static final String MSG_ONLY_HTTP_SSE_SUPPORTED = "msg.only_http_sse_supported";
     public static final String PERFORMANCE_MSG_SAVE_SUCCESS = "performance.msg.save_success";
 
     // ============ 性能报表列相关 ============

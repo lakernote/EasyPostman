@@ -102,10 +102,11 @@ public class PreparedRequestBuilder {
         req.followRedirects = SettingManager.isFollowRedirects();
 
         // 填充 List 数据，支持相同 key
-        req.headersList = buildHeadersListWithAuth(effectiveItem);
-        req.formDataList = effectiveItem.getFormDataList();
-        req.urlencodedList = effectiveItem.getUrlencodedList();
-        req.paramsList = effectiveItem.getParamsList();
+        // 每次执行都使用独立副本，避免并发压测时线程间互相污染变量替换结果
+        req.headersList = cloneHeaders(buildHeadersListWithAuth(effectiveItem));
+        req.formDataList = cloneFormData(effectiveItem.getFormDataList());
+        req.urlencodedList = cloneUrlencoded(effectiveItem.getUrlencodedList());
+        req.paramsList = cloneParams(effectiveItem.getParamsList());
 
         // 3. 存储合并后的脚本（供 ScriptExecutionPipeline 使用）
         req.prescript = effectiveItem.getPrescript();
@@ -316,5 +317,65 @@ public class PreparedRequestBuilder {
                 item.setValue(VariableResolver.resolve(item.getValue()));
             }
         }
+    }
+
+    private static List<HttpHeader> cloneHeaders(List<HttpHeader> list) {
+        if (list == null) {
+            return null;
+        }
+        List<HttpHeader> cloned = new ArrayList<>(list.size());
+        for (HttpHeader item : list) {
+            if (item == null) {
+                cloned.add(null);
+            } else {
+                cloned.add(new HttpHeader(item.isEnabled(), item.getKey(), item.getValue()));
+            }
+        }
+        return cloned;
+    }
+
+    private static List<HttpFormData> cloneFormData(List<HttpFormData> list) {
+        if (list == null) {
+            return null;
+        }
+        List<HttpFormData> cloned = new ArrayList<>(list.size());
+        for (HttpFormData item : list) {
+            if (item == null) {
+                cloned.add(null);
+            } else {
+                cloned.add(new HttpFormData(item.isEnabled(), item.getKey(), item.getType(), item.getValue()));
+            }
+        }
+        return cloned;
+    }
+
+    private static List<HttpFormUrlencoded> cloneUrlencoded(List<HttpFormUrlencoded> list) {
+        if (list == null) {
+            return null;
+        }
+        List<HttpFormUrlencoded> cloned = new ArrayList<>(list.size());
+        for (HttpFormUrlencoded item : list) {
+            if (item == null) {
+                cloned.add(null);
+            } else {
+                cloned.add(new HttpFormUrlencoded(item.isEnabled(), item.getKey(), item.getValue()));
+            }
+        }
+        return cloned;
+    }
+
+    private static List<HttpParam> cloneParams(List<HttpParam> list) {
+        if (list == null) {
+            return null;
+        }
+        List<HttpParam> cloned = new ArrayList<>(list.size());
+        for (HttpParam item : list) {
+            if (item == null) {
+                cloned.add(null);
+            } else {
+                cloned.add(new HttpParam(item.isEnabled(), item.getKey(), item.getValue()));
+            }
+        }
+        return cloned;
     }
 }

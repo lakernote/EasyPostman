@@ -1,5 +1,6 @@
 package com.laker.postman.panel.performance;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.SingletonFactory;
@@ -29,6 +30,7 @@ import com.laker.postman.panel.performance.timer.TimerPropertyPanel;
 import com.laker.postman.service.PerformancePersistenceService;
 import com.laker.postman.service.collections.RequestCollectionsService;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
+import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.http.okhttp.OkHttpClientManager;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
@@ -49,13 +51,20 @@ import javax.swing.tree.TreeSelectionModel;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.nio.charset.StandardCharsets;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+
+import okhttp3.Response;
+import okhttp3.sse.EventSource;
+import okhttp3.sse.EventSourceListener;
 
 /**
  * 左侧多层级树（用户组-请求-断言-定时器），右侧属性区，底部Tab结果区
@@ -67,6 +76,9 @@ public class PerformancePanel extends SingletonBasePanel {
     public static final String REQUEST = "request";
     public static final String ASSERTION = "assertion";
     public static final String TIMER = "timer";
+    public static final String SSE_CONNECT = "sseConnect";
+    public static final String SSE_AWAIT = "sseAwait";
+    public static final String SSE_CLOSE = "sseClose";
     private JTree jmeterTree;
     private DefaultTreeModel treeModel;
     private JPanel propertyPanel; // 右侧属性区（CardLayout）
@@ -75,7 +87,12 @@ public class PerformancePanel extends SingletonBasePanel {
     private ThreadGroupPropertyPanel threadGroupPanel;
     private AssertionPropertyPanel assertionPanel;
     private TimerPropertyPanel timerPanel;
+    private SseStagePropertyPanel sseConnectPanel;
+    private SseStagePropertyPanel sseAwaitPanel;
+    private SseStagePropertyPanel sseClosePanel;
     private RequestEditSubPanel requestEditSubPanel;
+    private JPanel requestEditorHost;
+    private RequestItemProtocolEnum currentRequestEditorProtocol = RequestItemProtocolEnum.HTTP;
     private volatile boolean running = false;
     private transient Thread runThread;
     private StartButton runBtn;
@@ -121,6 +138,7 @@ public class PerformancePanel extends SingletonBasePanel {
 
     // 当前选中的请求节点
     private DefaultMutableTreeNode currentRequestNode;
+    private final transient Set<EventSource> activeSseSources = ConcurrentHashMap.newKeySet();
 
     @Override
     protected void initUI() {
@@ -176,6 +194,12 @@ public class PerformancePanel extends SingletonBasePanel {
         propertyPanel.add(assertionPanel, ASSERTION);
         timerPanel = new TimerPropertyPanel();
         propertyPanel.add(timerPanel, TIMER);
+        sseConnectPanel = new SseStagePropertyPanel(SseStagePropertyPanel.Stage.CONNECT);
+        propertyPanel.add(sseConnectPanel, SSE_CONNECT);
+        sseAwaitPanel = new SseStagePropertyPanel(SseStagePropertyPanel.Stage.AWAIT);
+        propertyPanel.add(sseAwaitPanel, SSE_AWAIT);
+        sseClosePanel = new SseStagePropertyPanel(SseStagePropertyPanel.Stage.CLOSE);
+        propertyPanel.add(sseClosePanel, SSE_CLOSE);
         propertyCardLayout.show(propertyPanel, EMPTY);
 
         // 3. 结果区
@@ -283,6 +307,8 @@ public class PerformancePanel extends SingletonBasePanel {
         topPanel.add(progressPanel, BorderLayout.EAST);
         add(topPanel, BorderLayout.NORTH);
 
+        syncAllSseRequestStructures((DefaultMutableTreeNode) treeModel.getRoot());
+
         runBtn.addActionListener(e -> startRun(progressLabel));
         stopBtn.addActionListener(e -> stopRun());
 
@@ -365,9 +391,164 @@ public class PerformancePanel extends SingletonBasePanel {
 
         // 组装
         wrapper.add(infoBar, BorderLayout.NORTH);
-        wrapper.add(requestEditSubPanel, BorderLayout.CENTER);
+        requestEditorHost = new JPanel(new BorderLayout());
+        requestEditorHost.add(requestEditSubPanel, BorderLayout.CENTER);
+        wrapper.add(requestEditorHost, BorderLayout.CENTER);
 
         return wrapper;
+    }
+
+    private RequestItemProtocolEnum resolveRequestProtocol(HttpRequestItem item) {
+        return item != null && item.getProtocol() != null ? item.getProtocol() : RequestItemProtocolEnum.HTTP;
+    }
+
+    private boolean isSsePerfRequest(HttpRequestItem item) {
+        RequestItemProtocolEnum protocol = resolveRequestProtocol(item);
+        return protocol.isSseProtocol() || (protocol.isHttpProtocol() && HttpUtil.isSSERequest(item));
+    }
+
+    private boolean isSsePerfRequest(HttpRequestItem item, PreparedRequest req) {
+        RequestItemProtocolEnum protocol = resolveRequestProtocol(item);
+        return protocol.isSseProtocol() || (protocol.isHttpProtocol() && HttpUtil.isSSERequest(req));
+    }
+
+    private DefaultMutableTreeNode getParentRequestNode(DefaultMutableTreeNode node) {
+        DefaultMutableTreeNode current = node;
+        while (current != null) {
+            Object userObj = current.getUserObject();
+            if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.REQUEST) {
+                return current;
+            }
+            current = (DefaultMutableTreeNode) current.getParent();
+        }
+        return null;
+    }
+
+    private DefaultMutableTreeNode findChildNode(DefaultMutableTreeNode parent, NodeType type) {
+        for (int i = 0; i < parent.getChildCount(); i++) {
+            DefaultMutableTreeNode child = (DefaultMutableTreeNode) parent.getChildAt(i);
+            Object userObj = child.getUserObject();
+            if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == type) {
+                return child;
+            }
+        }
+        return null;
+    }
+
+    private DefaultMutableTreeNode ensureFixedChildNode(DefaultMutableTreeNode parent, NodeType type, String name, int index) {
+        DefaultMutableTreeNode existing = findChildNode(parent, type);
+        if (existing != null) {
+            Object userObj = existing.getUserObject();
+            if (userObj instanceof JMeterTreeNode jtNode) {
+                jtNode.name = name;
+            }
+            if (parent.getIndex(existing) != index) {
+                treeModel.removeNodeFromParent(existing);
+                treeModel.insertNodeInto(existing, parent, Math.min(index, parent.getChildCount()));
+            } else {
+                treeModel.nodeChanged(existing);
+            }
+            return existing;
+        }
+        DefaultMutableTreeNode child = new DefaultMutableTreeNode(new JMeterTreeNode(name, type));
+        treeModel.insertNodeInto(child, parent, Math.min(index, parent.getChildCount()));
+        return child;
+    }
+
+    private void moveChildrenByType(DefaultMutableTreeNode from, DefaultMutableTreeNode to, NodeType type) {
+        if (from == null || to == null) {
+            return;
+        }
+        List<DefaultMutableTreeNode> toMove = new ArrayList<>();
+        for (int i = 0; i < from.getChildCount(); i++) {
+            DefaultMutableTreeNode child = (DefaultMutableTreeNode) from.getChildAt(i);
+            Object userObj = child.getUserObject();
+            if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == type) {
+                toMove.add(child);
+            }
+        }
+        for (DefaultMutableTreeNode child : toMove) {
+            treeModel.removeNodeFromParent(child);
+            treeModel.insertNodeInto(child, to, to.getChildCount());
+        }
+    }
+
+    private void syncSseRequestStructure(DefaultMutableTreeNode requestNode, JMeterTreeNode requestData) {
+        if (requestNode == null || requestData == null || requestData.httpRequestItem == null) {
+            return;
+        }
+
+        boolean isSse = isSsePerfRequest(requestData.httpRequestItem);
+        DefaultMutableTreeNode connectNode = findChildNode(requestNode, NodeType.SSE_CONNECT);
+        DefaultMutableTreeNode awaitNode = findChildNode(requestNode, NodeType.SSE_AWAIT);
+        DefaultMutableTreeNode closeNode = findChildNode(requestNode, NodeType.SSE_CLOSE);
+
+        if (isSse) {
+            if (requestData.ssePerformanceData == null) {
+                requestData.ssePerformanceData = new SsePerformanceData();
+            }
+            connectNode = ensureFixedChildNode(requestNode, NodeType.SSE_CONNECT,
+                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_NODE_CONNECT), 0);
+            awaitNode = ensureFixedChildNode(requestNode, NodeType.SSE_AWAIT,
+                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_NODE_AWAIT), 1);
+            closeNode = ensureFixedChildNode(requestNode, NodeType.SSE_CLOSE,
+                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_NODE_CLOSE), 2);
+            moveChildrenByType(requestNode, awaitNode, NodeType.ASSERTION);
+        } else {
+            if (awaitNode != null) {
+                moveChildrenByType(awaitNode, requestNode, NodeType.ASSERTION);
+            }
+            if (connectNode != null) {
+                treeModel.removeNodeFromParent(connectNode);
+            }
+            if (awaitNode != null) {
+                treeModel.removeNodeFromParent(awaitNode);
+            }
+            if (closeNode != null) {
+                treeModel.removeNodeFromParent(closeNode);
+            }
+        }
+    }
+
+    private void syncAllSseRequestStructures(DefaultMutableTreeNode node) {
+        Object userObj = node.getUserObject();
+        if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.REQUEST) {
+            syncSseRequestStructure(node, jtNode);
+        }
+        for (int i = 0; i < node.getChildCount(); i++) {
+            syncAllSseRequestStructures((DefaultMutableTreeNode) node.getChildAt(i));
+        }
+    }
+
+    private void switchRequestEditor(HttpRequestItem item) {
+        RequestItemProtocolEnum protocol = resolveRequestProtocol(item);
+        if (requestEditSubPanel == null || requestEditorHost == null || protocol != currentRequestEditorProtocol) {
+            if (requestEditorHost != null && requestEditSubPanel != null) {
+                requestEditorHost.remove(requestEditSubPanel);
+            }
+            requestEditSubPanel = new RequestEditSubPanel("", protocol);
+            currentRequestEditorProtocol = protocol;
+            if (requestEditorHost != null) {
+                requestEditorHost.add(requestEditSubPanel, BorderLayout.CENTER);
+                requestEditorHost.revalidate();
+                requestEditorHost.repaint();
+            }
+        }
+
+        if (item != null) {
+            requestEditSubPanel.initPanelData(item);
+        }
+    }
+
+    private void saveRequestNodeData(DefaultMutableTreeNode node) {
+        if (requestEditSubPanel == null || node == null) {
+            return;
+        }
+        Object userObj = node.getUserObject();
+        if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.REQUEST) {
+            jtNode.httpRequestItem = requestEditSubPanel.getCurrentRequest();
+            syncSseRequestStructure(node, jtNode);
+        }
     }
 
     /**
@@ -426,6 +607,7 @@ public class PerformancePanel extends SingletonBasePanel {
 
         // 更新节点中的请求数据
         jmNode.httpRequestItem = latestRequestItem;
+        syncSseRequestStructure(currentRequestNode, jmNode);
         jmNode.name = latestRequestItem.getName();
         treeModel.nodeChanged(currentRequestNode);
         // 清除 InheritanceCache，防止下次执行时 PreparedRequestBuilder.build() 拿到旧缓存
@@ -434,7 +616,7 @@ public class PerformancePanel extends SingletonBasePanel {
 
         // 用从集合取回的最新数据直接刷新右侧编辑面板（不依赖节点引用，避免被 listener 覆盖）
         log.debug("[refreshCurrentRequest] 调用 initPanelData, url={}", latestRequestItem.getUrl());
-        requestEditSubPanel.initPanelData(latestRequestItem);
+        switchRequestEditor(latestRequestItem);
         log.debug("[refreshCurrentRequest] initPanelData 执行完毕，editSub.id={}", requestEditSubPanel.getId());
 
         // 保存配置
@@ -501,15 +683,22 @@ public class PerformancePanel extends SingletonBasePanel {
     }
 
     private void saveAllPropertyPanelData() {
-        // 保存所有属性区数据到树节点
-        threadGroupPanel.saveThreadGroupData();
-        assertionPanel.saveAssertionData();
-        timerPanel.saveTimerData();
-        if (requestEditSubPanel != null && currentRequestNode != null) {
-            // 保存RequestEditSubPanel表单到当前选中的请求节点
-            Object userObj = currentRequestNode.getUserObject();
-            if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.REQUEST) {
-                jtNode.httpRequestItem = requestEditSubPanel.getCurrentRequest();
+        DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
+        if (selectedNode != null && selectedNode.getUserObject() instanceof JMeterTreeNode jtNode) {
+            switch (jtNode.type) {
+                case THREAD_GROUP -> threadGroupPanel.saveThreadGroupData();
+                case REQUEST -> {
+                    if (requestEditSubPanel != null && currentRequestNode != null) {
+                        saveRequestNodeData(currentRequestNode);
+                    }
+                }
+                case ASSERTION -> assertionPanel.saveAssertionData();
+                case TIMER -> timerPanel.saveTimerData();
+                case SSE_CONNECT -> sseConnectPanel.saveData();
+                case SSE_AWAIT -> sseAwaitPanel.saveData();
+                case SSE_CLOSE -> sseClosePanel.saveData();
+                default -> {
+                }
             }
         }
     }
@@ -1607,7 +1796,10 @@ public class PerformancePanel extends SingletonBasePanel {
      * 检查异常是否是被取消或中断的请求
      * 包括：InterruptedIOException、IOException: Canceled 等
      */
-    private boolean isCancelledOrInterrupted(Exception ex) {
+    private boolean isCancelledOrInterrupted(Throwable ex) {
+        if (ex == null) {
+            return false;
+        }
         // 1. InterruptedIOException（线程中断）
         if (ex instanceof java.io.InterruptedIOException) {
             return true;
@@ -1627,12 +1819,274 @@ public class PerformancePanel extends SingletonBasePanel {
         }
 
         // 4. 检查异常链中是否包含上述异常
-        Throwable cause = ex.getCause();
-        if (cause instanceof Exception exception) {
-            return isCancelledOrInterrupted(exception);
+        return isCancelledOrInterrupted(ex.getCause());
+    }
+
+    private static final class SseExecutionOutcome {
+        private final HttpResponse response;
+        private final String errorMsg;
+        private final boolean executionFailed;
+        private final boolean interrupted;
+
+        private SseExecutionOutcome(HttpResponse response, String errorMsg, boolean executionFailed, boolean interrupted) {
+            this.response = response;
+            this.errorMsg = errorMsg;
+            this.executionFailed = executionFailed;
+            this.interrupted = interrupted;
+        }
+    }
+
+    private SseExecutionOutcome executeSseSample(PreparedRequest req, JMeterTreeNode jtNode) {
+        long requestStartTime = System.currentTimeMillis();
+        HttpResponse resp = new HttpResponse();
+        resp.isSse = true;
+
+        SsePerformanceData cfg = jtNode.ssePerformanceData != null ? jtNode.ssePerformanceData : new SsePerformanceData();
+        AtomicBoolean interrupted = new AtomicBoolean(false);
+        AtomicBoolean failed = new AtomicBoolean(false);
+        AtomicBoolean closingSource = new AtomicBoolean(false);
+        AtomicReference<String> errorRef = new AtomicReference<>("");
+        AtomicReference<String> completionReasonRef = new AtomicReference<>("pending");
+        AtomicReference<String> lastEventIdRef = new AtomicReference<>("");
+        AtomicReference<String> lastEventTypeRef = new AtomicReference<>("");
+        AtomicReference<String> lastEventDataRef = new AtomicReference<>("");
+        StringBuffer matchedEventBody = new StringBuffer();
+        AtomicLong firstMessageLatencyMs = new AtomicLong(-1);
+        AtomicInteger matchedMessageCount = new AtomicInteger(0);
+        CountDownLatch openLatch = new CountDownLatch(1);
+        CountDownLatch firstMessageLatch = new CountDownLatch(1);
+        CountDownLatch completionLatch = new CountDownLatch(1);
+
+        EventSourceListener listener = new EventSourceListener() {
+            @Override
+            public void onOpen(EventSource eventSource, Response response) {
+                resp.headers = new LinkedHashMap<>();
+                for (String name : response.headers().names()) {
+                    resp.addHeader(name, response.headers(name));
+                }
+                resp.code = response.code();
+                resp.protocol = response.protocol().toString();
+                resp.isSse = true;
+                openLatch.countDown();
+            }
+
+            @Override
+            public void onClosed(EventSource eventSource) {
+                completionReasonRef.compareAndSet("pending", "closed");
+                openLatch.countDown();
+                firstMessageLatch.countDown();
+                completionLatch.countDown();
+            }
+
+            @Override
+            public void onFailure(EventSource eventSource, Throwable throwable, Response response) {
+                if (response != null) {
+                    if (resp.headers == null) {
+                        resp.headers = new LinkedHashMap<>();
+                    }
+                    for (String name : response.headers().names()) {
+                        resp.addHeader(name, response.headers(name));
+                    }
+                    resp.code = response.code();
+                    resp.protocol = response.protocol().toString();
+                }
+                String message = throwable != null ? throwable.getMessage() : "";
+                if (closingSource.get()) {
+                    completionReasonRef.compareAndSet("pending", "closed");
+                } else if (failed.get()) {
+                    completionReasonRef.compareAndSet("pending", "failure");
+                } else if (!running || isCancelledOrInterrupted(throwable)) {
+                    interrupted.set(true);
+                    completionReasonRef.set("interrupted");
+                } else {
+                    failed.set(true);
+                    errorRef.set(CharSequenceUtil.blankToDefault(message, "SSE request failed"));
+                    completionReasonRef.set("failure");
+                }
+                openLatch.countDown();
+                firstMessageLatch.countDown();
+                completionLatch.countDown();
+            }
+
+            @Override
+            public void onEvent(EventSource eventSource, String id, String type, String data) {
+                String eventType = CharSequenceUtil.blankToDefault(type, "message");
+                if (matchesSseEvent(cfg, eventType)) {
+                    if (matchedMessageCount.incrementAndGet() == 1) {
+                        firstMessageLatencyMs.compareAndSet(-1, System.currentTimeMillis() - requestStartTime);
+                        completionReasonRef.compareAndSet("pending", "first_message");
+                        firstMessageLatch.countDown();
+                    }
+                    lastEventIdRef.set(id == null ? "" : id);
+                    lastEventTypeRef.set(eventType);
+                    lastEventDataRef.set(data == null ? "" : data);
+                    appendSseEvent(matchedEventBody, id, eventType, data);
+
+                    if (cfg.completionMode == SsePerformanceData.CompletionMode.FIRST_MESSAGE) {
+                        completionLatch.countDown();
+                    } else if (cfg.completionMode == SsePerformanceData.CompletionMode.MESSAGE_COUNT
+                            && matchedMessageCount.get() >= Math.max(1, cfg.targetMessageCount)) {
+                        completionReasonRef.set("message_target");
+                        completionLatch.countDown();
+                    }
+                }
+            }
+        };
+
+        EventSource eventSource = HttpSingleRequestExecutor.executeSSE(req, listener);
+        activeSseSources.add(eventSource);
+
+        try {
+            switch (cfg.completionMode) {
+                case FIRST_MESSAGE -> {
+                    boolean opened = openLatch.await(Math.max(100, cfg.connectTimeoutMs), TimeUnit.MILLISECONDS);
+                    if (!opened && !failed.get() && !interrupted.get()) {
+                        failed.set(true);
+                        errorRef.set("SSE connection timeout");
+                        completionReasonRef.set("connect_timeout");
+                        closingSource.set(true);
+                        eventSource.cancel();
+                    }
+                    boolean gotFirstMessage = !failed.get() && !interrupted.get()
+                            && firstMessageLatch.await(Math.max(100, cfg.firstMessageTimeoutMs), TimeUnit.MILLISECONDS);
+                    if ((!gotFirstMessage || matchedMessageCount.get() == 0) && !failed.get() && !interrupted.get()) {
+                        failed.set(true);
+                        errorRef.set("SSE first message timeout");
+                        completionReasonRef.compareAndSet("pending", "first_message_timeout");
+                        closingSource.set(true);
+                        eventSource.cancel();
+                    }
+                }
+                case FIXED_DURATION -> {
+                    boolean opened = openLatch.await(Math.max(100, cfg.connectTimeoutMs), TimeUnit.MILLISECONDS);
+                    if (!opened && !failed.get() && !interrupted.get()) {
+                        failed.set(true);
+                        errorRef.set("SSE connection timeout");
+                        completionReasonRef.set("connect_timeout");
+                        closingSource.set(true);
+                        eventSource.cancel();
+                    } else if (!failed.get() && !interrupted.get()) {
+                        boolean terminated = completionLatch.await(Math.max(100, cfg.holdConnectionMs), TimeUnit.MILLISECONDS);
+                        if (terminated && !failed.get() && !interrupted.get()) {
+                            failed.set(true);
+                            errorRef.set("SSE connection closed before hold duration finished");
+                            completionReasonRef.set("closed_early");
+                        } else if (!terminated) {
+                            completionReasonRef.set("hold_complete");
+                        }
+                    }
+                }
+                case MESSAGE_COUNT -> {
+                    boolean opened = openLatch.await(Math.max(100, cfg.connectTimeoutMs), TimeUnit.MILLISECONDS);
+                    if (!opened && !failed.get() && !interrupted.get()) {
+                        failed.set(true);
+                        errorRef.set("SSE connection timeout");
+                        completionReasonRef.set("connect_timeout");
+                        closingSource.set(true);
+                        eventSource.cancel();
+                    }
+                    boolean gotFirstMessage = !failed.get() && !interrupted.get()
+                            && firstMessageLatch.await(Math.max(100, cfg.firstMessageTimeoutMs), TimeUnit.MILLISECONDS);
+                    if ((!gotFirstMessage || matchedMessageCount.get() == 0) && !failed.get() && !interrupted.get()) {
+                        failed.set(true);
+                        errorRef.set("SSE first message timeout");
+                        completionReasonRef.compareAndSet("pending", "first_message_timeout");
+                        closingSource.set(true);
+                        eventSource.cancel();
+                    } else if (!failed.get() && !interrupted.get()
+                            && matchedMessageCount.get() < Math.max(1, cfg.targetMessageCount)) {
+                        boolean reachedTarget = completionLatch.await(Math.max(100, cfg.holdConnectionMs), TimeUnit.MILLISECONDS);
+                        if (!reachedTarget && matchedMessageCount.get() < Math.max(1, cfg.targetMessageCount)
+                                && !failed.get() && !interrupted.get()) {
+                            failed.set(true);
+                            errorRef.set("SSE target message count timeout");
+                            completionReasonRef.set("message_target_timeout");
+                            closingSource.set(true);
+                            eventSource.cancel();
+                        }
+                    }
+                }
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            interrupted.set(true);
+            completionReasonRef.set("interrupted");
+        } finally {
+            closingSource.set(true);
+            eventSource.cancel();
+            activeSseSources.remove(eventSource);
         }
 
-        return false;
+        long endTime = System.currentTimeMillis();
+        resp.endTime = endTime;
+        resp.costMs = endTime - requestStartTime;
+        resp.body = matchedEventBody.toString();
+        resp.bodySize = resp.body.getBytes(StandardCharsets.UTF_8).length;
+        if (resp.headers == null) {
+            resp.headers = new LinkedHashMap<>();
+        }
+        enrichSseResponseHeaders(resp, cfg, matchedMessageCount.get(), firstMessageLatencyMs.get(),
+                completionReasonRef.get(), lastEventIdRef.get(), lastEventTypeRef.get(), errorRef.get());
+
+        return new SseExecutionOutcome(resp, errorRef.get(), failed.get(), interrupted.get());
+    }
+
+    private boolean matchesSseEvent(SsePerformanceData cfg, String eventType) {
+        String filter = cfg.eventNameFilter;
+        return CharSequenceUtil.isBlank(filter) || CharSequenceUtil.equals(filter.trim(), eventType);
+    }
+
+    private void appendSseEvent(StringBuffer buffer, String id, String type, String data) {
+        if (id != null && !id.isBlank()) {
+            buffer.append("id: ").append(id).append('\n');
+        }
+        if (type != null && !type.isBlank()) {
+            buffer.append("event: ").append(type).append('\n');
+        }
+        String eventData = data == null ? "" : data;
+        for (String line : eventData.split("\\R", -1)) {
+            buffer.append("data: ").append(line).append('\n');
+        }
+        buffer.append('\n');
+    }
+
+    private void enrichSseResponseHeaders(HttpResponse resp,
+                                          SsePerformanceData cfg,
+                                          int matchedMessageCount,
+                                          long firstMessageLatencyMs,
+                                          String completionReason,
+                                          String lastEventId,
+                                          String lastEventType,
+                                          String errorMsg) {
+        resp.addHeader("X-Easy-SSE-Mode", Collections.singletonList(cfg.completionMode.name()));
+        resp.addHeader("X-Easy-SSE-Event-Filter", Collections.singletonList(CharSequenceUtil.blankToDefault(cfg.eventNameFilter, "")));
+        resp.addHeader("X-Easy-SSE-Message-Count", Collections.singletonList(String.valueOf(matchedMessageCount)));
+        resp.addHeader("X-Easy-SSE-First-Message-Latency-Ms", Collections.singletonList(firstMessageLatencyMs >= 0 ? String.valueOf(firstMessageLatencyMs) : ""));
+        resp.addHeader("X-Easy-SSE-Completion-Reason", Collections.singletonList(CharSequenceUtil.blankToDefault(completionReason, "")));
+        resp.addHeader("X-Easy-SSE-Event-Id", Collections.singletonList(CharSequenceUtil.blankToDefault(lastEventId, "")));
+        resp.addHeader("X-Easy-SSE-Event-Type", Collections.singletonList(CharSequenceUtil.blankToDefault(lastEventType, "")));
+        if (CharSequenceUtil.isNotBlank(errorMsg)) {
+            resp.addHeader("X-Easy-SSE-Error", Collections.singletonList(errorMsg));
+        }
+    }
+
+    private List<DefaultMutableTreeNode> getAssertionNodesForExecution(DefaultMutableTreeNode requestNode, boolean sseRequest) {
+        List<DefaultMutableTreeNode> nodes = new ArrayList<>();
+        DefaultMutableTreeNode parent = requestNode;
+        if (sseRequest) {
+            DefaultMutableTreeNode awaitNode = findChildNode(requestNode, NodeType.SSE_AWAIT);
+            if (awaitNode != null) {
+                parent = awaitNode;
+            }
+        }
+        for (int i = 0; i < parent.getChildCount(); i++) {
+            DefaultMutableTreeNode child = (DefaultMutableTreeNode) parent.getChildAt(i);
+            Object userObj = child.getUserObject();
+            if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.ASSERTION) {
+                nodes.add(child);
+            }
+        }
+        return nodes;
     }
 
     // 执行单个请求节点
@@ -1646,6 +2100,7 @@ public class PerformancePanel extends SingletonBasePanel {
             // 使用 ID 而不是 Name，避免重名问题
             String apiId = jtNode.httpRequestItem.getId();
             String apiName = jtNode.httpRequestItem.getName();
+            boolean sseRequest = isSsePerfRequest(jtNode.httpRequestItem);
 
             // 注册API元数据（集中管理，避免重复存储）
             ApiMetadata.register(apiId, apiName);
@@ -1710,14 +2165,22 @@ public class PerformancePanel extends SingletonBasePanel {
             long costMs = 0;
             boolean interrupted = false; // 标记是否被中断
 
-            if (preOk && running) {  // 执行HTTP请求前再次检查running状态
+            if (preOk && running) {  // 执行请求前再次检查running状态
                 try {
-                    // Performance 场景：精细化控制事件收集
                     req.collectBasicInfo = true; // 始终收集基本信息（headers、body），用于结果展示
                     req.collectEventInfo = SettingManager.isPerformanceEventLoggingEnabled(); // 根据设置决定是否收集完整事件信息
                     req.enableNetworkLog = false; // 压测场景不输出 NetworkLog，避免 UI 线程阻塞
 
-                    resp = HttpSingleRequestExecutor.executeHttp(req);
+                    sseRequest = isSsePerfRequest(jtNode.httpRequestItem, req);
+                    if (sseRequest) {
+                        SseExecutionOutcome outcome = executeSseSample(req, jtNode);
+                        resp = outcome.response;
+                        errorMsg = CharSequenceUtil.blankToDefault(outcome.errorMsg, errorMsg);
+                        executionFailed = outcome.executionFailed;
+                        interrupted = outcome.interrupted;
+                    } else {
+                        resp = HttpSingleRequestExecutor.executeHttp(req);
+                    }
                 } catch (Exception ex) {
                     // 检查是否是被取消/中断的请求
                     // 注意：cancelAllHttpCalls() 只在停止时调用，所以 Canceled 异常就是停止导致的
@@ -1737,8 +2200,11 @@ public class PerformancePanel extends SingletonBasePanel {
                     costMs = System.currentTimeMillis() - requestStartTime;
                 }
                 // 断言处理（JMeter树断言）
-                for (int j = 0; j < child.getChildCount() && resp != null && running; j++) {
-                    DefaultMutableTreeNode sub = (DefaultMutableTreeNode) child.getChildAt(j);
+                List<DefaultMutableTreeNode> assertionNodes = getAssertionNodesForExecution(child, sseRequest);
+                for (DefaultMutableTreeNode sub : assertionNodes) {
+                    if (resp == null || !running) {
+                        break;
+                    }
                     Object subObj = sub.getUserObject();
                     if (subObj instanceof JMeterTreeNode subNode && subNode.type == NodeType.ASSERTION && subNode.assertionData != null) {
                         // 跳过已停用的断言
@@ -1891,16 +2357,12 @@ public class PerformancePanel extends SingletonBasePanel {
                     if (userObj instanceof JMeterTreeNode jtNode) {
                         switch (jtNode.type) {
                             case THREAD_GROUP -> threadGroupPanel.saveThreadGroupData();
-                            case REQUEST -> {
-                                HttpRequestItem fromEditSub = requestEditSubPanel.getCurrentRequest();
-                                log.debug("[TreeSelectionListener] lastNode REQUEST 写回: name={}, url={} -> editSub: name={}, url={}",
-                                        jtNode.httpRequestItem != null ? jtNode.httpRequestItem.getName() : "null",
-                                        jtNode.httpRequestItem != null ? jtNode.httpRequestItem.getUrl() : "null",
-                                        fromEditSub.getName(), fromEditSub.getUrl());
-                                jtNode.httpRequestItem = fromEditSub;
-                            }
+                            case REQUEST -> saveRequestNodeData(lastNode);
                             case ASSERTION -> assertionPanel.saveAssertionData();
                             case TIMER -> timerPanel.saveTimerData();
+                            case SSE_CONNECT -> sseConnectPanel.saveData();
+                            case SSE_AWAIT -> sseAwaitPanel.saveData();
+                            case SSE_CLOSE -> sseClosePanel.saveData();
                             default -> {
                                 // 其他类型节点不需要保存数据
                             }
@@ -1932,7 +2394,8 @@ public class PerformancePanel extends SingletonBasePanel {
                         propertyCardLayout.show(propertyPanel, REQUEST);
                         currentRequestNode = node; // 记录当前请求节点
                         if (jtNode.httpRequestItem != null) {
-                            requestEditSubPanel.initPanelData(jtNode.httpRequestItem);
+                            syncSseRequestStructure(node, jtNode);
+                            switchRequestEditor(jtNode.httpRequestItem);
                         }
                     }
                     case ASSERTION -> {
@@ -1944,6 +2407,36 @@ public class PerformancePanel extends SingletonBasePanel {
                         propertyCardLayout.show(propertyPanel, TIMER);
                         timerPanel.setTimerData(jtNode);
                         currentRequestNode = null; // 清空当前请求节点引用
+                    }
+                    case SSE_CONNECT -> {
+                        DefaultMutableTreeNode requestNode = getParentRequestNode(node);
+                        if (requestNode != null && requestNode.getUserObject() instanceof JMeterTreeNode requestJtNode) {
+                            propertyCardLayout.show(propertyPanel, SSE_CONNECT);
+                            sseConnectPanel.setRequestNode(requestJtNode);
+                        } else {
+                            propertyCardLayout.show(propertyPanel, EMPTY);
+                        }
+                        currentRequestNode = null;
+                    }
+                    case SSE_AWAIT -> {
+                        DefaultMutableTreeNode requestNode = getParentRequestNode(node);
+                        if (requestNode != null && requestNode.getUserObject() instanceof JMeterTreeNode requestJtNode) {
+                            propertyCardLayout.show(propertyPanel, SSE_AWAIT);
+                            sseAwaitPanel.setRequestNode(requestJtNode);
+                        } else {
+                            propertyCardLayout.show(propertyPanel, EMPTY);
+                        }
+                        currentRequestNode = null;
+                    }
+                    case SSE_CLOSE -> {
+                        DefaultMutableTreeNode requestNode = getParentRequestNode(node);
+                        if (requestNode != null && requestNode.getUserObject() instanceof JMeterTreeNode requestJtNode) {
+                            propertyCardLayout.show(propertyPanel, SSE_CLOSE);
+                            sseClosePanel.setRequestNode(requestJtNode);
+                        } else {
+                            propertyCardLayout.show(propertyPanel, EMPTY);
+                        }
+                        currentRequestNode = null;
                     }
                     default -> {
                         propertyCardLayout.show(propertyPanel, EMPTY);
@@ -2001,20 +2494,24 @@ public class PerformancePanel extends SingletonBasePanel {
             RequestCollectionsService.showMultiSelectRequestDialog(selectedList -> {
                 if (selectedList == null || selectedList.isEmpty()) return;
 
-                // 过滤只保留HTTP类型的请求
-                List<HttpRequestItem> httpOnlyList = selectedList.stream()
-                        .filter(reqItem -> reqItem.getProtocol() != null && reqItem.getProtocol().isHttpProtocol())
+                // 过滤只保留 HTTP / SSE 类型的请求
+                List<HttpRequestItem> supportedList = selectedList.stream()
+                        .filter(reqItem -> {
+                            RequestItemProtocolEnum protocol = resolveRequestProtocol(reqItem);
+                            return protocol.isHttpProtocol() || protocol.isSseProtocol();
+                        })
                         .toList();
 
-                if (httpOnlyList.isEmpty()) {
-                    NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.MSG_ONLY_HTTP_SUPPORTED));
+                if (supportedList.isEmpty()) {
+                    NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.MSG_ONLY_HTTP_SSE_SUPPORTED));
                     return;
                 }
 
                 List<DefaultMutableTreeNode> newNodes = new ArrayList<>();
-                for (HttpRequestItem reqItem : httpOnlyList) {
+                for (HttpRequestItem reqItem : supportedList) {
                     DefaultMutableTreeNode req = new DefaultMutableTreeNode(new JMeterTreeNode(reqItem.getName(), NodeType.REQUEST, reqItem));
                     treeModel.insertNodeInto(req, node, node.getChildCount());
+                    syncSseRequestStructure(req, (JMeterTreeNode) req.getUserObject());
                     newNodes.add(req);
                 }
                 jmeterTree.expandPath(new TreePath(node.getPath()));
@@ -2022,7 +2519,8 @@ public class PerformancePanel extends SingletonBasePanel {
                 TreePath newPath = new TreePath(newNodes.get(0).getPath());
                 jmeterTree.setSelectionPath(newPath);
                 propertyCardLayout.show(propertyPanel, REQUEST);
-                requestEditSubPanel.initPanelData(((JMeterTreeNode) newNodes.get(0).getUserObject()).httpRequestItem);
+                JMeterTreeNode newRequestNode = (JMeterTreeNode) newNodes.get(0).getUserObject();
+                switchRequestEditor(newRequestNode.httpRequestItem);
                 saveConfig();
             });
         });
@@ -2030,9 +2528,14 @@ public class PerformancePanel extends SingletonBasePanel {
         addAssertion.addActionListener(e -> {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
             if (node == null) return;
+            DefaultMutableTreeNode parentNode = node;
+            Object userObj = node.getUserObject();
+            if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.SSE_AWAIT) {
+                parentNode = node;
+            }
             DefaultMutableTreeNode assertion = new DefaultMutableTreeNode(new JMeterTreeNode("Assertion", NodeType.ASSERTION));
-            treeModel.insertNodeInto(assertion, node, node.getChildCount());
-            jmeterTree.expandPath(new TreePath(node.getPath()));
+            treeModel.insertNodeInto(assertion, parentNode, parentNode.getChildCount());
+            jmeterTree.expandPath(new TreePath(parentNode.getPath()));
             saveConfig();
         });
         // 添加定时器
@@ -2059,7 +2562,7 @@ public class PerformancePanel extends SingletonBasePanel {
                 // 同步更新 request 类型的 httpRequestItem name 字段
                 if (jtNode.type == NodeType.REQUEST && jtNode.httpRequestItem != null) {
                     jtNode.httpRequestItem.setName(newName.trim());
-                    requestEditSubPanel.initPanelData(jtNode.httpRequestItem);
+                    switchRequestEditor(jtNode.httpRequestItem);
                 }
                 treeModel.nodeChanged(node);
                 saveConfig();
@@ -2147,6 +2650,10 @@ public class PerformancePanel extends SingletonBasePanel {
                         }
                     }
 
+                    if (currentRequestNode != null) {
+                        saveRequestNodeData(currentRequestNode);
+                    }
+
                     TreePath[] selectedPaths = jmeterTree.getSelectionPaths();
                     if (selectedPaths == null || selectedPaths.length == 0) return;
 
@@ -2202,13 +2709,18 @@ public class PerformancePanel extends SingletonBasePanel {
                         }
                         addThreadGroup.setVisible(false);
                         addRequest.setVisible(jtNode.type == NodeType.THREAD_GROUP);
-                        addAssertion.setVisible(jtNode.type == NodeType.REQUEST);
+                        boolean isSseRequestNode = jtNode.type == NodeType.REQUEST && isSsePerfRequest(jtNode.httpRequestItem);
+                        addAssertion.setVisible((jtNode.type == NodeType.REQUEST && !isSseRequestNode)
+                                || jtNode.type == NodeType.SSE_AWAIT);
                         addTimer.setVisible(jtNode.type == NodeType.REQUEST);
-                        renameNode.setVisible(true);
-                        deleteNode.setVisible(true);
+                        boolean structuralSseNode = jtNode.type == NodeType.SSE_CONNECT
+                                || jtNode.type == NodeType.SSE_AWAIT
+                                || jtNode.type == NodeType.SSE_CLOSE;
+                        renameNode.setVisible(!structuralSseNode);
+                        deleteNode.setVisible(!structuralSseNode);
                         // 根据当前启用状态显示启用或停用菜单
-                        enableNode.setVisible(!jtNode.enabled);
-                        disableNode.setVisible(jtNode.enabled);
+                        enableNode.setVisible(!structuralSseNode && !jtNode.enabled);
+                        disableNode.setVisible(!structuralSseNode && jtNode.enabled);
                         // 显示分割线
                         separator1.setVisible(true);
                         separator2.setVisible(true);
@@ -2273,11 +2785,19 @@ public class PerformancePanel extends SingletonBasePanel {
     }
 
     /**
-     * 取消所有正在执行的 HTTP 请求
-     * 通过取消 OkHttpClient 的 Dispatcher 中的所有 Call 来实现快速停止
+     * 取消所有正在执行的 HTTP / SSE 请求
+     * HTTP 通过 Dispatcher 中的 Call 中断，SSE 通过 EventSource.cancel() 中断。
      */
     private void cancelAllHttpCalls() {
         OkHttpClientManager.cancelAllCalls();
+        for (EventSource eventSource : new ArrayList<>(activeSseSources)) {
+            try {
+                eventSource.cancel();
+            } catch (Exception e) {
+                log.debug("取消 SSE EventSource 失败", e);
+            }
+        }
+        activeSseSources.clear();
     }
 
     private static int getJmeterMaxIdleConnections() {
@@ -2342,11 +2862,12 @@ public class PerformancePanel extends SingletonBasePanel {
                 && jtNode.httpRequestItem != null
                 && item.getId().equals(jtNode.httpRequestItem.getId())) {
             jtNode.httpRequestItem = item;
+            syncSseRequestStructure(node, jtNode);
             jtNode.name = item.getName();
             treeModel.nodeChanged(node);
             // 如果当前正在编辑面板里展示的就是这个请求，也同步更新面板
             if (node == currentRequestNode) {
-                requestEditSubPanel.initPanelData(item);
+                switchRequestEditor(item);
             }
             log.debug("PerformancePanel syncRequestItem: id={}, name={}", item.getId(), item.getName());
         }
@@ -2486,7 +3007,7 @@ public class PerformancePanel extends SingletonBasePanel {
                     if (itemToLoad != null) {
                         // 同步到节点，保证节点与面板一致
                         jtNode.httpRequestItem = itemToLoad;
-                        requestEditSubPanel.initPanelData(itemToLoad);
+                        switchRequestEditor(itemToLoad);
                         log.debug("[refreshFromCollections] initPanelData 执行完毕，editSub.id={}", requestEditSubPanel.getId());
                     }
                 } else {
@@ -2543,6 +3064,7 @@ public class PerformancePanel extends SingletonBasePanel {
                                 latestRequestItem.getName(), latestRequestItem.getUrl());
                         // 更新请求数据
                         jmNode.httpRequestItem = latestRequestItem;
+                        syncSseRequestStructure(treeNode, jmNode);
                         jmNode.name = latestRequestItem.getName();
                         treeModel.nodeChanged(treeNode);
                         // 清除 InheritanceCache，防止执行时 PreparedRequestBuilder.build() 拿到旧缓存

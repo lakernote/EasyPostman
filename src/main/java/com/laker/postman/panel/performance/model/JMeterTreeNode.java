@@ -12,6 +12,7 @@ public class JMeterTreeNode {
     public ThreadGroupData threadGroupData; // 线程组数据
     public AssertionData assertionData;   // 断言数据
     public TimerData timerData;           // 定时器数据
+    public SsePerformanceData ssePerformanceData; // SSE 压测配置，仅 SSE REQUEST 节点使用
     public boolean enabled = true;        // 是否启用，默认启用
 
     public JMeterTreeNode(String name, NodeType type) {
@@ -27,6 +28,8 @@ public class JMeterTreeNode {
             case REQUEST -> this.httpRequestItem = (HttpRequestItem) data;
             case ASSERTION -> this.assertionData = (AssertionData) data;
             case TIMER -> this.timerData = (TimerData) data;
+            case SSE_CONNECT, SSE_AWAIT, SSE_CLOSE, ROOT -> {
+            }
         }
     }
 
@@ -36,6 +39,7 @@ public class JMeterTreeNode {
             case REQUEST -> httpRequestItem;
             case ASSERTION -> assertionData;
             case TIMER -> timerData;
+            case SSE_CONNECT, SSE_AWAIT, SSE_CLOSE, ROOT -> null;
             default -> null;
         };
     }
@@ -46,6 +50,8 @@ public class JMeterTreeNode {
             case REQUEST -> this.httpRequestItem = (com.laker.postman.model.HttpRequestItem) data;
             case ASSERTION -> this.assertionData = (AssertionData) data;
             case TIMER -> this.timerData = (TimerData) data;
+            case SSE_CONNECT, SSE_AWAIT, SSE_CLOSE, ROOT -> {
+            }
         }
     }
 

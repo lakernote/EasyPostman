@@ -40,7 +40,12 @@ public class TreeNodeTransferHandler extends TransferHandler {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
             Object userObj = node.getUserObject();
             if (userObj instanceof JMeterTreeNode jtNode) {
-                if (jtNode.type == NodeType.ROOT) return NONE;
+                if (jtNode.type == NodeType.ROOT
+                        || jtNode.type == NodeType.SSE_CONNECT
+                        || jtNode.type == NodeType.SSE_AWAIT
+                        || jtNode.type == NodeType.SSE_CLOSE) {
+                    return NONE;
+                }
             }
         }
         return MOVE;
@@ -93,7 +98,12 @@ public class TreeNodeTransferHandler extends TransferHandler {
             }
         }
         // 断言、定时器只能在请求下
-        if (dragJtNode.type == NodeType.ASSERTION || dragJtNode.type == NodeType.TIMER) {
+        if (dragJtNode.type == NodeType.ASSERTION) {
+            if (jtNode.type != NodeType.REQUEST && jtNode.type != NodeType.SSE_AWAIT) {
+                return false;
+            }
+        }
+        if (dragJtNode.type == NodeType.TIMER) {
             if (jtNode.type != NodeType.REQUEST) {
                 return false;
             }
@@ -105,7 +115,10 @@ public class TreeNodeTransferHandler extends TransferHandler {
         if (isNodeDescendant(nodeToRemove, targetNode)) {
             return false;
         }
-        return dragJtNode.type != NodeType.ROOT;
+        return dragJtNode.type != NodeType.ROOT
+                && dragJtNode.type != NodeType.SSE_CONNECT
+                && dragJtNode.type != NodeType.SSE_AWAIT
+                && dragJtNode.type != NodeType.SSE_CLOSE;
     }
 
     @Override

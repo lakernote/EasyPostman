@@ -340,7 +340,11 @@ public class WebSocketScenarioExecutor {
         long endTime = System.currentTimeMillis();
         resp.endTime = endTime;
         resp.costMs = endTime - requestStartTime;
-        resp.body = matchedMessageBody.toString();
+        List<String> receivedSnapshot;
+        synchronized (receivedMessages) {
+            receivedSnapshot = new ArrayList<>(receivedMessages);
+        }
+        resp.body = buildResponseBody(receivedSnapshot);
         resp.bodySize = resp.body.getBytes(StandardCharsets.UTF_8).length;
         if (resp.headers == null) {
             resp.headers = new LinkedHashMap<>();
@@ -356,6 +360,7 @@ public class WebSocketScenarioExecutor {
         resp.addHeader("X-Easy-WS-Send-Interval-Ms", Collections.singletonList(String.valueOf(Math.max(0, headerCfg.sendIntervalMs))));
         resp.addHeader("X-Easy-WS-Mode", Collections.singletonList(headerCfg.completionMode.name()));
         resp.addHeader("X-Easy-WS-Message-Filter", Collections.singletonList(CharSequenceUtil.blankToDefault(headerCfg.messageFilter, "")));
+        resp.addHeader("X-Easy-WS-Received-Count", Collections.singletonList(String.valueOf(receivedSnapshot.size())));
         resp.addHeader("X-Easy-WS-Sent-Count", Collections.singletonList(String.valueOf(sentMessageCount.get())));
         resp.addHeader("X-Easy-WS-Message-Count", Collections.singletonList(String.valueOf(matchedMessageCount.get())));
         resp.addHeader("X-Easy-WS-First-Message-Latency-Ms", Collections.singletonList(firstMessageLatencyMs.get() >= 0 ? String.valueOf(firstMessageLatencyMs.get()) : ""));
@@ -386,6 +391,18 @@ public class WebSocketScenarioExecutor {
     private void appendMessage(StringBuffer buffer, String payload) {
         String value = payload == null ? "" : payload;
         buffer.append(value).append("\n\n");
+    }
+
+    static String buildResponseBody(List<String> messages) {
+        if (messages == null || messages.isEmpty()) {
+            return "";
+        }
+        StringBuffer buffer = new StringBuffer();
+        for (String message : messages) {
+            String value = message == null ? "" : message;
+            buffer.append(value).append("\n\n");
+        }
+        return buffer.toString();
     }
 
     private WebSocketPerformanceData copyData(WebSocketPerformanceData source) {

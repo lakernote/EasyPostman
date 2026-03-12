@@ -2492,6 +2492,8 @@ public class PerformancePanel extends SingletonBasePanel {
         JMenuItem deleteNode = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_DELETE));
         JMenuItem enableNode = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ENABLE));
         JMenuItem disableNode = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_DISABLE));
+        renameNode.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F2, 0));
+        deleteNode.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_DELETE, 0));
 
         // 创建两个分割线，以便可以单独控制显示
         JSeparator separator1 = new JSeparator();
@@ -2507,6 +2509,15 @@ public class PerformancePanel extends SingletonBasePanel {
         treeMenu.add(separator2);
         treeMenu.add(renameNode);
         treeMenu.add(deleteNode);
+
+        Runnable updateMenuSeparators = () -> {
+            boolean hasAddGroup = addThreadGroup.isVisible() || addRequest.isVisible()
+                    || addAssertion.isVisible() || addTimer.isVisible();
+            boolean hasToggleGroup = enableNode.isVisible() || disableNode.isVisible();
+            boolean hasEditGroup = renameNode.isVisible() || deleteNode.isVisible();
+            separator1.setVisible(hasAddGroup && (hasToggleGroup || hasEditGroup));
+            separator2.setVisible(hasToggleGroup && hasEditGroup);
+        };
 
         // 添加用户组（仅根节点可添加）
         addThreadGroup.addActionListener(e -> {
@@ -2582,54 +2593,73 @@ public class PerformancePanel extends SingletonBasePanel {
             jmeterTree.expandPath(new TreePath(node.getPath()));
             saveConfig();
         });
-        // 重命名
-        renameNode.addActionListener(e -> {
-            DefaultMutableTreeNode node = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
-            if (node == null) return;
-            Object userObj = node.getUserObject();
-            if (!(userObj instanceof JMeterTreeNode jtNode)) return;
-            if (jtNode.type == NodeType.ROOT) return;
-            String oldName = jtNode.name;
-            String newName = JOptionPane.showInputDialog(PerformancePanel.this,
-                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_RENAME_NODE), oldName);
-            if (newName != null && !newName.trim().isEmpty()) {
-                jtNode.name = newName.trim();
-                // 同步更新 request 类型的 httpRequestItem name 字段
-                if (jtNode.type == NodeType.REQUEST && jtNode.httpRequestItem != null) {
-                    jtNode.httpRequestItem.setName(newName.trim());
-                    switchRequestEditor(jtNode.httpRequestItem);
+        Action renameAction = new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                DefaultMutableTreeNode node = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
+                if (node == null) return;
+                Object userObj = node.getUserObject();
+                if (!(userObj instanceof JMeterTreeNode jtNode)) return;
+                if (jtNode.type == NodeType.ROOT || jtNode.type == NodeType.SSE_CONNECT || jtNode.type == NodeType.SSE_AWAIT) {
+                    return;
                 }
-                treeModel.nodeChanged(node);
+                String oldName = jtNode.name;
+                String newName = JOptionPane.showInputDialog(PerformancePanel.this,
+                        I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_RENAME_NODE), oldName);
+                if (newName != null && !newName.trim().isEmpty()) {
+                    jtNode.name = newName.trim();
+                    // 同步更新 request 类型的 httpRequestItem name 字段
+                    if (jtNode.type == NodeType.REQUEST && jtNode.httpRequestItem != null) {
+                        jtNode.httpRequestItem.setName(newName.trim());
+                        switchRequestEditor(jtNode.httpRequestItem);
+                    }
+                    treeModel.nodeChanged(node);
+                    saveConfig();
+                }
+            }
+        };
+        renameNode.addActionListener(renameAction);
+        // 删除（自动支持单个和批量操作）
+        Action deleteAction = new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                TreePath[] selectedPaths = jmeterTree.getSelectionPaths();
+                if (selectedPaths == null || selectedPaths.length == 0) return;
+
+                // 收集要删除的节点（过滤掉ROOT节点）
+                List<DefaultMutableTreeNode> nodesToDelete = new ArrayList<>();
+                for (TreePath path : selectedPaths) {
+                    DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
+                    Object userObj = node.getUserObject();
+                    if (userObj instanceof JMeterTreeNode jtNode
+                            && jtNode.type != NodeType.ROOT
+                            && jtNode.type != NodeType.SSE_CONNECT
+                            && jtNode.type != NodeType.SSE_AWAIT) {
+                        nodesToDelete.add(node);
+                    }
+                }
+
+                if (nodesToDelete.isEmpty()) return;
+
+                // 批量删除节点
+                for (DefaultMutableTreeNode node : nodesToDelete) {
+                    // 如果删除的是当前选中的请求节点，清空引用
+                    if (node == currentRequestNode) {
+                        currentRequestNode = null;
+                    }
+                    treeModel.removeNodeFromParent(node);
+                }
                 saveConfig();
             }
-        });
-        // 删除（自动支持单个和批量操作）
-        deleteNode.addActionListener(e -> {
-            TreePath[] selectedPaths = jmeterTree.getSelectionPaths();
-            if (selectedPaths == null || selectedPaths.length == 0) return;
+        };
+        deleteNode.addActionListener(deleteAction);
 
-            // 收集要删除的节点（过滤掉ROOT节点）
-            List<DefaultMutableTreeNode> nodesToDelete = new ArrayList<>();
-            for (TreePath path : selectedPaths) {
-                DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
-                Object userObj = node.getUserObject();
-                if (userObj instanceof JMeterTreeNode jtNode && jtNode.type != NodeType.ROOT) {
-                    nodesToDelete.add(node);
-                }
-            }
-
-            if (nodesToDelete.isEmpty()) return;
-
-            // 批量删除节点
-            for (DefaultMutableTreeNode node : nodesToDelete) {
-                // 如果删除的是当前选中的请求节点，清空引用
-                if (node == currentRequestNode) {
-                    currentRequestNode = null;
-                }
-                treeModel.removeNodeFromParent(node);
-            }
-            saveConfig();
-        });
+        InputMap treeInputMap = jmeterTree.getInputMap(JComponent.WHEN_FOCUSED);
+        ActionMap treeActionMap = jmeterTree.getActionMap();
+        treeInputMap.put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F2, 0), "renamePerformanceNode");
+        treeActionMap.put("renamePerformanceNode", renameAction);
+        treeInputMap.put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_DELETE, 0), "deletePerformanceNode");
+        treeActionMap.put("deletePerformanceNode", deleteAction);
         // 启用（自动支持单个和批量操作）
         enableNode.addActionListener(e -> {
             TreePath[] selectedPaths = jmeterTree.getSelectionPaths();
@@ -2720,8 +2750,7 @@ public class PerformancePanel extends SingletonBasePanel {
                         }
                         enableNode.setVisible(hasDisabled);
                         disableNode.setVisible(hasEnabled);
-                        separator1.setVisible(true);
-                        separator2.setVisible(true);
+                        updateMenuSeparators.run();
                     } else {
                         // 单选模式：显示常规菜单
                         DefaultMutableTreeNode node = (DefaultMutableTreeNode) selectedPaths[0].getLastPathComponent();
@@ -2737,8 +2766,7 @@ public class PerformancePanel extends SingletonBasePanel {
                             deleteNode.setVisible(false);
                             enableNode.setVisible(false);
                             disableNode.setVisible(false);
-                            separator1.setVisible(false);
-                            separator2.setVisible(false);
+                            updateMenuSeparators.run();
                             treeMenu.show(jmeterTree, e.getX(), e.getY());
                             return;
                         }
@@ -2755,9 +2783,7 @@ public class PerformancePanel extends SingletonBasePanel {
                         // 根据当前启用状态显示启用或停用菜单
                         enableNode.setVisible(!structuralSseNode && !jtNode.enabled);
                         disableNode.setVisible(!structuralSseNode && jtNode.enabled);
-                        // 显示分割线
-                        separator1.setVisible(true);
-                        separator2.setVisible(true);
+                        updateMenuSeparators.run();
                     }
                     treeMenu.show(jmeterTree, e.getX(), e.getY());
                 }

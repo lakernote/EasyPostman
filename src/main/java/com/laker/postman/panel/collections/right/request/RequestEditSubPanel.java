@@ -56,6 +56,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.laker.postman.service.http.HttpUtil.validateRequest;
 
@@ -112,6 +113,8 @@ public class RequestEditSubPanel extends JPanel {
     private transient volatile EventSource currentEventSource;
     // HTTP 请求自动识别为 SSE 后，用于在取消时保持 SSE 视图
     private transient volatile boolean httpSseStreamOpened;
+    // 标记当前 SSE 是否由用户主动取消，避免把预期断开误报为失败
+    private final transient AtomicBoolean currentSseCancelled = new AtomicBoolean(false);
     // WebSocket连接对象
     private transient volatile WebSocket currentWebSocket;
     // WebSocket连接ID，用于防止过期连接的回调
@@ -995,7 +998,9 @@ public class RequestEditSubPanel extends JPanel {
                             });
                         }
                     };
-                    currentEventSource = HttpSingleRequestExecutor.executeSSE(req, new SseEventListener(callback, resp, sseBodyBuilder, startTime));
+                    currentSseCancelled.set(false);
+                    currentEventSource = HttpSingleRequestExecutor.executeSSE(req,
+                            new SseEventListener(callback, resp, sseBodyBuilder, startTime, currentSseCancelled::get));
                     responsePanel.setResponseTabButtonsEnable(true); // 启用响应区的tab按钮
                 } catch (Exception ex) {
                     log.error("Error executing SSE request: {} - {}", req.url, ex.getMessage(), ex);
@@ -1500,6 +1505,7 @@ public class RequestEditSubPanel extends JPanel {
     // 取消当前请求
     private void cancelCurrentRequest() {
         if (currentEventSource != null) {
+            currentSseCancelled.set(true);
             currentEventSource.cancel(); // 取消SSE请求
             currentEventSource = null;
         }

@@ -700,6 +700,23 @@ public class RequestEditPanel extends SingletonBasePanel {
         }
     }
 
+    public void updateTabProtocol(RequestEditSubPanel panel, RequestItemProtocolEnum protocol) {
+        int idx = tabbedPane.indexOfComponent(panel);
+        if (idx < 0 || protocol == null) {
+            return;
+        }
+        Component tabComp = tabbedPane.getTabComponentAt(idx);
+        if (!(tabComp instanceof ClosableTabComponent closable)) {
+            return;
+        }
+        String title = tabbedPane.getTitleAt(idx);
+        ClosableTabComponent updated = new ClosableTabComponent(title, protocol);
+        updated.setDirty(closable.isDirty());
+        updated.setNewRequest(closable.isNewRequest());
+        updated.setPreviewMode(closable.isPreviewMode());
+        tabbedPane.setTabComponentAt(idx, updated);
+    }
+
     /**
      * 更新 GroupEditPanel 的 Tab 标题
      */

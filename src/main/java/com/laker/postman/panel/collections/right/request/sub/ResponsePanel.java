@@ -123,7 +123,7 @@ public class ResponsePanel extends JPanel {
             testsPane = null;
             sseResponsePanel = null;
         } else if (protocol == RequestItemProtocolEnum.SSE) {
-            // SSE: 使用 SSEResponsePanel 和 ResponseHeadersPanel
+            // SSE: 使用事件流和响应头
             TabBarBuilder.TabConfig tabConfig = TabBarBuilder.createSSETabs();
             tabNames = tabConfig.tabNames;
             tabButtons = createModernTabButtons(tabNames);
@@ -623,9 +623,7 @@ public class ResponsePanel extends JPanel {
         }
         if (protocol.isHttpProtocol()) {
             responseBodyPanel.setBodyText(null);
-            timelinePanel.removeAll();
-            timelinePanel.revalidate();
-            timelinePanel.repaint();
+            clearTiming();
             networkLogPanel.clearLog();
             networkLogPanel.clearAllDetails();
             sseResponsePanel.clearMessages();
@@ -642,6 +640,9 @@ public class ResponsePanel extends JPanel {
      * @param type "http" 显示HTTP相关tabs，"sse" 显示SSE相关tabs
      */
     public void switchTabButtonHttpOrSse(String type) {
+        if (!protocol.isHttpProtocol()) {
+            return;
+        }
         if ("http".equals(type)) {
             showHttpTabs();
         } else {
@@ -654,8 +655,9 @@ public class ResponsePanel extends JPanel {
      */
     private void showHttpTabs() {
         tabButtons[TAB_INDEX_RESPONSE_BODY].setVisible(true);
-        tabButtons[TAB_INDEX_RESPONSE_BODY].doClick();
         tabButtons[TAB_INDEX_LOG].setVisible(false);
+        refreshTabSelector();
+        tabButtons[TAB_INDEX_RESPONSE_BODY].doClick();
     }
 
     /**
@@ -664,7 +666,16 @@ public class ResponsePanel extends JPanel {
     private void showSSETabs() {
         tabButtons[TAB_INDEX_RESPONSE_BODY].setVisible(false);
         tabButtons[TAB_INDEX_LOG].setVisible(true);
+        refreshTabSelector();
         tabButtons[TAB_INDEX_LOG].doClick();
+    }
+
+    private void clearTiming() {
+        if (timelinePanel == null) {
+            return;
+        }
+        timelinePanel.setStages(new ArrayList<>());
+        timelinePanel.setHttpEventInfo(null);
     }
 
     /**
@@ -942,6 +953,19 @@ public class ResponsePanel extends JPanel {
         return 0;
     }
 
+    private void refreshTabSelector() {
+        if (tabComboBox == null) {
+            return;
+        }
+        String[] visibleNames = getVisibleTabNames();
+        tabComboBox.removeAllItems();
+        for (String name : visibleNames) {
+            tabComboBox.addItem(name);
+        }
+        int visibleIndex = Math.min(getVisibleTabIndex(selectedTabIndex), Math.max(visibleNames.length - 1, 0));
+        if (visibleNames.length > 0) {
+            tabComboBox.setSelectedIndex(visibleIndex);
+        }
+    }
+
 }
-
-

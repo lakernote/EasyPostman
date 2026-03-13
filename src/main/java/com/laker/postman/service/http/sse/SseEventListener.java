@@ -1,6 +1,7 @@
 package com.laker.postman.service.http.sse;
 
 import com.laker.postman.model.HttpResponse;
+import com.laker.postman.service.http.HttpService;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
@@ -32,6 +33,7 @@ public class SseEventListener extends EventSourceListener {
         resp.code = response.code();
         resp.protocol = response.protocol().toString();
         resp.isSse = true;
+        HttpService.attachHttpEventInfo(resp, startTime);
         callback.onOpen(resp, buildResponseHeadersTextStatic(resp));
     }
 
@@ -63,6 +65,9 @@ public class SseEventListener extends EventSourceListener {
             resp.protocol = response.protocol().toString();
         }
         resp.isSse = true;
+        if (resp.httpEventInfo == null) {
+            HttpService.attachHttpEventInfo(resp, startTime);
+        }
         String errorMsg = throwable != null ? throwable.getMessage() : "未知错误";
         long cost = System.currentTimeMillis() - startTime;
         resp.body = sseBodyBuilder.toString();

@@ -115,7 +115,7 @@ public class PerformanceTimerManager {
             } catch (Exception ex) {
                 log.error("趋势图采样执行失败", ex);
             }
-        }, 0, samplingIntervalMs, TimeUnit.MILLISECONDS);
+        }, samplingIntervalMs, samplingIntervalMs, TimeUnit.MILLISECONDS);
 
         log.debug("趋势图采样定时器已启动 - 间隔: {}ms", samplingIntervalMs);
     }
@@ -194,4 +194,3 @@ public class PerformanceTimerManager {
         reportRefreshCallback = null;
     }
 }
-

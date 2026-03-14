@@ -15,9 +15,11 @@ import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.time.RegularTimePeriod;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
+import org.jfree.data.xy.XYDataset;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.geom.Ellipse2D;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 
@@ -203,7 +205,7 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         plot.setRangeGridlinePaint(getGridLineColor());
         plot.setOutlinePaint(getChartBorderColor());
 
-        XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer(true, false);
+        XYLineAndShapeRenderer renderer = createTrendRenderer();
         renderer.setSeriesPaint(0, lineColor);
         plot.setRenderer(renderer);
 
@@ -314,7 +316,7 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
      * 创建合并图表的渲染器，根据复选框状态设置颜色
      */
     private XYLineAndShapeRenderer createCombinedChartRenderer() {
-        XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer(true, false);
+        XYLineAndShapeRenderer renderer = createTrendRenderer();
         int seriesIndex = 0;
         if (threadsCheckBox.isSelected()) {
             renderer.setSeriesPaint(seriesIndex++, getThreadsLineColor());
@@ -329,6 +331,29 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
             renderer.setSeriesPaint(seriesIndex, getErrorRateLineColor());
         }
         return renderer;
+    }
+
+    private XYLineAndShapeRenderer createTrendRenderer() {
+        XYLineAndShapeRenderer renderer = new SinglePointAwareRenderer();
+        renderer.setDefaultShape(new Ellipse2D.Double(-1.5, -1.5, 3.0, 3.0));
+        renderer.setDefaultShapesFilled(true);
+        renderer.setDrawOutlines(false);
+        return renderer;
+    }
+
+    private static final class SinglePointAwareRenderer extends XYLineAndShapeRenderer {
+        private SinglePointAwareRenderer() {
+            super(true, false);
+        }
+
+        @Override
+        public boolean getItemShapeVisible(int series, int item) {
+            XYDataset dataset = null;
+            if (getPlot() != null) {
+                dataset = getPlot().getDataset();
+            }
+            return dataset != null && dataset.getItemCount(series) == 1;
+        }
     }
 
     /**

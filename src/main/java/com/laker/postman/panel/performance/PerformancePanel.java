@@ -35,7 +35,8 @@ import com.laker.postman.service.http.okhttp.OkHttpClientManager;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
-import org.jfree.data.time.Second;
+import org.jfree.data.time.Millisecond;
+import org.jfree.data.time.RegularTimePeriod;
 
 import javax.swing.*;
 import javax.swing.event.TreeSelectionEvent;
@@ -1105,11 +1106,11 @@ public class PerformancePanel extends SingletonBasePanel {
         // 虚拟用户编号重置（每次测试重新从0分配）
         virtualUserCounter.set(0);
 
-        // 启动所有定时器（趋势图采样 + 报表刷新）
-        timerManager.startAll();
-
         // 重要：更新开始时间，确保递增线程等模式正常工作
         startTime = System.currentTimeMillis();
+
+        // 启动所有定时器（趋势图采样 + 报表刷新）
+        timerManager.startAll();
 
         // 统计总用户数
         int totalThreads = getTotalThreads(rootNode);
@@ -1371,7 +1372,7 @@ public class PerformancePanel extends SingletonBasePanel {
     private void sampleTrendData() {
         int users = activeThreads.get();
         long now = System.currentTimeMillis();
-        Second second = new Second(new Date(now));
+        RegularTimePeriod period = createTrendPeriod(now);
         long samplingIntervalMs = timerManager.getSamplingIntervalMs();
         long windowStart = now - samplingIntervalMs;
 
@@ -1425,8 +1426,8 @@ public class PerformancePanel extends SingletonBasePanel {
             // UI 更新必须在 EDT 线程执行
             SwingUtilities.invokeLater(() -> {
                 log.debug("采样数据 {} - 用户数: {}, 平均响应时间: {} ms, QPS: {}, 错误率: {}%, 样本数: {}",
-                        second, users, finalAvgRespTime, finalQps, finalErrorPercent, finalTotalReq);
-                performanceTrendPanel.addOrUpdate(second, users, finalAvgRespTime, finalQps, finalErrorPercent);
+                        period, users, finalAvgRespTime, finalQps, finalErrorPercent, finalTotalReq);
+                performanceTrendPanel.addOrUpdate(period, users, finalAvgRespTime, finalQps, finalErrorPercent);
             });
         }).exceptionally(ex -> {
             log.error("趋势图采样失败", ex);
@@ -1446,7 +1447,7 @@ public class PerformancePanel extends SingletonBasePanel {
 
         int users = activeThreads.get();
         long now = System.currentTimeMillis();
-        Second second = new Second(new Date(now));
+        RegularTimePeriod period = createTrendPeriod(now);
         long samplingIntervalMs = timerManager.getSamplingIntervalMs();
         long windowStart = now - samplingIntervalMs;
 
@@ -1491,8 +1492,12 @@ public class PerformancePanel extends SingletonBasePanel {
 
         // 直接在 EDT 线程中更新（因为已经在 EDT 中了）
         log.debug("同步采样数据 {} - 用户数: {}, 平均响应时间: {} ms, QPS: {}, 错误率: {}%, 样本数: {}",
-                second, users, avgRespTime, qps, errorPercent, totalReq);
-        performanceTrendPanel.addOrUpdate(second, users, avgRespTime, qps, errorPercent);
+                period, users, avgRespTime, qps, errorPercent, totalReq);
+        performanceTrendPanel.addOrUpdate(period, users, avgRespTime, qps, errorPercent);
+    }
+
+    static RegularTimePeriod createTrendPeriod(long timestampMs) {
+        return new Millisecond(new Date(timestampMs));
     }
 
     // 带进度的执行

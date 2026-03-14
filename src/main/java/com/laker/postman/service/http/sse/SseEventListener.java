@@ -1,12 +1,14 @@
 package com.laker.postman.service.http.sse;
 
 import com.laker.postman.model.HttpResponse;
+import com.laker.postman.service.http.HttpService;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
 
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
+import java.util.function.BooleanSupplier;
 
 // SSE事件监听器
 @Slf4j
@@ -15,12 +17,15 @@ public class SseEventListener extends EventSourceListener {
     private final HttpResponse resp;
     private final StringBuilder sseBodyBuilder;
     private final long startTime;
+    private final BooleanSupplier cancelledChecker;
 
-    public SseEventListener(SseUiCallback callback, HttpResponse resp, StringBuilder sseBodyBuilder, long startTime) {
+    public SseEventListener(SseUiCallback callback, HttpResponse resp, StringBuilder sseBodyBuilder, long startTime,
+                            BooleanSupplier cancelledChecker) {
         this.callback = callback;
         this.resp = resp;
         this.sseBodyBuilder = sseBodyBuilder;
         this.startTime = startTime;
+        this.cancelledChecker = cancelledChecker;
     }
 
     @Override
@@ -32,22 +37,26 @@ public class SseEventListener extends EventSourceListener {
         resp.code = response.code();
         resp.protocol = response.protocol().toString();
         resp.isSse = true;
+        HttpService.attachHttpEventInfo(resp, startTime);
         callback.onOpen(resp, buildResponseHeadersTextStatic(resp));
     }
 
     @Override
     public void onClosed(EventSource eventSource) {
-        long cost = System.currentTimeMillis() - startTime;
-        resp.body = sseBodyBuilder.toString();
-        resp.bodySize = resp.body.getBytes(StandardCharsets.UTF_8).length;
-        resp.costMs = cost;
-        resp.endTime = System.currentTimeMillis();
+        finalizeResponse();
         callback.onClosed(resp);
     }
 
     @Override
     public void onFailure(EventSource eventSource, Throwable throwable, okhttp3.Response response) {
-        if (response != null) {
+        boolean cancelled = cancelledChecker != null && cancelledChecker.getAsBoolean();
+        if (cancelled) {
+            if (response != null) {
+                log.info("sse cancelled locally,response status: {},response headers: {}", response.code(), response.headers(), throwable);
+            } else {
+                log.info("sse cancelled locally,response is null", throwable);
+            }
+        } else if (response != null) {
             log.error("sse onFailure,response status: {},response headers: {}", response.code(), response.headers(), throwable);
         } else {
             log.error("sse onFailure,response is null", throwable);
@@ -63,12 +72,15 @@ public class SseEventListener extends EventSourceListener {
             resp.protocol = response.protocol().toString();
         }
         resp.isSse = true;
+        if (resp.httpEventInfo == null) {
+            HttpService.attachHttpEventInfo(resp, startTime);
+        }
+        finalizeResponse();
+        if (cancelled) {
+            callback.onClosed(resp);
+            return;
+        }
         String errorMsg = throwable != null ? throwable.getMessage() : "未知错误";
-        long cost = System.currentTimeMillis() - startTime;
-        resp.body = sseBodyBuilder.toString();
-        resp.bodySize = resp.body.getBytes(StandardCharsets.UTF_8).length;
-        resp.costMs = cost;
-        resp.endTime = System.currentTimeMillis();
         callback.onFailure(errorMsg, resp);
     }
 
@@ -91,6 +103,14 @@ public class SseEventListener extends EventSourceListener {
             sseBodyBuilder.append("data: ").append(line).append('\n');
         }
         sseBodyBuilder.append('\n');
+    }
+
+    private void finalizeResponse() {
+        long cost = System.currentTimeMillis() - startTime;
+        resp.body = sseBodyBuilder.toString();
+        resp.bodySize = resp.body.getBytes(StandardCharsets.UTF_8).length;
+        resp.costMs = cost;
+        resp.endTime = System.currentTimeMillis();
     }
 
     // 静态方法，避免内部类访问外部实例

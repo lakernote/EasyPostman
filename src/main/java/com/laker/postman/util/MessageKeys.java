@@ -2006,7 +2006,6 @@ public final class MessageKeys {
     // ============ Kafka 工具相关 ============
     public static final String TOOLBOX_KAFKA = "toolbox.kafka";
     public static final String TOOLBOX_KAFKA_BATCH_SIZE = "toolbox.kafka.batch.size";
-    public static final String TOOLBOX_KAFKA_CONNECTION_SECTION = "toolbox.kafka.connection.section";
     public static final String TOOLBOX_KAFKA_CLEAR_PAYLOAD = "toolbox.kafka.clear.payload";
     public static final String TOOLBOX_KAFKA_CLIENT_ID = "toolbox.kafka.client.id";
     public static final String TOOLBOX_KAFKA_CLIENT_ID_PLACEHOLDER = "toolbox.kafka.client.id.placeholder";
@@ -2028,6 +2027,8 @@ public final class MessageKeys {
     public static final String TOOLBOX_KAFKA_ERR_HOST_REQUIRED = "toolbox.kafka.err.host_required";
     public static final String TOOLBOX_KAFKA_ERR_OFFSET_VALUE_INVALID = "toolbox.kafka.err.offset_value_invalid";
     public static final String TOOLBOX_KAFKA_ERR_OFFSET_VALUE_REQUIRED = "toolbox.kafka.err.offset_value_required";
+    public static final String TOOLBOX_KAFKA_ERR_PARTITION_NOT_FOUND = "toolbox.kafka.err.partition_not_found";
+    public static final String TOOLBOX_KAFKA_ERR_COMMITTED_OFFSET_REQUIRED = "toolbox.kafka.err.committed_offset_required";
     public static final String TOOLBOX_KAFKA_WARN_OFFSET_OUT_OF_RANGE = "toolbox.kafka.warn.offset_out_of_range";
     public static final String TOOLBOX_KAFKA_WARN_TIMESTAMP_OUT_OF_RANGE = "toolbox.kafka.warn.timestamp_out_of_range";
     public static final String TOOLBOX_KAFKA_ERR_SASL_CREDENTIAL_REQUIRED = "toolbox.kafka.err.sasl_credential_required";
@@ -2082,7 +2083,7 @@ public final class MessageKeys {
     public static final String TOOLBOX_KAFKA_USER = "toolbox.kafka.user";
     public static final String TOOLBOX_KAFKA_USER_PLACEHOLDER = "toolbox.kafka.user.placeholder";
     public static final String TOOLBOX_KAFKA_ADVANCED_OPTIONS = "toolbox.kafka.advanced.options";
-    public static final String TOOLBOX_KAFKA_AUTH_SECTION = "toolbox.kafka.auth.section";
+    public static final String TOOLBOX_KAFKA_ALL_PARTITIONS = "toolbox.kafka.all.partitions";
     public static final String TOOLBOX_KAFKA_COPY_VALUE = "toolbox.kafka.copy.value";
     public static final String TOOLBOX_KAFKA_CLOSE_DETAIL = "toolbox.kafka.close.detail";
     public static final String TOOLBOX_KAFKA_VALUE_COPIED = "toolbox.kafka.value.copied";

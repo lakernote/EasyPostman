@@ -1,0 +1,10 @@
+## Skills
+
+### Available skills
+
+- swing-flatlaf-miglayout-principles: Use when modifying EasyPostman Swing forms that use FlatLaf and MigLayout, especially when layout refactors introduce clipped focus rings, dense spacing, border conflicts, or inconsistent form structure. (file: /Users/lonli2/IdeaProjects-laker/easy-postman-github/.codex/skills/swing-flatlaf-miglayout-principles/SKILL.md)
+
+### How to use skills
+
+- If the request names a skill or clearly matches the description above, read the skill and follow it.
+- Keep the skill body concise and use it only for repo-specific knowledge that is hard to infer from the code alone.

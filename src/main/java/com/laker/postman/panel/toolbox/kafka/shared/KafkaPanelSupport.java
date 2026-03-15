@@ -7,7 +7,9 @@ import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.consumer.OffsetAndTimestamp;
+import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.internals.RecordHeader;
@@ -76,6 +78,41 @@ public final class KafkaPanelSupport {
         } catch (NumberFormatException ignored) {
             throw new IllegalArgumentException(t(MessageKeys.TOOLBOX_KAFKA_ERR_OFFSET_VALUE_INVALID, valueText));
         }
+    }
+
+    public static List<TopicPartition> resolveTopicPartitions(
+            KafkaConsumer<String, String> consumer,
+            String topic,
+            Set<Integer> selectedPartitions) {
+        List<PartitionInfo> partitionInfos = consumer.partitionsFor(topic);
+        if (partitionInfos == null || partitionInfos.isEmpty()) {
+            throw new IllegalArgumentException(t(MessageKeys.TOOLBOX_KAFKA_ERR_TOPIC_REQUIRED));
+        }
+
+        TreeSet<Integer> availablePartitions = new TreeSet<>();
+        for (PartitionInfo partitionInfo : partitionInfos) {
+            availablePartitions.add(partitionInfo.partition());
+        }
+
+        List<TopicPartition> topicPartitions = new ArrayList<>();
+        if (selectedPartitions == null || selectedPartitions.isEmpty()) {
+            for (Integer partition : availablePartitions) {
+                topicPartitions.add(new TopicPartition(topic, partition));
+            }
+            return topicPartitions;
+        }
+
+        for (Integer partition : selectedPartitions) {
+            if (!availablePartitions.contains(partition)) {
+                throw new IllegalArgumentException(t(
+                        MessageKeys.TOOLBOX_KAFKA_ERR_PARTITION_NOT_FOUND,
+                        partition,
+                        topic,
+                        availablePartitions.toString()));
+            }
+            topicPartitions.add(new TopicPartition(topic, partition));
+        }
+        return topicPartitions;
     }
 
     public static List<Header> parseHeaders(String headersText) {
@@ -147,9 +184,23 @@ public final class KafkaPanelSupport {
         if (partitions == null || partitions.isEmpty()) {
             return;
         }
-        if (consumeStartMode == KafkaConsumeStartMode.LATEST
-                || consumeStartMode == KafkaConsumeStartMode.EARLIEST
-                || consumeStartMode == KafkaConsumeStartMode.NONE) {
+        if (consumeStartMode == KafkaConsumeStartMode.LATEST) {
+            consumer.seekToEnd(partitions);
+            return;
+        }
+        if (consumeStartMode == KafkaConsumeStartMode.EARLIEST) {
+            consumer.seekToBeginning(partitions);
+            return;
+        }
+        if (consumeStartMode == KafkaConsumeStartMode.NONE) {
+            Map<TopicPartition, OffsetAndMetadata> committedOffsets = consumer.committed(new HashSet<>(partitions));
+            for (TopicPartition partition : partitions) {
+                OffsetAndMetadata committed = committedOffsets.get(partition);
+                if (committed == null) {
+                    throw new IllegalArgumentException(t(MessageKeys.TOOLBOX_KAFKA_ERR_COMMITTED_OFFSET_REQUIRED, partition.partition()));
+                }
+                consumer.seek(partition, committed.offset());
+            }
             return;
         }
         if (consumeStartMode == KafkaConsumeStartMode.OFFSET) {

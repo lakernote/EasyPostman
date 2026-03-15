@@ -7,6 +7,7 @@ import com.laker.postman.panel.toolbox.kafka.consumer.KafkaConsumedMessage;
 import com.laker.postman.panel.toolbox.kafka.consumer.ui.KafkaConsumerPanel;
 import com.laker.postman.panel.toolbox.kafka.producer.ui.KafkaProducerPanel;
 import com.laker.postman.panel.toolbox.kafka.shared.KafkaPanelSupport;
+import com.laker.postman.panel.toolbox.kafka.ui.KafkaTopicItem;
 import com.laker.postman.panel.toolbox.kafka.ui.KafkaTopicPanel;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.*;
@@ -47,12 +48,14 @@ public class KafkaPanel extends JPanel {
     private static final String CARD_CONNECT = "connect";
     private static final String CARD_DISCONNECT = "disconnect";
     private static final String TIMEOUT_MS = "3000";
+    private static final String USER_SETTING_KAFKA_BOOTSTRAP = "toolbox.kafka.bootstrapServers";
 
     private KafkaConnectionPanel connectionPanel;
 
     private KafkaTopicPanel topicPanel;
     private KafkaProducerPanel producerPanel;
     private KafkaConsumerPanel consumerPanel;
+    private final Map<String, Integer> topicPartitionCountMap = new HashMap<>();
 
     private final List<KafkaConsumedMessage> consumedMessages = new ArrayList<>();
     private final AtomicReference<SwingWorker<Void, List<KafkaConsumedMessage>>> consumeWorkerRef = new AtomicReference<>();
@@ -80,12 +83,33 @@ public class KafkaPanel extends JPanel {
 
         connectionPanel = new KafkaConnectionPanel(this::loadTopics, this::doDisconnect);
         connectionPanel.securityProtocolCombo.addActionListener(e -> updateSecurityFieldsEnabledState());
+        String savedBootstrap = UserSettingsUtil.getString(USER_SETTING_KAFKA_BOOTSTRAP);
+        if (savedBootstrap != null && !savedBootstrap.isBlank()) {
+            connectionPanel.bootstrapField.setText(savedBootstrap);
+        }
         producerPanel = new KafkaProducerPanel(this::sendMessage);
         consumerPanel = new KafkaConsumerPanel(this::startConsuming, this::stopConsuming, this::clearConsumedMessages, this::updateDetailBySelection);
         consumerPanel.autoOffsetCombo.addActionListener(e -> updateConsumeStartValueEnabledState());
         topicPanel = new KafkaTopicPanel(this::loadTopics, this::applyTopicSelection);
+        consumerPanel.topicField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                syncPartitionSelector();
+            }
+
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                syncPartitionSelector();
+            }
+
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                syncPartitionSelector();
+            }
+        });
         updateSecurityFieldsEnabledState();
         updateConsumeStartValueEnabledState();
+        syncPartitionSelector();
         updateEditorFont();
         topicPanel.topicSearchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
             @Override
@@ -136,6 +160,7 @@ public class KafkaPanel extends JPanel {
         }
         producerPanel.topicField.setText(selected);
         consumerPanel.topicField.setText(selected);
+        syncPartitionSelector();
     }
 
 
@@ -169,6 +194,7 @@ public class KafkaPanel extends JPanel {
             NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_KAFKA_ERR_HOST_REQUIRED));
             return;
         }
+        UserSettingsUtil.set(USER_SETTING_KAFKA_BOOTSTRAP, bootstrap);
 
         // 在 EDT 预先读取所有 UI 字段（含 passwordField），避免非 EDT 线程读取 Swing 组件
         final Properties baseProps;
@@ -182,9 +208,9 @@ public class KafkaPanel extends JPanel {
         connectionPanel.connectBtn.setEnabled(false);
         setConnectionStatus(ModernColors.INFO, t(MessageKeys.TOOLBOX_KAFKA_STATUS_LOADING_TOPICS));
 
-        SwingWorker<List<String>, Void> worker = new SwingWorker<>() {
+        SwingWorker<List<KafkaTopicItem>, Void> worker = new SwingWorker<>() {
             @Override
-            protected List<String> doInBackground() throws Exception {
+            protected List<KafkaTopicItem> doInBackground() throws Exception {
                 Properties props = new Properties();
                 props.putAll(baseProps);
                 props.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, TIMEOUT_MS);
@@ -193,7 +219,14 @@ public class KafkaPanel extends JPanel {
                     ListTopicsOptions options = new ListTopicsOptions().listInternal(false).timeoutMs(Integer.parseInt(TIMEOUT_MS));
                     List<String> topics = new ArrayList<>(adminClient.listTopics(options).names().get(Integer.parseInt(TIMEOUT_MS), TimeUnit.MILLISECONDS));
                     Collections.sort(topics);
-                    return topics;
+                    Map<String, org.apache.kafka.clients.admin.TopicDescription> descriptions =
+                            adminClient.describeTopics(topics).allTopicNames().get(Integer.parseInt(TIMEOUT_MS), TimeUnit.MILLISECONDS);
+                    List<KafkaTopicItem> topicItems = new ArrayList<>(topics.size());
+                    for (String topic : topics) {
+                        int partitionCount = descriptions.get(topic).partitions().size();
+                        topicItems.add(new KafkaTopicItem(topic, partitionCount));
+                    }
+                    return topicItems;
                 }
             }
 
@@ -201,16 +234,19 @@ public class KafkaPanel extends JPanel {
             protected void done() {
                 connectionPanel.connectBtn.setEnabled(true);
                 try {
-                    List<String> topics = get();
+                    List<KafkaTopicItem> topics = get();
+                    topicPartitionCountMap.clear();
                     topicPanel.topicListModel.clear();
-                    for (String topic : topics) {
+                    for (KafkaTopicItem topic : topics) {
+                        topicPartitionCountMap.put(topic.name(), topic.partitionCount());
                         topicPanel.topicListModel.addElement(topic);
                     }
                     applyTopicFilter();
                     if (!topics.isEmpty() && producerPanel.topicField.getText().isBlank() && consumerPanel.topicField.getText().isBlank()) {
-                        producerPanel.topicField.setText(topics.get(0));
-                        consumerPanel.topicField.setText(topics.get(0));
+                        producerPanel.topicField.setText(topics.get(0).name());
+                        consumerPanel.topicField.setText(topics.get(0).name());
                     }
+                    syncPartitionSelector();
                     String status = t(MessageKeys.TOOLBOX_KAFKA_STATUS_CONNECTED, bootstrap);
                     setConnectionStatus(ModernColors.SUCCESS, status);
                     connectionPanel.btnCardLayout.show(connectionPanel.btnCard, CARD_DISCONNECT);
@@ -232,17 +268,18 @@ public class KafkaPanel extends JPanel {
 
     private void applyTopicFilter() {
         String keyword = topicPanel.topicSearchField.getText().trim().toLowerCase(Locale.ROOT);
-        String previousSelection = topicPanel.topicList.getSelectedValue();
+        KafkaTopicItem selectedItem = topicPanel.topicList.getSelectedValue();
+        String previousSelection = selectedItem == null ? null : selectedItem.name();
         topicPanel.topicFilteredModel.clear();
         for (int i = 0; i < topicPanel.topicListModel.getSize(); i++) {
-            String topic = topicPanel.topicListModel.getElementAt(i);
-            if (keyword.isBlank() || topic.toLowerCase(Locale.ROOT).contains(keyword)) {
+            KafkaTopicItem topic = topicPanel.topicListModel.getElementAt(i);
+            if (keyword.isBlank() || topic.name().toLowerCase(Locale.ROOT).contains(keyword)) {
                 topicPanel.topicFilteredModel.addElement(topic);
             }
         }
         if (previousSelection != null && !previousSelection.isBlank()) {
             for (int i = 0; i < topicPanel.topicFilteredModel.getSize(); i++) {
-                if (previousSelection.equals(topicPanel.topicFilteredModel.getElementAt(i))) {
+                if (previousSelection.equals(topicPanel.topicFilteredModel.getElementAt(i).name())) {
                     topicPanel.topicList.setSelectedIndex(i);
                     topicPanel.topicList.ensureIndexIsVisible(i);
                     break;
@@ -388,6 +425,7 @@ public class KafkaPanel extends JPanel {
             NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_KAFKA_ERR_TOPIC_REQUIRED));
             return;
         }
+        final Set<Integer> selectedPartitions = consumerPanel.partitionSelector.getSelectedPartitions();
 
         int pollTimeoutMs = (Integer) consumerPanel.pollTimeoutSpinner.getValue();
         int maxPollRecords = (Integer) consumerPanel.batchSizeSpinner.getValue();
@@ -422,6 +460,7 @@ public class KafkaPanel extends JPanel {
                 ? "easy-postman-consumer-" + System.currentTimeMillis()
                 : configuredGroupId;
 
+        clearConsumedMessages();
         setConsuming(true);
         consumerPanel.statusLabel.setForeground(UIManager.getColor(LABEL_DISABLED_FG));
         consumerPanel.statusLabel.setText(t(MessageKeys.TOOLBOX_KAFKA_STATUS_CONSUMING, topic));
@@ -433,21 +472,28 @@ public class KafkaPanel extends JPanel {
 
                 try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(props)) {
                     runningConsumerRef.set(consumer);
-                    AtomicBoolean startPositionApplied = new AtomicBoolean(false);
-                    consumer.subscribe(Collections.singletonList(topic), new org.apache.kafka.clients.consumer.ConsumerRebalanceListener() {
-                        @Override
-                        public void onPartitionsRevoked(Collection<org.apache.kafka.common.TopicPartition> partitions) {
-                            // no-op
-                        }
-
-                        @Override
-                        public void onPartitionsAssigned(Collection<org.apache.kafka.common.TopicPartition> partitions) {
-                            if (startPositionApplied.getAndSet(true)) {
-                                return;
+                    if (selectedPartitions.isEmpty()) {
+                        AtomicBoolean startPositionApplied = new AtomicBoolean(false);
+                        consumer.subscribe(Collections.singletonList(topic), new org.apache.kafka.clients.consumer.ConsumerRebalanceListener() {
+                            @Override
+                            public void onPartitionsRevoked(Collection<org.apache.kafka.common.TopicPartition> partitions) {
+                                // no-op
                             }
-                            KafkaPanelSupport.applyConsumeStartPosition(consumer, partitions, consumeStartMode, consumeStartValue);
-                        }
-                    });
+
+                            @Override
+                            public void onPartitionsAssigned(Collection<org.apache.kafka.common.TopicPartition> partitions) {
+                                if (startPositionApplied.getAndSet(true)) {
+                                    return;
+                                }
+                                KafkaPanelSupport.applyConsumeStartPosition(consumer, partitions, consumeStartMode, consumeStartValue);
+                            }
+                        });
+                    } else {
+                        List<org.apache.kafka.common.TopicPartition> topicPartitions =
+                                KafkaPanelSupport.resolveTopicPartitions(consumer, topic, selectedPartitions);
+                        consumer.assign(topicPartitions);
+                        KafkaPanelSupport.applyConsumeStartPosition(consumer, topicPartitions, consumeStartMode, consumeStartValue);
+                    }
                     while (!isCancelled()) {
                         ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(pollTimeoutMs));
                         if (records.isEmpty()) {
@@ -723,9 +769,28 @@ public class KafkaPanel extends JPanel {
         closeAndClearCachedProducer();
         topicPanel.topicListModel.clear();
         topicPanel.topicFilteredModel.clear();
+        topicPartitionCountMap.clear();
+        consumerPanel.partitionSelector.setAvailablePartitions(Collections.emptyList());
         connectionPanel.btnCardLayout.show(connectionPanel.btnCard, CARD_CONNECT);
         setConnectionStatus(UIManager.getColor(LABEL_DISABLED_FG), t(MessageKeys.TOOLBOX_KAFKA_STATUS_NOT_CONNECTED));
         NotificationUtil.showInfo(t(MessageKeys.TOOLBOX_KAFKA_DISCONNECT_SUCCESS));
+    }
+
+    private void syncPartitionSelector() {
+        if (consumerPanel == null) {
+            return;
+        }
+        String topic = consumerPanel.topicField.getText().trim();
+        Integer partitionCount = topicPartitionCountMap.get(topic);
+        if (partitionCount == null || partitionCount <= 0) {
+            consumerPanel.partitionSelector.setAvailablePartitions(Collections.emptyList());
+            return;
+        }
+        List<Integer> partitions = new ArrayList<>(partitionCount);
+        for (int i = 0; i < partitionCount; i++) {
+            partitions.add(i);
+        }
+        consumerPanel.partitionSelector.setAvailablePartitions(partitions);
     }
 
     private void setConnectionStatus(Color color, String message) {

@@ -16,9 +16,9 @@ public class KafkaTopicPanel extends JPanel {
     private static final String SEPARATOR_FG = "Separator.foreground";
 
     public final SearchTextField topicSearchField;
-    public final DefaultListModel<String> topicListModel;
-    public final DefaultListModel<String> topicFilteredModel;
-    public final JList<String> topicList;
+    public final DefaultListModel<KafkaTopicItem> topicListModel;
+    public final DefaultListModel<KafkaTopicItem> topicFilteredModel;
+    public final JList<KafkaTopicItem> topicList;
 
     public KafkaTopicPanel(Runnable refreshAction, Consumer<String> topicSelectionAction) {
         super(new BorderLayout(0, 0));
@@ -48,14 +48,25 @@ public class KafkaTopicPanel extends JPanel {
         topicListModel = new DefaultListModel<>();
         topicFilteredModel = new DefaultListModel<>();
         topicList = new JList<>(topicFilteredModel);
+        topicList.setCellRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index,
+                                                          boolean isSelected, boolean cellHasFocus) {
+                JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof KafkaTopicItem item) {
+                    label.setText(item.name() + " (" + item.partitionCount() + ")");
+                }
+                return label;
+            }
+        });
         topicList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         topicList.addListSelectionListener(e -> {
             if (e.getValueIsAdjusting()) {
                 return;
             }
-            String selected = topicList.getSelectedValue();
-            if (selected != null && !selected.isBlank()) {
-                topicSelectionAction.accept(selected);
+            KafkaTopicItem selected = topicList.getSelectedValue();
+            if (selected != null && !selected.name().isBlank()) {
+                topicSelectionAction.accept(selected.name());
             }
         });
         topicList.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -65,9 +76,9 @@ public class KafkaTopicPanel extends JPanel {
                     int index = topicList.locationToIndex(e.getPoint());
                     if (index >= 0) {
                         topicList.setSelectedIndex(index);
-                        String selected = topicList.getSelectedValue();
+                        KafkaTopicItem selected = topicList.getSelectedValue();
                         if (selected != null) {
-                            topicSelectionAction.accept(selected);
+                            topicSelectionAction.accept(selected.name());
                         }
                     }
                 }

@@ -38,22 +38,22 @@ public class KafkaConnectionPanel extends JPanel {
                 BorderFactory.createEmptyBorder(2, 2, 2, 2)));
 
         JPanel form = new JPanel(new MigLayout(
-                "insets 4 0 4 0, fillx",
-                "[grow,fill]12[grow,fill]",
+                "insets 6 0 4 0, fillx, novisualpadding",
+                "[grow,fill]12[1!][grow,fill]",
                 "[]"
         ));
         form.setOpaque(false);
 
-        JPanel connectionSection = createSectionPanel(t(MessageKeys.TOOLBOX_KAFKA_CONNECTION_SECTION));
-        JPanel authSection = createSectionPanel(t(MessageKeys.TOOLBOX_KAFKA_AUTH_SECTION));
+        JPanel connectionSection = createSectionPanel(false);
+        JPanel authSection = createSectionPanel(true);
         JPanel connectionFields = new JPanel(new MigLayout(
-                "insets 0, fillx, gapy 8",
+                "insets 0, fillx, gapy 8, novisualpadding",
                 "[]8[grow,fill]",
                 "[][]"
         ));
         connectionFields.setOpaque(false);
         JPanel authFields = new JPanel(new MigLayout(
-                "insets 0, fillx, gapy 8",
+                "insets 0, fillx, gapy 8, novisualpadding",
                 "[]8[grow,fill]8[]8[grow,fill]",
                 "[][]"
         ));
@@ -116,7 +116,7 @@ public class KafkaConnectionPanel extends JPanel {
         connectionStatusLabel.setToolTipText(t(MessageKeys.TOOLBOX_KAFKA_STATUS_NOT_CONNECTED));
 
         JPanel actionRow = new JPanel(new MigLayout(
-                "insets 0, fillx",
+                "insets 0, fillx, novisualpadding",
                 "[grow,fill]8[]4[]",
                 "[]"));
         actionRow.setOpaque(false);
@@ -126,30 +126,26 @@ public class KafkaConnectionPanel extends JPanel {
 
         connectionSection.add(connectionFields, BorderLayout.CENTER);
 
-        JPanel authBody = new JPanel(new BorderLayout(0, 8));
+        JPanel authBody = new JPanel(new BorderLayout(0, 6));
         authBody.setOpaque(false);
         authBody.add(authFields, BorderLayout.CENTER);
         authBody.add(actionRow, BorderLayout.SOUTH);
         authSection.add(authBody, BorderLayout.CENTER);
 
         form.add(connectionSection, "grow");
+        form.add(new JSeparator(SwingConstants.VERTICAL), "growy");
         form.add(authSection, "grow");
 
         add(form, BorderLayout.CENTER);
     }
 
-    private static JPanel createSectionPanel(String title) {
-        JPanel panel = new JPanel(new BorderLayout(0, 8));
+    private static JPanel createSectionPanel(boolean addLeftPadding) {
+        JPanel panel = new JPanel(new BorderLayout(0, 0));
         panel.setOpaque(true);
         panel.setBackground(UIManager.getColor(PANEL_BG));
         panel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(UIManager.getColor(SEPARATOR_FG)),
-                BorderFactory.createEmptyBorder(10, 12, 10, 12)));
-
-        JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 12f));
-        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 2, 0));
-        panel.add(titleLabel, BorderLayout.NORTH);
+                BorderFactory.createEmptyBorder(6, addLeftPadding ? 10 : 8, 6, 8)));
         return panel;
     }
 

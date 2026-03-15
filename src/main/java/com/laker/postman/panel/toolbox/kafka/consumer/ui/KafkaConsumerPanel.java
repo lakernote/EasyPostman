@@ -35,6 +35,7 @@ public class KafkaConsumerPanel extends JPanel {
 
     public final JTextField topicField;
     public final JTextField groupIdField;
+    public final KafkaPartitionSelector partitionSelector;
     public final JComboBox<String> autoOffsetCombo;
     public final JTextField consumeStartValueField;
     public final JSpinner pollTimeoutSpinner;
@@ -125,13 +126,16 @@ public class KafkaConsumerPanel extends JPanel {
 
         JPanel advancedRowPanel = new JPanel(new MigLayout(
                 "insets 4 10 6 8, fillx",
-                "[]8[grow,fill]16[]8[140!]16[]8[grow,fill]",
+                "[]8[grow,fill]16[]8[grow,fill]16[]8[140!]28[]8[grow,fill]",
                 "[]6[]"
         ));
 
         groupIdField = new JTextField("easy-postman-consumer");
         groupIdField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, t(MessageKeys.TOOLBOX_KAFKA_GROUP_ID_PLACEHOLDER));
         groupIdField.setPreferredSize(new Dimension(0, 28));
+
+        partitionSelector = new KafkaPartitionSelector();
+        partitionSelector.setPreferredSize(new Dimension(0, 28));
 
         autoOffsetCombo = new JComboBox<>(new String[]{
                 t(MessageKeys.TOOLBOX_KAFKA_OFFSET_RESET_LATEST),
@@ -158,6 +162,8 @@ public class KafkaConsumerPanel extends JPanel {
 
         advancedRowPanel.add(new JLabel(t(MessageKeys.TOOLBOX_KAFKA_GROUP_ID)));
         advancedRowPanel.add(groupIdField);
+        advancedRowPanel.add(new JLabel(t(MessageKeys.TOOLBOX_KAFKA_PARTITION)));
+        advancedRowPanel.add(partitionSelector);
         advancedRowPanel.add(new JLabel(t(MessageKeys.TOOLBOX_KAFKA_OFFSET_RESET)));
         advancedRowPanel.add(autoOffsetCombo);
         advancedRowPanel.add(new JLabel(t(MessageKeys.TOOLBOX_KAFKA_OFFSET_VALUE)));

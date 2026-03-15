@@ -174,6 +174,7 @@ public class KafkaPanel extends JPanel {
     private void updateConsumeStartValueEnabledState() {
         KafkaConsumeStartMode consumeStartMode = selectedConsumeStartMode();
         boolean enabled = consumeStartMode.requiresStartValue();
+        consumerPanel.setConsumeStartValueVisible(enabled);
         consumerPanel.consumeStartValueField.setEnabled(enabled);
         if (consumeStartMode == KafkaConsumeStartMode.TIMESTAMP) {
             consumerPanel.consumeStartValueField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT,

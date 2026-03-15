@@ -55,6 +55,7 @@ public class KafkaConsumerPanel extends JPanel {
     private final JLabel detailOffsetLabel;
     private final JLabel detailKeyLabel;
     private final JLabel detailTimeLabel;
+    private final JLabel consumeStartValueLabel;
 
     public KafkaConsumerPanel(Runnable startAction, Runnable stopAction, Runnable clearAction, Runnable selectionChanged) {
         super(new BorderLayout(0, 0));
@@ -166,7 +167,8 @@ public class KafkaConsumerPanel extends JPanel {
         advancedRowPanel.add(partitionSelector);
         advancedRowPanel.add(new JLabel(t(MessageKeys.TOOLBOX_KAFKA_OFFSET_RESET)));
         advancedRowPanel.add(autoOffsetCombo);
-        advancedRowPanel.add(new JLabel(t(MessageKeys.TOOLBOX_KAFKA_OFFSET_VALUE)));
+        consumeStartValueLabel = new JLabel(t(MessageKeys.TOOLBOX_KAFKA_OFFSET_VALUE));
+        advancedRowPanel.add(consumeStartValueLabel);
         advancedRowPanel.add(consumeStartValueField, "growx, wrap");
 
         advancedRowPanel.add(new JLabel(t(MessageKeys.TOOLBOX_KAFKA_POLL_TIMEOUT)));
@@ -289,6 +291,13 @@ public class KafkaConsumerPanel extends JPanel {
 
     public void setConsuming(boolean consuming) {
         consumeBtnCardLayout.show(consumeBtnCard, consuming ? CARD_CONSUME_STOP : CARD_CONSUME_START);
+    }
+
+    public void setConsumeStartValueVisible(boolean visible) {
+        consumeStartValueLabel.setVisible(visible);
+        consumeStartValueField.setVisible(visible);
+        revalidate();
+        repaint();
     }
 
     public void showDetailPanel() {

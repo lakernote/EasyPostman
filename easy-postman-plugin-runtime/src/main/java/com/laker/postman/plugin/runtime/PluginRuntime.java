@@ -1,0 +1,303 @@
+package com.laker.postman.plugin.runtime;
+
+import com.laker.postman.plugin.api.EasyPostmanPlugin;
+import com.laker.postman.plugin.api.PluginContext;
+import com.laker.postman.plugin.api.PluginDescriptor;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.jar.JarFile;
+import java.util.stream.Stream;
+
+/**
+ * 简单插件运行时：从本地 plugins 目录加载插件 jar。
+ */
+@Slf4j
+public final class PluginRuntime {
+
+    private static final String PLUGIN_DESCRIPTOR_PREFIX = "META-INF/easy-postman/";
+    private static final String PLUGIN_DESCRIPTOR_SUFFIX = ".properties";
+    private static final String DISABLED_PLUGIN_IDS_KEY = "plugin.disabledIds";
+    private static final PluginRegistry REGISTRY = new PluginRegistry();
+    private static final List<EasyPostmanPlugin> LOADED_PLUGINS = new ArrayList<>();
+    private static final List<URLClassLoader> PLUGIN_CLASSLOADERS = new ArrayList<>();
+    private static final List<PluginFileInfo> LOADED_PLUGIN_FILES = new ArrayList<>();
+    @Getter
+    private static volatile boolean initialized = false;
+
+    private PluginRuntime() {
+    }
+
+    public static void initialize() {
+        if (initialized) {
+            return;
+        }
+        synchronized (PluginRuntime.class) {
+            if (initialized) {
+                return;
+            }
+            for (PluginFileInfo pluginFile : resolveLoadCandidates()) {
+                loadPluginJar(pluginFile.jarPath(), pluginFile.descriptor());
+            }
+            for (EasyPostmanPlugin plugin : LOADED_PLUGINS) {
+                try {
+                    plugin.onStart();
+                } catch (Exception e) {
+                    log.error("Failed to start plugin: {}", plugin.getClass().getName(), e);
+                }
+            }
+            initialized = true;
+            log.info("Plugin runtime initialized, loaded {} plugin(s)", LOADED_PLUGINS.size());
+        }
+    }
+
+    public static PluginRegistry getRegistry() {
+        return REGISTRY;
+    }
+
+    public static List<PluginFileInfo> getInstalledPlugins() {
+        List<PluginFileInfo> installed = new ArrayList<>();
+        for (Path pluginDir : resolvePluginDirs()) {
+            installed.addAll(listPluginsFromDirectory(pluginDir));
+        }
+        return installed;
+    }
+
+    public static String getCurrentAppVersion() {
+        String version = PluginRuntime.class.getPackage().getImplementationVersion();
+        return version == null || version.isBlank() ? "dev" : version;
+    }
+
+    public static Path getManagedPluginDir() {
+        return PluginRuntimePaths.managedPluginDir();
+    }
+
+    public static PluginDescriptor inspectPluginJar(Path jarPath) throws IOException {
+        return readDescriptor(jarPath);
+    }
+
+    public static void shutdown() {
+        for (EasyPostmanPlugin plugin : LOADED_PLUGINS) {
+            try {
+                plugin.onStop();
+            } catch (Exception e) {
+                log.warn("Failed to stop plugin: {}", plugin.getClass().getName(), e);
+            }
+        }
+        for (URLClassLoader classLoader : PLUGIN_CLASSLOADERS) {
+            try {
+                classLoader.close();
+            } catch (IOException e) {
+                log.warn("Failed to close plugin classloader", e);
+            }
+        }
+    }
+
+    public static boolean isPluginEnabled(String pluginId) {
+        return pluginId != null && !getDisabledPluginIds().contains(pluginId);
+    }
+
+    public static void setPluginEnabled(String pluginId, boolean enabled) {
+        if (pluginId == null || pluginId.isBlank()) {
+            return;
+        }
+        Set<String> disabledIds = new LinkedHashSet<>(getDisabledPluginIds());
+        if (enabled) {
+            disabledIds.remove(pluginId);
+        } else {
+            disabledIds.add(pluginId);
+        }
+        PluginSettingsStore.putStringSet(DISABLED_PLUGIN_IDS_KEY, disabledIds);
+    }
+
+    public static List<PluginFileInfo> getManagedPluginFiles() {
+        return listPluginsFromDirectory(getManagedPluginDir());
+    }
+
+    private static Set<Path> resolvePluginDirs() {
+        Set<Path> dirs = new LinkedHashSet<>();
+        String override = System.getProperty("easyPostman.plugins.dir");
+        if (override != null && !override.isBlank()) {
+            dirs.add(Paths.get(override));
+        }
+        dirs.add(Paths.get(System.getProperty("user.dir"), "plugins"));
+        dirs.add(getManagedPluginDir());
+        return dirs;
+    }
+
+    private static List<PluginFileInfo> resolveLoadCandidates() {
+        Map<String, PluginFileInfo> selected = new LinkedHashMap<>();
+        for (Path pluginDir : resolvePluginDirs()) {
+            for (PluginFileInfo candidate : listPluginsFromDirectory(pluginDir)) {
+                if (!candidate.enabled()) {
+                    log.info("Skip disabled plugin: {} ({})", candidate.descriptor().id(), candidate.jarPath());
+                    continue;
+                }
+                if (!candidate.compatible()) {
+                    log.warn("Skip incompatible plugin: {} requires app {}..{}, current {}",
+                            candidate.descriptor().id(),
+                            emptyToWildcard(candidate.descriptor().minAppVersion()),
+                            emptyToWildcard(candidate.descriptor().maxAppVersion()),
+                            getCurrentAppVersion());
+                    continue;
+                }
+                PluginFileInfo existing = selected.get(candidate.descriptor().id());
+                if (existing == null) {
+                    selected.put(candidate.descriptor().id(), candidate);
+                    continue;
+                }
+                if (PluginVersionComparator.compare(candidate.descriptor().version(), existing.descriptor().version()) > 0) {
+                    selected.put(candidate.descriptor().id(), candidate);
+                }
+            }
+        }
+        List<PluginFileInfo> result = new ArrayList<>(selected.values());
+        result.sort(Comparator.comparing(info -> info.jarPath().getFileName().toString()));
+        return result;
+    }
+
+    private static List<PluginFileInfo> listPluginsFromDirectory(Path pluginDir) {
+        if (pluginDir == null || !Files.isDirectory(pluginDir)) {
+            return Collections.emptyList();
+        }
+        List<PluginFileInfo> plugins = new ArrayList<>();
+        try (Stream<Path> stream = Files.list(pluginDir)) {
+            stream.filter(path -> Files.isRegularFile(path) && path.getFileName().toString().endsWith(".jar"))
+                    .sorted()
+                    .forEach(path -> {
+                        try {
+                            PluginDescriptor descriptor = inspectPluginJar(path);
+                            if (descriptor != null) {
+                                boolean enabled = isPluginEnabled(descriptor.id());
+                                boolean compatible = isDescriptorCompatible(descriptor);
+                                plugins.add(new PluginFileInfo(descriptor, path, isLoaded(path), enabled, compatible));
+                            }
+                        } catch (IOException e) {
+                            log.warn("Failed to inspect plugin jar: {}", path, e);
+                        }
+                    });
+        } catch (IOException e) {
+            log.warn("Failed to scan plugin directory: {}", pluginDir, e);
+        }
+        return plugins;
+    }
+
+    private static void loadPluginJar(Path jarPath, PluginDescriptor descriptor) {
+        try {
+            URLClassLoader classLoader = new URLClassLoader(new URL[]{jarPath.toUri().toURL()},
+                    PluginRuntime.class.getClassLoader());
+            Class<?> entryClass = Class.forName(descriptor.entryClass(), true, classLoader);
+            Object instance = entryClass.getDeclaredConstructor().newInstance();
+            if (!(instance instanceof EasyPostmanPlugin plugin)) {
+                throw new IllegalStateException("Plugin entry class does not implement EasyPostmanPlugin: " + descriptor.entryClass());
+            }
+            plugin.onLoad(new PluginContextImpl(descriptor));
+            LOADED_PLUGINS.add(plugin);
+            PLUGIN_CLASSLOADERS.add(classLoader);
+            LOADED_PLUGIN_FILES.add(new PluginFileInfo(descriptor, jarPath, true, true, true));
+        } catch (Exception e) {
+            log.error("Failed to load plugin jar: {}", jarPath, e);
+        }
+    }
+
+    private static PluginDescriptor readDescriptor(Path jarPath) throws IOException {
+        try (JarFile jarFile = new JarFile(jarPath.toFile())) {
+            return jarFile.stream()
+                    .filter(entry -> !entry.isDirectory())
+                    .filter(entry -> entry.getName().startsWith(PLUGIN_DESCRIPTOR_PREFIX))
+                    .filter(entry -> entry.getName().endsWith(PLUGIN_DESCRIPTOR_SUFFIX))
+                    .findFirst()
+                    .map(entry -> {
+                        try (InputStream inputStream = jarFile.getInputStream(entry)) {
+                            Properties properties = new Properties();
+                            properties.load(inputStream);
+                            return new PluginDescriptor(
+                                    properties.getProperty("plugin.id", jarPath.getFileName().toString()),
+                                    properties.getProperty("plugin.name", jarPath.getFileName().toString()),
+                                    properties.getProperty("plugin.version", "dev"),
+                                    properties.getProperty("plugin.entryClass"),
+                                    properties.getProperty("plugin.description", ""),
+                                    properties.getProperty("plugin.homepage", ""),
+                                    properties.getProperty("plugin.minAppVersion", ""),
+                                    properties.getProperty("plugin.maxAppVersion", "")
+                            );
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    })
+                    .filter(descriptor -> descriptor.entryClass() != null && !descriptor.entryClass().isBlank())
+                    .orElse(null);
+        }
+    }
+
+    private static boolean isLoaded(Path jarPath) {
+        return LOADED_PLUGIN_FILES.stream().anyMatch(info -> info.jarPath().equals(jarPath));
+    }
+
+    private static Set<String> getDisabledPluginIds() {
+        return PluginSettingsStore.getStringSet(DISABLED_PLUGIN_IDS_KEY);
+    }
+
+    private static boolean isDescriptorCompatible(PluginDescriptor descriptor) {
+        String currentVersion = getCurrentAppVersion();
+        if (descriptor.hasMinAppVersion()
+                && PluginVersionComparator.compare(currentVersion, descriptor.minAppVersion()) < 0) {
+            return false;
+        }
+        return !descriptor.hasMaxAppVersion()
+                || PluginVersionComparator.compare(currentVersion, descriptor.maxAppVersion()) <= 0;
+    }
+
+    private static String emptyToWildcard(String value) {
+        return value == null || value.isBlank() ? "*" : value;
+    }
+
+    private static final class PluginContextImpl implements PluginContext {
+        private final PluginDescriptor descriptor;
+
+        private PluginContextImpl(PluginDescriptor descriptor) {
+            this.descriptor = descriptor;
+        }
+
+        @Override
+        public PluginDescriptor descriptor() {
+            return descriptor;
+        }
+
+        @Override
+        public void registerScriptApi(String alias, java.util.function.Supplier<Object> factory) {
+            REGISTRY.registerScriptApi(alias, factory);
+        }
+
+        @Override
+        public void registerToolboxContribution(com.laker.postman.plugin.api.ToolboxContribution contribution) {
+            REGISTRY.registerToolboxContribution(contribution);
+        }
+
+        @Override
+        public void registerScriptCompletionContributor(com.laker.postman.plugin.api.ScriptCompletionContributor contributor) {
+            REGISTRY.registerScriptCompletionContributor(contributor);
+        }
+
+        @Override
+        public void registerSnippet(com.laker.postman.plugin.api.SnippetDefinition definition) {
+            REGISTRY.registerSnippet(definition);
+        }
+    }
+}

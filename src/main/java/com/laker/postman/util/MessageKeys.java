@@ -2006,6 +2006,7 @@ public final class MessageKeys {
     // ============ Kafka 工具相关 ============
     public static final String TOOLBOX_KAFKA = "toolbox.kafka";
     public static final String TOOLBOX_KAFKA_BATCH_SIZE = "toolbox.kafka.batch.size";
+    public static final String TOOLBOX_KAFKA_CONNECTION_SECTION = "toolbox.kafka.connection.section";
     public static final String TOOLBOX_KAFKA_CLEAR_PAYLOAD = "toolbox.kafka.clear.payload";
     public static final String TOOLBOX_KAFKA_CLIENT_ID = "toolbox.kafka.client.id";
     public static final String TOOLBOX_KAFKA_CLIENT_ID_PLACEHOLDER = "toolbox.kafka.client.id.placeholder";
@@ -2081,9 +2082,17 @@ public final class MessageKeys {
     public static final String TOOLBOX_KAFKA_USER = "toolbox.kafka.user";
     public static final String TOOLBOX_KAFKA_USER_PLACEHOLDER = "toolbox.kafka.user.placeholder";
     public static final String TOOLBOX_KAFKA_ADVANCED_OPTIONS = "toolbox.kafka.advanced.options";
+    public static final String TOOLBOX_KAFKA_AUTH_SECTION = "toolbox.kafka.auth.section";
     public static final String TOOLBOX_KAFKA_COPY_VALUE = "toolbox.kafka.copy.value";
     public static final String TOOLBOX_KAFKA_CLOSE_DETAIL = "toolbox.kafka.close.detail";
     public static final String TOOLBOX_KAFKA_VALUE_COPIED = "toolbox.kafka.value.copied";
+    public static final String TOOLBOX_KAFKA_ERR_PROPERTY_FORMAT = "toolbox.kafka.err.property_format";
+    public static final String TOOLBOX_KAFKA_PRODUCER_CUSTOM_PROPERTIES = "toolbox.kafka.producer.custom.properties";
+    public static final String TOOLBOX_KAFKA_PRODUCER_CUSTOM_PROPERTIES_HINT = "toolbox.kafka.producer.custom.properties.hint";
+    public static final String TOOLBOX_KAFKA_PRODUCER_CUSTOM_PROPERTIES_PLACEHOLDER = "toolbox.kafka.producer.custom.properties.placeholder";
+    public static final String TOOLBOX_KAFKA_CONSUMER_CUSTOM_PROPERTIES = "toolbox.kafka.consumer.custom.properties";
+    public static final String TOOLBOX_KAFKA_CONSUMER_CUSTOM_PROPERTIES_HINT = "toolbox.kafka.consumer.custom.properties.hint";
+    public static final String TOOLBOX_KAFKA_CONSUMER_CUSTOM_PROPERTIES_PLACEHOLDER = "toolbox.kafka.consumer.custom.properties.placeholder";
     public static final String TOOLBOX_CRON = "toolbox.cron";
     public static final String TOOLBOX_CRON_EXPRESSION = "toolbox.cron.expression";
     public static final String TOOLBOX_CRON_PARSE = "toolbox.cron.parse";

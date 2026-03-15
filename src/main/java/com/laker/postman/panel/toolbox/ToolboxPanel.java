@@ -5,6 +5,7 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.panel.toolbox.kafka.KafkaPanel;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;

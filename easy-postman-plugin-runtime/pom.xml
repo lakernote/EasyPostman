@@ -11,15 +11,21 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
+    <!--
+        插件运行时层：
+        负责插件 jar 的扫描、描述符解析、加载、状态持久化和注册表管理。
+     -->
     <artifactId>easy-postman-plugin-runtime</artifactId>
     <packaging>jar</packaging>
 
     <dependencies>
+        <!-- 运行时建立在稳定 SPI 之上 -->
         <dependency>
             <groupId>com.laker.tools</groupId>
             <artifactId>easy-postman-plugin-api</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- 插件用户配置（禁用列表、待卸载列表等）走 JSON 存储 -->
         <dependency>
             <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>

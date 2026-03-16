@@ -34,6 +34,8 @@ public final class MessageKeys {
     public static final String MENU_WORKSPACES = "menu.workspaces";
     public static final String MENU_TOOLBOX = "menu.toolbox";
     public static final String MENU_PLUGINS = "menu.plugins";
+    public static final String MENU_PLUGINS_CENTER = "menu.plugins.center";
+    public static final String MENU_PLUGINS_OPEN_DIR = "menu.plugins.open_dir";
 
     // ============ 语言相关 ============
     public static final String LANGUAGE_CHANGED = "language.changed";
@@ -167,6 +169,20 @@ public final class MessageKeys {
     public static final String PLUGIN_MANAGER_MARKET_AVAILABLE = "plugin.manager.market.available";
     public static final String PLUGIN_MANAGER_MARKET_INSTALLED = "plugin.manager.market.installed";
     public static final String PLUGIN_MANAGER_MARKET_UPDATE_AVAILABLE = "plugin.manager.market.update_available";
+    public static final String PLUGIN_MANAGER_SUBTITLE = "plugin.manager.subtitle";
+    public static final String PLUGIN_MANAGER_SUMMARY_INSTALLED = "plugin.manager.summary.installed";
+    public static final String PLUGIN_MANAGER_SUMMARY_LOADED = "plugin.manager.summary.loaded";
+    public static final String PLUGIN_MANAGER_SUMMARY_CATALOG = "plugin.manager.summary.catalog";
+    public static final String PLUGIN_MANAGER_SECTION_DIRECTORIES = "plugin.manager.section.directories";
+    public static final String PLUGIN_MANAGER_SECTION_DETAILS = "plugin.manager.section.details";
+    public static final String PLUGIN_MANAGER_DETAIL_EMPTY = "plugin.manager.detail.empty";
+    public static final String PLUGIN_MANAGER_DETAIL_ID = "plugin.manager.detail.id";
+    public static final String PLUGIN_MANAGER_DETAIL_VERSION = "plugin.manager.detail.version";
+    public static final String PLUGIN_MANAGER_DETAIL_PATH = "plugin.manager.detail.path";
+    public static final String PLUGIN_MANAGER_DETAIL_HOMEPAGE = "plugin.manager.detail.homepage";
+    public static final String PLUGIN_MANAGER_DETAIL_DOWNLOAD = "plugin.manager.detail.download";
+    public static final String PLUGIN_MANAGER_DETAIL_COMPATIBILITY = "plugin.manager.detail.compatibility";
+    public static final String PLUGIN_MANAGER_MARKET_SOURCE_HINT = "plugin.manager.market.source_hint";
 
     // ============ Markdown 编辑器 ============
     public static final String MARKDOWN_UNDO = "markdown.undo";

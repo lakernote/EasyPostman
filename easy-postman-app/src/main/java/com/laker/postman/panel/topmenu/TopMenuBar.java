@@ -22,6 +22,7 @@ import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.topmenu.help.ChangelogDialog;
 import com.laker.postman.panel.topmenu.plugin.PluginManagerDialog;
 import com.laker.postman.panel.topmenu.setting.ModernSettingsDialog;
+import com.laker.postman.plugin.manager.PluginManagementService;
 import com.laker.postman.panel.workspace.components.GitOperationDialog;
 import com.laker.postman.service.ExitService;
 import com.laker.postman.service.UpdateService;
@@ -182,6 +183,7 @@ public class TopMenuBar extends SingletonBaseMenuBar implements IRefreshable {
         addLanguageMenu();
         addThemeMenu();
         addSettingMenu();
+        addPluginMenu();
         addHelpMenu();
         addAboutMenu();
 
@@ -351,13 +353,21 @@ public class TopMenuBar extends SingletonBaseMenuBar implements IRefreshable {
         shortcutMenuItem.addActionListener(e -> showModernSettingsDialog(6));
         settingMenu.add(shortcutMenuItem);
 
-        settingMenu.addSeparator();
-
-        JMenuItem pluginManagerMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.MENU_PLUGINS));
-        pluginManagerMenuItem.addActionListener(e -> showPluginManagerDialog());
-        settingMenu.add(pluginManagerMenuItem);
-
         add(settingMenu);
+    }
+
+    private void addPluginMenu() {
+        JMenu pluginMenu = new JMenu(I18nUtil.getMessage(MessageKeys.MENU_PLUGINS));
+
+        JMenuItem pluginCenterMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.MENU_PLUGINS_CENTER));
+        pluginCenterMenuItem.addActionListener(e -> showPluginManagerDialog());
+        pluginMenu.add(pluginCenterMenuItem);
+
+        JMenuItem openPluginFolderItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.MENU_PLUGINS_OPEN_DIR));
+        openPluginFolderItem.addActionListener(e -> openPluginDirectory());
+        pluginMenu.add(openPluginFolderItem);
+
+        add(pluginMenu);
     }
 
 
@@ -374,6 +384,18 @@ public class TopMenuBar extends SingletonBaseMenuBar implements IRefreshable {
     private void showPluginManagerDialog() {
         Window window = SwingUtilities.getWindowAncestor(this);
         PluginManagerDialog.showDialog(window);
+    }
+
+    private void openPluginDirectory() {
+        try {
+            Desktop.getDesktop().open(PluginManagementService.getManagedPluginDir().toFile());
+        } catch (Exception e) {
+            log.error("Failed to open plugin directory", e);
+            JOptionPane.showMessageDialog(this,
+                    e.getMessage(),
+                    I18nUtil.getMessage(MessageKeys.GENERAL_ERROR),
+                    JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void addHelpMenu() {

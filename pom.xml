@@ -9,6 +9,13 @@
     <version>${revision}</version>
     <packaging>pom</packaging>
 
+    <!--
+        顶层模块划分说明：
+        1. plugin-api：稳定扩展接口，只放插件可依赖的公共 SPI
+        2. plugin-runtime：插件扫描、加载、启停、状态持久化
+        3. easy-postman-plugins：官方插件聚合目录，每个 plugin-* 独立打包发布
+        4. easy-postman-app：宿主应用，只保留核心能力和插件桥接点
+     -->
     <modules>
         <module>easy-postman-plugin-api</module>
         <module>easy-postman-plugin-runtime</module>
@@ -17,6 +24,10 @@
     </modules>
 
     <properties>
+        <!--
+            统一版本入口。后续升级版本时，只改这里即可。
+            子模块 parent.version 和 artifact version 都跟随 ${revision}。
+         -->
         <revision>4.3.55</revision>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
@@ -24,6 +35,7 @@
         <maven.build.timestamp.format>yyyy-MM-dd'T'HH:mm:ssXXX</maven.build.timestamp.format>
         <mainClass>com.laker.postman.App</mainClass>
 
+        <!-- UI / core 基础依赖版本 -->
         <flatlaf.version>3.7</flatlaf.version>
         <miglayout.version>11.4.2</miglayout.version>
         <hutool.version>5.8.41</hutool.version>
@@ -53,6 +65,10 @@
     </properties>
 
     <dependencyManagement>
+        <!--
+            统一管理公共依赖版本，避免各子模块重复写版本号。
+            这里主要放平台层和多个插件都会复用的库。
+         -->
         <dependencies>
             <dependency>
                 <groupId>com.formdev</groupId>
@@ -156,6 +172,7 @@
 
     <build>
         <pluginManagement>
+            <!-- 统一 Maven 插件版本与默认配置，子模块按需继承 -->
             <plugins>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -190,6 +207,7 @@
     </build>
 
     <repositories>
+        <!-- 国内镜像，降低依赖下载失败概率 -->
         <repository>
             <id>Aliyun-repository</id>
             <url>https://maven.aliyun.com/repository/public</url>
@@ -200,6 +218,7 @@
     </repositories>
 
     <pluginRepositories>
+        <!-- Maven 插件解析同样走国内镜像 -->
         <pluginRepository>
             <id>Aliyun-pluginRepository</id>
             <url>https://maven.aliyun.com/repository/public</url>

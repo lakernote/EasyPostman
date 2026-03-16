@@ -15,12 +15,19 @@ import java.util.function.Supplier;
 
 /**
  * 运行时扩展注册表。
+ * <p>
+ * 可以把它理解为“插件加载后的能力汇总表”：
+ * 插件 onLoad 时往里注册，宿主在运行时再从这里读取。
+ * </p>
  */
 @Slf4j
 public class PluginRegistry {
 
+    // alias -> 工厂，用于延迟创建 pm.xxx 类型的脚本 API 对象
     private final Map<String, Supplier<Object>> scriptApiFactories = new ConcurrentHashMap<>();
+    // type -> service，供宿主桥接层按类型取服务
     private final Map<Class<?>, Object> services = new ConcurrentHashMap<>();
+    // Toolbox / 自动补全 / Snippet 都是 UI 侧可扩展点
     private final List<ToolboxContribution> toolboxContributions = new CopyOnWriteArrayList<>();
     private final List<ScriptCompletionContributor> scriptCompletionContributors = new CopyOnWriteArrayList<>();
     private final List<SnippetDefinition> snippetDefinitions = new CopyOnWriteArrayList<>();
@@ -36,6 +43,7 @@ public class PluginRegistry {
         Map<String, Object> apis = new LinkedHashMap<>();
         for (Map.Entry<String, Supplier<Object>> entry : scriptApiFactories.entrySet()) {
             try {
+                // 某个插件 API 初始化失败时，只跳过当前插件，避免拖垮整个脚本环境
                 Object api = entry.getValue().get();
                 if (api != null) {
                     apis.put(entry.getKey(), api);
@@ -93,6 +101,7 @@ public class PluginRegistry {
     }
 
     public void clear() {
+        // 应用退出或运行时重置时清空，避免跨会话残留旧插件状态
         scriptApiFactories.clear();
         services.clear();
         toolboxContributions.clear();

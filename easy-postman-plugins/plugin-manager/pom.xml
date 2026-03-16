@@ -11,10 +11,16 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
+    <!--
+        插件管理层：
+        向 UI 提供更高层门面，封装 catalog、在线/离线安装、卸载等操作。
+        这样 app 层不需要直接依赖 runtime 的底层细节。
+     -->
     <artifactId>easy-postman-plugin-manager</artifactId>
     <packaging>jar</packaging>
 
     <dependencies>
+        <!-- manager 基于 runtime 提供的扫描/状态能力工作 -->
         <dependency>
             <groupId>com.laker.tools</groupId>
             <artifactId>easy-postman-plugin-runtime</artifactId>

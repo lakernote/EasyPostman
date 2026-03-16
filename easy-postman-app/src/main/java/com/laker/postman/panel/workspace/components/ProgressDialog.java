@@ -160,7 +160,9 @@ public abstract class ProgressDialog extends JDialog {
             validateInput();
             showProgressAndStartOperation();
         } catch (IllegalArgumentException ex) {
-            showError(ex.getMessage());
+            if (ex.getMessage() != null && !ex.getMessage().isBlank()) {
+                showError(ex.getMessage());
+            }
         }
     }
 

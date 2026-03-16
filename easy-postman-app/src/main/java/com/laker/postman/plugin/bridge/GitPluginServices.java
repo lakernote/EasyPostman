@@ -4,7 +4,8 @@ import com.laker.postman.plugin.runtime.PluginRuntime;
 
 public final class GitPluginServices {
 
-    private static final String MISSING_MESSAGE = "Git plugin is not installed. Please install easy-postman-plugin-git first.";
+    private static final String MISSING_MESSAGE =
+            "Git plugin is not installed. Open Plugin Manager and install easy-postman-plugin-git first.";
 
     private GitPluginServices() {
     }

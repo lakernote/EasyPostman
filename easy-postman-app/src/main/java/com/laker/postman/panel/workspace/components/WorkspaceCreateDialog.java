@@ -7,6 +7,8 @@ import com.laker.postman.model.GitAuthType;
 import com.laker.postman.model.GitRepoSource;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.model.WorkspaceType;
+import com.laker.postman.panel.topmenu.plugin.PluginManagerDialog;
+import com.laker.postman.plugin.bridge.GitPluginServices;
 import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.util.*;
 import lombok.Getter;
@@ -53,6 +55,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
     // 新增分支相关组件
     private JTextField branchField;
     private JLabel branchLabel;
+    private boolean adjustingWorkspaceType;
 
     public WorkspaceCreateDialog(Window parent) {
         super(parent, I18nUtil.getMessage(MessageKeys.WORKSPACE_CREATE));
@@ -192,7 +195,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
     @Override
     protected void setupEventHandlers() {
         // 工作区类型切换
-        ActionListener typeChangeListener = e -> updateGitPanelVisibility();
+        ActionListener typeChangeListener = e -> handleWorkspaceTypeChanged();
         localTypeRadio.addActionListener(typeChangeListener);
         gitTypeRadio.addActionListener(typeChangeListener);
 
@@ -254,6 +257,20 @@ public class WorkspaceCreateDialog extends ProgressDialog {
         String name = nameField.getText();
         String generatedPath = generatePathFromName(name);
         pathField.setText(generatedPath);
+    }
+
+    private void handleWorkspaceTypeChanged() {
+        if (adjustingWorkspaceType) {
+            updateGitPanelVisibility();
+            return;
+        }
+
+        // Git 工作区依赖插件支持，切换类型时就直接给出安装入口，避免用户填完表单后才失败。
+        if (gitTypeRadio.isSelected() && !ensureGitPluginReady()) {
+            switchToLocalWorkspaceType();
+            return;
+        }
+        updateGitPanelVisibility();
     }
 
     private JPanel createBasicInfoPanel() {
@@ -446,6 +463,44 @@ public class WorkspaceCreateDialog extends ProgressDialog {
         }
     }
 
+    private boolean ensureGitPluginReady() {
+        if (GitPluginServices.isGitPluginInstalled()) {
+            return true;
+        }
+
+        Object[] options = {
+                I18nUtil.getMessage(MessageKeys.WORKSPACE_CREATE_DIALOG_GIT_PLUGIN_REQUIRED_OPEN_MANAGER),
+                I18nUtil.getMessage(MessageKeys.WORKSPACE_CREATE_DIALOG_GIT_PLUGIN_REQUIRED_SWITCH_LOCAL),
+                I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL)
+        };
+        int choice = JOptionPane.showOptionDialog(
+                this,
+                I18nUtil.getMessage(MessageKeys.WORKSPACE_CREATE_DIALOG_GIT_PLUGIN_REQUIRED_MESSAGE),
+                I18nUtil.getMessage(MessageKeys.WORKSPACE_CREATE_DIALOG_GIT_PLUGIN_REQUIRED_TITLE),
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.WARNING_MESSAGE,
+                null,
+                options,
+                options[0]
+        );
+
+        if (choice == 0) {
+            PluginManagerDialog.showDialog(this);
+            return GitPluginServices.isGitPluginInstalled();
+        }
+        return false;
+    }
+
+    private void switchToLocalWorkspaceType() {
+        adjustingWorkspaceType = true;
+        try {
+            localTypeRadio.setSelected(true);
+        } finally {
+            adjustingWorkspaceType = false;
+        }
+        updateGitPanelVisibility();
+    }
+
     @Override
     protected void validateInput() throws IllegalArgumentException {
         // 验证工作区名称
@@ -458,6 +513,11 @@ public class WorkspaceCreateDialog extends ProgressDialog {
         String path = pathField.getText().trim();
         if (path.isEmpty()) {
             throw new IllegalArgumentException(I18nUtil.getMessage(MessageKeys.WORKSPACE_VALIDATION_PATH_REQUIRED));
+        }
+
+        if (gitTypeRadio.isSelected() && !ensureGitPluginReady()) {
+            switchToLocalWorkspaceType();
+            throw new IllegalArgumentException("");
         }
 
         // Git工作区特殊验证

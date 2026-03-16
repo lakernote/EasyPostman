@@ -535,6 +535,10 @@ public final class MessageKeys {
     public static final String WORKSPACE_CREATE_DIALOG_CREATION_COMPLETED = "workspace.create.dialog.creation.completed";
     public static final String WORKSPACE_CREATE_DIALOG_CREATION_FAILED = "workspace.create.dialog.creation.failed";
     public static final String WORKSPACE_CREATE_DIALOG_CREATION_FAILED_WITH_MESSAGE = "workspace.create.dialog.creation.failed.with.message";
+    public static final String WORKSPACE_CREATE_DIALOG_GIT_PLUGIN_REQUIRED_TITLE = "workspace.create.dialog.git.plugin.required.title";
+    public static final String WORKSPACE_CREATE_DIALOG_GIT_PLUGIN_REQUIRED_MESSAGE = "workspace.create.dialog.git.plugin.required.message";
+    public static final String WORKSPACE_CREATE_DIALOG_GIT_PLUGIN_REQUIRED_OPEN_MANAGER = "workspace.create.dialog.git.plugin.required.open_manager";
+    public static final String WORKSPACE_CREATE_DIALOG_GIT_PLUGIN_REQUIRED_SWITCH_LOCAL = "workspace.create.dialog.git.plugin.required.switch_local";
 
     // ProgressDialog keys
     public static final String PROGRESS_DIALOG_OPERATION_SUCCESS = "progress.dialog.operation.success";

@@ -34,6 +34,7 @@ public final class PluginRuntime {
     private static final String PLUGIN_DESCRIPTOR_PREFIX = "META-INF/easy-postman/";
     private static final String PLUGIN_DESCRIPTOR_SUFFIX = ".properties";
     private static final String DISABLED_PLUGIN_IDS_KEY = "plugin.disabledIds";
+    private static final String PENDING_UNINSTALL_PLUGIN_IDS_KEY = "plugin.pendingUninstallIds";
     private static final PluginRegistry REGISTRY = new PluginRegistry();
     private static final List<EasyPostmanPlugin> LOADED_PLUGINS = new ArrayList<>();
     private static final List<URLClassLoader> PLUGIN_CLASSLOADERS = new ArrayList<>();
@@ -52,6 +53,7 @@ public final class PluginRuntime {
             if (initialized) {
                 return;
             }
+            cleanupPendingUninstallPlugins();
             for (PluginFileInfo pluginFile : resolveLoadCandidates()) {
                 loadPluginJar(pluginFile.jarPath(), pluginFile.descriptor());
             }
@@ -101,24 +103,37 @@ public final class PluginRuntime {
     }
 
     public static void shutdown() {
-        for (EasyPostmanPlugin plugin : LOADED_PLUGINS) {
+        synchronized (PluginRuntime.class) {
             try {
-                plugin.onStop();
-            } catch (Exception e) {
-                log.warn("Failed to stop plugin: {}", plugin.getClass().getName(), e);
-            }
-        }
-        for (URLClassLoader classLoader : PLUGIN_CLASSLOADERS) {
-            try {
-                classLoader.close();
-            } catch (IOException e) {
-                log.warn("Failed to close plugin classloader", e);
+                for (EasyPostmanPlugin plugin : LOADED_PLUGINS) {
+                    try {
+                        plugin.onStop();
+                    } catch (Exception e) {
+                        log.warn("Failed to stop plugin: {}", plugin.getClass().getName(), e);
+                    }
+                }
+                for (URLClassLoader classLoader : PLUGIN_CLASSLOADERS) {
+                    try {
+                        classLoader.close();
+                    } catch (IOException e) {
+                        log.warn("Failed to close plugin classloader", e);
+                    }
+                }
+                cleanupPendingUninstallPlugins();
+            } finally {
+                LOADED_PLUGINS.clear();
+                PLUGIN_CLASSLOADERS.clear();
+                LOADED_PLUGIN_FILES.clear();
+                REGISTRY.clear();
+                initialized = false;
             }
         }
     }
 
     public static boolean isPluginEnabled(String pluginId) {
-        return pluginId != null && !getDisabledPluginIds().contains(pluginId);
+        return pluginId != null
+                && !getDisabledPluginIds().contains(pluginId)
+                && !getPendingUninstallPluginIds().contains(pluginId);
     }
 
     public static void setPluginEnabled(String pluginId, boolean enabled) {
@@ -128,10 +143,38 @@ public final class PluginRuntime {
         Set<String> disabledIds = new LinkedHashSet<>(getDisabledPluginIds());
         if (enabled) {
             disabledIds.remove(pluginId);
+            clearPendingUninstall(pluginId);
         } else {
             disabledIds.add(pluginId);
         }
         PluginSettingsStore.putStringSet(DISABLED_PLUGIN_IDS_KEY, disabledIds);
+    }
+
+    public static boolean isPluginPendingUninstall(String pluginId) {
+        return pluginId != null && getPendingUninstallPluginIds().contains(pluginId);
+    }
+
+    public static void markPluginPendingUninstall(String pluginId) {
+        if (pluginId == null || pluginId.isBlank()) {
+            return;
+        }
+        Set<String> pendingIds = new LinkedHashSet<>(getPendingUninstallPluginIds());
+        pendingIds.add(pluginId);
+        PluginSettingsStore.putStringSet(PENDING_UNINSTALL_PLUGIN_IDS_KEY, pendingIds);
+
+        Set<String> disabledIds = new LinkedHashSet<>(getDisabledPluginIds());
+        disabledIds.add(pluginId);
+        PluginSettingsStore.putStringSet(DISABLED_PLUGIN_IDS_KEY, disabledIds);
+    }
+
+    public static void clearPendingUninstall(String pluginId) {
+        if (pluginId == null || pluginId.isBlank()) {
+            return;
+        }
+        Set<String> pendingIds = new LinkedHashSet<>(getPendingUninstallPluginIds());
+        if (pendingIds.remove(pluginId)) {
+            PluginSettingsStore.putStringSet(PENDING_UNINSTALL_PLUGIN_IDS_KEY, pendingIds);
+        }
     }
 
     public static List<PluginFileInfo> getManagedPluginFiles() {
@@ -158,6 +201,10 @@ public final class PluginRuntime {
         for (Path pluginDir : resolvePluginDirs()) {
             for (PluginFileInfo candidate : listPluginsFromDirectory(pluginDir)) {
                 if (!candidate.enabled()) {
+                    if (isPluginPendingUninstall(candidate.descriptor().id())) {
+                        log.info("Skip pending uninstall plugin: {} ({})", candidate.descriptor().id(), candidate.jarPath());
+                        continue;
+                    }
                     log.info("Skip disabled plugin: {} ({})", candidate.descriptor().id(), candidate.jarPath());
                     continue;
                 }
@@ -264,6 +311,50 @@ public final class PluginRuntime {
 
     private static Set<String> getDisabledPluginIds() {
         return PluginSettingsStore.getStringSet(DISABLED_PLUGIN_IDS_KEY);
+    }
+
+    private static Set<String> getPendingUninstallPluginIds() {
+        return PluginSettingsStore.getStringSet(PENDING_UNINSTALL_PLUGIN_IDS_KEY);
+    }
+
+    static void cleanupPendingUninstallPlugins() {
+        Set<String> pendingIds = new LinkedHashSet<>(getPendingUninstallPluginIds());
+        if (pendingIds.isEmpty()) {
+            return;
+        }
+
+        for (PluginFileInfo info : getManagedPluginFiles()) {
+            if (!pendingIds.contains(info.descriptor().id())) {
+                continue;
+            }
+            try {
+                Files.deleteIfExists(info.jarPath());
+            } catch (IOException e) {
+                log.warn("Failed to delete pending uninstall plugin file: {}", info.jarPath(), e);
+            }
+        }
+
+        Set<String> remainingPending = new LinkedHashSet<>();
+        for (PluginFileInfo info : getManagedPluginFiles()) {
+            if (pendingIds.contains(info.descriptor().id())) {
+                remainingPending.add(info.descriptor().id());
+            }
+        }
+        PluginSettingsStore.putStringSet(PENDING_UNINSTALL_PLUGIN_IDS_KEY, remainingPending);
+        if (!remainingPending.isEmpty()) {
+            log.info("Pending uninstall plugin(s) still remain after cleanup: {}", remainingPending);
+        }
+    }
+
+    public static void resetForTests() {
+        synchronized (PluginRuntime.class) {
+            LOADED_PLUGINS.clear();
+            PLUGIN_CLASSLOADERS.clear();
+            LOADED_PLUGIN_FILES.clear();
+            REGISTRY.clear();
+            initialized = false;
+            PluginRuntimePaths.resetForTests();
+        }
     }
 
     private static boolean isDescriptorCompatible(PluginDescriptor descriptor) {

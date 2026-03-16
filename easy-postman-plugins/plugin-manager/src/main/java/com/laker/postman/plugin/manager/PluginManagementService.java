@@ -59,6 +59,10 @@ public class PluginManagementService {
         PluginRuntime.setPluginEnabled(pluginId, enabled);
     }
 
+    public static boolean isPluginPendingUninstall(String pluginId) {
+        return PluginRuntime.isPluginPendingUninstall(pluginId);
+    }
+
     public static String getCurrentAppVersion() {
         return PluginRuntime.getCurrentAppVersion();
     }
@@ -71,9 +75,28 @@ public class PluginManagementService {
         return PluginInstallerService.installCatalogPlugin(entry);
     }
 
-    public static boolean uninstallPlugin(String pluginId) {
+    public static PluginUninstallResult uninstallPlugin(String pluginId) {
+        List<PluginFileInfo> managedPlugins = PluginRuntime.getManagedPluginFiles();
+        boolean matched = false;
+        boolean hasLoadedManagedPlugin = false;
         boolean removed = false;
-        for (PluginFileInfo info : PluginRuntime.getManagedPluginFiles()) {
+
+        for (PluginFileInfo info : managedPlugins) {
+            if (!pluginId.equals(info.descriptor().id())) {
+                continue;
+            }
+            matched = true;
+            hasLoadedManagedPlugin |= info.loaded();
+        }
+        if (!matched) {
+            return new PluginUninstallResult(false, false);
+        }
+        if (hasLoadedManagedPlugin) {
+            PluginRuntime.markPluginPendingUninstall(pluginId);
+            return new PluginUninstallResult(false, true);
+        }
+
+        for (PluginFileInfo info : managedPlugins) {
             if (!pluginId.equals(info.descriptor().id())) {
                 continue;
             }
@@ -83,9 +106,14 @@ public class PluginManagementService {
                 log.warn("Failed to delete installed plugin file: {}", info.jarPath(), e);
             }
         }
-        if (removed) {
-            PluginRuntime.setPluginEnabled(pluginId, true);
+
+        boolean stillInstalled = PluginRuntime.getManagedPluginFiles().stream()
+                .anyMatch(info -> pluginId.equals(info.descriptor().id()));
+        if (stillInstalled) {
+            PluginRuntime.markPluginPendingUninstall(pluginId);
+            return new PluginUninstallResult(removed, true);
         }
-        return removed;
+        PluginRuntime.setPluginEnabled(pluginId, true);
+        return new PluginUninstallResult(removed, false);
     }
 }

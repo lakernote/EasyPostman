@@ -3,6 +3,7 @@ package com.laker.postman.plugin.runtime;
 import com.laker.postman.plugin.api.ScriptCompletionContributor;
 import com.laker.postman.plugin.api.SnippetDefinition;
 import com.laker.postman.plugin.api.ToolboxContribution;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -15,6 +16,7 @@ import java.util.function.Supplier;
 /**
  * 运行时扩展注册表。
  */
+@Slf4j
 public class PluginRegistry {
 
     private final Map<String, Supplier<Object>> scriptApiFactories = new ConcurrentHashMap<>();
@@ -33,7 +35,14 @@ public class PluginRegistry {
     public Map<String, Object> createScriptApis() {
         Map<String, Object> apis = new LinkedHashMap<>();
         for (Map.Entry<String, Supplier<Object>> entry : scriptApiFactories.entrySet()) {
-            apis.put(entry.getKey(), entry.getValue().get());
+            try {
+                Object api = entry.getValue().get();
+                if (api != null) {
+                    apis.put(entry.getKey(), api);
+                }
+            } catch (Throwable t) {
+                log.error("Failed to create script API for plugin alias: {}", entry.getKey(), t);
+            }
         }
         return apis;
     }
@@ -81,5 +90,13 @@ public class PluginRegistry {
 
     public List<SnippetDefinition> getSnippetDefinitions() {
         return new ArrayList<>(snippetDefinitions);
+    }
+
+    public void clear() {
+        scriptApiFactories.clear();
+        services.clear();
+        toolboxContributions.clear();
+        scriptCompletionContributors.clear();
+        snippetDefinitions.clear();
     }
 }

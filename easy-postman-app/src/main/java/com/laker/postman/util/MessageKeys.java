@@ -133,12 +133,15 @@ public final class MessageKeys {
     public static final String PLUGIN_MANAGER_STATUS_DISABLED = "plugin.manager.status.disabled";
     public static final String PLUGIN_MANAGER_STATUS_INCOMPATIBLE = "plugin.manager.status.incompatible";
     public static final String PLUGIN_MANAGER_STATUS_RESTART_REQUIRED = "plugin.manager.status.restart_required";
+    public static final String PLUGIN_MANAGER_STATUS_DISABLE_PENDING = "plugin.manager.status.disable_pending";
+    public static final String PLUGIN_MANAGER_STATUS_UNINSTALL_PENDING = "plugin.manager.status.uninstall_pending";
     public static final String PLUGIN_MANAGER_RESTART_HINT = "plugin.manager.restart_hint";
     public static final String PLUGIN_MANAGER_FILE_CHOOSER = "plugin.manager.file_chooser";
     public static final String PLUGIN_MANAGER_INVALID_PLUGIN = "plugin.manager.invalid_plugin";
     public static final String PLUGIN_MANAGER_INSTALL_SUCCESS = "plugin.manager.install_success";
     public static final String PLUGIN_MANAGER_UNINSTALL_CONFIRM = "plugin.manager.uninstall_confirm";
     public static final String PLUGIN_MANAGER_UNINSTALL_SUCCESS = "plugin.manager.uninstall_success";
+    public static final String PLUGIN_MANAGER_UNINSTALL_SCHEDULED = "plugin.manager.uninstall_scheduled";
     public static final String PLUGIN_MANAGER_UNINSTALL_FAILED = "plugin.manager.uninstall_failed";
     public static final String PLUGIN_MANAGER_UNINSTALL_TITLE = "plugin.manager.uninstall_title";
     public static final String PLUGIN_MANAGER_OVERWRITE_CONFIRM = "plugin.manager.overwrite_confirm";

@@ -38,6 +38,10 @@ final class PluginRuntimePaths {
         return dataRoot().resolve("user_settings.json");
     }
 
+    static void resetForTests() {
+        cachedDataPath = null;
+    }
+
     private static Path dataRoot() {
         if (cachedDataPath != null) {
             return Paths.get(cachedDataPath);

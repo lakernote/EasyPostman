@@ -145,8 +145,8 @@ public class ToolboxPanel extends SingletonBasePanel {
                 JPanel panel = contribution.panelSupplier().get();
                 regPlugin(contribution.id(), contribution.displayName(), contribution.iconPath(),
                         contribution.groupId(), contribution.groupDisplayName(), panel, contribution.iconClassLoader());
-            } catch (Exception e) {
-                log.error("Failed to register toolbox contribution: {}", contribution.id(), e);
+            } catch (Throwable t) {
+                log.error("Failed to register toolbox contribution: {}", contribution.id(), t);
             }
         }
     }

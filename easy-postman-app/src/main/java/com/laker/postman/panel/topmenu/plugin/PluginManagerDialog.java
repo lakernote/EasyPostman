@@ -2,6 +2,7 @@ package com.laker.postman.panel.topmenu.plugin;
 
 import com.laker.postman.plugin.api.PluginDescriptor;
 import com.laker.postman.plugin.manager.PluginManagementService;
+import com.laker.postman.plugin.manager.PluginUninstallResult;
 import com.laker.postman.plugin.manager.market.PluginCatalogEntry;
 import com.laker.postman.plugin.runtime.PluginFileInfo;
 import com.laker.postman.service.update.version.VersionComparator;
@@ -266,8 +267,14 @@ public class PluginManagerDialog extends JDialog {
         if (option != JOptionPane.OK_OPTION) {
             return;
         }
-        if (PluginManagementService.uninstallPlugin(selected.descriptor().id())) {
+        PluginUninstallResult result = PluginManagementService.uninstallPlugin(selected.descriptor().id());
+        if (result.removed()) {
             showInfo(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_UNINSTALL_SUCCESS, selected.descriptor().name()));
+            reloadPlugins();
+            return;
+        }
+        if (result.restartRequired()) {
+            showInfo(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_UNINSTALL_SCHEDULED, selected.descriptor().name()));
             reloadPlugins();
             return;
         }
@@ -429,9 +436,12 @@ public class PluginManagerDialog extends JDialog {
     private void updateInstalledActions() {
         PluginFileInfo selected = installedList.getSelectedValue();
         boolean validSelection = selected != null && !"empty".equals(selected.descriptor().id());
+        boolean pendingUninstall = validSelection && PluginManagementService.isPluginPendingUninstall(selected.descriptor().id());
         enableInstalledButton.setEnabled(validSelection && !selected.enabled());
-        disableInstalledButton.setEnabled(validSelection && selected.enabled());
-        uninstallInstalledButton.setEnabled(validSelection && PluginManagementService.isManagedPlugin(selected.jarPath()));
+        disableInstalledButton.setEnabled(validSelection && selected.enabled() && !pendingUninstall);
+        uninstallInstalledButton.setEnabled(validSelection
+                && PluginManagementService.isManagedPlugin(selected.jarPath())
+                && !pendingUninstall);
     }
 
     private void setMarketBusy(boolean busy, String message) {
@@ -467,6 +477,12 @@ public class PluginManagerDialog extends JDialog {
         PluginFileInfo installed = installedPluginMap.get(entry.id());
         if (installed == null) {
             return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_AVAILABLE);
+        }
+        if (PluginManagementService.isPluginPendingUninstall(installed.descriptor().id())) {
+            return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_UNINSTALL_PENDING);
+        }
+        if (installed.loaded() && !installed.enabled()) {
+            return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_DISABLE_PENDING);
         }
         if (!installed.enabled()) {
             return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_DISABLED);
@@ -556,6 +572,12 @@ public class PluginManagerDialog extends JDialog {
     }
 
     private static String resolveInstalledStatus(PluginFileInfo value) {
+        if (PluginManagementService.isPluginPendingUninstall(value.descriptor().id())) {
+            return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_UNINSTALL_PENDING);
+        }
+        if (value.loaded() && !value.enabled()) {
+            return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_DISABLE_PENDING);
+        }
         if (!value.enabled()) {
             return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_DISABLED);
         }

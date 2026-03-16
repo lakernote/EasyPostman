@@ -6,7 +6,7 @@ Redis 相关能力现在已经按真正插件边界拆开：
 
 - 宿主 `easy-postman` 不再打包 Redis 类、Redis 文案、Redis 图标
 - Redis 插件独立产物：
-  - `plugins/plugin-redis/target/easy-postman-<version>-plugin-redis.jar`
+  - `easy-postman-plugins/plugin-redis/target/easy-postman-<version>-plugin-redis.jar`
 - 插件自身包含：
   - Redis 工具箱面板
   - `pm.plugin("redis")` / `pm.redis` 兼容脚本 API
@@ -213,13 +213,13 @@ mvn -DskipTests clean package
 上传这个文件到 Release：
 
 ```text
-plugins/plugin-redis/target/easy-postman-<version>-plugin-redis.jar
+easy-postman-plugins/plugin-redis/target/easy-postman-<version>-plugin-redis.jar
 ```
 
 ### 6.2 计算 sha256
 
 ```bash
-shasum -a 256 plugins/plugin-redis/target/easy-postman-<version>-plugin-redis.jar
+shasum -a 256 easy-postman-plugins/plugin-redis/target/easy-postman-<version>-plugin-redis.jar
 ```
 
 ### 6.3 准备 catalog.json

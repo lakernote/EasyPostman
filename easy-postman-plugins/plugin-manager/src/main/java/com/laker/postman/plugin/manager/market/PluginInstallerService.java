@@ -73,6 +73,7 @@ public class PluginInstallerService {
             cleanupLegacyVersions(descriptor.id(), targetPath);
             cleanupLegacyCacheVersions(descriptor.id(), cachePath);
         }
+        PluginRuntime.setPluginEnabled(descriptor.id(), true);
         return new PluginFileInfo(descriptor, targetPath, false);
     }
 

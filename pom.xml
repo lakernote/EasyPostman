@@ -12,7 +12,7 @@
     <modules>
         <module>easy-postman-plugin-api</module>
         <module>easy-postman-plugin-runtime</module>
-        <module>plugins</module>
+        <module>easy-postman-plugins</module>
         <module>easy-postman-app</module>
     </modules>
 

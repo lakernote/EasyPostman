@@ -1,263 +1,59 @@
-# EasyPostman 插件市场与模块化方案
+# EasyPostman 插件市场说明
 
-Redis 插件的当前落地与本地 / GitHub 使用方式，见：
+当前插件主文档已经统一到：
 
-- `docs/REDIS_PLUGIN_zh.md`
+- `docs/PLUGINS_zh.md`
 
-## 1. 目标
+这份文档只保留插件市场相关的最小说明。
 
-当前 EasyPostman 采用单体 fat jar 打包，新增能力会持续拉大安装包、启动扫描范围和维护成本。结合现有代码结构，更合适的方向不是“做一个复杂平台”，而是先把项目拆成：
+## 支持的安装来源
 
-- `core`：默认安装，负责主框架、HTTP 调试主流程、基础 UI、工作区与本地存储
-- `official plugins`：官方插件，按需安装
-- `community plugins`：社区插件，通过统一协议接入
-- `market/index`：插件目录与元数据索引
+插件管理当前支持：
 
-目标是同时解决 4 个问题：
+- 在线 `HTTP(S)` catalog URL
+- 本地 `file://` catalog URL
+- 本地目录
+- 本地 `catalog.json`
+- 直接选择插件 jar
 
-1. 主安装包尽量小，默认只带高频核心能力
-2. 新功能以插件发布，不再强绑主版本
-3. 插件安装、升级、禁用、卸载都有统一入口
-4. 整套托管、构建、分发尽量基于 GitHub 免费设施完成
+## 推荐的发布方式
 
-## 2. 结合当前仓库的拆分建议
+如果你要给用户分发插件，建议同时提供：
 
-从当前 `pom.xml` 和代码目录看，以下能力最适合优先插件化。
+1. 单独插件 jar
+2. 离线目录
+3. 在线 catalog URL
 
-### 2.1 建议保留在 Core 的部分
+这样分别覆盖：
 
-- 主窗口、导航、主题、国际化
-- HTTP/HTTPS 请求编辑与发送主链路
-- 环境变量、集合、历史记录、本地工作区
-- 基础响应查看
-- 插件管理器本身
-- 自动更新与插件更新框架
+- 想最快安装的用户
+- 内网离线用户
+- 想持续在线更新的用户
 
-这些能力决定产品能不能开箱即用，不建议变成可选安装。
+## 离线目录长什么样
 
-### 2.2 第一批建议拆出去的插件
-
-#### A. 脚本引擎插件
-
-当前重量级依赖：
-
-- GraalVM JS
-- 内置 JS libs
-
-建议插件：
-
-- `plugin-script-js`
-
-提供能力：
-
-- Pre-request / Test Script 执行
-- `pm.*` 基础脚本 API
-- 代码片段与脚本自动补全扩展
-
-收益：
-
-- 这是包体和启动复杂度的大头之一
-- 不用脚本的用户可以完全不装
-
-#### B. 数据源脚本插件
-
-当前已经有明确边界：
-
-- `ScriptRedisApi`
-- `ScriptKafkaApi`
-- `ScriptElasticsearchApi`
-- `ScriptInfluxDbApi`
-
-建议拆成独立插件：
-
-- `plugin-script-redis`
-- `plugin-script-kafka`
-- `plugin-script-elasticsearch`
-- `plugin-script-influxdb`
-
-收益：
-
-- 外部中间件能力完全按需装
-- 某个插件坏了不会拖累整个主程序升级
-
-#### C. Toolbox 工具插件
-
-当前适合拆出去：
-
-- Kafka 工具面板
-- Elasticsearch 工具面板
-- InfluxDB 工具面板
-- Markdown 工具面板
-
-建议插件：
-
-- `plugin-toolbox-kafka`
-- `plugin-toolbox-elasticsearch`
-- `plugin-toolbox-influxdb`
-- `plugin-toolbox-markdown`
-
-#### D. 导入器插件
-
-建议拆出去：
-
-- Swagger / OpenAPI 导入
-- HAR 导入
-- ApiPost 导入
-- IntelliJ HTTP 导入
-
-建议插件：
-
-- `plugin-import-openapi`
-- `plugin-import-har`
-- `plugin-import-apipost`
-- `plugin-import-idea-http`
-
-#### E. Git 工作区插件
-
-当前依赖：
-
-- JGit
-
-建议插件：
-
-- `plugin-workspace-git`
-
-说明：
-
-- 如果你认为 Git 工作区是产品核心卖点，也可以先保留在 core
-- 但从“减包”和“低频用户不必安装”的角度，它非常适合插件化
-
-#### F. 性能测试插件
-
-当前相关：
-
-- `panel/performance`
-- `jfreechart`
-
-建议插件：
-
-- `plugin-performance`
-
-说明：
-
-- 这块功能完整度高，但并非所有用户都需要
-- 拆出去后主程序可以更聚焦 API 调试
-
-## 3. 目标工程结构
-
-建议从单模块 Maven 逐步演进为多模块，不要一次性大迁移。
+以 Redis 为例：
 
 ```text
-easy-postman/
-├── pom.xml                       # parent
-├── easy-postman-app/            # 启动器/桌面壳
-├── easy-postman-core-api/       # 插件 API、扩展点接口、公共模型
-├── easy-postman-core-runtime/   # 插件管理器、类加载、安装/更新/校验
-├── easy-postman-core-ui/        # 核心 UI
-├── easy-postman-plugin-sdk/     # 插件开发脚手架
-├── plugins/
-│   ├── plugin-script-js/
-│   ├── plugin-script-redis/
-│   ├── plugin-script-kafka/
-│   ├── plugin-script-elasticsearch/
-│   ├── plugin-script-influxdb/
-│   ├── plugin-workspace-git/
-│   ├── plugin-performance/
-│   ├── plugin-import-openapi/
-│   └── ...
-└── docs/
+easy-postman-plugins/plugin-redis/target/plugin-market/offline/easy-postman-plugin-redis/
+├── catalog.json
+└── easy-postman-4.3.55-plugin-redis.jar
 ```
 
-最重要的原则：
+用户在插件管理里选择这个目录，或者直接选里面的 `catalog.json` 即可。
 
-- `core-api` 只放稳定接口，不放具体实现
-- 插件只能依赖 `core-api`，不要反向依赖 `app`
-- 每个插件单独产出制品，独立发布版本
+## 本地调试入口
 
-## 4. 插件运行时设计
+推荐直接使用：
 
-### 4.1 插件包格式
-
-建议不要直接下载裸 jar，而是定义一个插件包，例如 `.epp`：
-
-```text
-plugin-script-kafka-1.2.0.epp
-├── plugin.json
-├── plugin.jar
-├── lib/
-│   └── *.jar
-├── icon.png
-└── checksums.txt
+```bash
+./scripts/plugin-dev.sh prepare redis
+./scripts/plugin-dev.sh run-clean redis
 ```
 
-`plugin.json` 示例：
+更完整的架构、开发流程、安装说明见：
 
-```json
-{
-  "id": "plugin-script-kafka",
-  "name": "Kafka Script API",
-  "version": "1.2.0",
-  "entryClass": "com.laker.postman.plugins.kafka.KafkaScriptPlugin",
-  "description": "Provide pm.kafka APIs and Kafka toolbox panels.",
-  "provider": "lakernote",
-  "homepage": "https://github.com/lakernote/easy-postman-plugin-kafka",
-  "minCoreVersion": "5.0.0",
-  "maxCoreVersion": "5.x",
-  "dependencies": [
-    {
-      "id": "plugin-script-js",
-      "version": ">=1.0.0"
-    }
-  ],
-  "permissions": [
-    "network",
-    "filesystem",
-    "script-api"
-  ]
-}
-```
-
-### 4.2 插件生命周期
-
-建议定义统一接口：
-
-```java
-public interface EasyPostmanPlugin {
-    PluginDescriptor descriptor();
-    void onLoad(PluginContext context);
-    void onStart();
-    void onStop();
-}
-```
-
-### 4.3 扩展点
-
-不要让插件直接改主程序内部类，统一走扩展点注册。
-
-首批扩展点建议：
-
-- `ToolPanelExtension`
-- `ImportProviderExtension`
-- `ScriptApiExtension`
-- `SidebarTabExtension`
-- `MenuActionExtension`
-- `RequestProtocolExtension`
-- `SettingsPageExtension`
-
-这样你现有的 Kafka、导入器、脚本 API、工具箱，都能自然映射进去。
-
-### 4.4 类加载隔离
-
-建议每个插件一个独立 `URLClassLoader`。
-
-规则：
-
-- `core-api` 由主程序 classloader 提供
-- 插件自身依赖放插件 classloader
-- 插件之间默认不可互相直接访问
-- 插件依赖插件时，通过运行时导出的 API 或服务注册访问
-
-这样可以避免：
+- `docs/PLUGINS_zh.md`
 
 - Kafka/JGit/GraalVM 这类依赖把主包拖大
 - 插件之间依赖版本打架
@@ -364,7 +160,7 @@ public interface EasyPostmanPlugin {
 
 ```text
 ~/.easy-postman/
-├── plugins/
+├── easy-postman-plugins/
 │   ├── plugin-script-js/
 │   │   └── 1.0.0/
 │   ├── plugin-script-kafka/

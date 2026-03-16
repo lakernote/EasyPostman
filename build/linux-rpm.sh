@@ -35,8 +35,8 @@ PROJECT_ROOT=$(cd "$(dirname "$0")/.."; pwd)
 
 # 切换到项目根目录并读取版本号
 cd "$PROJECT_ROOT" || exit 1
-# 直接从 pom.xml 解析版本号
-VERSION=$(grep -m 1 '<version>' pom.xml | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
+# 直接从 pom.xml 解析 revision
+VERSION=$(grep -m 1 '<revision>' pom.xml | sed 's/.*<revision>\(.*\)<\/revision>.*/\1/')
 echo "🔧 开始打包 EasyPostman RPM 包，版本: $VERSION"
 APP_NAME="EasyPostman"
 JAR_NAME_WITH_VERSION="easy-postman-$VERSION.jar"
@@ -44,6 +44,7 @@ JAR_NAME="easy-postman.jar"  # 固定名称，不带版本号
 MAIN_CLASS="com.laker.postman.App"
 ICON_DIR="assets/linux/EasyPostman.png"
 OUTPUT_DIR="dist"
+APP_TARGET_DIR="easy-postman-app/target"
 
 # 检查 JDK 版本是否 >= 17
 JAVA_VERSION=$(java -version 2>&1 | grep version | awk '{print substr($3, 2, 3)}' | tr -d '"')
@@ -60,14 +61,14 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 # 检查 jar 包是否生成成功
-if [ ! -f "target/$JAR_NAME_WITH_VERSION" ]; then
-    echo "❌ 构建未生成 jar 包: target/$JAR_NAME_WITH_VERSION"
+if [ ! -f "${APP_TARGET_DIR}/$JAR_NAME_WITH_VERSION" ]; then
+    echo "❌ 构建未生成 jar 包: ${APP_TARGET_DIR}/$JAR_NAME_WITH_VERSION"
     exit 1
 fi
 
 # 重命名 JAR 为固定名称（方便 jpackage 配置和后续更新）
 echo "📝 重命名 JAR: $JAR_NAME_WITH_VERSION -> $JAR_NAME"
-cp "target/$JAR_NAME_WITH_VERSION" "target/$JAR_NAME"
+cp "${APP_TARGET_DIR}/$JAR_NAME_WITH_VERSION" "${APP_TARGET_DIR}/$JAR_NAME"
 
 # Step 2: 创建最小运行时 jlink
 echo "⚙️ 使用 jlink 创建最小化运行时..."
@@ -92,7 +93,7 @@ mkdir -p ${OUTPUT_DIR}
 DIST_INPUT_DIR="target/dist-input"
 rm -rf ${DIST_INPUT_DIR}
 mkdir -p ${DIST_INPUT_DIR}
-cp target/${JAR_NAME} ${DIST_INPUT_DIR}/
+cp "${APP_TARGET_DIR}/${JAR_NAME}" ${DIST_INPUT_DIR}/
 
 # Step 5: 使用 jpackage 打包 RPM
 echo "📦 使用 jpackage 打包 RPM 包..."

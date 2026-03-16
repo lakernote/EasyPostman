@@ -3,7 +3,6 @@ package com.laker.postman.panel.workspace.components;
 import com.laker.postman.model.GitAuthType;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.service.WorkspaceService;
-import com.laker.postman.service.git.SshCredentialsProvider;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -147,10 +146,10 @@ public class UpdateAuthDialog extends JDialog {
             if (authType == GitAuthType.SSH_KEY && workspace.getSshPrivateKeyPath() != null) {
                 // 如果SSH密钥路径发生了变化，清除旧密钥的缓存
                 if (!workspace.getSshPrivateKeyPath().equals(sshKeyPath)) {
-                    SshCredentialsProvider.clearCache(workspace.getSshPrivateKeyPath());
+                    WorkspaceService.getInstance().clearSshCache(workspace.getSshPrivateKeyPath());
                 } else {
                     // 即使路径相同，密码可能变化了，也清除缓存
-                    SshCredentialsProvider.clearCache(sshKeyPath);
+                    WorkspaceService.getInstance().clearSshCache(sshKeyPath);
                 }
             }
 

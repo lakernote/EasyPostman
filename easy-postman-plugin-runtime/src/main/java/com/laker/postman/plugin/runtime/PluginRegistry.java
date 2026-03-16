@@ -18,6 +18,7 @@ import java.util.function.Supplier;
 public class PluginRegistry {
 
     private final Map<String, Supplier<Object>> scriptApiFactories = new ConcurrentHashMap<>();
+    private final Map<Class<?>, Object> services = new ConcurrentHashMap<>();
     private final List<ToolboxContribution> toolboxContributions = new CopyOnWriteArrayList<>();
     private final List<ScriptCompletionContributor> scriptCompletionContributors = new CopyOnWriteArrayList<>();
     private final List<SnippetDefinition> snippetDefinitions = new CopyOnWriteArrayList<>();
@@ -35,6 +36,21 @@ public class PluginRegistry {
             apis.put(entry.getKey(), entry.getValue().get());
         }
         return apis;
+    }
+
+    public <T> void registerService(Class<T> type, T service) {
+        if (type == null || service == null) {
+            return;
+        }
+        services.put(type, service);
+    }
+
+    public <T> T getService(Class<T> type) {
+        Object service = services.get(type);
+        if (service == null) {
+            return null;
+        }
+        return type.cast(service);
     }
 
     public void registerToolboxContribution(ToolboxContribution contribution) {

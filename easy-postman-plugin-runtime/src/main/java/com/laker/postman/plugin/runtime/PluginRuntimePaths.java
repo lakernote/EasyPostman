@@ -15,7 +15,17 @@ final class PluginRuntimePaths {
     }
 
     static Path managedPluginDir() {
-        Path pluginDir = dataRoot().resolve("plugins");
+        Path pluginDir = dataRoot().resolve("plugins").resolve("installed");
+        try {
+            Files.createDirectories(pluginDir);
+        } catch (Exception ignored) {
+            // defer to callers if directory creation later fails
+        }
+        return pluginDir;
+    }
+
+    static Path pluginCacheDir() {
+        Path pluginDir = dataRoot().resolve("plugins").resolve("cache");
         try {
             Files.createDirectories(pluginDir);
         } catch (Exception ignored) {

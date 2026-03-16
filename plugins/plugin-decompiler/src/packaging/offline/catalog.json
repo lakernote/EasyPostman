@@ -1,0 +1,15 @@
+{
+  "name": "EasyPostman Offline Plugin Catalog",
+  "generatedAt": "${maven.build.timestamp}",
+  "plugins": [
+    {
+      "id": "plugin-decompiler",
+      "name": "Decompiler Plugin",
+      "version": "${project.version}",
+      "description": "Java decompiler toolbox panel powered by CFR.",
+      "downloadUrl": "${project.build.finalName}.jar",
+      "homepage": "https://github.com/lakernote/easy-postman",
+      "sha256": ""
+    }
+  ]
+}

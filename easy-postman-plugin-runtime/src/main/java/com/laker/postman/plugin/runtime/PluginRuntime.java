@@ -81,11 +81,19 @@ public final class PluginRuntime {
 
     public static String getCurrentAppVersion() {
         String version = PluginRuntime.class.getPackage().getImplementationVersion();
-        return version == null || version.isBlank() ? "dev" : version;
+        if (version != null && !version.isBlank()) {
+            return version;
+        }
+        String pomVersion = resolvePomVersion(Paths.get("pom.xml"));
+        return pomVersion == null || pomVersion.isBlank() ? "dev" : pomVersion;
     }
 
     public static Path getManagedPluginDir() {
         return PluginRuntimePaths.managedPluginDir();
+    }
+
+    public static Path getPluginCacheDir() {
+        return PluginRuntimePaths.pluginCacheDir();
     }
 
     public static PluginDescriptor inspectPluginJar(Path jarPath) throws IOException {
@@ -128,6 +136,10 @@ public final class PluginRuntime {
 
     public static List<PluginFileInfo> getManagedPluginFiles() {
         return listPluginsFromDirectory(getManagedPluginDir());
+    }
+
+    public static List<PluginFileInfo> getCachedPluginFiles() {
+        return listPluginsFromDirectory(getPluginCacheDir());
     }
 
     private static Set<Path> resolvePluginDirs() {
@@ -268,6 +280,56 @@ public final class PluginRuntime {
         return value == null || value.isBlank() ? "*" : value;
     }
 
+    private static String resolvePomVersion(Path pom) {
+        Path current = pom;
+        for (int depth = 0; depth < 4 && current != null; depth++) {
+            try {
+                if (Files.exists(current)) {
+                    String xml = Files.readString(current);
+                    String version = readXmlTag(xml, "version");
+                    if (version != null && !version.isBlank()) {
+                        String trimmed = version.trim();
+                        if ("${revision}".equals(trimmed)) {
+                            String revision = readXmlTag(xml, "revision");
+                            if (revision != null && !revision.isBlank()) {
+                                return revision.trim();
+                            }
+                        } else if (!trimmed.contains("${")) {
+                            return trimmed;
+                        }
+                    }
+                    String revision = readXmlTag(xml, "revision");
+                    if (revision != null && !revision.isBlank()) {
+                        return revision.trim();
+                    }
+                    String relativePath = readXmlTag(xml, "relativePath");
+                    if (relativePath != null && !relativePath.isBlank()) {
+                        current = current.getParent().resolve(relativePath.trim()).normalize();
+                        continue;
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+            current = current.getParent() == null ? null : current.getParent().getParent() == null ? null : current.getParent().getParent().resolve("pom.xml");
+        }
+        return null;
+    }
+
+    private static String readXmlTag(String xml, String tagName) {
+        String openTag = "<" + tagName + ">";
+        String closeTag = "</" + tagName + ">";
+        int start = xml.indexOf(openTag);
+        if (start < 0) {
+            return null;
+        }
+        int contentStart = start + openTag.length();
+        int end = xml.indexOf(closeTag, contentStart);
+        if (end <= contentStart) {
+            return null;
+        }
+        return xml.substring(contentStart, end).trim();
+    }
+
     private static final class PluginContextImpl implements PluginContext {
         private final PluginDescriptor descriptor;
 
@@ -283,6 +345,11 @@ public final class PluginRuntime {
         @Override
         public void registerScriptApi(String alias, java.util.function.Supplier<Object> factory) {
             REGISTRY.registerScriptApi(alias, factory);
+        }
+
+        @Override
+        public <T> void registerService(Class<T> type, T service) {
+            REGISTRY.registerService(type, service);
         }
 
         @Override

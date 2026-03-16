@@ -700,24 +700,6 @@ public class ScriptSnippetManager {
      * Add built-in data store APIs and plugin-provided script APIs.
      */
     private static void addPmDataStoreApis(DefaultCompletionProvider provider) {
-        provider.addCompletion(new BasicCompletion(provider, "pm.kafka", "Kafka script API"));
-        provider.addCompletion(new BasicCompletion(provider, "pm.kafka.listTopics", "pm.kafka.listTopics(options)"));
-        provider.addCompletion(new BasicCompletion(provider, "pm.kafka.send", "pm.kafka.send(options)"));
-        provider.addCompletion(new BasicCompletion(provider, "pm.kafka.poll", "pm.kafka.poll(options)"));
-        provider.addCompletion(new ShorthandCompletion(provider, "kafka.poll",
-                """
-                const records = pm.kafka.poll({
-                  bootstrapServers: "localhost:9092",
-                  topic: "demo-topic",
-                  groupId: "easy-postman-script",
-                  autoOffsetReset: "earliest",
-                  pollTimeoutMs: 1000
-                });
-                pm.test("Kafka has records", function () {
-                  pm.expect(records.length).to.be.above(0);
-                });""",
-                "Kafka poll + assert"));
-
         provider.addCompletion(new BasicCompletion(provider, "pm.es", "Elasticsearch script API"));
         provider.addCompletion(new BasicCompletion(provider, "pm.elasticsearch", "Elasticsearch script API"));
         provider.addCompletion(new BasicCompletion(provider, "pm.es.request", "pm.es.request(options)"));

@@ -5,7 +5,6 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.panel.toolbox.kafka.KafkaPanel;
 import com.laker.postman.plugin.api.ToolboxContribution;
 import com.laker.postman.plugin.runtime.PluginRuntime;
 import com.laker.postman.util.I18nUtil;
@@ -135,10 +134,8 @@ public class ToolboxPanel extends SingletonBasePanel {
         // 数据库
         regBuiltIn("es", MessageKeys.TOOLBOX_ELASTICSEARCH, "icons/elasticsearch.svg", GRP_DB, new ElasticsearchPanel());
         regBuiltIn("influxdb", MessageKeys.TOOLBOX_INFLUXDB, "icons/influxdb.svg", GRP_DB, new InfluxDbPanel());
-        regBuiltIn("kafka", MessageKeys.TOOLBOX_KAFKA, "icons/kafka.svg", GRP_DB, new KafkaPanel());
         // 开发
         regBuiltIn("diff", MessageKeys.TOOLBOX_DIFF, "icons/file.svg", GRP_DEV, new DiffPanel());
-        regBuiltIn("decompiler", MessageKeys.TOOLBOX_DECOMPILER, "icons/decompile.svg", GRP_DEV, new DecompilerPanel());
         registerPluginTools();
     }
 

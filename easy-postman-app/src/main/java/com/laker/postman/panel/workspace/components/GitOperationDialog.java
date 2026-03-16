@@ -9,12 +9,10 @@ import com.laker.postman.model.GitStatusCheck;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.workspace.WorkspacePanel;
 import com.laker.postman.service.WorkspaceService;
-import com.laker.postman.service.git.SshCredentialsProvider;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.jgit.transport.CredentialsProvider;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -26,8 +24,6 @@ import java.awt.event.ActionListener;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-
-import static com.laker.postman.service.git.GitConflictDetector.checkGitStatus;
 
 /**
  * Git 操作对话框
@@ -465,13 +461,7 @@ public class GitOperationDialog extends JDialog {
             @Override
             protected GitStatusCheck doInBackground() {
                 try {
-                    CredentialsProvider credentialsProvider = null;
-                    SshCredentialsProvider sshCredentialsProvider = null;
-                    if (workspace.getGitAuthType() != null) {
-                        credentialsProvider = workspaceService.getCredentialsProvider(workspace);
-                        sshCredentialsProvider = workspaceService.getSshCredentialsProvider(workspace);
-                    }
-                    return checkGitStatus(workspace.getPath(), operation.name(), credentialsProvider, sshCredentialsProvider);
+                    return workspaceService.checkGitStatus(workspace, operation);
                 } catch (Exception e) {
                     log.error("Failed to check git status", e);
                     return null;

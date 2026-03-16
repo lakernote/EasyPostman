@@ -7,7 +7,7 @@
     <parent>
         <groupId>com.laker.tools</groupId>
         <artifactId>easy-postman-parent</artifactId>
-        <version>4.3.55</version>
+        <version>${revision}</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -26,19 +26,21 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.laker.tools</groupId>
+            <artifactId>easy-postman-plugin-manager</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.formdev</groupId>
             <artifactId>flatlaf</artifactId>
-            <version>${flatlaf.version}</version>
         </dependency>
         <dependency>
             <groupId>com.formdev</groupId>
             <artifactId>flatlaf-extras</artifactId>
-            <version>${flatlaf.version}</version>
         </dependency>
         <dependency>
             <groupId>com.miglayout</groupId>
             <artifactId>miglayout-swing</artifactId>
-            <version>${miglayout.version}</version>
         </dependency>
         <dependency>
             <groupId>cn.hutool</groupId>
@@ -53,18 +55,15 @@
         <dependency>
             <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>${logback-classic.version}</version>
         </dependency>
         <dependency>
             <groupId>com.github.jiconfont</groupId>
@@ -84,34 +83,28 @@
         <dependency>
             <groupId>org.graalvm.polyglot</groupId>
             <artifactId>polyglot</artifactId>
-            <version>${polyglot.version}</version>
         </dependency>
         <dependency>
             <groupId>org.graalvm.polyglot</groupId>
             <artifactId>js</artifactId>
-            <version>${polyglot.version}</version>
             <type>pom</type>
         </dependency>
         <dependency>
             <groupId>org.graalvm.polyglot</groupId>
             <artifactId>js-community</artifactId>
-            <version>${polyglot.version}</version>
             <type>pom</type>
         </dependency>
         <dependency>
             <groupId>org.graalvm.regex</groupId>
             <artifactId>regex</artifactId>
-            <version>${polyglot.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fifesoft</groupId>
             <artifactId>rsyntaxtextarea</artifactId>
-            <version>3.5.4</version>
         </dependency>
         <dependency>
             <groupId>com.fifesoft</groupId>
             <artifactId>autocomplete</artifactId>
-            <version>3.3.2</version>
         </dependency>
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
@@ -143,24 +136,8 @@
             <version>${okhttp.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka-clients</artifactId>
-            <version>${kafka.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jgit</groupId>
-            <artifactId>org.eclipse.jgit</artifactId>
-            <version>${org.eclipse.jgit.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.jgit</groupId>
-            <artifactId>org.eclipse.jgit.ssh.apache</artifactId>
-            <version>${org.eclipse.jgit.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
-            <version>7.8.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -169,14 +146,14 @@
             <version>${okhttp.version}</version>
         </dependency>
         <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.18.0</version>
+        </dependency>
+        <dependency>
             <groupId>io.github.hakky54</groupId>
             <artifactId>ayza-for-pem</artifactId>
             <version>10.0.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.benf</groupId>
-            <artifactId>cfr</artifactId>
-            <version>0.152</version>
         </dependency>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>

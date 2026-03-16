@@ -1,5 +1,7 @@
-/dependency-reduced-pom.xml
-/target/
+dependency-reduced-pom.xml
+**/dependency-reduced-pom.xml
+target/
+**/target/
 /dist/
 /.idea/
 /.vscode/
@@ -15,5 +17,6 @@
 *.ear
 *.iml
 out/
+**/out/
 logs/
 temp/

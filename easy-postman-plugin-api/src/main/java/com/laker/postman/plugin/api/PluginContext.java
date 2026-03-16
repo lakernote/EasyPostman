@@ -11,6 +11,8 @@ public interface PluginContext {
 
     void registerScriptApi(String alias, Supplier<Object> factory);
 
+    <T> void registerService(Class<T> type, T service);
+
     void registerToolboxContribution(ToolboxContribution contribution);
 
     void registerScriptCompletionContributor(ScriptCompletionContributor contributor);

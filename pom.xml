@@ -6,20 +6,22 @@
 
     <groupId>com.laker.tools</groupId>
     <artifactId>easy-postman-parent</artifactId>
-    <version>4.3.55</version>
+    <version>${revision}</version>
     <packaging>pom</packaging>
 
     <modules>
         <module>easy-postman-plugin-api</module>
         <module>easy-postman-plugin-runtime</module>
+        <module>plugins</module>
         <module>easy-postman-app</module>
-        <module>easy-postman-plugin-redis</module>
     </modules>
 
     <properties>
+        <revision>4.3.55</revision>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.build.timestamp.format>yyyy-MM-dd'T'HH:mm:ssXXX</maven.build.timestamp.format>
         <mainClass>com.laker.postman.App</mainClass>
 
         <flatlaf.version>3.7</flatlaf.version>
@@ -37,6 +39,12 @@
         <lombok.version>1.18.42</lombok.version>
         <twelvemonkeys.version>3.12.0</twelvemonkeys.version>
         <kotlin.version>1.9.25</kotlin.version>
+        <rsyntaxtextarea.version>3.5.4</rsyntaxtextarea.version>
+        <autocomplete.version>3.3.2</autocomplete.version>
+        <slf4j.version>2.0.17</slf4j.version>
+        <testng.version>7.8.0</testng.version>
+        <jedis.version>5.2.0</jedis.version>
+        <cfr.version>0.152</cfr.version>
 
         <maven.compiler.plugin.version>3.11.0</maven.compiler.plugin.version>
         <maven.jar.plugin.version>3.4.2</maven.jar.plugin.version>
@@ -46,6 +54,83 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>com.formdev</groupId>
+                <artifactId>flatlaf</artifactId>
+                <version>${flatlaf.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.formdev</groupId>
+                <artifactId>flatlaf-extras</artifactId>
+                <version>${flatlaf.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.miglayout</groupId>
+                <artifactId>miglayout-swing</artifactId>
+                <version>${miglayout.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>tools.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>${logback-classic.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.graalvm.polyglot</groupId>
+                <artifactId>polyglot</artifactId>
+                <version>${polyglot.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.graalvm.polyglot</groupId>
+                <artifactId>js</artifactId>
+                <version>${polyglot.version}</version>
+                <type>pom</type>
+            </dependency>
+            <dependency>
+                <groupId>org.graalvm.polyglot</groupId>
+                <artifactId>js-community</artifactId>
+                <version>${polyglot.version}</version>
+                <type>pom</type>
+            </dependency>
+            <dependency>
+                <groupId>org.graalvm.regex</groupId>
+                <artifactId>regex</artifactId>
+                <version>${polyglot.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fifesoft</groupId>
+                <artifactId>rsyntaxtextarea</artifactId>
+                <version>${rsyntaxtextarea.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fifesoft</groupId>
+                <artifactId>autocomplete</artifactId>
+                <version>${autocomplete.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.testng</groupId>
+                <artifactId>testng</artifactId>
+                <version>${testng.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>redis.clients</groupId>
+                <artifactId>jedis</artifactId>
+                <version>${jedis.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-stdlib</artifactId>

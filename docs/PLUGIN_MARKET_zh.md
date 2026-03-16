@@ -1,5 +1,9 @@
 # EasyPostman 插件市场与模块化方案
 
+Redis 插件的当前落地与本地 / GitHub 使用方式，见：
+
+- `docs/REDIS_PLUGIN_zh.md`
+
 ## 1. 目标
 
 当前 EasyPostman 采用单体 fat jar 打包，新增能力会持续拉大安装包、启动扫描范围和维护成本。结合现有代码结构，更合适的方向不是“做一个复杂平台”，而是先把项目拆成：

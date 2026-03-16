@@ -456,6 +456,10 @@ public class TopMenuBar extends SingletonBaseMenuBar implements IRefreshable {
     private void addGitToolbarIfNeeded() {
         try {
             WorkspaceService workspaceService = WorkspaceService.getInstance();
+            if (!workspaceService.isGitPluginInstalled()) {
+                log.info("Git plugin not installed, skip Git toolbar");
+                return;
+            }
             Workspace currentWorkspace = workspaceService.getCurrentWorkspace();
 
             // 只有当前工作区是 Git 工作区时才显示 Git 工具栏
@@ -597,6 +601,9 @@ public class TopMenuBar extends SingletonBaseMenuBar implements IRefreshable {
 
         try {
             WorkspaceService workspaceService = WorkspaceService.getInstance();
+            if (!workspaceService.isGitPluginInstalled()) {
+                return toolbar;
+            }
             RemoteStatus remoteStatus = workspaceService.getRemoteStatus(workspace.getId());
 
             // Commit 按钮（本地提交，始终显示）

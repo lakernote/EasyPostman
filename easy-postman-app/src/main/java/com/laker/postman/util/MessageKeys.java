@@ -125,7 +125,9 @@ public final class MessageKeys {
     public static final String PLUGIN_MANAGER_REFRESH = "plugin.manager.refresh";
     public static final String PLUGIN_MANAGER_ENABLE = "plugin.manager.enable";
     public static final String PLUGIN_MANAGER_DISABLE = "plugin.manager.disable";
+    public static final String PLUGIN_MANAGER_UNINSTALL = "plugin.manager.uninstall";
     public static final String PLUGIN_MANAGER_DIRECTORY = "plugin.manager.directory";
+    public static final String PLUGIN_MANAGER_CACHE_DIRECTORY = "plugin.manager.cache_directory";
     public static final String PLUGIN_MANAGER_EMPTY = "plugin.manager.empty";
     public static final String PLUGIN_MANAGER_STATUS_LOADED = "plugin.manager.status.loaded";
     public static final String PLUGIN_MANAGER_STATUS_DISABLED = "plugin.manager.status.disabled";
@@ -135,6 +137,10 @@ public final class MessageKeys {
     public static final String PLUGIN_MANAGER_FILE_CHOOSER = "plugin.manager.file_chooser";
     public static final String PLUGIN_MANAGER_INVALID_PLUGIN = "plugin.manager.invalid_plugin";
     public static final String PLUGIN_MANAGER_INSTALL_SUCCESS = "plugin.manager.install_success";
+    public static final String PLUGIN_MANAGER_UNINSTALL_CONFIRM = "plugin.manager.uninstall_confirm";
+    public static final String PLUGIN_MANAGER_UNINSTALL_SUCCESS = "plugin.manager.uninstall_success";
+    public static final String PLUGIN_MANAGER_UNINSTALL_FAILED = "plugin.manager.uninstall_failed";
+    public static final String PLUGIN_MANAGER_UNINSTALL_TITLE = "plugin.manager.uninstall_title";
     public static final String PLUGIN_MANAGER_OVERWRITE_CONFIRM = "plugin.manager.overwrite_confirm";
     public static final String PLUGIN_MANAGER_OVERWRITE_TITLE = "plugin.manager.overwrite_title";
     public static final String PLUGIN_MANAGER_TAB_INSTALLED = "plugin.manager.tab.installed";
@@ -144,6 +150,9 @@ public final class MessageKeys {
     public static final String PLUGIN_MANAGER_MARKET_INSTALL = "plugin.manager.market.install";
     public static final String PLUGIN_MANAGER_MARKET_OPEN_HOMEPAGE = "plugin.manager.market.open_homepage";
     public static final String PLUGIN_MANAGER_MARKET_CATALOG_URL = "plugin.manager.market.catalog_url";
+    public static final String PLUGIN_MANAGER_MARKET_BROWSE_CATALOG = "plugin.manager.market.browse_catalog";
+    public static final String PLUGIN_MANAGER_MARKET_CATALOG_FILE_CHOOSER = "plugin.manager.market.catalog_file_chooser";
+    public static final String PLUGIN_MANAGER_MARKET_CATALOG_MISSING = "plugin.manager.market.catalog_missing";
     public static final String PLUGIN_MANAGER_MARKET_HINT = "plugin.manager.market.hint";
     public static final String PLUGIN_MANAGER_MARKET_EMPTY = "plugin.manager.market.empty";
     public static final String PLUGIN_MANAGER_MARKET_LOADING = "plugin.manager.market.loading";

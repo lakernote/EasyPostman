@@ -88,9 +88,9 @@ public class PostmanApiContext {
     public TestApi test;
 
     /**
-     * Kafka API - 对应 pm.kafka
+     * Kafka API - 保留 pm.kafka 兼容别名，实际由插件在运行时注入。
      */
-    public ScriptKafkaApi kafka;
+    public Object kafka;
 
     /**
      * Redis API - 保留 pm.redis 兼容别名，实际由插件在运行时注入。
@@ -121,7 +121,6 @@ public class PostmanApiContext {
         this.env = environment; // Postman 中 env 和 environment 是同一个对象
         this.cookies = new CookieApi(); // 初始化 cookies
         this.test = new TestApi(this); // 初始化 test API
-        this.kafka = new ScriptKafkaApi();
         this.elasticsearch = new ScriptElasticsearchApi();
         this.es = this.elasticsearch;
         this.influxdb = new ScriptInfluxDbApi();
@@ -134,6 +133,9 @@ public class PostmanApiContext {
             return;
         }
         pluginApis.put(alias, api);
+        if ("kafka".equals(alias)) {
+            this.kafka = api;
+        }
         if ("redis".equals(alias)) {
             this.redis = api;
         }

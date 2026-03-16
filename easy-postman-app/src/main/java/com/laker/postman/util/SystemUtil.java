@@ -117,24 +117,84 @@ public class SystemUtil {
         if (version != null && !version.isBlank()) {
             return "v" + version;
         }
-        // 开发环境下读取 pom.xml
         try {
-            Path pom = Paths.get("pom.xml");
-            if (Files.exists(pom)) {
-                String xml = Files.readString(pom);
-                int idx = xml.indexOf("<version>");
-                if (idx > 0) {
-                    int start = idx + "<version>".length();
-                    int end = xml.indexOf("</version>", start);
-                    if (end > start) {
-                        version = xml.substring(start, end).trim();
-                        return "v" + version;
-                    }
-                }
+            version = resolveVersionFromPom(Paths.get("pom.xml"));
+            if (version != null && !version.isBlank()) {
+                return "v" + version;
             }
         } catch (Exception ignored) {
         }
         return "开发环境";
+    }
+
+    private static String resolveVersionFromPom(Path pom) {
+        Path current = pom;
+        for (int depth = 0; depth < 4 && current != null; depth++) {
+            if (Files.exists(current)) {
+                String xml = readPom(current);
+                String version = readXmlTag(xml, "version");
+                String resolved = resolveVersionToken(version, xml, current);
+                if (resolved != null && !resolved.contains("${")) {
+                    return resolved;
+                }
+                String revision = readXmlTag(xml, "revision");
+                if (revision != null && !revision.isBlank()) {
+                    return revision.trim();
+                }
+                String relativePath = readXmlTag(xml, "relativePath");
+                if (relativePath != null && !relativePath.isBlank()) {
+                    current = current.getParent().resolve(relativePath.trim()).normalize();
+                    continue;
+                }
+            }
+            current = current.getParent() == null ? null : current.getParent().getParent() == null ? null : current.getParent().getParent().resolve("pom.xml");
+        }
+        return null;
+    }
+
+    private static String resolveVersionToken(String version, String xml, Path currentPom) {
+        if (version == null || version.isBlank()) {
+            return null;
+        }
+        String trimmed = version.trim();
+        if (!trimmed.startsWith("${") || !trimmed.endsWith("}")) {
+            return trimmed;
+        }
+        String propertyName = trimmed.substring(2, trimmed.length() - 1);
+        String propertyValue = readXmlTag(xml, propertyName);
+        if (propertyValue != null && !propertyValue.isBlank()) {
+            return propertyValue.trim();
+        }
+        if ("revision".equals(propertyName)) {
+            Path parentPom = currentPom.getParent() == null ? null : currentPom.getParent().getParent();
+            if (parentPom != null) {
+                return resolveVersionFromPom(parentPom.resolve("pom.xml"));
+            }
+        }
+        return trimmed;
+    }
+
+    private static String readPom(Path pom) {
+        try {
+            return Files.readString(pom);
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    private static String readXmlTag(String xml, String tagName) {
+        String openTag = "<" + tagName + ">";
+        String closeTag = "</" + tagName + ">";
+        int start = xml.indexOf(openTag);
+        if (start < 0) {
+            return null;
+        }
+        int contentStart = start + openTag.length();
+        int end = xml.indexOf(closeTag, contentStart);
+        if (end <= contentStart) {
+            return null;
+        }
+        return xml.substring(contentStart, end).trim();
     }
 
 

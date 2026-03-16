@@ -105,8 +105,8 @@ public final class PluginRuntime {
         return PluginRuntimePaths.managedPluginDir();
     }
 
-    public static Path getPluginCacheDir() {
-        return PluginRuntimePaths.pluginCacheDir();
+    public static Path getPluginPackageDir() {
+        return PluginRuntimePaths.pluginPackageDir();
     }
 
     public static PluginDescriptor inspectPluginJar(Path jarPath) throws IOException {
@@ -196,8 +196,8 @@ public final class PluginRuntime {
         return listPluginsFromDirectory(getManagedPluginDir());
     }
 
-    public static List<PluginFileInfo> getCachedPluginFiles() {
-        return listPluginsFromDirectory(getPluginCacheDir());
+    public static List<PluginFileInfo> getPluginPackageFiles() {
+        return listPluginsFromDirectory(getPluginPackageDir());
     }
 
     private static Set<Path> resolvePluginDirs() {
@@ -341,7 +341,7 @@ public final class PluginRuntime {
             return;
         }
 
-        // 只清理托管安装目录里的副本，不碰 cache 包
+        // 只清理托管安装目录里的副本，不碰 packages 里的本地插件包
         for (PluginFileInfo info : getManagedPluginFiles()) {
             if (!pendingIds.contains(info.descriptor().id())) {
                 continue;

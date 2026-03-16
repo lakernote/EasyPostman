@@ -44,8 +44,8 @@ public class PluginManagementService {
         return PluginRuntime.getManagedPluginDir();
     }
 
-    public static Path getPluginCacheDir() {
-        return PluginRuntime.getPluginCacheDir();
+    public static Path getPluginPackageDir() {
+        return PluginRuntime.getPluginPackageDir();
     }
 
     public static List<PluginFileInfo> getInstalledPlugins() {

@@ -24,8 +24,8 @@ final class PluginRuntimePaths {
         return pluginDir;
     }
 
-    static Path pluginCacheDir() {
-        Path pluginDir = dataRoot().resolve("plugins").resolve("cache");
+    static Path pluginPackageDir() {
+        Path pluginDir = dataRoot().resolve("plugins").resolve("packages");
         try {
             Files.createDirectories(pluginDir);
         } catch (Exception ignored) {
@@ -44,11 +44,6 @@ final class PluginRuntimePaths {
 
     private static Path dataRoot() {
         if (cachedDataPath != null) {
-            return Paths.get(cachedDataPath);
-        }
-        String portable = System.getProperty("easyPostman.data.dir");
-        if (portable != null && !portable.isBlank()) {
-            cachedDataPath = Paths.get(portable.trim()).toAbsolutePath().normalize().toString();
             return Paths.get(cachedDataPath);
         }
 

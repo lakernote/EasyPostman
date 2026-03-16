@@ -58,20 +58,20 @@ public class PluginInstallerService {
     private static PluginFileInfo installPreparedJar(Path sourceJar, PluginDescriptor descriptor, boolean removeLegacyVersions)
             throws IOException {
         Path targetDir = PluginRuntime.getManagedPluginDir();
-        Path cacheDir = PluginRuntime.getPluginCacheDir();
+        Path packageDir = PluginRuntime.getPluginPackageDir();
         Files.createDirectories(targetDir);
-        Files.createDirectories(cacheDir);
+        Files.createDirectories(packageDir);
         Path targetPath = targetDir.resolve(buildTargetFileName(descriptor));
-        Path cachePath = cacheDir.resolve(buildTargetFileName(descriptor));
-        if (!sourceJar.toAbsolutePath().normalize().equals(cachePath.toAbsolutePath().normalize())) {
-            Files.copy(sourceJar, cachePath, StandardCopyOption.REPLACE_EXISTING);
+        Path packagePath = packageDir.resolve(buildTargetFileName(descriptor));
+        if (!sourceJar.toAbsolutePath().normalize().equals(packagePath.toAbsolutePath().normalize())) {
+            Files.copy(sourceJar, packagePath, StandardCopyOption.REPLACE_EXISTING);
         }
         if (!sourceJar.toAbsolutePath().normalize().equals(targetPath.toAbsolutePath().normalize())) {
             Files.copy(sourceJar, targetPath, StandardCopyOption.REPLACE_EXISTING);
         }
         if (removeLegacyVersions) {
             cleanupLegacyVersions(descriptor.id(), targetPath);
-            cleanupLegacyCacheVersions(descriptor.id(), cachePath);
+            cleanupLegacyPackageVersions(descriptor.id(), packagePath);
         }
         PluginRuntime.setPluginEnabled(descriptor.id(), true);
         return new PluginFileInfo(descriptor, targetPath, false);
@@ -121,16 +121,16 @@ public class PluginInstallerService {
         }
     }
 
-    private static void cleanupLegacyCacheVersions(String pluginId, Path keepPath) {
-        List<PluginFileInfo> cachedPlugins = PluginRuntime.getCachedPluginFiles();
-        for (PluginFileInfo info : cachedPlugins) {
+    private static void cleanupLegacyPackageVersions(String pluginId, Path keepPath) {
+        List<PluginFileInfo> packagedPlugins = PluginRuntime.getPluginPackageFiles();
+        for (PluginFileInfo info : packagedPlugins) {
             if (!pluginId.equals(info.descriptor().id()) || info.jarPath().equals(keepPath)) {
                 continue;
             }
             try {
                 Files.deleteIfExists(info.jarPath());
             } catch (IOException e) {
-                log.warn("Failed to delete legacy cached plugin file: {}", info.jarPath(), e);
+                log.warn("Failed to delete legacy packaged plugin file: {}", info.jarPath(), e);
             }
         }
     }

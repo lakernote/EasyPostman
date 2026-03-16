@@ -51,7 +51,7 @@ public class PluginManagerDialog extends JDialog {
     private final JLabel statusMessageLabel = createMutedLabel();
 
     private final JTextArea directoryArea = createReadOnlyArea(2);
-    private final JTextArea cacheDirectoryArea = createReadOnlyArea(2);
+    private final JTextArea packageDirectoryArea = createReadOnlyArea(2);
     private final JTextField catalogUrlField = new JTextField();
 
     private final JToggleButton installedViewButton = new JToggleButton(
@@ -283,7 +283,7 @@ public class PluginManagerDialog extends JDialog {
         ), "grow");
         panel.add(createKeyValueBlock(
                 I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_CACHE_DIRECTORY, ""),
-                cacheDirectoryArea
+                packageDirectoryArea
         ), "grow");
         return panel;
     }
@@ -476,7 +476,7 @@ public class PluginManagerDialog extends JDialog {
     private void reloadPlugins(String preferredPluginId) {
         Path pluginDir = PluginManagementService.getManagedPluginDir();
         directoryArea.setText(pluginDir.toString());
-        cacheDirectoryArea.setText(PluginManagementService.getPluginCacheDir().toString());
+        packageDirectoryArea.setText(PluginManagementService.getPluginPackageDir().toString());
 
         installedListModel.clear();
         List<PluginFileInfo> plugins = PluginManagementService.getInstalledPlugins();

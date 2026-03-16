@@ -166,7 +166,7 @@ easy-postman-plugins/plugin-redis/target/plugin-market/offline/easy-postman-plug
 │   ├── plugin-script-kafka/
 │   │   └── 1.2.0/
 │   └── installed.json
-└── cache/
+└── packages/
 ```
 
 ### 6.2 升级流程

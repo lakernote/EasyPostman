@@ -18,7 +18,9 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 工具箱面板 - 左侧导航栏 + 右侧内容区（CardLayout）
@@ -197,25 +199,36 @@ public class ToolboxPanel extends SingletonBasePanel {
     private void rebuildNav() {
         navPanel.removeAll();
         navPanel.add(Box.createVerticalStrut(4));
-        String curGroup = null;
-        for (ToolEntry t : filtered) {
-            if (!t.groupId().equals(curGroup)) {
-                curGroup = t.groupId();
-                if (navPanel.getComponentCount() > 1) {
-                    navPanel.add(Box.createVerticalStrut(2));
-                    JSeparator sep = new JSeparator();
-                    sep.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
-                    navPanel.add(sep);
-                    navPanel.add(Box.createVerticalStrut(2));
-                }
-                JLabel grpLbl = new JLabel(t.groupDisplayName());
-                grpLbl.setFont(grpLbl.getFont().deriveFont(Font.BOLD, 9.5f));
-                grpLbl.setForeground(UIManager.getColor("Label.disabledForeground"));
-                grpLbl.setBorder(new EmptyBorder(4, 10, 2, 8));
-                grpLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
-                navPanel.add(grpLbl);
+        Map<String, List<ToolEntry>> groupedTools = new LinkedHashMap<>();
+        for (ToolEntry tool : filtered) {
+            groupedTools.computeIfAbsent(tool.groupId(), ignored -> new ArrayList<>()).add(tool);
+        }
+
+        boolean firstGroup = true;
+        for (List<ToolEntry> groupTools : groupedTools.values()) {
+            if (groupTools.isEmpty()) {
+                continue;
             }
-            navPanel.add(buildNavItem(t));
+            if (!firstGroup) {
+                navPanel.add(Box.createVerticalStrut(2));
+                JSeparator sep = new JSeparator();
+                sep.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
+                navPanel.add(sep);
+                navPanel.add(Box.createVerticalStrut(2));
+            }
+            firstGroup = false;
+
+            ToolEntry firstTool = groupTools.get(0);
+            JLabel grpLbl = new JLabel(firstTool.groupDisplayName());
+            grpLbl.setFont(grpLbl.getFont().deriveFont(Font.BOLD, 9.5f));
+            grpLbl.setForeground(UIManager.getColor("Label.disabledForeground"));
+            grpLbl.setBorder(new EmptyBorder(4, 10, 2, 8));
+            grpLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
+            navPanel.add(grpLbl);
+
+            for (ToolEntry tool : groupTools) {
+                navPanel.add(buildNavItem(tool));
+            }
         }
         navPanel.add(Box.createVerticalGlue());
         navPanel.revalidate();

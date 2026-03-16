@@ -48,7 +48,7 @@ class PrimaryButton extends JButton {
         initButton(iconPath, Color.WHITE);
         setForeground(Color.WHITE);
         putClientProperty("JButton.buttonType", "roundRect");
-        putClientProperty(FlatClientProperties.STYLE, "background:#1677ff; borderWidth:0; focusedBorderWidth:0");
+        putClientProperty(FlatClientProperties.STYLE, "background:#1677ff; borderWidth:0");
     }
 
     private void initButton(String iconPath, Color iconColor) {

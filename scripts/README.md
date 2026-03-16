@@ -9,6 +9,7 @@
 
 - 本地构建应用与插件：`./scripts/plugin-dev.sh build <plugin|all>`
 - 本地验证插件安装链路：`./scripts/plugin-dev.sh prepare <plugin>`
+- 更新官方在线 catalog 并同步应用内置 catalog：`./scripts/update-plugin-catalog.sh`
 - 保留兼容入口：`./scripts/verify-redis-plugin-macos.sh`
 
 更多说明见：

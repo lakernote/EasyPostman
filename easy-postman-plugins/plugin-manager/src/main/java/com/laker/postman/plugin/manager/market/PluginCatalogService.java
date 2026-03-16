@@ -31,6 +31,8 @@ public class PluginCatalogService {
             "https://raw.githubusercontent.com/lakernote/easy-postman/master/plugin-catalog/catalog-github.json";
     public static final String OFFICIAL_GITEE_CATALOG_URL =
             "https://gitee.com/lakernote/easy-postman/raw/master/plugin-catalog/catalog-gitee.json";
+    public static final String OFFICIAL_GITHUB_CATALOG_RESOURCE = "/plugin-catalog/catalog-github.json";
+    public static final String OFFICIAL_GITEE_CATALOG_RESOURCE = "/plugin-catalog/catalog-gitee.json";
     private static final String CATALOG_URL_PROPERTY = "easyPostman.plugins.catalogUrl";
     private static final int CONNECT_TIMEOUT = 10000;
     private static final int READ_TIMEOUT = 10000;
@@ -56,6 +58,17 @@ public class PluginCatalogService {
         return OFFICIAL_GITEE_CATALOG_URL;
     }
 
+    public static String detectOfficialCatalogSource(String catalogUrl) {
+        String normalized = normalizeCatalogLocation(catalogUrl);
+        if (normalized.equals(normalizeCatalogLocation(OFFICIAL_GITHUB_CATALOG_URL))) {
+            return "github";
+        }
+        if (normalized.equals(normalizeCatalogLocation(OFFICIAL_GITEE_CATALOG_URL))) {
+            return "gitee";
+        }
+        return "";
+    }
+
     public static String normalizeCatalogLocation(String catalogUrl) {
         return normalizeLocation(catalogUrl);
     }
@@ -66,7 +79,27 @@ public class PluginCatalogService {
             throw new IllegalArgumentException("Catalog URL is blank");
         }
         String json = readText(normalizedUrl);
-        URI catalogBaseUri = URI.create(normalizedUrl).resolve(".");
+        return parseCatalog(json, URI.create(normalizedUrl).resolve("."));
+    }
+
+    public static List<PluginCatalogEntry> loadBundledOfficialCatalog(String source) throws Exception {
+        String resolvedSource = "github".equalsIgnoreCase(source) ? "github" : "gitee";
+        String resourcePath = "github".equalsIgnoreCase(resolvedSource)
+                ? OFFICIAL_GITHUB_CATALOG_RESOURCE
+                : OFFICIAL_GITEE_CATALOG_RESOURCE;
+        try (InputStream inputStream = PluginCatalogService.class.getResourceAsStream(resourcePath)) {
+            if (inputStream == null) {
+                throw new IllegalStateException("Bundled catalog resource not found: " + resourcePath);
+            }
+            try (Scanner scanner = new Scanner(inputStream, StandardCharsets.UTF_8)) {
+                String json = scanner.useDelimiter("\\A").hasNext() ? scanner.next() : "";
+                String baseUrl = getOfficialCatalogUrl(resolvedSource);
+                return parseCatalog(json, URI.create(baseUrl).resolve("."));
+            }
+        }
+    }
+
+    private static List<PluginCatalogEntry> parseCatalog(String json, URI catalogBaseUri) throws Exception {
         JsonNode root = MAPPER.readTree(json);
         JsonNode plugins = root.get("plugins");
         List<PluginCatalogEntry> entries = new ArrayList<>();

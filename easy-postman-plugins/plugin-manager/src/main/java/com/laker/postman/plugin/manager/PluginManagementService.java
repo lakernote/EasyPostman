@@ -40,8 +40,16 @@ public class PluginManagementService {
         return PluginCatalogService.getOfficialCatalogUrl(source);
     }
 
+    public static String detectOfficialCatalogSource(String catalogUrl) {
+        return PluginCatalogService.detectOfficialCatalogSource(catalogUrl);
+    }
+
     public static List<PluginCatalogEntry> loadCatalog(String catalogUrl) throws Exception {
         return PluginCatalogService.loadCatalog(catalogUrl);
+    }
+
+    public static List<PluginCatalogEntry> loadBundledOfficialCatalog(String source) throws Exception {
+        return PluginCatalogService.loadBundledOfficialCatalog(source);
     }
 
     public static Path getManagedPluginDir() {

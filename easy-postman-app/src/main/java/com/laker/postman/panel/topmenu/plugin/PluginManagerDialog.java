@@ -98,6 +98,9 @@ public class PluginManagerDialog extends JDialog {
     private Map<String, PluginFileInfo> installedPluginMap = Map.of();
     private boolean marketBusy;
 
+    private record CatalogLoadResult(List<PluginCatalogEntry> entries, boolean builtinFallback) {
+    }
+
     private PluginManagerDialog(Window owner) {
         super(owner, I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_TITLE), ModalityType.APPLICATION_MODAL);
         initUI();
@@ -672,17 +675,37 @@ public class PluginManagerDialog extends JDialog {
 
         showView(VIEW_MARKET);
         setMarketBusy(true, I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_LOADING));
-        new SwingWorker<List<PluginCatalogEntry>, Void>() {
+        new SwingWorker<CatalogLoadResult, Void>() {
             @Override
-            protected List<PluginCatalogEntry> doInBackground() throws Exception {
-                return PluginManagementService.loadCatalog(catalogUrl);
+            protected CatalogLoadResult doInBackground() throws Exception {
+                try {
+                    return new CatalogLoadResult(PluginManagementService.loadCatalog(catalogUrl), false);
+                } catch (Exception remoteError) {
+                    String source = PluginManagementService.detectOfficialCatalogSource(catalogUrl);
+                    if (source.isBlank()) {
+                        throw remoteError;
+                    }
+                    log.warn("Failed to load official remote plugin catalog, falling back to bundled catalog: {}",
+                            catalogUrl, remoteError);
+                    try {
+                        return new CatalogLoadResult(PluginManagementService.loadBundledOfficialCatalog(source), true);
+                    } catch (Exception fallbackError) {
+                        remoteError.addSuppressed(fallbackError);
+                        throw remoteError;
+                    }
+                }
             }
 
             @Override
             protected void done() {
                 try {
-                    applyMarketEntries(get());
-                    setStatusMessage(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_HINT));
+                    CatalogLoadResult result = get();
+                    applyMarketEntries(result.entries());
+                    if (result.builtinFallback()) {
+                        setStatusMessage(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_LOAD_FALLBACK_BUILTIN));
+                    } else {
+                        setStatusMessage(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_HINT));
+                    }
                 } catch (Exception e) {
                     log.error("Failed to load plugin catalog: {}", catalogUrl, e);
                     setMarketPlaceholder(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_LOAD_FAILED));

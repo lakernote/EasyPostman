@@ -794,7 +794,7 @@ public class WorkspacePanel extends SingletonBasePanel {
     /**
      * 记录Git操作结果到日志区域
      */
-    public void logGitOperationResult(WorkspaceService.GitOperationResult result) {
+    public void logGitOperationResult(GitOperationResult result) {
         if (logArea != null) {
             SwingUtilities.invokeLater(() -> {
                 SimpleDateFormat sdf = new SimpleDateFormat(HH_MM_SS);

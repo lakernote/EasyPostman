@@ -418,10 +418,7 @@ public class DecompilerPanel extends JPanel {
         String fileName = file.getName().toLowerCase();
         if (!fileName.endsWith(JAR_EXTENSION) && !fileName.endsWith(CLASS_EXTENSION) &&
                 !fileName.endsWith(ZIP_EXTENSION) && !fileName.endsWith(WAR_EXTENSION)) {
-            JOptionPane.showMessageDialog(this,
-                    I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_UNSUPPORTED_FILE),
-                    I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_ERROR),
-                    JOptionPane.ERROR_MESSAGE);
+            NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_UNSUPPORTED_FILE));
             return;
         }
 
@@ -448,10 +445,9 @@ public class DecompilerPanel extends JPanel {
                 } catch (Exception e) {
                     log.error("Failed to load file: {}", file.getAbsolutePath(), e);
                     SwingUtilities.invokeLater(() -> {
-                        JOptionPane.showMessageDialog(DecompilerPanel.this,
-                                I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_LOAD_ERROR) + ": " + e.getMessage(),
-                                I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_ERROR),
-                                JOptionPane.ERROR_MESSAGE);
+                        NotificationUtil.showError(
+                                I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_LOAD_ERROR) + ": " + e.getMessage()
+                        );
                     });
                 }
                 return null;

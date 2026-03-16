@@ -40,13 +40,22 @@ public class IconUtil {
      * @return SVG 图标
      */
     public static FlatSVGIcon create(String iconPath, int width, int height) {
-        return new FlatSVGIcon(iconPath, width, height);
+        return create(iconPath, width, height, null);
     }
 
     public static FlatSVGIcon create(String iconPath, int width, int height, ClassLoader classLoader) {
-        return classLoader == null
-                ? create(iconPath, width, height)
-                : new FlatSVGIcon(iconPath, width, height, classLoader);
+        return new FlatSVGIcon(iconPath, width, height, resolveClassLoader(classLoader));
+    }
+
+    private static ClassLoader resolveClassLoader(ClassLoader classLoader) {
+        if (classLoader != null) {
+            return classLoader;
+        }
+        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+        if (contextClassLoader != null) {
+            return contextClassLoader;
+        }
+        return IconUtil.class.getClassLoader();
     }
 
     /**

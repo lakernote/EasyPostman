@@ -11,29 +11,34 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <!--
-        插件运行时层：
-        负责插件 jar 的扫描、描述符解析、加载、状态持久化和注册表管理。
-     -->
-    <artifactId>easy-postman-plugin-runtime</artifactId>
+    <artifactId>easy-postman-plugin-ui</artifactId>
     <packaging>jar</packaging>
 
     <dependencies>
-        <!-- 运行时建立在稳定 SPI 之上 -->
-        <dependency>
-            <groupId>com.laker.tools</groupId>
-            <artifactId>easy-postman-plugin-api</artifactId>
-            <version>${project.version}</version>
-        </dependency>
         <dependency>
             <groupId>com.laker.tools</groupId>
             <artifactId>easy-postman-plugin-bridge</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <!-- 插件用户配置（禁用列表、待卸载列表等）走 JSON 存储 -->
         <dependency>
-            <groupId>tools.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
+            <groupId>com.formdev</groupId>
+            <artifactId>flatlaf</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.formdev</groupId>
+            <artifactId>flatlaf-extras</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.miglayout</groupId>
+            <artifactId>miglayout-swing</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fifesoft</groupId>
+            <artifactId>rsyntaxtextarea</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fifesoft</groupId>
+            <artifactId>autocomplete</artifactId>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -43,11 +48,6 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

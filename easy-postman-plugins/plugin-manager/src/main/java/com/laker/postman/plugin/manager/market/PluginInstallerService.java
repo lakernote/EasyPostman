@@ -48,6 +48,11 @@ public class PluginInstallerService {
             if (!entry.id().equals(descriptor.id())) {
                 throw new IllegalStateException("Plugin id mismatch: " + entry.id() + " != " + descriptor.id());
             }
+            if (entry.version() != null
+                    && !entry.version().isBlank()
+                    && !entry.version().equals(descriptor.version())) {
+                throw new IllegalStateException("Plugin version mismatch: " + entry.version() + " != " + descriptor.version());
+            }
             verifySha256(tempJar, entry.sha256());
             return installPreparedJar(tempJar, descriptor, true);
         } finally {

@@ -3,6 +3,7 @@ package com.laker.postman.plugin.git;
 import com.laker.postman.model.GitAuthType;
 import com.laker.postman.model.GitCommitInfo;
 import com.laker.postman.model.GitOperation;
+import com.laker.postman.model.GitOperationResult;
 import com.laker.postman.model.GitStatusCheck;
 import com.laker.postman.model.GitRepoSource;
 import com.laker.postman.model.RemoteStatus;
@@ -11,7 +12,6 @@ import com.laker.postman.model.WorkspaceType;
 import com.laker.postman.plugin.bridge.GitPluginService;
 import com.laker.postman.plugin.git.internal.GitConflictDetector;
 import com.laker.postman.plugin.git.internal.SshCredentialsProvider;
-import com.laker.postman.service.WorkspaceService;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.CloneCommand;
 import org.eclipse.jgit.api.Git;
@@ -97,9 +97,9 @@ public class GitWorkspacePluginService implements GitPluginService {
     }
 
     @Override
-    public WorkspaceService.GitOperationResult pullUpdates(Workspace workspace) throws Exception {
+    public GitOperationResult pullUpdates(Workspace workspace) throws Exception {
         ensureGitWorkspace(workspace);
-        WorkspaceService.GitOperationResult result = new WorkspaceService.GitOperationResult();
+        GitOperationResult result = new GitOperationResult();
         result.operationType = "Pull";
 
         try (Git git = Git.open(new File(workspace.getPath()))) {
@@ -208,9 +208,9 @@ public class GitWorkspacePluginService implements GitPluginService {
     }
 
     @Override
-    public WorkspaceService.GitOperationResult pushChanges(Workspace workspace) throws Exception {
+    public GitOperationResult pushChanges(Workspace workspace) throws Exception {
         ensureGitWorkspace(workspace);
-        WorkspaceService.GitOperationResult result = new WorkspaceService.GitOperationResult();
+        GitOperationResult result = new GitOperationResult();
         result.operationType = "Push";
 
         try (Git git = Git.open(new File(workspace.getPath()))) {
@@ -324,9 +324,9 @@ public class GitWorkspacePluginService implements GitPluginService {
     }
 
     @Override
-    public WorkspaceService.GitOperationResult forcePushChanges(Workspace workspace) throws Exception {
+    public GitOperationResult forcePushChanges(Workspace workspace) throws Exception {
         ensureGitWorkspace(workspace);
-        WorkspaceService.GitOperationResult result = new WorkspaceService.GitOperationResult();
+        GitOperationResult result = new GitOperationResult();
         result.operationType = "Force Push";
 
         try (Git git = Git.open(new File(workspace.getPath()))) {
@@ -364,9 +364,9 @@ public class GitWorkspacePluginService implements GitPluginService {
     }
 
     @Override
-    public WorkspaceService.GitOperationResult stashChanges(Workspace workspace) throws Exception {
+    public GitOperationResult stashChanges(Workspace workspace) throws Exception {
         ensureGitWorkspace(workspace);
-        WorkspaceService.GitOperationResult result = new WorkspaceService.GitOperationResult();
+        GitOperationResult result = new GitOperationResult();
         result.operationType = "Stash";
 
         try (Git git = Git.open(new File(workspace.getPath()))) {
@@ -390,9 +390,9 @@ public class GitWorkspacePluginService implements GitPluginService {
     }
 
     @Override
-    public WorkspaceService.GitOperationResult popStashChanges(Workspace workspace) throws Exception {
+    public GitOperationResult popStashChanges(Workspace workspace) throws Exception {
         ensureGitWorkspace(workspace);
-        WorkspaceService.GitOperationResult result = new WorkspaceService.GitOperationResult();
+        GitOperationResult result = new GitOperationResult();
         result.operationType = "Pop Stash";
 
         try (Git git = Git.open(new File(workspace.getPath()))) {
@@ -419,9 +419,9 @@ public class GitWorkspacePluginService implements GitPluginService {
     }
 
     @Override
-    public WorkspaceService.GitOperationResult forcePullUpdates(Workspace workspace) throws Exception {
+    public GitOperationResult forcePullUpdates(Workspace workspace) throws Exception {
         ensureGitWorkspace(workspace);
-        WorkspaceService.GitOperationResult result = new WorkspaceService.GitOperationResult();
+        GitOperationResult result = new GitOperationResult();
         result.operationType = "Force Pull";
 
         try (Git git = Git.open(new File(workspace.getPath()))) {
@@ -457,9 +457,9 @@ public class GitWorkspacePluginService implements GitPluginService {
     }
 
     @Override
-    public WorkspaceService.GitOperationResult commitChanges(Workspace workspace, String message) throws Exception {
+    public GitOperationResult commitChanges(Workspace workspace, String message) throws Exception {
         ensureGitWorkspace(workspace);
-        WorkspaceService.GitOperationResult result = new WorkspaceService.GitOperationResult();
+        GitOperationResult result = new GitOperationResult();
         result.operationType = "Commit";
 
         try (Git git = Git.open(new File(workspace.getPath()))) {
@@ -608,9 +608,9 @@ public class GitWorkspacePluginService implements GitPluginService {
     }
 
     @Override
-    public WorkspaceService.GitOperationResult restoreToCommit(Workspace workspace, String commitId, boolean createBackup) throws Exception {
+    public GitOperationResult restoreToCommit(Workspace workspace, String commitId, boolean createBackup) throws Exception {
         ensureGitWorkspace(workspace);
-        WorkspaceService.GitOperationResult result = new WorkspaceService.GitOperationResult();
+        GitOperationResult result = new GitOperationResult();
         String backupCommitId = null;
 
         try (Git git = Git.open(new File(workspace.getPath()))) {

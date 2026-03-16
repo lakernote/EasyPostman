@@ -5,6 +5,7 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.StepIndicator;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.GitOperation;
+import com.laker.postman.model.GitOperationResult;
 import com.laker.postman.model.GitStatusCheck;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.workspace.WorkspacePanel;
@@ -750,7 +751,7 @@ public class GitOperationDialog extends JDialog {
     /**
      * 通知 WorkspacePanel 记录 Git 操作结果
      */
-    private void notifyWorkspacePanel(WorkspaceService.GitOperationResult result) {
+    private void notifyWorkspacePanel(GitOperationResult result) {
         SwingUtilities.invokeLater(() -> {
             try {
                 WorkspacePanel workspacePanel =

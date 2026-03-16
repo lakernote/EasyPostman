@@ -72,6 +72,24 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Validate release source（校验默认分支）
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          DEFAULT_BRANCH="${{ github.event.repository.default_branch }}"
+          CURRENT_REF="${{ github.ref_name }}"
+
+          if [ "$CURRENT_REF" != "$DEFAULT_BRANCH" ]; then
+            echo "Plugin release is only allowed from the default branch: ${DEFAULT_BRANCH}" >&2
+            exit 1
+          fi
+
+          if [ "${{ inputs.dry_run }}" != "true" ] && [ "${{ inputs.update_github_catalog }}" != "true" ]; then
+            echo "Official plugin releases must update the GitHub catalog." >&2
+            exit 1
+          fi
+
       - name: Compute metadata（计算元数据）
         id: meta
         shell: bash
@@ -143,7 +161,7 @@ jobs:
         run: |
           set -euo pipefail
           mvn -B \
-            -pl "easy-postman-app,${{ needs.prepare-context.outputs.module_path }}" \
+            -pl "${{ needs.prepare-context.outputs.module_path }}" \
             -am \
             clean package \
             -DskipTests
@@ -172,6 +190,60 @@ jobs:
           printf '%s  %s\n' "$JAR_SHA256" "${{ needs.prepare-context.outputs.jar_name }}" > "$SHA_FILE"
 
           echo "jar_sha256=${JAR_SHA256}" >> "$GITHUB_OUTPUT"
+
+      - name: Validate descriptor metadata（校验 tag/pom/descriptor 一致性）
+        shell: bash
+        env:
+          EXPECTED_PLUGIN_ID: ${{ needs.prepare-context.outputs.plugin_id }}
+          EXPECTED_PLUGIN_VERSION: ${{ needs.prepare-context.outputs.plugin_version }}
+          EXPECTED_MIN_APP_VERSION: ${{ needs.prepare-context.outputs.min_app_version }}
+          EXPECTED_TAG_NAME: ${{ needs.prepare-context.outputs.tag_name }}
+          JAR_FILE: dist/${{ needs.prepare-context.outputs.jar_name }}
+        run: |
+          set -euo pipefail
+
+          python3 <<'PY'
+          import os
+          import zipfile
+
+          jar_file = os.environ["JAR_FILE"]
+          expected_plugin_id = os.environ["EXPECTED_PLUGIN_ID"]
+          expected_plugin_version = os.environ["EXPECTED_PLUGIN_VERSION"]
+          expected_min_app_version = os.environ["EXPECTED_MIN_APP_VERSION"]
+          expected_tag_name = os.environ["EXPECTED_TAG_NAME"]
+
+          with zipfile.ZipFile(jar_file) as zf:
+              descriptor_names = [
+                  name for name in zf.namelist()
+                  if name.startswith("META-INF/easy-postman/") and name.endswith(".properties")
+              ]
+              if len(descriptor_names) != 1:
+                  raise SystemExit(f"Expected exactly one plugin descriptor, got {descriptor_names}")
+
+              content = zf.read(descriptor_names[0]).decode("utf-8")
+
+          props = {}
+          for raw_line in content.splitlines():
+              line = raw_line.strip()
+              if not line or line.startswith("#") or "=" not in line:
+                  continue
+              key, value = line.split("=", 1)
+              props[key.strip()] = value.strip()
+
+          actual_plugin_id = props.get("plugin.id", "")
+          actual_plugin_version = props.get("plugin.version", "")
+          actual_min_app_version = props.get("plugin.minAppVersion", "")
+          expected_tag_from_version = f"{expected_plugin_id}-v{expected_plugin_version}"
+
+          if actual_plugin_id != expected_plugin_id:
+              raise SystemExit(f"Descriptor plugin.id mismatch: {actual_plugin_id} != {expected_plugin_id}")
+          if actual_plugin_version != expected_plugin_version:
+              raise SystemExit(f"Descriptor plugin.version mismatch: {actual_plugin_version} != {expected_plugin_version}")
+          if actual_min_app_version != expected_min_app_version:
+              raise SystemExit(f"Descriptor plugin.minAppVersion mismatch: {actual_min_app_version} != {expected_min_app_version}")
+          if expected_tag_name != expected_tag_from_version:
+              raise SystemExit(f"Tag mismatch: {expected_tag_name} != {expected_tag_from_version}")
+          PY
 
       - name: Upload dry-run artifacts（上传验证产物）
         if: ${{ inputs.dry_run }}
@@ -417,6 +489,16 @@ jobs:
                   plugins.append(new_entry)
               data["generatedAt"] = generated_at
               path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+              matched = next((entry for entry in data["plugins"] if entry.get("id") == plugin_id), None)
+              if matched is None:
+                  raise SystemExit(f"Catalog entry missing after update: {path} -> {plugin_id}")
+              if matched.get("version") != plugin_version:
+                  raise SystemExit(f"Catalog version mismatch in {path}: {matched.get('version')} != {plugin_version}")
+              if matched.get("downloadUrl") != download_url:
+                  raise SystemExit(f"Catalog downloadUrl mismatch in {path}")
+              if matched.get("sha256") != sha256:
+                  raise SystemExit(f"Catalog sha256 mismatch in {path}")
           PY
 
       - name: Commit catalog changes（提交 catalog 更新）

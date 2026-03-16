@@ -5,7 +5,6 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.model.ClientCertificate;
-import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.plugin.bridge.ClientCertificatePluginService;
 import com.laker.postman.plugin.clientcert.internal.ClientCertificateLoader;
 import com.laker.postman.util.I18nUtil;
@@ -76,7 +75,7 @@ public class ClientCertificatePluginServiceImpl implements ClientCertificatePlug
                     I18nUtil.getMessage(MessageKeys.CERT_CONSOLE_VALIDATION_FAILED),
                     certificate.getName() != null ? certificate.getName() : "Unknown"
             );
-            ConsolePanel.appendLog(message, ConsolePanel.LogType.WARN);
+            logWarn(message);
             return false;
         }
 
@@ -87,7 +86,7 @@ public class ClientCertificatePluginServiceImpl implements ClientCertificatePlug
                     I18nUtil.getMessage(MessageKeys.CERT_CONSOLE_FILE_NOT_FOUND),
                     certificate.getCertPath()
             );
-            ConsolePanel.appendLog(message, ConsolePanel.LogType.ERROR);
+            logError(message);
             return false;
         }
 
@@ -97,7 +96,7 @@ public class ClientCertificatePluginServiceImpl implements ClientCertificatePlug
                         I18nUtil.getMessage(MessageKeys.CERT_CONSOLE_VALIDATION_FAILED),
                         certificate.getName() != null ? certificate.getName() : "Unknown"
                 );
-                ConsolePanel.appendLog(message, ConsolePanel.LogType.WARN);
+                logWarn(message);
                 return false;
             }
             File keyFile = new File(certificate.getKeyPath());
@@ -107,7 +106,7 @@ public class ClientCertificatePluginServiceImpl implements ClientCertificatePlug
                         I18nUtil.getMessage(MessageKeys.CERT_CONSOLE_FILE_NOT_FOUND),
                         certificate.getKeyPath()
                 );
-                ConsolePanel.appendLog(message, ConsolePanel.LogType.ERROR);
+                logError(message);
                 return false;
             }
         }
@@ -137,7 +136,7 @@ public class ClientCertificatePluginServiceImpl implements ClientCertificatePlug
                     I18nUtil.getMessage(MessageKeys.CERT_CONSOLE_LOADED),
                     certificateName
             );
-            ConsolePanel.appendLog(message, ConsolePanel.LogType.SUCCESS);
+            logInfo(message);
             return keyManagers;
         } catch (Exception e) {
             log.error("Failed to load client certificate for host: {}", host, e);
@@ -148,7 +147,7 @@ public class ClientCertificatePluginServiceImpl implements ClientCertificatePlug
                     I18nUtil.getMessage(MessageKeys.CERT_CONSOLE_LOAD_FAILED),
                     certificateName, e.getMessage()
             );
-            ConsolePanel.appendLog(message, ConsolePanel.LogType.ERROR);
+            logError(message);
             return new KeyManager[0];
         }
     }
@@ -200,10 +199,22 @@ public class ClientCertificatePluginServiceImpl implements ClientCertificatePlug
                         I18nUtil.getMessage(MessageKeys.CERT_CONSOLE_MATCHED),
                         host, port, certificate.getCertType(), certificateName
                 );
-                ConsolePanel.appendLog(message, ConsolePanel.LogType.SUCCESS);
+                logInfo(message);
                 return certificate;
             }
         }
         return null;
+    }
+
+    private static void logInfo(String message) {
+        log.info(message);
+    }
+
+    private static void logWarn(String message) {
+        log.warn(message);
+    }
+
+    private static void logError(String message) {
+        log.error(message);
     }
 }

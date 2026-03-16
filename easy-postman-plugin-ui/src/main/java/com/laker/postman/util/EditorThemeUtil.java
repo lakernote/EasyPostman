@@ -28,22 +28,18 @@ public class EditorThemeUtil {
         String themeFile;
         InputStream in = null;
         if (FlatLaf.isLafDark()) {
-            // 优先加载自定义暗色主题
             themeFile = "/themes/easypostman-dark.xml";
-            in = EditorThemeUtil.class.getResourceAsStream(themeFile);
+            in = loadResource(themeFile);
             if (in == null) {
-                // 回退到默认 dark.xml
                 themeFile = "/org/fife/ui/rsyntaxtextarea/themes/dark.xml";
-                in = EditorThemeUtil.class.getResourceAsStream(themeFile);
+                in = loadResource(themeFile);
             }
         } else {
-            // 优先加载自定义亮色主题
             themeFile = "/themes/easypostman-light.xml";
-            in = EditorThemeUtil.class.getResourceAsStream(themeFile);
+            in = loadResource(themeFile);
             if (in == null) {
-                // 回退到默认 vs.xml
                 themeFile = "/org/fife/ui/rsyntaxtextarea/themes/vs.xml";
-                in = EditorThemeUtil.class.getResourceAsStream(themeFile);
+                in = loadResource(themeFile);
             }
         }
         try {
@@ -57,5 +53,21 @@ public class EditorThemeUtil {
         } catch (IOException e) {
             log.error("Failed to load editor theme: {}", themeFile, e);
         }
+    }
+
+    private static InputStream loadResource(String resourcePath) {
+        String normalized = resourcePath.startsWith("/") ? resourcePath.substring(1) : resourcePath;
+        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+        if (contextClassLoader != null) {
+            InputStream contextStream = contextClassLoader.getResourceAsStream(normalized);
+            if (contextStream != null) {
+                return contextStream;
+            }
+        }
+        InputStream localStream = EditorThemeUtil.class.getResourceAsStream(resourcePath);
+        if (localStream != null) {
+            return localStream;
+        }
+        return EditorThemeUtil.class.getClassLoader().getResourceAsStream(normalized);
     }
 }

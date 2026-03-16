@@ -354,17 +354,6 @@ public class WorkspaceService {
     }
 
     /**
-     * Git操作结果封装
-     */
-    public static class GitOperationResult {
-        public boolean success = false;
-        public String message = "";
-        public List<String> affectedFiles = new ArrayList<>();
-        public String operationType = "";
-        public String details = "";
-    }
-
-    /**
      * Git操作：拉取更新
      */
     public GitOperationResult pullUpdates(String workspaceId) throws Exception {

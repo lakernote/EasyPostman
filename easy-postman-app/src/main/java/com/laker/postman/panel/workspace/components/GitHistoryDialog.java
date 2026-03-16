@@ -2,6 +2,7 @@ package com.laker.postman.panel.workspace.components;
 
 import com.laker.postman.common.component.button.RefreshButton;
 import com.laker.postman.model.GitCommitInfo;
+import com.laker.postman.model.GitOperationResult;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.util.FontsUtil;
@@ -301,16 +302,16 @@ public class GitHistoryDialog extends JDialog {
         boolean createBackup = backupCheckBox.isSelected();
 
         // 在后台执行恢复
-        new SwingWorker<WorkspaceService.GitOperationResult, Void>() {
+        new SwingWorker<GitOperationResult, Void>() {
             @Override
-            protected WorkspaceService.GitOperationResult doInBackground() throws Exception {
+            protected GitOperationResult doInBackground() throws Exception {
                 return workspaceService.restoreToCommit(workspace.getId(), commit.getCommitId(), createBackup);
             }
 
             @Override
             protected void done() {
                 try {
-                    WorkspaceService.GitOperationResult result = get();
+                    GitOperationResult result = get();
 
                     if (result.success) {
                         JOptionPane.showMessageDialog(

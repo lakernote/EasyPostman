@@ -32,6 +32,8 @@ jobs:
     steps:
       - name: Checkout（检出代码）
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref_name }}
 
       - name: Setup Java（配置 Java）
         uses: actions/setup-java@v4
@@ -49,6 +51,36 @@ jobs:
           VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
           echo "Version: $VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Validate release source and version（校验默认分支与版本一致性）
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          DEFAULT_BRANCH="${{ github.event.repository.default_branch }}"
+          CURRENT_REF="${{ github.ref_name }}"
+          VERSION="${{ steps.extract_version.outputs.version }}"
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "$CURRENT_REF" != "$DEFAULT_BRANCH" ]; then
+            echo "workflow_dispatch is only allowed from the default branch: ${DEFAULT_BRANCH}" >&2
+            exit 1
+          fi
+
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG_NAME="${{ github.event.release.tag_name }}"
+            TARGET_COMMITISH="${{ github.event.release.target_commitish }}"
+            EXPECTED_TAG="v${VERSION}"
+
+            if [ "$TARGET_COMMITISH" != "$DEFAULT_BRANCH" ]; then
+              echo "Release must target default branch ${DEFAULT_BRANCH}, got ${TARGET_COMMITISH}" >&2
+              exit 1
+            fi
+
+            if [ "$TAG_NAME" != "$EXPECTED_TAG" ]; then
+              echo "Release tag ${TAG_NAME} does not match pom version ${VERSION}" >&2
+              exit 1
+            fi
+          fi
 
   # 构建 Fat JAR（跨平台），供所有平台复用
   build-jar-artifact:

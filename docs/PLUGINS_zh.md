@@ -15,11 +15,13 @@
 
 ## 1. 当前插件架构
 
-当前仓库分成 4 层：
+当前仓库分成 6 层：
 
 ```text
 easy-postman-parent
 ├── easy-postman-plugin-api
+├── easy-postman-plugin-bridge
+├── easy-postman-plugin-ui
 ├── easy-postman-plugin-runtime
 ├── easy-postman-app
 └── easy-postman-plugins
@@ -35,6 +37,10 @@ easy-postman-parent
 
 - `easy-postman-plugin-api`
   - 稳定 SPI 和插件上下文
+- `easy-postman-plugin-bridge`
+  - 稳定桥接契约、共享模型、非 UI 公共工具
+- `easy-postman-plugin-ui`
+  - 插件和宿主共享的 UI 基础组件、样式和视觉工具
 - `easy-postman-plugin-runtime`
   - 扫描插件目录
   - 读取插件 descriptor
@@ -216,12 +222,12 @@ easy-postman-plugins/plugin-git
 示例：
 
 ```bash
-mvn -pl easy-postman-app,easy-postman-plugins/plugin-redis -am clean package -DskipTests
+mvn -pl easy-postman-plugins/plugin-redis -am clean package -DskipTests
 ```
 
 说明：
 
-- 会把宿主和目标插件一起构建出来
+- 会把目标插件及其依赖的 `plugin-api` / `plugin-bridge` / `plugin-ui` / `plugin-runtime` 一起构建出来
 - 插件模块的 `package` 阶段会产出插件 JAR
 
 ### 7.2 本地构建全部插件
@@ -244,6 +250,11 @@ mvn clean package -DskipTests
 - 创建 GitHub Release
 - 可选同步 Gitee Release
 - 可选回写官方 GitHub / Gitee catalog
+
+当前又额外加了两条硬约束：
+
+- 只能从默认分支触发正式插件发版
+- 发版时会强校验 `tag == pom == descriptor == catalog`
 
 当前发布边界是合理的：
 

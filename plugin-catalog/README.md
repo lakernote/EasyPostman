@@ -21,6 +21,8 @@ Current behavior:
 - each plugin release may update the matching GitHub and Gitee catalog entry
 - bundled fallback catalogs are kept in sync with the public catalogs
 - `sha256` is supported by the installer and should be filled by the release pipeline when available
+- official plugin releases are expected to run from the default branch
+- the release workflow validates tag / pom / descriptor / catalog consistency before publishing
 
 If you need to adjust catalog structure manually, update both places together:
 

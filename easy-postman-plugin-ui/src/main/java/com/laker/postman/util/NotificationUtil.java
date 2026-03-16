@@ -1,9 +1,7 @@
 package com.laker.postman.util;
 
 import com.formdev.flatlaf.FlatLaf;
-import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.NotificationPosition;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -26,11 +24,24 @@ import java.util.List;
 public class NotificationUtil {
 
     private static Window getMainFrame() {
-        try {
-            return SingletonFactory.getInstance(MainFrame.class);
-        } catch (Exception e) {
-            return JOptionPane.getRootFrame();
+        KeyboardFocusManager focusManager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
+        Window activeWindow = focusManager.getActiveWindow();
+        if (activeWindow != null && activeWindow.isShowing()) {
+            return activeWindow;
         }
+
+        Window focusedWindow = focusManager.getFocusedWindow();
+        if (focusedWindow != null && focusedWindow.isShowing()) {
+            return focusedWindow;
+        }
+
+        for (Window window : Window.getWindows()) {
+            if (window.isShowing() && window.isActive()) {
+                return window;
+            }
+        }
+
+        return JOptionPane.getRootFrame();
     }
 
     // ==================== 通知类型 ====================

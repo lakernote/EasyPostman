@@ -2,7 +2,6 @@ package com.laker.postman.util;
 
 import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.model.Workspace;
-import com.laker.postman.service.update.asset.WindowsVersionDetector;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -60,12 +59,28 @@ public class SystemUtil {
         }
     }
 
-    /**
-     * 检查是否为 Portable 模式
-     * 复用 WindowsVersionDetector 的检测逻辑
-     */
     private static boolean isPortableMode() {
-        return WindowsVersionDetector.isPortableVersion();
+        String override = System.getProperty("easyPostman.portable");
+        if (override != null && !override.isBlank()) {
+            return Boolean.parseBoolean(override);
+        }
+        String applicationDirectory = getApplicationDirectory();
+        File appDir = new File(applicationDirectory);
+        if (new File(appDir, ".portable").exists()) {
+            return true;
+        }
+        File parentDir = appDir.getParentFile();
+        if (parentDir != null && new File(parentDir, ".portable").exists()) {
+            return true;
+        }
+
+        String lowerPath = applicationDirectory.toLowerCase();
+        if (lowerPath.contains("program files")
+                || lowerPath.contains("appdata\\local\\programs")
+                || lowerPath.contains("appdata/local/programs")) {
+            return false;
+        }
+        return false;
     }
 
     /**
@@ -79,7 +94,10 @@ public class SystemUtil {
         }
 
         String dataPath;
-        if (isPortableMode()) {
+        String override = System.getProperty("easyPostman.data.dir");
+        if (override != null && !override.isBlank()) {
+            dataPath = Paths.get(override.trim()).toAbsolutePath().normalize().toString() + File.separator;
+        } else if (isPortableMode()) {
             // Portable 模式：使用程序所在目录
             String appDir = getApplicationDirectory();
             dataPath = appDir + "data" + File.separator;

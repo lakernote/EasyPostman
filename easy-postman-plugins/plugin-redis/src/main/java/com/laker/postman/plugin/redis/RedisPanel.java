@@ -1,6 +1,17 @@
 package com.laker.postman.plugin.redis;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.common.component.SearchableTextArea;
+import com.laker.postman.common.component.button.ClearButton;
+import com.laker.postman.common.component.button.PrimaryButton;
+import com.laker.postman.common.component.button.RefreshButton;
+import com.laker.postman.common.component.button.SecondaryButton;
+import com.laker.postman.util.EditorThemeUtil;
+import com.laker.postman.util.FontsUtil;
+import com.laker.postman.util.IconUtil;
+import com.laker.postman.util.JsonUtil;
+import com.laker.postman.util.NotificationUtil;
 import lombok.extern.slf4j.Slf4j;
 import net.miginfocom.swing.MigLayout;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
@@ -428,7 +439,10 @@ public class RedisPanel extends JPanel {
         title.setFont(title.getFont().deriveFont(Font.BOLD, 11f));
         header.add(title);
 
-        FormatButton formatBtn = new FormatButton();
+        JButton formatBtn = new JButton(IconUtil.createThemed("icons/format.svg", 16, 16));
+        formatBtn.setFocusable(false);
+        formatBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        formatBtn.putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
         formatBtn.setToolTipText(t(MessageKeys.TOOLBOX_REDIS_FORMAT_JSON));
         formatBtn.addActionListener(e -> formatValueJson());
         header.add(formatBtn);
@@ -464,6 +478,7 @@ public class RedisPanel extends JPanel {
         resultArea.setLineWrap(false);
         resultArea.setHighlightCurrentLine(false);
         searchableResultArea = new SearchableTextArea(resultArea, false);
+        searchableResultArea.setLineNumbersEnabled(false);
 
         panel.add(header, BorderLayout.NORTH);
         panel.add(searchableResultArea, BorderLayout.CENTER);

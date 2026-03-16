@@ -22,7 +22,9 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -51,6 +53,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
     private JTabbedPane tabbedPane;
     @Getter
     private transient List<TabInfo> tabInfos;
+    private transient List<SidebarTab> visibleTabs;
     private JPanel consoleContainer;
     private JPanel bottomLeftPanel;  // 底部栏左侧面板缓存
     private JPanel bottomRightPanel; // 底部栏右侧面板缓存
@@ -90,23 +93,20 @@ public class SidebarTabPanel extends SingletonBasePanel {
 
         // 1. 创建标签页
         tabbedPane = createModernTabbedPane();
-        tabInfos = new ArrayList<>();
-
-        // 使用枚举初始化所有 Tab，简化代码并集中管理
-        for (SidebarTab tab : SidebarTab.values()) {
-            tabInfos.add(tab.toTabInfo());
-        }
+        reloadTabInfosFromSettings();
 
         // Add tabs to the JTabbedPane
         for (int i = 0; i < tabInfos.size(); i++) {
             TabInfo info = tabInfos.get(i);
             tabbedPane.addTab(info.title, new JPanel());
             // 设置自定义 tab 组件以实现图标在上、文本在下的布局
-            tabbedPane.setTabComponentAt(i, createTabComponent(info.title, info.icon));
+            tabbedPane.setTabComponentAt(i, createTabComponent(visibleTabs.get(i), info.title, info.icon));
         }
 
         // 默认设置选中第一个标签
-        tabbedPane.setSelectedIndex(0);
+        if (tabbedPane.getTabCount() > 0) {
+            tabbedPane.setSelectedIndex(0);
+        }
 
         // 2. 控制台日志区和底部栏
         consoleContainer = new JPanel(new BorderLayout());
@@ -362,21 +362,15 @@ public class SidebarTabPanel extends SingletonBasePanel {
         }
 
         // 7. 重新创建所有 tab 组件以更新字体和文本
-        if (tabbedPane != null && tabInfos != null) {
+        if (tabbedPane != null && tabInfos != null && visibleTabs != null) {
             int currentSelectedIndex = tabbedPane.getSelectedIndex();
             for (int i = 0; i < tabInfos.size(); i++) {
-                // 从 SidebarTab 枚举重新获取标题（支持语言切换）
-                if (i < SidebarTab.values().length) {
-                    SidebarTab sidebarTab = SidebarTab.values()[i];
-                    TabInfo info = tabInfos.get(i);
-                    // 更新标题（语言切换）
-                    info.title = I18nUtil.getMessage(sidebarTab.getTitleKey());
-                    // 根据是否选中使用对应的图标
-                    boolean isSelected = (i == currentSelectedIndex);
-                    Icon iconToUse = isSelected ? sidebarTab.getSelectedIcon() : sidebarTab.getIcon();
-                    // 重新创建 tab 组件
-                    tabbedPane.setTabComponentAt(i, createTabComponent(info.title, iconToUse));
-                }
+                SidebarTab sidebarTab = visibleTabs.get(i);
+                TabInfo info = tabInfos.get(i);
+                info.title = I18nUtil.getMessage(sidebarTab.getTitleKey());
+                boolean isSelected = (i == currentSelectedIndex);
+                Icon iconToUse = isSelected ? sidebarTab.getSelectedIcon() : sidebarTab.getIcon();
+                tabbedPane.setTabComponentAt(i, createTabComponent(sidebarTab, info.title, iconToUse));
             }
             // 延迟执行颜色初始化，确保所有 UI 组件都创建完成
             SwingUtilities.invokeLater(() -> {
@@ -483,9 +477,8 @@ public class SidebarTabPanel extends SingletonBasePanel {
         Component tabComponent = tabbedPane.getTabComponentAt(tabIndex);
         if (!(tabComponent instanceof JPanel panel)) return;
 
-        // 获取对应的 SidebarTab 枚举
-        if (tabIndex < 0 || tabIndex >= SidebarTab.values().length) return;
-        SidebarTab sidebarTab = SidebarTab.values()[tabIndex];
+        SidebarTab sidebarTab = getSidebarTabAt(tabIndex);
+        if (sidebarTab == null) return;
 
         updateTabIcon(panel, sidebarTab, isSelected);
         updateTabTitle(panel, isSelected);
@@ -525,14 +518,11 @@ public class SidebarTabPanel extends SingletonBasePanel {
     private void handleTabChange() {
         int selectedIndex = tabbedPane.getSelectedIndex();
         ensureTabComponentLoaded(selectedIndex); // 懒加载当前选中的tab内容
-        // Check if the selected tab is the environment tab
-        if (selectedIndex >= 0 && selectedIndex < tabInfos.size()) {
-            TabInfo info = tabInfos.get(selectedIndex);
-            if (info.title.equals(I18nUtil.getMessage(MessageKeys.MENU_ENVIRONMENTS))) {
-                Component comp = tabbedPane.getComponentAt(selectedIndex);
-                if (comp instanceof EnvironmentPanel environmentPanel) {
-                    environmentPanel.refreshUI();
-                }
+        SidebarTab selectedTab = getSidebarTabAt(selectedIndex);
+        if (selectedTab == SidebarTab.ENVIRONMENTS) {
+            Component comp = tabbedPane.getComponentAt(selectedIndex);
+            if (comp instanceof EnvironmentPanel environmentPanel) {
+                environmentPanel.refreshUI();
             }
         }
     }
@@ -705,7 +695,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
     /**
      * 创建自定义 Tab 组件（图标在上，文本在下）
      */
-    private Component createTabComponent(String title, Icon icon) {
+    private Component createTabComponent(SidebarTab sidebarTab, String title, Icon icon) {
         JPanel panel = new JPanel() {
             @Override
             public Dimension getPreferredSize() {
@@ -732,7 +722,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
             JLabel titleLabel = new JLabel(title);
             titleLabel.setName(TITLE_LABEL_NAME); // 标记为文字标签
             // 根据当前是否选中设置初始颜色
-            int currentIndex = getTabIndexByTitle(title);
+            int currentIndex = getTabIndex(sidebarTab);
             boolean isCurrentlySelected = currentIndex >= 0 && tabbedPane.getSelectedIndex() == currentIndex;
 
             if (isCurrentlySelected) {
@@ -780,7 +770,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
         panel.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                int tabIndex = getTabIndexByTitle(title);
+                int tabIndex = getTabIndex(sidebarTab);
                 if (tabIndex >= 0) {
                     tabbedPane.setSelectedIndex(tabIndex);
                 }
@@ -803,9 +793,12 @@ public class SidebarTabPanel extends SingletonBasePanel {
     /**
      * 根据标题获取 tab 索引
      */
-    private int getTabIndexByTitle(String title) {
-        for (int i = 0; i < tabInfos.size(); i++) {
-            if (tabInfos.get(i).title.equals(title)) {
+    private int getTabIndex(SidebarTab sidebarTab) {
+        if (visibleTabs == null) {
+            return -1;
+        }
+        for (int i = 0; i < visibleTabs.size(); i++) {
+            if (visibleTabs.get(i) == sidebarTab) {
                 return i;
             }
         }
@@ -941,17 +934,38 @@ public class SidebarTabPanel extends SingletonBasePanel {
         }
     }
 
+    public void refreshSidebarConfiguration() {
+        boolean newExpanded = SettingManager.isSidebarExpanded();
+        boolean expansionChanged = this.sidebarExpanded != newExpanded;
+        this.sidebarExpanded = newExpanded;
+        if (sidebarToggleLabel != null) {
+            sidebarToggleLabel.setToolTipText(sidebarExpanded ? TOOLTIP_COLLAPSE_SIDEBAR : TOOLTIP_EXPAND_SIDEBAR);
+        }
+
+        List<SidebarTab> configuredTabs = SettingManager.getVisibleSidebarTabs();
+        boolean tabsChanged = visibleTabs == null || !visibleTabs.equals(configuredTabs);
+        if (expansionChanged || tabsChanged) {
+            calculatedExpandedTabWidth = -1;
+            calculatedCollapsedTabWidth = -1;
+            calculatedExpandedTabHeight = -1;
+            calculatedCollapsedTabHeight = -1;
+            recreateTabbedPane();
+        }
+    }
+
     /**
      * 重新创建标签页以应用新的展开/收起状态
      */
     private void recreateTabbedPane() {
         int selectedIndex = tabbedPane.getSelectedIndex();
+        SidebarTab selectedTab = getSidebarTabAt(selectedIndex);
 
         // 保存所有已加载的面板
-        List<Component> loadedPanels = new ArrayList<>();
-        for (int i = 0; i < tabInfos.size(); i++) {
-            Component comp = tabbedPane.getComponentAt(i);
-            loadedPanels.add(comp);
+        Map<SidebarTab, Component> loadedPanels = new EnumMap<>(SidebarTab.class);
+        if (visibleTabs != null) {
+            for (int i = 0; i < visibleTabs.size(); i++) {
+                loadedPanels.put(visibleTabs.get(i), tabbedPane.getComponentAt(i));
+            }
         }
 
         // 移除旧的 TabbedPane
@@ -964,18 +978,23 @@ public class SidebarTabPanel extends SingletonBasePanel {
 
         // 创建新的 TabbedPane
         tabbedPane = createModernTabbedPane();
+        reloadTabInfosFromSettings();
 
         // 恢复所有 tab - 重用 tabInfos 中缓存的图标
         for (int i = 0; i < tabInfos.size(); i++) {
             TabInfo info = tabInfos.get(i);
-            tabbedPane.addTab(info.title, loadedPanels.get(i));
+            SidebarTab sidebarTab = visibleTabs.get(i);
+            Component content = loadedPanels.getOrDefault(sidebarTab, new JPanel());
+            tabbedPane.addTab(info.title, content);
             // 设置自定义 tab 组件 - icon 从 tabInfos 获取，已经缓存
-            tabbedPane.setTabComponentAt(i, createTabComponent(info.title, info.icon));
+            tabbedPane.setTabComponentAt(i, createTabComponent(sidebarTab, info.title, info.icon));
         }
 
-        // 恢复选中的索引
-        if (selectedIndex >= 0 && selectedIndex < tabbedPane.getTabCount()) {
-            tabbedPane.setSelectedIndex(selectedIndex);
+        int restoredIndex = getTabIndex(selectedTab);
+        if (restoredIndex >= 0 && restoredIndex < tabbedPane.getTabCount()) {
+            tabbedPane.setSelectedIndex(restoredIndex);
+        } else if (tabbedPane.getTabCount() > 0) {
+            tabbedPane.setSelectedIndex(Math.min(selectedIndex, tabbedPane.getTabCount() - 1));
         }
 
         // 重新添加组件
@@ -1001,6 +1020,21 @@ public class SidebarTabPanel extends SingletonBasePanel {
         repaint();
     }
 
+    private void reloadTabInfosFromSettings() {
+        visibleTabs = new ArrayList<>(SettingManager.getVisibleSidebarTabs());
+        tabInfos = new ArrayList<>(visibleTabs.size());
+        for (SidebarTab tab : visibleTabs) {
+            tabInfos.add(tab.toTabInfo());
+        }
+    }
+
+    private SidebarTab getSidebarTabAt(int index) {
+        if (visibleTabs == null || index < 0 || index >= visibleTabs.size()) {
+            return null;
+        }
+        return visibleTabs.get(index);
+    }
+
     /**
      * 根据当前语言获取合适的 Tab 标题字体
      * 英文使用小一号字体，避免 Tab 标题文本过长
@@ -1019,4 +1053,3 @@ public class SidebarTabPanel extends SingletonBasePanel {
         }
     }
 }
-

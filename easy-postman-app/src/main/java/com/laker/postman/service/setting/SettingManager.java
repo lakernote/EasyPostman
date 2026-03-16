@@ -1,6 +1,7 @@
 package com.laker.postman.service.setting;
 
 import com.laker.postman.common.constants.ConfigPathConstants;
+import com.laker.postman.model.SidebarTab;
 import com.laker.postman.model.NotificationPosition;
 import com.laker.postman.service.http.okhttp.OkHttpClientManager;
 import com.laker.postman.util.NotificationUtil;
@@ -10,7 +11,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 
 @Slf4j
 public class SettingManager {
@@ -374,6 +380,64 @@ public class SettingManager {
     public static void setSidebarExpanded(boolean expanded) {
         props.setProperty("sidebar_expanded", String.valueOf(expanded));
         save();
+    }
+
+    public static List<String> getSidebarTabOrder() {
+        String val = props.getProperty("sidebar_tab_order");
+        List<String> order = new ArrayList<>();
+        if (val == null || val.isBlank()) {
+            return order;
+        }
+
+        for (String token : val.split(",")) {
+            String normalized = token == null ? null : token.trim();
+            if (normalized != null && !normalized.isEmpty()) {
+                order.add(normalized);
+            }
+        }
+        return order;
+    }
+
+    public static void setSidebarTabOrder(Collection<String> tabOrder) {
+        if (tabOrder == null || tabOrder.isEmpty()) {
+            props.remove("sidebar_tab_order");
+        } else {
+            props.setProperty("sidebar_tab_order", String.join(",", tabOrder));
+        }
+        save();
+    }
+
+    public static Set<String> getHiddenSidebarTabs() {
+        String val = props.getProperty("sidebar_hidden_tabs");
+        Set<String> hiddenTabs = new LinkedHashSet<>();
+        if (val == null || val.isBlank()) {
+            return hiddenTabs;
+        }
+
+        for (String token : val.split(",")) {
+            String normalized = token == null ? null : token.trim();
+            if (normalized != null && !normalized.isEmpty()) {
+                hiddenTabs.add(normalized.toUpperCase());
+            }
+        }
+        return hiddenTabs;
+    }
+
+    public static void setHiddenSidebarTabs(Collection<String> hiddenTabs) {
+        if (hiddenTabs == null || hiddenTabs.isEmpty()) {
+            props.remove("sidebar_hidden_tabs");
+        } else {
+            props.setProperty("sidebar_hidden_tabs", String.join(",", hiddenTabs));
+        }
+        save();
+    }
+
+    public static List<SidebarTab> getOrderedSidebarTabs() {
+        return SidebarTab.resolveOrderedTabs(getSidebarTabOrder());
+    }
+
+    public static List<SidebarTab> getVisibleSidebarTabs() {
+        return SidebarTab.resolveVisibleTabs(getSidebarTabOrder(), getHiddenSidebarTabs());
     }
 
     /**

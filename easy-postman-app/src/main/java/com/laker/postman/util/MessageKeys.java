@@ -975,6 +975,11 @@ public final class MessageKeys {
     public static final String SETTINGS_GENERAL_AUTO_FORMAT_RESPONSE_TOOLTIP = "settings.general.auto_format_response.tooltip";
     public static final String SETTINGS_GENERAL_SIDEBAR_EXPANDED = "settings.general.sidebar_expanded";
     public static final String SETTINGS_GENERAL_SIDEBAR_EXPANDED_TOOLTIP = "settings.general.sidebar_expanded.tooltip";
+    public static final String SETTINGS_GENERAL_SIDEBAR_TABS = "settings.general.sidebar_tabs";
+    public static final String SETTINGS_GENERAL_SIDEBAR_TABS_TOOLTIP = "settings.general.sidebar_tabs.tooltip";
+    public static final String SETTINGS_GENERAL_SIDEBAR_TABS_HINT = "settings.general.sidebar_tabs.hint";
+    public static final String SETTINGS_GENERAL_SIDEBAR_TABS_AT_LEAST_ONE = "settings.general.sidebar_tabs.at_least_one";
+    public static final String SETTINGS_GENERAL_SIDEBAR_TABS_RESET = "settings.general.sidebar_tabs.reset";
     public static final String SETTINGS_GENERAL_NOTIFICATION_POSITION = "settings.general.notification_position";
     public static final String SETTINGS_GENERAL_NOTIFICATION_POSITION_TOOLTIP = "settings.general.notification_position.tooltip";
     public static final String SETTINGS_GENERAL_NOTIFICATION_POSITION_TOP_RIGHT = "settings.general.notification_position.top_right";

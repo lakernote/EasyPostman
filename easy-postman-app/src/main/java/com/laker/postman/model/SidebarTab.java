@@ -15,6 +15,10 @@ import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
 
 import javax.swing.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 
 /**
@@ -86,6 +90,13 @@ public enum SidebarTab {
     }
 
     /**
+     * 获取当前语言下的标题，不使用缓存，便于设置页和运行时刷新。
+     */
+    public String getDisplayTitle() {
+        return I18nUtil.getMessage(titleKey);
+    }
+
+    /**
      * 获取图标（懒加载，避免重复创建）- 普通状态
      */
     public Icon getIcon() {
@@ -120,7 +131,62 @@ public enum SidebarTab {
      * 转换为 TabInfo 对象（为了兼容现有代码）
      */
     public TabInfo toTabInfo() {
-        return new TabInfo(getTitle(), getIcon(), this::getPanel);
+        return new TabInfo(getDisplayTitle(), getIcon(), this::getPanel);
+    }
+
+    public static SidebarTab fromName(String name) {
+        if (name == null || name.isBlank()) {
+            return null;
+        }
+        for (SidebarTab tab : values()) {
+            if (tab.name().equalsIgnoreCase(name.trim())) {
+                return tab;
+            }
+        }
+        return null;
+    }
+
+    public static List<SidebarTab> resolveOrderedTabs(List<String> orderedNames) {
+        List<SidebarTab> resolvedTabs = new ArrayList<>();
+        Set<SidebarTab> addedTabs = new HashSet<>();
+
+        if (orderedNames != null) {
+            for (String orderedName : orderedNames) {
+                SidebarTab tab = fromName(orderedName);
+                if (tab != null && addedTabs.add(tab)) {
+                    resolvedTabs.add(tab);
+                }
+            }
+        }
+
+        for (SidebarTab tab : values()) {
+            if (addedTabs.add(tab)) {
+                resolvedTabs.add(tab);
+            }
+        }
+
+        return resolvedTabs;
+    }
+
+    public static List<SidebarTab> resolveVisibleTabs(List<String> orderedNames, Set<String> hiddenNames) {
+        List<SidebarTab> orderedTabs = resolveOrderedTabs(orderedNames);
+        Set<String> normalizedHiddenNames = new HashSet<>();
+        if (hiddenNames != null) {
+            for (String hiddenName : hiddenNames) {
+                if (hiddenName != null && !hiddenName.isBlank()) {
+                    normalizedHiddenNames.add(hiddenName.trim().toUpperCase());
+                }
+            }
+        }
+
+        List<SidebarTab> visibleTabs = new ArrayList<>();
+        for (SidebarTab tab : orderedTabs) {
+            if (!normalizedHiddenNames.contains(tab.name())) {
+                visibleTabs.add(tab);
+            }
+        }
+
+        return visibleTabs.isEmpty() ? new ArrayList<>(List.of(values())) : visibleTabs;
     }
 
 }

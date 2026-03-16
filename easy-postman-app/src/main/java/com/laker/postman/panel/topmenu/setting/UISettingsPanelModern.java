@@ -2,6 +2,7 @@ package com.laker.postman.panel.topmenu.setting;
 
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.model.NotificationPosition;
+import com.laker.postman.model.SidebarTab;
 import com.laker.postman.panel.sidebar.SidebarTabPanel;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FontManager;
@@ -11,6 +12,16 @@ import com.laker.postman.util.NotificationUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Transferable;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 import java.awt.*;
 
 /**
@@ -32,6 +43,9 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
     private JComboBox<String> fontNameComboBox;
     private JTextField fontSizeField;
     private JLabel fontPreviewLabel;
+    private DefaultListModel<SidebarTabSettingItem> sidebarTabListModel;
+    private JList<SidebarTabSettingItem> sidebarTabList;
+    private JTextField sidebarTabsStateField;
     private String systemDefaultFontName; // 保存系统默认字体名称
 
     @Override
@@ -130,6 +144,10 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
                 I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_SIDEBAR_EXPANDED_TOOLTIP)
         );
         generalSection.add(sidebarRow);
+        generalSection.add(createVerticalSpace(FIELD_SPACING));
+
+        JPanel sidebarTabsRow = createSidebarTabsRow();
+        generalSection.add(sidebarTabsRow);
         generalSection.add(createVerticalSpace(FIELD_SPACING));
 
         // 通知位置设置 - 使用枚举的 i18nKey
@@ -256,6 +274,198 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
         trackComponentValue(notificationPositionComboBox);
         trackComponentValue(fontNameComboBox);
         trackComponentValue(fontSizeField);
+        trackComponentValue(sidebarTabsStateField);
+    }
+
+    private JPanel createSidebarTabsRow() {
+        JPanel row = new JPanel();
+        row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
+        row.setBackground(getCardBackgroundColor());
+        row.setAlignmentX(Component.LEFT_ALIGNMENT);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 230));
+
+        JLabel label = new JLabel(I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_SIDEBAR_TABS));
+        label.setFont(com.laker.postman.util.FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        label.setForeground(getTextPrimaryColor());
+        label.setToolTipText(I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_SIDEBAR_TABS_TOOLTIP));
+        label.setPreferredSize(new Dimension(220, 32));
+        label.setMinimumSize(new Dimension(220, 32));
+        label.setMaximumSize(new Dimension(220, Integer.MAX_VALUE));
+        label.setAlignmentY(Component.TOP_ALIGNMENT);
+
+        JPanel editor = createSidebarTabsEditor();
+        editor.setAlignmentY(Component.TOP_ALIGNMENT);
+
+        row.add(label);
+        row.add(Box.createHorizontalStrut(16));
+        row.add(editor);
+        row.add(Box.createHorizontalGlue());
+
+        return row;
+    }
+
+    private JPanel createSidebarTabsEditor() {
+        JPanel editor = new JPanel();
+        editor.setLayout(new BoxLayout(editor, BoxLayout.Y_AXIS));
+        editor.setBackground(getCardBackgroundColor());
+        editor.setAlignmentX(Component.LEFT_ALIGNMENT);
+        editor.setMaximumSize(new Dimension(340, 220));
+
+        sidebarTabListModel = new DefaultListModel<>();
+        Set<String> hiddenTabs = SettingManager.getHiddenSidebarTabs();
+        for (SidebarTab tab : SettingManager.getOrderedSidebarTabs()) {
+            sidebarTabListModel.addElement(new SidebarTabSettingItem(tab, !hiddenTabs.contains(tab.name())));
+        }
+
+        sidebarTabList = new JList<>(sidebarTabListModel);
+        sidebarTabList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        sidebarTabList.setCellRenderer(new SidebarTabListCellRenderer());
+        sidebarTabList.setDragEnabled(true);
+        sidebarTabList.setDropMode(DropMode.INSERT);
+        sidebarTabList.setTransferHandler(new SidebarTabListTransferHandler());
+        sidebarTabList.setFixedCellHeight(38);
+        sidebarTabList.setVisibleRowCount(Math.min(sidebarTabListModel.size(), 7));
+        sidebarTabList.setOpaque(false);
+        sidebarTabList.setSelectionBackground(getHoverBackgroundColor());
+        sidebarTabList.setSelectionForeground(getTextPrimaryColor());
+        sidebarTabList.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int index = sidebarTabList.locationToIndex(e.getPoint());
+                if (index < 0) {
+                    return;
+                }
+                Rectangle bounds = sidebarTabList.getCellBounds(index, index);
+                if (bounds != null && e.getX() - bounds.x <= 28) {
+                    toggleSidebarTabVisibility(index);
+                }
+            }
+        });
+        sidebarTabList.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke(KeyEvent.VK_SPACE, 0), "toggleSidebarTabVisibility");
+        sidebarTabList.getActionMap().put("toggleSidebarTabVisibility", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                int selectedIndex = sidebarTabList.getSelectedIndex();
+                if (selectedIndex >= 0) {
+                    toggleSidebarTabVisibility(selectedIndex);
+                }
+            }
+        });
+        if (!sidebarTabListModel.isEmpty()) {
+            sidebarTabList.setSelectedIndex(0);
+        }
+
+        JScrollPane scrollPane = new JScrollPane(sidebarTabList);
+        scrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
+        scrollPane.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(getBorderMediumColor(), 1),
+                new EmptyBorder(4, 4, 4, 4)
+        ));
+        scrollPane.setBackground(getInputBackgroundColor());
+        scrollPane.getViewport().setBackground(getInputBackgroundColor());
+        scrollPane.setPreferredSize(new Dimension(320, 160));
+        scrollPane.setMaximumSize(new Dimension(320, 160));
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(12);
+
+        JButton resetButton = createModernButton(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_SIDEBAR_TABS_RESET),
+                false
+        );
+        resetButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+        resetButton.setPreferredSize(new Dimension(116, 32));
+        resetButton.setMaximumSize(new Dimension(116, 32));
+        resetButton.addActionListener(e -> resetSidebarTabsToDefault());
+
+        JLabel hintLabel = new JLabel("<html>" + I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_SIDEBAR_TABS_HINT) + "</html>");
+        hintLabel.setFont(com.laker.postman.util.FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
+        hintLabel.setForeground(getTextSecondaryColor());
+        hintLabel.setBorder(new EmptyBorder(8, 0, 0, 0));
+        hintLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        sidebarTabsStateField = new JTextField(buildSidebarTabsStateSnapshot());
+
+        editor.add(scrollPane);
+        editor.add(Box.createVerticalStrut(8));
+        editor.add(resetButton);
+        editor.add(hintLabel);
+        return editor;
+    }
+
+    private void resetSidebarTabsToDefault() {
+        sidebarTabListModel.clear();
+        for (SidebarTab tab : SidebarTab.values()) {
+            sidebarTabListModel.addElement(new SidebarTabSettingItem(tab, true));
+        }
+        if (!sidebarTabListModel.isEmpty()) {
+            sidebarTabList.setSelectedIndex(0);
+        }
+        sidebarTabList.repaint();
+        syncSidebarTabsState();
+    }
+
+    private void toggleSidebarTabVisibility(int index) {
+        SidebarTabSettingItem item = sidebarTabListModel.get(index);
+        if (item.visible && countVisibleSidebarTabs() == 1) {
+            NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_SIDEBAR_TABS_AT_LEAST_ONE));
+            return;
+        }
+        item.visible = !item.visible;
+        sidebarTabList.repaint();
+        syncSidebarTabsState();
+    }
+
+    private int countVisibleSidebarTabs() {
+        int visibleCount = 0;
+        for (int i = 0; i < sidebarTabListModel.size(); i++) {
+            if (sidebarTabListModel.get(i).visible) {
+                visibleCount++;
+            }
+        }
+        return visibleCount;
+    }
+
+    private void syncSidebarTabsState() {
+        if (sidebarTabsStateField != null) {
+            sidebarTabsStateField.setText(buildSidebarTabsStateSnapshot());
+        }
+    }
+
+    private String buildSidebarTabsStateSnapshot() {
+        List<String> state = new ArrayList<>();
+        for (int i = 0; i < sidebarTabListModel.size(); i++) {
+            SidebarTabSettingItem item = sidebarTabListModel.get(i);
+            state.add(item.tab.name() + ":" + (item.visible ? "1" : "0"));
+        }
+        return String.join(",", state);
+    }
+
+    private List<String> getSidebarTabOrderForSave() {
+        List<String> order = new ArrayList<>();
+        for (int i = 0; i < sidebarTabListModel.size(); i++) {
+            order.add(sidebarTabListModel.get(i).tab.name());
+        }
+        return order;
+    }
+
+    private Set<String> getHiddenSidebarTabsForSave() {
+        Set<String> hiddenTabs = new LinkedHashSet<>();
+        for (int i = 0; i < sidebarTabListModel.size(); i++) {
+            SidebarTabSettingItem item = sidebarTabListModel.get(i);
+            if (!item.visible) {
+                hiddenTabs.add(item.tab.name());
+            }
+        }
+        return hiddenTabs;
+    }
+
+    private String getPersistedSidebarTabsStateSnapshot() {
+        List<String> persistedState = new ArrayList<>();
+        Set<String> hiddenTabs = SettingManager.getHiddenSidebarTabs();
+        for (SidebarTab tab : SettingManager.getOrderedSidebarTabs()) {
+            persistedState.add(tab.name() + ":" + (hiddenTabs.contains(tab.name()) ? "0" : "1"));
+        }
+        return String.join(",", persistedState);
     }
 
     /**
@@ -463,10 +673,16 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
             NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_ERROR_MESSAGE));
             return;
         }
+        if (countVisibleSidebarTabs() == 0) {
+            NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_SIDEBAR_TABS_AT_LEAST_ONE));
+            return;
+        }
 
         boolean fontChanged = false; // 声明在 try 块外，以便在 catch 后也能访问
 
         try {
+            String oldSidebarTabsState = getPersistedSidebarTabsStateSnapshot();
+
             // 保存下载设置
             SettingManager.setShowDownloadProgressDialog(showDownloadProgressCheckBox.isSelected());
             if (downloadProgressDialogThresholdField.isEnabled()) {
@@ -483,9 +699,11 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
             boolean oldSidebarExpanded = SettingManager.isSidebarExpanded();
             boolean newSidebarExpanded = sidebarExpandedCheckBox.isSelected();
             SettingManager.setSidebarExpanded(newSidebarExpanded);
-            if (oldSidebarExpanded != newSidebarExpanded) {
-                // 通知 SidebarTabPanel 更新展开状态
-                updateSidebarExpansion();
+            SettingManager.setSidebarTabOrder(getSidebarTabOrderForSave());
+            SettingManager.setHiddenSidebarTabs(getHiddenSidebarTabsForSave());
+            String newSidebarTabsState = buildSidebarTabsStateSnapshot();
+            if (oldSidebarExpanded != newSidebarExpanded || !oldSidebarTabsState.equals(newSidebarTabsState)) {
+                updateSidebarConfiguration();
             }
 
             // 保存通知位置设置并更新NotificationUtil - 使用枚举的 fromIndex 方法
@@ -530,6 +748,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
             trackComponentValue(notificationPositionComboBox);
             trackComponentValue(fontNameComboBox);
             trackComponentValue(fontSizeField);
+            trackComponentValue(sidebarTabsStateField);
             setHasUnsavedChanges(false);
 
             // 根据是否修改了字体显示不同的提示信息
@@ -552,15 +771,117 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
     }
 
     /**
-     * 更新侧边栏展开状态
+     * 更新侧边栏配置
      */
-    private void updateSidebarExpansion() {
+    private void updateSidebarConfiguration() {
         try {
-            // 获取 SidebarTabPanel 单例并更新
             SidebarTabPanel sidebarPanel = SingletonFactory.getInstance(SidebarTabPanel.class);
-            sidebarPanel.updateSidebarExpansion();
+            sidebarPanel.refreshSidebarConfiguration();
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);
+        }
+    }
+
+    private static final class SidebarTabSettingItem {
+        private final SidebarTab tab;
+        private boolean visible;
+
+        private SidebarTabSettingItem(SidebarTab tab, boolean visible) {
+            this.tab = tab;
+            this.visible = visible;
+        }
+    }
+
+    private final class SidebarTabListCellRenderer extends JPanel implements ListCellRenderer<SidebarTabSettingItem> {
+        private final JCheckBox visibleCheckBox = new JCheckBox();
+        private final JLabel titleLabel = new JLabel();
+        private final JLabel dragHintLabel = new JLabel("::");
+
+        private SidebarTabListCellRenderer() {
+            setLayout(new BorderLayout(8, 0));
+            setBorder(new EmptyBorder(6, 8, 6, 8));
+            setOpaque(true);
+
+            visibleCheckBox.setOpaque(false);
+            visibleCheckBox.setFocusable(false);
+            visibleCheckBox.setEnabled(true);
+
+            titleLabel.setOpaque(false);
+            dragHintLabel.setOpaque(false);
+
+            add(visibleCheckBox, BorderLayout.WEST);
+            add(titleLabel, BorderLayout.CENTER);
+            add(dragHintLabel, BorderLayout.EAST);
+        }
+
+        @Override
+        public Component getListCellRendererComponent(JList<? extends SidebarTabSettingItem> list,
+                                                      SidebarTabSettingItem value,
+                                                      int index,
+                                                      boolean isSelected,
+                                                      boolean cellHasFocus) {
+            visibleCheckBox.setSelected(value.visible);
+            titleLabel.setText(value.tab.getDisplayTitle());
+            titleLabel.setFont(com.laker.postman.util.FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+            titleLabel.setForeground(getTextPrimaryColor());
+
+            dragHintLabel.setFont(com.laker.postman.util.FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
+            dragHintLabel.setForeground(getTextSecondaryColor());
+
+            Color background = isSelected ? getHoverBackgroundColor() : getInputBackgroundColor();
+            setBackground(background);
+            return this;
+        }
+    }
+
+    private final class SidebarTabListTransferHandler extends TransferHandler {
+        @Override
+        public int getSourceActions(JComponent c) {
+            return MOVE;
+        }
+
+        @Override
+        protected Transferable createTransferable(JComponent c) {
+            return new StringSelection(String.valueOf(sidebarTabList.getSelectedIndex()));
+        }
+
+        @Override
+        public boolean canImport(TransferSupport support) {
+            return support.isDrop() && support.isDataFlavorSupported(java.awt.datatransfer.DataFlavor.stringFlavor);
+        }
+
+        @Override
+        public boolean importData(TransferSupport support) {
+            if (!canImport(support)) {
+                return false;
+            }
+
+            try {
+                int sourceIndex = Integer.parseInt((String) support.getTransferable()
+                        .getTransferData(java.awt.datatransfer.DataFlavor.stringFlavor));
+                JList.DropLocation dropLocation = (JList.DropLocation) support.getDropLocation();
+                int targetIndex = dropLocation.getIndex();
+
+                if (sourceIndex < 0 || sourceIndex >= sidebarTabListModel.size()) {
+                    return false;
+                }
+                if (targetIndex < 0 || targetIndex > sidebarTabListModel.size()) {
+                    return false;
+                }
+
+                SidebarTabSettingItem movedItem = sidebarTabListModel.get(sourceIndex);
+                sidebarTabListModel.remove(sourceIndex);
+                if (sourceIndex < targetIndex) {
+                    targetIndex--;
+                }
+                sidebarTabListModel.add(targetIndex, movedItem);
+                sidebarTabList.setSelectedIndex(targetIndex);
+                syncSidebarTabsState();
+                return true;
+            } catch (Exception ex) {
+                log.debug("Failed to reorder sidebar tabs", ex);
+                return false;
+            }
         }
     }
 }

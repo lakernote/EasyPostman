@@ -11,8 +11,8 @@
 
     <!--
         顶层模块划分说明：
-        1. plugin-api：稳定扩展接口，只放插件可依赖的公共 SPI
-        2. plugin-runtime：插件扫描、加载、启停、状态持久化
+        1. easy-postman-plugin-api：稳定扩展接口，只放插件可依赖的公共 SPI
+        2. easy-postman-plugin-runtime：插件扫描、加载、启停、状态持久化
         3. easy-postman-plugins：官方插件聚合目录，每个 plugin-* 独立打包发布
         4. easy-postman-app：宿主应用，只保留核心能力和插件桥接点
      -->

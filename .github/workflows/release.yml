@@ -77,7 +77,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-jar
-          path: target/easy-postman-${{ needs.get-version.outputs.version }}.jar
+          path: easy-postman-app/target/easy-postman-${{ needs.get-version.outputs.version }}.jar
           retention-days: 1
 
 
@@ -622,7 +622,7 @@ jobs:
     name: Build Ubuntu DEB（构建 Ubuntu 安装包）
     runs-on: ubuntu-22.04
     needs: [ get-version, build-jar-artifact ]
-    if: github.event_name != 'release' || startsWith(github.event.release.tag_name, 'v')
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')
 
     steps:
       - name: Checkout（检出代码）

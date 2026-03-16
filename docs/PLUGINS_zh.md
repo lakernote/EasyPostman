@@ -282,9 +282,12 @@ catalog 的 `downloadUrl` 可以是：
 独立插件发版时，建议输入：
 
 - `plugin`: 要发布的插件，如 `redis`
+- `dry_run`: 分支验证时保持 `true`；确认无误后正式发版再改成 `false`
+- `publish_gitee_release`: 正式发版时如需同步 Gitee 保持 `true`
 - 先在对应 `plugin-*/pom.xml` 里维护好 `<version>`
 - 同时在对应 `plugin-*/pom.xml` 里维护 `plugin.minAppVersion`
 - `update_github_catalog`: 是否回写官方 GitHub catalog，通常保持开启
+- `update_gitee_catalog`: 是否回写官方 Gitee catalog，通常与 Gitee Release 一起开启
 
 这样覆盖三类用户：
 

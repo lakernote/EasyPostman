@@ -16,9 +16,8 @@
 常用命令：
 
 ```bash
-./scripts/plugin-dev.sh list
-./scripts/plugin-dev.sh build all
-./scripts/plugin-dev.sh prepare redis
+mvn -pl easy-postman-app,easy-postman-plugins/plugin-redis -am clean package -DskipTests
+mvn clean package -DskipTests
 ```
 
 更多说明见：

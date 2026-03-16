@@ -8,7 +8,6 @@
 插件架构、本地插件开发、在线/离线安装说明，统一见：
 
 - `docs/PLUGINS_zh.md`
-- `scripts/plugin-dev.sh`
 
 ## 前置要求
 
@@ -72,20 +71,21 @@ java -jar easy-postman-app/target/easy-postman-*.jar
 java -Xms512m -Xmx2g -jar easy-postman-app/target/easy-postman-*.jar
 ```
 
-### 插件本地开发
+### 插件本地构建
+
+如果要本地构建单个插件，直接用 Maven 即可：
 
 ```bash
-./scripts/plugin-dev.sh list
-./scripts/plugin-dev.sh build redis
-./scripts/plugin-dev.sh prepare redis
+mvn -pl easy-postman-app,easy-postman-plugins/plugin-redis -am clean package -DskipTests
 ```
 
-这套脚本会帮你统一处理：
+如果要一次性构建全部插件：
 
-- app + 插件构建
-- 本地 catalog 生成
-- 离线目录定位
-- 隔离数据目录验证
+```bash
+mvn clean package -DskipTests
+```
+
+更多插件安装、离线包、catalog 和独立发版说明，见 `docs/PLUGINS_zh.md`。
 
 ---
 

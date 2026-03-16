@@ -2297,6 +2297,9 @@ public final class MessageKeys {
     public static final String CERT_EDIT_SUCCESS = "cert.edit.success";
     public static final String CERT_DELETE_SUCCESS = "cert.delete.success";
     public static final String CERT_STATUS_UPDATED = "cert.status.updated";
+    public static final String CERT_PLUGIN_REQUIRED_TITLE = "cert.plugin.required.title";
+    public static final String CERT_PLUGIN_REQUIRED_DESCRIPTION = "cert.plugin.required.description";
+    public static final String CERT_PLUGIN_OPEN_MANAGER = "cert.plugin.open_manager";
 
     // Client Certificate Console Logs
     public static final String CERT_CONSOLE_MATCHED = "cert.console.matched";

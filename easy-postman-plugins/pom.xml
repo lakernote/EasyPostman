@@ -23,6 +23,7 @@
      -->
     <modules>
         <module>plugin-manager</module>
+        <module>plugin-client-cert</module>
         <module>plugin-redis</module>
         <module>plugin-kafka</module>
         <module>plugin-decompiler</module>

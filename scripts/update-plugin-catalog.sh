@@ -57,6 +57,7 @@ plugin_name() {
     kafka) echo "Kafka Plugin" ;;
     git) echo "Git Plugin" ;;
     decompiler) echo "Decompiler Plugin" ;;
+    client-cert) echo "Client Certificate Plugin" ;;
     *) echo "Unknown Plugin" ;;
   esac
 }
@@ -67,6 +68,7 @@ plugin_description() {
     kafka) echo "Kafka toolbox panel, pm.kafka script API, completions and snippets." ;;
     git) echo "Git workspace operations, history and conflict checks powered by JGit." ;;
     decompiler) echo "Java decompiler toolbox panel powered by CFR." ;;
+    client-cert) echo "Client certificate management and mTLS key material loading." ;;
     *) echo "" ;;
   esac
 }
@@ -115,7 +117,7 @@ write_catalog() {
   local include_sha256="$4"
   local output_path="$5"
   local source_title source_homepage
-  local plugins=(redis kafka git decompiler)
+  local plugins=(redis kafka git decompiler client-cert)
   local plugin first=true
 
   mkdir -p "$(dirname "${output_path}")"

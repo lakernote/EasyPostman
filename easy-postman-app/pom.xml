@@ -151,11 +151,6 @@
             <version>1.18.0</version>
         </dependency>
         <dependency>
-            <groupId>io.github.hakky54</groupId>
-            <artifactId>ayza-for-pem</artifactId>
-            <version>10.0.1</version>
-        </dependency>
-        <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>
             <artifactId>imageio-webp</artifactId>
             <version>${twelvemonkeys.version}</version>

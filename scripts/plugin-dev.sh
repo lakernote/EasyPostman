@@ -20,7 +20,7 @@ Usage:
   ./scripts/plugin-dev.sh reset <plugin>
 
 Plugins:
-  redis | kafka | git | decompiler
+  redis | kafka | git | decompiler | client-cert
 
 Commands:
   list             Print supported plugin ids.
@@ -61,7 +61,7 @@ project_version() {
 
 plugin_exists() {
   case "$1" in
-    redis|kafka|git|decompiler) return 0 ;;
+    redis|kafka|git|decompiler|client-cert) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -72,6 +72,7 @@ plugin_label() {
     kafka) echo "Kafka" ;;
     git) echo "Git" ;;
     decompiler) echo "Decompiler" ;;
+    client-cert) echo "Client Certificate" ;;
   esac
 }
 
@@ -81,6 +82,7 @@ plugin_package_path() {
     kafka) echo "com/laker/postman/plugin/kafka" ;;
     git) echo "com/laker/postman/plugin/git" ;;
     decompiler) echo "com/laker/postman/plugin/decompiler" ;;
+    client-cert) echo "com/laker/postman/plugin/clientcert" ;;
   esac
 }
 
@@ -90,6 +92,7 @@ plugin_entry_class() {
     kafka) echo "KafkaPlugin.class" ;;
     git) echo "GitPlugin.class" ;;
     decompiler) echo "DecompilerPlugin.class" ;;
+    client-cert) echo "ClientCertificatePlugin.class" ;;
   esac
 }
 
@@ -99,6 +102,7 @@ plugin_description() {
     kafka) echo "Kafka toolbox panel, pm.kafka script API, completions and snippets." ;;
     git) echo "Git workspace actions, repository status, sync and auth operations." ;;
     decompiler) echo "Java decompiler toolbox panel powered by CFR." ;;
+    client-cert) echo "Client certificate management and mTLS key material loading." ;;
   esac
 }
 
@@ -167,7 +171,7 @@ ensure_plugin() {
 }
 
 list_plugins() {
-  printf '%s\n' redis kafka git decompiler
+  printf '%s\n' redis kafka git decompiler client-cert
 }
 
 run_maven() {

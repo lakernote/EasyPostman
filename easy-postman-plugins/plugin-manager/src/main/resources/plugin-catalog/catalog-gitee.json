@@ -37,6 +37,15 @@
       "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/v4.3.55/easy-postman-4.3.55-plugin-decompiler.jar",
       "homepage": "https://gitee.com/lakernote/easy-postman",
       "sha256": ""
+    },
+    {
+      "id": "plugin-client-cert",
+      "name": "Client Certificate Plugin",
+      "version": "4.3.55",
+      "description": "Client certificate management and mTLS key material loading.",
+      "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/v4.3.55/easy-postman-4.3.55-plugin-client-cert.jar",
+      "homepage": "https://gitee.com/lakernote/easy-postman",
+      "sha256": ""
     }
   ]
 }

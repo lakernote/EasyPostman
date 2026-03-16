@@ -1,9 +1,10 @@
 package com.laker.postman.panel.topmenu.setting;
 
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.model.ClientCertificate;
-import com.laker.postman.service.ClientCertificateService;
+import com.laker.postman.panel.topmenu.plugin.PluginManagerDialog;
+import com.laker.postman.plugin.bridge.ClientCertificatePluginService;
+import com.laker.postman.plugin.bridge.ClientCertificatePluginServices;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
@@ -33,7 +34,9 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
     private JButton editBtn;
     private JButton deleteBtn;
     private JButton helpBtn;
+    private JButton openPluginManagerBtn;
     private final Window parentWindow;
+    private boolean pluginInstalled;
 
     public ClientCertificateSettingsPanelModern(Window parentWindow) {
         this.parentWindow = parentWindow;
@@ -41,10 +44,18 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
 
     @Override
     protected void buildContent(JPanel contentPanel) {
+        pluginInstalled = ClientCertificatePluginServices.isClientCertificatePluginInstalled();
+
         // 说明区域
         JPanel descSection = createDescriptionSection();
         contentPanel.add(descSection);
         contentPanel.add(createVerticalSpace(SECTION_SPACING));
+
+        if (!pluginInstalled) {
+            contentPanel.add(createPluginInstallSection());
+            contentPanel.add(createVerticalSpace(SECTION_SPACING));
+            return;
+        }
 
         // 证书表格区域
         JPanel tableSection = createModernSection(
@@ -83,6 +94,13 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
                     parentWindow.dispose();
                 }
             });
+        }
+
+        if (!pluginInstalled) {
+            if (openPluginManagerBtn != null) {
+                openPluginManagerBtn.addActionListener(e -> openPluginManager());
+            }
+            return;
         }
 
         addBtn.addActionListener(e -> showAddDialog());
@@ -125,6 +143,21 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         panel.add(descLabel);
 
         return panel;
+    }
+
+    private JPanel createPluginInstallSection() {
+        JPanel section = createModernSection(
+                I18nUtil.getMessage(MessageKeys.CERT_PLUGIN_REQUIRED_TITLE),
+                I18nUtil.getMessage(MessageKeys.CERT_PLUGIN_REQUIRED_DESCRIPTION)
+        );
+
+        openPluginManagerBtn = createModernButton(
+                I18nUtil.getMessage(MessageKeys.CERT_PLUGIN_OPEN_MANAGER), true);
+        openPluginManagerBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
+        openPluginManagerBtn.setMaximumSize(new Dimension(220, 32));
+        section.add(openPluginManagerBtn);
+
+        return section;
     }
 
     /**
@@ -245,6 +278,15 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         tableModel.loadCertificates();
     }
 
+    private ClientCertificatePluginService getCertificateService() {
+        return ClientCertificatePluginServices.requireClientCertificateService();
+    }
+
+    private void openPluginManager() {
+        Window window = parentWindow != null ? parentWindow : SwingUtilities.getWindowAncestor(this);
+        PluginManagerDialog.showDialog(window);
+    }
+
     private void showAddDialog() {
         ClientCertificate cert = new ClientCertificate();
         CertificateEditDialog dialog = new CertificateEditDialog(
@@ -252,7 +294,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         dialog.setVisible(true);
 
         if (dialog.isConfirmed()) {
-            BeanFactory.getBean(ClientCertificateService.class).addCertificate(cert);
+            getCertificateService().addCertificate(cert);
             loadCertificates();
             NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.CERT_ADD_SUCCESS));
         }
@@ -268,7 +310,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         dialog.setVisible(true);
 
         if (dialog.isConfirmed()) {
-            BeanFactory.getBean(ClientCertificateService.class).updateCertificate(cert);
+            getCertificateService().updateCertificate(cert);
             loadCertificates();
             NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.CERT_EDIT_SUCCESS));
         }
@@ -294,7 +336,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
                 JOptionPane.WARNING_MESSAGE);
 
         if (result == JOptionPane.YES_OPTION) {
-            BeanFactory.getBean(ClientCertificateService.class).deleteCertificate(cert.getId());
+            getCertificateService().deleteCertificate(cert.getId());
             loadCertificates();
             updateButtonStates();
             NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.CERT_DELETE_SUCCESS));
@@ -336,7 +378,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         private List<ClientCertificate> certificates = new java.util.ArrayList<>();
 
         public void loadCertificates() {
-            certificates = BeanFactory.getBean(ClientCertificateService.class).getAllCertificates();
+            certificates = ClientCertificatePluginServices.requireClientCertificateService().getAllCertificates();
             fireTableDataChanged();
         }
 
@@ -390,7 +432,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
             if (columnIndex == 0) {
                 ClientCertificate cert = certificates.get(rowIndex);
                 cert.setEnabled((Boolean) aValue);
-                BeanFactory.getBean(ClientCertificateService.class).updateCertificate(cert);
+                ClientCertificatePluginServices.requireClientCertificateService().updateCertificate(cert);
                 fireTableCellUpdated(rowIndex, columnIndex);
                 NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.CERT_STATUS_UPDATED));
             }

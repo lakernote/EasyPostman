@@ -1,9 +1,8 @@
 package com.laker.postman.service.http.ssl;
 
-import com.laker.postman.ioc.BeanFactory;
-import com.laker.postman.model.ClientCertificate;
 import com.laker.postman.panel.sidebar.ConsolePanel;
-import com.laker.postman.service.ClientCertificateService;
+import com.laker.postman.plugin.bridge.ClientCertificatePluginService;
+import com.laker.postman.plugin.bridge.ClientCertificatePluginServices;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
@@ -133,37 +132,18 @@ public class SSLConfigurationUtil {
         if (host == null || host.isEmpty()) {
             return new KeyManager[0];
         }
-        ClientCertificateService clientCertificateService = BeanFactory.getBean(ClientCertificateService.class);
-        ClientCertificate clientCert = clientCertificateService.findMatchingCertificate(host, port);
-        if (clientCert == null || !clientCertificateService.validateCertificatePaths(clientCert)) {
+        ClientCertificatePluginService service = ClientCertificatePluginServices.getClientCertificateService();
+        if (service == null) {
             return new KeyManager[0];
         }
 
         try {
-            KeyManager[] keyManagers = ClientCertificateLoader.createKeyManagers(clientCert);
-            log.info("Using client certificate for host: {} ({})", host, clientCert.getName());
-
-            // 输出到控制台：证书加载成功
-            String certName = clientCert.getName() != null && !clientCert.getName().isEmpty()
-                    ? clientCert.getName()
-                    : clientCert.getCertPath();
-            String message = MessageFormat.format(
-                    I18nUtil.getMessage(MessageKeys.CERT_CONSOLE_LOADED),
-                    certName
-            );
-            ConsolePanel.appendLog(message, ConsolePanel.LogType.SUCCESS);
-
-            return keyManagers;
+            return service.loadClientCertificateKeyManagers(host, port);
         } catch (Exception e) {
             log.error("Failed to load client certificate for host: {}", host, e);
-
-            // 输出到控制台：证书加载失败
-            String certName = clientCert.getName() != null && !clientCert.getName().isEmpty()
-                    ? clientCert.getName()
-                    : clientCert.getCertPath();
             String message = MessageFormat.format(
                     I18nUtil.getMessage(MessageKeys.CERT_CONSOLE_LOAD_FAILED),
-                    certName, e.getMessage()
+                    host, e.getMessage()
             );
             ConsolePanel.appendLog(message, ConsolePanel.LogType.ERROR);
 

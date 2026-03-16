@@ -93,8 +93,8 @@ public class PluginCatalogServiceTest {
         List<PluginCatalogEntry> githubEntries = PluginCatalogService.loadBundledOfficialCatalog("github");
         List<PluginCatalogEntry> giteeEntries = PluginCatalogService.loadBundledOfficialCatalog("gitee");
 
-        assertEquals(githubEntries.size(), 4);
-        assertEquals(giteeEntries.size(), 4);
+        assertEquals(githubEntries.size(), 5);
+        assertEquals(giteeEntries.size(), 5);
         assertEquals(githubEntries.get(0).id(), "plugin-redis");
         assertTrue(githubEntries.get(0).installUrl().startsWith("https://github.com/lakernote/easy-postman/"));
         assertTrue(giteeEntries.get(0).installUrl().startsWith("https://gitee.com/lakernote/easy-postman/"));

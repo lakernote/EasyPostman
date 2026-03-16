@@ -2,6 +2,7 @@ package com.laker.postman.panel.topmenu.plugin;
 
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.plugin.api.PluginDescriptor;
+import com.laker.postman.plugin.manager.PluginInstallSource;
 import com.laker.postman.plugin.manager.PluginManagementService;
 import com.laker.postman.plugin.manager.PluginUninstallResult;
 import com.laker.postman.plugin.manager.market.PluginCatalogEntry;
@@ -40,6 +41,9 @@ public class PluginManagerDialog extends JDialog {
 
     private static final String VIEW_INSTALLED = "installed";
     private static final String VIEW_MARKET = "market";
+    private static final int DETAILS_MIN_WIDTH = 320;
+    private static final int LIST_MIN_WIDTH = 260;
+    private static final int SPLIT_DIVIDER_SIZE = 6;
 
     private final DefaultListModel<PluginFileInfo> installedListModel = new DefaultListModel<>();
     private final JList<PluginFileInfo> installedList = new JList<>(installedListModel);
@@ -83,6 +87,7 @@ public class PluginManagerDialog extends JDialog {
     private final JLabel installedIdValueLabel = createValueLabel();
     private final JLabel installedVersionValueLabel = createValueLabel();
     private final JLabel installedCompatibilityValueLabel = createValueLabel();
+    private final JTextArea installedSourceValueArea = createReadOnlyArea(3);
     private final JTextArea installedPathValueArea = createReadOnlyArea(3);
 
     private final JLabel marketDetailTitleLabel = createDetailTitleLabel();
@@ -91,6 +96,7 @@ public class PluginManagerDialog extends JDialog {
     private final JTextArea marketDetailDescriptionArea = createReadOnlyArea(4);
     private final JLabel marketIdValueLabel = createValueLabel();
     private final JLabel marketVersionValueLabel = createValueLabel();
+    private final JTextArea marketInstalledSourceValueArea = createReadOnlyArea(3);
     private final JTextArea marketDownloadValueArea = createReadOnlyArea(3);
     private final JTextArea marketHomepageValueArea = createReadOnlyArea(2);
 
@@ -297,12 +303,7 @@ public class PluginManagerDialog extends JDialog {
     }
 
     private JSplitPane createInstalledSplitPane() {
-        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
-                createInstalledListPanel(), createInstalledDetailsPanel());
-        splitPane.setBorder(BorderFactory.createEmptyBorder());
-        splitPane.setResizeWeight(0.56);
-        splitPane.setContinuousLayout(true);
-        return splitPane;
+        return createHorizontalSplitPane(createInstalledListPanel(), createInstalledDetailsPanel(), 0.56);
     }
 
     private JPanel createInstalledListPanel() {
@@ -346,6 +347,7 @@ public class PluginManagerDialog extends JDialog {
         panel.add(createDetailRow(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_ID), installedIdValueLabel), "growx, wrap");
         panel.add(createDetailRow(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_VERSION), installedVersionValueLabel), "growx, wrap");
         panel.add(createDetailRow(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_COMPATIBILITY), installedCompatibilityValueLabel), "growx, wrap");
+        panel.add(createKeyValueBlock(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_INSTALL_SOURCE), installedSourceValueArea), "growx, wrap");
         panel.add(createKeyValueBlock(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_PATH), installedPathValueArea), "growx, push, wrap");
         panel.add(createInstalledActionPanel(), "growx");
         return panel;
@@ -395,11 +397,26 @@ public class PluginManagerDialog extends JDialog {
     }
 
     private JSplitPane createMarketSplitPane() {
-        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
-                createMarketListPanel(), createMarketDetailsPanel());
+        return createHorizontalSplitPane(createMarketListPanel(), createMarketDetailsPanel(), 0.56);
+    }
+
+    private JSplitPane createHorizontalSplitPane(JComponent left, JComponent right, double resizeWeight) {
+        left.setMinimumSize(new Dimension(LIST_MIN_WIDTH, 200));
+        right.setMinimumSize(new Dimension(DETAILS_MIN_WIDTH, 200));
+
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, left, right);
         splitPane.setBorder(BorderFactory.createEmptyBorder());
-        splitPane.setResizeWeight(0.56);
+        splitPane.setDividerSize(SPLIT_DIVIDER_SIZE);
         splitPane.setContinuousLayout(true);
+        splitPane.setResizeWeight(resizeWeight);
+        splitPane.setOneTouchExpandable(false);
+
+        // 对话框首次布局完成后再按比例落位，避免在不同父窗口/入口下 divider 初始位置漂移。
+        SwingUtilities.invokeLater(() -> {
+            if (splitPane.isDisplayable()) {
+                splitPane.setDividerLocation(resizeWeight);
+            }
+        });
         return splitPane;
     }
 
@@ -437,7 +454,10 @@ public class PluginManagerDialog extends JDialog {
         panel.add(marketDetailDescriptionArea, "growx, wrap");
         panel.add(createDetailRow(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_ID), marketIdValueLabel), "growx, wrap");
         panel.add(createDetailRow(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_VERSION), marketVersionValueLabel), "growx, wrap");
-        panel.add(createKeyValueBlock(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_DOWNLOAD), marketDownloadValueArea), "growx, wrap");
+        panel.add(createKeyValueBlock(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_CURRENT_INSTALL_SOURCE),
+                marketInstalledSourceValueArea), "growx, wrap");
+        panel.add(createKeyValueBlock(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_MARKET_DOWNLOAD),
+                marketDownloadValueArea), "growx, wrap");
         panel.add(createKeyValueBlock(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_HOMEPAGE), marketHomepageValueArea), "growx, push, wrap");
         panel.add(createMarketActionPanel(), "growx");
         return panel;
@@ -776,8 +796,26 @@ public class PluginManagerDialog extends JDialog {
     private void updateMarketActions() {
         PluginCatalogEntry selected = marketList.getSelectedValue();
         boolean validSelection = selected != null && !selected.isPlaceholder();
+        String actionText = I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_INSTALL);
+        boolean actionEnabled = !marketBusy && validSelection;
+        if (validSelection) {
+            PluginFileInfo installed = installedPluginMap.get(selected.id());
+            if (installed != null) {
+                int compare = VersionComparator.compare(selected.version(), installed.descriptor().version());
+                if (compare > 0) {
+                    actionText = I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_UPDATE);
+                } else if (compare == 0) {
+                    actionText = I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_ACTION_INSTALLED);
+                    actionEnabled = false;
+                } else {
+                    actionText = I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_ACTION_LOCAL_NEWER);
+                    actionEnabled = false;
+                }
+            }
+        }
         loadCatalogButton.setEnabled(!marketBusy);
-        installMarketButton.setEnabled(!marketBusy && validSelection);
+        installMarketButton.setText(actionText);
+        installMarketButton.setEnabled(actionEnabled);
         openHomepageButton.setEnabled(!marketBusy && validSelection && selected.hasHomepageUrl());
         catalogUrlField.setEnabled(!marketBusy);
         useOfficialGithubCatalogButton.setEnabled(!marketBusy);
@@ -800,6 +838,7 @@ public class PluginManagerDialog extends JDialog {
         installedIdValueLabel.setText(descriptor.id());
         installedVersionValueLabel.setText(descriptor.version());
         installedCompatibilityValueLabel.setText(buildCompatibilityValue(descriptor, selected.compatible()));
+        installedSourceValueArea.setText(resolveInstalledSourceText(descriptor.id(), selected.jarPath()));
         installedPathValueArea.setText(selected.jarPath().toString());
         applyStatusBadge(installedDetailStatusLabel, resolveInstalledStatus(selected));
     }
@@ -818,6 +857,7 @@ public class PluginManagerDialog extends JDialog {
                 : I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_EMPTY));
         marketIdValueLabel.setText(selected.id());
         marketVersionValueLabel.setText(selected.version());
+        marketInstalledSourceValueArea.setText(resolveInstalledSourceText(selected.id(), null));
         marketDownloadValueArea.setText(selected.installUrl());
         marketHomepageValueArea.setText(selected.hasHomepageUrl() ? selected.homepageUrl() : "-");
         applyStatusBadge(marketDetailStatusLabel, getMarketEntryStatus(selected));
@@ -830,6 +870,7 @@ public class PluginManagerDialog extends JDialog {
         installedIdValueLabel.setText("-");
         installedVersionValueLabel.setText("-");
         installedCompatibilityValueLabel.setText("-");
+        installedSourceValueArea.setText("-");
         installedPathValueArea.setText("-");
         applyStatusBadge(installedDetailStatusLabel, "");
     }
@@ -840,6 +881,7 @@ public class PluginManagerDialog extends JDialog {
         marketDetailDescriptionArea.setText(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_EMPTY));
         marketIdValueLabel.setText("-");
         marketVersionValueLabel.setText("-");
+        marketInstalledSourceValueArea.setText("-");
         marketDownloadValueArea.setText("-");
         marketHomepageValueArea.setText("-");
         applyStatusBadge(marketDetailStatusLabel, "");
@@ -937,10 +979,33 @@ public class PluginManagerDialog extends JDialog {
             return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_UPDATE_AVAILABLE,
                     installed.descriptor().version());
         }
+        if (compare < 0) {
+            return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_LOCAL_NEWER,
+                    installed.descriptor().version());
+        }
         if (!installed.loaded()) {
             return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_RESTART_REQUIRED);
         }
         return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_INSTALLED, installed.descriptor().version());
+    }
+
+    private String resolveInstalledSourceText(String pluginId, Path fallbackJarPath) {
+        PluginInstallSource source = PluginManagementService.getInstallSource(pluginId);
+        if (source != null && source.hasLocation()) {
+            String sourceLabel = source.isLocal()
+                    ? I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_SOURCE_LOCAL)
+                    : I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_SOURCE_MARKET);
+            return sourceLabel + " · " + source.location();
+        }
+
+        PluginFileInfo installed = installedPluginMap.get(pluginId);
+        if (installed != null) {
+            return installed.jarPath().toString();
+        }
+        if (fallbackJarPath != null) {
+            return fallbackJarPath.toString();
+        }
+        return "-";
     }
 
     private static String resolveInstalledStatus(PluginFileInfo value) {

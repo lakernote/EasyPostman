@@ -124,6 +124,7 @@ public final class MessageKeys {
     // ============ 插件管理 ============
     public static final String PLUGIN_MANAGER_TITLE = "plugin.manager.title";
     public static final String PLUGIN_MANAGER_INSTALL = "plugin.manager.install";
+    public static final String PLUGIN_MANAGER_UPDATE = "plugin.manager.update";
     public static final String PLUGIN_MANAGER_REFRESH = "plugin.manager.refresh";
     public static final String PLUGIN_MANAGER_ENABLE = "plugin.manager.enable";
     public static final String PLUGIN_MANAGER_DISABLE = "plugin.manager.disable";
@@ -169,6 +170,9 @@ public final class MessageKeys {
     public static final String PLUGIN_MANAGER_MARKET_AVAILABLE = "plugin.manager.market.available";
     public static final String PLUGIN_MANAGER_MARKET_INSTALLED = "plugin.manager.market.installed";
     public static final String PLUGIN_MANAGER_MARKET_UPDATE_AVAILABLE = "plugin.manager.market.update_available";
+    public static final String PLUGIN_MANAGER_MARKET_LOCAL_NEWER = "plugin.manager.market.local_newer";
+    public static final String PLUGIN_MANAGER_MARKET_ACTION_INSTALLED = "plugin.manager.market.action_installed";
+    public static final String PLUGIN_MANAGER_MARKET_ACTION_LOCAL_NEWER = "plugin.manager.market.action_local_newer";
     public static final String PLUGIN_MANAGER_SUBTITLE = "plugin.manager.subtitle";
     public static final String PLUGIN_MANAGER_SUMMARY_INSTALLED = "plugin.manager.summary.installed";
     public static final String PLUGIN_MANAGER_SUMMARY_LOADED = "plugin.manager.summary.loaded";
@@ -180,9 +184,13 @@ public final class MessageKeys {
     public static final String PLUGIN_MANAGER_DETAIL_VERSION = "plugin.manager.detail.version";
     public static final String PLUGIN_MANAGER_DETAIL_PATH = "plugin.manager.detail.path";
     public static final String PLUGIN_MANAGER_DETAIL_HOMEPAGE = "plugin.manager.detail.homepage";
-    public static final String PLUGIN_MANAGER_DETAIL_DOWNLOAD = "plugin.manager.detail.download";
+    public static final String PLUGIN_MANAGER_DETAIL_INSTALL_SOURCE = "plugin.manager.detail.install_source";
+    public static final String PLUGIN_MANAGER_DETAIL_CURRENT_INSTALL_SOURCE = "plugin.manager.detail.current_install_source";
+    public static final String PLUGIN_MANAGER_DETAIL_MARKET_DOWNLOAD = "plugin.manager.detail.market_download";
     public static final String PLUGIN_MANAGER_DETAIL_COMPATIBILITY = "plugin.manager.detail.compatibility";
     public static final String PLUGIN_MANAGER_MARKET_SOURCE_HINT = "plugin.manager.market.source_hint";
+    public static final String PLUGIN_MANAGER_SOURCE_LOCAL = "plugin.manager.source.local";
+    public static final String PLUGIN_MANAGER_SOURCE_MARKET = "plugin.manager.source.market";
 
     // ============ Markdown 编辑器 ============
     public static final String MARKDOWN_UNDO = "markdown.undo";

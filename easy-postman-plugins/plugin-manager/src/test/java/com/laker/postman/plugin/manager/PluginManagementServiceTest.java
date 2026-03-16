@@ -13,6 +13,9 @@ import java.nio.file.Path;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
@@ -44,6 +47,28 @@ public class PluginManagementServiceTest {
         assertFalse(result.restartRequired());
         assertFalse(Files.exists(pluginJar));
         assertFalse(PluginManagementService.isPluginPendingUninstall("plugin-redis"));
+    }
+
+    @Test
+    public void shouldPersistInstallSourceMetadata() {
+        Path localJar = dataDir.resolve("downloads").resolve("plugin-kafka-5.3.17.jar");
+
+        PluginInstallSourceStore.recordLocalInstall("plugin-kafka", localJar);
+        PluginInstallSource localSource = PluginManagementService.getInstallSource("plugin-kafka");
+
+        assertNotNull(localSource);
+        assertTrue(localSource.isLocal());
+        assertEquals(localSource.location(), localJar.toAbsolutePath().normalize().toString());
+
+        PluginInstallSourceStore.recordMarketInstall("plugin-kafka", "https://example.com/plugin-kafka.jar");
+        PluginInstallSource marketSource = PluginManagementService.getInstallSource("plugin-kafka");
+
+        assertNotNull(marketSource);
+        assertTrue(marketSource.isMarket());
+        assertEquals(marketSource.location(), "https://example.com/plugin-kafka.jar");
+
+        PluginInstallSourceStore.clear("plugin-kafka");
+        assertNull(PluginManagementService.getInstallSource("plugin-kafka"));
     }
 
     private static void writeStubPluginJar(Path jarPath, String pluginId) throws IOException {

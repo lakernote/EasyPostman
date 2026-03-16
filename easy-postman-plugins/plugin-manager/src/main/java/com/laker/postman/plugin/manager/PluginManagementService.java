@@ -82,11 +82,19 @@ public class PluginManagementService {
     }
 
     public static PluginFileInfo installPluginJar(Path sourceJar) throws IOException {
-        return PluginInstallerService.installPluginJar(sourceJar);
+        PluginFileInfo installed = PluginInstallerService.installPluginJar(sourceJar);
+        PluginInstallSourceStore.recordLocalInstall(installed.descriptor().id(), sourceJar);
+        return installed;
     }
 
     public static PluginFileInfo installCatalogPlugin(PluginCatalogEntry entry) throws Exception {
-        return PluginInstallerService.installCatalogPlugin(entry);
+        PluginFileInfo installed = PluginInstallerService.installCatalogPlugin(entry);
+        PluginInstallSourceStore.recordMarketInstall(installed.descriptor().id(), entry.installUrl());
+        return installed;
+    }
+
+    public static PluginInstallSource getInstallSource(String pluginId) {
+        return PluginInstallSourceStore.get(pluginId);
     }
 
     public static PluginUninstallResult uninstallPlugin(String pluginId) {
@@ -131,6 +139,7 @@ public class PluginManagementService {
         }
         // 已彻底卸载时，把禁用标记清掉，避免后续重装同 id 插件仍处于禁用状态
         PluginRuntime.setPluginEnabled(pluginId, true);
+        PluginInstallSourceStore.clear(pluginId);
         return new PluginUninstallResult(removed, false);
     }
 }

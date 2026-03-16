@@ -5,6 +5,7 @@ import org.testng.annotations.Test;
 import java.util.List;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertThrows;
 import static org.testng.Assert.assertTrue;
 
@@ -52,5 +53,18 @@ public class PluginCatalogServiceTest {
         assertEquals(githubEntries.get(0).id(), "plugin-redis");
         assertTrue(githubEntries.get(0).installUrl().startsWith("https://github.com/lakernote/easy-postman/"));
         assertTrue(giteeEntries.get(0).installUrl().startsWith("https://gitee.com/lakernote/easy-postman/"));
+
+        PluginCatalogEntry githubKafka = githubEntries.stream()
+                .filter(entry -> "plugin-kafka".equals(entry.id()))
+                .findFirst()
+                .orElse(null);
+        PluginCatalogEntry giteeKafka = giteeEntries.stream()
+                .filter(entry -> "plugin-kafka".equals(entry.id()))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(githubKafka);
+        assertNotNull(giteeKafka);
+        assertEquals(githubKafka.version(), "5.3.17");
+        assertEquals(giteeKafka.version(), "5.3.17");
     }
 }

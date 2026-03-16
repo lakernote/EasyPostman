@@ -14,9 +14,9 @@
     {
       "id": "plugin-kafka",
       "name": "Kafka Plugin",
-      "version": "5.3.16",
+      "version": "5.3.17",
       "description": "Kafka toolbox panel, pm.kafka script API, completions and snippets.",
-      "downloadUrl": "https://github.com/lakernote/easy-postman/releases/download/plugin-kafka-v5.3.16/easy-postman-5.3.16-plugin-kafka.jar",
+      "downloadUrl": "https://github.com/lakernote/easy-postman/releases/download/plugin-kafka-v5.3.17/easy-postman-5.3.17-plugin-kafka.jar",
       "homepage": "https://github.com/lakernote/easy-postman",
       "sha256": ""
     },

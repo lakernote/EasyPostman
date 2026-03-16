@@ -11,9 +11,6 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -159,12 +156,8 @@ public class PluginCatalogService {
         if (value.isBlank()) {
             return "";
         }
-        if (isUri(value)) {
+        if (isHttpUrl(value)) {
             return value;
-        }
-        Path path = toPathIfPossible(value);
-        if (path != null && path.isAbsolute()) {
-            return path.normalize().toUri().toString();
         }
         return catalogBaseUri.resolve(value).toString();
     }
@@ -174,44 +167,13 @@ public class PluginCatalogService {
         if (value.isBlank()) {
             return "";
         }
-        if (isUri(value)) {
-            return value;
-        }
-        Path path = toPathIfPossible(value);
-        if (path == null) {
-            return value;
-        }
-        Path normalizedPath = path.normalize();
-        if (!normalizedPath.isAbsolute()) {
-            normalizedPath = normalizedPath.toAbsolutePath().normalize();
-        }
-        if (Files.isDirectory(normalizedPath)) {
-            normalizedPath = normalizedPath.resolve("catalog.json").normalize();
-        }
-        return normalizedPath.toUri().toString();
-    }
-
-    private static boolean isUri(String value) {
-        return value.matches("^[a-zA-Z][a-zA-Z0-9+.-]*:.*") && !value.matches("^[a-zA-Z]:[\\\\/].*");
-    }
-
-    private static Path toPathIfPossible(String value) {
-        String expanded = expandUserHome(value);
-        try {
-            Path path = Paths.get(expanded);
-            if (path.isAbsolute() || Files.exists(path)) {
-                return path;
-            }
-            return path;
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private static String expandUserHome(String value) {
-        if (value.startsWith("~/") || value.startsWith("~\\")) {
-            return Paths.get(System.getProperty("user.home"), value.substring(2)).toString();
+        if (!isHttpUrl(value)) {
+            throw new IllegalArgumentException("Only http(s) catalog URLs are supported");
         }
         return value;
+    }
+
+    private static boolean isHttpUrl(String value) {
+        return value.startsWith("http://") || value.startsWith("https://");
     }
 }

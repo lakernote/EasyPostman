@@ -58,7 +58,6 @@ jobs:
       host_version: ${{ steps.meta.outputs.host_version }}
       jar_name: ${{ steps.meta.outputs.jar_name }}
       module_path: ${{ steps.meta.outputs.module_path }}
-      offline_dir: ${{ steps.meta.outputs.offline_dir }}
       release_title: ${{ steps.meta.outputs.release_title }}
     steps:
       - name: Checkout（检出代码）
@@ -106,7 +105,6 @@ jobs:
 
           TAG_NAME="plugin-${PLUGIN}-v${PLUGIN_VERSION}"
           JAR_NAME="easy-postman-${PLUGIN_VERSION}-plugin-${PLUGIN}.jar"
-          OFFLINE_DIR="${MODULE_PATH}/target/plugin-market/offline/easy-postman-plugin-${PLUGIN}"
           RELEASE_TITLE="Plugin ${PLUGIN} ${PLUGIN_VERSION}"
 
           echo "plugin=${PLUGIN}" >> "$GITHUB_OUTPUT"
@@ -117,7 +115,6 @@ jobs:
           echo "host_version=${HOST_VERSION}" >> "$GITHUB_OUTPUT"
           echo "jar_name=${JAR_NAME}" >> "$GITHUB_OUTPUT"
           echo "module_path=${MODULE_PATH}" >> "$GITHUB_OUTPUT"
-          echo "offline_dir=${OFFLINE_DIR}" >> "$GITHUB_OUTPUT"
           echo "release_title=${RELEASE_TITLE}" >> "$GITHUB_OUTPUT"
 
   release-plugin:
@@ -160,31 +157,19 @@ jobs:
           PLUGIN="${{ needs.prepare-context.outputs.plugin }}"
           PLUGIN_VERSION="${{ needs.prepare-context.outputs.plugin_version }}"
           MODULE_PATH="${{ needs.prepare-context.outputs.module_path }}"
-          OFFLINE_DIR="${{ needs.prepare-context.outputs.offline_dir }}"
           JAR_PATH="${MODULE_PATH}/target/${{ needs.prepare-context.outputs.jar_name }}"
 
           if [ ! -f "$JAR_PATH" ]; then
             echo "Plugin jar not found: $JAR_PATH" >&2
             exit 1
           fi
-          if [ ! -d "$OFFLINE_DIR" ]; then
-            echo "Offline bundle dir not found: $OFFLINE_DIR" >&2
-            exit 1
-          fi
-
           mkdir -p dist
 
-          OFFLINE_ZIP="dist/easy-postman-plugin-${PLUGIN}-${PLUGIN_VERSION}-offline.zip"
           SHA_FILE="dist/${{ needs.prepare-context.outputs.jar_name }}.sha256.txt"
 
           cp "$JAR_PATH" "dist/${{ needs.prepare-context.outputs.jar_name }}"
           JAR_SHA256="$(sha256sum "dist/${{ needs.prepare-context.outputs.jar_name }}" | awk '{print $1}')"
           printf '%s  %s\n' "$JAR_SHA256" "${{ needs.prepare-context.outputs.jar_name }}" > "$SHA_FILE"
-
-          (
-            cd "$(dirname "$OFFLINE_DIR")"
-            zip -rq "${GITHUB_WORKSPACE}/${OFFLINE_ZIP}" "$(basename "$OFFLINE_DIR")"
-          )
 
           echo "jar_sha256=${JAR_SHA256}" >> "$GITHUB_OUTPUT"
 
@@ -225,13 +210,11 @@ jobs:
             gh release upload "$TAG_NAME" \
               "dist/${{ needs.prepare-context.outputs.jar_name }}" \
               "dist/${{ needs.prepare-context.outputs.jar_name }}.sha256.txt" \
-              "dist/easy-postman-plugin-${{ needs.prepare-context.outputs.plugin }}-${{ needs.prepare-context.outputs.plugin_version }}-offline.zip" \
               --clobber
           else
             gh release create "$TAG_NAME" \
               "dist/${{ needs.prepare-context.outputs.jar_name }}" \
               "dist/${{ needs.prepare-context.outputs.jar_name }}.sha256.txt" \
-              "dist/easy-postman-plugin-${{ needs.prepare-context.outputs.plugin }}-${{ needs.prepare-context.outputs.plugin_version }}-offline.zip" \
               --title "$TITLE" \
               --notes-file "$NOTES_FILE" \
               --target "$GITHUB_SHA"
@@ -298,8 +281,7 @@ jobs:
 
           for file in \
             "dist/${{ needs.prepare-context.outputs.jar_name }}" \
-            "dist/${{ needs.prepare-context.outputs.jar_name }}.sha256.txt" \
-            "dist/easy-postman-plugin-${{ needs.prepare-context.outputs.plugin }}-${{ needs.prepare-context.outputs.plugin_version }}-offline.zip"
+            "dist/${{ needs.prepare-context.outputs.jar_name }}.sha256.txt"
           do
             if [ ! -f "$file" ]; then
               echo "Missing release asset: $file" >&2

@@ -25,8 +25,10 @@
 
     <properties>
         <!--
-            宿主版本入口。app / runtime / api / manager 等平台层跟随 ${revision}。
-            官方 plugin-* 模块在各自 pom.xml 里单独维护版本。
+            宿主版本入口。
+            app / runtime / api / manager 等平台层跟随 ${revision}。
+            plugin-* 不跟随这里自动升级，而是在各自 pom.xml 里单独维护版本，
+            这样后续可以按“哪个插件改了就只发哪个插件”的节奏独立发版。
          -->
         <revision>5.3.16</revision>
         <maven.compiler.source>17</maven.compiler.source>

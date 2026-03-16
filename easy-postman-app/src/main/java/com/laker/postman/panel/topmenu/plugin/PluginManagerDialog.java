@@ -69,7 +69,6 @@ public class PluginManagerDialog extends JDialog {
     private final JButton disableInstalledButton = new JButton(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DISABLE));
     private final JButton uninstallInstalledButton = new JButton(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_UNINSTALL));
 
-    private final JButton browseCatalogButton = new JButton(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_BROWSE_CATALOG));
     private final JButton marketInstallJarButton = new JButton(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_INSTALL));
     private final JButton loadCatalogButton = new JButton(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_LOAD));
     private final JButton installMarketButton = new JButton(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_INSTALL));
@@ -143,7 +142,6 @@ public class PluginManagerDialog extends JDialog {
         disableInstalledButton.addActionListener(e -> toggleSelectedInstalledPlugin(false));
         uninstallInstalledButton.addActionListener(e -> uninstallSelectedInstalledPlugin());
 
-        browseCatalogButton.addActionListener(e -> chooseCatalogLocation());
         marketInstallJarButton.addActionListener(e -> installLocalPluginJar());
         loadCatalogButton.addActionListener(e -> loadCatalog());
         installMarketButton.addActionListener(e -> installSelectedCatalogPlugin());
@@ -382,7 +380,7 @@ public class PluginManagerDialog extends JDialog {
     private JPanel createCatalogPanel() {
         JPanel panel = createCardPanel(new MigLayout(
                 "fillx, insets 14, gap 10, novisualpadding",
-                "[grow,fill][][][][]",
+                "[grow,fill][][][]",
                 "[][]"
         ));
 
@@ -390,10 +388,9 @@ public class PluginManagerDialog extends JDialog {
         panel.add(useOfficialGithubCatalogButton);
         panel.add(useOfficialGiteeCatalogButton);
         panel.add(marketInstallJarButton);
-        panel.add(browseCatalogButton);
         panel.add(loadCatalogButton, "wrap");
         panel.add(createMutedLabel(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_SOURCE_HINT)),
-                "span 6, growx");
+                "span 5, growx");
         return panel;
     }
 
@@ -485,8 +482,7 @@ public class PluginManagerDialog extends JDialog {
     }
 
     private void applyCatalogUrl(String catalogUrl, boolean autoLoad) {
-        String normalized = PluginManagementService.normalizeCatalogLocation(catalogUrl);
-        catalogUrlField.setText(normalized);
+        catalogUrlField.setText(catalogUrl == null ? "" : catalogUrl.trim());
         if (autoLoad) {
             loadCatalog();
         }
@@ -637,31 +633,9 @@ public class PluginManagerDialog extends JDialog {
         }
     }
 
-    private void chooseCatalogLocation() {
-        JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_CATALOG_FILE_CHOOSER));
-        chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
-        chooser.setFileFilter(new FileNameExtensionFilter("JSON", "json"));
-        if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
-            return;
-        }
-
-        Path selectedPath = chooser.getSelectedFile().toPath();
-        if (selectedPath.toFile().isDirectory()) {
-            selectedPath = selectedPath.resolve("catalog.json");
-        }
-        if (!selectedPath.toFile().isFile()) {
-            showError(new IllegalArgumentException(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_CATALOG_MISSING)));
-            return;
-        }
-        String normalizedLocation = PluginManagementService.normalizeCatalogLocation(selectedPath.toString());
-        catalogUrlField.setText(normalizedLocation);
-        showView(VIEW_MARKET);
-    }
-
     private void loadCatalog() {
         String rawCatalogUrl = catalogUrlField.getText().trim();
-        String catalogUrl = PluginManagementService.normalizeCatalogLocation(rawCatalogUrl);
+        String catalogUrl = rawCatalogUrl;
         PluginManagementService.saveCatalogUrl(catalogUrl);
         catalogUrlField.setText(catalogUrl);
         if (catalogUrl.isBlank()) {
@@ -806,7 +780,6 @@ public class PluginManagerDialog extends JDialog {
         installMarketButton.setEnabled(!marketBusy && validSelection);
         openHomepageButton.setEnabled(!marketBusy && validSelection && selected.hasHomepageUrl());
         catalogUrlField.setEnabled(!marketBusy);
-        browseCatalogButton.setEnabled(!marketBusy);
         useOfficialGithubCatalogButton.setEnabled(!marketBusy);
         useOfficialGiteeCatalogButton.setEnabled(!marketBusy);
     }

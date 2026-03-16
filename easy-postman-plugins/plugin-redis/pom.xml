@@ -11,11 +11,16 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
+    <!--
+        插件版本单独维护。
+        初始独立版本从 5.3.16 起步，后续只在该插件有变更时单独递增。
+     -->
     <version>5.3.16</version>
     <artifactId>easy-postman-plugin-redis</artifactId>
     <packaging>jar</packaging>
 
     <properties>
+        <!-- 插件编译和兼容判定仍然锚定宿主版本，不和插件自身版本绑定。 -->
         <host.version>${revision}</host.version>
         <plugin.minAppVersion>${host.version}</plugin.minAppVersion>
     </properties>
@@ -98,35 +103,6 @@
             </resource>
         </resources>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-resources-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>build-offline-plugin-directory</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/plugin-market/offline/${project.artifactId}</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>src/packaging/offline</directory>
-                                    <filtering>true</filtering>
-                                </resource>
-                                <resource>
-                                    <directory>${project.build.directory}</directory>
-                                    <filtering>false</filtering>
-                                    <includes>
-                                        <include>${project.build.finalName}.jar</include>
-                                    </includes>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>

@@ -48,6 +48,7 @@ final class PluginRuntimePaths {
         }
 
         Path root;
+        // 测试和开发调试可显式覆盖数据目录，避免污染用户真实目录。
         String override = System.getProperty("easyPostman.data.dir");
         if (override != null && !override.isBlank()) {
             root = Paths.get(override.trim());

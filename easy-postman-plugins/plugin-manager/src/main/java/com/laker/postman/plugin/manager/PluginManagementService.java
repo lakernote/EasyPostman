@@ -32,10 +32,6 @@ public class PluginManagementService {
         PluginCatalogService.saveCatalogUrl(catalogUrl);
     }
 
-    public static String normalizeCatalogLocation(String catalogUrl) {
-        return PluginCatalogService.normalizeCatalogLocation(catalogUrl);
-    }
-
     public static String getOfficialCatalogUrl(String source) {
         return PluginCatalogService.getOfficialCatalogUrl(source);
     }

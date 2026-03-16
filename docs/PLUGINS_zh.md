@@ -8,10 +8,10 @@
 结论先说：
 
 1. 对用户来说，EasyPostman 只需要 2 种安装模式
-   - 离线安装：本地 JAR 安装，或者本地离线包 / 本地 `catalog.json` 安装
+   - 本地安装：直接安装插件 JAR
    - 在线安装：通过远程 `catalog.json` 安装
-2. “直接安装 JAR”和“离线目录安装”不是两套架构，只是同一个离线场景下的两个入口
-3. 当前代码已经基本满足这两个模式，文档和命名需要继续收敛
+2. 当前代码不再维护本地 offline catalog 这条安装路径
+3. 插件发布和使用都围绕“单 JAR + 远程源”收敛
 
 ## 1. 当前插件架构
 
@@ -77,11 +77,6 @@ easy-postman-parent
 
 - 支持的 catalog 来源
   - `http://` / `https://`
-  - `file://`
-  - 本地目录
-  - 本地 `catalog.json`
-- catalog 中的 `downloadUrl` 可以是相对路径
-  - 所以同一份 catalog 结构既能做离线包，也能做在线源
 - 安装时会同时保留两份文件
   - `plugins/installed/`：当前已安装副本
   - `plugins/packages/`：保留的本地包副本
@@ -102,21 +97,14 @@ easy-postman-plugins/plugin-git
 ├── pom.xml
 ├── src/main/java
 ├── src/main/resources/META-INF/easy-postman/plugin-git.properties
-├── src/packaging/offline/catalog.json
 └── target
     ├── easy-postman-5.3.16-plugin-git.jar
-    └── plugin-market/offline/easy-postman-plugin-git/
-        ├── catalog.json
-        └── easy-postman-5.3.16-plugin-git.jar
 ```
 
 产物含义：
 
 - `target/easy-postman-<plugin-version>-plugin-*.jar`
   - 单文件安装包
-- `target/plugin-market/offline/easy-postman-plugin-*/`
-  - 离线安装目录
-  - 里面已经带好 `catalog.json`
 
 ### 3.2 用户机器上的插件目录
 
@@ -138,11 +126,9 @@ easy-postman-plugins/plugin-git
 
 这是这份文档最重要的收敛点。
 
-### 4.1 模式一：离线安装
+### 4.1 模式一：本地安装
 
-离线安装下其实有两个入口，但它们属于同一个模式。
-
-#### 入口 A：安装本地 JAR
+#### 入口：安装本地 JAR
 
 适合：
 
@@ -158,26 +144,6 @@ easy-postman-plugins/plugin-git
 4. 安装后重启应用
 
 这个入口最适合“想直接点 jar 的用户”。
-
-#### 入口 B：安装本地离线包 / 本地 catalog
-
-适合：
-
-- 公司内网
-- 不能访问公网
-- 希望一次性交付“插件 + 元数据”
-- 希望给用户一个更稳定的离线分发包
-
-操作：
-
-1. 把整个离线目录发给用户
-2. 用户在插件管理里选择：
-   - 这个目录
-   - 或目录里的 `catalog.json`
-3. 从列表里安装插件
-4. 安装后重启应用
-
-这个入口本质上仍然是离线安装，只是把“单个 JAR”升级成“带 catalog 的本地源”。
 
 ### 4.2 模式二：在线安装
 
@@ -202,30 +168,18 @@ easy-postman-plugins/plugin-git
 3. 选择插件安装
 4. 安装后重启应用
 
-## 5. 为什么不要再讲“3 种安装方式”
+## 5. 为什么现在只保留 2 条路径
 
-以前文档里把下面三件事拆成 3 类：
+当前插件体系已经刻意删掉了本地 offline catalog 这条路径，只保留：
 
-1. 直接安装 JAR
-2. 离线安装
-3. 在线安装
+1. 本地 JAR 安装
+2. 远程 catalog 安装
 
-问题在于：
+原因是：
 
-- “直接安装 JAR”本质上就是离线安装
-- “离线目录安装”和“在线 catalog 安装”共用一套 catalog 解析逻辑
-- 对用户来说，分类过细只会增加理解成本
-
-更适合产品表达的方式是：
-
-1. 离线安装
-   - 本地 JAR
-   - 本地离线包 / 本地 catalog
-2. 在线安装
-   - 官方源
-   - 团队源
-
-这也更符合现在的代码结构。
+- 本地 JAR 是最简单的用户入口
+- 远程 catalog 适合长期托管和更新
+- 本地 offline catalog 只会增加一套额外心智负担和构建产物
 
 ## 6. 当前推荐的产品表达
 
@@ -235,7 +189,6 @@ easy-postman-plugins/plugin-git
 
 - 离线安装
   - 安装本地 JAR
-  - 加载本地插件源
 - 在线安装
   - 官方插件源
   - 自定义插件源
@@ -245,15 +198,14 @@ easy-postman-plugins/plugin-git
 - `jar install`
   - 直接导入单个插件包
 - `catalog install`
-  - 通过 catalog 安装
-  - catalog 可以是本地的，也可以是远程的
+  - 通过远程 catalog 安装
 
 换句话说：
 
 - 用户层：2 种模式
 - 技术层：2 条入口
   - 单 JAR 安装
-  - catalog 安装
+  - 远程 catalog 安装
 
 ## 7. 本地构建与发版
 
@@ -270,7 +222,7 @@ mvn -pl easy-postman-app,easy-postman-plugins/plugin-redis -am clean package -Ds
 说明：
 
 - 会把宿主和目标插件一起构建出来
-- 插件模块的 `package` 阶段会自动产出离线目录
+- 插件模块的 `package` 阶段会产出插件 JAR
 
 ### 7.2 本地构建全部插件
 
@@ -288,7 +240,6 @@ mvn clean package -DskipTests
 
 - 构建指定插件
 - 产出单插件 JAR
-- 产出离线安装 ZIP
 - 计算 JAR `sha256`
 - 创建 GitHub Release
 - 可选同步 Gitee Release
@@ -313,15 +264,12 @@ mvn clean package -DskipTests
 
 1. 单插件 JAR
    - 给“直接安装”的用户
-2. 离线包 ZIP
-   - 给内网 / 离线用户
-3. 官方 catalog URL
+2. 官方 catalog URL
    - 给在线安装和持续更新用户
 
 所以建议保持这个发布矩阵：
 
 - Release 附件里放插件 JAR
-- Release 附件里放离线包 ZIP
 - 文档里固定给出官方 catalog URL
 
 ## 9. 借鉴其他产品后，你还可以继续优化什么
@@ -341,7 +289,6 @@ mvn clean package -DskipTests
 现在你产品上的真实场景是：
 
 - 我有一个 JAR
-- 我有一个本地离线包
 - 我有一个在线源
 
 建议 UI 和文档直接写成三个按钮或三个入口名，但只归到两个模式里：
@@ -475,4 +422,4 @@ VS Code 和 JetBrains 在企业场景里都强调集中分发或自定义源。
 
 推荐统一成一句话：
 
-> EasyPostman 支持两种插件安装方式：离线安装和在线安装。离线安装既支持直接导入 JAR，也支持导入本地离线包；在线安装通过官方或自定义插件源完成。
+> EasyPostman 支持两种插件安装方式：本地安装和在线安装。本地安装直接导入 JAR；在线安装通过官方或自定义插件源完成。

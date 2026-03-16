@@ -36,6 +36,10 @@ public class PluginManagementService {
         return PluginCatalogService.normalizeCatalogLocation(catalogUrl);
     }
 
+    public static String getOfficialCatalogUrl(String source) {
+        return PluginCatalogService.getOfficialCatalogUrl(source);
+    }
+
     public static List<PluginCatalogEntry> loadCatalog(String catalogUrl) throws Exception {
         return PluginCatalogService.loadCatalog(catalogUrl);
     }

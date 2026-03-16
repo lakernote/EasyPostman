@@ -6,6 +6,7 @@ import com.laker.postman.plugin.manager.PluginManagementService;
 import com.laker.postman.plugin.manager.PluginUninstallResult;
 import com.laker.postman.plugin.manager.market.PluginCatalogEntry;
 import com.laker.postman.plugin.runtime.PluginFileInfo;
+import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.service.update.version.VersionComparator;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -73,6 +74,8 @@ public class PluginManagerDialog extends JDialog {
     private final JButton loadCatalogButton = new JButton(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_LOAD));
     private final JButton installMarketButton = new JButton(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_INSTALL));
     private final JButton openHomepageButton = new JButton(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_OPEN_HOMEPAGE));
+    private final JButton useOfficialGithubCatalogButton = new JButton(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_OFFICIAL_GITHUB));
+    private final JButton useOfficialGiteeCatalogButton = new JButton(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_OFFICIAL_GITEE));
 
     private final JLabel installedDetailTitleLabel = createDetailTitleLabel();
     private final JLabel installedDetailMetaLabel = createMutedLabel();
@@ -142,6 +145,10 @@ public class PluginManagerDialog extends JDialog {
         loadCatalogButton.addActionListener(e -> loadCatalog());
         installMarketButton.addActionListener(e -> installSelectedCatalogPlugin());
         openHomepageButton.addActionListener(e -> openSelectedPluginHomepage());
+        useOfficialGithubCatalogButton.addActionListener(e -> applyCatalogUrl(
+                PluginManagementService.getOfficialCatalogUrl("github"), true));
+        useOfficialGiteeCatalogButton.addActionListener(e -> applyCatalogUrl(
+                PluginManagementService.getOfficialCatalogUrl("gitee"), true));
 
         installedList.setCellRenderer(new InstalledPluginCellRenderer());
         installedList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -372,14 +379,18 @@ public class PluginManagerDialog extends JDialog {
     private JPanel createCatalogPanel() {
         JPanel panel = createCardPanel(new MigLayout(
                 "fillx, insets 14, gap 10, novisualpadding",
-                "[grow,fill][][][]",
-                "[]"
+                "[grow,fill][][][][]",
+                "[][]"
         ));
 
         panel.add(catalogUrlField, "growx");
+        panel.add(useOfficialGithubCatalogButton);
+        panel.add(useOfficialGiteeCatalogButton);
         panel.add(marketInstallJarButton);
         panel.add(browseCatalogButton);
-        panel.add(loadCatalogButton, "span 2, wrap");
+        panel.add(loadCatalogButton, "wrap");
+        panel.add(createMutedLabel(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_SOURCE_HINT)),
+                "span 6, growx");
         return panel;
     }
 
@@ -462,15 +473,28 @@ public class PluginManagerDialog extends JDialog {
 
     private void loadSavedCatalogIfPresent() {
         String catalogUrl = PluginManagementService.getCatalogUrl();
-        catalogUrlField.setText(catalogUrl);
         if (catalogUrl == null || catalogUrl.isBlank()) {
-            setMarketPlaceholder(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_HINT));
-            updateMarketActions();
-            updateMarketDetails();
-            updateSummaryMetrics();
+            applyCatalogUrl(resolvePreferredOfficialCatalogUrl(), true);
             return;
         }
+        catalogUrlField.setText(catalogUrl);
         loadCatalog();
+    }
+
+    private void applyCatalogUrl(String catalogUrl, boolean autoLoad) {
+        String normalized = PluginManagementService.normalizeCatalogLocation(catalogUrl);
+        catalogUrlField.setText(normalized);
+        if (autoLoad) {
+            loadCatalog();
+        }
+    }
+
+    private String resolvePreferredOfficialCatalogUrl() {
+        String preference = SettingManager.getUpdateSourcePreference();
+        if ("github".equalsIgnoreCase(preference)) {
+            return PluginManagementService.getOfficialCatalogUrl("github");
+        }
+        return PluginManagementService.getOfficialCatalogUrl("gitee");
     }
 
     private void reloadPlugins(String preferredPluginId) {
@@ -760,6 +784,8 @@ public class PluginManagerDialog extends JDialog {
         openHomepageButton.setEnabled(!marketBusy && validSelection && selected.hasHomepageUrl());
         catalogUrlField.setEnabled(!marketBusy);
         browseCatalogButton.setEnabled(!marketBusy);
+        useOfficialGithubCatalogButton.setEnabled(!marketBusy);
+        useOfficialGiteeCatalogButton.setEnabled(!marketBusy);
     }
 
     private void updateInstalledDetails() {
@@ -1032,6 +1058,12 @@ public class PluginManagerDialog extends JDialog {
     private static JLabel createMutedLabel() {
         JLabel label = new JLabel();
         label.setForeground(ModernColors.getTextHint());
+        return label;
+    }
+
+    private static JLabel createMutedLabel(String text) {
+        JLabel label = createMutedLabel();
+        label.setText(text);
         return label;
     }
 

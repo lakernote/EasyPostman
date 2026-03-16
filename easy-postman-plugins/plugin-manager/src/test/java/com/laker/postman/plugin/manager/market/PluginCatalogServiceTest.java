@@ -63,4 +63,20 @@ public class PluginCatalogServiceTest {
 
         assertEquals(normalized, catalogFile.toUri().toString());
     }
+
+    @Test
+    public void shouldExposeOfficialCatalogUrls() {
+        assertEquals(
+                PluginCatalogService.getOfficialCatalogUrl("github"),
+                "https://raw.githubusercontent.com/lakernote/easy-postman/master/plugin-catalog/catalog-github.json"
+        );
+        assertEquals(
+                PluginCatalogService.getOfficialCatalogUrl("gitee"),
+                "https://gitee.com/lakernote/easy-postman/raw/master/plugin-catalog/catalog-gitee.json"
+        );
+        assertEquals(
+                PluginCatalogService.getOfficialCatalogUrl("auto"),
+                "https://gitee.com/lakernote/easy-postman/raw/master/plugin-catalog/catalog-gitee.json"
+        );
+    }
 }

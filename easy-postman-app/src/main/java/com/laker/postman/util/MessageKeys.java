@@ -154,6 +154,8 @@ public final class MessageKeys {
     public static final String PLUGIN_MANAGER_MARKET_LOAD = "plugin.manager.market.load";
     public static final String PLUGIN_MANAGER_MARKET_INSTALL = "plugin.manager.market.install";
     public static final String PLUGIN_MANAGER_MARKET_OPEN_HOMEPAGE = "plugin.manager.market.open_homepage";
+    public static final String PLUGIN_MANAGER_MARKET_OFFICIAL_GITHUB = "plugin.manager.market.official_github";
+    public static final String PLUGIN_MANAGER_MARKET_OFFICIAL_GITEE = "plugin.manager.market.official_gitee";
     public static final String PLUGIN_MANAGER_MARKET_CATALOG_URL = "plugin.manager.market.catalog_url";
     public static final String PLUGIN_MANAGER_MARKET_BROWSE_CATALOG = "plugin.manager.market.browse_catalog";
     public static final String PLUGIN_MANAGER_MARKET_CATALOG_FILE_CHOOSER = "plugin.manager.market.catalog_file_chooser";

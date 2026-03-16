@@ -27,6 +27,10 @@ import java.util.Scanner;
 public class PluginCatalogService {
 
     public static final String SETTINGS_KEY_CATALOG_URL = "plugin.market.catalogUrl";
+    public static final String OFFICIAL_GITHUB_CATALOG_URL =
+            "https://raw.githubusercontent.com/lakernote/easy-postman/master/plugin-catalog/catalog-github.json";
+    public static final String OFFICIAL_GITEE_CATALOG_URL =
+            "https://gitee.com/lakernote/easy-postman/raw/master/plugin-catalog/catalog-gitee.json";
     private static final String CATALOG_URL_PROPERTY = "easyPostman.plugins.catalogUrl";
     private static final int CONNECT_TIMEOUT = 10000;
     private static final int READ_TIMEOUT = 10000;
@@ -43,6 +47,13 @@ public class PluginCatalogService {
 
     public static void saveCatalogUrl(String catalogUrl) {
         PluginSettingsStore.putString(SETTINGS_KEY_CATALOG_URL, catalogUrl == null ? "" : catalogUrl.trim());
+    }
+
+    public static String getOfficialCatalogUrl(String source) {
+        if ("github".equalsIgnoreCase(source)) {
+            return OFFICIAL_GITHUB_CATALOG_URL;
+        }
+        return OFFICIAL_GITEE_CATALOG_URL;
     }
 
     public static String normalizeCatalogLocation(String catalogUrl) {

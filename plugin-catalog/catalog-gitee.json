@@ -1,0 +1,42 @@
+{
+  "name": "EasyPostman Official Plugin Catalog (Gitee)",
+  "generatedAt": "2026-03-16T00:00:00Z",
+  "plugins": [
+    {
+      "id": "plugin-redis",
+      "name": "Redis Plugin",
+      "version": "4.3.55",
+      "description": "Redis toolbox panel, pm.redis script API, completions and snippets.",
+      "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/v4.3.55/easy-postman-4.3.55-plugin-redis.jar",
+      "homepage": "https://gitee.com/lakernote/easy-postman",
+      "sha256": ""
+    },
+    {
+      "id": "plugin-kafka",
+      "name": "Kafka Plugin",
+      "version": "4.3.55",
+      "description": "Kafka toolbox panel, pm.kafka script API, completions and snippets.",
+      "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/v4.3.55/easy-postman-4.3.55-plugin-kafka.jar",
+      "homepage": "https://gitee.com/lakernote/easy-postman",
+      "sha256": ""
+    },
+    {
+      "id": "plugin-git",
+      "name": "Git Plugin",
+      "version": "4.3.55",
+      "description": "Git workspace operations, history and conflict checks powered by JGit.",
+      "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/v4.3.55/easy-postman-4.3.55-plugin-git.jar",
+      "homepage": "https://gitee.com/lakernote/easy-postman",
+      "sha256": ""
+    },
+    {
+      "id": "plugin-decompiler",
+      "name": "Decompiler Plugin",
+      "version": "4.3.55",
+      "description": "Java decompiler toolbox panel powered by CFR.",
+      "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/v4.3.55/easy-postman-4.3.55-plugin-decompiler.jar",
+      "homepage": "https://gitee.com/lakernote/easy-postman",
+      "sha256": ""
+    }
+  ]
+}

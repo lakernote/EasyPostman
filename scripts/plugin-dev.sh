@@ -59,6 +59,19 @@ project_version() {
   ' "${ROOT_DIR}/pom.xml"
 }
 
+plugin_project_version() {
+  local plugin="$1"
+  python3 <<PY
+import xml.etree.ElementTree as ET
+ns = {"m": "http://maven.apache.org/POM/4.0.0"}
+root = ET.parse("${ROOT_DIR}/easy-postman-plugins/plugin-${plugin}/pom.xml").getroot()
+version = root.findtext("m:version", default="", namespaces=ns).strip()
+if not version:
+    raise SystemExit("missing <version> for plugin-${plugin}")
+print(version)
+PY
+}
+
 plugin_exists() {
   case "$1" in
     redis|kafka|git|decompiler|client-cert) return 0 ;;
@@ -204,11 +217,12 @@ build_target() {
 
 copy_artifacts() {
   local plugin="$1"
-  local version app_source plugin_source
+  local host_version plugin_version app_source plugin_source
 
-  version="$(project_version)"
-  app_source="${ROOT_DIR}/easy-postman-app/target/easy-postman-${version}.jar"
-  plugin_source="$(plugin_module_dir "${plugin}")/target/easy-postman-${version}-plugin-${plugin}.jar"
+  host_version="$(project_version)"
+  plugin_version="$(plugin_project_version "${plugin}")"
+  app_source="${ROOT_DIR}/easy-postman-app/target/easy-postman-${host_version}.jar"
+  plugin_source="$(plugin_module_dir "${plugin}")/target/easy-postman-${plugin_version}-plugin-${plugin}.jar"
 
   [[ -f "${app_source}" ]] || {
     echo "App jar not found: ${app_source}" >&2

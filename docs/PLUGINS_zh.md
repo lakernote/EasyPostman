@@ -265,6 +265,27 @@ catalog 的 `downloadUrl` 可以是：
 - 同时放离线目录 zip
 - 文档里给一个公开 catalog URL
 
+更适合当前仓库的发布边界是：
+
+- 主包继续走 `.github/workflows/release.yml`
+- 主包 tag 继续使用 `v<app-version>`
+- 单插件独立发版走 `.github/workflows/plugin-release.yml`
+- 插件 release tag 使用 `plugin-<id>-v<plugin-version>`
+
+这样拆的好处：
+
+- 插件 release 不会触发主包打包流水线
+- 主包发版也不需要被单个插件的小修复阻塞
+- 插件 jar 文件名、descriptor 版本、offline catalog 版本可以独立递增
+- 插件编译依赖仍然锁定宿主 `revision`，兼容边界更清晰
+
+独立插件发版时，建议输入：
+
+- `plugin`: 要发布的插件，如 `redis`
+- 先在对应 `plugin-*/pom.xml` 里维护好 `<version>`
+- 同时在对应 `plugin-*/pom.xml` 里维护 `plugin.minAppVersion`
+- `update_github_catalog`: 是否回写官方 GitHub catalog，通常保持开启
+
 这样覆盖三类用户：
 
 - 想直接点 jar 的用户

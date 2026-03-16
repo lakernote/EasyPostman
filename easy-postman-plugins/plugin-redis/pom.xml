@@ -11,20 +11,26 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
+    <version>4.3.55</version>
     <artifactId>easy-postman-plugin-redis</artifactId>
     <packaging>jar</packaging>
+
+    <properties>
+        <host.version>${revision}</host.version>
+        <plugin.minAppVersion>${host.version}</plugin.minAppVersion>
+    </properties>
 
     <dependencies>
         <dependency>
             <groupId>com.laker.tools</groupId>
             <artifactId>easy-postman-plugin-api</artifactId>
-            <version>${project.version}</version>
+            <version>${host.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.laker.tools</groupId>
             <artifactId>easy-postman</artifactId>
-            <version>${project.version}</version>
+            <version>${host.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

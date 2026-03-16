@@ -1,0 +1,336 @@
+name: Plugin Release（插件独立发版）
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      plugin:
+        description: 选择要发布的插件
+        required: true
+        type: choice
+        options:
+          - redis
+          - kafka
+          - git
+          - decompiler
+          - client-cert
+      update_github_catalog:
+        description: 是否回写官方 GitHub plugin catalog
+        required: true
+        default: true
+        type: boolean
+      release_notes:
+        description: Release Notes（可选）
+        required: false
+        type: string
+
+env:
+  JAVA_VERSION: '17'
+  JAVA_DISTRIBUTION: 'jetbrains'
+
+jobs:
+  prepare-context:
+    name: Prepare Context（准备发版上下文）
+    runs-on: ubuntu-latest
+    outputs:
+      plugin: ${{ steps.meta.outputs.plugin }}
+      plugin_id: ${{ steps.meta.outputs.plugin_id }}
+      plugin_version: ${{ steps.meta.outputs.plugin_version }}
+      min_app_version: ${{ steps.meta.outputs.min_app_version }}
+      tag_name: ${{ steps.meta.outputs.tag_name }}
+      host_version: ${{ steps.meta.outputs.host_version }}
+      jar_name: ${{ steps.meta.outputs.jar_name }}
+      module_path: ${{ steps.meta.outputs.module_path }}
+      offline_dir: ${{ steps.meta.outputs.offline_dir }}
+      release_title: ${{ steps.meta.outputs.release_title }}
+    steps:
+      - name: Checkout（检出代码）
+        uses: actions/checkout@v4
+
+      - name: Compute metadata（计算元数据）
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          PLUGIN="${{ inputs.plugin }}"
+          MODULE_PATH="easy-postman-plugins/plugin-${PLUGIN}"
+          PLUGIN_POM="${MODULE_PATH}/pom.xml"
+
+          if [ ! -f "$PLUGIN_POM" ]; then
+            echo "Plugin pom not found: $PLUGIN_POM" >&2
+            exit 1
+          fi
+
+          export PLUGIN_POM
+          mapfile -t META < <(python3 <<'PY'
+          import os
+          import xml.etree.ElementTree as ET
+
+          pom_path = os.environ["PLUGIN_POM"]
+          ns = {"m": "http://maven.apache.org/POM/4.0.0"}
+          root = ET.parse(pom_path).getroot()
+
+          def text(path, default=""):
+              value = root.findtext(path, default=default, namespaces=ns)
+              return (value or default).strip()
+
+          version = text("m:version")
+          host_version = text("m:properties/m:host.version")
+          min_app_version = text("m:properties/m:plugin.minAppVersion")
+
+          if not version:
+              raise SystemExit("Missing <version> in plugin pom")
+          if not host_version:
+              raise SystemExit("Missing <host.version> in plugin pom")
+          if not min_app_version:
+              min_app_version = host_version
+
+          print(version)
+          print(host_version)
+          print(min_app_version)
+          PY
+          )
+
+          PLUGIN_VERSION="${META[0]}"
+          HOST_VERSION="${META[1]}"
+          MIN_APP_VERSION="${META[2]}"
+
+          TAG_NAME="plugin-${PLUGIN}-v${PLUGIN_VERSION}"
+          JAR_NAME="easy-postman-${PLUGIN_VERSION}-plugin-${PLUGIN}.jar"
+          OFFLINE_DIR="${MODULE_PATH}/target/plugin-market/offline/easy-postman-plugin-${PLUGIN}"
+          RELEASE_TITLE="Plugin ${PLUGIN} ${PLUGIN_VERSION}"
+
+          echo "plugin=${PLUGIN}" >> "$GITHUB_OUTPUT"
+          echo "plugin_id=plugin-${PLUGIN}" >> "$GITHUB_OUTPUT"
+          echo "plugin_version=${PLUGIN_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "min_app_version=${MIN_APP_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag_name=${TAG_NAME}" >> "$GITHUB_OUTPUT"
+          echo "host_version=${HOST_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "jar_name=${JAR_NAME}" >> "$GITHUB_OUTPUT"
+          echo "module_path=${MODULE_PATH}" >> "$GITHUB_OUTPUT"
+          echo "offline_dir=${OFFLINE_DIR}" >> "$GITHUB_OUTPUT"
+          echo "release_title=${RELEASE_TITLE}" >> "$GITHUB_OUTPUT"
+
+  release-plugin:
+    name: Build And Release Plugin（构建并发布插件）
+    runs-on: ubuntu-latest
+    needs: [ prepare-context ]
+    outputs:
+      jar_sha256: ${{ steps.package.outputs.jar_sha256 }}
+      release_url: ${{ steps.release.outputs.release_url }}
+    steps:
+      - name: Checkout（检出代码）
+        uses: actions/checkout@v4
+
+      - name: Setup Java（配置 Java）
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build selected plugin（只构建目标插件）
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn -B \
+            -pl "easy-postman-app,${{ needs.prepare-context.outputs.module_path }}" \
+            -am \
+            clean package \
+            -DskipTests
+
+      - name: Package release files（整理发布产物）
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          PLUGIN="${{ needs.prepare-context.outputs.plugin }}"
+          PLUGIN_VERSION="${{ needs.prepare-context.outputs.plugin_version }}"
+          MODULE_PATH="${{ needs.prepare-context.outputs.module_path }}"
+          OFFLINE_DIR="${{ needs.prepare-context.outputs.offline_dir }}"
+          JAR_PATH="${MODULE_PATH}/target/${{ needs.prepare-context.outputs.jar_name }}"
+
+          if [ ! -f "$JAR_PATH" ]; then
+            echo "Plugin jar not found: $JAR_PATH" >&2
+            exit 1
+          fi
+          if [ ! -d "$OFFLINE_DIR" ]; then
+            echo "Offline bundle dir not found: $OFFLINE_DIR" >&2
+            exit 1
+          fi
+
+          mkdir -p dist
+
+          OFFLINE_ZIP="dist/easy-postman-plugin-${PLUGIN}-${PLUGIN_VERSION}-offline.zip"
+          SHA_FILE="dist/${{ needs.prepare-context.outputs.jar_name }}.sha256.txt"
+
+          cp "$JAR_PATH" "dist/${{ needs.prepare-context.outputs.jar_name }}"
+          JAR_SHA256="$(sha256sum "dist/${{ needs.prepare-context.outputs.jar_name }}" | awk '{print $1}')"
+          printf '%s  %s\n' "$JAR_SHA256" "${{ needs.prepare-context.outputs.jar_name }}" > "$SHA_FILE"
+
+          (
+            cd "$(dirname "$OFFLINE_DIR")"
+            zip -rq "${GITHUB_WORKSPACE}/${OFFLINE_ZIP}" "$(basename "$OFFLINE_DIR")"
+          )
+
+          echo "jar_sha256=${JAR_SHA256}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish GitHub Release（发布 GitHub Release）
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TAG_NAME="${{ needs.prepare-context.outputs.tag_name }}"
+          TITLE="${{ needs.prepare-context.outputs.release_title }}"
+          NOTES_FILE="$(mktemp)"
+
+          if [ -n "${{ inputs.release_notes }}" ]; then
+            printf '%s\n' "${{ inputs.release_notes }}" > "$NOTES_FILE"
+          else
+            cat > "$NOTES_FILE" <<EOF
+          Independent release for \`${{ needs.prepare-context.outputs.plugin_id }}\`.
+
+          - Plugin version: `${{ needs.prepare-context.outputs.plugin_version }}`
+          - Minimum app version: `${{ needs.prepare-context.outputs.min_app_version }}`
+          - Built against host revision: `${{ needs.prepare-context.outputs.host_version }}`
+          EOF
+          fi
+
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            gh release upload "$TAG_NAME" \
+              "dist/${{ needs.prepare-context.outputs.jar_name }}" \
+              "dist/${{ needs.prepare-context.outputs.jar_name }}.sha256.txt" \
+              "dist/easy-postman-plugin-${{ needs.prepare-context.outputs.plugin }}-${{ needs.prepare-context.outputs.plugin_version }}-offline.zip" \
+              --clobber
+          else
+            gh release create "$TAG_NAME" \
+              "dist/${{ needs.prepare-context.outputs.jar_name }}" \
+              "dist/${{ needs.prepare-context.outputs.jar_name }}.sha256.txt" \
+              "dist/easy-postman-plugin-${{ needs.prepare-context.outputs.plugin }}-${{ needs.prepare-context.outputs.plugin_version }}-offline.zip" \
+              --title "$TITLE" \
+              --notes-file "$NOTES_FILE" \
+              --target "$GITHUB_SHA"
+          fi
+
+          echo "release_url=https://github.com/${{ github.repository }}/releases/tag/${TAG_NAME}" >> "$GITHUB_OUTPUT"
+
+  update-github-catalog:
+    name: Update GitHub Catalog（更新 GitHub 官方目录）
+    if: ${{ inputs.update_github_catalog }}
+    runs-on: ubuntu-latest
+    needs: [ prepare-context, release-plugin ]
+    steps:
+      - name: Checkout default branch（检出默认分支）
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Update catalog json（更新 catalog 文件）
+        shell: bash
+        env:
+          PLUGIN: ${{ needs.prepare-context.outputs.plugin }}
+          PLUGIN_ID: ${{ needs.prepare-context.outputs.plugin_id }}
+          PLUGIN_VERSION: ${{ needs.prepare-context.outputs.plugin_version }}
+          MIN_APP_VERSION: ${{ needs.prepare-context.outputs.min_app_version }}
+          TAG_NAME: ${{ needs.prepare-context.outputs.tag_name }}
+          JAR_NAME: ${{ needs.prepare-context.outputs.jar_name }}
+          JAR_SHA256: ${{ needs.release-plugin.outputs.jar_sha256 }}
+        run: |
+          set -euo pipefail
+
+          case "$PLUGIN" in
+            redis)
+              PLUGIN_NAME="Redis Plugin"
+              PLUGIN_DESCRIPTION="Redis toolbox panel, pm.redis script API, completions and snippets."
+              ;;
+            kafka)
+              PLUGIN_NAME="Kafka Plugin"
+              PLUGIN_DESCRIPTION="Kafka toolbox panel, pm.kafka script API, completions and snippets."
+              ;;
+            git)
+              PLUGIN_NAME="Git Plugin"
+              PLUGIN_DESCRIPTION="Git workspace operations, history and conflict checks powered by JGit."
+              ;;
+            decompiler)
+              PLUGIN_NAME="Decompiler Plugin"
+              PLUGIN_DESCRIPTION="Java decompiler toolbox panel powered by CFR."
+              ;;
+            client-cert)
+              PLUGIN_NAME="Client Certificate Plugin"
+              PLUGIN_DESCRIPTION="Client certificate management and mTLS key material loading."
+              ;;
+            *)
+              echo "Unsupported plugin: $PLUGIN" >&2
+              exit 1
+              ;;
+          esac
+
+          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${TAG_NAME}/${JAR_NAME}"
+          GENERATED_AT="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          export PLUGIN_NAME PLUGIN_DESCRIPTION DOWNLOAD_URL GENERATED_AT
+
+          python3 <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          files = [
+              Path("plugin-catalog/catalog-github.json"),
+              Path("easy-postman-plugins/plugin-manager/src/main/resources/plugin-catalog/catalog-github.json"),
+          ]
+
+          plugin_id = os.environ["PLUGIN_ID"]
+          plugin_name = os.environ["PLUGIN_NAME"]
+          plugin_version = os.environ["PLUGIN_VERSION"]
+          plugin_description = os.environ["PLUGIN_DESCRIPTION"]
+          download_url = os.environ["DOWNLOAD_URL"]
+          sha256 = os.environ["JAR_SHA256"]
+          generated_at = os.environ["GENERATED_AT"]
+
+          new_entry = {
+              "id": plugin_id,
+              "name": plugin_name,
+              "version": plugin_version,
+              "description": plugin_description,
+              "downloadUrl": download_url,
+              "homepage": f"https://github.com/{os.environ['GITHUB_REPOSITORY']}",
+              "sha256": sha256,
+          }
+
+          for path in files:
+              data = json.loads(path.read_text(encoding="utf-8"))
+              plugins = data.setdefault("plugins", [])
+              for idx, entry in enumerate(plugins):
+                  if entry.get("id") == plugin_id:
+                      plugins[idx] = new_entry
+                      break
+              else:
+                  plugins.append(new_entry)
+              data["generatedAt"] = generated_at
+              path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+          PY
+
+      - name: Commit catalog changes（提交 catalog 更新）
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet -- plugin-catalog/catalog-github.json easy-postman-plugins/plugin-manager/src/main/resources/plugin-catalog/catalog-github.json; then
+            echo "No catalog changes to commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add plugin-catalog/catalog-github.json easy-postman-plugins/plugin-manager/src/main/resources/plugin-catalog/catalog-github.json
+          git commit -m "chore(plugin-catalog): release ${{ needs.prepare-context.outputs.plugin_id }} ${{ needs.prepare-context.outputs.plugin_version }}"
+          git push origin "HEAD:${{ github.event.repository.default_branch }}"

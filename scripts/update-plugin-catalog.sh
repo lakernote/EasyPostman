@@ -9,12 +9,10 @@ usage() {
   cat <<'EOF'
 Usage:
   ./scripts/update-plugin-catalog.sh
-  ./scripts/update-plugin-catalog.sh --version 4.3.56
   ./scripts/update-plugin-catalog.sh --generated-at 2026-03-16T00:00:00Z
   ./scripts/update-plugin-catalog.sh --with-local-sha256
 
 Options:
-  --version <value>       Override plugin/app version. Default: read <revision> from pom.xml
   --generated-at <value>  Override generatedAt timestamp. Default: current UTC time
   --with-local-sha256     Fill sha256 from local built plugin jars when available
   --help                  Show this help
@@ -28,17 +26,17 @@ Behavior:
 EOF
 }
 
-project_version() {
-  awk '
-    /<revision>/ {
-      match($0, /<revision>[^<]+<\/revision>/)
-      if (RSTART > 0) {
-        value=substr($0, RSTART + 10, RLENGTH - 21)
-        print value
-        exit
-      }
-    }
-  ' "${ROOT_DIR}/pom.xml"
+plugin_version() {
+  local plugin="$1"
+  python3 <<PY
+import xml.etree.ElementTree as ET
+ns = {"m": "http://maven.apache.org/POM/4.0.0"}
+root = ET.parse("${ROOT_DIR}/easy-postman-plugins/plugin-${plugin}/pom.xml").getroot()
+version = root.findtext("m:version", default="", namespaces=ns).strip()
+if not version:
+    raise SystemExit("missing <version> for plugin-${plugin}")
+print(version)
+PY
 }
 
 json_escape() {
@@ -91,10 +89,10 @@ plugin_download_url() {
   local version="$3"
   case "${source}" in
     github)
-      echo "https://github.com/lakernote/easy-postman/releases/download/v${version}/easy-postman-${version}-plugin-${plugin}.jar"
+      echo "https://github.com/lakernote/easy-postman/releases/download/plugin-${plugin}-v${version}/easy-postman-${version}-plugin-${plugin}.jar"
       ;;
     gitee)
-      echo "https://gitee.com/lakernote/easy-postman/releases/download/v${version}/easy-postman-${version}-plugin-${plugin}.jar"
+      echo "https://gitee.com/lakernote/easy-postman/releases/download/plugin-${plugin}-v${version}/easy-postman-${version}-plugin-${plugin}.jar"
       ;;
     *)
       echo ""
@@ -112,10 +110,9 @@ plugin_homepage() {
 
 write_catalog() {
   local source="$1"
-  local version="$2"
-  local generated_at="$3"
-  local include_sha256="$4"
-  local output_path="$5"
+  local generated_at="$2"
+  local include_sha256="$3"
+  local output_path="$4"
   local source_title source_homepage
   local plugins=(redis kafka git decompiler client-cert)
   local plugin first=true
@@ -137,7 +134,8 @@ write_catalog() {
     printf '  "plugins": [\n'
     for plugin in "${plugins[@]}"; do
       local plugin_id="plugin-${plugin}"
-      local name description download_url sha256
+      local version name description download_url sha256
+      version="$(plugin_version "${plugin}")"
       name="$(plugin_name "${plugin}")"
       description="$(plugin_description "${plugin}")"
       download_url="$(plugin_download_url "${source}" "${plugin}" "${version}")"
@@ -169,17 +167,11 @@ sync_catalog() {
 }
 
 main() {
-  local version=""
   local generated_at=""
   local include_sha256=false
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      --version)
-        [[ $# -ge 2 ]] || { echo "Missing value for --version" >&2; exit 1; }
-        version="$2"
-        shift 2
-        ;;
       --generated-at)
         [[ $# -ge 2 ]] || { echo "Missing value for --generated-at" >&2; exit 1; }
         generated_at="$2"
@@ -201,20 +193,17 @@ main() {
     esac
   done
 
-  if [[ -z "${version}" ]]; then
-    version="$(project_version)"
-  fi
   if [[ -z "${generated_at}" ]]; then
     generated_at="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
   fi
 
   mkdir -p "${PUBLIC_CATALOG_DIR}" "${EMBEDDED_CATALOG_DIR}"
-  write_catalog "github" "${version}" "${generated_at}" "${include_sha256}" "${PUBLIC_CATALOG_DIR}/catalog-github.json"
-  write_catalog "gitee" "${version}" "${generated_at}" "${include_sha256}" "${PUBLIC_CATALOG_DIR}/catalog-gitee.json"
+  write_catalog "github" "${generated_at}" "${include_sha256}" "${PUBLIC_CATALOG_DIR}/catalog-github.json"
+  write_catalog "gitee" "${generated_at}" "${include_sha256}" "${PUBLIC_CATALOG_DIR}/catalog-gitee.json"
   sync_catalog "catalog-github.json"
   sync_catalog "catalog-gitee.json"
 
-  echo "[plugin-catalog] Generated catalogs for version ${version}"
+  echo "[plugin-catalog] Generated catalogs from per-plugin pom versions"
   echo "[plugin-catalog] Public catalogs:"
   echo "  - ${PUBLIC_CATALOG_DIR}/catalog-github.json"
   echo "  - ${PUBLIC_CATALOG_DIR}/catalog-gitee.json"

@@ -26,7 +26,7 @@ public class PluginCatalogServiceTest {
                     {
                       "id": "plugin-redis",
                       "name": "Redis Plugin",
-                      "version": "4.3.55",
+                      "version": "5.3.16",
                       "downloadUrl": "easy-postman-plugin-redis.jar"
                     }
                   ]

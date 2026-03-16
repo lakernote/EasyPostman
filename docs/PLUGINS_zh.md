@@ -104,10 +104,10 @@ easy-postman-plugins/plugin-git
 ├── src/main/resources/META-INF/easy-postman/plugin-git.properties
 ├── src/packaging/offline/catalog.json
 └── target
-    ├── easy-postman-4.3.55-plugin-git.jar
+    ├── easy-postman-5.3.16-plugin-git.jar
     └── plugin-market/offline/easy-postman-plugin-git/
         ├── catalog.json
-        └── easy-postman-4.3.55-plugin-git.jar
+        └── easy-postman-5.3.16-plugin-git.jar
 ```
 
 产物含义：

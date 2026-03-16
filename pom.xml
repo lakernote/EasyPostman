@@ -25,10 +25,10 @@
 
     <properties>
         <!--
-            统一版本入口。后续升级版本时，只改这里即可。
-            子模块 parent.version 和 artifact version 都跟随 ${revision}。
+            宿主版本入口。app / runtime / api / manager 等平台层跟随 ${revision}。
+            官方 plugin-* 模块在各自 pom.xml 里单独维护版本。
          -->
-        <revision>4.3.55</revision>
+        <revision>5.3.16</revision>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

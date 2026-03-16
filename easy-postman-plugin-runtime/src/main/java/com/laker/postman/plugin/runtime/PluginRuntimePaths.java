@@ -48,7 +48,10 @@ final class PluginRuntimePaths {
         }
 
         Path root;
-        if (isPortableMode()) {
+        String override = System.getProperty("easyPostman.data.dir");
+        if (override != null && !override.isBlank()) {
+            root = Paths.get(override.trim());
+        } else if (isPortableMode()) {
             root = applicationDirectory().resolve("data");
         } else {
             root = Paths.get(System.getProperty("user.home"), "EasyPostman");

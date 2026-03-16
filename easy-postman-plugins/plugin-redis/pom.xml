@@ -11,7 +11,7 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <version>4.3.55</version>
+    <version>5.3.16</version>
     <artifactId>easy-postman-plugin-redis</artifactId>
     <packaging>jar</packaging>
 

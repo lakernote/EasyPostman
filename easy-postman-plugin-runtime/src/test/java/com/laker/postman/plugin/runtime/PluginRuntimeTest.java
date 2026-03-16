@@ -46,8 +46,17 @@ public class PluginRuntimeTest {
     }
 
     @Test
+    public void shouldUseConfiguredDataDirectoryOverride() {
+        Path managedDir = PluginRuntime.getManagedPluginDir();
+        Path packageDir = PluginRuntime.getPluginPackageDir();
+
+        assertTrue(managedDir.startsWith(dataDir));
+        assertTrue(packageDir.startsWith(dataDir));
+    }
+
+    @Test
     public void shouldDeleteManagedPluginFilesDuringPendingUninstallCleanup() throws Exception {
-        Path pluginJar = PluginRuntime.getManagedPluginDir().resolve("plugin-redis-4.3.55.jar");
+        Path pluginJar = PluginRuntime.getManagedPluginDir().resolve("plugin-redis-5.3.16.jar");
         writeStubPluginJar(pluginJar, "plugin-redis");
         PluginRuntime.markPluginPendingUninstall("plugin-redis");
 
@@ -65,7 +74,7 @@ public class PluginRuntimeTest {
             jarOutputStream.write(("""
                     plugin.id=%s
                     plugin.name=Stub Plugin
-                    plugin.version=4.3.55
+                    plugin.version=5.3.16
                     plugin.entryClass=com.example.StubPlugin
                     """.formatted(pluginId)).getBytes(StandardCharsets.UTF_8));
             jarOutputStream.closeEntry();

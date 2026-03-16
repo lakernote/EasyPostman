@@ -35,7 +35,7 @@ public class PluginManagementServiceTest {
 
     @Test
     public void shouldRemoveUnloadedManagedPluginImmediately() throws Exception {
-        Path pluginJar = PluginManagementService.getManagedPluginDir().resolve("plugin-redis-4.3.55.jar");
+        Path pluginJar = PluginManagementService.getManagedPluginDir().resolve("plugin-redis-5.3.16.jar");
         writeStubPluginJar(pluginJar, "plugin-redis");
 
         PluginUninstallResult result = PluginManagementService.uninstallPlugin("plugin-redis");
@@ -54,7 +54,7 @@ public class PluginManagementServiceTest {
             jarOutputStream.write(("""
                     plugin.id=%s
                     plugin.name=Stub Plugin
-                    plugin.version=4.3.55
+                    plugin.version=5.3.16
                     plugin.entryClass=com.example.StubPlugin
                     """.formatted(pluginId)).getBytes(StandardCharsets.UTF_8));
             jarOutputStream.closeEntry();

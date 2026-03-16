@@ -5,45 +5,45 @@
     {
       "id": "plugin-redis",
       "name": "Redis Plugin",
-      "version": "4.3.55",
+      "version": "5.3.16",
       "description": "Redis toolbox panel, pm.redis script API, completions and snippets.",
-      "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-redis-v4.3.55/easy-postman-4.3.55-plugin-redis.jar",
+      "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-redis-v5.3.16/easy-postman-5.3.16-plugin-redis.jar",
       "homepage": "https://gitee.com/lakernote/easy-postman",
       "sha256": ""
     },
     {
       "id": "plugin-kafka",
       "name": "Kafka Plugin",
-      "version": "4.3.55",
+      "version": "5.3.16",
       "description": "Kafka toolbox panel, pm.kafka script API, completions and snippets.",
-      "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-kafka-v4.3.55/easy-postman-4.3.55-plugin-kafka.jar",
+      "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-kafka-v5.3.16/easy-postman-5.3.16-plugin-kafka.jar",
       "homepage": "https://gitee.com/lakernote/easy-postman",
       "sha256": ""
     },
     {
       "id": "plugin-git",
       "name": "Git Plugin",
-      "version": "4.3.55",
+      "version": "5.3.16",
       "description": "Git workspace operations, history and conflict checks powered by JGit.",
-      "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-git-v4.3.55/easy-postman-4.3.55-plugin-git.jar",
+      "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-git-v5.3.16/easy-postman-5.3.16-plugin-git.jar",
       "homepage": "https://gitee.com/lakernote/easy-postman",
       "sha256": ""
     },
     {
       "id": "plugin-decompiler",
       "name": "Decompiler Plugin",
-      "version": "4.3.55",
+      "version": "5.3.16",
       "description": "Java decompiler toolbox panel powered by CFR.",
-      "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-decompiler-v4.3.55/easy-postman-4.3.55-plugin-decompiler.jar",
+      "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-decompiler-v5.3.16/easy-postman-5.3.16-plugin-decompiler.jar",
       "homepage": "https://gitee.com/lakernote/easy-postman",
       "sha256": ""
     },
     {
       "id": "plugin-client-cert",
       "name": "Client Certificate Plugin",
-      "version": "4.3.55",
+      "version": "5.3.16",
       "description": "Client certificate management and mTLS key material loading.",
-      "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-client-cert-v4.3.55/easy-postman-4.3.55-plugin-client-cert.jar",
+      "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-client-cert-v5.3.16/easy-postman-5.3.16-plugin-client-cert.jar",
       "homepage": "https://gitee.com/lakernote/easy-postman",
       "sha256": ""
     }

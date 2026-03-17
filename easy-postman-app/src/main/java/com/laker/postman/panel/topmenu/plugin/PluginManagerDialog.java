@@ -27,24 +27,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 插件中心对话框。
- *
- * <p>交互目标：</p>
- * <ul>
- *     <li>插件作为一级能力单独管理，而不是被埋进通用设置页。</li>
- *     <li>把“已安装管理”和“发现/安装”拆成两个清晰视图，降低信息噪音。</li>
- *     <li>右侧统一展示详情与动作，避免列表区塞满按钮和长路径。</li>
- * </ul>
- */
 @Slf4j
 public class PluginManagerDialog extends JDialog {
 
     private static final String VIEW_INSTALLED = "installed";
     private static final String VIEW_MARKET = "market";
-    private static final int DETAILS_MIN_WIDTH = 340;
-    private static final int LIST_MIN_WIDTH = 260;
-    private static final int SPLIT_DIVIDER_SIZE = 6;
+    private static final int SIDEBAR_WIDTH = 360;
 
     private final DefaultListModel<PluginFileInfo> installedListModel = new DefaultListModel<>();
     private final JList<PluginFileInfo> installedList = new JList<>(installedListModel);
@@ -55,8 +43,6 @@ public class PluginManagerDialog extends JDialog {
     private final JLabel loadedSummaryLabel = createSummaryMetricLabel();
     private final JLabel catalogSummaryLabel = createSummaryMetricLabel();
     private final JLabel statusMessageLabel = createMutedLabel();
-
-    private final JTextField catalogUrlField = new JTextField();
 
     private final JToggleButton installedViewButton = new JToggleButton(
             I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_TAB_INSTALLED));
@@ -83,6 +69,7 @@ public class PluginManagerDialog extends JDialog {
     private final JLabel installedDetailStatusLabel = createStatusBadgeLabel();
     private final JTextArea installedDetailDescriptionArea = createReadOnlyArea(4, true);
     private final JLabel installedIdValueLabel = createValueLabel();
+    private final JLabel installedVersionValueLabel = createValueLabel();
     private final JLabel installedCompatibilityValueLabel = createValueLabel();
     private final JLabel installedSourceValueLabel = createCompactValueLabel();
     private final JLabel installedPathValueLabel = createCompactValueLabel();
@@ -92,8 +79,11 @@ public class PluginManagerDialog extends JDialog {
     private final JLabel marketDetailStatusLabel = createStatusBadgeLabel();
     private final JTextArea marketDetailDescriptionArea = createReadOnlyArea(4, true);
     private final JLabel marketIdValueLabel = createValueLabel();
+    private final JLabel marketVersionValueLabel = createValueLabel();
     private final JLabel marketCompatibilityValueLabel = createValueLabel();
     private final JLabel marketInstalledSourceValueLabel = createCompactValueLabel();
+    private final JLabel marketHomepageValueLabel = createCompactValueLabel();
+    private final JLabel marketDownloadValueLabel = createCompactValueLabel();
 
     private Map<String, PluginFileInfo> installedPluginMap = Map.of();
     private boolean marketBusy;
@@ -115,12 +105,12 @@ public class PluginManagerDialog extends JDialog {
 
     private void initUI() {
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-        setMinimumSize(new Dimension(980, 680));
-        setSize(1080, 720);
+        setMinimumSize(new Dimension(1040, 720));
+        setSize(1140, 760);
         setLocationRelativeTo(getOwner());
 
         JPanel content = new JPanel(new MigLayout(
-                "fill, insets 16, gap 12, novisualpadding",
+                "fill, insets 16, gap 14, novisualpadding",
                 "[grow,fill]",
                 "[][grow,fill][]"
         ));
@@ -187,18 +177,33 @@ public class PluginManagerDialog extends JDialog {
 
     private JPanel createHeaderPanel() {
         JPanel panel = createCardPanel(new MigLayout(
-                "fillx, insets 14 16 14 16, gap 12, novisualpadding",
+                "fillx, insets 16, gap 14, novisualpadding",
                 "[grow,fill][right]",
                 "[][]"
         ));
 
-        JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_TITLE));
-        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 20f));
-
-        panel.add(titleLabel, "growx");
+        panel.add(createHeaderTitlePanel(), "growx");
         panel.add(createHeaderActionPanel(), "aligny top");
         panel.add(createMetricStrip(), "growx");
         panel.add(createNavigationPanel(), "alignx right");
+        return panel;
+    }
+
+    private JPanel createHeaderTitlePanel() {
+        JPanel panel = new JPanel(new MigLayout(
+                "fillx, insets 0, gap 6, novisualpadding",
+                "[grow,fill]",
+                "[][]"
+        ));
+        panel.setOpaque(false);
+
+        JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_TITLE));
+        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 22f));
+        panel.add(titleLabel, "growx, wrap");
+
+        JTextArea subtitleArea = createReadOnlyArea(2, true);
+        subtitleArea.setText(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_SUBTITLE));
+        panel.add(subtitleArea, "growx");
         return panel;
     }
 
@@ -218,7 +223,7 @@ public class PluginManagerDialog extends JDialog {
     private JPanel createMetricStrip() {
         JPanel panel = new JPanel(new MigLayout(
                 "fillx, insets 0, gap 10, novisualpadding",
-                "[][][]",
+                "[grow,fill][grow,fill][grow,fill]",
                 "[]"
         ));
         panel.setOpaque(false);
@@ -260,18 +265,30 @@ public class PluginManagerDialog extends JDialog {
 
     private void configureViewToggle(AbstractButton button) {
         button.setFocusPainted(false);
+        button.setOpaque(true);
         button.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(ModernColors.getBorderLightColor()),
-                new EmptyBorder(7, 12, 7, 12)
+                new EmptyBorder(8, 14, 8, 14)
         ));
     }
 
     private JPanel createInstalledPanel() {
-        return wrapContentCard(createInstalledSplitPane());
+        return createViewGridPanel(createInstalledListPanel(), createDetailScrollPane(createInstalledDetailsPanel()));
     }
 
-    private JSplitPane createInstalledSplitPane() {
-        return createHorizontalSplitPane(createInstalledListPanel(), createDetailScrollPane(createInstalledDetailsPanel()), 0.56);
+    private JPanel createViewGridPanel(JComponent left, JComponent right) {
+        left.setMinimumSize(new Dimension(SIDEBAR_WIDTH, 200));
+        right.setMinimumSize(new Dimension(420, 200));
+
+        JPanel panel = new JPanel(new MigLayout(
+                "fill, insets 0, gap 14, novisualpadding",
+                "[" + SIDEBAR_WIDTH + "!,fill][grow,fill]",
+                "[grow,fill]"
+        ));
+        panel.setOpaque(false);
+        panel.add(left, "growy");
+        panel.add(right, "grow, push");
+        return panel;
     }
 
     private JPanel createInstalledListPanel() {
@@ -281,33 +298,35 @@ public class PluginManagerDialog extends JDialog {
                 "[][grow,fill]"
         ));
 
-        JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_TAB_INSTALLED));
-        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 14f));
-
-        panel.add(titleLabel, "growx, wrap");
+        panel.add(createSectionHeader(
+                I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_TAB_INSTALLED),
+                I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_LOCAL_HINT)), "growx, wrap");
         panel.add(createListScrollPane(installedList), "grow, push");
         return panel;
     }
 
     private JPanel createInstalledDetailsPanel() {
         JPanel panel = createCardPanel(new MigLayout(
-                "fill, insets 16, gap 10, novisualpadding",
+                "fillx, insets 18, gap 12, novisualpadding",
                 "[grow,fill]",
                 "[][][][][][][push][]"
         ));
 
-        JPanel titleRow = new JPanel(new MigLayout("insets 0, gap 8, novisualpadding", "[grow,fill][]", "[]"));
-        titleRow.setOpaque(false);
-        titleRow.add(installedDetailTitleLabel, "growx");
-        titleRow.add(installedDetailStatusLabel);
-
-        panel.add(titleRow, "growx, wrap");
-        panel.add(installedDetailMetaLabel, "growx, wrap");
+        panel.add(createDetailHeader(installedDetailTitleLabel, installedDetailMetaLabel, installedDetailStatusLabel), "growx, wrap");
         panel.add(installedDetailDescriptionArea, "growx, wrap");
-        panel.add(createDetailRow(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_ID), installedIdValueLabel), "growx, wrap");
-        panel.add(createDetailRow(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_COMPATIBILITY), installedCompatibilityValueLabel), "growx, wrap");
-        panel.add(createDetailRow(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_INSTALL_SOURCE), installedSourceValueLabel), "growx, wrap");
-        panel.add(createDetailRow(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_PATH), installedPathValueLabel), "growx, wrap");
+        panel.add(createInfoGrid(
+                createDetailInfoCard(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_ID), installedIdValueLabel),
+                createDetailInfoCard(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_VERSION), installedVersionValueLabel)
+        ), "growx, wrap");
+        panel.add(createInfoGrid(
+                createDetailInfoCard(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_COMPATIBILITY),
+                        installedCompatibilityValueLabel),
+                createDetailInfoCard(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_INSTALL_SOURCE),
+                        installedSourceValueLabel)
+        ), "growx, wrap");
+        panel.add(createDetailInfoCard(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_PATH), installedPathValueLabel),
+                "growx, wrap");
+        panel.add(createDirectorySectionCard(), "growx, wrap");
         panel.add(new JPanel(), "grow, push, wrap");
         panel.add(createInstalledActionPanel(), "growx");
         return panel;
@@ -327,31 +346,19 @@ public class PluginManagerDialog extends JDialog {
     }
 
     private JPanel createMarketPanel() {
-        return wrapContentCard(createMarketSplitPane());
+        return createViewGridPanel(createMarketSidebarPanel(), createDetailScrollPane(createMarketDetailsPanel()));
     }
 
-    private JSplitPane createMarketSplitPane() {
-        return createHorizontalSplitPane(createMarketListPanel(), createDetailScrollPane(createMarketDetailsPanel()), 0.56);
-    }
-
-    private JSplitPane createHorizontalSplitPane(JComponent left, JComponent right, double resizeWeight) {
-        left.setMinimumSize(new Dimension(LIST_MIN_WIDTH, 200));
-        right.setMinimumSize(new Dimension(DETAILS_MIN_WIDTH, 200));
-
-        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, left, right);
-        splitPane.setBorder(BorderFactory.createEmptyBorder());
-        splitPane.setDividerSize(SPLIT_DIVIDER_SIZE);
-        splitPane.setContinuousLayout(true);
-        splitPane.setResizeWeight(resizeWeight);
-        splitPane.setOneTouchExpandable(false);
-
-        // 对话框首次布局完成后再按比例落位，避免在不同父窗口/入口下 divider 初始位置漂移。
-        SwingUtilities.invokeLater(() -> {
-            if (splitPane.isDisplayable()) {
-                splitPane.setDividerLocation(resizeWeight);
-            }
-        });
-        return splitPane;
+    private JPanel createMarketSidebarPanel() {
+        JPanel panel = new JPanel(new MigLayout(
+                "fill, insets 0, gap 14, novisualpadding",
+                "[grow,fill]",
+                "[][grow,fill]"
+        ));
+        panel.setOpaque(false);
+        panel.add(createCatalogToolbar(), "growx, wrap");
+        panel.add(createMarketListPanel(), "grow, push");
+        return panel;
     }
 
     private JScrollPane createDetailScrollPane(JComponent component) {
@@ -368,51 +375,72 @@ public class PluginManagerDialog extends JDialog {
         JPanel panel = createCardPanel(new MigLayout(
                 "fill, insets 14, gap 10, novisualpadding",
                 "[grow,fill]",
-                "[][][grow,fill]"
+                "[][grow,fill]"
         ));
-        JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_TAB_MARKET));
-        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 14f));
-        panel.add(titleLabel, "growx, wrap");
-        panel.add(createCatalogToolbar(), "growx, wrap");
+        panel.add(createSectionHeader(
+                I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_TAB_MARKET),
+                null), "growx, wrap");
         panel.add(createListScrollPane(marketList), "grow, push");
         return panel;
     }
 
     private JPanel createCatalogToolbar() {
-        JPanel panel = new JPanel(new MigLayout(
-                "fillx, insets 0, gap 8, novisualpadding",
-                "[grow,fill][][]",
+        JPanel panel = createCardPanel(new MigLayout(
+                "fillx, insets 14, gap 10, novisualpadding",
+                "[grow,fill]",
                 "[][]"
         ));
-        panel.setOpaque(false);
 
-        panel.add(catalogUrlField, "growx");
-        panel.add(loadCatalogButton);
+        panel.add(createMutedLabel(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_SOURCE_HINT)), "growx, wrap");
+
+        JPanel actionRow = new JPanel(new MigLayout(
+                "fillx, insets 0, gap 10, novisualpadding",
+                "[left][push][right]",
+                "[]"
+        ));
+        actionRow.setOpaque(false);
+
+        actionRow.add(createCatalogSourceSegment(), "alignx left");
+        actionRow.add(loadCatalogButton, "alignx right");
+        panel.add(actionRow, "growx");
+        return panel;
+    }
+
+    private JPanel createCatalogSourceSegment() {
+        JPanel panel = createSoftCard(new MigLayout(
+                "insets 2, gap 2, novisualpadding",
+                "[][]",
+                "[]"
+        ));
         panel.add(useOfficialGithubCatalogButton);
-        panel.add(useOfficialGiteeCatalogButton, "wrap");
-        panel.add(createMutedLabel(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_SOURCE_HINT)),
-                "span 4, growx");
+        panel.add(useOfficialGiteeCatalogButton);
         return panel;
     }
 
     private JPanel createMarketDetailsPanel() {
         JPanel panel = createCardPanel(new MigLayout(
-                "fill, insets 16, gap 10, novisualpadding",
+                "fillx, insets 18, gap 12, novisualpadding",
                 "[grow,fill]",
-                "[][][][][push][]"
+                "[][][][][][][push][]"
         ));
 
-        JPanel titleRow = new JPanel(new MigLayout("insets 0, gap 8, novisualpadding", "[grow,fill][]", "[]"));
-        titleRow.setOpaque(false);
-        titleRow.add(marketDetailTitleLabel, "growx");
-        titleRow.add(marketDetailStatusLabel);
-
-        panel.add(titleRow, "growx, wrap");
-        panel.add(marketDetailMetaLabel, "growx, wrap");
+        panel.add(createDetailHeader(marketDetailTitleLabel, marketDetailMetaLabel, marketDetailStatusLabel), "growx, wrap");
         panel.add(marketDetailDescriptionArea, "growx, wrap");
-        panel.add(createDetailRow(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_ID), marketIdValueLabel), "growx, wrap");
-        panel.add(createDetailRow(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_COMPATIBILITY), marketCompatibilityValueLabel), "growx, wrap");
-        panel.add(createDetailRow(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_CURRENT_INSTALL_SOURCE), marketInstalledSourceValueLabel), "growx, wrap");
+        panel.add(createInfoGrid(
+                createDetailInfoCard(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_ID), marketIdValueLabel),
+                createDetailInfoCard(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_VERSION), marketVersionValueLabel)
+        ), "growx, wrap");
+        panel.add(createInfoGrid(
+                createDetailInfoCard(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_COMPATIBILITY),
+                        marketCompatibilityValueLabel),
+                createDetailInfoCard(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_CURRENT_INSTALL_SOURCE),
+                        marketInstalledSourceValueLabel)
+        ), "growx, wrap");
+        panel.add(createDetailInfoCard(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_HOMEPAGE),
+                marketHomepageValueLabel), "growx, wrap");
+        panel.add(createDetailInfoCard(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_MARKET_DOWNLOAD),
+                marketDownloadValueLabel), "growx, wrap");
+        panel.add(createDirectorySectionCard(), "growx, wrap");
         panel.add(new JPanel(), "grow, push, wrap");
         panel.add(createMarketActionPanel(), "growx");
         return panel;
@@ -433,7 +461,7 @@ public class PluginManagerDialog extends JDialog {
     private JPanel createFooterPanel() {
         JPanel panel = new JPanel(new MigLayout(
                 "fillx, insets 0, gap 10, novisualpadding",
-                "[grow,fill][right][]",
+                "[grow,fill][]",
                 "[]"
         ));
         panel.setOpaque(false);
@@ -443,20 +471,8 @@ public class PluginManagerDialog extends JDialog {
         configureButton(closeButton, false);
 
         panel.add(statusMessageLabel, "growx");
-        panel.add(createDirectoryHintLabel(), "gapright 8");
         panel.add(closeButton, "alignx right");
         return panel;
-    }
-
-    private JLabel createDirectoryHintLabel() {
-        JLabel label = createMutedLabel();
-        label.setText(shorten(PluginManagementService.getManagedPluginDir().toString(), 52));
-        label.setToolTipText("<html>"
-                + escapeHtml(PluginManagementService.getManagedPluginDir().toString())
-                + "<br>"
-                + escapeHtml(PluginManagementService.getPluginPackageDir().toString())
-                + "</html>");
-        return label;
     }
 
     private void loadSavedCatalogIfPresent() {
@@ -465,12 +481,11 @@ public class PluginManagerDialog extends JDialog {
             applyCatalogUrl(resolvePreferredOfficialCatalogUrl(), true);
             return;
         }
-        catalogUrlField.setText(catalogUrl);
         loadCatalog();
     }
 
     private void applyCatalogUrl(String catalogUrl, boolean autoLoad) {
-        catalogUrlField.setText(catalogUrl == null ? "" : catalogUrl.trim());
+        PluginManagementService.saveCatalogUrl(catalogUrl == null ? "" : catalogUrl.trim());
         if (autoLoad) {
             loadCatalog();
         }
@@ -618,10 +633,8 @@ public class PluginManagerDialog extends JDialog {
     }
 
     private void loadCatalog() {
-        String rawCatalogUrl = catalogUrlField.getText().trim();
-        String catalogUrl = rawCatalogUrl;
-        PluginManagementService.saveCatalogUrl(catalogUrl);
-        catalogUrlField.setText(catalogUrl);
+        String savedCatalogUrl = PluginManagementService.getCatalogUrl();
+        final String catalogUrl = savedCatalogUrl == null ? "" : savedCatalogUrl.trim();
         if (catalogUrl.isBlank()) {
             setMarketPlaceholder(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_HINT));
             setStatusMessage(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_HINT));
@@ -786,9 +799,9 @@ public class PluginManagerDialog extends JDialog {
         installMarketButton.setText(actionText);
         installMarketButton.setEnabled(actionEnabled);
         openHomepageButton.setEnabled(!marketBusy && validSelection && selected.hasHomepageUrl());
-        catalogUrlField.setEnabled(!marketBusy);
         useOfficialGithubCatalogButton.setEnabled(!marketBusy);
         useOfficialGiteeCatalogButton.setEnabled(!marketBusy);
+        refreshCatalogSourceButtons();
     }
 
     private void updateInstalledDetails() {
@@ -805,6 +818,7 @@ public class PluginManagerDialog extends JDialog {
                 ? descriptor.description()
                 : I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_EMPTY));
         installedIdValueLabel.setText(descriptor.id());
+        installedVersionValueLabel.setText(descriptor.version());
         installedCompatibilityValueLabel.setText(buildCompatibilityValue(descriptor, selected.compatible()));
         setCompactText(installedSourceValueLabel, resolveInstalledSourceText(descriptor.id(), selected.jarPath()));
         setCompactText(installedPathValueLabel, selected.jarPath().toString());
@@ -824,8 +838,11 @@ public class PluginManagerDialog extends JDialog {
                 ? selected.description()
                 : I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_EMPTY));
         marketIdValueLabel.setText(selected.id());
+        marketVersionValueLabel.setText(selected.version());
         marketCompatibilityValueLabel.setText(buildCompatibilityValue(selected));
         setCompactText(marketInstalledSourceValueLabel, resolveInstalledSourceText(selected.id(), null));
+        setCompactText(marketHomepageValueLabel, selected.hasHomepageUrl() ? selected.homepageUrl() : "-");
+        setCompactText(marketDownloadValueLabel, selected.installUrl());
         applyStatusBadge(marketDetailStatusLabel, getMarketEntryStatus(selected));
     }
 
@@ -834,6 +851,7 @@ public class PluginManagerDialog extends JDialog {
         installedDetailMetaLabel.setText("");
         installedDetailDescriptionArea.setText(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_EMPTY));
         installedIdValueLabel.setText("-");
+        installedVersionValueLabel.setText("-");
         installedCompatibilityValueLabel.setText("-");
         setCompactText(installedSourceValueLabel, "-");
         setCompactText(installedPathValueLabel, "-");
@@ -845,8 +863,11 @@ public class PluginManagerDialog extends JDialog {
         marketDetailMetaLabel.setText("");
         marketDetailDescriptionArea.setText(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_EMPTY));
         marketIdValueLabel.setText("-");
+        marketVersionValueLabel.setText("-");
         marketCompatibilityValueLabel.setText("-");
         setCompactText(marketInstalledSourceValueLabel, "-");
+        setCompactText(marketHomepageValueLabel, "-");
+        setCompactText(marketDownloadValueLabel, "-");
         applyStatusBadge(marketDetailStatusLabel, "");
     }
 
@@ -881,6 +902,30 @@ public class PluginManagerDialog extends JDialog {
         contentLayout.show(contentPanel, view);
         installedViewButton.setSelected(VIEW_INSTALLED.equals(view));
         marketViewButton.setSelected(VIEW_MARKET.equals(view));
+        refreshViewToggleStyles();
+    }
+
+    private void refreshViewToggleStyles() {
+        applyViewToggleStyle(installedViewButton);
+        applyViewToggleStyle(marketViewButton);
+    }
+
+    private void applyViewToggleStyle(AbstractButton button) {
+        boolean selected = button.isSelected();
+        button.setBackground(selected ? ModernColors.PRIMARY : ModernColors.getCardBackgroundColor());
+        button.setForeground(selected ? Color.WHITE : ModernColors.getTextPrimary());
+    }
+
+    private void refreshCatalogSourceButtons() {
+        String catalogUrl = PluginManagementService.getCatalogUrl();
+        String source = PluginManagementService.detectOfficialCatalogSource(catalogUrl == null ? "" : catalogUrl);
+        applyCatalogSourceButtonStyle(useOfficialGithubCatalogButton, "github".equalsIgnoreCase(source));
+        applyCatalogSourceButtonStyle(useOfficialGiteeCatalogButton, "gitee".equalsIgnoreCase(source));
+    }
+
+    private void applyCatalogSourceButtonStyle(AbstractButton button, boolean selected) {
+        button.setBackground(selected ? ModernColors.PRIMARY : ModernColors.getCardBackgroundColor());
+        button.setForeground(selected ? Color.WHITE : ModernColors.getTextPrimary());
     }
 
     private String getSelectedInstalledPluginId() {
@@ -1034,26 +1079,82 @@ public class PluginManagerDialog extends JDialog {
         return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_COMPATIBILITY_REQUIRES_HOST_UPGRADE);
     }
 
-    private JPanel createDetailRow(String key, JComponent valueComponent) {
+    private JPanel createSectionHeader(String title, String description) {
         JPanel panel = new JPanel(new MigLayout(
-                "fillx, insets 0, gap 10, novisualpadding",
-                "[72!][grow,fill]",
-                "[]"
+                "fillx, insets 0, gap 6, novisualpadding",
+                "[grow,fill]",
+                description == null || description.isBlank() ? "[]" : "[][]"
         ));
         panel.setOpaque(false);
 
-        JLabel keyLabel = new JLabel(key);
-        keyLabel.setForeground(ModernColors.getTextHint());
-        panel.add(keyLabel);
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 15f));
+        panel.add(titleLabel, "growx, wrap");
+        if (description != null && !description.isBlank()) {
+            JTextArea descriptionArea = createReadOnlyArea(2, true);
+            descriptionArea.setText(description);
+            panel.add(descriptionArea, "growx");
+        }
+        return panel;
+    }
+
+    private JPanel createDetailHeader(JLabel titleLabel, JLabel metaLabel, JLabel statusLabel) {
+        JPanel panel = new JPanel(new MigLayout(
+                "fillx, insets 0, gap 8, novisualpadding",
+                "[grow,fill][]",
+                "[][]"
+        ));
+        panel.setOpaque(false);
+        panel.add(titleLabel, "growx");
+        panel.add(statusLabel, "aligny top, wrap");
+        panel.add(metaLabel, "span 2, growx");
+        return panel;
+    }
+
+    private JPanel createInfoGrid(JComponent first, JComponent second) {
+        JPanel panel = new JPanel(new MigLayout(
+                "fillx, insets 0, gap 10, novisualpadding",
+                "[grow,fill][grow,fill]",
+                "[]"
+        ));
+        panel.setOpaque(false);
+        panel.add(first, "growx");
+        panel.add(second, "growx");
+        return panel;
+    }
+
+    private JPanel createDetailInfoCard(String title, JComponent valueComponent) {
+        JPanel panel = createSoftCard(new MigLayout(
+                "fillx, insets 10 12 10 12, gap 6, novisualpadding",
+                "[grow,fill]",
+                "[][]"
+        ));
+        JLabel titleLabel = createMutedLabel(title);
+        panel.add(titleLabel, "growx, wrap");
         panel.add(valueComponent, "growx");
         return panel;
     }
 
-    private JPanel wrapContentCard(JComponent component) {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setOpaque(false);
-        panel.add(component, BorderLayout.CENTER);
+    private JPanel createDirectorySectionCard() {
+        JPanel panel = createSoftCard(new MigLayout(
+                "fillx, insets 12, gap 8, novisualpadding",
+                "[grow,fill]",
+                "[][][]"
+        ));
+        JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_SECTION_DIRECTORIES));
+        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 13f));
+        panel.add(titleLabel, "growx, wrap");
+        panel.add(createPathInfoLabel(I18nUtil.getMessage(
+                MessageKeys.PLUGIN_MANAGER_DIRECTORY, PluginManagementService.getManagedPluginDir())), "growx, wrap");
+        panel.add(createPathInfoLabel(I18nUtil.getMessage(
+                MessageKeys.PLUGIN_MANAGER_CACHE_DIRECTORY, PluginManagementService.getPluginPackageDir())), "growx");
         return panel;
+    }
+
+    private JLabel createPathInfoLabel(String text) {
+        JLabel label = createCompactValueLabel();
+        setCompactText(label, text);
+        return label;
     }
 
     private JScrollPane createListScrollPane(JList<?> list) {
@@ -1132,6 +1233,7 @@ public class PluginManagerDialog extends JDialog {
     private static JTextArea createReadOnlyArea(int rows, boolean wrapLines) {
         JTextArea area = new JTextArea(rows, 0);
         area.setEditable(false);
+        area.setFocusable(false);
         area.setLineWrap(wrapLines);
         area.setWrapStyleWord(wrapLines);
         area.setOpaque(false);
@@ -1153,11 +1255,11 @@ public class PluginManagerDialog extends JDialog {
         configureButton(enableInstalledButton, false);
         configureButton(disableInstalledButton, false);
         configureButton(uninstallInstalledButton, false);
-        configureButton(loadCatalogButton, true);
+        configureButton(loadCatalogButton, false);
         configureButton(installMarketButton, true);
         configureButton(openHomepageButton, false);
-        configureButton(useOfficialGithubCatalogButton, false);
-        configureButton(useOfficialGiteeCatalogButton, false);
+        configureSegmentButton(useOfficialGithubCatalogButton);
+        configureSegmentButton(useOfficialGiteeCatalogButton);
     }
 
     private void configureListAppearance(JList<?> list) {
@@ -1190,6 +1292,12 @@ public class PluginManagerDialog extends JDialog {
             button.setBackground(ModernColors.getCardBackgroundColor());
             button.setForeground(ModernColors.getTextPrimary());
         }
+    }
+
+    private void configureSegmentButton(AbstractButton button) {
+        button.setFocusPainted(false);
+        button.setOpaque(true);
+        button.setBorder(new EmptyBorder(7, 12, 7, 12));
     }
 
     private static String shorten(String value, int maxLength) {
@@ -1264,15 +1372,6 @@ public class PluginManagerDialog extends JDialog {
         }
     }
 
-    private static String escapeHtml(String text) {
-        if (text == null) {
-            return "";
-        }
-        return text.replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;");
-    }
-
     private final class InstalledPluginCellRenderer extends JPanel implements ListCellRenderer<PluginFileInfo> {
         private final JLabel titleLabel = new JLabel();
         private final JLabel metaLabel = new JLabel();
@@ -1280,24 +1379,26 @@ public class PluginManagerDialog extends JDialog {
         private final JLabel statusLabel = createStatusBadgeLabel();
 
         private InstalledPluginCellRenderer() {
-            setLayout(new BorderLayout(10, 6));
+            setLayout(new MigLayout(
+                    "fillx, insets 12 14 12 14, gap 4, novisualpadding",
+                    "[][pref!][grow,fill]",
+                    "[][][]"
+            ));
             setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getBorderLightColor()),
-                    new EmptyBorder(10, 12, 10, 12)
+                    new EmptyBorder(0, 0, 0, 0)
             ));
             setOpaque(true);
 
-            JPanel center = new JPanel(new GridLayout(0, 1, 0, 4));
-            center.setOpaque(false);
-            titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 14f));
+            titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 15f));
             metaLabel.setForeground(ModernColors.getTextHint());
             detailLabel.setForeground(ModernColors.getTextSecondary());
-            center.add(titleLabel);
-            center.add(metaLabel);
-            center.add(detailLabel);
 
-            add(center, BorderLayout.CENTER);
-            add(statusLabel, BorderLayout.EAST);
+            add(titleLabel);
+            add(statusLabel, "aligny center");
+            add(new JLabel(), "growx, wrap");
+            add(metaLabel, "span 3, growx, wrap");
+            add(detailLabel, "span 3, growx");
         }
 
         @Override
@@ -1308,12 +1409,15 @@ public class PluginManagerDialog extends JDialog {
 
             if (isPlaceholder) {
                 metaLabel.setText("");
-                detailLabel.setText(escapeHtml(value.jarPath().toString()));
+                detailLabel.setText(shorten(value.jarPath().toString(), 92));
+                detailLabel.setToolTipText(value.jarPath().toString());
                 applyStatusBadge(statusLabel, "");
             } else {
                 PluginDescriptor descriptor = value.descriptor();
                 metaLabel.setText(descriptor.id() + "  ·  " + descriptor.version());
-                detailLabel.setText(descriptor.hasDescription() ? descriptor.description() : value.jarPath().toString());
+                String detail = descriptor.hasDescription() ? descriptor.description() : value.jarPath().toString();
+                detailLabel.setText(shorten(detail, 92));
+                detailLabel.setToolTipText(detail);
                 applyStatusBadge(statusLabel, resolveInstalledStatus(value));
             }
 
@@ -1329,24 +1433,26 @@ public class PluginManagerDialog extends JDialog {
         private final JLabel statusLabel = createStatusBadgeLabel();
 
         private MarketPluginCellRenderer() {
-            setLayout(new BorderLayout(10, 6));
+            setLayout(new MigLayout(
+                    "fillx, insets 12 14 12 14, gap 4, novisualpadding",
+                    "[][pref!][grow,fill]",
+                    "[][][]"
+            ));
             setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getBorderLightColor()),
-                    new EmptyBorder(10, 12, 10, 12)
+                    new EmptyBorder(0, 0, 0, 0)
             ));
             setOpaque(true);
 
-            JPanel center = new JPanel(new GridLayout(0, 1, 0, 4));
-            center.setOpaque(false);
-            titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 14f));
+            titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 15f));
             metaLabel.setForeground(ModernColors.getTextHint());
             detailLabel.setForeground(ModernColors.getTextSecondary());
-            center.add(titleLabel);
-            center.add(metaLabel);
-            center.add(detailLabel);
 
-            add(center, BorderLayout.CENTER);
-            add(statusLabel, BorderLayout.EAST);
+            add(titleLabel);
+            add(statusLabel, "aligny center");
+            add(new JLabel(), "growx, wrap");
+            add(metaLabel, "span 3, growx, wrap");
+            add(detailLabel, "span 3, growx");
         }
 
         @Override
@@ -1356,10 +1462,13 @@ public class PluginManagerDialog extends JDialog {
             if (value.isPlaceholder()) {
                 metaLabel.setText("");
                 detailLabel.setText("");
+                detailLabel.setToolTipText(null);
                 applyStatusBadge(statusLabel, "");
             } else {
                 metaLabel.setText(value.id() + "  ·  " + value.version());
-                detailLabel.setText(value.hasDescription() ? value.description() : value.installUrl());
+                String detail = value.hasDescription() ? value.description() : value.installUrl();
+                detailLabel.setText(shorten(detail, 92));
+                detailLabel.setToolTipText(detail);
                 applyStatusBadge(statusLabel, getMarketEntryStatus(value));
             }
 

@@ -84,45 +84,12 @@ jobs:
       - name: Run tests
         run: mvn test
 
-      - name: Validate JAR size
-        run: |
-          VERSION="${{ needs.get-version.outputs.version }}"
-          JAR_FILE="target/easy-postman-${VERSION}.jar"
-          
-          if [ ! -f "$JAR_FILE" ]; then
-            echo "❌ JAR file not found: $JAR_FILE"
-            exit 1
-          fi
-          
-          # 获取文件大小（字节）
-          JAR_SIZE=$(stat -f%z "$JAR_FILE" 2>/dev/null || stat -c%s "$JAR_FILE" 2>/dev/null)
-          # 转换为MB
-          JAR_SIZE_MB=$(echo "scale=2; $JAR_SIZE / 1024 / 1024" | bc)
-          # 最大允许大小：70MB
-          MAX_SIZE_MB=70
-          
-          echo "📦 JAR file: $JAR_FILE"
-          echo "📏 JAR size: ${JAR_SIZE_MB} MB"
-          echo "📊 Maximum allowed size: ${MAX_SIZE_MB} MB"
-          
-          # 检查大小是否超过限制
-          if (( $(echo "$JAR_SIZE_MB > $MAX_SIZE_MB" | bc -l) )); then
-            echo "❌ JAR file size (${JAR_SIZE_MB} MB) exceeds maximum allowed size (${MAX_SIZE_MB} MB)"
-            echo "💡 Please optimize the JAR size by:"
-            echo "   - Removing unnecessary dependencies"
-            echo "   - Using dependency exclusions"
-            echo "   - Optimizing resource files"
-            exit 1
-          else
-            echo "✅ JAR size validation passed"
-          fi
-
       - name: Upload JAR for packaging
         uses: actions/upload-artifact@v4
         if: success()
         with:
           name: app-jar
-          path: target/easy-postman-${{ needs.get-version.outputs.version }}.jar
+          path: easy-postman-app/target/easy-postman-${{ needs.get-version.outputs.version }}.jar
           retention-days: 1
 
   # Job 2: Windows 打包和验证

@@ -55,8 +55,8 @@ public class PluginManagerDialog extends JDialog {
     private final JLabel catalogSummaryLabel = createSummaryMetricLabel();
     private final JLabel statusMessageLabel = createMutedLabel();
 
-    private final JTextArea directoryArea = createReadOnlyArea(2);
-    private final JTextArea packageDirectoryArea = createReadOnlyArea(2);
+    private final JLabel directoryArea = createCompactValueLabel();
+    private final JLabel packageDirectoryArea = createCompactValueLabel();
     private final JTextField catalogUrlField = new JTextField();
 
     private final JToggleButton installedViewButton = new JToggleButton(
@@ -83,22 +83,18 @@ public class PluginManagerDialog extends JDialog {
     private final JLabel installedDetailTitleLabel = createDetailTitleLabel();
     private final JLabel installedDetailMetaLabel = createMutedLabel();
     private final JLabel installedDetailStatusLabel = createStatusBadgeLabel();
-    private final JTextArea installedDetailDescriptionArea = createReadOnlyArea(4);
+    private final JTextArea installedDetailDescriptionArea = createReadOnlyArea(4, true);
     private final JLabel installedIdValueLabel = createValueLabel();
-    private final JLabel installedVersionValueLabel = createValueLabel();
     private final JLabel installedCompatibilityValueLabel = createValueLabel();
-    private final JTextArea installedSourceValueArea = createReadOnlyArea(3);
-    private final JTextArea installedPathValueArea = createReadOnlyArea(3);
+    private final JLabel installedSourceValueLabel = createCompactValueLabel();
+    private final JLabel installedPathValueLabel = createCompactValueLabel();
 
     private final JLabel marketDetailTitleLabel = createDetailTitleLabel();
     private final JLabel marketDetailMetaLabel = createMutedLabel();
     private final JLabel marketDetailStatusLabel = createStatusBadgeLabel();
-    private final JTextArea marketDetailDescriptionArea = createReadOnlyArea(4);
+    private final JTextArea marketDetailDescriptionArea = createReadOnlyArea(4, true);
     private final JLabel marketIdValueLabel = createValueLabel();
-    private final JLabel marketVersionValueLabel = createValueLabel();
-    private final JTextArea marketInstalledSourceValueArea = createReadOnlyArea(3);
-    private final JTextArea marketDownloadValueArea = createReadOnlyArea(3);
-    private final JTextArea marketHomepageValueArea = createReadOnlyArea(2);
+    private final JLabel marketInstalledSourceValueLabel = createCompactValueLabel();
 
     private Map<String, PluginFileInfo> installedPluginMap = Map.of();
     private boolean marketBusy;
@@ -329,7 +325,7 @@ public class PluginManagerDialog extends JDialog {
         JPanel panel = createCardPanel(new MigLayout(
                 "fill, insets 14, gap 10, novisualpadding",
                 "[grow,fill]",
-                "[][][][][][][][grow,fill][]"
+                "[][][][][][][][push][]"
         ));
 
         JLabel sectionTitle = new JLabel(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_SECTION_DETAILS));
@@ -345,10 +341,10 @@ public class PluginManagerDialog extends JDialog {
         panel.add(installedDetailMetaLabel, "growx, wrap");
         panel.add(installedDetailDescriptionArea, "growx, wrap");
         panel.add(createDetailRow(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_ID), installedIdValueLabel), "growx, wrap");
-        panel.add(createDetailRow(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_VERSION), installedVersionValueLabel), "growx, wrap");
         panel.add(createDetailRow(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_COMPATIBILITY), installedCompatibilityValueLabel), "growx, wrap");
-        panel.add(createKeyValueBlock(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_INSTALL_SOURCE), installedSourceValueArea), "growx, wrap");
-        panel.add(createKeyValueBlock(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_PATH), installedPathValueArea), "growx, push, wrap");
+        panel.add(createDetailRow(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_INSTALL_SOURCE), installedSourceValueLabel), "growx, wrap");
+        panel.add(createDetailRow(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_PATH), installedPathValueLabel), "growx, wrap");
+        panel.add(new JPanel(), "grow, push, wrap");
         panel.add(createInstalledActionPanel(), "growx");
         return panel;
     }
@@ -437,7 +433,7 @@ public class PluginManagerDialog extends JDialog {
         JPanel panel = createCardPanel(new MigLayout(
                 "fill, insets 14, gap 10, novisualpadding",
                 "[grow,fill]",
-                "[][][][][][][][grow,fill][]"
+                "[][][][][][push][]"
         ));
 
         JLabel sectionTitle = new JLabel(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_SECTION_DETAILS));
@@ -453,12 +449,8 @@ public class PluginManagerDialog extends JDialog {
         panel.add(marketDetailMetaLabel, "growx, wrap");
         panel.add(marketDetailDescriptionArea, "growx, wrap");
         panel.add(createDetailRow(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_ID), marketIdValueLabel), "growx, wrap");
-        panel.add(createDetailRow(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_VERSION), marketVersionValueLabel), "growx, wrap");
-        panel.add(createKeyValueBlock(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_CURRENT_INSTALL_SOURCE),
-                marketInstalledSourceValueArea), "growx, wrap");
-        panel.add(createKeyValueBlock(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_MARKET_DOWNLOAD),
-                marketDownloadValueArea), "growx, wrap");
-        panel.add(createKeyValueBlock(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_HOMEPAGE), marketHomepageValueArea), "growx, push, wrap");
+        panel.add(createDetailRow(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_CURRENT_INSTALL_SOURCE), marketInstalledSourceValueLabel), "growx, wrap");
+        panel.add(new JPanel(), "grow, push, wrap");
         panel.add(createMarketActionPanel(), "growx");
         return panel;
     }
@@ -836,10 +828,9 @@ public class PluginManagerDialog extends JDialog {
                 ? descriptor.description()
                 : I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_EMPTY));
         installedIdValueLabel.setText(descriptor.id());
-        installedVersionValueLabel.setText(descriptor.version());
         installedCompatibilityValueLabel.setText(buildCompatibilityValue(descriptor, selected.compatible()));
-        installedSourceValueArea.setText(resolveInstalledSourceText(descriptor.id(), selected.jarPath()));
-        installedPathValueArea.setText(selected.jarPath().toString());
+        setCompactText(installedSourceValueLabel, resolveInstalledSourceText(descriptor.id(), selected.jarPath()));
+        setCompactText(installedPathValueLabel, selected.jarPath().toString());
         applyStatusBadge(installedDetailStatusLabel, resolveInstalledStatus(selected));
     }
 
@@ -856,10 +847,7 @@ public class PluginManagerDialog extends JDialog {
                 ? selected.description()
                 : I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_EMPTY));
         marketIdValueLabel.setText(selected.id());
-        marketVersionValueLabel.setText(selected.version());
-        marketInstalledSourceValueArea.setText(resolveInstalledSourceText(selected.id(), null));
-        marketDownloadValueArea.setText(selected.installUrl());
-        marketHomepageValueArea.setText(selected.hasHomepageUrl() ? selected.homepageUrl() : "-");
+        setCompactText(marketInstalledSourceValueLabel, resolveInstalledSourceText(selected.id(), null));
         applyStatusBadge(marketDetailStatusLabel, getMarketEntryStatus(selected));
     }
 
@@ -868,10 +856,9 @@ public class PluginManagerDialog extends JDialog {
         installedDetailMetaLabel.setText("");
         installedDetailDescriptionArea.setText(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_EMPTY));
         installedIdValueLabel.setText("-");
-        installedVersionValueLabel.setText("-");
         installedCompatibilityValueLabel.setText("-");
-        installedSourceValueArea.setText("-");
-        installedPathValueArea.setText("-");
+        setCompactText(installedSourceValueLabel, "-");
+        setCompactText(installedPathValueLabel, "-");
         applyStatusBadge(installedDetailStatusLabel, "");
     }
 
@@ -880,10 +867,7 @@ public class PluginManagerDialog extends JDialog {
         marketDetailMetaLabel.setText("");
         marketDetailDescriptionArea.setText(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_EMPTY));
         marketIdValueLabel.setText("-");
-        marketVersionValueLabel.setText("-");
-        marketInstalledSourceValueArea.setText("-");
-        marketDownloadValueArea.setText("-");
-        marketHomepageValueArea.setText("-");
+        setCompactText(marketInstalledSourceValueLabel, "-");
         applyStatusBadge(marketDetailStatusLabel, "");
     }
 
@@ -1140,15 +1124,38 @@ public class PluginManagerDialog extends JDialog {
         return label;
     }
 
+    private static JLabel createCompactValueLabel() {
+        JLabel label = createValueLabel();
+        label.setVerticalAlignment(SwingConstants.TOP);
+        return label;
+    }
+
     private static JTextArea createReadOnlyArea(int rows) {
+        return createReadOnlyArea(rows, true);
+    }
+
+    private static JTextArea createReadOnlyArea(int rows, boolean wrapLines) {
         JTextArea area = new JTextArea(rows, 0);
         area.setEditable(false);
-        area.setLineWrap(true);
-        area.setWrapStyleWord(true);
+        area.setLineWrap(wrapLines);
+        area.setWrapStyleWord(wrapLines);
         area.setOpaque(false);
         area.setBorder(new EmptyBorder(0, 0, 0, 0));
         area.setForeground(ModernColors.getTextSecondary());
         return area;
+    }
+
+    private void setCompactText(JLabel label, String text) {
+        String value = text == null || text.isBlank() ? "-" : text;
+        label.setText(shorten(value, 72));
+        label.setToolTipText(value.length() > 72 ? value : null);
+    }
+
+    private static String shorten(String value, int maxLength) {
+        if (value == null || value.length() <= maxLength) {
+            return value;
+        }
+        return value.substring(0, Math.max(0, maxLength - 3)) + "...";
     }
 
     private static JLabel createStatusBadgeLabel() {

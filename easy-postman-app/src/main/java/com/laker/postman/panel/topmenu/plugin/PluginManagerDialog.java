@@ -6,6 +6,7 @@ import com.laker.postman.plugin.manager.PluginInstallSource;
 import com.laker.postman.plugin.manager.PluginManagementService;
 import com.laker.postman.plugin.manager.PluginUninstallResult;
 import com.laker.postman.plugin.manager.market.PluginCatalogEntry;
+import com.laker.postman.plugin.runtime.PluginCompatibility;
 import com.laker.postman.plugin.runtime.PluginFileInfo;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.service.update.version.VersionComparator;
@@ -41,7 +42,7 @@ public class PluginManagerDialog extends JDialog {
 
     private static final String VIEW_INSTALLED = "installed";
     private static final String VIEW_MARKET = "market";
-    private static final int DETAILS_MIN_WIDTH = 320;
+    private static final int DETAILS_MIN_WIDTH = 340;
     private static final int LIST_MIN_WIDTH = 260;
     private static final int SPLIT_DIVIDER_SIZE = 6;
 
@@ -55,8 +56,6 @@ public class PluginManagerDialog extends JDialog {
     private final JLabel catalogSummaryLabel = createSummaryMetricLabel();
     private final JLabel statusMessageLabel = createMutedLabel();
 
-    private final JLabel directoryArea = createCompactValueLabel();
-    private final JLabel packageDirectoryArea = createCompactValueLabel();
     private final JTextField catalogUrlField = new JTextField();
 
     private final JToggleButton installedViewButton = new JToggleButton(
@@ -73,7 +72,6 @@ public class PluginManagerDialog extends JDialog {
     private final JButton disableInstalledButton = new JButton(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DISABLE));
     private final JButton uninstallInstalledButton = new JButton(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_UNINSTALL));
 
-    private final JButton marketInstallJarButton = new JButton(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_INSTALL));
     private final JButton loadCatalogButton = new JButton(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_LOAD));
     private final JButton installMarketButton = new JButton(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_INSTALL));
     private final JButton openHomepageButton = new JButton(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_OPEN_HOMEPAGE));
@@ -94,6 +92,7 @@ public class PluginManagerDialog extends JDialog {
     private final JLabel marketDetailStatusLabel = createStatusBadgeLabel();
     private final JTextArea marketDetailDescriptionArea = createReadOnlyArea(4, true);
     private final JLabel marketIdValueLabel = createValueLabel();
+    private final JLabel marketCompatibilityValueLabel = createValueLabel();
     private final JLabel marketInstalledSourceValueLabel = createCompactValueLabel();
 
     private Map<String, PluginFileInfo> installedPluginMap = Map.of();
@@ -123,19 +122,20 @@ public class PluginManagerDialog extends JDialog {
         JPanel content = new JPanel(new MigLayout(
                 "fill, insets 16, gap 12, novisualpadding",
                 "[grow,fill]",
-                "[][][grow,fill][]"
+                "[][grow,fill][]"
         ));
         content.setBackground(ModernColors.getBackgroundColor());
         setContentPane(content);
 
-        content.add(createHeroPanel(), "growx, wrap");
-        content.add(createNavigationPanel(), "growx, wrap");
+        content.add(createHeaderPanel(), "growx, wrap");
 
         contentPanel.setOpaque(false);
         contentPanel.add(createInstalledPanel(), VIEW_INSTALLED);
         contentPanel.add(createMarketPanel(), VIEW_MARKET);
         content.add(contentPanel, "grow, push, wrap");
         content.add(createFooterPanel(), "growx");
+
+        configureActionButtons();
 
         installLocalButton.addActionListener(e -> installLocalPluginJar());
         openDirButton.addActionListener(e -> openManagedPluginDirectory());
@@ -144,7 +144,6 @@ public class PluginManagerDialog extends JDialog {
         disableInstalledButton.addActionListener(e -> toggleSelectedInstalledPlugin(false));
         uninstallInstalledButton.addActionListener(e -> uninstallSelectedInstalledPlugin());
 
-        marketInstallJarButton.addActionListener(e -> installLocalPluginJar());
         loadCatalogButton.addActionListener(e -> loadCatalog());
         installMarketButton.addActionListener(e -> installSelectedCatalogPlugin());
         openHomepageButton.addActionListener(e -> openSelectedPluginHomepage());
@@ -156,6 +155,7 @@ public class PluginManagerDialog extends JDialog {
         installedList.setCellRenderer(new InstalledPluginCellRenderer());
         installedList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         installedList.setVisibleRowCount(-1);
+        configureListAppearance(installedList);
         installedList.addListSelectionListener(e -> {
             updateInstalledActions();
             updateInstalledDetails();
@@ -164,6 +164,7 @@ public class PluginManagerDialog extends JDialog {
         marketList.setCellRenderer(new MarketPluginCellRenderer());
         marketList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         marketList.setVisibleRowCount(-1);
+        configureListAppearance(marketList);
         marketList.addListSelectionListener(e -> {
             updateMarketActions();
             updateMarketDetails();
@@ -184,23 +185,24 @@ public class PluginManagerDialog extends JDialog {
         setStatusMessage(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_RESTART_HINT));
     }
 
-    private JPanel createHeroPanel() {
+    private JPanel createHeaderPanel() {
         JPanel panel = createCardPanel(new MigLayout(
-                "fillx, insets 18 18 16 18, gap 14, novisualpadding",
+                "fillx, insets 14 16 14 16, gap 12, novisualpadding",
                 "[grow,fill][right]",
-                "[]"
+                "[][]"
         ));
 
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_TITLE));
-        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 22f));
+        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 20f));
 
         panel.add(titleLabel, "growx");
-        panel.add(createHeroActionPanel(), "aligny top");
-        panel.add(createSummaryPanel(), "span 2, growx");
+        panel.add(createHeaderActionPanel(), "aligny top");
+        panel.add(createMetricStrip(), "growx");
+        panel.add(createNavigationPanel(), "alignx right");
         return panel;
     }
 
-    private JPanel createHeroActionPanel() {
+    private JPanel createHeaderActionPanel() {
         JPanel panel = new JPanel(new MigLayout(
                 "insets 0, gap 8, novisualpadding",
                 "[][][]",
@@ -213,29 +215,30 @@ public class PluginManagerDialog extends JDialog {
         return panel;
     }
 
-    private JPanel createSummaryPanel() {
+    private JPanel createMetricStrip() {
         JPanel panel = new JPanel(new MigLayout(
                 "fillx, insets 0, gap 10, novisualpadding",
-                "[grow,fill][grow,fill][grow,fill]",
+                "[][][]",
                 "[]"
         ));
         panel.setOpaque(false);
-        panel.add(createSummaryCard(installedSummaryLabel, I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_SUMMARY_INSTALLED)), "growx");
-        panel.add(createSummaryCard(loadedSummaryLabel, I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_SUMMARY_LOADED)), "growx");
-        panel.add(createSummaryCard(catalogSummaryLabel, I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_SUMMARY_CATALOG)), "growx");
+        panel.add(createMetricPill(installedSummaryLabel, I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_SUMMARY_INSTALLED)));
+        panel.add(createMetricPill(loadedSummaryLabel, I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_SUMMARY_LOADED)));
+        panel.add(createMetricPill(catalogSummaryLabel, I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_SUMMARY_CATALOG)));
         return panel;
     }
 
-    private JPanel createSummaryCard(JLabel valueLabel, String title) {
+    private JPanel createMetricPill(JLabel valueLabel, String title) {
         JPanel panel = createSoftCard(new MigLayout(
-                "fillx, insets 12 14 12 14, gap 4, novisualpadding",
-                "[grow,fill]",
-                "[][]"
+                "insets 6 10 6 10, gap 8, novisualpadding",
+                "[][]",
+                "[]"
         ));
         JLabel titleLabel = new JLabel(title);
         titleLabel.setForeground(ModernColors.getTextHint());
-        panel.add(titleLabel, "growx, wrap");
-        panel.add(valueLabel, "growx");
+        valueLabel.setFont(valueLabel.getFont().deriveFont(Font.BOLD, 14f));
+        panel.add(titleLabel);
+        panel.add(valueLabel);
         return panel;
     }
 
@@ -259,84 +262,45 @@ public class PluginManagerDialog extends JDialog {
         button.setFocusPainted(false);
         button.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(ModernColors.getBorderLightColor()),
-                new EmptyBorder(6, 12, 6, 12)
+                new EmptyBorder(7, 12, 7, 12)
         ));
     }
 
     private JPanel createInstalledPanel() {
-        JPanel panel = new JPanel(new MigLayout(
-                "fill, insets 0, gap 12, novisualpadding",
-                "[grow,fill]",
-                "[][grow,fill]"
-        ));
-        panel.setOpaque(false);
-
-        panel.add(createDirectoriesPanel(), "growx, wrap");
-        panel.add(createInstalledSplitPane(), "grow, push");
-        return panel;
-    }
-
-    private JPanel createDirectoriesPanel() {
-        JPanel panel = createCardPanel(new MigLayout(
-                "fillx, insets 14, gap 10, novisualpadding",
-                "[grow,fill][grow,fill]",
-                "[][grow,fill]"
-        ));
-
-        JLabel sectionTitle = new JLabel(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_SECTION_DIRECTORIES));
-        sectionTitle.setFont(sectionTitle.getFont().deriveFont(Font.BOLD, 14f));
-        panel.add(sectionTitle, "span 2, wrap");
-
-        panel.add(createKeyValueBlock(
-                I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DIRECTORY, ""),
-                directoryArea
-        ), "grow");
-        panel.add(createKeyValueBlock(
-                I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_CACHE_DIRECTORY, ""),
-                packageDirectoryArea
-        ), "grow");
-        return panel;
+        return wrapContentCard(createInstalledSplitPane());
     }
 
     private JSplitPane createInstalledSplitPane() {
-        return createHorizontalSplitPane(createInstalledListPanel(), createInstalledDetailsPanel(), 0.56);
+        return createHorizontalSplitPane(createInstalledListPanel(), createDetailScrollPane(createInstalledDetailsPanel()), 0.56);
     }
 
     private JPanel createInstalledListPanel() {
         JPanel panel = createCardPanel(new MigLayout(
                 "fill, insets 14, gap 10, novisualpadding",
                 "[grow,fill]",
-                "[][][grow,fill]"
+                "[][grow,fill]"
         ));
 
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_TAB_INSTALLED));
         titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 14f));
 
-        JTextArea hintArea = createReadOnlyArea(2);
-        hintArea.setText(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_LOCAL_HINT));
-
         panel.add(titleLabel, "growx, wrap");
-        panel.add(hintArea, "growx, wrap");
         panel.add(createListScrollPane(installedList), "grow, push");
         return panel;
     }
 
     private JPanel createInstalledDetailsPanel() {
         JPanel panel = createCardPanel(new MigLayout(
-                "fill, insets 14, gap 10, novisualpadding",
+                "fill, insets 16, gap 10, novisualpadding",
                 "[grow,fill]",
-                "[][][][][][][][push][]"
+                "[][][][][][][push][]"
         ));
-
-        JLabel sectionTitle = new JLabel(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_SECTION_DETAILS));
-        sectionTitle.setFont(sectionTitle.getFont().deriveFont(Font.BOLD, 14f));
 
         JPanel titleRow = new JPanel(new MigLayout("insets 0, gap 8, novisualpadding", "[grow,fill][]", "[]"));
         titleRow.setOpaque(false);
         titleRow.add(installedDetailTitleLabel, "growx");
         titleRow.add(installedDetailStatusLabel);
 
-        panel.add(sectionTitle, "growx, wrap");
         panel.add(titleRow, "growx, wrap");
         panel.add(installedDetailMetaLabel, "growx, wrap");
         panel.add(installedDetailDescriptionArea, "growx, wrap");
@@ -352,48 +316,22 @@ public class PluginManagerDialog extends JDialog {
     private JPanel createInstalledActionPanel() {
         JPanel panel = new JPanel(new MigLayout(
                 "insets 0, gap 8, novisualpadding",
-                "[][][]",
+                "[grow,fill][grow,fill][grow,fill]",
                 "[]"
         ));
         panel.setOpaque(false);
-        panel.add(enableInstalledButton);
-        panel.add(disableInstalledButton);
-        panel.add(uninstallInstalledButton);
+        panel.add(enableInstalledButton, "growx");
+        panel.add(disableInstalledButton, "growx");
+        panel.add(uninstallInstalledButton, "growx");
         return panel;
     }
 
     private JPanel createMarketPanel() {
-        JPanel panel = new JPanel(new MigLayout(
-                "fill, insets 0, gap 12, novisualpadding",
-                "[grow,fill]",
-                "[][grow,fill]"
-        ));
-        panel.setOpaque(false);
-
-        panel.add(createCatalogPanel(), "growx, wrap");
-        panel.add(createMarketSplitPane(), "grow, push");
-        return panel;
-    }
-
-    private JPanel createCatalogPanel() {
-        JPanel panel = createCardPanel(new MigLayout(
-                "fillx, insets 14, gap 10, novisualpadding",
-                "[grow,fill][][][]",
-                "[][]"
-        ));
-
-        panel.add(catalogUrlField, "growx");
-        panel.add(useOfficialGithubCatalogButton);
-        panel.add(useOfficialGiteeCatalogButton);
-        panel.add(marketInstallJarButton);
-        panel.add(loadCatalogButton, "wrap");
-        panel.add(createMutedLabel(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_SOURCE_HINT)),
-                "span 5, growx");
-        return panel;
+        return wrapContentCard(createMarketSplitPane());
     }
 
     private JSplitPane createMarketSplitPane() {
-        return createHorizontalSplitPane(createMarketListPanel(), createMarketDetailsPanel(), 0.56);
+        return createHorizontalSplitPane(createMarketListPanel(), createDetailScrollPane(createMarketDetailsPanel()), 0.56);
     }
 
     private JSplitPane createHorizontalSplitPane(JComponent left, JComponent right, double resizeWeight) {
@@ -416,39 +354,64 @@ public class PluginManagerDialog extends JDialog {
         return splitPane;
     }
 
+    private JScrollPane createDetailScrollPane(JComponent component) {
+        JScrollPane scrollPane = new JScrollPane(component);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.setOpaque(false);
+        scrollPane.getViewport().setOpaque(false);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        return scrollPane;
+    }
+
     private JPanel createMarketListPanel() {
         JPanel panel = createCardPanel(new MigLayout(
                 "fill, insets 14, gap 10, novisualpadding",
                 "[grow,fill]",
-                "[][grow,fill]"
+                "[][][grow,fill]"
         ));
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_TAB_MARKET));
         titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 14f));
         panel.add(titleLabel, "growx, wrap");
+        panel.add(createCatalogToolbar(), "growx, wrap");
         panel.add(createListScrollPane(marketList), "grow, push");
+        return panel;
+    }
+
+    private JPanel createCatalogToolbar() {
+        JPanel panel = new JPanel(new MigLayout(
+                "fillx, insets 0, gap 8, novisualpadding",
+                "[grow,fill][][]",
+                "[][]"
+        ));
+        panel.setOpaque(false);
+
+        panel.add(catalogUrlField, "growx");
+        panel.add(loadCatalogButton);
+        panel.add(useOfficialGithubCatalogButton);
+        panel.add(useOfficialGiteeCatalogButton, "wrap");
+        panel.add(createMutedLabel(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_SOURCE_HINT)),
+                "span 4, growx");
         return panel;
     }
 
     private JPanel createMarketDetailsPanel() {
         JPanel panel = createCardPanel(new MigLayout(
-                "fill, insets 14, gap 10, novisualpadding",
+                "fill, insets 16, gap 10, novisualpadding",
                 "[grow,fill]",
-                "[][][][][][push][]"
+                "[][][][][push][]"
         ));
-
-        JLabel sectionTitle = new JLabel(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_SECTION_DETAILS));
-        sectionTitle.setFont(sectionTitle.getFont().deriveFont(Font.BOLD, 14f));
 
         JPanel titleRow = new JPanel(new MigLayout("insets 0, gap 8, novisualpadding", "[grow,fill][]", "[]"));
         titleRow.setOpaque(false);
         titleRow.add(marketDetailTitleLabel, "growx");
         titleRow.add(marketDetailStatusLabel);
 
-        panel.add(sectionTitle, "growx, wrap");
         panel.add(titleRow, "growx, wrap");
         panel.add(marketDetailMetaLabel, "growx, wrap");
         panel.add(marketDetailDescriptionArea, "growx, wrap");
         panel.add(createDetailRow(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_ID), marketIdValueLabel), "growx, wrap");
+        panel.add(createDetailRow(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_COMPATIBILITY), marketCompatibilityValueLabel), "growx, wrap");
         panel.add(createDetailRow(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_CURRENT_INSTALL_SOURCE), marketInstalledSourceValueLabel), "growx, wrap");
         panel.add(new JPanel(), "grow, push, wrap");
         panel.add(createMarketActionPanel(), "growx");
@@ -458,29 +421,42 @@ public class PluginManagerDialog extends JDialog {
     private JPanel createMarketActionPanel() {
         JPanel panel = new JPanel(new MigLayout(
                 "insets 0, gap 8, novisualpadding",
-                "[][]",
+                "[grow,fill][grow,fill]",
                 "[]"
         ));
         panel.setOpaque(false);
-        panel.add(installMarketButton);
-        panel.add(openHomepageButton);
+        panel.add(installMarketButton, "growx");
+        panel.add(openHomepageButton, "growx");
         return panel;
     }
 
     private JPanel createFooterPanel() {
         JPanel panel = new JPanel(new MigLayout(
                 "fillx, insets 0, gap 10, novisualpadding",
-                "[grow,fill][]",
+                "[grow,fill][right][]",
                 "[]"
         ));
         panel.setOpaque(false);
 
         JButton closeButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLOSE));
         closeButton.addActionListener(e -> dispose());
+        configureButton(closeButton, false);
 
         panel.add(statusMessageLabel, "growx");
+        panel.add(createDirectoryHintLabel(), "gapright 8");
         panel.add(closeButton, "alignx right");
         return panel;
+    }
+
+    private JLabel createDirectoryHintLabel() {
+        JLabel label = createMutedLabel();
+        label.setText(shorten(PluginManagementService.getManagedPluginDir().toString(), 52));
+        label.setToolTipText("<html>"
+                + escapeHtml(PluginManagementService.getManagedPluginDir().toString())
+                + "<br>"
+                + escapeHtml(PluginManagementService.getPluginPackageDir().toString())
+                + "</html>");
+        return label;
     }
 
     private void loadSavedCatalogIfPresent() {
@@ -509,17 +485,13 @@ public class PluginManagerDialog extends JDialog {
     }
 
     private void reloadPlugins(String preferredPluginId) {
-        Path pluginDir = PluginManagementService.getManagedPluginDir();
-        directoryArea.setText(pluginDir.toString());
-        packageDirectoryArea.setText(PluginManagementService.getPluginPackageDir().toString());
-
         installedListModel.clear();
         List<PluginFileInfo> plugins = PluginManagementService.getInstalledPlugins();
         installedPluginMap = buildInstalledPluginMap(plugins);
         if (plugins.isEmpty()) {
             installedListModel.addElement(new PluginFileInfo(
                     new PluginDescriptor("empty", I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_EMPTY), "", "", "", ""),
-                    pluginDir,
+                    PluginManagementService.getManagedPluginDir(),
                     false,
                     false,
                     true
@@ -791,8 +763,13 @@ public class PluginManagerDialog extends JDialog {
         String actionText = I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_INSTALL);
         boolean actionEnabled = !marketBusy && validSelection;
         if (validSelection) {
+            PluginCompatibility compatibility = PluginManagementService.evaluateCompatibility(selected);
+            if (!compatibility.compatible()) {
+                actionText = I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_ACTION_REQUIRES_HOST_UPGRADE);
+                actionEnabled = false;
+            }
             PluginFileInfo installed = installedPluginMap.get(selected.id());
-            if (installed != null) {
+            if (installed != null && compatibility.compatible()) {
                 int compare = VersionComparator.compare(selected.version(), installed.descriptor().version());
                 if (compare > 0) {
                     actionText = I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_UPDATE);
@@ -847,6 +824,7 @@ public class PluginManagerDialog extends JDialog {
                 ? selected.description()
                 : I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_EMPTY));
         marketIdValueLabel.setText(selected.id());
+        marketCompatibilityValueLabel.setText(buildCompatibilityValue(selected));
         setCompactText(marketInstalledSourceValueLabel, resolveInstalledSourceText(selected.id(), null));
         applyStatusBadge(marketDetailStatusLabel, getMarketEntryStatus(selected));
     }
@@ -867,6 +845,7 @@ public class PluginManagerDialog extends JDialog {
         marketDetailMetaLabel.setText("");
         marketDetailDescriptionArea.setText(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_EMPTY));
         marketIdValueLabel.setText("-");
+        marketCompatibilityValueLabel.setText("-");
         setCompactText(marketInstalledSourceValueLabel, "-");
         applyStatusBadge(marketDetailStatusLabel, "");
     }
@@ -942,6 +921,14 @@ public class PluginManagerDialog extends JDialog {
     }
 
     private String getMarketEntryStatus(PluginCatalogEntry entry) {
+        PluginCompatibility compatibility = PluginManagementService.evaluateCompatibility(entry);
+        if (!compatibility.compatible()) {
+            PluginFileInfo installed = installedPluginMap.get(entry.id());
+            if (installed != null && VersionComparator.compare(entry.version(), installed.descriptor().version()) > 0) {
+                return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_UPDATE_REQUIRES_HOST_UPGRADE);
+            }
+            return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_REQUIRES_HOST_UPGRADE);
+        }
         PluginFileInfo installed = installedPluginMap.get(entry.id());
         if (installed == null) {
             return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_AVAILABLE);
@@ -1011,23 +998,46 @@ public class PluginManagerDialog extends JDialog {
     }
 
     private String buildCompatibilityValue(PluginDescriptor descriptor, boolean compatible) {
-        if (!descriptor.hasMinAppVersion() && !descriptor.hasMaxAppVersion()) {
-            return compatible ? "-" : I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_INCOMPATIBLE);
-        }
-        String range = (descriptor.hasMinAppVersion() ? descriptor.minAppVersion() : "*")
-                + " - "
-                + (descriptor.hasMaxAppVersion() ? descriptor.maxAppVersion() : "*");
-        String current = PluginManagementService.getCurrentAppVersion();
+        return buildCompatibilityValue(PluginManagementService.evaluateCompatibility(descriptor), compatible);
+    }
+
+    private String buildCompatibilityValue(PluginCatalogEntry entry) {
+        PluginCompatibility compatibility = PluginManagementService.evaluateCompatibility(entry);
+        return buildCompatibilityValue(compatibility, compatibility.compatible());
+    }
+
+    private String buildCompatibilityValue(PluginCompatibility compatibility, boolean compatible) {
         if (compatible) {
-            return range + " / current " + current;
+            return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_COMPATIBILITY_CURRENT);
         }
-        return range + " / current " + current + " (" + I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_INCOMPATIBLE) + ")";
+        if (!compatibility.appVersionCompatible()) {
+            return buildRequiredAppText(compatibility.minAppVersion(), compatibility.maxAppVersion());
+        }
+        return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_COMPATIBILITY_REQUIRES_HOST_UPGRADE);
+    }
+
+    private String buildRequiredAppText(String minVersion, String maxVersion) {
+        boolean hasMin = minVersion != null && !minVersion.isBlank();
+        boolean hasMax = maxVersion != null && !maxVersion.isBlank();
+        if (hasMin && hasMax) {
+            if (minVersion.equals(maxVersion)) {
+                return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_COMPATIBILITY_REQUIRES_APP, minVersion);
+            }
+            return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_COMPATIBILITY_REQUIRES_APP_RANGE, minVersion, maxVersion);
+        }
+        if (hasMin) {
+            return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_COMPATIBILITY_REQUIRES_APP_MIN, minVersion);
+        }
+        if (hasMax) {
+            return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_COMPATIBILITY_REQUIRES_APP_MAX, maxVersion);
+        }
+        return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_COMPATIBILITY_REQUIRES_HOST_UPGRADE);
     }
 
     private JPanel createDetailRow(String key, JComponent valueComponent) {
         JPanel panel = new JPanel(new MigLayout(
                 "fillx, insets 0, gap 10, novisualpadding",
-                "[90!][grow,fill]",
+                "[72!][grow,fill]",
                 "[]"
         ));
         panel.setOpaque(false);
@@ -1039,31 +1049,16 @@ public class PluginManagerDialog extends JDialog {
         return panel;
     }
 
-    private JPanel createKeyValueBlock(String title, JComponent valueComponent) {
-        JPanel panel = new JPanel(new MigLayout(
-                "fill, insets 0, gap 6, novisualpadding",
-                "[grow,fill]",
-                "[][grow,fill]"
-        ));
+    private JPanel wrapContentCard(JComponent component) {
+        JPanel panel = new JPanel(new BorderLayout());
         panel.setOpaque(false);
-
-        JLabel titleLabel = new JLabel(stripTrailingColon(title));
-        titleLabel.setForeground(ModernColors.getTextHint());
-        panel.add(titleLabel, "growx, wrap");
-        panel.add(valueComponent, "grow, push");
+        panel.add(component, BorderLayout.CENTER);
         return panel;
-    }
-
-    private static String stripTrailingColon(String text) {
-        if (text == null) {
-            return "";
-        }
-        return text.replace("：", "").replace(":", "");
     }
 
     private JScrollPane createListScrollPane(JList<?> list) {
         JScrollPane scrollPane = new JScrollPane(list);
-        scrollPane.setBorder(BorderFactory.createLineBorder(ModernColors.getBorderLightColor()));
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.getViewport().setBackground(ModernColors.getCardBackgroundColor());
         return scrollPane;
     }
@@ -1096,7 +1091,7 @@ public class PluginManagerDialog extends JDialog {
 
     private static JLabel createSummaryMetricLabel() {
         JLabel label = new JLabel("0");
-        label.setFont(label.getFont().deriveFont(Font.BOLD, 24f));
+        label.setFont(label.getFont().deriveFont(Font.BOLD, 16f));
         return label;
     }
 
@@ -1147,8 +1142,54 @@ public class PluginManagerDialog extends JDialog {
 
     private void setCompactText(JLabel label, String text) {
         String value = text == null || text.isBlank() ? "-" : text;
-        label.setText(shorten(value, 72));
-        label.setToolTipText(value.length() > 72 ? value : null);
+        label.setText(shorten(value, 96));
+        label.setToolTipText(value.length() > 96 ? value : null);
+    }
+
+    private void configureActionButtons() {
+        configureButton(installLocalButton, true);
+        configureButton(openDirButton, false);
+        configureButton(refreshInstalledButton, false);
+        configureButton(enableInstalledButton, false);
+        configureButton(disableInstalledButton, false);
+        configureButton(uninstallInstalledButton, false);
+        configureButton(loadCatalogButton, true);
+        configureButton(installMarketButton, true);
+        configureButton(openHomepageButton, false);
+        configureButton(useOfficialGithubCatalogButton, false);
+        configureButton(useOfficialGiteeCatalogButton, false);
+    }
+
+    private void configureListAppearance(JList<?> list) {
+        list.setBackground(ModernColors.getCardBackgroundColor());
+        list.setForeground(ModernColors.getTextPrimary());
+        list.setSelectionBackground(adaptSelectionBackground(ModernColors.PRIMARY));
+        list.setSelectionForeground(ModernColors.getTextPrimary());
+        list.setBorder(BorderFactory.createEmptyBorder());
+    }
+
+    private Color adaptSelectionBackground(Color color) {
+        if (ModernColors.isDarkTheme()) {
+            return new Color(color.getRed(), color.getGreen(), color.getBlue(), 110);
+        }
+        return new Color(color.getRed(), color.getGreen(), color.getBlue(), 28);
+    }
+
+    private void configureButton(AbstractButton button, boolean primary) {
+        button.setFocusPainted(false);
+        button.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(primary ? ModernColors.PRIMARY : ModernColors.getBorderLightColor()),
+                new EmptyBorder(7, 12, 7, 12)
+        ));
+        if (primary) {
+            button.setBackground(ModernColors.PRIMARY);
+            button.setForeground(Color.WHITE);
+            button.setOpaque(true);
+        } else {
+            button.setOpaque(true);
+            button.setBackground(ModernColors.getCardBackgroundColor());
+            button.setForeground(ModernColors.getTextPrimary());
+        }
     }
 
     private static String shorten(String value, int maxLength) {

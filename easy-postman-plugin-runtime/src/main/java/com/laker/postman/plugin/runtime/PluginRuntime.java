@@ -40,6 +40,8 @@ public final class PluginRuntime {
 
     private static final String PLUGIN_DESCRIPTOR_PREFIX = "META-INF/easy-postman/";
     private static final String PLUGIN_DESCRIPTOR_SUFFIX = ".properties";
+    private static final String RUNTIME_PROPERTIES_RESOURCE = "/META-INF/easy-postman/runtime.properties";
+    private static final String PLATFORM_VERSION_KEY = "plugin.platform.version";
     // 已禁用插件列表。禁用后默认在下次启动时不再加载。
     private static final String DISABLED_PLUGIN_IDS_KEY = "plugin.disabledIds";
     // 待卸载插件列表。主要用于已加载插件无法立即删除的场景，例如 Windows 文件锁。
@@ -101,6 +103,23 @@ public final class PluginRuntime {
         return pomVersion == null || pomVersion.isBlank() ? "dev" : pomVersion;
     }
 
+    public static String getCurrentPluginPlatformVersion() {
+        try (InputStream inputStream = PluginRuntime.class.getResourceAsStream(RUNTIME_PROPERTIES_RESOURCE)) {
+            if (inputStream != null) {
+                Properties properties = new Properties();
+                properties.load(inputStream);
+                String version = properties.getProperty(PLATFORM_VERSION_KEY);
+                if (version != null && !version.isBlank()) {
+                    return version.trim();
+                }
+            }
+        } catch (IOException ignored) {
+        }
+        // 本地开发或未打包场景下，从根 pom 回退读取平台版本，避免 compatibility 判断退化成 "dev"。
+        String pomValue = resolvePomProperty(Paths.get("pom.xml"), PLATFORM_VERSION_KEY);
+        return pomValue == null || pomValue.isBlank() ? "dev" : pomValue;
+    }
+
     public static Path getManagedPluginDir() {
         return PluginRuntimePaths.managedPluginDir();
     }
@@ -111,6 +130,43 @@ public final class PluginRuntime {
 
     public static PluginDescriptor inspectPluginJar(Path jarPath) throws IOException {
         return readDescriptor(jarPath);
+    }
+
+    public static PluginCompatibility evaluateCompatibility(PluginDescriptor descriptor) {
+        if (descriptor == null) {
+            return new PluginCompatibility(false, false, false,
+                    getCurrentAppVersion(), getCurrentPluginPlatformVersion(),
+                    "", "", "", "");
+        }
+        return evaluateCompatibility(
+                descriptor.minAppVersion(),
+                descriptor.maxAppVersion(),
+                descriptor.minPlatformVersion(),
+                descriptor.maxPlatformVersion()
+        );
+    }
+
+    public static PluginCompatibility evaluateCompatibility(String minAppVersion,
+                                                            String maxAppVersion,
+                                                            String minPlatformVersion,
+                                                            String maxPlatformVersion) {
+        String currentAppVersion = getCurrentAppVersion();
+        String currentPlatformVersion = getCurrentPluginPlatformVersion();
+
+        // app 版本决定“这个宿主发行版是否允许安装”，platform 版本决定“这套插件 SPI 是否还能装配”。
+        boolean appVersionCompatible = isVersionInRange(currentAppVersion, minAppVersion, maxAppVersion);
+        boolean platformVersionCompatible = isVersionInRange(currentPlatformVersion, minPlatformVersion, maxPlatformVersion);
+        return new PluginCompatibility(
+                appVersionCompatible && platformVersionCompatible,
+                appVersionCompatible,
+                platformVersionCompatible,
+                currentAppVersion,
+                currentPlatformVersion,
+                minAppVersion == null ? "" : minAppVersion,
+                maxAppVersion == null ? "" : maxAppVersion,
+                minPlatformVersion == null ? "" : minPlatformVersion,
+                maxPlatformVersion == null ? "" : maxPlatformVersion
+        );
     }
 
     public static void shutdown() {
@@ -225,11 +281,15 @@ public final class PluginRuntime {
                     continue;
                 }
                 if (!candidate.compatible()) {
-                    log.warn("Skip incompatible plugin: {} requires app {}..{}, current {}",
+                    PluginCompatibility compatibility = evaluateCompatibility(candidate.descriptor());
+                    log.warn("Skip incompatible plugin: {} requires app {}..{} and platform {}..{}, current app {}, current platform {}",
                             candidate.descriptor().id(),
                             emptyToWildcard(candidate.descriptor().minAppVersion()),
                             emptyToWildcard(candidate.descriptor().maxAppVersion()),
-                            getCurrentAppVersion());
+                            emptyToWildcard(candidate.descriptor().minPlatformVersion()),
+                            emptyToWildcard(candidate.descriptor().maxPlatformVersion()),
+                            compatibility.currentAppVersion(),
+                            compatibility.currentPlatformVersion());
                     continue;
                 }
                 // 同一插件 id 出现多个版本时，只保留最高版本候选项
@@ -261,7 +321,7 @@ public final class PluginRuntime {
                             PluginDescriptor descriptor = inspectPluginJar(path);
                             if (descriptor != null) {
                                 boolean enabled = isPluginEnabled(descriptor.id());
-                                boolean compatible = isDescriptorCompatible(descriptor);
+                                boolean compatible = evaluateCompatibility(descriptor).compatible();
                                 plugins.add(new PluginFileInfo(descriptor, path, isLoaded(path), enabled, compatible));
                             }
                         } catch (IOException e) {
@@ -312,7 +372,9 @@ public final class PluginRuntime {
                                     properties.getProperty("plugin.description", ""),
                                     properties.getProperty("plugin.homepage", ""),
                                     properties.getProperty("plugin.minAppVersion", ""),
-                                    properties.getProperty("plugin.maxAppVersion", "")
+                                    properties.getProperty("plugin.maxAppVersion", ""),
+                                    properties.getProperty("plugin.minPlatformVersion", ""),
+                                    properties.getProperty("plugin.maxPlatformVersion", "")
                             );
                         } catch (IOException e) {
                             throw new RuntimeException(e);
@@ -376,14 +438,13 @@ public final class PluginRuntime {
         }
     }
 
-    private static boolean isDescriptorCompatible(PluginDescriptor descriptor) {
-        String currentVersion = getCurrentAppVersion();
-        if (descriptor.hasMinAppVersion()
-                && PluginVersionComparator.compare(currentVersion, descriptor.minAppVersion()) < 0) {
+    private static boolean isVersionInRange(String currentVersion, String minVersion, String maxVersion) {
+        if (minVersion != null && !minVersion.isBlank()
+                && PluginVersionComparator.compare(currentVersion, minVersion) < 0) {
             return false;
         }
-        return !descriptor.hasMaxAppVersion()
-                || PluginVersionComparator.compare(currentVersion, descriptor.maxAppVersion()) <= 0;
+        return maxVersion == null || maxVersion.isBlank()
+                || PluginVersionComparator.compare(currentVersion, maxVersion) <= 0;
     }
 
     private static String emptyToWildcard(String value) {
@@ -391,26 +452,26 @@ public final class PluginRuntime {
     }
 
     private static String resolvePomVersion(Path pom) {
+        String version = resolvePomProperty(pom, "version");
+        if (version == null || version.isBlank()) {
+            return null;
+        }
+        String trimmed = version.trim();
+        if ("${revision}".equals(trimmed)) {
+            return resolvePomProperty(pom, "revision");
+        }
+        return trimmed.contains("${") ? null : trimmed;
+    }
+
+    private static String resolvePomProperty(Path pom, String propertyName) {
         Path current = pom;
         for (int depth = 0; depth < 4 && current != null; depth++) {
             try {
                 if (Files.exists(current)) {
                     String xml = Files.readString(current);
-                    String version = readXmlTag(xml, "version");
-                    if (version != null && !version.isBlank()) {
-                        String trimmed = version.trim();
-                        if ("${revision}".equals(trimmed)) {
-                            String revision = readXmlTag(xml, "revision");
-                            if (revision != null && !revision.isBlank()) {
-                                return revision.trim();
-                            }
-                        } else if (!trimmed.contains("${")) {
-                            return trimmed;
-                        }
-                    }
-                    String revision = readXmlTag(xml, "revision");
-                    if (revision != null && !revision.isBlank()) {
-                        return revision.trim();
+                    String property = readXmlTag(xml, propertyName);
+                    if (property != null && !property.isBlank()) {
+                        return property.trim();
                     }
                     String relativePath = readXmlTag(xml, "relativePath");
                     if (relativePath != null && !relativePath.isBlank()) {

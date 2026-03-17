@@ -71,7 +71,34 @@ public class PluginManagementServiceTest {
         assertNull(PluginManagementService.getInstallSource("plugin-kafka"));
     }
 
+    @Test
+    public void shouldRejectIncompatiblePluginBeforeInstall() throws Exception {
+        Path sourceJar = dataDir.resolve("downloads").resolve("plugin-redis-9.0.0.jar");
+        writeStubPluginJar(sourceJar, "plugin-redis", "9.0.0", "9.0.0", "9.0.0");
+
+        IllegalStateException error;
+        try {
+            PluginManagementService.installPluginJar(sourceJar);
+            throw new AssertionError("Expected incompatible plugin install to fail");
+        } catch (IllegalStateException e) {
+            error = e;
+        }
+
+        assertTrue(error.getMessage().contains("not compatible"));
+        try (var files = Files.list(PluginManagementService.getManagedPluginDir())) {
+            assertTrue(files.findAny().isEmpty());
+        }
+    }
+
     private static void writeStubPluginJar(Path jarPath, String pluginId) throws IOException {
+        writeStubPluginJar(jarPath, pluginId, "5.3.16", "", "");
+    }
+
+    private static void writeStubPluginJar(Path jarPath,
+                                           String pluginId,
+                                           String pluginVersion,
+                                           String minPlatformVersion,
+                                           String maxPlatformVersion) throws IOException {
         Files.createDirectories(jarPath.getParent());
         try (OutputStream outputStream = Files.newOutputStream(jarPath);
              JarOutputStream jarOutputStream = new JarOutputStream(outputStream)) {
@@ -79,9 +106,12 @@ public class PluginManagementServiceTest {
             jarOutputStream.write(("""
                     plugin.id=%s
                     plugin.name=Stub Plugin
-                    plugin.version=5.3.16
+                    plugin.version=%s
                     plugin.entryClass=com.example.StubPlugin
-                    """.formatted(pluginId)).getBytes(StandardCharsets.UTF_8));
+                    plugin.minPlatformVersion=%s
+                    plugin.maxPlatformVersion=%s
+                    """.formatted(pluginId, pluginVersion, minPlatformVersion, maxPlatformVersion))
+                    .getBytes(StandardCharsets.UTF_8));
             jarOutputStream.closeEntry();
         }
     }

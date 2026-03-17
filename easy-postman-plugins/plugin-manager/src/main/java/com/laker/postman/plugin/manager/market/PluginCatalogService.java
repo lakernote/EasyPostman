@@ -121,7 +121,11 @@ public class PluginCatalogService {
                     downloadUrl,
                     text(pluginJson, "homepage", text(pluginJson, "homepageUrl", "")),
                     text(pluginJson, "sha256", ""),
-                    resolvedDownloadUrl
+                    resolvedDownloadUrl,
+                    text(pluginJson, "minAppVersion", ""),
+                    text(pluginJson, "maxAppVersion", ""),
+                    text(pluginJson, "minPlatformVersion", ""),
+                    text(pluginJson, "maxPlatformVersion", "")
             ));
         }
         return entries;

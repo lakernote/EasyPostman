@@ -1,5 +1,6 @@
 package com.laker.postman.plugin.runtime;
 
+import com.laker.postman.plugin.api.PluginDescriptor;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -12,6 +13,7 @@ import java.nio.file.Path;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
@@ -52,6 +54,33 @@ public class PluginRuntimeTest {
 
         assertTrue(managedDir.startsWith(dataDir));
         assertTrue(packageDir.startsWith(dataDir));
+    }
+
+    @Test
+    public void shouldExposeIndependentPluginPlatformVersion() {
+        assertEquals(PluginRuntime.getCurrentPluginPlatformVersion(), "1.0.0");
+    }
+
+    @Test
+    public void shouldRejectPluginWhenPlatformVersionIsOutOfRange() {
+        PluginDescriptor descriptor = new PluginDescriptor(
+                "plugin-redis",
+                "Redis Plugin",
+                "5.3.16",
+                "com.example.StubPlugin",
+                "",
+                "",
+                "",
+                "",
+                "9.0.0",
+                "9.0.0"
+        );
+
+        PluginCompatibility compatibility = PluginRuntime.evaluateCompatibility(descriptor);
+
+        assertFalse(compatibility.compatible());
+        assertTrue(compatibility.appVersionCompatible());
+        assertFalse(compatibility.platformVersionCompatible());
     }
 
     @Test

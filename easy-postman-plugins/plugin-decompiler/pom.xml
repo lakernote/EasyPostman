@@ -20,9 +20,18 @@
     <packaging>jar</packaging>
 
     <properties>
-        <!-- 插件编译和兼容判定仍然锚定宿主版本，不和插件自身版本绑定。 -->
+        <!-- 插件编译依赖宿主当前平台包版本，运行兼容基线则使用独立插件平台版本。 -->
         <host.version>${revision}</host.version>
-        <plugin.minAppVersion>${host.version}</plugin.minAppVersion>
+        <!--
+            插件元数据单一真源放在 pom.xml。
+            descriptor 模板和发布 catalog 都从这里间接生成，避免多处手填漂移。
+         -->
+        <plugin.id>plugin-decompiler</plugin.id>
+        <plugin.name>Decompiler Plugin</plugin.name>
+        <plugin.entryClass>com.laker.postman.plugin.decompiler.DecompilerPlugin</plugin.entryClass>
+        <plugin.description>Java decompiler toolbox panel powered by CFR.</plugin.description>
+        <plugin.minPlatformVersion>${plugin.platform.version}</plugin.minPlatformVersion>
+        <plugin.maxPlatformVersion>${plugin.platform.version}</plugin.maxPlatformVersion>
     </properties>
 
     <dependencies>
@@ -61,6 +70,7 @@
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
+                <!-- 只过滤插件 descriptor，让运行时读取到的版本和元数据直接来自 pom。 -->
                 <filtering>true</filtering>
                 <includes>
                     <include>META-INF/easy-postman/plugin-decompiler.properties</include>

@@ -170,8 +170,11 @@ public final class MessageKeys {
     public static final String PLUGIN_MANAGER_MARKET_AVAILABLE = "plugin.manager.market.available";
     public static final String PLUGIN_MANAGER_MARKET_INSTALLED = "plugin.manager.market.installed";
     public static final String PLUGIN_MANAGER_MARKET_UPDATE_AVAILABLE = "plugin.manager.market.update_available";
+    public static final String PLUGIN_MANAGER_MARKET_REQUIRES_HOST_UPGRADE = "plugin.manager.market.requires_host_upgrade";
+    public static final String PLUGIN_MANAGER_MARKET_UPDATE_REQUIRES_HOST_UPGRADE = "plugin.manager.market.update_requires_host_upgrade";
     public static final String PLUGIN_MANAGER_MARKET_LOCAL_NEWER = "plugin.manager.market.local_newer";
     public static final String PLUGIN_MANAGER_MARKET_ACTION_INSTALLED = "plugin.manager.market.action_installed";
+    public static final String PLUGIN_MANAGER_MARKET_ACTION_REQUIRES_HOST_UPGRADE = "plugin.manager.market.action_requires_host_upgrade";
     public static final String PLUGIN_MANAGER_MARKET_ACTION_LOCAL_NEWER = "plugin.manager.market.action_local_newer";
     public static final String PLUGIN_MANAGER_SUBTITLE = "plugin.manager.subtitle";
     public static final String PLUGIN_MANAGER_SUMMARY_INSTALLED = "plugin.manager.summary.installed";
@@ -188,6 +191,12 @@ public final class MessageKeys {
     public static final String PLUGIN_MANAGER_DETAIL_CURRENT_INSTALL_SOURCE = "plugin.manager.detail.current_install_source";
     public static final String PLUGIN_MANAGER_DETAIL_MARKET_DOWNLOAD = "plugin.manager.detail.market_download";
     public static final String PLUGIN_MANAGER_DETAIL_COMPATIBILITY = "plugin.manager.detail.compatibility";
+    public static final String PLUGIN_MANAGER_COMPATIBILITY_CURRENT = "plugin.manager.compatibility.current";
+    public static final String PLUGIN_MANAGER_COMPATIBILITY_REQUIRES_APP = "plugin.manager.compatibility.requires_app";
+    public static final String PLUGIN_MANAGER_COMPATIBILITY_REQUIRES_APP_MIN = "plugin.manager.compatibility.requires_app_min";
+    public static final String PLUGIN_MANAGER_COMPATIBILITY_REQUIRES_APP_MAX = "plugin.manager.compatibility.requires_app_max";
+    public static final String PLUGIN_MANAGER_COMPATIBILITY_REQUIRES_APP_RANGE = "plugin.manager.compatibility.requires_app_range";
+    public static final String PLUGIN_MANAGER_COMPATIBILITY_REQUIRES_HOST_UPGRADE = "plugin.manager.compatibility.requires_host_upgrade";
     public static final String PLUGIN_MANAGER_MARKET_SOURCE_HINT = "plugin.manager.market.source_hint";
     public static final String PLUGIN_MANAGER_SOURCE_LOCAL = "plugin.manager.source.local";
     public static final String PLUGIN_MANAGER_SOURCE_MARKET = "plugin.manager.source.market";

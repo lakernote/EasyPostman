@@ -1,8 +1,10 @@
 package com.laker.postman.plugin.manager;
 
+import com.laker.postman.plugin.api.PluginDescriptor;
 import com.laker.postman.plugin.manager.market.PluginCatalogEntry;
 import com.laker.postman.plugin.manager.market.PluginCatalogService;
 import com.laker.postman.plugin.manager.market.PluginInstallerService;
+import com.laker.postman.plugin.runtime.PluginCompatibility;
 import com.laker.postman.plugin.runtime.PluginFileInfo;
 import com.laker.postman.plugin.runtime.PluginRuntime;
 import lombok.experimental.UtilityClass;
@@ -79,6 +81,26 @@ public class PluginManagementService {
 
     public static String getCurrentAppVersion() {
         return PluginRuntime.getCurrentAppVersion();
+    }
+
+    public static String getCurrentPluginPlatformVersion() {
+        return PluginRuntime.getCurrentPluginPlatformVersion();
+    }
+
+    public static PluginCompatibility evaluateCompatibility(PluginDescriptor descriptor) {
+        return PluginRuntime.evaluateCompatibility(descriptor);
+    }
+
+    public static PluginCompatibility evaluateCompatibility(PluginCatalogEntry entry) {
+        if (entry == null) {
+            return PluginRuntime.evaluateCompatibility("", "", "", "");
+        }
+        return PluginRuntime.evaluateCompatibility(
+                entry.minAppVersion(),
+                entry.maxAppVersion(),
+                entry.minPlatformVersion(),
+                entry.maxPlatformVersion()
+        );
     }
 
     public static PluginFileInfo installPluginJar(Path sourceJar) throws IOException {

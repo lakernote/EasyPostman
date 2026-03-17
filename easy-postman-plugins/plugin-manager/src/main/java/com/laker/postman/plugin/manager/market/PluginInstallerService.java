@@ -1,6 +1,7 @@
 package com.laker.postman.plugin.manager.market;
 
 import com.laker.postman.plugin.api.PluginDescriptor;
+import com.laker.postman.plugin.runtime.PluginCompatibility;
 import com.laker.postman.plugin.runtime.PluginFileInfo;
 import com.laker.postman.plugin.runtime.PluginRuntime;
 import lombok.experimental.UtilityClass;
@@ -35,6 +36,7 @@ public class PluginInstallerService {
         if (descriptor == null) {
             throw new IllegalArgumentException("Invalid plugin jar");
         }
+        validateCompatibility(descriptor);
         return installPreparedJar(sourceJar, descriptor, true);
     }
 
@@ -54,6 +56,7 @@ public class PluginInstallerService {
                 throw new IllegalStateException("Plugin version mismatch: " + entry.version() + " != " + descriptor.version());
             }
             verifySha256(tempJar, entry.sha256());
+            validateCompatibility(descriptor);
             return installPreparedJar(tempJar, descriptor, true);
         } finally {
             Files.deleteIfExists(tempJar);
@@ -158,6 +161,24 @@ public class PluginInstallerService {
         }
     }
 
+    private static void validateCompatibility(PluginDescriptor descriptor) {
+        // 安装阶段先拦截不兼容插件，避免出现“安装成功但重启后被运行时跳过”的假成功状态。
+        PluginCompatibility compatibility = PluginRuntime.evaluateCompatibility(descriptor);
+        if (compatibility.compatible()) {
+            return;
+        }
+        throw new IllegalStateException(buildCompatibilityErrorMessage(descriptor, compatibility));
+    }
+
+    private static String buildCompatibilityErrorMessage(PluginDescriptor descriptor, PluginCompatibility compatibility) {
+        return "Plugin " + descriptor.id() + " " + descriptor.version()
+                + " is not compatible with current EasyPostman. "
+                + "App range: " + versionRange(compatibility.minAppVersion(), compatibility.maxAppVersion())
+                + ", current app: " + compatibility.currentAppVersion()
+                + "; plugin platform range: " + versionRange(compatibility.minPlatformVersion(), compatibility.maxPlatformVersion())
+                + ", current platform: " + compatibility.currentPlatformVersion();
+    }
+
     private static String buildTargetFileName(PluginDescriptor descriptor) {
         return sanitizeFileName(descriptor.id()) + "-" + sanitizeFileName(descriptor.version()) + ".jar";
     }
@@ -182,5 +203,11 @@ public class PluginInstallerService {
             return "plugin";
         }
         return value.replaceAll("[^a-zA-Z0-9._-]", "-");
+    }
+
+    private static String versionRange(String minVersion, String maxVersion) {
+        String min = minVersion == null || minVersion.isBlank() ? "*" : minVersion;
+        String max = maxVersion == null || maxVersion.isBlank() ? "*" : maxVersion;
+        return min + " - " + max;
     }
 }

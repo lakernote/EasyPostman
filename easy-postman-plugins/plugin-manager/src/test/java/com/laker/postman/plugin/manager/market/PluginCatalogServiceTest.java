@@ -66,5 +66,9 @@ public class PluginCatalogServiceTest {
         assertNotNull(giteeKafka);
         assertEquals(githubKafka.version(), "5.3.17");
         assertEquals(giteeKafka.version(), "5.3.17");
+        assertEquals(githubKafka.minPlatformVersion(), "1.0.0");
+        assertEquals(githubKafka.maxPlatformVersion(), "1.0.0");
+        assertEquals(giteeKafka.minPlatformVersion(), "1.0.0");
+        assertEquals(giteeKafka.maxPlatformVersion(), "1.0.0");
     }
 }

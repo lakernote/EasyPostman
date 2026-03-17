@@ -9,7 +9,9 @@
       "description": "Redis toolbox panel, pm.redis script API, completions and snippets.",
       "downloadUrl": "https://github.com/lakernote/easy-postman/releases/download/plugin-redis-v5.3.16/easy-postman-5.3.16-plugin-redis.jar",
       "homepage": "https://github.com/lakernote/easy-postman",
-      "sha256": ""
+      "sha256": "",
+      "minPlatformVersion": "1.0.0",
+      "maxPlatformVersion": "1.0.0"
     },
     {
       "id": "plugin-kafka",
@@ -18,7 +20,9 @@
       "description": "Kafka toolbox panel, pm.kafka script API, completions and snippets.",
       "downloadUrl": "https://github.com/lakernote/easy-postman/releases/download/plugin-kafka-v5.3.17/easy-postman-5.3.17-plugin-kafka.jar",
       "homepage": "https://github.com/lakernote/easy-postman",
-      "sha256": ""
+      "sha256": "",
+      "minPlatformVersion": "1.0.0",
+      "maxPlatformVersion": "1.0.0"
     },
     {
       "id": "plugin-git",
@@ -27,7 +31,9 @@
       "description": "Git workspace operations, history and conflict checks powered by JGit.",
       "downloadUrl": "https://github.com/lakernote/easy-postman/releases/download/plugin-git-v5.3.16/easy-postman-5.3.16-plugin-git.jar",
       "homepage": "https://github.com/lakernote/easy-postman",
-      "sha256": ""
+      "sha256": "",
+      "minPlatformVersion": "1.0.0",
+      "maxPlatformVersion": "1.0.0"
     },
     {
       "id": "plugin-decompiler",
@@ -36,7 +42,9 @@
       "description": "Java decompiler toolbox panel powered by CFR.",
       "downloadUrl": "https://github.com/lakernote/easy-postman/releases/download/plugin-decompiler-v5.3.16/easy-postman-5.3.16-plugin-decompiler.jar",
       "homepage": "https://github.com/lakernote/easy-postman",
-      "sha256": ""
+      "sha256": "",
+      "minPlatformVersion": "1.0.0",
+      "maxPlatformVersion": "1.0.0"
     },
     {
       "id": "plugin-client-cert",
@@ -45,7 +53,9 @@
       "description": "Client certificate management and mTLS key material loading.",
       "downloadUrl": "https://github.com/lakernote/easy-postman/releases/download/plugin-client-cert-v5.3.16/easy-postman-5.3.16-plugin-client-cert.jar",
       "homepage": "https://github.com/lakernote/easy-postman",
-      "sha256": ""
+      "sha256": "",
+      "minPlatformVersion": "1.0.0",
+      "maxPlatformVersion": "1.0.0"
     }
   ]
 }

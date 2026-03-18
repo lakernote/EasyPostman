@@ -1,6 +1,6 @@
 {
   "name": "EasyPostman Official Plugin Catalog (Gitee)",
-  "generatedAt": "2026-03-18T15:22:25Z",
+  "generatedAt": "2026-03-18T16:13:18Z",
   "plugins": [
     {
       "id": "plugin-client-cert",
@@ -40,6 +40,14 @@
       "description": "Kafka toolbox panel, pm.kafka script API, completions and snippets.",
       "homepage": "https://gitee.com/lakernote/easy-postman",
       "releases": [
+        {
+          "version": "5.3.18",
+          "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-kafka-v5.3.18/easy-postman-5.3.18-plugin-kafka.jar",
+          "sha256": "2e0470f9554c44c7c3fab2c1664163fa6dc80f210aa76b110aa72a3a35338c52",
+          "minAppVersion": "5.3.18",
+          "minPlatformVersion": "1.0.0",
+          "maxPlatformVersion": "1.0.0"
+        },
         {
           "version": "5.3.17",
           "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-kafka-v5.3.17/easy-postman-5.3.17-plugin-kafka.jar",

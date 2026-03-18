@@ -47,13 +47,6 @@
           "minAppVersion": "5.3.18",
           "minPlatformVersion": "1.0.0",
           "maxPlatformVersion": "1.0.0"
-        },
-        {
-          "version": "5.3.17",
-          "downloadUrl": "https://github.com/lakernote/EasyPostman/releases/download/plugin-kafka-v5.3.17/easy-postman-5.3.17-plugin-kafka.jar",
-          "sha256": "93115139115cd0018552fd79104b93bda64b184c4a59874caf143d8454476e9d",
-          "minPlatformVersion": "1.0.0",
-          "maxPlatformVersion": "1.0.0"
         }
       ]
     },

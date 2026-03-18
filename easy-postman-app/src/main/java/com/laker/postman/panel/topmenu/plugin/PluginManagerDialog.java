@@ -651,7 +651,7 @@ public class PluginManagerDialog extends JDialog {
                     if (result.builtinFallback()) {
                         setStatusMessage(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_LOAD_FALLBACK_BUILTIN));
                     } else {
-                        setStatusMessage(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_HINT));
+                        setStatusMessage(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_SOURCE_HINT));
                     }
                 } catch (Exception e) {
                     log.error("Failed to load plugin catalog: {}", catalogUrl, e);
@@ -711,7 +711,7 @@ public class PluginManagerDialog extends JDialog {
                     setStatusMessage(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_INSTALL_SUCCESS, installed.jarPath()));
                     showInfo(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_INSTALL_SUCCESS, installed.jarPath()));
                 } catch (Exception e) {
-                    log.error("Failed to install plugin from catalog: {}", selected.id(), e);
+                    log.error("Failed to install plugin from catalog: {}, url: {}", selected.id(), selected.installUrl(), e);
                     setStatusMessage(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_INSTALL_FAILED));
                     showError(e);
                 } finally {

@@ -101,7 +101,7 @@ public class PluginInstallerService {
             int code = httpConnection.getResponseCode();
             if (code < 200 || code >= 300) {
                 Files.deleteIfExists(tempFile);
-                throw new IllegalStateException("HTTP error code: " + code);
+                throw new IllegalStateException("HTTP error code: " + code + ", url: " + installUrl);
             }
         }
 

@@ -73,11 +73,32 @@ public abstract class AbstractUpdateSource implements UpdateSource {
 
     @Override
     public JSONObject fetchLatestReleaseInfo() {
-        return fetchReleaseInfo(getApiUrl());
+        JSONArray releases = fetchAllReleases(1);
+        if (releases == null || releases.isEmpty()) {
+            log.warn("No stable app releases found from {}", getName());
+            return null;
+        }
+
+        JSONObject releaseInfo = releases.getJSONObject(0);
+        releaseInfo.set(SOURCE_KEY, getName());
+        log.info("Selected latest stable app release from {}", getName());
+        return releaseInfo;
     }
 
     @Override
     public JSONArray fetchAllReleases(int limit) {
+        int requestLimit = expandedReleaseFetchLimit(limit);
+        JSONArray allReleases = fetchRawReleases(requestLimit);
+        if (allReleases == null) {
+            return null;
+        }
+
+        JSONArray filtered = AppReleaseSelector.selectStableAppReleases(allReleases, limit);
+        log.info("Selected {} stable app releases from {}", filtered.size(), getName());
+        return filtered;
+    }
+
+    private JSONArray fetchRawReleases(int limit) {
         HttpURLConnection conn = null;
         try {
             String url = getAllReleasesApiUrl();
@@ -99,7 +120,7 @@ public abstract class AbstractUpdateSource implements UpdateSource {
             if (code == 200) {
                 String json = readResponse(conn);
                 JSONArray releases = new JSONArray(json);
-                log.info("Successfully fetched {} releases from {}", releases.size(), getName());
+                log.info("Successfully fetched {} raw releases from {}", releases.size(), getName());
                 return releases;
             } else {
                 String errorResponse = readErrorResponse(conn);
@@ -115,41 +136,11 @@ public abstract class AbstractUpdateSource implements UpdateSource {
         }
     }
 
-    /**
-     * 获取发布信息
-     */
-    protected JSONObject fetchReleaseInfo(String apiUrl) {
-        HttpURLConnection conn = null;
-        try {
-            URL url = new URL(apiUrl);
-            conn = (HttpURLConnection) url.openConnection();
-            conn.setConnectTimeout(FETCH_CONNECTION_TIMEOUT);
-            conn.setReadTimeout(FETCH_READ_TIMEOUT);
-            conn.setRequestMethod("GET");
-            conn.setRequestProperty("Accept", "application/json");
-            conn.setRequestProperty("User-Agent", buildUserAgent());
-            conn.setRequestProperty("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8");
-            conn.setRequestProperty("Cache-Control", "no-cache");
-
-            int code = conn.getResponseCode();
-            if (code == 200) {
-                String json = readResponse(conn);
-                JSONObject releaseInfo = new JSONObject(json);
-                releaseInfo.set(SOURCE_KEY, getName());
-                log.info("Successfully fetched release info from {}", getName());
-                return releaseInfo;
-            } else {
-                String errorResponse = readErrorResponse(conn);
-                log.warn("Failed to fetch release info from {}, HTTP code: {}, response: {}",
-                        getName(), code, errorResponse);
-                return null;
-            }
-        } catch (Exception e) {
-            log.debug("Error fetching release info from {}: {}", getName(), e.getMessage());
-            return null;
-        } finally {
-            closeConnection(conn);
+    private int expandedReleaseFetchLimit(int requestedLimit) {
+        if (requestedLimit <= 0) {
+            return 100;
         }
+        return Math.min(100, Math.max(requestedLimit * 5, requestedLimit + 20));
     }
 
     /**
@@ -200,4 +191,3 @@ public abstract class AbstractUpdateSource implements UpdateSource {
         }
     }
 }
-

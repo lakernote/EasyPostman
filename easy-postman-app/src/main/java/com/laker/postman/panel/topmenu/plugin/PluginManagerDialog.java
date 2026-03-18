@@ -284,7 +284,7 @@ public class PluginManagerDialog extends JDialog {
 
         panel.add(createSectionHeader(
                 I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_TAB_INSTALLED),
-                I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_LOCAL_HINT)), "growx, wrap");
+                null), "growx, wrap");
         panel.add(createListScrollPane(installedList), "grow, push");
         return panel;
     }
@@ -293,7 +293,7 @@ public class PluginManagerDialog extends JDialog {
         JPanel panel = createCardPanel(new MigLayout(
                 "fillx, insets 18, gap 12, novisualpadding",
                 "[grow,fill]",
-                "[][][][][][][push][]"
+                "[][][][][][]"
         ));
 
         panel.add(createDetailHeader(installedDetailTitleLabel, installedDetailMetaLabel, installedDetailStatusLabel), "growx, wrap");
@@ -306,7 +306,6 @@ public class PluginManagerDialog extends JDialog {
                 installedCompatibilityValueLabel), "growx, wrap");
         panel.add(createDetailInfoCard(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_PATH), installedPathValueLabel),
                 "growx, wrap");
-        panel.add(new JPanel(), "grow, push, wrap");
         panel.add(createInstalledActionPanel(), "growx");
         return panel;
     }

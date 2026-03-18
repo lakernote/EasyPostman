@@ -122,6 +122,24 @@ easy-postman-parent
 - `platform` 管“这套插件接口还能不能接上”
 - `app` 管“当前宿主有没有插件依赖的具体功能”
 
+再细一点说：
+
+- 根 `pom.xml` 里的 `revision`
+  - 是宿主发行版版本
+  - 会随着宿主正常发版、补丁、非插件改动持续递增
+- 插件 `pom.xml` 里的 `host.version`
+  - 默认跟随 `${revision}`
+  - 作用只是“编译时依赖哪一版宿主平台包”
+- 根 `pom.xml` 里的 `plugin.platform.version`
+  - 是运行时插件平台版本
+  - 作用是表达“当前 runtime / SPI 装配边界有没有发生不兼容变化”
+
+为什么 `plugin.min/maxPlatformVersion` 不能直接写 `${revision}`：
+
+- `revision` 变化太频繁，很多变化和插件 SPI 无关
+- 如果把 platform 兼容范围直接绑到 `revision`，会把很多其实还能加载的老插件误判成“不兼容”
+- 所以必须把“宿主发版节奏”和“插件平台兼容边界”拆成两个版本概念分别维护
+
 ### 2.2 什么时候改 platform version
 
 只有插件机制本身发生不兼容变化时，才应该提升 `plugin.platform.version`，例如：
@@ -217,13 +235,29 @@ easy-postman-plugins/plugin-xxx
 
 - `host.version`
   - 编译时依赖哪一版宿主平台包
+  - 官方插件默认跟随 `${revision}`，这样能直接对齐当前 `api / bridge / ui` 的编译输入
+  - 如果只是宿主正常发版，这里跟随即可；它不负责表达运行兼容范围
 - `plugin.id`
   - 插件唯一 ID
   - 发布、安装、升级都靠它识别
 - `plugin.entryClass`
   - 插件入口类
 - `plugin.min/maxPlatformVersion`
-  - 当前官方插件默认都绑定到平台版本
+  - 当前官方插件默认都绑定到根 `pom.xml` 的 `plugin.platform.version`
+  - 它表达的是运行时插件平台兼容范围，不是宿主发行版号
+  - 只有插件机制本身发生破坏性变化时才应该调整
+
+如果你发现“版本不合适”，按下面判断：
+
+- 编译不过，因为插件要依赖新的宿主 `api / bridge / ui`
+  - 调整或跟随 `host.version`
+- 运行时老宿主缺少插件依赖的新功能
+  - 增加或调整 `plugin.minAppVersion`
+- runtime / SPI 契约变了，老插件会装配失败
+  - 先提升根 `pom.xml` 的 `plugin.platform.version`
+  - 再调整插件的 `plugin.min/maxPlatformVersion`
+- 只是插件自己改了功能或修了 bug
+  - 通常只改插件自己的 `<version>`
 
 如果插件确实依赖宿主特定功能，可以额外加：
 
@@ -353,6 +387,12 @@ context.registerSnippet(...);
 1. 先提升根 `pom.xml` 里的 `plugin.platform.version`
 2. 再更新受影响插件的 `plugin.min/maxPlatformVersion`
 3. 验证旧插件被正确判为不兼容
+
+不要因为下面这些情况去改 `plugin.platform.version`：
+
+- 宿主 `revision` 从 `5.3.16` 升到 `5.3.17`
+- 宿主修了普通 bug，但插件 SPI 没变
+- 某个插件自己新增了一个工具面板或脚本 API
 
 ### 4.3 更新已有插件的推荐顺序
 

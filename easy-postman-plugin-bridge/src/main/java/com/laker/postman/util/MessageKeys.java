@@ -151,7 +151,6 @@ public final class MessageKeys {
     public static final String PLUGIN_MANAGER_OVERWRITE_TITLE = "plugin.manager.overwrite_title";
     public static final String PLUGIN_MANAGER_TAB_INSTALLED = "plugin.manager.tab.installed";
     public static final String PLUGIN_MANAGER_TAB_MARKET = "plugin.manager.tab.market";
-    public static final String PLUGIN_MANAGER_LOCAL_HINT = "plugin.manager.local_hint";
     public static final String PLUGIN_MANAGER_MARKET_LOAD = "plugin.manager.market.load";
     public static final String PLUGIN_MANAGER_MARKET_INSTALL = "plugin.manager.market.install";
     public static final String PLUGIN_MANAGER_MARKET_OPEN_HOMEPAGE = "plugin.manager.market.open_homepage";

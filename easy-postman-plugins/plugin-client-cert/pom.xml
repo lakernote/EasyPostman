@@ -20,7 +20,11 @@
     <packaging>jar</packaging>
 
     <properties>
-        <!-- 插件编译依赖宿主当前平台包版本，运行兼容基线则使用独立插件平台版本。 -->
+        <!--
+            编译期依赖的宿主平台包版本。
+            官方插件在 monorepo 内默认跟随 ${revision}，这样会直接对齐当前 api / bridge / ui 的编译输入。
+            它只决定“编译时依赖哪版平台包”，不表达“运行时兼容哪代插件平台”。
+         -->
         <host.version>${revision}</host.version>
         <!--
             插件元数据单一真源放在 pom.xml。
@@ -30,6 +34,15 @@
         <plugin.name>Client Certificate Plugin</plugin.name>
         <plugin.entryClass>com.laker.postman.plugin.clientcert.ClientCertificatePlugin</plugin.entryClass>
         <plugin.description>Client certificate management and mTLS key material loading.</plugin.description>
+        <!--
+            运行时插件平台兼容范围，匹配的是 runtime/SPI 装配边界，不是宿主发行版 revision。
+            这里不要直接跟随 ${revision}：
+            1. revision 会因为宿主普通发版、bugfix、非插件改动持续变化
+            2. 这些变化通常不代表插件 SPI 发生不兼容
+            3. 如果这里绑死 revision，会把很多本来兼容的插件误判成“不兼容”
+            只有插件机制自身发生破坏性变化时，才先提升根 pom 的 plugin.platform.version，
+            再按实际兼容范围调整这里；普通插件功能迭代通常不需要改。
+         -->
         <plugin.minPlatformVersion>${plugin.platform.version}</plugin.minPlatformVersion>
         <plugin.maxPlatformVersion>${plugin.platform.version}</plugin.maxPlatformVersion>
     </properties>

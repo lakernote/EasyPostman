@@ -15,13 +15,6 @@
           "minAppVersion": "5.3.18",
           "minPlatformVersion": "1.0.0",
           "maxPlatformVersion": "1.0.0"
-        },
-        {
-          "version": "5.3.16",
-          "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-client-cert-v5.3.16/easy-postman-5.3.16-plugin-client-cert.jar",
-          "sha256": "f768523a6d0289706ec3d4ee61096a16b24e012ac11aab516e55d9cc7b08768a",
-          "minPlatformVersion": "1.0.0",
-          "maxPlatformVersion": "1.0.0"
         }
       ]
     },
@@ -36,13 +29,6 @@
           "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-decompiler-v5.3.18/easy-postman-5.3.18-plugin-decompiler.jar",
           "sha256": "394de9762a4efa0e8bd17fbac8f55d377cf2078b23d7100fd5d1748f45491070",
           "minAppVersion": "5.3.18",
-          "minPlatformVersion": "1.0.0",
-          "maxPlatformVersion": "1.0.0"
-        },
-        {
-          "version": "5.3.16",
-          "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-decompiler-v5.3.16/easy-postman-5.3.16-plugin-decompiler.jar",
-          "sha256": "a578fa0557d9df7059a61aca4987c79e547f58a68e1f12b30eb60fe503d98f30",
           "minPlatformVersion": "1.0.0",
           "maxPlatformVersion": "1.0.0"
         }
@@ -74,13 +60,6 @@
           "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-redis-v5.3.18/easy-postman-5.3.18-plugin-redis.jar",
           "sha256": "ea7e5e5b86d83131570fc7da9dd4e37dfce42d529a14e43cc3fa247f9cc76dd9",
           "minAppVersion": "5.3.18",
-          "minPlatformVersion": "1.0.0",
-          "maxPlatformVersion": "1.0.0"
-        },
-        {
-          "version": "5.3.16",
-          "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-redis-v5.3.16/easy-postman-5.3.16-plugin-redis.jar",
-          "sha256": "690075ae246adfbee8278d8bccb3d504ad118b244591fad702a503d9ed5900f5",
           "minPlatformVersion": "1.0.0",
           "maxPlatformVersion": "1.0.0"
         }

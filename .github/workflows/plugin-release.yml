@@ -13,7 +13,6 @@ on:
         options:
           - redis
           - kafka
-          - git
           - decompiler
           - client-cert
       dry_run:

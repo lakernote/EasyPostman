@@ -181,13 +181,24 @@ public class PluginManagerDialog extends JDialog {
         JPanel panel = createCardPanel(new MigLayout(
                 "fillx, insets 16, gap 14, novisualpadding",
                 "[grow,fill][right]",
-                "[][]"
+                "[]"
         ));
 
-        panel.add(createHeaderTitlePanel(), "growx");
-        panel.add(createHeaderActionPanel(), "aligny top");
-        panel.add(createMetricStrip(), "growx");
-        panel.add(createNavigationPanel(), "alignx right");
+        panel.add(createHeaderTitlePanel(), "growx, aligny center");
+        panel.add(createHeaderControlsPanel(), "alignx right, aligny center");
+        return panel;
+    }
+
+    private JPanel createHeaderControlsPanel() {
+        JPanel panel = new JPanel(new MigLayout(
+                "insets 0, gap 14, novisualpadding",
+                "[][][]",
+                "[]"
+        ));
+        panel.setOpaque(false);
+        panel.add(createHeaderActionPanel(), "aligny center");
+        panel.add(createMetricStrip(), "aligny center");
+        panel.add(createNavigationPanel(), "aligny center");
         return panel;
     }
 

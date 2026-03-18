@@ -1,0 +1,50 @@
+{
+  "name": "EasyPostman Official Plugin Catalog (GitHub)",
+  "generatedAt": "2026-03-16T00:00:00Z",
+  "plugins": [
+    {
+      "id": "plugin-redis",
+      "name": "Redis Plugin",
+      "version": "5.3.16",
+      "description": "Redis toolbox panel, pm.redis script API, completions and snippets.",
+      "downloadUrl": "https://github.com/lakernote/easy-postman/releases/download/plugin-redis-v5.3.16/easy-postman-5.3.16-plugin-redis.jar",
+      "homepage": "https://github.com/lakernote/easy-postman",
+      "sha256": "",
+      "minPlatformVersion": "1.0.0",
+      "maxPlatformVersion": "1.0.0"
+    },
+    {
+      "id": "plugin-kafka",
+      "name": "Kafka Plugin",
+      "version": "5.3.17",
+      "description": "Kafka toolbox panel, pm.kafka script API, completions and snippets.",
+      "downloadUrl": "https://github.com/lakernote/easy-postman/releases/download/plugin-kafka-v5.3.17/easy-postman-5.3.17-plugin-kafka.jar",
+      "homepage": "https://github.com/lakernote/easy-postman",
+      "sha256": "",
+      "minPlatformVersion": "1.0.0",
+      "maxPlatformVersion": "1.0.0"
+    },
+    {
+      "id": "plugin-decompiler",
+      "name": "Decompiler Plugin",
+      "version": "5.3.16",
+      "description": "Java decompiler toolbox panel powered by CFR.",
+      "downloadUrl": "https://github.com/lakernote/easy-postman/releases/download/plugin-decompiler-v5.3.16/easy-postman-5.3.16-plugin-decompiler.jar",
+      "homepage": "https://github.com/lakernote/easy-postman",
+      "sha256": "",
+      "minPlatformVersion": "1.0.0",
+      "maxPlatformVersion": "1.0.0"
+    },
+    {
+      "id": "plugin-client-cert",
+      "name": "Client Certificate Plugin",
+      "version": "5.3.16",
+      "description": "Client certificate management and mTLS key material loading.",
+      "downloadUrl": "https://github.com/lakernote/easy-postman/releases/download/plugin-client-cert-v5.3.16/easy-postman-5.3.16-plugin-client-cert.jar",
+      "homepage": "https://github.com/lakernote/easy-postman",
+      "sha256": "",
+      "minPlatformVersion": "1.0.0",
+      "maxPlatformVersion": "1.0.0"
+    }
+  ]
+}

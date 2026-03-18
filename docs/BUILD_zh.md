@@ -1,5 +1,14 @@
 # 🚀 构建指南
 
+这份文档只讲两件事：
+
+- 从源码构建 EasyPostman
+- 生成各平台发行包
+
+插件架构、本地插件开发、在线/离线安装说明，统一见：
+
+- `docs/PLUGINS_zh.md`
+
 ## 前置要求
 
 ### 必需
@@ -49,17 +58,34 @@ mvn clean package -DskipTests
 ```
 
 这将生成：
-- `target/easy-postman-{版本号}.jar` - 可执行 JAR 文件
+- `easy-postman-app/target/easy-postman-{版本号}.jar` - 主程序可执行 JAR
+- `easy-postman-plugins/plugin-*/target/easy-postman-{版本号}-plugin-*.jar` - 插件 JAR
 
 ### 3. 运行应用
 
 ```bash
 # 直接运行
-java -jar target/easy-postman-*.jar
+java -jar easy-postman-app/target/easy-postman-*.jar
 
 # 或使用自定义 JVM 选项
-java -Xms512m -Xmx2g -jar target/easy-postman-*.jar
+java -Xms512m -Xmx2g -jar easy-postman-app/target/easy-postman-*.jar
 ```
+
+### 插件本地构建
+
+如果要本地构建单个插件，直接用 Maven 即可：
+
+```bash
+mvn -pl easy-postman-app,easy-postman-plugins/plugin-redis -am clean package -DskipTests
+```
+
+如果要一次性构建全部插件：
+
+```bash
+mvn clean package -DskipTests
+```
+
+更多插件安装、离线包、catalog 和独立发版说明，见 `docs/PLUGINS_zh.md`。
 
 ---
 
@@ -82,7 +108,7 @@ chmod +x build/mac.sh
 ./build/mac.sh
 ```
 
-**输出**: `target/EasyPostman-{版本号}-macos-{架构}.dmg`
+**输出**: `dist/EasyPostman-{版本号}-macos-{架构}.dmg`
 - Apple Silicon (M1/M2/M3/M4): `macos-arm64.dmg`
 - Intel: `macos-x86_64.dmg`
 
@@ -131,8 +157,8 @@ build\win-exe.bat
 ```
 
 **输出**:
-- `target/EasyPostman-{版本号}-windows-x64.exe` - 安装程序
-- `target/EasyPostman-{版本号}-windows-x64-portable.zip` - 便携版
+- `dist/EasyPostman-{版本号}-windows-x64.exe` - 安装程序
+- `dist/EasyPostman-{版本号}-windows-x64-portable.zip` - 便携版
 
 #### 手动构建
 
@@ -177,7 +203,7 @@ chmod +x build/linux-deb.sh
 ./build/linux-deb.sh
 ```
 
-**输出**: `target/easypostman_{版本号}_amd64.deb`
+**输出**: `dist/EasyPostman_{版本号}-1_amd64.deb` 或 jpackage 生成的同类 DEB 文件
 
 #### 手动构建
 
@@ -198,7 +224,7 @@ jpackage \
 #### 安装 DEB 包
 
 ```bash
-sudo dpkg -i target/easypostman_{版本号}_amd64.deb
+sudo dpkg -i dist/EasyPostman_{版本号}-1_amd64.deb
 
 # 如果缺少依赖
 sudo apt-get install -f
@@ -223,7 +249,7 @@ chmod +x build/linux-rpm.sh
 ./build/linux-rpm.sh
 ```
 
-**输出**: `target/easypostman-{版本号}-1.x86_64.rpm`
+**输出**: `dist/EasyPostman-{版本号}-1.x86_64.rpm`
 
 ---
 

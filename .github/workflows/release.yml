@@ -26,11 +26,14 @@ jobs:
   get-version:
     name: Get Version（获取版本号）
     runs-on: ubuntu-latest
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')
     outputs:
       version: ${{ steps.extract_version.outputs.version }}
     steps:
       - name: Checkout（检出代码）
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref_name }}
 
       - name: Setup Java（配置 Java）
         uses: actions/setup-java@v4
@@ -49,11 +52,42 @@ jobs:
           echo "Version: $VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
+      - name: Validate release source and version（校验默认分支与版本一致性）
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          DEFAULT_BRANCH="${{ github.event.repository.default_branch }}"
+          CURRENT_REF="${{ github.ref_name }}"
+          VERSION="${{ steps.extract_version.outputs.version }}"
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "$CURRENT_REF" != "$DEFAULT_BRANCH" ]; then
+            echo "workflow_dispatch is only allowed from the default branch: ${DEFAULT_BRANCH}" >&2
+            exit 1
+          fi
+
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG_NAME="${{ github.event.release.tag_name }}"
+            TARGET_COMMITISH="${{ github.event.release.target_commitish }}"
+            EXPECTED_TAG="v${VERSION}"
+
+            if [ "$TARGET_COMMITISH" != "$DEFAULT_BRANCH" ]; then
+              echo "Release must target default branch ${DEFAULT_BRANCH}, got ${TARGET_COMMITISH}" >&2
+              exit 1
+            fi
+
+            if [ "$TAG_NAME" != "$EXPECTED_TAG" ]; then
+              echo "Release tag ${TAG_NAME} does not match pom version ${VERSION}" >&2
+              exit 1
+            fi
+          fi
+
   # 构建 Fat JAR（跨平台），供所有平台复用
   build-jar-artifact:
     name: Build Fat JAR（构建跨平台 JAR）
     runs-on: ubuntu-latest
     needs: [ get-version ]
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')
     steps:
       - name: Checkout（检出代码）
         uses: actions/checkout@v4
@@ -75,7 +109,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-jar
-          path: target/easy-postman-${{ needs.get-version.outputs.version }}.jar
+          path: easy-postman-app/target/easy-postman-${{ needs.get-version.outputs.version }}.jar
           retention-days: 1
 
 
@@ -83,6 +117,7 @@ jobs:
     name: Build Windows Portable（构建 Windows 绿色版）
     runs-on: windows-latest
     needs: [ get-version, build-jar-artifact ]
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')
 
     steps:
       - name: Checkout（检出代码）
@@ -213,6 +248,7 @@ jobs:
     name: Build Windows EXE Installer（构建 Windows EXE 安装程序）
     runs-on: windows-latest
     needs: [ get-version, build-jar-artifact ]
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')
 
     steps:
       - name: Checkout（检出代码）
@@ -396,6 +432,7 @@ jobs:
     name: Build macOS Intel DMG（构建 macOS Intel 版安装包）
     runs-on: macos-15-intel  # Intel x86_64
     needs: [ get-version, build-jar-artifact ]
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')
 
     steps:
       - name: Checkout（检出代码）
@@ -496,6 +533,7 @@ jobs:
     name: Build macOS Apple Silicon DMG（构建 macOS Apple Silicon 版安装包）
     runs-on: macos-latest  # Apple Silicon (M1/M2/M3/M4)
     needs: [ get-version, build-jar-artifact ]
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')
 
     steps:
       - name: Checkout（检出代码）
@@ -596,6 +634,7 @@ jobs:
     name: Build Standalone JAR（构建独立 JAR 包）
     runs-on: ubuntu-latest
     needs: [ get-version, build-jar-artifact ]
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')
 
     steps:
       - name: Download JAR artifact（下载已构建的 JAR）
@@ -615,6 +654,7 @@ jobs:
     name: Build Ubuntu DEB（构建 Ubuntu 安装包）
     runs-on: ubuntu-22.04
     needs: [ get-version, build-jar-artifact ]
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')
 
     steps:
       - name: Checkout（检出代码）
@@ -717,7 +757,7 @@ jobs:
   # ============================================================
   upload-to-github-release:
     name: Upload All to GitHub Release（统一上传到 GitHub Release）
-    if: github.event_name == 'release'
+    if: (github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')) && github.event_name == 'release'
     needs: [ build-windows-portable, build-windows-exe, build-macos-intel, build-macos-arm, build-jar, build-ubuntu ]
     runs-on: ubuntu-latest
     steps:
@@ -755,6 +795,7 @@ jobs:
   check-any-build-success:
     name: Check Any Build Success（检查至少一个构建成功）
     if: |
+      (github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')) &&
       github.event_name == 'release' &&
       always()
     needs: [ build-windows-portable, build-windows-exe, build-macos-arm ]
@@ -788,7 +829,7 @@ jobs:
   # ============================================================
   create-gitee-release:
     name: Create Gitee Release（创建 Gitee Release）
-    if: github.event_name == 'release' && needs.check-any-build-success.outputs.should_create_release == 'true'
+    if: (github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')) && github.event_name == 'release' && needs.check-any-build-success.outputs.should_create_release == 'true'
     needs: [ get-version, check-any-build-success ]
     runs-on: ubuntu-latest
     outputs:
@@ -926,7 +967,7 @@ jobs:
   # Windows 绿色版上传到 Gitee
   sync-windows-portable-to-gitee:
     name: Upload Windows Portable to Gitee（上传 Windows 绿色版到 Gitee）
-    if: github.event_name == 'release' && needs.build-windows-portable.result == 'success'
+    if: (github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')) && github.event_name == 'release' && needs.build-windows-portable.result == 'success'
     needs: [ create-gitee-release, build-windows-portable ]
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -982,7 +1023,7 @@ jobs:
   # Windows EXE 上传到 Gitee
   sync-windows-exe-to-gitee:
     name: Upload Windows EXE to Gitee（上传 Windows EXE 到 Gitee）
-    if: github.event_name == 'release' && needs.build-windows-exe.result == 'success'
+    if: (github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')) && github.event_name == 'release' && needs.build-windows-exe.result == 'success'
     needs: [ create-gitee-release, build-windows-exe ]
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -1038,7 +1079,7 @@ jobs:
   # macOS ARM 上传到 Gitee
   sync-macos-to-gitee:
     name: Upload macOS ARM to Gitee（上传 macOS ARM 到 Gitee）
-    if: github.event_name == 'release' && needs.build-macos-arm.result == 'success'
+    if: (github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')) && github.event_name == 'release' && needs.build-macos-arm.result == 'success'
     needs: [ create-gitee-release, build-macos-arm ]
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -1095,6 +1136,7 @@ jobs:
   sync-summary:
     name: Sync Summary（同步汇总）
     if: |
+      (github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')) &&
       github.event_name == 'release' &&
       always()
     needs: [ check-any-build-success, create-gitee-release, sync-windows-portable-to-gitee, sync-windows-exe-to-gitee, sync-macos-to-gitee ]

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.laker.tools</groupId>
+        <artifactId>easy-postman-parent</artifactId>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <!--
+        插件 API 层：
+        只放稳定的扩展接口 / 数据结构，尽量不依赖宿主实现细节。
+        插件模块应该优先依赖这里，而不是直接依赖 easy-postman-app 内部代码。
+     -->
+    <artifactId>easy-postman-plugin-api</artifactId>
+    <packaging>jar</packaging>
+
+    <dependencies>
+        <!-- 自动补全 SPI 会被插件扩展点直接复用 -->
+        <dependency>
+            <groupId>com.fifesoft</groupId>
+            <artifactId>autocomplete</artifactId>
+        </dependency>
+    </dependencies>
+</project>

@@ -1,0 +1,550 @@
+name: Plugin Release（插件独立发版）
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      plugin:
+        description: 选择要发布的插件
+        required: true
+        type: choice
+        options:
+          - redis
+          - kafka
+          - git
+          - decompiler
+          - client-cert
+      dry_run:
+        description: 仅做构建验证，不创建 Release，不回写 catalog
+        required: true
+        default: true
+        type: boolean
+      publish_gitee_release:
+        description: 是否同时创建 Gitee 插件 Release 并上传附件
+        required: true
+        default: true
+        type: boolean
+      update_github_catalog:
+        description: 是否回写官方 GitHub plugin catalog
+        required: true
+        default: true
+        type: boolean
+      update_gitee_catalog:
+        description: 是否回写官方 Gitee plugin catalog
+        required: true
+        default: true
+        type: boolean
+      release_notes:
+        description: Release Notes（可选）
+        required: false
+        type: string
+
+env:
+  JAVA_VERSION: '17'
+  JAVA_DISTRIBUTION: 'jetbrains'
+
+jobs:
+  prepare-context:
+    name: Prepare Context（准备发版上下文）
+    runs-on: ubuntu-latest
+    outputs:
+      plugin: ${{ steps.meta.outputs.plugin }}
+      plugin_id: ${{ steps.meta.outputs.plugin_id }}
+      plugin_version: ${{ steps.meta.outputs.plugin_version }}
+      tag_name: ${{ steps.meta.outputs.tag_name }}
+      host_version: ${{ steps.meta.outputs.host_version }}
+      jar_name: ${{ steps.meta.outputs.jar_name }}
+      module_path: ${{ steps.meta.outputs.module_path }}
+      release_title: ${{ steps.meta.outputs.release_title }}
+    steps:
+      - name: Checkout（检出代码）
+        uses: actions/checkout@v4
+
+      - name: Setup Java（配置 Java）
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate release source（校验默认分支）
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          DEFAULT_BRANCH="${{ github.event.repository.default_branch }}"
+          CURRENT_REF="${{ github.ref_name }}"
+
+          if [ "$CURRENT_REF" != "$DEFAULT_BRANCH" ]; then
+            echo "Plugin release is only allowed from the default branch: ${DEFAULT_BRANCH}" >&2
+            exit 1
+          fi
+
+          if [ "${{ inputs.dry_run }}" != "true" ] && [ "${{ inputs.update_github_catalog }}" != "true" ]; then
+            echo "Official plugin releases must update the GitHub catalog." >&2
+            exit 1
+          fi
+
+      - name: Compute metadata（计算元数据）
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          PLUGIN="${{ inputs.plugin }}"
+          MODULE_PATH="easy-postman-plugins/plugin-${PLUGIN}"
+          PLUGIN_POM="${MODULE_PATH}/pom.xml"
+
+          if [ ! -f "$PLUGIN_POM" ]; then
+            echo "Plugin pom not found: $PLUGIN_POM" >&2
+            exit 1
+          fi
+
+          PLUGIN_VERSION="$(mvn -q -f "$PLUGIN_POM" help:evaluate -Dexpression=project.version -DforceStdout)"
+          HOST_VERSION="$(mvn -q -f "$PLUGIN_POM" help:evaluate -Dexpression=host.version -DforceStdout)"
+
+          if [ -z "$PLUGIN_VERSION" ] || [[ "$PLUGIN_VERSION" == *'${'* ]]; then
+            echo "Invalid plugin version resolved from $PLUGIN_POM: $PLUGIN_VERSION" >&2
+            exit 1
+          fi
+          if [ -z "$HOST_VERSION" ] || [[ "$HOST_VERSION" == *'${'* ]]; then
+            echo "Invalid host version resolved from $PLUGIN_POM: $HOST_VERSION" >&2
+            exit 1
+          fi
+
+          TAG_NAME="plugin-${PLUGIN}-v${PLUGIN_VERSION}"
+          JAR_NAME="easy-postman-${PLUGIN_VERSION}-plugin-${PLUGIN}.jar"
+          RELEASE_TITLE="Plugin ${PLUGIN} ${PLUGIN_VERSION}"
+
+          echo "plugin=${PLUGIN}" >> "$GITHUB_OUTPUT"
+          echo "plugin_id=plugin-${PLUGIN}" >> "$GITHUB_OUTPUT"
+          echo "plugin_version=${PLUGIN_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag_name=${TAG_NAME}" >> "$GITHUB_OUTPUT"
+          echo "host_version=${HOST_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "jar_name=${JAR_NAME}" >> "$GITHUB_OUTPUT"
+          echo "module_path=${MODULE_PATH}" >> "$GITHUB_OUTPUT"
+          echo "release_title=${RELEASE_TITLE}" >> "$GITHUB_OUTPUT"
+
+  release-plugin:
+    name: Build And Release Plugin（构建并发布插件）
+    runs-on: ubuntu-latest
+    needs: [ prepare-context ]
+    outputs:
+      descriptor_plugin_id: ${{ steps.descriptor.outputs.plugin_id }}
+      descriptor_plugin_name: ${{ steps.descriptor.outputs.plugin_name }}
+      descriptor_plugin_version: ${{ steps.descriptor.outputs.plugin_version }}
+      descriptor_plugin_description: ${{ steps.descriptor.outputs.plugin_description }}
+      descriptor_min_app_version: ${{ steps.descriptor.outputs.min_app_version }}
+      descriptor_max_app_version: ${{ steps.descriptor.outputs.max_app_version }}
+      descriptor_min_platform_version: ${{ steps.descriptor.outputs.min_platform_version }}
+      descriptor_max_platform_version: ${{ steps.descriptor.outputs.max_platform_version }}
+      jar_sha256: ${{ steps.package.outputs.jar_sha256 }}
+      release_url: ${{ steps.release.outputs.release_url }}
+      gitee_release_url: ${{ steps.gitee_release.outputs.gitee_release_url }}
+    steps:
+      - name: Checkout（检出代码）
+        uses: actions/checkout@v4
+
+      - name: Setup Java（配置 Java）
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build selected plugin（只构建目标插件）
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn -B \
+            -pl "${{ needs.prepare-context.outputs.module_path }}" \
+            -am \
+            clean package \
+            -DskipTests
+
+      - name: Package release files（整理发布产物）
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          PLUGIN="${{ needs.prepare-context.outputs.plugin }}"
+          PLUGIN_VERSION="${{ needs.prepare-context.outputs.plugin_version }}"
+          MODULE_PATH="${{ needs.prepare-context.outputs.module_path }}"
+          JAR_PATH="${MODULE_PATH}/target/${{ needs.prepare-context.outputs.jar_name }}"
+
+          if [ ! -f "$JAR_PATH" ]; then
+            echo "Plugin jar not found: $JAR_PATH" >&2
+            exit 1
+          fi
+          mkdir -p dist
+
+          SHA_FILE="dist/${{ needs.prepare-context.outputs.jar_name }}.sha256.txt"
+
+          cp "$JAR_PATH" "dist/${{ needs.prepare-context.outputs.jar_name }}"
+          JAR_SHA256="$(sha256sum "dist/${{ needs.prepare-context.outputs.jar_name }}" | awk '{print $1}')"
+          printf '%s  %s\n' "$JAR_SHA256" "${{ needs.prepare-context.outputs.jar_name }}" > "$SHA_FILE"
+
+          echo "jar_sha256=${JAR_SHA256}" >> "$GITHUB_OUTPUT"
+
+      - name: Read descriptor metadata（从插件包读取 descriptor）
+        id: descriptor
+        shell: bash
+        env:
+          JAR_FILE: dist/${{ needs.prepare-context.outputs.jar_name }}
+        run: |
+          set -euo pipefail
+
+          # 发布链路只读取构建产物中的 descriptor，
+          # 不在 workflow 里单独维护一套插件兼容字段，避免 pom / jar / catalog 漂移。
+          python3 <<'PY'
+          import os
+          import zipfile
+
+          jar_file = os.environ["JAR_FILE"]
+          github_output = os.environ["GITHUB_OUTPUT"]
+
+          with zipfile.ZipFile(jar_file) as zf:
+              descriptor_names = [
+                  name for name in zf.namelist()
+                  if name.startswith("META-INF/easy-postman/") and name.endswith(".properties")
+              ]
+              if len(descriptor_names) != 1:
+                  raise SystemExit(f"Expected exactly one plugin descriptor, got {descriptor_names}")
+              content = zf.read(descriptor_names[0]).decode("utf-8")
+
+          props = {}
+          for raw_line in content.splitlines():
+              line = raw_line.strip()
+              if not line or line.startswith("#") or "=" not in line:
+                  continue
+              key, value = line.split("=", 1)
+              props[key.strip()] = value.strip()
+
+          mappings = {
+              "plugin_id": props.get("plugin.id", ""),
+              "plugin_name": props.get("plugin.name", ""),
+              "plugin_version": props.get("plugin.version", ""),
+              "plugin_description": props.get("plugin.description", ""),
+              "min_app_version": props.get("plugin.minAppVersion", ""),
+              "max_app_version": props.get("plugin.maxAppVersion", ""),
+              "min_platform_version": props.get("plugin.minPlatformVersion", ""),
+              "max_platform_version": props.get("plugin.maxPlatformVersion", ""),
+          }
+
+          with open(github_output, "a", encoding="utf-8") as fh:
+              for key, value in mappings.items():
+                  fh.write(f"{key}={value}\n")
+          PY
+
+      - name: Validate descriptor metadata（校验 tag/pom/descriptor 一致性）
+        shell: bash
+        env:
+          EXPECTED_PLUGIN_ID: ${{ needs.prepare-context.outputs.plugin_id }}
+          EXPECTED_PLUGIN_VERSION: ${{ needs.prepare-context.outputs.plugin_version }}
+          EXPECTED_TAG_NAME: ${{ needs.prepare-context.outputs.tag_name }}
+          ACTUAL_PLUGIN_ID: ${{ steps.descriptor.outputs.plugin_id }}
+          ACTUAL_PLUGIN_VERSION: ${{ steps.descriptor.outputs.plugin_version }}
+        run: |
+          set -euo pipefail
+
+          python3 <<'PY'
+          import os
+
+          expected_plugin_id = os.environ["EXPECTED_PLUGIN_ID"]
+          expected_plugin_version = os.environ["EXPECTED_PLUGIN_VERSION"]
+          expected_tag_name = os.environ["EXPECTED_TAG_NAME"]
+          actual_plugin_id = os.environ["ACTUAL_PLUGIN_ID"]
+          actual_plugin_version = os.environ["ACTUAL_PLUGIN_VERSION"]
+          expected_tag_from_version = f"{expected_plugin_id}-v{expected_plugin_version}"
+
+          if actual_plugin_id != expected_plugin_id:
+              raise SystemExit(f"Descriptor plugin.id mismatch: {actual_plugin_id} != {expected_plugin_id}")
+          if actual_plugin_version != expected_plugin_version:
+              raise SystemExit(f"Descriptor plugin.version mismatch: {actual_plugin_version} != {expected_plugin_version}")
+          if expected_tag_name != expected_tag_from_version:
+              raise SystemExit(f"Tag mismatch: {expected_tag_name} != {expected_tag_from_version}")
+          PY
+
+      - name: Upload dry-run artifacts（上传验证产物）
+        if: ${{ inputs.dry_run }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin-release-${{ needs.prepare-context.outputs.plugin }}-${{ needs.prepare-context.outputs.plugin_version }}
+          path: dist/*
+          retention-days: 7
+
+      - name: Publish GitHub Release（发布 GitHub Release）
+        if: ${{ !inputs.dry_run }}
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TAG_NAME="${{ needs.prepare-context.outputs.tag_name }}"
+          TITLE="${{ needs.prepare-context.outputs.release_title }}"
+          NOTES_FILE="$(mktemp)"
+
+          if [ -n "${{ inputs.release_notes }}" ]; then
+            printf '%s\n' "${{ inputs.release_notes }}" > "$NOTES_FILE"
+          else
+            cat > "$NOTES_FILE" <<EOF
+          Independent release for \`${{ needs.prepare-context.outputs.plugin_id }}\`.
+
+          - Plugin version: `${{ steps.descriptor.outputs.plugin_version }}`
+          - Minimum app version: `${{ steps.descriptor.outputs.min_app_version || 'unspecified' }}`
+          - Plugin platform version: `${{ steps.descriptor.outputs.min_platform_version || 'unspecified' }}`
+          - Built against host revision: `${{ needs.prepare-context.outputs.host_version }}`
+          EOF
+          fi
+
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            gh release upload "$TAG_NAME" \
+              "dist/${{ needs.prepare-context.outputs.jar_name }}" \
+              "dist/${{ needs.prepare-context.outputs.jar_name }}.sha256.txt" \
+              --clobber
+          else
+            gh release create "$TAG_NAME" \
+              "dist/${{ needs.prepare-context.outputs.jar_name }}" \
+              "dist/${{ needs.prepare-context.outputs.jar_name }}.sha256.txt" \
+              --title "$TITLE" \
+              --notes-file "$NOTES_FILE" \
+              --target "$GITHUB_SHA"
+          fi
+
+          echo "release_url=https://github.com/${{ github.repository }}/releases/tag/${TAG_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish Gitee Release（发布 Gitee Release）
+        if: ${{ !inputs.dry_run && inputs.publish_gitee_release }}
+        id: gitee_release
+        shell: bash
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${GITEE_TOKEN:-}" ]; then
+            echo "Missing GITEE_TOKEN secret" >&2
+            exit 1
+          fi
+
+          TAG_NAME="${{ needs.prepare-context.outputs.tag_name }}"
+          TITLE="${{ needs.prepare-context.outputs.release_title }}"
+          BODY_FILE="$(mktemp)"
+          RESPONSE_FILE="$(mktemp)"
+          RELEASE_ID=""
+
+          if [ -n "${{ inputs.release_notes }}" ]; then
+            printf '%s\n' "${{ inputs.release_notes }}" > "$BODY_FILE"
+          else
+            cat > "$BODY_FILE" <<EOF
+          ${TITLE}
+
+          - Plugin version: ${{ steps.descriptor.outputs.plugin_version }}
+          - Minimum app version: ${{ steps.descriptor.outputs.min_app_version || 'unspecified' }}
+          - Plugin platform version: ${{ steps.descriptor.outputs.min_platform_version || 'unspecified' }}
+          - GitHub release: https://github.com/${{ github.repository }}/releases/tag/${TAG_NAME}
+          EOF
+          fi
+
+          set +e
+          HTTP_CODE="$(curl -sS -o "$RESPONSE_FILE" -w "%{http_code}" \
+            -X POST "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases" \
+            -F "access_token=${GITEE_TOKEN}" \
+            -F "tag_name=${TAG_NAME}" \
+            -F "name=${TITLE}" \
+            -F "body=<${BODY_FILE}" \
+            -F "prerelease=false" \
+            -F "target_commitish=master")"
+          CURL_EXIT_CODE=$?
+          set -e
+
+          if [ $CURL_EXIT_CODE -eq 0 ] && [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            RELEASE_ID="$(python3 -c "import json; import sys; print(json.load(open('${RESPONSE_FILE}')).get('id',''))")"
+          else
+            curl -sS "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases?access_token=${GITEE_TOKEN}&page=1&per_page=100" -o "$RESPONSE_FILE"
+            RELEASE_ID="$(python3 -c "import json; from pathlib import Path; data=json.loads(Path('${RESPONSE_FILE}').read_text()); tag='${TAG_NAME}'; print(next((str(item.get('id','')) for item in data if item.get('tag_name') == tag), ''))")"
+          fi
+
+          if [ -z "$RELEASE_ID" ]; then
+            echo "Failed to create or resolve Gitee release id for ${TAG_NAME}" >&2
+            cat "$RESPONSE_FILE" >&2 || true
+            exit 1
+          fi
+
+          for file in \
+            "dist/${{ needs.prepare-context.outputs.jar_name }}" \
+            "dist/${{ needs.prepare-context.outputs.jar_name }}.sha256.txt"
+          do
+            if [ ! -f "$file" ]; then
+              echo "Missing release asset: $file" >&2
+              exit 1
+            fi
+            FILE_SIZE="$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file")"
+            if [ "$FILE_SIZE" -gt 104857600 ]; then
+              echo "Skip oversized Gitee asset: $(basename "$file")" >&2
+              continue
+            fi
+            curl -sS -X POST "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases/${RELEASE_ID}/attach_files" \
+              -F "access_token=${GITEE_TOKEN}" \
+              -F "file=@${file}" >/dev/null
+          done
+
+          echo "gitee_release_url=https://gitee.com/lakernote/easy-postman/releases/${TAG_NAME}" >> "$GITHUB_OUTPUT"
+
+  update-catalogs:
+    name: Update Catalogs（更新官方目录）
+    if: ${{ (inputs.update_github_catalog || inputs.update_gitee_catalog) && !inputs.dry_run }}
+    runs-on: ubuntu-latest
+    needs: [ prepare-context, release-plugin ]
+    steps:
+      - name: Checkout default branch（检出默认分支）
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Update catalog json（更新 catalog 文件）
+        shell: bash
+        env:
+          # catalog 元数据统一来自 release-plugin 阶段解析出的 descriptor 输出。
+          PLUGIN_ID: ${{ needs.release-plugin.outputs.descriptor_plugin_id }}
+          PLUGIN_NAME: ${{ needs.release-plugin.outputs.descriptor_plugin_name }}
+          PLUGIN_VERSION: ${{ needs.release-plugin.outputs.descriptor_plugin_version }}
+          PLUGIN_DESCRIPTION: ${{ needs.release-plugin.outputs.descriptor_plugin_description }}
+          MIN_APP_VERSION: ${{ needs.release-plugin.outputs.descriptor_min_app_version }}
+          MAX_APP_VERSION: ${{ needs.release-plugin.outputs.descriptor_max_app_version }}
+          MIN_PLATFORM_VERSION: ${{ needs.release-plugin.outputs.descriptor_min_platform_version }}
+          MAX_PLATFORM_VERSION: ${{ needs.release-plugin.outputs.descriptor_max_platform_version }}
+          TAG_NAME: ${{ needs.prepare-context.outputs.tag_name }}
+          JAR_NAME: ${{ needs.prepare-context.outputs.jar_name }}
+          JAR_SHA256: ${{ needs.release-plugin.outputs.jar_sha256 }}
+          UPDATE_GITHUB_CATALOG: ${{ inputs.update_github_catalog }}
+          UPDATE_GITEE_CATALOG: ${{ inputs.update_gitee_catalog && inputs.publish_gitee_release }}
+        run: |
+          set -euo pipefail
+
+          GITHUB_DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${TAG_NAME}/${JAR_NAME}"
+          GITEE_DOWNLOAD_URL="https://gitee.com/lakernote/easy-postman/releases/download/${TAG_NAME}/${JAR_NAME}"
+          GENERATED_AT="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          export PLUGIN_NAME PLUGIN_DESCRIPTION GITHUB_DOWNLOAD_URL GITEE_DOWNLOAD_URL GENERATED_AT
+          export MIN_APP_VERSION MAX_APP_VERSION MIN_PLATFORM_VERSION MAX_PLATFORM_VERSION
+
+          python3 <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          plugin_id = os.environ["PLUGIN_ID"]
+          plugin_name = os.environ["PLUGIN_NAME"]
+          plugin_version = os.environ["PLUGIN_VERSION"]
+          plugin_description = os.environ["PLUGIN_DESCRIPTION"]
+          sha256 = os.environ["JAR_SHA256"]
+          generated_at = os.environ["GENERATED_AT"]
+          min_app_version = os.environ.get("MIN_APP_VERSION", "")
+          max_app_version = os.environ.get("MAX_APP_VERSION", "")
+          min_platform_version = os.environ.get("MIN_PLATFORM_VERSION", "")
+          max_platform_version = os.environ.get("MAX_PLATFORM_VERSION", "")
+
+          updates = []
+          if os.environ["UPDATE_GITHUB_CATALOG"].lower() == "true":
+              updates.extend([
+                  (
+                      Path("plugin-catalog/catalog-github.json"),
+                      os.environ["GITHUB_DOWNLOAD_URL"],
+                      f"https://github.com/{os.environ['GITHUB_REPOSITORY']}",
+                  ),
+                  (
+                      Path("easy-postman-plugins/plugin-manager/src/main/resources/plugin-catalog/catalog-github.json"),
+                      os.environ["GITHUB_DOWNLOAD_URL"],
+                      f"https://github.com/{os.environ['GITHUB_REPOSITORY']}",
+                  ),
+              ])
+          if os.environ["UPDATE_GITEE_CATALOG"].lower() == "true":
+              updates.extend([
+                  (
+                      Path("plugin-catalog/catalog-gitee.json"),
+                      os.environ["GITEE_DOWNLOAD_URL"],
+                      "https://gitee.com/lakernote/easy-postman",
+                  ),
+                  (
+                      Path("easy-postman-plugins/plugin-manager/src/main/resources/plugin-catalog/catalog-gitee.json"),
+                      os.environ["GITEE_DOWNLOAD_URL"],
+                      "https://gitee.com/lakernote/easy-postman",
+                  ),
+              ])
+
+          for path, download_url, homepage in updates:
+              data = json.loads(path.read_text(encoding="utf-8"))
+              plugins = data.setdefault("plugins", [])
+              new_entry = {
+                  "id": plugin_id,
+                  "name": plugin_name,
+                  "version": plugin_version,
+                  "description": plugin_description,
+                  "downloadUrl": download_url,
+                  "homepage": homepage,
+                  "sha256": sha256,
+                  "minAppVersion": min_app_version,
+                  "maxAppVersion": max_app_version,
+                  "minPlatformVersion": min_platform_version,
+                  "maxPlatformVersion": max_platform_version,
+              }
+              for idx, entry in enumerate(plugins):
+                  if entry.get("id") == plugin_id:
+                      plugins[idx] = new_entry
+                      break
+              else:
+                  plugins.append(new_entry)
+              data["generatedAt"] = generated_at
+              path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+              matched = next((entry for entry in data["plugins"] if entry.get("id") == plugin_id), None)
+              if matched is None:
+                  raise SystemExit(f"Catalog entry missing after update: {path} -> {plugin_id}")
+              if matched.get("version") != plugin_version:
+                  raise SystemExit(f"Catalog version mismatch in {path}: {matched.get('version')} != {plugin_version}")
+              if matched.get("downloadUrl") != download_url:
+                  raise SystemExit(f"Catalog downloadUrl mismatch in {path}")
+              if matched.get("sha256") != sha256:
+                  raise SystemExit(f"Catalog sha256 mismatch in {path}")
+              if matched.get("minAppVersion", "") != min_app_version:
+                  raise SystemExit(f"Catalog minAppVersion mismatch in {path}")
+              if matched.get("maxAppVersion", "") != max_app_version:
+                  raise SystemExit(f"Catalog maxAppVersion mismatch in {path}")
+              if matched.get("minPlatformVersion", "") != min_platform_version:
+                  raise SystemExit(f"Catalog minPlatformVersion mismatch in {path}")
+              if matched.get("maxPlatformVersion", "") != max_platform_version:
+                  raise SystemExit(f"Catalog maxPlatformVersion mismatch in {path}")
+          PY
+
+      - name: Commit catalog changes（提交 catalog 更新）
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet -- \
+            plugin-catalog/catalog-github.json \
+            plugin-catalog/catalog-gitee.json \
+            easy-postman-plugins/plugin-manager/src/main/resources/plugin-catalog/catalog-github.json \
+            easy-postman-plugins/plugin-manager/src/main/resources/plugin-catalog/catalog-gitee.json; then
+            echo "No catalog changes to commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            plugin-catalog/catalog-github.json \
+            plugin-catalog/catalog-gitee.json \
+            easy-postman-plugins/plugin-manager/src/main/resources/plugin-catalog/catalog-github.json \
+            easy-postman-plugins/plugin-manager/src/main/resources/plugin-catalog/catalog-gitee.json
+          git commit -m "chore(plugin-catalog): release ${{ needs.prepare-context.outputs.plugin_id }} ${{ needs.prepare-context.outputs.plugin_version }}"
+          git push origin "HEAD:${{ github.event.repository.default_branch }}"

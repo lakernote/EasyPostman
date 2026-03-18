@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.laker.tools</groupId>
+        <artifactId>easy-postman-parent</artifactId>
+        <version>${revision}</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+
+    <!--
+        插件版本单独维护。
+        初始独立版本从 5.3.16 起步，后续只在该插件有变更时单独递增。
+     -->
+    <version>5.3.16</version>
+    <artifactId>easy-postman-plugin-redis</artifactId>
+    <packaging>jar</packaging>
+
+    <properties>
+        <!--
+            编译期依赖的宿主平台包版本。
+            官方插件在 monorepo 内默认跟随 ${revision}，这样会直接对齐当前 api / bridge / ui 的编译输入。
+            它只决定“编译时依赖哪版平台包”，不表达“运行时兼容哪代插件平台”。
+         -->
+        <host.version>${revision}</host.version>
+        <!--
+            插件元数据单一真源放在 pom.xml。
+            descriptor 模板和发布 catalog 都从这里间接生成，避免多处手填漂移。
+         -->
+        <plugin.id>plugin-redis</plugin.id>
+        <plugin.name>Redis Plugin</plugin.name>
+        <plugin.entryClass>com.laker.postman.plugin.redis.RedisPlugin</plugin.entryClass>
+        <plugin.description>Redis toolbox panel, pm.redis script API, completions and snippets.</plugin.description>
+        <!--
+            运行时插件平台兼容范围，匹配的是 runtime/SPI 装配边界，不是宿主发行版 revision。
+            这里不要直接跟随 ${revision}：
+            1. revision 会因为宿主普通发版、bugfix、非插件改动持续变化
+            2. 这些变化通常不代表插件 SPI 发生不兼容
+            3. 如果这里绑死 revision，会把很多本来兼容的插件误判成“不兼容”
+            只有插件机制自身发生破坏性变化时，才先提升根 pom 的 plugin.platform.version，
+            再按实际兼容范围调整这里；普通插件功能迭代通常不需要改。
+         -->
+        <plugin.minPlatformVersion>${plugin.platform.version}</plugin.minPlatformVersion>
+        <plugin.maxPlatformVersion>${plugin.platform.version}</plugin.maxPlatformVersion>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.laker.tools</groupId>
+            <artifactId>easy-postman-plugin-api</artifactId>
+            <version>${host.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.laker.tools</groupId>
+            <artifactId>easy-postman-plugin-bridge</artifactId>
+            <version>${host.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.laker.tools</groupId>
+            <artifactId>easy-postman-plugin-ui</artifactId>
+            <version>${host.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.formdev</groupId>
+            <artifactId>flatlaf</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.formdev</groupId>
+            <artifactId>flatlaf-extras</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.miglayout</groupId>
+            <artifactId>miglayout-swing</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fifesoft</groupId>
+            <artifactId>rsyntaxtextarea</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.graalvm.polyglot</groupId>
+            <artifactId>polyglot</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>easy-postman-${project.version}-plugin-redis</finalName>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <!-- 只过滤插件 descriptor，让运行时读取到的版本和元数据直接来自 pom。 -->
+                <filtering>true</filtering>
+                <includes>
+                    <include>META-INF/easy-postman/plugin-redis.properties</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>META-INF/easy-postman/plugin-redis.properties</exclude>
+                </excludes>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <Implementation-Version>${project.version}</Implementation-Version>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>shade-plugin</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <finalName>${project.build.finalName}</finalName>
+                            <artifactSet>
+                                <includes>
+                                    <include>redis.clients:jedis</include>
+                                    <include>org.apache.commons:commons-pool2</include>
+                                    <include>org.json:json</include>
+                                    <include>com.google.code.gson:gson</include>
+                                </includes>
+                            </artifactSet>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                        <exclude>META-INF/maven/**</exclude>
+                                        <exclude>META-INF/LICENSE*</exclude>
+                                        <exclude>META-INF/NOTICE*</exclude>
+                                        <exclude>META-INF/DEPENDENCIES</exclude>
+                                        <exclude>**/*.md</exclude>
+                                        <exclude>**/*.txt</exclude>
+                                        <exclude>**/module-info.class</exclude>
+                                        <exclude>**/*.kotlin_module</exclude>
+                                        <exclude>**/*.kotlin_builtins</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

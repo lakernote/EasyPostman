@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.laker.tools</groupId>
+        <artifactId>easy-postman-parent</artifactId>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <!-- 官方插件聚合工程，只负责组织 plugin-* 模块，不直接产出业务 jar -->
+    <artifactId>easy-postman-plugins</artifactId>
+    <packaging>pom</packaging>
+
+    <!--
+        这里放“官方插件”本体：
+        - plugin-manager：安装/卸载/目录与市场门面
+        - plugin-redis / plugin-kafka：外部中间件能力插件
+        - plugin-decompiler：重功能可选插件
+     -->
+    <modules>
+        <module>plugin-manager</module>
+        <module>plugin-client-cert</module>
+        <module>plugin-redis</module>
+        <module>plugin-kafka</module>
+        <module>plugin-decompiler</module>
+    </modules>
+</project>

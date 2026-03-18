@@ -27,7 +27,7 @@ if not exist "pom.xml" (
 :: Step 2: 从 pom.xml 获取版本号
 echo [2/9] 提取版本号...
 FOR /F "tokens=* USEBACKQ" %%F IN (`
-    powershell -Command "[regex]::Match((Get-Content '%cd%\pom.xml' -Raw), '<version>(.*?)</version>').Groups[1].Value"
+    powershell -Command "[regex]::Match((Get-Content '%cd%\pom.xml' -Raw), '<revision>(.*?)</revision>').Groups[1].Value"
 `) DO SET VERSION=%%F
 
 if not defined VERSION (
@@ -47,6 +47,7 @@ set ICON_FILE=assets\win\EasyPostman.ico
 set ISS_SCRIPT=build\easy-postman.iss
 set OUTPUT_DIR=dist
 set ARCH=x64
+set APP_TARGET_DIR=easy-postman-app\target
 
 :: Step 3: 检查 Java 版本
 echo [3/9] 检查 Java 版本...
@@ -83,12 +84,12 @@ if errorlevel 1 (
 )
 
 :: 检查 JAR 文件是否生成
-if not exist "target\%JAR_NAME_WITH_VERSION%" (
-    echo ERROR: JAR file not found: target\%JAR_NAME_WITH_VERSION%
+if not exist "%APP_TARGET_DIR%\%JAR_NAME_WITH_VERSION%" (
+    echo ERROR: JAR file not found: %APP_TARGET_DIR%\%JAR_NAME_WITH_VERSION%
     pause
     exit /b 1
 )
-echo         JAR: target\%JAR_NAME_WITH_VERSION% [OK]
+echo         JAR: %APP_TARGET_DIR%\%JAR_NAME_WITH_VERSION% [OK]
 
 :: Step 6: 创建精简 JRE (jlink)
 echo [6/9] 使用 jlink 创建精简 JRE...
@@ -114,7 +115,7 @@ if exist %DIST_INPUT_DIR% rd /s /q %DIST_INPUT_DIR%
 mkdir %DIST_INPUT_DIR%
 
 :: 重命名 JAR 为固定名称
-copy "target\%JAR_NAME_WITH_VERSION%" "%DIST_INPUT_DIR%\%JAR_NAME%" >nul
+copy "%APP_TARGET_DIR%\%JAR_NAME_WITH_VERSION%" "%DIST_INPUT_DIR%\%JAR_NAME%" >nul
 if errorlevel 1 (
     echo ERROR: Failed to copy JAR file
     pause
@@ -223,4 +224,3 @@ echo.
 
 ENDLOCAL
 pause
-

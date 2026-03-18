@@ -825,12 +825,75 @@ jobs:
           fi
 
   # ============================================================
+  # 校验 Gitee 附件大小（超过 100MB 直接失败）
+  # ============================================================
+  verify-gitee-assets:
+    name: Verify Gitee Assets（校验 Gitee 附件大小）
+    if: (github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')) && github.event_name == 'release' && needs.check-any-build-success.outputs.should_create_release == 'true'
+    needs: [ check-any-build-success, build-windows-portable, build-windows-exe, build-macos-arm ]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Windows Portable artifact（下载 Windows 绿色版产物）
+        if: needs.build-windows-portable.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: EasyPostman-Windows-Portable
+          path: verify/windows-portable
+
+      - name: Download Windows EXE artifact（下载 Windows EXE 产物）
+        if: needs.build-windows-exe.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: EasyPostman-Windows-EXE
+          path: verify/windows-exe
+
+      - name: Download macOS ARM artifact（下载 macOS ARM 产物）
+        if: needs.build-macos-arm.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: EasyPostman-macOS-ARM-DMG
+          path: verify/macos-arm
+
+      - name: Validate asset size（校验附件大小）
+        run: |
+          validate_file() {
+            FILE="$1"
+            LABEL="$2"
+            if [ ! -f "$FILE" ]; then
+              echo "❌ Missing expected artifact for $LABEL: $FILE"
+              exit 1
+            fi
+
+            FILE_SIZE=$(stat -c%s "$FILE" 2>/dev/null || stat -f%z "$FILE")
+            FILE_SIZE_MB=$(echo "scale=2; $FILE_SIZE/1048576" | bc)
+            echo "📏 $LABEL: ${FILE_SIZE_MB} MB"
+
+            if [ "$FILE_SIZE" -gt 104857600 ]; then
+              echo "❌ $LABEL exceeds Gitee 100MB limit: ${FILE_SIZE_MB} MB"
+              exit 1
+            fi
+          }
+
+          if [ "${{ needs.build-windows-portable.result }}" = "success" ]; then
+            validate_file "$(find verify/windows-portable -name '*-portable.zip' | head -n 1)" "Windows Portable"
+          fi
+
+          if [ "${{ needs.build-windows-exe.result }}" = "success" ]; then
+            validate_file "$(find verify/windows-exe -name '*.exe' | head -n 1)" "Windows EXE"
+          fi
+
+          if [ "${{ needs.build-macos-arm.result }}" = "success" ]; then
+            validate_file "$(find verify/macos-arm -name '*-macos-arm64.dmg' | head -n 1)" "macOS ARM"
+          fi
+
+  # ============================================================
   # 创建 Gitee Release
   # ============================================================
   create-gitee-release:
     name: Create Gitee Release（创建 Gitee Release）
     if: (github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')) && github.event_name == 'release' && needs.check-any-build-success.outputs.should_create_release == 'true'
-    needs: [ get-version, check-any-build-success ]
+    needs: [ get-version, check-any-build-success, verify-gitee-assets ]
     runs-on: ubuntu-latest
     outputs:
       release_id: ${{ steps.gitee_release.outputs.release_id }}
@@ -945,10 +1008,7 @@ jobs:
     name: Upload Windows Portable to Gitee（上传 Windows 绿色版到 Gitee）
     if: (github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')) && github.event_name == 'release' && needs.build-windows-portable.result == 'success'
     needs: [ create-gitee-release, build-windows-portable ]
-    outputs:
-      upload_status: ${{ steps.upload.outputs.upload_status }}
     runs-on: ubuntu-latest
-    continue-on-error: true
 
     steps:
       - name: Download Windows Portable artifact（下载 Windows 绿色版产物）
@@ -958,26 +1018,22 @@ jobs:
           path: artifacts
 
       - name: Upload Windows Portable to Gitee（上传 Windows 绿色版到 Gitee）
-        id: upload
         run: |
           RELEASE_ID="${{ needs.create-gitee-release.outputs.release_id }}"
           FILE=$(find artifacts -name "*-portable.zip" | head -n 1)
           
           if [ -z "$FILE" ]; then
             echo "❌ Windows Portable ZIP file not found!"
-            echo "upload_status=failed" >> "$GITHUB_OUTPUT"
-            exit 0
+            exit 1
           fi
           
-          # 检查文件大小（单位：字节），超过 100MB 则跳过上传
           FILE_SIZE=$(stat -c%s "$FILE" 2>/dev/null || stat -f%z "$FILE")
           FILE_SIZE_MB=$(echo "scale=2; $FILE_SIZE/1048576" | bc)
           echo "📏 File size: ${FILE_SIZE_MB} MB"
           
           if [ "$FILE_SIZE" -gt 104857600 ]; then
-            echo "⚠️ File size ${FILE_SIZE_MB} MB exceeds Gitee 100MB limit, skipping upload."
-            echo "upload_status=skipped_too_large" >> "$GITHUB_OUTPUT"
-            exit 0
+            echo "❌ File size ${FILE_SIZE_MB} MB exceeds Gitee 100MB limit."
+            exit 1
           fi
           
           echo "📦 Uploading $(basename $FILE) to Gitee..."
@@ -990,7 +1046,6 @@ jobs:
               -F "access_token=${{ secrets.GITEE_TOKEN }}" \
               -F "file=@$FILE"; then
               echo "✅ Windows Portable uploaded successfully!"
-              echo "upload_status=uploaded" >> "$GITHUB_OUTPUT"
               exit 0
             else
               RETRY_COUNT=$((RETRY_COUNT + 1))
@@ -999,18 +1054,14 @@ jobs:
           done
           
           echo "❌ Failed to upload Windows Portable after $MAX_RETRIES attempts"
-          echo "upload_status=failed" >> "$GITHUB_OUTPUT"
-          exit 0
+          exit 1
 
   # Windows EXE 上传到 Gitee
   sync-windows-exe-to-gitee:
     name: Upload Windows EXE to Gitee（上传 Windows EXE 到 Gitee）
     if: (github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')) && github.event_name == 'release' && needs.build-windows-exe.result == 'success'
     needs: [ create-gitee-release, build-windows-exe ]
-    outputs:
-      upload_status: ${{ steps.upload.outputs.upload_status }}
     runs-on: ubuntu-latest
-    continue-on-error: true
 
     steps:
       - name: Download Windows EXE artifact（下载 Windows EXE 产物）
@@ -1020,26 +1071,22 @@ jobs:
           path: artifacts
 
       - name: Upload Windows EXE to Gitee（上传 Windows EXE 到 Gitee）
-        id: upload
         run: |
           RELEASE_ID="${{ needs.create-gitee-release.outputs.release_id }}"
           FILE=$(find artifacts -name "*.exe" | head -n 1)
           
           if [ -z "$FILE" ]; then
             echo "❌ Windows EXE file not found!"
-            echo "upload_status=failed" >> "$GITHUB_OUTPUT"
-            exit 0
+            exit 1
           fi
           
-          # 检查文件大小（单位：字节），超过 100MB 则跳过上传
           FILE_SIZE=$(stat -c%s "$FILE" 2>/dev/null || stat -f%z "$FILE")
           FILE_SIZE_MB=$(echo "scale=2; $FILE_SIZE/1048576" | bc)
           echo "📏 File size: ${FILE_SIZE_MB} MB"
           
           if [ "$FILE_SIZE" -gt 104857600 ]; then
-            echo "⚠️ File size ${FILE_SIZE_MB} MB exceeds Gitee 100MB limit, skipping upload."
-            echo "upload_status=skipped_too_large" >> "$GITHUB_OUTPUT"
-            exit 0
+            echo "❌ File size ${FILE_SIZE_MB} MB exceeds Gitee 100MB limit."
+            exit 1
           fi
           
           echo "📦 Uploading $(basename $FILE) to Gitee..."
@@ -1052,7 +1099,6 @@ jobs:
               -F "access_token=${{ secrets.GITEE_TOKEN }}" \
               -F "file=@$FILE"; then
               echo "✅ Windows EXE uploaded successfully!"
-              echo "upload_status=uploaded" >> "$GITHUB_OUTPUT"
               exit 0
             else
               RETRY_COUNT=$((RETRY_COUNT + 1))
@@ -1061,18 +1107,14 @@ jobs:
           done
           
           echo "❌ Failed to upload Windows EXE after $MAX_RETRIES attempts"
-          echo "upload_status=failed" >> "$GITHUB_OUTPUT"
-          exit 0
+          exit 1
 
   # macOS ARM 上传到 Gitee
   sync-macos-to-gitee:
     name: Upload macOS ARM to Gitee（上传 macOS ARM 到 Gitee）
     if: (github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')) && github.event_name == 'release' && needs.build-macos-arm.result == 'success'
     needs: [ create-gitee-release, build-macos-arm ]
-    outputs:
-      upload_status: ${{ steps.upload.outputs.upload_status }}
     runs-on: ubuntu-latest
-    continue-on-error: true
 
     steps:
       - name: Download macOS ARM artifact（下载 macOS ARM 产物）
@@ -1082,26 +1124,22 @@ jobs:
           path: artifacts
 
       - name: Upload macOS ARM to Gitee（上传 macOS ARM 到 Gitee）
-        id: upload
         run: |
           RELEASE_ID="${{ needs.create-gitee-release.outputs.release_id }}"
           FILE=$(find artifacts -name "*-macos-arm64.dmg" | head -n 1)
           
           if [ -z "$FILE" ]; then
             echo "❌ macOS ARM DMG file not found!"
-            echo "upload_status=failed" >> "$GITHUB_OUTPUT"
-            exit 0
+            exit 1
           fi
           
-          # 检查文件大小（单位：字节），超过 100MB 则跳过上传
           FILE_SIZE=$(stat -c%s "$FILE" 2>/dev/null || stat -f%z "$FILE")
           FILE_SIZE_MB=$(echo "scale=2; $FILE_SIZE/1048576" | bc)
           echo "📏 File size: ${FILE_SIZE_MB} MB"
           
           if [ "$FILE_SIZE" -gt 104857600 ]; then
-            echo "⚠️ File size ${FILE_SIZE_MB} MB exceeds Gitee 100MB limit, skipping upload."
-            echo "upload_status=skipped_too_large" >> "$GITHUB_OUTPUT"
-            exit 0
+            echo "❌ File size ${FILE_SIZE_MB} MB exceeds Gitee 100MB limit."
+            exit 1
           fi
           
           echo "🍎 Uploading $(basename $FILE) to Gitee..."
@@ -1114,7 +1152,6 @@ jobs:
               -F "access_token=${{ secrets.GITEE_TOKEN }}" \
               -F "file=@$FILE"; then
               echo "✅ macOS ARM uploaded successfully!"
-              echo "upload_status=uploaded" >> "$GITHUB_OUTPUT"
               exit 0
             else
               RETRY_COUNT=$((RETRY_COUNT + 1))
@@ -1123,8 +1160,7 @@ jobs:
           done
           
           echo "❌ Failed to upload macOS ARM after $MAX_RETRIES attempts"
-          echo "upload_status=failed" >> "$GITHUB_OUTPUT"
-          exit 0
+          exit 1
 
   # 汇总结果
   sync-summary:
@@ -1133,7 +1169,7 @@ jobs:
       (github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')) &&
       github.event_name == 'release' &&
       always()
-    needs: [ check-any-build-success, create-gitee-release, sync-windows-portable-to-gitee, sync-windows-exe-to-gitee, sync-macos-to-gitee ]
+    needs: [ check-any-build-success, verify-gitee-assets, create-gitee-release, sync-windows-portable-to-gitee, sync-windows-exe-to-gitee, sync-macos-to-gitee ]
     runs-on: ubuntu-latest
 
     steps:
@@ -1142,10 +1178,15 @@ jobs:
           echo "📊 Gitee Release 同步完成！"
           
           CHECK_STATUS="${{ needs.check-any-build-success.result }}"
+          VERIFY_STATUS="${{ needs.verify-gitee-assets.result }}"
           RELEASE_STATUS="${{ needs.create-gitee-release.result }}"
+          PORTABLE_STATUS="${{ needs.sync-windows-portable-to-gitee.result }}"
+          EXE_STATUS="${{ needs.sync-windows-exe-to-gitee.result }}"
+          MACOS_STATUS="${{ needs.sync-macos-to-gitee.result }}"
           
           echo ""
           echo "🔍 构建检查结果: $CHECK_STATUS"
+          echo "📏 Gitee 附件校验: $VERIFY_STATUS"
           echo "📝 Gitee Release 创建: $RELEASE_STATUS"
           
           if [ "$RELEASE_STATUS" == "success" ]; then
@@ -1154,38 +1195,20 @@ jobs:
           
           echo ""
           echo "已同步到 Gitee 的文件："
-          PORTABLE_STATUS="${{ needs.sync-windows-portable-to-gitee.outputs.upload_status || 'not_run' }}"
-          EXE_STATUS="${{ needs.sync-windows-exe-to-gitee.outputs.upload_status || 'not_run' }}"
-          MACOS_STATUS="${{ needs.sync-macos-to-gitee.outputs.upload_status || 'not_run' }}"
           echo "  📦 Windows Portable (绿色版) - $PORTABLE_STATUS"
           echo "  🪟 Windows EXE (安装包) - $EXE_STATUS"
           echo "  🍎 macOS Apple Silicon (ARM64) - $MACOS_STATUS"
           echo ""
-          
-          UPLOADED_COUNT=0
-          SKIPPED_COUNT=0
-          FAILED_COUNT=0
-          [ "$PORTABLE_STATUS" == "uploaded" ] && UPLOADED_COUNT=$((UPLOADED_COUNT + 1))
-          [ "$EXE_STATUS" == "uploaded" ] && UPLOADED_COUNT=$((UPLOADED_COUNT + 1))
-          [ "$MACOS_STATUS" == "uploaded" ] && UPLOADED_COUNT=$((UPLOADED_COUNT + 1))
-          [ "$PORTABLE_STATUS" == "skipped_too_large" ] && SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
-          [ "$EXE_STATUS" == "skipped_too_large" ] && SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
-          [ "$MACOS_STATUS" == "skipped_too_large" ] && SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
-          [ "$PORTABLE_STATUS" == "failed" ] && FAILED_COUNT=$((FAILED_COUNT + 1))
-          [ "$EXE_STATUS" == "failed" ] && FAILED_COUNT=$((FAILED_COUNT + 1))
-          [ "$MACOS_STATUS" == "failed" ] && FAILED_COUNT=$((FAILED_COUNT + 1))
-          
-          echo "📈 上传成功: $UPLOADED_COUNT 个平台"
-          echo "⏭️  跳过上传: $SKIPPED_COUNT 个平台"
-          echo "❌ 上传失败: $FAILED_COUNT 个平台"
-          
+
           if [ "$CHECK_STATUS" == "failure" ]; then
             echo "❌ 所有构建都失败，未创建 Gitee Release"
             exit 1
-          elif [ $UPLOADED_COUNT -eq 0 ] && [ "$SKIPPED_COUNT" -gt 0 ] && [ "$FAILED_COUNT" -eq 0 ] && [ "$RELEASE_STATUS" == "success" ]; then
-            echo "⚠️  Gitee Release 已创建，但所有附件都因大小限制被跳过"
-          elif [ $UPLOADED_COUNT -eq 0 ] && [ "$FAILED_COUNT" -gt 0 ] && [ "$RELEASE_STATUS" == "success" ]; then
-            echo "⚠️  Gitee Release 已创建，但附件上传全部失败"
-          elif [ $UPLOADED_COUNT -gt 0 ]; then
-            echo "✅ Gitee Release 创建成功，已上传 $UPLOADED_COUNT 个平台的文件"
           fi
+
+          if [ "$VERIFY_STATUS" == "failure" ] || [ "$RELEASE_STATUS" == "failure" ] || \
+             [ "$PORTABLE_STATUS" == "failure" ] || [ "$EXE_STATUS" == "failure" ] || [ "$MACOS_STATUS" == "failure" ]; then
+            echo "❌ Gitee Release 流程存在失败步骤"
+            exit 1
+          fi
+
+          echo "✅ Gitee Release 创建成功，附件上传完成"

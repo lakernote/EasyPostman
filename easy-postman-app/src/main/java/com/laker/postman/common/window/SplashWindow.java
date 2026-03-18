@@ -1,14 +1,10 @@
 package com.laker.postman.common.window;
 
 import com.formdev.flatlaf.FlatLaf;
-import com.laker.postman.common.SingletonFactory;
-import com.laker.postman.common.constants.AppConstants;
 import com.laker.postman.common.constants.Icons;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.frame.MainFrame;
-import com.laker.postman.ioc.BeanFactory;
-import com.laker.postman.plugin.runtime.PluginRuntime;
-import com.laker.postman.service.UpdateService;
+import com.laker.postman.startup.StartupCoordinator;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -274,33 +270,38 @@ public class SplashWindow extends JFrame {
         }
     }
 
-    public void initMainFrame() {
+    public void initMainFrame(StartupCoordinator startupCoordinator) {
         SwingWorker<MainFrame, String> worker = new SwingWorker<>() {
             @Override
             protected MainFrame doInBackground() {
                 long start = System.currentTimeMillis();
 
-                publish(MessageKeys.SPLASH_STATUS_STARTING);
-                setProgress(10);
-                BeanFactory.init(AppConstants.BASE_PACKAGE);
-
-                publish(MessageKeys.SPLASH_STATUS_LOADING_PLUGINS);
-                setProgress(20);
-                PluginRuntime.initialize();
-
-                publish(MessageKeys.SPLASH_STATUS_LOADING_MAIN);
-                setProgress(45);
-                MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
-
-                publish(MessageKeys.SPLASH_STATUS_INITIALIZING);
-                setProgress(75);
-                mainFrame.initComponents();
-
-                publish(MessageKeys.SPLASH_STATUS_READY);
-                setProgress(100);
-
-                ensureMinimumDisplayTime(start);
-                return mainFrame;
+                try {
+                    MainFrame mainFrame = startupCoordinator.prepareMainFrame(stage -> {
+                        switch (stage) {
+                            case STARTING -> {
+                                publish(MessageKeys.SPLASH_STATUS_STARTING);
+                                setProgress(10);
+                            }
+                            case LOADING_PLUGINS -> {
+                                publish(MessageKeys.SPLASH_STATUS_LOADING_PLUGINS);
+                                setProgress(20);
+                            }
+                            case LOADING_MAIN -> {
+                                publish(MessageKeys.SPLASH_STATUS_LOADING_MAIN);
+                                setProgress(45);
+                            }
+                            case READY -> {
+                                publish(MessageKeys.SPLASH_STATUS_READY);
+                                setProgress(100);
+                            }
+                        }
+                    });
+                    ensureMinimumDisplayTime(start);
+                    return mainFrame;
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to prepare main frame", e);
+                }
             }
 
             @Override
@@ -313,20 +314,20 @@ public class SplashWindow extends JFrame {
 
             @Override
             protected void done() {
-                SwingUtilities.invokeLater(() -> {
-                    try {
-                        if (isDisposed) return;
-
-                        setStatus(MessageKeys.SPLASH_STATUS_DONE);
-                        MainFrame mainFrame = get();
-
-                        // 启动渐隐动画关闭 SplashWindow
-                        startFadeOutAnimation(mainFrame);
-
-                    } catch (Exception e) {
-                        handleMainFrameLoadError(e);
+                try {
+                    if (isDisposed) {
+                        return;
                     }
-                });
+
+                    setStatus(MessageKeys.SPLASH_STATUS_DONE);
+                    MainFrame mainFrame = get();
+
+                    // 启动渐隐动画关闭 SplashWindow
+                    startFadeOutAnimation(mainFrame, startupCoordinator);
+
+                } catch (Exception e) {
+                    handleMainFrameLoadError(e);
+                }
             }
         };
         worker.execute();
@@ -370,20 +371,13 @@ public class SplashWindow extends JFrame {
     /**
      * 启动渐隐动画
      */
-    private void startFadeOutAnimation(MainFrame mainFrame) {
+    private void startFadeOutAnimation(MainFrame mainFrame, StartupCoordinator startupCoordinator) {
         if (isDisposed) return;
 
         // 在开始渐隐动画之前就显示主窗口，实现重叠效果
-        SwingUtilities.invokeLater(() -> {
-            if (mainFrame != null) {
-                mainFrame.setVisible(true);
-                // 确保主窗口在前面
-                mainFrame.toFront();
-                mainFrame.requestFocus();
-            }
-        });
+        startupCoordinator.showMainFrame(mainFrame);
 
-        fadeOutListener = createFadeOutListener();
+        fadeOutListener = createFadeOutListener(startupCoordinator);
         fadeOutTimer = new Timer(FADE_TIMER_DELAY, fadeOutListener);
         fadeOutTimer.start();
     }
@@ -391,7 +385,7 @@ public class SplashWindow extends JFrame {
     /**
      * 创建渐隐监听器
      */
-    private ActionListener createFadeOutListener() {
+    private ActionListener createFadeOutListener(StartupCoordinator startupCoordinator) {
         return e -> {
             if (isDisposed) {
                 stopFadeOutAnimation();
@@ -399,7 +393,7 @@ public class SplashWindow extends JFrame {
             }
 
             try {
-                processFadeOutStep();
+                processFadeOutStep(startupCoordinator);
             } catch (Exception ex) {
                 handleFadeOutError(ex);
             }
@@ -409,41 +403,22 @@ public class SplashWindow extends JFrame {
     /**
      * 处理渐隐步骤
      */
-    private void processFadeOutStep() {
+    private void processFadeOutStep(StartupCoordinator startupCoordinator) {
         float opacity = getOpacity();
         if (opacity > MIN_OPACITY) {
             setOpacity(Math.max(0f, opacity - FADE_STEP));
         } else {
-            completeFadeOut();
+            completeFadeOut(startupCoordinator);
         }
     }
 
     /**
      * 完成渐隐效果
      */
-    private void completeFadeOut() {
+    private void completeFadeOut(StartupCoordinator startupCoordinator) {
         stopFadeOutAnimation();
         disposeSafely();
-        // 延迟启动后台更新检查，避免与主窗口初始化竞争资源
-        scheduleBackgroundUpdateCheck();
-    }
-
-    /**
-     * 延迟调度后台更新检查
-     * 在主窗口完全稳定后延迟启动，提升用户体验
-     */
-    private void scheduleBackgroundUpdateCheck() {
-        Timer delayTimer = new Timer(2000, e -> {
-            try {
-                BeanFactory.getBean(UpdateService.class).checkUpdateOnStartup();
-                log.debug("Background update check scheduled and started after main window stabilized");
-            } catch (Exception ex) {
-                log.warn("Failed to start background update check", ex);
-                // 异常不影响主程序使用
-            }
-        });
-        delayTimer.setRepeats(false);
-        delayTimer.start();
+        startupCoordinator.scheduleBackgroundUpdateCheck();
     }
 
     /**

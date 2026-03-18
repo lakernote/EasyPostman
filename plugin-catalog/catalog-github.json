@@ -1,6 +1,6 @@
 {
   "name": "EasyPostman Official Plugin Catalog (GitHub)",
-  "generatedAt": "2026-03-18T15:04:15Z",
+  "generatedAt": "2026-03-18T15:22:25Z",
   "plugins": [
     {
       "id": "plugin-client-cert",
@@ -8,6 +8,14 @@
       "description": "Client certificate management and mTLS key material loading.",
       "homepage": "https://github.com/lakernote/EasyPostman",
       "releases": [
+        {
+          "version": "5.3.18",
+          "downloadUrl": "https://github.com/lakernote/EasyPostman/releases/download/plugin-client-cert-v5.3.18/easy-postman-5.3.18-plugin-client-cert.jar",
+          "sha256": "81222931470b88aeff5f6db97d06e906cece30bd4629227fe7180690cc0ef130",
+          "minAppVersion": "5.3.18",
+          "minPlatformVersion": "1.0.0",
+          "maxPlatformVersion": "1.0.0"
+        },
         {
           "version": "5.3.16",
           "downloadUrl": "https://github.com/lakernote/EasyPostman/releases/download/plugin-client-cert-v5.3.16/easy-postman-5.3.16-plugin-client-cert.jar",

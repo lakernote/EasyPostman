@@ -165,6 +165,16 @@
             <artifactId>imageio-webp</artifactId>
             <version>${twelvemonkeys.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.eclipse.jgit</groupId>
+            <artifactId>org.eclipse.jgit</artifactId>
+            <version>${org.eclipse.jgit.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jgit</groupId>
+            <artifactId>org.eclipse.jgit.ssh.apache</artifactId>
+            <version>${org.eclipse.jgit.version}</version>
+        </dependency>
     </dependencies>
 
     <build>

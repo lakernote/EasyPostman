@@ -25,17 +25,6 @@
       "maxPlatformVersion": "1.0.0"
     },
     {
-      "id": "plugin-git",
-      "name": "Git Plugin",
-      "version": "5.3.16",
-      "description": "Git workspace operations, history and conflict checks powered by JGit.",
-      "downloadUrl": "https://github.com/lakernote/easy-postman/releases/download/plugin-git-v5.3.16/easy-postman-5.3.16-plugin-git.jar",
-      "homepage": "https://github.com/lakernote/easy-postman",
-      "sha256": "",
-      "minPlatformVersion": "1.0.0",
-      "maxPlatformVersion": "1.0.0"
-    },
-    {
       "id": "plugin-decompiler",
       "name": "Decompiler Plugin",
       "version": "5.3.16",

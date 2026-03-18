@@ -19,7 +19,7 @@
         这里放“官方插件”本体：
         - plugin-manager：安装/卸载/目录与市场门面
         - plugin-redis / plugin-kafka：外部中间件能力插件
-        - plugin-decompiler / plugin-git：重功能可选插件
+        - plugin-decompiler：重功能可选插件
      -->
     <modules>
         <module>plugin-manager</module>
@@ -27,6 +27,5 @@
         <module>plugin-redis</module>
         <module>plugin-kafka</module>
         <module>plugin-decompiler</module>
-        <module>plugin-git</module>
     </modules>
 </project>

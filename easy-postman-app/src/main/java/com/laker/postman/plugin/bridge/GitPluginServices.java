@@ -1,24 +1,19 @@
 package com.laker.postman.plugin.bridge;
 
-import com.laker.postman.plugin.runtime.PluginRuntime;
+import com.laker.postman.plugin.git.GitWorkspacePluginService;
 
 public final class GitPluginServices {
 
-    private static final String MISSING_MESSAGE =
-            "Git plugin is not installed. Open Plugin Manager and install easy-postman-plugin-git first.";
+    private static final GitPluginService BUILT_IN_SERVICE = new GitWorkspacePluginService();
 
     private GitPluginServices() {
     }
 
     public static boolean isGitPluginInstalled() {
-        return PluginRuntime.getRegistry().getService(GitPluginService.class) != null;
+        return true;
     }
 
     public static GitPluginService requireGitService() {
-        GitPluginService service = PluginRuntime.getRegistry().getService(GitPluginService.class);
-        if (service == null) {
-            throw new IllegalStateException(MISSING_MESSAGE);
-        }
-        return service;
+        return BUILT_IN_SERVICE;
     }
 }

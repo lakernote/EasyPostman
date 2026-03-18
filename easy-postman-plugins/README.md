@@ -5,7 +5,6 @@
 - `plugin-manager`: catalog 解析、在线/离线安装、插件管理门面
 - `plugin-redis`: Redis 插件
 - `plugin-kafka`: Kafka 插件
-- `plugin-git`: Git 工作区插件
 - `plugin-decompiler`: Java 反编译插件
 
 共享平台层仍放在根目录：

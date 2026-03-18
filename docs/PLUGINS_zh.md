@@ -27,7 +27,6 @@ easy-postman-parent
     ├── plugin-manager
     ├── plugin-redis
     ├── plugin-kafka
-    ├── plugin-git
     ├── plugin-decompiler
     └── plugin-client-cert
 ```

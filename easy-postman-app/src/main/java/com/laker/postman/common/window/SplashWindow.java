@@ -2,12 +2,12 @@ package com.laker.postman.common.window;
 
 import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.constants.AppConstants;
 import com.laker.postman.common.constants.Icons;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.ioc.BeanFactory;
-import com.laker.postman.ioc.Component;
-import com.laker.postman.ioc.PostConstruct;
+import com.laker.postman.plugin.runtime.PluginRuntime;
 import com.laker.postman.service.UpdateService;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -22,13 +22,13 @@ import java.io.Serial;
 
 /**
  * 启动欢迎窗口（Splash Window），用于主程序加载时的过渡。
+ * 使用无边框 JFrame 代替 JWindow，降低 macOS 上首次创建顶层窗口的额外开销。
  */
 @Slf4j
-@Component
-public class SplashWindow extends JWindow {
+public class SplashWindow extends JFrame {
     @Serial
     private static final long serialVersionUID = 1L; // 添加序列化ID
-    public static final int MIN_TIME = 1000; // 最小显示时间，避免闪屏
+    public static final int MIN_TIME = 350; // 最小显示时间，避免闪屏但不过度拖慢启动
     private static final float FADE_STEP = 0.08f; // 渐隐步长
     private static final float MIN_OPACITY = 0.05f; // 最小透明度
     private static final int FADE_TIMER_DELAY = 15; // 渐隐定时器延迟
@@ -38,15 +38,18 @@ public class SplashWindow extends JWindow {
     private transient ActionListener fadeOutListener; // 渐隐监听器，用于防止内存泄漏
     private volatile boolean isDisposed = false; // 标记窗口是否已释放
 
+    public SplashWindow() {
+        super();
+        setUndecorated(true);
+        setResizable(false);
+        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+    }
 
     /**
-     * Bean 初始化方法 - 在依赖注入完成后自动调用
-     * 在 EDT 线程中初始化 UI 组件
+     * 在 EDT 线程中初始化 UI 组件。
      */
-    @PostConstruct
     public void init() {
         try {
-            // 确保在 EDT 线程中初始化 UI
             if (SwingUtilities.isEventDispatchThread()) {
                 initUI();
             } else {
@@ -79,15 +82,11 @@ public class SplashWindow extends JWindow {
     private JPanel createContentPanel() {
         JPanel content = getJPanel();
 
-        // Logo
         content.add(createLogoPanel(), BorderLayout.CENTER);
 
-        // 应用信息
         content.add(createInfoPanel(), BorderLayout.NORTH);
 
-        // 状态面板
         content.add(createStatusPanel(), BorderLayout.SOUTH);
-
         return content;
     }
 
@@ -191,7 +190,6 @@ public class SplashWindow extends JWindow {
         setSize(340, 250); // 设置窗口大小
         setLocationRelativeTo(null);  // 居中显示
 
-        // 安全设置透明度和置顶
         setupWindowProperties();
 
         setVisible(true); // 显示窗口
@@ -282,21 +280,26 @@ public class SplashWindow extends JWindow {
             protected MainFrame doInBackground() {
                 long start = System.currentTimeMillis();
 
+                publish(MessageKeys.SPLASH_STATUS_STARTING);
+                setProgress(10);
+                BeanFactory.init(AppConstants.BASE_PACKAGE);
+
+                publish(MessageKeys.SPLASH_STATUS_LOADING_PLUGINS);
+                setProgress(20);
+                PluginRuntime.initialize();
+
                 publish(MessageKeys.SPLASH_STATUS_LOADING_MAIN);
-                setProgress(30);
+                setProgress(45);
                 MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
 
                 publish(MessageKeys.SPLASH_STATUS_INITIALIZING);
-                setProgress(60);
+                setProgress(75);
                 mainFrame.initComponents();
 
                 publish(MessageKeys.SPLASH_STATUS_READY);
                 setProgress(100);
 
-                long cost = System.currentTimeMillis() - start;
-                log.info("main frame initComponents cost: {} ms", cost);
-
-                ensureMinimumDisplayTime(cost);
+                ensureMinimumDisplayTime(start);
                 return mainFrame;
             }
 
@@ -332,14 +335,17 @@ public class SplashWindow extends JWindow {
     /**
      * 确保最小显示时间
      */
-    private void ensureMinimumDisplayTime(long cost) {
-        if (cost < MIN_TIME) {
-            try {
-                Thread.sleep(MIN_TIME - cost);
-            } catch (InterruptedException interruptedException) {
-                Thread.currentThread().interrupt(); // 恢复中断状态
-                log.warn("Thread interrupted while sleeping", interruptedException);
-            }
+    private void ensureMinimumDisplayTime(long startTimeMillis) {
+        long elapsed = System.currentTimeMillis() - startTimeMillis;
+        long remaining = MIN_TIME - elapsed;
+        if (remaining <= 0) {
+            return;
+        }
+        try {
+            Thread.sleep(remaining);
+        } catch (InterruptedException interruptedException) {
+            Thread.currentThread().interrupt(); // 恢复中断状态
+            log.warn("Thread interrupted while sleeping", interruptedException);
         }
     }
 

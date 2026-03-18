@@ -856,33 +856,9 @@ jobs:
             RELEASE_BODY="EasyPostman ${VERSION} 发布版本，支持 Windows、macOS 和 Linux。"
           fi
           
-          # 拼接 GitHub Release 下载地址（超过 100MB 的文件无法上传 Gitee，请前往 GitHub 下载）
-          GITHUB_RELEASE_URL="https://github.com/lakernote/easy-postman/releases/tag/${TAG_NAME}"
-          GITHUB_ASSETS_BASE="https://github.com/lakernote/easy-postman/releases/download/${TAG_NAME}"
-          
           # 把 body 写入临时文件，方便处理特殊字符
           BODY_FILE="/tmp/release_body.txt"
           printf '%s\n' "${RELEASE_BODY}" > "$BODY_FILE"
-          printf '\n---\n\n' >> "$BODY_FILE"
-          printf '## GitHub 下载地址（部分大文件仅在 GitHub 提供）\n\n' >> "$BODY_FILE"
-          printf 'Gitee 单文件上传限制为 100MB，超过限制的安装包请前往 GitHub Release 下载：\n' >> "$BODY_FILE"
-          printf '%s\n\n' "${GITHUB_RELEASE_URL}" >> "$BODY_FILE"
-          printf '| 平台 | 文件 | 链接 |\n' >> "$BODY_FILE"
-          printf '|------|------|------|\n' >> "$BODY_FILE"
-          printf '| Windows 绿色版 (x64) | EasyPostman-%s-windows-x64-portable.zip | [下载](%s/EasyPostman-%s-windows-x64-portable.zip) |\n' \
-            "${VERSION}" "${GITHUB_ASSETS_BASE}" "${VERSION}" >> "$BODY_FILE"
-          printf '| Windows 安装包 (x64) | EasyPostman-%s-windows-x64.exe | [下载](%s/EasyPostman-%s-windows-x64.exe) |\n' \
-            "${VERSION}" "${GITHUB_ASSETS_BASE}" "${VERSION}" >> "$BODY_FILE"
-          printf '| macOS Apple Silicon (arm64) | EasyPostman-%s-macos-arm64.dmg | [下载](%s/EasyPostman-%s-macos-arm64.dmg) |\n' \
-            "${VERSION}" "${GITHUB_ASSETS_BASE}" "${VERSION}" >> "$BODY_FILE"
-          printf '| macOS Intel (x86_64) | EasyPostman-%s-macos-x86_64.dmg | [下载](%s/EasyPostman-%s-macos-x86_64.dmg) |\n' \
-            "${VERSION}" "${GITHUB_ASSETS_BASE}" "${VERSION}" >> "$BODY_FILE"
-          printf '| 跨平台 JAR | easy-postman-%s.jar | [下载](%s/easy-postman-%s.jar) |\n' \
-            "${VERSION}" "${GITHUB_ASSETS_BASE}" "${VERSION}" >> "$BODY_FILE"
-          printf '| Ubuntu DEB | easypostman_%s_amd64.deb | [下载](%s/easypostman_%s_amd64.deb) |\n' \
-            "${VERSION}" "${GITHUB_ASSETS_BASE}" "${VERSION}" >> "$BODY_FILE"
-          
-          RELEASE_BODY=$(cat "$BODY_FILE")
 
           echo "🚀 Creating Gitee Release for tag: $TAG_NAME"
           
@@ -969,6 +945,8 @@ jobs:
     name: Upload Windows Portable to Gitee（上传 Windows 绿色版到 Gitee）
     if: (github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')) && github.event_name == 'release' && needs.build-windows-portable.result == 'success'
     needs: [ create-gitee-release, build-windows-portable ]
+    outputs:
+      upload_status: ${{ steps.upload.outputs.upload_status }}
     runs-on: ubuntu-latest
     continue-on-error: true
 
@@ -980,13 +958,15 @@ jobs:
           path: artifacts
 
       - name: Upload Windows Portable to Gitee（上传 Windows 绿色版到 Gitee）
+        id: upload
         run: |
           RELEASE_ID="${{ needs.create-gitee-release.outputs.release_id }}"
           FILE=$(find artifacts -name "*-portable.zip" | head -n 1)
           
           if [ -z "$FILE" ]; then
             echo "❌ Windows Portable ZIP file not found!"
-            exit 1
+            echo "upload_status=failed" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
           
           # 检查文件大小（单位：字节），超过 100MB 则跳过上传
@@ -996,7 +976,7 @@ jobs:
           
           if [ "$FILE_SIZE" -gt 104857600 ]; then
             echo "⚠️ File size ${FILE_SIZE_MB} MB exceeds Gitee 100MB limit, skipping upload."
-            echo "💡 Please download from GitHub Release (link already added to Gitee release body)."
+            echo "upload_status=skipped_too_large" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           
@@ -1010,6 +990,7 @@ jobs:
               -F "access_token=${{ secrets.GITEE_TOKEN }}" \
               -F "file=@$FILE"; then
               echo "✅ Windows Portable uploaded successfully!"
+              echo "upload_status=uploaded" >> "$GITHUB_OUTPUT"
               exit 0
             else
               RETRY_COUNT=$((RETRY_COUNT + 1))
@@ -1018,13 +999,16 @@ jobs:
           done
           
           echo "❌ Failed to upload Windows Portable after $MAX_RETRIES attempts"
-          exit 1
+          echo "upload_status=failed" >> "$GITHUB_OUTPUT"
+          exit 0
 
   # Windows EXE 上传到 Gitee
   sync-windows-exe-to-gitee:
     name: Upload Windows EXE to Gitee（上传 Windows EXE 到 Gitee）
     if: (github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')) && github.event_name == 'release' && needs.build-windows-exe.result == 'success'
     needs: [ create-gitee-release, build-windows-exe ]
+    outputs:
+      upload_status: ${{ steps.upload.outputs.upload_status }}
     runs-on: ubuntu-latest
     continue-on-error: true
 
@@ -1036,13 +1020,15 @@ jobs:
           path: artifacts
 
       - name: Upload Windows EXE to Gitee（上传 Windows EXE 到 Gitee）
+        id: upload
         run: |
           RELEASE_ID="${{ needs.create-gitee-release.outputs.release_id }}"
           FILE=$(find artifacts -name "*.exe" | head -n 1)
           
           if [ -z "$FILE" ]; then
             echo "❌ Windows EXE file not found!"
-            exit 1
+            echo "upload_status=failed" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
           
           # 检查文件大小（单位：字节），超过 100MB 则跳过上传
@@ -1052,7 +1038,7 @@ jobs:
           
           if [ "$FILE_SIZE" -gt 104857600 ]; then
             echo "⚠️ File size ${FILE_SIZE_MB} MB exceeds Gitee 100MB limit, skipping upload."
-            echo "💡 Please download from GitHub Release (link already added to Gitee release body)."
+            echo "upload_status=skipped_too_large" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           
@@ -1066,6 +1052,7 @@ jobs:
               -F "access_token=${{ secrets.GITEE_TOKEN }}" \
               -F "file=@$FILE"; then
               echo "✅ Windows EXE uploaded successfully!"
+              echo "upload_status=uploaded" >> "$GITHUB_OUTPUT"
               exit 0
             else
               RETRY_COUNT=$((RETRY_COUNT + 1))
@@ -1074,13 +1061,16 @@ jobs:
           done
           
           echo "❌ Failed to upload Windows EXE after $MAX_RETRIES attempts"
-          exit 1
+          echo "upload_status=failed" >> "$GITHUB_OUTPUT"
+          exit 0
 
   # macOS ARM 上传到 Gitee
   sync-macos-to-gitee:
     name: Upload macOS ARM to Gitee（上传 macOS ARM 到 Gitee）
     if: (github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')) && github.event_name == 'release' && needs.build-macos-arm.result == 'success'
     needs: [ create-gitee-release, build-macos-arm ]
+    outputs:
+      upload_status: ${{ steps.upload.outputs.upload_status }}
     runs-on: ubuntu-latest
     continue-on-error: true
 
@@ -1092,13 +1082,15 @@ jobs:
           path: artifacts
 
       - name: Upload macOS ARM to Gitee（上传 macOS ARM 到 Gitee）
+        id: upload
         run: |
           RELEASE_ID="${{ needs.create-gitee-release.outputs.release_id }}"
           FILE=$(find artifacts -name "*-macos-arm64.dmg" | head -n 1)
           
           if [ -z "$FILE" ]; then
             echo "❌ macOS ARM DMG file not found!"
-            exit 1
+            echo "upload_status=failed" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
           
           # 检查文件大小（单位：字节），超过 100MB 则跳过上传
@@ -1108,7 +1100,7 @@ jobs:
           
           if [ "$FILE_SIZE" -gt 104857600 ]; then
             echo "⚠️ File size ${FILE_SIZE_MB} MB exceeds Gitee 100MB limit, skipping upload."
-            echo "💡 Please download from GitHub Release (link already added to Gitee release body)."
+            echo "upload_status=skipped_too_large" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           
@@ -1122,6 +1114,7 @@ jobs:
               -F "access_token=${{ secrets.GITEE_TOKEN }}" \
               -F "file=@$FILE"; then
               echo "✅ macOS ARM uploaded successfully!"
+              echo "upload_status=uploaded" >> "$GITHUB_OUTPUT"
               exit 0
             else
               RETRY_COUNT=$((RETRY_COUNT + 1))
@@ -1130,7 +1123,8 @@ jobs:
           done
           
           echo "❌ Failed to upload macOS ARM after $MAX_RETRIES attempts"
-          exit 1
+          echo "upload_status=failed" >> "$GITHUB_OUTPUT"
+          exit 0
 
   # 汇总结果
   sync-summary:
@@ -1160,32 +1154,38 @@ jobs:
           
           echo ""
           echo "已同步到 Gitee 的文件："
-          echo "  📦 Windows Portable (绿色版) - ${{ needs.sync-windows-portable-to-gitee.result }}"
-          echo "  🪟 Windows EXE (安装包) - ${{ needs.sync-windows-exe-to-gitee.result }}"
-          echo "  🍎 macOS Apple Silicon (ARM64) - ${{ needs.sync-macos-to-gitee.result }}"
+          PORTABLE_STATUS="${{ needs.sync-windows-portable-to-gitee.outputs.upload_status || 'not_run' }}"
+          EXE_STATUS="${{ needs.sync-windows-exe-to-gitee.outputs.upload_status || 'not_run' }}"
+          MACOS_STATUS="${{ needs.sync-macos-to-gitee.outputs.upload_status || 'not_run' }}"
+          echo "  📦 Windows Portable (绿色版) - $PORTABLE_STATUS"
+          echo "  🪟 Windows EXE (安装包) - $EXE_STATUS"
+          echo "  🍎 macOS Apple Silicon (ARM64) - $MACOS_STATUS"
           echo ""
-          echo "💡 注意：超过 100MB 的文件会自动跳过 Gitee 上传（Gitee 限制），"
-          echo "   但 Gitee Release 说明中已包含 GitHub 各平台下载链接，用户可直接跳转 GitHub 下载。"
-          echo "💡 其他平台（Standalone JAR、macOS Intel、Ubuntu DEB）仅在 GitHub Release 提供"
-          echo ""
           
-          PORTABLE_STATUS="${{ needs.sync-windows-portable-to-gitee.result }}"
-          EXE_STATUS="${{ needs.sync-windows-exe-to-gitee.result }}"
-          MACOS_STATUS="${{ needs.sync-macos-to-gitee.result }}"
+          UPLOADED_COUNT=0
+          SKIPPED_COUNT=0
+          FAILED_COUNT=0
+          [ "$PORTABLE_STATUS" == "uploaded" ] && UPLOADED_COUNT=$((UPLOADED_COUNT + 1))
+          [ "$EXE_STATUS" == "uploaded" ] && UPLOADED_COUNT=$((UPLOADED_COUNT + 1))
+          [ "$MACOS_STATUS" == "uploaded" ] && UPLOADED_COUNT=$((UPLOADED_COUNT + 1))
+          [ "$PORTABLE_STATUS" == "skipped_too_large" ] && SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
+          [ "$EXE_STATUS" == "skipped_too_large" ] && SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
+          [ "$MACOS_STATUS" == "skipped_too_large" ] && SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
+          [ "$PORTABLE_STATUS" == "failed" ] && FAILED_COUNT=$((FAILED_COUNT + 1))
+          [ "$EXE_STATUS" == "failed" ] && FAILED_COUNT=$((FAILED_COUNT + 1))
+          [ "$MACOS_STATUS" == "failed" ] && FAILED_COUNT=$((FAILED_COUNT + 1))
           
-          SUCCESS_COUNT=0
-          [ "$PORTABLE_STATUS" == "success" ] && SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
-          [ "$EXE_STATUS" == "success" ] && SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
-          [ "$MACOS_STATUS" == "success" ] && SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
-          
-          echo "📈 成功上传: $SUCCESS_COUNT 个平台"
+          echo "📈 上传成功: $UPLOADED_COUNT 个平台"
+          echo "⏭️  跳过上传: $SKIPPED_COUNT 个平台"
+          echo "❌ 上传失败: $FAILED_COUNT 个平台"
           
           if [ "$CHECK_STATUS" == "failure" ]; then
             echo "❌ 所有构建都失败，未创建 Gitee Release"
             exit 1
-          elif [ $SUCCESS_COUNT -eq 0 ] && [ "$RELEASE_STATUS" == "success" ]; then
-            echo "⚠️  Gitee Release 已创建，所有文件超过 100MB 限制或上传失败，请前往 GitHub Release 下载"
-            echo "🔗 GitHub Release: https://github.com/lakernote/easy-postman/releases/tag/${{ needs.create-gitee-release.outputs.tag_name }}"
-          elif [ $SUCCESS_COUNT -gt 0 ]; then
-            echo "✅ Gitee Release 创建成功，已上传 $SUCCESS_COUNT 个平台的文件"
+          elif [ $UPLOADED_COUNT -eq 0 ] && [ "$SKIPPED_COUNT" -gt 0 ] && [ "$FAILED_COUNT" -eq 0 ] && [ "$RELEASE_STATUS" == "success" ]; then
+            echo "⚠️  Gitee Release 已创建，但所有附件都因大小限制被跳过"
+          elif [ $UPLOADED_COUNT -eq 0 ] && [ "$FAILED_COUNT" -gt 0 ] && [ "$RELEASE_STATUS" == "success" ]; then
+            echo "⚠️  Gitee Release 已创建，但附件上传全部失败"
+          elif [ $UPLOADED_COUNT -gt 0 ]; then
+            echo "✅ Gitee Release 创建成功，已上传 $UPLOADED_COUNT 个平台的文件"
           fi

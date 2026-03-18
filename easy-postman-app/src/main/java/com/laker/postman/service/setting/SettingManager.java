@@ -367,6 +367,22 @@ public class SettingManager {
     }
 
     /**
+     * 是否在启动时显示欢迎画面
+     */
+    public static boolean isStartupSplashEnabled() {
+        String val = props.getProperty("startup_splash_enabled");
+        if (val != null) {
+            return Boolean.parseBoolean(val);
+        }
+        return true; // 默认开启
+    }
+
+    public static void setStartupSplashEnabled(boolean enabled) {
+        props.setProperty("startup_splash_enabled", String.valueOf(enabled));
+        save();
+    }
+
+    /**
      * 是否默认展开侧边栏
      */
     public static boolean isSidebarExpanded() {

@@ -727,6 +727,7 @@ public final class MessageKeys {
     // ============ 应用相关 ============
     public static final String APP_NAME = "app.name";
     public static final String SPLASH_STATUS_STARTING = "splash.status.starting";
+    public static final String SPLASH_STATUS_LOADING_PLUGINS = "splash.status.loading_plugins";
     public static final String SPLASH_STATUS_LOADING_MAIN = "splash.status.loading_main";
     public static final String SPLASH_STATUS_INITIALIZING = "splash.status.initializing";
     public static final String SPLASH_STATUS_READY = "splash.status.ready";
@@ -1000,6 +1001,8 @@ public final class MessageKeys {
     public static final String SETTINGS_GENERAL_MAX_OPENED_REQUESTS_TOOLTIP = "settings.general.max_opened_requests.tooltip";
     public static final String SETTINGS_GENERAL_AUTO_FORMAT_RESPONSE = "settings.general.auto_format_response";
     public static final String SETTINGS_GENERAL_AUTO_FORMAT_RESPONSE_TOOLTIP = "settings.general.auto_format_response.tooltip";
+    public static final String SETTINGS_GENERAL_STARTUP_SPLASH = "settings.general.startup_splash";
+    public static final String SETTINGS_GENERAL_STARTUP_SPLASH_TOOLTIP = "settings.general.startup_splash.tooltip";
     public static final String SETTINGS_GENERAL_SIDEBAR_EXPANDED = "settings.general.sidebar_expanded";
     public static final String SETTINGS_GENERAL_SIDEBAR_EXPANDED_TOOLTIP = "settings.general.sidebar_expanded.tooltip";
     public static final String SETTINGS_GENERAL_SIDEBAR_TABS = "settings.general.sidebar_tabs";

@@ -37,6 +37,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
     private JTextField maxHistoryCountField;
     private JTextField maxOpenedRequestsCountField;
     private JCheckBox autoFormatResponseCheckBox;
+    private JCheckBox startupSplashCheckBox;
     private JCheckBox sidebarExpandedCheckBox;
     private JComboBox<String> notificationPositionComboBox;
     private JLabel downloadProgressDialogThresholdLabel;
@@ -132,6 +133,17 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
                 I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_AUTO_FORMAT_RESPONSE_TOOLTIP)
         );
         generalSection.add(formatRow);
+        generalSection.add(createVerticalSpace(FIELD_SPACING));
+
+        startupSplashCheckBox = new JCheckBox(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_STARTUP_SPLASH),
+                SettingManager.isStartupSplashEnabled()
+        );
+        JPanel startupSplashRow = createCheckBoxRow(
+                startupSplashCheckBox,
+                I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_STARTUP_SPLASH_TOOLTIP)
+        );
+        generalSection.add(startupSplashRow);
         generalSection.add(createVerticalSpace(FIELD_SPACING));
 
         // 侧边栏展开设置
@@ -270,6 +282,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
         trackComponentValue(maxHistoryCountField);
         trackComponentValue(maxOpenedRequestsCountField);
         trackComponentValue(autoFormatResponseCheckBox);
+        trackComponentValue(startupSplashCheckBox);
         trackComponentValue(sidebarExpandedCheckBox);
         trackComponentValue(notificationPositionComboBox);
         trackComponentValue(fontNameComboBox);
@@ -694,6 +707,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
             SettingManager.setMaxHistoryCount(Integer.parseInt(maxHistoryCountField.getText().trim()));
             SettingManager.setMaxOpenedRequestsCount(Integer.parseInt(maxOpenedRequestsCountField.getText().trim()));
             SettingManager.setAutoFormatResponse(autoFormatResponseCheckBox.isSelected());
+            SettingManager.setStartupSplashEnabled(startupSplashCheckBox.isSelected());
 
             // 保存侧边栏展开设置并更新UI
             boolean oldSidebarExpanded = SettingManager.isSidebarExpanded();
@@ -744,6 +758,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
             trackComponentValue(maxHistoryCountField);
             trackComponentValue(maxOpenedRequestsCountField);
             trackComponentValue(autoFormatResponseCheckBox);
+            trackComponentValue(startupSplashCheckBox);
             trackComponentValue(sidebarExpandedCheckBox);
             trackComponentValue(notificationPositionComboBox);
             trackComponentValue(fontNameComboBox);

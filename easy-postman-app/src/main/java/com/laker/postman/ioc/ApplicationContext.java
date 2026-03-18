@@ -19,7 +19,6 @@ import java.util.jar.JarFile;
  */
 @Slf4j
 public class ApplicationContext {
-
     /**
      * 单例实例
      */
@@ -95,8 +94,6 @@ public class ApplicationContext {
                 log.error("Failed to scan package: {}", basePackage, e);
             }
         }
-        // 已注册的Bean数量
-        log.info("Total registered beans: [{}]", beanDefinitionMap.size());
     }
 
     /**
@@ -137,7 +134,8 @@ public class ApplicationContext {
                 if (entryName.endsWith(".class") && entryName.startsWith(packagePath)) {
                     String className = entryName.replace('/', '.').replace(".class", "");
                     try {
-                        Class<?> clazz = Class.forName(className);
+                        Class<?> clazz = Class.forName(className, false,
+                                Thread.currentThread().getContextClassLoader());
                         if (clazz.isAnnotationPresent(Component.class)) {
                             registerBean(clazz);
                         }
@@ -170,7 +168,8 @@ public class ApplicationContext {
                     } else if (f.getName().endsWith(".class")) {
                         String className = packageName + "." + f.getName().replace(".class", "");
                         try {
-                            Class<?> clazz = Class.forName(className);
+                            Class<?> clazz = Class.forName(className, false,
+                                    Thread.currentThread().getContextClassLoader());
                             if (clazz.isAnnotationPresent(Component.class)) {
                                 registerBean(clazz);
                             }
@@ -383,25 +382,19 @@ public class ApplicationContext {
         Class<?> beanClass = beanDefinition.getBeanClass();
 
         try {
-            // 1. 实例化Bean（仅创建对象，不注入依赖）
             Object instance = instantiateBean(beanClass);
 
-            // 2. 如果是单例Bean，提前暴露到三级缓存（解决循环依赖的关键）
             if (beanDefinition.isSingleton()) {
                 final Object finalInstance = instance;
-                // 将Bean工厂放入三级缓存
                 singletonFactories.put(beanName, () -> getEarlyBeanReference(beanName, finalInstance));
                 log.debug("Added bean factory to third-level cache for: {}", beanName);
             }
 
-            // 3. 属性注入（此时如果有循环依赖，会从三级缓存获取早期引用）
             injectFields(instance);
 
-            // 4. 调用初始化方法
             invokePostConstruct(instance);
             invokeInitializingBean(instance);
 
-            // 5. 保存销毁方法
             registerPreDestroyMethods(instance);
 
             log.debug("Created bean: {}", beanName);
@@ -713,5 +706,5 @@ public class ApplicationContext {
         singletonsCurrentlyInCreation.clear();
         log.info("ApplicationContext cleared");
     }
-}
 
+}

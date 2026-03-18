@@ -13,15 +13,7 @@ import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.jar.JarFile;
 import java.util.stream.Stream;
 
@@ -53,6 +45,8 @@ public final class PluginRuntime {
     private static final List<PluginFileInfo> LOADED_PLUGIN_FILES = new ArrayList<>();
     @Getter
     private static volatile boolean initialized = false;
+    private static volatile String cachedAppVersion;
+    private static volatile String cachedPlatformVersion;
 
     private PluginRuntime() {
     }
@@ -65,9 +59,11 @@ public final class PluginRuntime {
             if (initialized) {
                 return;
             }
-            // 先清理上一次退出时遗留的待卸载插件，再进行新一轮加载
             cleanupPendingUninstallPlugins();
-            for (PluginFileInfo pluginFile : resolveLoadCandidates()) {
+
+            List<PluginFileInfo> loadCandidates = resolveLoadCandidates();
+
+            for (PluginFileInfo pluginFile : loadCandidates) {
                 loadPluginJar(pluginFile.jarPath(), pluginFile.descriptor());
             }
             for (EasyPostmanPlugin plugin : LOADED_PLUGINS) {
@@ -78,7 +74,6 @@ public final class PluginRuntime {
                 }
             }
             initialized = true;
-            log.info("Plugin runtime initialized, loaded {} plugin(s)", LOADED_PLUGINS.size());
         }
     }
 
@@ -95,29 +90,51 @@ public final class PluginRuntime {
     }
 
     public static String getCurrentAppVersion() {
-        String version = PluginRuntime.class.getPackage().getImplementationVersion();
-        if (version != null && !version.isBlank()) {
+        String version = cachedAppVersion;
+        if (version != null) {
             return version;
         }
-        String pomVersion = resolvePomVersion(Paths.get("pom.xml"));
-        return pomVersion == null || pomVersion.isBlank() ? "dev" : pomVersion;
+        synchronized (PluginRuntime.class) {
+            if (cachedAppVersion != null) {
+                return cachedAppVersion;
+            }
+            String implementationVersion = PluginRuntime.class.getPackage().getImplementationVersion();
+            if (implementationVersion != null && !implementationVersion.isBlank()) {
+                cachedAppVersion = implementationVersion;
+            } else {
+                String pomVersion = resolvePomVersion(Paths.get("pom.xml"));
+                cachedAppVersion = pomVersion == null || pomVersion.isBlank() ? "dev" : pomVersion;
+            }
+            return cachedAppVersion;
+        }
     }
 
     public static String getCurrentPluginPlatformVersion() {
-        try (InputStream inputStream = PluginRuntime.class.getResourceAsStream(RUNTIME_PROPERTIES_RESOURCE)) {
-            if (inputStream != null) {
-                Properties properties = new Properties();
-                properties.load(inputStream);
-                String version = properties.getProperty(PLATFORM_VERSION_KEY);
-                if (version != null && !version.isBlank()) {
-                    return version.trim();
-                }
-            }
-        } catch (IOException ignored) {
+        String version = cachedPlatformVersion;
+        if (version != null) {
+            return version;
         }
-        // 本地开发或未打包场景下，从根 pom 回退读取平台版本，避免 compatibility 判断退化成 "dev"。
-        String pomValue = resolvePomProperty(Paths.get("pom.xml"), PLATFORM_VERSION_KEY);
-        return pomValue == null || pomValue.isBlank() ? "dev" : pomValue;
+        synchronized (PluginRuntime.class) {
+            if (cachedPlatformVersion != null) {
+                return cachedPlatformVersion;
+            }
+            try (InputStream inputStream = PluginRuntime.class.getResourceAsStream(RUNTIME_PROPERTIES_RESOURCE)) {
+                if (inputStream != null) {
+                    Properties properties = new Properties();
+                    properties.load(inputStream);
+                    String propertyVersion = properties.getProperty(PLATFORM_VERSION_KEY);
+                    if (propertyVersion != null && !propertyVersion.isBlank()) {
+                        cachedPlatformVersion = propertyVersion.trim();
+                        return cachedPlatformVersion;
+                    }
+                }
+            } catch (IOException ignored) {
+            }
+            // 本地开发或未打包场景下，从根 pom 回退读取平台版本，避免 compatibility 判断退化成 "dev"。
+            String pomValue = resolvePomProperty(Paths.get("pom.xml"), PLATFORM_VERSION_KEY);
+            cachedPlatformVersion = pomValue == null || pomValue.isBlank() ? "dev" : pomValue;
+            return cachedPlatformVersion;
+        }
     }
 
     public static Path getManagedPluginDir() {
@@ -150,8 +167,22 @@ public final class PluginRuntime {
                                                             String maxAppVersion,
                                                             String minPlatformVersion,
                                                             String maxPlatformVersion) {
-        String currentAppVersion = getCurrentAppVersion();
-        String currentPlatformVersion = getCurrentPluginPlatformVersion();
+        return evaluateCompatibility(
+                new RuntimeVersionInfo(getCurrentAppVersion(), getCurrentPluginPlatformVersion()),
+                minAppVersion,
+                maxAppVersion,
+                minPlatformVersion,
+                maxPlatformVersion
+        );
+    }
+
+    private static PluginCompatibility evaluateCompatibility(RuntimeVersionInfo runtimeVersionInfo,
+                                                             String minAppVersion,
+                                                             String maxAppVersion,
+                                                             String minPlatformVersion,
+                                                             String maxPlatformVersion) {
+        String currentAppVersion = runtimeVersionInfo.currentAppVersion();
+        String currentPlatformVersion = runtimeVersionInfo.currentPlatformVersion();
 
         // app 版本决定“这个宿主发行版是否允许安装”，platform 版本决定“这套插件 SPI 是否还能装配”。
         boolean appVersionCompatible = isVersionInRange(currentAppVersion, minAppVersion, maxAppVersion);
@@ -195,6 +226,8 @@ public final class PluginRuntime {
                 LOADED_PLUGIN_FILES.clear();
                 REGISTRY.clear();
                 initialized = false;
+                cachedAppVersion = null;
+                cachedPlatformVersion = null;
             }
         }
     }
@@ -269,11 +302,19 @@ public final class PluginRuntime {
     }
 
     private static List<PluginFileInfo> resolveLoadCandidates() {
+        RuntimeVersionInfo runtimeVersionInfo = new RuntimeVersionInfo(
+                getCurrentAppVersion(),
+                getCurrentPluginPlatformVersion()
+        );
+        PluginStateSnapshot pluginStateSnapshot = new PluginStateSnapshot(
+                getDisabledPluginIds(),
+                getPendingUninstallPluginIds()
+        );
         Map<String, PluginFileInfo> selected = new LinkedHashMap<>();
         for (Path pluginDir : resolvePluginDirs()) {
-            for (PluginFileInfo candidate : listPluginsFromDirectory(pluginDir)) {
+            for (PluginFileInfo candidate : listPluginsFromDirectory(pluginDir, pluginStateSnapshot, runtimeVersionInfo)) {
                 if (!candidate.enabled()) {
-                    if (isPluginPendingUninstall(candidate.descriptor().id())) {
+                    if (pluginStateSnapshot.pendingUninstallPluginIds().contains(candidate.descriptor().id())) {
                         log.info("Skip pending uninstall plugin: {} ({})", candidate.descriptor().id(), candidate.jarPath());
                         continue;
                     }
@@ -281,7 +322,11 @@ public final class PluginRuntime {
                     continue;
                 }
                 if (!candidate.compatible()) {
-                    PluginCompatibility compatibility = evaluateCompatibility(candidate.descriptor());
+                    PluginCompatibility compatibility = evaluateCompatibility(runtimeVersionInfo,
+                            candidate.descriptor().minAppVersion(),
+                            candidate.descriptor().maxAppVersion(),
+                            candidate.descriptor().minPlatformVersion(),
+                            candidate.descriptor().maxPlatformVersion());
                     log.warn("Skip incompatible plugin: {} requires app {}..{} and platform {}..{}, current app {}, current platform {}",
                             candidate.descriptor().id(),
                             emptyToWildcard(candidate.descriptor().minAppVersion()),
@@ -309,6 +354,14 @@ public final class PluginRuntime {
     }
 
     private static List<PluginFileInfo> listPluginsFromDirectory(Path pluginDir) {
+        return listPluginsFromDirectory(pluginDir,
+                new PluginStateSnapshot(getDisabledPluginIds(), getPendingUninstallPluginIds()),
+                new RuntimeVersionInfo(getCurrentAppVersion(), getCurrentPluginPlatformVersion()));
+    }
+
+    private static List<PluginFileInfo> listPluginsFromDirectory(Path pluginDir,
+                                                                 PluginStateSnapshot pluginStateSnapshot,
+                                                                 RuntimeVersionInfo runtimeVersionInfo) {
         if (pluginDir == null || !Files.isDirectory(pluginDir)) {
             return Collections.emptyList();
         }
@@ -320,8 +373,12 @@ public final class PluginRuntime {
                         try {
                             PluginDescriptor descriptor = inspectPluginJar(path);
                             if (descriptor != null) {
-                                boolean enabled = isPluginEnabled(descriptor.id());
-                                boolean compatible = evaluateCompatibility(descriptor).compatible();
+                                boolean enabled = isPluginEnabled(descriptor.id(), pluginStateSnapshot);
+                                boolean compatible = evaluateCompatibility(runtimeVersionInfo,
+                                        descriptor.minAppVersion(),
+                                        descriptor.maxAppVersion(),
+                                        descriptor.minPlatformVersion(),
+                                        descriptor.maxPlatformVersion()).compatible();
                                 plugins.add(new PluginFileInfo(descriptor, path, isLoaded(path), enabled, compatible));
                             }
                         } catch (IOException e) {
@@ -402,9 +459,10 @@ public final class PluginRuntime {
         if (pendingIds.isEmpty()) {
             return;
         }
+        List<PluginFileInfo> managedPluginFiles = getManagedPluginFiles();
 
         // 只清理托管安装目录里的副本，不碰 packages 里的本地插件包
-        for (PluginFileInfo info : getManagedPluginFiles()) {
+        for (PluginFileInfo info : managedPluginFiles) {
             if (!pendingIds.contains(info.descriptor().id())) {
                 continue;
             }
@@ -434,8 +492,16 @@ public final class PluginRuntime {
             LOADED_PLUGIN_FILES.clear();
             REGISTRY.clear();
             initialized = false;
+            cachedAppVersion = null;
+            cachedPlatformVersion = null;
             PluginRuntimePaths.resetForTests();
         }
+    }
+
+    private static boolean isPluginEnabled(String pluginId, PluginStateSnapshot pluginStateSnapshot) {
+        return pluginId != null
+                && !pluginStateSnapshot.disabledPluginIds().contains(pluginId)
+                && !pluginStateSnapshot.pendingUninstallPluginIds().contains(pluginId);
     }
 
     private static boolean isVersionInRange(String currentVersion, String minVersion, String maxVersion) {
@@ -499,6 +565,12 @@ public final class PluginRuntime {
             return null;
         }
         return xml.substring(contentStart, end).trim();
+    }
+
+    private record RuntimeVersionInfo(String currentAppVersion, String currentPlatformVersion) {
+    }
+
+    private record PluginStateSnapshot(Set<String> disabledPluginIds, Set<String> pendingUninstallPluginIds) {
     }
 
     private static final class PluginContextImpl implements PluginContext {

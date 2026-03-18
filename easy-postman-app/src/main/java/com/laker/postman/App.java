@@ -1,11 +1,15 @@
 package com.laker.postman;
 
 import com.formdev.flatlaf.util.SystemInfo;
+import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.AppConstants;
 import com.laker.postman.common.themes.SimpleThemeManager;
 import com.laker.postman.common.window.SplashWindow;
+import com.laker.postman.frame.MainFrame;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.plugin.runtime.PluginRuntime;
+import com.laker.postman.service.UpdateService;
+import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.ExceptionUtil;
 import com.laker.postman.util.FontManager;
 import com.laker.postman.util.I18nUtil;
@@ -21,13 +25,10 @@ import javax.swing.*;
  */
 @Slf4j
 public class App {
+    private static final int UPDATE_CHECK_DELAY_MS = 2000;
 
 
     public static void main(String[] args) {
-        // 0. 初始化 IOC 容器（在 EDT 之前，避免阻塞 UI）
-        BeanFactory.init(AppConstants.BASE_PACKAGE);
-        PluginRuntime.initialize();
-
         // 1. 配置平台特定的窗口装饰
         configurePlatformSpecificSettings();
 
@@ -73,12 +74,71 @@ public class App {
      * 初始化用户界面。
      */
     private static void initializeUI() {
-        // 注册图标字体
         IconFontSwing.register(FontAwesome.getIconFont());
 
-        // 显示启动画面并异步加载主窗口
-        SplashWindow splash = BeanFactory.getBean(SplashWindow.class);
+        if (!isSplashEnabled()) {
+            initializeMainFrameWithoutSplash();
+            return;
+        }
+
+        SplashWindow splash = new SplashWindow();
+        splash.init();
         splash.initMainFrame();
+    }
+
+    private static void initializeMainFrameWithoutSplash() {
+        SwingWorker<MainFrame, Void> worker = new SwingWorker<>() {
+            @Override
+            protected MainFrame doInBackground() {
+                BeanFactory.init(AppConstants.BASE_PACKAGE);
+
+                PluginRuntime.initialize();
+
+                MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
+                mainFrame.initComponents();
+                return mainFrame;
+            }
+
+            @Override
+            protected void done() {
+                SwingUtilities.invokeLater(() -> {
+                    try {
+                        MainFrame mainFrame = get();
+                        mainFrame.setVisible(true);
+                        mainFrame.toFront();
+                        mainFrame.requestFocus();
+                        scheduleBackgroundUpdateCheck();
+                    } catch (Exception e) {
+                        log.error("Failed to initialize main frame without splash", e);
+                        JOptionPane.showMessageDialog(
+                                null,
+                                I18nUtil.getMessage(MessageKeys.SPLASH_ERROR_LOAD_MAIN),
+                                I18nUtil.getMessage(MessageKeys.GENERAL_ERROR),
+                                JOptionPane.ERROR_MESSAGE
+                        );
+                        System.exit(1);
+                    }
+                });
+            }
+        };
+        worker.execute();
+    }
+
+    private static void scheduleBackgroundUpdateCheck() {
+        Timer delayTimer = new Timer(UPDATE_CHECK_DELAY_MS, e -> {
+            try {
+                BeanFactory.getBean(UpdateService.class).checkUpdateOnStartup();
+                log.debug("Background update check scheduled after main window became visible");
+            } catch (Exception ex) {
+                log.warn("Failed to start background update check", ex);
+            }
+        });
+        delayTimer.setRepeats(false);
+        delayTimer.start();
+    }
+
+    private static boolean isSplashEnabled() {
+        return SettingManager.isStartupSplashEnabled();
     }
 
     /**

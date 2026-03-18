@@ -1,21 +1,15 @@
 package com.laker.postman.plugin.runtime;
 
 import com.laker.postman.plugin.api.EasyPostmanPlugin;
-import com.laker.postman.plugin.api.PluginContext;
 import com.laker.postman.plugin.api.PluginDescriptor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
-import java.util.jar.JarFile;
-import java.util.stream.Stream;
 
 /**
  * 简单插件运行时：从本地 plugins 目录加载插件 jar。
@@ -30,14 +24,8 @@ import java.util.stream.Stream;
 @Slf4j
 public final class PluginRuntime {
 
-    private static final String PLUGIN_DESCRIPTOR_PREFIX = "META-INF/easy-postman/";
-    private static final String PLUGIN_DESCRIPTOR_SUFFIX = ".properties";
     private static final String RUNTIME_PROPERTIES_RESOURCE = "/META-INF/easy-postman/runtime.properties";
     private static final String PLATFORM_VERSION_KEY = "plugin.platform.version";
-    // 已禁用插件列表。禁用后默认在下次启动时不再加载。
-    private static final String DISABLED_PLUGIN_IDS_KEY = "plugin.disabledIds";
-    // 待卸载插件列表。主要用于已加载插件无法立即删除的场景，例如 Windows 文件锁。
-    private static final String PENDING_UNINSTALL_PLUGIN_IDS_KEY = "plugin.pendingUninstallIds";
     private static final PluginRegistry REGISTRY = new PluginRegistry();
     // 当前进程内已成功加载的插件实例、类加载器与文件信息
     private static final List<EasyPostmanPlugin> LOADED_PLUGINS = new ArrayList<>();
@@ -59,20 +47,27 @@ public final class PluginRuntime {
             if (initialized) {
                 return;
             }
+            // 启动时先处理上一次退出后遗留的“待卸载”插件文件，
+            // 这样后面的扫描结果才是干净的当前状态。
             cleanupPendingUninstallPlugins();
 
+            // 这里先做“选插件”而不是直接扫到什么就加载什么。
+            // 运行时会统一处理禁用、待卸载、兼容性和同 id 多版本择优。
             List<PluginFileInfo> loadCandidates = resolveLoadCandidates();
 
             for (PluginFileInfo pluginFile : loadCandidates) {
-                loadPluginJar(pluginFile.jarPath(), pluginFile.descriptor());
+                PluginLoader.loadPluginJar(
+                        pluginFile.jarPath(),
+                        pluginFile.descriptor(),
+                        REGISTRY,
+                        LOADED_PLUGINS,
+                        PLUGIN_CLASSLOADERS,
+                        LOADED_PLUGIN_FILES,
+                        PluginRuntime.class.getClassLoader()
+                );
             }
-            for (EasyPostmanPlugin plugin : LOADED_PLUGINS) {
-                try {
-                    plugin.onStart();
-                } catch (Exception e) {
-                    log.error("Failed to start plugin: {}", plugin.getClass().getName(), e);
-                }
-            }
+            // onLoad 负责注册扩展点，onStart 则表示“所有插件都注册完了，可以开始运行”。
+            PluginLoader.startPlugins(LOADED_PLUGINS);
             initialized = true;
         }
     }
@@ -83,8 +78,15 @@ public final class PluginRuntime {
 
     public static List<PluginFileInfo> getInstalledPlugins() {
         List<PluginFileInfo> installed = new ArrayList<>();
-        for (Path pluginDir : resolvePluginDirs()) {
-            installed.addAll(listPluginsFromDirectory(pluginDir));
+        Set<String> disabledPluginIds = PluginStateStore.getDisabledPluginIds();
+        Set<String> pendingUninstallPluginIds = PluginStateStore.getPendingUninstallPluginIds();
+        for (Path pluginDir : PluginScanner.resolvePluginDirs(getManagedPluginDir())) {
+            installed.addAll(PluginScanner.listPluginsFromDirectory(
+                    pluginDir,
+                    disabledPluginIds,
+                    pendingUninstallPluginIds,
+                    PluginRuntime::isLoaded
+            ));
         }
         return installed;
     }
@@ -98,13 +100,7 @@ public final class PluginRuntime {
             if (cachedAppVersion != null) {
                 return cachedAppVersion;
             }
-            String implementationVersion = PluginRuntime.class.getPackage().getImplementationVersion();
-            if (implementationVersion != null && !implementationVersion.isBlank()) {
-                cachedAppVersion = implementationVersion;
-            } else {
-                String pomVersion = resolvePomVersion(Paths.get("pom.xml"));
-                cachedAppVersion = pomVersion == null || pomVersion.isBlank() ? "dev" : pomVersion;
-            }
+            cachedAppVersion = RuntimeVersionResolver.resolveCurrentAppVersion(PluginRuntime.class);
             return cachedAppVersion;
         }
     }
@@ -118,21 +114,11 @@ public final class PluginRuntime {
             if (cachedPlatformVersion != null) {
                 return cachedPlatformVersion;
             }
-            try (InputStream inputStream = PluginRuntime.class.getResourceAsStream(RUNTIME_PROPERTIES_RESOURCE)) {
-                if (inputStream != null) {
-                    Properties properties = new Properties();
-                    properties.load(inputStream);
-                    String propertyVersion = properties.getProperty(PLATFORM_VERSION_KEY);
-                    if (propertyVersion != null && !propertyVersion.isBlank()) {
-                        cachedPlatformVersion = propertyVersion.trim();
-                        return cachedPlatformVersion;
-                    }
-                }
-            } catch (IOException ignored) {
-            }
-            // 本地开发或未打包场景下，从根 pom 回退读取平台版本，避免 compatibility 判断退化成 "dev"。
-            String pomValue = resolvePomProperty(Paths.get("pom.xml"), PLATFORM_VERSION_KEY);
-            cachedPlatformVersion = pomValue == null || pomValue.isBlank() ? "dev" : pomValue;
+            cachedPlatformVersion = RuntimeVersionResolver.resolveCurrentPlatformVersion(
+                    PluginRuntime.class,
+                    RUNTIME_PROPERTIES_RESOURCE,
+                    PLATFORM_VERSION_KEY
+            );
             return cachedPlatformVersion;
         }
     }
@@ -146,7 +132,7 @@ public final class PluginRuntime {
     }
 
     public static PluginDescriptor inspectPluginJar(Path jarPath) throws IOException {
-        return readDescriptor(jarPath);
+        return PluginScanner.readDescriptor(jarPath);
     }
 
     public static PluginCompatibility evaluateCompatibility(PluginDescriptor descriptor) {
@@ -203,20 +189,8 @@ public final class PluginRuntime {
     public static void shutdown() {
         synchronized (PluginRuntime.class) {
             try {
-                for (EasyPostmanPlugin plugin : LOADED_PLUGINS) {
-                    try {
-                        plugin.onStop();
-                    } catch (Exception e) {
-                        log.warn("Failed to stop plugin: {}", plugin.getClass().getName(), e);
-                    }
-                }
-                for (URLClassLoader classLoader : PLUGIN_CLASSLOADERS) {
-                    try {
-                        classLoader.close();
-                    } catch (IOException e) {
-                        log.warn("Failed to close plugin classloader", e);
-                    }
-                }
+                PluginLoader.stopPlugins(LOADED_PLUGINS);
+                PluginLoader.closeClassLoaders(PLUGIN_CLASSLOADERS);
                 // shutdown 阶段清理待卸载插件，避免已加载 jar 在运行期间删除失败
                 cleanupPendingUninstallPlugins();
             } finally {
@@ -233,229 +207,58 @@ public final class PluginRuntime {
     }
 
     public static boolean isPluginEnabled(String pluginId) {
-        return pluginId != null
-                && !getDisabledPluginIds().contains(pluginId)
-                && !getPendingUninstallPluginIds().contains(pluginId);
+        return PluginStateStore.isPluginEnabled(pluginId);
     }
 
     public static void setPluginEnabled(String pluginId, boolean enabled) {
-        if (pluginId == null || pluginId.isBlank()) {
-            return;
-        }
-        Set<String> disabledIds = new LinkedHashSet<>(getDisabledPluginIds());
-        if (enabled) {
-            disabledIds.remove(pluginId);
-            // 重新启用时，一并取消“待卸载”状态
-            clearPendingUninstall(pluginId);
-        } else {
-            disabledIds.add(pluginId);
-        }
-        PluginSettingsStore.putStringSet(DISABLED_PLUGIN_IDS_KEY, disabledIds);
+        PluginStateStore.setPluginEnabled(pluginId, enabled);
     }
 
     public static boolean isPluginPendingUninstall(String pluginId) {
-        return pluginId != null && getPendingUninstallPluginIds().contains(pluginId);
+        return PluginStateStore.isPluginPendingUninstall(pluginId);
     }
 
     public static void markPluginPendingUninstall(String pluginId) {
-        if (pluginId == null || pluginId.isBlank()) {
-            return;
-        }
-        Set<String> pendingIds = new LinkedHashSet<>(getPendingUninstallPluginIds());
-        pendingIds.add(pluginId);
-        PluginSettingsStore.putStringSet(PENDING_UNINSTALL_PLUGIN_IDS_KEY, pendingIds);
-
-        // 待卸载插件也要视为 disabled，避免下次启动前再次被选中加载
-        Set<String> disabledIds = new LinkedHashSet<>(getDisabledPluginIds());
-        disabledIds.add(pluginId);
-        PluginSettingsStore.putStringSet(DISABLED_PLUGIN_IDS_KEY, disabledIds);
+        PluginStateStore.markPluginPendingUninstall(pluginId);
     }
 
     public static void clearPendingUninstall(String pluginId) {
-        if (pluginId == null || pluginId.isBlank()) {
-            return;
-        }
-        Set<String> pendingIds = new LinkedHashSet<>(getPendingUninstallPluginIds());
-        if (pendingIds.remove(pluginId)) {
-            PluginSettingsStore.putStringSet(PENDING_UNINSTALL_PLUGIN_IDS_KEY, pendingIds);
-        }
+        PluginStateStore.clearPendingUninstall(pluginId);
     }
 
     public static List<PluginFileInfo> getManagedPluginFiles() {
-        return listPluginsFromDirectory(getManagedPluginDir());
+        return PluginScanner.listPluginsFromDirectory(
+                getManagedPluginDir(),
+                PluginStateStore.getDisabledPluginIds(),
+                PluginStateStore.getPendingUninstallPluginIds(),
+                PluginRuntime::isLoaded
+        );
     }
 
     public static List<PluginFileInfo> getPluginPackageFiles() {
-        return listPluginsFromDirectory(getPluginPackageDir());
-    }
-
-    private static Set<Path> resolvePluginDirs() {
-        Set<Path> dirs = new LinkedHashSet<>();
-        String override = System.getProperty("easyPostman.plugins.dir");
-        if (override != null && !override.isBlank()) {
-            dirs.add(Paths.get(override));
-        }
-        // 兼容开发期工作目录下的 plugins/，以及用户数据目录下的托管安装目录
-        dirs.add(Paths.get(System.getProperty("user.dir"), "plugins"));
-        dirs.add(getManagedPluginDir());
-        return dirs;
+        return PluginScanner.listPluginsFromDirectory(
+                getPluginPackageDir(),
+                PluginStateStore.getDisabledPluginIds(),
+                PluginStateStore.getPendingUninstallPluginIds(),
+                PluginRuntime::isLoaded
+        );
     }
 
     private static List<PluginFileInfo> resolveLoadCandidates() {
-        RuntimeVersionInfo runtimeVersionInfo = new RuntimeVersionInfo(
-                getCurrentAppVersion(),
-                getCurrentPluginPlatformVersion()
+        return PluginCandidateResolver.resolveLoadCandidates(
+                PluginScanner.resolvePluginDirs(getManagedPluginDir()),
+                PluginStateStore.getDisabledPluginIds(),
+                PluginStateStore.getPendingUninstallPluginIds(),
+                PluginRuntime::isLoaded
         );
-        PluginStateSnapshot pluginStateSnapshot = new PluginStateSnapshot(
-                getDisabledPluginIds(),
-                getPendingUninstallPluginIds()
-        );
-        Map<String, PluginFileInfo> selected = new LinkedHashMap<>();
-        for (Path pluginDir : resolvePluginDirs()) {
-            for (PluginFileInfo candidate : listPluginsFromDirectory(pluginDir, pluginStateSnapshot, runtimeVersionInfo)) {
-                if (!candidate.enabled()) {
-                    if (pluginStateSnapshot.pendingUninstallPluginIds().contains(candidate.descriptor().id())) {
-                        log.info("Skip pending uninstall plugin: {} ({})", candidate.descriptor().id(), candidate.jarPath());
-                        continue;
-                    }
-                    log.info("Skip disabled plugin: {} ({})", candidate.descriptor().id(), candidate.jarPath());
-                    continue;
-                }
-                if (!candidate.compatible()) {
-                    PluginCompatibility compatibility = evaluateCompatibility(runtimeVersionInfo,
-                            candidate.descriptor().minAppVersion(),
-                            candidate.descriptor().maxAppVersion(),
-                            candidate.descriptor().minPlatformVersion(),
-                            candidate.descriptor().maxPlatformVersion());
-                    log.warn("Skip incompatible plugin: {} requires app {}..{} and platform {}..{}, current app {}, current platform {}",
-                            candidate.descriptor().id(),
-                            emptyToWildcard(candidate.descriptor().minAppVersion()),
-                            emptyToWildcard(candidate.descriptor().maxAppVersion()),
-                            emptyToWildcard(candidate.descriptor().minPlatformVersion()),
-                            emptyToWildcard(candidate.descriptor().maxPlatformVersion()),
-                            compatibility.currentAppVersion(),
-                            compatibility.currentPlatformVersion());
-                    continue;
-                }
-                // 同一插件 id 出现多个版本时，只保留最高版本候选项
-                PluginFileInfo existing = selected.get(candidate.descriptor().id());
-                if (existing == null) {
-                    selected.put(candidate.descriptor().id(), candidate);
-                    continue;
-                }
-                if (PluginVersionComparator.compare(candidate.descriptor().version(), existing.descriptor().version()) > 0) {
-                    selected.put(candidate.descriptor().id(), candidate);
-                }
-            }
-        }
-        List<PluginFileInfo> result = new ArrayList<>(selected.values());
-        result.sort(Comparator.comparing(info -> info.jarPath().getFileName().toString()));
-        return result;
-    }
-
-    private static List<PluginFileInfo> listPluginsFromDirectory(Path pluginDir) {
-        return listPluginsFromDirectory(pluginDir,
-                new PluginStateSnapshot(getDisabledPluginIds(), getPendingUninstallPluginIds()),
-                new RuntimeVersionInfo(getCurrentAppVersion(), getCurrentPluginPlatformVersion()));
-    }
-
-    private static List<PluginFileInfo> listPluginsFromDirectory(Path pluginDir,
-                                                                 PluginStateSnapshot pluginStateSnapshot,
-                                                                 RuntimeVersionInfo runtimeVersionInfo) {
-        if (pluginDir == null || !Files.isDirectory(pluginDir)) {
-            return Collections.emptyList();
-        }
-        List<PluginFileInfo> plugins = new ArrayList<>();
-        try (Stream<Path> stream = Files.list(pluginDir)) {
-            stream.filter(path -> Files.isRegularFile(path) && path.getFileName().toString().endsWith(".jar"))
-                    .sorted()
-                    .forEach(path -> {
-                        try {
-                            PluginDescriptor descriptor = inspectPluginJar(path);
-                            if (descriptor != null) {
-                                boolean enabled = isPluginEnabled(descriptor.id(), pluginStateSnapshot);
-                                boolean compatible = evaluateCompatibility(runtimeVersionInfo,
-                                        descriptor.minAppVersion(),
-                                        descriptor.maxAppVersion(),
-                                        descriptor.minPlatformVersion(),
-                                        descriptor.maxPlatformVersion()).compatible();
-                                plugins.add(new PluginFileInfo(descriptor, path, isLoaded(path), enabled, compatible));
-                            }
-                        } catch (IOException e) {
-                            log.warn("Failed to inspect plugin jar: {}", path, e);
-                        }
-                    });
-        } catch (IOException e) {
-            log.warn("Failed to scan plugin directory: {}", pluginDir, e);
-        }
-        return plugins;
-    }
-
-    private static void loadPluginJar(Path jarPath, PluginDescriptor descriptor) {
-        try {
-            // 每个插件使用独立 URLClassLoader，避免依赖相互污染
-            URLClassLoader classLoader = new URLClassLoader(new URL[]{jarPath.toUri().toURL()},
-                    PluginRuntime.class.getClassLoader());
-            Class<?> entryClass = Class.forName(descriptor.entryClass(), true, classLoader);
-            Object instance = entryClass.getDeclaredConstructor().newInstance();
-            if (!(instance instanceof EasyPostmanPlugin plugin)) {
-                throw new IllegalStateException("Plugin entry class does not implement EasyPostmanPlugin: " + descriptor.entryClass());
-            }
-            plugin.onLoad(new PluginContextImpl(descriptor));
-            LOADED_PLUGINS.add(plugin);
-            PLUGIN_CLASSLOADERS.add(classLoader);
-            LOADED_PLUGIN_FILES.add(new PluginFileInfo(descriptor, jarPath, true, true, true));
-        } catch (Exception e) {
-            log.error("Failed to load plugin jar: {}", jarPath, e);
-        }
-    }
-
-    private static PluginDescriptor readDescriptor(Path jarPath) throws IOException {
-        try (JarFile jarFile = new JarFile(jarPath.toFile())) {
-            return jarFile.stream()
-                    .filter(entry -> !entry.isDirectory())
-                    .filter(entry -> entry.getName().startsWith(PLUGIN_DESCRIPTOR_PREFIX))
-                    .filter(entry -> entry.getName().endsWith(PLUGIN_DESCRIPTOR_SUFFIX))
-                    .findFirst()
-                    .map(entry -> {
-                        try (InputStream inputStream = jarFile.getInputStream(entry)) {
-                            Properties properties = new Properties();
-                            properties.load(inputStream);
-                            return new PluginDescriptor(
-                                    properties.getProperty("plugin.id", jarPath.getFileName().toString()),
-                                    properties.getProperty("plugin.name", jarPath.getFileName().toString()),
-                                    properties.getProperty("plugin.version", "dev"),
-                                    properties.getProperty("plugin.entryClass"),
-                                    properties.getProperty("plugin.description", ""),
-                                    properties.getProperty("plugin.homepage", ""),
-                                    properties.getProperty("plugin.minAppVersion", ""),
-                                    properties.getProperty("plugin.maxAppVersion", ""),
-                                    properties.getProperty("plugin.minPlatformVersion", ""),
-                                    properties.getProperty("plugin.maxPlatformVersion", "")
-                            );
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    })
-                    .filter(descriptor -> descriptor.entryClass() != null && !descriptor.entryClass().isBlank())
-                    .orElse(null);
-        }
     }
 
     private static boolean isLoaded(Path jarPath) {
         return LOADED_PLUGIN_FILES.stream().anyMatch(info -> info.jarPath().equals(jarPath));
     }
 
-    private static Set<String> getDisabledPluginIds() {
-        return PluginSettingsStore.getStringSet(DISABLED_PLUGIN_IDS_KEY);
-    }
-
-    private static Set<String> getPendingUninstallPluginIds() {
-        return PluginSettingsStore.getStringSet(PENDING_UNINSTALL_PLUGIN_IDS_KEY);
-    }
-
     static void cleanupPendingUninstallPlugins() {
-        Set<String> pendingIds = new LinkedHashSet<>(getPendingUninstallPluginIds());
+        Set<String> pendingIds = new LinkedHashSet<>(PluginStateStore.getPendingUninstallPluginIds());
         if (pendingIds.isEmpty()) {
             return;
         }
@@ -479,7 +282,7 @@ public final class PluginRuntime {
                 remainingPending.add(info.descriptor().id());
             }
         }
-        PluginSettingsStore.putStringSet(PENDING_UNINSTALL_PLUGIN_IDS_KEY, remainingPending);
+        PluginStateStore.replacePendingUninstallPluginIds(remainingPending);
         if (!remainingPending.isEmpty()) {
             log.info("Pending uninstall plugin(s) still remain after cleanup: {}", remainingPending);
         }
@@ -498,12 +301,6 @@ public final class PluginRuntime {
         }
     }
 
-    private static boolean isPluginEnabled(String pluginId, PluginStateSnapshot pluginStateSnapshot) {
-        return pluginId != null
-                && !pluginStateSnapshot.disabledPluginIds().contains(pluginId)
-                && !pluginStateSnapshot.pendingUninstallPluginIds().contains(pluginId);
-    }
-
     private static boolean isVersionInRange(String currentVersion, String minVersion, String maxVersion) {
         if (minVersion != null && !minVersion.isBlank()
                 && PluginVersionComparator.compare(currentVersion, minVersion) < 0) {
@@ -513,101 +310,6 @@ public final class PluginRuntime {
                 || PluginVersionComparator.compare(currentVersion, maxVersion) <= 0;
     }
 
-    private static String emptyToWildcard(String value) {
-        return value == null || value.isBlank() ? "*" : value;
-    }
-
-    private static String resolvePomVersion(Path pom) {
-        String version = resolvePomProperty(pom, "version");
-        if (version == null || version.isBlank()) {
-            return null;
-        }
-        String trimmed = version.trim();
-        if ("${revision}".equals(trimmed)) {
-            return resolvePomProperty(pom, "revision");
-        }
-        return trimmed.contains("${") ? null : trimmed;
-    }
-
-    private static String resolvePomProperty(Path pom, String propertyName) {
-        Path current = pom;
-        for (int depth = 0; depth < 4 && current != null; depth++) {
-            try {
-                if (Files.exists(current)) {
-                    String xml = Files.readString(current);
-                    String property = readXmlTag(xml, propertyName);
-                    if (property != null && !property.isBlank()) {
-                        return property.trim();
-                    }
-                    String relativePath = readXmlTag(xml, "relativePath");
-                    if (relativePath != null && !relativePath.isBlank()) {
-                        current = current.getParent().resolve(relativePath.trim()).normalize();
-                        continue;
-                    }
-                }
-            } catch (Exception ignored) {
-            }
-            current = current.getParent() == null ? null : current.getParent().getParent() == null ? null : current.getParent().getParent().resolve("pom.xml");
-        }
-        return null;
-    }
-
-    private static String readXmlTag(String xml, String tagName) {
-        String openTag = "<" + tagName + ">";
-        String closeTag = "</" + tagName + ">";
-        int start = xml.indexOf(openTag);
-        if (start < 0) {
-            return null;
-        }
-        int contentStart = start + openTag.length();
-        int end = xml.indexOf(closeTag, contentStart);
-        if (end <= contentStart) {
-            return null;
-        }
-        return xml.substring(contentStart, end).trim();
-    }
-
     private record RuntimeVersionInfo(String currentAppVersion, String currentPlatformVersion) {
-    }
-
-    private record PluginStateSnapshot(Set<String> disabledPluginIds, Set<String> pendingUninstallPluginIds) {
-    }
-
-    private static final class PluginContextImpl implements PluginContext {
-        private final PluginDescriptor descriptor;
-
-        private PluginContextImpl(PluginDescriptor descriptor) {
-            this.descriptor = descriptor;
-        }
-
-        @Override
-        public PluginDescriptor descriptor() {
-            return descriptor;
-        }
-
-        @Override
-        public void registerScriptApi(String alias, java.util.function.Supplier<Object> factory) {
-            REGISTRY.registerScriptApi(alias, factory);
-        }
-
-        @Override
-        public <T> void registerService(Class<T> type, T service) {
-            REGISTRY.registerService(type, service);
-        }
-
-        @Override
-        public void registerToolboxContribution(com.laker.postman.plugin.api.ToolboxContribution contribution) {
-            REGISTRY.registerToolboxContribution(contribution);
-        }
-
-        @Override
-        public void registerScriptCompletionContributor(com.laker.postman.plugin.api.ScriptCompletionContributor contributor) {
-            REGISTRY.registerScriptCompletionContributor(contributor);
-        }
-
-        @Override
-        public void registerSnippet(com.laker.postman.plugin.api.SnippetDefinition definition) {
-            REGISTRY.registerSnippet(definition);
-        }
     }
 }

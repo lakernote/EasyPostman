@@ -1,6 +1,6 @@
 package com.laker.postman.common.component.editor;
 
-import com.laker.postman.plugin.runtime.PluginRuntime;
+import com.laker.postman.plugin.bridge.PluginAccess;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.experimental.UtilityClass;
@@ -137,7 +137,9 @@ public class ScriptSnippetManager {
         addCheerio(provider);
         addXml2Json(provider);
 
-        for (var contributor : PluginRuntime.getRegistry().getScriptCompletionContributors()) {
+        for (var contributor : PluginAccess.getScriptCompletionContributors()) {
+            // 内建补全先注册，插件补全后追加。
+            // 这样宿主负责“基础语言 + 核心 pm”，插件只补自己的增量能力。
             contributor.contribute(provider);
         }
     }

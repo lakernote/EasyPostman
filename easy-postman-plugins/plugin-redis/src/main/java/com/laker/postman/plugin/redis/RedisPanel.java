@@ -27,10 +27,10 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.laker.postman.plugin.redis.RedisI18n.t;
+
 @Slf4j
 public class RedisPanel extends JPanel {
-    private static final String BUNDLE_NAME = "redis-messages";
-
     private static final String LABEL_DISABLED_FG = "Label.disabledForeground";
     private static final String SEPARATOR_FG = "Separator.foreground";
     private static final int MAX_HOST_HISTORY = 5;
@@ -121,10 +121,6 @@ public class RedisPanel extends JPanel {
 
     public RedisPanel() {
         initUI();
-    }
-
-    private static String t(String key, Object... args) {
-        return I18nUtil.getMessage(BUNDLE_NAME, RedisPanel.class.getClassLoader(), key, args);
     }
 
     private void initUI() {

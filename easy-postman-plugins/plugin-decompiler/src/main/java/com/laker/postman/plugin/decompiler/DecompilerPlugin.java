@@ -1,8 +1,8 @@
 package com.laker.postman.plugin.decompiler;
 
 import com.laker.postman.plugin.api.EasyPostmanPlugin;
+import com.laker.postman.plugin.api.PluginContributionSupport;
 import com.laker.postman.plugin.api.PluginContext;
-import com.laker.postman.plugin.api.ToolboxContribution;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 
@@ -12,7 +12,8 @@ public class DecompilerPlugin implements EasyPostmanPlugin {
 
     @Override
     public void onLoad(PluginContext context) {
-        context.registerToolboxContribution(new ToolboxContribution(
+        PluginContributionSupport.registerToolbox(
+                context,
                 "decompiler",
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER),
                 "icons/decompile.svg",
@@ -20,6 +21,6 @@ public class DecompilerPlugin implements EasyPostmanPlugin {
                 I18nUtil.getMessage(TOOLBOX_GROUP_DEV),
                 DecompilerPanel::new,
                 null
-        ));
+        );
     }
 }

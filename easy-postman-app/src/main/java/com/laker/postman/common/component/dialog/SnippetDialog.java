@@ -4,8 +4,8 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.Snippet;
-import com.laker.postman.plugin.runtime.PluginRuntime;
 import com.laker.postman.model.SnippetType;
+import com.laker.postman.plugin.bridge.PluginAccess;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
@@ -43,7 +43,7 @@ public class SnippetDialog extends JDialog {
     private static List<Snippet> getI18nSnippets() {
         return Stream.concat(
                         Arrays.stream(SnippetType.values()).map(Snippet::new),
-                        PluginRuntime.getRegistry().getSnippetDefinitions().stream().map(Snippet::new)
+                        PluginAccess.getSnippetDefinitions().stream().map(Snippet::new)
                 )
                 .toList();
     }

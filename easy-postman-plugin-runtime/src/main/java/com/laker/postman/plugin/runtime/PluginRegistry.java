@@ -24,27 +24,37 @@ import java.util.function.Supplier;
 public class PluginRegistry {
 
     // alias -> 工厂，用于延迟创建 pm.xxx 类型的脚本 API 对象
-    private final Map<String, Supplier<Object>> scriptApiFactories = new ConcurrentHashMap<>();
+    private final Map<String, ScriptApiRegistration> scriptApiFactories = new ConcurrentHashMap<>();
     // type -> service，供宿主桥接层按类型取服务
-    private final Map<Class<?>, Object> services = new ConcurrentHashMap<>();
+    private final Map<Class<?>, ServiceRegistration> services = new ConcurrentHashMap<>();
     // Toolbox / 自动补全 / Snippet 都是 UI 侧可扩展点
     private final List<ToolboxContribution> toolboxContributions = new CopyOnWriteArrayList<>();
     private final List<ScriptCompletionContributor> scriptCompletionContributors = new CopyOnWriteArrayList<>();
     private final List<SnippetDefinition> snippetDefinitions = new CopyOnWriteArrayList<>();
 
     public void registerScriptApi(String alias, Supplier<Object> factory) {
+        registerScriptApi(null, alias, factory);
+    }
+
+    void registerScriptApi(String pluginId, String alias, Supplier<Object> factory) {
         if (alias == null || alias.isBlank() || factory == null) {
             return;
         }
-        scriptApiFactories.put(alias, factory);
+        ScriptApiRegistration previous = scriptApiFactories.put(alias, new ScriptApiRegistration(pluginId, factory));
+        if (previous != null && previous.factory() != factory) {
+            log.warn("Script API alias '{}' is already registered by plugin '{}'. Latest registration from plugin '{}' will replace it.",
+                    alias, owner(previous.pluginId()), owner(pluginId));
+        }
     }
 
     public Map<String, Object> createScriptApis() {
         Map<String, Object> apis = new LinkedHashMap<>();
-        for (Map.Entry<String, Supplier<Object>> entry : scriptApiFactories.entrySet()) {
+        for (Map.Entry<String, ScriptApiRegistration> entry : scriptApiFactories.entrySet()) {
             try {
+                // 这里延迟实例化，而不是插件加载时立即 new。
+                // 好处是脚本环境真正需要时才创建，插件加载更轻，也减少启动阶段失败面。
                 // 某个插件 API 初始化失败时，只跳过当前插件，避免拖垮整个脚本环境
-                Object api = entry.getValue().get();
+                Object api = entry.getValue().factory().get();
                 if (api != null) {
                     apis.put(entry.getKey(), api);
                 }
@@ -56,18 +66,36 @@ public class PluginRegistry {
     }
 
     public <T> void registerService(Class<T> type, T service) {
+        registerService(null, type, service);
+    }
+
+    <T> void registerService(String pluginId, Class<T> type, T service) {
         if (type == null || service == null) {
             return;
         }
-        services.put(type, service);
+        ServiceRegistration previous = services.put(type, new ServiceRegistration(pluginId, service));
+        if (previous != null && previous.service() != service) {
+            log.warn("Plugin service '{}' is already registered by plugin '{}'. Latest registration from plugin '{}' will replace it.",
+                    type.getName(), owner(previous.pluginId()), owner(pluginId));
+        }
     }
 
     public <T> T getService(Class<T> type) {
-        Object service = services.get(type);
-        if (service == null) {
+        ServiceRegistration registration = services.get(type);
+        if (registration == null) {
             return null;
         }
-        return type.cast(service);
+        return type.cast(registration.service());
+    }
+
+    String getScriptApiOwner(String alias) {
+        ScriptApiRegistration registration = scriptApiFactories.get(alias);
+        return registration == null ? null : registration.pluginId();
+    }
+
+    String getServiceOwner(Class<?> type) {
+        ServiceRegistration registration = services.get(type);
+        return registration == null ? null : registration.pluginId();
     }
 
     public void registerToolboxContribution(ToolboxContribution contribution) {
@@ -107,5 +135,15 @@ public class PluginRegistry {
         toolboxContributions.clear();
         scriptCompletionContributors.clear();
         snippetDefinitions.clear();
+    }
+
+    private static String owner(String pluginId) {
+        return pluginId == null || pluginId.isBlank() ? "<unknown>" : pluginId;
+    }
+
+    private record ScriptApiRegistration(String pluginId, Supplier<Object> factory) {
+    }
+
+    private record ServiceRegistration(String pluginId, Object service) {
     }
 }

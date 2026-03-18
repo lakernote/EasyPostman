@@ -1360,14 +1360,26 @@ public class PluginManagerDialog extends JDialog {
         if (text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_UNINSTALL_PENDING))
                 || text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_DISABLE_PENDING))
                 || text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_RESTART_REQUIRED))
-                || text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_UPDATE_AVAILABLE).split("\\{")[0])) {
+                || matchesStatusPrefix(text, MessageKeys.PLUGIN_MANAGER_MARKET_UPDATE_AVAILABLE)) {
             return new StatusPalette(adaptStatusBackground(ModernColors.WARNING), adaptStatusForeground(ModernColors.WARNING));
         }
         if (text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_DISABLED))
                 || text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_INCOMPATIBLE))) {
             return new StatusPalette(adaptStatusBackground(ModernColors.ERROR), adaptStatusForeground(ModernColors.ERROR));
         }
+        if (text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_AVAILABLE))) {
+            return new StatusPalette(adaptStatusBackground(ModernColors.PRIMARY), adaptStatusForeground(ModernColors.PRIMARY));
+        }
         return new StatusPalette(adaptStatusBackground(ModernColors.SUCCESS), adaptStatusForeground(ModernColors.SUCCESS));
+    }
+
+    private boolean matchesStatusPrefix(String text, String messageKey) {
+        String pattern = I18nUtil.getMessage(messageKey);
+        int placeholderIndex = pattern.indexOf('{');
+        if (placeholderIndex >= 0) {
+            return text.contains(pattern.substring(0, placeholderIndex));
+        }
+        return text.contains(pattern);
     }
 
     private Color adaptStatusBackground(Color color) {

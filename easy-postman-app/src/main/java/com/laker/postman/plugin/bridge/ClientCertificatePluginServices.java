@@ -1,7 +1,5 @@
 package com.laker.postman.plugin.bridge;
 
-import com.laker.postman.plugin.runtime.PluginRuntime;
-
 public final class ClientCertificatePluginServices {
 
     private static final String MISSING_MESSAGE =
@@ -11,11 +9,11 @@ public final class ClientCertificatePluginServices {
     }
 
     public static boolean isClientCertificatePluginInstalled() {
-        return PluginRuntime.getRegistry().getService(ClientCertificatePluginService.class) != null;
+        return PluginAccess.getService(ClientCertificatePluginService.class) != null;
     }
 
     public static ClientCertificatePluginService getClientCertificateService() {
-        return PluginRuntime.getRegistry().getService(ClientCertificatePluginService.class);
+        return PluginAccess.getService(ClientCertificatePluginService.class);
     }
 
     public static ClientCertificatePluginService requireClientCertificateService() {

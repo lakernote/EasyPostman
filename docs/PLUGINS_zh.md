@@ -12,6 +12,10 @@
 3. GitHub Actions 只负责读取产物、校验一致性、发布和回写 catalog
 4. 本地验证优先走“构建插件 JAR -> 插件管理安装 -> 重启验证”这条路径
 
+如果你当前更想看 runtime 内核实现，而不是开发/发布流程，可以直接先读：
+
+- [PLUGIN_RUNTIME_ARCHITECTURE_zh.md](./PLUGIN_RUNTIME_ARCHITECTURE_zh.md)
+
 ## 1. 组件分层和原理
 
 当前插件体系分成 6 层：

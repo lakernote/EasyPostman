@@ -1,7 +1,7 @@
 package com.laker.postman.model.script;
 
 import com.laker.postman.model.*;
-import com.laker.postman.plugin.runtime.PluginRuntime;
+import com.laker.postman.plugin.bridge.PluginAccess;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.http.HttpService;
 import lombok.extern.slf4j.Slf4j;
@@ -125,7 +125,9 @@ public class PostmanApiContext {
         this.es = this.elasticsearch;
         this.influxdb = new ScriptInfluxDbApi();
         this.influx = this.influxdb;
-        PluginRuntime.getRegistry().createScriptApis().forEach(this::registerPluginApi);
+        // 核心 pm 能力先由宿主内建，再把插件注册表里的扩展 API 动态挂进来。
+        // 这样脚本层看到的是一个统一的 pm 对象，而不是“宿主 API + 插件 API”两套入口。
+        PluginAccess.createScriptApis().forEach(this::registerPluginApi);
     }
 
     private void registerPluginApi(String alias, Object api) {
@@ -133,6 +135,8 @@ public class PostmanApiContext {
             return;
         }
         pluginApis.put(alias, api);
+        // 对 kafka / redis 保留字段别名，是为了兼容已有脚本里直接写 pm.kafka / pm.redis 的习惯。
+        // 新能力统一建议走 pm.plugin(alias)，这样未来不会因为字段膨胀把 pm 顶层塞满。
         if ("kafka".equals(alias)) {
             this.kafka = api;
         }
@@ -142,6 +146,7 @@ public class PostmanApiContext {
     }
 
     public Object plugin(String alias) {
+        // 统一的插件 API 访问入口，脚本里可以通过 pm.plugin("kafka") 这种方式按需取能力。
         return pluginApis.get(alias);
     }
 

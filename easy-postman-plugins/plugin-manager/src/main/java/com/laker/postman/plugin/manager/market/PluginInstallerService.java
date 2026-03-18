@@ -60,6 +60,8 @@ public class PluginInstallerService {
         PluginInstallController controller = installController == null
                 ? new PluginInstallController()
                 : installController;
+        // 市场安装不是“下载完就算成功”。
+        // 必须经历下载 -> descriptor 校验 -> sha256 校验 -> 兼容性校验 -> 落盘安装 这条完整链路。
         Path tempJar = downloadToTempFile(entry, listener, controller);
         try {
             controller.checkCancelled();
@@ -118,6 +120,8 @@ public class PluginInstallerService {
         Files.createDirectories(packageDir);
         Path targetPath = targetDir.resolve(buildTargetFileName(descriptor));
         Path packagePath = packageDir.resolve(buildTargetFileName(descriptor));
+        // installed 目录是“运行时扫描入口”，packages 目录更像“保留的原始安装包仓库”。
+        // 两边各留一份，便于运行和后续管理操作解耦。
         if (!sourceJar.toAbsolutePath().normalize().equals(packagePath.toAbsolutePath().normalize())) {
             Files.copy(sourceJar, packagePath, StandardCopyOption.REPLACE_EXISTING);
         }

@@ -6,7 +6,7 @@ import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.plugin.api.ToolboxContribution;
-import com.laker.postman.plugin.runtime.PluginRuntime;
+import com.laker.postman.plugin.bridge.PluginAccess;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
@@ -142,8 +142,10 @@ public class ToolboxPanel extends SingletonBasePanel {
     }
 
     private void registerPluginTools() {
-        for (ToolboxContribution contribution : PluginRuntime.getRegistry().getToolboxContributions()) {
+        for (ToolboxContribution contribution : PluginAccess.getToolboxContributions()) {
             try {
+                // 插件在 onLoad 里只注册“面板工厂”，真正创建 Swing 面板放到宿主这里完成。
+                // 这样可以把插件声明和 UI 实例化分开，降低启动期创建大量面板的成本。
                 JPanel panel = contribution.panelSupplier().get();
                 regPlugin(contribution.id(), contribution.displayName(), contribution.iconPath(),
                         contribution.groupId(), contribution.groupDisplayName(), panel, contribution.iconClassLoader());

@@ -8,15 +8,13 @@ import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.plugin.runtime.PluginRuntime;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.startup.StartupCoordinator;
-import com.laker.postman.util.ExceptionUtil;
-import com.laker.postman.util.FontManager;
-import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.*;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
+import java.awt.*;
 
 /**
  * 程序入口类。
@@ -24,7 +22,7 @@ import javax.swing.*;
 @Slf4j
 public class App {
     public static void main(String[] args) {
-        // 1. 设置全局异常处理器
+        // 0. 设置全局异常处理器
         setupGlobalExceptionHandler();
 
         // 1. 配置平台特定的窗口装饰
@@ -131,13 +129,32 @@ public class App {
 
             // 记录错误并通知用户
             log.error("Uncaught exception in thread: {}", thread.getName(), throwable);
-            SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
-                    null,
-                    I18nUtil.getMessage(MessageKeys.GENERAL_ERROR_MESSAGE),
-                    I18nUtil.getMessage(MessageKeys.GENERAL_ERROR),
-                    JOptionPane.ERROR_MESSAGE
-            ));
+            SwingUtilities.invokeLater(App::notifyUnhandledException);
         });
+    }
+
+    private static void notifyUnhandledException() {
+        String message = I18nUtil.getMessage(MessageKeys.GENERAL_ERROR_MESSAGE);
+        if (isMainFrameVisible()) {
+            NotificationUtil.showError(message);
+            return;
+        }
+
+        JOptionPane.showMessageDialog(
+                null,
+                message,
+                I18nUtil.getMessage(MessageKeys.GENERAL_ERROR),
+                JOptionPane.ERROR_MESSAGE
+        );
+    }
+
+    private static boolean isMainFrameVisible() {
+        for (Window window : Window.getWindows()) {
+            if (window instanceof MainFrame && window.isShowing()) {
+                return true;
+            }
+        }
+        return false;
     }
 
 
@@ -147,7 +164,6 @@ public class App {
     private static void registerShutdownHook() {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
-                // 销毁 IOC 容器，调用所有 @PreDestroy 方法
                 PluginRuntime.shutdown();
                 BeanFactory.destroy();
                 log.info("Application shutdown completed");

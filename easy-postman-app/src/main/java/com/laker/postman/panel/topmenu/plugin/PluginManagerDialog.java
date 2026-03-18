@@ -1,5 +1,6 @@
 package com.laker.postman.panel.topmenu.plugin;
 
+import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.plugin.api.PluginDescriptor;
 import com.laker.postman.plugin.manager.PluginManagementService;
@@ -42,24 +43,34 @@ public class PluginManagerDialog extends JDialog {
     private final JLabel catalogSummaryLabel = createSummaryMetricLabel();
     private final JLabel statusMessageLabel = createMutedLabel();
 
-    private final JToggleButton installedViewButton = new JToggleButton(
+    private final JToggleButton installedViewButton = ModernButtonFactory.createToggleButton(
             I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_TAB_INSTALLED));
-    private final JToggleButton marketViewButton = new JToggleButton(
+    private final JToggleButton marketViewButton = ModernButtonFactory.createToggleButton(
             I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_TAB_MARKET));
     private final CardLayout contentLayout = new CardLayout();
     private final JPanel contentPanel = new JPanel(contentLayout);
 
-    private final JButton openDirButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_OPEN_FOLDER));
-    private final JButton installLocalButton = new JButton(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_INSTALL));
-    private final JButton refreshInstalledButton = new JButton(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_REFRESH));
-    private final JButton enableInstalledButton = new JButton(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_ENABLE));
-    private final JButton disableInstalledButton = new JButton(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DISABLE));
-    private final JButton uninstallInstalledButton = new JButton(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_UNINSTALL));
+    private final JButton openDirButton = ModernButtonFactory.createButton(
+            I18nUtil.getMessage(MessageKeys.GENERAL_OPEN_FOLDER), false);
+    private final JButton installLocalButton = ModernButtonFactory.createButton(
+            I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_INSTALL), true);
+    private final JButton refreshInstalledButton = ModernButtonFactory.createButton(
+            I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_REFRESH), false);
+    private final JButton enableInstalledButton = ModernButtonFactory.createButton(
+            I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_ENABLE), false);
+    private final JButton disableInstalledButton = ModernButtonFactory.createButton(
+            I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DISABLE), false);
+    private final JButton uninstallInstalledButton = ModernButtonFactory.createButton(
+            I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_UNINSTALL), false);
 
-    private final JButton loadCatalogButton = new JButton(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_LOAD));
-    private final JButton installMarketButton = new JButton(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_ACTION_INSTALL));
-    private final JButton useOfficialGithubCatalogButton = new JButton(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_OFFICIAL_GITHUB));
-    private final JButton useOfficialGiteeCatalogButton = new JButton(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_OFFICIAL_GITEE));
+    private final JButton loadCatalogButton = ModernButtonFactory.createButton(
+            I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_LOAD), false);
+    private final JButton installMarketButton = ModernButtonFactory.createButton(
+            I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_ACTION_INSTALL), true);
+    private final JToggleButton useOfficialGithubCatalogButton = ModernButtonFactory.createToggleButton(
+            I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_OFFICIAL_GITHUB));
+    private final JToggleButton useOfficialGiteeCatalogButton = ModernButtonFactory.createToggleButton(
+            I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_OFFICIAL_GITEE));
 
     private final JLabel installedDetailTitleLabel = createDetailTitleLabel();
     private final JLabel installedDetailMetaLabel = createMutedLabel();
@@ -118,8 +129,6 @@ public class PluginManagerDialog extends JDialog {
         contentPanel.add(createMarketPanel(), VIEW_MARKET);
         content.add(contentPanel, "grow, push, wrap");
         content.add(createFooterPanel(), "growx");
-
-        configureActionButtons();
 
         installLocalButton.addActionListener(e -> installLocalPluginJar());
         openDirButton.addActionListener(e -> openManagedPluginDirectory());
@@ -244,21 +253,9 @@ public class PluginManagerDialog extends JDialog {
         ));
         panel.setOpaque(false);
 
-        configureViewToggle(installedViewButton);
-        configureViewToggle(marketViewButton);
-
         panel.add(installedViewButton);
         panel.add(marketViewButton);
         return panel;
-    }
-
-    private void configureViewToggle(AbstractButton button) {
-        button.setFocusPainted(false);
-        button.setOpaque(true);
-        button.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(ModernColors.getBorderLightColor()),
-                new EmptyBorder(8, 14, 8, 14)
-        ));
     }
 
     private JPanel createInstalledPanel() {
@@ -437,9 +434,9 @@ public class PluginManagerDialog extends JDialog {
         ));
         panel.setOpaque(false);
 
-        JButton closeButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLOSE));
+        JButton closeButton = ModernButtonFactory.createButton(
+                I18nUtil.getMessage(MessageKeys.BUTTON_CLOSE), false);
         closeButton.addActionListener(e -> dispose());
-        configureButton(closeButton, false);
 
         panel.add(statusMessageLabel, "growx");
         panel.add(closeButton, "alignx right");
@@ -839,30 +836,13 @@ public class PluginManagerDialog extends JDialog {
         contentLayout.show(contentPanel, view);
         installedViewButton.setSelected(VIEW_INSTALLED.equals(view));
         marketViewButton.setSelected(VIEW_MARKET.equals(view));
-        refreshViewToggleStyles();
-    }
-
-    private void refreshViewToggleStyles() {
-        applyViewToggleStyle(installedViewButton);
-        applyViewToggleStyle(marketViewButton);
-    }
-
-    private void applyViewToggleStyle(AbstractButton button) {
-        boolean selected = button.isSelected();
-        button.setBackground(selected ? ModernColors.PRIMARY : ModernColors.getCardBackgroundColor());
-        button.setForeground(selected ? Color.WHITE : ModernColors.getTextPrimary());
     }
 
     private void refreshCatalogSourceButtons() {
         String catalogUrl = PluginManagementService.getCatalogUrl();
         String source = PluginManagementService.detectOfficialCatalogSource(catalogUrl == null ? "" : catalogUrl);
-        applyCatalogSourceButtonStyle(useOfficialGithubCatalogButton, "github".equalsIgnoreCase(source));
-        applyCatalogSourceButtonStyle(useOfficialGiteeCatalogButton, "gitee".equalsIgnoreCase(source));
-    }
-
-    private void applyCatalogSourceButtonStyle(AbstractButton button, boolean selected) {
-        button.setBackground(selected ? ModernColors.PRIMARY : ModernColors.getCardBackgroundColor());
-        button.setForeground(selected ? Color.WHITE : ModernColors.getTextPrimary());
+        useOfficialGithubCatalogButton.setSelected("github".equalsIgnoreCase(source));
+        useOfficialGiteeCatalogButton.setSelected("gitee".equalsIgnoreCase(source));
     }
 
     private String getSelectedInstalledPluginId() {
@@ -1144,19 +1124,6 @@ public class PluginManagerDialog extends JDialog {
         label.setToolTipText(value.length() > 96 ? value : null);
     }
 
-    private void configureActionButtons() {
-        configureButton(installLocalButton, true);
-        configureButton(openDirButton, false);
-        configureButton(refreshInstalledButton, false);
-        configureButton(enableInstalledButton, false);
-        configureButton(disableInstalledButton, false);
-        configureButton(uninstallInstalledButton, false);
-        configureButton(loadCatalogButton, false);
-        configureButton(installMarketButton, true);
-        configureSegmentButton(useOfficialGithubCatalogButton);
-        configureSegmentButton(useOfficialGiteeCatalogButton);
-    }
-
     private void configureListAppearance(JList<?> list) {
         list.setBackground(ModernColors.getCardBackgroundColor());
         list.setForeground(ModernColors.getTextPrimary());
@@ -1170,29 +1137,6 @@ public class PluginManagerDialog extends JDialog {
             return new Color(color.getRed(), color.getGreen(), color.getBlue(), 110);
         }
         return new Color(color.getRed(), color.getGreen(), color.getBlue(), 28);
-    }
-
-    private void configureButton(AbstractButton button, boolean primary) {
-        button.setFocusPainted(false);
-        button.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(primary ? ModernColors.PRIMARY : ModernColors.getBorderLightColor()),
-                new EmptyBorder(7, 12, 7, 12)
-        ));
-        if (primary) {
-            button.setBackground(ModernColors.PRIMARY);
-            button.setForeground(Color.WHITE);
-            button.setOpaque(true);
-        } else {
-            button.setOpaque(true);
-            button.setBackground(ModernColors.getCardBackgroundColor());
-            button.setForeground(ModernColors.getTextPrimary());
-        }
-    }
-
-    private void configureSegmentButton(AbstractButton button) {
-        button.setFocusPainted(false);
-        button.setOpaque(true);
-        button.setBorder(new EmptyBorder(7, 12, 7, 12));
     }
 
     private static String shorten(String value, int maxLength) {

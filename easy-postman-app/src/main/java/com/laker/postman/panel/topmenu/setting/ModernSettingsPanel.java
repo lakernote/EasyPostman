@@ -1,6 +1,7 @@
 package com.laker.postman.panel.topmenu.setting;
 
 import com.formdev.flatlaf.FlatLaf;
+import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -426,75 +427,7 @@ public abstract class ModernSettingsPanel extends JPanel {
      * 创建现代化按钮
      */
     protected JButton createModernButton(String text, boolean isPrimary) {
-        JButton button = new JButton(text) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-                // 背景
-                if (isPrimary) {
-                    if (!isEnabled()) {
-                        g2.setColor(ModernColors.getTextDisabled());
-                    } else if (getModel().isPressed()) {
-                        g2.setColor(ModernColors.PRIMARY_DARKER);
-                    } else if (getModel().isRollover()) {
-                        g2.setColor(ModernColors.PRIMARY_DARK);
-                    } else {
-                        g2.setColor(ModernColors.PRIMARY);
-                    }
-                } else {
-                    if (!isEnabled()) {
-                        g2.setColor(getBackgroundColor());
-                    } else if (getModel().isPressed()) {
-                        g2.setColor(getButtonDarkColor());
-                    } else if (getModel().isRollover()) {
-                        g2.setColor(getHoverBackgroundColor());
-                    } else {
-                        g2.setColor(getCardBackgroundColor());
-                    }
-                }
-
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
-
-                // 边框（非主按钮）
-                if (!isPrimary) {
-                    g2.setColor(isEnabled() ? getBorderMediumColor() : getBorderLightColor());
-                    g2.setStroke(new BasicStroke(1));
-                    g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
-                }
-
-                g2.dispose();
-
-                // 文字
-                super.paintComponent(g);
-            }
-        };
-
-        button.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        button.setForeground(isPrimary ? ModernColors.getTextInverse() : getTextPrimaryColor());
-        button.setPreferredSize(new Dimension(100, 34));
-        button.setContentAreaFilled(false);
-        button.setBorderPainted(false);
-        button.setFocusPainted(false);
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        // 悬停动画
-        button.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                if (button.isEnabled()) {
-                    button.repaint();
-                }
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                button.repaint();
-            }
-        });
-
-        return button;
+        return ModernButtonFactory.createButton(text, isPrimary);
     }
 
     /**
@@ -946,4 +879,3 @@ public abstract class ModernSettingsPanel extends JPanel {
         return hasUnsavedChanges;
     }
 }
-

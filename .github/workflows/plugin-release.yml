@@ -453,6 +453,10 @@ jobs:
           min_platform_version = os.environ.get("MIN_PLATFORM_VERSION", "")
           max_platform_version = os.environ.get("MAX_PLATFORM_VERSION", "")
 
+          def put_if_not_blank(target, key, value):
+              if value is not None and str(value).strip():
+                  target[key] = value
+
           updates = []
           if os.environ["UPDATE_GITHUB_CATALOG"].lower() == "true":
               updates.extend([
@@ -492,11 +496,11 @@ jobs:
                   "downloadUrl": download_url,
                   "homepage": homepage,
                   "sha256": sha256,
-                  "minAppVersion": min_app_version,
-                  "maxAppVersion": max_app_version,
-                  "minPlatformVersion": min_platform_version,
-                  "maxPlatformVersion": max_platform_version,
               }
+              put_if_not_blank(new_entry, "minAppVersion", min_app_version)
+              put_if_not_blank(new_entry, "maxAppVersion", max_app_version)
+              put_if_not_blank(new_entry, "minPlatformVersion", min_platform_version)
+              put_if_not_blank(new_entry, "maxPlatformVersion", max_platform_version)
               for idx, entry in enumerate(plugins):
                   if entry.get("id") == plugin_id:
                       plugins[idx] = new_entry

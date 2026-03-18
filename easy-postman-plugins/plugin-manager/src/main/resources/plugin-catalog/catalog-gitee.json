@@ -1,6 +1,6 @@
 {
   "name": "EasyPostman Official Plugin Catalog (Gitee)",
-  "generatedAt": "2026-03-16T00:00:00Z",
+  "generatedAt": "2026-03-18T06:07:44Z",
   "plugins": [
     {
       "id": "plugin-redis",
@@ -9,7 +9,9 @@
       "description": "Redis toolbox panel, pm.redis script API, completions and snippets.",
       "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-redis-v5.3.16/easy-postman-5.3.16-plugin-redis.jar",
       "homepage": "https://gitee.com/lakernote/easy-postman",
-      "sha256": "",
+      "sha256": "48da808b8f29a4e7b4246bb4f50b694e37b63e00554478debba11c757d8569aa",
+      "minAppVersion": "",
+      "maxAppVersion": "",
       "minPlatformVersion": "1.0.0",
       "maxPlatformVersion": "1.0.0"
     },

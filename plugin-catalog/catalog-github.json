@@ -1,6 +1,6 @@
 {
   "name": "EasyPostman Official Plugin Catalog (GitHub)",
-  "generatedAt": "2026-03-18T06:50:02Z",
+  "generatedAt": "2026-03-18T07:03:34Z",
   "plugins": [
     {
       "id": "plugin-redis",
@@ -18,9 +18,9 @@
       "name": "Kafka Plugin",
       "version": "5.3.17",
       "description": "Kafka toolbox panel, pm.kafka script API, completions and snippets.",
-      "downloadUrl": "https://github.com/lakernote/easy-postman/releases/download/plugin-kafka-v5.3.17/easy-postman-5.3.17-plugin-kafka.jar",
-      "homepage": "https://github.com/lakernote/easy-postman",
-      "sha256": "",
+      "downloadUrl": "https://github.com/lakernote/EasyPostman/releases/download/plugin-kafka-v5.3.17/easy-postman-5.3.17-plugin-kafka.jar",
+      "homepage": "https://github.com/lakernote/EasyPostman",
+      "sha256": "93115139115cd0018552fd79104b93bda64b184c4a59874caf143d8454476e9d",
       "minPlatformVersion": "1.0.0",
       "maxPlatformVersion": "1.0.0"
     },

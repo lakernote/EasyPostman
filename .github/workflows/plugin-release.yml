@@ -1,4 +1,6 @@
 name: Plugin Release（插件独立发版）
+run-name: >-
+  Plugin Release / ${{ inputs.plugin }} / ${{ inputs.dry_run && 'dry-run' || 'release' }}
 
 permissions:
   contents: write

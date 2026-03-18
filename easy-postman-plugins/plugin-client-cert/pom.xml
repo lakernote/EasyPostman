@@ -15,7 +15,7 @@
         插件版本单独维护。
         初始独立版本从 5.3.16 起步，后续只在该插件有变更时单独递增。
      -->
-    <version>5.3.16</version>
+    <version>5.3.18</version>
     <artifactId>easy-postman-plugin-client-cert</artifactId>
     <packaging>jar</packaging>
 
@@ -34,6 +34,7 @@
         <plugin.name>Client Certificate Plugin</plugin.name>
         <plugin.entryClass>com.laker.postman.plugin.clientcert.ClientCertificatePlugin</plugin.entryClass>
         <plugin.description>Client certificate management and mTLS key material loading.</plugin.description>
+        <plugin.minAppVersion>5.3.18</plugin.minAppVersion>
         <!--
             运行时插件平台兼容范围，匹配的是 runtime/SPI 装配边界，不是宿主发行版 revision。
             这里不要直接跟随 ${revision}：

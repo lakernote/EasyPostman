@@ -10,8 +10,6 @@
       "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-redis-v5.3.16/easy-postman-5.3.16-plugin-redis.jar",
       "homepage": "https://gitee.com/lakernote/easy-postman",
       "sha256": "48da808b8f29a4e7b4246bb4f50b694e37b63e00554478debba11c757d8569aa",
-      "minAppVersion": "",
-      "maxAppVersion": "",
       "minPlatformVersion": "1.0.0",
       "maxPlatformVersion": "1.0.0"
     },

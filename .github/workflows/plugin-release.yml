@@ -456,6 +456,17 @@ jobs:
               if value is not None and str(value).strip():
                   target[key] = value
 
+          def version_sort_key(value):
+              text = str(value or "").strip()
+              if text.startswith("v"):
+                  text = text[1:]
+              core = text.split("-", 1)[0].split("+", 1)[0]
+              parts = []
+              for token in core.split("."):
+                  digits = "".join(ch for ch in token if ch.isdigit())
+                  parts.append(int(digits or "0"))
+              return tuple(parts)
+
           updates = []
           if os.environ["UPDATE_GITHUB_CATALOG"].lower() == "true":
               updates.extend([
@@ -487,44 +498,96 @@ jobs:
           for path, download_url, homepage in updates:
               data = json.loads(path.read_text(encoding="utf-8"))
               plugins = data.setdefault("plugins", [])
-              new_entry = {
-                  "id": plugin_id,
-                  "name": plugin_name,
-                  "version": plugin_version,
-                  "description": plugin_description,
-                  "downloadUrl": download_url,
-                  "homepage": homepage,
-                  "sha256": sha256,
-              }
-              put_if_not_blank(new_entry, "minAppVersion", min_app_version)
-              put_if_not_blank(new_entry, "maxAppVersion", max_app_version)
-              put_if_not_blank(new_entry, "minPlatformVersion", min_platform_version)
-              put_if_not_blank(new_entry, "maxPlatformVersion", max_platform_version)
-              for idx, entry in enumerate(plugins):
+              plugin_entry = None
+              for entry in plugins:
                   if entry.get("id") == plugin_id:
-                      plugins[idx] = new_entry
+                      plugin_entry = entry
                       break
               else:
-                  plugins.append(new_entry)
+                  plugin_entry = {
+                      "id": plugin_id,
+                      "name": plugin_name,
+                      "description": plugin_description,
+                      "homepage": homepage,
+                      "releases": [],
+                  }
+                  plugins.append(plugin_entry)
+
+              plugin_entry["name"] = plugin_name
+              plugin_entry["description"] = plugin_description
+              plugin_entry["homepage"] = homepage
+
+              releases = plugin_entry.get("releases")
+              if not isinstance(releases, list):
+                  releases = []
+                  plugin_entry["releases"] = releases
+
+              if not releases and plugin_entry.get("version") and plugin_entry.get("downloadUrl"):
+                  migrated_release = {
+                      "version": plugin_entry.get("version"),
+                      "downloadUrl": plugin_entry.get("downloadUrl"),
+                      "sha256": plugin_entry.get("sha256", ""),
+                  }
+                  put_if_not_blank(migrated_release, "minAppVersion", plugin_entry.get("minAppVersion", ""))
+                  put_if_not_blank(migrated_release, "maxAppVersion", plugin_entry.get("maxAppVersion", ""))
+                  put_if_not_blank(migrated_release, "minPlatformVersion", plugin_entry.get("minPlatformVersion", ""))
+                  put_if_not_blank(migrated_release, "maxPlatformVersion", plugin_entry.get("maxPlatformVersion", ""))
+                  releases.append(migrated_release)
+
+              for legacy_key in (
+                  "version",
+                  "downloadUrl",
+                  "download_url",
+                  "sha256",
+                  "minAppVersion",
+                  "maxAppVersion",
+                  "minPlatformVersion",
+                  "maxPlatformVersion",
+              ):
+                  plugin_entry.pop(legacy_key, None)
+
+              new_release = {
+                  "version": plugin_version,
+                  "downloadUrl": download_url,
+                  "sha256": sha256,
+              }
+              put_if_not_blank(new_release, "minAppVersion", min_app_version)
+              put_if_not_blank(new_release, "maxAppVersion", max_app_version)
+              put_if_not_blank(new_release, "minPlatformVersion", min_platform_version)
+              put_if_not_blank(new_release, "maxPlatformVersion", max_platform_version)
+
+              for idx, release in enumerate(releases):
+                  if release.get("version") == plugin_version:
+                      releases[idx] = new_release
+                      break
+              else:
+                  releases.append(new_release)
+
+              releases.sort(key=lambda release: version_sort_key(release.get("version")), reverse=True)
+              plugins.sort(key=lambda entry: entry.get("id", ""))
               data["generatedAt"] = generated_at
               path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
-              matched = next((entry for entry in data["plugins"] if entry.get("id") == plugin_id), None)
-              if matched is None:
-                  raise SystemExit(f"Catalog entry missing after update: {path} -> {plugin_id}")
-              if matched.get("version") != plugin_version:
-                  raise SystemExit(f"Catalog version mismatch in {path}: {matched.get('version')} != {plugin_version}")
-              if matched.get("downloadUrl") != download_url:
+              matched_plugin = next((entry for entry in data["plugins"] if entry.get("id") == plugin_id), None)
+              if matched_plugin is None:
+                  raise SystemExit(f"Catalog plugin entry missing after update: {path} -> {plugin_id}")
+              matched_release = next((release for release in matched_plugin.get("releases", [])
+                                      if release.get("version") == plugin_version), None)
+              if matched_release is None:
+                  raise SystemExit(f"Catalog entry missing after update: {path} -> {plugin_id} {plugin_version}")
+              if matched_release.get("version") != plugin_version:
+                  raise SystemExit(f"Catalog version mismatch in {path}: {matched_release.get('version')} != {plugin_version}")
+              if matched_release.get("downloadUrl") != download_url:
                   raise SystemExit(f"Catalog downloadUrl mismatch in {path}")
-              if matched.get("sha256") != sha256:
+              if matched_release.get("sha256") != sha256:
                   raise SystemExit(f"Catalog sha256 mismatch in {path}")
-              if matched.get("minAppVersion", "") != min_app_version:
+              if matched_release.get("minAppVersion", "") != min_app_version:
                   raise SystemExit(f"Catalog minAppVersion mismatch in {path}")
-              if matched.get("maxAppVersion", "") != max_app_version:
+              if matched_release.get("maxAppVersion", "") != max_app_version:
                   raise SystemExit(f"Catalog maxAppVersion mismatch in {path}")
-              if matched.get("minPlatformVersion", "") != min_platform_version:
+              if matched_release.get("minPlatformVersion", "") != min_platform_version:
                   raise SystemExit(f"Catalog minPlatformVersion mismatch in {path}")
-              if matched.get("maxPlatformVersion", "") != max_platform_version:
+              if matched_release.get("maxPlatformVersion", "") != max_platform_version:
                   raise SystemExit(f"Catalog maxPlatformVersion mismatch in {path}")
           PY
 

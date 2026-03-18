@@ -1,5 +1,6 @@
 package com.laker.postman.plugin.manager.market;
 
+import com.laker.postman.plugin.runtime.PluginRuntime;
 import com.laker.postman.plugin.runtime.PluginSettingsStore;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -96,39 +97,125 @@ public class PluginCatalogService {
         }
     }
 
+    static List<PluginCatalogEntry> parseCatalogForTests(String json, String baseUrl) throws Exception {
+        return parseCatalog(json, URI.create(baseUrl).resolve("."));
+    }
+
+    static List<PluginCatalogEntry> parseCatalogForTests(String json,
+                                                         String baseUrl,
+                                                         String currentAppVersion,
+                                                         String currentPlatformVersion) throws Exception {
+        return parseCatalog(json, URI.create(baseUrl).resolve("."), currentAppVersion, currentPlatformVersion);
+    }
+
     private static List<PluginCatalogEntry> parseCatalog(String json, URI catalogBaseUri) throws Exception {
+        return parseCatalog(
+                json,
+                catalogBaseUri,
+                PluginRuntime.getCurrentAppVersion(),
+                PluginRuntime.getCurrentPluginPlatformVersion()
+        );
+    }
+
+    private static List<PluginCatalogEntry> parseCatalog(String json,
+                                                         URI catalogBaseUri,
+                                                         String currentAppVersion,
+                                                         String currentPlatformVersion) throws Exception {
         JsonNode root = MAPPER.readTree(json);
         JsonNode plugins = root.get("plugins");
-        List<PluginCatalogEntry> entries = new ArrayList<>();
+        List<PluginCatalogEntry> candidates = new ArrayList<>();
         if (plugins == null || !plugins.isArray()) {
-            return entries;
+            return candidates;
         }
         for (JsonNode pluginJson : plugins) {
-            String downloadUrl = text(pluginJson, "downloadUrl", text(pluginJson, "download_url", ""));
-            String id = text(pluginJson, "id", "");
-            String entryName = text(pluginJson, "name", id);
-            String version = text(pluginJson, "version", "dev");
-            if (id.isBlank() || downloadUrl.isBlank()) {
-                log.warn("Skip invalid plugin catalog entry: {}", pluginJson);
-                continue;
-            }
-            String resolvedDownloadUrl = resolveLocation(catalogBaseUri, downloadUrl);
-            entries.add(new PluginCatalogEntry(
-                    id,
-                    entryName,
-                    version,
-                    text(pluginJson, "description", ""),
-                    downloadUrl,
-                    text(pluginJson, "homepage", text(pluginJson, "homepageUrl", "")),
-                    text(pluginJson, "sha256", ""),
-                    resolvedDownloadUrl,
-                    text(pluginJson, "minAppVersion", ""),
-                    text(pluginJson, "maxAppVersion", ""),
-                    text(pluginJson, "minPlatformVersion", ""),
-                    text(pluginJson, "maxPlatformVersion", "")
-            ));
+            candidates.addAll(parsePluginEntries(pluginJson, catalogBaseUri));
         }
-        return entries;
+        return PluginCatalogVersionSelector.selectForHost(
+                candidates,
+                currentAppVersion,
+                currentPlatformVersion
+        );
+    }
+
+    private static List<PluginCatalogEntry> parsePluginEntries(JsonNode pluginJson, URI catalogBaseUri) {
+        String id = text(pluginJson, "id", "");
+        String entryName = text(pluginJson, "name", id);
+        String description = text(pluginJson, "description", "");
+        String homepage = text(pluginJson, "homepage", text(pluginJson, "homepageUrl", ""));
+        if (id.isBlank()) {
+            log.warn("Skip invalid plugin catalog entry without id: {}", pluginJson);
+            return List.of();
+        }
+
+        JsonNode releases = pluginJson.get("releases");
+        if (releases != null && releases.isArray()) {
+            List<PluginCatalogEntry> entries = new ArrayList<>();
+            for (JsonNode releaseJson : releases) {
+                PluginCatalogEntry entry = parseReleaseEntry(id, entryName, description, homepage, releaseJson, catalogBaseUri);
+                if (entry != null) {
+                    entries.add(entry);
+                }
+            }
+            return entries;
+        }
+
+        PluginCatalogEntry legacyEntry = parseFlatEntry(pluginJson, catalogBaseUri);
+        return legacyEntry == null ? List.of() : List.of(legacyEntry);
+    }
+
+    private static PluginCatalogEntry parseFlatEntry(JsonNode pluginJson, URI catalogBaseUri) {
+        String downloadUrl = text(pluginJson, "downloadUrl", text(pluginJson, "download_url", ""));
+        String id = text(pluginJson, "id", "");
+        String entryName = text(pluginJson, "name", id);
+        String version = text(pluginJson, "version", "dev");
+        if (id.isBlank() || downloadUrl.isBlank()) {
+            log.warn("Skip invalid plugin catalog entry: {}", pluginJson);
+            return null;
+        }
+        String resolvedDownloadUrl = resolveLocation(catalogBaseUri, downloadUrl);
+        return new PluginCatalogEntry(
+                id,
+                entryName,
+                version,
+                text(pluginJson, "description", ""),
+                downloadUrl,
+                text(pluginJson, "homepage", text(pluginJson, "homepageUrl", "")),
+                text(pluginJson, "sha256", ""),
+                resolvedDownloadUrl,
+                text(pluginJson, "minAppVersion", ""),
+                text(pluginJson, "maxAppVersion", ""),
+                text(pluginJson, "minPlatformVersion", ""),
+                text(pluginJson, "maxPlatformVersion", "")
+        );
+    }
+
+    private static PluginCatalogEntry parseReleaseEntry(String id,
+                                                        String entryName,
+                                                        String description,
+                                                        String homepage,
+                                                        JsonNode releaseJson,
+                                                        URI catalogBaseUri) {
+        String downloadUrl = text(releaseJson, "downloadUrl", text(releaseJson, "download_url", ""));
+        String version = text(releaseJson, "version", "dev");
+        if (downloadUrl.isBlank()) {
+            log.warn("Skip invalid plugin release entry: {} {}", id, releaseJson);
+            return null;
+        }
+        String resolvedDownloadUrl = resolveLocation(catalogBaseUri, downloadUrl);
+        return new PluginCatalogEntry(
+                id,
+                entryName,
+                version,
+                text(releaseJson, "description", description),
+                downloadUrl,
+                text(releaseJson, "homepage", text(releaseJson, "homepageUrl", homepage)),
+                text(releaseJson, "sha256", ""),
+                resolvedDownloadUrl,
+                text(releaseJson, "minAppVersion", ""),
+                text(releaseJson, "maxAppVersion", ""),
+                text(releaseJson, "minPlatformVersion", ""),
+                text(releaseJson, "maxPlatformVersion", "")
+        );
     }
 
     private static String readText(String url) throws Exception {

@@ -3,48 +3,64 @@
   "generatedAt": "2026-03-18T07:28:13Z",
   "plugins": [
     {
-      "id": "plugin-redis",
-      "name": "Redis Plugin",
-      "version": "5.3.16",
-      "description": "Redis toolbox panel, pm.redis script API, completions and snippets.",
-      "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-redis-v5.3.16/easy-postman-5.3.16-plugin-redis.jar",
+      "id": "plugin-client-cert",
+      "name": "Client Certificate Plugin",
+      "description": "Client certificate management and mTLS key material loading.",
       "homepage": "https://gitee.com/lakernote/easy-postman",
-      "sha256": "690075ae246adfbee8278d8bccb3d504ad118b244591fad702a503d9ed5900f5",
-      "minPlatformVersion": "1.0.0",
-      "maxPlatformVersion": "1.0.0"
-    },
-    {
-      "id": "plugin-kafka",
-      "name": "Kafka Plugin",
-      "version": "5.3.17",
-      "description": "Kafka toolbox panel, pm.kafka script API, completions and snippets.",
-      "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-kafka-v5.3.17/easy-postman-5.3.17-plugin-kafka.jar",
-      "homepage": "https://gitee.com/lakernote/easy-postman",
-      "sha256": "93115139115cd0018552fd79104b93bda64b184c4a59874caf143d8454476e9d",
-      "minPlatformVersion": "1.0.0",
-      "maxPlatformVersion": "1.0.0"
+      "releases": [
+        {
+          "version": "5.3.16",
+          "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-client-cert-v5.3.16/easy-postman-5.3.16-plugin-client-cert.jar",
+          "sha256": "f768523a6d0289706ec3d4ee61096a16b24e012ac11aab516e55d9cc7b08768a",
+          "minPlatformVersion": "1.0.0",
+          "maxPlatformVersion": "1.0.0"
+        }
+      ]
     },
     {
       "id": "plugin-decompiler",
       "name": "Decompiler Plugin",
-      "version": "5.3.16",
       "description": "Java decompiler toolbox panel powered by CFR.",
-      "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-decompiler-v5.3.16/easy-postman-5.3.16-plugin-decompiler.jar",
       "homepage": "https://gitee.com/lakernote/easy-postman",
-      "sha256": "a578fa0557d9df7059a61aca4987c79e547f58a68e1f12b30eb60fe503d98f30",
-      "minPlatformVersion": "1.0.0",
-      "maxPlatformVersion": "1.0.0"
+      "releases": [
+        {
+          "version": "5.3.16",
+          "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-decompiler-v5.3.16/easy-postman-5.3.16-plugin-decompiler.jar",
+          "sha256": "a578fa0557d9df7059a61aca4987c79e547f58a68e1f12b30eb60fe503d98f30",
+          "minPlatformVersion": "1.0.0",
+          "maxPlatformVersion": "1.0.0"
+        }
+      ]
     },
     {
-      "id": "plugin-client-cert",
-      "name": "Client Certificate Plugin",
-      "version": "5.3.16",
-      "description": "Client certificate management and mTLS key material loading.",
-      "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-client-cert-v5.3.16/easy-postman-5.3.16-plugin-client-cert.jar",
+      "id": "plugin-kafka",
+      "name": "Kafka Plugin",
+      "description": "Kafka toolbox panel, pm.kafka script API, completions and snippets.",
       "homepage": "https://gitee.com/lakernote/easy-postman",
-      "sha256": "f768523a6d0289706ec3d4ee61096a16b24e012ac11aab516e55d9cc7b08768a",
-      "minPlatformVersion": "1.0.0",
-      "maxPlatformVersion": "1.0.0"
+      "releases": [
+        {
+          "version": "5.3.17",
+          "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-kafka-v5.3.17/easy-postman-5.3.17-plugin-kafka.jar",
+          "sha256": "93115139115cd0018552fd79104b93bda64b184c4a59874caf143d8454476e9d",
+          "minPlatformVersion": "1.0.0",
+          "maxPlatformVersion": "1.0.0"
+        }
+      ]
+    },
+    {
+      "id": "plugin-redis",
+      "name": "Redis Plugin",
+      "description": "Redis toolbox panel, pm.redis script API, completions and snippets.",
+      "homepage": "https://gitee.com/lakernote/easy-postman",
+      "releases": [
+        {
+          "version": "5.3.16",
+          "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-redis-v5.3.16/easy-postman-5.3.16-plugin-redis.jar",
+          "sha256": "690075ae246adfbee8278d8bccb3d504ad118b244591fad702a503d9ed5900f5",
+          "minPlatformVersion": "1.0.0",
+          "maxPlatformVersion": "1.0.0"
+        }
+      ]
     }
   ]
 }

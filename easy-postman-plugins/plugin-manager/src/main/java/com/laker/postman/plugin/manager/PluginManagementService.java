@@ -3,6 +3,7 @@ package com.laker.postman.plugin.manager;
 import com.laker.postman.plugin.api.PluginDescriptor;
 import com.laker.postman.plugin.manager.market.PluginCatalogEntry;
 import com.laker.postman.plugin.manager.market.PluginCatalogService;
+import com.laker.postman.plugin.manager.market.PluginCatalogVersionSelector;
 import com.laker.postman.plugin.manager.market.PluginInstallController;
 import com.laker.postman.plugin.manager.market.PluginInstallerService;
 import com.laker.postman.plugin.manager.market.PluginInstallProgressListener;
@@ -50,6 +51,20 @@ public class PluginManagementService {
 
     public static List<PluginCatalogEntry> loadBundledOfficialCatalog(String source) throws Exception {
         return PluginCatalogService.loadBundledOfficialCatalog(source);
+    }
+
+    public static List<PluginCatalogEntry> selectCatalogEntriesForCurrentHost(List<PluginCatalogEntry> entries) {
+        return selectCatalogEntriesForHost(
+                entries,
+                PluginRuntime.getCurrentAppVersion(),
+                PluginRuntime.getCurrentPluginPlatformVersion()
+        );
+    }
+
+    static List<PluginCatalogEntry> selectCatalogEntriesForHost(List<PluginCatalogEntry> entries,
+                                                                String currentAppVersion,
+                                                                String currentPlatformVersion) {
+        return PluginCatalogVersionSelector.selectForHost(entries, currentAppVersion, currentPlatformVersion);
     }
 
     public static Path getManagedPluginDir() {

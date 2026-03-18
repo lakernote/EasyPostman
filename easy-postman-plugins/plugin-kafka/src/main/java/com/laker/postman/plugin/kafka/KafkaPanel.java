@@ -37,6 +37,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.laker.postman.plugin.kafka.KafkaI18n.t;
+
 /**
  * Kafka 工具面板：Topic 浏览 + 发送消息 + 实时消费。
  */
@@ -71,10 +73,6 @@ public class KafkaPanel extends JPanel {
 
     public KafkaPanel() {
         initUI();
-    }
-
-    private static String t(String key, Object... args) {
-        return I18nUtil.getMessage(key, args);
     }
 
     private void initUI() {

@@ -1,8 +1,7 @@
 package com.laker.postman.plugin.kafka.consumer.ui;
 
+import com.laker.postman.plugin.kafka.MessageKeys;
 import com.laker.postman.common.component.button.SecondaryButton;
-import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
 import java.awt.*;
@@ -13,6 +12,8 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+
+import static com.laker.postman.plugin.kafka.KafkaI18n.t;
 
 public class KafkaPartitionSelector extends JPanel {
 
@@ -137,9 +138,5 @@ public class KafkaPartitionSelector extends JPanel {
                 .reduce((left, right) -> left + "," + right)
                 .orElse(t(MessageKeys.TOOLBOX_KAFKA_ALL_PARTITIONS));
         triggerButton.setText(text);
-    }
-
-    private static String t(String key, Object... args) {
-        return I18nUtil.getMessage(key, args);
     }
 }

@@ -6,7 +6,10 @@ import lombok.extern.slf4j.Slf4j;
 import java.text.MessageFormat;
 import java.util.Locale;
 import java.util.MissingResourceException;
+import java.util.Objects;
 import java.util.ResourceBundle;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * 国际化工具类
@@ -17,6 +20,7 @@ public class I18nUtil {
     private static final String BUNDLE_NAME = "messages";
     private static ResourceBundle resourceBundle;
     private static Locale currentLocale;
+    private static final ConcurrentMap<BundleCacheKey, ResourceBundle> BUNDLE_CACHE = new ConcurrentHashMap<>();
 
     static {
         // 从用户设置中读取语言设置，默认使用系统语言
@@ -76,6 +80,13 @@ public class I18nUtil {
         }
     }
 
+    private static ResourceBundle getBundle(String bundleName, Locale locale, ClassLoader classLoader) {
+        ClassLoader resolvedClassLoader = classLoader != null ? classLoader : I18nUtil.class.getClassLoader();
+        BundleCacheKey cacheKey = new BundleCacheKey(bundleName, locale, resolvedClassLoader);
+        return BUNDLE_CACHE.computeIfAbsent(cacheKey, key -> ResourceBundle.getBundle(
+                key.bundleName(), key.locale(), key.classLoader()));
+    }
+
     /**
      * 获取国际化消息
      *
@@ -108,6 +119,19 @@ public class I18nUtil {
         }
     }
 
+    public static String getMessage(String bundleName, ClassLoader classLoader, String key, Object... args) {
+        String pattern = key;
+        try {
+            ResourceBundle bundle = getBundle(bundleName, currentLocale, classLoader);
+            pattern = bundle.getString(key);
+        } catch (MissingResourceException e) {
+            log.warn("Missing resource key: {} in bundle: {}", key, bundleName);
+        } catch (Exception e) {
+            log.warn("Failed to load resource key: {} in bundle: {}", key, bundleName, e);
+        }
+        return args == null || args.length == 0 ? pattern : MessageFormat.format(pattern, args);
+    }
+
     /**
      * 设置语言环境
      *
@@ -116,6 +140,7 @@ public class I18nUtil {
     public static void setLocale(Locale locale) {
         if (locale != null && !locale.equals(currentLocale)) {
             currentLocale = locale;
+            BUNDLE_CACHE.clear();
             loadResourceBundle();
 
             // 保存到用户设置
@@ -151,5 +176,13 @@ public class I18nUtil {
     public static boolean isChinese() {
         return Locale.CHINESE.equals(currentLocale) ||
                 "zh".equals(currentLocale.getLanguage());
+    }
+
+    private record BundleCacheKey(String bundleName, Locale locale, ClassLoader classLoader) {
+        private BundleCacheKey {
+            Objects.requireNonNull(bundleName, "bundleName");
+            Objects.requireNonNull(locale, "locale");
+            Objects.requireNonNull(classLoader, "classLoader");
+        }
     }
 }

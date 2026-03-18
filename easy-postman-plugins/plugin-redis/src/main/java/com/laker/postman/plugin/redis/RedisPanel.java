@@ -7,11 +7,7 @@ import com.laker.postman.common.component.button.ClearButton;
 import com.laker.postman.common.component.button.PrimaryButton;
 import com.laker.postman.common.component.button.RefreshButton;
 import com.laker.postman.common.component.button.SecondaryButton;
-import com.laker.postman.util.EditorThemeUtil;
-import com.laker.postman.util.FontsUtil;
-import com.laker.postman.util.IconUtil;
-import com.laker.postman.util.JsonUtil;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
 import net.miginfocom.swing.MigLayout;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
@@ -26,13 +22,14 @@ import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
-import java.util.List;
 import java.util.*;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Slf4j
 public class RedisPanel extends JPanel {
+    private static final String BUNDLE_NAME = "redis-messages";
 
     private static final String LABEL_DISABLED_FG = "Label.disabledForeground";
     private static final String SEPARATOR_FG = "Separator.foreground";
@@ -127,7 +124,7 @@ public class RedisPanel extends JPanel {
     }
 
     private static String t(String key, Object... args) {
-        return I18nUtil.getMessage(key, args);
+        return I18nUtil.getMessage(BUNDLE_NAME, RedisPanel.class.getClassLoader(), key, args);
     }
 
     private void initUI() {
@@ -875,7 +872,8 @@ public class RedisPanel extends JPanel {
                 long end = argList.size() < 2 ? 99L : parseLongOrThrow(argList.get(1), "end");
                 yield jedis.zrange(key, start, end);
             }
-            default -> throw new IllegalArgumentException(t(MessageKeys.TOOLBOX_REDIS_ERR_UNSUPPORTED_COMMAND, command));
+            default ->
+                    throw new IllegalArgumentException(t(MessageKeys.TOOLBOX_REDIS_ERR_UNSUPPORTED_COMMAND, command));
         };
     }
 

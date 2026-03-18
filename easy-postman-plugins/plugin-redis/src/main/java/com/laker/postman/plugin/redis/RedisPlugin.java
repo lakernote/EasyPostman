@@ -4,6 +4,7 @@ import com.laker.postman.plugin.api.EasyPostmanPlugin;
 import com.laker.postman.plugin.api.PluginContext;
 import com.laker.postman.plugin.api.SnippetDefinition;
 import com.laker.postman.plugin.api.ToolboxContribution;
+import com.laker.postman.util.I18nUtil;
 import org.fife.ui.autocomplete.BasicCompletion;
 import org.fife.ui.autocomplete.ShorthandCompletion;
 
@@ -12,10 +13,11 @@ import org.fife.ui.autocomplete.ShorthandCompletion;
  */
 public class RedisPlugin implements EasyPostmanPlugin {
 
+    private static final String BUNDLE_NAME = "redis-messages";
     private static final String TOOLBOX_GROUP_DATABASE = "toolbox.group.database";
 
     private static String t(String key, Object... args) {
-        return I18nUtil.getMessage(key, args);
+        return I18nUtil.getMessage(BUNDLE_NAME, RedisPlugin.class.getClassLoader(), key, args);
     }
 
     @Override
@@ -39,17 +41,17 @@ public class RedisPlugin implements EasyPostmanPlugin {
                     "pm.plugin(\"redis\").query", "pm.plugin(\"redis\").query(options)"));
             provider.addCompletion(new ShorthandCompletion(provider, "redis.get",
                     """
-                    const redis = pm.plugin("redis");
-                    const value = redis.execute({
-                      host: "localhost",
-                      port: 6379,
-                      db: 0,
-                      command: "GET",
-                      key: "user:1"
-                    });
-                    pm.test("Redis key exists", function () {
-                      pm.expect(value).to.exist();
-                    });""",
+                            const redis = pm.plugin("redis");
+                            const value = redis.execute({
+                              host: "localhost",
+                              port: 6379,
+                              db: 0,
+                              command: "GET",
+                              key: "user:1"
+                            });
+                            pm.test("Redis key exists", function () {
+                              pm.expect(value).to.exist();
+                            });""",
                     "Redis query + assert"));
         });
         context.registerSnippet(new SnippetDefinition(

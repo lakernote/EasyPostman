@@ -1,14 +1,15 @@
 package com.laker.postman.plugin.kafka.connection.ui;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.laker.postman.plugin.kafka.MessageKeys;
 import com.laker.postman.common.component.button.PrimaryButton;
 import com.laker.postman.common.component.button.SecondaryButton;
-import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.MessageKeys;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.*;
 import java.awt.*;
+
+import static com.laker.postman.plugin.kafka.KafkaI18n.t;
 
 public class KafkaConnectionPanel extends JPanel {
 
@@ -147,9 +148,5 @@ public class KafkaConnectionPanel extends JPanel {
                 BorderFactory.createLineBorder(UIManager.getColor(SEPARATOR_FG)),
                 BorderFactory.createEmptyBorder(6, addLeftPadding ? 10 : 8, 6, 8)));
         return panel;
-    }
-
-    private static String t(String key, Object... args) {
-        return I18nUtil.getMessage(key, args);
     }
 }

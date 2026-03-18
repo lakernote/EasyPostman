@@ -1,6 +1,7 @@
 package com.laker.postman.plugin.kafka.consumer.ui;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.laker.postman.plugin.kafka.MessageKeys;
 import com.laker.postman.plugin.kafka.consumer.KafkaConsumedMessage;
 import com.laker.postman.plugin.kafka.shared.KafkaPanelSupport;
 import com.laker.postman.plugin.kafka.shared.ui.KafkaPropertiesEditorPanel;
@@ -13,10 +14,8 @@ import com.laker.postman.common.component.button.SecondaryButton;
 import com.laker.postman.common.component.table.EnhancedTablePanel;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.EditorThemeUtil;
-import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.JsonUtil;
-import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
 import net.miginfocom.swing.MigLayout;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
@@ -25,6 +24,8 @@ import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+
+import static com.laker.postman.plugin.kafka.KafkaI18n.t;
 
 public class KafkaConsumerPanel extends JPanel {
 
@@ -382,9 +383,5 @@ public class KafkaConsumerPanel extends JPanel {
         lbl.setBorder(new EmptyBorder(2, 6, 2, 6));
         lbl.setOpaque(false);
         return lbl;
-    }
-
-    private static String t(String key, Object... args) {
-        return I18nUtil.getMessage(key, args);
     }
 }

@@ -1,6 +1,7 @@
 package com.laker.postman.plugin.kafka.producer.ui;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.laker.postman.plugin.kafka.MessageKeys;
 import com.laker.postman.plugin.kafka.shared.ui.KafkaPropertiesEditorPanel;
 import com.laker.postman.common.component.PlaceholderTextArea;
 import com.laker.postman.common.component.SearchableTextArea;
@@ -9,9 +10,7 @@ import com.laker.postman.common.component.button.PrimaryButton;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.EditorThemeUtil;
 import com.laker.postman.util.FontsUtil;
-import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
-import com.laker.postman.util.MessageKeys;
 import net.miginfocom.swing.MigLayout;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
@@ -19,6 +18,8 @@ import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+
+import static com.laker.postman.plugin.kafka.KafkaI18n.t;
 
 public class KafkaProducerPanel extends JPanel {
 
@@ -170,9 +171,5 @@ public class KafkaProducerPanel extends JPanel {
 
     public void updateEditorFont() {
         payloadArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-    }
-
-    private static String t(String key, Object... args) {
-        return I18nUtil.getMessage(key, args);
     }
 }

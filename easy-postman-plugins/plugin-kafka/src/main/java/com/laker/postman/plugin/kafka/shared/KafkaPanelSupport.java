@@ -1,9 +1,8 @@
 package com.laker.postman.plugin.kafka.shared;
 
+import com.laker.postman.plugin.kafka.MessageKeys;
 import com.laker.postman.plugin.kafka.consumer.KafkaConsumeStartMode;
-import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.JsonUtil;
-import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -22,6 +21,8 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+import static com.laker.postman.plugin.kafka.KafkaI18n.t;
+
 @Slf4j
 public final class KafkaPanelSupport {
 
@@ -29,11 +30,6 @@ public final class KafkaPanelSupport {
 
     private KafkaPanelSupport() {
     }
-
-    private static String t(String key, Object... args) {
-        return I18nUtil.getMessage(key, args);
-    }
-
     public static String escapeJaasValue(String text) {
         return text.replace("\\", "\\\\").replace("\"", "\\\"");
     }

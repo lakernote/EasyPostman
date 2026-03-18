@@ -38,7 +38,7 @@ public final class ModernButtonFactory {
         JToggleButton button = new JToggleButton(text) {
             @Override
             protected void paintComponent(Graphics g) {
-                paintModernButtonBackground(this, g, isSelected());
+                paintModernToggleButtonBackground(this, g);
                 super.paintComponent(g);
             }
         };
@@ -88,6 +88,20 @@ public final class ModernButtonFactory {
         g2.dispose();
     }
 
+    private static void paintModernToggleButtonBackground(AbstractButton button, Graphics g) {
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        Color background = resolveToggleBackground(button);
+        if (background != null) {
+            g2.setColor(background);
+            g2.fillRoundRect(0, 0, button.getWidth(), button.getHeight(), ARC, ARC);
+        }
+
+        button.setForeground(resolveToggleForeground(button));
+        g2.dispose();
+    }
+
     private static Color resolveBackground(AbstractButton button, boolean primary) {
         ButtonModel model = button.getModel();
 
@@ -114,5 +128,36 @@ public final class ModernButtonFactory {
             return ModernColors.getHoverBackgroundColor();
         }
         return ModernColors.getCardBackgroundColor();
+    }
+
+    private static Color resolveToggleBackground(AbstractButton button) {
+        ButtonModel model = button.getModel();
+
+        if (!button.isEnabled()) {
+            return null;
+        }
+        if (button.isSelected()) {
+            if (model.isPressed()) {
+                return ModernColors.PRIMARY_DARKER;
+            }
+            if (model.isRollover()) {
+                return ModernColors.PRIMARY_DARK;
+            }
+            return ModernColors.PRIMARY;
+        }
+        if (model.isPressed()) {
+            return ModernColors.getButtonPressedColor();
+        }
+        if (model.isRollover()) {
+            return ModernColors.getHoverBackgroundColor();
+        }
+        return null;
+    }
+
+    private static Color resolveToggleForeground(AbstractButton button) {
+        if (!button.isEnabled()) {
+            return ModernColors.getTextDisabled();
+        }
+        return button.isSelected() ? ModernColors.getTextInverse() : ModernColors.getTextPrimary();
     }
 }

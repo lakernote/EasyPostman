@@ -246,13 +246,11 @@ public class PluginManagerDialog extends JDialog {
     }
 
     private JPanel createNavigationPanel() {
-        JPanel panel = new JPanel(new MigLayout(
-                "insets 0, gap 8, novisualpadding",
+        JPanel panel = createSegmentedTogglePanel(new MigLayout(
+                "insets 3, gap 4, novisualpadding",
                 "[][]",
                 "[]"
         ));
-        panel.setOpaque(false);
-
         panel.add(installedViewButton);
         panel.add(marketViewButton);
         return panel;
@@ -386,8 +384,8 @@ public class PluginManagerDialog extends JDialog {
     }
 
     private JPanel createCatalogSourceSegment() {
-        JPanel panel = createSoftCard(new MigLayout(
-                "insets 2, gap 2, novisualpadding",
+        JPanel panel = createSegmentedTogglePanel(new MigLayout(
+                "insets 3, gap 4, novisualpadding",
                 "[][]",
                 "[]"
         ));
@@ -1049,6 +1047,17 @@ public class PluginManagerDialog extends JDialog {
     }
 
     private JPanel createSoftCard(LayoutManager layout) {
+        JPanel panel = new JPanel(layout);
+        panel.setOpaque(true);
+        panel.setBackground(ModernColors.getHoverBackgroundColor());
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(ModernColors.getBorderLightColor()),
+                new EmptyBorder(0, 0, 0, 0)
+        ));
+        return panel;
+    }
+
+    private JPanel createSegmentedTogglePanel(LayoutManager layout) {
         JPanel panel = new JPanel(layout);
         panel.setOpaque(true);
         panel.setBackground(ModernColors.getHoverBackgroundColor());

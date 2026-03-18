@@ -713,8 +713,8 @@ public class KafkaPanel extends JPanel {
         Properties props = new Properties();
         props.putAll(baseProps);
         props.putAll(producerCustomProps);
-        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         props.putIfAbsent(ProducerConfig.ACKS_CONFIG, "all");
         props.putIfAbsent(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, TIMEOUT_MS);
         props.putIfAbsent(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, "15000");
@@ -730,8 +730,8 @@ public class KafkaPanel extends JPanel {
         Properties props = new Properties();
         props.putAll(baseProps);
         props.putAll(consumerCustomProps);
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, consumeStartMode.autoOffsetReset());
         // 禁用自动提交：工具类消费不应修改服务端 group offset

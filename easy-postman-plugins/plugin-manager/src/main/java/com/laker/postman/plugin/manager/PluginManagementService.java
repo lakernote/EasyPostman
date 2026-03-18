@@ -3,7 +3,9 @@ package com.laker.postman.plugin.manager;
 import com.laker.postman.plugin.api.PluginDescriptor;
 import com.laker.postman.plugin.manager.market.PluginCatalogEntry;
 import com.laker.postman.plugin.manager.market.PluginCatalogService;
+import com.laker.postman.plugin.manager.market.PluginInstallController;
 import com.laker.postman.plugin.manager.market.PluginInstallerService;
+import com.laker.postman.plugin.manager.market.PluginInstallProgressListener;
 import com.laker.postman.plugin.runtime.PluginCompatibility;
 import com.laker.postman.plugin.runtime.PluginFileInfo;
 import com.laker.postman.plugin.runtime.PluginRuntime;
@@ -110,7 +112,18 @@ public class PluginManagementService {
     }
 
     public static PluginFileInfo installCatalogPlugin(PluginCatalogEntry entry) throws Exception {
-        PluginFileInfo installed = PluginInstallerService.installCatalogPlugin(entry);
+        return installCatalogPlugin(entry, PluginInstallProgressListener.NO_OP);
+    }
+
+    public static PluginFileInfo installCatalogPlugin(PluginCatalogEntry entry,
+                                                      PluginInstallProgressListener progressListener) throws Exception {
+        return installCatalogPlugin(entry, progressListener, new PluginInstallController());
+    }
+
+    public static PluginFileInfo installCatalogPlugin(PluginCatalogEntry entry,
+                                                      PluginInstallProgressListener progressListener,
+                                                      PluginInstallController installController) throws Exception {
+        PluginFileInfo installed = PluginInstallerService.installCatalogPlugin(entry, progressListener, installController);
         PluginInstallSourceStore.recordMarketInstall(installed.descriptor().id(), entry.installUrl());
         return installed;
     }

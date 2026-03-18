@@ -4,6 +4,8 @@ import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.plugin.api.PluginDescriptor;
 import com.laker.postman.plugin.manager.PluginManagementService;
+import com.laker.postman.plugin.manager.market.PluginInstallProgress;
+import com.laker.postman.plugin.manager.market.PluginInstallController;
 import com.laker.postman.plugin.manager.PluginUninstallResult;
 import com.laker.postman.plugin.manager.market.PluginCatalogEntry;
 import com.laker.postman.plugin.runtime.PluginCompatibility;
@@ -88,10 +90,16 @@ public class PluginManagerDialog extends JDialog {
     private final JLabel marketIdValueLabel = createValueLabel();
     private final JLabel marketVersionValueLabel = createValueLabel();
     private final JLabel marketCompatibilityValueLabel = createValueLabel();
+    private final JProgressBar marketInstallProgressBar = createMarketInstallProgressBar();
+    private final JButton cancelMarketInstallButton = ModernButtonFactory.createButton(
+            I18nUtil.getMessage(MessageKeys.GENERAL_CANCEL), false);
+    private final CardLayout marketActionLayout = new CardLayout();
     private final JPanel marketActionPanel = createMarketActionPanel();
 
     private Map<String, PluginFileInfo> installedPluginMap = Map.of();
     private boolean marketBusy;
+    private SwingWorker<PluginFileInfo, PluginInstallProgress> marketInstallWorker;
+    private PluginInstallController marketInstallController;
 
     private record CatalogLoadResult(List<PluginCatalogEntry> entries, boolean builtinFallback) {
     }
@@ -424,6 +432,15 @@ public class PluginManagerDialog extends JDialog {
     }
 
     private JPanel createMarketActionPanel() {
+        JPanel panel = new JPanel(marketActionLayout);
+        panel.setOpaque(false);
+        panel.add(createMarketInstallActionCard(), "action");
+        panel.add(createMarketInstallProgressCard(), "progress");
+        marketActionLayout.show(panel, "action");
+        return panel;
+    }
+
+    private JPanel createMarketInstallActionCard() {
         JPanel panel = new JPanel(new MigLayout(
                 "insets 0, gap 8, novisualpadding",
                 "[grow,fill]",
@@ -431,6 +448,19 @@ public class PluginManagerDialog extends JDialog {
         ));
         panel.setOpaque(false);
         panel.add(installMarketButton, "growx");
+        return panel;
+    }
+
+    private JPanel createMarketInstallProgressCard() {
+        JPanel panel = new JPanel(new MigLayout(
+                "insets 0, gap 8, novisualpadding",
+                "[grow,fill][]",
+                "[]"
+        ));
+        panel.setOpaque(false);
+        cancelMarketInstallButton.addActionListener(e -> cancelMarketInstallation());
+        panel.add(marketInstallProgressBar, "growx");
+        panel.add(cancelMarketInstallButton);
         return panel;
     }
 
@@ -695,10 +725,20 @@ public class PluginManagerDialog extends JDialog {
         }
 
         setMarketBusy(true, I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_INSTALLING, selected.name()));
-        new SwingWorker<PluginFileInfo, Void>() {
+        marketInstallController = new PluginInstallController();
+        showMarketInstallProgress();
+        marketInstallWorker = new SwingWorker<>() {
             @Override
             protected PluginFileInfo doInBackground() throws Exception {
-                return PluginManagementService.installCatalogPlugin(selected);
+                return PluginManagementService.installCatalogPlugin(selected, this::publish, marketInstallController);
+            }
+
+            @Override
+            protected void process(List<PluginInstallProgress> chunks) {
+                if (chunks == null || chunks.isEmpty()) {
+                    return;
+                }
+                applyMarketInstallProgress(chunks.get(chunks.size() - 1));
             }
 
             @Override
@@ -710,16 +750,31 @@ public class PluginManagerDialog extends JDialog {
                     showView(VIEW_INSTALLED);
                     setStatusMessage(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_INSTALL_SUCCESS, installed.jarPath()));
                     showInfo(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_INSTALL_SUCCESS, installed.jarPath()));
+                } catch (java.util.concurrent.CancellationException e) {
+                    setStatusMessage(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_INSTALL_CANCELLED));
+                } catch (java.util.concurrent.ExecutionException e) {
+                    Throwable cause = e.getCause();
+                    if (cause instanceof java.util.concurrent.CancellationException) {
+                        setStatusMessage(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_INSTALL_CANCELLED));
+                    } else {
+                        log.error("Failed to install plugin from catalog: {}, url: {}", selected.id(), selected.installUrl(), e);
+                        setStatusMessage(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_INSTALL_FAILED));
+                        showError(e);
+                    }
                 } catch (Exception e) {
                     log.error("Failed to install plugin from catalog: {}, url: {}", selected.id(), selected.installUrl(), e);
                     setStatusMessage(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_INSTALL_FAILED));
                     showError(e);
                 } finally {
+                    marketInstallWorker = null;
+                    marketInstallController = null;
+                    resetMarketInstallProgress();
                     setMarketBusy(false, statusMessageLabel.getText());
                     updateMarketActions();
                 }
             }
-        }.execute();
+        };
+        marketInstallWorker.execute();
     }
 
     private void updateInstalledActions() {
@@ -751,6 +806,7 @@ public class PluginManagerDialog extends JDialog {
         marketActionPanel.setVisible(showInstallAction);
         useOfficialGithubCatalogButton.setEnabled(!marketBusy);
         useOfficialGiteeCatalogButton.setEnabled(!marketBusy);
+        marketList.setEnabled(!marketBusy);
         refreshCatalogSourceButtons();
     }
 
@@ -1097,6 +1153,15 @@ public class PluginManagerDialog extends JDialog {
         return label;
     }
 
+    private static JProgressBar createMarketInstallProgressBar() {
+        JProgressBar progressBar = new JProgressBar(0, 100);
+        progressBar.setStringPainted(true);
+        progressBar.setBorderPainted(false);
+        progressBar.setPreferredSize(new Dimension(240, 36));
+        progressBar.setMinimumSize(new Dimension(120, 36));
+        return progressBar;
+    }
+
     private static JLabel createMutedLabel(String text) {
         JLabel label = createMutedLabel();
         label.setText(text);
@@ -1135,6 +1200,113 @@ public class PluginManagerDialog extends JDialog {
         area.setBorder(new EmptyBorder(0, 0, 0, 0));
         area.setForeground(ModernColors.getTextSecondary());
         return area;
+    }
+
+    private void showMarketInstallProgress() {
+        marketActionLayout.show(marketActionPanel, "progress");
+        marketInstallProgressBar.setValue(0);
+        marketInstallProgressBar.setIndeterminate(true);
+        marketInstallProgressBar.setString(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_CONNECTING));
+        cancelMarketInstallButton.setEnabled(true);
+    }
+
+    private void resetMarketInstallProgress() {
+        marketInstallProgressBar.setIndeterminate(false);
+        marketInstallProgressBar.setValue(0);
+        marketInstallProgressBar.setString("");
+        cancelMarketInstallButton.setEnabled(false);
+        marketActionLayout.show(marketActionPanel, "action");
+    }
+
+    private void applyMarketInstallProgress(PluginInstallProgress progress) {
+        if (progress == null) {
+            return;
+        }
+        showMarketInstallProgress();
+        switch (progress.stage()) {
+            case CONNECTING -> {
+                marketInstallProgressBar.setIndeterminate(true);
+                setStatusMessage(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_CONNECTING));
+                marketInstallProgressBar.setString(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_CONNECTING));
+            }
+            case DOWNLOADING -> {
+                setStatusMessage(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_DOWNLOADING));
+                if (progress.hasKnownTotalBytes()) {
+                    marketInstallProgressBar.setIndeterminate(false);
+                    int percent = (int) Math.min(100, Math.round(progress.downloadedBytes() * 100.0 / progress.totalBytes()));
+                    marketInstallProgressBar.setValue(percent);
+                    marketInstallProgressBar.setString(formatBytes(progress.downloadedBytes())
+                            + " / " + formatBytes(progress.totalBytes())
+                            + "  ·  " + formatSpeed(progress.bytesPerSecond()));
+                } else {
+                    marketInstallProgressBar.setIndeterminate(true);
+                    marketInstallProgressBar.setString(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_DOWNLOADING));
+                }
+            }
+            case VERIFYING -> {
+                marketInstallProgressBar.setIndeterminate(true);
+                setStatusMessage(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_VERIFYING));
+                marketInstallProgressBar.setString(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_VERIFYING));
+            }
+            case INSTALLING -> {
+                marketInstallProgressBar.setIndeterminate(true);
+                setStatusMessage(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_WRITING));
+                marketInstallProgressBar.setString(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_WRITING));
+            }
+            case COMPLETED -> {
+                marketInstallProgressBar.setIndeterminate(false);
+                marketInstallProgressBar.setValue(100);
+                marketInstallProgressBar.setString("100%");
+            }
+        }
+    }
+
+    private void cancelMarketInstallation() {
+        if (marketInstallController == null) {
+            return;
+        }
+        cancelMarketInstallButton.setEnabled(false);
+        setStatusMessage(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_CANCELLING));
+        marketInstallProgressBar.setIndeterminate(true);
+        marketInstallProgressBar.setString(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_CANCELLING));
+        marketInstallController.cancel();
+        if (marketInstallWorker != null) {
+            marketInstallWorker.cancel(true);
+        }
+    }
+
+    private String formatBytes(long bytes) {
+        if (bytes < 0) {
+            return "--";
+        }
+        double kb = 1024.0;
+        double mb = kb * 1024.0;
+        double gb = mb * 1024.0;
+        if (bytes >= gb) {
+            return String.format("%.2f GB", bytes / gb);
+        }
+        if (bytes >= mb) {
+            return String.format("%.1f MB", bytes / mb);
+        }
+        if (bytes >= kb) {
+            return String.format("%.1f KB", bytes / kb);
+        }
+        return bytes + " B";
+    }
+
+    private String formatSpeed(double bytesPerSecond) {
+        if (bytesPerSecond <= 0) {
+            return "--";
+        }
+        double kb = 1024.0;
+        double mb = kb * 1024.0;
+        if (bytesPerSecond >= mb) {
+            return String.format("%.2f MB/s", bytesPerSecond / mb);
+        }
+        if (bytesPerSecond >= kb) {
+            return String.format("%.1f KB/s", bytesPerSecond / kb);
+        }
+        return String.format("%.0f B/s", bytesPerSecond);
     }
 
     private void setCompactText(JLabel label, String text) {

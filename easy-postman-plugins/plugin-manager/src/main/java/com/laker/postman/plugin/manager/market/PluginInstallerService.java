@@ -28,8 +28,10 @@ import java.util.List;
 @UtilityClass
 public class PluginInstallerService {
 
-    private static final int CONNECT_TIMEOUT = 10000;
-    private static final int READ_TIMEOUT = 30000;
+    private static final int CONNECT_TIMEOUT = 5_000;
+    private static final int READ_TIMEOUT = 300_000;
+    private static final int DOWNLOAD_BUFFER_SIZE = 8192;
+    private static final long PROGRESS_EMIT_INTERVAL_NANOS = 150_000_000L;
 
     public static PluginFileInfo installPluginJar(Path sourceJar) throws IOException {
         PluginDescriptor descriptor = PluginRuntime.inspectPluginJar(sourceJar);
@@ -41,8 +43,35 @@ public class PluginInstallerService {
     }
 
     public static PluginFileInfo installCatalogPlugin(PluginCatalogEntry entry) throws Exception {
-        Path tempJar = downloadToTempFile(entry);
+        return installCatalogPlugin(entry, PluginInstallProgressListener.NO_OP, new PluginInstallController());
+    }
+
+    public static PluginFileInfo installCatalogPlugin(PluginCatalogEntry entry,
+                                                      PluginInstallProgressListener progressListener) throws Exception {
+        return installCatalogPlugin(entry, progressListener, new PluginInstallController());
+    }
+
+    public static PluginFileInfo installCatalogPlugin(PluginCatalogEntry entry,
+                                                      PluginInstallProgressListener progressListener,
+                                                      PluginInstallController installController) throws Exception {
+        PluginInstallProgressListener listener = progressListener == null
+                ? PluginInstallProgressListener.NO_OP
+                : progressListener;
+        PluginInstallController controller = installController == null
+                ? new PluginInstallController()
+                : installController;
+        Path tempJar = downloadToTempFile(entry, listener, controller);
         try {
+            controller.checkCancelled();
+            listener.onProgress(new PluginInstallProgress(
+                    PluginInstallProgress.Stage.VERIFYING,
+                    entry.id(),
+                    entry.installUrl(),
+                    Files.size(tempJar),
+                    Files.size(tempJar),
+                    0
+            ));
+            controller.checkCancelled();
             PluginDescriptor descriptor = PluginRuntime.inspectPluginJar(tempJar);
             if (descriptor == null) {
                 throw new IllegalArgumentException("Downloaded file is not a valid plugin jar");
@@ -57,7 +86,25 @@ public class PluginInstallerService {
             }
             verifySha256(tempJar, entry.sha256());
             validateCompatibility(descriptor);
-            return installPreparedJar(tempJar, descriptor, true);
+            controller.checkCancelled();
+            listener.onProgress(new PluginInstallProgress(
+                    PluginInstallProgress.Stage.INSTALLING,
+                    descriptor.id(),
+                    entry.installUrl(),
+                    Files.size(tempJar),
+                    Files.size(tempJar),
+                    0
+            ));
+            PluginFileInfo installed = installPreparedJar(tempJar, descriptor, true);
+            listener.onProgress(new PluginInstallProgress(
+                    PluginInstallProgress.Stage.COMPLETED,
+                    descriptor.id(),
+                    entry.installUrl(),
+                    Files.size(tempJar),
+                    Files.size(tempJar),
+                    0
+            ));
+            return installed;
         } finally {
             Files.deleteIfExists(tempJar);
         }
@@ -85,11 +132,23 @@ public class PluginInstallerService {
         return new PluginFileInfo(descriptor, targetPath, false);
     }
 
-    private static Path downloadToTempFile(PluginCatalogEntry entry) throws Exception {
+    private static Path downloadToTempFile(PluginCatalogEntry entry,
+                                           PluginInstallProgressListener progressListener,
+                                           PluginInstallController installController) throws Exception {
         String installUrl = entry.installUrl();
         String fileName = extractFileName(installUrl, entry.id(), entry.version());
         String suffix = fileName.endsWith(".jar") ? ".jar" : "-" + fileName;
         Path tempFile = Files.createTempFile("easy-postman-plugin-", suffix);
+
+        installController.checkCancelled();
+        progressListener.onProgress(new PluginInstallProgress(
+                PluginInstallProgress.Stage.CONNECTING,
+                entry.id(),
+                installUrl,
+                0,
+                -1,
+                0
+        ));
 
         URLConnection connection = new URL(installUrl).openConnection();
         if (connection instanceof HttpURLConnection httpConnection) {
@@ -97,20 +156,76 @@ public class PluginInstallerService {
             httpConnection.setReadTimeout(READ_TIMEOUT);
             httpConnection.setRequestMethod("GET");
             httpConnection.setInstanceFollowRedirects(true);
+            httpConnection.setUseCaches(false);
             httpConnection.setRequestProperty("User-Agent", "EasyPostman-PluginInstaller");
-            int code = httpConnection.getResponseCode();
-            if (code < 200 || code >= 300) {
-                Files.deleteIfExists(tempFile);
-                throw new IllegalStateException("HTTP error code: " + code + ", url: " + installUrl);
+            installController.attachConnection(httpConnection);
+            try {
+                int code = httpConnection.getResponseCode();
+                if (code < 200 || code >= 300) {
+                    Files.deleteIfExists(tempFile);
+                    throw new IllegalStateException("HTTP error code: " + code + ", url: " + installUrl);
+                }
+            } catch (Exception e) {
+                if (installController.isCancelled()) {
+                    Files.deleteIfExists(tempFile);
+                    throw new java.util.concurrent.CancellationException("Plugin installation cancelled");
+                }
+                throw e;
             }
         }
 
+        long totalBytes = connection.getContentLengthLong();
+        long startNanos = System.nanoTime();
+        progressListener.onProgress(new PluginInstallProgress(
+                PluginInstallProgress.Stage.DOWNLOADING,
+                entry.id(),
+                installUrl,
+                0,
+                totalBytes,
+                0
+        ));
+
         try (InputStream inputStream = connection.getInputStream();
              OutputStream outputStream = Files.newOutputStream(tempFile)) {
-            inputStream.transferTo(outputStream);
-        } catch (Exception e) {
+            byte[] buffer = new byte[DOWNLOAD_BUFFER_SIZE];
+            long downloadedBytes = 0;
+            long lastEmitNanos = startNanos;
+            int read;
+            while ((read = inputStream.read(buffer)) >= 0) {
+                installController.checkCancelled();
+                outputStream.write(buffer, 0, read);
+                downloadedBytes += read;
+                long now = System.nanoTime();
+                long elapsedNanos = now - startNanos;
+                double bytesPerSecond = elapsedNanos > 0
+                        ? downloadedBytes * 1_000_000_000.0 / elapsedNanos
+                        : 0;
+                boolean completed = totalBytes > 0 && downloadedBytes >= totalBytes;
+                if (completed || now - lastEmitNanos >= PROGRESS_EMIT_INTERVAL_NANOS) {
+                    progressListener.onProgress(new PluginInstallProgress(
+                            PluginInstallProgress.Stage.DOWNLOADING,
+                            entry.id(),
+                            installUrl,
+                            downloadedBytes,
+                            totalBytes,
+                            bytesPerSecond
+                    ));
+                    lastEmitNanos = now;
+                }
+            }
+        } catch (java.util.concurrent.CancellationException e) {
             Files.deleteIfExists(tempFile);
             throw e;
+        } catch (Exception e) {
+            Files.deleteIfExists(tempFile);
+            if (installController.isCancelled()) {
+                throw new java.util.concurrent.CancellationException("Plugin installation cancelled");
+            }
+            throw e;
+        } finally {
+            if (connection instanceof HttpURLConnection httpConnection) {
+                installController.detachConnection(httpConnection);
+            }
         }
         return tempFile;
     }

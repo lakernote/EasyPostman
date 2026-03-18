@@ -49,7 +49,8 @@ public class PluginCatalogServiceTest {
         assertEquals(githubEntries.size(), 4);
         assertEquals(giteeEntries.size(), 4);
         assertEquals(githubEntries.get(0).id(), "plugin-redis");
-        assertTrue(githubEntries.get(0).installUrl().startsWith("https://github.com/lakernote/easy-postman/"));
+        assertTrue(githubEntries.get(0).installUrl().startsWith("https://github.com/"));
+        assertTrue(githubEntries.get(0).installUrl().contains("/releases/download/"));
         assertTrue(giteeEntries.get(0).installUrl().startsWith("https://gitee.com/lakernote/easy-postman/"));
         assertEquals(
                 githubEntries.stream().map(PluginCatalogEntry::id).collect(java.util.stream.Collectors.toSet()),

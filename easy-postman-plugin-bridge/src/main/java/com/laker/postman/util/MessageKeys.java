@@ -164,6 +164,12 @@ public final class MessageKeys {
     public static final String PLUGIN_MANAGER_MARKET_LOAD_FALLBACK_BUILTIN = "plugin.manager.market.load_fallback_builtin";
     public static final String PLUGIN_MANAGER_MARKET_NO_SELECTION = "plugin.manager.market.no_selection";
     public static final String PLUGIN_MANAGER_MARKET_INSTALLING = "plugin.manager.market.installing";
+    public static final String PLUGIN_MANAGER_MARKET_CONNECTING = "plugin.manager.market.connecting";
+    public static final String PLUGIN_MANAGER_MARKET_DOWNLOADING = "plugin.manager.market.downloading";
+    public static final String PLUGIN_MANAGER_MARKET_VERIFYING = "plugin.manager.market.verifying";
+    public static final String PLUGIN_MANAGER_MARKET_WRITING = "plugin.manager.market.writing";
+    public static final String PLUGIN_MANAGER_MARKET_CANCELLING = "plugin.manager.market.cancelling";
+    public static final String PLUGIN_MANAGER_MARKET_INSTALL_CANCELLED = "plugin.manager.market.install_cancelled";
     public static final String PLUGIN_MANAGER_MARKET_INSTALL_SUCCESS = "plugin.manager.market.install_success";
     public static final String PLUGIN_MANAGER_MARKET_INSTALL_FAILED = "plugin.manager.market.install_failed";
     public static final String PLUGIN_MANAGER_MARKET_AVAILABLE = "plugin.manager.market.available";

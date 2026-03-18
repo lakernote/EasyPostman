@@ -31,8 +31,8 @@ public class PluginCatalogService {
     public static final String OFFICIAL_GITHUB_CATALOG_RESOURCE = "/plugin-catalog/catalog-github.json";
     public static final String OFFICIAL_GITEE_CATALOG_RESOURCE = "/plugin-catalog/catalog-gitee.json";
     private static final String CATALOG_URL_PROPERTY = "easyPostman.plugins.catalogUrl";
-    private static final int CONNECT_TIMEOUT = 10000;
-    private static final int READ_TIMEOUT = 10000;
+    private static final int CONNECT_TIMEOUT = 5_000;
+    private static final int READ_TIMEOUT = 15_000;
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     public static String getCatalogUrl() {

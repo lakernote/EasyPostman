@@ -18,7 +18,7 @@ on:
       dry_run:
         description: 仅做构建验证，不创建 Release，不回写 catalog
         required: true
-        default: true
+        default: false
         type: boolean
       publish_gitee_release:
         description: 是否同时创建 Gitee 插件 Release 并上传附件

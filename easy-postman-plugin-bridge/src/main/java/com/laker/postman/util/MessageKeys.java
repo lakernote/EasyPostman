@@ -179,6 +179,7 @@ public final class MessageKeys {
     public static final String PLUGIN_MANAGER_MARKET_UPDATE_REQUIRES_HOST_UPGRADE = "plugin.manager.market.update_requires_host_upgrade";
     public static final String PLUGIN_MANAGER_MARKET_LOCAL_NEWER = "plugin.manager.market.local_newer";
     public static final String PLUGIN_MANAGER_MARKET_ACTION_INSTALL = "plugin.manager.market.action_install";
+    public static final String PLUGIN_MANAGER_MARKET_ACTION_UPDATE = "plugin.manager.market.action_update";
     public static final String PLUGIN_MANAGER_MARKET_ACTION_INSTALLED = "plugin.manager.market.action_installed";
     public static final String PLUGIN_MANAGER_MARKET_ACTION_REQUIRES_HOST_UPGRADE = "plugin.manager.market.action_requires_host_upgrade";
     public static final String PLUGIN_MANAGER_MARKET_ACTION_LOCAL_NEWER = "plugin.manager.market.action_local_newer";

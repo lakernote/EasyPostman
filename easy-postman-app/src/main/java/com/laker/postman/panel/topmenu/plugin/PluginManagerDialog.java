@@ -793,14 +793,23 @@ public class PluginManagerDialog extends JDialog {
         boolean validSelection = selected != null && !selected.isPlaceholder();
         boolean showInstallAction = false;
         boolean installEnabled = false;
+        String actionLabel = I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_ACTION_INSTALL);
         if (validSelection) {
             PluginFileInfo installed = installedPluginMap.get(selected.id());
-            showInstallAction = installed == null;
-            if (showInstallAction) {
-                PluginCompatibility compatibility = PluginManagementService.evaluateCompatibility(selected);
+            PluginCompatibility compatibility = PluginManagementService.evaluateCompatibility(selected);
+            if (installed == null) {
+                showInstallAction = true;
                 installEnabled = !marketBusy && compatibility.compatible();
+            } else {
+                int compare = VersionComparator.compare(selected.version(), installed.descriptor().version());
+                if (compare > 0) {
+                    showInstallAction = true;
+                    installEnabled = !marketBusy && compatibility.compatible();
+                    actionLabel = I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_ACTION_UPDATE);
+                }
             }
         }
+        installMarketButton.setText(actionLabel);
         loadCatalogButton.setEnabled(!marketBusy);
         installMarketButton.setEnabled(installEnabled);
         marketActionPanel.setVisible(showInstallAction);

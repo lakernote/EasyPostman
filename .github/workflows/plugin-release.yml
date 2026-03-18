@@ -341,6 +341,7 @@ jobs:
           TITLE="${{ needs.prepare-context.outputs.release_title }}"
           BODY_FILE="$(mktemp)"
           RESPONSE_FILE="$(mktemp)"
+          UPLOAD_RESPONSE_FILE="$(mktemp)"
           RELEASE_ID=""
 
           if [ -n "${{ inputs.release_notes }}" ]; then
@@ -394,9 +395,21 @@ jobs:
               echo "Skip oversized Gitee asset: $(basename "$file")" >&2
               continue
             fi
-            curl -sS -X POST "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases/${RELEASE_ID}/attach_files" \
+            set +e
+            UPLOAD_HTTP_CODE="$(curl -sS -o "$UPLOAD_RESPONSE_FILE" -w "%{http_code}" \
+              --retry 5 \
+              --retry-delay 2 \
+              --retry-all-errors \
+              -X POST "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases/${RELEASE_ID}/attach_files" \
               -F "access_token=${GITEE_TOKEN}" \
-              -F "file=@${file}" >/dev/null
+              -F "file=@${file}")"
+            UPLOAD_EXIT_CODE=$?
+            set -e
+            if [ $UPLOAD_EXIT_CODE -ne 0 ] || [ "$UPLOAD_HTTP_CODE" -lt 200 ] || [ "$UPLOAD_HTTP_CODE" -ge 300 ]; then
+              echo "Failed to upload Gitee asset: $(basename "$file"), curl_exit=${UPLOAD_EXIT_CODE}, http_code=${UPLOAD_HTTP_CODE}" >&2
+              cat "$UPLOAD_RESPONSE_FILE" >&2 || true
+              exit 1
+            fi
           done
 
           echo "gitee_release_url=https://gitee.com/lakernote/easy-postman/releases/${TAG_NAME}" >> "$GITHUB_OUTPUT"

@@ -3,11 +3,9 @@ package com.laker.postman.plugin.manager.market;
 import org.testng.annotations.Test;
 
 import java.util.List;
+import java.util.Set;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertThrows;
-import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.*;
 
 public class PluginCatalogServiceTest {
 
@@ -48,11 +46,21 @@ public class PluginCatalogServiceTest {
         List<PluginCatalogEntry> githubEntries = PluginCatalogService.loadBundledOfficialCatalog("github");
         List<PluginCatalogEntry> giteeEntries = PluginCatalogService.loadBundledOfficialCatalog("gitee");
 
-        assertEquals(githubEntries.size(), 5);
-        assertEquals(giteeEntries.size(), 5);
+        assertEquals(githubEntries.size(), 4);
+        assertEquals(giteeEntries.size(), 4);
         assertEquals(githubEntries.get(0).id(), "plugin-redis");
         assertTrue(githubEntries.get(0).installUrl().startsWith("https://github.com/lakernote/easy-postman/"));
         assertTrue(giteeEntries.get(0).installUrl().startsWith("https://gitee.com/lakernote/easy-postman/"));
+        assertEquals(
+                githubEntries.stream().map(PluginCatalogEntry::id).collect(java.util.stream.Collectors.toSet()),
+                Set.of("plugin-redis", "plugin-kafka", "plugin-decompiler", "plugin-client-cert")
+        );
+        assertEquals(
+                giteeEntries.stream().map(PluginCatalogEntry::id).collect(java.util.stream.Collectors.toSet()),
+                Set.of("plugin-redis", "plugin-kafka", "plugin-decompiler", "plugin-client-cert")
+        );
+        assertTrue(githubEntries.stream().noneMatch(entry -> "plugin-git".equals(entry.id())));
+        assertTrue(giteeEntries.stream().noneMatch(entry -> "plugin-git".equals(entry.id())));
 
         PluginCatalogEntry githubKafka = githubEntries.stream()
                 .filter(entry -> "plugin-kafka".equals(entry.id()))

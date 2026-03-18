@@ -1,6 +1,6 @@
 {
   "name": "EasyPostman Official Plugin Catalog (Gitee)",
-  "generatedAt": "2026-03-18T07:03:34Z",
+  "generatedAt": "2026-03-18T07:28:13Z",
   "plugins": [
     {
       "id": "plugin-redis",
@@ -42,7 +42,7 @@
       "description": "Client certificate management and mTLS key material loading.",
       "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-client-cert-v5.3.16/easy-postman-5.3.16-plugin-client-cert.jar",
       "homepage": "https://gitee.com/lakernote/easy-postman",
-      "sha256": "",
+      "sha256": "f768523a6d0289706ec3d4ee61096a16b24e012ac11aab516e55d9cc7b08768a",
       "minPlatformVersion": "1.0.0",
       "maxPlatformVersion": "1.0.0"
     }

@@ -7,6 +7,8 @@ import com.laker.postman.model.HttpParam;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.service.EnvironmentService;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -21,6 +23,54 @@ import java.util.regex.Pattern;
 @Slf4j
 @UtilityClass
 public class HttpUtil {
+
+    public static final class ValidationResult {
+        private static final ValidationResult OK = new ValidationResult(true, false, null, false);
+
+        private final boolean valid;
+        private final boolean warning;
+        private final String message;
+        private final boolean focusUrlField;
+
+        private ValidationResult(boolean valid, boolean warning, String message, boolean focusUrlField) {
+            this.valid = valid;
+            this.warning = warning;
+            this.message = message;
+            this.focusUrlField = focusUrlField;
+        }
+
+        public static ValidationResult ok() {
+            return OK;
+        }
+
+        public static ValidationResult error(String message, boolean focusUrlField) {
+            return new ValidationResult(false, false, message, focusUrlField);
+        }
+
+        public static ValidationResult warning(String message, boolean focusUrlField) {
+            return new ValidationResult(false, true, message, focusUrlField);
+        }
+
+        public static ValidationResult okWithWarning(String message) {
+            return new ValidationResult(true, true, message, false);
+        }
+
+        public boolean isValid() {
+            return valid;
+        }
+
+        public boolean isWarning() {
+            return warning;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public boolean shouldFocusUrlField() {
+            return focusUrlField;
+        }
+    }
 
     /**
      * Postman 的行为是：对于 params，只有空格和部分特殊字符会被编码，像 : 这样的字符不会被编码。
@@ -134,14 +184,12 @@ public class HttpUtil {
     }
 
     // 校验请求参数
-    public static boolean validateRequest(PreparedRequest req, HttpRequestItem item) {
+    public static ValidationResult validateRequest(PreparedRequest req, HttpRequestItem item) {
         if (req.url.isEmpty()) {
-            JOptionPane.showMessageDialog(null, "请输入有效的 URL");
-            return false;
+            return ValidationResult.error(I18nUtil.getMessage(MessageKeys.REQUEST_VALIDATION_URL_REQUIRED), true);
         }
         if (req.method == null || req.method.isEmpty()) {
-            JOptionPane.showMessageDialog(null, "请选择请求方法");
-            return false;
+            return ValidationResult.error(I18nUtil.getMessage(MessageKeys.REQUEST_VALIDATION_METHOD_REQUIRED), false);
         }
 
         // 检查 URL 中是否还有未被解析的变量占位符（如 {{baseUrl}}）
@@ -149,10 +197,27 @@ public class HttpUtil {
         if (!unresolved.isEmpty()) {
             String activeEnvName = EnvironmentService.getActiveEnvironment() != null
                     ? EnvironmentService.getActiveEnvironment().getName()
-                    : "（无激活环境）";
-            log.warn("URL 中存在未解析的变量占位符，将无法发送请求。未解析变量={}, 当前激活环境=[{}], URL={}",
+                    : I18nUtil.getMessage(MessageKeys.REQUEST_VALIDATION_NO_ACTIVE_ENVIRONMENT);
+            int queryIndex = req.url.indexOf('?');
+            String targetPart = queryIndex >= 0 ? req.url.substring(0, queryIndex) : req.url;
+            List<String> unresolvedInTarget = findUnresolvedVariables(targetPart);
+            if (!unresolvedInTarget.isEmpty()) {
+                log.warn("URL 目标地址中存在未解析的变量占位符，将阻止发送。未解析变量={}, 当前激活环境=[{}], URL={}",
+                        unresolvedInTarget, activeEnvName, req.url);
+                return ValidationResult.error(I18nUtil.getMessage(
+                        MessageKeys.REQUEST_VALIDATION_UNRESOLVED_URL_VARIABLES,
+                        String.join(", ", unresolvedInTarget),
+                        activeEnvName
+                ), true);
+            }
+
+            log.warn("URL 查询参数中存在未解析的变量占位符，将继续发送请求。未解析变量={}, 当前激活环境=[{}], URL={}",
                     unresolved, activeEnvName, req.url);
-            return false;
+            return ValidationResult.okWithWarning(I18nUtil.getMessage(
+                    MessageKeys.REQUEST_VALIDATION_UNRESOLVED_QUERY_VARIABLES,
+                    String.join(", ", unresolved),
+                    activeEnvName
+            ));
         }
 
         if (item.getProtocol().isHttpProtocol()
@@ -165,9 +230,11 @@ public class HttpUtil {
                     "确认",
                     JOptionPane.YES_NO_OPTION
             );
-            return confirm == JOptionPane.YES_OPTION;
+            return confirm == JOptionPane.YES_OPTION
+                    ? ValidationResult.ok()
+                    : ValidationResult.warning(null, false);
         }
-        return true;
+        return ValidationResult.ok();
     }
 
     /**

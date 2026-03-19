@@ -275,6 +275,12 @@ public final class MessageKeys {
     public static final String SAVE_REQUEST = "save.request";
     public static final String REQUEST_NAME = "request.name";
     public static final String REQUEST_URL_PLACEHOLDER = "request.url.placeholder";
+    public static final String REQUEST_VALIDATION_URL_REQUIRED = "request.validation.url.required";
+    public static final String REQUEST_VALIDATION_METHOD_REQUIRED = "request.validation.method.required";
+    public static final String REQUEST_VALIDATION_UNRESOLVED_URL_VARIABLES = "request.validation.unresolved_url_variables";
+    public static final String REQUEST_VALIDATION_UNRESOLVED_QUERY_VARIABLES = "request.validation.unresolved_query_variables";
+    public static final String REQUEST_VALIDATION_NO_ACTIVE_ENVIRONMENT = "request.validation.no_active_environment";
+    public static final String REQUEST_VALIDATION_WEBSOCKET_PROTOCOL = "request.validation.websocket_protocol";
     public static final String SELECT_GROUP = "select.group";
     public static final String PLEASE_ENTER_REQUEST_NAME = "please.enter.request.name";
     public static final String PLEASE_SELECT_GROUP = "please.select.group";

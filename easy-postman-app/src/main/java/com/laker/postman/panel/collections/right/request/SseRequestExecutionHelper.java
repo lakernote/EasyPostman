@@ -18,6 +18,7 @@ import okhttp3.sse.EventSource;
 import javax.swing.*;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 @Slf4j
@@ -30,6 +31,7 @@ final class SseRequestExecutionHelper {
     private final Consumer<EventSource> currentEventSourceSetter;
     private final Runnable clearCurrentEventSource;
     private final Runnable clearCurrentWorker;
+    private final BooleanSupplier disposedSupplier;
 
     SseRequestExecutionHelper(ResponsePanel responsePanel,
                               RequestExecutionUiHelper requestExecutionUiHelper,
@@ -38,7 +40,8 @@ final class SseRequestExecutionHelper {
                               AtomicBoolean currentSseCancelled,
                               Consumer<EventSource> currentEventSourceSetter,
                               Runnable clearCurrentEventSource,
-                              Runnable clearCurrentWorker) {
+                              Runnable clearCurrentWorker,
+                              BooleanSupplier disposedSupplier) {
         this.responsePanel = responsePanel;
         this.requestExecutionUiHelper = requestExecutionUiHelper;
         this.requestStreamUiHelper = requestStreamUiHelper;
@@ -47,6 +50,7 @@ final class SseRequestExecutionHelper {
         this.currentEventSourceSetter = currentEventSourceSetter;
         this.clearCurrentEventSource = clearCurrentEventSource;
         this.clearCurrentWorker = clearCurrentWorker;
+        this.disposedSupplier = disposedSupplier;
     }
 
     SwingWorker<Void, Void> createWorker(PreparedRequest req, ScriptExecutionPipeline pipeline) {
@@ -68,6 +72,9 @@ final class SseRequestExecutionHelper {
                         @Override
                         public void onOpen(HttpResponse r, String headersText) {
                             SwingUtilities.invokeLater(() -> {
+                                if (disposedSupplier.getAsBoolean()) {
+                                    return;
+                                }
                                 requestExecutionUiHelper.updateUIForResponse(r);
                                 responsePanel.setRequestDetails(req);
                                 responsePanel.setResponseDetails(r);
@@ -79,6 +86,9 @@ final class SseRequestExecutionHelper {
                         @Override
                         public void onEvent(String id, String type, String data) {
                             SwingUtilities.invokeLater(() -> {
+                                if (disposedSupplier.getAsBoolean()) {
+                                    return;
+                                }
                                 List<TestResult> testResults = requestResponseHelper.handleStreamMessage(pipeline, data);
                                 requestStreamUiHelper.appendSseMessage(MessageType.RECEIVED, id, type, null, data, testResults);
                             });
@@ -86,13 +96,21 @@ final class SseRequestExecutionHelper {
 
                         @Override
                         public void onRetryChange(long retryMs) {
-                            SwingUtilities.invokeLater(() -> requestStreamUiHelper.appendSseMessage(MessageType.INFO, null, "retry", retryMs,
-                                    I18nUtil.getMessage(MessageKeys.SSE_RETRY_UPDATED, retryMs), null));
+                            SwingUtilities.invokeLater(() -> {
+                                if (disposedSupplier.getAsBoolean()) {
+                                    return;
+                                }
+                                requestStreamUiHelper.appendSseMessage(MessageType.INFO, null, "retry", retryMs,
+                                        I18nUtil.getMessage(MessageKeys.SSE_RETRY_UPDATED, retryMs), null);
+                            });
                         }
 
                         @Override
                         public void onClosed(HttpResponse r) {
                             SwingUtilities.invokeLater(() -> {
+                                if (disposedSupplier.getAsBoolean()) {
+                                    return;
+                                }
                                 requestExecutionUiHelper.updateUIForResponse(r);
                                 responsePanel.setRequestDetails(req);
                                 responsePanel.setResponseDetails(r);
@@ -107,6 +125,9 @@ final class SseRequestExecutionHelper {
                         @Override
                         public void onFailure(String errorMsg, HttpResponse r) {
                             SwingUtilities.invokeLater(() -> {
+                                if (disposedSupplier.getAsBoolean()) {
+                                    return;
+                                }
                                 NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.SSE_FAILED, errorMsg));
                                 requestExecutionUiHelper.updateUIForResponse(r);
                                 responsePanel.setRequestDetails(req);
@@ -126,6 +147,9 @@ final class SseRequestExecutionHelper {
                 } catch (Exception ex) {
                     log.error("Error executing SSE request: {} - {}", req.url, ex.getMessage(), ex);
                     SwingUtilities.invokeLater(() -> {
+                        if (disposedSupplier.getAsBoolean()) {
+                            return;
+                        }
                         responsePanel.setStatus(0);
                         NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.SSE_ERROR, ex.getMessage()));
                     });
@@ -135,7 +159,7 @@ final class SseRequestExecutionHelper {
 
             @Override
             protected void done() {
-                if (resp != null) {
+                if (!disposedSupplier.getAsBoolean() && resp != null) {
                     requestResponseHelper.saveHistory(req, resp, "SSE request");
                 }
             }

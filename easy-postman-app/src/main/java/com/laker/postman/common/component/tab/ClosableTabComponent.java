@@ -271,8 +271,11 @@ public class ClosableTabComponent extends JPanel {
     private void closeTabsToTheRight() {
         int thisIdx = tabbedPane.indexOfTabComponent(this);
         if (thisIdx < 0) return;
+        RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
         for (int i = tabbedPane.getTabCount() - 1; i > thisIdx; i--) {
-            if (!(tabbedPane.getComponentAt(i) instanceof PlusPanel)) tabbedPane.remove(i);
+            if (!(tabbedPane.getComponentAt(i) instanceof PlusPanel)) {
+                editPanel.removeTabAtWithCleanup(i);
+            }
         }
     }
 

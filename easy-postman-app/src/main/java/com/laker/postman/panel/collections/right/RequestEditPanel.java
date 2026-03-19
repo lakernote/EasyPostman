@@ -887,7 +887,7 @@ public class RequestEditPanel extends SingletonBasePanel {
 
 
         // 对于其他类型的面板（如 GroupEditPanel），直接关闭
-        tabbedPane.remove(currentIndex);
+        removeTabAtWithCleanup(currentIndex);
 
         // 如果还有请求Tab，且没有选中Tab，则选中最后一个请求Tab
         int count = tabbedPane.getTabCount();
@@ -938,7 +938,7 @@ public class RequestEditPanel extends SingletonBasePanel {
                     saveCurrentRequest();
                 }
             }
-            tabbedPane.remove(comp);
+            removeTabComponentWithCleanup(comp);
         }
 
         // 操作完成后，定位到当前tab（使用保存的组件引用而不是旧的索引）
@@ -977,7 +977,7 @@ public class RequestEditPanel extends SingletonBasePanel {
                     saveCurrentRequest();
                 }
             }
-            tabbedPane.remove(comp);
+            removeTabComponentWithCleanup(comp);
         }
     }
 
@@ -1076,6 +1076,7 @@ public class RequestEditPanel extends SingletonBasePanel {
      */
     private void showOrUpdatePreviewTab(Component panel, String name, RequestItemProtocolEnum protocol, boolean isRoot) {
         if (previewTab != null && previewTabIndex >= 0) {
+            cleanupTabComponent(previewTab);
             previewTab = panel;
             tabbedPane.setComponentAt(previewTabIndex, previewTab);
             tabbedPane.setTitleAt(previewTabIndex, name);
@@ -1097,6 +1098,35 @@ public class RequestEditPanel extends SingletonBasePanel {
             tabbedPane.setTabComponentAt(previewTabIndex, tabComponent);
             tabbedPane.setSelectedIndex(previewTabIndex);
             addPlusTab();
+        }
+    }
+
+    public void removeTabAtWithCleanup(int index) {
+        if (index < 0 || index >= tabbedPane.getTabCount()) {
+            return;
+        }
+
+        Component component = tabbedPane.getComponentAt(index);
+        cleanupTabComponent(component);
+        if (component == previewTab) {
+            previewTab = null;
+            previewTabIndex = -1;
+        } else if (previewTabIndex > index) {
+            previewTabIndex--;
+        }
+        tabbedPane.removeTabAt(index);
+    }
+
+    public void removeTabComponentWithCleanup(Component component) {
+        int index = tabbedPane.indexOfComponent(component);
+        if (index >= 0) {
+            removeTabAtWithCleanup(index);
+        }
+    }
+
+    private void cleanupTabComponent(Component component) {
+        if (component instanceof RequestEditSubPanel requestEditSubPanel) {
+            requestEditSubPanel.disposeResources();
         }
     }
 

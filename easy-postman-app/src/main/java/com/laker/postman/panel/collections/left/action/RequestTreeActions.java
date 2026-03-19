@@ -453,12 +453,13 @@ public class RequestTreeActions {
      * 关闭请求的Tab
      */
     private void closeRequestTabs(HttpRequestItem item, JTabbedPane tabbedPane) {
+        RequestEditPanel requestEditPanel = SingletonFactory.getInstance(RequestEditPanel.class);
         for (int i = tabbedPane.getTabCount() - 1; i >= 0; i--) {
             Component comp = tabbedPane.getComponentAt(i);
             if (comp instanceof RequestEditSubPanel subPanel) {
                 HttpRequestItem tabItem = subPanel.getCurrentRequest();
                 if (tabItem != null && item.getId().equals(tabItem.getId())) {
-                    tabbedPane.remove(i);
+                    requestEditPanel.removeTabAtWithCleanup(i);
                 }
             }
         }

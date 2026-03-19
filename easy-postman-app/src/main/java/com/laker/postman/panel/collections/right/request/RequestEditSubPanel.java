@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class RequestEditSubPanel extends JPanel {
     // 常量定义
     private static final int MAX_REDIRECT_COUNT = 10;
+    private static final int WEBSOCKET_NORMAL_CLOSURE = 1000;
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     private final JTextField urlField;
@@ -97,6 +98,7 @@ public class RequestEditSubPanel extends JPanel {
     JSplitPane splitPane;
     // 数据加载标志，防止加载时触发自动保存和联动更新
     private boolean isLoadingData = false;
+    private volatile boolean disposed;
     @Getter
     private final ResponsePanel responsePanel;
 
@@ -274,7 +276,8 @@ public class RequestEditSubPanel extends JPanel {
                 this::convertCurrentRequestToSse,
                 opened -> httpSseStreamOpened = opened,
                 () -> httpSseStreamOpened,
-                () -> currentWorker = null
+                () -> currentWorker = null,
+                this::isDisposed
         );
         sseRequestExecutionHelper = new SseRequestExecutionHelper(
                 responsePanel,
@@ -284,7 +287,8 @@ public class RequestEditSubPanel extends JPanel {
                 currentSseCancelled,
                 eventSource -> currentEventSource = eventSource,
                 () -> currentEventSource = null,
-                () -> currentWorker = null
+                () -> currentWorker = null,
+                this::isDisposed
         );
         webSocketRequestExecutionHelper = new WebSocketRequestExecutionHelper(
                 responsePanel,
@@ -293,7 +297,9 @@ public class RequestEditSubPanel extends JPanel {
                 requestResponseHelper,
                 webSocket -> currentWebSocket = webSocket,
                 connectionId -> currentWebSocketConnectionId = connectionId,
-                () -> currentWebSocketConnectionId
+                () -> currentWebSocketConnectionId,
+                () -> currentWorker = null,
+                this::isDisposed
         );
         requestProtocolDispatchHelper = new RequestProtocolDispatchHelper(
                 httpRequestExecutionHelper,
@@ -467,6 +473,35 @@ public class RequestEditSubPanel extends JPanel {
     // 取消当前请求
     private void cancelCurrentRequest() {
         requestEditorActionHelper.cancelCurrentRequest();
+    }
+
+    /**
+     * 关闭标签页前释放网络资源，避免后台连接在 UI 被移除后继续存活。
+     */
+    public void disposeResources() {
+        disposed = true;
+
+        if (currentEventSource != null) {
+            currentSseCancelled.set(true);
+            currentEventSource.cancel();
+            currentEventSource = null;
+        }
+        if (currentWebSocket != null) {
+            currentWebSocket.close(WEBSOCKET_NORMAL_CLOSURE, "Tab closed");
+            currentWebSocket = null;
+        }
+        currentWebSocketConnectionId = null;
+
+        SwingWorker<Void, Void> worker = currentWorker;
+        if (worker != null) {
+            worker.cancel(true);
+            currentWorker = null;
+        }
+        httpSseStreamOpened = false;
+    }
+
+    boolean isDisposed() {
+        return disposed;
     }
 
     private void convertCurrentRequestToSse() {

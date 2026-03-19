@@ -18,6 +18,7 @@ import okio.ByteString;
 import javax.swing.*;
 import java.util.LinkedHashMap;
 import java.util.UUID;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -32,6 +33,8 @@ final class WebSocketRequestExecutionHelper {
     private final Consumer<WebSocket> currentWebSocketSetter;
     private final Consumer<String> currentConnectionIdSetter;
     private final Supplier<String> currentConnectionIdSupplier;
+    private final Runnable clearCurrentWorker;
+    private final BooleanSupplier disposedSupplier;
 
     WebSocketRequestExecutionHelper(ResponsePanel responsePanel,
                                     RequestExecutionUiHelper requestExecutionUiHelper,
@@ -39,7 +42,9 @@ final class WebSocketRequestExecutionHelper {
                                     RequestResponseHelper requestResponseHelper,
                                     Consumer<WebSocket> currentWebSocketSetter,
                                     Consumer<String> currentConnectionIdSetter,
-                                    Supplier<String> currentConnectionIdSupplier) {
+                                    Supplier<String> currentConnectionIdSupplier,
+                                    Runnable clearCurrentWorker,
+                                    BooleanSupplier disposedSupplier) {
         this.responsePanel = responsePanel;
         this.requestExecutionUiHelper = requestExecutionUiHelper;
         this.requestStreamUiHelper = requestStreamUiHelper;
@@ -47,6 +52,8 @@ final class WebSocketRequestExecutionHelper {
         this.currentWebSocketSetter = currentWebSocketSetter;
         this.currentConnectionIdSetter = currentConnectionIdSetter;
         this.currentConnectionIdSupplier = currentConnectionIdSupplier;
+        this.clearCurrentWorker = clearCurrentWorker;
+        this.disposedSupplier = disposedSupplier;
     }
 
     SwingWorker<Void, Void> createWorker(PreparedRequest req, ScriptExecutionPipeline pipeline) {
@@ -67,7 +74,7 @@ final class WebSocketRequestExecutionHelper {
                     HttpSingleRequestExecutor.executeWebSocket(req, new WebSocketListener() {
                         @Override
                         public void onOpen(WebSocket webSocket, Response response) {
-                            if (!connectionId.equals(currentConnectionIdSupplier.get())) {
+                            if (!isActiveConnection(connectionId)) {
                                 log.debug("Ignoring onOpen callback for expired connection ID: {}, current ID: {}",
                                         connectionId, currentConnectionIdSupplier.get());
                                 webSocket.close(NORMAL_CLOSURE, "Connection expired");
@@ -82,17 +89,22 @@ final class WebSocketRequestExecutionHelper {
                             resp.protocol = response.protocol().toString();
                             currentWebSocketSetter.accept(webSocket);
                             SwingUtilities.invokeLater(() -> {
+                                if (!isActiveConnection(connectionId)) {
+                                    return;
+                                }
                                 requestExecutionUiHelper.updateUIForResponse(resp);
                                 requestExecutionUiHelper.activateWebSocketBodyTab();
                                 requestExecutionUiHelper.switchSendButtonToClose();
                                 requestExecutionUiHelper.setWebSocketConnected(true);
                             });
-                            requestStreamUiHelper.appendWebSocketMessage(MessageType.CONNECTED, response.message());
+                            if (isActiveConnection(connectionId)) {
+                                requestStreamUiHelper.appendWebSocketMessage(MessageType.CONNECTED, response.message());
+                            }
                         }
 
                         @Override
                         public void onMessage(WebSocket webSocket, String text) {
-                            if (!connectionId.equals(currentConnectionIdSupplier.get())) {
+                            if (!isActiveConnection(connectionId)) {
                                 log.debug("Ignoring onMessage callback for expired connection ID: {}", connectionId);
                                 return;
                             }
@@ -102,7 +114,7 @@ final class WebSocketRequestExecutionHelper {
 
                         @Override
                         public void onMessage(WebSocket webSocket, ByteString bytes) {
-                            if (!connectionId.equals(currentConnectionIdSupplier.get())) {
+                            if (!isActiveConnection(connectionId)) {
                                 log.debug("Ignoring onMessage(binary) callback for expired connection ID: {}", connectionId);
                                 return;
                             }
@@ -111,7 +123,7 @@ final class WebSocketRequestExecutionHelper {
 
                         @Override
                         public void onClosing(WebSocket webSocket, int code, String reason) {
-                            if (isValidConnection(connectionId)) {
+                            if (isActiveConnection(connectionId)) {
                                 log.debug("closing WebSocket: code={}, reason={}", code, reason);
                                 handleWebSocketClose();
                             }
@@ -119,7 +131,7 @@ final class WebSocketRequestExecutionHelper {
 
                         @Override
                         public void onClosed(WebSocket webSocket, int code, String reason) {
-                            if (isValidConnection(connectionId)) {
+                            if (isActiveConnection(connectionId)) {
                                 log.debug("closed WebSocket: code={}, reason={}", code, reason);
                                 requestStreamUiHelper.appendWebSocketMessage(MessageType.CLOSED, code + " " + reason);
                                 handleWebSocketClose();
@@ -127,10 +139,17 @@ final class WebSocketRequestExecutionHelper {
                         }
 
                         private void handleWebSocketClose() {
+                            if (closed) {
+                                return;
+                            }
                             closed = true;
                             resp.costMs = System.currentTimeMillis() - startTime;
                             currentWebSocketSetter.accept(null);
+                            clearCurrentWorker.run();
                             SwingUtilities.invokeLater(() -> {
+                                if (disposedSupplier.getAsBoolean()) {
+                                    return;
+                                }
                                 requestExecutionUiHelper.updateUIForResponse(resp);
                                 requestExecutionUiHelper.resetSendButton();
                                 requestExecutionUiHelper.setWebSocketConnected(false);
@@ -139,7 +158,7 @@ final class WebSocketRequestExecutionHelper {
 
                         @Override
                         public void onFailure(WebSocket webSocket, Throwable t, Response response) {
-                            if (!connectionId.equals(currentConnectionIdSupplier.get())) {
+                            if (!isActiveConnection(connectionId)) {
                                 log.debug("Ignoring onFailure callback for expired connection ID: {}", connectionId);
                                 return;
                             }
@@ -147,7 +166,12 @@ final class WebSocketRequestExecutionHelper {
                             requestStreamUiHelper.appendWebSocketMessage(MessageType.WARNING, t.getMessage());
                             closed = true;
                             resp.costMs = System.currentTimeMillis() - startTime;
+                            currentWebSocketSetter.accept(null);
+                            clearCurrentWorker.run();
                             SwingUtilities.invokeLater(() -> {
+                                if (disposedSupplier.getAsBoolean()) {
+                                    return;
+                                }
                                 String errorMsg = response != null
                                         ? I18nUtil.getMessage(MessageKeys.WEBSOCKET_FAILED, t.getMessage() + " (" + response.code() + ")")
                                         : I18nUtil.getMessage(MessageKeys.WEBSOCKET_FAILED, t.getMessage());
@@ -158,10 +182,19 @@ final class WebSocketRequestExecutionHelper {
                             });
                         }
                     });
-                    SwingUtilities.invokeLater(() -> responsePanel.setResponseTabButtonsEnable(true));
+                    SwingUtilities.invokeLater(() -> {
+                        if (!isActiveConnection(connectionId)) {
+                            return;
+                        }
+                        responsePanel.setResponseTabButtonsEnable(true);
+                    });
                 } catch (Exception ex) {
                     log.error("Error executing WebSocket request: {} - {}", req.url, ex.getMessage(), ex);
+                    clearCurrentWorker.run();
                     SwingUtilities.invokeLater(() -> {
+                        if (disposedSupplier.getAsBoolean()) {
+                            return;
+                        }
                         requestExecutionUiHelper.updateUIForResponse(null);
                         NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.WEBSOCKET_ERROR, ex.getMessage()));
                         requestExecutionUiHelper.setWebSocketConnected(false);
@@ -172,15 +205,18 @@ final class WebSocketRequestExecutionHelper {
 
             @Override
             protected void done() {
-                if (connectionId.equals(currentConnectionIdSupplier.get())) {
+                if (!disposedSupplier.getAsBoolean() && connectionId.equals(currentConnectionIdSupplier.get())) {
                     requestResponseHelper.saveHistory(req, resp, "WebSocket request");
                 }
             }
         };
     }
 
-    private boolean isValidConnection(String connectionId) {
+    private boolean isActiveConnection(String connectionId) {
         String currentConnectionId = currentConnectionIdSupplier.get();
-        return currentConnectionId == null || currentConnectionId.isBlank() || connectionId.equals(currentConnectionId);
+        return !disposedSupplier.getAsBoolean()
+                && currentConnectionId != null
+                && !currentConnectionId.isBlank()
+                && connectionId.equals(currentConnectionId);
     }
 }

@@ -17,7 +17,6 @@ final class RequestPreparationFeedbackHelper {
 
     void clearUrlValidationFeedback(JTextField urlField) {
         urlField.putClientProperty(FlatClientProperties.OUTLINE, null);
-        urlField.setToolTipText(null);
     }
 
     boolean handlePreparationFailure(RequestPreparationResult result,
@@ -70,14 +69,13 @@ final class RequestPreparationFeedbackHelper {
             }
         }
         if (validationResult.shouldFocusUrlField()) {
-            showUrlValidationFeedback(urlField, message, validationResult.isWarning());
+            showUrlValidationFeedback(urlField, validationResult.isWarning());
         }
     }
 
-    private void showUrlValidationFeedback(JTextField urlField, String message, boolean warning) {
+    private void showUrlValidationFeedback(JTextField urlField, boolean warning) {
         urlField.putClientProperty(FlatClientProperties.OUTLINE,
                 warning ? "warning" : FlatClientProperties.OUTLINE_ERROR);
-        urlField.setToolTipText(message);
         SwingUtilities.invokeLater(() -> {
             urlField.requestFocusInWindow();
             urlField.selectAll();

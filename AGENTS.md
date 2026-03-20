@@ -3,6 +3,7 @@
 ### Available skills
 
 - swing-flatlaf-miglayout-principles: Use when modifying EasyPostman Swing forms that use FlatLaf and MigLayout, especially when layout refactors introduce clipped focus rings, dense spacing, border conflicts, or inconsistent form structure. (file: /Users/lonli2/IdeaProjects-laker/easy-postman-github/.codex/skills/swing-flatlaf-miglayout-principles/SKILL.md)
+- fontsutil-font-usage: Use when modifying EasyPostman Swing UI fonts, especially when dialogs, labels, tables, tabs, or renderers look too large or too small, or when a change must follow the user's configured UI font size. Prefer FontsUtil.getDefaultFontWithOffset(...). (file: /Users/lonli2/IdeaProjects-laker/easy-postman-github/.codex/skills/fontsutil-font-usage/SKILL.md)
 
 ### How to use skills
 

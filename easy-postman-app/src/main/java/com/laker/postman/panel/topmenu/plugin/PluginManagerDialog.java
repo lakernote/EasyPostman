@@ -12,6 +12,7 @@ import com.laker.postman.plugin.runtime.PluginCompatibility;
 import com.laker.postman.plugin.runtime.PluginFileInfo;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.service.update.version.VersionComparator;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +34,8 @@ public class PluginManagerDialog extends JDialog {
 
     private static final String VIEW_INSTALLED = "installed";
     private static final String VIEW_MARKET = "market";
-    private static final int SIDEBAR_WIDTH = 360;
+    private static final int SIDEBAR_WIDTH = 320;
+    private static final Dimension DIALOG_SIZE = new Dimension(980, 680);
 
     private final DefaultListModel<PluginFileInfo> installedListModel = new DefaultListModel<>();
     private final JList<PluginFileInfo> installedList = new JList<>(installedListModel);
@@ -118,8 +120,9 @@ public class PluginManagerDialog extends JDialog {
 
     private void initUI() {
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-        setMinimumSize(new Dimension(1040, 720));
-        setSize(1140, 760);
+        setResizable(false);
+        setMinimumSize(DIALOG_SIZE);
+        setSize(DIALOG_SIZE);
         setLocationRelativeTo(getOwner());
 
         JPanel content = new JPanel(new MigLayout(
@@ -219,7 +222,7 @@ public class PluginManagerDialog extends JDialog {
         panel.setOpaque(false);
 
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_TITLE));
-        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 22f));
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 2));
         panel.add(titleLabel, "growx");
         return panel;
     }
@@ -258,7 +261,7 @@ public class PluginManagerDialog extends JDialog {
         ));
         JLabel titleLabel = new JLabel(title);
         titleLabel.setForeground(ModernColors.getTextHint());
-        valueLabel.setFont(valueLabel.getFont().deriveFont(Font.BOLD, 14f));
+        valueLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 1));
         panel.add(titleLabel);
         panel.add(valueLabel);
         return panel;
@@ -484,14 +487,18 @@ public class PluginManagerDialog extends JDialog {
     private void loadSavedCatalogIfPresent() {
         String catalogUrl = PluginManagementService.getCatalogUrl();
         if (catalogUrl == null || catalogUrl.isBlank()) {
-            applyCatalogUrl(resolvePreferredOfficialCatalogUrl(), true);
+            PluginManagementService.saveCatalogUrl(resolvePreferredOfficialCatalogUrl());
+            refreshCatalogSourceButtons();
+            loadCatalog(false);
             return;
         }
-        loadCatalog();
+        refreshCatalogSourceButtons();
+        loadCatalog(false);
     }
 
     private void applyCatalogUrl(String catalogUrl, boolean autoLoad) {
         PluginManagementService.saveCatalogUrl(catalogUrl == null ? "" : catalogUrl.trim());
+        refreshCatalogSourceButtons();
         if (autoLoad) {
             loadCatalog();
         }
@@ -639,6 +646,10 @@ public class PluginManagerDialog extends JDialog {
     }
 
     private void loadCatalog() {
+        loadCatalog(true);
+    }
+
+    private void loadCatalog(boolean switchToMarketView) {
         String savedCatalogUrl = PluginManagementService.getCatalogUrl();
         final String catalogUrl = savedCatalogUrl == null ? "" : savedCatalogUrl.trim();
         if (catalogUrl.isBlank()) {
@@ -650,7 +661,9 @@ public class PluginManagerDialog extends JDialog {
             return;
         }
 
-        showView(VIEW_MARKET);
+        if (switchToMarketView) {
+            showView(VIEW_MARKET);
+        }
         setMarketBusy(true, I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_LOADING));
         new SwingWorker<CatalogLoadResult, Void>() {
             @Override
@@ -1059,7 +1072,7 @@ public class PluginManagerDialog extends JDialog {
         panel.setOpaque(false);
 
         JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 15f));
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 1));
         panel.add(titleLabel, "growx, wrap");
         if (description != null && !description.isBlank()) {
             JTextArea descriptionArea = createReadOnlyArea(2, true);
@@ -1110,6 +1123,9 @@ public class PluginManagerDialog extends JDialog {
         JScrollPane scrollPane = new JScrollPane(list);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.getViewport().setBackground(ModernColors.getCardBackgroundColor());
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         return scrollPane;
     }
 
@@ -1152,7 +1168,7 @@ public class PluginManagerDialog extends JDialog {
 
     private static JLabel createSummaryMetricLabel() {
         JLabel label = new JLabel("0");
-        label.setFont(label.getFont().deriveFont(Font.BOLD, 16f));
+        label.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 1));
         return label;
     }
 
@@ -1179,7 +1195,7 @@ public class PluginManagerDialog extends JDialog {
 
     private static JLabel createDetailTitleLabel() {
         JLabel label = new JLabel();
-        label.setFont(label.getFont().deriveFont(Font.BOLD, 18f));
+        label.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 2));
         return label;
     }
 
@@ -1440,7 +1456,7 @@ public class PluginManagerDialog extends JDialog {
             ));
             setOpaque(true);
 
-            titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 15f));
+            titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 1));
             metaLabel.setForeground(ModernColors.getTextHint());
 
             add(titleLabel);
@@ -1486,7 +1502,7 @@ public class PluginManagerDialog extends JDialog {
             ));
             setOpaque(true);
 
-            titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 15f));
+            titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 1));
             metaLabel.setForeground(ModernColors.getTextHint());
 
             add(titleLabel);

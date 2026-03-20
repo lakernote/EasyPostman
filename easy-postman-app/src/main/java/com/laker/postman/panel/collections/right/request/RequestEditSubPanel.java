@@ -298,6 +298,7 @@ public class RequestEditSubPanel extends JPanel {
                 webSocket -> currentWebSocket = webSocket,
                 connectionId -> currentWebSocketConnectionId = connectionId,
                 () -> currentWebSocketConnectionId,
+                () -> currentWorker,
                 () -> currentWorker = null,
                 this::isDisposed
         );

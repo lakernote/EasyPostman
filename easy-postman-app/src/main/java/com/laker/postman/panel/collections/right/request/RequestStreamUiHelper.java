@@ -25,9 +25,24 @@ final class RequestStreamUiHelper {
 
     void appendWebSocketMessage(MessageType type, String text, List<TestResult> testResults) {
         if (responsePanel.getProtocol().isWebSocketProtocol() && responsePanel.getWebSocketResponsePanel() != null) {
-            String timestamp = LocalTime.now().format(timeFormatter);
+            String timestamp = currentTimestamp();
             responsePanel.getWebSocketResponsePanel().addMessage(type, timestamp, text, testResults);
         }
+    }
+
+    void appendWebSocketRawEvent(StringBuilder webSocketBodyBuilder, MessageType type, String text) {
+        if (webSocketBodyBuilder == null) {
+            return;
+        }
+        String normalizedText = normalizeWebSocketTranscriptText(text);
+        webSocketBodyBuilder
+                .append('[')
+                .append(currentTimestamp())
+                .append("] ")
+                .append(type.display)
+                .append(": ")
+                .append(normalizedText)
+                .append('\n');
     }
 
     void appendSseMessage(MessageType type, String eventId, String eventType, Long retryMs,
@@ -35,7 +50,7 @@ final class RequestStreamUiHelper {
         if (responsePanel.getSseResponsePanel() == null) {
             return;
         }
-        String timestamp = LocalTime.now().format(timeFormatter);
+        String timestamp = currentTimestamp();
         responsePanel.getSseResponsePanel().addMessage(type, timestamp, eventId, eventType, retryMs, text, testResults);
     }
 
@@ -64,5 +79,40 @@ final class RequestStreamUiHelper {
         response.bodySize = response.body.getBytes(StandardCharsets.UTF_8).length;
         response.costMs = System.currentTimeMillis() - startTime;
         response.endTime = System.currentTimeMillis();
+    }
+
+    void finalizeWebSocketResponse(HttpResponse response, StringBuilder webSocketBodyBuilder, long startTime) {
+        if (response == null) {
+            return;
+        }
+        response.body = webSocketBodyBuilder != null ? webSocketBodyBuilder.toString() : "";
+        response.bodySize = response.body.getBytes(StandardCharsets.UTF_8).length;
+        response.costMs = System.currentTimeMillis() - startTime;
+        response.endTime = System.currentTimeMillis();
+    }
+
+    private String currentTimestamp() {
+        return LocalTime.now().format(timeFormatter);
+    }
+
+    private String normalizeWebSocketTranscriptText(String text) {
+        if (text == null || text.isEmpty()) {
+            return "";
+        }
+        String normalized = text.replace("\r\n", "\n").replace('\r', '\n');
+        normalized = trimEdgeNewlines(normalized);
+        return normalized.replace("\n", "\n  ");
+    }
+
+    private String trimEdgeNewlines(String text) {
+        int start = 0;
+        int end = text.length();
+        while (start < end && text.charAt(start) == '\n') {
+            start++;
+        }
+        while (end > start && text.charAt(end - 1) == '\n') {
+            end--;
+        }
+        return text.substring(start, end);
     }
 }

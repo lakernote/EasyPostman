@@ -131,8 +131,15 @@ final class RequestEditorActionHelper {
         WebSocket currentWebSocket = currentWebSocketSupplier.get();
         if (currentWebSocket != null) {
             currentWebSocket.close(WEBSOCKET_NORMAL_CLOSURE, "User canceled");
+            SwingWorker<Void, Void> currentWorker = currentWorkerSupplier.get();
+            if (currentWorker instanceof UserClosableWebSocketWorker closeableWebSocketWorker) {
+                closeableWebSocketWorker.requestUserClose();
+                responsePanel.hideLoadingOverlay();
+                return;
+            }
             currentWebSocketSetter.accept(null);
         }
+
         currentWebSocketConnectionIdSetter.accept(null);
 
         SwingWorker<Void, Void> currentWorker = currentWorkerSupplier.get();
@@ -143,9 +150,6 @@ final class RequestEditorActionHelper {
         currentWorkerSetter.accept(null);
         responsePanel.hideLoadingOverlay();
 
-        if (Boolean.TRUE.equals(isEffectiveWebSocketProtocolSupplier.get())) {
-            requestStreamUiHelper.appendWebSocketMessage(MessageType.WARNING, "User canceled");
-        }
         if (Boolean.TRUE.equals(isBaseHttpProtocolSupplier.get()) && Boolean.TRUE.equals(httpSseStreamOpenedSupplier.get())) {
             responsePanel.switchTabButtonHttpOrSse("sse");
             requestStreamUiHelper.appendSseMessage(MessageType.CLOSED, null, "closed", null, "User canceled", null);

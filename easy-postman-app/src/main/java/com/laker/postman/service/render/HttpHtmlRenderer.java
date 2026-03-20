@@ -232,11 +232,12 @@ public class HttpHtmlRenderer {
 
     /** 代码块（请求/响应 body） */
     private static String codeBlock(String content) {
-        return "<pre style='background:" + codeBgColor()
+        return "<div style='background:" + codeBgColor()
                 + ";color:" + textColor()
-                + ";padding:8px;border-radius:4px;margin:2px 0 6px 0;"
-                + "white-space:pre-wrap;word-break:break-all;'>"
-                + escapeHtml(content) + "</pre>";
+                + ";padding:8px;border-radius:4px;margin:2px 0 6px 0;'>"
+                + "<pre style='margin:0;font-family:monospace;white-space:pre-wrap;word-break:break-all;'>"
+                + escapeHtml(content)
+                + "</pre></div>";
     }
 
     /**

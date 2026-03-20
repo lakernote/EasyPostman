@@ -86,7 +86,9 @@ final class RequestFormDataHelper {
         item.setHeadersList(headersPanel.getHeadersList());
 
         requestBodyPanel.getBodyArea().setText(item.getBody());
-        requestBodyPanel.getBodyTypeComboBox().setSelectedItem(resolveBodyType(item));
+        String bodyType = normalizeBodyType(resolveBodyType(item), item.getBody());
+        item.setBodyType(bodyType);
+        requestBodyPanel.getBodyTypeComboBox().setSelectedItem(bodyType);
         applyRawType(item.getBody());
         applyFormData(item.getFormDataList());
         applyUrlencoded(item.getUrlencodedList());
@@ -112,9 +114,10 @@ final class RequestFormDataHelper {
         paramsPanel.setParamsList(copyList(originalRequest.getParams()));
         headersPanel.setHeadersList(copyList(originalRequest.getHeaders()));
 
-        String bodyType = CharSequenceUtil.isBlank(originalRequest.getBodyType())
+        String requestedBodyType = CharSequenceUtil.isBlank(originalRequest.getBodyType())
                 ? RequestBodyPanel.BODY_TYPE_NONE
                 : originalRequest.getBodyType();
+        String bodyType = normalizeBodyType(requestedBodyType, originalRequest.getBody());
         requestBodyPanel.getBodyTypeComboBox().setSelectedItem(bodyType);
 
         String body = originalRequest.getBody();
@@ -148,9 +151,9 @@ final class RequestFormDataHelper {
         item.setHeadersList(fromModel ? headersPanel.getHeadersListFromModel() : headersPanel.getHeadersList());
         item.setParamsList(fromModel ? paramsPanel.getParamsListFromModel() : paramsPanel.getParamsList());
         item.setBody(requestBodyPanel.getBodyArea().getText().trim());
-        item.setBodyType(Objects.requireNonNull(requestBodyPanel.getBodyTypeComboBox().getSelectedItem()).toString());
+        item.setBodyType(resolveCurrentBodyType());
 
-        String bodyType = requestBodyPanel.getBodyType();
+        String bodyType = item.getBodyType();
         if (RequestBodyPanel.BODY_TYPE_FORM_DATA.equals(bodyType)) {
             FormDataTablePanel formDataTablePanel = requestBodyPanel.getFormDataTablePanel();
             item.setFormDataList(fromModel ? formDataTablePanel.getFormDataListFromModel() : formDataTablePanel.getFormDataList());
@@ -291,11 +294,57 @@ final class RequestFormDataHelper {
     }
 
     private void applyFormData(List<HttpFormData> formDataList) {
-        requestBodyPanel.getFormDataTablePanel().setFormDataList(copyList(formDataList));
+        FormDataTablePanel formDataTablePanel = requestBodyPanel.getFormDataTablePanel();
+        if (formDataTablePanel == null) {
+            return;
+        }
+        formDataTablePanel.setFormDataList(copyList(formDataList));
     }
 
     private void applyUrlencoded(List<HttpFormUrlencoded> urlencodedList) {
-        requestBodyPanel.getFormUrlencodedTablePanel().setFormDataList(copyList(urlencodedList));
+        FormUrlencodedTablePanel formUrlencodedTablePanel = requestBodyPanel.getFormUrlencodedTablePanel();
+        if (formUrlencodedTablePanel == null) {
+            return;
+        }
+        formUrlencodedTablePanel.setFormDataList(copyList(urlencodedList));
+    }
+
+    private String resolveCurrentBodyType() {
+        String selectedBodyType = Objects.requireNonNull(requestBodyPanel.getBodyTypeComboBox().getSelectedItem()).toString();
+        return normalizeBodyType(selectedBodyType, requestBodyPanel.getRawBody());
+    }
+
+    private String normalizeBodyType(String requestedBodyType, String body) {
+        if (isSupportedBodyType(requestedBodyType)) {
+            return requestedBodyType;
+        }
+        if (CharSequenceUtil.isNotBlank(body) && isSupportedBodyType(RequestBodyPanel.BODY_TYPE_RAW)) {
+            return RequestBodyPanel.BODY_TYPE_RAW;
+        }
+        if (isSupportedBodyType(RequestBodyPanel.BODY_TYPE_NONE)) {
+            return RequestBodyPanel.BODY_TYPE_NONE;
+        }
+        if (isSupportedBodyType(RequestBodyPanel.BODY_TYPE_RAW)) {
+            return RequestBodyPanel.BODY_TYPE_RAW;
+        }
+        JComboBox<String> bodyTypeComboBox = requestBodyPanel.getBodyTypeComboBox();
+        if (bodyTypeComboBox.getItemCount() > 0) {
+            return bodyTypeComboBox.getItemAt(0);
+        }
+        return RequestBodyPanel.BODY_TYPE_NONE;
+    }
+
+    private boolean isSupportedBodyType(String bodyType) {
+        if (CharSequenceUtil.isBlank(bodyType)) {
+            return false;
+        }
+        JComboBox<String> bodyTypeComboBox = requestBodyPanel.getBodyTypeComboBox();
+        for (int i = 0; i < bodyTypeComboBox.getItemCount(); i++) {
+            if (bodyType.equals(bodyTypeComboBox.getItemAt(i))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private <T> List<T> copyList(List<T> source) {

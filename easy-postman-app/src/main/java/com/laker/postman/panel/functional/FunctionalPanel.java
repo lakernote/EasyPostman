@@ -98,6 +98,7 @@ public class FunctionalPanel extends SingletonBasePanel {
 
         // 初始化 CSV 数据面板
         csvDataPanel = new CsvDataPanel();
+        csvDataPanel.setChangeListener(this::save);
 
         // 左侧按钮组
         topPanel.add(createButtonPanel(), BorderLayout.WEST);
@@ -804,6 +805,7 @@ public class FunctionalPanel extends SingletonBasePanel {
     private void loadSaved() {
         try {
             List<RunnerRowData> savedRows = persistenceService.load();
+            csvDataPanel.restoreState(persistenceService.loadCsvState());
             if (savedRows != null && !savedRows.isEmpty()) {
                 for (RunnerRowData row : savedRows) {
                     tableModel.addRow(row);
@@ -845,7 +847,7 @@ public class FunctionalPanel extends SingletonBasePanel {
     public void save() {
         try {
             List<RunnerRowData> rows = tableModel.getAllRows();
-            persistenceService.saveAsync(rows);
+            persistenceService.saveAsync(rows, csvDataPanel != null ? csvDataPanel.exportState() : null);
         } catch (Exception e) {
             log.error("Failed to save config", e);
         }
@@ -923,7 +925,6 @@ public class FunctionalPanel extends SingletonBasePanel {
         }
     }
 }
-
 
 
 

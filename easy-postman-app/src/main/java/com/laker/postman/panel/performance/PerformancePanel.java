@@ -310,6 +310,8 @@ public class PerformancePanel extends SingletonBasePanel {
         btnPanel.add(efficientCheckBox);
         csvDataPanel = new CsvDataPanel();
         csvDataPanel.setContextHelpText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_CSV_USAGE_NOTE));
+        csvDataPanel.setChangeListener(this::saveConfig);
+        csvDataPanel.restoreState(persistenceService.loadCsvState());
         btnPanel.add(csvDataPanel);
         topPanel.add(btnPanel, BorderLayout.WEST);
         // ========== 执行进度指示器 ==========
@@ -1012,7 +1014,7 @@ public class PerformancePanel extends SingletonBasePanel {
 
         // 3. 持久化到文件
         DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();
-        persistenceService.save(root, efficientMode);
+        persistenceService.save(root, efficientMode, csvDataPanel != null ? csvDataPanel.exportState() : null);
 
         // 4. 显示成功提示
         NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_SAVE_SUCCESS));
@@ -2749,7 +2751,7 @@ public class PerformancePanel extends SingletonBasePanel {
             // 获取根节点
             DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();
             // 异步保存配置
-            persistenceService.saveAsync(root, efficientMode);
+            persistenceService.saveAsync(root, efficientMode, csvDataPanel != null ? csvDataPanel.exportState() : null);
         } catch (Exception e) {
             log.error("Failed to save performance config", e);
         }

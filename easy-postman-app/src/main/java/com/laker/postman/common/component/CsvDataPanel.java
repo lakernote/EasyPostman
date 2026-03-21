@@ -25,12 +25,38 @@ import java.util.List;
 @Slf4j
 public class CsvDataPanel extends JPanel {
 
+    public static final class CsvState {
+        private final String sourceName;
+        private final List<String> headers;
+        private final List<Map<String, String>> rows;
+
+        public CsvState(String sourceName, List<String> headers, List<Map<String, String>> rows) {
+            this.sourceName = sourceName;
+            this.headers = copyHeaders(headers);
+            this.rows = copyRows(rows);
+        }
+
+        public String getSourceName() {
+            return sourceName;
+        }
+
+        public List<String> getHeaders() {
+            return copyHeaders(headers);
+        }
+
+        public List<Map<String, String>> getRows() {
+            return copyRows(rows);
+        }
+    }
+
     private File csvFile;
+    private String csvSourceName;
     private List<Map<String, String>> csvData;
     private List<String> csvHeaders; // 保存CSV列标题的顺序
     private JPanel csvStatusPanel;  // CSV 状态显示面板
     private JLabel csvStatusLabel;  // CSV 状态标签
     private String contextHelpText; // 调用方注入的场景说明
+    private Runnable changeListener;
 
 
     public CsvDataPanel() {
@@ -167,14 +193,31 @@ public class CsvDataPanel extends JPanel {
         }
     }
 
+    public void setChangeListener(Runnable changeListener) {
+        this.changeListener = changeListener;
+    }
+
+    public CsvState exportState() {
+        if (!hasData()) {
+            return null;
+        }
+        return new CsvState(getCurrentSourceName(), csvHeaders, csvData);
+    }
+
+    public void restoreState(CsvState state) {
+        applyState(state, false);
+    }
+
     /**
      * 清除 CSV 数据
      */
     public void clearCsvData() {
         csvFile = null;
+        csvSourceName = null;
         csvData = null;
         csvHeaders = null;
         updateCsvStatus();
+        notifyChangeListener();
         NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.CSV_DATA_CLEARED));
     }
 
@@ -322,7 +365,9 @@ public class CsvDataPanel extends JPanel {
                 csvData = newData;
                 csvHeaders = headers;
                 csvFile = null; // 清除文件引用，标记为手动创建
+                csvSourceName = null;
                 updateCsvStatus();
+                notifyChangeListener();
 
                 dialog.dispose();
 
@@ -512,7 +557,7 @@ public class CsvDataPanel extends JPanel {
         topPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         JLabel infoLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_DATA_SOURCE_INFO,
-                csvFile != null ? csvFile.getName() : I18nUtil.getMessage(MessageKeys.CSV_MANUAL_CREATED),
+                getCurrentSourceDisplayName(),
                 csvData.size()));
         infoLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         topPanel.add(infoLabel, BorderLayout.CENTER);
@@ -810,9 +855,13 @@ public class CsvDataPanel extends JPanel {
                 // 更新 CSV 数据和列标题顺序
                 csvData = newCsvData;
                 csvHeaders = currentHeaders; // 保存列标题顺序
-                csvFile = null; // 清除原文件引用，表示这是手动编辑的数据
+                csvFile = null; // 清除原文件引用，避免后续误以为仍需重新读文件
+                if (CharSequenceUtil.isBlank(csvSourceName)) {
+                    csvSourceName = null;
+                }
 
                 updateCsvStatus();
+                notifyChangeListener();
 
                 NotificationUtil.showSuccess(
                         I18nUtil.getMessage(MessageKeys.CSV_DATA_SAVED, newCsvData.size(), currentHeaders.size()));
@@ -1058,8 +1107,10 @@ public class CsvDataPanel extends JPanel {
                 }
 
                 csvFile = selectedFile;
+                csvSourceName = selectedFile.getName();
                 csvData = newCsvData;
                 csvHeaders = CsvDataUtil.getCsvHeaders(selectedFile); // 获取列标题
+                notifyChangeListener();
                 return true;
 
             } catch (Exception e) {
@@ -1094,5 +1145,61 @@ public class CsvDataPanel extends JPanel {
             return csvData.get(index);
         }
         return Collections.emptyMap();
+    }
+
+    private void applyState(CsvState state, boolean notifyChange) {
+        if (state == null || state.getRows().isEmpty()) {
+            csvFile = null;
+            csvSourceName = null;
+            csvData = null;
+            csvHeaders = null;
+        } else {
+            csvFile = null;
+            csvSourceName = CharSequenceUtil.isBlank(state.getSourceName()) ? null : state.getSourceName();
+            csvHeaders = copyHeaders(state.getHeaders());
+            csvData = copyRows(state.getRows());
+        }
+        updateCsvStatus();
+        if (notifyChange) {
+            notifyChangeListener();
+        }
+    }
+
+    private String getCurrentSourceName() {
+        if (csvFile != null) {
+            return csvFile.getName();
+        }
+        return csvSourceName;
+    }
+
+    private String getCurrentSourceDisplayName() {
+        String sourceName = getCurrentSourceName();
+        return CharSequenceUtil.isNotBlank(sourceName)
+                ? sourceName
+                : I18nUtil.getMessage(MessageKeys.CSV_MANUAL_CREATED);
+    }
+
+    private void notifyChangeListener() {
+        if (changeListener != null) {
+            changeListener.run();
+        }
+    }
+
+    private static List<String> copyHeaders(List<String> headers) {
+        if (headers == null) {
+            return new ArrayList<>();
+        }
+        return new ArrayList<>(headers);
+    }
+
+    private static List<Map<String, String>> copyRows(List<Map<String, String>> rows) {
+        List<Map<String, String>> copiedRows = new ArrayList<>();
+        if (rows == null) {
+            return copiedRows;
+        }
+        for (Map<String, String> row : rows) {
+            copiedRows.add(row == null ? new LinkedHashMap<>() : new LinkedHashMap<>(row));
+        }
+        return copiedRows;
     }
 }

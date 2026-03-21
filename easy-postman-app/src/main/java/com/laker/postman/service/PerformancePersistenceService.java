@@ -4,6 +4,7 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.ioc.Component;
 import com.laker.postman.ioc.PostConstruct;
 import com.laker.postman.model.HttpRequestItem;
@@ -17,7 +18,6 @@ import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
 import com.laker.postman.panel.performance.timer.TimerData;
 import com.laker.postman.service.collections.RequestCollectionsService;
 import com.laker.postman.common.constants.ConfigPathConstants;
-import com.laker.postman.util.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -45,8 +45,9 @@ public class PerformancePersistenceService {
 
     private void ensureDirExists() {
         try {
-            Path configDir = Paths.get(SystemUtil.getEasyPostmanPath());
-            if (!Files.exists(configDir)) {
+            Path configPath = getConfigFilePath();
+            Path configDir = configPath.getParent();
+            if (configDir != null && !Files.exists(configDir)) {
                 Files.createDirectories(configDir);
             }
         } catch (IOException e) {
@@ -59,7 +60,7 @@ public class PerformancePersistenceService {
      * 只保存请求ID引用，不保存完整请求配置，确保与集合中的请求保持同步
      */
     public void save(DefaultMutableTreeNode rootNode) {
-        save(rootNode, true);
+        save(rootNode, true, null);
     }
 
     /**
@@ -69,15 +70,29 @@ public class PerformancePersistenceService {
      * @param efficientMode 是否开启高效模式
      */
     public void save(DefaultMutableTreeNode rootNode, boolean efficientMode) {
+        save(rootNode, efficientMode, null);
+    }
+
+    /**
+     * 保存性能测试配置树结构
+     *
+     * @param rootNode      树根节点
+     * @param efficientMode 是否开启高效模式
+     * @param csvState      CSV 快照状态
+     */
+    public void save(DefaultMutableTreeNode rootNode, boolean efficientMode, CsvDataPanel.CsvState csvState) {
         try {
             JSONObject jsonRoot = new JSONObject();
             jsonRoot.set("version", "1.0");
             jsonRoot.set("efficientMode", efficientMode);
             jsonRoot.set("tree", serializeTreeNode(rootNode));
+            if (csvState != null) {
+                jsonRoot.set("csvState", serializeCsvState(csvState));
+            }
 
             // 写入文件
             String jsonString = JSONUtil.toJsonPrettyStr(jsonRoot);
-            Files.writeString(Paths.get(FILE_PATH), jsonString, StandardCharsets.UTF_8);
+            Files.writeString(getConfigFilePath(), jsonString, StandardCharsets.UTF_8);
 
             log.info("Successfully saved performance test configuration (efficientMode: {})", efficientMode);
         } catch (IOException e) {
@@ -89,7 +104,7 @@ public class PerformancePersistenceService {
      * 异步保存配置
      */
     public void saveAsync(DefaultMutableTreeNode rootNode) {
-        saveAsync(rootNode, true);
+        saveAsync(rootNode, true, null);
     }
 
     /**
@@ -99,7 +114,18 @@ public class PerformancePersistenceService {
      * @param efficientMode 是否开启高效模式
      */
     public void saveAsync(DefaultMutableTreeNode rootNode, boolean efficientMode) {
-        Thread saveThread = new Thread(() -> save(rootNode, efficientMode));
+        saveAsync(rootNode, efficientMode, null);
+    }
+
+    /**
+     * 异步保存配置
+     *
+     * @param rootNode      树根节点
+     * @param efficientMode 是否开启高效模式
+     * @param csvState      CSV 快照状态
+     */
+    public void saveAsync(DefaultMutableTreeNode rootNode, boolean efficientMode, CsvDataPanel.CsvState csvState) {
+        Thread saveThread = new Thread(() -> save(rootNode, efficientMode, csvState));
         saveThread.setDaemon(true);
         saveThread.start();
     }
@@ -245,12 +271,36 @@ public class PerformancePersistenceService {
         return json;
     }
 
+    private JSONObject serializeCsvState(CsvDataPanel.CsvState csvState) {
+        JSONObject json = new JSONObject();
+        json.set("sourceName", csvState.getSourceName());
+
+        JSONArray headers = new JSONArray();
+        for (String header : csvState.getHeaders()) {
+            headers.add(header);
+        }
+        json.set("headers", headers);
+
+        JSONArray rows = new JSONArray();
+        for (java.util.Map<String, String> row : csvState.getRows()) {
+            JSONObject rowJson = new JSONObject();
+            if (row != null) {
+                for (java.util.Map.Entry<String, String> entry : row.entrySet()) {
+                    rowJson.set(entry.getKey(), entry.getValue());
+                }
+            }
+            rows.add(rowJson);
+        }
+        json.set("rows", rows);
+        return json;
+    }
+
     /**
      * 加载性能测试配置
      * 通过ID从集合中获取最新的请求配置，确保与集合保持同步
      */
     public DefaultMutableTreeNode load(String rootName) {
-        File file = new File(FILE_PATH);
+        File file = getConfigFilePath().toFile();
 
         if (!file.exists()) {
             log.info("No performance test config file found, starting fresh");
@@ -271,7 +321,7 @@ public class PerformancePersistenceService {
             }
 
             // 读取文件
-            String jsonString = Files.readString(Paths.get(FILE_PATH), StandardCharsets.UTF_8);
+            String jsonString = Files.readString(getConfigFilePath(), StandardCharsets.UTF_8);
             if (jsonString.trim().isEmpty()) {
                 return null;
             }
@@ -309,7 +359,7 @@ public class PerformancePersistenceService {
      * @return 高效模式设置，如果配置文件不存在或读取失败则返回 true（默认值）
      */
     public boolean loadEfficientMode() {
-        File file = new File(FILE_PATH);
+        File file = getConfigFilePath().toFile();
 
         if (!file.exists()) {
             log.debug("No performance test config file found, using default efficientMode: true");
@@ -322,7 +372,7 @@ public class PerformancePersistenceService {
                 return true;
             }
 
-            String jsonString = Files.readString(Paths.get(FILE_PATH), StandardCharsets.UTF_8);
+            String jsonString = Files.readString(getConfigFilePath(), StandardCharsets.UTF_8);
             if (jsonString.trim().isEmpty()) {
                 return true;
             }
@@ -336,6 +386,36 @@ public class PerformancePersistenceService {
         } catch (Exception e) {
             log.error("Failed to load efficientMode: {}", e.getMessage());
             return true;
+        }
+    }
+
+    public CsvDataPanel.CsvState loadCsvState() {
+        File file = getConfigFilePath().toFile();
+
+        if (!file.exists()) {
+            return null;
+        }
+
+        try {
+            long fileSizeInBytes = file.length();
+            if (fileSizeInBytes == 0 || fileSizeInBytes > MAX_FILE_SIZE) {
+                return null;
+            }
+
+            String jsonString = Files.readString(getConfigFilePath(), StandardCharsets.UTF_8);
+            if (jsonString.trim().isEmpty()) {
+                return null;
+            }
+
+            JSONObject jsonRoot = JSONUtil.parseObj(jsonString);
+            JSONObject csvStateJson = jsonRoot.getJSONObject("csvState");
+            if (csvStateJson == null) {
+                return null;
+            }
+            return deserializeCsvState(csvStateJson);
+        } catch (Exception e) {
+            log.error("Failed to load csvState: {}", e.getMessage());
+            return null;
         }
     }
 
@@ -530,11 +610,42 @@ public class PerformancePersistenceService {
         return data;
     }
 
+    private CsvDataPanel.CsvState deserializeCsvState(JSONObject json) {
+        if (json == null) {
+            return null;
+        }
+
+        JSONArray headersJson = json.getJSONArray("headers");
+        JSONArray rowsJson = json.getJSONArray("rows");
+        if (headersJson == null || rowsJson == null || rowsJson.isEmpty()) {
+            return null;
+        }
+
+        java.util.List<String> headers = new java.util.ArrayList<>();
+        for (int i = 0; i < headersJson.size(); i++) {
+            headers.add(headersJson.getStr(i));
+        }
+
+        java.util.List<java.util.Map<String, String>> rows = new java.util.ArrayList<>();
+        for (int i = 0; i < rowsJson.size(); i++) {
+            JSONObject rowJson = rowsJson.getJSONObject(i);
+            java.util.Map<String, String> row = new java.util.LinkedHashMap<>();
+            if (rowJson != null) {
+                for (String header : headers) {
+                    row.put(header, rowJson.getStr(header, ""));
+                }
+            }
+            rows.add(row);
+        }
+
+        return new CsvDataPanel.CsvState(json.getStr("sourceName"), headers, rows);
+    }
+
     /**
      * 清空配置
      */
     public void clear() {
-        File file = new File(FILE_PATH);
+        File file = getConfigFilePath().toFile();
         if (file.exists()) {
             deleteFile(file);
         }
@@ -602,5 +713,9 @@ public class PerformancePersistenceService {
         } catch (Exception e) {
             log.error("Error deleting config file: {}", e.getMessage());
         }
+    }
+
+    protected Path getConfigFilePath() {
+        return Paths.get(FILE_PATH);
     }
 }

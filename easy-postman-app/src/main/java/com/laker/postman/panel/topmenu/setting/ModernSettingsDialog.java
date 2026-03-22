@@ -102,6 +102,8 @@ public class ModernSettingsDialog extends JDialog {
                 new RequestSettingsPanelModern());
         tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_TITLE),
                 new ProxySettingsPanelModern());
+        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_TRUSTED_MATERIAL_TITLE),
+                new TrustedCertificatesSettingsPanelModern());
         tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_TITLE),
                 new AutoUpdateSettingsPanel());
         tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_TITLE),

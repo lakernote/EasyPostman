@@ -975,6 +975,27 @@ public final class MessageKeys {
     public static final String SETTINGS_REQUEST_SSL_VERIFICATION_CHECKBOX = "settings.request.ssl_verification.checkbox";
     public static final String SETTINGS_REQUEST_DEFAULT_PROTOCOL = "settings.request.default_protocol";
     public static final String SETTINGS_REQUEST_DEFAULT_PROTOCOL_TOOLTIP = "settings.request.default_protocol.tooltip";
+    public static final String SETTINGS_REQUEST_TRUSTED_MATERIAL_TITLE = "settings.request.trusted_material.title";
+    public static final String SETTINGS_REQUEST_TRUSTED_MATERIAL_DESCRIPTION = "settings.request.trusted_material.description";
+    public static final String SETTINGS_REQUEST_TRUSTED_MATERIAL_ENABLED_CHECKBOX = "settings.request.trusted_material.enabled.checkbox";
+    public static final String SETTINGS_REQUEST_TRUSTED_MATERIAL_ENABLED_TOOLTIP = "settings.request.trusted_material.enabled.tooltip";
+    public static final String SETTINGS_REQUEST_TRUSTED_MATERIAL_HINT = "settings.request.trusted_material.hint";
+    public static final String SETTINGS_REQUEST_TRUSTED_MATERIAL_ADD = "settings.request.trusted_material.add";
+    public static final String SETTINGS_REQUEST_TRUSTED_MATERIAL_EDIT = "settings.request.trusted_material.edit";
+    public static final String SETTINGS_REQUEST_TRUSTED_MATERIAL_DELETE = "settings.request.trusted_material.delete";
+    public static final String SETTINGS_REQUEST_TRUSTED_MATERIAL_FILE_COLUMN = "settings.request.trusted_material.file.column";
+    public static final String SETTINGS_REQUEST_TRUSTED_MATERIAL_TYPE_COLUMN = "settings.request.trusted_material.type.column";
+    public static final String SETTINGS_REQUEST_TRUSTED_MATERIAL_PASSWORD_COLUMN = "settings.request.trusted_material.password.column";
+    public static final String SETTINGS_REQUEST_TRUSTED_MATERIAL_PATH = "settings.request.trusted_material.path";
+    public static final String SETTINGS_REQUEST_TRUSTED_MATERIAL_PATH_TOOLTIP = "settings.request.trusted_material.path.tooltip";
+    public static final String SETTINGS_REQUEST_TRUSTED_MATERIAL_PASSWORD = "settings.request.trusted_material.password";
+    public static final String SETTINGS_REQUEST_TRUSTED_MATERIAL_PASSWORD_TOOLTIP = "settings.request.trusted_material.password.tooltip";
+    public static final String SETTINGS_REQUEST_TRUSTED_MATERIAL_BROWSE = "settings.request.trusted_material.browse";
+    public static final String SETTINGS_REQUEST_TRUSTED_MATERIAL_CLEAR = "settings.request.trusted_material.clear";
+    public static final String SETTINGS_REQUEST_TRUSTED_MATERIAL_DIALOG_ADD_TITLE = "settings.request.trusted_material.dialog.add.title";
+    public static final String SETTINGS_REQUEST_TRUSTED_MATERIAL_DIALOG_EDIT_TITLE = "settings.request.trusted_material.dialog.edit.title";
+    public static final String SETTINGS_REQUEST_TRUSTED_MATERIAL_DIALOG_BROWSE_TITLE = "settings.request.trusted_material.dialog.browse.title";
+    public static final String SETTINGS_REQUEST_TRUSTED_MATERIAL_DIALOG_EMPTY = "settings.request.trusted_material.dialog.empty";
 
     // JMeter settings section
     public static final String SETTINGS_JMETER_TITLE = "settings.jmeter.title";
@@ -1039,6 +1060,8 @@ public final class MessageKeys {
     public static final String SETTINGS_VALIDATION_MAX_HISTORY_ERROR = "settings.validation.max_history.error";
     public static final String SETTINGS_VALIDATION_MAX_OPENED_REQUESTS_ERROR = "settings.validation.max_opened_requests_error";
     public static final String SETTINGS_VALIDATION_PORT_ERROR = "settings.validation.port.error";
+    public static final String SETTINGS_VALIDATION_TRUSTED_MATERIAL_PATH_ERROR = "settings.validation.trusted_material.path.error";
+    public static final String SETTINGS_VALIDATION_TRUSTED_MATERIAL_LOAD_ERROR = "settings.validation.trusted_material.load.error";
 
     // Success messages
     public static final String SETTINGS_SAVE_SUCCESS_MESSAGE = "settings.save.success.message";

@@ -25,13 +25,11 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
 
     @Override
     protected void buildContent(JPanel contentPanel) {
-        // 请求设置区域
         JPanel requestSection = createModernSection(
                 I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_TITLE),
                 ""
         );
 
-        // 响应体最大显示大小
         maxBodySizeField = new JTextField(10);
         int maxBodySizeKB = SettingManager.getMaxBodySize() / 1024;
         maxBodySizeField.setText(String.valueOf(maxBodySizeKB));
@@ -43,7 +41,6 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
         requestSection.add(maxBodySizeRow);
         requestSection.add(createVerticalSpace(FIELD_SPACING));
 
-        // 请求超时时间
         requestTimeoutField = new JTextField(10);
         requestTimeoutField.setText(String.valueOf(SettingManager.getRequestTimeout()));
         JPanel requestTimeoutRow = createFieldRow(
@@ -54,7 +51,6 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
         requestSection.add(requestTimeoutRow);
         requestSection.add(createVerticalSpace(FIELD_SPACING));
 
-        // 最大响应下载大小
         maxDownloadSizeField = new JTextField(10);
         int maxDownloadSizeMB = SettingManager.getMaxDownloadSize() / (1024 * 1024);
         maxDownloadSizeField.setText(String.valueOf(maxDownloadSizeMB));
@@ -66,7 +62,6 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
         requestSection.add(maxDownloadSizeRow);
         requestSection.add(createVerticalSpace(FIELD_SPACING));
 
-        // 自动重定向设置
         followRedirectsCheckBox = new JCheckBox(
                 I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_FOLLOW_REDIRECTS_CHECKBOX),
                 SettingManager.isFollowRedirects()
@@ -78,7 +73,6 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
         requestSection.add(followRedirectsRow);
         requestSection.add(createVerticalSpace(FIELD_SPACING));
 
-        // SSL 验证设置
         sslVerificationDisabledCheckBox = new JCheckBox(
                 I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SSL_VERIFICATION_CHECKBOX),
                 SettingManager.isRequestSslVerificationDisabled()
@@ -90,7 +84,6 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
         requestSection.add(sslVerificationRow);
         requestSection.add(createVerticalSpace(FIELD_SPACING));
 
-        // 默认协议设置
         String[] protocolOptions = {"https", "http"};
         defaultProtocolComboBox = new JComboBox<>(protocolOptions);
         defaultProtocolComboBox.setSelectedItem(SettingManager.getDefaultProtocol());
@@ -106,7 +99,6 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
 
         setupValidators();
 
-        // 跟踪所有组件的初始值
         trackComponentValue(maxBodySizeField);
         trackComponentValue(requestTimeoutField);
         trackComponentValue(maxDownloadSizeField);
@@ -146,7 +138,6 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
             }
         });
 
-        // 键盘快捷键
         InputMap inputMap = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
         ActionMap actionMap = getActionMap();
 
@@ -157,11 +148,9 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
                 saveSettings(false);
             }
         });
-
     }
 
     private void saveSettings(boolean closeAfterSave) {
-        // 验证所有字段
         if (!validateAllFields()) {
             NotificationUtil.showError(
                     I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_ERROR_MESSAGE));
@@ -169,7 +158,6 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
         }
 
         try {
-            // 保存请求设置
             int maxBodySizeKB = Integer.parseInt(maxBodySizeField.getText().trim());
             SettingManager.setMaxBodySize(maxBodySizeKB * 1024);
             SettingManager.setRequestTimeout(Integer.parseInt(requestTimeoutField.getText().trim()));
@@ -181,10 +169,8 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
             SettingManager.setRequestSslVerificationDisabled(sslVerificationDisabledCheckBox.isSelected());
             SettingManager.setDefaultProtocol((String) defaultProtocolComboBox.getSelectedItem());
 
-            // Clear client cache to apply new settings
             OkHttpClientManager.clearClientCache();
 
-            // 重新跟踪当前值
             originalValues.clear();
             trackComponentValue(maxBodySizeField);
             trackComponentValue(requestTimeoutField);
@@ -196,7 +182,6 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
 
             NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS_MESSAGE));
 
-            // 根据参数决定是否关闭对话框
             if (closeAfterSave) {
                 Window window = SwingUtilities.getWindowAncestor(this);
                 if (window instanceof JDialog dialog) {
@@ -208,4 +193,3 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
         }
     }
 }
-

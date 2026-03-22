@@ -148,8 +148,8 @@ public class SSLCertificateValidator {
 
             return false;
         } catch (Exception e) {
-            log.debug("Error checking hostname match: {}", e.getMessage());
-            return true; // 无法检查时假设匹配，避免误报
+            log.warn("Failed to inspect certificate hostname for '{}': {}", hostname, e.getMessage());
+            return false;
         }
     }
 

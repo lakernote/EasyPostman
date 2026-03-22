@@ -337,20 +337,24 @@ public class TopMenuBar extends SingletonBaseMenuBar implements IRefreshable {
         proxySettingMenuItem.addActionListener(e -> showModernSettingsDialog(2));
         settingMenu.add(proxySettingMenuItem);
 
+        JMenuItem trustedCertMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_TRUSTED_MATERIAL_TITLE));
+        trustedCertMenuItem.addActionListener(e -> showModernSettingsDialog(3));
+        settingMenu.add(trustedCertMenuItem);
+
         JMenuItem systemSettingMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_TITLE));
-        systemSettingMenuItem.addActionListener(e -> showModernSettingsDialog(3));
+        systemSettingMenuItem.addActionListener(e -> showModernSettingsDialog(4));
         settingMenu.add(systemSettingMenuItem);
 
         JMenuItem performanceSettingMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_TITLE));
-        performanceSettingMenuItem.addActionListener(e -> showModernSettingsDialog(4));
+        performanceSettingMenuItem.addActionListener(e -> showModernSettingsDialog(5));
         settingMenu.add(performanceSettingMenuItem);
 
         JMenuItem clientCertMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.CERT_TITLE));
-        clientCertMenuItem.addActionListener(e -> showModernSettingsDialog(5));
+        clientCertMenuItem.addActionListener(e -> showModernSettingsDialog(6));
         settingMenu.add(clientCertMenuItem);
 
         JMenuItem shortcutMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.SETTINGS_SHORTCUTS_TITLE));
-        shortcutMenuItem.addActionListener(e -> showModernSettingsDialog(6));
+        shortcutMenuItem.addActionListener(e -> showModernSettingsDialog(7));
         settingMenu.add(shortcutMenuItem);
 
         add(settingMenu);

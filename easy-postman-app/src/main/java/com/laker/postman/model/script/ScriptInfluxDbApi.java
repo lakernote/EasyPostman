@@ -1,12 +1,12 @@
 package com.laker.postman.model.script;
 
 import cn.hutool.json.JSONUtil;
+import com.laker.postman.service.http.okhttp.OkHttpClientManager;
 import com.laker.postman.util.JsonUtil;
 import okhttp3.*;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Script InfluxDB API for pm.influxdb / pm.influx.
@@ -19,20 +19,17 @@ public class ScriptInfluxDbApi {
     private static final String APPLICATION_VND_FLUX = "application/vnd.flux";
     private static final String AUTHORIZATION = "Authorization";
     private static final String TOKEN_PREFIX = "Token ";
-
-    private static final OkHttpClient DEFAULT_HTTP_CLIENT = new OkHttpClient.Builder()
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
-            .build();
+    private static final int CONNECT_TIMEOUT_MS = 10_000;
+    private static final int READ_TIMEOUT_MS = 30_000;
+    private static final int WRITE_TIMEOUT_MS = 30_000;
     private final OkHttpClient httpClient;
 
     public ScriptInfluxDbApi() {
-        this(DEFAULT_HTTP_CLIENT);
+        this(null);
     }
 
     public ScriptInfluxDbApi(OkHttpClient httpClient) {
-        this.httpClient = httpClient == null ? DEFAULT_HTTP_CLIENT : httpClient;
+        this.httpClient = httpClient;
     }
 
     public InfluxResponse query(Object options) {
@@ -230,7 +227,7 @@ public class ScriptInfluxDbApi {
     }
 
     private InfluxResponse executeRequest(Request request, String mode, String path, String operation) throws IOException {
-        try (Response response = httpClient.newCall(request).execute()) {
+        try (Response response = resolveHttpClient(request.url().toString()).newCall(request).execute()) {
             String responseBody = response.body() == null ? "" : response.body().string();
             Object json = JsonUtil.isTypeJSON(responseBody) ? JSONUtil.parse(responseBody) : null;
             Map<String, Object> meta = new LinkedHashMap<>();
@@ -240,6 +237,19 @@ public class ScriptInfluxDbApi {
             meta.put("contentType", response.header("Content-Type"));
             return new InfluxResponse(response.code(), responseBody, json, meta);
         }
+    }
+
+    private OkHttpClient resolveHttpClient(String url) {
+        if (httpClient != null) {
+            return httpClient;
+        }
+        return OkHttpClientManager.getClientForUrl(
+                url,
+                true,
+                CONNECT_TIMEOUT_MS,
+                READ_TIMEOUT_MS,
+                WRITE_TIMEOUT_MS
+        );
     }
 
     private void applyCustomHeaders(Request.Builder builder, Object headersObj) {

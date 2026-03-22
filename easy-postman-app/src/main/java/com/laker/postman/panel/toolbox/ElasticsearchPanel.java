@@ -3,6 +3,7 @@ package com.laker.postman.panel.toolbox;
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.button.*;
+import com.laker.postman.service.http.okhttp.OkHttpClientManager;
 import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
 import net.miginfocom.swing.MigLayout;
@@ -18,7 +19,6 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Elasticsearch 可视化 CRUD + DSL 工具面板
@@ -74,8 +74,6 @@ public class ElasticsearchPanel extends JPanel {
     private DefaultListModel<HistoryEntry> historyListModel;
     private JList<HistoryEntry> historyList;
 
-    // ===== HTTP 客户端 =====
-    private transient OkHttpClient httpClient;
     private String baseUrl = "http://localhost:9200";
     private String authHeader = null;
     private boolean connected = false;
@@ -91,6 +89,9 @@ public class ElasticsearchPanel extends JPanel {
     private static final String CLIENT_PROP_TOTAL_HITS = "es.totalHits";
     private static final String LABEL_DISABLED_FG = "Label.disabledForeground";
     private static final int MAX_HOST_HISTORY = 5;
+    private static final int CONNECT_TIMEOUT_MS = 10_000;
+    private static final int READ_TIMEOUT_MS = 30_000;
+    private static final int WRITE_TIMEOUT_MS = 30_000;
     // aggregation JSON field names
     private static final String AGG_KEY_AS_STRING = "key_as_string";
     private static final String AGG_KEY = "key";
@@ -154,16 +155,7 @@ public class ElasticsearchPanel extends JPanel {
     }
 
     public ElasticsearchPanel() {
-        initHttpClient();
         initUI();
-    }
-
-    private void initHttpClient() {
-        httpClient = new OkHttpClient.Builder()
-                .connectTimeout(10, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
-                .build();
     }
 
     private void initUI() {
@@ -1466,13 +1458,23 @@ public class ElasticsearchPanel extends JPanel {
     }
 
     private ResponseWrapper executeHttpWithCode(Request req) throws IOException {
-        try (Response resp = httpClient.newCall(req).execute()) {
+        try (Response resp = getHttpClient().newCall(req).execute()) {
             String body = resp.body() != null ? resp.body().string() : "";
             if (!resp.isSuccessful() && body.isEmpty()) {
                 throw new IOException("HTTP " + resp.code() + " " + resp.message());
             }
             return new ResponseWrapper(resp.code(), body);
         }
+    }
+
+    private OkHttpClient getHttpClient() {
+        return OkHttpClientManager.getClientForUrl(
+                baseUrl,
+                true,
+                CONNECT_TIMEOUT_MS,
+                READ_TIMEOUT_MS,
+                WRITE_TIMEOUT_MS
+        );
     }
 
     private String normalizePath(String path) {

@@ -1,8 +1,10 @@
 package com.laker.postman.service.setting;
 
+import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.model.SidebarTab;
 import com.laker.postman.model.NotificationPosition;
+import com.laker.postman.model.TrustedCertificateEntry;
 import com.laker.postman.service.http.okhttp.OkHttpClientManager;
 import com.laker.postman.util.NotificationUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -287,7 +289,7 @@ public class SettingManager {
         if (val != null) {
             return !Boolean.parseBoolean(val);
         }
-        return true;
+        return false;
     }
 
     public static void setRequestSslVerificationDisabled(boolean disabled) {
@@ -314,6 +316,138 @@ public class SettingManager {
             props.setProperty("default_protocol", protocol);
             save();
         }
+    }
+
+    /**
+     * 是否启用自定义受信任证书或 truststore。
+     */
+    public static boolean isCustomTrustMaterialEnabled() {
+        String val = props.getProperty("custom_trust_material_enabled");
+        if (val != null) {
+            return Boolean.parseBoolean(val);
+        }
+        return false;
+    }
+
+    public static void setCustomTrustMaterialEnabled(boolean enabled) {
+        props.setProperty("custom_trust_material_enabled", String.valueOf(enabled));
+        save();
+        OkHttpClientManager.clearClientCache();
+    }
+
+    public static List<TrustedCertificateEntry> getCustomTrustMaterialEntries() {
+        String json = props.getProperty("custom_trust_material_entries");
+        if (json != null && !json.trim().isEmpty()) {
+            try {
+                List<TrustedCertificateEntry> entries = JSONUtil.toList(
+                        JSONUtil.parseArray(json),
+                        TrustedCertificateEntry.class
+                );
+                if (entries != null) {
+                    return sanitizeTrustedCertificateEntries(entries);
+                }
+            } catch (Exception e) {
+                log.warn("Failed to parse custom trust material entries, falling back to legacy settings", e);
+            }
+        }
+
+        String legacyPath = props.getProperty("custom_trust_material_path", "").trim();
+        if (legacyPath.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        TrustedCertificateEntry entry = new TrustedCertificateEntry();
+        entry.setEnabled(true);
+        entry.setPath(legacyPath);
+        entry.setPassword(props.getProperty("custom_trust_material_password", ""));
+        List<TrustedCertificateEntry> entries = new ArrayList<>();
+        entries.add(entry);
+        return entries;
+    }
+
+    public static void setCustomTrustMaterialEntries(List<TrustedCertificateEntry> entries) {
+        List<TrustedCertificateEntry> sanitizedEntries = sanitizeTrustedCertificateEntries(entries);
+        if (sanitizedEntries.isEmpty()) {
+            props.remove("custom_trust_material_entries");
+            props.setProperty("custom_trust_material_path", "");
+            props.setProperty("custom_trust_material_password", "");
+        } else {
+            props.setProperty("custom_trust_material_entries", JSONUtil.toJsonStr(sanitizedEntries));
+            TrustedCertificateEntry firstEntry = sanitizedEntries.get(0);
+            props.setProperty("custom_trust_material_path", firstEntry.getPath());
+            props.setProperty("custom_trust_material_password", firstEntry.getPassword() != null ? firstEntry.getPassword() : "");
+        }
+        save();
+        OkHttpClientManager.clearClientCache();
+    }
+
+    /**
+     * 自定义受信任证书或 truststore 文件路径。
+     */
+    public static String getCustomTrustMaterialPath() {
+        List<TrustedCertificateEntry> entries = getCustomTrustMaterialEntries();
+        if (!entries.isEmpty()) {
+            return entries.get(0).getPath();
+        }
+        String val = props.getProperty("custom_trust_material_path");
+        return val != null ? val : "";
+    }
+
+    public static void setCustomTrustMaterialPath(String path) {
+        List<TrustedCertificateEntry> entries = getCustomTrustMaterialEntries();
+        if (entries.isEmpty()) {
+            TrustedCertificateEntry entry = new TrustedCertificateEntry();
+            entry.setPath(path != null ? path : "");
+            entries.add(entry);
+        } else {
+            entries.get(0).setPath(path != null ? path : "");
+        }
+        setCustomTrustMaterialEntries(entries);
+    }
+
+    /**
+     * 自定义 truststore 密码。仅对 JKS/PKCS12 文件有效。
+     */
+    public static String getCustomTrustMaterialPassword() {
+        List<TrustedCertificateEntry> entries = getCustomTrustMaterialEntries();
+        if (!entries.isEmpty()) {
+            return entries.get(0).getPassword();
+        }
+        String val = props.getProperty("custom_trust_material_password");
+        return val != null ? val : "";
+    }
+
+    public static void setCustomTrustMaterialPassword(String password) {
+        List<TrustedCertificateEntry> entries = getCustomTrustMaterialEntries();
+        if (entries.isEmpty()) {
+            TrustedCertificateEntry entry = new TrustedCertificateEntry();
+            entry.setPassword(password != null ? password : "");
+            entries.add(entry);
+        } else {
+            entries.get(0).setPassword(password != null ? password : "");
+        }
+        setCustomTrustMaterialEntries(entries);
+    }
+
+    private static List<TrustedCertificateEntry> sanitizeTrustedCertificateEntries(List<TrustedCertificateEntry> entries) {
+        List<TrustedCertificateEntry> sanitizedEntries = new ArrayList<>();
+        if (entries == null) {
+            return sanitizedEntries;
+        }
+
+        for (TrustedCertificateEntry entry : entries) {
+            if (entry == null) {
+                continue;
+            }
+            TrustedCertificateEntry sanitized = new TrustedCertificateEntry();
+            sanitized.setEnabled(entry.isEnabled());
+            sanitized.setPath(entry.getPath() != null ? entry.getPath().trim() : "");
+            sanitized.setPassword(entry.getPassword() != null ? entry.getPassword() : "");
+            if (sanitized.hasUsablePath()) {
+                sanitizedEntries.add(sanitized);
+            }
+        }
+        return sanitizedEntries;
     }
 
     public static int getMaxHistoryCount() {

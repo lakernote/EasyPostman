@@ -84,6 +84,8 @@ public class EasyConsoleEventListener extends EventListener {
         if (!collectEventInfo) {
             return;
         }
+        SSLConfigurationUtil.clearValidationResult();
+        CertificateCapturingSSLSocketFactory.clearLastCapturedCertificates();
         info.setCallStart(System.currentTimeMillis());
         Request request = call.request();
         log(NetworkLogStage.CALL_START, request.method() + " " + request.url());
@@ -158,133 +160,136 @@ public class EasyConsoleEventListener extends EventListener {
             return;
         }
         info.setSecureConnectEnd(System.currentTimeMillis());
-        if (handshake != null) {
-            info.setTlsVersion(handshake.tlsVersion().javaName());
-            info.setCipherName(handshake.cipherSuite().toString());
+        try {
+            if (handshake != null) {
+                info.setTlsVersion(handshake.tlsVersion().javaName());
+                info.setCipherName(handshake.cipherSuite().toString());
 
-            // 首先尝试从 Handshake 获取证书
-            List<Certificate> peerCerts = handshake.peerCertificates();
-            log.debug("=== SSL Handshake Debug ===");
-            log.debug("TLS Version: {}", handshake.tlsVersion());
-            log.debug("Cipher Suite: {}", handshake.cipherSuite());
-            log.debug("Peer Certificates from Handshake: {}", peerCerts.size());
+                // 首先尝试从 Handshake 获取证书
+                List<Certificate> peerCerts = handshake.peerCertificates();
+                log.debug("=== SSL Handshake Debug ===");
+                log.debug("TLS Version: {}", handshake.tlsVersion());
+                log.debug("Cipher Suite: {}", handshake.cipherSuite());
+                log.debug("Peer Certificates from Handshake: {}", peerCerts.size());
 
-            // 如果 Handshake 中的证书为空，尝试从 CertificateCapturingSSLSocketFactory 获取
-            if (peerCerts.isEmpty()) {
-                log.warn("⚠️  Handshake.peerCertificates() is empty, trying to get from SSLSession...");
+                // 如果 Handshake 中的证书为空，尝试从同线程的 SSLSession 捕获缓存获取
+                if (peerCerts.isEmpty()) {
+                    log.warn("⚠️  Handshake.peerCertificates() is empty, trying to get from SSLSession...");
 
-                // 尝试使用最近捕获的证书（跨线程访问）
-                peerCerts = CertificateCapturingSSLSocketFactory.getLastCapturedCertificates();
-                log.debug("Peer Certificates from SSLSession cache: {}", peerCerts.size());
+                    peerCerts = CertificateCapturingSSLSocketFactory.getLastCapturedCertificates();
+                    log.debug("Peer Certificates from SSLSession cache: {}", peerCerts.size());
+
+                    if (!peerCerts.isEmpty()) {
+                        log.debug("✅ Successfully retrieved {} certificates from SSLSession cache!", peerCerts.size());
+                    } else {
+                        log.error("❌ Failed to retrieve certificates from both Handshake and SSLSession!");
+                    }
+                }
 
                 if (!peerCerts.isEmpty()) {
-                    log.debug("✅ Successfully retrieved {} certificates from SSLSession cache!", peerCerts.size());
-                } else {
-                    log.error("❌ Failed to retrieve certificates from both Handshake and SSLSession!");
-                }
-            }
-
-            if (!peerCerts.isEmpty()) {
-                for (int i = 0; i < peerCerts.size(); i++) {
-                    Certificate cert = peerCerts.get(i);
-                    log.debug("Certificate[{}]: Type={}, Class={}", i, cert.getType(), cert.getClass().getName());
-                    if (cert instanceof X509Certificate x509) {
-                        log.debug("  Subject: {}", x509.getSubjectX500Principal().getName());
-                        log.debug("  Issuer: {}", x509.getIssuerX500Principal().getName());
-                        log.debug("  Valid: {} to {}", x509.getNotBefore(), x509.getNotAfter());
-                    }
-                }
-            }
-
-            info.setPeerCertificates(peerCerts);
-            info.setLocalCertificates(handshake.localCertificates());
-
-            // 验证证书并记录警告信息
-            StringBuilder allWarnings = new StringBuilder();
-            try {
-                String hostname = call.request().url().host();
-
-                // 1. 检查在握手阶段捕获的SSL验证错误（如untrusted root, hostname mismatch）
-                SSLValidationResult validationResult = SSLConfigurationUtil.getLastValidationResult();
-                if (validationResult != null && validationResult.hasErrors()) {
-                    String sslValidationError = validationResult.getSummary();
-                    allWarnings.append(sslValidationError);
-                    log.warn("SSL Validation Error: {}", sslValidationError);
-                }
-
-                // 2. 对证书本身进行检查（如expired, self-signed等）
-                SSLValidationResult certValidationResult = SSLCertificateValidator.validateCertificates(
-                        peerCerts,
-                        hostname
-                );
-                if (certValidationResult != null && (certValidationResult.hasErrors() || certValidationResult.hasWarnings())) {
-                    String certWarning = certValidationResult.getSummary();
-                    if (certWarning != null && !certWarning.isEmpty()) {
-                        if (!allWarnings.isEmpty()) {
-                            allWarnings.append("; ");
+                    for (int i = 0; i < peerCerts.size(); i++) {
+                        Certificate cert = peerCerts.get(i);
+                        log.debug("Certificate[{}]: Type={}, Class={}", i, cert.getType(), cert.getClass().getName());
+                        if (cert instanceof X509Certificate x509) {
+                            log.debug("  Subject: {}", x509.getSubjectX500Principal().getName());
+                            log.debug("  Issuer: {}", x509.getIssuerX500Principal().getName());
+                            log.debug("  Valid: {} to {}", x509.getNotBefore(), x509.getNotAfter());
                         }
-                        allWarnings.append(certWarning);
                     }
                 }
 
-                // 合并所有警告
-                if (!allWarnings.isEmpty()) {
-                    info.setSslCertWarning(allWarnings.toString());
-                }
+                info.setPeerCertificates(peerCerts);
+                info.setLocalCertificates(handshake.localCertificates());
 
-                // 清除线程本地存储的SSL错误
-                SSLConfigurationUtil.clearValidationResult();
-            } catch (Exception e) {
-                log.debug("Error validating certificate: {}", e.getMessage());
-            }
-        }
-        // 记录handshake信息
-        if (handshake != null) {
-            StringBuilder handshakeInfo = new StringBuilder();
-            handshakeInfo.append("SSL connection using ")
-                    .append(handshake.tlsVersion())
-                    .append(" / ")
-                    .append(handshake.cipherSuite())
-                    .append("\n");
-            List<Certificate> peerCertificates = handshake.peerCertificates();
-            if (!peerCertificates.isEmpty()) {
-                Certificate cert = peerCertificates.get(0);
-                if (cert instanceof X509Certificate x509) {
-                    handshakeInfo.append("Server certificate:\n");
-                    handshakeInfo.append(" subject: ").append(x509.getSubjectDN()).append("\n");
-                    handshakeInfo.append(" start date: ").append(x509.getNotBefore()).append(" GMT\n");
-                    handshakeInfo.append(" expire date: ").append(x509.getNotAfter()).append(" GMT\n");
-                    Collection<List<?>> altNames = null;
-                    try {
-                        altNames = x509.getSubjectAlternativeNames();
-                    } catch (Exception ignored) {
+                // 验证证书并记录警告信息
+                StringBuilder allWarnings = new StringBuilder();
+                try {
+                    String hostname = call.request().url().host();
+
+                    // 1. 检查在握手阶段捕获的SSL验证错误（如untrusted root, hostname mismatch）
+                    SSLValidationResult validationResult = SSLConfigurationUtil.getLastValidationResult();
+                    if (validationResult != null && validationResult.hasErrors()) {
+                        String sslValidationError = validationResult.getSummary();
+                        allWarnings.append(sslValidationError);
+                        log.warn("SSL Validation Error: {}", sslValidationError);
                     }
-                    if (altNames != null) {
-                        handshakeInfo.append(" subjectAltName: ");
-                        for (List<?> altName : altNames) {
-                            if (altName.size() > 1) {
-                                handshakeInfo.append(altName.get(1)).append(", ");
+
+                    // 2. 对证书本身进行检查（如expired, self-signed等）
+                    SSLValidationResult certValidationResult = SSLCertificateValidator.validateCertificates(
+                            peerCerts,
+                            hostname
+                    );
+                    if (certValidationResult != null && (certValidationResult.hasErrors() || certValidationResult.hasWarnings())) {
+                        String certWarning = certValidationResult.getSummary();
+                        if (certWarning != null && !certWarning.isEmpty()) {
+                            if (!allWarnings.isEmpty()) {
+                                allWarnings.append("; ");
                             }
+                            allWarnings.append(certWarning);
                         }
-                        if (handshakeInfo.charAt(handshakeInfo.length() - 2) == ',') {
-                            handshakeInfo.setLength(handshakeInfo.length() - 2);
-                        }
-                        handshakeInfo.append("\n");
                     }
-                    handshakeInfo.append(" issuer: ").append(x509.getIssuerDN()).append("\n");
+
+                    // 合并所有警告
+                    if (!allWarnings.isEmpty()) {
+                        info.setSslCertWarning(allWarnings.toString());
+                    }
+
+                    // 清除线程本地存储的SSL错误
+                    SSLConfigurationUtil.clearValidationResult();
+                } catch (Exception e) {
+                    log.debug("Error validating certificate: {}", e.getMessage());
                 }
             }
+            // 记录handshake信息
+            if (handshake != null) {
+                StringBuilder handshakeInfo = new StringBuilder();
+                handshakeInfo.append("SSL connection using ")
+                        .append(handshake.tlsVersion())
+                        .append(" / ")
+                        .append(handshake.cipherSuite())
+                        .append("\n");
+                List<Certificate> peerCertificates = info.getPeerCertificates();
+                if (peerCertificates != null && !peerCertificates.isEmpty()) {
+                    Certificate cert = peerCertificates.get(0);
+                    if (cert instanceof X509Certificate x509) {
+                        handshakeInfo.append("Server certificate:\n");
+                        handshakeInfo.append(" subject: ").append(x509.getSubjectDN()).append("\n");
+                        handshakeInfo.append(" start date: ").append(x509.getNotBefore()).append(" GMT\n");
+                        handshakeInfo.append(" expire date: ").append(x509.getNotAfter()).append(" GMT\n");
+                        Collection<List<?>> altNames = null;
+                        try {
+                            altNames = x509.getSubjectAlternativeNames();
+                        } catch (Exception ignored) {
+                        }
+                        if (altNames != null) {
+                            handshakeInfo.append(" subjectAltName: ");
+                            for (List<?> altName : altNames) {
+                                if (altName.size() > 1) {
+                                    handshakeInfo.append(altName.get(1)).append(", ");
+                                }
+                            }
+                            if (handshakeInfo.length() >= 2 && handshakeInfo.charAt(handshakeInfo.length() - 2) == ',') {
+                                handshakeInfo.setLength(handshakeInfo.length() - 2);
+                            }
+                            handshakeInfo.append("\n");
+                        }
+                        handshakeInfo.append(" issuer: ").append(x509.getIssuerDN()).append("\n");
+                    }
+                }
 
-            // 如果有证书警告，添加到日志中
-            if (info.getSslCertWarning() != null && !info.getSslCertWarning().isEmpty()) {
-                handshakeInfo.append("⚠️  Certificate Warning: ").append(info.getSslCertWarning()).append("\n");
+                // 如果有证书警告，添加到日志中
+                if (info.getSslCertWarning() != null && !info.getSslCertWarning().isEmpty()) {
+                    handshakeInfo.append("⚠️  Certificate Warning: ").append(info.getSslCertWarning()).append("\n");
+                } else {
+                    handshakeInfo.append("SSL certificate verify ok.\n");
+                }
+
+                log(NetworkLogStage.SECURE_CONNECT_END, handshakeInfo.toString());
             } else {
-                handshakeInfo.append("SSL certificate verify ok.\n");
+                log(NetworkLogStage.SECURE_CONNECT_END, "no handshake");
             }
-
-            log(NetworkLogStage.SECURE_CONNECT_END, handshakeInfo.toString());
-        } else {
-            log(NetworkLogStage.SECURE_CONNECT_END, "no handshake");
+        } finally {
+            CertificateCapturingSSLSocketFactory.clearLastCapturedCertificates();
         }
     }
 

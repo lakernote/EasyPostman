@@ -251,7 +251,7 @@ public abstract class ModernSettingsPanel extends JPanel {
 
         // 描述（可选）
         if (description != null && !description.isEmpty()) {
-            JLabel descLabel = new JLabel("<html>" + description + "</html>");
+            JLabel descLabel = new JLabel("<html><div style='width: 560px;'>" + description + "</div></html>");
             descLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
             descLabel.setForeground(getTextSecondaryColor());
             descLabel.setBorder(new EmptyBorder(4, 0, 8, 0));

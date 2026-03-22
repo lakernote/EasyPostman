@@ -1,6 +1,7 @@
 package com.laker.postman.model.script;
 
 import cn.hutool.json.JSONUtil;
+import com.laker.postman.service.http.okhttp.OkHttpClientManager;
 import com.laker.postman.util.JsonUtil;
 import okhttp3.*;
 
@@ -9,7 +10,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Script Elasticsearch API for pm.es / pm.elasticsearch.
@@ -18,11 +18,9 @@ public class ScriptElasticsearchApi {
     private static final String DEFAULT_BASE_URL = "http://localhost:9200";
     private static final String JSON_UTF8 = "application/json; charset=utf-8";
     private static final String JSON_MIME = "application/json";
-    private static final OkHttpClient HTTP_CLIENT = new OkHttpClient.Builder()
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
-            .build();
+    private static final int CONNECT_TIMEOUT_MS = 10_000;
+    private static final int READ_TIMEOUT_MS = 30_000;
+    private static final int WRITE_TIMEOUT_MS = 30_000;
 
     public EsResponse query(Object options) {
         return request(options);
@@ -46,7 +44,7 @@ public class ScriptElasticsearchApi {
 
         try {
             Request request = buildRequest(baseUrl, method, path, body, username, password, map);
-            try (Response response = HTTP_CLIENT.newCall(request).execute()) {
+            try (Response response = createHttpClient(baseUrl).newCall(request).execute()) {
                 String responseBody = response.body() == null ? "" : response.body().string();
                 Object json = JsonUtil.isTypeJSON(responseBody) ? JSONUtil.parse(responseBody) : null;
                 return new EsResponse(response.code(), responseBody, json);
@@ -54,6 +52,16 @@ public class ScriptElasticsearchApi {
         } catch (Exception e) {
             throw new RuntimeException("Elasticsearch request failed: " + rootMessage(e), e);
         }
+    }
+
+    private OkHttpClient createHttpClient(String baseUrl) {
+        return OkHttpClientManager.getClientForUrl(
+                baseUrl,
+                true,
+                CONNECT_TIMEOUT_MS,
+                READ_TIMEOUT_MS,
+                WRITE_TIMEOUT_MS
+        );
     }
 
     private Request buildRequest(
@@ -161,4 +169,3 @@ public class ScriptElasticsearchApi {
         }
     }
 }
-

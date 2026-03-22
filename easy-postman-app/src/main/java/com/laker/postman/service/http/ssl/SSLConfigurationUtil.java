@@ -1,17 +1,23 @@
 package com.laker.postman.service.http.ssl;
 
+import com.laker.postman.model.TrustedCertificateEntry;
 import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.plugin.bridge.ClientCertificatePluginService;
 import com.laker.postman.plugin.bridge.ClientCertificatePluginServices;
+import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 
 import javax.net.ssl.*;
+import java.security.KeyStore;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.text.MessageFormat;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * SSL配置工具类
@@ -158,19 +164,17 @@ public class SSLConfigurationUtil {
      */
     private static X509TrustManager configureTrustManager(SSLVerificationMode mode, KeyManager[] keyManagers)
             throws SSLConfigurationException {
+        boolean hasCustomTrustMaterial = hasCustomTrustMaterial();
         if (mode == SSLVerificationMode.STRICT) {
-            // 严格模式：使用系统默认的信任管理器（只有在有客户端证书时才需要自定义配置）
-            if (keyManagers != null && keyManagers.length > 0) {
-                // 有客户端证书，需要返回默认的 TrustManager 以配置 SSL 上下文
-                return getDefaultTrustManager();
-            } else {
-                // 没有客户端证书，使用默认配置（返回null会跳过自定义配置）
+            // 严格模式：无客户端证书且无自定义 trust material 时直接使用平台默认配置
+            if ((keyManagers == null || keyManagers.length == 0) && !hasCustomTrustMaterial) {
                 return null;
             }
-        } else {
-            // 宽松模式或信任所有模式
-            return createTrustManager(mode);
+            return buildEffectiveTrustManager(true);
         }
+
+        // 宽松模式或信任所有模式
+        return createTrustManager(mode);
     }
 
     /**
@@ -178,13 +182,10 @@ public class SSLConfigurationUtil {
      */
     private static X509TrustManager createTrustManager(SSLVerificationMode mode) {
         try {
-            // 获取默认的TrustManager用于验证
-            X509TrustManager defaultTrustManager = getDefaultTrustManager();
-
             if (mode == SSLVerificationMode.TRUST_ALL) {
                 return new TrustAllManager();
             } else {
-                return new LenientTrustManager(defaultTrustManager);
+                return new LenientTrustManager(buildEffectiveTrustManager(false));
             }
         } catch (Exception e) {
             log.error("Failed to create TrustManager", e);
@@ -210,6 +211,100 @@ public class SSLConfigurationUtil {
             throw new SSLConfigurationException("No X509TrustManager found");
         } catch (Exception e) {
             throw new SSLConfigurationException("Failed to get default TrustManager", e);
+        }
+    }
+
+    private static boolean hasCustomTrustMaterial() {
+        if (!SettingManager.isCustomTrustMaterialEnabled()) {
+            return false;
+        }
+        for (TrustedCertificateEntry entry : SettingManager.getCustomTrustMaterialEntries()) {
+            if (entry.isEnabled() && entry.hasUsablePath()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static X509TrustManager buildEffectiveTrustManager(boolean failOnCustomTrustLoad)
+            throws SSLConfigurationException {
+        X509TrustManager defaultTrustManager = getDefaultTrustManager();
+        X509TrustManager customTrustManager = loadCustomTrustManager(failOnCustomTrustLoad);
+        if (customTrustManager == null) {
+            return defaultTrustManager;
+        }
+        return createMergedTrustManager(defaultTrustManager, customTrustManager);
+    }
+
+    private static X509TrustManager loadCustomTrustManager(boolean failOnError)
+            throws SSLConfigurationException {
+        if (!hasCustomTrustMaterial()) {
+            return null;
+        }
+        List<TrustedCertificateEntry> entries = SettingManager.getCustomTrustMaterialEntries();
+
+        try {
+            X509TrustManager trustManager = CustomTrustMaterialLoader.loadTrustManager(entries);
+            log.info("Loaded {} custom trust material entries", entries.size());
+            return trustManager;
+        } catch (Exception e) {
+            if (failOnError) {
+                log.warn("Failed to load custom trust material in strict mode, falling back to system defaults", e);
+                return null;
+            }
+            log.warn("Failed to load custom trust material in lenient mode, continuing without it", e);
+            return null;
+        }
+    }
+
+    static X509TrustManager createMergedTrustManager(X509TrustManager... trustManagers)
+            throws SSLConfigurationException {
+        try {
+            KeyStore mergedKeyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+            mergedKeyStore.load(null, null);
+
+            Set<String> seenCertificates = new LinkedHashSet<>();
+            int aliasIndex = 0;
+            X509TrustManager fallback = null;
+
+            if (trustManagers != null) {
+                for (X509TrustManager trustManager : trustManagers) {
+                    if (trustManager == null) {
+                        continue;
+                    }
+                    if (fallback == null) {
+                        fallback = trustManager;
+                    }
+                    for (X509Certificate issuer : trustManager.getAcceptedIssuers()) {
+                        String fingerprint = java.util.Base64.getEncoder().encodeToString(issuer.getEncoded());
+                        if (seenCertificates.add(fingerprint)) {
+                            mergedKeyStore.setCertificateEntry("merged-ca-" + aliasIndex++, issuer);
+                        }
+                    }
+                }
+            }
+
+            if (aliasIndex == 0) {
+                if (fallback != null) {
+                    return fallback;
+                }
+                throw new SSLConfigurationException("No trust managers available");
+            }
+
+            TrustManagerFactory factory = TrustManagerFactory.getInstance(
+                    TrustManagerFactory.getDefaultAlgorithm());
+            factory.init(mergedKeyStore);
+
+            for (TrustManager tm : factory.getTrustManagers()) {
+                if (tm instanceof X509TrustManager x509TrustManager) {
+                    return x509TrustManager;
+                }
+            }
+            throw new SSLConfigurationException("No X509TrustManager found for merged trust material");
+        } catch (SSLConfigurationException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new SSLConfigurationException("Failed to merge trust managers", e);
         }
     }
 

@@ -8,6 +8,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.security.cert.Certificate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -18,8 +19,9 @@ public class CertificateCapturingSSLSocketFactory extends SSLSocketFactory {
 
     private final SSLSocketFactory delegate;
 
-    // 用于传递最近捕获的证书（作为备用方案）
-    private static final List<Certificate> lastCapturedCertificates = new ArrayList<>();
+    // 用于传递最近捕获的证书（作为备用方案），按线程隔离避免并发串数据
+    private static final ThreadLocal<List<Certificate>> lastCapturedCertificates =
+            ThreadLocal.withInitial(Collections::emptyList);
 
     public CertificateCapturingSSLSocketFactory(SSLContext sslContext) {
         this.delegate = sslContext.getSocketFactory();
@@ -29,7 +31,19 @@ public class CertificateCapturingSSLSocketFactory extends SSLSocketFactory {
      * 获取最近捕获的证书（备用方案）
      */
     public static List<Certificate> getLastCapturedCertificates() {
-        return new ArrayList<>(lastCapturedCertificates);
+        return new ArrayList<>(lastCapturedCertificates.get());
+    }
+
+    static void rememberCapturedCertificates(List<Certificate> certificates) {
+        if (certificates == null || certificates.isEmpty()) {
+            clearLastCapturedCertificates();
+            return;
+        }
+        lastCapturedCertificates.set(new ArrayList<>(certificates));
+    }
+
+    public static void clearLastCapturedCertificates() {
+        lastCapturedCertificates.remove();
     }
 
     @Override
@@ -105,9 +119,7 @@ public class CertificateCapturingSSLSocketFactory extends SSLSocketFactory {
             Certificate[] certs = session.getPeerCertificates();
             if (certs != null && certs.length > 0) {
                 List<Certificate> certList = new ArrayList<>(java.util.Arrays.asList(certs));
-
-                lastCapturedCertificates.clear();
-                lastCapturedCertificates.addAll(certList);
+                rememberCapturedCertificates(certList);
 
                 log.debug("Captured {} certificates from SSLSession (SessionId: {})",
                         certs.length, sessionId);
@@ -120,9 +132,11 @@ public class CertificateCapturingSSLSocketFactory extends SSLSocketFactory {
                             x509.getIssuerX500Principal().getName());
                 }
             } else {
+                clearLastCapturedCertificates();
                 log.warn("No certificates in SSLSession");
             }
         } catch (SSLPeerUnverifiedException e) {
+            clearLastCapturedCertificates();
             log.debug("Peer unverified: {}", e.getMessage());
         }
     }

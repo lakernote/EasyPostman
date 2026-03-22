@@ -1,5 +1,6 @@
 package com.laker.postman.service.http.okhttp;
 
+import com.laker.postman.model.TrustedCertificateEntry;
 import com.laker.postman.service.http.ssl.SSLConfigurationUtil;
 import com.laker.postman.service.setting.SettingManager;
 import lombok.extern.slf4j.Slf4j;
@@ -7,9 +8,12 @@ import okhttp3.*;
 import okhttp3.Authenticator;
 
 import java.net.*;
+import java.io.File;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+
+import static com.laker.postman.service.http.HttpRequestUtil.extractBaseUri;
 
 /**
  * OkHttpClient 管理器，按 baseUri（协议+host+port）分配连接池和 OkHttpClient
@@ -168,6 +172,22 @@ public class OkHttpClientManager {
     }
 
     /**
+     * 基于目标 URL 获取已应用全局代理/SSL 配置的客户端，并按需覆盖超时参数。
+     */
+    public static OkHttpClient getClientForUrl(String url,
+                                               boolean followRedirects,
+                                               int connectTimeoutMs,
+                                               int readTimeoutMs,
+                                               int writeTimeoutMs) {
+        OkHttpClient baseClient = getClient(extractBaseUri(url), followRedirects);
+        return baseClient.newBuilder()
+                .connectTimeout(connectTimeoutMs, TimeUnit.MILLISECONDS)
+                .readTimeout(readTimeoutMs, TimeUnit.MILLISECONDS)
+                .writeTimeout(writeTimeoutMs, TimeUnit.MILLISECONDS)
+                .build();
+    }
+
+    /**
      * 配置网络代理
      */
     private static void configureProxy(OkHttpClient.Builder builder) {
@@ -216,61 +236,85 @@ public class OkHttpClientManager {
      * 配置SSL设置（统一处理所有HTTPS连接的SSL配置）
      */
     private static void configureSSLSettings(OkHttpClient.Builder builder, String baseUri) {
-        // 检查是否启用了代理
+        URI uri;
+        try {
+            uri = URI.create(baseUri);
+        } catch (Exception e) {
+            log.debug("Failed to parse baseUri for SSL configuration: {}", baseUri);
+            return;
+        }
+
+        String scheme = uri.getScheme();
+        boolean secureScheme = "https".equalsIgnoreCase(scheme) || "wss".equalsIgnoreCase(scheme);
+        if (!secureScheme) {
+            return;
+        }
+
         boolean isProxyEnabled = SettingManager.isProxyEnabled();
         // 检查用户是否在请求设置中禁用了SSL验证
         boolean isRequestSslDisabled = SettingManager.isRequestSslVerificationDisabled();
         // 检查是否在代理设置中禁用了SSL验证
-        boolean isProxySslDisabled = SettingManager.isProxySslVerificationDisabled();
+        boolean isProxySslDisabled = isProxyEnabled && SettingManager.isProxySslVerificationDisabled();
 
         // 决定SSL验证模式
         SSLConfigurationUtil.SSLVerificationMode mode;
 
-        if (isRequestSslDisabled || (isProxyEnabled && isProxySslDisabled)) {
+        if (isRequestSslDisabled || isProxySslDisabled) {
             // 用户明确禁用SSL验证，使用宽松模式
             mode = SSLConfigurationUtil.SSLVerificationMode.LENIENT;
             log.warn("SSL verification disabled by user settings");
-        } else if (isProxyEnabled) {
-            // 代理已启用但未禁用SSL验证，使用宽松模式以兼容代理环境
-            mode = SSLConfigurationUtil.SSLVerificationMode.LENIENT;
-            log.info("Using lenient SSL mode for proxy environment");
         } else {
             // 默认使用严格模式
             mode = SSLConfigurationUtil.SSLVerificationMode.STRICT;
         }
 
         // 提取主机名和端口用于客户端证书匹配
-        String host = null;
-        int port = 443; // HTTPS 默认端口
-        try {
-            URL url = new URL(baseUri);
-            host = url.getHost();
-            port = url.getPort();
-            if (port == -1) {
-                port = url.getDefaultPort();
-            }
-        } catch (Exception e) {
-            log.debug("Failed to parse baseUri for client certificate matching: {}", baseUri);
+        String host = uri.getHost();
+        int port = uri.getPort();
+        if (port == -1) {
+            port = 443;
         }
 
         SSLConfigurationUtil.configureSSL(builder, mode, host, port);
     }
 
     /**
-     * 生成代理配置的key，用于客户端缓存
+     * 生成网络/SSL 配置 key，用于客户端缓存。
      */
     private static String getProxyConfigKey() {
-        if (!SettingManager.isProxyEnabled()) {
-            return "no-proxy";
-        }
-
-        return String.format("proxy:%s:%s:%d:%s:%b:%b",
+        String proxyPart = SettingManager.isProxyEnabled()
+                ? String.format("proxy:%s:%s:%d:%s",
                 SettingManager.getProxyType(),
                 SettingManager.getProxyHost(),
                 SettingManager.getProxyPort(),
-                SettingManager.getProxyUsername(),
-                SettingManager.isProxySslVerificationDisabled(),
-                SettingManager.isRequestSslVerificationDisabled());
+                SettingManager.getProxyUsername())
+                : "proxy:disabled";
+
+        StringBuilder trustPart = new StringBuilder();
+        for (TrustedCertificateEntry entry : SettingManager.getCustomTrustMaterialEntries()) {
+            String trustPath = entry.getPath();
+            File trustFile = (trustPath == null || trustPath.isBlank()) ? null : new File(trustPath);
+            long trustLastModified = (trustFile != null && trustFile.exists()) ? trustFile.lastModified() : -1L;
+            long trustFileLength = (trustFile != null && trustFile.exists()) ? trustFile.length() : -1L;
+            trustPart.append(entry.isEnabled())
+                    .append(':')
+                    .append(trustPath)
+                    .append(':')
+                    .append(trustLastModified)
+                    .append(':')
+                    .append(trustFileLength)
+                    .append(':')
+                    .append(entry.getPassword() == null ? 0 : entry.getPassword().hashCode())
+                    .append(';');
+        }
+        boolean effectiveProxySslDisabled = SettingManager.isProxyEnabled()
+                && SettingManager.isProxySslVerificationDisabled();
+        return String.format("%s|ssl:%b:%b|customTrust:%b:%s",
+                proxyPart,
+                effectiveProxySslDisabled,
+                SettingManager.isRequestSslVerificationDisabled(),
+                SettingManager.isCustomTrustMaterialEnabled(),
+                trustPart);
     }
 
     public static CookieManager getGlobalCookieManager() {

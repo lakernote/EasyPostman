@@ -10,6 +10,7 @@ import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.button.*;
 import com.laker.postman.common.component.table.EnhancedTablePanel;
+import com.laker.postman.service.http.okhttp.OkHttpClientManager;
 import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
 import net.miginfocom.swing.MigLayout;
@@ -27,7 +28,6 @@ import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class InfluxDbPanel extends JPanel {
@@ -91,7 +91,6 @@ public class InfluxDbPanel extends JPanel {
     private List<String> cachedTagKeys = new ArrayList<>();
     private boolean suppressComboEvents = false;
 
-    private transient OkHttpClient httpClient;
     private String baseUrl = "http://localhost:8086";
     private boolean connected = false;
     private String lastResponseBody = "";
@@ -110,6 +109,9 @@ public class InfluxDbPanel extends JPanel {
     private static final String TOKEN_PREFIX = "Token ";
     private static final String APPLICATION_VND_FLUX = "application/vnd.flux";
     private static final String TEXT_CSV = "text/csv";
+    private static final int CONNECT_TIMEOUT_MS = 10_000;
+    private static final int READ_TIMEOUT_MS = 30_000;
+    private static final int WRITE_TIMEOUT_MS = 30_000;
 
     private static class HistoryEntry {
         final QueryMode mode;
@@ -230,16 +232,7 @@ public class InfluxDbPanel extends JPanel {
     };
 
     public InfluxDbPanel() {
-        initHttpClient();
         initUI();
-    }
-
-    private void initHttpClient() {
-        httpClient = new OkHttpClient.Builder()
-                .connectTimeout(10, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
-                .build();
     }
 
     private void initUI() {
@@ -1861,11 +1854,21 @@ public class InfluxDbPanel extends JPanel {
         }
 
         long start = System.currentTimeMillis();
-        try (Response response = httpClient.newCall(builder.build()).execute()) {
+        try (Response response = getHttpClient().newCall(builder.build()).execute()) {
             long cost = System.currentTimeMillis() - start;
             String respBody = response.body() == null ? "" : response.body().string();
             return new HttpResult(response.code(), respBody, cost);
         }
+    }
+
+    private OkHttpClient getHttpClient() {
+        return OkHttpClientManager.getClientForUrl(
+                baseUrl,
+                true,
+                CONNECT_TIMEOUT_MS,
+                READ_TIMEOUT_MS,
+                WRITE_TIMEOUT_MS
+        );
     }
 
     private String enc(String value) {

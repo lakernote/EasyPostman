@@ -20,3 +20,4 @@ out/
 **/out/
 logs/
 temp/
+/.m2/

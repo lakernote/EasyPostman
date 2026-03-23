@@ -415,9 +415,10 @@ public class CapturePanel extends JPanel {
                 try {
                     StartResult result = get();
                     updateStatus();
+                    String portText = String.valueOf(result.port());
                     NotificationUtil.showSuccess(result.systemProxySynced()
-                            ? t(MessageKeys.TOOLBOX_CAPTURE_START_SUCCESS_SYNCED, result.host(), result.port())
-                            : t(MessageKeys.TOOLBOX_CAPTURE_START_SUCCESS, result.host(), result.port()));
+                            ? t(MessageKeys.TOOLBOX_CAPTURE_START_SUCCESS_SYNCED, result.host(), portText)
+                            : t(MessageKeys.TOOLBOX_CAPTURE_START_SUCCESS, result.host(), portText));
                 } catch (Exception ex) {
                     updateStatus();
                     NotificationUtil.showError(t(MessageKeys.TOOLBOX_CAPTURE_START_FAILED, rootMessage(ex)));

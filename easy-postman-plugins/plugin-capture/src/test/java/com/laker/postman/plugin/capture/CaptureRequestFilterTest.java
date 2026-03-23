@@ -149,4 +149,76 @@ public class CaptureRequestFilterTest {
                 Map.of()));
         assertTrue(filter.shouldMitmHost("echo.websocket.org"));
     }
+
+    @Test
+    public void shouldSupportOrAndParenthesesExpressions() {
+        CaptureRequestFilter filter = CaptureRequestFilter.parse("(a.com or b.com) json");
+
+        assertTrue(filter.matches(
+                "a.com",
+                "/orders",
+                "https://a.com/orders",
+                Map.of("Accept", "application/json")));
+        assertTrue(filter.matches(
+                "api.b.com",
+                "/orders",
+                "https://api.b.com/orders",
+                Map.of("Content-Type", "application/json")));
+        assertFalse(filter.matches(
+                "c.com",
+                "/orders",
+                "https://c.com/orders",
+                Map.of("Accept", "application/json")));
+        assertFalse(filter.matches(
+                "a.com",
+                "/orders",
+                "https://a.com/orders",
+                Map.of("Accept", "text/html")));
+    }
+
+    @Test
+    public void shouldRespectOperatorPrecedenceInExpressions() {
+        CaptureRequestFilter filter = CaptureRequestFilter.parse("a.com or b.com json");
+
+        assertTrue(filter.matches(
+                "a.com",
+                "/orders",
+                "https://a.com/orders",
+                Map.of("Accept", "text/html")));
+        assertTrue(filter.matches(
+                "b.com",
+                "/orders",
+                "https://b.com/orders",
+                Map.of("Accept", "application/json")));
+        assertFalse(filter.matches(
+                "b.com",
+                "/orders",
+                "https://b.com/orders",
+                Map.of("Accept", "text/html")));
+    }
+
+    @Test
+    public void shouldUseHostTermsInsideExpressionForMitmDecision() {
+        CaptureRequestFilter filter = CaptureRequestFilter.parse("(a.com or b.com) json");
+
+        assertTrue(filter.shouldMitmHost("a.com"));
+        assertTrue(filter.shouldMitmHost("x.b.com"));
+        assertFalse(filter.shouldMitmHost("c.com"));
+    }
+
+    @Test
+    public void shouldSupportNegationInsideExpressions() {
+        CaptureRequestFilter filter = CaptureRequestFilter.parse("(a.com or b.com) !image");
+
+        assertTrue(filter.matches(
+                "a.com",
+                "/orders",
+                "https://a.com/orders",
+                Map.of("Accept", "application/json")));
+        assertFalse(filter.matches(
+                "a.com",
+                "/logo.png",
+                "https://a.com/logo.png",
+                Map.of("Accept", "image/png")));
+    }
 }

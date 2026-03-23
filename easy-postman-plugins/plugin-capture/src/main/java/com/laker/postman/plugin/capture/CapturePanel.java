@@ -61,7 +61,6 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import static com.laker.postman.plugin.capture.CaptureI18n.t;
@@ -640,8 +639,8 @@ public class CapturePanel extends JPanel {
         if (syncingQuickFilters) {
             return;
         }
-        List<String> tokens = new ArrayList<>(parseFilterTokens(captureHostsField.getText()));
-        removeQuickFilterToken(tokens, token);
+        List<String> tokens = new ArrayList<>(CaptureQuickFilterTokens.parse(captureHostsField.getText()));
+        CaptureQuickFilterTokens.removeToken(tokens, token, selected);
         if (selected) {
             tokens.add(token);
         }
@@ -656,10 +655,10 @@ public class CapturePanel extends JPanel {
     }
 
     private void syncQuickFilterButtonsFromField() {
-        List<String> tokens = parseFilterTokens(captureHostsField.getText());
+        List<String> tokens = CaptureQuickFilterTokens.parse(captureHostsField.getText());
         syncingQuickFilters = true;
         try {
-            quickFilterButtons.forEach((token, button) -> button.setSelected(hasQuickFilterToken(tokens, token)));
+            quickFilterButtons.forEach((token, button) -> button.setSelected(CaptureQuickFilterTokens.hasIncludedToken(tokens, token)));
         } finally {
             syncingQuickFilters = false;
         }
@@ -667,53 +666,6 @@ public class CapturePanel extends JPanel {
 
     private void setQuickFiltersEnabled(boolean enabled) {
         quickFilterButtons.values().forEach(button -> button.setEnabled(enabled));
-    }
-
-    private List<String> parseFilterTokens(String rawValue) {
-        List<String> tokens = new ArrayList<>();
-        if (rawValue == null || rawValue.isBlank()) {
-            return tokens;
-        }
-        for (String token : rawValue.trim().split("[,;\\s\\r\\n]+")) {
-            if (token != null && !token.isBlank()) {
-                tokens.add(token.trim());
-            }
-        }
-        return tokens;
-    }
-
-    private boolean hasQuickFilterToken(List<String> tokens, String canonicalToken) {
-        for (String token : tokens) {
-            String normalized = normalizeQuickFilterToken(token);
-            if (canonicalToken.equals(normalized)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private void removeQuickFilterToken(List<String> tokens, String canonicalToken) {
-        tokens.removeIf(token -> canonicalToken.equals(normalizeQuickFilterToken(token)));
-    }
-
-    private String normalizeQuickFilterToken(String token) {
-        if (token == null) {
-            return "";
-        }
-        String normalized = token.trim().toLowerCase(Locale.ROOT);
-        if (normalized.startsWith("!")) {
-            normalized = normalized.substring(1).trim();
-        }
-        return switch (normalized) {
-            case "http", "scheme:http" -> "http";
-            case "https", "scheme:https" -> "https";
-            case "json", "type:json" -> "json";
-            case "image", "img", "type:image", "type:img" -> "image";
-            case "js", "type:js" -> "js";
-            case "css", "type:css" -> "css";
-            case "api", "type:api" -> "api";
-            default -> normalized;
-        };
     }
 
     private boolean isCertificateInstallSupported() {

@@ -13,6 +13,7 @@ import static com.laker.postman.plugin.capture.CaptureI18n.t;
 
 final class CaptureRequestFilter {
     private final String rawValue;
+    private final Expression expression;
     private final List<Rule> includeHostRules;
     private final List<Rule> excludeHostRules;
     private final List<Rule> includePathRules;
@@ -30,6 +31,7 @@ final class CaptureRequestFilter {
     private final List<String> summaryTokens;
 
     private CaptureRequestFilter(String rawValue,
+                                 Expression expression,
                                  List<Rule> includeHostRules,
                                  List<Rule> excludeHostRules,
                                  List<Rule> includePathRules,
@@ -46,6 +48,7 @@ final class CaptureRequestFilter {
                                  List<Rule> excludeRegexRules,
                                  List<String> summaryTokens) {
         this.rawValue = rawValue;
+        this.expression = expression;
         this.includeHostRules = List.copyOf(includeHostRules);
         this.excludeHostRules = List.copyOf(excludeHostRules);
         this.includePathRules = List.copyOf(includePathRules);
@@ -65,6 +68,7 @@ final class CaptureRequestFilter {
 
     static CaptureRequestFilter parse(String rawValue) {
         String normalizedRaw = rawValue == null ? "" : rawValue.trim();
+        Expression expression = null;
         List<Rule> includeHostRules = new ArrayList<>();
         List<Rule> excludeHostRules = new ArrayList<>();
         List<Rule> includePathRules = new ArrayList<>();
@@ -82,7 +86,12 @@ final class CaptureRequestFilter {
         List<String> summaryTokens = new ArrayList<>();
 
         if (!normalizedRaw.isEmpty()) {
-            for (String token : normalizedRaw.split("[,;\\s\\r\\n]+")) {
+            List<String> tokens = tokenize(normalizedRaw);
+            if (containsExpressionSyntax(tokens)) {
+                expression = new ExpressionParser(tokens).parse();
+                summaryTokens.add(normalizedRaw);
+            } else {
+                for (String token : tokens) {
                 String trimmed = token == null ? "" : token.trim();
                 if (trimmed.isEmpty()) {
                     continue;
@@ -102,10 +111,12 @@ final class CaptureRequestFilter {
                     case REGEX -> (rule.exclude() ? excludeRegexRules : includeRegexRules).add(rule);
                 }
             }
+            }
         }
 
         return new CaptureRequestFilter(
                 normalizedRaw,
+                expression,
                 includeHostRules,
                 excludeHostRules,
                 includePathRules,
@@ -126,6 +137,9 @@ final class CaptureRequestFilter {
 
     boolean matches(String host, String requestUri, String fullUrl, Map<String, String> headers) {
         RequestParts parts = RequestParts.from(host, requestUri, fullUrl, headers);
+        if (expression != null) {
+            return expression.matches(parts);
+        }
         if (matchesAny(excludeHostRules, parts.host())
                 || matchesAny(excludePathRules, parts.path())
                 || matchesAny(excludeQueryRules, parts.query())
@@ -146,6 +160,9 @@ final class CaptureRequestFilter {
 
     boolean shouldMitmHost(String host) {
         String normalizedHost = normalizeHost(host);
+        if (expression != null) {
+            return expression.mayMatchHost(normalizedHost) != TriState.FALSE;
+        }
         if (matchesAny(excludeHostRules, normalizedHost)) {
             return false;
         }
@@ -191,6 +208,57 @@ final class CaptureRequestFilter {
             normalized = normalized.substring(0, normalized.length() - 1);
         }
         return normalized;
+    }
+
+    private static List<String> tokenize(String rawValue) {
+        List<String> tokens = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        for (int i = 0; i < rawValue.length(); i++) {
+            char ch = rawValue.charAt(i);
+            if (Character.isWhitespace(ch) || ch == ',' || ch == ';') {
+                flushToken(tokens, current);
+                continue;
+            }
+            if (ch == '(' || ch == ')') {
+                if (isRegexToken(current)) {
+                    current.append(ch);
+                    continue;
+                }
+                flushToken(tokens, current);
+                tokens.add(String.valueOf(ch));
+                continue;
+            }
+            current.append(ch);
+        }
+        flushToken(tokens, current);
+        return tokens;
+    }
+
+    private static boolean isRegexToken(StringBuilder current) {
+        if (current == null || current.isEmpty()) {
+            return false;
+        }
+        String token = current.toString().toLowerCase(Locale.ROOT);
+        return token.startsWith("regex:") || token.startsWith("!regex:");
+    }
+
+    private static void flushToken(List<String> tokens, StringBuilder current) {
+        if (current.length() == 0) {
+            return;
+        }
+        tokens.add(current.toString());
+        current.setLength(0);
+    }
+
+    private static boolean containsExpressionSyntax(List<String> tokens) {
+        for (String token : tokens) {
+            if ("(".equals(token) || ")".equals(token)
+                    || "or".equalsIgnoreCase(token)
+                    || "and".equalsIgnoreCase(token)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private record RequestParts(String host,
@@ -299,6 +367,200 @@ final class CaptureRequestFilter {
                 }
             }
             return false;
+        }
+    }
+
+    private enum TriState {
+        TRUE,
+        FALSE,
+        UNKNOWN;
+
+        static TriState and(TriState left, TriState right) {
+            if (left == FALSE || right == FALSE) {
+                return FALSE;
+            }
+            if (left == TRUE && right == TRUE) {
+                return TRUE;
+            }
+            return UNKNOWN;
+        }
+
+        static TriState or(TriState left, TriState right) {
+            if (left == TRUE || right == TRUE) {
+                return TRUE;
+            }
+            if (left == FALSE && right == FALSE) {
+                return FALSE;
+            }
+            return UNKNOWN;
+        }
+    }
+
+    private interface Expression {
+        boolean matches(RequestParts parts);
+
+        TriState mayMatchHost(String normalizedHost);
+    }
+
+    private record RuleExpression(Rule rule) implements Expression {
+        @Override
+        public boolean matches(RequestParts parts) {
+            boolean matched = switch (rule.type()) {
+                case HOST -> rule.matches(parts.host());
+                case PATH -> rule.matches(parts.path());
+                case QUERY -> rule.matches(parts.query());
+                case URL -> rule.matches(parts.fullUrl());
+                case SCHEME -> rule.matches(parts.scheme());
+                case TYPE -> rule.matches(parts.resourceType());
+                case REGEX -> rule.matches(parts.fullUrl());
+            };
+            return rule.exclude() ? !matched : matched;
+        }
+
+        @Override
+        public TriState mayMatchHost(String normalizedHost) {
+            if (rule.type() != RuleType.HOST) {
+                return TriState.UNKNOWN;
+            }
+            boolean matched = rule.matches(normalizedHost);
+            if (rule.exclude()) {
+                return matched ? TriState.FALSE : TriState.TRUE;
+            }
+            return matched ? TriState.TRUE : TriState.FALSE;
+        }
+    }
+
+    private record AndExpression(List<Expression> operands) implements Expression {
+        @Override
+        public boolean matches(RequestParts parts) {
+            for (Expression operand : operands) {
+                if (!operand.matches(parts)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        @Override
+        public TriState mayMatchHost(String normalizedHost) {
+            TriState result = TriState.TRUE;
+            for (Expression operand : operands) {
+                result = TriState.and(result, operand.mayMatchHost(normalizedHost));
+                if (result == TriState.FALSE) {
+                    return TriState.FALSE;
+                }
+            }
+            return result;
+        }
+    }
+
+    private record OrExpression(List<Expression> operands) implements Expression {
+        @Override
+        public boolean matches(RequestParts parts) {
+            for (Expression operand : operands) {
+                if (operand.matches(parts)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public TriState mayMatchHost(String normalizedHost) {
+            TriState result = TriState.FALSE;
+            for (Expression operand : operands) {
+                result = TriState.or(result, operand.mayMatchHost(normalizedHost));
+                if (result == TriState.TRUE) {
+                    return TriState.TRUE;
+                }
+            }
+            return result;
+        }
+    }
+
+    private static final class ExpressionParser {
+        private final List<String> tokens;
+        private int index;
+
+        private ExpressionParser(List<String> tokens) {
+            this.tokens = tokens;
+        }
+
+        private Expression parse() {
+            Expression expression = parseOrExpression();
+            if (index < tokens.size()) {
+                throw new IllegalArgumentException("Unexpected token: " + tokens.get(index));
+            }
+            return expression;
+        }
+
+        private Expression parseOrExpression() {
+            List<Expression> operands = new ArrayList<>();
+            operands.add(parseAndExpression());
+            while (matchOperator("or")) {
+                operands.add(parseAndExpression());
+            }
+            return operands.size() == 1 ? operands.get(0) : new OrExpression(List.copyOf(operands));
+        }
+
+        private Expression parseAndExpression() {
+            List<Expression> operands = new ArrayList<>();
+            operands.add(parsePrimary());
+            while (true) {
+                if (matchOperator("and")) {
+                    operands.add(parsePrimary());
+                    continue;
+                }
+                String next = peek();
+                if (next == null || ")".equals(next) || "or".equalsIgnoreCase(next)) {
+                    break;
+                }
+                operands.add(parsePrimary());
+            }
+            return operands.size() == 1 ? operands.get(0) : new AndExpression(List.copyOf(operands));
+        }
+
+        private Expression parsePrimary() {
+            String token = peek();
+            if (token == null) {
+                throw new IllegalArgumentException("Unexpected end of filter expression");
+            }
+            if ("(".equals(token)) {
+                index++;
+                Expression expression = parseOrExpression();
+                expect(")");
+                return expression;
+            }
+            if (")".equals(token) || "and".equalsIgnoreCase(token) || "or".equalsIgnoreCase(token)) {
+                throw new IllegalArgumentException("Unexpected token: " + token);
+            }
+            index++;
+            Rule rule = Rule.parse(token);
+            if (rule == null) {
+                throw new IllegalArgumentException("Invalid filter token: " + token);
+            }
+            return new RuleExpression(rule);
+        }
+
+        private boolean matchOperator(String operator) {
+            String token = peek();
+            if (token != null && operator.equalsIgnoreCase(token)) {
+                index++;
+                return true;
+            }
+            return false;
+        }
+
+        private void expect(String expectedToken) {
+            String token = peek();
+            if (!expectedToken.equals(token)) {
+                throw new IllegalArgumentException("Expected " + expectedToken + " but found " + token);
+            }
+            index++;
+        }
+
+        private String peek() {
+            return index < tokens.size() ? tokens.get(index) : null;
         }
     }
 

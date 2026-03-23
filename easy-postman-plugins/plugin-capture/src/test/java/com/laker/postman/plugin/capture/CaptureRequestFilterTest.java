@@ -137,4 +137,16 @@ public class CaptureRequestFilterTest {
         assertFalse(filter.shouldMitmHost("static.example.com"));
         assertFalse(filter.shouldMitmHost("other.example.com"));
     }
+
+    @Test
+    public void shouldSupportPartialHostSegmentMatching() {
+        CaptureRequestFilter filter = CaptureRequestFilter.parse("echo.websocket");
+
+        assertTrue(filter.matches(
+                "echo.websocket.org",
+                "/",
+                "https://echo.websocket.org/",
+                Map.of()));
+        assertTrue(filter.shouldMitmHost("echo.websocket.org"));
+    }
 }

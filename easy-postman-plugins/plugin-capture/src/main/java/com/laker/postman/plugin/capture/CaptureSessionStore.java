@@ -43,6 +43,72 @@ final class CaptureSessionStore {
         }
     }
 
+    void recordResponseStart(String flowId, int statusCode, String statusText, Map<String, String> responseHeaders) {
+        CaptureFlow flow;
+        synchronized (this) {
+            flow = flowById.get(flowId);
+        }
+        if (flow != null) {
+            flow.recordResponseStart(statusCode, statusText, responseHeaders);
+            fireChanged();
+        }
+    }
+
+    void appendRequestBody(String flowId, byte[] bytes) {
+        CaptureFlow flow;
+        synchronized (this) {
+            flow = flowById.get(flowId);
+        }
+        if (flow != null) {
+            flow.appendRequestBody(bytes);
+            fireChanged();
+        }
+    }
+
+    void appendRequestStreamEvent(String flowId, String text) {
+        CaptureFlow flow;
+        synchronized (this) {
+            flow = flowById.get(flowId);
+        }
+        if (flow != null) {
+            flow.appendRequestStreamEvent(text);
+            fireChanged();
+        }
+    }
+
+    void appendResponseBody(String flowId, byte[] bytes) {
+        CaptureFlow flow;
+        synchronized (this) {
+            flow = flowById.get(flowId);
+        }
+        if (flow != null) {
+            flow.appendResponseBody(bytes);
+            fireChanged();
+        }
+    }
+
+    void appendResponseStreamEvent(String flowId, String text) {
+        CaptureFlow flow;
+        synchronized (this) {
+            flow = flowById.get(flowId);
+        }
+        if (flow != null) {
+            flow.appendResponseStreamEvent(text);
+            fireChanged();
+        }
+    }
+
+    void complete(String flowId) {
+        CaptureFlow flow;
+        synchronized (this) {
+            flow = flowById.get(flowId);
+        }
+        if (flow != null) {
+            flow.complete();
+            fireChanged();
+        }
+    }
+
     void fail(String flowId, int statusCode, String errorMessage) {
         CaptureFlow flow;
         synchronized (this) {

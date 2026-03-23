@@ -226,6 +226,12 @@ final class CaptureRequestFilter {
             if (fullUrl.startsWith("http://")) {
                 return "http";
             }
+            if (fullUrl.startsWith("wss://")) {
+                return "https";
+            }
+            if (fullUrl.startsWith("ws://")) {
+                return "http";
+            }
             return "";
         }
 
@@ -407,7 +413,8 @@ final class CaptureRequestFilter {
                 return wildcardPattern.matcher(normalizedCandidate).matches();
             }
             return normalizedCandidate.equals(normalizedValue)
-                    || normalizedCandidate.endsWith("." + normalizedValue);
+                    || normalizedCandidate.endsWith("." + normalizedValue)
+                    || normalizedCandidate.contains(normalizedValue);
         }
 
         private boolean matchesText(String candidate) {

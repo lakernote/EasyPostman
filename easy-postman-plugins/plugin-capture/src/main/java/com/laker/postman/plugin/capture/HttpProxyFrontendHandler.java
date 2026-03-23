@@ -9,7 +9,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.DefaultFullHttpRequest;
@@ -91,7 +90,6 @@ final class HttpProxyFrontendHandler extends SimpleChannelInboundHandler<FullHtt
                     @Override
                     protected void initChannel(SocketChannel ch) {
                         ch.pipeline().addLast(new HttpClientCodec());
-                        ch.pipeline().addLast(new HttpObjectAggregator(MAX_HTTP_OBJECT_SIZE));
                         ch.pipeline().addLast(new HttpProxyBackendHandler(ctx.channel(), sessionStore, flow.id()));
                     }
                 });
@@ -210,7 +208,6 @@ final class HttpProxyFrontendHandler extends SimpleChannelInboundHandler<FullHtt
                     @Override
                     protected void initChannel(SocketChannel ch) {
                         ch.pipeline().addLast(new HttpClientCodec());
-                        ch.pipeline().addLast(new HttpObjectAggregator(MAX_HTTP_OBJECT_SIZE));
                         ch.pipeline().addLast(new HttpProxyBackendHandler(ctx.channel()));
                     }
                 });
@@ -278,6 +275,7 @@ final class HttpProxyFrontendHandler extends SimpleChannelInboundHandler<FullHtt
     }
 
     private FullHttpRequest buildOutboundRequest(FullHttpRequest request, ProxyRequestTarget target, byte[] requestBody) {
+        boolean webSocketUpgrade = isWebSocketUpgradeRequest(request);
         FullHttpRequest outbound = new DefaultFullHttpRequest(
                 HttpVersion.HTTP_1_1,
                 request.method(),
@@ -287,16 +285,22 @@ final class HttpProxyFrontendHandler extends SimpleChannelInboundHandler<FullHtt
         request.headers().forEach(entry -> {
             String name = entry.getKey();
             if (HttpHeaderNames.PROXY_CONNECTION.contentEqualsIgnoreCase(name)
-                    || HttpHeaderNames.CONNECTION.contentEqualsIgnoreCase(name)
+                    || (!webSocketUpgrade && HttpHeaderNames.CONNECTION.contentEqualsIgnoreCase(name))
                     || HttpHeaderNames.HOST.contentEqualsIgnoreCase(name)) {
                 return;
             }
             outbound.headers().add(name, entry.getValue());
         });
         outbound.headers().set(HttpHeaderNames.HOST, target.port == 80 ? target.host : target.host + ":" + target.port);
-        outbound.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
+        if (!webSocketUpgrade) {
+            outbound.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
+        }
         HttpUtil.setContentLength(outbound, requestBody.length);
         return outbound;
+    }
+
+    private boolean isWebSocketUpgradeRequest(FullHttpRequest request) {
+        return "websocket".equalsIgnoreCase(request.headers().get(HttpHeaderNames.UPGRADE));
     }
 
     private Map<String, String> flattenHeaders(io.netty.handler.codec.http.HttpHeaders headers) {

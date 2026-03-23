@@ -17,7 +17,6 @@ import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
-import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
@@ -31,7 +30,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 final class HttpsMitmFrontendHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
-    private static final int MAX_HTTP_OBJECT_SIZE = 10 * 1024 * 1024;
     private static final Logger log = LoggerFactory.getLogger(HttpsMitmFrontendHandler.class);
 
     private final CaptureSessionStore sessionStore;
@@ -97,7 +95,6 @@ final class HttpsMitmFrontendHandler extends SimpleChannelInboundHandler<FullHtt
                         });
                         ch.pipeline().addLast(sslHandler);
                         ch.pipeline().addLast(new HttpClientCodec());
-                        ch.pipeline().addLast(new HttpObjectAggregator(MAX_HTTP_OBJECT_SIZE));
                         ch.pipeline().addLast(new HttpProxyBackendHandler(ctx.channel(), sessionStore, flow.id()));
                     }
                 });
@@ -145,7 +142,6 @@ final class HttpsMitmFrontendHandler extends SimpleChannelInboundHandler<FullHtt
                     protected void initChannel(SocketChannel ch) {
                         ch.pipeline().addLast(clientSslContext.newHandler(ch.alloc(), targetHost, targetPort));
                         ch.pipeline().addLast(new HttpClientCodec());
-                        ch.pipeline().addLast(new HttpObjectAggregator(MAX_HTTP_OBJECT_SIZE));
                         ch.pipeline().addLast(new HttpProxyBackendHandler(ctx.channel()));
                     }
                 });
@@ -177,6 +173,7 @@ final class HttpsMitmFrontendHandler extends SimpleChannelInboundHandler<FullHtt
     }
 
     private FullHttpRequest buildOutboundRequest(FullHttpRequest request, String uri, byte[] requestBody) {
+        boolean webSocketUpgrade = isWebSocketUpgradeRequest(request);
         FullHttpRequest outbound = new DefaultFullHttpRequest(
                 HttpVersion.HTTP_1_1,
                 request.method(),
@@ -185,16 +182,22 @@ final class HttpsMitmFrontendHandler extends SimpleChannelInboundHandler<FullHtt
         );
         request.headers().forEach(entry -> {
             String name = entry.getKey();
-            if (HttpHeaderNames.CONNECTION.contentEqualsIgnoreCase(name)
+            if ((!webSocketUpgrade && HttpHeaderNames.CONNECTION.contentEqualsIgnoreCase(name))
                     || HttpHeaderNames.HOST.contentEqualsIgnoreCase(name)) {
                 return;
             }
             outbound.headers().add(name, entry.getValue());
         });
         outbound.headers().set(HttpHeaderNames.HOST, targetPort == 443 ? targetHost : targetHost + ":" + targetPort);
-        outbound.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
+        if (!webSocketUpgrade) {
+            outbound.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
+        }
         HttpUtil.setContentLength(outbound, requestBody.length);
         return outbound;
+    }
+
+    private boolean isWebSocketUpgradeRequest(FullHttpRequest request) {
+        return "websocket".equalsIgnoreCase(request.headers().get(HttpHeaderNames.UPGRADE));
     }
 
     private Map<String, String> flattenHeaders(io.netty.handler.codec.http.HttpHeaders headers) {

@@ -26,9 +26,10 @@ final class ProxyRequestTarget {
             URI uri = URI.create(rawUri);
             if (uri.isAbsolute() && uri.getHost() != null) {
                 String scheme = uri.getScheme() == null ? "http" : uri.getScheme();
-                int port = uri.getPort() > 0 ? uri.getPort() : ("https".equalsIgnoreCase(scheme) ? 443 : 80);
+                String normalizedScheme = normalizeScheme(scheme);
+                int port = uri.getPort() > 0 ? uri.getPort() : ("https".equalsIgnoreCase(normalizedScheme) ? 443 : 80);
                 String path = buildPath(uri);
-                return new ProxyRequestTarget(uri.getHost(), port, uri.toString(), path, scheme);
+                return new ProxyRequestTarget(uri.getHost(), port, uri.toString(), path, normalizedScheme);
             }
         } catch (IllegalArgumentException ignore) {
             // Fall through to Host header fallback.
@@ -58,5 +59,15 @@ final class ProxyRequestTarget {
             path += "?" + uri.getRawQuery();
         }
         return path;
+    }
+
+    private static String normalizeScheme(String scheme) {
+        if ("ws".equalsIgnoreCase(scheme)) {
+            return "http";
+        }
+        if ("wss".equalsIgnoreCase(scheme)) {
+            return "https";
+        }
+        return scheme == null ? "http" : scheme;
     }
 }

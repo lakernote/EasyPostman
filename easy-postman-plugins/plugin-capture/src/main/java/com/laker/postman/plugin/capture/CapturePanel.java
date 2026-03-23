@@ -97,11 +97,13 @@ public class CapturePanel extends JPanel {
     private EnhancedTablePanel tablePanel;
     private RSyntaxTextArea requestDetailArea;
     private RSyntaxTextArea responseDetailArea;
+    private RSyntaxTextArea streamDetailArea;
     private JTabbedPane detailTabs;
     private JSplitPane detailSplit;
     private JToggleButton detailToggleButton;
     private boolean detailPanelVisible;
     private JLabel detailMethodLabel;
+    private JLabel detailProtocolLabel;
     private JLabel detailStatusLabel;
     private JLabel detailHostLabel;
     private JLabel detailDurationLabel;
@@ -114,6 +116,8 @@ public class CapturePanel extends JPanel {
     private JLabel responseHeadersLabel;
     private JLabel responseBytesLabel;
     private JLabel responseTypeLabel;
+    private JLabel streamEventsLabel;
+    private JLabel streamProtocolLabel;
     private final Map<String, JToggleButton> quickFilterButtons = new LinkedHashMap<>();
     private boolean syncingQuickFilters;
     private boolean operationInProgress;
@@ -247,17 +251,21 @@ public class CapturePanel extends JPanel {
 
         requestDetailArea = createDetailArea();
         responseDetailArea = createDetailArea();
+        streamDetailArea = createDetailArea();
         requestDetailArea.setText(t(MessageKeys.TOOLBOX_CAPTURE_IDLE_DETAILS));
         responseDetailArea.setText(t(MessageKeys.TOOLBOX_CAPTURE_IDLE_DETAILS));
+        streamDetailArea.setText(t(MessageKeys.TOOLBOX_CAPTURE_IDLE_DETAILS));
 
         detailTabs = new JTabbedPane(JTabbedPane.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
         detailTabs.addTab(t(MessageKeys.TOOLBOX_CAPTURE_TAB_REQUEST), buildRequestDetailTab());
         detailTabs.addTab(t(MessageKeys.TOOLBOX_CAPTURE_TAB_RESPONSE), buildResponseDetailTab());
+        detailTabs.addTab(t(MessageKeys.TOOLBOX_CAPTURE_TAB_STREAM), buildStreamDetailTab());
         detailTabs.setPreferredSize(new Dimension(360, 200));
 
-        JPanel detailHeader = new JPanel(new MigLayout("insets 4 10 4 8, fillx", "[]8[]8[]8[]push[]4[]", "[]"));
+        JPanel detailHeader = new JPanel(new MigLayout("insets 4 10 4 8, fillx", "[]8[]8[]8[]8[]push[]4[]", "[]"));
         detailHeader.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor("Separator.foreground")));
         detailMethodLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_METHOD) + ": -", ModernColors.INFO);
+        detailProtocolLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_PROTOCOL) + ": -", new Color(0, 110, 170));
         detailStatusLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_STATUS) + ": -", ModernColors.SUCCESS);
         detailHostLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_HOST) + ": -", new Color(120, 80, 200));
         detailDurationLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_DURATION) + ": -", new Color(180, 100, 0));
@@ -283,6 +291,7 @@ public class CapturePanel extends JPanel {
         });
 
         detailHeader.add(detailMethodLabel);
+        detailHeader.add(detailProtocolLabel);
         detailHeader.add(detailStatusLabel);
         detailHeader.add(detailHostLabel);
         detailHeader.add(detailDurationLabel);
@@ -1017,6 +1026,7 @@ public class CapturePanel extends JPanel {
     private void clearDetail() {
         selectedFlow = null;
         detailMethodLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_METHOD) + ": -");
+        detailProtocolLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_PROTOCOL) + ": -");
         detailStatusLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_STATUS) + ": -");
         detailHostLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_HOST) + ": -");
         detailDurationLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_DURATION) + ": -");
@@ -1029,17 +1039,23 @@ public class CapturePanel extends JPanel {
         responseHeadersLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_HEADERS) + ": -");
         responseBytesLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_BYTES) + ": -");
         responseTypeLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_CONTENT_TYPE) + ": -");
+        streamEventsLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_EVENTS) + ": -");
+        streamProtocolLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_PROTOCOL) + ": -");
         requestDetailArea.setText(t(MessageKeys.TOOLBOX_CAPTURE_IDLE_DETAILS));
         requestDetailArea.setCaretPosition(0);
         requestDetailArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
         responseDetailArea.setText(t(MessageKeys.TOOLBOX_CAPTURE_IDLE_DETAILS));
         responseDetailArea.setCaretPosition(0);
         responseDetailArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+        streamDetailArea.setText(t(MessageKeys.TOOLBOX_CAPTURE_IDLE_DETAILS));
+        streamDetailArea.setCaretPosition(0);
+        streamDetailArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
         detailTabs.setSelectedIndex(0);
     }
 
     private void updateDetailHeader(CaptureFlow flow) {
         detailMethodLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_METHOD) + ": " + flow.method());
+        detailProtocolLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_PROTOCOL) + ": " + flow.protocolText());
         detailStatusLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_STATUS) + ": " + flow.statusDisplayText());
         detailHostLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_HOST) + ": " + flow.host());
         detailDurationLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_DURATION) + ": " + flow.durationMs() + " ms");
@@ -1052,10 +1068,12 @@ public class CapturePanel extends JPanel {
         responseHeadersLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_HEADERS) + ": " + flow.responseHeaderCount());
         responseBytesLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_BYTES) + ": " + flow.responseSize());
         responseTypeLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_CONTENT_TYPE) + ": " + displayValue(flow.responseContentType()));
+        streamEventsLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_EVENTS) + ": " + flow.streamEventCount());
+        streamProtocolLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_PROTOCOL) + ": " + flow.protocolText());
     }
 
     private void copyDetail() {
-        RSyntaxTextArea activeArea = detailTabs.getSelectedIndex() == 0 ? requestDetailArea : responseDetailArea;
+        RSyntaxTextArea activeArea = activeDetailArea();
         String detailText = activeArea.getText().trim();
         if (detailText.isEmpty()) {
             return;
@@ -1119,6 +1137,16 @@ public class CapturePanel extends JPanel {
         return buildDetailTabPanel(responseStatusLabel, responseHeadersLabel, responseBytesLabel, responseTypeLabel, responseDetailArea);
     }
 
+    private JComponent buildStreamDetailTab() {
+        streamEventsLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_EVENTS) + ": -", ModernColors.INFO);
+        streamProtocolLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_PROTOCOL) + ": -", new Color(120, 80, 200));
+        JLabel streamBytesLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_BYTES) + ": -", new Color(20, 150, 100));
+        JLabel streamTypeLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_CONTENT_TYPE) + ": -", new Color(180, 100, 0));
+        streamBytesLabel.setVisible(false);
+        streamTypeLabel.setVisible(false);
+        return buildDetailTabPanel(streamEventsLabel, streamProtocolLabel, streamBytesLabel, streamTypeLabel, streamDetailArea);
+    }
+
     private JComponent buildDetailTabPanel(JLabel first,
                                            JLabel second,
                                            JLabel third,
@@ -1142,6 +1170,7 @@ public class CapturePanel extends JPanel {
     private void updateDetailAreas(CaptureFlow flow) {
         updateDetailArea(requestDetailArea, flow.requestDetailText());
         updateDetailArea(responseDetailArea, flow.responseDetailText());
+        updateDetailArea(streamDetailArea, flow.streamDetailText());
     }
 
     private void updateDetailArea(RSyntaxTextArea area, String text) {
@@ -1152,6 +1181,17 @@ public class CapturePanel extends JPanel {
 
     private String displayValue(String value) {
         return value == null || value.isBlank() ? "-" : value;
+    }
+
+    private RSyntaxTextArea activeDetailArea() {
+        int index = detailTabs.getSelectedIndex();
+        if (index == 0) {
+            return requestDetailArea;
+        }
+        if (index == 1) {
+            return responseDetailArea;
+        }
+        return streamDetailArea;
     }
 
     private JLabel buildChipLabel(String text, Color bgColor) {

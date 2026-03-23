@@ -210,23 +210,25 @@ public class KafkaPanel extends JPanel {
         SwingWorker<List<KafkaTopicItem>, Void> worker = new SwingWorker<>() {
             @Override
             protected List<KafkaTopicItem> doInBackground() throws Exception {
-                Properties props = new Properties();
-                props.putAll(baseProps);
-                props.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, TIMEOUT_MS);
-                props.put(AdminClientConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, TIMEOUT_MS);
-                try (AdminClient adminClient = AdminClient.create(props)) {
-                    ListTopicsOptions options = new ListTopicsOptions().listInternal(false).timeoutMs(Integer.parseInt(TIMEOUT_MS));
-                    List<String> topics = new ArrayList<>(adminClient.listTopics(options).names().get(Integer.parseInt(TIMEOUT_MS), TimeUnit.MILLISECONDS));
-                    Collections.sort(topics);
-                    Map<String, org.apache.kafka.clients.admin.TopicDescription> descriptions =
-                            adminClient.describeTopics(topics).allTopicNames().get(Integer.parseInt(TIMEOUT_MS), TimeUnit.MILLISECONDS);
-                    List<KafkaTopicItem> topicItems = new ArrayList<>(topics.size());
-                    for (String topic : topics) {
-                        int partitionCount = descriptions.get(topic).partitions().size();
-                        topicItems.add(new KafkaTopicItem(topic, partitionCount));
+                return KafkaClassLoaderSupport.withPluginContextClassLoader(() -> {
+                    Properties props = new Properties();
+                    props.putAll(baseProps);
+                    props.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, TIMEOUT_MS);
+                    props.put(AdminClientConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, TIMEOUT_MS);
+                    try (AdminClient adminClient = AdminClient.create(props)) {
+                        ListTopicsOptions options = new ListTopicsOptions().listInternal(false).timeoutMs(Integer.parseInt(TIMEOUT_MS));
+                        List<String> topics = new ArrayList<>(adminClient.listTopics(options).names().get(Integer.parseInt(TIMEOUT_MS), TimeUnit.MILLISECONDS));
+                        Collections.sort(topics);
+                        Map<String, org.apache.kafka.clients.admin.TopicDescription> descriptions =
+                                adminClient.describeTopics(topics).allTopicNames().get(Integer.parseInt(TIMEOUT_MS), TimeUnit.MILLISECONDS);
+                        List<KafkaTopicItem> topicItems = new ArrayList<>(topics.size());
+                        for (String topic : topics) {
+                            int partitionCount = descriptions.get(topic).partitions().size();
+                            topicItems.add(new KafkaTopicItem(topic, partitionCount));
+                        }
+                        return topicItems;
                     }
-                    return topicItems;
-                }
+                });
             }
 
             @Override
@@ -333,18 +335,20 @@ public class KafkaPanel extends JPanel {
         SwingWorker<RecordMetadata, Void> worker = new SwingWorker<>() {
             @Override
             protected RecordMetadata doInBackground() throws Exception {
-                KafkaProducer<String, String> producer = getOrCreateProducer(producerProps, producerConfigSignature);
-                ProducerRecord<String, String> producerRecord;
-                String finalKey = key.isBlank() ? null : key;
-                if (partition != null && partition >= 0) {
-                    producerRecord = new ProducerRecord<>(topic, partition, finalKey, payload);
-                } else {
-                    producerRecord = new ProducerRecord<>(topic, finalKey, payload);
-                }
-                for (Header header : headers) {
-                    producerRecord.headers().add(header);
-                }
-                return producer.send(producerRecord).get(15, TimeUnit.SECONDS);
+                return KafkaClassLoaderSupport.withPluginContextClassLoader(() -> {
+                    KafkaProducer<String, String> producer = getOrCreateProducer(producerProps, producerConfigSignature);
+                    ProducerRecord<String, String> producerRecord;
+                    String finalKey = key.isBlank() ? null : key;
+                    if (partition != null && partition >= 0) {
+                        producerRecord = new ProducerRecord<>(topic, partition, finalKey, payload);
+                    } else {
+                        producerRecord = new ProducerRecord<>(topic, finalKey, payload);
+                    }
+                    for (Header header : headers) {
+                        producerRecord.headers().add(header);
+                    }
+                    return producer.send(producerRecord).get(15, TimeUnit.SECONDS);
+                });
             }
 
             @Override
@@ -390,7 +394,8 @@ public class KafkaPanel extends JPanel {
             existing = null;
         }
         if (existing == null) {
-            KafkaProducer<String, String> newProducer = new KafkaProducer<>(producerProps);
+            KafkaProducer<String, String> newProducer = KafkaClassLoaderSupport.withPluginContextClassLoader(
+                    () -> new KafkaProducer<>(producerProps));
             cachedProducerRef.set(newProducer);
             cachedProducerConfigSignature = producerConfigSignature;
             return newProducer;
@@ -467,59 +472,61 @@ public class KafkaPanel extends JPanel {
         SwingWorker<Void, List<KafkaConsumedMessage>> worker = new SwingWorker<>() {
             @Override
             protected Void doInBackground() throws Exception {
-                Properties props = buildConsumerProperties(baseProps, consumerCustomProps, finalGroupId, consumeStartMode, maxPollRecords);
+                return KafkaClassLoaderSupport.withPluginContextClassLoader(() -> {
+                    Properties props = buildConsumerProperties(baseProps, consumerCustomProps, finalGroupId, consumeStartMode, maxPollRecords);
 
-                try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(props)) {
-                    runningConsumerRef.set(consumer);
-                    if (selectedPartitions.isEmpty()) {
-                        AtomicBoolean startPositionApplied = new AtomicBoolean(false);
-                        consumer.subscribe(Collections.singletonList(topic), new org.apache.kafka.clients.consumer.ConsumerRebalanceListener() {
-                            @Override
-                            public void onPartitionsRevoked(Collection<org.apache.kafka.common.TopicPartition> partitions) {
-                                // no-op
-                            }
-
-                            @Override
-                            public void onPartitionsAssigned(Collection<org.apache.kafka.common.TopicPartition> partitions) {
-                                if (startPositionApplied.getAndSet(true)) {
-                                    return;
+                    try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(props)) {
+                        runningConsumerRef.set(consumer);
+                        if (selectedPartitions.isEmpty()) {
+                            AtomicBoolean startPositionApplied = new AtomicBoolean(false);
+                            consumer.subscribe(Collections.singletonList(topic), new org.apache.kafka.clients.consumer.ConsumerRebalanceListener() {
+                                @Override
+                                public void onPartitionsRevoked(Collection<org.apache.kafka.common.TopicPartition> partitions) {
+                                    // no-op
                                 }
-                                KafkaPanelSupport.applyConsumeStartPosition(consumer, partitions, consumeStartMode, consumeStartValue);
+
+                                @Override
+                                public void onPartitionsAssigned(Collection<org.apache.kafka.common.TopicPartition> partitions) {
+                                    if (startPositionApplied.getAndSet(true)) {
+                                        return;
+                                    }
+                                    KafkaPanelSupport.applyConsumeStartPosition(consumer, partitions, consumeStartMode, consumeStartValue);
+                                }
+                            });
+                        } else {
+                            List<org.apache.kafka.common.TopicPartition> topicPartitions =
+                                    KafkaPanelSupport.resolveTopicPartitions(consumer, topic, selectedPartitions);
+                            consumer.assign(topicPartitions);
+                            KafkaPanelSupport.applyConsumeStartPosition(consumer, topicPartitions, consumeStartMode, consumeStartValue);
+                        }
+                        while (!isCancelled()) {
+                            ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(pollTimeoutMs));
+                            if (records.isEmpty()) {
+                                continue;
                             }
-                        });
-                    } else {
-                        List<org.apache.kafka.common.TopicPartition> topicPartitions =
-                                KafkaPanelSupport.resolveTopicPartitions(consumer, topic, selectedPartitions);
-                        consumer.assign(topicPartitions);
-                        KafkaPanelSupport.applyConsumeStartPosition(consumer, topicPartitions, consumeStartMode, consumeStartValue);
-                    }
-                    while (!isCancelled()) {
-                        ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(pollTimeoutMs));
-                        if (records.isEmpty()) {
-                            continue;
+                            List<KafkaConsumedMessage> batch = new ArrayList<>(records.count());
+                            for (ConsumerRecord<String, String> rec : records) {
+                                batch.add(new KafkaConsumedMessage(
+                                        KafkaPanelSupport.formatRecordTimestamp(System.currentTimeMillis()),
+                                        KafkaPanelSupport.formatRecordTimestamp(rec.timestamp()),
+                                        rec.topic(),
+                                        rec.partition(),
+                                        rec.offset(),
+                                        rec.key() == null ? "" : rec.key(),
+                                        KafkaPanelSupport.formatHeaders(rec.headers()),
+                                        rec.value() == null ? "" : rec.value()));
+                            }
+                            publish(batch);
                         }
-                        List<KafkaConsumedMessage> batch = new ArrayList<>(records.count());
-                        for (ConsumerRecord<String, String> rec : records) {
-                            batch.add(new KafkaConsumedMessage(
-                                    KafkaPanelSupport.formatRecordTimestamp(System.currentTimeMillis()),
-                                    KafkaPanelSupport.formatRecordTimestamp(rec.timestamp()),
-                                    rec.topic(),
-                                    rec.partition(),
-                                    rec.offset(),
-                                    rec.key() == null ? "" : rec.key(),
-                                    KafkaPanelSupport.formatHeaders(rec.headers()),
-                                    rec.value() == null ? "" : rec.value()));
+                    } catch (WakeupException wakeupException) {
+                        if (!isCancelled()) {
+                            throw wakeupException;
                         }
-                        publish(batch);
+                    } finally {
+                        runningConsumerRef.compareAndSet(runningConsumerRef.get(), null);
                     }
-                } catch (WakeupException wakeupException) {
-                    if (!isCancelled()) {
-                        throw wakeupException;
-                    }
-                } finally {
-                    runningConsumerRef.compareAndSet(runningConsumerRef.get(), null);
-                }
-                return null;
+                    return null;
+                });
             }
 
             @Override

@@ -36,16 +36,18 @@ public class ScriptKafkaApi {
         props.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, String.valueOf(timeoutMs));
         props.put(AdminClientConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, String.valueOf(timeoutMs));
 
-        try (AdminClient adminClient = AdminClient.create(props)) {
-            ListTopicsOptions listOptions = new ListTopicsOptions()
-                    .listInternal(false)
-                    .timeoutMs(timeoutMs);
-            List<String> topics = new ArrayList<>(adminClient.listTopics(listOptions).names().get(timeoutMs, TimeUnit.MILLISECONDS));
-            Collections.sort(topics);
-            return topics;
-        } catch (Exception e) {
-            throw new RuntimeException("Kafka listTopics failed: " + rootMessage(e), e);
-        }
+        return KafkaClassLoaderSupport.withPluginContextClassLoader(() -> {
+            try (AdminClient adminClient = AdminClient.create(props)) {
+                ListTopicsOptions listOptions = new ListTopicsOptions()
+                        .listInternal(false)
+                        .timeoutMs(timeoutMs);
+                List<String> topics = new ArrayList<>(adminClient.listTopics(listOptions).names().get(timeoutMs, TimeUnit.MILLISECONDS));
+                Collections.sort(topics);
+                return topics;
+            } catch (Exception e) {
+                throw new RuntimeException("Kafka listTopics failed: " + rootMessage(e), e);
+            }
+        });
     }
 
     public KafkaSendResult send(Object options) {
@@ -61,6 +63,7 @@ public class ScriptKafkaApi {
                 partition = null;
             }
         }
+        final Integer finalPartition = partition;
 
         Properties props = buildCommonClientProperties(map);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
@@ -69,19 +72,21 @@ public class ScriptKafkaApi {
         props.put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, String.valueOf(timeoutMs));
         props.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, String.valueOf(timeoutMs));
 
-        try (KafkaProducer<String, String> producer = new KafkaProducer<>(props)) {
-            String finalKey = key.isBlank() ? null : key;
-            ProducerRecord<String, String> record = (partition == null)
-                    ? new ProducerRecord<>(topic, finalKey, value)
-                    : new ProducerRecord<>(topic, partition, finalKey, value);
-            for (Header header : parseHeaders(ScriptOptionUtil.get(map, "headers", "header"))) {
-                record.headers().add(header);
+        return KafkaClassLoaderSupport.withPluginContextClassLoader(() -> {
+            try (KafkaProducer<String, String> producer = new KafkaProducer<>(props)) {
+                String finalKey = key.isBlank() ? null : key;
+                ProducerRecord<String, String> record = (finalPartition == null)
+                        ? new ProducerRecord<>(topic, finalKey, value)
+                        : new ProducerRecord<>(topic, finalPartition, finalKey, value);
+                for (Header header : parseHeaders(ScriptOptionUtil.get(map, "headers", "header"))) {
+                    record.headers().add(header);
+                }
+                RecordMetadata metadata = producer.send(record).get(timeoutMs, TimeUnit.MILLISECONDS);
+                return new KafkaSendResult(metadata.topic(), metadata.partition(), metadata.offset(), metadata.timestamp());
+            } catch (Exception e) {
+                throw new RuntimeException("Kafka send failed: " + rootMessage(e), e);
             }
-            RecordMetadata metadata = producer.send(record).get(timeoutMs, TimeUnit.MILLISECONDS);
-            return new KafkaSendResult(metadata.topic(), metadata.partition(), metadata.offset(), metadata.timestamp());
-        } catch (Exception e) {
-            throw new RuntimeException("Kafka send failed: " + rootMessage(e), e);
-        }
+        });
     }
 
     public List<KafkaMessage> poll(Object options) {
@@ -106,36 +111,38 @@ public class ScriptKafkaApi {
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
         props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, String.valueOf(maxPollRecords));
 
-        try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(props)) {
-            consumer.subscribe(Collections.singletonList(topic));
-            // trigger partition assignment
-            consumer.poll(Duration.ofMillis(0));
-            Set<TopicPartition> assignment = consumer.assignment();
-            if (assignment.isEmpty()) {
-                consumer.poll(Duration.ofMillis(Math.min(300, Math.max(50, pollTimeoutMs))));
-                assignment = consumer.assignment();
-            }
-            applyStartPosition(consumer, assignment, startOffset, startTimestamp);
-
-            ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(Math.max(1, pollTimeoutMs)));
-            List<KafkaMessage> messages = new ArrayList<>();
-            for (ConsumerRecord<String, String> record : records) {
-                if (messages.size() >= maxMessages) {
-                    break;
+        return KafkaClassLoaderSupport.withPluginContextClassLoader(() -> {
+            try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(props)) {
+                consumer.subscribe(Collections.singletonList(topic));
+                // trigger partition assignment
+                consumer.poll(Duration.ofMillis(0));
+                Set<TopicPartition> assignment = consumer.assignment();
+                if (assignment.isEmpty()) {
+                    consumer.poll(Duration.ofMillis(Math.min(300, Math.max(50, pollTimeoutMs))));
+                    assignment = consumer.assignment();
                 }
-                messages.add(new KafkaMessage(
-                        record.topic(),
-                        record.partition(),
-                        record.offset(),
-                        record.timestamp(),
-                        record.key(),
-                        record.value(),
-                        headersToMap(record.headers())));
+                applyStartPosition(consumer, assignment, startOffset, startTimestamp);
+
+                ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(Math.max(1, pollTimeoutMs)));
+                List<KafkaMessage> messages = new ArrayList<>();
+                for (ConsumerRecord<String, String> record : records) {
+                    if (messages.size() >= maxMessages) {
+                        break;
+                    }
+                    messages.add(new KafkaMessage(
+                            record.topic(),
+                            record.partition(),
+                            record.offset(),
+                            record.timestamp(),
+                            record.key(),
+                            record.value(),
+                            headersToMap(record.headers())));
+                }
+                return messages;
+            } catch (Exception e) {
+                throw new RuntimeException("Kafka poll failed: " + rootMessage(e), e);
             }
-            return messages;
-        } catch (Exception e) {
-            throw new RuntimeException("Kafka poll failed: " + rootMessage(e), e);
-        }
+        });
     }
 
     private Properties buildCommonClientProperties(Map<String, Object> map) {

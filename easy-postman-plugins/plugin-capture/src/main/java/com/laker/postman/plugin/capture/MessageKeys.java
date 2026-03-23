@@ -8,6 +8,7 @@ public final class MessageKeys {
     public static final String TOOLBOX_GROUP_DEV = "toolbox.group.dev";
     public static final String TOOLBOX_CAPTURE = "toolbox.capture";
     public static final String TOOLBOX_CAPTURE_BIND = "toolbox.capture.bind";
+    public static final String TOOLBOX_CAPTURE_BIND_HOST_PLACEHOLDER = "toolbox.capture.bind.host.placeholder";
     public static final String TOOLBOX_CAPTURE_CAPTURE_HOSTS = "toolbox.capture.capture_hosts";
     public static final String TOOLBOX_CAPTURE_HOSTS_PLACEHOLDER = "toolbox.capture.capture_hosts.placeholder";
     public static final String TOOLBOX_CAPTURE_HOSTS_TOOLTIP = "toolbox.capture.capture_hosts.tooltip";
@@ -51,6 +52,7 @@ public final class MessageKeys {
     public static final String TOOLBOX_CAPTURE_CA_TRUST_NOT_INSTALLED = "toolbox.capture.ca_trust.not_installed";
     public static final String TOOLBOX_CAPTURE_SYSTEM_PROXY_UNSUPPORTED = "toolbox.capture.system_proxy.unsupported";
     public static final String TOOLBOX_CAPTURE_SYSTEM_PROXY_MANUAL = "toolbox.capture.system_proxy.manual";
+    public static final String TOOLBOX_CAPTURE_SYSTEM_PROXY_PENDING = "toolbox.capture.system_proxy.pending";
     public static final String TOOLBOX_CAPTURE_SYSTEM_PROXY_SYNCED = "toolbox.capture.system_proxy.synced";
     public static final String TOOLBOX_CAPTURE_FILTER_ALL = "toolbox.capture.filter.all";
     public static final String TOOLBOX_CAPTURE_FILTER_RULES = "toolbox.capture.filter.rules";

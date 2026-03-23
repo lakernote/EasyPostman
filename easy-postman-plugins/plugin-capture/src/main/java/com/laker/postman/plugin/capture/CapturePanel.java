@@ -38,6 +38,9 @@ import javax.swing.UIManager;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.TableColumn;
+import javax.swing.table.TableCellRenderer;
+import javax.swing.text.DefaultFormatterFactory;
+import javax.swing.text.NumberFormatter;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
@@ -50,6 +53,7 @@ import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -69,16 +73,18 @@ public class CapturePanel extends JPanel {
     private JSpinner portSpinner;
     private JButton toggleProxyButton;
     private JButton clearButton;
-    private JButton caActionsButton;
     private JMenuItem installCaMenuItem;
     private JMenuItem openCaMenuItem;
     private JPopupMenu statusPopupMenu;
     private JCheckBox syncSystemProxyCheckBox;
+    private JCheckBox popupSyncSystemProxyCheckBox;
     private JTextField captureHostsField;
     private JLabel captureFilterLabel;
-    private JLabel captureStatusLabel;
-    private JLabel statusPopupTrustLabel;
-    private JLabel statusPopupProxyLabel;
+    private JPanel captureStatusPanel;
+    private StatusChipLabel captureTrustChipLabel;
+    private StatusChipLabel captureProxyChipLabel;
+    private StatusChipLabel statusPopupTrustLabel;
+    private StatusChipLabel statusPopupProxyLabel;
     private JLabel statusPopupPathLabel;
     private JLabel statusPopupDetailLabel;
     private JButton refreshStatusButton;
@@ -123,7 +129,7 @@ public class CapturePanel extends JPanel {
     private JComponent buildTopBar() {
         JPanel panel = new JPanel(new MigLayout(
                 "insets 8, fillx, novisualpadding",
-                "[][grow,fill]12[]12[]6[]12[]6[]6[]push[]",
+                "[][grow,fill]12[]12[]6[]push[]",
                 "[][][]"));
         panel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor("Separator.foreground")),
@@ -131,8 +137,10 @@ public class CapturePanel extends JPanel {
 
         hostField = new JTextField(defaultHost());
         hostField.setColumns(16);
+        hostField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT,
+                t(MessageKeys.TOOLBOX_CAPTURE_BIND_HOST_PLACEHOLDER));
         portSpinner = new JSpinner(new SpinnerNumberModel(defaultPort(), 1, 65535, 1));
-        ((JSpinner.DefaultEditor) portSpinner.getEditor()).getTextField().setColumns(6);
+        configurePortSpinner();
         captureHostsField = new JTextField(defaultCaptureHostFilter());
         captureHostsField.setColumns(28);
         captureHostsField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT,
@@ -141,10 +149,7 @@ public class CapturePanel extends JPanel {
 
         toggleProxyButton = new JButton();
         clearButton = new JButton(t(MessageKeys.TOOLBOX_CAPTURE_CLEAR), IconUtil.createThemed("icons/clear.svg", 16, 16));
-        caActionsButton = new JButton(t(MessageKeys.TOOLBOX_CAPTURE_CA_ACTIONS));
         syncSystemProxyCheckBox = new JCheckBox(t(MessageKeys.TOOLBOX_CAPTURE_SYNC_MACOS_PROXY), defaultSyncSystemProxy());
-        syncSystemProxyCheckBox.setOpaque(false);
-        syncSystemProxyCheckBox.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_SYNC_PROXY_TOOLTIP));
         detailToggleButton = new JToggleButton();
         detailToggleButton.setIcon(IconUtil.createThemed("icons/detail.svg", 16, 16));
         detailToggleButton.setSelectedIcon(IconUtil.createColored("icons/detail.svg", 16, 16, ModernColors.PRIMARY));
@@ -163,7 +168,6 @@ public class CapturePanel extends JPanel {
             }
         });
         clearButton.addActionListener(e -> proxyService.sessionStore().clear());
-        caActionsButton.addActionListener(e -> showStatusPopup(caActionsButton, 0, caActionsButton.getHeight()));
         detailToggleButton.addActionListener(e -> {
             detailPanelVisible = detailToggleButton.isSelected();
             if (detailPanelVisible) {
@@ -176,16 +180,22 @@ public class CapturePanel extends JPanel {
         captureFilterLabel = new JLabel();
         captureFilterLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         captureFilterLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
-        captureStatusLabel = new JLabel();
-        captureStatusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
-        captureStatusLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
-        captureStatusLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        captureStatusLabel.addMouseListener(new MouseAdapter() {
+        captureTrustChipLabel = new StatusChipLabel();
+        captureProxyChipLabel = new StatusChipLabel();
+        captureStatusPanel = new JPanel(new MigLayout("insets 0, novisualpadding", "[]6[]", "[]"));
+        captureStatusPanel.setOpaque(false);
+        captureStatusPanel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        captureStatusPanel.add(captureTrustChipLabel);
+        captureStatusPanel.add(captureProxyChipLabel);
+        MouseAdapter statusClickListener = new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                showStatusPopup(captureStatusLabel, 0, captureStatusLabel.getHeight());
+                showStatusPopup(captureStatusPanel, 0, captureStatusPanel.getHeight());
             }
-        });
+        };
+        captureStatusPanel.addMouseListener(statusClickListener);
+        captureTrustChipLabel.addMouseListener(statusClickListener);
+        captureProxyChipLabel.addMouseListener(statusClickListener);
 
         panel.add(new JLabel(t(MessageKeys.TOOLBOX_CAPTURE_BIND)), "gapright 8");
         panel.add(hostField, "wmin 180");
@@ -193,13 +203,11 @@ public class CapturePanel extends JPanel {
         panel.add(toggleProxyButton, "wmin 110");
         panel.add(clearButton);
         panel.add(detailToggleButton);
-        panel.add(syncSystemProxyCheckBox);
-        panel.add(caActionsButton, "wmin 68");
         panel.add(new JLabel(), "push, wrap");
         panel.add(new JLabel(t(MessageKeys.TOOLBOX_CAPTURE_CAPTURE_HOSTS)), "gapright 8");
-        panel.add(captureHostsField, "span 8, growx, wrap");
+        panel.add(captureHostsField, "span 6, growx, wrap");
         panel.add(captureFilterLabel, "span, split 2, growx");
-        panel.add(captureStatusLabel, "gapleft push");
+        panel.add(captureStatusPanel, "gapleft push");
         return panel;
     }
 
@@ -207,6 +215,7 @@ public class CapturePanel extends JPanel {
         tablePanel = new EnhancedTablePanel(columnNames());
         JTable table = tablePanel.getTable();
         table.getSelectionModel().addListSelectionListener(this::handleSelectionChanged);
+        disableTableTooltips(table);
         hideIdColumn(table);
 
         requestDetailArea = createDetailArea();
@@ -281,18 +290,20 @@ public class CapturePanel extends JPanel {
         JLabel titleLabel = new JLabel(t(MessageKeys.TOOLBOX_CAPTURE_STATUS_DETAILS));
         titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 0));
 
-        statusPopupTrustLabel = new JLabel();
-        statusPopupProxyLabel = new JLabel();
+        statusPopupTrustLabel = new StatusChipLabel();
+        statusPopupProxyLabel = new StatusChipLabel();
         statusPopupPathLabel = new JLabel();
         statusPopupDetailLabel = new JLabel();
-        statusPopupTrustLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        statusPopupProxyLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         statusPopupPathLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         statusPopupDetailLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        statusPopupTrustLabel.setForeground(UIManager.getColor("Label.foreground"));
-        statusPopupProxyLabel.setForeground(UIManager.getColor("Label.foreground"));
         statusPopupPathLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
         statusPopupDetailLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        popupSyncSystemProxyCheckBox = new JCheckBox(t(MessageKeys.TOOLBOX_CAPTURE_SYNC_MACOS_PROXY), syncSystemProxyCheckBox.isSelected());
+        popupSyncSystemProxyCheckBox.setOpaque(false);
+        popupSyncSystemProxyCheckBox.addActionListener(e -> {
+            syncSystemProxyCheckBox.setSelected(popupSyncSystemProxyCheckBox.isSelected());
+            updateCaptureStatusLabel();
+        });
 
         installCaMenuItem = new JMenuItem(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA));
         openCaMenuItem = new JMenuItem(t(MessageKeys.TOOLBOX_CAPTURE_OPEN_CA));
@@ -319,8 +330,9 @@ public class CapturePanel extends JPanel {
         actions.add(refreshStatusButton);
 
         content.add(titleLabel, "wrap");
-        content.add(statusPopupTrustLabel, "wrap");
+        content.add(statusPopupTrustLabel, "split 2");
         content.add(statusPopupProxyLabel, "wrap");
+        content.add(popupSyncSystemProxyCheckBox, "wrap");
         content.add(statusPopupPathLabel, "wrap");
         content.add(statusPopupDetailLabel, "wmin 320, wrap");
         content.add(actions, "growx");
@@ -450,6 +462,8 @@ public class CapturePanel extends JPanel {
         portSpinner.setEnabled(!busy && !running);
         captureHostsField.setEnabled(!busy && !running);
         syncSystemProxyCheckBox.setEnabled(!busy && !running && proxyService.isSystemProxySyncSupported());
+        popupSyncSystemProxyCheckBox.setEnabled(!busy && !running && proxyService.isSystemProxySyncSupported());
+        popupSyncSystemProxyCheckBox.setSelected(syncSystemProxyCheckBox.isSelected());
 
         captureFilterLabel.setText(running
                 ? proxyService.captureFilterSummary()
@@ -461,20 +475,19 @@ public class CapturePanel extends JPanel {
 
         if (!systemProxySupported) {
             syncSystemProxyCheckBox.setSelected(false);
+            popupSyncSystemProxyCheckBox.setSelected(false);
+            popupSyncSystemProxyCheckBox.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_SYNC_PROXY_TOOLTIP_UNSUPPORTED));
             syncSystemProxyCheckBox.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_SYNC_PROXY_TOOLTIP_UNSUPPORTED));
         } else {
+            popupSyncSystemProxyCheckBox.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_SYNC_PROXY_TOOLTIP));
             syncSystemProxyCheckBox.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_SYNC_PROXY_TOOLTIP));
         }
 
         if (!certificateInstallSupported) {
-            caActionsButton.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_TOOLTIP_UNSUPPORTED));
-            caActionsButton.setEnabled(false);
             installCaMenuItem.setEnabled(false);
             openCaMenuItem.setEnabled(false);
             refreshStatusButton.setEnabled(true);
         } else {
-            caActionsButton.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_TOOLTIP));
-            caActionsButton.setEnabled(!busy);
             installCaMenuItem.setEnabled(!busy);
             openCaMenuItem.setEnabled(!busy);
             refreshStatusButton.setEnabled(true);
@@ -486,16 +499,22 @@ public class CapturePanel extends JPanel {
     }
 
     private void updateCaptureStatusLabel() {
-        captureStatusLabel.setText(caTrustSummaryText() + "    |    " + proxyService.systemProxyStatus());
-        captureStatusLabel.setToolTipText(buildCaptureStatusTooltip());
+        CaptureTrustStatus trustStatus = safeCaptureTrustStatus();
+        String tooltip = buildCaptureStatusTooltip();
+        captureTrustChipLabel.setChip(resolveTrustChipText(trustStatus), resolveTrustChipColor(trustStatus));
+        captureProxyChipLabel.setChip(resolveProxyChipText(), resolveProxyChipColor());
+        captureTrustChipLabel.setToolTipText(tooltip);
+        captureProxyChipLabel.setToolTipText(tooltip);
+        captureStatusPanel.setToolTipText(tooltip);
         refreshStatusPopup();
     }
 
     private void refreshStatusPopup() {
-        statusPopupTrustLabel.setText(caTrustSummaryText());
-        statusPopupProxyLabel.setText(proxyService.systemProxyStatus());
+        CaptureTrustStatus trustStatus = safeCaptureTrustStatus();
+        statusPopupTrustLabel.setChip(resolveTrustChipText(trustStatus), resolveTrustChipColor(trustStatus));
+        statusPopupProxyLabel.setChip(resolveProxyChipText(), resolveProxyChipColor());
         statusPopupPathLabel.setText(caPathSummaryText());
-        String detail = caTrustDetailText();
+        String detail = trustStatus.detail();
         statusPopupDetailLabel.setText(detail.isBlank()
                 ? ""
                 : "<html><div style='width:320px'>" + escapeHtml(detail).replace("\n", "<br>") + "</div></html>");
@@ -513,7 +532,7 @@ public class CapturePanel extends JPanel {
         if (!detail.isBlank()) {
             builder.append("<br>").append(escapeHtml(detail));
         }
-        builder.append("<br>").append(escapeHtml(proxyService.systemProxyStatus()));
+        builder.append("<br>").append(escapeHtml(systemProxySummaryText()));
         builder.append("</html>");
         return builder.toString();
     }
@@ -553,6 +572,70 @@ public class CapturePanel extends JPanel {
         return "";
     }
 
+    private String systemProxySummaryText() {
+        if (!proxyService.isSystemProxySyncSupported()) {
+            return t(MessageKeys.TOOLBOX_CAPTURE_SYSTEM_PROXY_UNSUPPORTED);
+        }
+        if (proxyService.isSystemProxySynced()) {
+            return proxyService.systemProxyStatus();
+        }
+        if (!proxyService.isRunning() && syncSystemProxyCheckBox != null && syncSystemProxyCheckBox.isSelected()) {
+            return t(MessageKeys.TOOLBOX_CAPTURE_SYSTEM_PROXY_PENDING);
+        }
+        return t(MessageKeys.TOOLBOX_CAPTURE_SYSTEM_PROXY_MANUAL);
+    }
+
+    private CaptureTrustStatus safeCaptureTrustStatus() {
+        try {
+            return resolveCaptureTrustStatus();
+        } catch (Exception ex) {
+            return new CaptureTrustStatus(false, false, false, t(MessageKeys.TOOLBOX_CAPTURE_CA_TRUST_UNKNOWN));
+        }
+    }
+
+    private String resolveTrustChipText(CaptureTrustStatus trustStatus) {
+        if (!trustStatus.supported()) {
+            return t(MessageKeys.TOOLBOX_CAPTURE_CA_TRUST_UNSUPPORTED);
+        }
+        if (trustStatus.trusted()) {
+            return t(MessageKeys.TOOLBOX_CAPTURE_CA_TRUST_TRUSTED);
+        }
+        if (trustStatus.installed()) {
+            return t(MessageKeys.TOOLBOX_CAPTURE_CA_TRUST_VERIFY);
+        }
+        return t(MessageKeys.TOOLBOX_CAPTURE_CA_TRUST_NOT_INSTALLED);
+    }
+
+    private Color resolveTrustChipColor(CaptureTrustStatus trustStatus) {
+        if (!trustStatus.supported()) {
+            return new Color(120, 120, 120);
+        }
+        if (trustStatus.trusted()) {
+            return ModernColors.SUCCESS;
+        }
+        if (trustStatus.installed()) {
+            return new Color(180, 100, 0);
+        }
+        return new Color(160, 60, 60);
+    }
+
+    private String resolveProxyChipText() {
+        return systemProxySummaryText();
+    }
+
+    private Color resolveProxyChipColor() {
+        if (!proxyService.isSystemProxySyncSupported()) {
+            return new Color(120, 120, 120);
+        }
+        if (proxyService.isSystemProxySynced()) {
+            return ModernColors.INFO;
+        }
+        if (!proxyService.isRunning() && syncSystemProxyCheckBox != null && syncSystemProxyCheckBox.isSelected()) {
+            return new Color(180, 100, 0);
+        }
+        return new Color(120, 80, 200);
+    }
+
     private CaptureTrustStatus resolveCaptureTrustStatus() throws Exception {
         String certificatePath = proxyService.rootCertificatePath();
         if (macCertificateInstallService.isSupported()) {
@@ -584,6 +667,19 @@ public class CapturePanel extends JPanel {
         idColumn.setMaxWidth(0);
         idColumn.setPreferredWidth(0);
         idColumn.setResizable(false);
+    }
+
+    private void disableTableTooltips(JTable table) {
+        TableCellRenderer renderer = table.getDefaultRenderer(Object.class);
+        table.setDefaultRenderer(Object.class, (tbl, value, selected, focus, row, column) -> {
+            java.awt.Component component = renderer.getTableCellRendererComponent(tbl, value, selected, focus, row, column);
+            if (component instanceof JComponent jComponent) {
+                jComponent.setToolTipText(null);
+            }
+            return component;
+        });
+        table.setToolTipText(null);
+        table.getTableHeader().setToolTipText(null);
     }
 
     private String defaultHost() {
@@ -851,6 +947,19 @@ public class CapturePanel extends JPanel {
         return area;
     }
 
+    private void configurePortSpinner() {
+        JSpinner.NumberEditor editor = new JSpinner.NumberEditor(portSpinner, "0");
+        DecimalFormat format = editor.getFormat();
+        format.setGroupingUsed(false);
+        NumberFormatter formatter = (NumberFormatter) editor.getTextField().getFormatter();
+        formatter.setValueClass(Integer.class);
+        formatter.setAllowsInvalid(false);
+        formatter.setCommitsOnValidEdit(true);
+        editor.getTextField().setFormatterFactory(new DefaultFormatterFactory(formatter));
+        editor.getTextField().setColumns(6);
+        portSpinner.setEditor(editor);
+    }
+
     private JComponent buildRequestDetailTab() {
         requestPathLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_PATH) + ": -", ModernColors.INFO);
         requestHeadersLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_HEADERS) + ": -", new Color(120, 80, 200));
@@ -929,6 +1038,45 @@ public class CapturePanel extends JPanel {
         label.setBorder(new EmptyBorder(2, 6, 2, 6));
         label.setOpaque(false);
         return label;
+    }
+
+    private static final class StatusChipLabel extends JLabel {
+        private Color bgColor;
+
+        private StatusChipLabel() {
+            setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+            setBorder(new EmptyBorder(2, 6, 2, 6));
+            setOpaque(false);
+        }
+
+        private void setChip(String text, Color color) {
+            setText(text);
+            bgColor = color;
+            if (bgColor != null) {
+                setForeground(ModernColors.isDarkTheme()
+                        ? new Color(Math.min(bgColor.getRed() + 80, 255),
+                        Math.min(bgColor.getGreen() + 80, 255),
+                        Math.min(bgColor.getBlue() + 80, 255))
+                        : bgColor.darker());
+            } else {
+                setForeground(UIManager.getColor("Label.foreground"));
+            }
+            repaint();
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            if (bgColor != null) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(bgColor.getRed(), bgColor.getGreen(), bgColor.getBlue(), 30));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                g2.setColor(new Color(bgColor.getRed(), bgColor.getGreen(), bgColor.getBlue(), 140));
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
+                g2.dispose();
+            }
+            super.paintComponent(g);
+        }
     }
 
     private String[] columnNames() {

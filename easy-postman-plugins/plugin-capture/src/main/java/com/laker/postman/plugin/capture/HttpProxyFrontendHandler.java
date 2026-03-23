@@ -133,7 +133,7 @@ final class HttpProxyFrontendHandler extends SimpleChannelInboundHandler<FullHtt
             host = authority.substring(0, colonIndex);
             port = Integer.parseInt(authority.substring(colonIndex + 1));
         }
-        log.info("CONNECT request received: {} -> {}:{}", authority, host, port);
+        log.debug("CONNECT request received: {} -> {}:{}", authority, host, port);
 
         if (!captureRequestFilter.shouldMitmHost(host)) {
             establishDirectTunnel(ctx, authority, host, port);
@@ -143,7 +143,7 @@ final class HttpProxyFrontendHandler extends SimpleChannelInboundHandler<FullHtt
         final SslContext serverSslContext;
         try {
             serverSslContext = certificateService.buildServerSslContext(host);
-            log.info("MITM server certificate prepared for {}", host);
+            log.debug("MITM server certificate prepared for {}", host);
         } catch (Exception ex) {
             log.error("Failed to initialize MITM certificate for {}", host, ex);
             CaptureFlow flow = sessionStore.createFlow(
@@ -175,7 +175,7 @@ final class HttpProxyFrontendHandler extends SimpleChannelInboundHandler<FullHtt
                 ctx.close();
                 return;
             }
-            log.info("CONNECT tunnel acknowledged for {}", authority);
+            log.debug("CONNECT tunnel acknowledged for {}", authority);
             ChannelPipeline pipeline = ctx.pipeline();
             pipeline.remove(HttpServerCodec.class);
             pipeline.remove(HttpObjectAggregator.class);
@@ -183,7 +183,7 @@ final class HttpProxyFrontendHandler extends SimpleChannelInboundHandler<FullHtt
             SslHandler sslHandler = serverSslContext.newHandler(ctx.alloc());
             sslHandler.handshakeFuture().addListener(handshakeFuture -> {
                 if (handshakeFuture.isSuccess()) {
-                    log.info("Client TLS handshake succeeded for {}", authority);
+                    log.debug("Client TLS handshake succeeded for {}", authority);
                 } else {
                     log.warn("Client TLS handshake failed for {}: {}", authority, summarize(handshakeFuture.cause()));
                 }
@@ -266,7 +266,7 @@ final class HttpProxyFrontendHandler extends SimpleChannelInboundHandler<FullHtt
                     ctx.close();
                     return;
                 }
-                log.info("Direct tunnel acknowledged for {}", authority);
+                log.debug("Direct tunnel acknowledged for {}", authority);
                 ChannelPipeline pipeline = ctx.pipeline();
                 pipeline.remove(HttpServerCodec.class);
                 pipeline.remove(HttpObjectAggregator.class);

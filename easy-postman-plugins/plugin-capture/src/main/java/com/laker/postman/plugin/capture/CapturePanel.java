@@ -1,6 +1,9 @@
 package com.laker.postman.plugin.capture;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.laker.postman.common.component.SearchableTextArea;
+import com.laker.postman.common.component.button.CloseButton;
+import com.laker.postman.common.component.button.CopyButton;
 import com.laker.postman.common.component.table.EnhancedTablePanel;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
@@ -8,6 +11,8 @@ import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.NotificationUtil;
 import com.laker.postman.util.UserSettingsUtil;
 import net.miginfocom.swing.MigLayout;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -24,16 +29,24 @@ import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.JToggleButton;
+import javax.swing.JTabbedPane;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.UIManager;
 import javax.swing.event.ListSelectionEvent;
+import javax.swing.border.EmptyBorder;
 import javax.swing.table.TableColumn;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.Toolkit;
+import java.awt.datatransfer.StringSelection;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -60,7 +73,25 @@ public class CapturePanel extends JPanel {
     private JTextField captureHostsField;
     private JLabel captureFilterLabel;
     private EnhancedTablePanel tablePanel;
-    private JTextArea detailArea;
+    private RSyntaxTextArea requestDetailArea;
+    private RSyntaxTextArea responseDetailArea;
+    private JTabbedPane detailTabs;
+    private JSplitPane detailSplit;
+    private JToggleButton detailToggleButton;
+    private boolean detailPanelVisible;
+    private JLabel detailMethodLabel;
+    private JLabel detailStatusLabel;
+    private JLabel detailHostLabel;
+    private JLabel detailDurationLabel;
+    private JLabel detailTimeLabel;
+    private JLabel requestPathLabel;
+    private JLabel requestHeadersLabel;
+    private JLabel requestBytesLabel;
+    private JLabel requestTypeLabel;
+    private JLabel responseStatusLabel;
+    private JLabel responseHeadersLabel;
+    private JLabel responseBytesLabel;
+    private JLabel responseTypeLabel;
     private boolean operationInProgress;
 
     public CapturePanel() {
@@ -103,6 +134,14 @@ public class CapturePanel extends JPanel {
         syncSystemProxyCheckBox = new JCheckBox(t(MessageKeys.TOOLBOX_CAPTURE_SYNC_MACOS_PROXY), defaultSyncSystemProxy());
         syncSystemProxyCheckBox.setOpaque(false);
         syncSystemProxyCheckBox.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_SYNC_PROXY_TOOLTIP));
+        detailToggleButton = new JToggleButton();
+        detailToggleButton.setIcon(IconUtil.createThemed("icons/detail.svg", 16, 16));
+        detailToggleButton.setSelectedIcon(IconUtil.createColored("icons/detail.svg", 16, 16, ModernColors.PRIMARY));
+        detailToggleButton.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL));
+        detailToggleButton.setSelected(false);
+        detailToggleButton.setPreferredSize(new Dimension(28, 28));
+        detailToggleButton.setFocusable(false);
+        detailToggleButton.putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
         initCaActionsMenu();
 
         toggleProxyButton.addActionListener(e -> {
@@ -114,6 +153,14 @@ public class CapturePanel extends JPanel {
         });
         clearButton.addActionListener(e -> proxyService.sessionStore().clear());
         caActionsButton.addActionListener(e -> caActionsMenu.show(caActionsButton, 0, caActionsButton.getHeight()));
+        detailToggleButton.addActionListener(e -> {
+            detailPanelVisible = detailToggleButton.isSelected();
+            if (detailPanelVisible) {
+                showDetailPanel();
+            } else {
+                hideDetailPanel();
+            }
+        });
 
         captureFilterLabel = new JLabel();
         captureFilterLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
@@ -124,6 +171,7 @@ public class CapturePanel extends JPanel {
         panel.add(portSpinner, "wmin 90");
         panel.add(toggleProxyButton, "wmin 110");
         panel.add(clearButton);
+        panel.add(detailToggleButton);
         panel.add(syncSystemProxyCheckBox);
         panel.add(caActionsButton, "wmin 68");
         panel.add(new JLabel(), "push, wrap");
@@ -139,21 +187,57 @@ public class CapturePanel extends JPanel {
         table.getSelectionModel().addListSelectionListener(this::handleSelectionChanged);
         hideIdColumn(table);
 
-        detailArea = new JTextArea();
-        detailArea.setEditable(false);
-        detailArea.setLineWrap(false);
-        detailArea.setWrapStyleWord(false);
-        detailArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        detailArea.setText(t(MessageKeys.TOOLBOX_CAPTURE_IDLE_DETAILS));
+        requestDetailArea = createDetailArea();
+        responseDetailArea = createDetailArea();
+        requestDetailArea.setText(t(MessageKeys.TOOLBOX_CAPTURE_IDLE_DETAILS));
+        responseDetailArea.setText(t(MessageKeys.TOOLBOX_CAPTURE_IDLE_DETAILS));
 
-        JScrollPane detailScroll = new JScrollPane(detailArea);
-        detailScroll.setPreferredSize(new Dimension(360, 200));
+        detailTabs = new JTabbedPane(JTabbedPane.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
+        detailTabs.addTab(t(MessageKeys.TOOLBOX_CAPTURE_TAB_REQUEST), buildRequestDetailTab());
+        detailTabs.addTab(t(MessageKeys.TOOLBOX_CAPTURE_TAB_RESPONSE), buildResponseDetailTab());
+        detailTabs.setPreferredSize(new Dimension(360, 200));
 
-        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, tablePanel, detailScroll);
-        splitPane.setResizeWeight(0.68);
-        splitPane.setDividerSize(3);
-        splitPane.setContinuousLayout(true);
-        return splitPane;
+        JPanel detailHeader = new JPanel(new MigLayout("insets 4 10 4 8, fillx", "[]8[]8[]8[]push[]4[]", "[]"));
+        detailHeader.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor("Separator.foreground")));
+        detailMethodLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_METHOD) + ": -", ModernColors.INFO);
+        detailStatusLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_STATUS) + ": -", ModernColors.SUCCESS);
+        detailHostLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_HOST) + ": -", new Color(120, 80, 200));
+        detailDurationLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_DURATION) + ": -", new Color(180, 100, 0));
+        detailTimeLabel = buildChipLabel("-", null);
+        detailTimeLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
+        detailTimeLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+
+        CopyButton copyDetailButton = new CopyButton();
+        copyDetailButton.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_COPY_DETAIL));
+        copyDetailButton.addActionListener(e -> copyDetail());
+
+        CloseButton closeDetailButton = new CloseButton();
+        closeDetailButton.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_CLOSE_DETAIL));
+        closeDetailButton.addActionListener(e -> {
+            detailToggleButton.setSelected(false);
+            hideDetailPanel();
+        });
+
+        detailHeader.add(detailMethodLabel);
+        detailHeader.add(detailStatusLabel);
+        detailHeader.add(detailHostLabel);
+        detailHeader.add(detailDurationLabel);
+        detailHeader.add(detailTimeLabel);
+        detailHeader.add(copyDetailButton);
+        detailHeader.add(closeDetailButton);
+
+        JPanel detailPanel = new JPanel(new BorderLayout(0, 0));
+        detailPanel.setMinimumSize(new Dimension(0, 0));
+        detailPanel.add(detailHeader, BorderLayout.NORTH);
+        detailPanel.add(detailTabs, BorderLayout.CENTER);
+
+        detailSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, tablePanel, detailPanel);
+        detailSplit.setResizeWeight(1.0);
+        detailSplit.setDividerSize(3);
+        detailSplit.setContinuousLayout(true);
+        detailSplit.setBorder(BorderFactory.createEmptyBorder());
+        SwingUtilities.invokeLater(this::hideDetailPanel);
+        return detailSplit;
     }
 
     private void initCaActionsMenu() {
@@ -247,6 +331,9 @@ public class CapturePanel extends JPanel {
         }
         tablePanel.setData(rows);
         hideIdColumn(tablePanel.getTable());
+        if (rows.isEmpty()) {
+            clearDetail();
+        }
         updateStatus();
     }
 
@@ -257,13 +344,19 @@ public class CapturePanel extends JPanel {
         JTable table = tablePanel.getTable();
         int selectedRow = table.getSelectedRow();
         if (selectedRow < 0) {
+            clearDetail();
             return;
         }
         Object flowId = table.getValueAt(selectedRow, 0);
         CaptureFlow flow = proxyService.sessionStore().find(String.valueOf(flowId));
         if (flow != null) {
-            detailArea.setText(flow.detailText());
-            detailArea.setCaretPosition(0);
+            updateDetailHeader(flow);
+            updateDetailAreas(flow);
+            detailTabs.setSelectedIndex(0);
+            if (!detailPanelVisible) {
+                detailToggleButton.setSelected(true);
+                showDetailPanel();
+            }
         }
     }
 
@@ -411,6 +504,160 @@ public class CapturePanel extends JPanel {
     private void setOperationState(boolean busy) {
         operationInProgress = busy;
         updateStatus();
+    }
+
+    private void showDetailPanel() {
+        detailPanelVisible = true;
+        int totalHeight = detailSplit.getHeight();
+        int location = totalHeight > 0 ? (int) (totalHeight * 0.60) : 320;
+        detailSplit.setDividerLocation(location);
+    }
+
+    private void hideDetailPanel() {
+        detailPanelVisible = false;
+        detailSplit.setDividerLocation(1.0);
+    }
+
+    private void clearDetail() {
+        detailMethodLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_METHOD) + ": -");
+        detailStatusLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_STATUS) + ": -");
+        detailHostLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_HOST) + ": -");
+        detailDurationLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_DURATION) + ": -");
+        detailTimeLabel.setText("-");
+        requestPathLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_PATH) + ": -");
+        requestHeadersLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_HEADERS) + ": -");
+        requestBytesLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_BYTES) + ": -");
+        requestTypeLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_CONTENT_TYPE) + ": -");
+        responseStatusLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_STATUS) + ": -");
+        responseHeadersLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_HEADERS) + ": -");
+        responseBytesLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_BYTES) + ": -");
+        responseTypeLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_CONTENT_TYPE) + ": -");
+        requestDetailArea.setText(t(MessageKeys.TOOLBOX_CAPTURE_IDLE_DETAILS));
+        requestDetailArea.setCaretPosition(0);
+        requestDetailArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+        responseDetailArea.setText(t(MessageKeys.TOOLBOX_CAPTURE_IDLE_DETAILS));
+        responseDetailArea.setCaretPosition(0);
+        responseDetailArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+        detailTabs.setSelectedIndex(0);
+    }
+
+    private void updateDetailHeader(CaptureFlow flow) {
+        detailMethodLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_METHOD) + ": " + flow.method());
+        detailStatusLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_STATUS) + ": " + flow.statusDisplayText());
+        detailHostLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_HOST) + ": " + flow.host());
+        detailDurationLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_DURATION) + ": " + flow.durationMs() + " ms");
+        detailTimeLabel.setText(flow.startedAtText());
+        requestPathLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_PATH) + ": " + displayValue(flow.path()));
+        requestHeadersLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_HEADERS) + ": " + flow.requestHeaderCount());
+        requestBytesLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_BYTES) + ": " + flow.requestSize());
+        requestTypeLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_CONTENT_TYPE) + ": " + displayValue(flow.requestContentType()));
+        responseStatusLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_STATUS) + ": " + flow.statusDisplayText());
+        responseHeadersLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_HEADERS) + ": " + flow.responseHeaderCount());
+        responseBytesLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_BYTES) + ": " + flow.responseSize());
+        responseTypeLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_CONTENT_TYPE) + ": " + displayValue(flow.responseContentType()));
+    }
+
+    private void copyDetail() {
+        RSyntaxTextArea activeArea = detailTabs.getSelectedIndex() == 0 ? requestDetailArea : responseDetailArea;
+        String detailText = activeArea.getText().trim();
+        if (detailText.isEmpty()) {
+            return;
+        }
+        Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(detailText), null);
+        NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_COPIED));
+    }
+
+    private RSyntaxTextArea createDetailArea() {
+        RSyntaxTextArea area = new RSyntaxTextArea();
+        area.setEditable(false);
+        area.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+        area.setCodeFoldingEnabled(true);
+        area.setAntiAliasingEnabled(true);
+        area.setHighlightCurrentLine(true);
+        area.setLineWrap(false);
+        area.setWrapStyleWord(false);
+        area.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        return area;
+    }
+
+    private JComponent buildRequestDetailTab() {
+        requestPathLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_PATH) + ": -", ModernColors.INFO);
+        requestHeadersLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_HEADERS) + ": -", new Color(120, 80, 200));
+        requestBytesLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_BYTES) + ": -", new Color(20, 150, 100));
+        requestTypeLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_CONTENT_TYPE) + ": -", new Color(180, 100, 0));
+        return buildDetailTabPanel(requestPathLabel, requestHeadersLabel, requestBytesLabel, requestTypeLabel, requestDetailArea);
+    }
+
+    private JComponent buildResponseDetailTab() {
+        responseStatusLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_STATUS) + ": -", ModernColors.SUCCESS);
+        responseHeadersLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_HEADERS) + ": -", new Color(120, 80, 200));
+        responseBytesLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_BYTES) + ": -", new Color(20, 150, 100));
+        responseTypeLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_CONTENT_TYPE) + ": -", new Color(180, 100, 0));
+        return buildDetailTabPanel(responseStatusLabel, responseHeadersLabel, responseBytesLabel, responseTypeLabel, responseDetailArea);
+    }
+
+    private JComponent buildDetailTabPanel(JLabel first,
+                                           JLabel second,
+                                           JLabel third,
+                                           JLabel fourth,
+                                           RSyntaxTextArea detailArea) {
+        JPanel panel = new JPanel(new BorderLayout(0, 0));
+        JPanel header = new JPanel(new MigLayout("insets 6 8 4 8, fillx, novisualpadding", "[]8[]8[]8[]push", "[]"));
+        header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor("Separator.foreground")));
+        header.add(first);
+        header.add(second);
+        header.add(third);
+        header.add(fourth, "growx");
+
+        SearchableTextArea searchableDetail = new SearchableTextArea(detailArea, false);
+        searchableDetail.setLineNumbersEnabled(false);
+        panel.add(header, BorderLayout.NORTH);
+        panel.add(searchableDetail, BorderLayout.CENTER);
+        return panel;
+    }
+
+    private void updateDetailAreas(CaptureFlow flow) {
+        updateDetailArea(requestDetailArea, flow.requestDetailText());
+        updateDetailArea(responseDetailArea, flow.responseDetailText());
+    }
+
+    private void updateDetailArea(RSyntaxTextArea area, String text) {
+        area.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+        area.setText(text == null ? "" : text);
+        area.setCaretPosition(0);
+    }
+
+    private String displayValue(String value) {
+        return value == null || value.isBlank() ? "-" : value;
+    }
+
+    private JLabel buildChipLabel(String text, Color bgColor) {
+        JLabel label = new JLabel(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                if (bgColor != null) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setColor(new Color(bgColor.getRed(), bgColor.getGreen(), bgColor.getBlue(), 30));
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                    g2.setColor(new Color(bgColor.getRed(), bgColor.getGreen(), bgColor.getBlue(), 140));
+                    g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
+                    g2.dispose();
+                }
+                super.paintComponent(g);
+            }
+        };
+        label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        if (bgColor != null) {
+            label.setForeground(ModernColors.isDarkTheme()
+                    ? new Color(Math.min(bgColor.getRed() + 80, 255),
+                    Math.min(bgColor.getGreen() + 80, 255),
+                    Math.min(bgColor.getBlue() + 80, 255))
+                    : bgColor.darker());
+        }
+        label.setBorder(new EmptyBorder(2, 6, 2, 6));
+        label.setOpaque(false);
+        return label;
     }
 
     private String[] columnNames() {

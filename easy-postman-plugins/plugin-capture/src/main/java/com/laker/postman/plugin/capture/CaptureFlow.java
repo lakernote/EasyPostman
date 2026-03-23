@@ -1,5 +1,7 @@
 package com.laker.postman.plugin.capture;
 
+import com.laker.postman.util.JsonUtil;
+
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -68,12 +70,40 @@ final class CaptureFlow {
         return path;
     }
 
+    String url() {
+        return url;
+    }
+
     int statusCode() {
         return statusCode;
     }
 
     String statusText() {
         return statusText;
+    }
+
+    String startedAtText() {
+        return new Date(startedAt).toString();
+    }
+
+    String statusDisplayText() {
+        return statusCode > 0 ? statusCode + " " + statusText : t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_PENDING);
+    }
+
+    int requestHeaderCount() {
+        return requestHeaders.size();
+    }
+
+    int responseHeaderCount() {
+        return responseHeaders.size();
+    }
+
+    String requestContentType() {
+        return headerValueIgnoreCase(requestHeaders, "Content-Type");
+    }
+
+    String responseContentType() {
+        return headerValueIgnoreCase(responseHeaders, "Content-Type");
     }
 
     long durationMs() {
@@ -158,6 +188,36 @@ final class CaptureFlow {
         return builder.toString();
     }
 
+    String requestDetailText() {
+        StringBuilder builder = new StringBuilder();
+        appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_METHOD), method);
+        appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_URL), url);
+        appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_TIME), new Date(startedAt).toString());
+        builder.append('\n').append(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_REQUEST_HEADERS)).append('\n');
+        builder.append("---------------\n");
+        appendHeaders(builder, requestHeaders);
+        builder.append('\n').append(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_REQUEST_BODY)).append('\n');
+        builder.append("------------\n");
+        builder.append(requestBodyPreview()).append('\n');
+        return builder.toString();
+    }
+
+    String responseDetailText() {
+        StringBuilder builder = new StringBuilder();
+        appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_STATUS), statusDisplayText());
+        appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_DURATION), durationMs() + " ms");
+        if (!errorMessage.isBlank()) {
+            appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_ERROR), errorMessage);
+        }
+        builder.append('\n').append(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_RESPONSE_HEADERS)).append('\n');
+        builder.append("----------------\n");
+        appendHeaders(builder, responseHeaders);
+        builder.append('\n').append(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_RESPONSE_BODY)).append('\n');
+        builder.append("-------------\n");
+        builder.append(responseBodyPreview()).append('\n');
+        return builder.toString();
+    }
+
     private static void appendLine(StringBuilder builder, String key, String value) {
         builder.append(key).append(": ").append(value == null ? "" : value).append('\n');
     }
@@ -168,6 +228,18 @@ final class CaptureFlow {
             return;
         }
         headers.forEach((name, value) -> builder.append(name).append(": ").append(value).append('\n'));
+    }
+
+    private static String headerValueIgnoreCase(Map<String, String> headers, String name) {
+        if (headers == null || headers.isEmpty()) {
+            return "";
+        }
+        for (Map.Entry<String, String> entry : headers.entrySet()) {
+            if (name.equalsIgnoreCase(entry.getKey())) {
+                return entry.getValue() == null ? "" : entry.getValue();
+            }
+        }
+        return "";
     }
 
     private static byte[] trimPreview(byte[] bytes) {
@@ -188,6 +260,10 @@ final class CaptureFlow {
         }
         String text = new String(bytes, StandardCharsets.UTF_8);
         if (looksPrintable(text)) {
+            if (JsonUtil.isTypeJSON(text)) {
+                String pretty = JsonUtil.toJsonPrettyStr(text);
+                return pretty == null ? text : pretty;
+            }
             return text;
         }
         StringBuilder hex = new StringBuilder();

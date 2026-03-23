@@ -17,6 +17,12 @@ public final class MessageKeys {
     public static final String TOOLBOX_CAPTURE_STOPPING = "toolbox.capture.stopping";
     public static final String TOOLBOX_CAPTURE_CLEAR = "toolbox.capture.clear";
     public static final String TOOLBOX_CAPTURE_CA_ACTIONS = "toolbox.capture.ca_actions";
+    public static final String TOOLBOX_CAPTURE_DETAIL = "toolbox.capture.detail";
+    public static final String TOOLBOX_CAPTURE_CLOSE_DETAIL = "toolbox.capture.close_detail";
+    public static final String TOOLBOX_CAPTURE_COPY_DETAIL = "toolbox.capture.copy_detail";
+    public static final String TOOLBOX_CAPTURE_DETAIL_COPIED = "toolbox.capture.detail_copied";
+    public static final String TOOLBOX_CAPTURE_TAB_REQUEST = "toolbox.capture.tab.request";
+    public static final String TOOLBOX_CAPTURE_TAB_RESPONSE = "toolbox.capture.tab.response";
     public static final String TOOLBOX_CAPTURE_INSTALL_CA = "toolbox.capture.install_ca";
     public static final String TOOLBOX_CAPTURE_OPEN_CA = "toolbox.capture.open_ca";
     public static final String TOOLBOX_CAPTURE_COPY_CA_PATH = "toolbox.capture.copy_ca_path";
@@ -82,6 +88,9 @@ public final class MessageKeys {
     public static final String TOOLBOX_CAPTURE_DETAIL_URL = "toolbox.capture.detail.url";
     public static final String TOOLBOX_CAPTURE_DETAIL_STATUS = "toolbox.capture.detail.status";
     public static final String TOOLBOX_CAPTURE_DETAIL_DURATION = "toolbox.capture.detail.duration";
+    public static final String TOOLBOX_CAPTURE_DETAIL_HEADERS = "toolbox.capture.detail.headers";
+    public static final String TOOLBOX_CAPTURE_DETAIL_BYTES = "toolbox.capture.detail.bytes";
+    public static final String TOOLBOX_CAPTURE_DETAIL_CONTENT_TYPE = "toolbox.capture.detail.content_type";
     public static final String TOOLBOX_CAPTURE_DETAIL_ERROR = "toolbox.capture.detail.error";
     public static final String TOOLBOX_CAPTURE_DETAIL_REQUEST_HEADERS = "toolbox.capture.detail.request_headers";
     public static final String TOOLBOX_CAPTURE_DETAIL_REQUEST_BODY = "toolbox.capture.detail.request_body";

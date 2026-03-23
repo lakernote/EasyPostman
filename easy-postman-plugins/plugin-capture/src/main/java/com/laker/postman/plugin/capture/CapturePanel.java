@@ -23,6 +23,7 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
 import javax.swing.UIManager;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.table.TableColumn;
@@ -35,20 +36,20 @@ import java.awt.datatransfer.StringSelection;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.laker.postman.plugin.capture.CaptureI18n.t;
+
 public class CapturePanel extends JPanel {
     private static final String SETTING_BIND_HOST = "plugin.capture.bindHost";
     private static final String SETTING_BIND_PORT = "plugin.capture.bindPort";
     private static final String SETTING_SYNC_SYSTEM_PROXY = "plugin.capture.syncSystemProxy";
     private static final String SETTING_CAPTURE_HOST_FILTER = "plugin.capture.hostFilter";
-    private static final String[] COLUMNS = {"ID", "Time", "Method", "Host", "Path", "Status", "Duration(ms)", "Req(bytes)", "Resp(bytes)"};
 
     private final CaptureProxyService proxyService = new CaptureProxyService();
     private final MacCertificateInstallService certificateInstallService = new MacCertificateInstallService();
 
     private JTextField hostField;
     private JSpinner portSpinner;
-    private JButton startButton;
-    private JButton stopButton;
+    private JButton toggleProxyButton;
     private JButton clearButton;
     private JButton installCaButton;
     private JButton openCaButton;
@@ -62,6 +63,7 @@ public class CapturePanel extends JPanel {
     private JLabel captureFilterLabel;
     private EnhancedTablePanel tablePanel;
     private JTextArea detailArea;
+    private boolean operationInProgress;
 
     public CapturePanel() {
         initUI();
@@ -93,20 +95,24 @@ public class CapturePanel extends JPanel {
         ((JSpinner.DefaultEditor) portSpinner.getEditor()).getTextField().setColumns(6);
         captureHostsField = new JTextField(defaultCaptureHostFilter());
         captureHostsField.setColumns(28);
-        captureHostsField.setToolTipText("Only capture these hosts. Use commas or spaces, for example: baidu.com, google.com");
+        captureHostsField.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_HOSTS_TOOLTIP));
 
-        startButton = new JButton("Start", IconUtil.createThemed("icons/start.svg", 16, 16));
-        stopButton = new JButton("Stop", IconUtil.createThemed("icons/stop.svg", 16, 16));
-        clearButton = new JButton("Clear", IconUtil.createThemed("icons/clear.svg", 16, 16));
-        installCaButton = new JButton("Install CA");
-        openCaButton = new JButton("Open CA");
-        copyCaPathButton = new JButton("Copy CA Path", IconUtil.createThemed("icons/copy.svg", 16, 16));
-        syncSystemProxyCheckBox = new JCheckBox("Sync macOS Proxy", defaultSyncSystemProxy());
+        toggleProxyButton = new JButton();
+        clearButton = new JButton(t(MessageKeys.TOOLBOX_CAPTURE_CLEAR), IconUtil.createThemed("icons/clear.svg", 16, 16));
+        installCaButton = new JButton(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA));
+        openCaButton = new JButton(t(MessageKeys.TOOLBOX_CAPTURE_OPEN_CA));
+        copyCaPathButton = new JButton(t(MessageKeys.TOOLBOX_CAPTURE_COPY_CA_PATH), IconUtil.createThemed("icons/copy.svg", 16, 16));
+        syncSystemProxyCheckBox = new JCheckBox(t(MessageKeys.TOOLBOX_CAPTURE_SYNC_MACOS_PROXY), defaultSyncSystemProxy());
         syncSystemProxyCheckBox.setOpaque(false);
-        syncSystemProxyCheckBox.setToolTipText("Automatically apply the capture proxy to macOS system proxy settings");
+        syncSystemProxyCheckBox.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_SYNC_PROXY_TOOLTIP));
 
-        startButton.addActionListener(e -> startProxy());
-        stopButton.addActionListener(e -> stopProxy());
+        toggleProxyButton.addActionListener(e -> {
+            if (proxyService.isRunning()) {
+                stopProxy();
+            } else {
+                startProxy();
+            }
+        });
         clearButton.addActionListener(e -> proxyService.sessionStore().clear());
         installCaButton.addActionListener(e -> installCa());
         openCaButton.addActionListener(e -> openCa());
@@ -126,28 +132,27 @@ public class CapturePanel extends JPanel {
         captureFilterLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         captureFilterLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
 
-        panel.add(new JLabel("Bind"), "gapright 8");
+        panel.add(new JLabel(t(MessageKeys.TOOLBOX_CAPTURE_BIND)), "gapright 8");
         panel.add(hostField, "wmin 180");
         panel.add(portSpinner, "wmin 90");
-        panel.add(startButton);
-        panel.add(stopButton);
+        panel.add(toggleProxyButton, "wmin 110");
         panel.add(clearButton);
         panel.add(syncSystemProxyCheckBox);
         panel.add(installCaButton);
         panel.add(openCaButton);
         panel.add(copyCaPathButton);
         panel.add(statusLabel, "gapleft 12, wrap");
-        panel.add(new JLabel("Capture Hosts"), "gapright 8");
+        panel.add(new JLabel(t(MessageKeys.TOOLBOX_CAPTURE_CAPTURE_HOSTS)), "gapright 8");
         panel.add(captureHostsField, "span 8, growx, wrap");
         panel.add(caPathLabel, "span, growx, wrap");
         panel.add(caTrustLabel, "span, split 2");
         panel.add(systemProxyLabel, "gapleft 16, wrap");
-        panel.add(captureFilterLabel, "span");
+        panel.add(captureFilterLabel, "span, growx");
         return panel;
     }
 
     private JComponent buildContent() {
-        tablePanel = new EnhancedTablePanel(COLUMNS);
+        tablePanel = new EnhancedTablePanel(columnNames());
         JTable table = tablePanel.getTable();
         table.getSelectionModel().addListSelectionListener(this::handleSelectionChanged);
         hideIdColumn(table);
@@ -157,20 +162,7 @@ public class CapturePanel extends JPanel {
         detailArea.setLineWrap(false);
         detailArea.setWrapStyleWord(false);
         detailArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        detailArea.setText("""
-                Capture proxy is idle.
-
-                MVP scope:
-                - HTTP explicit proxy
-                - HTTPS CONNECT + MITM
-                - request / response headers
-                - body preview
-                - timing and sizes
-
-                Not implemented yet:
-                - WebSocket frames
-                - SSE event stream parsing
-                """);
+        detailArea.setText(t(MessageKeys.TOOLBOX_CAPTURE_IDLE_DETAILS));
 
         JScrollPane detailScroll = new JScrollPane(detailArea);
         detailScroll.setPreferredSize(new Dimension(360, 200));
@@ -185,42 +177,75 @@ public class CapturePanel extends JPanel {
     private void startProxy() {
         String host = hostField.getText().trim();
         if (host.isBlank()) {
-            NotificationUtil.showWarning("Bind host is required");
+            NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_CAPTURE_WARN_BIND_HOST_REQUIRED));
+            return;
+        }
+        if (operationInProgress) {
             return;
         }
         int port = ((Number) portSpinner.getValue()).intValue();
+        boolean syncSystemProxy = syncSystemProxyCheckBox.isSelected();
         String captureHostFilter = captureHostsField.getText().trim();
-        try {
-            boolean syncSystemProxy = syncSystemProxyCheckBox.isSelected();
-            proxyService.start(host, port, syncSystemProxy, captureHostFilter);
-            UserSettingsUtil.set(SETTING_BIND_HOST, host);
-            UserSettingsUtil.set(SETTING_BIND_PORT, port);
-            UserSettingsUtil.set(SETTING_SYNC_SYSTEM_PROXY, syncSystemProxy);
-            UserSettingsUtil.set(SETTING_CAPTURE_HOST_FILTER, captureHostFilter);
-            updateStatus();
-            if (proxyService.isSystemProxySynced()) {
-                NotificationUtil.showSuccess("Capture proxy started and macOS proxy synced to " + host + ":" + port);
-            } else {
-                NotificationUtil.showSuccess("Capture proxy started on " + host + ":" + port);
+
+        setOperationState(true);
+        SwingWorker<StartResult, Void> worker = new SwingWorker<>() {
+            @Override
+            protected StartResult doInBackground() throws Exception {
+                proxyService.start(host, port, syncSystemProxy, captureHostFilter);
+                UserSettingsUtil.set(SETTING_BIND_HOST, host);
+                UserSettingsUtil.set(SETTING_BIND_PORT, port);
+                UserSettingsUtil.set(SETTING_SYNC_SYSTEM_PROXY, syncSystemProxy);
+                UserSettingsUtil.set(SETTING_CAPTURE_HOST_FILTER, captureHostFilter);
+                return new StartResult(host, port, proxyService.isSystemProxySynced());
             }
-        } catch (Exception ex) {
-            NotificationUtil.showError("Failed to start capture proxy: " + ex.getMessage());
-            updateStatus();
-        }
+
+            @Override
+            protected void done() {
+                setOperationState(false);
+                try {
+                    StartResult result = get();
+                    updateStatus();
+                    NotificationUtil.showSuccess(result.systemProxySynced()
+                            ? t(MessageKeys.TOOLBOX_CAPTURE_START_SUCCESS_SYNCED, result.host(), result.port())
+                            : t(MessageKeys.TOOLBOX_CAPTURE_START_SUCCESS, result.host(), result.port()));
+                } catch (Exception ex) {
+                    updateStatus();
+                    NotificationUtil.showError(t(MessageKeys.TOOLBOX_CAPTURE_START_FAILED, rootMessage(ex)));
+                }
+            }
+        };
+        worker.execute();
     }
 
     private void stopProxy() {
-        try {
-            boolean synced = proxyService.isSystemProxySynced();
-            proxyService.stop();
-            updateStatus();
-            NotificationUtil.showInfo(synced
-                    ? "Capture proxy stopped and macOS proxy restored"
-                    : "Capture proxy stopped");
-        } catch (Exception ex) {
-            updateStatus();
-            NotificationUtil.showError("Failed to stop capture proxy cleanly: " + ex.getMessage());
+        if (operationInProgress) {
+            return;
         }
+        setOperationState(true);
+        SwingWorker<Boolean, Void> worker = new SwingWorker<>() {
+            @Override
+            protected Boolean doInBackground() {
+                boolean synced = proxyService.isSystemProxySynced();
+                proxyService.stop();
+                return synced;
+            }
+
+            @Override
+            protected void done() {
+                setOperationState(false);
+                try {
+                    boolean synced = get();
+                    updateStatus();
+                    NotificationUtil.showInfo(synced
+                            ? t(MessageKeys.TOOLBOX_CAPTURE_STOP_SUCCESS_SYNCED)
+                            : t(MessageKeys.TOOLBOX_CAPTURE_STOP_SUCCESS));
+                } catch (Exception ex) {
+                    updateStatus();
+                    NotificationUtil.showError(t(MessageKeys.TOOLBOX_CAPTURE_STOP_FAILED, rootMessage(ex)));
+                }
+            }
+        };
+        worker.execute();
     }
 
     private void refreshTable() {
@@ -252,19 +277,20 @@ public class CapturePanel extends JPanel {
 
     private void updateStatus() {
         boolean running = proxyService.isRunning();
-        startButton.setEnabled(!running);
-        stopButton.setEnabled(running);
-        hostField.setEnabled(!running);
-        portSpinner.setEnabled(!running);
-        captureHostsField.setEnabled(!running);
-        syncSystemProxyCheckBox.setEnabled(!running && proxyService.isSystemProxySyncSupported());
+        boolean busy = operationInProgress;
+        updateToggleProxyButton(running, busy);
+        clearButton.setEnabled(!busy);
+        hostField.setEnabled(!busy && !running);
+        portSpinner.setEnabled(!busy && !running);
+        captureHostsField.setEnabled(!busy && !running);
+        syncSystemProxyCheckBox.setEnabled(!busy && !running && proxyService.isSystemProxySyncSupported());
 
         if (running) {
             statusLabel.setForeground(ModernColors.SUCCESS);
-            statusLabel.setText("RUNNING  " + proxyService.listenHost() + ":" + proxyService.listenPort());
+            statusLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_STATUS_RUNNING, proxyService.listenHost(), proxyService.listenPort()));
         } else {
             statusLabel.setForeground(new Color(0xB85C00));
-            statusLabel.setText("STOPPED");
+            statusLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_STATUS_STOPPED));
         }
         captureFilterLabel.setText(running
                 ? proxyService.captureFilterSummary()
@@ -272,16 +298,16 @@ public class CapturePanel extends JPanel {
 
         try {
             String caPath = proxyService.rootCertificatePath();
-            caPathLabel.setText("Root CA: " + caPath);
+            caPathLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_CA_PATH, caPath));
             caPathLabel.setToolTipText(caPath);
             updateCaTrustStatus(caPath);
-            copyCaPathButton.setEnabled(true);
-            openCaButton.setEnabled(certificateInstallService.isSupported());
-            installCaButton.setEnabled(certificateInstallService.isSupported());
+            copyCaPathButton.setEnabled(!busy);
+            openCaButton.setEnabled(!busy && certificateInstallService.isSupported());
+            installCaButton.setEnabled(!busy && certificateInstallService.isSupported());
         } catch (Exception ex) {
-            caPathLabel.setText("Root CA: unavailable");
+            caPathLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_CA_PATH_UNAVAILABLE));
             caPathLabel.setToolTipText(ex.getMessage());
-            caTrustLabel.setText("CA Trust: unknown");
+            caTrustLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_CA_TRUST_UNKNOWN));
             caTrustLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
             caTrustLabel.setToolTipText(ex.getMessage());
             copyCaPathButton.setEnabled(false);
@@ -290,19 +316,21 @@ public class CapturePanel extends JPanel {
         }
 
         if (!proxyService.isSystemProxySyncSupported()) {
-            systemProxyLabel.setText("System proxy: unsupported on this OS");
+            systemProxyLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_SYSTEM_PROXY_UNSUPPORTED));
             syncSystemProxyCheckBox.setSelected(false);
-            syncSystemProxyCheckBox.setToolTipText("System proxy sync is only supported on macOS");
-            installCaButton.setToolTipText("CA install helper is only supported on macOS");
-            openCaButton.setToolTipText("CA install helper is only supported on macOS");
-            caTrustLabel.setText("CA Trust: macOS only");
+            syncSystemProxyCheckBox.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_SYNC_PROXY_TOOLTIP_UNSUPPORTED));
+            installCaButton.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_TOOLTIP_UNSUPPORTED));
+            openCaButton.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_OPEN_CA_TOOLTIP_UNSUPPORTED));
+            caTrustLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_CA_TRUST_MACOS_ONLY));
             caTrustLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
-            caTrustLabel.setToolTipText("CA trust verification is only supported on macOS");
+            caTrustLabel.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_CA_TRUST_TOOLTIP_MACOS_ONLY));
         } else {
-            systemProxyLabel.setText(proxyService.systemProxyStatus());
-            syncSystemProxyCheckBox.setToolTipText("Automatically apply the capture proxy to macOS system proxy settings");
-            installCaButton.setToolTipText("Install the generated root CA into macOS keychains and request admin approval if browser trust is not effective");
-            openCaButton.setToolTipText("Open the generated root CA certificate file");
+            systemProxyLabel.setText(proxyService.isSystemProxySynced()
+                    ? t(MessageKeys.TOOLBOX_CAPTURE_SYSTEM_PROXY_SYNCED, proxyService.listenHost(), proxyService.listenPort())
+                    : t(MessageKeys.TOOLBOX_CAPTURE_SYSTEM_PROXY_MANUAL));
+            syncSystemProxyCheckBox.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_SYNC_PROXY_TOOLTIP));
+            installCaButton.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_TOOLTIP));
+            openCaButton.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_OPEN_CA_TOOLTIP));
         }
     }
 
@@ -340,9 +368,9 @@ public class CapturePanel extends JPanel {
         try {
             String caPath = proxyService.rootCertificatePath();
             Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(caPath), null);
-            NotificationUtil.showSuccess("Root CA path copied");
+            NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_CAPTURE_COPY_CA_PATH_SUCCESS));
         } catch (Exception ex) {
-            NotificationUtil.showError("Failed to copy root CA path: " + ex.getMessage());
+            NotificationUtil.showError(t(MessageKeys.TOOLBOX_CAPTURE_COPY_CA_PATH_FAILED, ex.getMessage()));
         }
     }
 
@@ -350,9 +378,9 @@ public class CapturePanel extends JPanel {
         try {
             String caPath = proxyService.rootCertificatePath();
             certificateInstallService.openCertificate(caPath);
-            NotificationUtil.showInfo("Root CA opened");
+            NotificationUtil.showInfo(t(MessageKeys.TOOLBOX_CAPTURE_OPEN_CA_SUCCESS));
         } catch (Exception ex) {
-            NotificationUtil.showError("Failed to open root CA: " + ex.getMessage());
+            NotificationUtil.showError(t(MessageKeys.TOOLBOX_CAPTURE_OPEN_CA_FAILED, ex.getMessage()));
         }
     }
 
@@ -380,45 +408,34 @@ public class CapturePanel extends JPanel {
             updateStatus();
             certificateInstallService.openKeychainAccess();
             if (trustStatus.trusted()) {
-                String removedMessage = removed > 0
-                        ? "Removed " + removed + " old CA entr" + (removed == 1 ? "y" : "ies") + " and installed the current root CA"
-                        : "Root CA installed and trusted in macOS";
+                String removedMessage = removed > 1
+                        ? t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_REMOVED_MULTI, removed)
+                        : removed == 1
+                        ? t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_REMOVED_SINGLE)
+                        : t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_REMOVED_NONE);
                 if (systemInstallAttempted) {
-                    NotificationUtil.showSuccess(removedMessage + " after system-level trust approval");
+                    NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_SUCCESS_SYSTEM, removedMessage));
                 } else if (loginInstallAttempted) {
-                    NotificationUtil.showSuccess(removedMessage + " in the login keychain");
+                    NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_SUCCESS_LOGIN, removedMessage));
                 } else {
                     NotificationUtil.showSuccess(removedMessage);
                 }
             } else if (trustStatus.installed()) {
                 certificateInstallService.openCertificate(caPath);
                 showManualTrustGuide(caPath, trustStatus.detail());
-                NotificationUtil.showWarning("Root CA is installed, but macOS trust is still not effective. In Keychain Access, confirm the certificate is trusted for SSL.");
+                NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_WARN_TRUST));
             } else {
                 certificateInstallService.openCertificate(caPath);
                 showManualTrustGuide(caPath, trustStatus.detail());
-                NotificationUtil.showWarning("Root CA install finished, but the certificate is still not visible in macOS keychains.");
+                NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_WARN_VISIBLE));
             }
         } catch (Exception ex) {
-            NotificationUtil.showError("Failed to install root CA: " + ex.getMessage());
+            NotificationUtil.showError(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_FAILED, ex.getMessage()));
         }
     }
 
     private void showManualTrustGuide(String caPath, String detail) {
-        JTextArea guide = new JTextArea("""
-                EasyPostman could not make the CA trusted automatically.
-
-                JMeter-style fallback on macOS:
-
-                1. In Keychain Access, import/open the certificate shown below.
-                2. Prefer adding it to the System keychain if macOS asks.
-                3. Open the certificate entry, expand Trust, and set:
-                   Secure Sockets Layer (SSL) -> Always Trust
-                4. Close the dialog and enter your macOS password if prompted.
-                5. Fully restart the browser and test HTTPS again.
-
-                Certificate path:
-                """ + caPath + "\n\nCurrent trust status:\n" + detail);
+        JTextArea guide = new JTextArea(t(MessageKeys.TOOLBOX_CAPTURE_MANUAL_TRUST_GUIDE, caPath, detail));
         guide.setEditable(false);
         guide.setLineWrap(true);
         guide.setWrapStyleWord(true);
@@ -433,37 +450,89 @@ public class CapturePanel extends JPanel {
         JOptionPane.showMessageDialog(
                 this,
                 scrollPane,
-                "Install Root CA",
+                t(MessageKeys.TOOLBOX_CAPTURE_MANUAL_TRUST_TITLE),
                 JOptionPane.INFORMATION_MESSAGE
         );
     }
 
     private void updateCaTrustStatus(String caPath) {
         if (!certificateInstallService.isSupported()) {
-            caTrustLabel.setText("CA Trust: macOS only");
+            caTrustLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_CA_TRUST_MACOS_ONLY));
             caTrustLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
-            caTrustLabel.setToolTipText("CA trust verification is only supported on macOS");
+            caTrustLabel.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_CA_TRUST_TOOLTIP_MACOS_ONLY));
             return;
         }
         try {
             MacCertificateInstallService.CertificateTrustStatus trustStatus = certificateInstallService.trustStatus(caPath);
             caTrustLabel.setToolTipText(trustStatus.detail());
             if (trustStatus.trusted()) {
-                caTrustLabel.setText("CA Trust: trusted");
+                caTrustLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_CA_TRUST_TRUSTED));
                 caTrustLabel.setForeground(ModernColors.SUCCESS_DARK);
                 return;
             }
             if (trustStatus.installed()) {
-                caTrustLabel.setText("CA Trust: installed, verify trust");
+                caTrustLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_CA_TRUST_VERIFY));
                 caTrustLabel.setForeground(ModernColors.WARNING_DARKER);
                 return;
             }
-            caTrustLabel.setText("CA Trust: not installed");
+            caTrustLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_CA_TRUST_NOT_INSTALLED));
             caTrustLabel.setForeground(ModernColors.WARNING_DARKER);
         } catch (Exception ex) {
-            caTrustLabel.setText("CA Trust: unknown");
+            caTrustLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_CA_TRUST_UNKNOWN));
             caTrustLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
             caTrustLabel.setToolTipText(ex.getMessage());
         }
+    }
+
+    private void setOperationState(boolean busy) {
+        operationInProgress = busy;
+        updateStatus();
+    }
+
+    private String[] columnNames() {
+        return new String[]{
+                t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_ID),
+                t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_TIME),
+                t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_METHOD),
+                t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_HOST),
+                t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_PATH),
+                t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_STATUS),
+                t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_DURATION_MS),
+                t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_REQ_BYTES),
+                t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_RESP_BYTES)
+        };
+    }
+
+    private String rootMessage(Exception ex) {
+        Throwable current = ex;
+        while (current.getCause() != null) {
+            current = current.getCause();
+        }
+        return current.getMessage() == null ? ex.getMessage() : current.getMessage();
+    }
+
+    private record StartResult(String host, int port, boolean systemProxySynced) {
+    }
+
+    private void updateToggleProxyButton(boolean running, boolean busy) {
+        if (busy) {
+            if (running) {
+                toggleProxyButton.setText(t(MessageKeys.TOOLBOX_CAPTURE_STOPPING));
+                toggleProxyButton.setIcon(IconUtil.createThemed("icons/stop.svg", 16, 16));
+            } else {
+                toggleProxyButton.setText(t(MessageKeys.TOOLBOX_CAPTURE_STARTING));
+                toggleProxyButton.setIcon(IconUtil.createThemed("icons/start.svg", 16, 16));
+            }
+            toggleProxyButton.setEnabled(false);
+            return;
+        }
+        if (running) {
+            toggleProxyButton.setText(t(MessageKeys.TOOLBOX_CAPTURE_STOP));
+            toggleProxyButton.setIcon(IconUtil.createThemed("icons/stop.svg", 16, 16));
+        } else {
+            toggleProxyButton.setText(t(MessageKeys.TOOLBOX_CAPTURE_START));
+            toggleProxyButton.setIcon(IconUtil.createThemed("icons/start.svg", 16, 16));
+        }
+        toggleProxyButton.setEnabled(true);
     }
 }

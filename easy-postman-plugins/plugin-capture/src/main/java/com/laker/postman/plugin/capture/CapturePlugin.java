@@ -4,6 +4,8 @@ import com.laker.postman.plugin.api.EasyPostmanPlugin;
 import com.laker.postman.plugin.api.PluginContext;
 import com.laker.postman.plugin.api.PluginContributionSupport;
 
+import static com.laker.postman.plugin.capture.CaptureI18n.t;
+
 public class CapturePlugin implements EasyPostmanPlugin {
 
     @Override
@@ -11,10 +13,10 @@ public class CapturePlugin implements EasyPostmanPlugin {
         PluginContributionSupport.registerToolbox(
                 context,
                 "capture",
-                "Capture",
+                t(MessageKeys.TOOLBOX_CAPTURE),
                 "icons/capture.svg",
                 "toolbox.group.dev",
-                "DEV",
+                t(MessageKeys.TOOLBOX_GROUP_DEV),
                 CapturePanel::new,
                 CapturePlugin.class
         );

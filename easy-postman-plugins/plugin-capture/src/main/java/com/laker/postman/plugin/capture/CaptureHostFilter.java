@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import static com.laker.postman.plugin.capture.CaptureI18n.t;
+
 final class CaptureHostFilter {
     private final String rawValue;
     private final List<String> rules;
@@ -50,9 +52,9 @@ final class CaptureHostFilter {
 
     String summary() {
         if (rules.isEmpty()) {
-            return "Capture filter: all hosts";
+            return t(MessageKeys.TOOLBOX_CAPTURE_FILTER_ALL);
         }
-        return "Capture filter: " + String.join(", ", rules);
+        return t(MessageKeys.TOOLBOX_CAPTURE_FILTER_RULES, String.join(", ", rules));
     }
 
     private static String normalizeHost(String host) {

@@ -7,6 +7,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static com.laker.postman.plugin.capture.CaptureI18n.t;
+
 final class CaptureFlow {
     private static final AtomicLong IDS = new AtomicLong(1);
     private static final int PREVIEW_LIMIT = 64 * 1024;
@@ -106,7 +108,7 @@ final class CaptureFlow {
 
     void fail(int statusCode, String errorMessage) {
         this.statusCode = statusCode;
-        this.statusText = statusCode > 0 ? "ERROR" : "";
+        this.statusText = statusCode > 0 ? t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_ERROR_STATUS) : "";
         this.errorMessage = errorMessage == null ? "" : errorMessage;
         this.completedAt = System.currentTimeMillis();
     }
@@ -127,29 +129,30 @@ final class CaptureFlow {
 
     String detailText() {
         StringBuilder builder = new StringBuilder();
-        appendLine(builder, "ID", id);
-        appendLine(builder, "Time", new Date(startedAt).toString());
-        appendLine(builder, "Method", method);
-        appendLine(builder, "URL", url);
-        appendLine(builder, "Status", statusCode > 0 ? statusCode + " " + statusText : "PENDING");
-        appendLine(builder, "Duration", durationMs() + " ms");
+        appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_ID), id);
+        appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_TIME), new Date(startedAt).toString());
+        appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_METHOD), method);
+        appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_URL), url);
+        appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_STATUS),
+                statusCode > 0 ? statusCode + " " + statusText : t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_PENDING));
+        appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_DURATION), durationMs() + " ms");
         if (!errorMessage.isBlank()) {
-            appendLine(builder, "Error", errorMessage);
+            appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_ERROR), errorMessage);
         }
 
-        builder.append("\nRequest Headers\n");
+        builder.append('\n').append(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_REQUEST_HEADERS)).append('\n');
         builder.append("---------------\n");
         appendHeaders(builder, requestHeaders);
 
-        builder.append("\nRequest Body\n");
+        builder.append('\n').append(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_REQUEST_BODY)).append('\n');
         builder.append("------------\n");
         builder.append(requestBodyPreview()).append('\n');
 
-        builder.append("\nResponse Headers\n");
+        builder.append('\n').append(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_RESPONSE_HEADERS)).append('\n');
         builder.append("----------------\n");
         appendHeaders(builder, responseHeaders);
 
-        builder.append("\nResponse Body\n");
+        builder.append('\n').append(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_RESPONSE_BODY)).append('\n');
         builder.append("-------------\n");
         builder.append(responseBodyPreview()).append('\n');
         return builder.toString();
@@ -161,7 +164,7 @@ final class CaptureFlow {
 
     private static void appendHeaders(StringBuilder builder, Map<String, String> headers) {
         if (headers == null || headers.isEmpty()) {
-            builder.append("(empty)\n");
+            builder.append(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_EMPTY)).append('\n');
             return;
         }
         headers.forEach((name, value) -> builder.append(name).append(": ").append(value).append('\n'));
@@ -198,7 +201,7 @@ final class CaptureFlow {
             hex.append(String.format("%02X", bytes[i]));
         }
         if (bytes.length > limit) {
-            hex.append("\n... truncated ...");
+            hex.append('\n').append(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_TRUNCATED));
         }
         return hex.toString();
     }

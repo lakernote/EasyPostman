@@ -35,6 +35,8 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.UIManager;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.TableColumn;
@@ -55,7 +57,10 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 import static com.laker.postman.plugin.capture.CaptureI18n.t;
 
@@ -79,6 +84,7 @@ public class CapturePanel extends JPanel {
     private JCheckBox syncSystemProxyCheckBox;
     private JCheckBox popupSyncSystemProxyCheckBox;
     private JTextField captureHostsField;
+    private JPanel quickFilterPanel;
     private JLabel captureFilterLabel;
     private JPanel captureStatusPanel;
     private StatusChipLabel captureTrustChipLabel;
@@ -108,6 +114,8 @@ public class CapturePanel extends JPanel {
     private JLabel responseHeadersLabel;
     private JLabel responseBytesLabel;
     private JLabel responseTypeLabel;
+    private final Map<String, JToggleButton> quickFilterButtons = new LinkedHashMap<>();
+    private boolean syncingQuickFilters;
     private boolean operationInProgress;
     private CaptureFlow selectedFlow;
 
@@ -130,7 +138,7 @@ public class CapturePanel extends JPanel {
         JPanel panel = new JPanel(new MigLayout(
                 "insets 8, fillx, novisualpadding",
                 "[][grow,fill]12[]12[]6[]push[]",
-                "[][][]"));
+                "[][][][]"));
         panel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor("Separator.foreground")),
                 BorderFactory.createEmptyBorder(0, 0, 8, 0)));
@@ -146,6 +154,22 @@ public class CapturePanel extends JPanel {
         captureHostsField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT,
                 t(MessageKeys.TOOLBOX_CAPTURE_HOSTS_PLACEHOLDER));
         captureHostsField.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_HOSTS_TOOLTIP));
+        captureHostsField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                handleCaptureFilterChanged();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                handleCaptureFilterChanged();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                handleCaptureFilterChanged();
+            }
+        });
 
         toggleProxyButton = new JButton();
         clearButton = new JButton(t(MessageKeys.TOOLBOX_CAPTURE_CLEAR), IconUtil.createThemed("icons/clear.svg", 16, 16));
@@ -180,6 +204,7 @@ public class CapturePanel extends JPanel {
         captureFilterLabel = new JLabel();
         captureFilterLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         captureFilterLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        quickFilterPanel = buildQuickFilterPanel();
         captureTrustChipLabel = new StatusChipLabel();
         captureProxyChipLabel = new StatusChipLabel();
         captureStatusPanel = new JPanel(new MigLayout("insets 0, novisualpadding", "[]6[]", "[]"));
@@ -206,8 +231,10 @@ public class CapturePanel extends JPanel {
         panel.add(new JLabel(), "push, wrap");
         panel.add(new JLabel(t(MessageKeys.TOOLBOX_CAPTURE_CAPTURE_HOSTS)), "gapright 8");
         panel.add(captureHostsField, "span 6, growx, wrap");
+        panel.add(quickFilterPanel, "skip 1, span 6, growx, wrap");
         panel.add(captureFilterLabel, "span, split 2, growx");
         panel.add(captureStatusPanel, "gapleft push");
+        syncQuickFilterButtonsFromField();
         return panel;
     }
 
@@ -461,13 +488,13 @@ public class CapturePanel extends JPanel {
         hostField.setEnabled(!busy && !running);
         portSpinner.setEnabled(!busy && !running);
         captureHostsField.setEnabled(!busy && !running);
+        setQuickFiltersEnabled(!busy && !running);
         syncSystemProxyCheckBox.setEnabled(!busy && !running && proxyService.isSystemProxySyncSupported());
         popupSyncSystemProxyCheckBox.setEnabled(!busy && !running && proxyService.isSystemProxySyncSupported());
         popupSyncSystemProxyCheckBox.setSelected(syncSystemProxyCheckBox.isSelected());
 
-        captureFilterLabel.setText(running
-                ? proxyService.captureFilterSummary()
-                : CaptureRequestFilter.parse(captureHostsField.getText()).summary());
+        updateCaptureFilterSummary();
+        syncQuickFilterButtonsFromField();
         updateCaptureStatusLabel();
 
         boolean systemProxySupported = proxyService.isSystemProxySyncSupported();
@@ -492,6 +519,122 @@ public class CapturePanel extends JPanel {
             openCaMenuItem.setEnabled(!busy);
             refreshStatusButton.setEnabled(true);
         }
+    }
+
+    private void handleCaptureFilterChanged() {
+        if (syncingQuickFilters) {
+            return;
+        }
+        syncQuickFilterButtonsFromField();
+        if (!proxyService.isRunning()) {
+            updateCaptureFilterSummary();
+        }
+    }
+
+    private void updateCaptureFilterSummary() {
+        captureFilterLabel.setText(proxyService.isRunning()
+                ? proxyService.captureFilterSummary()
+                : CaptureRequestFilter.parse(captureHostsField.getText()).summary());
+    }
+
+    private JPanel buildQuickFilterPanel() {
+        JPanel panel = new JPanel(new MigLayout("insets 0, gapx 6, gapy 0, novisualpadding", "[]0[]0[]0[]0[]0[]0[]", "[]"));
+        panel.setOpaque(false);
+        addQuickFilterButton(panel, "http", t(MessageKeys.TOOLBOX_CAPTURE_QUICK_FILTER_HTTP));
+        addQuickFilterButton(panel, "https", t(MessageKeys.TOOLBOX_CAPTURE_QUICK_FILTER_HTTPS));
+        addQuickFilterButton(panel, "json", t(MessageKeys.TOOLBOX_CAPTURE_QUICK_FILTER_JSON));
+        addQuickFilterButton(panel, "image", t(MessageKeys.TOOLBOX_CAPTURE_QUICK_FILTER_IMAGE));
+        addQuickFilterButton(panel, "js", t(MessageKeys.TOOLBOX_CAPTURE_QUICK_FILTER_JS));
+        addQuickFilterButton(panel, "css", t(MessageKeys.TOOLBOX_CAPTURE_QUICK_FILTER_CSS));
+        addQuickFilterButton(panel, "api", t(MessageKeys.TOOLBOX_CAPTURE_QUICK_FILTER_API));
+        return panel;
+    }
+
+    private void addQuickFilterButton(JPanel panel, String token, String text) {
+        JToggleButton button = new QuickFilterButton(text);
+        button.addActionListener(e -> toggleQuickFilterToken(token, button.isSelected()));
+        quickFilterButtons.put(token, button);
+        panel.add(button);
+    }
+
+    private void toggleQuickFilterToken(String token, boolean selected) {
+        if (syncingQuickFilters) {
+            return;
+        }
+        List<String> tokens = new ArrayList<>(parseFilterTokens(captureHostsField.getText()));
+        removeQuickFilterToken(tokens, token);
+        if (selected) {
+            tokens.add(token);
+        }
+        syncingQuickFilters = true;
+        try {
+            captureHostsField.setText(String.join(" ", tokens));
+        } finally {
+            syncingQuickFilters = false;
+        }
+        syncQuickFilterButtonsFromField();
+        updateCaptureFilterSummary();
+    }
+
+    private void syncQuickFilterButtonsFromField() {
+        List<String> tokens = parseFilterTokens(captureHostsField.getText());
+        syncingQuickFilters = true;
+        try {
+            quickFilterButtons.forEach((token, button) -> button.setSelected(hasQuickFilterToken(tokens, token)));
+        } finally {
+            syncingQuickFilters = false;
+        }
+    }
+
+    private void setQuickFiltersEnabled(boolean enabled) {
+        quickFilterButtons.values().forEach(button -> button.setEnabled(enabled));
+    }
+
+    private List<String> parseFilterTokens(String rawValue) {
+        List<String> tokens = new ArrayList<>();
+        if (rawValue == null || rawValue.isBlank()) {
+            return tokens;
+        }
+        for (String token : rawValue.trim().split("[,;\\s\\r\\n]+")) {
+            if (token != null && !token.isBlank()) {
+                tokens.add(token.trim());
+            }
+        }
+        return tokens;
+    }
+
+    private boolean hasQuickFilterToken(List<String> tokens, String canonicalToken) {
+        for (String token : tokens) {
+            String normalized = normalizeQuickFilterToken(token);
+            if (canonicalToken.equals(normalized)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void removeQuickFilterToken(List<String> tokens, String canonicalToken) {
+        tokens.removeIf(token -> canonicalToken.equals(normalizeQuickFilterToken(token)));
+    }
+
+    private String normalizeQuickFilterToken(String token) {
+        if (token == null) {
+            return "";
+        }
+        String normalized = token.trim().toLowerCase(Locale.ROOT);
+        if (normalized.startsWith("!")) {
+            normalized = normalized.substring(1).trim();
+        }
+        return switch (normalized) {
+            case "http", "scheme:http" -> "http";
+            case "https", "scheme:https" -> "https";
+            case "json", "type:json" -> "json";
+            case "image", "img", "type:image", "type:img" -> "image";
+            case "js", "type:js" -> "js";
+            case "css", "type:css" -> "css";
+            case "api", "type:api" -> "api";
+            default -> normalized;
+        };
     }
 
     private boolean isCertificateInstallSupported() {
@@ -1038,6 +1181,75 @@ public class CapturePanel extends JPanel {
         label.setBorder(new EmptyBorder(2, 6, 2, 6));
         label.setOpaque(false);
         return label;
+    }
+
+    private static final class QuickFilterButton extends JToggleButton {
+
+        private QuickFilterButton(String text) {
+            super(text);
+            setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+            setBorder(new EmptyBorder(3, 8, 3, 8));
+            setFocusable(false);
+            setOpaque(false);
+            setContentAreaFilled(false);
+            setBorderPainted(false);
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            updateColors();
+        }
+
+        @Override
+        public void setSelected(boolean selected) {
+            super.setSelected(selected);
+            updateColors();
+        }
+
+        @Override
+        public void setEnabled(boolean enabled) {
+            super.setEnabled(enabled);
+            updateColors();
+        }
+
+        private void updateColors() {
+            Color borderColor = isSelected() ? ModernColors.PRIMARY : UIManager.getColor("Separator.foreground");
+            if (borderColor == null) {
+                borderColor = ModernColors.NEUTRAL;
+            }
+            if (!isEnabled()) {
+                setForeground(UIManager.getColor("Label.disabledForeground"));
+            } else if (isSelected()) {
+                setForeground(ModernColors.isDarkTheme()
+                        ? new Color(Math.min(borderColor.getRed() + 80, 255),
+                        Math.min(borderColor.getGreen() + 80, 255),
+                        Math.min(borderColor.getBlue() + 80, 255))
+                        : borderColor.darker());
+            } else {
+                setForeground(UIManager.getColor("Label.foreground"));
+            }
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            Color borderColor = isSelected() ? ModernColors.PRIMARY : UIManager.getColor("Separator.foreground");
+            if (borderColor == null) {
+                borderColor = ModernColors.NEUTRAL;
+            }
+            Color fillColor;
+            if (!isEnabled()) {
+                fillColor = new Color(borderColor.getRed(), borderColor.getGreen(), borderColor.getBlue(), 18);
+            } else if (isSelected()) {
+                fillColor = new Color(borderColor.getRed(), borderColor.getGreen(), borderColor.getBlue(), 40);
+            } else {
+                fillColor = new Color(borderColor.getRed(), borderColor.getGreen(), borderColor.getBlue(), 12);
+            }
+            g2.setColor(fillColor);
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+            g2.setColor(new Color(borderColor.getRed(), borderColor.getGreen(), borderColor.getBlue(), isSelected() ? 160 : 90));
+            g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+            g2.dispose();
+            super.paintComponent(g);
+        }
     }
 
     private static final class StatusChipLabel extends JLabel {

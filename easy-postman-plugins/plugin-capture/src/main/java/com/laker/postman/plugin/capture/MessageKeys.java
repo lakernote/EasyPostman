@@ -12,6 +12,13 @@ public final class MessageKeys {
     public static final String TOOLBOX_CAPTURE_CAPTURE_HOSTS = "toolbox.capture.capture_hosts";
     public static final String TOOLBOX_CAPTURE_HOSTS_PLACEHOLDER = "toolbox.capture.capture_hosts.placeholder";
     public static final String TOOLBOX_CAPTURE_HOSTS_TOOLTIP = "toolbox.capture.capture_hosts.tooltip";
+    public static final String TOOLBOX_CAPTURE_QUICK_FILTER_HTTP = "toolbox.capture.quick_filter.http";
+    public static final String TOOLBOX_CAPTURE_QUICK_FILTER_HTTPS = "toolbox.capture.quick_filter.https";
+    public static final String TOOLBOX_CAPTURE_QUICK_FILTER_JSON = "toolbox.capture.quick_filter.json";
+    public static final String TOOLBOX_CAPTURE_QUICK_FILTER_IMAGE = "toolbox.capture.quick_filter.image";
+    public static final String TOOLBOX_CAPTURE_QUICK_FILTER_JS = "toolbox.capture.quick_filter.js";
+    public static final String TOOLBOX_CAPTURE_QUICK_FILTER_CSS = "toolbox.capture.quick_filter.css";
+    public static final String TOOLBOX_CAPTURE_QUICK_FILTER_API = "toolbox.capture.quick_filter.api";
     public static final String TOOLBOX_CAPTURE_START = "toolbox.capture.start";
     public static final String TOOLBOX_CAPTURE_STOP = "toolbox.capture.stop";
     public static final String TOOLBOX_CAPTURE_STARTING = "toolbox.capture.starting";

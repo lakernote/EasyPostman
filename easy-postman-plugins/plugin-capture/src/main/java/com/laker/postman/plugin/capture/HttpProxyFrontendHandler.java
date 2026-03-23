@@ -69,7 +69,7 @@ final class HttpProxyFrontendHandler extends SimpleChannelInboundHandler<FullHtt
             return;
         }
 
-        if (!captureRequestFilter.matches(target.host, target.requestUri, target.fullUrl)) {
+        if (!captureRequestFilter.matches(target.host, target.requestUri, target.fullUrl, flattenHeaders(request.headers()))) {
             proxyHttpWithoutCapture(ctx, request, target);
             return;
         }

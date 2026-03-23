@@ -58,7 +58,7 @@ final class HttpsMitmFrontendHandler extends SimpleChannelInboundHandler<FullHtt
         String uri = request.uri() == null || request.uri().isBlank() ? "/" : request.uri();
         String fullUrl = "https://" + targetHost + (targetPort == 443 ? "" : ":" + targetPort) + uri;
 
-        if (!captureRequestFilter.matches(targetHost, uri, fullUrl)) {
+        if (!captureRequestFilter.matches(targetHost, uri, fullUrl, flattenHeaders(request.headers()))) {
             proxyHttpsWithoutCapture(ctx, request, uri, requestBody, fullUrl);
             return;
         }

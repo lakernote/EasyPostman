@@ -9,12 +9,14 @@ public final class MessageKeys {
     public static final String TOOLBOX_CAPTURE = "toolbox.capture";
     public static final String TOOLBOX_CAPTURE_BIND = "toolbox.capture.bind";
     public static final String TOOLBOX_CAPTURE_CAPTURE_HOSTS = "toolbox.capture.capture_hosts";
+    public static final String TOOLBOX_CAPTURE_HOSTS_PLACEHOLDER = "toolbox.capture.capture_hosts.placeholder";
     public static final String TOOLBOX_CAPTURE_HOSTS_TOOLTIP = "toolbox.capture.capture_hosts.tooltip";
     public static final String TOOLBOX_CAPTURE_START = "toolbox.capture.start";
     public static final String TOOLBOX_CAPTURE_STOP = "toolbox.capture.stop";
     public static final String TOOLBOX_CAPTURE_STARTING = "toolbox.capture.starting";
     public static final String TOOLBOX_CAPTURE_STOPPING = "toolbox.capture.stopping";
     public static final String TOOLBOX_CAPTURE_CLEAR = "toolbox.capture.clear";
+    public static final String TOOLBOX_CAPTURE_CA_ACTIONS = "toolbox.capture.ca_actions";
     public static final String TOOLBOX_CAPTURE_INSTALL_CA = "toolbox.capture.install_ca";
     public static final String TOOLBOX_CAPTURE_OPEN_CA = "toolbox.capture.open_ca";
     public static final String TOOLBOX_CAPTURE_COPY_CA_PATH = "toolbox.capture.copy_ca_path";

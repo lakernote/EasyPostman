@@ -36,15 +36,18 @@ final class HttpsMitmFrontendHandler extends SimpleChannelInboundHandler<FullHtt
 
     private final CaptureSessionStore sessionStore;
     private final CaptureCertificateService certificateService;
+    private final CaptureRequestFilter captureRequestFilter;
     private final String targetHost;
     private final int targetPort;
 
     HttpsMitmFrontendHandler(CaptureSessionStore sessionStore,
                              CaptureCertificateService certificateService,
+                             CaptureRequestFilter captureRequestFilter,
                              String targetHost,
                              int targetPort) {
         this.sessionStore = sessionStore;
         this.certificateService = certificateService;
+        this.captureRequestFilter = captureRequestFilter;
         this.targetHost = targetHost;
         this.targetPort = targetPort;
     }
@@ -54,6 +57,11 @@ final class HttpsMitmFrontendHandler extends SimpleChannelInboundHandler<FullHtt
         byte[] requestBody = ByteBufUtil.getBytes(request.content());
         String uri = request.uri() == null || request.uri().isBlank() ? "/" : request.uri();
         String fullUrl = "https://" + targetHost + (targetPort == 443 ? "" : ":" + targetPort) + uri;
+
+        if (!captureRequestFilter.matches(targetHost, uri, fullUrl)) {
+            proxyHttpsWithoutCapture(ctx, request, uri, requestBody, fullUrl);
+            return;
+        }
 
         CaptureFlow flow = sessionStore.createFlow(
                 request.method().name(),
@@ -108,6 +116,52 @@ final class HttpsMitmFrontendHandler extends SimpleChannelInboundHandler<FullHtt
                     log.warn("HTTPS upstream write failed: {} {} - {}", request.method(), fullUrl, summarize(writeFuture.cause()));
                     sessionStore.fail(flow.id(), HttpResponseStatus.BAD_GATEWAY.code(),
                             writeFuture.cause() == null ? "Failed to send HTTPS upstream request" : summarize(writeFuture.cause()));
+                    writeSimpleResponse(ctx, HttpResponseStatus.BAD_GATEWAY, "Failed to send HTTPS upstream request");
+                    upstreamChannel.close();
+                }
+            });
+        });
+    }
+
+    private void proxyHttpsWithoutCapture(ChannelHandlerContext ctx,
+                                          FullHttpRequest request,
+                                          String uri,
+                                          byte[] requestBody,
+                                          String fullUrl) {
+        final SslContext clientSslContext;
+        try {
+            clientSslContext = certificateService.buildClientSslContext();
+        } catch (Exception ex) {
+            log.error("Failed to build client SSL context for passthrough {}:{}", targetHost, targetPort, ex);
+            writeSimpleResponse(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR, summarize(ex));
+            return;
+        }
+
+        Bootstrap bootstrap = new Bootstrap()
+                .group(ctx.channel().eventLoop())
+                .channel(NioSocketChannel.class)
+                .handler(new ChannelInitializer<SocketChannel>() {
+                    @Override
+                    protected void initChannel(SocketChannel ch) {
+                        ch.pipeline().addLast(clientSslContext.newHandler(ch.alloc(), targetHost, targetPort));
+                        ch.pipeline().addLast(new HttpClientCodec());
+                        ch.pipeline().addLast(new HttpObjectAggregator(MAX_HTTP_OBJECT_SIZE));
+                        ch.pipeline().addLast(new HttpProxyBackendHandler(ctx.channel()));
+                    }
+                });
+
+        bootstrap.connect(targetHost, targetPort).addListener(connectFuture -> {
+            if (!connectFuture.isSuccess()) {
+                log.warn("HTTPS passthrough connect failed: {} - {}", fullUrl, summarize(connectFuture.cause()));
+                writeSimpleResponse(ctx, HttpResponseStatus.BAD_GATEWAY,
+                        connectFuture.cause() == null ? "HTTPS upstream connect failed" : summarize(connectFuture.cause()));
+                return;
+            }
+            Channel upstreamChannel = ((io.netty.channel.ChannelFuture) connectFuture).channel();
+            FullHttpRequest outboundRequest = buildOutboundRequest(request, uri, requestBody);
+            upstreamChannel.writeAndFlush(outboundRequest).addListener(writeFuture -> {
+                if (!writeFuture.isSuccess()) {
+                    log.warn("HTTPS passthrough write failed: {} - {}", fullUrl, summarize(writeFuture.cause()));
                     writeSimpleResponse(ctx, HttpResponseStatus.BAD_GATEWAY, "Failed to send HTTPS upstream request");
                     upstreamChannel.close();
                 }

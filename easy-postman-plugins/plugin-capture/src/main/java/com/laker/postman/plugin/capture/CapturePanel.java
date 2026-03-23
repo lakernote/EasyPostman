@@ -1,5 +1,6 @@
 package com.laker.postman.plugin.capture;
 
+import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.component.table.EnhancedTablePanel;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
@@ -13,8 +14,10 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.JSplitPane;
@@ -28,11 +31,9 @@ import javax.swing.UIManager;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.table.TableColumn;
 import java.awt.BorderLayout;
-import java.awt.Toolkit;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.datatransfer.StringSelection;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,15 +52,12 @@ public class CapturePanel extends JPanel {
     private JSpinner portSpinner;
     private JButton toggleProxyButton;
     private JButton clearButton;
-    private JButton installCaButton;
-    private JButton openCaButton;
-    private JButton copyCaPathButton;
+    private JButton caActionsButton;
+    private JMenuItem installCaMenuItem;
+    private JMenuItem openCaMenuItem;
+    private JPopupMenu caActionsMenu;
     private JCheckBox syncSystemProxyCheckBox;
     private JTextField captureHostsField;
-    private JLabel statusLabel;
-    private JLabel caPathLabel;
-    private JLabel caTrustLabel;
-    private JLabel systemProxyLabel;
     private JLabel captureFilterLabel;
     private EnhancedTablePanel tablePanel;
     private JTextArea detailArea;
@@ -95,16 +93,17 @@ public class CapturePanel extends JPanel {
         ((JSpinner.DefaultEditor) portSpinner.getEditor()).getTextField().setColumns(6);
         captureHostsField = new JTextField(defaultCaptureHostFilter());
         captureHostsField.setColumns(28);
+        captureHostsField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT,
+                t(MessageKeys.TOOLBOX_CAPTURE_HOSTS_PLACEHOLDER));
         captureHostsField.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_HOSTS_TOOLTIP));
 
         toggleProxyButton = new JButton();
         clearButton = new JButton(t(MessageKeys.TOOLBOX_CAPTURE_CLEAR), IconUtil.createThemed("icons/clear.svg", 16, 16));
-        installCaButton = new JButton(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA));
-        openCaButton = new JButton(t(MessageKeys.TOOLBOX_CAPTURE_OPEN_CA));
-        copyCaPathButton = new JButton(t(MessageKeys.TOOLBOX_CAPTURE_COPY_CA_PATH), IconUtil.createThemed("icons/copy.svg", 16, 16));
+        caActionsButton = new JButton(t(MessageKeys.TOOLBOX_CAPTURE_CA_ACTIONS));
         syncSystemProxyCheckBox = new JCheckBox(t(MessageKeys.TOOLBOX_CAPTURE_SYNC_MACOS_PROXY), defaultSyncSystemProxy());
         syncSystemProxyCheckBox.setOpaque(false);
         syncSystemProxyCheckBox.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_SYNC_PROXY_TOOLTIP));
+        initCaActionsMenu();
 
         toggleProxyButton.addActionListener(e -> {
             if (proxyService.isRunning()) {
@@ -114,20 +113,8 @@ public class CapturePanel extends JPanel {
             }
         });
         clearButton.addActionListener(e -> proxyService.sessionStore().clear());
-        installCaButton.addActionListener(e -> installCa());
-        openCaButton.addActionListener(e -> openCa());
-        copyCaPathButton.addActionListener(e -> copyCaPath());
+        caActionsButton.addActionListener(e -> caActionsMenu.show(caActionsButton, 0, caActionsButton.getHeight()));
 
-        statusLabel = new JLabel();
-        statusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -1));
-        caPathLabel = new JLabel();
-        caPathLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
-        caPathLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
-        caTrustLabel = new JLabel();
-        caTrustLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
-        systemProxyLabel = new JLabel();
-        systemProxyLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
-        systemProxyLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
         captureFilterLabel = new JLabel();
         captureFilterLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         captureFilterLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
@@ -138,15 +125,10 @@ public class CapturePanel extends JPanel {
         panel.add(toggleProxyButton, "wmin 110");
         panel.add(clearButton);
         panel.add(syncSystemProxyCheckBox);
-        panel.add(installCaButton);
-        panel.add(openCaButton);
-        panel.add(copyCaPathButton);
-        panel.add(statusLabel, "gapleft 12, wrap");
+        panel.add(caActionsButton, "wmin 68");
+        panel.add(new JLabel(), "push, wrap");
         panel.add(new JLabel(t(MessageKeys.TOOLBOX_CAPTURE_CAPTURE_HOSTS)), "gapright 8");
         panel.add(captureHostsField, "span 8, growx, wrap");
-        panel.add(caPathLabel, "span, growx, wrap");
-        panel.add(caTrustLabel, "span, split 2");
-        panel.add(systemProxyLabel, "gapleft 16, wrap");
         panel.add(captureFilterLabel, "span, growx");
         return panel;
     }
@@ -172,6 +154,16 @@ public class CapturePanel extends JPanel {
         splitPane.setDividerSize(3);
         splitPane.setContinuousLayout(true);
         return splitPane;
+    }
+
+    private void initCaActionsMenu() {
+        caActionsMenu = new JPopupMenu();
+        installCaMenuItem = new JMenuItem(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA));
+        openCaMenuItem = new JMenuItem(t(MessageKeys.TOOLBOX_CAPTURE_OPEN_CA));
+        installCaMenuItem.addActionListener(e -> installCa());
+        openCaMenuItem.addActionListener(e -> openCa());
+        caActionsMenu.add(installCaMenuItem);
+        caActionsMenu.add(openCaMenuItem);
     }
 
     private void startProxy() {
@@ -285,52 +277,23 @@ public class CapturePanel extends JPanel {
         captureHostsField.setEnabled(!busy && !running);
         syncSystemProxyCheckBox.setEnabled(!busy && !running && proxyService.isSystemProxySyncSupported());
 
-        if (running) {
-            statusLabel.setForeground(ModernColors.SUCCESS);
-            statusLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_STATUS_RUNNING, proxyService.listenHost(), proxyService.listenPort()));
-        } else {
-            statusLabel.setForeground(new Color(0xB85C00));
-            statusLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_STATUS_STOPPED));
-        }
         captureFilterLabel.setText(running
                 ? proxyService.captureFilterSummary()
-                : CaptureHostFilter.parse(captureHostsField.getText()).summary());
-
-        try {
-            String caPath = proxyService.rootCertificatePath();
-            caPathLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_CA_PATH, caPath));
-            caPathLabel.setToolTipText(caPath);
-            updateCaTrustStatus(caPath);
-            copyCaPathButton.setEnabled(!busy);
-            openCaButton.setEnabled(!busy && certificateInstallService.isSupported());
-            installCaButton.setEnabled(!busy && certificateInstallService.isSupported());
-        } catch (Exception ex) {
-            caPathLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_CA_PATH_UNAVAILABLE));
-            caPathLabel.setToolTipText(ex.getMessage());
-            caTrustLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_CA_TRUST_UNKNOWN));
-            caTrustLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
-            caTrustLabel.setToolTipText(ex.getMessage());
-            copyCaPathButton.setEnabled(false);
-            openCaButton.setEnabled(false);
-            installCaButton.setEnabled(false);
-        }
+                : CaptureRequestFilter.parse(captureHostsField.getText()).summary());
 
         if (!proxyService.isSystemProxySyncSupported()) {
-            systemProxyLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_SYSTEM_PROXY_UNSUPPORTED));
             syncSystemProxyCheckBox.setSelected(false);
             syncSystemProxyCheckBox.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_SYNC_PROXY_TOOLTIP_UNSUPPORTED));
-            installCaButton.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_TOOLTIP_UNSUPPORTED));
-            openCaButton.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_OPEN_CA_TOOLTIP_UNSUPPORTED));
-            caTrustLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_CA_TRUST_MACOS_ONLY));
-            caTrustLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
-            caTrustLabel.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_CA_TRUST_TOOLTIP_MACOS_ONLY));
+            caActionsButton.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_TOOLTIP_UNSUPPORTED));
+            caActionsButton.setEnabled(false);
+            installCaMenuItem.setEnabled(false);
+            openCaMenuItem.setEnabled(false);
         } else {
-            systemProxyLabel.setText(proxyService.isSystemProxySynced()
-                    ? t(MessageKeys.TOOLBOX_CAPTURE_SYSTEM_PROXY_SYNCED, proxyService.listenHost(), proxyService.listenPort())
-                    : t(MessageKeys.TOOLBOX_CAPTURE_SYSTEM_PROXY_MANUAL));
             syncSystemProxyCheckBox.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_SYNC_PROXY_TOOLTIP));
-            installCaButton.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_TOOLTIP));
-            openCaButton.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_OPEN_CA_TOOLTIP));
+            caActionsButton.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_TOOLTIP));
+            caActionsButton.setEnabled(!busy);
+            installCaMenuItem.setEnabled(!busy);
+            openCaMenuItem.setEnabled(!busy);
         }
     }
 
@@ -362,16 +325,6 @@ public class CapturePanel extends JPanel {
     private String defaultCaptureHostFilter() {
         String saved = UserSettingsUtil.getString(SETTING_CAPTURE_HOST_FILTER);
         return saved == null ? "" : saved;
-    }
-
-    private void copyCaPath() {
-        try {
-            String caPath = proxyService.rootCertificatePath();
-            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(caPath), null);
-            NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_CAPTURE_COPY_CA_PATH_SUCCESS));
-        } catch (Exception ex) {
-            NotificationUtil.showError(t(MessageKeys.TOOLBOX_CAPTURE_COPY_CA_PATH_FAILED, ex.getMessage()));
-        }
     }
 
     private void openCa() {
@@ -453,35 +406,6 @@ public class CapturePanel extends JPanel {
                 t(MessageKeys.TOOLBOX_CAPTURE_MANUAL_TRUST_TITLE),
                 JOptionPane.INFORMATION_MESSAGE
         );
-    }
-
-    private void updateCaTrustStatus(String caPath) {
-        if (!certificateInstallService.isSupported()) {
-            caTrustLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_CA_TRUST_MACOS_ONLY));
-            caTrustLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
-            caTrustLabel.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_CA_TRUST_TOOLTIP_MACOS_ONLY));
-            return;
-        }
-        try {
-            MacCertificateInstallService.CertificateTrustStatus trustStatus = certificateInstallService.trustStatus(caPath);
-            caTrustLabel.setToolTipText(trustStatus.detail());
-            if (trustStatus.trusted()) {
-                caTrustLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_CA_TRUST_TRUSTED));
-                caTrustLabel.setForeground(ModernColors.SUCCESS_DARK);
-                return;
-            }
-            if (trustStatus.installed()) {
-                caTrustLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_CA_TRUST_VERIFY));
-                caTrustLabel.setForeground(ModernColors.WARNING_DARKER);
-                return;
-            }
-            caTrustLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_CA_TRUST_NOT_INSTALLED));
-            caTrustLabel.setForeground(ModernColors.WARNING_DARKER);
-        } catch (Exception ex) {
-            caTrustLabel.setText(t(MessageKeys.TOOLBOX_CAPTURE_CA_TRUST_UNKNOWN));
-            caTrustLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
-            caTrustLabel.setToolTipText(ex.getMessage());
-        }
     }
 
     private void setOperationState(boolean busy) {

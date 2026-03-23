@@ -40,14 +40,14 @@ final class HttpProxyFrontendHandler extends SimpleChannelInboundHandler<FullHtt
 
     private final CaptureSessionStore sessionStore;
     private final CaptureCertificateService certificateService;
-    private final CaptureHostFilter captureHostFilter;
+    private final CaptureRequestFilter captureRequestFilter;
 
     HttpProxyFrontendHandler(CaptureSessionStore sessionStore,
                              CaptureCertificateService certificateService,
-                             CaptureHostFilter captureHostFilter) {
+                             CaptureRequestFilter captureRequestFilter) {
         this.sessionStore = sessionStore;
         this.certificateService = certificateService;
-        this.captureHostFilter = captureHostFilter;
+        this.captureRequestFilter = captureRequestFilter;
     }
 
     @Override
@@ -69,7 +69,7 @@ final class HttpProxyFrontendHandler extends SimpleChannelInboundHandler<FullHtt
             return;
         }
 
-        if (!captureHostFilter.matches(target.host)) {
+        if (!captureRequestFilter.matches(target.host, target.requestUri, target.fullUrl)) {
             proxyHttpWithoutCapture(ctx, request, target);
             return;
         }
@@ -135,7 +135,7 @@ final class HttpProxyFrontendHandler extends SimpleChannelInboundHandler<FullHtt
         }
         log.info("CONNECT request received: {} -> {}:{}", authority, host, port);
 
-        if (!captureHostFilter.matches(host)) {
+        if (!captureRequestFilter.shouldMitmHost(host)) {
             establishDirectTunnel(ctx, authority, host, port);
             return;
         }
@@ -194,6 +194,7 @@ final class HttpProxyFrontendHandler extends SimpleChannelInboundHandler<FullHtt
             pipeline.addLast("httpsFrontendHandler", new HttpsMitmFrontendHandler(
                     sessionStore,
                     certificateService,
+                    captureRequestFilter,
                     targetHost,
                     targetPort
             ));

@@ -10,20 +10,20 @@ final class CaptureServerInitializer extends ChannelInitializer<SocketChannel> {
 
     private final CaptureSessionStore sessionStore;
     private final CaptureCertificateService certificateService;
-    private final CaptureHostFilter captureHostFilter;
+    private final CaptureRequestFilter captureRequestFilter;
 
     CaptureServerInitializer(CaptureSessionStore sessionStore,
                              CaptureCertificateService certificateService,
-                             CaptureHostFilter captureHostFilter) {
+                             CaptureRequestFilter captureRequestFilter) {
         this.sessionStore = sessionStore;
         this.certificateService = certificateService;
-        this.captureHostFilter = captureHostFilter;
+        this.captureRequestFilter = captureRequestFilter;
     }
 
     @Override
     protected void initChannel(SocketChannel channel) {
         channel.pipeline().addLast(new HttpServerCodec());
         channel.pipeline().addLast(new HttpObjectAggregator(MAX_HTTP_OBJECT_SIZE));
-        channel.pipeline().addLast(new HttpProxyFrontendHandler(sessionStore, certificateService, captureHostFilter));
+        channel.pipeline().addLast(new HttpProxyFrontendHandler(sessionStore, certificateService, captureRequestFilter));
     }
 }

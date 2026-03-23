@@ -21,4 +21,9 @@ public class CapturePlugin implements EasyPostmanPlugin {
                 CapturePlugin.class
         );
     }
+
+    @Override
+    public void onStop() {
+        CaptureRuntime.stopQuietly();
+    }
 }

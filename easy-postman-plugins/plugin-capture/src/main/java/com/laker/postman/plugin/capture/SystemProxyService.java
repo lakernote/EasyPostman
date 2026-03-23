@@ -2,7 +2,7 @@ package com.laker.postman.plugin.capture;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -15,12 +15,16 @@ import org.slf4j.LoggerFactory;
 final class SystemProxyService {
     private static final Logger log = LoggerFactory.getLogger(SystemProxyService.class);
     private static final String NETWORKSETUP = "/usr/sbin/networksetup";
+    private static final String REG = "reg";
+    private static final String CMD = "cmd";
+    private static final String WINDOWS_PROXY_KEY = "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings";
     private static final List<String> REQUIRED_BYPASS_DOMAINS = List.of("localhost", "127.0.0.1", "::1");
     private static final String EMPTY = "Empty";
 
     private final Thread shutdownHook;
 
     private volatile Map<String, ProxyServiceSnapshot> snapshots = Map.of();
+    private volatile WindowsProxySnapshot windowsSnapshot;
     private volatile boolean active;
     private volatile String activeHost = "";
     private volatile int activePort;
@@ -31,7 +35,8 @@ final class SystemProxyService {
     }
 
     boolean isSupported() {
-        return System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("mac");
+        String osName = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
+        return osName.contains("mac") || osName.contains("win");
     }
 
     boolean isActive() {
@@ -40,6 +45,10 @@ final class SystemProxyService {
 
     synchronized void enable(String host, int port) throws Exception {
         ensureSupported();
+        if (isWindows()) {
+            enableWindows(host, port);
+            return;
+        }
         String proxyHost = normalizeProxyHost(host);
         if (active) {
             if (proxyHost.equals(activeHost) && port == activePort) {
@@ -75,6 +84,10 @@ final class SystemProxyService {
         if (!active) {
             return;
         }
+        if (isWindows()) {
+            restoreWindowsSnapshot();
+            return;
+        }
         restoreSnapshots();
     }
 
@@ -90,7 +103,7 @@ final class SystemProxyService {
 
     private void ensureSupported() {
         if (!isSupported()) {
-            throw new IllegalStateException("System proxy sync is only supported on macOS");
+            throw new IllegalStateException("System proxy sync is only supported on macOS and Windows");
         }
     }
 
@@ -110,9 +123,40 @@ final class SystemProxyService {
 
     private void restoreQuietly() {
         try {
-            restoreSnapshots();
+            if (isWindows()) {
+                restoreWindowsSnapshot();
+            } else {
+                restoreSnapshots();
+            }
         } catch (Exception ex) {
-            log.warn("Failed to restore macOS proxy settings", ex);
+            log.warn("Failed to restore system proxy settings", ex);
+        }
+    }
+
+    private boolean isWindows() {
+        return System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("win");
+    }
+
+    private void enableWindows(String host, int port) throws Exception {
+        String proxyHost = normalizeProxyHost(host);
+        if (active) {
+            if (proxyHost.equals(activeHost) && port == activePort) {
+                return;
+            }
+            restoreWindowsSnapshot();
+        }
+
+        WindowsProxySnapshot snapshot = readWindowsSnapshot();
+        try {
+            applyWindowsProxy(proxyHost, port, snapshot.proxyOverrideData());
+            windowsSnapshot = snapshot;
+            activeHost = proxyHost;
+            activePort = port;
+            active = true;
+        } catch (Exception ex) {
+            windowsSnapshot = snapshot;
+            restoreQuietly();
+            throw ex;
         }
     }
 
@@ -128,6 +172,15 @@ final class SystemProxyService {
 
         runCommand(NETWORKSETUP, "-setwebproxystate", service, "on");
         runCommand(NETWORKSETUP, "-setsecurewebproxystate", service, "on");
+    }
+
+    private void applyWindowsProxy(String host, int port, String originalBypass) throws Exception {
+        writeWindowsRegistryValue("ProxyServer", "REG_SZ", host + ":" + port);
+        writeWindowsRegistryValue("ProxyOverride", "REG_SZ", mergeWindowsBypass(originalBypass));
+        writeWindowsRegistryValue("ProxyEnable", "REG_DWORD", "1");
+        deleteWindowsRegistryValue("AutoConfigURL");
+        writeWindowsRegistryValue("AutoDetect", "REG_DWORD", "0");
+        refreshWindowsInternetOptions();
     }
 
     private void restoreSnapshot(String service, ProxyServiceSnapshot snapshot) throws Exception {
@@ -257,6 +310,89 @@ final class SystemProxyService {
         return values;
     }
 
+    private WindowsProxySnapshot readWindowsSnapshot() throws Exception {
+        return new WindowsProxySnapshot(
+                queryWindowsRegistryValue("ProxyEnable"),
+                queryWindowsRegistryValue("ProxyServer"),
+                queryWindowsRegistryValue("ProxyOverride"),
+                queryWindowsRegistryValue("AutoConfigURL"),
+                queryWindowsRegistryValue("AutoDetect")
+        );
+    }
+
+    private synchronized void restoreWindowsSnapshot() throws Exception {
+        WindowsProxySnapshot snapshot = windowsSnapshot;
+        try {
+            restoreWindowsValue("ProxyEnable", snapshot == null ? null : snapshot.proxyEnable());
+            restoreWindowsValue("ProxyServer", snapshot == null ? null : snapshot.proxyServer());
+            restoreWindowsValue("ProxyOverride", snapshot == null ? null : snapshot.proxyOverride());
+            restoreWindowsValue("AutoConfigURL", snapshot == null ? null : snapshot.autoConfigUrl());
+            restoreWindowsValue("AutoDetect", snapshot == null ? null : snapshot.autoDetect());
+            refreshWindowsInternetOptions();
+        } finally {
+            active = false;
+            activeHost = "";
+            activePort = 0;
+            windowsSnapshot = null;
+        }
+    }
+
+    private void restoreWindowsValue(String name, WindowsRegistryValue value) throws Exception {
+        if (value == null || !value.present()) {
+            deleteWindowsRegistryValue(name);
+            return;
+        }
+        writeWindowsRegistryValue(name, value.type(), value.data());
+    }
+
+    private WindowsRegistryValue queryWindowsRegistryValue(String name) throws Exception {
+        CommandResult result = runCommandAllowFailure(List.of(REG, "query", WINDOWS_PROXY_KEY, "/v", name));
+        if (result.exitCode() != 0) {
+            return new WindowsRegistryValue(false, "", "");
+        }
+        for (String line : result.lines()) {
+            String trimmed = line.trim();
+            if (!trimmed.startsWith(name)) {
+                continue;
+            }
+            String remainder = trimmed.substring(name.length()).trim();
+            String[] parts = remainder.split("\\s+", 2);
+            if (parts.length == 2) {
+                return new WindowsRegistryValue(true, parts[0], parts[1].trim());
+            }
+        }
+        return new WindowsRegistryValue(false, "", "");
+    }
+
+    private void writeWindowsRegistryValue(String name, String type, String data) throws Exception {
+        runCommand(REG, "add", WINDOWS_PROXY_KEY, "/v", name, "/t", type, "/d", data, "/f");
+    }
+
+    private void deleteWindowsRegistryValue(String name) throws Exception {
+        runCommandAllowFailure(List.of(REG, "delete", WINDOWS_PROXY_KEY, "/v", name, "/f"));
+    }
+
+    private String mergeWindowsBypass(String originalBypass) {
+        LinkedHashSet<String> values = new LinkedHashSet<>();
+        if (originalBypass != null && !originalBypass.isBlank()) {
+            for (String value : originalBypass.split(";")) {
+                String trimmed = value.trim();
+                if (!trimmed.isEmpty()) {
+                    values.add(trimmed);
+                }
+            }
+        }
+        values.add("localhost");
+        values.add("127.0.0.1");
+        values.add("::1");
+        values.add("<local>");
+        return String.join(";", values);
+    }
+
+    private void refreshWindowsInternetOptions() throws Exception {
+        runCommandAllowFailure(List.of(CMD, "/c", "RUNDLL32.EXE", "USER32.DLL,UpdatePerUserSystemParameters", "1", "True"));
+    }
+
     private int parsePort(String value) {
         if (value == null || value.isBlank()) {
             return 0;
@@ -281,22 +417,31 @@ final class SystemProxyService {
     }
 
     private CommandResult runCommand(List<String> command) throws Exception {
+        CommandResult result = runCommandAllowFailure(command);
+        if (result.exitCode() != 0) {
+            throw new IllegalStateException(String.join(System.lineSeparator(), result.lines()));
+        }
+        return result;
+    }
+
+    private CommandResult runCommandAllowFailure(List<String> command) throws Exception {
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         processBuilder.redirectErrorStream(true);
         Process process = processBuilder.start();
         List<String> lines = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
+                new InputStreamReader(process.getInputStream(), commandCharset()))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 lines.add(line);
             }
         }
         int exitCode = process.waitFor();
-        if (exitCode != 0) {
-            throw new IllegalStateException(String.join(System.lineSeparator(), lines));
-        }
-        return new CommandResult(lines);
+        return new CommandResult(exitCode, lines);
+    }
+
+    private Charset commandCharset() {
+        return Charset.defaultCharset();
     }
 
     private String normalizeProxyHost(String host) {
@@ -310,7 +455,7 @@ final class SystemProxyService {
         return trimmed;
     }
 
-    private record CommandResult(List<String> lines) {
+    private record CommandResult(int exitCode, List<String> lines) {
     }
 
     private record ProxyServiceSnapshot(
@@ -327,5 +472,20 @@ final class SystemProxyService {
     }
 
     private record AutoProxyConfig(boolean enabled, String url) {
+    }
+
+    private record WindowsRegistryValue(boolean present, String type, String data) {
+    }
+
+    private record WindowsProxySnapshot(
+            WindowsRegistryValue proxyEnable,
+            WindowsRegistryValue proxyServer,
+            WindowsRegistryValue proxyOverride,
+            WindowsRegistryValue autoConfigUrl,
+            WindowsRegistryValue autoDetect
+    ) {
+        String proxyOverrideData() {
+            return proxyOverride.present() ? proxyOverride.data() : "";
+        }
     }
 }

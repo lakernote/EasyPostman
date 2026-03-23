@@ -218,6 +218,33 @@ final class CaptureFlow {
         return builder.toString();
     }
 
+    String curlCommand() {
+        StringBuilder builder = new StringBuilder("curl");
+        appendCurlArgument(builder, "-X");
+        appendCurlArgument(builder, method);
+        appendCurlArgument(builder, url);
+        requestHeaders.forEach((name, value) -> {
+            if (shouldIncludeCurlHeader(name)) {
+                appendCurlArgument(builder, "-H");
+                appendCurlArgument(builder, name + ": " + value);
+            }
+        });
+        String bodyText = curlBodyText();
+        if (bodyText != null) {
+            appendCurlArgument(builder, "--data-raw");
+            appendCurlArgument(builder, bodyText);
+        }
+        return builder.toString();
+    }
+
+    boolean curlBodyPartial() {
+        if (requestSize == 0) {
+            return false;
+        }
+        String bodyText = curlBodyText();
+        return bodyText == null || requestSize > requestBody.length;
+    }
+
     private static void appendLine(StringBuilder builder, String key, String value) {
         builder.append(key).append(": ").append(value == null ? "" : value).append('\n');
     }
@@ -228,6 +255,28 @@ final class CaptureFlow {
             return;
         }
         headers.forEach((name, value) -> builder.append(name).append(": ").append(value).append('\n'));
+    }
+
+    private String curlBodyText() {
+        if (requestBody == null || requestBody.length == 0) {
+            return null;
+        }
+        String text = new String(requestBody, StandardCharsets.UTF_8);
+        return looksPrintable(text) ? text : null;
+    }
+
+    private static boolean shouldIncludeCurlHeader(String name) {
+        return !"Content-Length".equalsIgnoreCase(name)
+                && !"Host".equalsIgnoreCase(name)
+                && !"Proxy-Connection".equalsIgnoreCase(name);
+    }
+
+    private static void appendCurlArgument(StringBuilder builder, String argument) {
+        builder.append(" \\\n  ").append(shellQuote(argument));
+    }
+
+    private static String shellQuote(String value) {
+        return "'" + (value == null ? "" : value.replace("'", "'\"'\"'")) + "'";
     }
 
     private static String headerValueIgnoreCase(Map<String, String> headers, String name) {

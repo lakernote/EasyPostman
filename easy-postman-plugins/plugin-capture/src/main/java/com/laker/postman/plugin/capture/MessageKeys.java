@@ -17,10 +17,15 @@ public final class MessageKeys {
     public static final String TOOLBOX_CAPTURE_STOPPING = "toolbox.capture.stopping";
     public static final String TOOLBOX_CAPTURE_CLEAR = "toolbox.capture.clear";
     public static final String TOOLBOX_CAPTURE_CA_ACTIONS = "toolbox.capture.ca_actions";
+    public static final String TOOLBOX_CAPTURE_STATUS_DETAILS = "toolbox.capture.status.details";
+    public static final String TOOLBOX_CAPTURE_REFRESH_STATUS = "toolbox.capture.refresh_status";
     public static final String TOOLBOX_CAPTURE_DETAIL = "toolbox.capture.detail";
     public static final String TOOLBOX_CAPTURE_CLOSE_DETAIL = "toolbox.capture.close_detail";
     public static final String TOOLBOX_CAPTURE_COPY_DETAIL = "toolbox.capture.copy_detail";
+    public static final String TOOLBOX_CAPTURE_COPY_CURL = "toolbox.capture.copy_curl";
     public static final String TOOLBOX_CAPTURE_DETAIL_COPIED = "toolbox.capture.detail_copied";
+    public static final String TOOLBOX_CAPTURE_CURL_COPIED = "toolbox.capture.curl_copied";
+    public static final String TOOLBOX_CAPTURE_CURL_COPIED_PARTIAL = "toolbox.capture.curl_copied_partial";
     public static final String TOOLBOX_CAPTURE_TAB_REQUEST = "toolbox.capture.tab.request";
     public static final String TOOLBOX_CAPTURE_TAB_RESPONSE = "toolbox.capture.tab.response";
     public static final String TOOLBOX_CAPTURE_INSTALL_CA = "toolbox.capture.install_ca";
@@ -40,8 +45,7 @@ public final class MessageKeys {
     public static final String TOOLBOX_CAPTURE_CA_PATH = "toolbox.capture.ca_path";
     public static final String TOOLBOX_CAPTURE_CA_PATH_UNAVAILABLE = "toolbox.capture.ca_path.unavailable";
     public static final String TOOLBOX_CAPTURE_CA_TRUST_UNKNOWN = "toolbox.capture.ca_trust.unknown";
-    public static final String TOOLBOX_CAPTURE_CA_TRUST_MACOS_ONLY = "toolbox.capture.ca_trust.macos_only";
-    public static final String TOOLBOX_CAPTURE_CA_TRUST_TOOLTIP_MACOS_ONLY = "toolbox.capture.ca_trust.tooltip.macos_only";
+    public static final String TOOLBOX_CAPTURE_CA_TRUST_UNSUPPORTED = "toolbox.capture.ca_trust.unsupported";
     public static final String TOOLBOX_CAPTURE_CA_TRUST_TRUSTED = "toolbox.capture.ca_trust.trusted";
     public static final String TOOLBOX_CAPTURE_CA_TRUST_VERIFY = "toolbox.capture.ca_trust.verify";
     public static final String TOOLBOX_CAPTURE_CA_TRUST_NOT_INSTALLED = "toolbox.capture.ca_trust.not_installed";
@@ -65,6 +69,7 @@ public final class MessageKeys {
     public static final String TOOLBOX_CAPTURE_INSTALL_CA_SUCCESS = "toolbox.capture.install_ca.success";
     public static final String TOOLBOX_CAPTURE_INSTALL_CA_SUCCESS_SYSTEM = "toolbox.capture.install_ca.success.system";
     public static final String TOOLBOX_CAPTURE_INSTALL_CA_SUCCESS_LOGIN = "toolbox.capture.install_ca.success.login";
+    public static final String TOOLBOX_CAPTURE_INSTALL_CA_SUCCESS_WINDOWS = "toolbox.capture.install_ca.success.windows";
     public static final String TOOLBOX_CAPTURE_INSTALL_CA_WARN_TRUST = "toolbox.capture.install_ca.warn_trust";
     public static final String TOOLBOX_CAPTURE_INSTALL_CA_WARN_VISIBLE = "toolbox.capture.install_ca.warn_visible";
     public static final String TOOLBOX_CAPTURE_INSTALL_CA_FAILED = "toolbox.capture.install_ca.failed";
@@ -73,6 +78,7 @@ public final class MessageKeys {
     public static final String TOOLBOX_CAPTURE_INSTALL_CA_REMOVED_NONE = "toolbox.capture.install_ca.removed_none";
     public static final String TOOLBOX_CAPTURE_MANUAL_TRUST_TITLE = "toolbox.capture.manual_trust.title";
     public static final String TOOLBOX_CAPTURE_MANUAL_TRUST_GUIDE = "toolbox.capture.manual_trust.guide";
+    public static final String TOOLBOX_CAPTURE_MANUAL_TRUST_GUIDE_WINDOWS = "toolbox.capture.manual_trust.guide.windows";
     public static final String TOOLBOX_CAPTURE_COLUMN_ID = "toolbox.capture.column.id";
     public static final String TOOLBOX_CAPTURE_COLUMN_TIME = "toolbox.capture.column.time";
     public static final String TOOLBOX_CAPTURE_COLUMN_METHOD = "toolbox.capture.column.method";

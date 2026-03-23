@@ -1,7 +1,23 @@
 {
   "name": "EasyPostman Official Plugin Catalog (Gitee)",
-  "generatedAt": "2026-03-18T16:13:18Z",
+  "generatedAt": "2026-03-23T13:23:09Z",
   "plugins": [
+    {
+      "id": "plugin-capture",
+      "name": "Capture Plugin",
+      "description": "HTTP capture toolbox panel with a local explicit proxy.",
+      "homepage": "https://gitee.com/lakernote/easy-postman",
+      "releases": [
+        {
+          "version": "5.3.23",
+          "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-capture-v5.3.23/easy-postman-5.3.23-plugin-capture.jar",
+          "sha256": "ecf7369b32ebad0c0431ab9ec01a105f540023be3f08bf929eabbbafdb5384e1",
+          "minAppVersion": "5.3.23",
+          "minPlatformVersion": "1.0.0",
+          "maxPlatformVersion": "1.0.0"
+        }
+      ]
+    },
     {
       "id": "plugin-client-cert",
       "name": "Client Certificate Plugin",

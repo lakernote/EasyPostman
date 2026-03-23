@@ -13,6 +13,7 @@ import com.laker.postman.panel.collections.right.request.sub.AuthTabPanel;
 import com.laker.postman.panel.collections.right.request.sub.EasyRequestHttpHeadersPanel;
 import com.laker.postman.panel.collections.right.request.sub.EasyRequestParamsPanel;
 import com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel;
+import com.laker.postman.panel.collections.right.request.sub.RequestSettingsPanel;
 import com.laker.postman.panel.collections.right.request.sub.ScriptPanel;
 
 import javax.swing.*;
@@ -30,11 +31,13 @@ final class RequestTabStateHelper {
     private final AuthTabPanel authTabPanel;
     private final EasyRequestHttpHeadersPanel headersPanel;
     private final RequestBodyPanel requestBodyPanel;
+    private final RequestSettingsPanel requestSettingsPanel;
     private final ScriptPanel scriptPanel;
     private final IndicatorTabComponent paramsTabIndicator;
     private final IndicatorTabComponent authTabIndicator;
     private final IndicatorTabComponent headersTabIndicator;
     private final IndicatorTabComponent bodyTabIndicator;
+    private final IndicatorTabComponent settingsTabIndicator;
     private final IndicatorTabComponent scriptsTabIndicator;
 
     RequestTabStateHelper(RequestItemProtocolEnum protocol,
@@ -45,11 +48,13 @@ final class RequestTabStateHelper {
                           AuthTabPanel authTabPanel,
                           EasyRequestHttpHeadersPanel headersPanel,
                           RequestBodyPanel requestBodyPanel,
+                          RequestSettingsPanel requestSettingsPanel,
                           ScriptPanel scriptPanel,
                           IndicatorTabComponent paramsTabIndicator,
                           IndicatorTabComponent authTabIndicator,
                           IndicatorTabComponent headersTabIndicator,
                           IndicatorTabComponent bodyTabIndicator,
+                          IndicatorTabComponent settingsTabIndicator,
                           IndicatorTabComponent scriptsTabIndicator) {
         this.protocol = protocol;
         this.urlField = urlField;
@@ -59,11 +64,13 @@ final class RequestTabStateHelper {
         this.authTabPanel = authTabPanel;
         this.headersPanel = headersPanel;
         this.requestBodyPanel = requestBodyPanel;
+        this.requestSettingsPanel = requestSettingsPanel;
         this.scriptPanel = scriptPanel;
         this.paramsTabIndicator = paramsTabIndicator;
         this.authTabIndicator = authTabIndicator;
         this.headersTabIndicator = headersTabIndicator;
         this.bodyTabIndicator = bodyTabIndicator;
+        this.settingsTabIndicator = settingsTabIndicator;
         this.scriptsTabIndicator = scriptsTabIndicator;
     }
 
@@ -74,6 +81,7 @@ final class RequestTabStateHelper {
         headersPanel.addTableModelListener(e -> dirtyAction.run());
         paramsPanel.addTableModelListener(e -> dirtyAction.run());
         authTabPanel.addDirtyListener(dirtyAction);
+        requestSettingsPanel.addDirtyListener(dirtyAction);
 
         if (protocol.isHttpProtocol()) {
             if (requestBodyPanel.getBodyArea() != null) {
@@ -95,6 +103,7 @@ final class RequestTabStateHelper {
         paramsPanel.addTableModelListener(e -> updateTabIndicators());
         authTabPanel.addDirtyListener(this::updateTabIndicators);
         headersPanel.addTableModelListener(e -> updateTabIndicators());
+        requestSettingsPanel.addDirtyListener(this::updateTabIndicators);
         scriptPanel.addDirtyListeners(this::updateTabIndicators);
     }
 
@@ -111,6 +120,9 @@ final class RequestTabStateHelper {
             }
             if (bodyTabIndicator != null) {
                 bodyTabIndicator.setShowIndicator(hasBodyContent());
+            }
+            if (settingsTabIndicator != null) {
+                settingsTabIndicator.setShowIndicator(hasSettingsContent());
             }
             if (scriptsTabIndicator != null) {
                 scriptsTabIndicator.setShowIndicator(hasScriptsContent());
@@ -184,6 +196,10 @@ final class RequestTabStateHelper {
         String postscript = scriptPanel.getPostscript();
         return (prescript != null && !prescript.trim().isEmpty())
                 || (postscript != null && !postscript.trim().isEmpty());
+    }
+
+    private boolean hasSettingsContent() {
+        return requestSettingsPanel.hasCustomSettings();
     }
 
     private void addDocumentListener(Document document, Runnable action) {

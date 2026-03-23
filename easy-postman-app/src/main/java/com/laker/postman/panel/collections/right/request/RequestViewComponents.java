@@ -2,13 +2,7 @@ package com.laker.postman.panel.collections.right.request;
 
 import com.laker.postman.common.component.MarkdownEditorPanel;
 import com.laker.postman.common.component.tab.IndicatorTabComponent;
-import com.laker.postman.panel.collections.right.request.sub.AuthTabPanel;
-import com.laker.postman.panel.collections.right.request.sub.EasyRequestHttpHeadersPanel;
-import com.laker.postman.panel.collections.right.request.sub.EasyRequestParamsPanel;
-import com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel;
-import com.laker.postman.panel.collections.right.request.sub.RequestLinePanel;
-import com.laker.postman.panel.collections.right.request.sub.ResponsePanel;
-import com.laker.postman.panel.collections.right.request.sub.ScriptPanel;
+import com.laker.postman.panel.collections.right.request.sub.*;
 
 import javax.swing.*;
 
@@ -26,6 +20,8 @@ final class RequestViewComponents {
     final IndicatorTabComponent headersTabIndicator;
     final RequestBodyPanel requestBodyPanel;
     final IndicatorTabComponent bodyTabIndicator;
+    final IndicatorTabComponent settingsTabIndicator;
+    final RequestSettingsPanel requestSettingsPanel;
     final ScriptPanel scriptPanel;
     final IndicatorTabComponent scriptsTabIndicator;
     final ResponsePanel responsePanel;
@@ -44,6 +40,8 @@ final class RequestViewComponents {
                           IndicatorTabComponent headersTabIndicator,
                           RequestBodyPanel requestBodyPanel,
                           IndicatorTabComponent bodyTabIndicator,
+                          IndicatorTabComponent settingsTabIndicator,
+                          RequestSettingsPanel requestSettingsPanel,
                           ScriptPanel scriptPanel,
                           IndicatorTabComponent scriptsTabIndicator,
                           ResponsePanel responsePanel,
@@ -61,6 +59,8 @@ final class RequestViewComponents {
         this.headersTabIndicator = headersTabIndicator;
         this.requestBodyPanel = requestBodyPanel;
         this.bodyTabIndicator = bodyTabIndicator;
+        this.settingsTabIndicator = settingsTabIndicator;
+        this.requestSettingsPanel = requestSettingsPanel;
         this.scriptPanel = scriptPanel;
         this.scriptsTabIndicator = scriptsTabIndicator;
         this.responsePanel = responsePanel;

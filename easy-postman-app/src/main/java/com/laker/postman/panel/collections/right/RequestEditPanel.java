@@ -383,6 +383,12 @@ public class RequestEditPanel extends SingletonBasePanel {
         // 保存请求时，如果当前是预览 tab，则转为固定 tab（模仿 Postman 行为）
         promotePreviewTabToPermanent();
 
+        String settingsValidationError = currentSubPanel != null ? currentSubPanel.validateRequestSettings() : null;
+        if (settingsValidationError != null) {
+            NotificationUtil.showError(settingsValidationError);
+            return false;
+        }
+
         HttpRequestItem currentItem = getCurrentRequest();
         if (currentItem == null) {
             log.warn("没有可保存的请求");

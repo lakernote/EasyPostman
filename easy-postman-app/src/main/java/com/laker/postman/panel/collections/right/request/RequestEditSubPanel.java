@@ -53,6 +53,7 @@ public class RequestEditSubPanel extends JPanel {
     private final RequestLinePanel requestLinePanel;
     //  RequestBodyPanel
     private final RequestBodyPanel requestBodyPanel;
+    private final RequestSettingsPanel requestSettingsPanel;
     private final AuthTabPanel authTabPanel;
     private final ScriptPanel scriptPanel;
     private final MarkdownEditorPanel descriptionEditor; // Docs tab
@@ -81,6 +82,7 @@ public class RequestEditSubPanel extends JPanel {
     private IndicatorTabComponent authTabIndicator;
     private IndicatorTabComponent headersTabIndicator;
     private IndicatorTabComponent bodyTabIndicator;
+    private IndicatorTabComponent settingsTabIndicator;
     private IndicatorTabComponent scriptsTabIndicator;
 
     // 当前请求的 SwingWorker，用于支持取消
@@ -174,6 +176,8 @@ public class RequestEditSubPanel extends JPanel {
         headersTabIndicator = components.headersTabIndicator;
         requestBodyPanel = components.requestBodyPanel;
         bodyTabIndicator = components.bodyTabIndicator;
+        settingsTabIndicator = components.settingsTabIndicator;
+        requestSettingsPanel = components.requestSettingsPanel;
         scriptPanel = components.scriptPanel;
         scriptsTabIndicator = components.scriptsTabIndicator;
         responsePanel = components.responsePanel;
@@ -197,6 +201,7 @@ public class RequestEditSubPanel extends JPanel {
                 paramsPanel,
                 headersPanel,
                 requestBodyPanel,
+                requestSettingsPanel,
                 authTabPanel,
                 scriptPanel,
                 descriptionEditor,
@@ -211,11 +216,13 @@ public class RequestEditSubPanel extends JPanel {
                 authTabPanel,
                 headersPanel,
                 requestBodyPanel,
+                requestSettingsPanel,
                 scriptPanel,
                 paramsTabIndicator,
                 authTabIndicator,
                 headersTabIndicator,
                 bodyTabIndicator,
+                settingsTabIndicator,
                 scriptsTabIndicator
         );
         requestDirtyStateHelper = new RequestDirtyStateHelper(
@@ -372,6 +379,7 @@ public class RequestEditSubPanel extends JPanel {
      */
     public void setOriginalRequestItem(HttpRequestItem item) {
         requestDirtyStateHelper.setOriginalRequestItem(item);
+        requestSettingsPanel.rebaseline(item);
     }
 
     public HttpRequestItem getOriginalRequestItem() {
@@ -409,9 +417,17 @@ public class RequestEditSubPanel extends JPanel {
     private RequestPreparationResult prepareRequestForSending() {
         // 发送前只做“收集表单 + 构建请求 + 执行前置脚本 + 校验”，真正发协议请求交给 dispatch helper。
         promotePreviewTabToPermanent();
+        String settingsValidationError = validateRequestSettings();
+        if (settingsValidationError != null) {
+            return RequestPreparationResult.error(settingsValidationError);
+        }
         HttpRequestItem item = getCurrentRequest();
         boolean useCache = getOriginalRequestItem() != null && !isModified();
         return requestPreparationService.prepare(item, useCache);
+    }
+
+    public String validateRequestSettings() {
+        return requestSettingsPanel.validateSettings();
     }
 
     private void promotePreviewTabToPermanent() {

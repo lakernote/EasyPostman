@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 
 import javax.net.ssl.*;
+import javax.net.ssl.HttpsURLConnection;
 import java.security.KeyStore;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
@@ -95,6 +96,8 @@ public class SSLConfigurationUtil {
     public static void configureSSL(OkHttpClient.Builder builder, SSLVerificationMode mode,
                                     String host, int port) {
         try {
+            builder.hostnameVerifier(createHostnameVerifier(mode));
+
             // 查找并加载匹配的客户端证书
             KeyManager[] keyManagers = loadClientCertificate(host, port);
 
@@ -118,9 +121,7 @@ public class SSLConfigurationUtil {
 
             builder.sslSocketFactory(socketFactory, trustManager);
 
-            // 配置 HostnameVerifier
             if (mode != SSLVerificationMode.STRICT) {
-                builder.hostnameVerifier(createHostnameVerifier(mode));
                 log.warn("SSL verification mode set to: {}. Use with caution in production.", mode);
             }
 
@@ -314,9 +315,10 @@ public class SSLConfigurationUtil {
     private static HostnameVerifier createHostnameVerifier(SSLVerificationMode mode) {
         if (mode == SSLVerificationMode.TRUST_ALL) {
             return (hostname, session) -> true;
-        } else {
+        } else if (mode == SSLVerificationMode.LENIENT) {
             return new LenientHostnameVerifier();
         }
+        return HttpsURLConnection.getDefaultHostnameVerifier();
     }
 
     /**

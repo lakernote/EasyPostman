@@ -3,7 +3,9 @@ package com.laker.postman.service.http;
 import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.service.http.okhttp.*;
+import com.laker.postman.service.http.ssl.SSLConfigurationUtil;
 import com.laker.postman.service.http.sse.SseResEventListener;
 import com.laker.postman.service.setting.SettingManager;
 import lombok.experimental.UtilityClass;
@@ -14,6 +16,8 @@ import okhttp3.sse.EventSourceListener;
 import okhttp3.sse.EventSources;
 
 import java.io.IOException;
+import java.net.URI;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static com.laker.postman.service.http.HttpRequestUtil.extractBaseUri;
@@ -53,10 +57,19 @@ public class HttpService {
      * - Functional: collectBasicInfo=true, collectEventInfo=true, enableNetworkLog=false (不输出UI日志)
      * - Performance: collectBasicInfo=true, collectEventInfo=可选, enableNetworkLog=false (根据设置)
      */
-    private static OkHttpClient buildDynamicClient(OkHttpClient baseClient, PreparedRequest preparedRequest, int timeoutMs) {
+    private static OkHttpClient buildDynamicClient(OkHttpClient baseClient,
+                                                   PreparedRequest preparedRequest,
+                                                   int timeoutMs,
+                                                   boolean isolateConnectionPool) {
         OkHttpClient.Builder builder = baseClient.newBuilder();
+        if (isolateConnectionPool) {
+            // Avoid reusing sockets that were established under a different SSL verification mode.
+            builder.connectionPool(new ConnectionPool());
+        }
         // 添加自动解压拦截器
         builder.addNetworkInterceptor(new CompressionDecompressNetworkInterceptor());
+
+        applyRequestSettings(builder, preparedRequest);
 
         // 只有至少需要一种信息收集时才创建 EventListener
         // 如果三个开关都是 false，则不创建（最小性能开销）
@@ -106,9 +119,90 @@ public class HttpService {
      */
     private static OkHttpClient buildCustomClient(PreparedRequest req) {
         String baseUri = extractBaseUri(req.url);
-        int timeoutMs = SettingManager.getRequestTimeout();
         OkHttpClient baseClient = OkHttpClientManager.getClient(baseUri, req.followRedirects);
-        return buildDynamicClient(baseClient, req, timeoutMs);
+        return buildDynamicClient(baseClient, req, req.requestTimeoutMs, shouldIsolateConnectionPool(req));
+    }
+
+    private static void applyRequestSettings(OkHttpClient.Builder builder, PreparedRequest preparedRequest) {
+        if (!preparedRequest.cookieJarEnabled) {
+            builder.cookieJar(CookieJar.NO_COOKIES);
+        }
+
+        String httpVersion = preparedRequest.httpVersion != null
+                ? preparedRequest.httpVersion
+                : HttpRequestItem.HTTP_VERSION_AUTO;
+        if (HttpRequestItem.HTTP_VERSION_HTTP_1_1.equals(httpVersion)) {
+            builder.protocols(List.of(Protocol.HTTP_1_1));
+        } else if (HttpRequestItem.HTTP_VERSION_HTTP_2.equals(httpVersion)) {
+            builder.protocols(List.of(Protocol.HTTP_2, Protocol.HTTP_1_1));
+        }
+
+        applySslVerificationSetting(builder, preparedRequest);
+    }
+
+    private static void applySslVerificationSetting(OkHttpClient.Builder builder, PreparedRequest preparedRequest) {
+        URI uri;
+        try {
+            uri = URI.create(preparedRequest.url);
+        } catch (Exception e) {
+            return;
+        }
+
+        String scheme = uri.getScheme();
+        boolean secureScheme = "https".equalsIgnoreCase(scheme) || "wss".equalsIgnoreCase(scheme);
+        if (!secureScheme) {
+            return;
+        }
+
+        SSLConfigurationUtil.SSLVerificationMode mode = resolveSslVerificationMode(preparedRequest);
+
+        SSLConfigurationUtil.configureSSL(builder, mode, uri.getHost(), resolveSecurePort(scheme, uri.getPort()));
+    }
+
+    static boolean shouldIsolateConnectionPool(PreparedRequest preparedRequest) {
+        if (preparedRequest == null) {
+            return false;
+        }
+
+        URI uri;
+        try {
+            uri = URI.create(preparedRequest.url);
+        } catch (Exception e) {
+            return false;
+        }
+
+        String scheme = uri.getScheme();
+        boolean secureScheme = "https".equalsIgnoreCase(scheme) || "wss".equalsIgnoreCase(scheme);
+        if (!secureScheme) {
+            return false;
+        }
+
+        return resolveSslVerificationMode(preparedRequest) != resolveGlobalSslVerificationMode();
+    }
+
+    static SSLConfigurationUtil.SSLVerificationMode resolveSslVerificationMode(PreparedRequest preparedRequest) {
+        if (preparedRequest == null) {
+            return resolveGlobalSslVerificationMode();
+        }
+
+        boolean proxySslDisabled = SettingManager.isProxyEnabled() && SettingManager.isProxySslVerificationDisabled();
+        return (!preparedRequest.sslVerificationEnabled || proxySslDisabled)
+                ? SSLConfigurationUtil.SSLVerificationMode.LENIENT
+                : SSLConfigurationUtil.SSLVerificationMode.STRICT;
+    }
+
+    static int resolveSecurePort(String scheme, int port) {
+        if (port != -1) {
+            return port;
+        }
+        return ("https".equalsIgnoreCase(scheme) || "wss".equalsIgnoreCase(scheme)) ? 443 : 80;
+    }
+
+    private static SSLConfigurationUtil.SSLVerificationMode resolveGlobalSslVerificationMode() {
+        boolean proxySslDisabled = SettingManager.isProxyEnabled() && SettingManager.isProxySslVerificationDisabled();
+        return (SettingManager.isRequestSslVerificationDisabled() || proxySslDisabled)
+                ? SSLConfigurationUtil.SSLVerificationMode.LENIENT
+                : SSLConfigurationUtil.SSLVerificationMode.STRICT;
     }
 
     /**

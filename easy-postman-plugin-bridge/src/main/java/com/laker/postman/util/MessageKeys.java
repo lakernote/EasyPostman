@@ -303,6 +303,7 @@ public final class MessageKeys {
     public static final String TAB_VARIABLES = "tab.variables";
     public static final String TAB_AUTHORIZATION = "tab.authorization";
     public static final String TAB_SCRIPTS = "tab.scripts";
+    public static final String TAB_SETTINGS = "tab.settings";
     public static final String TAB_TESTS = "tab.tests";
     public static final String TAB_NETWORK_LOG = "tab.network_log";
     public static final String TAB_REQUEST_HEADERS = "tab.request_headers";
@@ -857,6 +858,28 @@ public final class MessageKeys {
 
     // ============ Request Docs Tab 相关 ============
     public static final String REQUEST_DOCS_TAB_TITLE = "request.docs.tab.title";
+    public static final String REQUEST_SETTINGS_FOLLOW_REDIRECTS_LABEL = "request.settings.follow_redirects.label";
+    public static final String REQUEST_SETTINGS_FOLLOW_REDIRECTS_TOOLTIP = "request.settings.follow_redirects.tooltip";
+    public static final String REQUEST_SETTINGS_FOLLOW_REDIRECTS_DESC = "request.settings.follow_redirects.desc";
+    public static final String REQUEST_SETTINGS_USE_COOKIE_JAR_LABEL = "request.settings.use_cookie_jar.label";
+    public static final String REQUEST_SETTINGS_USE_COOKIE_JAR_TOOLTIP = "request.settings.use_cookie_jar.tooltip";
+    public static final String REQUEST_SETTINGS_USE_COOKIE_JAR_DESC = "request.settings.use_cookie_jar.desc";
+    public static final String REQUEST_SETTINGS_HTTP_VERSION_LABEL = "request.settings.http_version.label";
+    public static final String REQUEST_SETTINGS_HTTP_VERSION_TOOLTIP = "request.settings.http_version.tooltip";
+    public static final String REQUEST_SETTINGS_HTTP_VERSION_DESC = "request.settings.http_version.desc";
+    public static final String REQUEST_SETTINGS_HTTP_VERSION_AUTO = "request.settings.http_version.auto";
+    public static final String REQUEST_SETTINGS_HTTP_VERSION_HTTP_1_1 = "request.settings.http_version.http_1_1";
+    public static final String REQUEST_SETTINGS_HTTP_VERSION_HTTP_2 = "request.settings.http_version.http_2";
+    public static final String REQUEST_SETTINGS_SSL_VERIFICATION_LABEL = "request.settings.ssl_verification.label";
+    public static final String REQUEST_SETTINGS_SSL_VERIFICATION_TOOLTIP = "request.settings.ssl_verification.tooltip";
+    public static final String REQUEST_SETTINGS_SSL_VERIFICATION_DESC = "request.settings.ssl_verification.desc";
+    public static final String REQUEST_SETTINGS_TIMEOUT_LABEL = "request.settings.timeout.label";
+    public static final String REQUEST_SETTINGS_TIMEOUT_TOOLTIP = "request.settings.timeout.tooltip";
+    public static final String REQUEST_SETTINGS_TIMEOUT_DESC = "request.settings.timeout.desc";
+    public static final String REQUEST_SETTINGS_TIMEOUT_HINT = "request.settings.timeout.hint";
+    public static final String REQUEST_SETTINGS_TIMEOUT_VALIDATION = "request.settings.timeout.validation";
+    public static final String REQUEST_SETTINGS_SWITCH_ON = "request.settings.switch.on";
+    public static final String REQUEST_SETTINGS_SWITCH_OFF = "request.settings.switch.off";
 
     // ============ 功能测试执行结果相关 ============
     public static final String FUNCTIONAL_EXECUTION_RESULTS = "functional.execution.results";

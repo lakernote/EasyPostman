@@ -2,6 +2,7 @@ package com.laker.postman.panel.collections.right.request;
 
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.SavedResponse;
+import com.laker.postman.service.http.RequestSettingsResolver;
 import com.laker.postman.util.JsonUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -66,21 +67,25 @@ final class RequestDirtyStateHelper {
         }
 
         try {
-            List<SavedResponse> originalSavedResponses = original.getResponse();
-            List<SavedResponse> currentSavedResponses = current.getResponse();
+            HttpRequestItem normalizedOriginal = RequestSettingsResolver.normalizeForComparison(original);
+            HttpRequestItem normalizedCurrent = RequestSettingsResolver.normalizeForComparison(current);
+
+            List<SavedResponse> originalSavedResponses = normalizedOriginal.getResponse();
+            List<SavedResponse> currentSavedResponses = normalizedCurrent.getResponse();
 
             try {
                 // response 是历史结果，不属于请求编辑内容；比较时剔除，避免误判整页已修改。
-                original.setResponse(null);
-                current.setResponse(null);
-                return JsonUtil.toJsonStr(original).equals(JsonUtil.toJsonStr(current));
+                normalizedOriginal.setResponse(null);
+                normalizedCurrent.setResponse(null);
+                return JsonUtil.toJsonStr(normalizedOriginal).equals(JsonUtil.toJsonStr(normalizedCurrent));
             } finally {
-                original.setResponse(originalSavedResponses);
-                current.setResponse(currentSavedResponses);
+                normalizedOriginal.setResponse(originalSavedResponses);
+                normalizedCurrent.setResponse(currentSavedResponses);
             }
         } catch (Exception ex) {
             log.error("比较请求时发生异常", ex);
             return false;
         }
     }
+
 }

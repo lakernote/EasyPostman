@@ -1,19 +1,34 @@
 package com.laker.postman.plugin.capture;
 
 final class CaptureRuntime {
-    private static final CaptureProxyService PROXY_SERVICE = new CaptureProxyService();
+    private static volatile CaptureProxyService proxyService;
 
     private CaptureRuntime() {
     }
 
     static CaptureProxyService proxyService() {
-        return PROXY_SERVICE;
+        CaptureProxyService current = proxyService;
+        if (current != null) {
+            return current;
+        }
+        synchronized (CaptureRuntime.class) {
+            current = proxyService;
+            if (current == null) {
+                current = new CaptureProxyService();
+                proxyService = current;
+            }
+            return current;
+        }
     }
 
     static void stopQuietly() {
+        CaptureProxyService current = proxyService;
+        if (current == null) {
+            return;
+        }
         try {
-            if (PROXY_SERVICE.isRunning() || PROXY_SERVICE.isSystemProxySynced()) {
-                PROXY_SERVICE.stop();
+            if (current.isRunning() || current.isSystemProxySynced()) {
+                current.stop();
             }
         } catch (Exception ignored) {
             // Runtime shutdown should not be blocked by best-effort proxy cleanup.

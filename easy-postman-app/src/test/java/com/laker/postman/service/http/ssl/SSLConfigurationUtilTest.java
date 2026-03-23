@@ -1,7 +1,9 @@
 package com.laker.postman.service.http.ssl;
 
+import okhttp3.OkHttpClient;
 import org.testng.annotations.Test;
 
+import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
@@ -12,6 +14,7 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertTrue;
 
 public class SSLConfigurationUtilTest {
@@ -42,6 +45,18 @@ public class SSLConfigurationUtilTest {
         } finally {
             Files.deleteIfExists(certificateFile);
         }
+    }
+
+    @Test
+    public void shouldRestoreDefaultHostnameVerifierInStrictMode() {
+        HostnameVerifier lenientVerifier = (hostname, session) -> true;
+        OkHttpClient.Builder builder = new OkHttpClient.Builder()
+                .hostnameVerifier(lenientVerifier);
+
+        SSLConfigurationUtil.configureSSL(builder, SSLConfigurationUtil.SSLVerificationMode.STRICT, null, 0);
+
+        OkHttpClient client = builder.build();
+        assertNotSame(client.hostnameVerifier(), lenientVerifier);
     }
 
     private static X509TrustManager getDefaultTrustManager() throws Exception {

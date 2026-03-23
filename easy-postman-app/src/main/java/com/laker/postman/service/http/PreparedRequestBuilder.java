@@ -2,7 +2,6 @@ package com.laker.postman.service.http;
 
 import com.laker.postman.model.*;
 import com.laker.postman.service.collections.InheritanceService;
-import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.service.variable.RequestContext;
 import com.laker.postman.service.variable.VariableResolver;
 import lombok.experimental.UtilityClass;
@@ -99,7 +98,11 @@ public class PreparedRequestBuilder {
 
         // 判断是否为 multipart 请求
         req.isMultipart = checkIsMultipart(effectiveItem.getFormDataList());
-        req.followRedirects = SettingManager.isFollowRedirects();
+        req.followRedirects = RequestSettingsResolver.resolveFollowRedirects(effectiveItem);
+        req.cookieJarEnabled = RequestSettingsResolver.resolveCookieJarEnabled(effectiveItem);
+        req.sslVerificationEnabled = RequestSettingsResolver.resolveSslVerificationEnabled(effectiveItem);
+        req.httpVersion = RequestSettingsResolver.resolveHttpVersion(effectiveItem);
+        req.requestTimeoutMs = RequestSettingsResolver.resolveRequestTimeoutMs(effectiveItem);
 
         // 填充 List 数据，支持相同 key
         // 每次执行都使用独立副本，避免并发压测时线程间互相污染变量替换结果

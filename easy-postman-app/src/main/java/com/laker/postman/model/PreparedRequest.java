@@ -23,6 +23,10 @@ public class PreparedRequest {
 
     public boolean isMultipart;
     public boolean followRedirects = true; // 默认自动重定向
+    public boolean cookieJarEnabled = true; // 默认启用 Cookie Jar
+    public boolean sslVerificationEnabled = true; // 默认启用 SSL 校验
+    public String httpVersion = HttpRequestItem.HTTP_VERSION_AUTO; // HTTP 协议偏好
+    public int requestTimeoutMs = 0; // 0 表示不超时
 
     // 事件监听控制（精细化控制）
     public boolean collectBasicInfo = true; // 收集基本信息（headers、body），默认开启
@@ -51,6 +55,10 @@ public class PreparedRequest {
         copy.okHttpRequestBody = this.okHttpRequestBody;
         copy.isMultipart = this.isMultipart;
         copy.followRedirects = this.followRedirects;
+        copy.cookieJarEnabled = this.cookieJarEnabled;
+        copy.sslVerificationEnabled = this.sslVerificationEnabled;
+        copy.httpVersion = this.httpVersion;
+        copy.requestTimeoutMs = this.requestTimeoutMs;
         copy.collectBasicInfo = this.collectBasicInfo;
         copy.collectEventInfo = this.collectEventInfo;
         copy.enableNetworkLog = this.enableNetworkLog;

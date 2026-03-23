@@ -15,6 +15,10 @@ import java.util.List;
 @Setter
 @Getter
 public class HttpRequestItem implements Serializable {
+    public static final String HTTP_VERSION_AUTO = "AUTO";
+    public static final String HTTP_VERSION_HTTP_1_1 = "HTTP_1_1";
+    public static final String HTTP_VERSION_HTTP_2 = "HTTP_2";
+
     private String id = ""; // 唯一标识符
     private String name = ""; // 请求名称
     private String description = ""; // 请求描述（支持Markdown）
@@ -31,6 +35,11 @@ public class HttpRequestItem implements Serializable {
     private String authUsername = ""; // Basic用户名
     private String authPassword = ""; // Basic密码
     private String authToken = "";    // Bearer Token
+    private Boolean followRedirects; // 是否自动跟随重定向，null 表示跟随全局设置
+    private Boolean cookieJarEnabled; // 是否启用 Cookie Jar，null 表示使用默认值
+    private Boolean sslVerificationEnabled; // 是否启用 SSL 证书校验，null 表示跟随全局设置
+    private String httpVersion = HTTP_VERSION_AUTO; // HTTP 协议偏好
+    private Integer requestTimeoutMs; // 请求超时（毫秒），null 表示跟随全局设置
     // 前置脚本（请求前执行）
     private String prescript = "";
     // 后置脚本（响应后执行）
@@ -45,5 +54,14 @@ public class HttpRequestItem implements Serializable {
         return name == null || name.trim().isEmpty();
     }
 
+    public String resolveHttpVersion() {
+        if (httpVersion == null || httpVersion.trim().isEmpty()) {
+            return HTTP_VERSION_AUTO;
+        }
+        if (HTTP_VERSION_HTTP_1_1.equals(httpVersion) || HTTP_VERSION_HTTP_2.equals(httpVersion)) {
+            return httpVersion;
+        }
+        return HTTP_VERSION_AUTO;
+    }
 
 }

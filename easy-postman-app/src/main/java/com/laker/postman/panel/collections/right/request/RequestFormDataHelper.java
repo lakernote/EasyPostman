@@ -16,6 +16,7 @@ import com.laker.postman.panel.collections.right.request.sub.AuthTabPanel;
 import com.laker.postman.panel.collections.right.request.sub.EasyRequestHttpHeadersPanel;
 import com.laker.postman.panel.collections.right.request.sub.EasyRequestParamsPanel;
 import com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel;
+import com.laker.postman.panel.collections.right.request.sub.RequestSettingsPanel;
 import com.laker.postman.panel.collections.right.request.sub.ScriptPanel;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.util.XmlUtil;
@@ -31,6 +32,7 @@ final class RequestFormDataHelper {
     private final EasyRequestParamsPanel paramsPanel;
     private final EasyRequestHttpHeadersPanel headersPanel;
     private final RequestBodyPanel requestBodyPanel;
+    private final RequestSettingsPanel requestSettingsPanel;
     private final AuthTabPanel authTabPanel;
     private final ScriptPanel scriptPanel;
     private final MarkdownEditorPanel descriptionEditor;
@@ -41,6 +43,7 @@ final class RequestFormDataHelper {
                           EasyRequestParamsPanel paramsPanel,
                           EasyRequestHttpHeadersPanel headersPanel,
                           RequestBodyPanel requestBodyPanel,
+                          RequestSettingsPanel requestSettingsPanel,
                           AuthTabPanel authTabPanel,
                           ScriptPanel scriptPanel,
                           MarkdownEditorPanel descriptionEditor,
@@ -50,6 +53,7 @@ final class RequestFormDataHelper {
         this.paramsPanel = paramsPanel;
         this.headersPanel = headersPanel;
         this.requestBodyPanel = requestBodyPanel;
+        this.requestSettingsPanel = requestSettingsPanel;
         this.authTabPanel = authTabPanel;
         this.scriptPanel = scriptPanel;
         this.descriptionEditor = descriptionEditor;
@@ -97,6 +101,7 @@ final class RequestFormDataHelper {
         authTabPanel.setUsername(item.getAuthUsername());
         authTabPanel.setPassword(item.getAuthPassword());
         authTabPanel.setToken(item.getAuthToken());
+        requestSettingsPanel.populate(item);
 
         scriptPanel.setPrescript(item.getPrescript() == null ? "" : item.getPrescript());
         scriptPanel.setPostscript(item.getPostscript() == null ? "" : item.getPostscript());
@@ -130,6 +135,7 @@ final class RequestFormDataHelper {
         authTabPanel.setUsername("");
         authTabPanel.setPassword("");
         authTabPanel.setToken("");
+        requestSettingsPanel.populate(null);
         scriptPanel.setPrescript("");
         scriptPanel.setPostscript("");
         descriptionEditor.setText("");
@@ -174,6 +180,7 @@ final class RequestFormDataHelper {
         item.setAuthUsername(authTabPanel.getUsername());
         item.setAuthPassword(authTabPanel.getPassword());
         item.setAuthToken(authTabPanel.getToken());
+        requestSettingsPanel.applyTo(item);
         item.setPrescript(scriptPanel.getPrescript());
         item.setPostscript(scriptPanel.getPostscript());
 

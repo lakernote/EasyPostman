@@ -5,13 +5,7 @@ import com.laker.postman.common.component.MarkdownEditorPanel;
 import com.laker.postman.common.component.tab.IndicatorTabComponent;
 import com.laker.postman.model.RequestEditSubPanelType;
 import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.panel.collections.right.request.sub.AuthTabPanel;
-import com.laker.postman.panel.collections.right.request.sub.EasyRequestHttpHeadersPanel;
-import com.laker.postman.panel.collections.right.request.sub.EasyRequestParamsPanel;
-import com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel;
-import com.laker.postman.panel.collections.right.request.sub.RequestLinePanel;
-import com.laker.postman.panel.collections.right.request.sub.ResponsePanel;
-import com.laker.postman.panel.collections.right.request.sub.ScriptPanel;
+import com.laker.postman.panel.collections.right.request.sub.*;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -63,6 +57,11 @@ final class RequestViewFactory {
         reqTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_SCRIPTS), scriptPanel);
         reqTabs.setTabComponentAt(5, scriptsTabIndicator);
 
+        RequestSettingsPanel requestSettingsPanel = new RequestSettingsPanel();
+        IndicatorTabComponent settingsTabIndicator = new IndicatorTabComponent(I18nUtil.getMessage(MessageKeys.TAB_SETTINGS));
+        reqTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_SETTINGS), requestSettingsPanel);
+        reqTabs.setTabComponentAt(6, settingsTabIndicator);
+
         boolean enableSaveButton = protocol.isHttpProtocol() && panelType != RequestEditSubPanelType.SAVED_RESPONSE;
         ResponsePanel responsePanel = new ResponsePanel(protocol, enableSaveButton);
 
@@ -87,6 +86,8 @@ final class RequestViewFactory {
                 headersTabIndicator,
                 requestBodyPanel,
                 bodyTabIndicator,
+                settingsTabIndicator,
+                requestSettingsPanel,
                 scriptPanel,
                 scriptsTabIndicator,
                 responsePanel,

@@ -3,6 +3,7 @@ package com.laker.postman.service.http;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.service.setting.SettingManager;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -175,6 +176,58 @@ public class PreparedRequestBuilderTest {
             "PreparedRequest headersList should contain additional Authorization header");
     }
 
+    @Test
+    public void testRequestLevelSettingsOverrideGlobalDefaults() {
+        HttpRequestItem item = new HttpRequestItem();
+        item.setId("test-settings-override");
+        item.setMethod("GET");
+        item.setUrl("https://api.example.com/data");
+        item.setFollowRedirects(Boolean.FALSE);
+        item.setCookieJarEnabled(Boolean.FALSE);
+        item.setSslVerificationEnabled(Boolean.TRUE);
+        item.setHttpVersion(HttpRequestItem.HTTP_VERSION_HTTP_1_1);
+        item.setRequestTimeoutMs(4321);
+
+        PreparedRequest req = PreparedRequestBuilder.build(item);
+
+        assertFalse(req.followRedirects);
+        assertFalse(req.cookieJarEnabled);
+        assertTrue(req.sslVerificationEnabled);
+        assertEquals(req.httpVersion, HttpRequestItem.HTTP_VERSION_HTTP_1_1);
+        assertEquals(req.requestTimeoutMs, 4321);
+    }
+
+    @Test
+    public void testRequestLevelSettingsFallBackToGlobalDefaults() {
+        boolean oldFollowRedirects = SettingManager.isFollowRedirects();
+        boolean oldSslVerificationDisabled = SettingManager.isRequestSslVerificationDisabled();
+        int oldRequestTimeout = SettingManager.getRequestTimeout();
+
+        try {
+            SettingManager.setFollowRedirects(false);
+            SettingManager.setRequestSslVerificationDisabled(true);
+            SettingManager.setRequestTimeout(6789);
+
+            HttpRequestItem item = new HttpRequestItem();
+            item.setId("test-settings-fallback");
+            item.setMethod("GET");
+            item.setUrl("https://api.example.com/data");
+            item.setHttpVersion(null);
+
+            PreparedRequest req = PreparedRequestBuilder.build(item);
+
+            assertFalse(req.followRedirects);
+            assertTrue(req.cookieJarEnabled);
+            assertFalse(req.sslVerificationEnabled);
+            assertEquals(req.httpVersion, HttpRequestItem.HTTP_VERSION_AUTO);
+            assertEquals(req.requestTimeoutMs, 6789);
+        } finally {
+            SettingManager.setFollowRedirects(oldFollowRedirects);
+            SettingManager.setRequestSslVerificationDisabled(oldSslVerificationDisabled);
+            SettingManager.setRequestTimeout(oldRequestTimeout);
+        }
+    }
+
     private HttpHeader createHeader(String key, String value, boolean enabled) {
         HttpHeader header = new HttpHeader();
         header.setKey(key);
@@ -183,4 +236,3 @@ public class PreparedRequestBuilderTest {
         return header;
     }
 }
-

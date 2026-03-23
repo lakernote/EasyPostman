@@ -11,7 +11,7 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <version>5.3.18</version>
+    <version>5.3.23</version>
     <artifactId>easy-postman-plugin-capture</artifactId>
     <packaging>jar</packaging>
 
@@ -21,7 +21,7 @@
         <plugin.name>Capture Plugin</plugin.name>
         <plugin.entryClass>com.laker.postman.plugin.capture.CapturePlugin</plugin.entryClass>
         <plugin.description>HTTP capture toolbox panel with a local explicit proxy.</plugin.description>
-        <plugin.minAppVersion>5.3.18</plugin.minAppVersion>
+        <plugin.minAppVersion>5.3.23</plugin.minAppVersion>
         <plugin.minPlatformVersion>${plugin.platform.version}</plugin.minPlatformVersion>
         <plugin.maxPlatformVersion>${plugin.platform.version}</plugin.maxPlatformVersion>
 

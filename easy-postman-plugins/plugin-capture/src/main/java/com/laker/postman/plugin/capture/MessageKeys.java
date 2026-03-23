@@ -68,6 +68,7 @@ public final class MessageKeys {
     public static final String TOOLBOX_CAPTURE_SYSTEM_PROXY_SYNCED = "toolbox.capture.system_proxy.synced";
     public static final String TOOLBOX_CAPTURE_FILTER_ALL = "toolbox.capture.filter.all";
     public static final String TOOLBOX_CAPTURE_FILTER_RULES = "toolbox.capture.filter.rules";
+    public static final String TOOLBOX_CAPTURE_FILTER_INVALID = "toolbox.capture.filter.invalid";
     public static final String TOOLBOX_CAPTURE_IDLE_DETAILS = "toolbox.capture.idle_details";
     public static final String TOOLBOX_CAPTURE_WARN_BIND_HOST_REQUIRED = "toolbox.capture.warn.bind_host_required";
     public static final String TOOLBOX_CAPTURE_START_SUCCESS = "toolbox.capture.start.success";

@@ -612,7 +612,16 @@ public class CapturePanel extends JPanel {
     private void updateCaptureFilterSummary() {
         captureFilterLabel.setText(proxyService.isRunning()
                 ? proxyService.captureFilterSummary()
-                : CaptureRequestFilter.parse(captureHostsField.getText()).summary());
+                : summarizeDraftCaptureFilter(captureHostsField.getText()));
+    }
+
+    static String summarizeDraftCaptureFilter(String rawValue) {
+        try {
+            return CaptureRequestFilter.parse(rawValue).summary();
+        } catch (IllegalArgumentException ex) {
+            String draft = rawValue == null ? "" : rawValue.trim();
+            return t(MessageKeys.TOOLBOX_CAPTURE_FILTER_INVALID, draft.isEmpty() ? "..." : draft);
+        }
     }
 
     private JPanel buildQuickFilterPanel() {

@@ -322,12 +322,18 @@ final class SystemProxyService {
 
     private synchronized void restoreWindowsSnapshot() throws Exception {
         WindowsProxySnapshot snapshot = windowsSnapshot;
+        if (snapshot == null) {
+            active = false;
+            activeHost = "";
+            activePort = 0;
+            return;
+        }
         try {
-            restoreWindowsValue("ProxyEnable", snapshot == null ? null : snapshot.proxyEnable());
-            restoreWindowsValue("ProxyServer", snapshot == null ? null : snapshot.proxyServer());
-            restoreWindowsValue("ProxyOverride", snapshot == null ? null : snapshot.proxyOverride());
-            restoreWindowsValue("AutoConfigURL", snapshot == null ? null : snapshot.autoConfigUrl());
-            restoreWindowsValue("AutoDetect", snapshot == null ? null : snapshot.autoDetect());
+            restoreWindowsValue("ProxyEnable", snapshot.proxyEnable());
+            restoreWindowsValue("ProxyServer", snapshot.proxyServer());
+            restoreWindowsValue("ProxyOverride", snapshot.proxyOverride());
+            restoreWindowsValue("AutoConfigURL", snapshot.autoConfigUrl());
+            restoreWindowsValue("AutoDetect", snapshot.autoDetect());
             refreshWindowsInternetOptions();
         } finally {
             active = false;

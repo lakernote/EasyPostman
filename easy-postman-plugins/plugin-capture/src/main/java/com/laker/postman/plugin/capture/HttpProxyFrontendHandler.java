@@ -124,13 +124,9 @@ final class HttpProxyFrontendHandler extends SimpleChannelInboundHandler<FullHtt
 
     private void handleConnect(ChannelHandlerContext ctx, FullHttpRequest request) {
         String authority = request.uri();
-        String host = authority;
-        int port = 443;
-        int colonIndex = authority.lastIndexOf(':');
-        if (colonIndex > 0 && colonIndex < authority.length() - 1) {
-            host = authority.substring(0, colonIndex);
-            port = Integer.parseInt(authority.substring(colonIndex + 1));
-        }
+        ProxyRequestTarget.HostPort hostPort = ProxyRequestTarget.parseAuthority(authority, 443);
+        String host = hostPort.host();
+        int port = hostPort.port();
         log.debug("CONNECT request received: {} -> {}:{}", authority, host, port);
 
         if (!captureRequestFilter.shouldMitmHost(host)) {

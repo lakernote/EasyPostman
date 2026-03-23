@@ -27,10 +27,12 @@ import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.JSplitPane;
 import javax.swing.JTable;
+import javax.swing.Timer;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.JTabbedPane;
+import javax.swing.ListSelectionModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
@@ -71,6 +73,7 @@ public class CapturePanel extends JPanel {
     private static final String SETTING_CAPTURE_HOST_FILTER = "plugin.capture.hostFilter";
 
     private final CaptureProxyService proxyService = CaptureRuntime.proxyService();
+    private final CaptureRequestCollectionImporter requestCollectionImporter = new CaptureRequestCollectionImporter();
     private final MacCertificateInstallService macCertificateInstallService = new MacCertificateInstallService();
     private final WindowsCertificateInstallService windowsCertificateInstallService = new WindowsCertificateInstallService();
 
@@ -122,10 +125,11 @@ public class CapturePanel extends JPanel {
     private boolean syncingQuickFilters;
     private boolean operationInProgress;
     private CaptureFlow selectedFlow;
+    private Timer refreshTimer;
 
     public CapturePanel() {
         initUI();
-        proxyService.sessionStore().addChangeListener(() -> SwingUtilities.invokeLater(this::refreshTable));
+        proxyService.sessionStore().addChangeListener(this::scheduleRefreshTable);
         refreshTable();
         updateStatus();
     }
@@ -141,7 +145,7 @@ public class CapturePanel extends JPanel {
     private JComponent buildTopBar() {
         JPanel panel = new JPanel(new MigLayout(
                 "insets 8, fillx, novisualpadding",
-                "[][grow,fill]12[]12[]6[]push[]",
+                "[][grow,fill]12[]8[]12[]6[]push[]",
                 "[][][][]"));
         panel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor("Separator.foreground")),
@@ -244,10 +248,14 @@ public class CapturePanel extends JPanel {
 
     private JComponent buildContent() {
         tablePanel = new EnhancedTablePanel(columnNames());
+        tablePanel.setAutoResizeOnRefresh(false);
+        tablePanel.setContextMenuCustomizer(this::appendTableContextMenu);
         JTable table = tablePanel.getTable();
+        table.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         table.getSelectionModel().addListSelectionListener(this::handleSelectionChanged);
         disableTableTooltips(table);
         hideIdColumn(table);
+        configureTableColumns(table);
 
         requestDetailArea = createDetailArea();
         responseDetailArea = createDetailArea();
@@ -450,17 +458,78 @@ public class CapturePanel extends JPanel {
         worker.execute();
     }
 
+    private void scheduleRefreshTable() {
+        SwingUtilities.invokeLater(() -> {
+            if (refreshTimer == null) {
+                refreshTimer = new Timer(120, e -> refreshTable());
+                refreshTimer.setRepeats(false);
+            }
+            refreshTimer.restart();
+        });
+    }
+
     private void refreshTable() {
+        List<String> selectedIds = selectedFlowIds();
         List<Object[]> rows = new ArrayList<>();
         for (CaptureFlow flow : proxyService.sessionStore().snapshot()) {
             rows.add(flow.toRow());
         }
-        tablePanel.setData(rows);
-        hideIdColumn(tablePanel.getTable());
+        tablePanel.setDataPreserveView(rows);
+        JTable table = tablePanel.getTable();
+        hideIdColumn(table);
+        configureTableColumns(table);
+        restoreSelectedRows(selectedIds);
         if (rows.isEmpty()) {
             clearDetail();
+        } else if (selectedFlow != null) {
+            CaptureFlow latestSelectedFlow = proxyService.sessionStore().find(selectedFlow.id());
+            if (latestSelectedFlow != null) {
+                selectedFlow = latestSelectedFlow;
+                updateDetailHeader(latestSelectedFlow);
+                updateDetailAreas(latestSelectedFlow);
+            }
         }
-        updateStatus();
+    }
+
+    private void appendTableContextMenu(JPopupMenu menu) {
+        JMenuItem importItem = new JMenuItem(t(MessageKeys.TOOLBOX_CAPTURE_IMPORT));
+        importItem.setEnabled(!operationInProgress && !selectedFlows().isEmpty());
+        importItem.addActionListener(e -> importSelectedFlows());
+        menu.addSeparator();
+        menu.add(importItem);
+    }
+
+    private List<String> selectedFlowIds() {
+        if (tablePanel == null || tablePanel.getTable() == null) {
+            return List.of();
+        }
+        JTable table = tablePanel.getTable();
+        int[] selectedRows = table.getSelectedRows();
+        if (selectedRows == null || selectedRows.length == 0) {
+            return List.of();
+        }
+        List<String> flowIds = new ArrayList<>();
+        for (int selectedRow : selectedRows) {
+            Object flowId = table.getValueAt(selectedRow, 0);
+            if (flowId != null) {
+                flowIds.add(String.valueOf(flowId));
+            }
+        }
+        return flowIds;
+    }
+
+    private void restoreSelectedRows(List<String> flowIds) {
+        if (flowIds == null || flowIds.isEmpty() || tablePanel == null || tablePanel.getTable() == null) {
+            return;
+        }
+        JTable table = tablePanel.getTable();
+        table.clearSelection();
+        for (int row = 0; row < table.getRowCount(); row++) {
+            Object flowId = table.getValueAt(row, 0);
+            if (flowId != null && flowIds.contains(String.valueOf(flowId))) {
+                table.addRowSelectionInterval(row, row);
+            }
+        }
     }
 
     private void handleSelectionChanged(ListSelectionEvent event) {
@@ -821,6 +890,21 @@ public class CapturePanel extends JPanel {
         idColumn.setResizable(false);
     }
 
+    private void configureTableColumns(JTable table) {
+        if (table.getColumnModel().getColumnCount() < 10) {
+            return;
+        }
+        table.getColumnModel().getColumn(1).setPreferredWidth(52);
+        table.getColumnModel().getColumn(2).setPreferredWidth(82);
+        table.getColumnModel().getColumn(3).setPreferredWidth(74);
+        table.getColumnModel().getColumn(4).setPreferredWidth(180);
+        table.getColumnModel().getColumn(5).setPreferredWidth(320);
+        table.getColumnModel().getColumn(6).setPreferredWidth(72);
+        table.getColumnModel().getColumn(7).setPreferredWidth(88);
+        table.getColumnModel().getColumn(8).setPreferredWidth(96);
+        table.getColumnModel().getColumn(9).setPreferredWidth(96);
+    }
+
     private void disableTableTooltips(JTable table) {
         TableCellRenderer renderer = table.getDefaultRenderer(Object.class);
         table.setDefaultRenderer(Object.class, (tbl, value, selected, focus, row, column) -> {
@@ -1095,6 +1179,15 @@ public class CapturePanel extends JPanel {
         }
     }
 
+    private void importSelectedFlows() {
+        List<CaptureFlow> flows = selectedFlows();
+        if (flows.isEmpty()) {
+            NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_CAPTURE_IMPORT_EMPTY));
+            return;
+        }
+        requestCollectionImporter.importFlows(flows);
+    }
+
     private RSyntaxTextArea createDetailArea() {
         RSyntaxTextArea area = new RSyntaxTextArea();
         area.setEditable(false);
@@ -1192,6 +1285,26 @@ public class CapturePanel extends JPanel {
             return responseDetailArea;
         }
         return streamDetailArea;
+    }
+
+    private List<CaptureFlow> selectedFlows() {
+        if (tablePanel == null || tablePanel.getTable() == null) {
+            return List.of();
+        }
+        JTable table = tablePanel.getTable();
+        int[] selectedRows = table.getSelectedRows();
+        if (selectedRows == null || selectedRows.length == 0) {
+            return List.of();
+        }
+        List<CaptureFlow> flows = new ArrayList<>();
+        for (int selectedRow : selectedRows) {
+            Object flowId = table.getValueAt(selectedRow, 0);
+            CaptureFlow flow = proxyService.sessionStore().find(String.valueOf(flowId));
+            if (flow != null) {
+                flows.add(flow);
+            }
+        }
+        return flows;
     }
 
     private JLabel buildChipLabel(String text, Color bgColor) {
@@ -1334,6 +1447,7 @@ public class CapturePanel extends JPanel {
     private String[] columnNames() {
         return new String[]{
                 t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_ID),
+                t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_SEQ),
                 t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_TIME),
                 t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_METHOD),
                 t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_HOST),

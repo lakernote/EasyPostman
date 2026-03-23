@@ -62,6 +62,10 @@ final class CaptureFlow {
         return id;
     }
 
+    int sequence() {
+        return Integer.parseInt(id);
+    }
+
     String timeText() {
         return formatTime(startedAt);
     }
@@ -79,6 +83,19 @@ final class CaptureFlow {
     }
 
     String url() {
+        return url;
+    }
+
+    String collectionRequestUrl() {
+        if (protocol != Protocol.WEBSOCKET) {
+            return url;
+        }
+        if (url.startsWith("https://")) {
+            return "wss://" + url.substring("https://".length());
+        }
+        if (url.startsWith("http://")) {
+            return "ws://" + url.substring("http://".length());
+        }
         return url;
     }
 
@@ -102,6 +119,14 @@ final class CaptureFlow {
         };
     }
 
+    boolean isSseProtocol() {
+        return protocol == Protocol.SSE;
+    }
+
+    boolean isWebSocketProtocol() {
+        return protocol == Protocol.WEBSOCKET;
+    }
+
     String statusDisplayText() {
         return statusCode > 0 ? statusCode + " " + statusText : t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_PENDING);
     }
@@ -112,6 +137,10 @@ final class CaptureFlow {
 
     int requestHeaderCount() {
         return requestHeaders.size();
+    }
+
+    Map<String, String> requestHeadersSnapshot() {
+        return new LinkedHashMap<>(requestHeaders);
     }
 
     int responseHeaderCount() {
@@ -211,6 +240,7 @@ final class CaptureFlow {
     Object[] toRow() {
         return new Object[]{
                 id,
+                sequence(),
                 timeText(),
                 method,
                 host,
@@ -291,6 +321,18 @@ final class CaptureFlow {
             return streamTimelinePreview;
         }
         return t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_NO_STREAM);
+    }
+
+    String requestBodyImportText() {
+        if (protocol == Protocol.WEBSOCKET || requestBody == null || requestBody.length == 0) {
+            return "";
+        }
+        String text = new String(requestBody, StandardCharsets.UTF_8);
+        return looksPrintable(text) ? text : "";
+    }
+
+    boolean requestBodyPartial() {
+        return requestSize > (requestBody == null ? 0 : requestBody.length);
     }
 
     String curlCommand() {

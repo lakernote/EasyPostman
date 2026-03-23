@@ -49,6 +49,12 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>com.laker.tools</groupId>
+            <artifactId>easy-postman</artifactId>
+            <version>${host.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>com.formdev</groupId>
             <artifactId>flatlaf</artifactId>
             <scope>provided</scope>

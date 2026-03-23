@@ -18,6 +18,7 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.event.*;
 import java.util.*;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * 增强型通用表格组件
@@ -58,6 +59,8 @@ public class EnhancedTablePanel extends JPanel {
 
     // ── Hover ─────────────────────────────────────────────────────────────
     private int hoveredRow = -1;
+    private boolean autoResizeOnRefresh = true;
+    private Consumer<JPopupMenu> contextMenuCustomizer;
 
     // ── UI 常量 ───────────────────────────────────────────────────────────
     private static final String SEPARATOR_FG = "Separator.foreground";
@@ -145,6 +148,24 @@ public class EnhancedTablePanel extends JPanel {
         sortCol = -1;
         updateHintLabel();
         applyFilterAndSort();
+    }
+
+    /**
+     * 保持当前排序、过滤、分页，仅替换数据。
+     */
+    public void setDataPreserveView(List<Object[]> rows) {
+        allRows.clear();
+        if (rows != null) allRows.addAll(rows);
+        updateHintLabel();
+        applyFilterAndSort();
+    }
+
+    public void setAutoResizeOnRefresh(boolean autoResizeOnRefresh) {
+        this.autoResizeOnRefresh = autoResizeOnRefresh;
+    }
+
+    public void setContextMenuCustomizer(Consumer<JPopupMenu> contextMenuCustomizer) {
+        this.contextMenuCustomizer = contextMenuCustomizer;
     }
 
     /**
@@ -578,7 +599,9 @@ public class EnhancedTablePanel extends JPanel {
             public void mousePressed(MouseEvent e) {
                 if (SwingUtilities.isRightMouseButton(e)) {
                     int row = table.rowAtPoint(e.getPoint());
-                    if (row >= 0) table.setRowSelectionInterval(row, row);
+                    if (row >= 0 && !table.isRowSelected(row)) {
+                        table.setRowSelectionInterval(row, row);
+                    }
                     showContextMenu(e);
                 }
             }
@@ -691,7 +714,9 @@ public class EnhancedTablePanel extends JPanel {
 
         updatePaginationControls();
         updateEmptyState();
-        SwingUtilities.invokeLater(this::autoResizeColumns);
+        if (autoResizeOnRefresh) {
+            SwingUtilities.invokeLater(this::autoResizeColumns);
+        }
     }
 
     private void updatePaginationControls() {
@@ -779,6 +804,9 @@ public class EnhancedTablePanel extends JPanel {
         });
         menu.add(copyCell);
         menu.add(copyRow);
+        if (contextMenuCustomizer != null) {
+            contextMenuCustomizer.accept(menu);
+        }
         menu.show(table, e.getX(), e.getY());
     }
 
@@ -1121,4 +1149,3 @@ public class EnhancedTablePanel extends JPanel {
                 .replace(" ", "&nbsp;");
     }
 }
-

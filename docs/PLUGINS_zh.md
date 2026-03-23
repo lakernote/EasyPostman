@@ -29,10 +29,11 @@ easy-postman-parent
 ├── easy-postman-app
 └── easy-postman-plugins
     ├── plugin-manager
+    ├── plugin-client-cert
+    ├── plugin-capture
     ├── plugin-redis
     ├── plugin-kafka
-    ├── plugin-decompiler
-    └── plugin-client-cert
+    └── plugin-decompiler
 ```
 
 ### 1.1 每层负责什么
@@ -215,6 +216,7 @@ easy-postman-plugins/plugin-xxx
 
 推荐直接参考现有官方插件，例如：
 
+- `easy-postman-plugins/plugin-capture/pom.xml`
 - `easy-postman-plugins/plugin-kafka/pom.xml`
 - `easy-postman-plugins/plugin-redis/pom.xml`
 
@@ -464,7 +466,7 @@ context.registerSnippet(...);
 你通常只需要关心这些输入：
 
 - `plugin`
-  - 选择要发布的插件，例如 `kafka`
+  - 选择要发布的插件，例如 `capture`、`kafka`
 - `dry_run`
   - 建议先 `true`
 - `publish_gitee_release`

@@ -18,6 +18,8 @@
     <!--
         这里放“官方插件”本体：
         - plugin-manager：安装/卸载/目录与市场门面
+        - plugin-client-cert：客户端证书能力插件
+        - plugin-capture：HTTP 抓包能力插件
         - plugin-redis / plugin-kafka：外部中间件能力插件
         - plugin-decompiler：重功能可选插件
      -->

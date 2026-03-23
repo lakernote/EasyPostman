@@ -3,6 +3,8 @@
 这里放官方插件模块和插件管理模块：
 
 - `plugin-manager`: catalog 解析、在线/离线安装、插件管理门面
+- `plugin-client-cert`: 客户端证书插件
+- `plugin-capture`: 抓包插件
 - `plugin-redis`: Redis 插件
 - `plugin-kafka`: Kafka 插件
 - `plugin-decompiler`: Java 反编译插件

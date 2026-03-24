@@ -69,7 +69,7 @@ public class HttpService {
         // 添加自动解压拦截器
         builder.addNetworkInterceptor(new CompressionDecompressNetworkInterceptor());
 
-        applyRequestSettings(builder, preparedRequest);
+        applyRequestSettings(builder, preparedRequest, isolateConnectionPool);
 
         // 只有至少需要一种信息收集时才创建 EventListener
         // 如果三个开关都是 false，则不创建（最小性能开销）
@@ -123,7 +123,9 @@ public class HttpService {
         return buildDynamicClient(baseClient, req, req.requestTimeoutMs, shouldIsolateConnectionPool(req));
     }
 
-    private static void applyRequestSettings(OkHttpClient.Builder builder, PreparedRequest preparedRequest) {
+    private static void applyRequestSettings(OkHttpClient.Builder builder,
+                                             PreparedRequest preparedRequest,
+                                             boolean overrideSslConfiguration) {
         if (!preparedRequest.cookieJarEnabled) {
             builder.cookieJar(CookieJar.NO_COOKIES);
         }
@@ -137,7 +139,9 @@ public class HttpService {
             builder.protocols(List.of(Protocol.HTTP_2, Protocol.HTTP_1_1));
         }
 
-        applySslVerificationSetting(builder, preparedRequest);
+        if (overrideSslConfiguration) {
+            applySslVerificationSetting(builder, preparedRequest);
+        }
     }
 
     private static void applySslVerificationSetting(OkHttpClient.Builder builder, PreparedRequest preparedRequest) {
@@ -185,7 +189,7 @@ public class HttpService {
             return resolveGlobalSslVerificationMode();
         }
 
-        boolean proxySslDisabled = SettingManager.isProxyEnabled() && SettingManager.isProxySslVerificationDisabled();
+        boolean proxySslDisabled = RequestSettingsResolver.isProxySslVerificationForcedDisabled();
         return (!preparedRequest.sslVerificationEnabled || proxySslDisabled)
                 ? SSLConfigurationUtil.SSLVerificationMode.LENIENT
                 : SSLConfigurationUtil.SSLVerificationMode.STRICT;
@@ -199,7 +203,7 @@ public class HttpService {
     }
 
     private static SSLConfigurationUtil.SSLVerificationMode resolveGlobalSslVerificationMode() {
-        boolean proxySslDisabled = SettingManager.isProxyEnabled() && SettingManager.isProxySslVerificationDisabled();
+        boolean proxySslDisabled = RequestSettingsResolver.isProxySslVerificationForcedDisabled();
         return (SettingManager.isRequestSslVerificationDisabled() || proxySslDisabled)
                 ? SSLConfigurationUtil.SSLVerificationMode.LENIENT
                 : SSLConfigurationUtil.SSLVerificationMode.STRICT;

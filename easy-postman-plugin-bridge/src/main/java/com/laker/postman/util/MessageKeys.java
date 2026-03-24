@@ -873,11 +873,15 @@ public final class MessageKeys {
     public static final String REQUEST_SETTINGS_SSL_VERIFICATION_LABEL = "request.settings.ssl_verification.label";
     public static final String REQUEST_SETTINGS_SSL_VERIFICATION_TOOLTIP = "request.settings.ssl_verification.tooltip";
     public static final String REQUEST_SETTINGS_SSL_VERIFICATION_DESC = "request.settings.ssl_verification.desc";
+    public static final String REQUEST_SETTINGS_SSL_VERIFICATION_PROXY_FORCED_HINT = "request.settings.ssl_verification.proxy_forced_hint";
     public static final String REQUEST_SETTINGS_TIMEOUT_LABEL = "request.settings.timeout.label";
     public static final String REQUEST_SETTINGS_TIMEOUT_TOOLTIP = "request.settings.timeout.tooltip";
     public static final String REQUEST_SETTINGS_TIMEOUT_DESC = "request.settings.timeout.desc";
     public static final String REQUEST_SETTINGS_TIMEOUT_HINT = "request.settings.timeout.hint";
     public static final String REQUEST_SETTINGS_TIMEOUT_VALIDATION = "request.settings.timeout.validation";
+    public static final String REQUEST_SETTINGS_BOOLEAN_DEFAULT = "request.settings.boolean.default";
+    public static final String REQUEST_SETTINGS_BOOLEAN_ENABLED = "request.settings.boolean.enabled";
+    public static final String REQUEST_SETTINGS_BOOLEAN_DISABLED = "request.settings.boolean.disabled";
     public static final String REQUEST_SETTINGS_SWITCH_ON = "request.settings.switch.on";
     public static final String REQUEST_SETTINGS_SWITCH_OFF = "request.settings.switch.off";
 

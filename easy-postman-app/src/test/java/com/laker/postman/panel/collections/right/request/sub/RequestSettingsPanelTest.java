@@ -6,6 +6,7 @@ import org.testng.annotations.Test;
 
 import javax.swing.*;
 import java.lang.reflect.Field;
+import java.util.Objects;
 
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -34,7 +35,7 @@ public class RequestSettingsPanelTest {
     }
 
     @Test
-    public void shouldPreserveInheritedSettingsWhenGlobalDefaultsChange() throws Exception {
+    public void shouldPreserveInheritedSettingsWhenGlobalDefaultsChange() {
         boolean oldFollowRedirects = SettingManager.isFollowRedirects();
         boolean oldSslVerificationDisabled = SettingManager.isRequestSslVerificationDisabled();
 
@@ -65,6 +66,72 @@ public class RequestSettingsPanelTest {
     }
 
     @Test
+    public void shouldAllowExplicitFollowRedirectsOverrideToReturnToDefault() throws Exception {
+        HttpRequestItem original = new HttpRequestItem();
+        original.setFollowRedirects(Boolean.FALSE);
+
+        RequestSettingsPanel panel = new RequestSettingsPanel();
+        panel.populate(original);
+        selectBooleanSetting(panel, "followRedirectsComboBox", null);
+
+        HttpRequestItem saved = new HttpRequestItem();
+        panel.applyTo(saved);
+
+        assertNull(saved.getFollowRedirects());
+        assertFalse(panel.hasCustomSettings());
+    }
+
+    @Test
+    public void shouldAllowInheritedFollowRedirectsToBeSavedAsExplicitValue() throws Exception {
+        boolean oldFollowRedirects = SettingManager.isFollowRedirects();
+
+        try {
+            SettingManager.setFollowRedirects(true);
+
+            HttpRequestItem original = new HttpRequestItem();
+            original.setFollowRedirects(null);
+
+            RequestSettingsPanel panel = new RequestSettingsPanel();
+            panel.populate(original);
+            selectBooleanSetting(panel, "followRedirectsComboBox", Boolean.TRUE);
+
+            HttpRequestItem saved = new HttpRequestItem();
+            panel.applyTo(saved);
+
+            assertTrue(saved.getFollowRedirects());
+            assertTrue(panel.hasCustomSettings());
+        } finally {
+            SettingManager.setFollowRedirects(oldFollowRedirects);
+        }
+    }
+
+    @Test
+    public void shouldKeepStoredSslOverrideAndShowProxyHintWhenProxyForcesLenientMode() throws Exception {
+        boolean oldProxyEnabled = SettingManager.isProxyEnabled();
+        boolean oldProxySslDisabled = SettingManager.isProxySslVerificationDisabled();
+
+        try {
+            SettingManager.setProxyEnabled(true);
+            SettingManager.setProxySslVerificationDisabled(true);
+
+            HttpRequestItem original = new HttpRequestItem();
+            original.setSslVerificationEnabled(Boolean.TRUE);
+
+            RequestSettingsPanel panel = new RequestSettingsPanel();
+            panel.populate(original);
+
+            HttpRequestItem saved = new HttpRequestItem();
+            panel.applyTo(saved);
+
+            assertTrue(saved.getSslVerificationEnabled());
+            assertTrue(readLabel(panel, "sslVerificationHintLabel").isVisible());
+        } finally {
+            SettingManager.setProxyEnabled(oldProxyEnabled);
+            SettingManager.setProxySslVerificationDisabled(oldProxySslDisabled);
+        }
+    }
+
+    @Test
     public void shouldKeepExplicitOverrideWhenUserChangesInheritedValueAfterGlobalChange() throws Exception {
         boolean oldFollowRedirects = SettingManager.isFollowRedirects();
 
@@ -78,7 +145,7 @@ public class RequestSettingsPanelTest {
             panel.populate(original);
 
             SettingManager.setFollowRedirects(false);
-            setSwitchSelected(panel, "followRedirectsSwitch", false);
+            selectBooleanSetting(panel, "followRedirectsComboBox", Boolean.FALSE);
 
             HttpRequestItem saved = new HttpRequestItem();
             panel.applyTo(saved);
@@ -103,12 +170,12 @@ public class RequestSettingsPanelTest {
             RequestSettingsPanel panel = new RequestSettingsPanel();
             panel.populate(original);
 
-            setSwitchSelected(panel, "followRedirectsSwitch", true);
+            selectBooleanSetting(panel, "followRedirectsComboBox", Boolean.TRUE);
             HttpRequestItem saved = new HttpRequestItem();
             panel.applyTo(saved);
             panel.rebaseline(saved);
 
-            setSwitchSelected(panel, "followRedirectsSwitch", false);
+            selectBooleanSetting(panel, "followRedirectsComboBox", Boolean.FALSE);
             HttpRequestItem savedAgain = new HttpRequestItem();
             panel.applyTo(savedAgain);
 
@@ -125,10 +192,27 @@ public class RequestSettingsPanelTest {
         timeoutField.setText(value);
     }
 
-    private static void setSwitchSelected(RequestSettingsPanel panel, String fieldName, boolean selected) throws Exception {
+    private static void selectBooleanSetting(RequestSettingsPanel panel, String fieldName, Boolean value) throws Exception {
         Field field = RequestSettingsPanel.class.getDeclaredField(fieldName);
         field.setAccessible(true);
-        AbstractButton button = (AbstractButton) field.get(panel);
-        button.setSelected(selected);
+        JComboBox<?> comboBox = (JComboBox<?>) field.get(panel);
+        ComboBoxModel<?> model = comboBox.getModel();
+        for (int i = 0; i < model.getSize(); i++) {
+            Object option = model.getElementAt(i);
+            Field valueField = option.getClass().getDeclaredField("value");
+            valueField.setAccessible(true);
+            Object optionValue = valueField.get(option);
+            if (Objects.equals(optionValue, value)) {
+                comboBox.setSelectedIndex(i);
+                return;
+            }
+        }
+        throw new IllegalArgumentException("No combo option found for value: " + value);
+    }
+
+    private static JLabel readLabel(RequestSettingsPanel panel, String fieldName) throws Exception {
+        Field field = RequestSettingsPanel.class.getDeclaredField(fieldName);
+        field.setAccessible(true);
+        return (JLabel) field.get(panel);
     }
 }

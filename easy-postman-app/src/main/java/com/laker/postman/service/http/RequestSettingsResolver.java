@@ -23,9 +23,16 @@ public class RequestSettingsResolver {
     }
 
     public static boolean resolveSslVerificationEnabled(HttpRequestItem item) {
+        if (isProxySslVerificationForcedDisabled()) {
+            return false;
+        }
         return item != null && item.getSslVerificationEnabled() != null
                 ? item.getSslVerificationEnabled()
                 : !SettingManager.isRequestSslVerificationDisabled();
+    }
+
+    public static boolean isProxySslVerificationForcedDisabled() {
+        return SettingManager.isProxyEnabled() && SettingManager.isProxySslVerificationDisabled();
     }
 
     public static String resolveHttpVersion(HttpRequestItem item) {
@@ -38,17 +45,37 @@ public class RequestSettingsResolver {
                 : SettingManager.getRequestTimeout();
     }
 
-    public static HttpRequestItem normalizeForComparison(HttpRequestItem item) {
+    public static HttpRequestItem normalizeStoredSettings(HttpRequestItem item) {
         HttpRequestItem copy = JsonUtil.deepCopy(item, HttpRequestItem.class);
         if (copy == null) {
             return null;
         }
 
-        copy.setFollowRedirects(resolveFollowRedirects(copy));
-        copy.setCookieJarEnabled(resolveCookieJarEnabled(copy));
-        copy.setSslVerificationEnabled(resolveSslVerificationEnabled(copy));
-        copy.setHttpVersion(resolveHttpVersion(copy));
-        copy.setRequestTimeoutMs(resolveRequestTimeoutMs(copy));
+        normalizeStoredSettingsInPlace(copy);
         return copy;
+    }
+
+    public static HttpRequestItem normalizeForComparison(HttpRequestItem item) {
+        return normalizeStoredSettings(item);
+    }
+
+    public static void normalizeStoredSettingsInPlace(HttpRequestItem item) {
+        if (item == null) {
+            return;
+        }
+
+        item.setCookieJarEnabled(normalizeStoredCookieJarEnabled(item.getCookieJarEnabled()));
+        item.setHttpVersion(normalizeStoredHttpVersion(item.getHttpVersion()));
+    }
+
+    public static Boolean normalizeStoredCookieJarEnabled(Boolean cookieJarEnabled) {
+        return Boolean.TRUE.equals(cookieJarEnabled) ? null : cookieJarEnabled;
+    }
+
+    public static String normalizeStoredHttpVersion(String httpVersion) {
+        if (httpVersion == null || httpVersion.trim().isEmpty()) {
+            return null;
+        }
+        return HttpRequestItem.HTTP_VERSION_AUTO.equals(httpVersion) ? null : httpVersion;
     }
 }

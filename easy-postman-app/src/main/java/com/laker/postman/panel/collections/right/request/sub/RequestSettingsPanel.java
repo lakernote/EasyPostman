@@ -31,20 +31,13 @@ public class RequestSettingsPanel extends JScrollPane {
     private static final int ROW_COLUMN_GAP = 16;
     private static final int SCROLL_UNIT_INCREMENT = 24;
 
-    private final SwitchButton followRedirectsSwitch;
+    private final EasyComboBox<BooleanSettingOption> followRedirectsComboBox;
     private final SwitchButton useCookieJarSwitch;
     private final EasyComboBox<HttpVersionOption> httpVersionComboBox;
-    private final SwitchButton sslVerificationSwitch;
+    private final EasyComboBox<BooleanSettingOption> sslVerificationComboBox;
     private final JTextField requestTimeoutField;
     private final JLabel requestTimeoutHintLabel;
-    private Boolean initialFollowRedirects;
-    private Boolean initialCookieJarEnabled;
-    private Boolean initialSslVerificationEnabled;
-    private String initialHttpVersion;
-    private boolean initialEffectiveFollowRedirects;
-    private boolean initialEffectiveCookieJarEnabled;
-    private boolean initialEffectiveSslVerificationEnabled;
-    private String initialEffectiveHttpVersion;
+    private final JLabel sslVerificationHintLabel;
 
     public RequestSettingsPanel() {
         setBorder(BorderFactory.createEmptyBorder());
@@ -63,22 +56,23 @@ public class RequestSettingsPanel extends JScrollPane {
         viewportContent.add(content, BorderLayout.NORTH);
         setViewportView(viewportContent);
 
-        followRedirectsSwitch = new SwitchButton();
+        followRedirectsComboBox = createBooleanSettingComboBox();
         useCookieJarSwitch = new SwitchButton();
         httpVersionComboBox = new EasyComboBox<>(createHttpVersionOptions(), EasyComboBox.WidthMode.FIXED_MAX);
-        sslVerificationSwitch = new SwitchButton();
+        sslVerificationComboBox = createBooleanSettingComboBox();
         requestTimeoutField = new JTextField();
         requestTimeoutHintLabel = createHintLabel();
+        sslVerificationHintLabel = createHintLabel();
 
         ((AbstractDocument) requestTimeoutField.getDocument()).setDocumentFilter(new DigitsOnlyDocumentFilter());
         httpVersionComboBox.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         requestTimeoutField.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         requestTimeoutField.setColumns(10);
 
-        content.add(createSwitchRow(
+        content.add(createSelectRow(
                 I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_FOLLOW_REDIRECTS_LABEL),
                 I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_FOLLOW_REDIRECTS_DESC),
-                followRedirectsSwitch
+                followRedirectsComboBox
         ), "growx, wrap");
         content.add(createSwitchRow(
                 I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_USE_COOKIE_JAR_LABEL),
@@ -90,31 +84,33 @@ public class RequestSettingsPanel extends JScrollPane {
                 I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_HTTP_VERSION_DESC),
                 httpVersionComboBox
         ), "growx, wrap");
-        content.add(createSwitchRow(
-                I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_SSL_VERIFICATION_LABEL),
-                I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_SSL_VERIFICATION_DESC),
-                sslVerificationSwitch
-        ), "growx, wrap");
+        content.add(createSslVerificationRow(), "growx, wrap");
         content.add(createTimeoutRow(), "growx, wrap");
-        captureInitialState(null);
-        resetToDefaults(null);
+        populate(null);
     }
 
     public void populate(HttpRequestItem item) {
-        captureInitialState(item);
-        resetToDefaults(item);
+        updateDynamicHints();
+        followRedirectsComboBox.setSelectedItem(findBooleanOption(followRedirectsComboBox, item != null ? item.getFollowRedirects() : null));
+        useCookieJarSwitch.setSelected(RequestSettingsResolver.resolveCookieJarEnabled(item));
+        sslVerificationComboBox.setSelectedItem(findBooleanOption(sslVerificationComboBox, item != null ? item.getSslVerificationEnabled() : null));
+        httpVersionComboBox.setSelectedItem(findHttpVersionOption(
+                RequestSettingsResolver.normalizeStoredHttpVersion(item != null ? item.getHttpVersion() : null)
+        ));
+        Integer requestTimeout = item != null ? item.getRequestTimeoutMs() : null;
+        requestTimeoutField.setText(requestTimeout != null ? String.valueOf(requestTimeout) : "");
     }
 
     public void applyTo(HttpRequestItem item) {
-        item.setFollowRedirects(resolveFollowRedirectsValueForSave());
-        item.setCookieJarEnabled(resolveCookieJarValueForSave());
-        item.setSslVerificationEnabled(resolveSslVerificationValueForSave());
-        item.setHttpVersion(resolveHttpVersionValueForSave());
-        item.setRequestTimeoutMs(resolveRequestTimeoutValueForSave());
+        item.setFollowRedirects(getSelectedBooleanValue(followRedirectsComboBox));
+        item.setCookieJarEnabled(getStoredCookieJarValue());
+        item.setSslVerificationEnabled(getSelectedBooleanValue(sslVerificationComboBox));
+        item.setHttpVersion(getStoredHttpVersionValue());
+        item.setRequestTimeoutMs(getStoredRequestTimeoutValue());
     }
 
     public void rebaseline(HttpRequestItem item) {
-        captureInitialState(item);
+        updateDynamicHints();
     }
 
     public String validateSettings() {
@@ -122,21 +118,21 @@ public class RequestSettingsPanel extends JScrollPane {
     }
 
     public boolean hasCustomSettings() {
-        return resolveFollowRedirectsValueForSave() != null
-                || Boolean.FALSE.equals(resolveCookieJarValueForSave())
-                || resolveSslVerificationValueForSave() != null
-                || resolveHttpVersionValueForSave() != null
-                || resolveRequestTimeoutValueForSave() != null;
+        return getSelectedBooleanValue(followRedirectsComboBox) != null
+                || Boolean.FALSE.equals(getStoredCookieJarValue())
+                || getSelectedBooleanValue(sslVerificationComboBox) != null
+                || getStoredHttpVersionValue() != null
+                || getStoredRequestTimeoutValue() != null;
     }
 
     public void addDirtyListener(Runnable listener) {
         if (listener == null) {
             return;
         }
-        followRedirectsSwitch.addActionListener(e -> listener.run());
+        followRedirectsComboBox.addActionListener(e -> listener.run());
         useCookieJarSwitch.addActionListener(e -> listener.run());
         httpVersionComboBox.addActionListener(e -> listener.run());
-        sslVerificationSwitch.addActionListener(e -> listener.run());
+        sslVerificationComboBox.addActionListener(e -> listener.run());
         requestTimeoutField.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
@@ -155,32 +151,34 @@ public class RequestSettingsPanel extends JScrollPane {
         });
     }
 
+    private EasyComboBox<BooleanSettingOption> createBooleanSettingComboBox() {
+        EasyComboBox<BooleanSettingOption> comboBox = new EasyComboBox<>(
+                createBooleanSettingOptions(),
+                EasyComboBox.WidthMode.FIXED_MAX
+        );
+        comboBox.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        return comboBox;
+    }
+
     private JPanel createSwitchRow(String title, String description, SwitchButton switchButton) {
         return createSettingRow(title, description, switchButton);
     }
 
     private JPanel createSelectRow(String title, String description, JComponent component) {
-        return createSettingRow(title, description, component);
+        return createSettingRow(title, description, wrapControl(component));
+    }
+
+    private JPanel createSslVerificationRow() {
+        JPanel rightPanel = createHintedControlPanel(sslVerificationComboBox, sslVerificationHintLabel);
+        return createSettingRow(
+                I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_SSL_VERIFICATION_LABEL),
+                I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_SSL_VERIFICATION_DESC),
+                rightPanel
+        );
     }
 
     private JPanel createTimeoutRow() {
-        requestTimeoutHintLabel.setText(I18nUtil.getMessage(
-                MessageKeys.REQUEST_SETTINGS_TIMEOUT_HINT,
-                SettingManager.getRequestTimeout()
-        ));
-
-        JPanel rightPanel = new JPanel(new MigLayout(
-                "insets 0, fillx, novisualpadding, gap 0",
-                "[grow,fill]",
-                "[]2[]"
-        ));
-        rightPanel.setOpaque(false);
-        rightPanel.add(
-                requestTimeoutField,
-                "growx, pushx, wmin " + CONTROL_MIN_WIDTH + ", wmax " + CONTROL_WIDTH + ", alignx right, wrap"
-        );
-        rightPanel.add(requestTimeoutHintLabel, "alignx right");
-
+        JPanel rightPanel = createHintedControlPanel(requestTimeoutField, requestTimeoutHintLabel);
         return createSettingRow(
                 I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_TIMEOUT_LABEL),
                 I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_TIMEOUT_DESC),
@@ -215,13 +213,37 @@ public class RequestSettingsPanel extends JScrollPane {
         return row;
     }
 
+    private JPanel wrapControl(JComponent component) {
+        JPanel panel = new JPanel(new MigLayout("insets 0, fillx, novisualpadding, gap 0", "[grow,fill]", "[]"));
+        panel.setOpaque(false);
+        panel.add(
+                component,
+                "growx, pushx, wmin " + CONTROL_MIN_WIDTH + ", wmax " + CONTROL_WIDTH + ", alignx right"
+        );
+        return panel;
+    }
+
+    private JPanel createHintedControlPanel(JComponent component, JLabel hintLabel) {
+        JPanel rightPanel = new JPanel(new MigLayout(
+                "insets 0, fillx, novisualpadding, gap 0",
+                "[grow,fill]",
+                "[]2[]"
+        ));
+        rightPanel.setOpaque(false);
+        rightPanel.add(
+                component,
+                "growx, pushx, wmin " + CONTROL_MIN_WIDTH + ", wmax " + CONTROL_WIDTH + ", alignx right, wrap"
+        );
+        rightPanel.add(hintLabel, "alignx right");
+        return rightPanel;
+    }
+
     private JLabel createHintLabel() {
         JLabel label = new JLabel();
         label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         label.setForeground(ModernColors.getTextSecondary());
         return label;
     }
-
 
     private JTextArea createDescriptionText(String description) {
         JTextArea area = new ShrinkableWrapTextArea(description);
@@ -236,85 +258,48 @@ public class RequestSettingsPanel extends JScrollPane {
         return area;
     }
 
-    private void resetToDefaults(HttpRequestItem item) {
-        boolean followRedirects = resolveEffectiveFollowRedirects(item);
-        boolean cookieJarEnabled = resolveEffectiveCookieJarEnabled(item);
-        boolean sslVerificationEnabled = resolveEffectiveSslVerificationEnabled(item);
-        String httpVersion = resolveEffectiveHttpVersion(item);
-        Integer requestTimeout = item != null ? item.getRequestTimeoutMs() : null;
+    private void updateDynamicHints() {
+        requestTimeoutHintLabel.setText(I18nUtil.getMessage(
+                MessageKeys.REQUEST_SETTINGS_TIMEOUT_HINT,
+                SettingManager.getRequestTimeout()
+        ));
 
-        followRedirectsSwitch.setSelected(followRedirects);
-        useCookieJarSwitch.setSelected(cookieJarEnabled);
-        sslVerificationSwitch.setSelected(sslVerificationEnabled);
-        httpVersionComboBox.setSelectedItem(findHttpVersionOption(httpVersion));
-        requestTimeoutField.setText(requestTimeout != null ? String.valueOf(requestTimeout) : "");
+        boolean proxyForcesSslDisabled = RequestSettingsResolver.isProxySslVerificationForcedDisabled();
+        sslVerificationHintLabel.setVisible(proxyForcesSslDisabled);
+        sslVerificationHintLabel.setText(proxyForcesSslDisabled
+                ? I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_SSL_VERIFICATION_PROXY_FORCED_HINT)
+                : "");
     }
 
-    private void captureInitialState(HttpRequestItem item) {
-        initialFollowRedirects = item != null ? item.getFollowRedirects() : null;
-        initialCookieJarEnabled = item != null ? item.getCookieJarEnabled() : null;
-        initialSslVerificationEnabled = item != null ? item.getSslVerificationEnabled() : null;
-        initialHttpVersion = item != null ? item.getHttpVersion() : null;
-        initialEffectiveFollowRedirects = resolveEffectiveFollowRedirects(item);
-        initialEffectiveCookieJarEnabled = resolveEffectiveCookieJarEnabled(item);
-        initialEffectiveSslVerificationEnabled = resolveEffectiveSslVerificationEnabled(item);
-        initialEffectiveHttpVersion = resolveEffectiveHttpVersion(item);
+    private Boolean getStoredCookieJarValue() {
+        return RequestSettingsResolver.normalizeStoredCookieJarEnabled(
+                useCookieJarSwitch.isSelected() ? Boolean.TRUE : Boolean.FALSE
+        );
     }
 
-    private boolean resolveEffectiveFollowRedirects(HttpRequestItem item) {
-        return RequestSettingsResolver.resolveFollowRedirects(item);
+    private String getStoredHttpVersionValue() {
+        return RequestSettingsResolver.normalizeStoredHttpVersion(getSelectedHttpVersion());
     }
 
-    private boolean resolveEffectiveCookieJarEnabled(HttpRequestItem item) {
-        return RequestSettingsResolver.resolveCookieJarEnabled(item);
-    }
-
-    private boolean resolveEffectiveSslVerificationEnabled(HttpRequestItem item) {
-        return RequestSettingsResolver.resolveSslVerificationEnabled(item);
-    }
-
-    private String resolveEffectiveHttpVersion(HttpRequestItem item) {
-        return RequestSettingsResolver.resolveHttpVersion(item);
-    }
-
-    private Boolean resolveFollowRedirectsValueForSave() {
-        boolean selected = followRedirectsSwitch.isSelected();
-        if (selected == initialEffectiveFollowRedirects) {
-            return initialFollowRedirects;
-        }
-        return selected;
-    }
-
-    private Boolean resolveCookieJarValueForSave() {
-        boolean selected = useCookieJarSwitch.isSelected();
-        if (selected == initialEffectiveCookieJarEnabled) {
-            return Boolean.FALSE.equals(initialCookieJarEnabled) ? Boolean.FALSE : null;
-        }
-        return selected ? null : Boolean.FALSE;
-    }
-
-    private Boolean resolveSslVerificationValueForSave() {
-        boolean selected = sslVerificationSwitch.isSelected();
-        if (selected == initialEffectiveSslVerificationEnabled) {
-            return initialSslVerificationEnabled;
-        }
-        return selected;
-    }
-
-    private String resolveHttpVersionValueForSave() {
-        String selectedHttpVersion = getSelectedHttpVersion();
-        if (selectedHttpVersion.equals(initialEffectiveHttpVersion)) {
-            if (HttpRequestItem.HTTP_VERSION_HTTP_1_1.equals(initialHttpVersion)
-                    || HttpRequestItem.HTTP_VERSION_HTTP_2.equals(initialHttpVersion)) {
-                return initialHttpVersion;
-            }
-            return null;
-        }
-        return HttpRequestItem.HTTP_VERSION_AUTO.equals(selectedHttpVersion) ? null : selectedHttpVersion;
-    }
-
-    private Integer resolveRequestTimeoutValueForSave() {
+    private Integer getStoredRequestTimeoutValue() {
         return parseRequestTimeoutOrNull();
+    }
+
+    private BooleanSettingOption[] createBooleanSettingOptions() {
+        return new BooleanSettingOption[]{
+                new BooleanSettingOption(
+                        null,
+                        I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_BOOLEAN_DEFAULT)
+                ),
+                new BooleanSettingOption(
+                        Boolean.TRUE,
+                        I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_BOOLEAN_ENABLED)
+                ),
+                new BooleanSettingOption(
+                        Boolean.FALSE,
+                        I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_BOOLEAN_DISABLED)
+                )
+        };
     }
 
     private HttpVersionOption[] createHttpVersionOptions() {
@@ -334,15 +319,34 @@ public class RequestSettingsPanel extends JScrollPane {
         return options.toArray(new HttpVersionOption[0]);
     }
 
-    private HttpVersionOption findHttpVersionOption(String value) {
-        ComboBoxModel<HttpVersionOption> model = httpVersionComboBox.getModel();
+    private BooleanSettingOption findBooleanOption(EasyComboBox<BooleanSettingOption> comboBox, Boolean value) {
+        ComboBoxModel<BooleanSettingOption> model = comboBox.getModel();
         for (int i = 0; i < model.getSize(); i++) {
-            HttpVersionOption option = model.getElementAt(i);
-            if (option.value.equals(value)) {
+            BooleanSettingOption option = model.getElementAt(i);
+            if ((value == null && option.value == null) || (value != null && value.equals(option.value))) {
                 return option;
             }
         }
         return model.getElementAt(0);
+    }
+
+    private HttpVersionOption findHttpVersionOption(String value) {
+        String normalizedValue = (value == null || value.trim().isEmpty())
+                ? HttpRequestItem.HTTP_VERSION_AUTO
+                : value;
+        ComboBoxModel<HttpVersionOption> model = httpVersionComboBox.getModel();
+        for (int i = 0; i < model.getSize(); i++) {
+            HttpVersionOption option = model.getElementAt(i);
+            if (option.value.equals(normalizedValue)) {
+                return option;
+            }
+        }
+        return model.getElementAt(0);
+    }
+
+    private Boolean getSelectedBooleanValue(EasyComboBox<BooleanSettingOption> comboBox) {
+        BooleanSettingOption option = (BooleanSettingOption) comboBox.getSelectedItem();
+        return option != null ? option.value : null;
     }
 
     private String getSelectedHttpVersion() {
@@ -379,6 +383,21 @@ public class RequestSettingsPanel extends JScrollPane {
             return null;
         } catch (NumberFormatException ex) {
             return I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_TIMEOUT_VALIDATION);
+        }
+    }
+
+    private static final class BooleanSettingOption {
+        private final Boolean value;
+        private final String label;
+
+        private BooleanSettingOption(Boolean value, String label) {
+            this.value = value;
+            this.label = label;
+        }
+
+        @Override
+        public String toString() {
+            return label;
         }
     }
 

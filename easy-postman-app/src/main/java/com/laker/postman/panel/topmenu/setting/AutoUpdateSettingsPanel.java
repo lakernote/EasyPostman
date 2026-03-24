@@ -26,7 +26,7 @@ public class AutoUpdateSettingsPanel extends ModernSettingsPanel {
         // 自动更新设置区域
         JPanel autoUpdateSection = createModernSection(
                 I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_TITLE),
-                ""
+                I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_DESCRIPTION)
         );
 
         // 自动更新开关

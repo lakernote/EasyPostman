@@ -10,7 +10,7 @@ import com.laker.postman.plugin.manager.PluginUninstallResult;
 import com.laker.postman.plugin.manager.market.PluginCatalogEntry;
 import com.laker.postman.plugin.runtime.PluginCompatibility;
 import com.laker.postman.plugin.runtime.PluginFileInfo;
-import com.laker.postman.service.setting.SettingManager;
+import com.laker.postman.service.update.plugin.PluginCatalogPreferenceResolver;
 import com.laker.postman.service.update.version.VersionComparator;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -102,19 +102,29 @@ public class PluginManagerDialog extends JDialog {
     private boolean marketBusy;
     private SwingWorker<PluginFileInfo, PluginInstallProgress> marketInstallWorker;
     private PluginInstallController marketInstallController;
+    private final String initialView;
+    private String preferredMarketPluginId;
 
     private record CatalogLoadResult(List<PluginCatalogEntry> entries, boolean builtinFallback) {
     }
 
-    private PluginManagerDialog(Window owner) {
+    private PluginManagerDialog(Window owner, String initialView, String preferredMarketPluginId) {
         super(owner, I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_TITLE), ModalityType.APPLICATION_MODAL);
+        this.initialView = initialView == null || initialView.isBlank() ? VIEW_INSTALLED : initialView;
+        this.preferredMarketPluginId = preferredMarketPluginId;
         initUI();
         reloadPlugins(null);
         loadSavedCatalogIfPresent();
+        showView(this.initialView);
     }
 
     public static void showDialog(Window owner) {
-        PluginManagerDialog dialog = new PluginManagerDialog(owner);
+        PluginManagerDialog dialog = new PluginManagerDialog(owner, VIEW_INSTALLED, null);
+        dialog.setVisible(true);
+    }
+
+    public static void showMarketDialog(Window owner, String preferredPluginId) {
+        PluginManagerDialog dialog = new PluginManagerDialog(owner, VIEW_MARKET, preferredPluginId);
         dialog.setVisible(true);
     }
 
@@ -485,15 +495,34 @@ public class PluginManagerDialog extends JDialog {
     }
 
     private void loadSavedCatalogIfPresent() {
-        String catalogUrl = PluginManagementService.getCatalogUrl();
-        if (catalogUrl == null || catalogUrl.isBlank()) {
-            PluginManagementService.saveCatalogUrl(resolvePreferredOfficialCatalogUrl());
-            refreshCatalogSourceButtons();
-            loadCatalog(false);
-            return;
-        }
-        refreshCatalogSourceButtons();
-        loadCatalog(false);
+        setMarketBusy(true, I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_LOADING));
+        new SwingWorker<String, Void>() {
+            @Override
+            protected String doInBackground() {
+                return PluginCatalogPreferenceResolver.resolveEffectiveCatalogUrl(true);
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    String catalogUrl = get();
+                    PluginManagementService.saveCatalogUrl(catalogUrl);
+                    refreshCatalogSourceButtons();
+                    loadCatalog(false);
+                } catch (Exception e) {
+                    log.warn("Failed to resolve preferred plugin catalog URL", e);
+                    PluginManagementService.saveCatalogUrl(
+                            PluginCatalogPreferenceResolver.resolvePreferredOfficialCatalogUrl(false));
+                    refreshCatalogSourceButtons();
+                    loadCatalog(false);
+                } finally {
+                    if (!marketBusy) {
+                        updateMarketActions();
+                        updateMarketDetails();
+                    }
+                }
+            }
+        }.execute();
     }
 
     private void applyCatalogUrl(String catalogUrl, boolean autoLoad) {
@@ -505,11 +534,7 @@ public class PluginManagerDialog extends JDialog {
     }
 
     private String resolvePreferredOfficialCatalogUrl() {
-        String preference = SettingManager.getUpdateSourcePreference();
-        if ("github".equalsIgnoreCase(preference)) {
-            return PluginManagementService.getOfficialCatalogUrl("github");
-        }
-        return PluginManagementService.getOfficialCatalogUrl("gitee");
+        return PluginCatalogPreferenceResolver.resolvePreferredOfficialCatalogUrl();
     }
 
     private void reloadPlugins(String preferredPluginId) {
@@ -691,6 +716,7 @@ public class PluginManagerDialog extends JDialog {
                 try {
                     CatalogLoadResult result = get();
                     applyMarketEntries(result.entries());
+                    selectMarketPlugin(preferredMarketPluginId);
                     if (result.builtinFallback()) {
                         setStatusMessage(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_LOAD_FALLBACK_BUILTIN));
                     } else {
@@ -722,6 +748,21 @@ public class PluginManagerDialog extends JDialog {
         }
         marketList.setSelectedIndex(0);
         marketList.ensureIndexIsVisible(0);
+    }
+
+    private void selectMarketPlugin(String pluginId) {
+        if (pluginId == null || pluginId.isBlank()) {
+            return;
+        }
+        for (int i = 0; i < marketListModel.size(); i++) {
+            PluginCatalogEntry entry = marketListModel.getElementAt(i);
+            if (!entry.isPlaceholder() && pluginId.equals(entry.id())) {
+                marketList.setSelectedIndex(i);
+                marketList.ensureIndexIsVisible(i);
+                preferredMarketPluginId = null;
+                return;
+            }
+        }
     }
 
     private void setMarketPlaceholder(String message) {

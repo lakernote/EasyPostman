@@ -71,6 +71,7 @@ public final class MessageKeys {
     public static final String UPDATE_FETCH_RELEASE_FAILED = "update.fetch_release_failed";
     public static final String UPDATE_NO_VERSION_INFO = "update.no_version_info";
     public static final String UPDATE_ALREADY_LATEST = "update.already_latest";
+    public static final String UPDATE_ALREADY_LATEST_WITH_PLUGINS = "update.already_latest_with_plugins";
     public static final String UPDATE_AVAILABLE_NO_ASSET = "update.available_no_asset";
     public static final String UPDATE_AVAILABLE_NO_ASSET_TITLE = "update.available_no_asset.title";
     public static final String UPDATE_AVAILABLE_NO_ASSET_GO_GITHUB = "update.available_no_asset.go_github";
@@ -207,6 +208,14 @@ public final class MessageKeys {
     public static final String PLUGIN_MANAGER_MARKET_SOURCE_HINT = "plugin.manager.market.source_hint";
     public static final String PLUGIN_MANAGER_SOURCE_LOCAL = "plugin.manager.source.local";
     public static final String PLUGIN_MANAGER_SOURCE_MARKET = "plugin.manager.source.market";
+    public static final String PLUGIN_UPDATE_NOTIFICATION_TITLE = "plugin.update.notification.title";
+    public static final String PLUGIN_UPDATE_NOTIFICATION_SINGLE = "plugin.update.notification.single";
+    public static final String PLUGIN_UPDATE_NOTIFICATION_MULTIPLE = "plugin.update.notification.multiple";
+    public static final String PLUGIN_UPDATE_NOTIFICATION_MORE = "plugin.update.notification.more";
+    public static final String PLUGIN_UPDATE_NOTIFICATION_ACTION = "plugin.update.notification.action";
+    public static final String PLUGIN_UPDATE_CHECK_FAILED = "plugin.update.check_failed";
+    public static final String PLUGIN_UPDATE_MANUAL_PROMPT_SINGLE = "plugin.update.manual.prompt.single";
+    public static final String PLUGIN_UPDATE_MANUAL_PROMPT_MULTIPLE = "plugin.update.manual.prompt.multiple";
 
     // ============ Markdown 编辑器 ============
     public static final String MARKDOWN_UNDO = "markdown.undo";
@@ -1397,6 +1406,7 @@ public final class MessageKeys {
 
     // ============ 自动更新设置相关 ============
     public static final String SETTINGS_AUTO_UPDATE_TITLE = "settings.auto_update.title";
+    public static final String SETTINGS_AUTO_UPDATE_DESCRIPTION = "settings.auto_update.description";
     public static final String SETTINGS_AUTO_UPDATE_ENABLED_TOOLTIP = "settings.auto_update.enabled.tooltip";
     public static final String SETTINGS_AUTO_UPDATE_ENABLED_CHECKBOX = "settings.auto_update.enabled.checkbox";
     public static final String SETTINGS_AUTO_UPDATE_FREQUENCY = "settings.auto_update.frequency";

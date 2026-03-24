@@ -64,7 +64,11 @@ public class RequestsTabsService {
         long uiInsertStartNanos = System.nanoTime();
         tabbedPane.insertTab(tabTitle, null, subPanel, null, insertIndex);
         tabbedPane.setTabComponentAt(insertIndex, new ClosableTabComponent(tabTitle, item.getProtocol()));
-        if (selectTab) {
+        boolean shouldSelectInsertedTab = selectTab;
+        if (shouldSelectInsertedTab && deferEditorInitialization) {
+            shouldSelectInsertedTab = requestEditPanel.shouldSelectRestoredStartupTab();
+        }
+        if (shouldSelectInsertedTab) {
             tabbedPane.setSelectedIndex(insertIndex);
             if (!deferEditorInitialization) {
                 requestEditPanel.setAutoRevealTabsCard(true);
@@ -76,7 +80,7 @@ public class RequestsTabsService {
                 + " (construct=" + panelCreateDuration
                 + ", init=" + initPanelDuration
                 + ", insert=" + StartupDiagnostics.formatSince(uiInsertStartNanos)
-                + ", select=" + selectTab
+                + ", select=" + shouldSelectInsertedTab
                 + ", deferred=" + deferEditorInitialization + ")");
         return subPanel;
     }

@@ -190,12 +190,14 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                         requestEditPanel.addPlusTab();
                     } else {
                         StartupDiagnostics.mark("Delaying center tab restore to let top/left stabilize");
+                        requestEditPanel.beginStartupRestoreSelectionTracking();
                         requestEditPanel.setAutoRevealTabsCard(false);
                         requestEditPanel.addPlusTab();
                         RequestCollectionsService.restoreOpenedRequestsIncrementally(
                                 snapshot.openedRequests(),
                                 RequestCollectionsService.STARTUP_RESTORE_INITIAL_DELAY_MS,
                                 () -> {
+                                    requestEditPanel.completeStartupRestoreSelectionTracking();
                                     requestEditPanel.showTabsCard(false);
                                     requestEditPanel.setAutoRevealTabsCard(true);
                                     requestEditPanel.initializeSelectedRequestTabLater(40);

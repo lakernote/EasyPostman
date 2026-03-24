@@ -67,6 +67,7 @@ public class RequestEditPanel extends SingletonBasePanel {
     private JPanel contentCardPanel;
     private boolean startupPlaceholderVisible = true;
     private boolean autoRevealTabsCard = true;
+    private boolean startupRestoreSelectionPending;
 
     // 预览模式：单击使用的临时 tab（可被下次单击替换）
     private Component previewTab = null; // 可以是 RequestEditSubPanel 或 GroupEditPanel
@@ -75,6 +76,7 @@ public class RequestEditPanel extends SingletonBasePanel {
 
     // 新建Tab，可指定标题
     public RequestEditSubPanel addNewTab(String title, RequestItemProtocolEnum protocol) {
+        registerUserSelectionDuringStartupRestore();
         // 先移除+Tab
         if (tabbedPane.getTabCount() > 0 && isPlusTab(tabbedPane.getTabCount() - 1)) {
             tabbedPane.removeTabAt(tabbedPane.getTabCount() - 1);
@@ -142,6 +144,7 @@ public class RequestEditPanel extends SingletonBasePanel {
      * 4. 预览 tab 会在标题显示斜体，提示这是临时的
      */
     public void showOrCreatePreviewTab(HttpRequestItem item) {
+        registerUserSelectionDuringStartupRestore();
         String id = item.getId();
         if (id == null || id.isEmpty()) {
             addNewTab(null);
@@ -193,6 +196,7 @@ public class RequestEditPanel extends SingletonBasePanel {
      * 显示或创建 Group 的预览 tab（用于单击 Group 时）
      */
     public void showOrCreatePreviewTabForGroup(DefaultMutableTreeNode groupNode, RequestGroup group) {
+        registerUserSelectionDuringStartupRestore();
         String groupId = group.getId();
 
         // 1. 先查找是否已有固定的 Group tab（不包括预览 tab）
@@ -217,6 +221,7 @@ public class RequestEditPanel extends SingletonBasePanel {
 
     // showOrCreateTab 需适配 "+" Tab（双击时调用，创建固定 tab）
     public void showOrCreateTab(HttpRequestItem item) {
+        registerUserSelectionDuringStartupRestore();
         String id = item.getId();
         if (id == null || id.isEmpty()) {
             addNewTab(null);
@@ -792,6 +797,18 @@ public class RequestEditPanel extends SingletonBasePanel {
         return startupPlaceholderVisible;
     }
 
+    public void beginStartupRestoreSelectionTracking() {
+        startupRestoreSelectionPending = true;
+    }
+
+    public void completeStartupRestoreSelectionTracking() {
+        startupRestoreSelectionPending = false;
+    }
+
+    public boolean shouldSelectRestoredStartupTab() {
+        return startupRestoreSelectionPending;
+    }
+
     public void setAutoRevealTabsCard(boolean autoRevealTabsCard) {
         this.autoRevealTabsCard = autoRevealTabsCard;
     }
@@ -898,6 +915,14 @@ public class RequestEditPanel extends SingletonBasePanel {
         return glassCard;
     }
 
+    private void registerUserSelectionDuringStartupRestore() {
+        if (!startupRestoreSelectionPending) {
+            return;
+        }
+        startupRestoreSelectionPending = false;
+        StartupDiagnostics.mark("Startup restore auto-selection cancelled after user opened another tab");
+    }
+
     @Override
     protected void registerListeners() {
         // 统一注册所有快捷键
@@ -961,6 +986,7 @@ public class RequestEditPanel extends SingletonBasePanel {
      * 双击时调用，创建固定 tab
      */
     public void showGroupEditPanel(DefaultMutableTreeNode groupNode, RequestGroup group) {
+        registerUserSelectionDuringStartupRestore();
         String groupId = group.getId();
 
         // 如果当前预览的就是这个 group，则将预览 tab 转为固定 tab
@@ -1134,6 +1160,7 @@ public class RequestEditPanel extends SingletonBasePanel {
      * 单击保存的响应：在预览 Tab 中显示
      */
     public void showOrCreatePreviewTabForSavedResponse(SavedResponse savedResponse) {
+        registerUserSelectionDuringStartupRestore();
         if (savedResponse == null) {
             return;
         }
@@ -1163,6 +1190,7 @@ public class RequestEditPanel extends SingletonBasePanel {
      * 双击保存的响应：在固定 Tab 中显示
      */
     public void showOrCreateTabForSavedResponse(SavedResponse savedResponse) {
+        registerUserSelectionDuringStartupRestore();
         String savedResponseId = savedResponse.getId();
 
         if (savedResponseId == null || savedResponseId.isEmpty()) {

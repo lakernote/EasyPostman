@@ -5,6 +5,7 @@ import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
+import com.laker.postman.startup.StartupDiagnostics;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.experimental.UtilityClass;
@@ -15,7 +16,10 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.REQUEST;
@@ -23,10 +27,19 @@ import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPan
 @Slf4j
 @UtilityClass
 public class RequestCollectionsService {
+    static final int RESTORE_BATCH_SIZE = 1;
+    static final int RESTORE_DELAY_MS = 25;
+    public static final int STARTUP_RESTORE_INITIAL_DELAY_MS = 180;
 
 
     public static HttpRequestItem getLastNonNewRequest() {
-        List<HttpRequestItem> requestItems = OpenedRequestsService.getAll();
+        return getLastNonNewRequest(OpenedRequestsService.getAll());
+    }
+
+    static HttpRequestItem getLastNonNewRequest(List<HttpRequestItem> requestItems) {
+        if (requestItems == null || requestItems.isEmpty()) {
+            return null;
+        }
         for (int i = requestItems.size() - 1; i >= 0; i--) {
             HttpRequestItem item = requestItems.get(i);
             if (!item.isNewRequest()) {
@@ -37,10 +50,52 @@ public class RequestCollectionsService {
     }
 
     public static void restoreOpenedRequests() {
-        List<HttpRequestItem> requestItems = OpenedRequestsService.getAll();
-        RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
-        DefaultMutableTreeNode rootNode = leftPanel.getRootTreeNode();
+        restoreOpenedRequestsIncrementally(OpenedRequestsService.getAll(), 0, null);
+    }
 
+    public static void restoreOpenedRequestsIncrementally(List<HttpRequestItem> requestItems, Runnable onComplete) {
+        restoreOpenedRequestsIncrementally(requestItems, 0, onComplete);
+    }
+
+    public static void restoreOpenedRequestsIncrementally(List<HttpRequestItem> requestItems,
+                                                          int initialDelayMs,
+                                                          Runnable onComplete) {
+        Runnable restoreTask = () -> {
+            RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+            List<HttpRequestItem> restorableRequests = buildRestorableOpenedRequests(requestItems, leftPanel.getRootTreeNode());
+            StartupDiagnostics.mark("Incremental restore prepared; validRequests=" + restorableRequests.size());
+            restoreOpenedRequestsIncrementally(
+                    restorableRequests,
+                    RESTORE_BATCH_SIZE,
+                    RESTORE_DELAY_MS,
+                    initialDelayMs,
+                    (item, selectTab) -> {
+                        RequestEditSubPanel panel = RequestsTabsService.addTab(item, selectTab, true);
+                        RequestsTabsService.updateTabNew(panel, item.isNewRequest());
+                    },
+                    () -> {
+                        OpenedRequestsService.clear();
+                        if (onComplete != null) {
+                            onComplete.run();
+                        }
+                    }
+            );
+        };
+
+        if (SwingUtilities.isEventDispatchThread()) {
+            restoreTask.run();
+        } else {
+            SwingUtilities.invokeLater(restoreTask);
+        }
+    }
+
+    static List<HttpRequestItem> buildRestorableOpenedRequests(List<HttpRequestItem> requestItems,
+                                                               DefaultMutableTreeNode rootNode) {
+        if (requestItems == null || requestItems.isEmpty()) {
+            return List.of();
+        }
+
+        List<HttpRequestItem> restorableItems = new ArrayList<>();
         for (HttpRequestItem item : requestItems) {
             // 验证请求对象和ID是否有效
             if (item == null || item.getId() == null || item.getId().isEmpty()) {
@@ -49,6 +104,7 @@ public class RequestCollectionsService {
                 continue;
             }
 
+            HttpRequestItem resolvedItem = item;
             // 如果不是新请求，从tree中找到完整数据
             if (!item.isNewRequest()) {
                 DefaultMutableTreeNode node = findRequestNodeById(rootNode, item.getId());
@@ -60,14 +116,60 @@ public class RequestCollectionsService {
                 }
                 // 从tree节点中获取完整的请求数据
                 Object[] userObj = (Object[]) node.getUserObject();
-                item = (HttpRequestItem) userObj[1];
+                resolvedItem = (HttpRequestItem) userObj[1];
+            }
+            restorableItems.add(resolvedItem);
+        }
+        return restorableItems;
+    }
+
+    static Timer restoreOpenedRequestsIncrementally(List<HttpRequestItem> requestItems,
+                                                    int batchSize,
+                                                    int delayMs,
+                                                    int initialDelayMs,
+                                                    BiConsumer<HttpRequestItem, Boolean> restoreAction,
+                                                    Runnable onComplete) {
+        if (requestItems == null || requestItems.isEmpty()) {
+            if (onComplete != null) {
+                onComplete.run();
+            }
+            return null;
+        }
+
+        int safeBatchSize = Math.max(1, batchSize);
+        int safeDelayMs = Math.max(0, delayMs);
+        AtomicInteger restoreIndex = new AtomicInteger();
+        long totalRestoreStartNanos = System.nanoTime();
+        Timer timer = new Timer(safeDelayMs, null);
+        timer.addActionListener(e -> {
+            long batchStartNanos = System.nanoTime();
+            int startIndex = restoreIndex.get();
+            int endIndex = Math.min(startIndex + safeBatchSize, requestItems.size());
+            StartupDiagnostics.mark("Restoring opened requests batch " + (startIndex + 1) + "-" + endIndex
+                    + "/" + requestItems.size());
+            for (int i = startIndex; i < endIndex; i++) {
+                HttpRequestItem item = requestItems.get(i);
+                boolean selectTab = i == requestItems.size() - 1;
+                restoreAction.accept(item, selectTab);
             }
 
-            // 恢复请求
-            RequestEditSubPanel panel = RequestsTabsService.addTab(item);
-            RequestsTabsService.updateTabNew(panel, item.isNewRequest());
-        }
-        OpenedRequestsService.clear();
+            if (endIndex >= requestItems.size()) {
+                timer.stop();
+                StartupDiagnostics.mark("Incremental restore finished in "
+                        + StartupDiagnostics.formatSince(totalRestoreStartNanos));
+                if (onComplete != null) {
+                    onComplete.run();
+                }
+                return;
+            }
+            StartupDiagnostics.mark("Opened requests batch rendered in "
+                    + StartupDiagnostics.formatSince(batchStartNanos));
+            restoreIndex.set(endIndex);
+        });
+        timer.setInitialDelay(Math.max(0, initialDelayMs));
+        timer.setRepeats(true);
+        timer.start();
+        return timer;
     }
 
     /**

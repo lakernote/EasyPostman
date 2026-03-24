@@ -3,10 +3,12 @@ package com.laker.postman.panel.collections.right.request;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.MarkdownEditorPanel;
 import com.laker.postman.common.component.tab.IndicatorTabComponent;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.sub.*;
 import com.laker.postman.service.setting.SettingManager;
+import com.laker.postman.startup.StartupDiagnostics;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -31,15 +33,21 @@ public class RequestEditSubPanel extends JPanel {
     private static final int WEBSOCKET_NORMAL_CLOSURE = 1000;
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
 
-    private final JTextField urlField;
-    private final JComboBox<String> methodBox;
-    private final EasyRequestParamsPanel paramsPanel;
-    private final EasyRequestHttpHeadersPanel headersPanel;
+    private JTextField urlField;
+    private JComboBox<String> methodBox;
+    private EasyRequestParamsPanel paramsPanel;
+    private EasyRequestHttpHeadersPanel headersPanel;
     @Getter
     private String id;
     private String name;
     private final RequestItemProtocolEnum protocol;
     private volatile RequestItemProtocolEnum currentProtocol;
+    private final boolean deferEditorInitialization;
+    private boolean editorInitialized;
+    private HttpRequestItem pendingRequestItem;
+    private HttpRequestItem pendingOriginalRequestItem;
+    private Boolean pendingLayoutVertical;
+    private JPanel deferredShellPanel;
 
     // 面板类型
     @Getter
@@ -49,33 +57,32 @@ public class RequestEditSubPanel extends JPanel {
     @Getter
     private final SavedResponse savedResponse;
 
-    @Getter
-    private final RequestLinePanel requestLinePanel;
+    private RequestLinePanel requestLinePanel;
     //  RequestBodyPanel
-    private final RequestBodyPanel requestBodyPanel;
-    private final RequestSettingsPanel requestSettingsPanel;
-    private final AuthTabPanel authTabPanel;
-    private final ScriptPanel scriptPanel;
-    private final MarkdownEditorPanel descriptionEditor; // Docs tab
-    private final JTabbedPane reqTabs; // 请求选项卡面板
+    private RequestBodyPanel requestBodyPanel;
+    private RequestSettingsPanel requestSettingsPanel;
+    private AuthTabPanel authTabPanel;
+    private ScriptPanel scriptPanel;
+    private MarkdownEditorPanel descriptionEditor; // Docs tab
+    private JTabbedPane reqTabs; // 请求选项卡面板
     // 主面板只保留“编排”和“状态持有”，具体行为拆给各个 helper，避免再次演变成巨型类。
     private final RequestPreparationService requestPreparationService = new RequestPreparationService();
     private final RequestPreparationFeedbackHelper requestPreparationFeedbackHelper = new RequestPreparationFeedbackHelper();
-    private final RequestExecutionUiHelper requestExecutionUiHelper;
-    private final RequestStreamUiHelper requestStreamUiHelper;
-    private final RequestResponseHelper requestResponseHelper;
-    private final RequestFormDataHelper requestFormDataHelper;
-    private final RequestTabStateHelper requestTabStateHelper;
-    private final RequestDirtyStateHelper requestDirtyStateHelper;
-    private final RequestUrlSyncHelper requestUrlSyncHelper;
-    private final RequestEditorActionHelper requestEditorActionHelper;
-    private final RequestSplitLayoutHelper requestSplitLayoutHelper;
-    private final RequestProtocolDispatchHelper requestProtocolDispatchHelper;
-    private final RequestSendCoordinator requestSendCoordinator;
+    private RequestExecutionUiHelper requestExecutionUiHelper;
+    private RequestStreamUiHelper requestStreamUiHelper;
+    private RequestResponseHelper requestResponseHelper;
+    private RequestFormDataHelper requestFormDataHelper;
+    private RequestTabStateHelper requestTabStateHelper;
+    private RequestDirtyStateHelper requestDirtyStateHelper;
+    private RequestUrlSyncHelper requestUrlSyncHelper;
+    private RequestEditorActionHelper requestEditorActionHelper;
+    private RequestSplitLayoutHelper requestSplitLayoutHelper;
+    private RequestProtocolDispatchHelper requestProtocolDispatchHelper;
+    private RequestSendCoordinator requestSendCoordinator;
     private final SavedResponseHelper savedResponseHelper = new SavedResponseHelper();
-    private final HttpRequestExecutionHelper httpRequestExecutionHelper;
-    private final SseRequestExecutionHelper sseRequestExecutionHelper;
-    private final WebSocketRequestExecutionHelper webSocketRequestExecutionHelper;
+    private HttpRequestExecutionHelper httpRequestExecutionHelper;
+    private SseRequestExecutionHelper sseRequestExecutionHelper;
+    private WebSocketRequestExecutionHelper webSocketRequestExecutionHelper;
 
     // Tab indicators for showing content status
     private IndicatorTabComponent paramsTabIndicator;
@@ -101,8 +108,7 @@ public class RequestEditSubPanel extends JPanel {
     // 数据加载标志，防止加载时触发自动保存和联动更新
     private boolean isLoadingData = false;
     private volatile boolean disposed;
-    @Getter
-    private final ResponsePanel responsePanel;
+    private ResponsePanel responsePanel;
 
     // 保存最后一次请求和响应，用于保存响应功能
     private PreparedRequest lastRequest;
@@ -139,28 +145,79 @@ public class RequestEditSubPanel extends JPanel {
      * 普通请求编辑面板构造函数
      */
     public RequestEditSubPanel(String id, RequestItemProtocolEnum protocol) {
-        this(id, protocol, RequestEditSubPanelType.NORMAL, null);
+        this(id, protocol, false);
+    }
+
+    public RequestEditSubPanel(String id, RequestItemProtocolEnum protocol, boolean deferEditorInitialization) {
+        this(id, protocol, RequestEditSubPanelType.NORMAL, null, deferEditorInitialization);
     }
 
     /**
      * 保存的响应面板构造函数
      */
     public RequestEditSubPanel(SavedResponse savedResponse) {
-        this(savedResponse.getId(), RequestItemProtocolEnum.HTTP, RequestEditSubPanelType.SAVED_RESPONSE, savedResponse);
+        this(savedResponse.getId(), RequestItemProtocolEnum.HTTP, RequestEditSubPanelType.SAVED_RESPONSE, savedResponse, false);
     }
 
     /**
      * 完整构造函数
      */
     private RequestEditSubPanel(String id, RequestItemProtocolEnum protocol, RequestEditSubPanelType panelType,
-                                SavedResponse savedResponse) {
+                                SavedResponse savedResponse,
+                                boolean deferEditorInitialization) {
         this.id = id;
         this.protocol = protocol;
         this.currentProtocol = protocol;
         this.panelType = panelType;
         this.savedResponse = savedResponse;
+        this.deferEditorInitialization = deferEditorInitialization && panelType == RequestEditSubPanelType.NORMAL;
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5)); // 设置边距为5
+        setOpaque(true);
+        setBackground(ModernColors.getBackgroundColor());
+        if (this.deferEditorInitialization) {
+            installDeferredShell();
+        } else {
+            initializeEditorUiIfNeeded();
+        }
+    }
+
+    public void ensureEditorInitialized() {
+        if (editorInitialized) {
+            return;
+        }
+        if (SwingUtilities.isEventDispatchThread()) {
+            initializeEditorUiIfNeeded();
+            return;
+        }
+        try {
+            SwingUtilities.invokeAndWait(this::initializeEditorUiIfNeeded);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to initialize RequestEditSubPanel on EDT", e);
+        }
+    }
+
+    public boolean isEditorInitialized() {
+        return editorInitialized;
+    }
+
+    public RequestLinePanel getRequestLinePanel() {
+        ensureEditorInitialized();
+        return requestLinePanel;
+    }
+
+    public ResponsePanel getResponsePanel() {
+        ensureEditorInitialized();
+        return responsePanel;
+    }
+
+    private void initializeEditorUiIfNeeded() {
+        if (editorInitialized) {
+            return;
+        }
+        long initStartNanos = System.nanoTime();
+        removeAll();
+        deferredShellPanel = null;
         // 先集中创建视图组件，再把交互逻辑按职责注入 helper，构造阶段就能看清依赖方向。
         RequestViewComponents components = RequestViewFactory.create(protocol, panelType, this::sendRequest);
         requestLinePanel = components.requestLinePanel;
@@ -357,6 +414,91 @@ public class RequestEditSubPanel extends JPanel {
         SwingUtilities.invokeLater(this::updateTabIndicators);
         RequestUiSetupHelper.bindSaveResponseButton(protocol, panelType, responsePanel, e -> saveResponseDialog());
         RequestUiSetupHelper.bindBodyTypeHeaderSync(requestBodyPanel, headersPanel, () -> isLoadingData);
+        editorInitialized = true;
+
+        if (pendingRequestItem != null) {
+            populatePanelData(pendingRequestItem, pendingOriginalRequestItem != null ? pendingOriginalRequestItem : pendingRequestItem);
+        }
+        if (pendingLayoutVertical != null) {
+            requestSplitLayoutHelper.updateLayoutOrientation(pendingLayoutVertical);
+            pendingLayoutVertical = null;
+        }
+        revalidate();
+        repaint();
+        if (deferEditorInitialization) {
+            StartupDiagnostics.mark("Initialized deferred editor tab '" + (name != null ? name : id)
+                    + "' in " + StartupDiagnostics.formatSince(initStartNanos));
+        }
+    }
+
+    private void installDeferredShell() {
+        deferredShellPanel = createDeferredShellPanel();
+        add(deferredShellPanel, BorderLayout.CENTER);
+    }
+
+    private JPanel createDeferredShellPanel() {
+        JPanel shell = new JPanel(new BorderLayout(0, 16));
+        shell.setOpaque(true);
+        shell.setBackground(ModernColors.getBackgroundColor());
+        shell.setBorder(BorderFactory.createEmptyBorder(18, 18, 18, 18));
+
+        JPanel topRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        topRow.setOpaque(false);
+        topRow.add(createDeferredBlock(120, 30, ModernColors.primaryWithAlpha(20)));
+        topRow.add(createDeferredBlock(140, 30, ModernColors.primaryWithAlpha(12)));
+        shell.add(topRow, BorderLayout.NORTH);
+
+        JPanel content = new JPanel(new BorderLayout(0, 14));
+        content.setOpaque(true);
+        content.setBackground(ModernColors.getCardBackgroundColor());
+        content.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(ModernColors.getDividerBorderColor()),
+                BorderFactory.createEmptyBorder(18, 18, 18, 18)
+        ));
+        content.add(createDeferredBlock(420, 36, ModernColors.primaryWithAlpha(14)), BorderLayout.NORTH);
+
+        JPanel body = new JPanel(new GridLayout(1, 2, 16, 0));
+        body.setOpaque(false);
+        body.add(createDeferredColumn(new int[][]{{160, 16}, {220, 16}, {180, 16}, {240, 16}}));
+        body.add(createDeferredColumn(new int[][]{{260, 16}, {200, 16}, {280, 16}, {220, 16}}));
+        content.add(body, BorderLayout.CENTER);
+        shell.add(content, BorderLayout.CENTER);
+        return shell;
+    }
+
+    private JPanel createDeferredColumn(int[][] rows) {
+        JPanel column = new JPanel();
+        column.setOpaque(false);
+        column.setLayout(new BoxLayout(column, BoxLayout.Y_AXIS));
+        for (int i = 0; i < rows.length; i++) {
+            column.add(createDeferredBlock(rows[i][0], rows[i][1], ModernColors.primaryWithAlpha(10)));
+            if (i < rows.length - 1) {
+                column.add(Box.createVerticalStrut(12));
+            }
+        }
+        column.add(Box.createVerticalGlue());
+        return column;
+    }
+
+    private JComponent createDeferredBlock(int width, int height, Color fillColor) {
+        JComponent block = new JComponent() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                try {
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setColor(fillColor);
+                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+                } finally {
+                    g2.dispose();
+                }
+            }
+        };
+        block.setOpaque(false);
+        block.setPreferredSize(new Dimension(width, height));
+        block.setMinimumSize(new Dimension(width, height));
+        block.setMaximumSize(new Dimension(width, height));
+        return block;
     }
 
     /**
@@ -378,11 +520,19 @@ public class RequestEditSubPanel extends JPanel {
      * 设置原始请求数据（脏数据检测）
      */
     public void setOriginalRequestItem(HttpRequestItem item) {
+        if (!editorInitialized) {
+            pendingOriginalRequestItem = item;
+            pendingRequestItem = item;
+            return;
+        }
         requestDirtyStateHelper.setOriginalRequestItem(item);
         requestSettingsPanel.rebaseline(item);
     }
 
     public HttpRequestItem getOriginalRequestItem() {
+        if (!editorInitialized) {
+            return pendingOriginalRequestItem;
+        }
         return requestDirtyStateHelper.getOriginalRequestItem();
     }
 
@@ -391,6 +541,9 @@ public class RequestEditSubPanel extends JPanel {
      * 注意：比较时排除 response 字段，因为它是历史响应数据，不属于表单编辑内容
      */
     public boolean isModified() {
+        if (!editorInitialized) {
+            return false;
+        }
         return requestDirtyStateHelper.isModified();
     }
 
@@ -400,6 +553,9 @@ public class RequestEditSubPanel extends JPanel {
      * 避免在 TableModelListener 回调中打断用户正在进行的单元格编辑。
      */
     private HttpRequestItem getCurrentRequestFromModel() {
+        if (!editorInitialized) {
+            return pendingRequestItem != null ? pendingRequestItem : pendingOriginalRequestItem;
+        }
         return requestFormDataHelper.buildCurrentRequest(id, name, currentProtocol, getOriginalRequestItem(), true);
     }
 
@@ -416,6 +572,7 @@ public class RequestEditSubPanel extends JPanel {
 
     private RequestPreparationResult prepareRequestForSending() {
         // 发送前只做“收集表单 + 构建请求 + 执行前置脚本 + 校验”，真正发协议请求交给 dispatch helper。
+        ensureEditorInitialized();
         promotePreviewTabToPermanent();
         String settingsValidationError = validateRequestSettings();
         if (settingsValidationError != null) {
@@ -427,6 +584,7 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     public String validateRequestSettings() {
+        ensureEditorInitialized();
         return requestSettingsPanel.validateSettings();
     }
 
@@ -446,6 +604,18 @@ public class RequestEditSubPanel extends JPanel {
      * 更新表单内容（用于切换请求或保存后刷新）
      */
     public void initPanelData(HttpRequestItem item) {
+        if (!editorInitialized) {
+            pendingRequestItem = item;
+            pendingOriginalRequestItem = item;
+            this.id = item.getId();
+            this.name = item.getName();
+            this.currentProtocol = item.getProtocol() != null ? item.getProtocol() : protocol;
+            return;
+        }
+        populatePanelData(item, item);
+    }
+
+    private void populatePanelData(HttpRequestItem item, HttpRequestItem originalItem) {
         // 设置加载标志，防止加载过程中触发自动保存和URL/Params联动
         isLoadingData = true;
 
@@ -456,7 +626,8 @@ public class RequestEditSubPanel extends JPanel {
             requestFormDataHelper.populate(item);
 
             // 设置原始数据用于脏检测
-            setOriginalRequestItem(item);
+            requestDirtyStateHelper.setOriginalRequestItem(originalItem);
+            requestSettingsPanel.rebaseline(originalItem);
 
             // 根据请求类型智能选择默认Tab
             requestFormDataHelper.selectDefaultTabByRequestType(getEffectiveProtocol(), item);
@@ -464,12 +635,17 @@ public class RequestEditSubPanel extends JPanel {
             // 确保标志一定会被清除，即使发生异常
             isLoadingData = false;
         }
+        pendingRequestItem = item;
+        pendingOriginalRequestItem = originalItem;
     }
 
     /**
      * 获取当前表单内容封装为HttpRequestItem
      */
     public HttpRequestItem getCurrentRequest() {
+        if (!editorInitialized) {
+            return pendingRequestItem != null ? pendingRequestItem : pendingOriginalRequestItem;
+        }
         return requestFormDataHelper.buildCurrentRequest(id, name, currentProtocol, getOriginalRequestItem(), false);
     }
 
@@ -497,6 +673,11 @@ public class RequestEditSubPanel extends JPanel {
      */
     public void disposeResources() {
         disposed = true;
+        if (!editorInitialized) {
+            pendingRequestItem = null;
+            pendingOriginalRequestItem = null;
+            return;
+        }
 
         if (currentEventSource != null) {
             currentSseCancelled.set(true);
@@ -560,6 +741,7 @@ public class RequestEditSubPanel extends JPanel {
      */
     public void loadSavedResponse(SavedResponse savedResponse) {
         if (savedResponse == null) return;
+        ensureEditorInitialized();
 
         try {
             SavedResponse.OriginalRequest originalRequest = savedResponse.getOriginalRequest();
@@ -587,19 +769,26 @@ public class RequestEditSubPanel extends JPanel {
      * @param isVertical true=垂直布局，false=水平布局
      */
     public void updateLayoutOrientation(boolean isVertical) {
+        if (!editorInitialized) {
+            pendingLayoutVertical = isVertical;
+            return;
+        }
         requestSplitLayoutHelper.updateLayoutOrientation(isVertical);
     }
 
     @Override
     public void doLayout() {
         super.doLayout();
-        requestSplitLayoutHelper.handleInitialLayout();
+        if (editorInitialized && requestSplitLayoutHelper != null) {
+            requestSplitLayoutHelper.handleInitialLayout();
+        }
     }
 
     /**
      * 检测并解析 cURL 命令
      */
     private void detectAndParseCurl() {
+        ensureEditorInitialized();
         requestEditorActionHelper.detectAndParseCurl(isLoadingData);
     }
 }

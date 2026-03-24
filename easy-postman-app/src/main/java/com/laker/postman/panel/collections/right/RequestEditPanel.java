@@ -20,7 +20,9 @@ import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.service.collections.DefaultTreeNodeRepository;
 import com.laker.postman.service.collections.RequestCollectionsService;
 import com.laker.postman.service.collections.RequestsTabsService;
+import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.service.setting.ShortcutManager;
+import com.laker.postman.startup.StartupDiagnostics;
 import com.laker.postman.service.variable.RequestContext;
 import com.laker.postman.util.CurlImportUtil;
 import com.laker.postman.util.I18nUtil;
@@ -30,6 +32,8 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
+import java.awt.event.ContainerAdapter;
+import java.awt.event.ContainerEvent;
 import javax.swing.tree.*;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
@@ -51,11 +55,18 @@ public class RequestEditPanel extends SingletonBasePanel {
     public static final String REQUEST_STRING = I18nUtil.getMessage(MessageKeys.NEW_REQUEST);
     public static final String PLUS_TAB = "+";
     public static final String GROUP = "group";
+    private static final String CARD_STARTUP = "startup";
+    private static final String CARD_TABS = "tabs";
     @Getter
     private JTabbedPane tabbedPane; // 使用 JTabbedPane 管理多个请求编辑子面板
 
     @Getter
     private TabbedPaneDragHandler dragHandler; // Tab 拖拽排序支持
+
+    private CardLayout contentCardLayout;
+    private JPanel contentCardPanel;
+    private boolean startupPlaceholderVisible = true;
+    private boolean autoRevealTabsCard = true;
 
     // 预览模式：单击使用的临时 tab（可被下次单击替换）
     private Component previewTab = null; // 可以是 RequestEditSubPanel 或 GroupEditPanel
@@ -86,6 +97,12 @@ public class RequestEditPanel extends SingletonBasePanel {
 
     // 添加"+"Tab
     public void addPlusTab() {
+        if (tabbedPane.getTabCount() > 0 && isPlusTab(tabbedPane.getTabCount() - 1)) {
+            if (autoRevealTabsCard) {
+                showTabsCard();
+            }
+            return;
+        }
         tabbedPane.addTab(PLUS_TAB, new PlusPanel());
         // 使用新版 PlusTabComponent，无需点击回调
         PlusTabComponent plusTabComponent = new PlusTabComponent();
@@ -739,6 +756,8 @@ public class RequestEditPanel extends SingletonBasePanel {
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
+        contentCardLayout = new CardLayout();
+        contentCardPanel = new JPanel(contentCardLayout);
         // 设置tabbedPane为单行滚动模式，防止多行tab顺序混乱
         tabbedPane = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
         // 设置整个tabbedPane区域的内边距
@@ -746,13 +765,137 @@ public class RequestEditPanel extends SingletonBasePanel {
         // 设置tabbedPane中一个个头部标签的的内边距（上、左、下、右）
         tabbedPane.putClientProperty(TABBED_PANE_TAB_INSETS, new Insets(3, 5, 3, 5));
         tabbedPane.putClientProperty(TABBED_PANE_TAB_HEIGHT, 38); // 设置tab高度，配合内边距让tab更美观
-        add(tabbedPane, BorderLayout.CENTER);
+        tabbedPane.addContainerListener(new ContainerAdapter() {
+            @Override
+            public void componentAdded(ContainerEvent e) {
+                if (tabbedPane.getTabCount() > 0 && autoRevealTabsCard) {
+                    showTabsCard();
+                }
+            }
+        });
+        tabbedPane.addChangeListener(e -> ensureSelectedRequestTabInitialized());
+
+        contentCardPanel.add(createStartupPlaceholderPanel(), CARD_STARTUP);
+        contentCardPanel.add(tabbedPane, CARD_TABS);
+        contentCardLayout.show(contentCardPanel, CARD_STARTUP);
+        startupPlaceholderVisible = true;
+        add(contentCardPanel, BorderLayout.CENTER);
 
         // 安装 Tab 拖拽排序支持（IDEA 风格蓝色竖线指示）
         // 通过 getter/setter 传入 previewTabIndex，确保拖拽移动后索引正确同步
         dragHandler = TabbedPaneDragHandler.install(tabbedPane,
                 () -> previewTabIndex,
                 v -> previewTabIndex = v);
+    }
+
+    boolean isShowingStartupPlaceholder() {
+        return startupPlaceholderVisible;
+    }
+
+    public void setAutoRevealTabsCard(boolean autoRevealTabsCard) {
+        this.autoRevealTabsCard = autoRevealTabsCard;
+    }
+
+    public void showTabsCard() {
+        showTabsCard(true);
+    }
+
+    public void showTabsCard(boolean initializeSelectedTab) {
+        if (startupPlaceholderVisible && contentCardLayout != null && contentCardPanel != null) {
+            contentCardLayout.show(contentCardPanel, CARD_TABS);
+            contentCardPanel.revalidate();
+            contentCardPanel.repaint();
+            startupPlaceholderVisible = false;
+            if (initializeSelectedTab) {
+                ensureSelectedRequestTabInitialized();
+            }
+            StartupDiagnostics.mark("RequestEditPanel switched from startup placeholder to tabs");
+        }
+    }
+
+    public void initializeSelectedRequestTabLater(int delayMs) {
+        Timer timer = new Timer(Math.max(0, delayMs), e -> {
+            ensureSelectedRequestTabInitialized();
+            StartupDiagnostics.mark("Initialized selected request tab after tabs card reveal");
+        });
+        timer.setRepeats(false);
+        timer.start();
+    }
+
+    private void ensureSelectedRequestTabInitialized() {
+        if (startupPlaceholderVisible) {
+            return;
+        }
+        Component selectedComponent = tabbedPane.getSelectedComponent();
+        if (selectedComponent instanceof RequestEditSubPanel requestEditSubPanel && !requestEditSubPanel.isEditorInitialized()) {
+            requestEditSubPanel.ensureEditorInitialized();
+        }
+    }
+
+    private JPanel createStartupPlaceholderPanel() {
+        JPanel wrapper = new JPanel(new GridBagLayout());
+        wrapper.setOpaque(true);
+        wrapper.setBackground(ModernColors.getBackgroundColor());
+        wrapper.setBorder(BorderFactory.createEmptyBorder(24, 24, 24, 24));
+        wrapper.add(createGlassStartupHint());
+        return wrapper;
+    }
+
+    private JComponent createGlassStartupHint() {
+        JPanel glassCard = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                try {
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    int width = getWidth();
+                    int height = getHeight();
+                    int innerX = 20;
+                    int innerY = 18;
+                    int innerWidth = width - 44;
+                    int innerHeight = height - 42;
+
+                    g2.setColor(new Color(0, 0, 0, 18));
+                    g2.fillRoundRect(4, 8, width - 8, height - 8, 30, 30);
+
+                    GradientPaint background = new GradientPaint(
+                            0, 0, new Color(255, 255, 255, 82),
+                            width, height, new Color(255, 255, 255, 42)
+                    );
+                    g2.setPaint(background);
+                    g2.fillRoundRect(0, 0, width - 4, height - 10, 28, 28);
+
+                    GradientPaint innerGlow = new GradientPaint(
+                            0, 12, new Color(255, 255, 255, 58),
+                            width, height - 12, new Color(255, 255, 255, 18)
+                    );
+                    g2.setPaint(innerGlow);
+                    g2.fillRoundRect(innerX, innerY, innerWidth, innerHeight, 26, 26);
+
+                    g2.setColor(ModernColors.primaryWithAlpha(22));
+                    g2.fillOval(width - 160, -20, 180, 180);
+                    g2.setColor(ModernColors.primaryWithAlpha(16));
+                    g2.fillOval(-50, height - 110, 210, 150);
+
+                    g2.setColor(new Color(255, 255, 255, 34));
+                    g2.fillRoundRect(54, 38, Math.max(220, width - 170), 24, 14, 14);
+                    g2.fillRoundRect(54, 76, Math.max(180, width - 250), 18, 12, 12);
+                    g2.fillRoundRect(54, 108, Math.max(210, width - 210), 18, 12, 12);
+                    g2.fillRoundRect(54, 140, Math.max(160, width - 300), 16, 10, 10);
+
+                    g2.setColor(new Color(255, 255, 255, 118));
+                    g2.setStroke(new BasicStroke(1.2f));
+                    g2.drawRoundRect(0, 0, width - 5, height - 11, 28, 28);
+                } finally {
+                    g2.dispose();
+                }
+                super.paintComponent(g);
+            }
+        };
+        glassCard.setOpaque(false);
+        glassCard.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 4));
+        glassCard.setPreferredSize(new Dimension(620, 210));
+        return glassCard;
     }
 
     @Override

@@ -8,6 +8,7 @@ import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.plugin.runtime.PluginRuntime;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.startup.StartupCoordinator;
+import com.laker.postman.startup.StartupDiagnostics;
 import com.laker.postman.util.*;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
@@ -22,6 +23,7 @@ import java.awt.*;
 @Slf4j
 public class App {
     public static void main(String[] args) {
+        StartupDiagnostics.mark("App.main entered");
         // 0. 设置全局异常处理器
         setupGlobalExceptionHandler();
 
@@ -61,6 +63,7 @@ public class App {
     private static void initializeLookAndFeel() {
         SimpleThemeManager.initTheme();
         FontManager.applyFontSettings();
+        StartupDiagnostics.mark("Look and feel initialized");
     }
 
     /**
@@ -69,6 +72,7 @@ public class App {
     private static void initializeUI() {
         IconFontSwing.register(FontAwesome.getIconFont());
         StartupCoordinator startupCoordinator = new StartupCoordinator();
+        StartupDiagnostics.mark("UI initialization started; splash=" + isSplashEnabled());
 
         if (!isSplashEnabled()) {
             initializeMainFrameWithoutSplash(startupCoordinator);
@@ -96,20 +100,55 @@ public class App {
                 try {
                     MainFrame mainFrame = get();
                     startupCoordinator.showMainFrame(mainFrame);
-                    startupCoordinator.scheduleBackgroundUpdateCheck();
-                } catch (Exception e) {
-                    log.error("Failed to initialize main frame without splash", e);
-                    JOptionPane.showMessageDialog(
-                            null,
-                            I18nUtil.getMessage(MessageKeys.SPLASH_ERROR_LOAD_MAIN),
-                            I18nUtil.getMessage(MessageKeys.GENERAL_ERROR),
-                            JOptionPane.ERROR_MESSAGE
+                    startupCoordinator.whenMainFrameReady(
+                            mainFrame,
+                            0,
+                            new StartupCoordinator.MainFrameReadinessCallbacks() {
+                                @Override
+                                public void onWaiting() {
+                                    StartupDiagnostics.mark("No-splash startup waiting for main content and first paint");
+                                }
+
+                                @Override
+                                public void onStartupShellPainted() {
+                                    StartupDiagnostics.mark("No-splash startup gate: startup shell painted");
+                                }
+
+                                @Override
+                                public void onMainContentReady() {
+                                    StartupDiagnostics.mark("No-splash startup gate: main content ready");
+                                }
+
+                                @Override
+                                public void onStartupShellPaintFallback(int waitMs) {
+                                    StartupDiagnostics.mark("No-splash startup gate: shell paint fallback after " + waitMs + " ms");
+                                }
+
+                                @Override
+                                public void onReady() {
+                                    StartupDiagnostics.mark("No-splash startup ready; scheduling background tasks");
+                                }
+                            },
+                            startupCoordinator::scheduleBackgroundUpdateCheck,
+                            App::handleStartupFailure
                     );
-                    System.exit(1);
+                } catch (Exception e) {
+                    handleStartupFailure(e);
                 }
             }
         };
         worker.execute();
+    }
+
+    private static void handleStartupFailure(Throwable throwable) {
+        log.error("Failed to initialize main frame without splash", throwable);
+        JOptionPane.showMessageDialog(
+                null,
+                I18nUtil.getMessage(MessageKeys.SPLASH_ERROR_LOAD_MAIN),
+                I18nUtil.getMessage(MessageKeys.GENERAL_ERROR),
+                JOptionPane.ERROR_MESSAGE
+        );
+        System.exit(1);
     }
 
     private static boolean isSplashEnabled() {

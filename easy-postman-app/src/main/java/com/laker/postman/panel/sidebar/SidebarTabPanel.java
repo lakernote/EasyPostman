@@ -10,6 +10,7 @@ import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.sidebar.cookie.CookieManagerDialog;
 import com.laker.postman.service.setting.SettingManager;
+import com.laker.postman.startup.StartupDiagnostics;
 import com.laker.postman.util.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -107,6 +108,8 @@ public class SidebarTabPanel extends SingletonBasePanel {
         if (tabbedPane.getTabCount() > 0) {
             tabbedPane.setSelectedIndex(0);
         }
+
+        preloadInitialContent();
 
         // 2. 控制台日志区和底部栏
         consoleContainer = new JPanel(new BorderLayout());
@@ -400,14 +403,17 @@ public class SidebarTabPanel extends SingletonBasePanel {
             handleTabChange();
             updateTabTextColors(); // 更新所有 tab 的文字颜色
         });
-        // 懒加载第一个tab
-        SwingUtilities.invokeLater(() -> {
-            ensureTabComponentLoaded(0);
-            initializeAllTabColors(); // 初始化时更新所有 tab 的颜色
-        });
+        SwingUtilities.invokeLater(this::initializeAllTabColors);
 
         // 注册快捷键
         registerTabShortcuts();
+    }
+
+    public void preloadInitialContent() {
+        int selectedIndex = tabbedPane != null ? tabbedPane.getSelectedIndex() : -1;
+        StartupDiagnostics.mark("SidebarTabPanel preloading initial tab index=" + (selectedIndex >= 0 ? selectedIndex : 0));
+        ensureTabComponentLoaded(selectedIndex >= 0 ? selectedIndex : 0);
+        initializeAllTabColors();
     }
 
     /**

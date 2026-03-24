@@ -750,6 +750,8 @@ public final class MessageKeys {
     public static final String SPLASH_STATUS_READY = "splash.status.ready";
     public static final String SPLASH_STATUS_DONE = "splash.status.done";
     public static final String SPLASH_ERROR_LOAD_MAIN = "splash.error.load_main";
+    public static final String STARTUP_PLACEHOLDER_TITLE = "startup.placeholder.title";
+    public static final String STARTUP_PLACEHOLDER_SUBTITLE = "startup.placeholder.subtitle";
 
     // ============ 退出相关 ============
     public static final String EXIT_UNSAVED_CHANGES = "exit.unsaved_changes";

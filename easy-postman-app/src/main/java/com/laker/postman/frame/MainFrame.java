@@ -3,12 +3,15 @@ package com.laker.postman.frame;
 import com.formdev.flatlaf.util.SystemInfo;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.constants.Icons;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.common.themes.SimpleThemeManager;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.panel.MainPanel;
 import com.laker.postman.panel.performance.PerformancePanel;
 import com.laker.postman.panel.topmenu.TopMenuBar;
 import com.laker.postman.service.ExitService;
+import com.laker.postman.startup.StartupDiagnostics;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.UserSettingsUtil;
@@ -20,6 +23,9 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * 主窗口类，继承自 JFrame。
@@ -55,6 +61,15 @@ public class MainFrame extends JFrame {
 
     // 防抖计时器（final 避免重复赋值）
     private final transient Timer saveStateTimer;
+    private transient JPanel startupShellPanel;
+    private transient volatile boolean mainContentLoaded;
+    private transient volatile boolean mainContentLoadRequested;
+    private transient volatile Throwable mainContentLoadFailure;
+    private transient volatile boolean macWindowDecorationsApplied;
+    private transient volatile boolean startupShellPainted;
+    private final transient List<Runnable> mainContentLoadedCallbacks = new ArrayList<>();
+    private final transient List<Consumer<Throwable>> mainContentLoadFailedCallbacks = new ArrayList<>();
+    private final transient List<Runnable> startupShellPaintedCallbacks = new ArrayList<>();
 
     // 单例模式，确保只有一个实例
     private MainFrame() {
@@ -69,34 +84,22 @@ public class MainFrame extends JFrame {
         setName(I18nUtil.getMessage(MessageKeys.APP_NAME));
         setTitle(I18nUtil.getMessage(MessageKeys.APP_NAME));
         setIconImage(Icons.LOGO.getImage());
+        applyWindowBackground();
 
-        // 在 macOS 上启用 Full Window Content
-        if (SystemInfo.isMacFullWindowContentSupported) {
-            // 启用全窗口内容模式，允许内容延伸到标题栏区域
-            getRootPane().putClientProperty("apple.awt.fullWindowContent", true);
-            // 启用透明标题栏，使标题栏背景透明并融入窗口内容
-            getRootPane().putClientProperty("apple.awt.transparentTitleBar", true);
-
-            // 根据当前主题设置窗口外观模式，确保标题栏文字颜色与主题匹配
-            // 这样可以避免在暗色主题下文字看不清的问题
-            if (SimpleThemeManager.isDarkTheme()) {
-                // 暗色主题：使用 VibrantDark 外观，标题栏文字显示为白色
-                getRootPane().putClientProperty("apple.awt.windowAppearance", "NSAppearanceNameVibrantDark");
-            } else {
-                // 亮色主题：使用 VibrantLight 外观，标题栏文字显示为黑色
-                getRootPane().putClientProperty("apple.awt.windowAppearance", "NSAppearanceNameVibrantLight");
-            }
-        }
+        applyMacWindowAppearance();
     }
 
     public void initComponents() {
+        long initStartNanos = System.nanoTime();
         setJMenuBar(SingletonFactory.getInstance(TopMenuBar.class));
-
-        setContentPane(SingletonFactory.getInstance(MainPanel.class));
+        installStartupShell();
 
         // 设置最小窗口尺寸，防止窗口被拖得太小
         Dimension minSize = getMinWindowSize();
         setMinimumSize(minSize);
+        if (startupShellPanel != null) {
+            startupShellPanel.setPreferredSize(minSize);
+        }
 
         initWindowSize();
         initWindowCloseListener();
@@ -111,6 +114,268 @@ public class MainFrame extends JFrame {
         boolean isMaximized = (getExtendedState() & Frame.MAXIMIZED_BOTH) == Frame.MAXIMIZED_BOTH;
         if (!isMaximized) {
             setLocationRelativeTo(null);
+        }
+        StartupDiagnostics.mark("MainFrame shell initialized in " + StartupDiagnostics.formatSince(initStartNanos));
+    }
+
+    public void loadMainContentAsync() {
+        if (mainContentLoaded || mainContentLoadRequested) {
+            return;
+        }
+        mainContentLoadRequested = true;
+        Runnable task = () -> {
+            if (mainContentLoaded) {
+                return;
+            }
+            long loadStartNanos = System.nanoTime();
+            try {
+                StartupDiagnostics.mark("MainFrame content load started");
+                setContentPane(SingletonFactory.getInstance(MainPanel.class));
+                revalidate();
+                repaint();
+                mainContentLoaded = true;
+                notifyMainContentLoaded();
+                scheduleDeferredMacWindowDecorations();
+                StartupDiagnostics.mark("MainFrame content load finished in " + StartupDiagnostics.formatSince(loadStartNanos));
+            } catch (Throwable throwable) {
+                mainContentLoadFailure = throwable;
+                log.error("Failed to initialize main content", throwable);
+                StartupDiagnostics.mark("MainFrame content load failed after " + StartupDiagnostics.formatSince(loadStartNanos));
+                notifyMainContentLoadFailed(throwable);
+            }
+        };
+
+        SwingUtilities.invokeLater(task);
+    }
+
+    private void installStartupShell() {
+        startupShellPanel = createStartupShellPanel();
+        setContentPane(startupShellPanel);
+        applyWindowBackground();
+    }
+
+    private void applyWindowBackground() {
+        Color background = ModernColors.getBackgroundColor();
+        setBackground(background);
+        if (getRootPane() != null) {
+            getRootPane().setOpaque(true);
+            getRootPane().setBackground(background);
+        }
+        if (getLayeredPane() != null) {
+            getLayeredPane().setOpaque(true);
+            getLayeredPane().setBackground(background);
+        }
+        if (getGlassPane() instanceof JComponent glassPane) {
+            glassPane.setOpaque(false);
+            glassPane.setBackground(background);
+        }
+        Container contentPane = getContentPane();
+        if (contentPane instanceof JComponent contentComponent) {
+            contentComponent.setOpaque(true);
+            contentComponent.setBackground(background);
+        }
+    }
+
+    private void applyMacWindowAppearance() {
+        if (!SystemInfo.isMacFullWindowContentSupported || getRootPane() == null) {
+            return;
+        }
+        if (SimpleThemeManager.isDarkTheme()) {
+            getRootPane().putClientProperty("apple.awt.windowAppearance", "NSAppearanceNameVibrantDark");
+        } else {
+            getRootPane().putClientProperty("apple.awt.windowAppearance", "NSAppearanceNameVibrantLight");
+        }
+    }
+
+    private void scheduleDeferredMacWindowDecorations() {
+        if (!SystemInfo.isMacFullWindowContentSupported || macWindowDecorationsApplied) {
+            return;
+        }
+        Timer timer = new Timer(180, e -> applyDeferredMacWindowDecorations());
+        timer.setRepeats(false);
+        timer.start();
+        StartupDiagnostics.mark("Scheduled deferred macOS window decorations");
+    }
+
+    private void applyDeferredMacWindowDecorations() {
+        if (!SystemInfo.isMacFullWindowContentSupported || macWindowDecorationsApplied || getRootPane() == null) {
+            return;
+        }
+        macWindowDecorationsApplied = true;
+        getRootPane().putClientProperty("apple.awt.fullWindowContent", true);
+        getRootPane().putClientProperty("apple.awt.transparentTitleBar", true);
+        applyMacWindowAppearance();
+        revalidate();
+        repaint();
+        StartupDiagnostics.mark("Applied deferred macOS window decorations");
+    }
+
+    private JPanel createStartupShellPanel() {
+        JPanel root = new JPanel(new BorderLayout()) {
+            private boolean firstPaintHandled;
+
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                if (!firstPaintHandled) {
+                    firstPaintHandled = true;
+                    startupShellPainted = true;
+                    StartupDiagnostics.mark("Startup shell first paint");
+                    notifyStartupShellPainted();
+                }
+            }
+        };
+        root.setOpaque(true);
+        root.setBackground(ModernColors.getBackgroundColor());
+
+        JPanel center = new JPanel(new GridBagLayout());
+        center.setOpaque(false);
+        center.setBorder(BorderFactory.createEmptyBorder(24, 24, 24, 24));
+        center.add(createGlassStartupShellHint());
+        root.add(center, BorderLayout.CENTER);
+        return root;
+    }
+
+    private JComponent createGlassStartupShellHint() {
+        JPanel glassCard = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                try {
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    int width = getWidth();
+                    int height = getHeight();
+                    int innerX = 20;
+                    int innerY = 18;
+                    int innerWidth = width - 44;
+                    int innerHeight = height - 42;
+
+                    g2.setColor(new Color(0, 0, 0, 18));
+                    g2.fillRoundRect(4, 8, width - 8, height - 8, 30, 30);
+
+                    GradientPaint background = new GradientPaint(
+                            0, 0, new Color(255, 255, 255, 82),
+                            width, height, new Color(255, 255, 255, 42)
+                    );
+                    g2.setPaint(background);
+                    g2.fillRoundRect(0, 0, width - 4, height - 10, 28, 28);
+
+                    GradientPaint innerGlow = new GradientPaint(
+                            0, 12, new Color(255, 255, 255, 58),
+                            width, height - 12, new Color(255, 255, 255, 18)
+                    );
+                    g2.setPaint(innerGlow);
+                    g2.fillRoundRect(innerX, innerY, innerWidth, innerHeight, 26, 26);
+
+                    g2.setColor(ModernColors.primaryWithAlpha(22));
+                    g2.fillOval(width - 160, -20, 180, 180);
+                    g2.setColor(ModernColors.primaryWithAlpha(16));
+                    g2.fillOval(-50, height - 110, 210, 150);
+
+                    g2.setColor(new Color(255, 255, 255, 34));
+                    g2.fillRoundRect(54, 38, Math.max(220, width - 170), 24, 14, 14);
+                    g2.fillRoundRect(54, 76, Math.max(180, width - 250), 18, 12, 12);
+                    g2.fillRoundRect(54, 108, Math.max(210, width - 210), 18, 12, 12);
+                    g2.fillRoundRect(54, 140, Math.max(160, width - 300), 16, 10, 10);
+
+                    g2.setColor(new Color(255, 255, 255, 118));
+                    g2.setStroke(new BasicStroke(1.2f));
+                    g2.drawRoundRect(0, 0, width - 5, height - 11, 28, 28);
+                } finally {
+                    g2.dispose();
+                }
+                super.paintComponent(g);
+            }
+        };
+        glassCard.setOpaque(false);
+        glassCard.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 4));
+        glassCard.setPreferredSize(new Dimension(620, 210));
+        return glassCard;
+    }
+
+    public void whenMainContentLoaded(Runnable callback) {
+        if (callback == null) {
+            return;
+        }
+        if (mainContentLoaded) {
+            SwingUtilities.invokeLater(callback);
+            return;
+        }
+        synchronized (mainContentLoadedCallbacks) {
+            if (mainContentLoaded) {
+                SwingUtilities.invokeLater(callback);
+            } else {
+                mainContentLoadedCallbacks.add(callback);
+            }
+        }
+    }
+
+    public void whenMainContentLoadFailed(Consumer<Throwable> callback) {
+        if (callback == null) {
+            return;
+        }
+        if (mainContentLoadFailure != null) {
+            Throwable failure = mainContentLoadFailure;
+            SwingUtilities.invokeLater(() -> callback.accept(failure));
+            return;
+        }
+        synchronized (mainContentLoadFailedCallbacks) {
+            if (mainContentLoadFailure != null) {
+                Throwable failure = mainContentLoadFailure;
+                SwingUtilities.invokeLater(() -> callback.accept(failure));
+            } else {
+                mainContentLoadFailedCallbacks.add(callback);
+            }
+        }
+    }
+
+    public void whenStartupShellPainted(Runnable callback) {
+        if (callback == null) {
+            return;
+        }
+        if (startupShellPainted) {
+            SwingUtilities.invokeLater(callback);
+            return;
+        }
+        synchronized (startupShellPaintedCallbacks) {
+            if (startupShellPainted) {
+                SwingUtilities.invokeLater(callback);
+            } else {
+                startupShellPaintedCallbacks.add(callback);
+            }
+        }
+    }
+
+    private void notifyMainContentLoaded() {
+        List<Runnable> callbacksToRun;
+        synchronized (mainContentLoadedCallbacks) {
+            callbacksToRun = new ArrayList<>(mainContentLoadedCallbacks);
+            mainContentLoadedCallbacks.clear();
+        }
+        for (Runnable callback : callbacksToRun) {
+            SwingUtilities.invokeLater(callback);
+        }
+    }
+
+    private void notifyMainContentLoadFailed(Throwable throwable) {
+        List<Consumer<Throwable>> callbacksToRun;
+        synchronized (mainContentLoadFailedCallbacks) {
+            callbacksToRun = new ArrayList<>(mainContentLoadFailedCallbacks);
+            mainContentLoadFailedCallbacks.clear();
+        }
+        for (Consumer<Throwable> callback : callbacksToRun) {
+            SwingUtilities.invokeLater(() -> callback.accept(throwable));
+        }
+    }
+
+    private void notifyStartupShellPainted() {
+        List<Runnable> callbacksToRun;
+        synchronized (startupShellPaintedCallbacks) {
+            callbacksToRun = new ArrayList<>(startupShellPaintedCallbacks);
+            startupShellPaintedCallbacks.clear();
+        }
+        for (Runnable callback : callbacksToRun) {
+            SwingUtilities.invokeLater(callback);
         }
     }
 

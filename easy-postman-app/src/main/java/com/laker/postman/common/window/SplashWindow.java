@@ -5,6 +5,7 @@ import com.laker.postman.common.constants.Icons;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.startup.StartupCoordinator;
+import com.laker.postman.startup.StartupDiagnostics;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -28,6 +29,7 @@ public class SplashWindow extends JFrame {
     private static final float FADE_STEP = 0.08f; // 渐隐步长
     private static final float MIN_OPACITY = 0.05f; // 最小透明度
     private static final int FADE_TIMER_DELAY = 15; // 渐隐定时器延迟
+    private static final int FADE_READY_HOLD_MS = 70; // 就绪后再额外停留一小拍，吞掉系统首帧切换
 
     private JLabel statusLabel; // 状态标签，用于显示加载状态
     private transient Timer fadeOutTimer; // 渐隐计时器
@@ -353,7 +355,7 @@ public class SplashWindow extends JFrame {
     /**
      * 处理主窗口加载错误
      */
-    private void handleMainFrameLoadError(Exception e) {
+    private void handleMainFrameLoadError(Throwable e) {
         if (e instanceof InterruptedException) {
             Thread.currentThread().interrupt();
         }
@@ -374,9 +376,51 @@ public class SplashWindow extends JFrame {
     private void startFadeOutAnimation(MainFrame mainFrame, StartupCoordinator startupCoordinator) {
         if (isDisposed) return;
 
-        // 在开始渐隐动画之前就显示主窗口，实现重叠效果
+        // 先显示主窗口，但继续让 splash 保持在前景，直到主窗口首绘和主内容加载都完成。
         startupCoordinator.showMainFrame(mainFrame);
+        startupCoordinator.whenMainFrameReady(
+                mainFrame,
+                FADE_READY_HOLD_MS,
+                new StartupCoordinator.MainFrameReadinessCallbacks() {
+                    @Override
+                    public void onWaiting() {
+                        StartupDiagnostics.mark("Splash waiting for main content and first paint before fade-out");
+                    }
 
+                    @Override
+                    public void onStartupShellPainted() {
+                        StartupDiagnostics.mark("Splash fade-out gate: startup shell painted");
+                    }
+
+                    @Override
+                    public void onMainContentReady() {
+                        StartupDiagnostics.mark("Splash fade-out gate: main content ready");
+                    }
+
+                    @Override
+                    public void onStartupShellPaintFallback(int waitMs) {
+                        StartupDiagnostics.mark("Splash fade-out using shell paint fallback after " + waitMs + " ms");
+                    }
+
+                    @Override
+                    public void onHoldScheduled(int holdDelayMs) {
+                        StartupDiagnostics.mark("Splash fade-out holding for " + holdDelayMs + " ms after readiness");
+                    }
+
+                    @Override
+                    public void onReady() {
+                        StartupDiagnostics.mark("Splash fade-out starting after first paint and main content loaded");
+                    }
+                },
+                () -> startFadeTimer(startupCoordinator),
+                this::handleMainFrameLoadError
+        );
+    }
+
+    private void startFadeTimer(StartupCoordinator startupCoordinator) {
+        if (isDisposed || fadeOutTimer != null) {
+            return;
+        }
         fadeOutListener = createFadeOutListener(startupCoordinator);
         fadeOutTimer = new Timer(FADE_TIMER_DELAY, fadeOutListener);
         fadeOutTimer.start();

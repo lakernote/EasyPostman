@@ -17,6 +17,7 @@ import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.service.collections.RequestCollectionsService;
 import com.laker.postman.service.collections.RequestsPersistence;
 import com.laker.postman.service.http.PreparedRequestBuilder;
+import com.laker.postman.startup.StartupDiagnostics;
 import com.laker.postman.util.SystemUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -54,6 +55,9 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     private DefaultTreeModel treeModel;
     @Getter
     private transient RequestsPersistence persistence;
+
+    private record StartupLoadSnapshot(List<HttpRequestItem> openedRequests, HttpRequestItem lastNonNewRequest) {
+    }
 
 
     @Override
@@ -157,18 +161,50 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         EasyTaskExecutor.execute(
                 // 后台线程：执行耗时的IO操作
                 () -> {
+                    long loadStartNanos = System.nanoTime();
+                    StartupDiagnostics.mark("Request collections load started");
                     persistence.initRequestGroupsFromFile();
-                    return RequestCollectionsService.getLastNonNewRequest();
+                    List<HttpRequestItem> openedRequests = com.laker.postman.service.collections.OpenedRequestsService.getAll();
+                    HttpRequestItem lastNonNewRequest = null;
+                    for (int i = openedRequests.size() - 1; i >= 0; i--) {
+                        HttpRequestItem item = openedRequests.get(i);
+                        if (!item.isNewRequest()) {
+                            lastNonNewRequest = item;
+                            break;
+                        }
+                    }
+                    StartupDiagnostics.mark("Request collections load finished in "
+                            + StartupDiagnostics.formatSince(loadStartNanos)
+                            + ", openedRequests=" + openedRequests.size());
+                    return new StartupLoadSnapshot(
+                            openedRequests,
+                            lastNonNewRequest
+                    );
                 },
                 // EDT线程：更新UI
-                lastNonNewRequest -> {
-                    // 恢复之前已打开请求
-                    RequestCollectionsService.restoreOpenedRequests();
-                    // 增加一个plusTab
-                    SingletonFactory.getInstance(RequestEditPanel.class).addPlusTab();
+                snapshot -> {
+                    RequestEditPanel requestEditPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+                    StartupDiagnostics.mark("Collections UI ready; openedRequests=" + snapshot.openedRequests().size());
+                    requestEditPanel.setAutoRevealTabsCard(true);
+                    if (snapshot.openedRequests().isEmpty()) {
+                        requestEditPanel.addPlusTab();
+                    } else {
+                        StartupDiagnostics.mark("Delaying center tab restore to let top/left stabilize");
+                        requestEditPanel.setAutoRevealTabsCard(false);
+                        requestEditPanel.addPlusTab();
+                        RequestCollectionsService.restoreOpenedRequestsIncrementally(
+                                snapshot.openedRequests(),
+                                RequestCollectionsService.STARTUP_RESTORE_INITIAL_DELAY_MS,
+                                () -> {
+                                    requestEditPanel.showTabsCard(false);
+                                    requestEditPanel.setAutoRevealTabsCard(true);
+                                    requestEditPanel.initializeSelectedRequestTabLater(40);
+                                }
+                        );
+                    }
                     // 反向定位到最后一个请求
-                    if (lastNonNewRequest != null) {
-                        locateAndSelectRequest(lastNonNewRequest.getId());
+                    if (snapshot.lastNonNewRequest() != null) {
+                        locateAndSelectRequest(snapshot.lastNonNewRequest().getId());
                     } else { // 没有请求时默认展开第一个组
                         if (rootTreeNode.getChildCount() > 0) {
                             DefaultMutableTreeNode firstGroup = (DefaultMutableTreeNode) rootTreeNode.getChildAt(0);

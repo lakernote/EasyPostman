@@ -15,7 +15,9 @@ final class PluginRuntimePaths {
     }
 
     static Path managedPluginDir() {
-        Path pluginDir = dataRoot().resolve("plugins").resolve("installed");
+        Path pluginDir = isPortableMode()
+                ? defaultDiscoveryPluginDir()
+                : dataRoot().resolve("plugins").resolve("installed");
         try {
             Files.createDirectories(pluginDir);
         } catch (Exception ignored) {
@@ -25,7 +27,9 @@ final class PluginRuntimePaths {
     }
 
     static Path pluginPackageDir() {
-        Path pluginDir = dataRoot().resolve("plugins").resolve("packages");
+        Path pluginDir = isPortableMode()
+                ? defaultDiscoveryPluginDir().resolve("packages")
+                : dataRoot().resolve("plugins").resolve("packages");
         try {
             Files.createDirectories(pluginDir);
         } catch (Exception ignored) {
@@ -42,6 +46,10 @@ final class PluginRuntimePaths {
         cachedDataPath = null;
     }
 
+    static Path defaultDiscoveryPluginDir() {
+        return applicationRootDirectory().resolve("plugins");
+    }
+
     private static Path dataRoot() {
         if (cachedDataPath != null) {
             return Paths.get(cachedDataPath);
@@ -53,7 +61,7 @@ final class PluginRuntimePaths {
         if (override != null && !override.isBlank()) {
             root = Paths.get(override.trim());
         } else if (isPortableMode()) {
-            root = applicationDirectory().resolve("data");
+            root = applicationRootDirectory().resolve("data");
         } else {
             root = Paths.get(System.getProperty("user.home"), "EasyPostman");
         }
@@ -71,10 +79,32 @@ final class PluginRuntimePaths {
         if (flag != null) {
             return Boolean.parseBoolean(flag);
         }
-        return new File(applicationDirectory().toFile(), ".portable").exists();
+        Path applicationRoot = applicationRootDirectory();
+        if (new File(applicationRoot.toFile(), ".portable").exists()) {
+            return true;
+        }
+        Path codeSourceDirectory = codeSourceDirectory();
+        return !applicationRoot.equals(codeSourceDirectory)
+                && new File(codeSourceDirectory.toFile(), ".portable").exists();
     }
 
-    private static Path applicationDirectory() {
+    private static Path applicationRootDirectory() {
+        String override = System.getProperty("easyPostman.app.dir");
+        if (override != null && !override.isBlank()) {
+            return Paths.get(override.trim()).toAbsolutePath().normalize();
+        }
+
+        Path codeSourceDirectory = codeSourceDirectory();
+        Path parent = codeSourceDirectory.getParent();
+        if (parent != null
+                && "app".equalsIgnoreCase(String.valueOf(codeSourceDirectory.getFileName()))
+                && Files.isDirectory(parent.resolve("runtime"))) {
+            return parent.toAbsolutePath().normalize();
+        }
+        return codeSourceDirectory.toAbsolutePath().normalize();
+    }
+
+    private static Path codeSourceDirectory() {
         try {
             String path = PluginRuntimePaths.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
             String decoded = URLDecoder.decode(path, StandardCharsets.UTF_8);

@@ -37,10 +37,12 @@ final class PluginScanner {
         Set<Path> dirs = new LinkedHashSet<>();
         String override = System.getProperty("easyPostman.plugins.dir");
         if (override != null && !override.isBlank()) {
-            dirs.add(Paths.get(override));
+            dirs.add(Paths.get(override).toAbsolutePath().normalize());
         }
-        dirs.add(Paths.get(System.getProperty("user.dir"), "plugins"));
-        dirs.add(managedPluginDir);
+        dirs.add(PluginRuntimePaths.defaultDiscoveryPluginDir().toAbsolutePath().normalize());
+        if (managedPluginDir != null) {
+            dirs.add(managedPluginDir.toAbsolutePath().normalize());
+        }
         return dirs;
     }
 

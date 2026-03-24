@@ -1,6 +1,7 @@
 package com.laker.postman.plugin.manager;
 
 import com.laker.postman.plugin.manager.market.PluginCatalogEntry;
+import com.laker.postman.plugin.runtime.PluginFileInfo;
 import com.laker.postman.plugin.runtime.PluginRuntime;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -24,17 +25,22 @@ import static org.testng.Assert.assertTrue;
 public class PluginManagementServiceTest {
 
     private Path dataDir;
+    private Path appDir;
 
     @BeforeMethod
     public void setUp() throws IOException {
         dataDir = Files.createTempDirectory("plugin-manager-test");
+        appDir = Files.createTempDirectory("plugin-manager-app");
         System.setProperty("easyPostman.data.dir", dataDir.toString());
+        System.setProperty("easyPostman.app.dir", appDir.toString());
         PluginRuntime.resetForTests();
     }
 
     @AfterMethod
     public void tearDown() {
         System.clearProperty("easyPostman.data.dir");
+        System.clearProperty("easyPostman.app.dir");
+        System.clearProperty("easyPostman.portable");
         PluginRuntime.resetForTests();
     }
 
@@ -90,6 +96,21 @@ public class PluginManagementServiceTest {
         try (var files = Files.list(PluginManagementService.getManagedPluginDir())) {
             assertTrue(files.findAny().isEmpty());
         }
+    }
+
+    @Test
+    public void shouldInstallPortablePluginsIntoApplicationPluginsDirectory() throws Exception {
+        System.setProperty("easyPostman.portable", "true");
+        PluginRuntime.resetForTests();
+        Path sourceJar = dataDir.resolve("downloads").resolve("plugin-kafka-5.3.17.jar");
+        writeStubPluginJar(sourceJar, "plugin-kafka", "5.3.17", "", "");
+
+        PluginFileInfo installed = PluginManagementService.installPluginJar(sourceJar);
+
+        assertEquals(installed.jarPath(), appDir.resolve("plugins").resolve("plugin-kafka-5.3.17.jar"));
+        assertTrue(Files.exists(appDir.resolve("plugins").resolve("plugin-kafka-5.3.17.jar")));
+        assertTrue(Files.exists(appDir.resolve("plugins").resolve("packages").resolve("plugin-kafka-5.3.17.jar")));
+        assertEquals(PluginManagementService.getManagedPluginDir(), appDir.resolve("plugins"));
     }
 
     @Test

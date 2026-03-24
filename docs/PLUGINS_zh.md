@@ -66,7 +66,8 @@ easy-postman-parent
 ```text
 本地 JAR / 远程 catalog
   -> plugin-manager 负责安装和下载
-  -> 插件 JAR 进入 plugins/installed 和 plugins/packages
+  -> 安装版插件 JAR 进入数据目录下的 plugins/installed 和 plugins/packages
+  -> 便携版默认写入程序根目录下的 plugins 和 plugins/packages，方便离线拷贝
   -> runtime 扫描插件目录
   -> 读取 META-INF/easy-postman/*.properties
   -> 解析 PluginDescriptor

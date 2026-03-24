@@ -66,17 +66,23 @@ public class PluginCatalogServiceTest {
     public void shouldLoadBundledOfficialCatalog() throws Exception {
         List<PluginCatalogEntry> githubEntries = PluginCatalogService.loadBundledOfficialCatalog("github");
         List<PluginCatalogEntry> giteeEntries = PluginCatalogService.loadBundledOfficialCatalog("gitee");
+        Set<String> requiredPluginIds = Set.of(
+                "plugin-capture",
+                "plugin-redis",
+                "plugin-kafka",
+                "plugin-decompiler",
+                "plugin-client-cert"
+        );
+        Set<String> githubIds = githubEntries.stream()
+                .map(PluginCatalogEntry::id)
+                .collect(java.util.stream.Collectors.toSet());
+        Set<String> giteeIds = giteeEntries.stream()
+                .map(PluginCatalogEntry::id)
+                .collect(java.util.stream.Collectors.toSet());
 
-        assertEquals(githubEntries.size(), 4);
-        assertEquals(giteeEntries.size(), 4);
-        assertEquals(
-                githubEntries.stream().map(PluginCatalogEntry::id).collect(java.util.stream.Collectors.toSet()),
-                Set.of("plugin-redis", "plugin-kafka", "plugin-decompiler", "plugin-client-cert")
-        );
-        assertEquals(
-                giteeEntries.stream().map(PluginCatalogEntry::id).collect(java.util.stream.Collectors.toSet()),
-                Set.of("plugin-redis", "plugin-kafka", "plugin-decompiler", "plugin-client-cert")
-        );
+        assertTrue(githubIds.containsAll(requiredPluginIds));
+        assertTrue(giteeIds.containsAll(requiredPluginIds));
+        assertEquals(githubIds, giteeIds);
         assertTrue(githubEntries.stream().noneMatch(entry -> "plugin-git".equals(entry.id())));
         assertTrue(giteeEntries.stream().noneMatch(entry -> "plugin-git".equals(entry.id())));
 

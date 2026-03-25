@@ -439,7 +439,7 @@ public class SplashWindow extends JFrame {
             try {
                 processFadeOutStep(startupCoordinator);
             } catch (Exception ex) {
-                handleFadeOutError(ex);
+                handleFadeOutError(ex, startupCoordinator);
             }
         };
     }
@@ -468,10 +468,11 @@ public class SplashWindow extends JFrame {
     /**
      * 处理渐隐错误
      */
-    private void handleFadeOutError(Exception ex) {
+    private void handleFadeOutError(Exception ex, StartupCoordinator startupCoordinator) {
         log.warn("渐隐动画执行失败，直接关闭窗口", ex);
         stopFadeOutAnimation();
         disposeSafely();
+        startupCoordinator.scheduleBackgroundUpdateCheck();
         // 主窗口在渐隐开始前就已经显示，这里不需要再显示
     }
 

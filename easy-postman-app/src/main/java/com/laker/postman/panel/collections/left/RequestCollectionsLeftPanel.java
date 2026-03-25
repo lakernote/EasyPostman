@@ -193,12 +193,14 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                         requestEditPanel.beginStartupRestoreSelectionTracking();
                         requestEditPanel.setAutoRevealTabsCard(false);
                         requestEditPanel.addPlusTab();
+                        // As soon as the tab shell exists, reveal the real tab area and let
+                        // deferred per-tab placeholders handle the remaining startup work.
+                        requestEditPanel.showTabsCard(false);
                         RequestCollectionsService.restoreOpenedRequestsIncrementally(
                                 snapshot.openedRequests(),
                                 RequestCollectionsService.STARTUP_RESTORE_INITIAL_DELAY_MS,
                                 () -> {
                                     requestEditPanel.completeStartupRestoreSelectionTracking();
-                                    requestEditPanel.showTabsCard(false);
                                     requestEditPanel.setAutoRevealTabsCard(true);
                                     requestEditPanel.initializeSelectedRequestTabLater(40);
                                 }

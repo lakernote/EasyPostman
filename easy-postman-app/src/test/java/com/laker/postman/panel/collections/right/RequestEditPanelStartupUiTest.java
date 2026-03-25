@@ -46,6 +46,21 @@ public class RequestEditPanelStartupUiTest extends AbstractSwingUiTest {
     }
 
     @Test
+    public void shouldRevealTabsCardWhenRequestedExplicitly() throws Exception {
+        RequestEditPanel panel = createPanel();
+
+        SwingUtilities.invokeAndWait(() -> {
+            panel.setAutoRevealTabsCard(false);
+            panel.addPlusTab();
+            panel.showTabsCard(false);
+        });
+
+        assertFalse(panel.isShowingStartupPlaceholder());
+        assertEquals(panel.getTabbedPane().getTabCount(), 1);
+        assertEquals(panel.getTabbedPane().getTitleAt(0), RequestEditPanel.PLUS_TAB);
+    }
+
+    @Test
     public void shouldCancelStartupRestoreSelectionWhenUserOpensAnotherTab() throws Exception {
         RequestEditPanel panel = createPanel();
 

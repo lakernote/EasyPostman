@@ -1,8 +1,7 @@
 package com.laker.postman.plugin.runtime;
 
-import java.io.File;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
+import com.laker.postman.util.AppRuntimeLayout;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -47,7 +46,7 @@ final class PluginRuntimePaths {
     }
 
     static Path defaultDiscoveryPluginDir() {
-        return applicationRootDirectory().resolve("plugins");
+        return AppRuntimeLayout.applicationRootDirectory(PluginRuntimePaths.class).resolve("plugins");
     }
 
     private static Path dataRoot() {
@@ -60,10 +59,8 @@ final class PluginRuntimePaths {
         String override = System.getProperty("easyPostman.data.dir");
         if (override != null && !override.isBlank()) {
             root = Paths.get(override.trim());
-        } else if (isPortableMode()) {
-            root = applicationRootDirectory().resolve("data");
         } else {
-            root = Paths.get(System.getProperty("user.home"), "EasyPostman");
+            root = AppRuntimeLayout.dataRootDirectory(PluginRuntimePaths.class);
         }
         try {
             Files.createDirectories(root);
@@ -75,43 +72,6 @@ final class PluginRuntimePaths {
     }
 
     private static boolean isPortableMode() {
-        String flag = System.getProperty("easyPostman.portable");
-        if (flag != null) {
-            return Boolean.parseBoolean(flag);
-        }
-        Path applicationRoot = applicationRootDirectory();
-        if (new File(applicationRoot.toFile(), ".portable").exists()) {
-            return true;
-        }
-        Path codeSourceDirectory = codeSourceDirectory();
-        return !applicationRoot.equals(codeSourceDirectory)
-                && new File(codeSourceDirectory.toFile(), ".portable").exists();
-    }
-
-    private static Path applicationRootDirectory() {
-        String override = System.getProperty("easyPostman.app.dir");
-        if (override != null && !override.isBlank()) {
-            return Paths.get(override.trim()).toAbsolutePath().normalize();
-        }
-
-        Path codeSourceDirectory = codeSourceDirectory();
-        Path parent = codeSourceDirectory.getParent();
-        if (parent != null
-                && "app".equalsIgnoreCase(String.valueOf(codeSourceDirectory.getFileName()))
-                && Files.isDirectory(parent.resolve("runtime"))) {
-            return parent.toAbsolutePath().normalize();
-        }
-        return codeSourceDirectory.toAbsolutePath().normalize();
-    }
-
-    private static Path codeSourceDirectory() {
-        try {
-            String path = PluginRuntimePaths.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
-            String decoded = URLDecoder.decode(path, StandardCharsets.UTF_8);
-            File file = new File(decoded);
-            return file.isFile() ? file.getParentFile().toPath() : Paths.get(System.getProperty("user.dir"));
-        } catch (Exception e) {
-            return Paths.get(System.getProperty("user.dir"));
-        }
+        return AppRuntimeLayout.isPortableMode(PluginRuntimePaths.class);
     }
 }

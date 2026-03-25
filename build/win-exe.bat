@@ -207,6 +207,29 @@ if not exist "%EXE_FILE%" (
 for %%F in ("%EXE_FILE%") do set SIZE=%%~zF
 set /a SIZE_MB=%SIZE% / 1048576
 
+:: 额外生成便携版 ZIP，并写入 .portable 标识
+echo [Portable] 创建便携版 ZIP...
+set PORTABLE_ROOT=target\portable
+set PORTABLE_APP_DIR=%PORTABLE_ROOT%\%APP_NAME%
+set PORTABLE_ZIP=%OUTPUT_DIR%\%APP_NAME%-%VERSION%-windows-%ARCH%-portable.zip
+
+if exist "%PORTABLE_ROOT%" rd /s /q "%PORTABLE_ROOT%"
+mkdir "%PORTABLE_APP_DIR%"
+xcopy "target\%APP_NAME%" "%PORTABLE_APP_DIR%\" /E /I /Y >nul
+if errorlevel 1 (
+    echo ERROR: Failed to copy portable app image
+    pause
+    exit /b 1
+)
+
+echo This is a portable version>"%PORTABLE_APP_DIR%\.portable"
+powershell -Command "if (Test-Path '%PORTABLE_ZIP%') { Remove-Item '%PORTABLE_ZIP%' -Force }; Compress-Archive -Path '%PORTABLE_APP_DIR%' -DestinationPath '%PORTABLE_ZIP%' -Force"
+if errorlevel 1 (
+    echo ERROR: Failed to create portable ZIP
+    pause
+    exit /b 1
+)
+
 echo.
 echo ========================================
 echo   构建成功！
@@ -214,12 +237,14 @@ echo ========================================
 echo   文件: %EXE_FILE%
 echo   大小: %SIZE_MB% MB
 echo   路径: %cd%\%OUTPUT_DIR%
+echo   便携版: %PORTABLE_ZIP%
 echo ========================================
 echo.
 echo 使用方法:
 echo   - 交互式安装: %APP_NAME%-%VERSION%-windows-%ARCH%.exe
 echo   - 静默安装:   %APP_NAME%-%VERSION%-windows-%ARCH%.exe /VERYSILENT
 echo   - 静默+启动:  %APP_NAME%-%VERSION%-windows-%ARCH%.exe /VERYSILENT /AUTOSTART
+echo   - 便携版 ZIP: %APP_NAME%-%VERSION%-windows-%ARCH%-portable.zip
 echo.
 
 ENDLOCAL

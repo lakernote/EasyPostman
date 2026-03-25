@@ -10,8 +10,6 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.io.File;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,46 +39,11 @@ public class SystemUtil {
      * 获取程序所在目录
      */
     private static String getApplicationDirectory() {
-        try {
-            String path = SystemUtil.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
-            String decodedPath = URLDecoder.decode(path, StandardCharsets.UTF_8);
-            File jarFile = new File(decodedPath);
-
-            // 如果是 jar 文件，获取其父目录
-            if (jarFile.isFile()) {
-                return jarFile.getParent() + File.separator;
-            } else {
-                // 开发环境，使用项目根目录
-                return System.getProperty("user.dir") + File.separator;
-            }
-        } catch (Exception e) {
-            log.warn("无法获取应用程序目录，使用当前工作目录", e);
-            return System.getProperty("user.dir") + File.separator;
-        }
+        return AppRuntimeLayout.applicationRootDirectory(SystemUtil.class).toString() + File.separator;
     }
 
     private static boolean isPortableMode() {
-        String override = System.getProperty("easyPostman.portable");
-        if (override != null && !override.isBlank()) {
-            return Boolean.parseBoolean(override);
-        }
-        String applicationDirectory = getApplicationDirectory();
-        File appDir = new File(applicationDirectory);
-        if (new File(appDir, ".portable").exists()) {
-            return true;
-        }
-        File parentDir = appDir.getParentFile();
-        if (parentDir != null && new File(parentDir, ".portable").exists()) {
-            return true;
-        }
-
-        String lowerPath = applicationDirectory.toLowerCase();
-        if (lowerPath.contains("program files")
-                || lowerPath.contains("appdata\\local\\programs")
-                || lowerPath.contains("appdata/local/programs")) {
-            return false;
-        }
-        return false;
+        return AppRuntimeLayout.isPortableMode(SystemUtil.class);
     }
 
     /**
@@ -97,14 +60,11 @@ public class SystemUtil {
         String override = System.getProperty("easyPostman.data.dir");
         if (override != null && !override.isBlank()) {
             dataPath = Paths.get(override.trim()).toAbsolutePath().normalize().toString() + File.separator;
-        } else if (isPortableMode()) {
-            // Portable 模式：使用程序所在目录
-            String appDir = getApplicationDirectory();
-            dataPath = appDir + "data" + File.separator;
-            log.info("运行在 Portable 模式，数据目录: {}", dataPath);
         } else {
-            // 普通模式：使用用户主目录
-            dataPath = System.getProperty("user.home") + File.separator + "EasyPostman" + File.separator;
+            dataPath = AppRuntimeLayout.dataRootDirectory(SystemUtil.class).toString() + File.separator;
+            if (isPortableMode()) {
+                log.info("运行在 Portable 模式，数据目录: {}", dataPath);
+            }
         }
 
         // 确保目录存在
@@ -120,6 +80,13 @@ public class SystemUtil {
 
         cachedDataPath = dataPath;
         return dataPath;
+    }
+
+    /**
+     * 仅供测试使用，清理静态缓存。
+     */
+    public static void resetForTests() {
+        cachedDataPath = null;
     }
 
     /**

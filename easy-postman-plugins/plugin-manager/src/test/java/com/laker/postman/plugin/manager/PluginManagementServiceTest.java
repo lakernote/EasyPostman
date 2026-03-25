@@ -1,5 +1,7 @@
 package com.laker.postman.plugin.manager;
 
+import com.laker.postman.plugin.api.EasyPostmanPlugin;
+import com.laker.postman.plugin.api.PluginContext;
 import com.laker.postman.plugin.manager.market.PluginCatalogEntry;
 import com.laker.postman.plugin.runtime.PluginFileInfo;
 import com.laker.postman.plugin.runtime.PluginRuntime;
@@ -55,6 +57,62 @@ public class PluginManagementServiceTest {
         assertFalse(result.restartRequired());
         assertFalse(Files.exists(pluginJar));
         assertFalse(PluginManagementService.isPluginPendingUninstall("plugin-redis"));
+    }
+
+    @Test
+    public void shouldRemoveManagedPluginEvenWhenAnotherLoadedCopyExists() throws Exception {
+        Path droppedJar = appDir.resolve("plugins").resolve("plugin-kafka-5.3.18.jar");
+        writePluginJar(droppedJar, "plugin-kafka", "5.3.18", LoadedStubPlugin.class.getName(), "", "");
+        PluginRuntime.initialize();
+
+        Path managedJar = PluginManagementService.getManagedPluginDir().resolve("plugin-kafka-5.3.23.jar");
+        writeStubPluginJar(managedJar, "plugin-kafka", "5.3.23", "", "");
+
+        PluginUninstallResult result = PluginManagementService.uninstallPlugin("plugin-kafka");
+
+        assertTrue(result.removed());
+        assertFalse(result.restartRequired());
+        assertFalse(Files.exists(managedJar));
+        assertFalse(PluginManagementService.isPluginPendingUninstall("plugin-kafka"));
+    }
+
+    @Test
+    public void shouldKeepAllDisplayInstalledPluginsButSortPreferredVersionFirst() throws Exception {
+        Path droppedJar = appDir.resolve("plugins").resolve("plugin-kafka-5.3.18.jar");
+        writePluginJar(droppedJar, "plugin-kafka", "5.3.18", LoadedStubPlugin.class.getName(), "", "");
+        PluginRuntime.initialize();
+
+        Path managedJar = PluginManagementService.getManagedPluginDir().resolve("plugin-kafka-5.3.23.jar");
+        writeStubPluginJar(managedJar, "plugin-kafka", "5.3.23", "", "");
+
+        List<PluginFileInfo> displayPlugins = PluginManagementService.sortDisplayInstalledPlugins(
+                PluginManagementService.getInstalledPlugins()
+        );
+
+        assertEquals(displayPlugins.size(), 2);
+        assertEquals(displayPlugins.get(0).descriptor().id(), "plugin-kafka");
+        assertEquals(displayPlugins.get(0).descriptor().version(), "5.3.23");
+        assertEquals(displayPlugins.get(0).jarPath(), managedJar);
+        assertFalse(displayPlugins.get(0).loaded());
+        assertEquals(displayPlugins.get(1).jarPath(), droppedJar);
+    }
+
+    @Test
+    public void shouldPreferNewerManagedPluginInInstalledPluginMap() throws Exception {
+        Path droppedJar = appDir.resolve("plugins").resolve("plugin-kafka-5.3.18.jar");
+        writePluginJar(droppedJar, "plugin-kafka", "5.3.18", LoadedStubPlugin.class.getName(), "", "");
+        PluginRuntime.initialize();
+
+        Path managedJar = PluginManagementService.getManagedPluginDir().resolve("plugin-kafka-5.3.23.jar");
+        writeStubPluginJar(managedJar, "plugin-kafka", "5.3.23", "", "");
+
+        PluginFileInfo preferred = PluginManagementService.buildPreferredInstalledPluginMap(
+                PluginManagementService.getInstalledPlugins()
+        ).get("plugin-kafka");
+
+        assertNotNull(preferred);
+        assertEquals(preferred.descriptor().version(), "5.3.23");
+        assertEquals(preferred.jarPath(), managedJar);
     }
 
     @Test
@@ -171,7 +229,7 @@ public class PluginManagementServiceTest {
     }
 
     private static void writeStubPluginJar(Path jarPath, String pluginId) throws IOException {
-        writeStubPluginJar(jarPath, pluginId, "5.3.16", "", "");
+        writePluginJar(jarPath, pluginId, "5.3.16", "com.example.StubPlugin", "", "");
     }
 
     private static void writeStubPluginJar(Path jarPath,
@@ -179,6 +237,16 @@ public class PluginManagementServiceTest {
                                            String pluginVersion,
                                            String minPlatformVersion,
                                            String maxPlatformVersion) throws IOException {
+        writePluginJar(jarPath, pluginId, pluginVersion, "com.example.StubPlugin",
+                minPlatformVersion, maxPlatformVersion);
+    }
+
+    private static void writePluginJar(Path jarPath,
+                                       String pluginId,
+                                       String pluginVersion,
+                                       String entryClass,
+                                       String minPlatformVersion,
+                                       String maxPlatformVersion) throws IOException {
         Files.createDirectories(jarPath.getParent());
         try (OutputStream outputStream = Files.newOutputStream(jarPath);
              JarOutputStream jarOutputStream = new JarOutputStream(outputStream)) {
@@ -187,12 +255,18 @@ public class PluginManagementServiceTest {
                     plugin.id=%s
                     plugin.name=Stub Plugin
                     plugin.version=%s
-                    plugin.entryClass=com.example.StubPlugin
+                    plugin.entryClass=%s
                     plugin.minPlatformVersion=%s
                     plugin.maxPlatformVersion=%s
-                    """.formatted(pluginId, pluginVersion, minPlatformVersion, maxPlatformVersion))
+                    """.formatted(pluginId, pluginVersion, entryClass, minPlatformVersion, maxPlatformVersion))
                     .getBytes(StandardCharsets.UTF_8));
             jarOutputStream.closeEntry();
+        }
+    }
+
+    public static final class LoadedStubPlugin implements EasyPostmanPlugin {
+        @Override
+        public void onLoad(PluginContext context) {
         }
     }
 }

@@ -539,8 +539,8 @@ public class PluginManagerDialog extends JDialog {
 
     private void reloadPlugins(String preferredPluginId) {
         installedListModel.clear();
-        List<PluginFileInfo> plugins = PluginManagementService.getInstalledPlugins();
-        installedPluginMap = buildInstalledPluginMap(plugins);
+        List<PluginFileInfo> plugins = PluginManagementService.getDisplayInstalledPlugins();
+        installedPluginMap = PluginManagementService.buildPreferredInstalledPluginMap(plugins);
         if (plugins.isEmpty()) {
             installedListModel.addElement(new PluginFileInfo(
                     new PluginDescriptor("empty", I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_EMPTY), "", "", "", ""),
@@ -579,25 +579,6 @@ public class PluginManagerDialog extends JDialog {
         if (!installedListModel.isEmpty()) {
             installedList.setSelectedIndex(0);
         }
-    }
-
-    private Map<String, PluginFileInfo> buildInstalledPluginMap(List<PluginFileInfo> plugins) {
-        Map<String, PluginFileInfo> map = new LinkedHashMap<>();
-        for (PluginFileInfo info : plugins) {
-            PluginFileInfo existing = map.get(info.descriptor().id());
-            if (existing == null) {
-                map.put(info.descriptor().id(), info);
-                continue;
-            }
-            if (info.loaded() && !existing.loaded()) {
-                map.put(info.descriptor().id(), info);
-                continue;
-            }
-            if (VersionComparator.compare(info.descriptor().version(), existing.descriptor().version()) > 0) {
-                map.put(info.descriptor().id(), info);
-            }
-        }
-        return map;
     }
 
     private void openManagedPluginDirectory() {

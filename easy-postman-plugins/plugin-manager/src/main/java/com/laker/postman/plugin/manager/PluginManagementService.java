@@ -16,7 +16,10 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 插件管理门面，统一封装安装、目录与启停相关操作。
@@ -77,6 +80,42 @@ public class PluginManagementService {
 
     public static List<PluginFileInfo> getInstalledPlugins() {
         return PluginRuntime.getInstalledPlugins();
+    }
+
+    public static List<PluginFileInfo> getDisplayInstalledPlugins() {
+        return sortDisplayInstalledPlugins(PluginRuntime.getInstalledPlugins());
+    }
+
+    static List<PluginFileInfo> sortDisplayInstalledPlugins(List<PluginFileInfo> plugins) {
+        if (plugins == null || plugins.isEmpty()) {
+            return List.of();
+        }
+        return plugins.stream()
+                .filter(plugin -> plugin != null && plugin.descriptor() != null
+                        && plugin.descriptor().id() != null && !plugin.descriptor().id().isBlank())
+                .sorted(DISPLAY_GROUP_COMPARATOR.thenComparing(DISPLAY_PLUGIN_PRIORITY.reversed()))
+                .toList();
+    }
+
+    public static Map<String, PluginFileInfo> buildPreferredInstalledPluginMap(List<PluginFileInfo> plugins) {
+        if (plugins == null || plugins.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, PluginFileInfo> selected = new LinkedHashMap<>();
+        for (PluginFileInfo plugin : plugins) {
+            if (plugin == null || plugin.descriptor() == null) {
+                continue;
+            }
+            String pluginId = plugin.descriptor().id();
+            if (pluginId == null || pluginId.isBlank()) {
+                continue;
+            }
+            PluginFileInfo existing = selected.get(pluginId);
+            if (existing == null || DISPLAY_PLUGIN_PRIORITY.compare(plugin, existing) > 0) {
+                selected.put(pluginId, plugin);
+            }
+        }
+        return selected;
     }
 
     public static boolean isManagedPlugin(Path jarPath) {
@@ -191,5 +230,92 @@ public class PluginManagementService {
         PluginRuntime.setPluginEnabled(pluginId, true);
         PluginInstallSourceStore.clear(pluginId);
         return new PluginUninstallResult(removed, false);
+    }
+
+    private static final Comparator<PluginFileInfo> DISPLAY_PLUGIN_PRIORITY =
+            Comparator.<PluginFileInfo>comparingInt(info -> info.enabled() ? 1 : 0)
+                    .thenComparingInt(info -> info.compatible() ? 1 : 0)
+                    .thenComparing((left, right) -> comparePluginVersion(left, right))
+                    .thenComparingInt(info -> info.loaded() ? 1 : 0)
+                    .thenComparingInt(info -> isManagedPlugin(info.jarPath()) ? 1 : 0);
+
+    private static final Comparator<PluginFileInfo> DISPLAY_GROUP_COMPARATOR =
+            Comparator.<PluginFileInfo, String>comparing(
+                    info -> info.descriptor().name() == null || info.descriptor().name().isBlank()
+                            ? info.descriptor().id()
+                            : info.descriptor().name(),
+                    String.CASE_INSENSITIVE_ORDER
+            ).thenComparing(info -> info.descriptor().id(), String.CASE_INSENSITIVE_ORDER);
+
+    private static int comparePluginVersion(PluginFileInfo left, PluginFileInfo right) {
+        String leftVersion = left == null || left.descriptor() == null ? null : left.descriptor().version();
+        String rightVersion = right == null || right.descriptor() == null ? null : right.descriptor().version();
+        if (leftVersion == null || rightVersion == null) {
+            return 0;
+        }
+        String normalizedLeft = trimVersionPrefix(leftVersion);
+        String normalizedRight = trimVersionPrefix(rightVersion);
+        String[] leftTokens = coreVersion(normalizedLeft).split("\\.");
+        String[] rightTokens = coreVersion(normalizedRight).split("\\.");
+        int length = Math.max(leftTokens.length, rightTokens.length);
+        for (int i = 0; i < length; i++) {
+            int leftNumber = i < leftTokens.length ? parseVersionToken(leftTokens[i]) : 0;
+            int rightNumber = i < rightTokens.length ? parseVersionToken(rightTokens[i]) : 0;
+            if (leftNumber != rightNumber) {
+                return Integer.compare(leftNumber, rightNumber);
+            }
+        }
+        return compareVersionQualifier(versionQualifier(normalizedLeft), versionQualifier(normalizedRight));
+    }
+
+    private static String trimVersionPrefix(String version) {
+        return version.startsWith("v") ? version.substring(1) : version;
+    }
+
+    private static String coreVersion(String version) {
+        int separatorIndex = qualifierSeparatorIndex(version);
+        return separatorIndex >= 0 ? version.substring(0, separatorIndex) : version;
+    }
+
+    private static String versionQualifier(String version) {
+        int separatorIndex = qualifierSeparatorIndex(version);
+        return separatorIndex >= 0 && separatorIndex + 1 < version.length()
+                ? version.substring(separatorIndex + 1)
+                : "";
+    }
+
+    private static int qualifierSeparatorIndex(String version) {
+        int dash = version.indexOf('-');
+        int plus = version.indexOf('+');
+        if (dash < 0) {
+            return plus;
+        }
+        if (plus < 0) {
+            return dash;
+        }
+        return Math.min(dash, plus);
+    }
+
+    private static int compareVersionQualifier(String leftQualifier, String rightQualifier) {
+        boolean leftBlank = leftQualifier == null || leftQualifier.isBlank();
+        boolean rightBlank = rightQualifier == null || rightQualifier.isBlank();
+        if (leftBlank && rightBlank) {
+            return 0;
+        }
+        if (leftBlank) {
+            return 1;
+        }
+        if (rightBlank) {
+            return -1;
+        }
+        return leftQualifier.compareToIgnoreCase(rightQualifier);
+    }
+
+    private static int parseVersionToken(String token) {
+        try {
+            return Integer.parseInt(token.replaceAll("\\D", ""));
+        } catch (Exception ignored) {
+            return 0;
+        }
     }
 }

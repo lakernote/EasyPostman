@@ -64,7 +64,6 @@ public class MainFrame extends JFrame {
     private transient volatile boolean mainContentLoaded;
     private transient volatile boolean mainContentLoadRequested;
     private transient volatile Throwable mainContentLoadFailure;
-    private transient volatile boolean macWindowDecorationsApplied;
     private transient volatile boolean startupShellPainted;
     private final transient List<Runnable> mainContentLoadedCallbacks = new ArrayList<>();
     private final transient List<Consumer<Throwable>> mainContentLoadFailedCallbacks = new ArrayList<>();
@@ -85,6 +84,7 @@ public class MainFrame extends JFrame {
         setIconImage(Icons.LOGO.getImage());
         applyWindowBackground();
 
+        applyMacWindowDecorations();
         applyMacWindowAppearance();
     }
 
@@ -134,7 +134,6 @@ public class MainFrame extends JFrame {
                 repaint();
                 mainContentLoaded = true;
                 notifyMainContentLoaded();
-                scheduleDeferredMacWindowDecorations();
                 StartupDiagnostics.mark("MainFrame content load finished in " + StartupDiagnostics.formatSince(loadStartNanos));
             } catch (Throwable throwable) {
                 mainContentLoadFailure = throwable;
@@ -186,27 +185,13 @@ public class MainFrame extends JFrame {
         }
     }
 
-    private void scheduleDeferredMacWindowDecorations() {
-        if (!SystemInfo.isMacFullWindowContentSupported || macWindowDecorationsApplied) {
+    private void applyMacWindowDecorations() {
+        if (!SystemInfo.isMacFullWindowContentSupported || getRootPane() == null) {
             return;
         }
-        Timer timer = new Timer(180, e -> applyDeferredMacWindowDecorations());
-        timer.setRepeats(false);
-        timer.start();
-        StartupDiagnostics.mark("Scheduled deferred macOS window decorations");
-    }
-
-    private void applyDeferredMacWindowDecorations() {
-        if (!SystemInfo.isMacFullWindowContentSupported || macWindowDecorationsApplied || getRootPane() == null) {
-            return;
-        }
-        macWindowDecorationsApplied = true;
         getRootPane().putClientProperty("apple.awt.fullWindowContent", true);
         getRootPane().putClientProperty("apple.awt.transparentTitleBar", true);
-        applyMacWindowAppearance();
-        revalidate();
-        repaint();
-        StartupDiagnostics.mark("Applied deferred macOS window decorations");
+        StartupDiagnostics.mark("Applied macOS window decorations before first show");
     }
 
     private JPanel createStartupShellPanel() {

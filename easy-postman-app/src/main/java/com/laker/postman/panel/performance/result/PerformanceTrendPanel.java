@@ -2,6 +2,7 @@ package com.laker.postman.panel.performance.result;
 
 import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.common.SingletonBasePanel;
+import com.laker.postman.common.component.placeholder.PerformanceTrendPlaceholderPanel;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -184,88 +185,10 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
     }
 
     private void showDeferredPlaceholder() {
-        JPanel placeholder = createDeferredPlaceholderPanel();
         chartContainer.removeAll();
-        chartContainer.add(placeholder, BorderLayout.CENTER);
+        chartContainer.add(new PerformanceTrendPlaceholderPanel(), BorderLayout.CENTER);
         chartContainer.revalidate();
         chartContainer.repaint();
-    }
-
-    private JPanel createDeferredPlaceholderPanel() {
-        return new JPanel(new BorderLayout()) {
-            {
-                setOpaque(true);
-                setBackground(getChartPanelBackgroundColor());
-                setBorder(BorderFactory.createEmptyBorder(18, 18, 18, 18));
-            }
-
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                Graphics2D g2 = (Graphics2D) g.create();
-                try {
-                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-                    int width = getWidth();
-                    int height = getHeight();
-                    if (width <= 120 || height <= 120) {
-                        return;
-                    }
-
-                    Color cardBg = isDarkTheme() ? new Color(52, 52, 52) : new Color(252, 253, 255);
-                    Color borderColor = isDarkTheme() ? new Color(82, 82, 82) : new Color(230, 235, 242);
-                    Color blockColor = isDarkTheme() ? new Color(78, 78, 78) : new Color(237, 241, 246);
-                    Color accentColor = isDarkTheme() ? new Color(100, 181, 246, 90) : new Color(33, 150, 243, 55);
-                    Color titleColor = isDarkTheme() ? new Color(205, 205, 205) : new Color(88, 96, 108);
-                    Color hintColor = isDarkTheme() ? new Color(160, 160, 160) : new Color(130, 138, 148);
-
-                    int cardW = Math.min(520, width - 48);
-                    int cardH = 190;
-                    int cardX = (width - cardW) / 2;
-                    int cardY = Math.max(28, (height - cardH) / 2 - 24);
-
-                    g2.setColor(cardBg);
-                    g2.fillRoundRect(cardX, cardY, cardW, cardH, 20, 20);
-                    g2.setColor(borderColor);
-                    g2.drawRoundRect(cardX, cardY, cardW, cardH, 20, 20);
-
-                    int topBarX = cardX + 24;
-                    int topBarY = cardY + 22;
-                    g2.setColor(accentColor);
-                    g2.fillRoundRect(topBarX, topBarY, 112, 10, 10, 10);
-
-                    g2.setColor(blockColor);
-                    g2.fillRoundRect(topBarX, topBarY + 28, cardW - 48, 14, 12, 12);
-                    g2.fillRoundRect(topBarX, topBarY + 56, cardW - 140, 12, 10, 10);
-                    g2.fillRoundRect(topBarX, topBarY + 80, cardW - 180, 12, 10, 10);
-
-                    int chipY = topBarY + 118;
-                    int chipX = topBarX;
-                    int[] chipWidths = {74, 96, 82};
-                    for (int chipWidth : chipWidths) {
-                        g2.fillRoundRect(chipX, chipY, chipWidth, 28, 14, 14);
-                        chipX += chipWidth + 12;
-                    }
-
-                    g2.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 0));
-                    g2.setColor(titleColor);
-                    String title = "\u8d8b\u52bf\u56fe\u5c06\u5728\u91c7\u6837\u540e\u663e\u793a";
-                    FontMetrics titleMetrics = g2.getFontMetrics();
-                    int titleX = (width - titleMetrics.stringWidth(title)) / 2;
-                    int titleY = cardY + cardH + 42;
-                    g2.drawString(title, titleX, titleY);
-
-                    g2.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-                    g2.setColor(hintColor);
-                    String hint = "\u542f\u52a8\u538b\u6d4b\u540e\uff0c\u8fd9\u91cc\u4f1a\u663e\u793a\u7528\u6237\u6570\u3001QPS \u548c\u54cd\u5e94\u65f6\u95f4";
-                    FontMetrics hintMetrics = g2.getFontMetrics();
-                    int hintX = (width - hintMetrics.stringWidth(hint)) / 2;
-                    g2.drawString(hint, hintX, titleY + 24);
-                } finally {
-                    g2.dispose();
-                }
-            }
-        };
     }
 
     /**

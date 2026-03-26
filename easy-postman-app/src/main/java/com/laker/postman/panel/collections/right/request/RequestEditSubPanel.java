@@ -2,6 +2,7 @@ package com.laker.postman.panel.collections.right.request;
 
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.MarkdownEditorPanel;
+import com.laker.postman.common.component.placeholder.DeferredEditorPlaceholderPanel;
 import com.laker.postman.common.component.tab.IndicatorTabComponent;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.*;
@@ -432,73 +433,8 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     private void installDeferredShell() {
-        deferredShellPanel = createDeferredShellPanel();
+        deferredShellPanel = new DeferredEditorPlaceholderPanel();
         add(deferredShellPanel, BorderLayout.CENTER);
-    }
-
-    private JPanel createDeferredShellPanel() {
-        JPanel shell = new JPanel(new BorderLayout(0, 16));
-        shell.setOpaque(true);
-        shell.setBackground(ModernColors.getBackgroundColor());
-        shell.setBorder(BorderFactory.createEmptyBorder(18, 18, 18, 18));
-
-        JPanel topRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        topRow.setOpaque(false);
-        topRow.add(createDeferredBlock(120, 30, ModernColors.primaryWithAlpha(20)));
-        topRow.add(createDeferredBlock(140, 30, ModernColors.primaryWithAlpha(12)));
-        shell.add(topRow, BorderLayout.NORTH);
-
-        JPanel content = new JPanel(new BorderLayout(0, 14));
-        content.setOpaque(true);
-        content.setBackground(ModernColors.getCardBackgroundColor());
-        content.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(ModernColors.getDividerBorderColor()),
-                BorderFactory.createEmptyBorder(18, 18, 18, 18)
-        ));
-        content.add(createDeferredBlock(420, 36, ModernColors.primaryWithAlpha(14)), BorderLayout.NORTH);
-
-        JPanel body = new JPanel(new GridLayout(1, 2, 16, 0));
-        body.setOpaque(false);
-        body.add(createDeferredColumn(new int[][]{{160, 16}, {220, 16}, {180, 16}, {240, 16}}));
-        body.add(createDeferredColumn(new int[][]{{260, 16}, {200, 16}, {280, 16}, {220, 16}}));
-        content.add(body, BorderLayout.CENTER);
-        shell.add(content, BorderLayout.CENTER);
-        return shell;
-    }
-
-    private JPanel createDeferredColumn(int[][] rows) {
-        JPanel column = new JPanel();
-        column.setOpaque(false);
-        column.setLayout(new BoxLayout(column, BoxLayout.Y_AXIS));
-        for (int i = 0; i < rows.length; i++) {
-            column.add(createDeferredBlock(rows[i][0], rows[i][1], ModernColors.primaryWithAlpha(10)));
-            if (i < rows.length - 1) {
-                column.add(Box.createVerticalStrut(12));
-            }
-        }
-        column.add(Box.createVerticalGlue());
-        return column;
-    }
-
-    private JComponent createDeferredBlock(int width, int height, Color fillColor) {
-        JComponent block = new JComponent() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                try {
-                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    g2.setColor(fillColor);
-                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
-                } finally {
-                    g2.dispose();
-                }
-            }
-        };
-        block.setOpaque(false);
-        block.setPreferredSize(new Dimension(width, height));
-        block.setMinimumSize(new Dimension(width, height));
-        block.setMaximumSize(new Dimension(width, height));
-        return block;
     }
 
     /**

@@ -1,0 +1,82 @@
+package com.laker.postman.common.component.placeholder;
+
+import com.laker.postman.util.FontsUtil;
+
+import javax.swing.*;
+import java.awt.*;
+
+public class PerformanceTrendPlaceholderPanel extends AbstractPlaceholderPanel {
+
+    public PerformanceTrendPlaceholderPanel() {
+        super(new BorderLayout());
+        configureRoot(getChartPanelBackgroundColor(), new Insets(18, 18, 18, 18));
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        Graphics2D g2 = (Graphics2D) g.create();
+        try {
+            enableAntialias(g2);
+
+            int width = getWidth();
+            int height = getHeight();
+            if (width <= 120 || height <= 120) {
+                return;
+            }
+
+            Color cardBg = isDarkTheme() ? new Color(52, 52, 52) : new Color(252, 253, 255);
+            Color borderColor = isDarkTheme() ? new Color(82, 82, 82) : new Color(230, 235, 242);
+            Color blockColor = isDarkTheme() ? new Color(78, 78, 78) : new Color(237, 241, 246);
+            Color accentColor = isDarkTheme() ? new Color(100, 181, 246, 90) : new Color(33, 150, 243, 55);
+            Color titleColor = isDarkTheme() ? new Color(205, 205, 205) : new Color(88, 96, 108);
+            Color hintColor = isDarkTheme() ? new Color(160, 160, 160) : new Color(130, 138, 148);
+
+            int cardW = Math.min(520, width - 48);
+            int cardH = 190;
+            int cardX = (width - cardW) / 2;
+            int cardY = Math.max(28, (height - cardH) / 2 - 24);
+
+            fillRoundedBlock(g2, cardX, cardY, cardW, cardH, cardBg, 20);
+            g2.setColor(borderColor);
+            g2.drawRoundRect(cardX, cardY, cardW, cardH, 20, 20);
+
+            int topBarX = cardX + 24;
+            int topBarY = cardY + 22;
+            fillRoundedBlock(g2, topBarX, topBarY, 112, 10, accentColor, 10);
+
+            fillRoundedBlock(g2, topBarX, topBarY + 28, cardW - 48, 14, blockColor, 12);
+            fillRoundedBlock(g2, topBarX, topBarY + 56, cardW - 140, 12, blockColor, 10);
+            fillRoundedBlock(g2, topBarX, topBarY + 80, cardW - 180, 12, blockColor, 10);
+
+            int chipY = topBarY + 118;
+            int chipX = topBarX;
+            int[] chipWidths = {74, 96, 82};
+            for (int chipWidth : chipWidths) {
+                fillRoundedBlock(g2, chipX, chipY, chipWidth, 28, blockColor, 14);
+                chipX += chipWidth + 12;
+            }
+
+            g2.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 0));
+            g2.setColor(titleColor);
+            String title = "趋势图将在采样后显示";
+            FontMetrics titleMetrics = g2.getFontMetrics();
+            int titleX = (width - titleMetrics.stringWidth(title)) / 2;
+            int titleY = cardY + cardH + 42;
+            g2.drawString(title, titleX, titleY);
+
+            g2.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+            g2.setColor(hintColor);
+            String hint = "启动压测后，这里会显示用户数、QPS 和响应时间";
+            FontMetrics hintMetrics = g2.getFontMetrics();
+            int hintX = (width - hintMetrics.stringWidth(hint)) / 2;
+            g2.drawString(hint, hintX, titleY + 24);
+        } finally {
+            g2.dispose();
+        }
+    }
+
+    private Color getChartPanelBackgroundColor() {
+        return isDarkTheme() ? new Color(43, 43, 43) : Color.WHITE;
+    }
+}

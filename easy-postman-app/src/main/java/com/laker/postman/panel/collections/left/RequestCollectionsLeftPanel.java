@@ -14,6 +14,7 @@ import com.laker.postman.panel.collections.left.handler.RequestTreeMouseHandler;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.service.WorkspaceService;
+import com.laker.postman.service.collections.OpenedRequestsService;
 import com.laker.postman.service.collections.RequestCollectionsService;
 import com.laker.postman.service.collections.RequestsPersistence;
 import com.laker.postman.service.http.PreparedRequestBuilder;
@@ -157,75 +158,74 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         requestTree.addMouseListener(mouseHandler);
         requestTree.addMouseMotionListener(mouseHandler);
 
-        // 使用 AsyncTaskExecutor 异步加载请求集合
         EasyTaskExecutor.execute(
-                // 后台线程：执行耗时的IO操作
-                () -> {
-                    long loadStartNanos = System.nanoTime();
-                    StartupDiagnostics.mark("Request collections load started");
-                    persistence.initRequestGroupsFromFile();
-                    List<HttpRequestItem> openedRequests = com.laker.postman.service.collections.OpenedRequestsService.getAll();
-                    HttpRequestItem lastNonNewRequest = null;
-                    for (int i = openedRequests.size() - 1; i >= 0; i--) {
-                        HttpRequestItem item = openedRequests.get(i);
-                        if (!item.isNewRequest()) {
-                            lastNonNewRequest = item;
-                            break;
-                        }
-                    }
-                    StartupDiagnostics.mark("Request collections load finished in "
-                            + StartupDiagnostics.formatSince(loadStartNanos)
-                            + ", openedRequests=" + openedRequests.size());
-                    return new StartupLoadSnapshot(
-                            openedRequests,
-                            lastNonNewRequest
-                    );
-                },
-                // EDT线程：更新UI
-                snapshot -> {
-                    RequestEditPanel requestEditPanel = SingletonFactory.getInstance(RequestEditPanel.class);
-                    StartupDiagnostics.mark("Collections UI ready; openedRequests=" + snapshot.openedRequests().size());
-                    requestEditPanel.setAutoRevealTabsCard(true);
-                    if (snapshot.openedRequests().isEmpty()) {
-                        requestEditPanel.addPlusTab();
-                    } else {
-                        StartupDiagnostics.mark("Delaying center tab restore to let top/left stabilize");
-                        requestEditPanel.beginStartupRestoreSelectionTracking();
-                        requestEditPanel.setAutoRevealTabsCard(false);
-                        requestEditPanel.addPlusTab();
-                        // As soon as the tab shell exists, reveal the real tab area and let
-                        // deferred per-tab placeholders handle the remaining startup work.
-                        requestEditPanel.showTabsCard(false);
-                        RequestCollectionsService.restoreOpenedRequestsIncrementally(
-                                snapshot.openedRequests(),
-                                RequestCollectionsService.STARTUP_RESTORE_INITIAL_DELAY_MS,
-                                () -> {
-                                    requestEditPanel.completeStartupRestoreSelectionTracking();
-                                    requestEditPanel.setAutoRevealTabsCard(true);
-                                    requestEditPanel.initializeSelectedRequestTabLater(40);
-                                }
-                        );
-                    }
-                    // 反向定位到最后一个请求
-                    if (snapshot.lastNonNewRequest() != null) {
-                        locateAndSelectRequest(snapshot.lastNonNewRequest().getId());
-                    } else { // 没有请求时默认展开第一个组
-                        if (rootTreeNode.getChildCount() > 0) {
-                            DefaultMutableTreeNode firstGroup = (DefaultMutableTreeNode) rootTreeNode.getChildAt(0);
-                            TreePath path = new TreePath(firstGroup.getPath());
-                            requestTree.setSelectionPath(path);
-                            requestTree.expandPath(path);
-                        }
-                    }
-                },
-                // EDT线程：处理错误
-                error -> {
-                    log.error("Error loading request collections", error);
-                    // 即使加载失败也要添加 plusTab
-                    SingletonFactory.getInstance(RequestEditPanel.class).addPlusTab();
-                },
+                this::loadStartupSnapshot,
+                this::applyStartupSnapshot,
+                this::handleStartupLoadError,
                 "RequestCollections-Loader"
         );
+    }
+
+    private StartupLoadSnapshot loadStartupSnapshot() {
+        long loadStartNanos = System.nanoTime();
+        StartupDiagnostics.mark("Request collections load started");
+        persistence.initRequestGroupsFromFile();
+        List<HttpRequestItem> openedRequests = OpenedRequestsService.getAll();
+        HttpRequestItem lastNonNewRequest = RequestCollectionsService.getLastNonNewRequest(openedRequests);
+        StartupDiagnostics.mark("Request collections load finished in "
+                + StartupDiagnostics.formatSince(loadStartNanos)
+                + ", openedRequests=" + openedRequests.size());
+        return new StartupLoadSnapshot(openedRequests, lastNonNewRequest);
+    }
+
+    private void applyStartupSnapshot(StartupLoadSnapshot snapshot) {
+        RequestEditPanel requestEditPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+        StartupDiagnostics.mark("Collections UI ready; openedRequests=" + snapshot.openedRequests().size());
+        requestEditPanel.setAutoInitializeSelectedTabOnTabAdd(true);
+        restoreOpenedRequestTabs(snapshot, requestEditPanel);
+        restoreTreeSelection(snapshot);
+    }
+
+    private void restoreOpenedRequestTabs(StartupLoadSnapshot snapshot, RequestEditPanel requestEditPanel) {
+        if (snapshot.openedRequests().isEmpty()) {
+            requestEditPanel.addPlusTab();
+            return;
+        }
+        StartupDiagnostics.mark("Restoring opened request tabs");
+        requestEditPanel.setStartupRestoreSelectingLastTab(true);
+        requestEditPanel.setAutoInitializeSelectedTabOnTabAdd(false);
+        requestEditPanel.addPlusTab();
+        RequestCollectionsService.restoreOpenedRequests(
+                snapshot.openedRequests(),
+                () -> {
+                    requestEditPanel.setStartupRestoreSelectingLastTab(false);
+                    requestEditPanel.setAutoInitializeSelectedTabOnTabAdd(true);
+                    requestEditPanel.initializeSelectedStartupRestoreTab();
+                }
+        );
+    }
+
+    private void restoreTreeSelection(StartupLoadSnapshot snapshot) {
+        if (snapshot.lastNonNewRequest() != null) {
+            locateAndSelectRequest(snapshot.lastNonNewRequest().getId());
+            return;
+        }
+        expandAndSelectFirstGroupIfPresent();
+    }
+
+    private void expandAndSelectFirstGroupIfPresent() {
+        if (rootTreeNode.getChildCount() <= 0) {
+            return;
+        }
+        DefaultMutableTreeNode firstGroup = (DefaultMutableTreeNode) rootTreeNode.getChildAt(0);
+        TreePath path = new TreePath(firstGroup.getPath());
+        requestTree.setSelectionPath(path);
+        requestTree.expandPath(path);
+    }
+
+    private void handleStartupLoadError(Throwable error) {
+        log.error("Error loading request collections", error);
+        SingletonFactory.getInstance(RequestEditPanel.class).addPlusTab();
     }
 
 

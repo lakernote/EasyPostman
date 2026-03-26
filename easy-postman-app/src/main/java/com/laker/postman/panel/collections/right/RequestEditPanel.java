@@ -28,6 +28,7 @@ import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -55,8 +56,13 @@ public class RequestEditPanel extends SingletonBasePanel {
     @Getter
     private TabbedPaneDragHandler dragHandler; // Tab 拖拽排序支持
 
-    private boolean autoRevealTabsCard = true;
-    private boolean startupRestoreSelectionPending;
+    // 普通交互下，新增/选中 tab 后会在下一轮 EDT 初始化当前编辑器。
+    @Setter
+    private boolean autoInitializeSelectedTabOnTabAdd = true;
+    // 启动恢复多个请求时，仅最后一个 tab 自动成为选中 tab。
+    @Getter
+    @Setter
+    private boolean startupRestoreSelectingLastTab;
 
     // 预览模式：单击使用的临时 tab（可被下次单击替换）
     private Component previewTab = null; // 可以是 RequestEditSubPanel 或 GroupEditPanel
@@ -65,7 +71,7 @@ public class RequestEditPanel extends SingletonBasePanel {
 
     // 新建Tab，可指定标题
     public RequestEditSubPanel addNewTab(String title, RequestItemProtocolEnum protocol) {
-        registerUserSelectionDuringStartupRestore();
+        cancelStartupRestoreAutoSelectionIfNeeded();
         // 先移除+Tab
         if (tabbedPane.getTabCount() > 0 && isPlusTab(tabbedPane.getTabCount() - 1)) {
             tabbedPane.removeTabAt(tabbedPane.getTabCount() - 1);
@@ -89,8 +95,8 @@ public class RequestEditPanel extends SingletonBasePanel {
     // 添加"+"Tab
     public void addPlusTab() {
         if (tabbedPane.getTabCount() > 0 && isPlusTab(tabbedPane.getTabCount() - 1)) {
-            if (autoRevealTabsCard) {
-                showTabsCard();
+            if (autoInitializeSelectedTabOnTabAdd) {
+                initializeSelectedTabSoon();
             }
             return;
         }
@@ -133,7 +139,7 @@ public class RequestEditPanel extends SingletonBasePanel {
      * 4. 预览 tab 会在标题显示斜体，提示这是临时的
      */
     public void showOrCreatePreviewTab(HttpRequestItem item) {
-        registerUserSelectionDuringStartupRestore();
+        cancelStartupRestoreAutoSelectionIfNeeded();
         String id = item.getId();
         if (id == null || id.isEmpty()) {
             addNewTab(null);
@@ -185,7 +191,7 @@ public class RequestEditPanel extends SingletonBasePanel {
      * 显示或创建 Group 的预览 tab（用于单击 Group 时）
      */
     public void showOrCreatePreviewTabForGroup(DefaultMutableTreeNode groupNode, RequestGroup group) {
-        registerUserSelectionDuringStartupRestore();
+        cancelStartupRestoreAutoSelectionIfNeeded();
         String groupId = group.getId();
 
         // 1. 先查找是否已有固定的 Group tab（不包括预览 tab）
@@ -210,7 +216,7 @@ public class RequestEditPanel extends SingletonBasePanel {
 
     // showOrCreateTab 需适配 "+" Tab（双击时调用，创建固定 tab）
     public void showOrCreateTab(HttpRequestItem item) {
-        registerUserSelectionDuringStartupRestore();
+        cancelStartupRestoreAutoSelectionIfNeeded();
         String id = item.getId();
         if (id == null || id.isEmpty()) {
             addNewTab(null);
@@ -760,12 +766,12 @@ public class RequestEditPanel extends SingletonBasePanel {
         tabbedPane.addContainerListener(new ContainerAdapter() {
             @Override
             public void componentAdded(ContainerEvent e) {
-                if (tabbedPane.getTabCount() > 0 && autoRevealTabsCard) {
-                    showTabsCard();
+                if (tabbedPane.getTabCount() > 0 && autoInitializeSelectedTabOnTabAdd) {
+                    initializeSelectedTabSoon();
                 }
             }
         });
-        tabbedPane.addChangeListener(e -> ensureSelectedRequestTabInitialized());
+        tabbedPane.addChangeListener(e -> initializeSelectedTabSoon());
 
         add(tabbedPane, BorderLayout.CENTER);
 
@@ -776,39 +782,11 @@ public class RequestEditPanel extends SingletonBasePanel {
                 v -> previewTabIndex = v);
     }
 
-    public void beginStartupRestoreSelectionTracking() {
-        startupRestoreSelectionPending = true;
-    }
-
-    public void completeStartupRestoreSelectionTracking() {
-        startupRestoreSelectionPending = false;
-    }
-
-    public boolean shouldSelectRestoredStartupTab() {
-        return startupRestoreSelectionPending;
-    }
-
-    public void setAutoRevealTabsCard(boolean autoRevealTabsCard) {
-        this.autoRevealTabsCard = autoRevealTabsCard;
-    }
-
-    public void showTabsCard() {
-        showTabsCard(true);
-    }
-
-    public void showTabsCard(boolean initializeSelectedTab) {
-        if (initializeSelectedTab) {
-            ensureSelectedRequestTabInitialized();
-        }
-    }
-
-    public void initializeSelectedRequestTabLater(int delayMs) {
-        Timer timer = new Timer(Math.max(0, delayMs), e -> {
-            ensureSelectedRequestTabInitialized();
-            StartupDiagnostics.mark("Initialized selected request tab after tabs card reveal");
-        });
-        timer.setRepeats(false);
-        timer.start();
+    /**
+     * 在下一轮 EDT 初始化当前选中的请求编辑器，保持切换直接且不额外引入定时器。
+     */
+    public void initializeSelectedTabSoon() {
+        scheduleSelectedRequestTabInitialization(false);
     }
 
     private void ensureSelectedRequestTabInitialized() {
@@ -818,11 +796,24 @@ public class RequestEditPanel extends SingletonBasePanel {
         }
     }
 
-    private void registerUserSelectionDuringStartupRestore() {
-        if (!startupRestoreSelectionPending) {
+    private void scheduleSelectedRequestTabInitialization(boolean markAfterInit) {
+        SwingUtilities.invokeLater(() -> {
+            ensureSelectedRequestTabInitialized();
+            if (markAfterInit) {
+                StartupDiagnostics.mark("Initialized selected request tab after startup restore");
+            }
+        });
+    }
+
+    public void initializeSelectedStartupRestoreTab() {
+        scheduleSelectedRequestTabInitialization(true);
+    }
+
+    private void cancelStartupRestoreAutoSelectionIfNeeded() {
+        if (!startupRestoreSelectingLastTab) {
             return;
         }
-        startupRestoreSelectionPending = false;
+        startupRestoreSelectingLastTab = false;
         StartupDiagnostics.mark("Startup restore auto-selection cancelled after user opened another tab");
     }
 
@@ -889,7 +880,7 @@ public class RequestEditPanel extends SingletonBasePanel {
      * 双击时调用，创建固定 tab
      */
     public void showGroupEditPanel(DefaultMutableTreeNode groupNode, RequestGroup group) {
-        registerUserSelectionDuringStartupRestore();
+        cancelStartupRestoreAutoSelectionIfNeeded();
         String groupId = group.getId();
 
         // 如果当前预览的就是这个 group，则将预览 tab 转为固定 tab
@@ -1063,7 +1054,7 @@ public class RequestEditPanel extends SingletonBasePanel {
      * 单击保存的响应：在预览 Tab 中显示
      */
     public void showOrCreatePreviewTabForSavedResponse(SavedResponse savedResponse) {
-        registerUserSelectionDuringStartupRestore();
+        cancelStartupRestoreAutoSelectionIfNeeded();
         if (savedResponse == null) {
             return;
         }
@@ -1093,7 +1084,7 @@ public class RequestEditPanel extends SingletonBasePanel {
      * 双击保存的响应：在固定 Tab 中显示
      */
     public void showOrCreateTabForSavedResponse(SavedResponse savedResponse) {
-        registerUserSelectionDuringStartupRestore();
+        cancelStartupRestoreAutoSelectionIfNeeded();
         String savedResponseId = savedResponse.getId();
 
         if (savedResponseId == null || savedResponseId.isEmpty()) {

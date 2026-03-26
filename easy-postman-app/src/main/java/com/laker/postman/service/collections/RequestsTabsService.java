@@ -66,13 +66,14 @@ public class RequestsTabsService {
         tabbedPane.setTabComponentAt(insertIndex, new ClosableTabComponent(tabTitle, item.getProtocol()));
         boolean shouldSelectInsertedTab = selectTab;
         if (shouldSelectInsertedTab && deferEditorInitialization) {
-            shouldSelectInsertedTab = requestEditPanel.shouldSelectRestoredStartupTab();
+            // 启动恢复时只选中最后一个请求 tab，其他 tab 保持轻量壳状态即可。
+            shouldSelectInsertedTab = requestEditPanel.isStartupRestoreSelectingLastTab();
         }
         if (shouldSelectInsertedTab) {
             tabbedPane.setSelectedIndex(insertIndex);
             if (!deferEditorInitialization) {
-                requestEditPanel.setAutoRevealTabsCard(true);
-                requestEditPanel.showTabsCard();
+                requestEditPanel.setAutoInitializeSelectedTabOnTabAdd(true);
+                requestEditPanel.initializeSelectedTabSoon();
             }
         }
         StartupDiagnostics.mark("Restored tab '" + tabTitle + "' in "

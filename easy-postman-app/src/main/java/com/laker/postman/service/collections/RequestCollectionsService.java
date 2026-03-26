@@ -18,8 +18,6 @@ import javax.swing.tree.TreeSelectionModel;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.REQUEST;
@@ -27,16 +25,11 @@ import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPan
 @Slf4j
 @UtilityClass
 public class RequestCollectionsService {
-    static final int RESTORE_BATCH_SIZE = 1;
-    static final int RESTORE_DELAY_MS = 25;
-    public static final int STARTUP_RESTORE_INITIAL_DELAY_MS = 180;
-
-
     public static HttpRequestItem getLastNonNewRequest() {
         return getLastNonNewRequest(OpenedRequestsService.getAll());
     }
 
-    static HttpRequestItem getLastNonNewRequest(List<HttpRequestItem> requestItems) {
+    public static HttpRequestItem getLastNonNewRequest(List<HttpRequestItem> requestItems) {
         if (requestItems == null || requestItems.isEmpty()) {
             return null;
         }
@@ -50,36 +43,27 @@ public class RequestCollectionsService {
     }
 
     public static void restoreOpenedRequests() {
-        restoreOpenedRequestsIncrementally(OpenedRequestsService.getAll(), 0, null);
+        restoreOpenedRequests(OpenedRequestsService.getAll(), null);
     }
 
-    public static void restoreOpenedRequestsIncrementally(List<HttpRequestItem> requestItems, Runnable onComplete) {
-        restoreOpenedRequestsIncrementally(requestItems, 0, onComplete);
-    }
-
-    public static void restoreOpenedRequestsIncrementally(List<HttpRequestItem> requestItems,
-                                                          int initialDelayMs,
-                                                          Runnable onComplete) {
+    public static void restoreOpenedRequests(List<HttpRequestItem> requestItems, Runnable onComplete) {
         Runnable restoreTask = () -> {
             RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
             List<HttpRequestItem> restorableRequests = buildRestorableOpenedRequests(requestItems, leftPanel.getRootTreeNode());
-            StartupDiagnostics.mark("Incremental restore prepared; validRequests=" + restorableRequests.size());
-            restoreOpenedRequestsIncrementally(
-                    restorableRequests,
-                    RESTORE_BATCH_SIZE,
-                    RESTORE_DELAY_MS,
-                    initialDelayMs,
-                    (item, selectTab) -> {
-                        RequestEditSubPanel panel = RequestsTabsService.addTab(item, selectTab, true);
-                        RequestsTabsService.updateTabNew(panel, item.isNewRequest());
-                    },
-                    () -> {
-                        OpenedRequestsService.clear();
-                        if (onComplete != null) {
-                            onComplete.run();
-                        }
-                    }
-            );
+            long restoreStartNanos = System.nanoTime();
+            StartupDiagnostics.mark("Opened requests restore prepared; validRequests=" + restorableRequests.size());
+            for (int i = 0; i < restorableRequests.size(); i++) {
+                HttpRequestItem item = restorableRequests.get(i);
+                boolean selectTab = i == restorableRequests.size() - 1;
+                RequestEditSubPanel panel = RequestsTabsService.addTab(item, selectTab, true);
+                RequestsTabsService.updateTabNew(panel, item.isNewRequest());
+            }
+            OpenedRequestsService.clear();
+            StartupDiagnostics.mark("Opened requests restore finished in "
+                    + StartupDiagnostics.formatSince(restoreStartNanos));
+            if (onComplete != null) {
+                onComplete.run();
+            }
         };
 
         if (SwingUtilities.isEventDispatchThread()) {
@@ -121,55 +105,6 @@ public class RequestCollectionsService {
             restorableItems.add(resolvedItem);
         }
         return restorableItems;
-    }
-
-    static Timer restoreOpenedRequestsIncrementally(List<HttpRequestItem> requestItems,
-                                                    int batchSize,
-                                                    int delayMs,
-                                                    int initialDelayMs,
-                                                    BiConsumer<HttpRequestItem, Boolean> restoreAction,
-                                                    Runnable onComplete) {
-        if (requestItems == null || requestItems.isEmpty()) {
-            if (onComplete != null) {
-                onComplete.run();
-            }
-            return null;
-        }
-
-        int safeBatchSize = Math.max(1, batchSize);
-        int safeDelayMs = Math.max(0, delayMs);
-        AtomicInteger restoreIndex = new AtomicInteger();
-        long totalRestoreStartNanos = System.nanoTime();
-        Timer timer = new Timer(safeDelayMs, null);
-        timer.addActionListener(e -> {
-            long batchStartNanos = System.nanoTime();
-            int startIndex = restoreIndex.get();
-            int endIndex = Math.min(startIndex + safeBatchSize, requestItems.size());
-            StartupDiagnostics.mark("Restoring opened requests batch " + (startIndex + 1) + "-" + endIndex
-                    + "/" + requestItems.size());
-            for (int i = startIndex; i < endIndex; i++) {
-                HttpRequestItem item = requestItems.get(i);
-                boolean selectTab = i == requestItems.size() - 1;
-                restoreAction.accept(item, selectTab);
-            }
-
-            if (endIndex >= requestItems.size()) {
-                timer.stop();
-                StartupDiagnostics.mark("Incremental restore finished in "
-                        + StartupDiagnostics.formatSince(totalRestoreStartNanos));
-                if (onComplete != null) {
-                    onComplete.run();
-                }
-                return;
-            }
-            StartupDiagnostics.mark("Opened requests batch rendered in "
-                    + StartupDiagnostics.formatSince(batchStartNanos));
-            restoreIndex.set(endIndex);
-        });
-        timer.setInitialDelay(Math.max(0, initialDelayMs));
-        timer.setRepeats(true);
-        timer.start();
-        return timer;
     }
 
     /**

@@ -2,7 +2,6 @@ package com.laker.postman.panel.collections.right.request;
 
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.MarkdownEditorPanel;
-import com.laker.postman.common.component.placeholder.RequestEditorPlaceholderPanel;
 import com.laker.postman.common.component.tab.IndicatorTabComponent;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.*;
@@ -48,7 +47,6 @@ public class RequestEditSubPanel extends JPanel {
     private HttpRequestItem pendingRequestItem;
     private HttpRequestItem pendingOriginalRequestItem;
     private Boolean pendingLayoutVertical;
-    private JPanel deferredShellPanel;
 
     // 面板类型
     @Getter
@@ -176,9 +174,7 @@ public class RequestEditSubPanel extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5)); // 设置边距为5
         setOpaque(true);
         setBackground(ModernColors.getBackgroundColor());
-        if (this.deferEditorInitialization) {
-            installDeferredShell();
-        } else {
+        if (!this.deferEditorInitialization) {
             initializeEditorUiIfNeeded();
         }
     }
@@ -218,7 +214,6 @@ public class RequestEditSubPanel extends JPanel {
         }
         long initStartNanos = System.nanoTime();
         removeAll();
-        deferredShellPanel = null;
         // 先集中创建视图组件，再把交互逻辑按职责注入 helper，构造阶段就能看清依赖方向。
         RequestViewComponents components = RequestViewFactory.create(protocol, panelType, this::sendRequest);
         requestLinePanel = components.requestLinePanel;
@@ -430,11 +425,6 @@ public class RequestEditSubPanel extends JPanel {
             StartupDiagnostics.mark("Initialized deferred editor tab '" + (name != null ? name : id)
                     + "' in " + StartupDiagnostics.formatSince(initStartNanos));
         }
-    }
-
-    private void installDeferredShell() {
-        deferredShellPanel = new RequestEditorPlaceholderPanel();
-        add(deferredShellPanel, BorderLayout.CENTER);
     }
 
     /**

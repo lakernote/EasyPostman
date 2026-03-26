@@ -2,6 +2,7 @@ package com.laker.postman.frame;
 
 import com.formdev.flatlaf.util.SystemInfo;
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.animation.WindowSnapshotTransition;
 import com.laker.postman.common.component.placeholder.StartupShellPlaceholderPanel;
 import com.laker.postman.common.constants.Icons;
 import com.laker.postman.common.constants.ModernColors;
@@ -54,13 +55,13 @@ public class MainFrame extends JFrame {
 
     // 防抖延迟时间（毫秒）
     private static final int DEBOUNCE_DELAY = 500;
-
     // 缓存字段，避免重复计算
     private transient Dimension cachedMinWindowSize;
     private final transient Dimension cachedScreenSize;
 
     // 防抖计时器（final 避免重复赋值）
     private final transient Timer saveStateTimer;
+    private final transient WindowSnapshotTransition startupShellTransition;
     private transient JPanel startupShellPanel;
     private transient volatile boolean mainContentLoaded;
     private transient volatile boolean mainContentLoadRequested;
@@ -79,6 +80,7 @@ public class MainFrame extends JFrame {
         // 初始化防抖计时器（只创建一次，避免重复创建对象）
         saveStateTimer = new Timer(DEBOUNCE_DELAY, e -> saveWindowState());
         saveStateTimer.setRepeats(false);
+        startupShellTransition = new WindowSnapshotTransition(this);
 
         setName(I18nUtil.getMessage(MessageKeys.APP_NAME));
         setTitle(I18nUtil.getMessage(MessageKeys.APP_NAME));
@@ -131,9 +133,14 @@ public class MainFrame extends JFrame {
             long loadStartNanos = System.nanoTime();
             try {
                 StartupDiagnostics.mark("MainFrame content load started");
+                JPanel shellSnapshotSource = startupShellPanel;
                 setContentPane(SingletonFactory.getInstance(MainPanel.class));
+                applyWindowBackground();
                 revalidate();
                 repaint();
+                startupShellTransition.start(shellSnapshotSource, WindowSnapshotTransition.DEFAULT_DURATION_MS,
+                        WindowSnapshotTransition.Easing.EASE_OUT_CUBIC);
+                startupShellPanel = null;
                 mainContentLoaded = true;
                 notifyMainContentLoaded();
                 StartupDiagnostics.mark("MainFrame content load finished in " + StartupDiagnostics.formatSince(loadStartNanos));
@@ -412,6 +419,7 @@ public class MainFrame extends JFrame {
         if (saveStateTimer != null && saveStateTimer.isRunning()) {
             saveStateTimer.stop();
         }
+        startupShellTransition.stop();
 
         // 清理性能测试面板资源（停止定时器等）
         try {

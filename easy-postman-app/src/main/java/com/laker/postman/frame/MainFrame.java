@@ -133,13 +133,7 @@ public class MainFrame extends JFrame {
             long loadStartNanos = System.nanoTime();
             try {
                 StartupDiagnostics.mark("MainFrame content load started");
-                JPanel shellSnapshotSource = startupShellPanel;
-                setContentPane(SingletonFactory.getInstance(MainPanel.class));
-                applyWindowBackground();
-                revalidate();
-                repaint();
-                startupShellTransition.start(shellSnapshotSource, WindowSnapshotTransition.DEFAULT_DURATION_MS,
-                        WindowSnapshotTransition.Easing.EASE_OUT_CUBIC);
+                replaceContentWithStartupTransition(SingletonFactory.getInstance(MainPanel.class));
                 startupShellPanel = null;
                 mainContentLoaded = true;
                 notifyMainContentLoaded();
@@ -222,6 +216,19 @@ public class MainFrame extends JFrame {
         root.setOpaque(true);
         root.setBackground(ModernColors.getBackgroundColor());
         return root;
+    }
+
+    private void replaceContentWithStartupTransition(Container nextContentPane) {
+        WindowSnapshotTransition.CapturedSnapshot capturedSnapshot = null;
+        Container currentContentPane = getContentPane();
+        if (currentContentPane instanceof JComponent contentComponent) {
+            capturedSnapshot = startupShellTransition.captureSnapshot(contentComponent);
+        }
+        setContentPane(nextContentPane);
+        applyWindowBackground();
+        revalidate();
+        repaint();
+        startupShellTransition.start(capturedSnapshot);
     }
 
     public void whenMainContentLoaded(Runnable callback) {

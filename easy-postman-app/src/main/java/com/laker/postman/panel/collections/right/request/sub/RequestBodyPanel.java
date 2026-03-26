@@ -3,11 +3,7 @@ package com.laker.postman.panel.collections.right.request.sub;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.common.component.SearchableTextArea;
-import com.laker.postman.common.component.button.FormatButton;
-import com.laker.postman.common.component.button.SearchButton;
-import com.laker.postman.common.component.button.WebSocketSendButton;
-import com.laker.postman.common.component.button.WebSocketTimedSendButton;
-import com.laker.postman.common.component.button.WrapToggleButton;
+import com.laker.postman.common.component.button.*;
 import com.laker.postman.common.component.table.FormDataTablePanel;
 import com.laker.postman.common.component.table.FormUrlencodedTablePanel;
 import com.laker.postman.common.constants.ModernColors;
@@ -67,7 +63,9 @@ public class RequestBodyPanel extends JPanel {
     private String currentBodyType = BODY_TYPE_NONE;
     @Getter
     private WebSocketSendButton wsSendButton;
+    private EditButton bulkEditButton;
     private FormatButton formatButton;
+    private RequestBodyBulkEditSupport bulkEditSupport;
     private final boolean isWebSocketMode;
 
     private Timer wsTimer; // 定时发送用
@@ -144,6 +142,12 @@ public class RequestBodyPanel extends JPanel {
         topPanel.add(bodyTypeComboBox);
         topPanel.add(Box.createHorizontalStrut(4));
 
+        bulkEditButton = new EditButton();
+        bulkEditButton.setToolTipText(I18nUtil.getMessage(MessageKeys.BULK_EDIT));
+        bulkEditButton.addActionListener(e -> showBulkEditDialog());
+        topPanel.add(bulkEditButton);
+        topPanel.add(Box.createHorizontalStrut(4));
+
         String[] rawTypes = {RAW_TYPE_JSON, RAW_TYPE_XML, RAW_TYPE_TEXT};
         rawTypeComboBox = new EasyComboBox<>(rawTypes, EasyComboBox.WidthMode.DYNAMIC);
         rawTypeComboBox.setSelectedItem(RAW_TYPE_JSON);
@@ -185,22 +189,9 @@ public class RequestBodyPanel extends JPanel {
         bodyCardPanel.add(createFormUrlencodedPanel(), BODY_TYPE_FORM_URLENCODED);
         bodyCardPanel.add(createRawPanel(), BODY_TYPE_RAW);
         add(bodyCardPanel, BorderLayout.CENTER);
+        bulkEditSupport = new RequestBodyBulkEditSupport(this, formDataTablePanel, formUrlencodedTablePanel);
         bodyCardLayout.show(bodyCardPanel, currentBodyType);
-
-        // 切换body类型时，控制搜索按钮和格式化按钮的显示
-        bodyTypeComboBox.addActionListener(e -> {
-            boolean isRaw = BODY_TYPE_RAW.equals(bodyTypeComboBox.getSelectedItem());
-            rawTypeComboBox.setVisible(isRaw);
-            formatButton.setVisible(isRaw);
-            searchButton.setVisible(isRaw);
-            wrapButton.setVisible(isRaw);
-        });
-        // 初始化显示状态
-        boolean isRaw = BODY_TYPE_RAW.equals(bodyTypeComboBox.getSelectedItem());
-        rawTypeComboBox.setVisible(isRaw);
-        formatButton.setVisible(isRaw);
-        searchButton.setVisible(isRaw);
-        wrapButton.setVisible(isRaw);
+        updateBodyActionVisibility(currentBodyType);
     }
 
     /**
@@ -465,11 +456,35 @@ public class RequestBodyPanel extends JPanel {
     private void switchBodyType(String bodyType) {
         currentBodyType = bodyType;
         bodyCardLayout.show(bodyCardPanel, bodyType);
-        // 只有HTTP模式才需要动态调整format控件的显示
-        if (!isWebSocketMode && rawTypeComboBox != null && formatButton != null) {
-            boolean isRaw = BODY_TYPE_RAW.equals(bodyType);
+        updateBodyActionVisibility(bodyType);
+    }
+
+    private void updateBodyActionVisibility(String bodyType) {
+        if (isWebSocketMode) {
+            return;
+        }
+        boolean isRaw = BODY_TYPE_RAW.equals(bodyType);
+        boolean isBulkEditable = BODY_TYPE_FORM_DATA.equals(bodyType) || BODY_TYPE_FORM_URLENCODED.equals(bodyType);
+        if (rawTypeComboBox != null) {
             rawTypeComboBox.setVisible(isRaw);
+        }
+        if (formatButton != null) {
             formatButton.setVisible(isRaw);
+        }
+        if (searchButton != null) {
+            searchButton.setVisible(isRaw);
+        }
+        if (wrapButton != null) {
+            wrapButton.setVisible(isRaw);
+        }
+        if (bulkEditButton != null) {
+            bulkEditButton.setVisible(isBulkEditable);
+        }
+    }
+
+    private void showBulkEditDialog() {
+        if (bulkEditSupport != null) {
+            bulkEditSupport.showBulkEditDialog(currentBodyType);
         }
     }
 

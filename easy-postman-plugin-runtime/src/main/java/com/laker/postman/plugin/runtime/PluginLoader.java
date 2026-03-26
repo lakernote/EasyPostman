@@ -31,6 +31,8 @@ final class PluginLoader {
                               List<PluginFileInfo> loadedPluginFiles,
                               ClassLoader parentClassLoader) {
         try {
+            log.info("Loading plugin: id={}, version={}, entryClass={}, jar={}",
+                    descriptor.id(), descriptor.version(), descriptor.entryClass(), jarPath);
             URLClassLoader classLoader = new URLClassLoader(new URL[]{jarPath.toUri().toURL()}, parentClassLoader);
             Class<?> entryClass = Class.forName(descriptor.entryClass(), true, classLoader);
             Object instance = entryClass.getDeclaredConstructor().newInstance();
@@ -41,6 +43,8 @@ final class PluginLoader {
             loadedPlugins.add(plugin);
             pluginClassLoaders.add(classLoader);
             loadedPluginFiles.add(new PluginFileInfo(descriptor, jarPath, true, true, true));
+            log.info("Loaded plugin successfully: id={}, version={}, jar={}",
+                    descriptor.id(), descriptor.version(), jarPath);
         } catch (Exception e) {
             log.error("Failed to load plugin jar: {}", jarPath, e);
         }
@@ -50,6 +54,7 @@ final class PluginLoader {
         for (EasyPostmanPlugin plugin : plugins) {
             try {
                 plugin.onStart();
+                log.info("Started plugin: {}", plugin.getClass().getName());
             } catch (Exception e) {
                 log.error("Failed to start plugin: {}", plugin.getClass().getName(), e);
             }

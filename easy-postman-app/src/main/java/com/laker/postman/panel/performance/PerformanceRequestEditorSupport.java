@@ -47,6 +47,9 @@ final class PerformanceRequestEditorSupport {
 
         if (item != null) {
             requestEditSubPanel.initPanelData(item);
+            // 压测页使用延迟初始化壳子降低首开成本，但用户选中请求节点后
+            // 必须立即升级为真实编辑器，否则会一直停留在骨架屏。
+            requestEditSubPanel.ensureEditorInitialized();
         }
     }
 

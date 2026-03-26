@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * 工具箱面板 - 左侧导航栏 + 右侧内容区（CardLayout）
@@ -34,13 +35,78 @@ import java.util.Map;
 @Slf4j
 public class ToolboxPanel extends SingletonBasePanel {
 
-    private record ToolEntry(String id, String displayName, String iconPath,
-                             String groupId, String groupDisplayName, JPanel panel,
-                             ClassLoader iconClassLoader) {
+    private static final class ToolEntry {
+        private final String id;
+        private final String displayName;
+        private final String iconPath;
+        private final String groupId;
+        private final String groupDisplayName;
+        private final Supplier<JPanel> panelSupplier;
+        private final ClassLoader iconClassLoader;
+        private JPanel panel;
+        private boolean addedToContentArea;
+
+        private ToolEntry(String id, String displayName, String iconPath,
+                          String groupId, String groupDisplayName, Supplier<JPanel> panelSupplier,
+                          ClassLoader iconClassLoader) {
+            this.id = id;
+            this.displayName = displayName;
+            this.iconPath = iconPath;
+            this.groupId = groupId;
+            this.groupDisplayName = groupDisplayName;
+            this.panelSupplier = panelSupplier;
+            this.iconClassLoader = iconClassLoader;
+        }
+
+        private String id() {
+            return id;
+        }
+
+        private String displayName() {
+            return displayName;
+        }
+
+        private String iconPath() {
+            return iconPath;
+        }
+
+        private String groupId() {
+            return groupId;
+        }
+
+        private String groupDisplayName() {
+            return groupDisplayName;
+        }
+
+        private ClassLoader iconClassLoader() {
+            return iconClassLoader;
+        }
+
+        private JPanel getOrCreatePanel() {
+            if (panel == null) {
+                panel = panelSupplier.get();
+            }
+            return panel;
+        }
+    }
+
+    private static JPanel createLoadFailedPanel(String toolDisplayName, Throwable throwable) {
+        JPanel panel = new JPanel(new BorderLayout());
+        JTextArea errorArea = new JTextArea();
+        errorArea.setEditable(false);
+        errorArea.setLineWrap(true);
+        errorArea.setWrapStyleWord(true);
+        errorArea.setText(I18nUtil.getMessage(MessageKeys.ERROR) + ": " + toolDisplayName + "\n\n"
+                + throwable.getMessage());
+        errorArea.setCaretPosition(0);
+        errorArea.setBorder(new EmptyBorder(12, 12, 12, 12));
+        panel.add(new JScrollPane(errorArea), BorderLayout.CENTER);
+        return panel;
     }
 
     private final List<ToolEntry> allTools = new ArrayList<>();
     private final List<ToolEntry> filtered = new ArrayList<>();
+    private final Map<String, ToolEntry> toolsById = new LinkedHashMap<>();
 
     private JPanel navPanel;
     private JPanel contentArea;
@@ -104,9 +170,6 @@ public class ToolboxPanel extends SingletonBasePanel {
         cardLayout = new CardLayout();
         contentArea = new JPanel(cardLayout);
         contentArea.setMinimumSize(new Dimension(200, 0));
-        for (ToolEntry t : allTools) {
-            contentArea.add(t.panel(), t.id());
-        }
 
         // 可拖动分割线（dividerSize=5，支持拖拽调宽）
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, contentArea);
@@ -122,49 +185,54 @@ public class ToolboxPanel extends SingletonBasePanel {
     // ===== 注册所有工具 =====
     private void registerAllTools() {
         // 格式化
-        regBuiltIn("json", MessageKeys.TOOLBOX_JSON, "icons/format.svg", GRP_FORMAT, new JsonToolPanel());
-        regBuiltIn("sql", MessageKeys.TOOLBOX_SQL, "icons/database.svg", GRP_FORMAT, new SqlToolPanel());
-        regBuiltIn("markdown", "toolbox.markdown", "icons/edit.svg", GRP_FORMAT, new MarkdownToolPanel());
+        regBuiltIn("json", MessageKeys.TOOLBOX_JSON, "icons/format.svg", GRP_FORMAT, JsonToolPanel::new);
+        regBuiltIn("sql", MessageKeys.TOOLBOX_SQL, "icons/database.svg", GRP_FORMAT, SqlToolPanel::new);
+        regBuiltIn("markdown", "toolbox.markdown", "icons/edit.svg", GRP_FORMAT, MarkdownToolPanel::new);
         // 转换
-        regBuiltIn("encoder", MessageKeys.TOOLBOX_ENCODER, "icons/code.svg", GRP_CONVERT, new EncoderPanel());
-        regBuiltIn("timestamp", MessageKeys.TOOLBOX_TIMESTAMP, "icons/time.svg", GRP_CONVERT, new TimestampPanel());
-        regBuiltIn("crypto", MessageKeys.TOOLBOX_CRYPTO, "icons/security.svg", GRP_CONVERT, new CryptoPanel());
+        regBuiltIn("encoder", MessageKeys.TOOLBOX_ENCODER, "icons/code.svg", GRP_CONVERT, EncoderPanel::new);
+        regBuiltIn("timestamp", MessageKeys.TOOLBOX_TIMESTAMP, "icons/time.svg", GRP_CONVERT, TimestampPanel::new);
+        regBuiltIn("crypto", MessageKeys.TOOLBOX_CRYPTO, "icons/security.svg", GRP_CONVERT, CryptoPanel::new);
         // 生成
-        regBuiltIn("uuid", MessageKeys.TOOLBOX_UUID, "icons/plus.svg", GRP_GEN, new UuidPanel());
-        regBuiltIn("hash", MessageKeys.TOOLBOX_HASH, "icons/hash.svg", GRP_GEN, new HashPanel());
-        regBuiltIn("cron", MessageKeys.TOOLBOX_CRON, "icons/time.svg", GRP_GEN, new CronPanel());
+        regBuiltIn("uuid", MessageKeys.TOOLBOX_UUID, "icons/plus.svg", GRP_GEN, UuidPanel::new);
+        regBuiltIn("hash", MessageKeys.TOOLBOX_HASH, "icons/hash.svg", GRP_GEN, HashPanel::new);
+        regBuiltIn("cron", MessageKeys.TOOLBOX_CRON, "icons/time.svg", GRP_GEN, CronPanel::new);
         // 数据库
-        regBuiltIn("es", MessageKeys.TOOLBOX_ELASTICSEARCH, "icons/elasticsearch.svg", GRP_DB, new ElasticsearchPanel());
-        regBuiltIn("influxdb", MessageKeys.TOOLBOX_INFLUXDB, "icons/influxdb.svg", GRP_DB, new InfluxDbPanel());
+        regBuiltIn("es", MessageKeys.TOOLBOX_ELASTICSEARCH, "icons/elasticsearch.svg", GRP_DB, ElasticsearchPanel::new);
+        regBuiltIn("influxdb", MessageKeys.TOOLBOX_INFLUXDB, "icons/influxdb.svg", GRP_DB, InfluxDbPanel::new);
         // 开发
-        regBuiltIn("diff", MessageKeys.TOOLBOX_DIFF, "icons/file.svg", GRP_DEV, new DiffPanel());
+        regBuiltIn("diff", MessageKeys.TOOLBOX_DIFF, "icons/file.svg", GRP_DEV, DiffPanel::new);
         registerPluginTools();
     }
 
     private void registerPluginTools() {
         for (ToolboxContribution contribution : PluginAccess.getToolboxContributions()) {
             try {
-                // 插件在 onLoad 里只注册“面板工厂”，真正创建 Swing 面板放到宿主这里完成。
-                // 这样可以把插件声明和 UI 实例化分开，降低启动期创建大量面板的成本。
-                JPanel panel = contribution.panelSupplier().get();
                 regPlugin(contribution.id(), contribution.displayName(), contribution.iconPath(),
-                        contribution.groupId(), contribution.groupDisplayName(), panel, contribution.iconClassLoader());
+                        contribution.groupId(), contribution.groupDisplayName(),
+                        contribution.panelSupplier(), contribution.iconClassLoader());
             } catch (Throwable t) {
                 log.error("Failed to register toolbox contribution: {}", contribution.id(), t);
             }
         }
     }
 
-    private void regBuiltIn(String id, String nameKey, String iconPath, String groupId, JPanel panel) {
-        allTools.add(new ToolEntry(id, I18nUtil.getMessage(nameKey), iconPath,
-                groupId, resolveGroupDisplayName(groupId, null), panel, null));
+    private void regBuiltIn(String id, String nameKey, String iconPath, String groupId, Supplier<JPanel> panelSupplier) {
+        addTool(new ToolEntry(id, I18nUtil.getMessage(nameKey), iconPath,
+                groupId, resolveGroupDisplayName(groupId, null), panelSupplier, null));
     }
 
     private void regPlugin(String id, String displayName, String iconPath,
-                           String groupId, String groupDisplayName, JPanel panel, ClassLoader iconClassLoader) {
+                           String groupId, String groupDisplayName, Supplier<JPanel> panelSupplier,
+                           ClassLoader iconClassLoader) {
         String normalizedGroupId = (groupId == null || groupId.isBlank()) ? GRP_PLUGIN : groupId;
-        allTools.add(new ToolEntry(id, displayName, iconPath,
-                normalizedGroupId, resolveGroupDisplayName(normalizedGroupId, groupDisplayName), panel, iconClassLoader));
+        addTool(new ToolEntry(id, displayName, iconPath,
+                normalizedGroupId, resolveGroupDisplayName(normalizedGroupId, groupDisplayName),
+                panelSupplier, iconClassLoader));
+    }
+
+    private void addTool(ToolEntry toolEntry) {
+        allTools.add(toolEntry);
+        toolsById.put(toolEntry.id(), toolEntry);
     }
 
     private String resolveGroupDisplayName(String groupId, String fallback) {
@@ -304,9 +372,26 @@ public class ToolboxPanel extends SingletonBasePanel {
 
     // ===== 选中工具 =====
     private void selectTool(String id) {
+        ensureToolContentLoaded(id);
         selectedId = id;
         cardLayout.show(contentArea, id);
         rebuildNav();
+    }
+
+    private void ensureToolContentLoaded(String id) {
+        ToolEntry toolEntry = toolsById.get(id);
+        if (toolEntry == null || toolEntry.addedToContentArea) {
+            return;
+        }
+        try {
+            contentArea.add(toolEntry.getOrCreatePanel(), toolEntry.id());
+        } catch (Throwable t) {
+            log.error("Failed to initialize toolbox panel: {}", id, t);
+            contentArea.add(createLoadFailedPanel(toolEntry.displayName(), t), toolEntry.id());
+        }
+        toolEntry.addedToContentArea = true;
+        contentArea.revalidate();
+        contentArea.repaint();
     }
 
     @Override

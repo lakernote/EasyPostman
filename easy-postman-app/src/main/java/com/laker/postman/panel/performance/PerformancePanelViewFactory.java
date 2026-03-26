@@ -66,7 +66,7 @@ final class PerformancePanelViewFactory {
         ThreadGroupPropertyPanel threadGroupPanel = new ThreadGroupPropertyPanel();
         propertyPanel.add(threadGroupPanel, threadGroupCard);
 
-        RequestEditSubPanel requestEditSubPanel = new RequestEditSubPanel("", RequestItemProtocolEnum.HTTP);
+        RequestEditSubPanel requestEditSubPanel = new RequestEditSubPanel("", RequestItemProtocolEnum.HTTP, true);
         RequestEditorSection requestEditorSection = createRequestEditorSection(requestEditSubPanel, refreshCurrentRequestAction);
         propertyPanel.add(requestEditorSection.wrapperPanel(), requestCard);
 

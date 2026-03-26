@@ -47,13 +47,26 @@ public final class PluginRuntime {
             if (initialized) {
                 return;
             }
+            Path managedPluginDir = getManagedPluginDir();
+            Path pluginPackageDir = getPluginPackageDir();
+            Set<Path> pluginDirs = PluginScanner.resolvePluginDirs(managedPluginDir);
+            log.info("Plugin runtime initializing. managedPluginDir={}, pluginPackageDir={}, scanDirs={}",
+                    managedPluginDir, pluginPackageDir, pluginDirs);
+
             // 启动时先处理上一次退出后遗留的“待卸载”插件文件，
             // 这样后面的扫描结果才是干净的当前状态。
             cleanupPendingUninstallPlugins();
 
             // 这里先做“选插件”而不是直接扫到什么就加载什么。
             // 运行时会统一处理禁用、待卸载、兼容性和同 id 多版本择优。
-            List<PluginFileInfo> loadCandidates = resolveLoadCandidates();
+            List<PluginFileInfo> loadCandidates = resolveLoadCandidates(pluginDirs);
+            if (loadCandidates.isEmpty()) {
+                log.info("No plugin candidates selected for loading.");
+            } else {
+                log.info("Plugin candidates selected for loading ({}): {}",
+                        loadCandidates.size(),
+                        formatPluginList(loadCandidates));
+            }
 
             for (PluginFileInfo pluginFile : loadCandidates) {
                 PluginLoader.loadPluginJar(
@@ -68,6 +81,11 @@ public final class PluginRuntime {
             }
             // onLoad 负责注册扩展点，onStart 则表示“所有插件都注册完了，可以开始运行”。
             PluginLoader.startPlugins(LOADED_PLUGINS);
+            if (LOADED_PLUGIN_FILES.isEmpty()) {
+                log.info("Plugin runtime initialized with 0 loaded plugins.");
+            } else {
+                log.info("Plugin runtime initialized. loadedPlugins={}", formatPluginList(LOADED_PLUGIN_FILES));
+            }
             initialized = true;
         }
     }
@@ -244,13 +262,26 @@ public final class PluginRuntime {
         );
     }
 
-    private static List<PluginFileInfo> resolveLoadCandidates() {
+    private static List<PluginFileInfo> resolveLoadCandidates(Set<Path> pluginDirs) {
         return PluginCandidateResolver.resolveLoadCandidates(
-                PluginScanner.resolvePluginDirs(getManagedPluginDir()),
+                pluginDirs,
                 PluginStateStore.getDisabledPluginIds(),
                 PluginStateStore.getPendingUninstallPluginIds(),
                 PluginRuntime::isLoaded
         );
+    }
+
+    private static String formatPluginList(List<PluginFileInfo> pluginFiles) {
+        List<String> parts = new ArrayList<>(pluginFiles.size());
+        for (PluginFileInfo pluginFile : pluginFiles) {
+            PluginDescriptor descriptor = pluginFile.descriptor();
+            if (descriptor == null) {
+                parts.add(String.valueOf(pluginFile.jarPath()));
+                continue;
+            }
+            parts.add(descriptor.id() + ":" + descriptor.version() + "@" + pluginFile.jarPath());
+        }
+        return parts.toString();
     }
 
     private static boolean isLoaded(Path jarPath) {

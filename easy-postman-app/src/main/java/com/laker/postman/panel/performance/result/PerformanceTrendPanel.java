@@ -39,6 +39,7 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
     private boolean isCombinedView = false;
     private JPanel chartContainer;
     private JButton toggleButton;
+    private boolean chartsInitialized;
 
     // 缓存图表面板，避免切换时重复创建
     private JPanel separateChartsPanel;
@@ -128,16 +129,11 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
     protected void initUI() {
         setLayout(new BorderLayout());
 
-
         // 先创建复选框（默认全选）- 必须在创建图表面板之前
         threadsCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_THREADS), true);
         responseTimeCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_RESPONSE_TIME_MS), false);
         qpsCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_QPS), true);
         errorRateCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_ERROR_RATE_PERCENT), true);
-
-        // 预创建图表面板（避免切换时重复创建）
-        separateChartsPanel = createSeparateChartsPanel();
-        combinedChartPanel = createCombinedChartPanel();
 
         // 为复选框添加监听器，动态更新合并图表
         threadsCheckBox.addActionListener(e -> updateCombinedChart());
@@ -170,8 +166,31 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         chartContainer = new JPanel(new BorderLayout());
         add(chartContainer, BorderLayout.CENTER);
 
-        // Show separate charts by default
-        showSeparateCharts();
+        showDeferredPlaceholder();
+    }
+
+    private void ensureChartsInitialized() {
+        if (chartsInitialized) {
+            return;
+        }
+        if (separateChartsPanel == null) {
+            separateChartsPanel = createSeparateChartsPanel();
+        }
+        if (isCombinedView && combinedChartPanel == null) {
+            combinedChartPanel = createCombinedChartPanel();
+        }
+        chartsInitialized = true;
+        renderCurrentChartState();
+    }
+
+    private void showDeferredPlaceholder() {
+        JPanel placeholder = new JPanel(new BorderLayout());
+        placeholder.setBorder(BorderFactory.createEmptyBorder(24, 24, 24, 24));
+        JLabel label = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_TIME), SwingConstants.CENTER);
+        label.setEnabled(false);
+        placeholder.add(label, BorderLayout.CENTER);
+        chartContainer.removeAll();
+        chartContainer.add(placeholder, BorderLayout.CENTER);
     }
 
     /**
@@ -380,6 +399,7 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
      * 更新合并图表（当复选框状态改变时）
      */
     private void updateCombinedChart() {
+        ensureChartsInitialized();
         if (!isCombinedView || combinedChartPanel == null) {
             return;
         }
@@ -447,8 +467,24 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
      * 显示4个分离的图表
      */
     private void showSeparateCharts() {
-        chartContainer.removeAll();
-        chartContainer.add(separateChartsPanel, BorderLayout.CENTER);
+        ensureChartsInitialized();
+        renderCurrentChartState();
+    }
+
+    private void renderCurrentChartState() {
+        if (!chartsInitialized || chartContainer == null) {
+            return;
+        }
+        if (isCombinedView) {
+            if (combinedChartPanel == null) {
+                combinedChartPanel = createCombinedChartPanel();
+            }
+            chartContainer.removeAll();
+            chartContainer.add(combinedChartPanel, BorderLayout.CENTER);
+        } else {
+            chartContainer.removeAll();
+            chartContainer.add(separateChartsPanel, BorderLayout.CENTER);
+        }
         chartContainer.revalidate();
         chartContainer.repaint();
     }
@@ -457,10 +493,8 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
      * 显示1个合并的图表
      */
     private void showCombinedChart() {
-        chartContainer.removeAll();
-        chartContainer.add(combinedChartPanel, BorderLayout.CENTER);
-        chartContainer.revalidate();
-        chartContainer.repaint();
+        ensureChartsInitialized();
+        renderCurrentChartState();
     }
 
     @Override
@@ -489,6 +523,7 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
     public void addOrUpdate(RegularTimePeriod period, double users,
                             double responseTime, double qps, double errorPercent) {
         if (period == null) return;
+        ensureChartsInitialized();
 
         // 批量更新：暂时禁用通知，避免每次 addOrUpdate 都触发重绘
         userCountSeries.setNotify(false);

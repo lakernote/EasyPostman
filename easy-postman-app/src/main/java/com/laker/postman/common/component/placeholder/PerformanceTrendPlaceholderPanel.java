@@ -2,7 +2,6 @@ package com.laker.postman.common.component.placeholder;
 
 import com.laker.postman.util.FontsUtil;
 
-import javax.swing.*;
 import java.awt.*;
 
 public class PerformanceTrendPlaceholderPanel extends AbstractPlaceholderPanel {

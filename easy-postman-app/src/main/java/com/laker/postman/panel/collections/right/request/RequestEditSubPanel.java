@@ -2,7 +2,7 @@ package com.laker.postman.panel.collections.right.request;
 
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.MarkdownEditorPanel;
-import com.laker.postman.common.component.placeholder.DeferredEditorPlaceholderPanel;
+import com.laker.postman.common.component.placeholder.RequestEditorPlaceholderPanel;
 import com.laker.postman.common.component.tab.IndicatorTabComponent;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.*;
@@ -433,7 +433,7 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     private void installDeferredShell() {
-        deferredShellPanel = new DeferredEditorPlaceholderPanel();
+        deferredShellPanel = new RequestEditorPlaceholderPanel();
         add(deferredShellPanel, BorderLayout.CENTER);
     }
 

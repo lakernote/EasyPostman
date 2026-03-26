@@ -2,6 +2,7 @@ package com.laker.postman.frame;
 
 import com.formdev.flatlaf.util.SystemInfo;
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.component.placeholder.StartupShellPlaceholderPanel;
 import com.laker.postman.common.constants.Icons;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.common.themes.SimpleThemeManager;
@@ -197,7 +198,7 @@ public class MainFrame extends JFrame {
     }
 
     private JPanel createStartupShellPanel() {
-        JPanel root = new JPanel(new BorderLayout()) {
+        JPanel root = new StartupShellPlaceholderPanel() {
             private boolean firstPaintHandled;
 
             @Override

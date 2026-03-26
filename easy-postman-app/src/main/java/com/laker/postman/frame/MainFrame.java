@@ -2,7 +2,6 @@ package com.laker.postman.frame;
 
 import com.formdev.flatlaf.util.SystemInfo;
 import com.laker.postman.common.SingletonFactory;
-import com.laker.postman.common.component.placeholder.GlassStartupHintCard;
 import com.laker.postman.common.constants.Icons;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.common.themes.SimpleThemeManager;
@@ -227,12 +226,6 @@ public class MainFrame extends JFrame {
         };
         root.setOpaque(true);
         root.setBackground(ModernColors.getBackgroundColor());
-
-        JPanel center = new JPanel(new GridBagLayout());
-        center.setOpaque(false);
-        center.setBorder(BorderFactory.createEmptyBorder(24, 24, 24, 24));
-        center.add(new GlassStartupHintCard());
-        root.add(center, BorderLayout.CENTER);
         return root;
     }
 

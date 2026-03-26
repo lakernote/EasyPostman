@@ -5,7 +5,6 @@ import cn.hutool.core.util.IdUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.SingletonFactory;
-import com.laker.postman.common.component.placeholder.StartupPlaceholderPanel;
 import com.laker.postman.common.component.tab.ClosableTabComponent;
 import com.laker.postman.common.component.tab.PlusPanel;
 import com.laker.postman.common.component.tab.PlusTabComponent;
@@ -50,17 +49,12 @@ public class RequestEditPanel extends SingletonBasePanel {
     public static final String REQUEST_STRING = I18nUtil.getMessage(MessageKeys.NEW_REQUEST);
     public static final String PLUS_TAB = "+";
     public static final String GROUP = "group";
-    private static final String CARD_STARTUP = "startup";
-    private static final String CARD_TABS = "tabs";
     @Getter
     private JTabbedPane tabbedPane; // 使用 JTabbedPane 管理多个请求编辑子面板
 
     @Getter
     private TabbedPaneDragHandler dragHandler; // Tab 拖拽排序支持
 
-    private CardLayout contentCardLayout;
-    private JPanel contentCardPanel;
-    private boolean startupPlaceholderVisible = true;
     private boolean autoRevealTabsCard = true;
     private boolean startupRestoreSelectionPending;
 
@@ -756,8 +750,6 @@ public class RequestEditPanel extends SingletonBasePanel {
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
-        contentCardLayout = new CardLayout();
-        contentCardPanel = new JPanel(contentCardLayout);
         // 设置tabbedPane为单行滚动模式，防止多行tab顺序混乱
         tabbedPane = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
         // 设置整个tabbedPane区域的内边距
@@ -775,21 +767,13 @@ public class RequestEditPanel extends SingletonBasePanel {
         });
         tabbedPane.addChangeListener(e -> ensureSelectedRequestTabInitialized());
 
-        contentCardPanel.add(createStartupPlaceholderPanel(), CARD_STARTUP);
-        contentCardPanel.add(tabbedPane, CARD_TABS);
-        contentCardLayout.show(contentCardPanel, CARD_STARTUP);
-        startupPlaceholderVisible = true;
-        add(contentCardPanel, BorderLayout.CENTER);
+        add(tabbedPane, BorderLayout.CENTER);
 
         // 安装 Tab 拖拽排序支持（IDEA 风格蓝色竖线指示）
         // 通过 getter/setter 传入 previewTabIndex，确保拖拽移动后索引正确同步
         dragHandler = TabbedPaneDragHandler.install(tabbedPane,
                 () -> previewTabIndex,
                 v -> previewTabIndex = v);
-    }
-
-    boolean isShowingStartupPlaceholder() {
-        return startupPlaceholderVisible;
     }
 
     public void beginStartupRestoreSelectionTracking() {
@@ -813,15 +797,8 @@ public class RequestEditPanel extends SingletonBasePanel {
     }
 
     public void showTabsCard(boolean initializeSelectedTab) {
-        if (startupPlaceholderVisible && contentCardLayout != null && contentCardPanel != null) {
-            contentCardLayout.show(contentCardPanel, CARD_TABS);
-            contentCardPanel.revalidate();
-            contentCardPanel.repaint();
-            startupPlaceholderVisible = false;
-            if (initializeSelectedTab) {
-                ensureSelectedRequestTabInitialized();
-            }
-            StartupDiagnostics.mark("RequestEditPanel switched from startup placeholder to tabs");
+        if (initializeSelectedTab) {
+            ensureSelectedRequestTabInitialized();
         }
     }
 
@@ -835,17 +812,10 @@ public class RequestEditPanel extends SingletonBasePanel {
     }
 
     private void ensureSelectedRequestTabInitialized() {
-        if (startupPlaceholderVisible) {
-            return;
-        }
         Component selectedComponent = tabbedPane.getSelectedComponent();
         if (selectedComponent instanceof RequestEditSubPanel requestEditSubPanel && !requestEditSubPanel.isEditorInitialized()) {
             requestEditSubPanel.ensureEditorInitialized();
         }
-    }
-
-    private JPanel createStartupPlaceholderPanel() {
-        return new StartupPlaceholderPanel();
     }
 
     private void registerUserSelectionDuringStartupRestore() {

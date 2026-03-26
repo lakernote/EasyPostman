@@ -848,9 +848,6 @@ public final class MessageKeys {
     public static final String REQUEST_SETTINGS_HTTP_VERSION_AUTO = "request.settings.http_version.auto";
     public static final String REQUEST_SETTINGS_HTTP_VERSION_HTTP_1_1 = "request.settings.http_version.http_1_1";
     public static final String REQUEST_SETTINGS_HTTP_VERSION_HTTP_2 = "request.settings.http_version.http_2";
-    public static final String REQUEST_SETTINGS_SSL_VERIFICATION_LABEL = "request.settings.ssl_verification.label";
-    public static final String REQUEST_SETTINGS_SSL_VERIFICATION_DESC = "request.settings.ssl_verification.desc";
-    public static final String REQUEST_SETTINGS_SSL_VERIFICATION_PROXY_FORCED_HINT = "request.settings.ssl_verification.proxy_forced_hint";
     public static final String REQUEST_SETTINGS_TIMEOUT_LABEL = "request.settings.timeout.label";
     public static final String REQUEST_SETTINGS_TIMEOUT_DESC = "request.settings.timeout.desc";
     public static final String REQUEST_SETTINGS_TIMEOUT_HINT = "request.settings.timeout.hint";
@@ -1721,8 +1718,13 @@ public final class MessageKeys {
 
     // 网络代理设置
     public static final String SETTINGS_PROXY_TITLE = "settings.proxy.title";
+    public static final String SETTINGS_PROXY_DESCRIPTION = "settings.proxy.description";
     public static final String SETTINGS_PROXY_ENABLED_TOOLTIP = "settings.proxy.enabled.tooltip";
     public static final String SETTINGS_PROXY_ENABLED_CHECKBOX = "settings.proxy.enabled.checkbox";
+    public static final String SETTINGS_PROXY_MODE = "settings.proxy.mode";
+    public static final String SETTINGS_PROXY_MODE_TOOLTIP = "settings.proxy.mode.tooltip";
+    public static final String SETTINGS_PROXY_MODE_MANUAL = "settings.proxy.mode.manual";
+    public static final String SETTINGS_PROXY_MODE_SYSTEM = "settings.proxy.mode.system";
     public static final String SETTINGS_PROXY_TYPE = "settings.proxy.type";
     public static final String SETTINGS_PROXY_TYPE_TOOLTIP = "settings.proxy.type.tooltip";
     public static final String SETTINGS_PROXY_TYPE_HTTP = "settings.proxy.type.http";
@@ -1735,8 +1737,17 @@ public final class MessageKeys {
     public static final String SETTINGS_PROXY_USERNAME_TOOLTIP = "settings.proxy.username.tooltip";
     public static final String SETTINGS_PROXY_PASSWORD = "settings.proxy.password";
     public static final String SETTINGS_PROXY_PASSWORD_TOOLTIP = "settings.proxy.password.tooltip";
+    public static final String SETTINGS_PROXY_SYSTEM_AUTH_HINT = "settings.proxy.system_auth_hint";
     public static final String SETTINGS_PROXY_SSL_VERIFICATION_TOOLTIP = "settings.proxy.ssl.verification.tooltip";
     public static final String SETTINGS_PROXY_SSL_VERIFICATION_CHECKBOX = "settings.proxy.ssl.verification.checkbox";
+    public static final String SETTINGS_PROXY_PREVIEW_TARGET = "settings.proxy.preview.target";
+    public static final String SETTINGS_PROXY_PREVIEW_TARGET_TOOLTIP = "settings.proxy.preview.target.tooltip";
+    public static final String SETTINGS_PROXY_STATUS_DISABLED = "settings.proxy.status.disabled";
+    public static final String SETTINGS_PROXY_STATUS_MANUAL_INCOMPLETE = "settings.proxy.status.manual.incomplete";
+    public static final String SETTINGS_PROXY_STATUS_MANUAL_ACTIVE = "settings.proxy.status.manual.active";
+    public static final String SETTINGS_PROXY_STATUS_SYSTEM_ACTIVE = "settings.proxy.status.system.active";
+    public static final String SETTINGS_PROXY_STATUS_DIRECT = "settings.proxy.status.direct";
+    public static final String SETTINGS_PROXY_STATUS_UNAVAILABLE = "settings.proxy.status.unavailable";
 
     // ============ 工具箱相关 ============
     public static final String TOOLBOX_ENCODER = "toolbox.encoder";

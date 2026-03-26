@@ -37,31 +37,25 @@ public class RequestSettingsPanelTest {
     @Test
     public void shouldPreserveInheritedSettingsWhenGlobalDefaultsChange() {
         boolean oldFollowRedirects = SettingManager.isFollowRedirects();
-        boolean oldSslVerificationDisabled = SettingManager.isRequestSslVerificationDisabled();
 
         try {
             SettingManager.setFollowRedirects(true);
-            SettingManager.setRequestSslVerificationDisabled(false);
 
             HttpRequestItem original = new HttpRequestItem();
             original.setFollowRedirects(null);
-            original.setSslVerificationEnabled(null);
 
             RequestSettingsPanel panel = new RequestSettingsPanel();
             panel.populate(original);
 
             SettingManager.setFollowRedirects(false);
-            SettingManager.setRequestSslVerificationDisabled(true);
 
             HttpRequestItem saved = new HttpRequestItem();
             panel.applyTo(saved);
 
             assertNull(saved.getFollowRedirects());
-            assertNull(saved.getSslVerificationEnabled());
             assertFalse(panel.hasCustomSettings());
         } finally {
             SettingManager.setFollowRedirects(oldFollowRedirects);
-            SettingManager.setRequestSslVerificationDisabled(oldSslVerificationDisabled);
         }
     }
 
@@ -102,32 +96,6 @@ public class RequestSettingsPanelTest {
             assertTrue(panel.hasCustomSettings());
         } finally {
             SettingManager.setFollowRedirects(oldFollowRedirects);
-        }
-    }
-
-    @Test
-    public void shouldKeepStoredSslOverrideAndShowProxyHintWhenProxyForcesLenientMode() throws Exception {
-        boolean oldProxyEnabled = SettingManager.isProxyEnabled();
-        boolean oldProxySslDisabled = SettingManager.isProxySslVerificationDisabled();
-
-        try {
-            SettingManager.setProxyEnabled(true);
-            SettingManager.setProxySslVerificationDisabled(true);
-
-            HttpRequestItem original = new HttpRequestItem();
-            original.setSslVerificationEnabled(Boolean.TRUE);
-
-            RequestSettingsPanel panel = new RequestSettingsPanel();
-            panel.populate(original);
-
-            HttpRequestItem saved = new HttpRequestItem();
-            panel.applyTo(saved);
-
-            assertTrue(saved.getSslVerificationEnabled());
-            assertTrue(readLabel(panel, "sslVerificationHintLabel").isVisible());
-        } finally {
-            SettingManager.setProxyEnabled(oldProxyEnabled);
-            SettingManager.setProxySslVerificationDisabled(oldProxySslDisabled);
         }
     }
 
@@ -173,7 +141,7 @@ public class RequestSettingsPanelTest {
             selectBooleanSetting(panel, "followRedirectsComboBox", Boolean.TRUE);
             HttpRequestItem saved = new HttpRequestItem();
             panel.applyTo(saved);
-            panel.rebaseline(saved);
+            panel.rebaseline();
 
             selectBooleanSetting(panel, "followRedirectsComboBox", Boolean.FALSE);
             HttpRequestItem savedAgain = new HttpRequestItem();
@@ -210,9 +178,4 @@ public class RequestSettingsPanelTest {
         throw new IllegalArgumentException("No combo option found for value: " + value);
     }
 
-    private static JLabel readLabel(RequestSettingsPanel panel, String fieldName) throws Exception {
-        Field field = RequestSettingsPanel.class.getDeclaredField(fieldName);
-        field.setAccessible(true);
-        return (JLabel) field.get(panel);
-    }
 }

@@ -281,7 +281,6 @@ public class GroupInheritanceHelper {
         clone.setDescription(item.getDescription());
         clone.setFollowRedirects(item.getFollowRedirects());
         clone.setCookieJarEnabled(item.getCookieJarEnabled());
-        clone.setSslVerificationEnabled(item.getSslVerificationEnabled());
         clone.setHttpVersion(item.getHttpVersion());
         clone.setRequestTimeoutMs(item.getRequestTimeoutMs());
 

@@ -1,6 +1,7 @@
 package com.laker.postman.service.http;
 
 import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.service.http.okhttp.OkHttpClientManager;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.JsonUtil;
 import lombok.experimental.UtilityClass;
@@ -11,7 +12,6 @@ import lombok.experimental.UtilityClass;
  */
 @UtilityClass
 public class RequestSettingsResolver {
-
     public static boolean resolveFollowRedirects(HttpRequestItem item) {
         return item != null && item.getFollowRedirects() != null
                 ? item.getFollowRedirects()
@@ -23,16 +23,28 @@ public class RequestSettingsResolver {
     }
 
     public static boolean resolveSslVerificationEnabled(HttpRequestItem item) {
-        if (isProxySslVerificationForcedDisabled()) {
-            return false;
-        }
-        return item != null && item.getSslVerificationEnabled() != null
-                ? item.getSslVerificationEnabled()
-                : !SettingManager.isRequestSslVerificationDisabled();
+        return !SettingManager.isRequestSslVerificationDisabled();
     }
 
     public static boolean isProxySslVerificationForcedDisabled() {
-        return SettingManager.isProxyEnabled() && SettingManager.isProxySslVerificationDisabled();
+        if (!SettingManager.isProxyEnabled() || !SettingManager.isProxySslVerificationDisabled()) {
+            return false;
+        }
+        if (SettingManager.isSystemProxyMode()) {
+            return true;
+        }
+        String host = SettingManager.getProxyHost();
+        return !host.trim().isEmpty();
+    }
+
+    public static boolean isProxySslVerificationForcedDisabled(String url) {
+        if (!isProxySslVerificationForcedDisabled()) {
+            return false;
+        }
+        if (!SettingManager.isSystemProxyMode()) {
+            return true;
+        }
+        return OkHttpClientManager.isProxyActiveForUrl(url);
     }
 
     public static String resolveHttpVersion(HttpRequestItem item) {

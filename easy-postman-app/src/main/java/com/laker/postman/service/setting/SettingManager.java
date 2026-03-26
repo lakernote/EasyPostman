@@ -23,6 +23,10 @@ import java.util.Set;
 @Slf4j
 public class SettingManager {
     private static final String CONFIG_FILE = ConfigPathConstants.EASY_POSTMAN_SETTINGS;
+    public static final String PROXY_MODE_MANUAL = "MANUAL";
+    public static final String PROXY_MODE_SYSTEM = "SYSTEM";
+    public static final String PROXY_TYPE_HTTP = "HTTP";
+    public static final String PROXY_TYPE_SOCKS = "SOCKS";
     private static final Properties props = new Properties();
 
     // 私有构造函数，防止实例化
@@ -715,7 +719,7 @@ public class SettingManager {
         if (val != null) {
             return Boolean.parseBoolean(val);
         }
-        return false; // 默认不启用
+        return true; // 默认启用系统代理检测
     }
 
     public static void setProxyEnabled(boolean enabled) {
@@ -724,19 +728,51 @@ public class SettingManager {
     }
 
     /**
+     * 代理模式：MANUAL 或 SYSTEM
+     */
+    public static String getProxyMode() {
+        String val = props.getProperty("proxy_mode");
+        if (PROXY_MODE_MANUAL.equalsIgnoreCase(val)) {
+            return PROXY_MODE_MANUAL;
+        }
+        return PROXY_MODE_SYSTEM;
+    }
+
+    public static void setProxyMode(String mode) {
+        props.setProperty("proxy_mode", PROXY_MODE_SYSTEM.equalsIgnoreCase(mode) ? PROXY_MODE_SYSTEM : PROXY_MODE_MANUAL);
+        save();
+    }
+
+    public static boolean isSystemProxyMode() {
+        return PROXY_MODE_SYSTEM.equalsIgnoreCase(getProxyMode());
+    }
+
+    public static boolean isManualProxyMode() {
+        return PROXY_MODE_MANUAL.equalsIgnoreCase(getProxyMode());
+    }
+
+    public static boolean isManualProxyModeValue(String mode) {
+        return PROXY_MODE_MANUAL.equalsIgnoreCase(mode);
+    }
+
+    /**
      * 代理类型：HTTP 或 SOCKS
      */
     public static String getProxyType() {
         String val = props.getProperty("proxy_type");
-        if (val != null) {
-            return val;
+        if (PROXY_TYPE_SOCKS.equalsIgnoreCase(val)) {
+            return PROXY_TYPE_SOCKS;
         }
-        return "HTTP"; // 默认HTTP代理
+        return PROXY_TYPE_HTTP; // 默认HTTP代理
     }
 
     public static void setProxyType(String type) {
-        props.setProperty("proxy_type", type);
+        props.setProperty("proxy_type", normalizeProxyType(type));
         save();
+    }
+
+    public static String normalizeProxyType(String type) {
+        return PROXY_TYPE_SOCKS.equalsIgnoreCase(type) ? PROXY_TYPE_SOCKS : PROXY_TYPE_HTTP;
     }
 
     /**

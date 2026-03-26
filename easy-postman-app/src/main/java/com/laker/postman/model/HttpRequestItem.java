@@ -37,7 +37,6 @@ public class HttpRequestItem implements Serializable {
     private String authToken = "";    // Bearer Token
     private Boolean followRedirects; // 是否自动跟随重定向，null 表示跟随全局设置
     private Boolean cookieJarEnabled; // 是否启用 Cookie Jar，null 表示使用默认值
-    private Boolean sslVerificationEnabled; // 是否启用 SSL 证书校验，null 表示跟随全局设置
     private String httpVersion = HTTP_VERSION_AUTO; // HTTP 协议偏好
     private Integer requestTimeoutMs; // 请求超时（毫秒），null 表示跟随全局设置
     // 前置脚本（请求前执行）

@@ -177,24 +177,31 @@ public class PreparedRequestBuilderTest {
     }
 
     @Test
-    public void testRequestLevelSettingsOverrideGlobalDefaults() {
-        HttpRequestItem item = new HttpRequestItem();
-        item.setId("test-settings-override");
-        item.setMethod("GET");
-        item.setUrl("https://api.example.com/data");
-        item.setFollowRedirects(Boolean.FALSE);
-        item.setCookieJarEnabled(Boolean.FALSE);
-        item.setSslVerificationEnabled(Boolean.TRUE);
-        item.setHttpVersion(HttpRequestItem.HTTP_VERSION_HTTP_1_1);
-        item.setRequestTimeoutMs(4321);
+    public void testRequestLevelSettingsOverrideGlobalDefaultsExceptSslVerification() {
+        boolean oldSslVerificationDisabled = SettingManager.isRequestSslVerificationDisabled();
 
-        PreparedRequest req = PreparedRequestBuilder.build(item);
+        try {
+            SettingManager.setRequestSslVerificationDisabled(true);
 
-        assertFalse(req.followRedirects);
-        assertFalse(req.cookieJarEnabled);
-        assertTrue(req.sslVerificationEnabled);
-        assertEquals(req.httpVersion, HttpRequestItem.HTTP_VERSION_HTTP_1_1);
-        assertEquals(req.requestTimeoutMs, 4321);
+            HttpRequestItem item = new HttpRequestItem();
+            item.setId("test-settings-override");
+            item.setMethod("GET");
+            item.setUrl("https://api.example.com/data");
+            item.setFollowRedirects(Boolean.FALSE);
+            item.setCookieJarEnabled(Boolean.FALSE);
+            item.setHttpVersion(HttpRequestItem.HTTP_VERSION_HTTP_1_1);
+            item.setRequestTimeoutMs(4321);
+
+            PreparedRequest req = PreparedRequestBuilder.build(item);
+
+            assertFalse(req.followRedirects);
+            assertFalse(req.cookieJarEnabled);
+            assertFalse(req.sslVerificationEnabled);
+            assertEquals(req.httpVersion, HttpRequestItem.HTTP_VERSION_HTTP_1_1);
+            assertEquals(req.requestTimeoutMs, 4321);
+        } finally {
+            SettingManager.setRequestSslVerificationDisabled(oldSslVerificationDisabled);
+        }
     }
 
     @Test

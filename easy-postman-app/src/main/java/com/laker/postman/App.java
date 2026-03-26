@@ -26,6 +26,7 @@ public class App {
         StartupDiagnostics.mark("App.main entered");
         // 0. 设置全局异常处理器
         setupGlobalExceptionHandler();
+        enableSystemProxyDetection();
 
         // 1. 配置平台特定的窗口装饰
         configurePlatformSpecificSettings();
@@ -53,6 +54,10 @@ public class App {
             JFrame.setDefaultLookAndFeelDecorated(true);
             JDialog.setDefaultLookAndFeelDecorated(true);
         }
+    }
+
+    private static void enableSystemProxyDetection() {
+        System.setProperty("java.net.useSystemProxies", "true");
     }
 
     /**

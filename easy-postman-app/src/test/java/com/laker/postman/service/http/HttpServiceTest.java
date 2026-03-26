@@ -8,6 +8,10 @@ import org.testng.annotations.Test;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.Proxy;
+import java.net.ProxySelector;
+import java.net.URI;
+import java.util.List;
 import java.util.Properties;
 
 import static org.testng.Assert.assertSame;
@@ -92,6 +96,44 @@ public class HttpServiceTest {
             assertSame(customClient.sslSocketFactory(), baseClient.sslSocketFactory());
             assertSame(customClient.hostnameVerifier(), baseClient.hostnameVerifier());
         } finally {
+            props.clear();
+            props.putAll(backup);
+            OkHttpClientManager.clearClientCache();
+        }
+    }
+
+    @Test
+    public void systemProxyBypassShouldNotForceSslIsolation() throws Exception {
+        Properties props = getSettingsProperties();
+        Properties backup = new Properties();
+        backup.putAll(props);
+        ProxySelector originalSelector = ProxySelector.getDefault();
+
+        try {
+            props.clear();
+            props.setProperty("proxy_enabled", "true");
+            props.setProperty("proxy_mode", SettingManager.PROXY_MODE_SYSTEM);
+            props.setProperty("ssl_verification_enabled", "true");
+            props.setProperty("proxy_ssl_verification_disabled", "true");
+
+            ProxySelector.setDefault(new ProxySelector() {
+                @Override
+                public List<Proxy> select(URI uri) {
+                    return List.of(Proxy.NO_PROXY);
+                }
+
+                @Override
+                public void connectFailed(URI uri, java.net.SocketAddress sa, java.io.IOException ioe) {
+                }
+            });
+
+            PreparedRequest request = new PreparedRequest();
+            request.url = "https://bypass.example.com/data";
+            request.sslVerificationEnabled = true;
+
+            assertFalse(HttpService.shouldIsolateConnectionPool(request));
+        } finally {
+            ProxySelector.setDefault(originalSelector);
             props.clear();
             props.putAll(backup);
             OkHttpClientManager.clearClientCache();

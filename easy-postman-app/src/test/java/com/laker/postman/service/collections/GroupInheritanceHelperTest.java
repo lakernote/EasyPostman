@@ -21,7 +21,6 @@ public class GroupInheritanceHelperTest {
         item.setUrl("https://api.example.com/data");
         item.setFollowRedirects(Boolean.FALSE);
         item.setCookieJarEnabled(Boolean.FALSE);
-        item.setSslVerificationEnabled(Boolean.TRUE);
         item.setHttpVersion(HttpRequestItem.HTTP_VERSION_HTTP_1_1);
         item.setRequestTimeoutMs(4321);
 
@@ -31,7 +30,6 @@ public class GroupInheritanceHelperTest {
 
         assertFalse(merged.getFollowRedirects());
         assertFalse(merged.getCookieJarEnabled());
-        assertTrue(merged.getSslVerificationEnabled());
         assertEquals(merged.getHttpVersion(), HttpRequestItem.HTTP_VERSION_HTTP_1_1);
         assertEquals(merged.getRequestTimeoutMs(), Integer.valueOf(4321));
     }

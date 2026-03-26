@@ -34,10 +34,8 @@ public class RequestSettingsPanel extends JScrollPane {
     private final EasyComboBox<BooleanSettingOption> followRedirectsComboBox;
     private final SwitchButton useCookieJarSwitch;
     private final EasyComboBox<HttpVersionOption> httpVersionComboBox;
-    private final EasyComboBox<BooleanSettingOption> sslVerificationComboBox;
     private final JTextField requestTimeoutField;
     private final JLabel requestTimeoutHintLabel;
-    private final JLabel sslVerificationHintLabel;
 
     public RequestSettingsPanel() {
         setBorder(BorderFactory.createEmptyBorder());
@@ -59,10 +57,8 @@ public class RequestSettingsPanel extends JScrollPane {
         followRedirectsComboBox = createBooleanSettingComboBox();
         useCookieJarSwitch = new SwitchButton();
         httpVersionComboBox = new EasyComboBox<>(createHttpVersionOptions(), EasyComboBox.WidthMode.FIXED_MAX);
-        sslVerificationComboBox = createBooleanSettingComboBox();
         requestTimeoutField = new JTextField();
         requestTimeoutHintLabel = createHintLabel();
-        sslVerificationHintLabel = createHintLabel();
 
         ((AbstractDocument) requestTimeoutField.getDocument()).setDocumentFilter(new DigitsOnlyDocumentFilter());
         httpVersionComboBox.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
@@ -84,16 +80,14 @@ public class RequestSettingsPanel extends JScrollPane {
                 I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_HTTP_VERSION_DESC),
                 httpVersionComboBox
         ), "growx, wrap");
-        content.add(createSslVerificationRow(), "growx, wrap");
         content.add(createTimeoutRow(), "growx, wrap");
         populate(null);
     }
 
     public void populate(HttpRequestItem item) {
-        updateDynamicHints();
+        updateRequestTimeoutHint();
         followRedirectsComboBox.setSelectedItem(findBooleanOption(followRedirectsComboBox, item != null ? item.getFollowRedirects() : null));
         useCookieJarSwitch.setSelected(RequestSettingsResolver.resolveCookieJarEnabled(item));
-        sslVerificationComboBox.setSelectedItem(findBooleanOption(sslVerificationComboBox, item != null ? item.getSslVerificationEnabled() : null));
         httpVersionComboBox.setSelectedItem(findHttpVersionOption(
                 RequestSettingsResolver.normalizeStoredHttpVersion(item != null ? item.getHttpVersion() : null)
         ));
@@ -104,13 +98,12 @@ public class RequestSettingsPanel extends JScrollPane {
     public void applyTo(HttpRequestItem item) {
         item.setFollowRedirects(getSelectedBooleanValue(followRedirectsComboBox));
         item.setCookieJarEnabled(getStoredCookieJarValue());
-        item.setSslVerificationEnabled(getSelectedBooleanValue(sslVerificationComboBox));
         item.setHttpVersion(getStoredHttpVersionValue());
         item.setRequestTimeoutMs(getStoredRequestTimeoutValue());
     }
 
-    public void rebaseline(HttpRequestItem item) {
-        updateDynamicHints();
+    public void rebaseline() {
+        updateRequestTimeoutHint();
     }
 
     public String validateSettings() {
@@ -120,7 +113,6 @@ public class RequestSettingsPanel extends JScrollPane {
     public boolean hasCustomSettings() {
         return getSelectedBooleanValue(followRedirectsComboBox) != null
                 || Boolean.FALSE.equals(getStoredCookieJarValue())
-                || getSelectedBooleanValue(sslVerificationComboBox) != null
                 || getStoredHttpVersionValue() != null
                 || getStoredRequestTimeoutValue() != null;
     }
@@ -132,7 +124,6 @@ public class RequestSettingsPanel extends JScrollPane {
         followRedirectsComboBox.addActionListener(e -> listener.run());
         useCookieJarSwitch.addActionListener(e -> listener.run());
         httpVersionComboBox.addActionListener(e -> listener.run());
-        sslVerificationComboBox.addActionListener(e -> listener.run());
         requestTimeoutField.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
@@ -166,15 +157,6 @@ public class RequestSettingsPanel extends JScrollPane {
 
     private JPanel createSelectRow(String title, String description, JComponent component) {
         return createSettingRow(title, description, wrapControl(component));
-    }
-
-    private JPanel createSslVerificationRow() {
-        JPanel rightPanel = createHintedControlPanel(sslVerificationComboBox, sslVerificationHintLabel);
-        return createSettingRow(
-                I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_SSL_VERIFICATION_LABEL),
-                I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_SSL_VERIFICATION_DESC),
-                rightPanel
-        );
     }
 
     private JPanel createTimeoutRow() {
@@ -258,17 +240,11 @@ public class RequestSettingsPanel extends JScrollPane {
         return area;
     }
 
-    private void updateDynamicHints() {
+    private void updateRequestTimeoutHint() {
         requestTimeoutHintLabel.setText(I18nUtil.getMessage(
                 MessageKeys.REQUEST_SETTINGS_TIMEOUT_HINT,
                 SettingManager.getRequestTimeout()
         ));
-
-        boolean proxyForcesSslDisabled = RequestSettingsResolver.isProxySslVerificationForcedDisabled();
-        sslVerificationHintLabel.setVisible(proxyForcesSslDisabled);
-        sslVerificationHintLabel.setText(proxyForcesSslDisabled
-                ? I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_SSL_VERIFICATION_PROXY_FORCED_HINT)
-                : "");
     }
 
     private Boolean getStoredCookieJarValue() {

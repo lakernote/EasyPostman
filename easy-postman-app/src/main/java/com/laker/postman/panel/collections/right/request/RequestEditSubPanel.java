@@ -526,7 +526,7 @@ public class RequestEditSubPanel extends JPanel {
             return;
         }
         requestDirtyStateHelper.setOriginalRequestItem(item);
-        requestSettingsPanel.rebaseline(item);
+        requestSettingsPanel.rebaseline();
     }
 
     public HttpRequestItem getOriginalRequestItem() {
@@ -627,7 +627,7 @@ public class RequestEditSubPanel extends JPanel {
 
             // 设置原始数据用于脏检测
             requestDirtyStateHelper.setOriginalRequestItem(originalItem);
-            requestSettingsPanel.rebaseline(originalItem);
+            requestSettingsPanel.rebaseline();
 
             // 根据请求类型智能选择默认Tab
             requestFormDataHelper.selectDefaultTabByRequestType(getEffectiveProtocol(), item);

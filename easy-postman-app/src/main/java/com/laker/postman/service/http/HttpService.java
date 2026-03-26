@@ -181,7 +181,7 @@ public class HttpService {
             return false;
         }
 
-        return resolveSslVerificationMode(preparedRequest) != resolveGlobalSslVerificationMode();
+        return resolveSslVerificationMode(preparedRequest) != resolveGlobalSslVerificationMode(preparedRequest.url);
     }
 
     static SSLConfigurationUtil.SSLVerificationMode resolveSslVerificationMode(PreparedRequest preparedRequest) {
@@ -189,7 +189,7 @@ public class HttpService {
             return resolveGlobalSslVerificationMode();
         }
 
-        boolean proxySslDisabled = RequestSettingsResolver.isProxySslVerificationForcedDisabled();
+        boolean proxySslDisabled = RequestSettingsResolver.isProxySslVerificationForcedDisabled(preparedRequest.url);
         return (!preparedRequest.sslVerificationEnabled || proxySslDisabled)
                 ? SSLConfigurationUtil.SSLVerificationMode.LENIENT
                 : SSLConfigurationUtil.SSLVerificationMode.STRICT;
@@ -203,7 +203,14 @@ public class HttpService {
     }
 
     private static SSLConfigurationUtil.SSLVerificationMode resolveGlobalSslVerificationMode() {
-        boolean proxySslDisabled = RequestSettingsResolver.isProxySslVerificationForcedDisabled();
+        return resolveGlobalSslVerificationMode(null);
+    }
+
+    private static SSLConfigurationUtil.SSLVerificationMode resolveGlobalSslVerificationMode(String url) {
+        boolean proxySslDisabled = false;
+        if (url != null && !url.isBlank()) {
+            proxySslDisabled = RequestSettingsResolver.isProxySslVerificationForcedDisabled(url);
+        }
         return (SettingManager.isRequestSslVerificationDisabled() || proxySslDisabled)
                 ? SSLConfigurationUtil.SSLVerificationMode.LENIENT
                 : SSLConfigurationUtil.SSLVerificationMode.STRICT;

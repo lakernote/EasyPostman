@@ -84,6 +84,7 @@ public class MainFrame extends JFrame {
         setIconImage(Icons.LOGO.getImage());
         applyWindowBackground();
 
+        // macOS 标题栏扩展属性要在首次显示前设置，否则首次显示后再补设置容易出现抖动。
         applyMacWindowDecorations();
         applyMacWindowAppearance();
     }
@@ -109,7 +110,7 @@ public class MainFrame extends JFrame {
             pack();
         }
 
-        // 只有在非最大化状态下才居中窗口，避免全屏时的闪烁
+        // 只有在非最大化状态下才居中窗口，避免最大化恢复路径上的额外跳变
         boolean isMaximized = (getExtendedState() & Frame.MAXIMIZED_BOTH) == Frame.MAXIMIZED_BOTH;
         if (!isMaximized) {
             setLocationRelativeTo(null);
@@ -189,6 +190,7 @@ public class MainFrame extends JFrame {
         if (!SystemInfo.isMacFullWindowContentSupported || getRootPane() == null) {
             return;
         }
+        // 在窗口首显前一次性应用，避免显示后再切换 title bar / fullWindowContent 造成二次重绘。
         getRootPane().putClientProperty("apple.awt.fullWindowContent", true);
         getRootPane().putClientProperty("apple.awt.transparentTitleBar", true);
         StartupDiagnostics.mark("Applied macOS window decorations before first show");

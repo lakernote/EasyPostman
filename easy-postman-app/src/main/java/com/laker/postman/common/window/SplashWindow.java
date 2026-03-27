@@ -14,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionListener;
 import java.io.Serial;
 
 /**
@@ -26,14 +25,7 @@ public class SplashWindow extends JFrame {
     @Serial
     private static final long serialVersionUID = 1L; // 添加序列化ID
     public static final int MIN_TIME = 350; // 最小显示时间，避免闪屏但不过度拖慢启动
-    private static final float FADE_STEP = 0.08f; // 渐隐步长
-    private static final float MIN_OPACITY = 0.05f; // 最小透明度
-    private static final int FADE_TIMER_DELAY = 15; // 渐隐定时器延迟
-    private static final int FADE_READY_HOLD_MS = 70; // 就绪后再额外停留一小拍，吞掉系统首帧切换
-
     private JLabel statusLabel; // 状态标签，用于显示加载状态
-    private transient Timer fadeOutTimer; // 渐隐计时器
-    private transient ActionListener fadeOutListener; // 渐隐监听器，用于防止内存泄漏
     private volatile boolean isDisposed = false; // 标记窗口是否已释放
 
     public SplashWindow() {
@@ -376,15 +368,15 @@ public class SplashWindow extends JFrame {
     private void startFadeOutAnimation(MainFrame mainFrame, StartupCoordinator startupCoordinator) {
         if (isDisposed) return;
 
-        // 先显示主窗口，但继续让 splash 保持在前景，直到主窗口首绘和主内容加载都完成。
+        // 先显示主窗口；一旦启动占位符稳定绘制完成就尽快退场，不再阻塞等待主内容完全加载。
         startupCoordinator.showMainFrame(mainFrame);
-        startupCoordinator.whenMainFrameReady(
+        startupCoordinator.whenStartupShellReady(
                 mainFrame,
-                FADE_READY_HOLD_MS,
+                0,
                 new StartupCoordinator.MainFrameReadinessCallbacks() {
                     @Override
                     public void onWaiting() {
-                        StartupDiagnostics.mark("Splash waiting for main content and first paint before fade-out");
+                        StartupDiagnostics.mark("Splash waiting for startup shell paint before fade-out");
                     }
 
                     @Override
@@ -394,7 +386,7 @@ public class SplashWindow extends JFrame {
 
                     @Override
                     public void onMainContentReady() {
-                        StartupDiagnostics.mark("Splash fade-out gate: main content ready");
+                        StartupDiagnostics.mark("Main content finished loading after splash fade-out gate opened");
                     }
 
                     @Override
@@ -409,85 +401,17 @@ public class SplashWindow extends JFrame {
 
                     @Override
                     public void onReady() {
-                        StartupDiagnostics.mark("Splash fade-out starting after first paint and main content loaded");
+                        StartupDiagnostics.mark("Splash closing immediately after startup shell paint");
                     }
                 },
-                () -> startFadeTimer(startupCoordinator),
+                () -> closeSplash(startupCoordinator),
                 this::handleMainFrameLoadError
         );
     }
 
-    private void startFadeTimer(StartupCoordinator startupCoordinator) {
-        if (isDisposed || fadeOutTimer != null) {
-            return;
-        }
-        fadeOutListener = createFadeOutListener(startupCoordinator);
-        fadeOutTimer = new Timer(FADE_TIMER_DELAY, fadeOutListener);
-        fadeOutTimer.start();
-    }
-
-    /**
-     * 创建渐隐监听器
-     */
-    private ActionListener createFadeOutListener(StartupCoordinator startupCoordinator) {
-        return e -> {
-            if (isDisposed) {
-                stopFadeOutAnimation();
-                return;
-            }
-
-            try {
-                processFadeOutStep(startupCoordinator);
-            } catch (Exception ex) {
-                handleFadeOutError(ex, startupCoordinator);
-            }
-        };
-    }
-
-    /**
-     * 处理渐隐步骤
-     */
-    private void processFadeOutStep(StartupCoordinator startupCoordinator) {
-        float opacity = getOpacity();
-        if (opacity > MIN_OPACITY) {
-            setOpacity(Math.max(0f, opacity - FADE_STEP));
-        } else {
-            completeFadeOut(startupCoordinator);
-        }
-    }
-
-    /**
-     * 完成渐隐效果
-     */
-    private void completeFadeOut(StartupCoordinator startupCoordinator) {
-        stopFadeOutAnimation();
+    private void closeSplash(StartupCoordinator startupCoordinator) {
         disposeSafely();
         startupCoordinator.scheduleBackgroundUpdateCheck();
-    }
-
-    /**
-     * 处理渐隐错误
-     */
-    private void handleFadeOutError(Exception ex, StartupCoordinator startupCoordinator) {
-        log.warn("渐隐动画执行失败，直接关闭窗口", ex);
-        stopFadeOutAnimation();
-        disposeSafely();
-        startupCoordinator.scheduleBackgroundUpdateCheck();
-        // 主窗口在渐隐开始前就已经显示，这里不需要再显示
-    }
-
-    /**
-     * 停止渐隐动画
-     */
-    private void stopFadeOutAnimation() {
-        if (fadeOutTimer != null) {
-            fadeOutTimer.stop();
-            if (fadeOutListener != null) {
-                fadeOutTimer.removeActionListener(fadeOutListener);
-            }
-            fadeOutTimer = null;
-            fadeOutListener = null;
-        }
     }
 
     /**
@@ -497,7 +421,6 @@ public class SplashWindow extends JFrame {
         if (isDisposed) return;
 
         isDisposed = true;
-        stopFadeOutAnimation();
 
         SwingUtilities.invokeLater(() -> {
             setVisible(false);

@@ -67,6 +67,23 @@ public class StartupCoordinator {
                                    MainFrameReadinessCallbacks callbacks,
                                    Runnable onReady,
                                    Consumer<Throwable> onFailure) {
+        whenMainFrameReadyInternal(mainFrame, holdDelayMs, callbacks, true, onReady, onFailure);
+    }
+
+    public void whenStartupShellReady(MainFrame mainFrame,
+                                      int holdDelayMs,
+                                      MainFrameReadinessCallbacks callbacks,
+                                      Runnable onReady,
+                                      Consumer<Throwable> onFailure) {
+        whenMainFrameReadyInternal(mainFrame, holdDelayMs, callbacks, false, onReady, onFailure);
+    }
+
+    private void whenMainFrameReadyInternal(MainFrame mainFrame,
+                                            int holdDelayMs,
+                                            MainFrameReadinessCallbacks callbacks,
+                                            boolean waitForMainContent,
+                                            Runnable onReady,
+                                            Consumer<Throwable> onFailure) {
         if (mainFrame == null || onReady == null) {
             return;
         }
@@ -75,14 +92,15 @@ public class StartupCoordinator {
 
         final boolean[] contentLoaded = {false};
         final boolean[] shellReady = {false};
-        final boolean[] completionScheduled = {false};
+        final boolean[] readyScheduled = {false};
+        final boolean[] failureHandled = {false};
         final Timer[] shellFallbackTimer = {null};
         final Timer[] holdTimer = {null};
         Consumer<Throwable> failStartup = throwable -> {
-            if (completionScheduled[0]) {
+            if (failureHandled[0]) {
                 return;
             }
-            completionScheduled[0] = true;
+            failureHandled[0] = true;
             if (shellFallbackTimer[0] != null && shellFallbackTimer[0].isRunning()) {
                 shellFallbackTimer[0].stop();
             }
@@ -95,10 +113,10 @@ public class StartupCoordinator {
             }
         };
         Runnable tryComplete = () -> {
-            if (!contentLoaded[0] || !shellReady[0] || completionScheduled[0]) {
+            if ((waitForMainContent && !contentLoaded[0]) || !shellReady[0] || readyScheduled[0] || failureHandled[0]) {
                 return;
             }
-            completionScheduled[0] = true;
+            readyScheduled[0] = true;
             if (holdDelayMs > 0) {
                 safeCallbacks.onHoldScheduled(holdDelayMs);
                 holdTimer[0] = new Timer(holdDelayMs, e -> {

@@ -201,6 +201,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                     requestEditPanel.setStartupRestoreSelectingLastTab(false);
                     requestEditPanel.setAutoInitializeSelectedTabOnTabAdd(true);
                     requestEditPanel.initializeSelectedStartupRestoreTab();
+                    requestEditPanel.warmUpDeferredRequestTabsAfterStartup();
                 }
         );
     }

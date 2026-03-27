@@ -786,19 +786,29 @@ public class RequestEditPanel extends SingletonBasePanel {
      * 在下一轮 EDT 初始化当前选中的请求编辑器，保持切换直接且不额外引入定时器。
      */
     public void initializeSelectedTabSoon() {
+        if (startupRestoreSelectingLastTab) {
+            return;
+        }
         scheduleSelectedRequestTabInitialization(false);
     }
 
     private void ensureSelectedRequestTabInitialized() {
+        ensureSelectedRequestTabInitialized(false);
+    }
+
+    private void ensureSelectedRequestTabInitialized(boolean animatePlaceholderTransition) {
         Component selectedComponent = tabbedPane.getSelectedComponent();
         if (selectedComponent instanceof RequestEditSubPanel requestEditSubPanel && !requestEditSubPanel.isEditorInitialized()) {
-            requestEditSubPanel.ensureEditorInitialized();
+            requestEditSubPanel.ensureEditorInitialized(animatePlaceholderTransition);
         }
     }
 
     private void scheduleSelectedRequestTabInitialization(boolean markAfterInit) {
         SwingUtilities.invokeLater(() -> {
-            ensureSelectedRequestTabInitialized();
+            if (startupRestoreSelectingLastTab) {
+                return;
+            }
+            ensureSelectedRequestTabInitialized(markAfterInit);
             if (markAfterInit) {
                 StartupDiagnostics.mark("Initialized selected request tab after startup restore");
             }
@@ -807,6 +817,27 @@ public class RequestEditPanel extends SingletonBasePanel {
 
     public void initializeSelectedStartupRestoreTab() {
         scheduleSelectedRequestTabInitialization(true);
+    }
+
+    public void warmUpDeferredRequestTabsAfterStartup() {
+        SwingUtilities.invokeLater(() -> warmUpDeferredRequestTabsSequentially(0));
+    }
+
+    private void warmUpDeferredRequestTabsSequentially(int startIndex) {
+        for (int i = Math.max(0, startIndex); i < tabbedPane.getTabCount(); i++) {
+            if (i == tabbedPane.getSelectedIndex()) {
+                continue;
+            }
+            Component component = tabbedPane.getComponentAt(i);
+            if (!(component instanceof RequestEditSubPanel requestEditSubPanel) || requestEditSubPanel.isEditorInitialized()) {
+                continue;
+            }
+            requestEditSubPanel.ensureEditorInitialized(false);
+            int nextIndex = i + 1;
+            SwingUtilities.invokeLater(() -> warmUpDeferredRequestTabsSequentially(nextIndex));
+            return;
+        }
+        StartupDiagnostics.mark("Warm-up finished for deferred request tabs");
     }
 
     private void cancelStartupRestoreAutoSelectionIfNeeded() {

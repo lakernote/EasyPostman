@@ -1,7 +1,9 @@
 package com.laker.postman.panel.collections.right.request;
 
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.animation.ComponentSnapshotTransition;
 import com.laker.postman.common.component.MarkdownEditorPanel;
+import com.laker.postman.common.component.placeholder.RequestEditorPlaceholderPanel;
 import com.laker.postman.common.component.tab.IndicatorTabComponent;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.*;
@@ -20,6 +22,10 @@ import okhttp3.sse.EventSource;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -47,6 +53,7 @@ public class RequestEditSubPanel extends JPanel {
     private HttpRequestItem pendingRequestItem;
     private HttpRequestItem pendingOriginalRequestItem;
     private Boolean pendingLayoutVertical;
+    private final transient ComponentSnapshotTransition deferredEditorTransition = new ComponentSnapshotTransition(this);
 
     // 面板类型
     @Getter
@@ -176,19 +183,25 @@ public class RequestEditSubPanel extends JPanel {
         setBackground(ModernColors.getBackgroundColor());
         if (!this.deferEditorInitialization) {
             initializeEditorUiIfNeeded();
+        } else {
+            installDeferredPlaceholder();
         }
     }
 
     public void ensureEditorInitialized() {
+        ensureEditorInitialized(false);
+    }
+
+    public void ensureEditorInitialized(boolean animatePlaceholderTransition) {
         if (editorInitialized) {
             return;
         }
         if (SwingUtilities.isEventDispatchThread()) {
-            initializeEditorUiIfNeeded();
+            initializeEditorUiIfNeeded(animatePlaceholderTransition);
             return;
         }
         try {
-            SwingUtilities.invokeAndWait(this::initializeEditorUiIfNeeded);
+            SwingUtilities.invokeAndWait(() -> initializeEditorUiIfNeeded(animatePlaceholderTransition));
         } catch (Exception e) {
             throw new IllegalStateException("Failed to initialize RequestEditSubPanel on EDT", e);
         }
@@ -209,10 +222,17 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     private void initializeEditorUiIfNeeded() {
+        initializeEditorUiIfNeeded(false);
+    }
+
+    private void initializeEditorUiIfNeeded(boolean animatePlaceholderTransition) {
         if (editorInitialized) {
             return;
         }
         long initStartNanos = System.nanoTime();
+        ComponentSnapshotTransition.CapturedSnapshot placeholderSnapshot = animatePlaceholderTransition
+                ? captureDeferredPlaceholderSnapshot()
+                : null;
         removeAll();
         // 先集中创建视图组件，再把交互逻辑按职责注入 helper，构造阶段就能看清依赖方向。
         RequestViewComponents components = RequestViewFactory.create(protocol, panelType, this::sendRequest);
@@ -421,10 +441,72 @@ public class RequestEditSubPanel extends JPanel {
         }
         revalidate();
         repaint();
+        startDeferredPlaceholderTransition(placeholderSnapshot);
         if (deferEditorInitialization) {
             StartupDiagnostics.mark("Initialized deferred editor tab '" + (name != null ? name : id)
                     + "' in " + StartupDiagnostics.formatSince(initStartNanos));
         }
+    }
+
+    private void installDeferredPlaceholder() {
+        removeAll();
+        JComponent placeholder = new RequestEditorPlaceholderPanel();
+        attachDeferredActivationListeners(placeholder);
+        add(placeholder, BorderLayout.CENTER);
+    }
+
+    private void attachDeferredActivationListeners(Component component) {
+        MouseAdapter mouseAdapter = new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                activateDeferredEditorIfNeeded();
+            }
+        };
+        FocusAdapter focusAdapter = new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                activateDeferredEditorIfNeeded();
+            }
+        };
+        attachDeferredActivationListeners(component, mouseAdapter, focusAdapter);
+    }
+
+    private void attachDeferredActivationListeners(Component component, MouseAdapter mouseAdapter, FocusAdapter focusAdapter) {
+        component.addMouseListener(mouseAdapter);
+        component.addFocusListener(focusAdapter);
+        if (component instanceof JComponent jComponent) {
+            jComponent.setFocusable(true);
+        }
+        if (component instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                attachDeferredActivationListeners(child, mouseAdapter, focusAdapter);
+            }
+        }
+    }
+
+    private void activateDeferredEditorIfNeeded() {
+        if (!deferEditorInitialization || editorInitialized) {
+            return;
+        }
+        ensureEditorInitialized(false);
+    }
+
+    private ComponentSnapshotTransition.CapturedSnapshot captureDeferredPlaceholderSnapshot() {
+        if (!deferEditorInitialization || editorInitialized) {
+            return null;
+        }
+        Component currentContent = getComponentCount() > 0 ? getComponent(0) : null;
+        if (!(currentContent instanceof JComponent placeholder) || !placeholder.isShowing()) {
+            return null;
+        }
+        return deferredEditorTransition.captureSnapshot(placeholder);
+    }
+
+    private void startDeferredPlaceholderTransition(ComponentSnapshotTransition.CapturedSnapshot placeholderSnapshot) {
+        if (placeholderSnapshot == null) {
+            return;
+        }
+        deferredEditorTransition.start(placeholderSnapshot);
     }
 
     /**

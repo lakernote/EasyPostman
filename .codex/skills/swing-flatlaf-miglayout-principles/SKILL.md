@@ -63,6 +63,37 @@ Use this skill when editing Swing form layouts in this repo. The goal is not jus
   - reintroduce only plain borders after focus behavior is stable
 - If the user says "it is probably MigLayout", take that seriously and verify MigLayout constraints before touching theme or component code.
 
+## Theme entry points in this repo
+
+When the task is about light/dark theme colors instead of layout, start from these files instead of scattering hard-coded colors in panel code:
+
+- Shared semantic colors for both themes:
+  `easy-postman-plugin-ui/src/main/java/com/laker/postman/common/constants/ModernColors.java`
+- FlatLaf light theme tokens and component defaults:
+  `easy-postman-app/src/main/resources/com/laker/postman/common/themes/EasyLightLaf.properties`
+- FlatLaf dark theme tokens and component defaults:
+  `easy-postman-app/src/main/resources/com/laker/postman/common/themes/EasyDarkLaf.properties`
+- RSyntaxTextArea editor theme for light mode:
+  `easy-postman-app/src/main/resources/themes/easypostman-light.xml`
+- RSyntaxTextArea editor theme for dark mode:
+  `easy-postman-app/src/main/resources/themes/easypostman-dark.xml`
+
+Use the files with this intent:
+
+1. `ModernColors.java`
+   Use for shared semantic brand colors such as primary blue, hover blue, status colors, and colors referenced directly by custom Swing painting or custom components.
+2. `EasyLightLaf.properties` / `EasyDarkLaf.properties`
+   Use for FlatLaf UI defaults such as `Component.accentColor`, `Table.selectionBackground`, `Tree.selectionBackground`, `TabbedPane.*`, borders, backgrounds, and hover states.
+3. `easypostman-light.xml` / `easypostman-dark.xml`
+   Use only for editor syntax colors inside `RSyntaxTextArea`. These files are loaded by `EditorThemeUtil`, not by FlatLaf itself.
+
+Preferred order when adjusting theme:
+
+1. If the change is a shared accent or semantic status color, start with `ModernColors.java`.
+2. If the change is a standard Swing/FlatLaf control state, start with `EasyLightLaf.properties` or `EasyDarkLaf.properties`.
+3. If the change is only about code editor token colors, caret, selection, or current-line styling, change the `easypostman-*.xml` files.
+4. Do not hard-code new colors directly in panels before checking whether one of the files above is the right source of truth.
+
 ## Design heuristics for this repo
 
 - Top tool panels should prefer:

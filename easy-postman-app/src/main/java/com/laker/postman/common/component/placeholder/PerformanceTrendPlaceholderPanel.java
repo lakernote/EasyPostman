@@ -1,6 +1,8 @@
 package com.laker.postman.common.component.placeholder;
 
 import com.laker.postman.util.FontsUtil;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 
 import java.awt.*;
 
@@ -58,7 +60,7 @@ public class PerformanceTrendPlaceholderPanel extends AbstractPlaceholderPanel {
 
             g2.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 0));
             g2.setColor(titleColor);
-            String title = "趋势图将在采样后显示";
+            String title = I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_PLACEHOLDER_TITLE);
             FontMetrics titleMetrics = g2.getFontMetrics();
             int titleX = (width - titleMetrics.stringWidth(title)) / 2;
             int titleY = cardY + cardH + 42;
@@ -66,7 +68,7 @@ public class PerformanceTrendPlaceholderPanel extends AbstractPlaceholderPanel {
 
             g2.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
             g2.setColor(hintColor);
-            String hint = "启动压测后，这里会显示用户数、QPS 和响应时间";
+            String hint = I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_PLACEHOLDER_HINT);
             FontMetrics hintMetrics = g2.getFontMetrics();
             int hintX = (width - hintMetrics.stringWidth(hint)) / 2;
             g2.drawString(hint, hintX, titleY + 24);

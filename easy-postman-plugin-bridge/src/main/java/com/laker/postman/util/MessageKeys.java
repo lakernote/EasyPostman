@@ -695,6 +695,8 @@ public final class MessageKeys {
     public static final String PERFORMANCE_TREND_COMBINED_CHART = "performance.trend.combined_chart";
     public static final String PERFORMANCE_TREND_SEPARATE_CHARTS = "performance.trend.separate_charts";
     public static final String PERFORMANCE_TREND_METRICS = "performance.trend.metrics";
+    public static final String PERFORMANCE_TREND_PLACEHOLDER_TITLE = "performance.trend.placeholder.title";
+    public static final String PERFORMANCE_TREND_PLACEHOLDER_HINT = "performance.trend.placeholder.hint";
 
     // ============ 性能结果树相关 ============
     public static final String PERFORMANCE_RESULT_TREE_COLUMN_NAME = "performance.result_tree.column.name";

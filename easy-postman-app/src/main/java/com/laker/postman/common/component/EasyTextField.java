@@ -1,6 +1,7 @@
 package com.laker.postman.common.component;
 
 import com.formdev.flatlaf.extras.components.FlatTextField;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.VariableInfo;
 import com.laker.postman.model.VariableSegment;
 import com.laker.postman.service.variable.VariableResolver;
@@ -38,12 +39,6 @@ import java.util.List;
  */
 @Slf4j
 public class EasyTextField extends FlatTextField {
-    // Postman 风格颜色
-    private static final Color DEFINED_VAR_BG = new Color(180, 210, 255, 120);
-    private static final Color DEFINED_VAR_BORDER = new Color(80, 150, 255);
-    private static final Color UNDEFINED_VAR_BG = new Color(255, 200, 200, 120);
-    private static final Color UNDEFINED_VAR_BORDER = new Color(255, 100, 100);
-
     // 自动补全UI颜色
     private static final Color POPUP_BACKGROUND = new Color(255, 255, 255);
     private static final Color POPUP_SELECTION_BG = new Color(232, 242, 252);
@@ -118,8 +113,12 @@ public class EasyTextField extends FlatTextField {
                 }
                 // 判断变量状态：环境变量、临时变量或内置函数
                 boolean isDefined = VariableResolver.isVariableDefined(seg.name);
-                Color bgColor = isDefined ? DEFINED_VAR_BG : UNDEFINED_VAR_BG;
-                Color borderColor = isDefined ? DEFINED_VAR_BORDER : UNDEFINED_VAR_BORDER;
+                Color bgColor = isDefined
+                        ? ModernColors.getDefinedVariableBadgeBackground()
+                        : ModernColors.getUndefinedVariableBadgeBackground();
+                Color borderColor = isDefined
+                        ? ModernColors.getDefinedVariableBadgeBorder()
+                        : ModernColors.getUndefinedVariableBadgeBorder();
                 String varText = value.substring(seg.start, seg.end);
                 int varWidth = fm.stringWidth(varText);
                 // 只绘制变量的半透明背景和边框，不绘制文本

@@ -178,6 +178,37 @@ public final class ModernColors {
      */
     public static final Color GIT_PULL = new Color(168, 85, 247);  // Purple-500
 
+    // ==================== 变量徽标颜色 ====================
+
+    /**
+     * 已定义变量的徽标背景色。
+     * 保持与 EasyTextField / RequestBodyPanel 现有视觉一致。
+     */
+    public static Color getDefinedVariableBadgeBackground() {
+        return new Color(180, 210, 255, 120);
+    }
+
+    /**
+     * 已定义变量的徽标边框色。
+     */
+    public static Color getDefinedVariableBadgeBorder() {
+        return new Color(80, 150, 255);
+    }
+
+    /**
+     * 未定义变量的徽标背景色。
+     */
+    public static Color getUndefinedVariableBadgeBackground() {
+        return new Color(255, 200, 200, 120);
+    }
+
+    /**
+     * 未定义变量的徽标边框色。
+     */
+    public static Color getUndefinedVariableBadgeBorder() {
+        return new Color(255, 100, 100);
+    }
+
     // ==================== 文字颜色（主题适配）====================
 
     /**

@@ -45,6 +45,8 @@ public class LoadingOverlay extends JComponent {
     public LoadingOverlay() {
         setOpaque(false);
         setVisible(false);
+        setFocusable(false);
+        setEnabled(false);
         this.message = I18nUtil.getMessage(MessageKeys.STATUS_SENDING_REQUEST);
 
         // 创建动画定时器，每25ms更新一次，实现流畅的多层动画
@@ -146,6 +148,13 @@ public class LoadingOverlay extends JComponent {
         } finally {
             g2d.dispose();
         }
+    }
+
+    @Override
+    public boolean contains(int x, int y) {
+        // loading overlay 只负责视觉提示，不应该抢占底层组件的鼠标命中。
+        // 这样即使正在执行请求，用户仍然可以切换 response tab 或查看旧内容。
+        return false;
     }
 
     /**
@@ -362,4 +371,3 @@ public class LoadingOverlay extends JComponent {
         return super.getPreferredSize();
     }
 }
-

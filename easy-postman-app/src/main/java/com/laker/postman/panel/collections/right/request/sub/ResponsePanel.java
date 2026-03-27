@@ -243,33 +243,24 @@ public class ResponsePanel extends JPanel {
             topResponseBar.add(comboPanel, BorderLayout.WEST);
         }
 
-        // 创建包含topResponseBar和cardPanel的容器面板
-        JPanel contentPanel = new JPanel(new BorderLayout());
-        contentPanel.add(topResponseBar, BorderLayout.NORTH);
-        contentPanel.add(cardPanel, BorderLayout.CENTER);
-
         // 使用TabBarBuilder绑定tab事件
         TabBarBuilder.bindTabActions(tabButtons, tabNames, cardPanel, this::onTabSelected);
 
         // 默认所有按钮不可用
         setResponseTabButtonsEnable(false);
 
-
         // 初始化加载遮罩层
         loadingOverlay = new LoadingOverlay();
 
-        // 使用LayeredPane来叠加遮罩层，覆盖整个内容区域（包括tabs和status bar）
-        JLayeredPane layeredPane = new JLayeredPane();
-        layeredPane.setLayout(new OverlayLayout());
+        // loading overlay 只覆盖 cardPanel，不遮顶部 tab/status bar。
+        // 这样请求执行中仍然可以切换响应标签、查看状态信息。
+        JLayeredPane cardLayeredPane = new JLayeredPane();
+        cardLayeredPane.setLayout(new OverlayLayout());
+        cardLayeredPane.add(cardPanel, JLayeredPane.DEFAULT_LAYER);
+        cardLayeredPane.add(loadingOverlay, JLayeredPane.PALETTE_LAYER);
 
-        // 将contentPanel（包含topResponseBar和cardPanel）作为基础层
-        layeredPane.add(contentPanel, JLayeredPane.DEFAULT_LAYER);
-
-        // 将loadingOverlay作为顶层
-        layeredPane.add(loadingOverlay, JLayeredPane.PALETTE_LAYER);
-
-        // 添加layeredPane到主面板
-        add(layeredPane, BorderLayout.CENTER);
+        add(topResponseBar, BorderLayout.NORTH);
+        add(cardLayeredPane, BorderLayout.CENTER);
     }
 
     // ==================== Tab相关辅助方法 ====================
@@ -466,19 +457,7 @@ public class ResponsePanel extends JPanel {
 
     public void setResponseHeaders(HttpResponse resp) {
         responseHeadersPanel.setHeaders(resp.headers);
-        // 动态设置Headers按钮文本和颜色
-        if (tabButtons.length > TAB_INDEX_RESPONSE_HEADERS) {
-            JButton headersBtn = tabButtons[TAB_INDEX_RESPONSE_HEADERS];
-            int count = (resp.headers != null) ? resp.headers.size() : 0;
-            if (count > 0) {
-                String countText = " (" + count + ")";
-                String countHtml = I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS) +
-                        "<span style='color:#009900;font-weight:bold;'>" + countText + "</span>";
-                headersBtn.setText("<html>" + countHtml + "</html>");
-            } else {
-                headersBtn.setText(I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS));
-            }
-        }
+        updateResponseHeadersTabLabel(resp.headers != null ? resp.headers.size() : 0);
     }
 
     public void setTiming(HttpResponse resp) {
@@ -614,6 +593,7 @@ public class ResponsePanel extends JPanel {
         separator2.setVisible(false);
 
         responseHeadersPanel.setHeaders(new LinkedHashMap<>());
+        updateResponseHeadersTabLabel(0);
         if (protocol.isWebSocketProtocol()) {
             webSocketResponsePanel.clearMessages();
         }
@@ -632,6 +612,21 @@ public class ResponsePanel extends JPanel {
         if (testsPane != null) {
             setTestResults(new ArrayList<>());
         }
+    }
+
+    private void updateResponseHeadersTabLabel(int count) {
+        if (tabButtons.length <= TAB_INDEX_RESPONSE_HEADERS) {
+            return;
+        }
+        JButton headersBtn = tabButtons[TAB_INDEX_RESPONSE_HEADERS];
+        if (count > 0) {
+            String countText = " (" + count + ")";
+            String countHtml = I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS) +
+                    "<span style='color:#009900;font-weight:bold;'>" + countText + "</span>";
+            headersBtn.setText("<html>" + countHtml + "</html>");
+            return;
+        }
+        headersBtn.setText(I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS));
     }
 
     /**
@@ -682,7 +677,12 @@ public class ResponsePanel extends JPanel {
      * 显示加载遮罩
      */
     public void showLoadingOverlay() {
-        if (loadingOverlay != null) {
+        if (loadingOverlay == null) {
+            return;
+        }
+        if (SwingUtilities.isEventDispatchThread()) {
+            loadingOverlay.showLoading();
+        } else {
             SwingUtilities.invokeLater(loadingOverlay::showLoading);
         }
     }
@@ -691,7 +691,14 @@ public class ResponsePanel extends JPanel {
      * 隐藏加载遮罩
      */
     public void hideLoadingOverlay() {
-        if (loadingOverlay != null) {
+        if (loadingOverlay == null) {
+            return;
+        }
+        if (SwingUtilities.isEventDispatchThread()) {
+            // 请求完成后的 UI 刷新本来就在 EDT 上。
+            // 这里必须立即隐藏，否则会被排到大响应渲染之后，看起来像“转圈卡住不转”。
+            loadingOverlay.hideLoading();
+        } else {
             SwingUtilities.invokeLater(loadingOverlay::hideLoading);
         }
     }

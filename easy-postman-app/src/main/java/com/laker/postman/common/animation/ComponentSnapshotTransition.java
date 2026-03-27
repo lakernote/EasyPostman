@@ -128,6 +128,8 @@ public final class ComponentSnapshotTransition {
             Rectangle safeBounds = bounds != null ? bounds : new Rectangle();
             setBounds(safeBounds);
             setOpaque(false);
+            setFocusable(false);
+            setEnabled(false);
         }
 
         @Override
@@ -142,6 +144,13 @@ public final class ComponentSnapshotTransition {
             } finally {
                 g2.dispose();
             }
+        }
+
+        @Override
+        public boolean contains(int x, int y) {
+            // 组件级过渡层同样只负责绘制，不能参与鼠标命中。
+            // 这样下面真实编辑器里的 JSplitPane / Tab / 输入框交互才不会被挡住。
+            return false;
         }
 
         private void advance() {

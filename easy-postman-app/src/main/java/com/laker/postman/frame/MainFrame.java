@@ -2,6 +2,7 @@ package com.laker.postman.frame;
 
 import com.formdev.flatlaf.util.SystemInfo;
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.animation.WindowSnapshotTransition;
 import com.laker.postman.common.component.placeholder.StartupShellPlaceholderPanel;
 import com.laker.postman.common.constants.Icons;
 import com.laker.postman.common.constants.ModernColors;
@@ -60,6 +61,7 @@ public class MainFrame extends JFrame {
 
     // 防抖计时器（final 避免重复赋值）
     private final transient Timer saveStateTimer;
+    private final transient WindowSnapshotTransition startupShellTransition;
     private transient JPanel startupShellPanel;
     private transient volatile boolean mainContentLoaded;
     private transient volatile boolean mainContentLoadRequested;
@@ -78,6 +80,7 @@ public class MainFrame extends JFrame {
         // 初始化防抖计时器（只创建一次，避免重复创建对象）
         saveStateTimer = new Timer(DEBOUNCE_DELAY, e -> saveWindowState());
         saveStateTimer.setRepeats(false);
+        startupShellTransition = new WindowSnapshotTransition(this);
 
         setName(I18nUtil.getMessage(MessageKeys.APP_NAME));
         setTitle(I18nUtil.getMessage(MessageKeys.APP_NAME));
@@ -216,13 +219,18 @@ public class MainFrame extends JFrame {
     }
 
     private void replaceContentWithStartupTransition(Container nextContentPane) {
-        // 这里保留统一替换入口，但不再叠加窗口级快照动画。
-        // 原因：窗口级 overlay 即使是透明层，也会影响底层组件的 hover 命中，
-        // 进而导致 JSplitPane 分割条拿不到默认的 resize cursor。
+        WindowSnapshotTransition.CapturedSnapshot capturedSnapshot = null;
+        Container currentContentPane = getContentPane();
+        if (currentContentPane instanceof JComponent contentComponent) {
+            // 这里只保留基于 layeredPane 的纯绘制快照过渡。
+            // 不再使用 glassPane 覆盖整窗，避免挡住底层分割条的 hover / resize cursor。
+            capturedSnapshot = startupShellTransition.captureSnapshot(contentComponent);
+        }
         setContentPane(nextContentPane);
         applyWindowBackground();
         revalidate();
         repaint();
+        startupShellTransition.start(capturedSnapshot);
     }
 
     public void whenMainContentLoaded(Runnable callback) {
@@ -420,6 +428,7 @@ public class MainFrame extends JFrame {
         if (saveStateTimer != null && saveStateTimer.isRunning()) {
             saveStateTimer.stop();
         }
+        startupShellTransition.stop();
 
         // 清理性能测试面板资源（停止定时器等）
         try {

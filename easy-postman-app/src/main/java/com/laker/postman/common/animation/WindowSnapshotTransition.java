@@ -6,8 +6,8 @@ import java.awt.image.BufferedImage;
 
 /**
  * 窗口级快照淡出过渡。
- * 先对旧内容截图，再把截图盖在新内容之上，通过 glass pane 做短暂淡出。
- * 适用于启动壳切换、局部大面板替换等“旧画面 -> 新画面”的平滑过渡。
+ * 先对旧内容截图，再把截图挂到 layeredPane 上做短暂淡出。
+ * 这里刻意不用 glassPane，避免覆盖层参与鼠标命中，影响底层组件的 hover / cursor / drag。
  */
 public final class WindowSnapshotTransition {
 
@@ -17,7 +17,7 @@ public final class WindowSnapshotTransition {
 
     private final RootPaneContainer container;
     private Timer timer;
-    private Component previousGlassPane;
+    private SnapshotOverlay overlay;
 
     public WindowSnapshotTransition(RootPaneContainer container) {
         this.container = container;
@@ -46,21 +46,29 @@ public final class WindowSnapshotTransition {
         if (container == null || capturedSnapshot == null || capturedSnapshot.image == null || durationMs <= 0) {
             return;
         }
+        JLayeredPane layeredPane = container.getLayeredPane();
+        if (layeredPane == null) {
+            return;
+        }
         stop();
 
-        previousGlassPane = container.getGlassPane();
-        SnapshotGlassPane transitionPane = new SnapshotGlassPane(capturedSnapshot.origin, capturedSnapshot.image, durationMs,
+        overlay = new SnapshotOverlay(capturedSnapshot.image, capturedSnapshot.bounds, durationMs,
                 easing == null ? DEFAULT_EASING : easing);
-        container.setGlassPane(transitionPane);
-        transitionPane.setVisible(true);
+        layeredPane.add(overlay, Integer.valueOf(JLayeredPane.DRAG_LAYER + 1));
+        overlay.setVisible(true);
+        overlay.repaint();
 
         timer = new Timer(DEFAULT_FRAME_DELAY_MS, e -> {
-            transitionPane.advance();
-            if (transitionPane.isFinished()) {
+            if (overlay == null) {
                 stop();
                 return;
             }
-            transitionPane.repaint();
+            overlay.advance();
+            if (overlay.isFinished()) {
+                stop();
+                return;
+            }
+            overlay.repaint();
         });
         timer.start();
     }
@@ -70,10 +78,13 @@ public final class WindowSnapshotTransition {
             timer.stop();
         }
         timer = null;
-        if (container != null && previousGlassPane != null) {
-            previousGlassPane.setVisible(false);
-            container.setGlassPane(previousGlassPane);
-            previousGlassPane = null;
+        if (overlay != null) {
+            Container parent = overlay.getParent();
+            if (parent != null) {
+                parent.remove(overlay);
+                parent.repaint(overlay.getX(), overlay.getY(), overlay.getWidth(), overlay.getHeight());
+            }
+            overlay = null;
         }
     }
 
@@ -86,6 +97,10 @@ public final class WindowSnapshotTransition {
     }
 
     private CapturedSnapshot capture(JComponent source) {
+        JLayeredPane layeredPane = container != null ? container.getLayeredPane() : null;
+        if (layeredPane == null) {
+            return null;
+        }
         int width = source.getWidth();
         int height = source.getHeight();
         if (width <= 0 || height <= 0) {
@@ -98,20 +113,19 @@ public final class WindowSnapshotTransition {
         } finally {
             g2.dispose();
         }
-        Point origin = resolveOrigin(source);
-        return new CapturedSnapshot(snapshot, origin);
+        Rectangle bounds = resolveBounds(source, layeredPane);
+        return new CapturedSnapshot(snapshot, bounds);
     }
 
-    private Point resolveOrigin(JComponent source) {
-        if (!(container instanceof Component containerComponent)) {
-            return new Point(0, 0);
+    private Rectangle resolveBounds(JComponent source, JLayeredPane layeredPane) {
+        Container parent = source.getParent();
+        if (parent == null) {
+            return new Rectangle(0, 0, source.getWidth(), source.getHeight());
         }
         try {
-            Point containerOnScreen = containerComponent.getLocationOnScreen();
-            Point sourceOnScreen = source.getLocationOnScreen();
-            return new Point(sourceOnScreen.x - containerOnScreen.x, sourceOnScreen.y - containerOnScreen.y);
+            return SwingUtilities.convertRectangle(parent, source.getBounds(), layeredPane);
         } catch (IllegalComponentStateException ex) {
-            return new Point(0, 0);
+            return new Rectangle(0, 0, source.getWidth(), source.getHeight());
         }
     }
 
@@ -123,29 +137,31 @@ public final class WindowSnapshotTransition {
 
     public static final class CapturedSnapshot {
         private final BufferedImage image;
-        private final Point origin;
+        private final Rectangle bounds;
 
-        private CapturedSnapshot(BufferedImage image, Point origin) {
+        private CapturedSnapshot(BufferedImage image, Rectangle bounds) {
             this.image = image;
-            this.origin = origin != null ? origin : new Point(0, 0);
+            this.bounds = bounds != null ? new Rectangle(bounds) : new Rectangle();
         }
     }
 
-    private static final class SnapshotGlassPane extends JComponent {
-        private final Point origin;
+    private static final class SnapshotOverlay extends JComponent {
         private final BufferedImage snapshot;
         private final Easing easing;
         private final long startNanos;
         private final long durationNanos;
         private float alpha = 1f;
 
-        private SnapshotGlassPane(Point origin, BufferedImage snapshot, int durationMs, Easing easing) {
-            this.origin = origin != null ? origin : new Point(0, 0);
+        private SnapshotOverlay(BufferedImage snapshot, Rectangle bounds, int durationMs, Easing easing) {
             this.snapshot = snapshot;
             this.easing = easing;
             this.durationNanos = durationMs * 1_000_000L;
             this.startNanos = System.nanoTime();
+            Rectangle safeBounds = bounds != null ? bounds : new Rectangle();
+            setBounds(safeBounds);
             setOpaque(false);
+            setFocusable(false);
+            setEnabled(false);
         }
 
         @Override
@@ -156,10 +172,17 @@ public final class WindowSnapshotTransition {
             Graphics2D g2 = (Graphics2D) g.create();
             try {
                 g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
-                g2.drawImage(snapshot, origin.x, origin.y, null);
+                g2.drawImage(snapshot, 0, 0, null);
             } finally {
                 g2.dispose();
             }
+        }
+
+        @Override
+        public boolean contains(int x, int y) {
+            // 过渡层只负责“画旧图”，不允许成为鼠标命中目标。
+            // 否则底层 JSplitPane、Tab 拖拽等交互会拿不到正常的 hover / cursor 事件。
+            return false;
         }
 
         private void advance() {

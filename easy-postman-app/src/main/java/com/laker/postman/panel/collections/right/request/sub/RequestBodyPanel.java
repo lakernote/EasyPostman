@@ -6,7 +6,6 @@ import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.button.*;
 import com.laker.postman.common.component.table.FormDataTablePanel;
 import com.laker.postman.common.component.table.FormUrlencodedTablePanel;
-import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.VariableInfo;
 import com.laker.postman.model.VariableSegment;
@@ -23,8 +22,6 @@ import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.MouseInputAdapter;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.DefaultHighlighter;
 import javax.swing.undo.CannotRedoException;
 import javax.swing.undo.CannotUndoException;
 import javax.swing.undo.UndoManager;
@@ -90,13 +87,7 @@ public class RequestBodyPanel extends JPanel {
      * 暗模式：淡紫色 - 与JSON语法的绿色(105,134,90)形成补色对比
      */
     private static Color getDefinedVariableHighlightColor() {
-        if (ModernColors.isDarkTheme()) {
-            // 暗色主题：淡紫色背景，与JSON绿色文字形成补色对比
-            return new Color(130, 100, 180, 80);
-        } else {
-            // 亮色主题：浅青色背景，与JSON深红色文字形成冷暖对比
-            return new Color(180, 235, 235, 100);
-        }
+        return new Color(180, 210, 255, 220);
     }
 
     /**
@@ -105,13 +96,15 @@ public class RequestBodyPanel extends JPanel {
      * 暗模式：浅粉色 - 警告效果，与JSON语法的绿色(105,134,90)有明显区分
      */
     private static Color getUndefinedVariableHighlightColor() {
-        if (ModernColors.isDarkTheme()) {
-            // 暗色主题：浅粉色背景，警告效果柔和
-            return new Color(200, 120, 150, 85);
-        } else {
-            // 亮色主题：浅黄色背景，温和的警告提示
-            return new Color(255, 250, 205, 120);
-        }
+        return new Color(255, 200, 200, 220);
+    }
+
+    private static Color getDefinedVariableBorderColor() {
+        return new Color(80, 150, 255);
+    }
+
+    private static Color getUndefinedVariableBorderColor() {
+        return new Color(255, 100, 100);
     }
 
     public RequestBodyPanel(RequestItemProtocolEnum protocol) {
@@ -257,7 +250,7 @@ public class RequestBodyPanel extends JPanel {
 
     private JPanel createRawPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        bodyArea = new RSyntaxTextArea(5, 20);
+        bodyArea = new VariableAwareSyntaxTextArea();
         bodyArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON_WITH_COMMENTS); // 默认JSON高亮
         bodyArea.setCodeFoldingEnabled(true); // 启用代码折叠
         bodyArea.setLineWrap(false); // 禁用自动换行以提升大文本性能
@@ -306,48 +299,26 @@ public class RequestBodyPanel extends JPanel {
         panel.add(searchableTextArea, BorderLayout.CENTER);
 
         // ====== 变量高亮和悬浮提示 ======
-        // 变量高亮 - 使用主题自适应颜色
-        DefaultHighlighter highlighter = (DefaultHighlighter) bodyArea.getHighlighter();
-        DefaultHighlighter.DefaultHighlightPainter definedPainter = new DefaultHighlighter.DefaultHighlightPainter(getDefinedVariableHighlightColor());
-        DefaultHighlighter.DefaultHighlightPainter undefinedPainter = new DefaultHighlighter.DefaultHighlightPainter(getUndefinedVariableHighlightColor());
         bodyArea.getDocument().addDocumentListener(new DocumentListener() {
-            void updateHighlights() {
-                highlighter.removeAllHighlights();
-                String text = bodyArea.getText();
-                java.util.List<VariableSegment> segments = VariableParser.getVariableSegments(text);
-                for (VariableSegment seg : segments) {
-                    boolean isDefined = VariableResolver.isVariableDefined(seg.name);
-                    try {
-                        highlighter.addHighlight(seg.start, seg.end, isDefined ? definedPainter : undefinedPainter);
-                    } catch (BadLocationException ignored) {
-                    }
+            void repaintBadges() {
+                if (bodyArea != null) {
+                    bodyArea.repaint();
                 }
             }
 
             public void insertUpdate(DocumentEvent e) {
-                updateHighlights();
+                repaintBadges();
             }
 
             public void removeUpdate(DocumentEvent e) {
-                updateHighlights();
+                repaintBadges();
             }
 
             public void changedUpdate(DocumentEvent e) {
-                updateHighlights();
+                repaintBadges();
             }
         });
-        // 初始化高亮
-        SwingUtilities.invokeLater(() -> {
-            String text = bodyArea.getText();
-            java.util.List<VariableSegment> segments = VariableParser.getVariableSegments(text);
-            for (VariableSegment seg : segments) {
-                boolean isDefined = VariableResolver.isVariableDefined(seg.name);
-                try {
-                    highlighter.addHighlight(seg.start, seg.end, isDefined ? definedPainter : undefinedPainter);
-                } catch (BadLocationException ignored) {
-                }
-            }
-        });
+        SwingUtilities.invokeLater(bodyArea::repaint);
         // 悬浮提示
         bodyArea.addMouseMotionListener(new MouseInputAdapter() {
             @Override
@@ -398,6 +369,71 @@ public class RequestBodyPanel extends JPanel {
             });
         }
         return panel;
+    }
+
+    private class VariableAwareSyntaxTextArea extends RSyntaxTextArea {
+
+        private VariableAwareSyntaxTextArea() {
+            super(5, 20);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+
+            String text = getText();
+            java.util.List<VariableSegment> segments = VariableParser.getVariableSegments(text);
+            if (segments.isEmpty()) {
+                return;
+            }
+
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            try {
+                FontMetrics fm = getFontMetrics(getFont());
+                for (VariableSegment seg : segments) {
+                    paintVariableBadge(g2, fm, text, seg);
+                }
+            } finally {
+                g2.dispose();
+            }
+        }
+
+        private void paintVariableBadge(Graphics2D g2, FontMetrics fm, String text, VariableSegment seg) {
+            try {
+                Rectangle startRect = modelToView2D(seg.start).getBounds();
+                Rectangle endRect = modelToView2D(Math.max(seg.start, seg.end - 1)).getBounds();
+                if (startRect == null || endRect == null) {
+                    return;
+                }
+                if (startRect.y != endRect.y) {
+                    return;
+                }
+
+                boolean isDefined = VariableResolver.isVariableDefined(seg.name);
+                Color fillColor = isDefined ? getDefinedVariableHighlightColor() : getUndefinedVariableHighlightColor();
+                Color borderColor = isDefined ? getDefinedVariableBorderColor() : getUndefinedVariableBorderColor();
+                String varText = text.substring(seg.start, seg.end);
+                int width = Math.max(10, fm.stringWidth(varText) + 4);
+                int x = startRect.x - 2;
+                int y = startRect.y + 1;
+                int height = Math.max(14, startRect.height - 2);
+
+                g2.setColor(fillColor);
+                g2.fillRoundRect(x, y, width, height, 10, 10);
+
+                Stroke oldStroke = g2.getStroke();
+                g2.setColor(borderColor);
+                g2.setStroke(new BasicStroke(1.5f));
+                g2.drawRoundRect(x, y, width, height, 10, 10);
+                g2.setStroke(oldStroke);
+
+                g2.setColor(getForeground());
+                g2.drawString(varText, startRect.x, startRect.y + fm.getAscent());
+            } catch (Exception ex) {
+                log.debug("paintVariableBadge failed", ex);
+            }
+        }
     }
 
     // WebSocket发送并根据checkbox清空输入

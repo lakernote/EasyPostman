@@ -1,7 +1,6 @@
 package com.laker.postman.panel.collections.right.request;
 
 import com.laker.postman.common.SingletonFactory;
-import com.laker.postman.common.animation.ComponentSnapshotTransition;
 import com.laker.postman.common.component.MarkdownEditorPanel;
 import com.laker.postman.common.component.placeholder.RequestEditorPlaceholderPanel;
 import com.laker.postman.common.component.tab.IndicatorTabComponent;
@@ -53,7 +52,6 @@ public class RequestEditSubPanel extends JPanel {
     private HttpRequestItem pendingRequestItem;
     private HttpRequestItem pendingOriginalRequestItem;
     private Boolean pendingLayoutVertical;
-    private final transient ComponentSnapshotTransition deferredEditorTransition = new ComponentSnapshotTransition(this);
 
     // 面板类型
     @Getter
@@ -193,15 +191,17 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     public void ensureEditorInitialized(boolean animatePlaceholderTransition) {
+        // 保留这个重载是为了兼容现有调用方。
+        // 但这里不再启用占位快照过渡，否则透明 overlay 会影响真实组件的 hover 命中。
         if (editorInitialized) {
             return;
         }
         if (SwingUtilities.isEventDispatchThread()) {
-            initializeEditorUiIfNeeded(animatePlaceholderTransition);
+            initializeEditorUiIfNeeded();
             return;
         }
         try {
-            SwingUtilities.invokeAndWait(() -> initializeEditorUiIfNeeded(animatePlaceholderTransition));
+            SwingUtilities.invokeAndWait(this::initializeEditorUiIfNeeded);
         } catch (Exception e) {
             throw new IllegalStateException("Failed to initialize RequestEditSubPanel on EDT", e);
         }
@@ -222,17 +222,10 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     private void initializeEditorUiIfNeeded() {
-        initializeEditorUiIfNeeded(false);
-    }
-
-    private void initializeEditorUiIfNeeded(boolean animatePlaceholderTransition) {
         if (editorInitialized) {
             return;
         }
         long initStartNanos = System.nanoTime();
-        ComponentSnapshotTransition.CapturedSnapshot placeholderSnapshot = animatePlaceholderTransition
-                ? captureDeferredPlaceholderSnapshot()
-                : null;
         removeAll();
         // 先集中创建视图组件，再把交互逻辑按职责注入 helper，构造阶段就能看清依赖方向。
         RequestViewComponents components = RequestViewFactory.create(protocol, panelType, this::sendRequest);
@@ -441,7 +434,6 @@ public class RequestEditSubPanel extends JPanel {
         }
         revalidate();
         repaint();
-        startDeferredPlaceholderTransition(placeholderSnapshot);
         if (deferEditorInitialization) {
             StartupDiagnostics.mark("Initialized deferred editor tab '" + (name != null ? name : id)
                     + "' in " + StartupDiagnostics.formatSince(initStartNanos));
@@ -488,25 +480,7 @@ public class RequestEditSubPanel extends JPanel {
         if (!deferEditorInitialization || editorInitialized) {
             return;
         }
-        ensureEditorInitialized(false);
-    }
-
-    private ComponentSnapshotTransition.CapturedSnapshot captureDeferredPlaceholderSnapshot() {
-        if (!deferEditorInitialization || editorInitialized) {
-            return null;
-        }
-        Component currentContent = getComponentCount() > 0 ? getComponent(0) : null;
-        if (!(currentContent instanceof JComponent placeholder) || !placeholder.isShowing()) {
-            return null;
-        }
-        return deferredEditorTransition.captureSnapshot(placeholder);
-    }
-
-    private void startDeferredPlaceholderTransition(ComponentSnapshotTransition.CapturedSnapshot placeholderSnapshot) {
-        if (placeholderSnapshot == null) {
-            return;
-        }
-        deferredEditorTransition.start(placeholderSnapshot);
+        ensureEditorInitialized();
     }
 
     /**

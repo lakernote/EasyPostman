@@ -50,6 +50,7 @@ public class ShortcutSettingsPanel extends JPanel {
         tableModel = new ShortcutTableModel();
         shortcutTable = new JTable(tableModel);
         shortcutTable.setRowHeight(32);
+        shortcutTable.setFocusable(false);
         shortcutTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
         // 设置列宽（只有2列）

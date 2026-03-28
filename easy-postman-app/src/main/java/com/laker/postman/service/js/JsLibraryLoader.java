@@ -5,15 +5,27 @@ import lombok.extern.slf4j.Slf4j;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.proxy.ProxyExecutable;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+import com.laker.postman.model.Workspace;
+import com.laker.postman.service.WorkspaceService;
+import com.laker.postman.service.setting.SettingManager;
+import com.laker.postman.util.SystemUtil;
 
 /**
  * JS 外部库加载器
@@ -67,12 +79,17 @@ public class JsLibraryLoader {
     /**
      * 内置库缓存 - 避免重复加载
      */
-    private static final Map<String, String> LIBRARY_CACHE = new HashMap<>();
+    private static final Map<String, String> BUILTIN_LIBRARY_CACHE = new ConcurrentHashMap<>();
 
     /**
-     * 内置库映射表 - 库名 -> 资源路径
+     * 内置库别名 -> 规范名称
      */
-    private static final Map<String, String> BUILTIN_LIBRARIES = new HashMap<>();
+    private static final Map<String, String> BUILTIN_LIBRARY_IDS = new HashMap<>();
+
+    /**
+     * 内置库映射表 - 规范名称 -> 资源路径
+     */
+    private static final Map<String, String> BUILTIN_LIBRARY_PATHS = new HashMap<>();
 
     /**
      * 库路径常量 - 统一存放在 js-libs 目录
@@ -84,20 +101,16 @@ public class JsLibraryLoader {
 
     static {
         // 注册内置库 - CryptoJS
-        BUILTIN_LIBRARIES.put("crypto-js", CRYPTO_JS_PATH);
-        BUILTIN_LIBRARIES.put("cryptojs", CRYPTO_JS_PATH);
-        BUILTIN_LIBRARIES.put("CryptoJS", CRYPTO_JS_PATH);
+        registerBuiltInLibrary("crypto-js", CRYPTO_JS_PATH, "crypto-js", "cryptojs", "CryptoJS");
 
         // 注册内置库 - Lodash
-        BUILTIN_LIBRARIES.put("lodash", LODASH_PATH);
-        BUILTIN_LIBRARIES.put("_", LODASH_PATH);
+        registerBuiltInLibrary("lodash", LODASH_PATH, "lodash", "_");
 
         // 注册内置库 - Moment
-        BUILTIN_LIBRARIES.put("moment", MOMENT_PATH);
-        BUILTIN_LIBRARIES.put("Moment", MOMENT_PATH);
+        registerBuiltInLibrary("moment", MOMENT_PATH, "moment", "Moment");
 
 
-        log.debug("Registered {} built-in JavaScript libraries", BUILTIN_LIBRARIES.size());
+        log.debug("Registered {} built-in JavaScript libraries", BUILTIN_LIBRARY_PATHS.size());
     }
 
     /**
@@ -179,47 +192,57 @@ public class JsLibraryLoader {
     public static void injectRequireFunction(Context context) {
         // 创建 require() 函数的实现
         String requireFunction = """
-                var require = (function() {
-                    var cache = {};
-                \s\s\s\s
-                    return function(moduleName) {
-                        // 检查缓存
-                        if (cache[moduleName]) {
-                            return cache[moduleName];
-                        }
-                \s\s\s\s
-                        // 调用 Java 端加载库
-                        var moduleCode = __loadLibrary(moduleName);
-                        if (!moduleCode) {
-                            throw new Error('Cannot find module: ' + moduleName);
-                        }
-                \s\s\s\s
-                        // 创建模块作用域
-                        var module = { exports: {} };
-                        var exports = module.exports;
-                \s\s\s\s
-                        // 执行模块代码
-                        try {
-                            eval(moduleCode);
-                        } catch (e) {
-                            throw new Error('Failed to load module ' + moduleName + ': ' + e.message);
-                        }
-                \s\s\s\s
-                        // 缓存模块
-                        cache[moduleName] = module.exports;
-                        return module.exports;
+                globalThis.__epRequireCache = Object.create(null);
+
+                globalThis.__easyPostmanRequire = function(moduleName, parentModuleId) {
+                    var loadedModule;
+                    try {
+                        loadedModule = __loadLibrary(moduleName, parentModuleId || '');
+                    } catch (e) {
+                        throw new Error(e.message || ('Cannot find module: ' + moduleName));
+                    }
+                    if (!loadedModule || !loadedModule.id || !loadedModule.code) {
+                        throw new Error('Cannot find module: ' + moduleName);
+                    }
+
+                    var resolvedId = loadedModule.id;
+                    if (Object.prototype.hasOwnProperty.call(globalThis.__epRequireCache, resolvedId)) {
+                        return globalThis.__epRequireCache[resolvedId];
+                    }
+
+                    var module = { exports: {}, id: resolvedId };
+                    globalThis.__epRequireCache[resolvedId] = module.exports;
+                    var localRequire = function(childModuleName) {
+                        return globalThis.__easyPostmanRequire(childModuleName, resolvedId);
                     };
-                })();
+
+                    try {
+                        var moduleFactory = new Function('module', 'exports', 'require', loadedModule.code);
+                        moduleFactory(module, module.exports, localRequire);
+                    } catch (e) {
+                        delete globalThis.__epRequireCache[resolvedId];
+                        throw new Error('Failed to load module ' + moduleName + ': ' + e.message);
+                    }
+
+                    globalThis.__epRequireCache[resolvedId] = module.exports;
+                    return module.exports;
+                };
+
+                globalThis.require = function(moduleName) {
+                    return globalThis.__easyPostmanRequire(moduleName, '');
+                };
                 """;
 
         // 注入 __loadLibrary 辅助函数（Java 端实现）
         ProxyExecutable loadLibraryFunc = args -> {
+            String moduleName = args[0].asString();
+            String parentModuleId = args.length > 1 ? args[1].asString() : null;
             try {
-                String moduleName = args[0].asString();
-                return loadLibrary(moduleName);
+                LoadedLibrary library = loadLibrary(moduleName, parentModuleId);
+                return library.toJsObject();
             } catch (Exception e) {
-                log.error("Failed to load library: {}", args[0].asString(), e);
-                return null;
+                log.debug("Failed to load library {}: {}", moduleName, e.getMessage());
+                throw new IllegalStateException(e.getMessage(), e);
             }
         };
         context.getBindings("js").putMember("__loadLibrary", loadLibraryFunc);
@@ -233,32 +256,22 @@ public class JsLibraryLoader {
      * 加载 JS 库（内置或外部）
      *
      * @param moduleName 库名、文件路径或 URL
-     * @return 库的 JavaScript 代码
+     * @param parentModuleId 父模块标识，用于解析相对路径
+     * @return 库的 JavaScript 代码与规范 ID
      */
-    private static String loadLibrary(String moduleName) throws IOException {
-        // 1. 检查是否是内置库
-        if (BUILTIN_LIBRARIES.containsKey(moduleName)) {
-            return loadBuiltinLibrary(moduleName);
+    private static LoadedLibrary loadLibrary(String moduleName, String parentModuleId) throws IOException {
+        String builtInId = resolveBuiltinLibraryId(moduleName);
+        if (builtInId != null) {
+            return new LoadedLibrary("builtin:" + builtInId, loadBuiltinLibrary(builtInId));
         }
 
-        // 2. 检查是否是 URL
-        if (moduleName.startsWith("http://") || moduleName.startsWith("https://")) {
-            return loadFromUrl(moduleName);
+        if (isRemoteModule(moduleName, parentModuleId)) {
+            String normalizedUrl = resolveRemoteUrl(moduleName, parentModuleId);
+            return loadFromUrl(normalizedUrl);
         }
 
-        // 3. 检查是否是文件路径
-        if (moduleName.startsWith("/") || moduleName.startsWith("./") || moduleName.startsWith("../")) {
-            return loadFromFile(moduleName);
-        }
-
-        // 4. 尝试作为内置库（忽略大小写）
-        for (String libName : BUILTIN_LIBRARIES.keySet()) {
-            if (libName.equalsIgnoreCase(moduleName)) {
-                return loadBuiltinLibrary(libName);
-            }
-        }
-
-        throw new IOException("Cannot find module: " + moduleName);
+        Path filePath = resolveFilePath(moduleName, parentModuleId);
+        return loadFromFile(filePath);
     }
 
     /**
@@ -269,11 +282,12 @@ public class JsLibraryLoader {
      */
     private static String loadBuiltinLibrary(String libraryName) throws IOException {
         // 检查缓存
-        if (LIBRARY_CACHE.containsKey(libraryName)) {
-            return LIBRARY_CACHE.get(libraryName);
+        String cached = BUILTIN_LIBRARY_CACHE.get(libraryName);
+        if (cached != null) {
+            return cached;
         }
 
-        String resourcePath = BUILTIN_LIBRARIES.get(libraryName);
+        String resourcePath = BUILTIN_LIBRARY_PATHS.get(libraryName);
         if (resourcePath == null) {
             throw new IOException("Unknown built-in library: " + libraryName);
         }
@@ -284,7 +298,7 @@ public class JsLibraryLoader {
                 throw new IOException("Built-in library not found: " + resourcePath);
             }
             String code = new String(is.readAllBytes(), StandardCharsets.UTF_8);
-            LIBRARY_CACHE.put(libraryName, code);
+            BUILTIN_LIBRARY_CACHE.put(libraryName, code);
             log.debug("Loaded built-in library from resources: {}", resourcePath);
             return code;
         }
@@ -296,14 +310,14 @@ public class JsLibraryLoader {
      * @param filePath 文件路径
      * @return 文件内容
      */
-    private static String loadFromFile(String filePath) throws IOException {
-        Path path = Paths.get(filePath);
+    private static LoadedLibrary loadFromFile(Path path) throws IOException {
         if (!Files.exists(path)) {
-            throw new IOException("File not found: " + filePath);
+            throw new IOException("File not found: " + path);
         }
         String code = Files.readString(path, StandardCharsets.UTF_8);
-        log.debug("Loaded library from file: {}", filePath);
-        return code;
+        String normalizedPath = path.toAbsolutePath().normalize().toString();
+        log.debug("Loaded library from file: {}", normalizedPath);
+        return new LoadedLibrary(normalizedPath, code);
     }
 
     /**
@@ -312,18 +326,16 @@ public class JsLibraryLoader {
      * @param urlString URL 地址
      * @return URL 内容
      */
-    private static String loadFromUrl(String urlString) throws IOException {
-        // 检查缓存
-        if (LIBRARY_CACHE.containsKey(urlString)) {
-            return LIBRARY_CACHE.get(urlString);
-        }
-
+    private static LoadedLibrary loadFromUrl(String urlString) throws IOException {
+        validateRemoteUrl(urlString);
         URL url = new URL(urlString);
-        try (InputStream is = url.openStream()) {
-            String code = new String(is.readAllBytes(), StandardCharsets.UTF_8);
-            LIBRARY_CACHE.put(urlString, code);
+        URLConnection connection = url.openConnection();
+        connection.setConnectTimeout(SettingManager.getRemoteJsRequireConnectTimeoutMs());
+        connection.setReadTimeout(SettingManager.getRemoteJsRequireReadTimeoutMs());
+        try (InputStream is = connection.getInputStream()) {
+            String code = readUtf8WithLimit(is, SettingManager.getRemoteJsRequireMaxBytes());
             log.debug("Loaded library from URL: {}", urlString);
-            return code;
+            return new LoadedLibrary(url.toExternalForm(), code);
         }
     }
 
@@ -331,7 +343,7 @@ public class JsLibraryLoader {
      * 清空库缓存（测试用）
      */
     public static void clearCache() {
-        LIBRARY_CACHE.clear();
+        BUILTIN_LIBRARY_CACHE.clear();
         log.debug("Library cache cleared");
     }
 
@@ -341,7 +353,145 @@ public class JsLibraryLoader {
      * @return 内置库名称列表
      */
     public static String[] getBuiltinLibraries() {
-        return BUILTIN_LIBRARIES.keySet().toArray(new String[0]);
+        return BUILTIN_LIBRARY_PATHS.keySet().toArray(new String[0]);
+    }
+
+    private static void registerBuiltInLibrary(String canonicalId, String resourcePath, String... aliases) {
+        BUILTIN_LIBRARY_PATHS.put(canonicalId, resourcePath);
+        Arrays.stream(aliases).forEach(alias -> BUILTIN_LIBRARY_IDS.put(alias, canonicalId));
+    }
+
+    private static String resolveBuiltinLibraryId(String moduleName) {
+        String direct = BUILTIN_LIBRARY_IDS.get(moduleName);
+        if (direct != null) {
+            return direct;
+        }
+        for (Map.Entry<String, String> entry : BUILTIN_LIBRARY_IDS.entrySet()) {
+            if (entry.getKey().equalsIgnoreCase(moduleName)) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+
+    private static boolean isRemoteModule(String moduleName, String parentModuleId) {
+        return moduleName.startsWith("http://")
+                || moduleName.startsWith("https://")
+                || (isRemoteModuleId(parentModuleId) && isRelativePath(moduleName));
+    }
+
+    private static boolean isRemoteModuleId(String moduleId) {
+        return moduleId != null && (moduleId.startsWith("http://") || moduleId.startsWith("https://"));
+    }
+
+    private static boolean isRelativePath(String moduleName) {
+        return moduleName.startsWith("./") || moduleName.startsWith("../");
+    }
+
+    private static String resolveRemoteUrl(String moduleName, String parentModuleId) throws IOException {
+        if (moduleName.startsWith("http://") || moduleName.startsWith("https://")) {
+            return new URL(moduleName).toExternalForm();
+        }
+        if (!isRemoteModuleId(parentModuleId)) {
+            throw new IOException("Cannot resolve remote module: " + moduleName);
+        }
+        return new URL(new URL(parentModuleId), moduleName).toExternalForm();
+    }
+
+    private static Path resolveFilePath(String moduleName, String parentModuleId) throws IOException {
+        if (moduleName.startsWith("/")) {
+            return Paths.get(moduleName).toAbsolutePath().normalize();
+        }
+
+        if (!isRelativePath(moduleName)) {
+            throw new IOException("Cannot find module: " + moduleName);
+        }
+
+        Path baseDirectory = resolveBaseDirectory(parentModuleId);
+        return baseDirectory.resolve(moduleName).normalize().toAbsolutePath();
+    }
+
+    private static Path resolveBaseDirectory(String parentModuleId) {
+        if (parentModuleId != null && !parentModuleId.isBlank() && !isRemoteModuleId(parentModuleId)
+                && !parentModuleId.startsWith("builtin:")) {
+            Path parentPath = Paths.get(parentModuleId);
+            Path parentDirectory = Files.isDirectory(parentPath) ? parentPath : parentPath.getParent();
+            if (parentDirectory != null) {
+                return parentDirectory;
+            }
+        }
+
+        try {
+            Workspace currentWorkspace = WorkspaceService.getInstance().getCurrentWorkspace();
+            if (currentWorkspace != null && currentWorkspace.getPath() != null && !currentWorkspace.getPath().isBlank()) {
+                return Paths.get(currentWorkspace.getPath()).toAbsolutePath().normalize();
+            }
+        } catch (Exception e) {
+            log.debug("Falling back to default directory for local JS require(): {}", e.getMessage());
+        }
+
+        String userDir = System.getProperty("user.dir");
+        if (userDir != null && !userDir.isBlank()) {
+            return Paths.get(userDir).toAbsolutePath().normalize();
+        }
+
+        return Paths.get(SystemUtil.getEasyPostmanPath()).toAbsolutePath().normalize();
+    }
+
+    private static void validateRemoteUrl(String urlString) throws IOException {
+        if (!SettingManager.isRemoteJsRequireEnabled()) {
+            throw new IOException("Remote JavaScript require() is disabled. Enable it in Settings > Request > Script Loading.");
+        }
+
+        URL url = new URL(urlString);
+        String protocol = url.getProtocol().toLowerCase(Locale.ROOT);
+        boolean allowInsecureRemote = SettingManager.isInsecureRemoteJsRequireEnabled();
+        if (!"https".equals(protocol) && !(allowInsecureRemote && "http".equals(protocol))) {
+            throw new IOException("Only HTTPS remote modules are allowed by default: " + urlString);
+        }
+
+        Set<String> allowedHosts = getAllowedRemoteHosts();
+        if (!allowedHosts.isEmpty() && !allowedHosts.contains(url.getHost().toLowerCase(Locale.ROOT))) {
+            throw new IOException("Remote host is not in the allowlist: " + url.getHost());
+        }
+    }
+
+    private static Set<String> getAllowedRemoteHosts() {
+        String configuredHosts = SettingManager.getRemoteJsRequireAllowedHosts();
+        if (configuredHosts.isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        Set<String> hosts = ConcurrentHashMap.newKeySet();
+        Arrays.stream(configuredHosts.split(","))
+                .map(String::trim)
+                .filter(host -> !host.isEmpty())
+                .map(host -> host.toLowerCase(Locale.ROOT))
+                .forEach(hosts::add);
+        return hosts;
+    }
+
+    private static String readUtf8WithLimit(InputStream inputStream, int maxBytes) throws IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        byte[] buffer = new byte[8192];
+        int totalRead = 0;
+        int bytesRead;
+        while ((bytesRead = inputStream.read(buffer)) != -1) {
+            totalRead += bytesRead;
+            if (totalRead > maxBytes) {
+                throw new IOException("Remote JavaScript module exceeds max size: " + maxBytes + " bytes");
+            }
+            outputStream.write(buffer, 0, bytesRead);
+        }
+        return outputStream.toString(StandardCharsets.UTF_8);
+    }
+
+    private record LoadedLibrary(String id, String code) {
+        private Map<String, String> toJsObject() {
+            Map<String, String> result = new HashMap<>();
+            result.put("id", id);
+            result.put("code", code);
+            return result;
+        }
     }
 }
-

@@ -15,6 +15,7 @@ import java.awt.*;
 public class RequestSettingsPanelModern extends ModernSettingsPanel {
     private static final int FIELD_SPACING = 8;
     private static final int SECTION_SPACING = 12;
+    private static final int BYTES_PER_KB = 1024;
 
     private JTextField maxBodySizeField;
     private JTextField requestTimeoutField;
@@ -22,6 +23,12 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
     private JCheckBox followRedirectsCheckBox;
     private JCheckBox sslVerificationDisabledCheckBox;
     private JComboBox<String> defaultProtocolComboBox;
+    private JCheckBox remoteScriptRequireEnabledCheckBox;
+    private JCheckBox remoteScriptRequireAllowHttpCheckBox;
+    private JTextField remoteScriptAllowedHostsField;
+    private JTextField remoteScriptConnectTimeoutField;
+    private JTextField remoteScriptReadTimeoutField;
+    private JTextField remoteScriptMaxSizeField;
 
     @Override
     protected void buildContent(JPanel contentPanel) {
@@ -97,7 +104,71 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
         contentPanel.add(requestSection);
         contentPanel.add(createVerticalSpace(SECTION_SPACING));
 
+        JPanel scriptSection = createModernSection(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SCRIPT_TITLE),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SCRIPT_DESCRIPTION)
+        );
+
+        remoteScriptRequireEnabledCheckBox = new JCheckBox(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SCRIPT_REMOTE_REQUIRE_ENABLED),
+                SettingManager.isRemoteJsRequireEnabled()
+        );
+        scriptSection.add(createCheckBoxRow(
+                remoteScriptRequireEnabledCheckBox,
+                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SCRIPT_REMOTE_REQUIRE_ENABLED_TOOLTIP)
+        ));
+        scriptSection.add(createVerticalSpace(FIELD_SPACING));
+
+        remoteScriptRequireAllowHttpCheckBox = new JCheckBox(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SCRIPT_REMOTE_REQUIRE_ALLOW_HTTP),
+                SettingManager.isInsecureRemoteJsRequireEnabled()
+        );
+        scriptSection.add(createCheckBoxRow(
+                remoteScriptRequireAllowHttpCheckBox,
+                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SCRIPT_REMOTE_REQUIRE_ALLOW_HTTP_TOOLTIP)
+        ));
+        scriptSection.add(createVerticalSpace(FIELD_SPACING));
+
+        remoteScriptAllowedHostsField = new JTextField(10);
+        remoteScriptAllowedHostsField.setText(SettingManager.getRemoteJsRequireAllowedHosts());
+        scriptSection.add(createFieldRow(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SCRIPT_REMOTE_REQUIRE_ALLOWED_HOSTS),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SCRIPT_REMOTE_REQUIRE_ALLOWED_HOSTS_TOOLTIP),
+                remoteScriptAllowedHostsField
+        ));
+        scriptSection.add(createVerticalSpace(FIELD_SPACING));
+
+        remoteScriptConnectTimeoutField = new JTextField(10);
+        remoteScriptConnectTimeoutField.setText(String.valueOf(SettingManager.getRemoteJsRequireConnectTimeoutMs()));
+        scriptSection.add(createFieldRow(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SCRIPT_REMOTE_REQUIRE_CONNECT_TIMEOUT),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SCRIPT_REMOTE_REQUIRE_CONNECT_TIMEOUT_TOOLTIP),
+                remoteScriptConnectTimeoutField
+        ));
+        scriptSection.add(createVerticalSpace(FIELD_SPACING));
+
+        remoteScriptReadTimeoutField = new JTextField(10);
+        remoteScriptReadTimeoutField.setText(String.valueOf(SettingManager.getRemoteJsRequireReadTimeoutMs()));
+        scriptSection.add(createFieldRow(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SCRIPT_REMOTE_REQUIRE_READ_TIMEOUT),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SCRIPT_REMOTE_REQUIRE_READ_TIMEOUT_TOOLTIP),
+                remoteScriptReadTimeoutField
+        ));
+        scriptSection.add(createVerticalSpace(FIELD_SPACING));
+
+        remoteScriptMaxSizeField = new JTextField(10);
+        remoteScriptMaxSizeField.setText(String.valueOf(SettingManager.getRemoteJsRequireMaxBytes() / BYTES_PER_KB));
+        scriptSection.add(createFieldRow(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SCRIPT_REMOTE_REQUIRE_MAX_SIZE),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SCRIPT_REMOTE_REQUIRE_MAX_SIZE_TOOLTIP),
+                remoteScriptMaxSizeField
+        ));
+
+        contentPanel.add(scriptSection);
+        contentPanel.add(createVerticalSpace(SECTION_SPACING));
+
         setupValidators();
+        updateRemoteScriptControls();
 
         trackComponentValue(maxBodySizeField);
         trackComponentValue(requestTimeoutField);
@@ -105,6 +176,12 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
         trackComponentValue(followRedirectsCheckBox);
         trackComponentValue(sslVerificationDisabledCheckBox);
         trackComponentValue(defaultProtocolComboBox);
+        trackComponentValue(remoteScriptRequireEnabledCheckBox);
+        trackComponentValue(remoteScriptRequireAllowHttpCheckBox);
+        trackComponentValue(remoteScriptAllowedHostsField);
+        trackComponentValue(remoteScriptConnectTimeoutField);
+        trackComponentValue(remoteScriptReadTimeoutField);
+        trackComponentValue(remoteScriptMaxSizeField);
     }
 
     private void setupValidators() {
@@ -123,10 +200,26 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
                 this::isPositiveInteger,
                 I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_MAX_DOWNLOAD_SIZE_ERROR)
         );
+        setupValidator(
+                remoteScriptConnectTimeoutField,
+                value -> !remoteScriptRequireEnabledCheckBox.isSelected() || isStrictlyPositiveInteger(value),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_SCRIPT_REMOTE_CONNECT_TIMEOUT_ERROR)
+        );
+        setupValidator(
+                remoteScriptReadTimeoutField,
+                value -> !remoteScriptRequireEnabledCheckBox.isSelected() || isStrictlyPositiveInteger(value),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_SCRIPT_REMOTE_READ_TIMEOUT_ERROR)
+        );
+        setupValidator(
+                remoteScriptMaxSizeField,
+                value -> !remoteScriptRequireEnabledCheckBox.isSelected() || isStrictlyPositiveInteger(value),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_SCRIPT_REMOTE_MAX_SIZE_ERROR)
+        );
     }
 
     @Override
     protected void registerListeners() {
+        remoteScriptRequireEnabledCheckBox.addItemListener(e -> updateRemoteScriptControls());
         saveBtn.addActionListener(e -> saveSettings(true));
         applyBtn.addActionListener(e -> saveSettings(false));
         cancelBtn.addActionListener(e -> {
@@ -168,6 +261,12 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
             SettingManager.setFollowRedirects(followRedirectsCheckBox.isSelected());
             SettingManager.setRequestSslVerificationDisabled(sslVerificationDisabledCheckBox.isSelected());
             SettingManager.setDefaultProtocol((String) defaultProtocolComboBox.getSelectedItem());
+            SettingManager.setRemoteJsRequireEnabled(remoteScriptRequireEnabledCheckBox.isSelected());
+            SettingManager.setInsecureRemoteJsRequireEnabled(remoteScriptRequireAllowHttpCheckBox.isSelected());
+            SettingManager.setRemoteJsRequireAllowedHosts(remoteScriptAllowedHostsField.getText());
+            SettingManager.setRemoteJsRequireConnectTimeoutMs(Integer.parseInt(remoteScriptConnectTimeoutField.getText().trim()));
+            SettingManager.setRemoteJsRequireReadTimeoutMs(Integer.parseInt(remoteScriptReadTimeoutField.getText().trim()));
+            SettingManager.setRemoteJsRequireMaxBytes(Integer.parseInt(remoteScriptMaxSizeField.getText().trim()) * BYTES_PER_KB);
 
             OkHttpClientManager.clearClientCache();
 
@@ -178,6 +277,12 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
             trackComponentValue(followRedirectsCheckBox);
             trackComponentValue(sslVerificationDisabledCheckBox);
             trackComponentValue(defaultProtocolComboBox);
+            trackComponentValue(remoteScriptRequireEnabledCheckBox);
+            trackComponentValue(remoteScriptRequireAllowHttpCheckBox);
+            trackComponentValue(remoteScriptAllowedHostsField);
+            trackComponentValue(remoteScriptConnectTimeoutField);
+            trackComponentValue(remoteScriptReadTimeoutField);
+            trackComponentValue(remoteScriptMaxSizeField);
             setHasUnsavedChanges(false);
 
             NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS_MESSAGE));
@@ -191,5 +296,18 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
         } catch (Exception ex) {
             NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_ERROR_MESSAGE) + ": " + ex.getMessage());
         }
+    }
+
+    private void updateRemoteScriptControls() {
+        boolean remoteEnabled = remoteScriptRequireEnabledCheckBox.isSelected();
+        remoteScriptRequireAllowHttpCheckBox.setEnabled(remoteEnabled);
+        remoteScriptAllowedHostsField.setEnabled(remoteEnabled);
+        remoteScriptConnectTimeoutField.setEnabled(remoteEnabled);
+        remoteScriptReadTimeoutField.setEnabled(remoteEnabled);
+        remoteScriptMaxSizeField.setEnabled(remoteEnabled);
+    }
+
+    private boolean isStrictlyPositiveInteger(String value) {
+        return isInteger(value) && Integer.parseInt(value) > 0;
     }
 }

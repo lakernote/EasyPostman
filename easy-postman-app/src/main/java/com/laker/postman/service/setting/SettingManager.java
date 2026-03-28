@@ -23,6 +23,15 @@ import java.util.Set;
 @Slf4j
 public class SettingManager {
     private static final String CONFIG_FILE = ConfigPathConstants.EASY_POSTMAN_SETTINGS;
+    private static final String SCRIPT_REMOTE_REQUIRE_ENABLED = "script_remote_require_enabled";
+    private static final String SCRIPT_REMOTE_REQUIRE_ALLOW_HTTP = "script_remote_require_allow_http";
+    private static final String SCRIPT_REMOTE_REQUIRE_ALLOWED_HOSTS = "script_remote_require_allowed_hosts";
+    private static final String SCRIPT_REMOTE_REQUIRE_CONNECT_TIMEOUT_MS = "script_remote_require_connect_timeout_ms";
+    private static final String SCRIPT_REMOTE_REQUIRE_READ_TIMEOUT_MS = "script_remote_require_read_timeout_ms";
+    private static final String SCRIPT_REMOTE_REQUIRE_MAX_BYTES = "script_remote_require_max_bytes";
+    private static final int DEFAULT_SCRIPT_REMOTE_CONNECT_TIMEOUT_MS = 3000;
+    private static final int DEFAULT_SCRIPT_REMOTE_READ_TIMEOUT_MS = 5000;
+    private static final int DEFAULT_SCRIPT_REMOTE_MAX_BYTES = 512 * 1024;
     public static final String PROXY_MODE_MANUAL = "MANUAL";
     public static final String PROXY_MODE_SYSTEM = "SYSTEM";
     public static final String PROXY_TYPE_HTTP = "HTTP";
@@ -320,6 +329,69 @@ public class SettingManager {
             props.setProperty("default_protocol", protocol);
             save();
         }
+    }
+
+    public static boolean isRemoteJsRequireEnabled() {
+        String val = props.getProperty(SCRIPT_REMOTE_REQUIRE_ENABLED);
+        if (val != null) {
+            return Boolean.parseBoolean(val);
+        }
+        return false;
+    }
+
+    public static void setRemoteJsRequireEnabled(boolean enabled) {
+        props.setProperty(SCRIPT_REMOTE_REQUIRE_ENABLED, String.valueOf(enabled));
+        save();
+    }
+
+    public static boolean isInsecureRemoteJsRequireEnabled() {
+        String val = props.getProperty(SCRIPT_REMOTE_REQUIRE_ALLOW_HTTP);
+        if (val != null) {
+            return Boolean.parseBoolean(val);
+        }
+        return false;
+    }
+
+    public static void setInsecureRemoteJsRequireEnabled(boolean enabled) {
+        props.setProperty(SCRIPT_REMOTE_REQUIRE_ALLOW_HTTP, String.valueOf(enabled));
+        save();
+    }
+
+    public static String getRemoteJsRequireAllowedHosts() {
+        String val = props.getProperty(SCRIPT_REMOTE_REQUIRE_ALLOWED_HOSTS);
+        return val != null ? val.trim() : "";
+    }
+
+    public static void setRemoteJsRequireAllowedHosts(String hosts) {
+        props.setProperty(SCRIPT_REMOTE_REQUIRE_ALLOWED_HOSTS, hosts != null ? hosts.trim() : "");
+        save();
+    }
+
+    public static int getRemoteJsRequireConnectTimeoutMs() {
+        return getPositiveIntSetting(SCRIPT_REMOTE_REQUIRE_CONNECT_TIMEOUT_MS, DEFAULT_SCRIPT_REMOTE_CONNECT_TIMEOUT_MS);
+    }
+
+    public static void setRemoteJsRequireConnectTimeoutMs(int timeoutMs) {
+        props.setProperty(SCRIPT_REMOTE_REQUIRE_CONNECT_TIMEOUT_MS, String.valueOf(Math.max(1, timeoutMs)));
+        save();
+    }
+
+    public static int getRemoteJsRequireReadTimeoutMs() {
+        return getPositiveIntSetting(SCRIPT_REMOTE_REQUIRE_READ_TIMEOUT_MS, DEFAULT_SCRIPT_REMOTE_READ_TIMEOUT_MS);
+    }
+
+    public static void setRemoteJsRequireReadTimeoutMs(int timeoutMs) {
+        props.setProperty(SCRIPT_REMOTE_REQUIRE_READ_TIMEOUT_MS, String.valueOf(Math.max(1, timeoutMs)));
+        save();
+    }
+
+    public static int getRemoteJsRequireMaxBytes() {
+        return getPositiveIntSetting(SCRIPT_REMOTE_REQUIRE_MAX_BYTES, DEFAULT_SCRIPT_REMOTE_MAX_BYTES);
+    }
+
+    public static void setRemoteJsRequireMaxBytes(int maxBytes) {
+        props.setProperty(SCRIPT_REMOTE_REQUIRE_MAX_BYTES, String.valueOf(Math.max(1, maxBytes)));
+        save();
     }
 
     /**
@@ -912,5 +984,18 @@ public class SettingManager {
         int fontSize = Math.max(10, Math.min(24, size));
         props.setProperty("ui_font_size", String.valueOf(fontSize));
         save();
+    }
+
+    private static int getPositiveIntSetting(String key, int defaultValue) {
+        String val = props.getProperty(key);
+        if (val != null) {
+            try {
+                int parsed = Integer.parseInt(val);
+                return parsed > 0 ? parsed : defaultValue;
+            } catch (NumberFormatException e) {
+                return defaultValue;
+            }
+        }
+        return defaultValue;
     }
 }

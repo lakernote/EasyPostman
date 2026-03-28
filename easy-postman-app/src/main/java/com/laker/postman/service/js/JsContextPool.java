@@ -3,6 +3,7 @@ package com.laker.postman.service.js;
 import lombok.extern.slf4j.Slf4j;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
+import org.graalvm.polyglot.HostAccess;
 
 import java.io.OutputStream;
 import java.util.concurrent.BlockingQueue;
@@ -186,6 +187,12 @@ public class JsContextPool {
                                 // 忽略删除失败
                             }
                         });
+
+                        if (globalThis.__epRequireCache) {
+                            Object.keys(globalThis.__epRequireCache).forEach(moduleId => {
+                                delete globalThis.__epRequireCache[moduleId];
+                            });
+                        }
                     })();
                     """);
         } catch (Exception e) {
@@ -199,8 +206,9 @@ public class JsContextPool {
     private PooledContext createNewContext() {
         try {
             Context context = Context.newBuilder("js")
-                    .allowAllAccess(true)
-                    .allowNativeAccess(true)
+                    .allowHostAccess(HostAccess.ALL)
+                    .allowHostClassLookup(className -> false)
+                    .allowNativeAccess(false)
                     .out(OutputStream.nullOutputStream())
                     .err(OutputStream.nullOutputStream())
                     .engine(ENGINE)
@@ -240,4 +248,3 @@ public class JsContextPool {
                 totalCreated.get() > 0 ? (totalReused.get() * 100.0 / totalCreated.get()) : 0);
     }
 }
-

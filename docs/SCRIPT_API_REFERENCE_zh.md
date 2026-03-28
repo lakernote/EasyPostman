@@ -743,6 +743,64 @@ var _ = require('lodash');
 var moment = require('moment');
 ```
 
+### `require()` 加载本地 / 网络脚本
+
+除内置库外，脚本还支持通过 `require()` 加载你自己的 JavaScript 文件。
+
+```javascript
+// 1. 加载本地绝对路径脚本
+var signer = require('/absolute/path/to/signer.js');
+
+// 2. 加载相对路径脚本
+// 顶层脚本中的 ./ 和 ../ 默认相对当前工作区目录解析
+var helper = require('./scripts/helper.js');
+
+// 3. 本地脚本内部继续引用相对依赖
+// parent.js -> require('./child.js')
+var parent = require('/absolute/path/to/parent.js');
+```
+
+可以直接测试的现成示例：
+
+```javascript
+// 仓库内置本地示例，local-parent.js 内部还会继续 require('./local-child.js')
+// 当前工作区指向仓库根目录时可直接执行
+var localDemo = require('./docs/examples/js-require/local-parent.js');
+console.log(localDemo.describe('easy-postman'));
+console.log(localDemo.marker());
+```
+
+自定义脚本建议使用 CommonJS 风格导出：
+
+```javascript
+function sign(input) {
+    return input + '-signed';
+}
+
+module.exports = { sign };
+```
+
+网络脚本默认**关闭**，需要在“设置 -> 请求设置 -> 脚本加载”中显式开启“允许从网络加载脚本”后才允许加载。
+
+```javascript
+// 先到“设置 -> 请求设置 -> 脚本加载”开启远程脚本
+var dayjs = require('https://cdn.jsdelivr.net/npm/dayjs@1.11.13/dayjs.min.js');
+console.log(dayjs('2026-03-27').add(1, 'day').format('YYYY-MM-DD'));
+```
+
+同一组设置里还可以控制：
+
+- 是否允许 `http://` 远程脚本（默认关闭，仅建议本地调试使用）
+- 远程脚本主机白名单
+- 连接超时 / 读取超时
+- 单个远程脚本最大大小
+
+注意事项：
+
+- 顶层相对路径默认相对当前工作区目录解析；若当前工作区不可用，则退回到进程当前目录。
+- 每次脚本执行结束后，`require()` 模块缓存都会清空，所以本地文件修改后下次执行会重新加载。
+- 网络脚本本质上仍然是“下载后执行代码”，只建议加载你自己信任的脚本源。
+
 ### crypto-js - 加密库
 
 提供多种加密和哈希算法，常用于生成签名、加密敏感数据等场景。

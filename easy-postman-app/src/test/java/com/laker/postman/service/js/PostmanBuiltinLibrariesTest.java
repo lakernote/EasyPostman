@@ -2,10 +2,23 @@ package com.laker.postman.service.js;
 
 import lombok.extern.slf4j.Slf4j;
 import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.HostAccess;
 import org.graalvm.polyglot.Value;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import com.laker.postman.service.setting.SettingManager;
+import com.laker.postman.util.SystemUtil;
+import com.sun.net.httpserver.HttpServer;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static org.testng.Assert.*;
 
@@ -22,12 +35,46 @@ import static org.testng.Assert.*;
 public class PostmanBuiltinLibrariesTest {
 
     private Context context;
+    private HttpServer httpServer;
+    private boolean originalRemoteRequireEnabled;
+    private boolean originalAllowHttpRemoteRequire;
+    private String originalAllowedRemoteHosts;
+    private int originalRemoteConnectTimeoutMs;
+    private int originalRemoteReadTimeoutMs;
+    private int originalRemoteMaxBytes;
+    private String originalEasyPostmanDataDir;
+
+    @BeforeClass
+    public void rememberSettings() throws IOException {
+        Path tempDataDir = Files.createTempDirectory("easy-postman-js-settings-");
+        originalEasyPostmanDataDir = System.getProperty("easyPostman.data.dir");
+        System.setProperty("easyPostman.data.dir", tempDataDir.toString());
+        SystemUtil.resetForTests();
+
+        originalRemoteRequireEnabled = SettingManager.isRemoteJsRequireEnabled();
+        originalAllowHttpRemoteRequire = SettingManager.isInsecureRemoteJsRequireEnabled();
+        originalAllowedRemoteHosts = SettingManager.getRemoteJsRequireAllowedHosts();
+        originalRemoteConnectTimeoutMs = SettingManager.getRemoteJsRequireConnectTimeoutMs();
+        originalRemoteReadTimeoutMs = SettingManager.getRemoteJsRequireReadTimeoutMs();
+        originalRemoteMaxBytes = SettingManager.getRemoteJsRequireMaxBytes();
+    }
+
+    @AfterClass
+    public void restoreSettings() {
+        restoreScriptSettings();
+        if (originalEasyPostmanDataDir == null) {
+            System.clearProperty("easyPostman.data.dir");
+        } else {
+            System.setProperty("easyPostman.data.dir", originalEasyPostmanDataDir);
+        }
+    }
 
     @BeforeMethod
     public void setUp() {
         log.info("初始化 JavaScript 执行环境...");
         context = Context.newBuilder("js")
-                .allowAllAccess(true)
+                .allowHostAccess(HostAccess.ALL)
+                .allowHostClassLookup(className -> false)
                 .option("engine.WarnInterpreterOnly", "false")
                 .build();
 
@@ -39,10 +86,14 @@ public class PostmanBuiltinLibrariesTest {
 
     @AfterMethod
     public void tearDown() {
+        stopHttpServer();
         if (context != null) {
             context.close();
             log.info("JavaScript 执行环境已关闭");
         }
+
+        JsLibraryLoader.clearCache();
+        restoreScriptSettings();
     }
 
     // ==================== CryptoJS 测试 ====================
@@ -343,6 +394,98 @@ public class PostmanBuiltinLibrariesTest {
         log.info("✓ require('moment') 测试通过");
     }
 
+    @Test(description = "测试 require() - 加载本地绝对路径脚本")
+    public void testRequire_LocalFile() throws IOException {
+        Path scriptFile = Files.createTempFile("easy-postman-local-lib-", ".js");
+        Files.writeString(scriptFile, """
+                module.exports = {
+                    version: '1.0.0',
+                    sign: function(input) {
+                        return input + '-signed';
+                    }
+                };
+                """, StandardCharsets.UTF_8);
+
+        Value result = context.eval("js", "require('" + toJsString(scriptFile.toAbsolutePath().normalize().toString()) + "').sign('token');");
+        assertEquals(result.asString(), "token-signed");
+    }
+
+    @Test(description = "测试 require() - 本地脚本内部支持相对路径依赖")
+    public void testRequire_LocalFileRelativeDependency() throws IOException {
+        Path tempDir = Files.createTempDirectory("easy-postman-local-module-");
+        Path childModule = tempDir.resolve("child.js");
+        Path parentModule = tempDir.resolve("parent.js");
+
+        Files.writeString(childModule, "module.exports = { value: 'child-module' };", StandardCharsets.UTF_8);
+        Files.writeString(parentModule, """
+                var child = require('./child.js');
+                module.exports = { value: 'parent:' + child.value };
+                """, StandardCharsets.UTF_8);
+
+        Value result = context.eval("js", "require('" + toJsString(parentModule.toAbsolutePath().normalize().toString()) + "').value;");
+        assertEquals(result.asString(), "parent:child-module");
+    }
+
+    @Test(description = "测试 require() - 远程脚本默认禁用")
+    public void testRequire_RemoteDisabledByDefault() {
+        Value result = context.eval("js", """
+                try {
+                    require('https://example.com/remote-lib.js');
+                    'no-error';
+                } catch (e) {
+                    String(e.message);
+                }
+                """);
+        assertTrue(result.asString().contains("Remote JavaScript require() is disabled"));
+    }
+
+    @Test(description = "测试 require() - 远程脚本启用后可加载")
+    public void testRequire_RemoteEnabledWithExplicitOptIn() throws Exception {
+        httpServer = HttpServer.create(new InetSocketAddress(0), 0);
+        httpServer.createContext("/remote-lib.js", exchange -> {
+            byte[] body = "module.exports = { value: 'remote-ok' };".getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/javascript; charset=utf-8");
+            exchange.sendResponseHeaders(200, body.length);
+            exchange.getResponseBody().write(body);
+            exchange.close();
+        });
+        httpServer.start();
+
+        SettingManager.setRemoteJsRequireEnabled(true);
+        SettingManager.setInsecureRemoteJsRequireEnabled(true);
+        SettingManager.setRemoteJsRequireConnectTimeoutMs(1000);
+        SettingManager.setRemoteJsRequireReadTimeoutMs(1000);
+        SettingManager.setRemoteJsRequireMaxBytes(65536);
+
+        int port = httpServer.getAddress().getPort();
+        Value result = context.eval("js", "require('http://127.0.0.1:" + port + "/remote-lib.js').value;");
+        assertEquals(result.asString(), "remote-ok");
+    }
+
+    @Test(description = "测试 Context 池复用时 require() 缓存会在每次执行后清空")
+    public void testContextPoolClearsRequireCacheBetweenRuns() throws Exception {
+        Path scriptFile = Files.createTempFile("easy-postman-cache-reset-", ".js");
+        Files.writeString(scriptFile, "module.exports = { version: 'v1' };", StandardCharsets.UTF_8);
+
+        JsContextPool pool = new JsContextPool(1);
+        String normalizedPath = scriptFile.toAbsolutePath().normalize().toString();
+        try {
+            JsContextPool.PooledContext firstBorrow = pool.borrowContext(1000);
+            Value firstResult = firstBorrow.getContext().eval("js", "require('" + toJsString(normalizedPath) + "').version;");
+            assertEquals(firstResult.asString(), "v1");
+            pool.returnContext(firstBorrow);
+
+            Files.writeString(scriptFile, "module.exports = { version: 'v2' };", StandardCharsets.UTF_8);
+
+            JsContextPool.PooledContext secondBorrow = pool.borrowContext(1000);
+            Value secondResult = secondBorrow.getContext().eval("js", "require('" + toJsString(normalizedPath) + "').version;");
+            assertEquals(secondResult.asString(), "v2");
+            pool.returnContext(secondBorrow);
+        } finally {
+            pool.shutdown();
+        }
+    }
+
     // ==================== 综合场景测试 ====================
 
     @Test(description = "Postman 典型场景 - API 请求签名")
@@ -479,7 +622,8 @@ public class PostmanBuiltinLibrariesTest {
         long startTime = System.currentTimeMillis();
 
         Context testContext = Context.newBuilder("js")
-                .allowAllAccess(true)
+                .allowHostAccess(HostAccess.ALL)
+                .allowHostClassLookup(className -> false)
                 .option("engine.WarnInterpreterOnly", "false")
                 .build();
 
@@ -492,5 +636,25 @@ public class PostmanBuiltinLibrariesTest {
         assertTrue(loadTime < 1000, "库加载时间过长: " + loadTime + "ms");
         log.info("✓ 库加载性能测试通过，耗时: {}ms", loadTime);
     }
-}
 
+    private void stopHttpServer() {
+        if (httpServer != null) {
+            httpServer.stop(0);
+            httpServer = null;
+        }
+    }
+
+    private void restoreScriptSettings() {
+        SettingManager.setRemoteJsRequireEnabled(originalRemoteRequireEnabled);
+        SettingManager.setInsecureRemoteJsRequireEnabled(originalAllowHttpRemoteRequire);
+        SettingManager.setRemoteJsRequireAllowedHosts(originalAllowedRemoteHosts);
+        SettingManager.setRemoteJsRequireConnectTimeoutMs(originalRemoteConnectTimeoutMs);
+        SettingManager.setRemoteJsRequireReadTimeoutMs(originalRemoteReadTimeoutMs);
+        SettingManager.setRemoteJsRequireMaxBytes(originalRemoteMaxBytes);
+    }
+
+    private String toJsString(String raw) {
+        return raw.replace("\\", "\\\\").replace("'", "\\'");
+    }
+
+}

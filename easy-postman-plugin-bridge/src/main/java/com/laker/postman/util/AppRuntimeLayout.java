@@ -75,6 +75,13 @@ public final class AppRuntimeLayout {
         return Paths.get(System.getProperty("user.home"), "EasyPostman").toAbsolutePath().normalize();
     }
 
+    public static Path logRootDirectory(Class<?> anchorClass) {
+        if (isPortableMode(anchorClass)) {
+            return applicationRootDirectory(anchorClass).resolve("logs").toAbsolutePath().normalize();
+        }
+        return Paths.get(System.getProperty("user.home"), "EasyPostman", "logs").toAbsolutePath().normalize();
+    }
+
     private static boolean hasPortableMarker(Path directory) {
         if (directory == null) {
             return false;

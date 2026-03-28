@@ -1,6 +1,7 @@
 package com.laker.postman.service.update.asset;
 
 import com.laker.postman.plugin.runtime.PluginRuntime;
+import com.laker.postman.util.AppRuntimeLayout;
 import com.laker.postman.util.SystemUtil;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -43,6 +44,7 @@ public class RuntimeModeConsistencyTest {
 
         assertTrue(WindowsVersionDetector.isPortableVersion());
         assertEquals(Paths.get(SystemUtil.getEasyPostmanPath()).normalize(), appDir.resolve("data"));
+        assertEquals(AppRuntimeLayout.logRootDirectory(RuntimeModeConsistencyTest.class), appDir.resolve("logs"));
         assertEquals(PluginRuntime.getManagedPluginDir(), appDir.resolve("plugins"));
         assertEquals(PluginRuntime.getPluginPackageDir(), appDir.resolve("plugins").resolve("packages"));
     }
@@ -52,9 +54,11 @@ public class RuntimeModeConsistencyTest {
         System.setProperty("easyPostman.app.dir", appDir.toString());
 
         Path expectedDataRoot = Paths.get(System.getProperty("user.home"), "EasyPostman").toAbsolutePath().normalize();
+        Path expectedLogRoot = expectedDataRoot.resolve("logs");
 
         assertFalse(WindowsVersionDetector.isPortableVersion());
         assertEquals(Paths.get(SystemUtil.getEasyPostmanPath()).normalize(), expectedDataRoot);
+        assertEquals(AppRuntimeLayout.logRootDirectory(RuntimeModeConsistencyTest.class), expectedLogRoot);
         assertEquals(PluginRuntime.getManagedPluginDir(), expectedDataRoot.resolve("plugins").resolve("installed"));
         assertEquals(PluginRuntime.getPluginPackageDir(), expectedDataRoot.resolve("plugins").resolve("packages"));
     }

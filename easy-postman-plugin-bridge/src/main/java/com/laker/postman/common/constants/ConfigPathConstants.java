@@ -1,6 +1,7 @@
 package com.laker.postman.common.constants;
 
 import com.laker.postman.model.Workspace;
+import com.laker.postman.util.AppRuntimeLayout;
 import com.laker.postman.util.SystemUtil;
 import lombok.experimental.UtilityClass;
 
@@ -96,10 +97,11 @@ public class ConfigPathConstants {
 
     /**
      * 日志目录
-     * 使用用户主目录，与 logback.xml 配置保持一致
+     * Portable 模式：程序所在目录/logs/
+     * 普通模式：用户主目录/EasyPostman/logs/
      */
-    public static final String LOG_DIR = System.getProperty("user.home") + File.separator +
-            AppConstants.APP_NAME + File.separator + "logs" + File.separator;
+    public static final String LOG_DIR = AppRuntimeLayout.logRootDirectory(ConfigPathConstants.class).toString()
+            + File.separator;
 
     // ==================== 工作区相关路径方法 ====================
 

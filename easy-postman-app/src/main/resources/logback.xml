@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <!-- 定义日志文件存储路径变量，使用用户主目录下的 EasyPostman/logs 文件夹 -->
-    <!-- 应用程序标识和环境配置 -->
-    <property name="APP_NAME" value="EasyPostman"/>
-    <property name="LOG_HOME" value="${user.home}/${APP_NAME}/logs"/>
+    <!-- 便携版写入应用根目录/logs，安装版写入用户主目录/EasyPostman/logs -->
+    <define name="LOG_HOME" class="com.laker.postman.logging.LogHomePropertyDefiner"/>
     <!-- 支持通过系统属性覆盖日志级别，默认为 INFO -->
     <property name="LOG_LEVEL" value="${LOG_LEVEL:-INFO}"/>
 

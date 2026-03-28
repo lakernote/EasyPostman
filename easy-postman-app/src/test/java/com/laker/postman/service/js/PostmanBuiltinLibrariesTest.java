@@ -72,6 +72,7 @@ public class PostmanBuiltinLibrariesTest {
     @BeforeMethod
     public void setUp() {
         log.info("初始化 JavaScript 执行环境...");
+        resetScriptSettingsToDefaults();
         context = Context.newBuilder("js")
                 .allowHostAccess(HostAccess.ALL)
                 .allowHostClassLookup(className -> false)
@@ -651,6 +652,15 @@ public class PostmanBuiltinLibrariesTest {
         SettingManager.setRemoteJsRequireConnectTimeoutMs(originalRemoteConnectTimeoutMs);
         SettingManager.setRemoteJsRequireReadTimeoutMs(originalRemoteReadTimeoutMs);
         SettingManager.setRemoteJsRequireMaxBytes(originalRemoteMaxBytes);
+    }
+
+    private void resetScriptSettingsToDefaults() {
+        SettingManager.setRemoteJsRequireEnabled(false);
+        SettingManager.setInsecureRemoteJsRequireEnabled(false);
+        SettingManager.setRemoteJsRequireAllowedHosts("");
+        SettingManager.setRemoteJsRequireConnectTimeoutMs(3000);
+        SettingManager.setRemoteJsRequireReadTimeoutMs(5000);
+        SettingManager.setRemoteJsRequireMaxBytes(512 * 1024);
     }
 
     private String toJsString(String raw) {

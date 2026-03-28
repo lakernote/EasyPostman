@@ -9,8 +9,8 @@ EasyPostman is a Java 17 + Swing desktop API testing app. Entry point: `com.lake
 ```
 easy-postman-parent (root pom.xml, revision = host version)
 ├── easy-postman-plugin-api      # Stable plugin SPI: EasyPostmanPlugin, PluginContext, PluginDescriptor
-├── easy-postman-plugin-bridge   # Shared bridge contracts, models, utils (ConfigPathConstants, AppConstants, I18nUtil, MessageKeys, SystemUtil, UserSettingsUtil)
-├── easy-postman-plugin-ui       # Shared Swing UI base components, FontsUtil, IconUtil, NotificationUtil
+├── easy-postman-plugin-bridge   # Shared bridge contracts, models, utils (ConfigPathConstants, AppConstants, I18nUtil, MessageKeys, SystemUtil, UserSettingsUtil, JsonUtil, AppRuntimeLayout); bridge service interfaces (GitPluginService, ClientCertificatePluginService); shared models (Workspace, WorkspaceType, GitAuthType, GitCommitInfo, GitOperationResult, etc.)
+├── easy-postman-plugin-ui       # Shared Swing UI base components, FontsUtil, IconUtil, NotificationUtil, EditorThemeUtil, ModernColors, ModernButtonFactory
 ├── easy-postman-plugin-runtime  # Plugin scan/load/lifecycle: PluginRuntime, PluginScanner, PluginLoader, PluginRegistry
 ├── easy-postman-plugins/        # Official plugins (each builds an independent JAR)
 │   ├── plugin-manager           # Catalog parsing, online/offline install facade
@@ -103,8 +103,33 @@ All UI panels that are logically singletons must:
 
 - `AppConstants` — `APP_NAME`, `BASE_PACKAGE`
 - `ConfigPathConstants` — all data file paths (`EASY_POSTMAN_SETTINGS`, `COLLECTIONS`, `ENVIRONMENTS`, `DEFAULT_WORKSPACE_DIR`, etc.)
+- `JsonUtil` — Jackson-based JSON serialization/deserialization (supports JSON5/comments); use this instead of raw Jackson calls
+- `AppRuntimeLayout` — resolves portable mode (`isPortableMode(Class<?>)`) and key directory paths (`applicationRootDirectory`, `codeSourceDirectory`); portable mode is triggered by a `.portable` marker file or the `easyPostman.portable` system property
 
 Data root: `SystemUtil.getEasyPostmanPath()` — returns `<user.home>/EasyPostman/` in normal mode, or `<app-dir>/data/` in portable mode.
+
+---
+
+## Workspace & Git Sync
+
+The app supports multiple named workspaces. Each workspace is an isolated directory (collections, environments, settings). A workspace can optionally be backed by a Git repository.
+
+- Models: `Workspace`, `WorkspaceType` in `easy-postman-plugin-bridge`
+- Workspace UI: `WorkspacePanel` and its components in `com.laker.postman.panel.workspace`
+- Git operations are declared in `GitPluginService` (bridge module) and implemented by `GitWorkspacePluginService` in `com.laker.postman.plugin.git`
+- Host-side accessor: `GitPluginServices` (in `com.laker.postman.plugin.bridge`, app module) — calls `PluginAccess.getService(GitPluginService.class)`
+- `WorkspaceStorageUtil` (app util) handles workspace list persistence
+
+---
+
+## Script Execution
+
+Pre/post scripts run through `ScriptExecutionPipeline` (`com.laker.postman.service.js`), which merges collection/folder/request-level scripts, pools Rhino contexts (`JsContextPool`), and injects polyfills.
+
+Built-in JS libraries bundled at `easy-postman-app/src/main/resources/js-libs/`:
+- `crypto-js.min.js`, `lodash.min.js`, `moment.min.js`
+
+Plugin scripts are injected via `registerScriptApi` (alias → object factory); they become accessible as `pm.<alias>` inside scripts.
 
 ---
 
@@ -119,6 +144,9 @@ All user-visible strings must use `I18nUtil.getMessage(MessageKeys.SOME_KEY)`. K
 - Theme is managed by `SimpleThemeManager` (light/dark via FlatLaf, animated transitions).
 - User settings are persisted to `easy_postman_settings.properties` via `SettingManager` (static Properties file) and `UserSettingsUtil` (bridge module).
 - Font size setting key: `ui_font_size` in that properties file.
+- Custom FlatLaf token overrides: `easy-postman-app/src/main/resources/com/laker/postman/common/themes/EasyLightLaf.properties` and `EasyDarkLaf.properties`
+- RSyntaxTextArea editor theme XMLs: `easy-postman-app/src/main/resources/themes/easypostman-light.xml` and `easypostman-dark.xml`
+- Shared semantic colors for both themes: `ModernColors` in `easy-postman-plugin-ui` (`com.laker.postman.common.constants.ModernColors`)
 
 ---
 
@@ -128,6 +156,7 @@ All user-visible strings must use `I18nUtil.getMessage(MessageKeys.SOME_KEY)`. K
 - Plugin entry class implements `EasyPostmanPlugin`; `onLoad(PluginContext)` registers all capabilities.
 - Extension points: `registerScriptApi`, `registerService`, `registerToolboxContribution`, `registerScriptCompletionContributor`, `registerSnippet`.
 - Host consumes registered capabilities from `PluginRegistry`.
+- **Bridge service interfaces** (`GitPluginService`, `ClientCertificatePluginService`) live in `easy-postman-plugin-bridge`. Plugins register implementations via `context.registerService(GitPluginService.class, impl)`. Host code retrieves them through `PluginAccess.getService(Type.class)` or the typed accessors (`GitPluginServices`, `ClientCertificatePluginServices`) in `com.laker.postman.plugin.bridge` (app module).
 - Version model: `revision` = host release version; `plugin.platform.version` = SPI compatibility boundary. Only bump `plugin.platform.version` when plugin SPI/runtime changes are breaking.
 - Catalog source of truth: `pom.xml → descriptor → release asset → catalog`. Do not hand-edit `plugin-catalog/` or the bundled fallback in `plugin-manager/src/main/resources/plugin-catalog/` independently — update both together.
 - Reference runtime architecture: `docs/PLUGIN_RUNTIME_ARCHITECTURE_zh.md`.
@@ -142,6 +171,9 @@ All user-visible strings must use `I18nUtil.getMessage(MessageKeys.SOME_KEY)`. K
 | `release.yml` | Push tag | Multi-platform native installer build |
 | `plugin-release.yml` | Plugin tag | Build plugin JARs, validate consistency, publish, update catalog |
 | `codeql-analysis.yml` | Schedule/push | Security analysis |
+| `auto-label.yml` | Issue/PR opened or edited | Auto-apply labels based on title/body keywords |
+| `sync-labels.yml` | Push to main (`.github/labels.yml` changed) or manual | Sync label definitions to the repository |
+| `welcome.yml` | Issue/PR opened | Post a welcome comment for first-time contributors |
 
 ---
 

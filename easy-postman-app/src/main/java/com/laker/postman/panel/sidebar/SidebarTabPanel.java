@@ -16,12 +16,16 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.plaf.UIResource;
+import javax.swing.plaf.basic.BasicArrowButton;
 import javax.swing.plaf.basic.BasicTabbedPaneUI;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.geom.Path2D;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -49,7 +53,6 @@ public class SidebarTabPanel extends SingletonBasePanel {
 
     private static final int COLLAPSED_TAB_PADDING_VERTICAL = 14;
     private static final int COLLAPSED_TAB_PADDING_HORIZONTAL = 10;
-
     @Getter
     private JTabbedPane tabbedPane;
     @Getter
@@ -696,6 +699,71 @@ public class SidebarTabPanel extends SingletonBasePanel {
             // 根据展开状态调整高度，使用动态计算的高度
             return sidebarExpanded ? calculateExpandedTabHeight(fontHeight) : calculateCollapsedTabHeight();
         }
+
+        @Override
+        protected JButton createScrollButton(int direction) {
+            return new SidebarScrollButton(direction);
+        }
+    }
+
+    private final class SidebarScrollButton extends BasicArrowButton implements UIResource {
+        private final int direction;
+
+        private SidebarScrollButton(int direction) {
+            super(direction,
+                    UIManager.getColor("TabbedPane.selected"),
+                    UIManager.getColor("TabbedPane.shadow"),
+                    UIManager.getColor("TabbedPane.darkShadow"),
+                    UIManager.getColor("TabbedPane.highlight"));
+            this.direction = direction;
+            setFocusable(false);
+            setOpaque(false);
+            setContentAreaFilled(false);
+            setBorderPainted(false);
+            setFocusPainted(false);
+            setRolloverEnabled(true);
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            setBorder(new EmptyBorder(0, 0, 0, 0));
+        }
+
+        @Override
+        public void paint(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            try {
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+
+                ButtonModel model = getModel();
+                boolean hovered = model.isRollover() && isEnabled();
+                boolean pressed = (model.isPressed() || model.isArmed()) && isEnabled();
+                boolean enabled = isEnabled();
+
+                int inset = 2;
+                int width = Math.max(0, getWidth() - inset * 2);
+                int height = Math.max(0, getHeight() - inset * 2);
+
+                if (hovered || pressed) {
+                    Color background = pressed ? ModernColors.getButtonPressedColor() : ModernColors.getHoverBackgroundColor();
+                    g2.setColor(withAlpha(background, 230));
+                    g2.fillRoundRect(inset, inset, width, height, 8, 8);
+                }
+
+                Color arrowColor;
+                if (!enabled) {
+                    arrowColor = ModernColors.getTextDisabled();
+                } else if (pressed || hovered) {
+                    arrowColor = ModernColors.PRIMARY;
+                } else {
+                    arrowColor = ModernColors.getTextSecondary();
+                }
+
+                g2.setColor(arrowColor);
+                g2.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                paintChevron(g2, direction, getWidth(), getHeight());
+            } finally {
+                g2.dispose();
+            }
+        }
     }
 
     /**
@@ -1057,5 +1125,41 @@ public class SidebarTabPanel extends SingletonBasePanel {
             // 英文使用小字体
             return FontsUtil.getDefaultFontWithOffset(style, -3);
         }
+    }
+
+    private void paintChevron(Graphics2D g2, int direction, int width, int height) {
+        int midX = width / 2;
+        int midY = height / 2;
+        int size = 4;
+        Path2D.Float chevron = new Path2D.Float();
+
+        switch (direction) {
+            case SwingConstants.NORTH -> {
+                chevron.moveTo(midX - size, midY + 2);
+                chevron.lineTo(midX, midY - size);
+                chevron.lineTo(midX + size, midY + 2);
+            }
+            case SwingConstants.SOUTH -> {
+                chevron.moveTo(midX - size, midY - 2);
+                chevron.lineTo(midX, midY + size);
+                chevron.lineTo(midX + size, midY - 2);
+            }
+            case SwingConstants.WEST -> {
+                chevron.moveTo(midX + 2, midY - size);
+                chevron.lineTo(midX - size, midY);
+                chevron.lineTo(midX + 2, midY + size);
+            }
+            default -> {
+                chevron.moveTo(midX - 2, midY - size);
+                chevron.lineTo(midX + size, midY);
+                chevron.lineTo(midX - 2, midY + size);
+            }
+        }
+
+        g2.draw(chevron);
+    }
+
+    private Color withAlpha(Color color, int alpha) {
+        return new Color(color.getRed(), color.getGreen(), color.getBlue(), alpha);
     }
 }

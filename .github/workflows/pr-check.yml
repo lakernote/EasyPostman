@@ -30,6 +30,7 @@ env:
   JAVA_DISTRIBUTION: 'jetbrains'
   JLINK_MODULES: 'java.base,java.desktop,java.logging,jdk.unsupported,java.naming,java.net.http,java.prefs,java.sql,java.security.sasl,java.security.jgss,jdk.crypto.ec,java.management,java.management.rmi,jdk.crypto.cryptoki'
   JAVA_OPTIONS: '-Xms256m|-Xmx512m|-Dfile.encoding=UTF-8'
+  JAVA_OPTIONS_MACOS: '-Dsun.java2d.metal=false'
 
 jobs:
   # Job 0: 获取版本号（供所有 Job 使用）
@@ -397,7 +398,8 @@ jobs:
             --copyright "© 2025 Laker" \
             --java-options "${JAVA_OPTS[0]}" \
             --java-options "${JAVA_OPTS[1]}" \
-            --java-options "${JAVA_OPTS[2]}"
+            --java-options "${JAVA_OPTS[2]}" \
+            --java-options "${{ env.JAVA_OPTIONS_MACOS }}"
           
           echo "✅ App bundle created"
 

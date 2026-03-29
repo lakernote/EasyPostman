@@ -115,7 +115,7 @@ jpackage \
     --java-options "-XX:+HeapDumpOnOutOfMemoryError" \
     --java-options "-XX:HeapDumpPath=./dumps" \
     --java-options "-Dfile.encoding=UTF-8" \
-    --java-options "-Dsun.java2d.metal=true" \
+    --java-options "-Dsun.java2d.metal=false" \
     --java-options "-Dapple.awt.application.appearance=system" \
     --java-options "-Dswing.aatext=true" \
     --java-options "-Djava.net.preferIPv4Stack=true" \

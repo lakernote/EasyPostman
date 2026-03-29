@@ -17,7 +17,7 @@ env:
   # Windows 特定选项
   JAVA_OPTIONS_WINDOWS: '-Djavax.accessibility.assistive_technologies='
   # macOS 特定选项
-  JAVA_OPTIONS_MACOS: '-Dsun.java2d.metal=true|-Dapple.awt.application.appearance=system|--add-opens java.desktop/java.awt=ALL-UNNAMED|--add-opens java.desktop/sun.lwawt=ALL-UNNAMED|--add-opens java.desktop/sun.lwawt.macosx=ALL-UNNAMED|--add-exports java.desktop/com.apple.eawt=ALL-UNNAMED'
+  JAVA_OPTIONS_MACOS: '-Dsun.java2d.metal=false|-Dapple.awt.application.appearance=system|--add-opens java.desktop/java.awt=ALL-UNNAMED|--add-opens java.desktop/sun.lwawt=ALL-UNNAMED|--add-opens java.desktop/sun.lwawt.macosx=ALL-UNNAMED|--add-exports java.desktop/com.apple.eawt=ALL-UNNAMED'
   # Linux 特定选项
   JAVA_OPTIONS_LINUX: '-Dawt.useSystemAAFontSettings=on|--add-opens=java.desktop/sun.awt.X11=ALL-UNNAMED'
 

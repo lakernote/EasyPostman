@@ -1,5 +1,6 @@
 package com.laker.postman.panel.toolbox;
 
+import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.util.EditorThemeUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -7,18 +8,18 @@ import com.laker.postman.util.SqlFormatter;
 import lombok.extern.slf4j.Slf4j;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
-import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * SQL工具面板 - 使用专业的 SqlFormatter 提供 SQL 格式化和压缩功能
- * 参考 Druid SQLFormatter 实现
+ * SQL 工具面板。
  */
 @Slf4j
 public class SqlToolPanel extends JPanel {
@@ -27,8 +28,8 @@ public class SqlToolPanel extends JPanel {
     private RSyntaxTextArea outputArea;
     private JLabel statusLabel;
 
-    // 格式化选项
     private JSpinner indentSpinner;
+    private JComboBox<SqlFormatter.SqlDialect> dialectComboBox;
     private JCheckBox uppercaseKeywordsCheck;
     private JCheckBox addSemicolonCheck;
     private JCheckBox lineBreakAndCheck;
@@ -42,12 +43,24 @@ public class SqlToolPanel extends JPanel {
         setLayout(new BorderLayout(5, 5));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // 顶部工具栏
+        add(createTopPanel(), BorderLayout.NORTH);
+        add(createCenterPanel(), BorderLayout.CENTER);
+        add(createStatusPanel(), BorderLayout.SOUTH);
+
+        setupKeyBindings();
+    }
+
+    private JPanel createTopPanel() {
+        JPanel container = new JPanel(new BorderLayout(0, 6));
+        container.add(createToolbarPanel(), BorderLayout.NORTH);
+        container.add(createOptionsPanel(), BorderLayout.SOUTH);
+        return container;
+    }
+
+    private JPanel createToolbarPanel() {
         JPanel topPanel = new JPanel(new BorderLayout());
 
-        // 左侧按钮组
         JPanel leftBtnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
-
         JButton formatBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_FORMAT));
         JButton compressBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_COMPRESS));
         JButton validateBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_VALIDATE));
@@ -60,9 +73,7 @@ public class SqlToolPanel extends JPanel {
         leftBtnPanel.add(compressBtn);
         leftBtnPanel.add(validateBtn);
 
-        // 右侧按钮组
         JPanel rightBtnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 5));
-
         JButton sampleBtn = new JButton("📝 " + I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_SAMPLE));
         JButton copyBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_COPY));
         JButton pasteBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_PASTE));
@@ -84,75 +95,6 @@ public class SqlToolPanel extends JPanel {
         topPanel.add(leftBtnPanel, BorderLayout.WEST);
         topPanel.add(rightBtnPanel, BorderLayout.EAST);
 
-        add(topPanel, BorderLayout.NORTH);
-
-        // 中间主内容区域（包含选项面板和编辑器）
-        JPanel mainPanel = new JPanel(new BorderLayout(5, 5));
-
-        // 格式化选项面板
-        JPanel optionsPanel = createOptionsPanel();
-        mainPanel.add(optionsPanel, BorderLayout.NORTH);
-
-        // 中间分割面板
-        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-
-        // 输入区域
-        JPanel inputPanel = new JPanel(new BorderLayout(5, 5));
-        JLabel inputLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_INPUT));
-        inputPanel.add(inputLabel, BorderLayout.NORTH);
-
-        inputArea = createSqlTextArea();
-        inputArea.setEditable(true);
-        RTextScrollPane inputScrollPane = new RTextScrollPane(inputArea);
-        inputScrollPane.setLineNumbersEnabled(true);
-        inputPanel.add(inputScrollPane, BorderLayout.CENTER);
-
-        // 输出区域
-        JPanel outputPanel = new JPanel(new BorderLayout(5, 5));
-
-        // 输出标题栏（包含标签和信息）
-        JPanel outputHeaderPanel = new JPanel(new BorderLayout());
-        JLabel outputLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_OUTPUT));
-
-        // 输出信息标签（显示行数和字符数）
-        JLabel outputInfoLabel = new JLabel(" ");
-        outputInfoLabel.setFont(outputInfoLabel.getFont().deriveFont(Font.PLAIN, 10f));
-        outputInfoLabel.setForeground(Color.GRAY);
-
-        outputHeaderPanel.add(outputLabel, BorderLayout.WEST);
-        outputHeaderPanel.add(outputInfoLabel, BorderLayout.EAST);
-        outputPanel.add(outputHeaderPanel, BorderLayout.NORTH);
-
-        outputArea = createSqlTextArea();
-        outputArea.setEditable(false);
-
-        // 添加文档监听器，实时更新输出统计信息
-        outputArea.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            public void insertUpdate(javax.swing.event.DocumentEvent e) { updateOutputInfo(outputInfoLabel); }
-            public void removeUpdate(javax.swing.event.DocumentEvent e) { updateOutputInfo(outputInfoLabel); }
-            public void changedUpdate(javax.swing.event.DocumentEvent e) { updateOutputInfo(outputInfoLabel); }
-        });
-
-        RTextScrollPane outputScrollPane = new RTextScrollPane(outputArea);
-        outputScrollPane.setLineNumbersEnabled(true);
-        outputPanel.add(outputScrollPane, BorderLayout.CENTER);
-
-        splitPane.setTopComponent(inputPanel);
-        splitPane.setBottomComponent(outputPanel);
-        splitPane.setDividerLocation(300);
-        splitPane.setResizeWeight(0.5);
-
-        mainPanel.add(splitPane, BorderLayout.CENTER);
-        add(mainPanel, BorderLayout.CENTER);
-
-        // 底部状态栏
-        JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 3));
-        statusLabel = new JLabel(" ");
-        statusLabel.setFont(statusLabel.getFont().deriveFont(Font.PLAIN, 11f));
-        statusPanel.add(statusLabel);
-        add(statusPanel, BorderLayout.SOUTH);
-
-        // 按钮事件
         formatBtn.addActionListener(e -> formatSql());
         compressBtn.addActionListener(e -> compressSql());
         validateBtn.addActionListener(e -> validateSql());
@@ -161,44 +103,104 @@ public class SqlToolPanel extends JPanel {
         pasteBtn.addActionListener(e -> pasteFromClipboard());
         clearBtn.addActionListener(e -> clearAll());
         swapBtn.addActionListener(e -> swapInputOutput());
+
+        return topPanel;
     }
 
-    /**
-     * 创建格式化选项面板
-     */
     private JPanel createOptionsPanel() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-        panel.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_OPTIONS)));
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 6));
+        Color borderColor = UIManager.getColor("Component.borderColor");
+        if (borderColor == null) {
+            borderColor = UIManager.getColor("Separator.foreground");
+        }
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 1, 0, borderColor),
+                BorderFactory.createEmptyBorder(6, 0, 6, 0)
+        ));
 
-
-        // 缩进大小
         panel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_INDENT) + ":"));
         indentSpinner = new JSpinner(new SpinnerNumberModel(2, 0, 8, 1));
-        indentSpinner.setPreferredSize(new Dimension(60, 25));
+        indentSpinner.setPreferredSize(new Dimension(60, 26));
         panel.add(indentSpinner);
 
-        // 关键字大写
+        panel.add(new JSeparator(SwingConstants.VERTICAL));
+
+        panel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_DIALECT) + ":"));
+        dialectComboBox = new JComboBox<>(SqlFormatter.SqlDialect.values());
+        dialectComboBox.setPreferredSize(new Dimension(140, 28));
+        dialectComboBox.setSelectedItem(SqlFormatter.SqlDialect.GENERIC);
+        dialectComboBox.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index,
+                                                          boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof SqlFormatter.SqlDialect dialect) {
+                    setText(getDialectDisplayName(dialect));
+                }
+                return this;
+            }
+        });
+        panel.add(dialectComboBox);
+
+        panel.add(new JSeparator(SwingConstants.VERTICAL));
+
         uppercaseKeywordsCheck = new JCheckBox(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_UPPERCASE_KEYWORDS), true);
-        panel.add(uppercaseKeywordsCheck);
-
-        // 添加分号
         addSemicolonCheck = new JCheckBox(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_ADD_SEMICOLON), true);
-        panel.add(addSemicolonCheck);
-
-        // AND/OR 换行
         lineBreakAndCheck = new JCheckBox(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_LINE_BREAK_AND_OR), true);
-        panel.add(lineBreakAndCheck);
-
-        // 逗号后换行
         lineBreakCommaCheck = new JCheckBox(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_LINE_BREAK_COMMA), true);
+
+        panel.add(uppercaseKeywordsCheck);
+        panel.add(addSemicolonCheck);
+        panel.add(lineBreakAndCheck);
         panel.add(lineBreakCommaCheck);
 
         return panel;
     }
 
-    /**
-     * 创建配置好的SQL文本编辑区域
-     */
+    private JPanel createCenterPanel() {
+        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+        splitPane.setTopComponent(createEditorPanel(true));
+        splitPane.setBottomComponent(createEditorPanel(false));
+        splitPane.setDividerLocation(300);
+        splitPane.setResizeWeight(0.5);
+
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(splitPane, BorderLayout.CENTER);
+        return panel;
+    }
+
+    private JPanel createEditorPanel(boolean input) {
+        JPanel panel = new JPanel(new BorderLayout(5, 5));
+        JLabel titleLabel = new JLabel(I18nUtil.getMessage(
+                input ? MessageKeys.TOOLBOX_SQL_INPUT : MessageKeys.TOOLBOX_SQL_OUTPUT));
+
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.add(titleLabel, BorderLayout.WEST);
+        panel.add(headerPanel, BorderLayout.NORTH);
+
+        RSyntaxTextArea textArea = createSqlTextArea();
+        textArea.setEditable(input);
+        SearchableTextArea searchableTextArea = new SearchableTextArea(textArea, input);
+        searchableTextArea.setLineNumbersEnabled(true);
+        panel.add(searchableTextArea, BorderLayout.CENTER);
+
+        if (input) {
+            inputArea = textArea;
+        } else {
+            outputArea = textArea;
+        }
+
+        return panel;
+    }
+
+    private JPanel createStatusPanel() {
+        JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 3));
+        statusLabel = new JLabel(" ");
+        statusLabel.setFont(statusLabel.getFont().deriveFont(Font.PLAIN, 11f));
+        statusPanel.add(statusLabel);
+        return statusPanel;
+    }
+
     private RSyntaxTextArea createSqlTextArea() {
         RSyntaxTextArea textArea = new RSyntaxTextArea(10, 40);
         textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_SQL);
@@ -214,10 +216,29 @@ public class SqlToolPanel extends JPanel {
         return textArea;
     }
 
+    private void setupKeyBindings() {
+        addKeyBinding(KeyStroke.getKeyStroke(KeyEvent.VK_F, KeyEvent.CTRL_DOWN_MASK | KeyEvent.SHIFT_DOWN_MASK),
+                "format-sql", e -> formatSql());
+        addKeyBinding(KeyStroke.getKeyStroke(KeyEvent.VK_C, KeyEvent.CTRL_DOWN_MASK | KeyEvent.SHIFT_DOWN_MASK),
+                "compress-sql", e -> compressSql());
+        addKeyBinding(KeyStroke.getKeyStroke(KeyEvent.VK_V, KeyEvent.CTRL_DOWN_MASK | KeyEvent.SHIFT_DOWN_MASK),
+                "validate-sql", e -> validateSql());
+        addKeyBinding(KeyStroke.getKeyStroke(KeyEvent.VK_S, KeyEvent.CTRL_DOWN_MASK | KeyEvent.SHIFT_DOWN_MASK),
+                "swap-sql", e -> swapInputOutput());
+        addKeyBinding(KeyStroke.getKeyStroke(KeyEvent.VK_L, KeyEvent.CTRL_DOWN_MASK),
+                "clear-sql", e -> clearAll());
+    }
 
-    /**
-     * 标准格式化SQL
-     */
+    private void addKeyBinding(KeyStroke keyStroke, String actionName, java.awt.event.ActionListener action) {
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(keyStroke, actionName);
+        getActionMap().put(actionName, new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                action.actionPerformed(e);
+            }
+        });
+    }
+
     private void formatSql() {
         String input = inputArea.getText().trim();
         if (input.isEmpty()) {
@@ -227,22 +248,16 @@ public class SqlToolPanel extends JPanel {
         }
 
         try {
-            SqlFormatter.FormatOption option = createFormatOption();
-            String formatted = SqlFormatter.format(input, option);
+            String formatted = SqlFormatter.format(input, createFormatOption());
             outputArea.setText(formatted);
-            int lines = formatted.split("\n").length;
-            String message = I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_STATUS_FORMATTED,
-                    String.valueOf(lines), String.valueOf(formatted.length()));
-            updateStatus(message, true);
+            updateStatus(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_STATUS_FORMATTED,
+                    String.valueOf(countLines(formatted)), String.valueOf(formatted.length())), true);
         } catch (Exception ex) {
             log.error("SQL format error", ex);
             handleFormatError(ex);
         }
     }
 
-    /**
-     * 压缩SQL
-     */
     private void compressSql() {
         String input = inputArea.getText().trim();
         if (input.isEmpty()) {
@@ -252,50 +267,18 @@ public class SqlToolPanel extends JPanel {
         }
 
         try {
-            String compressed = SqlFormatter.compress(input);
+            String compressed = SqlFormatter.compress(input, getSelectedDialect());
             outputArea.setText(compressed);
             int reduction = input.length() - compressed.length();
             double percent = reduction > 0 ? (reduction * 100.0) / input.length() : 0;
-            String message = I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_STATUS_COMPRESSED,
-                    String.valueOf(Math.max(0, reduction)), String.format("%.1f", percent));
-            updateStatus(message, true);
+            updateStatus(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_STATUS_COMPRESSED,
+                    String.valueOf(Math.max(0, reduction)), String.format("%.1f", percent)), true);
         } catch (Exception ex) {
             log.error("SQL compress error", ex);
             handleFormatError(ex);
         }
     }
 
-    /**
-     * 创建格式化选项
-     */
-    private SqlFormatter.FormatOption createFormatOption() {
-        int indentSize = (Integer) indentSpinner.getValue();
-        boolean uppercaseKeywords = uppercaseKeywordsCheck.isSelected();
-        boolean addSemicolon = addSemicolonCheck.isSelected();
-        boolean lineBreakAnd = lineBreakAndCheck.isSelected();
-        boolean lineBreakComma = lineBreakCommaCheck.isSelected();
-
-        return new SqlFormatter.FormatOption()
-                .setIndent(indentSize)
-                .setUppercaseKeywords(uppercaseKeywords)
-                .setAddSemicolon(addSemicolon)
-                .setLineBreakBeforeAnd(lineBreakAnd)
-                .setLineBreakBeforeOr(lineBreakAnd)
-                .setLineBreakAfterComma(lineBreakComma);
-    }
-
-    /**
-     * 处理格式化错误
-     */
-    private void handleFormatError(Exception ex) {
-        String errorMsg = "❌ " + I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_ERROR) + ":\n\n" + ex.getMessage();
-        outputArea.setText(errorMsg);
-        updateStatus("❌ " + I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_ERROR) + ": " + ex.getMessage(), false);
-    }
-
-    /**
-     * 验证SQL - 基本的语法检查
-     */
     private void validateSql() {
         String input = inputArea.getText().trim();
         if (input.isEmpty()) {
@@ -305,36 +288,10 @@ public class SqlToolPanel extends JPanel {
         }
 
         try {
-            List<String> issues = new ArrayList<>();
+            SqlFormatter.ValidationResult validationResult = SqlFormatter.validate(input, getSelectedDialect());
+            List<String> issues = new ArrayList<>(validationResult.issues());
 
-            // 基本语法检查
-            int chars = input.length();
-            int lines = input.split("\n").length;
-            int statements = input.split(";").length;
-
-            // 检查括号匹配
-            int openParen = countOccurrences(input, '(');
-            int closeParen = countOccurrences(input, ')');
-            if (openParen != closeParen) {
-                issues.add(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_VALIDATION_PAREN_MISMATCH,
-                        String.valueOf(openParen), String.valueOf(closeParen)));
-            }
-
-            // 检查引号匹配
-            int singleQuotes = countOccurrences(input, '\'');
-            if (singleQuotes % 2 != 0) {
-                issues.add(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_VALIDATION_QUOTE_MISMATCH));
-            }
-
-            // 检查常见SQL关键字
-            boolean hasSelect = containsIgnoreCase(input, "SELECT");
-            boolean hasInsert = containsIgnoreCase(input, "INSERT");
-            boolean hasUpdate = containsIgnoreCase(input, "UPDATE");
-            boolean hasDelete = containsIgnoreCase(input, "DELETE");
-            boolean hasCreate = containsIgnoreCase(input, "CREATE");
-
-            boolean hasValidKeyword = hasSelect || hasInsert || hasUpdate || hasDelete || hasCreate;
-
+            boolean hasValidKeyword = validationResult.statementCount() > 0;
             StringBuilder info = new StringBuilder();
             if (issues.isEmpty() && hasValidKeyword) {
                 info.append("✓ ").append(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_VALIDATION_VALID)).append("\n\n");
@@ -344,9 +301,12 @@ public class SqlToolPanel extends JPanel {
                 info.append("❌ ").append(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_VALIDATION_ISSUES)).append("\n\n");
             }
 
-            info.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_VALIDATION_CHARACTERS)).append(": ").append(chars).append("\n");
-            info.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_VALIDATION_LINES)).append(": ").append(lines).append("\n");
-            info.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_VALIDATION_STATEMENTS)).append(": ").append(statements).append("\n");
+            info.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_VALIDATION_CHARACTERS))
+                    .append(": ").append(input.length()).append("\n");
+            info.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_VALIDATION_LINES))
+                    .append(": ").append(countLines(input)).append("\n");
+            info.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_VALIDATION_STATEMENTS))
+                    .append(": ").append(Math.max(1, validationResult.statementCount())).append("\n");
 
             if (!issues.isEmpty()) {
                 info.append("\n").append(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_VALIDATION_FOUND_ISSUES)).append("\n");
@@ -356,69 +316,71 @@ public class SqlToolPanel extends JPanel {
             }
 
             outputArea.setText(info.toString());
-            updateStatus(issues.isEmpty() ?
-                    I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_STATUS_VALIDATED) :
-                    I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_STATUS_INVALID), issues.isEmpty());
+            updateStatus(issues.isEmpty() && hasValidKeyword
+                            ? I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_STATUS_VALIDATED)
+                            : I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_STATUS_INVALID),
+                    issues.isEmpty() && hasValidKeyword);
         } catch (Exception ex) {
             log.error("SQL validate error", ex);
-            outputArea.setText("❌ " + I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_ERROR) + ":\n\n" + ex.getMessage());
-            updateStatus(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_STATUS_INVALID), false);
+            handleFormatError(ex);
         }
     }
 
+    private SqlFormatter.FormatOption createFormatOption() {
+        int indentSize = (Integer) indentSpinner.getValue();
+        boolean uppercaseKeywords = uppercaseKeywordsCheck.isSelected();
+        boolean addSemicolon = addSemicolonCheck.isSelected();
+        boolean lineBreakAnd = lineBreakAndCheck.isSelected();
+        boolean lineBreakComma = lineBreakCommaCheck.isSelected();
 
-    /**
-     * 加载示例 SQL
-     */
+        return new SqlFormatter.FormatOption()
+                .setIndent(indentSize)
+                .setDialect(getSelectedDialect())
+                .setUppercaseKeywords(uppercaseKeywords)
+                .setAddSemicolon(addSemicolon)
+                .setLineBreakBeforeAnd(lineBreakAnd)
+                .setLineBreakBeforeOr(lineBreakAnd)
+                .setLineBreakAfterComma(lineBreakComma);
+    }
+
+    private void handleFormatError(Exception ex) {
+        String errorMessage = "❌ " + I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_ERROR) + ":\n\n" + ex.getMessage();
+        outputArea.setText(errorMessage);
+        updateStatus("❌ " + I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_ERROR) + ": " + ex.getMessage(), false);
+    }
+
     private void loadSampleSql() {
-        String sampleSql =
-            "select u.id,u.name,u.email,u.created_at,o.order_id,o.total,o.status " +
-            "from users u " +
-            "left join orders o on u.id=o.user_id " +
-            "where u.status=1 and u.created_at>='2024-01-01' and (o.total>100 or o.status='paid') " +
-            "group by u.id " +
-            "having count(o.order_id)>0 " +
-            "order by u.created_at desc,o.total desc " +
-            "limit 100";
-
+        String sampleSql = switch (getSelectedDialect()) {
+            case MYSQL -> "select u.id,u.name,sum(o.total) total from `users` u left join `orders` o on u.id=o.user_id where u.status=1 and o.created_at>='2024-01-01' group by u.id order by total desc limit 20";
+            case POSTGRESQL -> "with recent_orders as (select user_id,total from orders where created_at >= now() - interval '7 day') select u.id,u.name,sum(r.total) as total from \"users\" u join recent_orders r on u.id=r.user_id group by u.id,u.name returning u.id";
+            case SQLSERVER -> "select top 20 u.id,u.name,o.total from [users] u left join [orders] o on u.id=o.user_id where u.status=1 order by o.total desc";
+            case ORACLE -> "select u.id,u.name,o.total from users u left join orders o on u.id=o.user_id where u.status=1 and o.created_at >= to_date('2024-01-01','yyyy-mm-dd') order by o.total desc";
+            case GENERIC -> "select u.id,u.name,u.email,u.created_at,o.order_id,o.total,o.status from users u left join orders o on u.id=o.user_id where u.status=1 and u.created_at>='2024-01-01' and (o.total>100 or o.status='paid') group by u.id having count(o.order_id)>0 order by u.created_at desc,o.total desc limit 100";
+        };
         inputArea.setText(sampleSql);
+        outputArea.setText("");
         updateStatus("✅ " + I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_STATUS_SAMPLE_LOADED), true);
     }
 
-    /**
-     * 更新输出区域信息
-     */
-    private void updateOutputInfo(JLabel infoLabel) {
-        String text = outputArea.getText();
-        if (text.isEmpty()) {
-            infoLabel.setText(" ");
-            return;
-        }
-
-        int lines = text.split("\n").length;
-        int chars = text.length();
-        String format = I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_OUTPUT_INFO_FORMAT,
-                String.valueOf(lines), String.valueOf(chars));
-        infoLabel.setText("  " + format);
+    private SqlFormatter.SqlDialect getSelectedDialect() {
+        Object selected = dialectComboBox.getSelectedItem();
+        return selected instanceof SqlFormatter.SqlDialect dialect ? dialect : SqlFormatter.SqlDialect.GENERIC;
     }
 
-    /**
-     * 统计字符出现次数
-     */
-    private int countOccurrences(String str, char ch) {
-        return (int) str.chars().filter(c -> c == ch).count();
+    private String getDialectDisplayName(SqlFormatter.SqlDialect dialect) {
+        return switch (dialect) {
+            case MYSQL -> I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_DIALECT_MYSQL);
+            case POSTGRESQL -> I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_DIALECT_POSTGRESQL);
+            case SQLSERVER -> I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_DIALECT_SQLSERVER);
+            case ORACLE -> I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_DIALECT_ORACLE);
+            case GENERIC -> I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_DIALECT_GENERIC);
+        };
     }
 
-    /**
-     * 忽略大小写检查包含
-     */
-    private boolean containsIgnoreCase(String str, String search) {
-        return str.toLowerCase().contains(search.toLowerCase());
+    private int countLines(String text) {
+        return text.isEmpty() ? 0 : text.split("\n", -1).length;
     }
 
-    /**
-     * 交换输入和输出区域的内容
-     */
     private void swapInputOutput() {
         String inputText = inputArea.getText();
         String outputText = outputArea.getText();
@@ -427,9 +389,6 @@ public class SqlToolPanel extends JPanel {
         updateStatus(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_STATUS_SWAPPED), true);
     }
 
-    /**
-     * 从剪贴板粘贴
-     */
     private void pasteFromClipboard() {
         try {
             String text = (String) Toolkit.getDefaultToolkit()
@@ -437,6 +396,7 @@ public class SqlToolPanel extends JPanel {
                     .getData(DataFlavor.stringFlavor);
             if (text != null && !text.isEmpty()) {
                 inputArea.setText(text);
+                outputArea.setText("");
                 updateStatus(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_STATUS_PASTED), true);
             }
         } catch (Exception ex) {
@@ -445,9 +405,6 @@ public class SqlToolPanel extends JPanel {
         }
     }
 
-    /**
-     * 复制到剪贴板
-     */
     private void copyToClipboard() {
         String text = outputArea.getText();
         if (!text.isEmpty()) {
@@ -459,26 +416,18 @@ public class SqlToolPanel extends JPanel {
         }
     }
 
-    /**
-     * 清空所有区域
-     */
     private void clearAll() {
         inputArea.setText("");
         outputArea.setText("");
         updateStatus(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_STATUS_CLEARED), true);
     }
 
-    /**
-     * 更新状态栏
-     */
     private void updateStatus(String message, boolean success) {
         statusLabel.setText(message);
         statusLabel.setForeground(success ? new Color(0, 128, 0) : new Color(180, 0, 0));
 
-        // 3秒后清除状态
         Timer timer = new Timer(3000, e -> statusLabel.setText(" "));
         timer.setRepeats(false);
         timer.start();
     }
 }
-

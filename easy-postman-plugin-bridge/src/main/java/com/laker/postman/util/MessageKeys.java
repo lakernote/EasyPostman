@@ -1872,6 +1872,12 @@ public final class MessageKeys {
     public static final String TOOLBOX_SQL_ERROR = "toolbox.sql.error";
     public static final String TOOLBOX_SQL_OPTIONS = "toolbox.sql.options";
     public static final String TOOLBOX_SQL_INDENT = "toolbox.sql.indent";
+    public static final String TOOLBOX_SQL_DIALECT = "toolbox.sql.dialect";
+    public static final String TOOLBOX_SQL_DIALECT_GENERIC = "toolbox.sql.dialect.generic";
+    public static final String TOOLBOX_SQL_DIALECT_MYSQL = "toolbox.sql.dialect.mysql";
+    public static final String TOOLBOX_SQL_DIALECT_POSTGRESQL = "toolbox.sql.dialect.postgresql";
+    public static final String TOOLBOX_SQL_DIALECT_SQLSERVER = "toolbox.sql.dialect.sqlserver";
+    public static final String TOOLBOX_SQL_DIALECT_ORACLE = "toolbox.sql.dialect.oracle";
     public static final String TOOLBOX_SQL_UPPERCASE_KEYWORDS = "toolbox.sql.uppercase_keywords";
     public static final String TOOLBOX_SQL_ADD_SEMICOLON = "toolbox.sql.add_semicolon";
     public static final String TOOLBOX_SQL_LINE_BREAK_AND_OR = "toolbox.sql.line_break_and_or";
@@ -1900,6 +1906,12 @@ public final class MessageKeys {
     public static final String TOOLBOX_SQL_VALIDATION_PAREN_MISMATCH = "toolbox.sql.validation.paren_mismatch";
     public static final String TOOLBOX_SQL_VALIDATION_QUOTE_MISMATCH = "toolbox.sql.validation.quote_mismatch";
     public static final String TOOLBOX_SQL_VALIDATION_FOUND_ISSUES = "toolbox.sql.validation.found_issues";
+    public static final String TOOLBOX_SQL_VALIDATION_UNTERMINATED_STRING = "toolbox.sql.validation.unterminated_string";
+    public static final String TOOLBOX_SQL_VALIDATION_UNTERMINATED_COMMENT = "toolbox.sql.validation.unterminated_comment";
+    public static final String TOOLBOX_SQL_VALIDATION_INCOMPLETE_STATEMENT = "toolbox.sql.validation.incomplete_statement";
+    public static final String TOOLBOX_SQL_VALIDATION_EXPECTED_AFTER = "toolbox.sql.validation.expected_after";
+    public static final String TOOLBOX_SQL_VALIDATION_EXPECTED_KEYWORD_AFTER = "toolbox.sql.validation.expected_keyword_after";
+    public static final String TOOLBOX_SQL_VALIDATION_MISSING_KEYWORD = "toolbox.sql.validation.missing_keyword";
 
     // SQL 工具提示
     public static final String TOOLBOX_SQL_TOOLTIP_FORMAT = "toolbox.sql.tooltip.format";

@@ -1027,6 +1027,15 @@ public class SidebarTabPanel extends SingletonBasePanel {
         }
     }
 
+    public boolean showTab(SidebarTab sidebarTab) {
+        int tabIndex = getTabIndex(sidebarTab);
+        if (tabIndex < 0 || tabIndex >= tabbedPane.getTabCount()) {
+            return false;
+        }
+        tabbedPane.setSelectedIndex(tabIndex);
+        return true;
+    }
+
     /**
      * 重新创建标签页以应用新的展开/收起状态
      */

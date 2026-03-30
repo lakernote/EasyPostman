@@ -7,6 +7,7 @@ import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.script.TestResult;
 import com.laker.postman.panel.collections.right.request.sub.ResponsePanel;
 import com.laker.postman.panel.sidebar.ConsolePanel;
+import com.laker.postman.service.http.NetworkErrorMessageResolver;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.RedirectHandler;
 import com.laker.postman.service.http.sse.SseResEventListener;
@@ -147,9 +148,10 @@ final class HttpRequestExecutionHelper {
                     log.warn("Request interrupted: {} {} - {}", req.method, req.url, ex.getMessage());
                 } catch (Exception ex) {
                     log.error("Error executing HTTP request: {} {} - {}", req.method, req.url, ex.getMessage(), ex);
-                    ConsolePanel.appendLog("[Error] " + ex.getMessage(), ConsolePanel.LogType.ERROR);
+                    String userFriendlyMessage = NetworkErrorMessageResolver.toUserFriendlyMessage(ex);
+                    ConsolePanel.appendLog("[Error] " + userFriendlyMessage, ConsolePanel.LogType.ERROR);
                     if (!disposedSupplier.getAsBoolean()) {
-                        NotificationUtil.showError(ex.getMessage());
+                        NotificationUtil.showError(userFriendlyMessage);
                     }
                 }
                 return null;

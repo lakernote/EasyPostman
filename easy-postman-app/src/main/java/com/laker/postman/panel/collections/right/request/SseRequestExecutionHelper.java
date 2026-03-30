@@ -6,6 +6,7 @@ import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.script.TestResult;
 import com.laker.postman.panel.collections.right.request.sub.ResponsePanel;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
+import com.laker.postman.service.http.NetworkErrorMessageResolver;
 import com.laker.postman.service.http.sse.SseEventListener;
 import com.laker.postman.service.http.sse.SseUiCallback;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
@@ -146,12 +147,13 @@ final class SseRequestExecutionHelper {
                     responsePanel.setResponseTabButtonsEnable(true);
                 } catch (Exception ex) {
                     log.error("Error executing SSE request: {} - {}", req.url, ex.getMessage(), ex);
+                    String userFriendlyMessage = NetworkErrorMessageResolver.toUserFriendlyMessage(ex);
                     SwingUtilities.invokeLater(() -> {
                         if (disposedSupplier.getAsBoolean()) {
                             return;
                         }
                         responsePanel.setStatus(0);
-                        NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.SSE_ERROR, ex.getMessage()));
+                        NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.SSE_ERROR, userFriendlyMessage));
                     });
                 }
                 return null;

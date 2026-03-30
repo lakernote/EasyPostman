@@ -27,21 +27,36 @@ public class NotificationUtil {
         KeyboardFocusManager focusManager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
         Window activeWindow = focusManager.getActiveWindow();
         if (activeWindow != null && activeWindow.isShowing()) {
-            return activeWindow;
+            return resolveNotificationAnchor(activeWindow);
         }
 
         Window focusedWindow = focusManager.getFocusedWindow();
         if (focusedWindow != null && focusedWindow.isShowing()) {
-            return focusedWindow;
+            return resolveNotificationAnchor(focusedWindow);
         }
 
         for (Window window : Window.getWindows()) {
             if (window.isShowing() && window.isActive()) {
-                return window;
+                return resolveNotificationAnchor(window);
             }
         }
 
         return JOptionPane.getRootFrame();
+    }
+
+    /**
+     * 通知默认挂到最外层可见 owner 上，避免在模态对话框里触发时贴在子窗口边缘。
+     */
+    private static Window resolveNotificationAnchor(Window window) {
+        Window anchor = window;
+        Window owner = window.getOwner();
+        while (owner != null) {
+            if (owner.isShowing()) {
+                anchor = owner;
+            }
+            owner = owner.getOwner();
+        }
+        return anchor;
     }
 
     // ==================== 通知类型 ====================

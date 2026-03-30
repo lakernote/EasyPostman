@@ -791,7 +791,7 @@ public class SettingManager {
         if (val != null) {
             return Boolean.parseBoolean(val);
         }
-        return true; // 默认启用系统代理检测
+        return false; // 默认关闭代理
     }
 
     public static void setProxyEnabled(boolean enabled) {
@@ -804,10 +804,10 @@ public class SettingManager {
      */
     public static String getProxyMode() {
         String val = props.getProperty("proxy_mode");
-        if (PROXY_MODE_MANUAL.equalsIgnoreCase(val)) {
-            return PROXY_MODE_MANUAL;
+        if (PROXY_MODE_SYSTEM.equalsIgnoreCase(val)) {
+            return PROXY_MODE_SYSTEM;
         }
-        return PROXY_MODE_SYSTEM;
+        return PROXY_MODE_MANUAL;
     }
 
     public static void setProxyMode(String mode) {
@@ -876,6 +876,11 @@ public class SettingManager {
             }
         }
         return 8080; // 默认8080端口
+    }
+
+    public static String getProxyPortText() {
+        String val = props.getProperty("proxy_port");
+        return val != null ? val : "";
     }
 
     public static void setProxyPort(int port) {

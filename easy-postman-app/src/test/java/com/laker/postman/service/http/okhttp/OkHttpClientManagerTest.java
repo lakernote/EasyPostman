@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Properties;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
@@ -26,7 +27,7 @@ import static org.testng.Assert.assertTrue;
 public class OkHttpClientManagerTest {
 
     @Test
-    public void defaultProxySettingsShouldEnableSystemProxyDetectionWhenUnset() throws Exception {
+    public void defaultProxySettingsShouldDisableProxyWhenUnset() throws Exception {
         Properties props = getSettingsProperties();
         Properties backup = new Properties();
         backup.putAll(props);
@@ -34,9 +35,10 @@ public class OkHttpClientManagerTest {
         try {
             props.clear();
 
-            assertTrue(SettingManager.isProxyEnabled());
-            assertEquals(SettingManager.getProxyMode(), SettingManager.PROXY_MODE_SYSTEM);
-            assertTrue(SettingManager.isSystemProxyMode());
+            assertFalse(SettingManager.isProxyEnabled());
+            assertEquals(SettingManager.getProxyMode(), SettingManager.PROXY_MODE_MANUAL);
+            assertTrue(SettingManager.isManualProxyMode());
+            assertEquals(SettingManager.getProxyPortText(), "");
         } finally {
             props.clear();
             props.putAll(backup);

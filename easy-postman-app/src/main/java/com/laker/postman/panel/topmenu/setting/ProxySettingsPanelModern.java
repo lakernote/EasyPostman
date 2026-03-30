@@ -90,7 +90,7 @@ public class ProxySettingsPanelModern extends ModernSettingsPanel {
         proxySection.add(proxyHostRow);
         proxySection.add(createVerticalSpace(FIELD_SPACING));
         proxyPortField = new JTextField(10);
-        proxyPortField.setText(String.valueOf(SettingManager.getProxyPort()));
+        proxyPortField.setText(SettingManager.getProxyPortText());
         JPanel proxyPortRow = createFieldRow(
                 I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_PORT),
                 I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_PORT_TOOLTIP),

@@ -6,6 +6,10 @@ import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.ioc.Component;
 import com.laker.postman.ioc.PostConstruct;
+import com.laker.postman.model.HttpFormData;
+import com.laker.postman.model.HttpFormUrlencoded;
+import com.laker.postman.model.HttpHeader;
+import com.laker.postman.model.HttpParam;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestHistoryItem;
@@ -21,6 +25,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -60,7 +65,7 @@ public class HistoryPersistenceService {
     /**
      * 添加历史记录
      */
-    public void addHistory(PreparedRequest request, HttpResponse response, long requestTime) {
+    public RequestHistoryItem addHistory(PreparedRequest request, HttpResponse response, long requestTime) {
         RequestHistoryItem item = new RequestHistoryItem(request, response, requestTime);
         historyItems.add(0, item); // 添加到开头
 
@@ -72,6 +77,7 @@ public class HistoryPersistenceService {
 
         // 异步保存
         saveHistoryAsync();
+        return item;
     }
 
     /**
@@ -87,6 +93,18 @@ public class HistoryPersistenceService {
     public void clearHistory() {
         historyItems.clear();
         saveHistoryAsync();
+    }
+
+    /**
+     * 删除单条历史记录
+     */
+    public void removeHistory(RequestHistoryItem item) {
+        if (item == null) {
+            return;
+        }
+        if (historyItems.remove(item)) {
+            saveHistoryAsync();
+        }
     }
 
     /**
@@ -106,7 +124,7 @@ public class HistoryPersistenceService {
             }
 
             // 写入文件
-            String jsonString = JSONUtil.toJsonPrettyStr(jsonArray);
+            String jsonString = JSONUtil.toJsonStr(jsonArray);
             Files.writeString(Paths.get(HISTORY_FILE), jsonString, StandardCharsets.UTF_8);
         } catch (IOException e) {
             log.error("Failed to save history: {}", e.getMessage());
@@ -253,19 +271,31 @@ public class HistoryPersistenceService {
         JSONObject requestJson = new JSONObject();
         requestJson.set("method", item.request.method);
         requestJson.set("url", item.request.url);
-        // 请求体 - 优先保存实际发送的okHttpRequestBody，但限制大小
+        // 请求体 - 保留完整内容，历史记录支持重新打开为可编辑请求时需要精确还原
         String requestBody = "";
         if (item.request.okHttpRequestBody != null && !item.request.okHttpRequestBody.isEmpty()) {
             requestBody = item.request.okHttpRequestBody;
         } else if (item.request.body != null) {
             requestBody = item.request.body;
         }
-        // 限制请求体大小
         requestBody = truncateBody(requestBody, MAX_REQUEST_BODY_SIZE);
         requestJson.set("body", requestBody);
+        if (!Objects.equals(item.request.body, requestBody)) {
+            requestJson.set("originalBody", truncateBody(item.request.body, MAX_REQUEST_BODY_SIZE));
+        }
+        requestJson.set("bodyType", item.request.bodyType);
         requestJson.set("id", item.request.id);
         requestJson.set("followRedirects", item.request.followRedirects);
         requestJson.set("isMultipart", item.request.isMultipart);
+        requestJson.set("cookieJarEnabled", item.request.cookieJarEnabled);
+        requestJson.set("sslVerificationEnabled", item.request.sslVerificationEnabled);
+        requestJson.set("httpVersion", item.request.httpVersion);
+        requestJson.set("requestTimeoutMs", item.request.requestTimeoutMs);
+        requestJson.set("collectBasicInfo", item.request.collectBasicInfo);
+        requestJson.set("collectEventInfo", item.request.collectEventInfo);
+        requestJson.set("enableNetworkLog", item.request.enableNetworkLog);
+        requestJson.set("prescript", item.request.prescript);
+        requestJson.set("postscript", item.request.postscript);
 
         // 请求头 - 优先保存实际发送的okHttpHeaders
         JSONObject requestHeaders = new JSONObject();
@@ -278,6 +308,10 @@ public class HistoryPersistenceService {
             }
         }
         requestJson.set("headers", requestHeaders);
+        requestJson.set("headersList", convertHeadersListToJson(item.request.headersList));
+        requestJson.set("paramsList", convertParamsListToJson(item.request.paramsList));
+        requestJson.set("formDataList", convertFormDataListToJson(item.request.formDataList));
+        requestJson.set("urlencodedList", convertUrlencodedListToJson(item.request.urlencodedList));
 
 
         jsonItem.set("request", requestJson);
@@ -364,12 +398,25 @@ public class HistoryPersistenceService {
         JSONObject requestJson = jsonItem.getJSONObject("request");
         request.method = requestJson.getStr("method");
         request.url = requestJson.getStr("url");
-        request.body = requestJson.getStr("body");
-        // 同时设置 okHttpRequestBody 供 HttpHtmlRenderer 使用
-        request.okHttpRequestBody = request.body;
+        request.body = requestJson.getStr("originalBody", requestJson.getStr("body"));
+        request.bodyType = requestJson.getStr("bodyType");
+        request.okHttpRequestBody = requestJson.getStr("body");
         request.id = requestJson.getStr("id");
         request.followRedirects = requestJson.getBool("followRedirects", true);
         request.isMultipart = requestJson.getBool("isMultipart", false);
+        request.cookieJarEnabled = requestJson.getBool("cookieJarEnabled", true);
+        request.sslVerificationEnabled = requestJson.getBool("sslVerificationEnabled", true);
+        request.httpVersion = requestJson.getStr("httpVersion");
+        request.requestTimeoutMs = requestJson.getInt("requestTimeoutMs", 0);
+        request.collectBasicInfo = requestJson.getBool("collectBasicInfo", true);
+        request.collectEventInfo = requestJson.getBool("collectEventInfo", true);
+        request.enableNetworkLog = requestJson.getBool("enableNetworkLog", false);
+        request.prescript = requestJson.getStr("prescript");
+        request.postscript = requestJson.getStr("postscript");
+        request.headersList = convertHeadersListFromJson(requestJson.getJSONArray("headersList"));
+        request.paramsList = convertParamsListFromJson(requestJson.getJSONArray("paramsList"));
+        request.formDataList = convertFormDataListFromJson(requestJson.getJSONArray("formDataList"));
+        request.urlencodedList = convertUrlencodedListFromJson(requestJson.getJSONArray("urlencodedList"));
 
         // 重建请求头 - 构建 okHttpHeaders 供 HttpHtmlRenderer 使用
         JSONObject requestHeaders = requestJson.getJSONObject("headers");
@@ -378,6 +425,19 @@ public class HistoryPersistenceService {
             for (String key : requestHeaders.keySet()) {
                 try {
                     headersBuilder.add(key, requestHeaders.getStr(key));
+                } catch (Exception e) {
+                    // 忽略无效的头信息
+                }
+            }
+            request.okHttpHeaders = headersBuilder.build();
+        } else if (request.headersList != null && !request.headersList.isEmpty()) {
+            okhttp3.Headers.Builder headersBuilder = new okhttp3.Headers.Builder();
+            for (HttpHeader header : request.headersList) {
+                if (header == null || !header.isEnabled() || header.getKey() == null || header.getKey().isBlank()) {
+                    continue;
+                }
+                try {
+                    headersBuilder.add(header.getKey(), header.getValue());
                 } catch (Exception e) {
                     // 忽略无效的头信息
                 }
@@ -468,5 +528,143 @@ public class HistoryPersistenceService {
         long requestTime = jsonItem.getLong("requestTime", System.currentTimeMillis());
 
         return new RequestHistoryItem(request, response, requestTime);
+    }
+
+    private JSONArray convertHeadersListToJson(List<HttpHeader> headersList) {
+        JSONArray jsonArray = new JSONArray();
+        if (headersList == null) {
+            return jsonArray;
+        }
+        for (HttpHeader header : headersList) {
+            if (header == null) {
+                continue;
+            }
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.set("enabled", header.isEnabled());
+            jsonObject.set("key", header.getKey());
+            jsonObject.set("value", header.getValue());
+            jsonArray.add(jsonObject);
+        }
+        return jsonArray;
+    }
+
+    private List<HttpHeader> convertHeadersListFromJson(JSONArray jsonArray) {
+        List<HttpHeader> headersList = new ArrayList<>();
+        if (jsonArray == null) {
+            return headersList;
+        }
+        for (int i = 0; i < jsonArray.size(); i++) {
+            JSONObject jsonObject = jsonArray.getJSONObject(i);
+            headersList.add(new HttpHeader(
+                    jsonObject.getBool("enabled", true),
+                    jsonObject.getStr("key", ""),
+                    jsonObject.getStr("value", "")
+            ));
+        }
+        return headersList;
+    }
+
+    private JSONArray convertParamsListToJson(List<HttpParam> paramsList) {
+        JSONArray jsonArray = new JSONArray();
+        if (paramsList == null) {
+            return jsonArray;
+        }
+        for (HttpParam param : paramsList) {
+            if (param == null) {
+                continue;
+            }
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.set("enabled", param.isEnabled());
+            jsonObject.set("key", param.getKey());
+            jsonObject.set("value", param.getValue());
+            jsonArray.add(jsonObject);
+        }
+        return jsonArray;
+    }
+
+    private List<HttpParam> convertParamsListFromJson(JSONArray jsonArray) {
+        List<HttpParam> paramsList = new ArrayList<>();
+        if (jsonArray == null) {
+            return paramsList;
+        }
+        for (int i = 0; i < jsonArray.size(); i++) {
+            JSONObject jsonObject = jsonArray.getJSONObject(i);
+            paramsList.add(new HttpParam(
+                    jsonObject.getBool("enabled", true),
+                    jsonObject.getStr("key", ""),
+                    jsonObject.getStr("value", "")
+            ));
+        }
+        return paramsList;
+    }
+
+    private JSONArray convertFormDataListToJson(List<HttpFormData> formDataList) {
+        JSONArray jsonArray = new JSONArray();
+        if (formDataList == null) {
+            return jsonArray;
+        }
+        for (HttpFormData formData : formDataList) {
+            if (formData == null) {
+                continue;
+            }
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.set("enabled", formData.isEnabled());
+            jsonObject.set("key", formData.getKey());
+            jsonObject.set("type", formData.getType());
+            jsonObject.set("value", formData.getValue());
+            jsonArray.add(jsonObject);
+        }
+        return jsonArray;
+    }
+
+    private List<HttpFormData> convertFormDataListFromJson(JSONArray jsonArray) {
+        List<HttpFormData> formDataList = new ArrayList<>();
+        if (jsonArray == null) {
+            return formDataList;
+        }
+        for (int i = 0; i < jsonArray.size(); i++) {
+            JSONObject jsonObject = jsonArray.getJSONObject(i);
+            formDataList.add(new HttpFormData(
+                    jsonObject.getBool("enabled", true),
+                    jsonObject.getStr("key", ""),
+                    jsonObject.getStr("type", HttpFormData.TYPE_TEXT),
+                    jsonObject.getStr("value", "")
+            ));
+        }
+        return formDataList;
+    }
+
+    private JSONArray convertUrlencodedListToJson(List<HttpFormUrlencoded> urlencodedList) {
+        JSONArray jsonArray = new JSONArray();
+        if (urlencodedList == null) {
+            return jsonArray;
+        }
+        for (HttpFormUrlencoded urlencoded : urlencodedList) {
+            if (urlencoded == null) {
+                continue;
+            }
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.set("enabled", urlencoded.isEnabled());
+            jsonObject.set("key", urlencoded.getKey());
+            jsonObject.set("value", urlencoded.getValue());
+            jsonArray.add(jsonObject);
+        }
+        return jsonArray;
+    }
+
+    private List<HttpFormUrlencoded> convertUrlencodedListFromJson(JSONArray jsonArray) {
+        List<HttpFormUrlencoded> urlencodedList = new ArrayList<>();
+        if (jsonArray == null) {
+            return urlencodedList;
+        }
+        for (int i = 0; i < jsonArray.size(); i++) {
+            JSONObject jsonObject = jsonArray.getJSONObject(i);
+            urlencodedList.add(new HttpFormUrlencoded(
+                    jsonObject.getBool("enabled", true),
+                    jsonObject.getStr("key", ""),
+                    jsonObject.getStr("value", "")
+            ));
+        }
+        return urlencodedList;
     }
 }

@@ -709,6 +709,32 @@ public final class MessageKeys {
     public static final String HISTORY_EMPTY_BODY = "history.empty_body";
     public static final String HISTORY_TODAY = "history.today";
     public static final String HISTORY_YESTERDAY = "history.yesterday";
+    public static final String HISTORY_SEARCH_PLACEHOLDER = "history.search_placeholder";
+    public static final String HISTORY_FILTER_ALL = "history.filter.all";
+    public static final String HISTORY_FILTER_SUCCESS = "history.filter.success";
+    public static final String HISTORY_FILTER_ERROR = "history.filter.error";
+    public static final String HISTORY_AGGREGATE_TOOLTIP = "history.aggregate.tooltip";
+    public static final String HISTORY_STATS = "history.stats";
+    public static final String HISTORY_EMPTY_FILTERED = "history.empty_filtered";
+    public static final String HISTORY_OVERVIEW_BODY = "history.overview.body";
+    public static final String HISTORY_OVERVIEW_ENDPOINT_CARD = "history.overview.endpoint_card";
+    public static final String HISTORY_OVERVIEW_PAYLOAD_CARD = "history.overview.payload_card";
+    public static final String HISTORY_OVERVIEW_STRUCTURE_CARD = "history.overview.structure_card";
+    public static final String HISTORY_OVERVIEW_RESULT_CARD = "history.overview.result_card";
+    public static final String HISTORY_OVERVIEW_PARAMS = "history.overview.params";
+    public static final String HISTORY_OVERVIEW_HEADERS = "history.overview.headers";
+    public static final String HISTORY_OVERVIEW_FORM_DATA = "history.overview.form_data";
+    public static final String HISTORY_OVERVIEW_URLENCODED = "history.overview.urlencoded";
+    public static final String HISTORY_OVERVIEW_HEADERS_SHORT = "history.overview.headers_short";
+    public static final String HISTORY_OVERVIEW_FORM_DATA_SHORT = "history.overview.form_data_short";
+    public static final String HISTORY_OVERVIEW_URLENCODED_SHORT = "history.overview.urlencoded_short";
+    public static final String HISTORY_OVERVIEW_PRESCRIPT = "history.overview.prescript";
+    public static final String HISTORY_OVERVIEW_POSTSCRIPT = "history.overview.postscript";
+    public static final String HISTORY_OVERVIEW_BODY_NONE = "history.overview.body.none";
+    public static final String HISTORY_OVERVIEW_BODY_RAW = "history.overview.body.raw";
+    public static final String HISTORY_OVERVIEW_BODY_FORM_DATA = "history.overview.body.form_data";
+    public static final String HISTORY_OVERVIEW_BODY_URLENCODED = "history.overview.body.urlencoded";
+    public static final String HISTORY_OPEN_REQUEST_TAB_HIDDEN = "history.open_request_tab_hidden";
 
     // ============ Tab标签页相关 ============
     public static final String TAB_REQUEST = "tab.request";
@@ -1767,6 +1793,7 @@ public final class MessageKeys {
     public static final String SETTINGS_PROXY_STATUS_SYSTEM_ACTIVE = "settings.proxy.status.system.active";
     public static final String SETTINGS_PROXY_STATUS_DIRECT = "settings.proxy.status.direct";
     public static final String SETTINGS_PROXY_STATUS_UNAVAILABLE = "settings.proxy.status.unavailable";
+    public static final String NETWORK_ERROR_PROXY_SOCKS_MALFORMED = "network.error.proxy.socks.malformed";
 
     // ============ 工具箱相关 ============
     public static final String TOOLBOX_ENCODER = "toolbox.encoder";

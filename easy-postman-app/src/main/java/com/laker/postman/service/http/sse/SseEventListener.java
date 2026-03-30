@@ -2,6 +2,7 @@ package com.laker.postman.service.http.sse;
 
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.service.http.HttpService;
+import com.laker.postman.service.http.NetworkErrorMessageResolver;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
@@ -80,7 +81,9 @@ public class SseEventListener extends EventSourceListener {
             callback.onClosed(resp);
             return;
         }
-        String errorMsg = throwable != null ? throwable.getMessage() : "未知错误";
+        String errorMsg = throwable != null
+                ? NetworkErrorMessageResolver.toUserFriendlyMessage(throwable)
+                : "未知错误";
         callback.onFailure(errorMsg, resp);
     }
 

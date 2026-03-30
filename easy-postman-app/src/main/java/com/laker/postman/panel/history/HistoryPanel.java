@@ -1,162 +1,384 @@
 package com.laker.postman.panel.history;
 
 import com.laker.postman.common.SingletonBasePanel;
+import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.button.ClearButton;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.ioc.BeanFactory;
+import com.laker.postman.model.HttpFormData;
+import com.laker.postman.model.HttpFormUrlencoded;
+import com.laker.postman.model.HttpHeader;
+import com.laker.postman.model.HttpParam;
+import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestHistoryItem;
+import com.laker.postman.model.RequestItemProtocolEnum;
+import com.laker.postman.model.SidebarTab;
+import com.laker.postman.panel.collections.right.RequestEditPanel;
+import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
+import com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel;
+import com.laker.postman.panel.sidebar.SidebarTabPanel;
 import com.laker.postman.service.HistoryPersistenceService;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.NotificationUtil;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.*;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.net.URI;
+import java.text.BreakIterator;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 历史记录面板
  */
 public class HistoryPanel extends SingletonBasePanel {
+    private static final int HISTORY_SIDEBAR_WIDTH = 360;
+    private static final int HISTORY_SIDEBAR_INSET = 8;
+    private static final int FILTER_DEBOUNCE_MS = 180;
+
     private JList<Object> historyList;
     private JPanel historyDetailPanel;
-    private JPanel titlePanel; // 标题面板，用于主题切换时更新边框
+    private JPanel titlePanel;
     private JTextPane requestPane;
     private JTextPane responsePane;
     private JTextPane timingPane;
     private JTextPane eventPane;
     private DefaultListModel<Object> historyListModel;
+    private SearchTextField searchField;
+    private JLabel statsLabel;
+    private JLabel detailTitleLabel;
+    private JLabel detailMetaLabel;
+    private JLabel endpointValueLabel;
+    private JLabel endpointDetailLabel;
+    private JLabel payloadValueLabel;
+    private JLabel payloadDetailLabel;
+    private JLabel structureValueLabel;
+    private JLabel structureDetailLabel;
+    private JLabel resultValueLabel;
+    private JLabel resultDetailLabel;
+    private JButton openRequestButton;
+    private JButton deleteItemButton;
 
-    // 缓存当前选中的项，避免重复渲染
-    private RequestHistoryItem currentSelectedItem = null;
-    // 标记是否正在更新，避免递归
+    private final List<RequestHistoryItem> allHistoryItems = new ArrayList<>();
+    private final Set<String> collapsedGroups = new HashSet<>();
+    private final Set<String> expandedEndpointGroups = new HashSet<>();
+    private RequestHistoryItem currentSelectedItem;
     private volatile boolean isUpdating = false;
-    // 缓存日期格式化器
-    private SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd");
-    // 缓存今天和昨天的时间戳
+    private volatile boolean suppressSelectionSync = false;
+    private int hoveredHistoryIndex = -1;
+    private final SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd");
+    private final SimpleDateFormat detailTimeFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     private long todayStartCache = 0;
     private long yesterdayStartCache = 0;
+    private Timer filterDebounceTimer;
+    private SwingWorker<HistoryListBuildResult, Void> historyListBuildWorker;
+    private final AtomicInteger historyListBuildVersion = new AtomicInteger();
+
+    private record HistoryVisualInfo(String title, String subtitle, String fullUrl) {
+    }
+
+    private record HistoryGroupHeader(String label, int count, boolean collapsed) {
+    }
+
+    private record EndpointGroupHeader(String key, String title, String subtitle, int count,
+                                       RequestHistoryItem latestItem, boolean expanded,
+                                       int successRate, List<Integer> recentStatusCodes) {
+    }
+
+    private record OverviewCardLabels(JLabel valueLabel, JLabel detailLabel) {
+    }
+
+    private record HistoryListBuildResult(List<RequestHistoryItem> filteredItems,
+                                          List<Object> displayItems,
+                                          int totalCount,
+                                          long failedCount) {
+    }
 
     @Override
     protected void initUI() {
-        JTabbedPane historyDetailTabPane;
         setLayout(new BorderLayout());
+        add(createHeaderPanel(), BorderLayout.PAGE_START);
+        add(createContentPanel(), BorderLayout.CENTER);
+        setMinimumSize(new Dimension(0, 120));
+        filterDebounceTimer = new Timer(FILTER_DEBOUNCE_MS, e -> rebuildHistoryListModel(currentSelectedItem));
+        filterDebounceTimer.setRepeats(false);
+
+        SwingUtilities.invokeLater(this::loadPersistedHistory);
+    }
+
+    private JPanel createHeaderPanel() {
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setOpaque(false);
+
         titlePanel = new JPanel(new BorderLayout());
-        // 复合边框
         titlePanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()), // 外边框
-                BorderFactory.createEmptyBorder(4, 8, 4, 8) // 内边框
+                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()),
+                BorderFactory.createEmptyBorder(4, 8, 4, 8)
         ));
+
         JLabel title = new JLabel(I18nUtil.getMessage(MessageKeys.MENU_HISTORY));
         title.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +1));
+
         ClearButton clearBtn = new ClearButton();
         clearBtn.addActionListener(e -> clearRequestHistory());
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         btnPanel.setOpaque(false);
         btnPanel.add(clearBtn);
+
         titlePanel.add(title, BorderLayout.WEST);
         titlePanel.add(btnPanel, BorderLayout.EAST);
-        add(titlePanel, BorderLayout.PAGE_START);
 
-        // 历史列表
+        JPanel filterPanel = new JPanel(new BorderLayout(10, 0));
+        filterPanel.setOpaque(false);
+        filterPanel.setBorder(BorderFactory.createEmptyBorder(8, HISTORY_SIDEBAR_INSET, 8, HISTORY_SIDEBAR_INSET));
+
+        JPanel searchPanel = new JPanel(new BorderLayout());
+        searchPanel.setOpaque(false);
+        int searchWidth = HISTORY_SIDEBAR_WIDTH - (HISTORY_SIDEBAR_INSET * 2);
+        searchPanel.setPreferredSize(new Dimension(searchWidth, 28));
+        searchPanel.setMinimumSize(new Dimension(searchWidth, 28));
+
+        searchField = new SearchTextField();
+        searchField.setPlaceholderText(I18nUtil.getMessage(MessageKeys.HISTORY_SEARCH_PLACEHOLDER));
+        searchField.setPreferredSize(new Dimension(searchWidth, 28));
+        searchField.setMaximumSize(new Dimension(searchWidth, 28));
+        searchPanel.add(searchField, BorderLayout.CENTER);
+
+        statsLabel = new JLabel();
+        statsLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        statsLabel.setForeground(ModernColors.getTextSecondary());
+        updateStatsLabel(0, 0, 0);
+
+        filterPanel.add(searchPanel, BorderLayout.WEST);
+        filterPanel.add(statsLabel, BorderLayout.EAST);
+
+        headerPanel.add(titlePanel, BorderLayout.NORTH);
+        headerPanel.add(filterPanel, BorderLayout.CENTER);
+        return headerPanel;
+    }
+
+    private Component createContentPanel() {
         historyListModel = new DefaultListModel<>();
-        historyList = new JList<>(historyListModel);
-        historyList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);// 优化：设置固定行高，提升渲染性能
-        historyList.setFixedCellHeight(24);
-        // 使用缓存的 Renderer
+        historyList = new JList<>(historyListModel) {
+            @Override
+            public String getToolTipText(MouseEvent event) {
+                int index = locationToIndex(event.getPoint());
+                Rectangle bounds = index >= 0 ? getCellBounds(index, index) : null;
+                if (bounds == null || !bounds.contains(event.getPoint())) {
+                    return null;
+                }
+                Object value = historyListModel.get(index);
+                if (value instanceof RequestHistoryItem item) {
+                    return item.url;
+                }
+                if (value instanceof EndpointGroupHeader groupHeader) {
+                    return groupHeader.latestItem() != null ? groupHeader.latestItem().url : null;
+                }
+                return null;
+            }
+
+            @Override
+            protected void processMouseEvent(MouseEvent event) {
+                if (interceptDateGroupMouseEvent(event, this)) {
+                    return;
+                }
+                super.processMouseEvent(event);
+            }
+        };
+        historyList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        historyList.setFixedCellHeight(-1);
         historyList.setCellRenderer(new OptimizedHistoryListCellRenderer());
+        historyList.setBorder(BorderFactory.createEmptyBorder(4, 0, 4, 0));
+        historyList.setBackground(ModernColors.getBackgroundColor());
+        ToolTipManager.sharedInstance().registerComponent(historyList);
+
         JScrollPane listScroll = new JScrollPane(historyList);
-        listScroll.setPreferredSize(new Dimension(220, 240));
-        listScroll.setMinimumSize(new Dimension(220, 240));
-        listScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER); // 水平滚动条不需要，内容不会超出
+        listScroll.setPreferredSize(new Dimension(HISTORY_SIDEBAR_WIDTH, 240));
+        listScroll.setMinimumSize(new Dimension(300, 240));
+        listScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        listScroll.getViewport().setBackground(ModernColors.getBackgroundColor());
+        listScroll.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, ModernColors.getDividerBorderColor()));
 
-        // 详情区 - 改为 Tab 形式
         historyDetailPanel = new JPanel(new BorderLayout());
+        historyDetailPanel.add(createDetailTopPanel(), BorderLayout.NORTH);
+        historyDetailPanel.add(createDetailTabs(), BorderLayout.CENTER);
 
-        // 创建 Tab 面板
-        historyDetailTabPane = new JTabbedPane();
+        clearDetailPanes();
+
+        JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, listScroll, historyDetailPanel);
+        split.setDividerLocation(HISTORY_SIDEBAR_WIDTH);
+        split.setDividerSize(3);
+        return split;
+    }
+
+    private JPanel createDetailTopPanel() {
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setOpaque(false);
+        topPanel.add(createDetailHeaderPanel(), BorderLayout.NORTH);
+        topPanel.add(createDetailOverviewPanel(), BorderLayout.CENTER);
+        return topPanel;
+    }
+
+    private JPanel createDetailHeaderPanel() {
+        JPanel detailHeaderPanel = new JPanel(new BorderLayout(12, 0));
+        detailHeaderPanel.setOpaque(true);
+        detailHeaderPanel.setBackground(ModernColors.getCardBackgroundColor());
+        detailHeaderPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()),
+                BorderFactory.createEmptyBorder(8, 12, 8, 12)
+        ));
+
+        JPanel detailInfoPanel = new JPanel(new BorderLayout(0, 2));
+        detailInfoPanel.setOpaque(false);
+
+        detailTitleLabel = new JLabel(" ");
+        detailTitleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +1));
+
+        detailMetaLabel = new JLabel(" ");
+        detailMetaLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        detailMetaLabel.setForeground(ModernColors.getTextSecondary());
+
+        detailInfoPanel.add(detailTitleLabel, BorderLayout.NORTH);
+        detailInfoPanel.add(detailMetaLabel, BorderLayout.CENTER);
+
+        JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        actionsPanel.setOpaque(false);
+
+        openRequestButton = createActionButton(
+                I18nUtil.getMessage(MessageKeys.CREATE_NEW_REQUEST),
+                "icons/request.svg"
+        );
+        openRequestButton.addActionListener(e -> openSelectedHistoryAsRequest());
+
+        deleteItemButton = createActionButton(
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_DELETE),
+                "icons/delete.svg"
+        );
+        deleteItemButton.addActionListener(e -> deleteSelectedHistory());
+
+        actionsPanel.add(openRequestButton);
+        actionsPanel.add(deleteItemButton);
+
+        detailHeaderPanel.add(detailInfoPanel, BorderLayout.CENTER);
+        detailHeaderPanel.add(actionsPanel, BorderLayout.EAST);
+        return detailHeaderPanel;
+    }
+
+    private JPanel createDetailOverviewPanel() {
+        JPanel overviewPanel = new JPanel(new GridLayout(1, 4, 0, 0));
+        overviewPanel.setOpaque(true);
+        overviewPanel.setBackground(ModernColors.getCardBackgroundColor());
+        overviewPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()),
+                BorderFactory.createEmptyBorder(0, 12, 0, 12)
+        ));
+
+        overviewPanel.add(createOverviewCard(I18nUtil.getMessage(MessageKeys.HISTORY_OVERVIEW_ENDPOINT_CARD), false, card -> {
+            endpointValueLabel = card.valueLabel();
+            endpointDetailLabel = card.detailLabel();
+        }));
+        overviewPanel.add(createOverviewCard(I18nUtil.getMessage(MessageKeys.HISTORY_OVERVIEW_PAYLOAD_CARD), true, card -> {
+            payloadValueLabel = card.valueLabel();
+            payloadDetailLabel = card.detailLabel();
+        }));
+        overviewPanel.add(createOverviewCard(I18nUtil.getMessage(MessageKeys.HISTORY_OVERVIEW_STRUCTURE_CARD), true, card -> {
+            structureValueLabel = card.valueLabel();
+            structureDetailLabel = card.detailLabel();
+        }));
+        overviewPanel.add(createOverviewCard(I18nUtil.getMessage(MessageKeys.HISTORY_OVERVIEW_RESULT_CARD), true, card -> {
+            resultValueLabel = card.valueLabel();
+            resultDetailLabel = card.detailLabel();
+        }));
+        return overviewPanel;
+    }
+
+    private JPanel createOverviewCard(String title, boolean withLeadingDivider,
+                                      java.util.function.Consumer<OverviewCardLabels> binder) {
+        JPanel cardPanel = new JPanel(new BorderLayout(0, 2));
+        cardPanel.setOpaque(false);
+        cardPanel.setBorder(BorderFactory.createCompoundBorder(
+                withLeadingDivider
+                        ? BorderFactory.createMatteBorder(0, 1, 0, 0, ModernColors.getDividerBorderColor())
+                        : BorderFactory.createEmptyBorder(),
+                BorderFactory.createEmptyBorder(6, 12, 10, 12)
+        ));
+
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
+        titleLabel.setForeground(ModernColors.getTextHint());
+
+        JLabel valueLabel = new JLabel(" ");
+        valueLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -1));
+        valueLabel.setForeground(ModernColors.getTextPrimary());
+
+        JLabel detailLabel = new JLabel(" ");
+        detailLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
+        detailLabel.setForeground(ModernColors.getTextSecondary());
+
+        cardPanel.add(titleLabel, BorderLayout.NORTH);
+        cardPanel.add(valueLabel, BorderLayout.CENTER);
+        cardPanel.add(detailLabel, BorderLayout.SOUTH);
+        binder.accept(new OverviewCardLabels(valueLabel, detailLabel));
+        return cardPanel;
+    }
+
+    private JButton createActionButton(String text, String iconPath) {
+        JButton button = new JButton(IconUtil.createThemed(iconPath, 16, 16));
+        button.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        button.setFocusable(false);
+        button.setMargin(new Insets(4, 4, 4, 4));
+        button.setToolTipText(text);
+        button.setPreferredSize(new Dimension(30, 30));
+        button.setMinimumSize(new Dimension(30, 30));
+        button.putClientProperty(com.formdev.flatlaf.FlatClientProperties.BUTTON_TYPE,
+                com.formdev.flatlaf.FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
+        return button;
+    }
+
+    private JTabbedPane createDetailTabs() {
+        JTabbedPane historyDetailTabPane = new JTabbedPane();
         historyDetailTabPane.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
 
-        // 创建各个标签页
         requestPane = createDetailPane();
         responsePane = createDetailPane();
         timingPane = createDetailPane();
         eventPane = createDetailPane();
 
-        // 添加标签页
         historyDetailTabPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_REQUEST), new JScrollPane(requestPane));
         historyDetailTabPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_RESPONSE), new JScrollPane(responsePane));
         historyDetailTabPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_TIMING), new JScrollPane(timingPane));
         historyDetailTabPane.addTab(I18nUtil.getMessage(MessageKeys.TAB_EVENTS), new JScrollPane(eventPane));
 
-        // 设置滚动策略
         for (int i = 0; i < historyDetailTabPane.getTabCount(); i++) {
             JScrollPane scrollPane = (JScrollPane) historyDetailTabPane.getComponentAt(i);
             scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
             scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         }
-
-        historyDetailPanel.add(historyDetailTabPane, BorderLayout.CENTER);
-
-        // 初始化显示空内容
-        clearDetailPanes();
-        historyDetailPanel.setVisible(true);
-
-        JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, listScroll, historyDetailPanel);
-        split.setDividerLocation(220);
-        split.setDividerSize(3);
-        add(split, BorderLayout.CENTER);
-        setMinimumSize(new Dimension(0, 120));
-
-        // 异步加载持久化的历史记录，避免阻塞UI
-        SwingUtilities.invokeLater(this::loadPersistedHistory);
+        return historyDetailTabPane;
     }
 
-    /**
-     * 优化的列表单元格渲染器 - 极简版，最大化性能
-     */
-    private static class OptimizedHistoryListCellRenderer extends DefaultListCellRenderer {
-        private final Font boldFont;
-        private final Font plainFont;
-        private final Color selectedBackground = new Color(180, 215, 255);
-
-        public OptimizedHistoryListCellRenderer() {
-            Font baseFont = FontsUtil.getDefaultFont(Font.PLAIN);
-            boldFont = baseFont.deriveFont(Font.BOLD);
-            plainFont = baseFont.deriveFont(Font.PLAIN);
-        }
-
-        @Override
-        public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-            JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-
-            if (value instanceof String dateStr) {
-                label.setText(dateStr);
-                label.setFont(boldFont);
-            } else if (value instanceof RequestHistoryItem item) {
-                // 直接显示，不做任何截断处理
-                label.setText(String.format(" [%s] %s", item.method, item.url));
-                label.setFont(isSelected ? boldFont : plainFont);
-
-                if (isSelected) {
-                    label.setBackground(selectedBackground);
-                }
-            }
-            return label;
-        }
-    }
-
-    /**
-     * 创建详情面板
-     */
     private JTextPane createDetailPane() {
         JTextPane pane = new JTextPane();
         pane.setEditable(false);
@@ -166,47 +388,259 @@ public class HistoryPanel extends SingletonBasePanel {
     }
 
     /**
-     * 清空所有详情面板
+     * 列表项渲染器。
+     * 分组显示日期，条目显示状态码、耗时和时间，避免历史列表只剩 URL。
      */
-    private void clearDetailPanes() {
-        String EMPTY_BODY_HTML = I18nUtil.getMessage(MessageKeys.HISTORY_EMPTY_BODY);
-        requestPane.setText(EMPTY_BODY_HTML);
-        responsePane.setText(EMPTY_BODY_HTML);
-        timingPane.setText(EMPTY_BODY_HTML);
-        eventPane.setText(EMPTY_BODY_HTML);
-        currentSelectedItem = null;
+    private class OptimizedHistoryListCellRenderer implements ListCellRenderer<Object> {
+        private final Font boldFont;
+        private final Font plainFont;
+        private final Color groupColor = ModernColors.getTextSecondary();
+        private final JPanel itemRootPanel;
+        private final JPanel itemCardPanel;
+        private final JLabel titleLabel;
+        private final JLabel urlLabel;
+        private final JLabel groupLabel;
+
+        private OptimizedHistoryListCellRenderer() {
+            Font baseFont = FontsUtil.getDefaultFont(Font.PLAIN);
+            boldFont = baseFont.deriveFont(Font.BOLD);
+            plainFont = baseFont;
+
+            itemRootPanel = new JPanel(new BorderLayout());
+            itemRootPanel.setOpaque(true);
+            itemRootPanel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+
+            itemCardPanel = new JPanel(new BorderLayout(0, 4));
+            itemCardPanel.setOpaque(true);
+            itemCardPanel.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(ModernColors.getBorderLightColor()),
+                    BorderFactory.createEmptyBorder(8, 10, 8, 10)
+            ));
+
+            titleLabel = new JLabel();
+            titleLabel.setFont(boldFont);
+            titleLabel.setVerticalAlignment(SwingConstants.TOP);
+
+            urlLabel = new JLabel();
+            urlLabel.setFont(plainFont);
+            urlLabel.setVerticalAlignment(SwingConstants.TOP);
+
+            itemCardPanel.add(titleLabel, BorderLayout.NORTH);
+            itemCardPanel.add(urlLabel, BorderLayout.CENTER);
+            itemRootPanel.add(itemCardPanel, BorderLayout.CENTER);
+
+            groupLabel = new JLabel();
+            groupLabel.setFont(boldFont);
+            groupLabel.setBorder(BorderFactory.createEmptyBorder(8, 10, 4, 10));
+            groupLabel.setOpaque(true);
+            groupLabel.setPreferredSize(new Dimension(10, 28));
+        }
+
+        @Override
+        public Component getListCellRendererComponent(JList<?> list, Object value, int index,
+                                                      boolean isSelected, boolean cellHasFocus) {
+            if (value instanceof HistoryGroupHeader groupHeader) {
+                String arrow = groupHeader.collapsed() ? "▸" : "▾";
+                this.groupLabel.setText(arrow + " " + groupHeader.label() + "  (" + groupHeader.count() + ")");
+                this.groupLabel.setForeground(groupColor);
+                this.groupLabel.setBackground(list.getBackground());
+                return this.groupLabel;
+            }
+
+            if (value instanceof EndpointGroupHeader endpointGroupHeader) {
+                Color metaColor = ModernColors.getTextSecondary();
+                Color statusColor = resolveStatusColor(endpointGroupHeader.latestItem().responseCode);
+                boolean hovered = !isSelected && index == hoveredHistoryIndex;
+                String arrow = endpointGroupHeader.expanded() ? "▾" : "▸";
+                String countText = endpointGroupHeader.count() + "x";
+
+                itemRootPanel.setBackground(list.getBackground());
+                itemCardPanel.setBackground(isSelected
+                        ? getSelectionBackground()
+                        : hovered ? getHoverBackground() : ModernColors.getCardBackgroundColor());
+                itemCardPanel.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createMatteBorder(0, isSelected ? 3 : hovered ? 2 : 0, 0, 0,
+                                isSelected ? ModernColors.PRIMARY : hovered ? ModernColors.PRIMARY_LIGHT : list.getBackground()),
+                        BorderFactory.createCompoundBorder(
+                                BorderFactory.createLineBorder(isSelected
+                                        ? ModernColors.PRIMARY
+                                        : hovered ? ModernColors.PRIMARY_LIGHT : ModernColors.getBorderLightColor()),
+                                BorderFactory.createEmptyBorder(8, 10, 8, 10)
+                        )
+                ));
+
+                titleLabel.setForeground(isSelected ? ModernColors.PRIMARY : ModernColors.getTextPrimary());
+                titleLabel.setText("<html>" + arrow + " " + highlightMatches(abbreviateMiddle(endpointGroupHeader.title(), 52))
+                        + " <span style='color:" + toHex(statusColor) + ";font-weight:bold;'>(" + countText + ")</span></html>");
+
+                urlLabel.setForeground(metaColor);
+                urlLabel.setText("<html><span style='color:" + toHex(metaColor) + ";'>"
+                        + highlightMatches(abbreviateMiddle(endpointGroupHeader.subtitle(), 48))
+                        + "  "
+                        + escapeHtml(endpointGroupHeader.successRate() + "%")
+                        + "  "
+                        + buildStatusTrendHtml(endpointGroupHeader.recentStatusCodes())
+                        + "  "
+                        + escapeHtml(formatDuration(endpointGroupHeader.latestItem().response != null
+                                ? endpointGroupHeader.latestItem().response.costMs : 0L))
+                        + "  "
+                        + escapeHtml(formatTime(endpointGroupHeader.latestItem().requestTime))
+                        + "</span></html>");
+                return itemRootPanel;
+            }
+
+            if (value instanceof RequestHistoryItem item) {
+                HistoryVisualInfo visualInfo = summarizeRequestTarget(item.url);
+                Color metaColor = ModernColors.getTextSecondary();
+                Color statusColor = resolveStatusColor(item.responseCode);
+                String statusText = item.responseCode > 0 ? String.valueOf(item.responseCode) : "-";
+                String durationText = item.response != null ? formatDuration(item.response.costMs) : "-";
+                String timeText = formatTime(item.requestTime);
+                String hostText = abbreviateMiddle(visualInfo.subtitle(), 52);
+                boolean hovered = !isSelected && index == hoveredHistoryIndex;
+
+                itemRootPanel.setBackground(list.getBackground());
+                itemCardPanel.setBackground(isSelected
+                        ? getSelectionBackground()
+                        : hovered ? getHoverBackground() : ModernColors.getCardBackgroundColor());
+                itemCardPanel.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createMatteBorder(0, isSelected ? 3 : hovered ? 2 : 0, 0, 0,
+                                isSelected ? ModernColors.PRIMARY : hovered ? ModernColors.PRIMARY_LIGHT : list.getBackground()),
+                        BorderFactory.createCompoundBorder(
+                                BorderFactory.createLineBorder(isSelected
+                                        ? ModernColors.PRIMARY
+                                        : hovered ? ModernColors.PRIMARY_LIGHT : ModernColors.getBorderLightColor()),
+                        BorderFactory.createEmptyBorder(8, 10, 8, 10)
+                        )
+                ));
+
+                titleLabel.setForeground(isSelected ? ModernColors.PRIMARY : ModernColors.getTextPrimary());
+                titleLabel.setText("<html>" + highlightMatches(abbreviateMiddle(visualInfo.title(), 56)) + "</html>");
+
+                urlLabel.setForeground(metaColor);
+                urlLabel.setText("<html><span style='color:" + toHex(metaColor) + ";'>"
+                        + highlightMatches(item.method)
+                        + "  "
+                        + highlightMatches(hostText)
+                        + "  "
+                        + "</span><span style='color:" + toHex(statusColor) + ";font-weight:bold;'>"
+                        + highlightMatches(statusText)
+                        + "</span><span style='color:" + toHex(metaColor) + ";'>  "
+                        + escapeHtml(durationText) + "  " + escapeHtml(timeText)
+                        + "</span></html>");
+                return itemRootPanel;
+            }
+            return new JLabel("");
+        }
+
+        private static String formatDuration(long costMs) {
+            return costMs > 0 ? costMs + " ms" : "-";
+        }
+
+        private static String formatTime(long timestamp) {
+            return new SimpleDateFormat("HH:mm:ss").format(new Date(timestamp));
+        }
+
+        private static Color resolveStatusColor(int statusCode) {
+            if (statusCode >= 200 && statusCode < 400) {
+                return new Color(46, 125, 50);
+            }
+            if (statusCode >= 400) {
+                return new Color(198, 40, 40);
+            }
+            return ModernColors.getTextSecondary();
+        }
+
+        private static String toHex(Color color) {
+            return String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
+        }
+
+        private static String escapeHtml(String text) {
+            if (text == null) {
+                return "";
+            }
+            return text.replace("&", "&amp;")
+                    .replace("<", "&lt;")
+                    .replace(">", "&gt;");
+        }
+
+        private static Color getSelectionBackground() {
+            return ModernColors.isDarkTheme()
+                    ? new Color(0, 122, 255, 52)
+                    : new Color(219, 234, 254);
+        }
+
+        private static Color getHoverBackground() {
+            return ModernColors.isDarkTheme()
+                    ? new Color(255, 255, 255, 18)
+                    : new Color(245, 249, 255);
+        }
+
+        private String buildStatusTrendHtml(List<Integer> recentStatusCodes) {
+            if (recentStatusCodes == null || recentStatusCodes.isEmpty()) {
+                return "";
+            }
+            StringBuilder html = new StringBuilder();
+            for (Integer statusCode : recentStatusCodes) {
+                Color dotColor = resolveStatusColor(statusCode == null ? 0 : statusCode);
+                html.append("<span style='color:")
+                        .append(toHex(dotColor))
+                        .append(";font-size:12px;'>●</span>");
+            }
+            return html.toString();
+        }
     }
 
-    /**
-     * 更新详情面板内容（优化：延迟渲染，避免卡顿）
-     */
+    private void clearDetailPanes() {
+        showEmptyDetailState(hasActiveFilters());
+    }
+
+    private void showEmptyDetailState(boolean filteredEmpty) {
+        String emptyBodyHtml = filteredEmpty
+                ? I18nUtil.getMessage(MessageKeys.HISTORY_EMPTY_FILTERED)
+                : I18nUtil.getMessage(MessageKeys.HISTORY_EMPTY_BODY);
+        requestPane.setText(emptyBodyHtml);
+        responsePane.setText(emptyBodyHtml);
+        timingPane.setText(emptyBodyHtml);
+        eventPane.setText(emptyBodyHtml);
+        detailTitleLabel.setText(" ");
+        detailTitleLabel.setToolTipText(null);
+        detailMetaLabel.setText(" ");
+        setOverviewCardState(endpointValueLabel, endpointDetailLabel, " ", " ");
+        setOverviewCardState(payloadValueLabel, payloadDetailLabel, " ", " ");
+        setOverviewCardState(structureValueLabel, structureDetailLabel, " ", " ");
+        setOverviewCardState(resultValueLabel, resultDetailLabel, " ", " ");
+        currentSelectedItem = null;
+        updateActionButtons(null);
+    }
+
     private void updateDetailPanes(RequestHistoryItem item) {
         if (item == null) {
             clearDetailPanes();
             return;
         }
 
-        // 如果已经是当前选中的项，不重复渲染
         if (item == currentSelectedItem) {
             return;
         }
 
         currentSelectedItem = item;
+        updateDetailSummary(item);
+        updateActionButtons(item);
 
-        // 优化：在后台线程渲染HTML，避免阻塞UI
         SwingWorker<Map<String, String>, Void> worker = new SwingWorker<>() {
             @Override
             protected Map<String, String> doInBackground() {
-                Map<String, String> htmlMap = new HashMap<>();
+                Map<String, String> htmlMap = new LinkedHashMap<>();
                 try {
                     htmlMap.put("request", HttpHtmlRenderer.renderRequest(item.request));
                     htmlMap.put("response", HttpHtmlRenderer.renderResponse(item.response));
                     htmlMap.put("timing", HttpHtmlRenderer.renderTimingInfo(item.response));
                     htmlMap.put("event", HttpHtmlRenderer.renderEventInfo(item.response));
                 } catch (Exception e) {
-                    String errorHtml = "<html><body style='font-family:monospace;font-size:9px;'>" +
-                            "<div style='color:#d32f2f;'>渲染详情时出错: " + e.getMessage() + "</div>" +
-                            "</body></html>";
+                    String errorHtml = "<html><body style='font-family:monospace;font-size:9px;'>"
+                            + "<div style='color:#d32f2f;'>渲染详情时出错: " + e.getMessage() + "</div>"
+                            + "</body></html>";
                     htmlMap.put("error", errorHtml);
                 }
                 return htmlMap;
@@ -215,6 +649,9 @@ public class HistoryPanel extends SingletonBasePanel {
             @Override
             protected void done() {
                 try {
+                    if (currentSelectedItem != item) {
+                        return;
+                    }
                     Map<String, String> htmlMap = get();
                     if (htmlMap.containsKey("error")) {
                         String errorHtml = htmlMap.get("error");
@@ -235,7 +672,7 @@ public class HistoryPanel extends SingletonBasePanel {
                         eventPane.setText(htmlMap.get("event"));
                         eventPane.setCaretPosition(0);
                     }
-                } catch (Exception e) {
+                } catch (Exception ignored) {
                     // Ignore if cancelled or interrupted
                 }
             }
@@ -243,10 +680,37 @@ public class HistoryPanel extends SingletonBasePanel {
         worker.execute();
     }
 
+    private void updateDetailSummary(RequestHistoryItem item) {
+        HistoryVisualInfo visualInfo = summarizeRequestTarget(item.url);
+        String protocol = resolveProtocol(item).getProtocol();
+        String duration = item.response != null && item.response.costMs > 0 ? item.response.costMs + " ms" : "-";
+        String status = item.responseCode > 0 ? String.valueOf(item.responseCode) : "-";
+        String timestamp = detailTimeFormatter.format(new Date(item.requestTime));
+        String secondary = toHex(ModernColors.getTextSecondary());
+        String statusColor = toHex(resolveStatusColor(item.responseCode));
+
+        detailTitleLabel.setText("<html>" + highlightMatches(abbreviateMiddle(visualInfo.title(), 120)) + "</html>");
+        detailTitleLabel.setToolTipText(visualInfo.fullUrl());
+        detailMetaLabel.setText("<html><span style='color:" + secondary + ";'>"
+                + highlightMatches(item.method) + "  "
+                + highlightMatches(visualInfo.subtitle()) + "  "
+                + escapeHtml(protocol) + "  "
+                + "<span style='color:" + statusColor + ";'>" + highlightMatches(status) + "</span>  "
+                + escapeHtml(duration) + "  "
+                + escapeHtml(timestamp)
+                + "</span></html>");
+        updateOverviewCards(item, visualInfo, protocol, duration, status, timestamp);
+    }
+
+    private void updateActionButtons(RequestHistoryItem item) {
+        boolean enabled = item != null;
+        openRequestButton.setEnabled(enabled);
+        deleteItemButton.setEnabled(enabled);
+    }
+
     @Override
     public void updateUI() {
         super.updateUI();
-        // 主题切换时重新设置边框，确保分隔线颜色更新
         if (titlePanel != null) {
             titlePanel.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()),
@@ -257,112 +721,923 @@ public class HistoryPanel extends SingletonBasePanel {
 
     @Override
     protected void registerListeners() {
-        // 监听列表选择变化
         historyList.addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting() && !isUpdating) {
-                int idx = historyList.getSelectedIndex();
-                if (idx == -1) {
-                    clearDetailPanes();
-                } else {
-                    Object value = historyListModel.get(idx);
-                    if (value instanceof RequestHistoryItem item) {
-                        updateDetailPanes(item);
-                    } else {
-                        clearDetailPanes();
-                    }
+            if (!e.getValueIsAdjusting() && !isUpdating && !suppressSelectionSync) {
+                Object selectedValue = historyList.getSelectedValue();
+                if (selectedValue instanceof HistoryGroupHeader) {
+                    return;
+                }
+                updateDetailPanes(getSelectedHistoryItem());
+            }
+        });
+
+        historyList.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (handleEndpointGroupInteraction(e)) {
+                    e.consume();
+                    return;
+                }
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+                maybeShowContextMenu(e);
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                maybeShowContextMenu(e);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                if (hoveredHistoryIndex != -1) {
+                    hoveredHistoryIndex = -1;
+                    historyList.repaint();
                 }
             }
         });
 
-        // 双击选中列表项
-        historyList.addMouseListener(new MouseAdapter() {
+        historyList.addMouseMotionListener(new MouseAdapter() {
             @Override
-            public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) {
-                    int idx = historyList.locationToIndex(e.getPoint());
-                    if (idx != -1) {
-                        historyList.setSelectedIndex(idx);
-                    }
+            public void mouseMoved(MouseEvent e) {
+                int hoveredIndex = historyList.locationToIndex(e.getPoint());
+                Rectangle cellBounds = hoveredIndex >= 0 ? historyList.getCellBounds(hoveredIndex, hoveredIndex) : null;
+                if (cellBounds == null || !cellBounds.contains(e.getPoint()) || historyListModel.get(hoveredIndex) instanceof HistoryGroupHeader) {
+                    hoveredIndex = -1;
+                }
+                if (hoveredHistoryIndex != hoveredIndex) {
+                    hoveredHistoryIndex = hoveredIndex;
+                    historyList.repaint();
                 }
             }
         });
+
+        historyList.getInputMap(JComponent.WHEN_FOCUSED)
+                .put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "openHistoryRequest");
+        historyList.getActionMap().put("openHistoryRequest", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                openSelectedHistoryAsRequest();
+            }
+        });
+
+        historyList.getInputMap(JComponent.WHEN_FOCUSED)
+                .put(KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0), "deleteHistoryRequest");
+        historyList.getActionMap().put("deleteHistoryRequest", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                deleteSelectedHistory();
+            }
+        });
+
+        int modifier = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+        historyList.getInputMap(JComponent.WHEN_FOCUSED)
+                .put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, modifier), "openHistoryRequestWithShortcut");
+        historyList.getActionMap().put("openHistoryRequestWithShortcut", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                openSelectedHistoryAsRequest();
+            }
+        });
+
+        getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(
+                KeyStroke.getKeyStroke(KeyEvent.VK_F, modifier), "focusHistorySearch"
+        );
+        getActionMap().put("focusHistorySearch", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                searchField.requestFocusInWindow();
+                searchField.selectAll();
+            }
+        });
+
+        searchField.getInputMap(JComponent.WHEN_FOCUSED).put(
+                KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "clearHistorySearch"
+        );
+        searchField.getActionMap().put("clearHistorySearch", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                searchField.setText("");
+            }
+        });
+
+        searchField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                scheduleApplyFilters();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                scheduleApplyFilters();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                scheduleApplyFilters();
+            }
+        });
+        searchField.addPropertyChangeListener("caseSensitive", e -> scheduleApplyFilters());
+        searchField.addPropertyChangeListener("wholeWord", e -> scheduleApplyFilters());
+
     }
 
     public void addRequestHistory(PreparedRequest req, HttpResponse resp) {
         long requestTime = System.currentTimeMillis();
-        // 添加到持久化管理器
-        BeanFactory.getBean(HistoryPersistenceService.class).addHistory(req, resp, requestTime);
+        RequestHistoryItem newItem = BeanFactory.getBean(HistoryPersistenceService.class)
+                .addHistory(req, resp, requestTime);
 
-        // 优化：增量更新UI，而不是完全重新加载
-        RequestHistoryItem newItem = new RequestHistoryItem(req, resp, requestTime);
-        if (historyListModel != null) {
-            isUpdating = true;
-            try {
-                // 检查是否需要添加新的日期分组
-                String groupLabel = getDateGroupLabel(requestTime);
-                int insertIndex = 0;
+        allHistoryItems.add(0, newItem);
+        int maxCount = SettingManager.getMaxHistoryCount();
+        while (allHistoryItems.size() > maxCount) {
+            allHistoryItems.remove(allHistoryItems.size() - 1);
+        }
+        rebuildHistoryListModel(newItem);
+    }
 
-                // 如果列表为空或第一个元素不是今天的分组，需要添加分组标题
-                if (historyListModel.isEmpty() || !historyListModel.get(0).equals(groupLabel)) {
-                    historyListModel.add(0, groupLabel);
-                    insertIndex = 1;
-                } else {
-                    insertIndex = 1; // 插入到分组标题后
+    private void applyFilters() {
+        rebuildHistoryListModel(currentSelectedItem);
+    }
+
+    private void scheduleApplyFilters() {
+        if (filterDebounceTimer == null) {
+            applyFilters();
+            return;
+        }
+        filterDebounceTimer.restart();
+    }
+
+    private void rebuildHistoryListModel(RequestHistoryItem preferredSelection) {
+        if (historyListModel == null) {
+            return;
+        }
+
+        List<RequestHistoryItem> itemsSnapshot = new ArrayList<>(allHistoryItems);
+        String keyword = searchField != null ? searchField.getText().trim() : "";
+        boolean caseSensitive = searchField != null && searchField.isCaseSensitive();
+        boolean wholeWord = searchField != null && searchField.isWholeWord();
+        Set<String> collapsedGroupsSnapshot = new HashSet<>(collapsedGroups);
+        Set<String> expandedEndpointGroupsSnapshot = new HashSet<>(expandedEndpointGroups);
+        updateDateCache();
+        long todayStart = todayStartCache;
+        long yesterdayStart = yesterdayStartCache;
+        int buildVersion = historyListBuildVersion.incrementAndGet();
+
+        if (historyListBuildWorker != null && !historyListBuildWorker.isDone()) {
+            historyListBuildWorker.cancel(true);
+        }
+
+        historyListBuildWorker = new SwingWorker<>() {
+            @Override
+            protected HistoryListBuildResult doInBackground() {
+                List<RequestHistoryItem> filteredItems = getFilteredHistoryItems(
+                        itemsSnapshot, keyword, caseSensitive, wholeWord
+                );
+                List<Object> displayItems = buildDisplayItems(
+                        filteredItems, collapsedGroupsSnapshot, expandedEndpointGroupsSnapshot, todayStart, yesterdayStart
+                );
+                long failedCount = itemsSnapshot.stream().filter(item -> item.responseCode >= 400).count();
+                return new HistoryListBuildResult(filteredItems, displayItems, itemsSnapshot.size(), failedCount);
+            }
+
+            @Override
+            protected void done() {
+                if (isCancelled() || buildVersion != historyListBuildVersion.get()) {
+                    return;
                 }
-
-                historyListModel.add(insertIndex, newItem);
-
-                // 限制UI显示的历史记录数量
-                int maxCount = SettingManager.getMaxHistoryCount();
-                int itemCount = 0;
-                for (int i = 0; i < historyListModel.size(); i++) {
-                    if (historyListModel.get(i) instanceof RequestHistoryItem) {
-                        itemCount++;
-                    }
-                }
-
-                // 如果超过最大数量，移除最旧的记录
-                while (itemCount > maxCount) {
-                    for (int i = historyListModel.size() - 1; i >= 0; i--) {
-                        if (historyListModel.get(i) instanceof RequestHistoryItem) {
-                            historyListModel.remove(i);
-                            itemCount--;
-                            // 检查是否需要移除空的日期分组
-                            if (i > 0 && i == historyListModel.size() &&
-                                    historyListModel.get(i - 1) instanceof String) {
-                                historyListModel.remove(i - 1);
-                            }
-                            break;
+                try {
+                    HistoryListBuildResult result = get();
+                    isUpdating = true;
+                    try {
+                        historyListModel.clear();
+                        for (Object displayItem : result.displayItems()) {
+                            historyListModel.addElement(displayItem);
                         }
+                    } finally {
+                        isUpdating = false;
                     }
+
+                    if (searchField != null) {
+                        searchField.setNoResult(!keyword.isEmpty() && result.filteredItems().isEmpty());
+                    }
+                    updateStatsLabel(result.filteredItems().size(), result.totalCount(), result.failedCount());
+                    restoreSelection(preferredSelection, result.filteredItems());
+                } catch (Exception ignored) {
+                    // Ignore if cancelled or interrupted
                 }
-            } finally {
-                isUpdating = false;
+            }
+        };
+        historyListBuildWorker.execute();
+    }
+
+    private List<RequestHistoryItem> getFilteredHistoryItems(List<RequestHistoryItem> sourceItems,
+                                                             String keyword,
+                                                             boolean caseSensitive,
+                                                             boolean wholeWord) {
+        List<RequestHistoryItem> filteredItems = new ArrayList<>();
+        for (RequestHistoryItem item : sourceItems) {
+            if (!keyword.isEmpty() && !matchesKeyword(item, keyword, caseSensitive, wholeWord)) {
+                continue;
+            }
+            filteredItems.add(item);
+        }
+        return filteredItems;
+    }
+
+    private List<Object> buildDisplayItems(List<RequestHistoryItem> filteredItems,
+                                           Set<String> collapsedGroupsSnapshot,
+                                           Set<String> expandedEndpointGroupsSnapshot,
+                                           long todayStart,
+                                           long yesterdayStart) {
+        Map<String, List<RequestHistoryItem>> dayMap = new LinkedHashMap<>();
+        SimpleDateFormat groupDateFormatter = new SimpleDateFormat("yyyy-MM-dd");
+
+        for (RequestHistoryItem item : filteredItems) {
+            String groupLabel = buildDateGroupLabel(item.requestTime, todayStart, yesterdayStart, groupDateFormatter);
+            dayMap.computeIfAbsent(groupLabel, key -> new ArrayList<>()).add(item);
+        }
+
+        List<Object> result = new ArrayList<>();
+        for (Map.Entry<String, List<RequestHistoryItem>> entry : dayMap.entrySet()) {
+            boolean collapsed = collapsedGroupsSnapshot.contains(entry.getKey());
+            result.add(new HistoryGroupHeader(entry.getKey(), entry.getValue().size(), collapsed));
+            if (!collapsed) {
+                if (isAggregateMode()) {
+                    appendAggregatedDisplayItems(result, entry.getKey(), entry.getValue(), expandedEndpointGroupsSnapshot);
+                } else {
+                    result.addAll(entry.getValue());
+                }
+            }
+        }
+        return result;
+    }
+
+    private void appendAggregatedDisplayItems(List<Object> result,
+                                              String dayLabel,
+                                              List<RequestHistoryItem> items,
+                                              Set<String> expandedEndpointGroupsSnapshot) {
+        Map<String, List<RequestHistoryItem>> endpointGroups = new LinkedHashMap<>();
+        for (RequestHistoryItem item : items) {
+            endpointGroups.computeIfAbsent(buildEndpointGroupKey(item), key -> new ArrayList<>()).add(item);
+        }
+        for (Map.Entry<String, List<RequestHistoryItem>> entry : endpointGroups.entrySet()) {
+            RequestHistoryItem latestItem = entry.getValue().get(0);
+            HistoryVisualInfo visualInfo = summarizeRequestTarget(latestItem.url);
+            String groupKey = dayLabel + "||" + entry.getKey();
+            boolean expanded = expandedEndpointGroupsSnapshot.contains(groupKey);
+            int successRate = calculateSuccessRate(entry.getValue());
+            List<Integer> recentStatusCodes = collectRecentStatusCodes(entry.getValue(), 6);
+            result.add(new EndpointGroupHeader(
+                    groupKey,
+                    visualInfo.title(),
+                    visualInfo.subtitle(),
+                    entry.getValue().size(),
+                    latestItem,
+                    expanded,
+                    successRate,
+                    recentStatusCodes
+            ));
+            if (expanded) {
+                result.addAll(entry.getValue());
             }
         }
     }
 
-    /**
-     * 获取日期分组标签（带缓存优化）
-     */
-    private String getDateGroupLabel(long timestamp) {
-        updateDateCache();
+    private void restoreSelection(RequestHistoryItem preferredSelection, List<RequestHistoryItem> filteredItems) {
+        Object preferredDisplayObject = preferredSelection != null ? findDisplayObjectForItem(preferredSelection) : null;
+        if (preferredDisplayObject != null && filteredItems.contains(preferredSelection)) {
+            historyList.setSelectedValue(preferredDisplayObject, true);
+            return;
+        }
+        Object firstSelectable = findFirstSelectableDisplayObject();
+        if (firstSelectable != null) {
+            historyList.setSelectedValue(firstSelectable, true);
+            return;
+        }
+        historyList.clearSelection();
+        showEmptyDetailState(hasActiveFilters());
+    }
 
-        if (timestamp >= todayStartCache) {
-            return I18nUtil.getMessage(MessageKeys.HISTORY_TODAY);
-        } else if (timestamp >= yesterdayStartCache) {
-            return I18nUtil.getMessage(MessageKeys.HISTORY_YESTERDAY);
+    private Object findDisplayObjectForItem(RequestHistoryItem item) {
+        for (int i = 0; i < historyListModel.size(); i++) {
+            Object value = historyListModel.get(i);
+            if (value == item) {
+                return value;
+            }
+            if (value instanceof EndpointGroupHeader endpointGroupHeader && endpointGroupHeader.latestItem() == item) {
+                return endpointGroupHeader;
+            }
+        }
+        return null;
+    }
+
+    private Object findFirstSelectableDisplayObject() {
+        for (int i = 0; i < historyListModel.size(); i++) {
+            Object value = historyListModel.get(i);
+            if (value instanceof RequestHistoryItem || value instanceof EndpointGroupHeader) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private boolean hasActiveFilters() {
+        return searchField != null && !searchField.getText().trim().isEmpty();
+    }
+
+    private void maybeShowContextMenu(MouseEvent e) {
+        if (!e.isPopupTrigger()) {
+            return;
+        }
+        int index = historyList.locationToIndex(e.getPoint());
+        Rectangle bounds = index >= 0 ? historyList.getCellBounds(index, index) : null;
+        if (bounds == null || !bounds.contains(e.getPoint())) {
+            return;
+        }
+        Object value = historyListModel.get(index);
+        RequestHistoryItem item;
+        if (value instanceof RequestHistoryItem requestHistoryItem) {
+            item = requestHistoryItem;
+        } else if (value instanceof EndpointGroupHeader endpointGroupHeader) {
+            item = endpointGroupHeader.latestItem();
         } else {
-            return dateFormatter.format(new Date(timestamp));
+            return;
+        }
+        historyList.setSelectedValue(value, true);
+
+        JPopupMenu menu = new JPopupMenu();
+        JMenuItem openItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.CREATE_NEW_REQUEST),
+                IconUtil.createThemed("icons/request.svg", 14, 14));
+        openItem.addActionListener(event -> openSelectedHistoryAsRequest());
+
+        JMenuItem deleteItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_DELETE),
+                IconUtil.createThemed("icons/delete.svg", 14, 14));
+        deleteItem.addActionListener(event -> deleteSelectedHistory());
+
+        menu.add(openItem);
+        menu.addSeparator();
+        menu.add(deleteItem);
+        menu.show(historyList, e.getX(), e.getY());
+    }
+
+    private boolean interceptDateGroupMouseEvent(MouseEvent e, JList<?> list) {
+        if (e.getButton() != MouseEvent.BUTTON1) {
+            return false;
+        }
+        int index = list.locationToIndex(e.getPoint());
+        Rectangle bounds = index >= 0 ? list.getCellBounds(index, index) : null;
+        if (bounds == null || !bounds.contains(e.getPoint())) {
+            return false;
+        }
+        Object value = historyListModel.get(index);
+        if (!(value instanceof HistoryGroupHeader groupHeader)) {
+            return false;
+        }
+        if (e.getID() == MouseEvent.MOUSE_PRESSED) {
+            toggleDateGroup(groupHeader.label());
+        }
+        e.consume();
+        return true;
+    }
+
+    private void toggleDateGroup(String label) {
+        RequestHistoryItem preferredSelection = currentSelectedItem;
+        suppressSelectionSync = true;
+        SwingUtilities.invokeLater(() -> {
+            try {
+                if (collapsedGroups.contains(label)) {
+                    collapsedGroups.remove(label);
+                } else {
+                    collapsedGroups.add(label);
+                }
+                historyList.clearSelection();
+                rebuildHistoryListModel(preferredSelection);
+            } finally {
+                suppressSelectionSync = false;
+            }
+        });
+    }
+
+    private boolean handleEndpointGroupInteraction(MouseEvent e) {
+        if (e.getButton() != MouseEvent.BUTTON1 || e.getClickCount() != 2) {
+            return false;
+        }
+        int index = historyList.locationToIndex(e.getPoint());
+        Rectangle bounds = index >= 0 ? historyList.getCellBounds(index, index) : null;
+        if (bounds == null || !bounds.contains(e.getPoint())) {
+            return false;
+        }
+        Object value = historyListModel.get(index);
+        if (value instanceof EndpointGroupHeader endpointGroupHeader) {
+            if (endpointGroupHeader.expanded()) {
+                expandedEndpointGroups.remove(endpointGroupHeader.key());
+            } else {
+                expandedEndpointGroups.add(endpointGroupHeader.key());
+            }
+            rebuildHistoryListModel(endpointGroupHeader.latestItem());
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isAggregateMode() {
+        return false;
+    }
+
+    private String buildEndpointGroupKey(RequestHistoryItem item) {
+        return (item.method != null ? item.method.toUpperCase(Locale.ROOT) : "UNKNOWN")
+                + "|"
+                + normalizeEndpointForGrouping(item.url);
+    }
+
+    private String normalizeEndpointForGrouping(String url) {
+        if (url == null || url.isBlank()) {
+            return "-";
+        }
+        try {
+            URI uri = URI.create(url);
+            String scheme = uri.getScheme() != null ? uri.getScheme() : "";
+            String host = uri.getHost() != null ? uri.getHost() : "";
+            String port = uri.getPort() > 0 ? ":" + uri.getPort() : "";
+            String path = uri.getPath() != null && !uri.getPath().isBlank() ? uri.getPath() : "/";
+            return scheme + "://" + host + port + path;
+        } catch (Exception ignored) {
+            int queryIndex = url.indexOf('?');
+            return queryIndex >= 0 ? url.substring(0, queryIndex) : url;
         }
     }
 
-    /**
-     * 更新日期缓存（每小时更新一次）
-     */
+    private int calculateSuccessRate(List<RequestHistoryItem> items) {
+        if (items == null || items.isEmpty()) {
+            return 0;
+        }
+        int successCount = 0;
+        for (RequestHistoryItem item : items) {
+            if (item.responseCode >= 200 && item.responseCode < 400) {
+                successCount++;
+            }
+        }
+        return (int) Math.round(successCount * 100.0 / items.size());
+    }
+
+    private List<Integer> collectRecentStatusCodes(List<RequestHistoryItem> items, int maxCount) {
+        List<Integer> recentStatusCodes = new ArrayList<>();
+        if (items == null) {
+            return recentStatusCodes;
+        }
+        for (RequestHistoryItem item : items) {
+            recentStatusCodes.add(item.responseCode);
+            if (recentStatusCodes.size() >= maxCount) {
+                break;
+            }
+        }
+        return recentStatusCodes;
+    }
+
+    private boolean matchesKeyword(RequestHistoryItem item, String keyword, boolean caseSensitive, boolean wholeWord) {
+        return contains(item.method, keyword, caseSensitive, wholeWord)
+                || contains(item.url, keyword, caseSensitive, wholeWord)
+                || contains(String.valueOf(item.responseCode), keyword, caseSensitive, wholeWord)
+                || contains(item.request != null ? item.request.body : null, keyword, caseSensitive, wholeWord)
+                || contains(item.request != null ? item.request.okHttpRequestBody : null, keyword, caseSensitive, wholeWord)
+                || contains(item.response != null ? item.response.body : null, keyword, caseSensitive, wholeWord);
+    }
+
+    private boolean contains(String value, String keyword, boolean caseSensitive, boolean wholeWord) {
+        if (value == null) {
+            return false;
+        }
+        String candidate = caseSensitive ? value : value.toLowerCase(Locale.ROOT);
+        String expected = caseSensitive ? keyword : keyword.toLowerCase(Locale.ROOT);
+        if (!wholeWord) {
+            return candidate.contains(expected);
+        }
+        return containsWholeWord(candidate, expected);
+    }
+
+    private boolean containsWholeWord(String text, String keyword) {
+        BreakIterator iterator = BreakIterator.getWordInstance(Locale.getDefault());
+        iterator.setText(text);
+        int start = iterator.first();
+        for (int end = iterator.next(); end != BreakIterator.DONE; start = end, end = iterator.next()) {
+            String token = text.substring(start, end);
+            if (token.equals(keyword)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void updateStatsLabel(int visibleCount, int totalCount, long failedCount) {
+        statsLabel.setText(I18nUtil.getMessage(MessageKeys.HISTORY_STATS, visibleCount, totalCount, failedCount));
+    }
+
+    private RequestHistoryItem getSelectedHistoryItem() {
+        Object selectedValue = historyList != null ? historyList.getSelectedValue() : null;
+        if (selectedValue instanceof RequestHistoryItem item) {
+            return item;
+        }
+        if (selectedValue instanceof EndpointGroupHeader endpointGroupHeader) {
+            return endpointGroupHeader.latestItem();
+        }
+        return null;
+    }
+
+    private void openSelectedHistoryAsRequest() {
+        RequestHistoryItem item = getSelectedHistoryItem();
+        if (item == null || item.request == null) {
+            return;
+        }
+
+        SidebarTabPanel sidebarTabPanel = SingletonFactory.getInstance(SidebarTabPanel.class);
+        if (!sidebarTabPanel.showTab(SidebarTab.COLLECTIONS)) {
+            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.HISTORY_OPEN_REQUEST_TAB_HIDDEN));
+            return;
+        }
+
+        RequestItemProtocolEnum protocol = resolveProtocol(item);
+        HttpRequestItem requestItem = createRequestItemFromHistory(item, protocol);
+        RequestEditPanel requestEditPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+        RequestEditSubPanel subPanel = requestEditPanel.addNewTab(buildTabTitle(item), protocol);
+        subPanel.initPanelData(requestItem);
+    }
+
+    private void deleteSelectedHistory() {
+        RequestHistoryItem item = getSelectedHistoryItem();
+        if (item == null) {
+            return;
+        }
+        BeanFactory.getBean(HistoryPersistenceService.class).removeHistory(item);
+        allHistoryItems.remove(item);
+        rebuildHistoryListModel(null);
+    }
+
+    private HttpRequestItem createRequestItemFromHistory(RequestHistoryItem item, RequestItemProtocolEnum protocol) {
+        PreparedRequest request = item.request;
+        HttpRequestItem requestItem = new HttpRequestItem();
+        requestItem.setName("");
+        requestItem.setProtocol(protocol);
+        requestItem.setMethod(request.method != null ? request.method : item.method);
+        requestItem.setUrl(request.url != null ? request.url : item.url);
+        requestItem.setHeadersList(copyHeaders(request));
+        requestItem.setParamsList(copyParams(request.paramsList));
+        requestItem.setFormDataList(copyFormData(request.formDataList));
+        requestItem.setUrlencodedList(copyUrlencoded(request.urlencodedList));
+        requestItem.setFollowRedirects(request.followRedirects);
+        requestItem.setCookieJarEnabled(request.cookieJarEnabled);
+        requestItem.setHttpVersion(request.httpVersion);
+        requestItem.setRequestTimeoutMs(request.requestTimeoutMs > 0 ? request.requestTimeoutMs : null);
+        requestItem.setPrescript(request.prescript == null ? "" : request.prescript);
+        requestItem.setPostscript(request.postscript == null ? "" : request.postscript);
+
+        String requestBody = request.body != null ? request.body : request.okHttpRequestBody;
+        requestItem.setBody(requestBody == null ? "" : requestBody);
+        requestItem.setBodyType(resolveBodyType(request));
+        return requestItem;
+    }
+
+    private List<HttpHeader> copyHeaders(PreparedRequest request) {
+        List<HttpHeader> copiedHeaders = copyHeadersList(request.headersList);
+        if (!copiedHeaders.isEmpty()) {
+            return copiedHeaders;
+        }
+        if (request.okHttpHeaders == null || request.okHttpHeaders.size() == 0) {
+            return copiedHeaders;
+        }
+        for (int i = 0; i < request.okHttpHeaders.size(); i++) {
+            copiedHeaders.add(new HttpHeader(true, request.okHttpHeaders.name(i), request.okHttpHeaders.value(i)));
+        }
+        return copiedHeaders;
+    }
+
+    private List<HttpHeader> copyHeadersList(List<HttpHeader> source) {
+        List<HttpHeader> copiedHeaders = new ArrayList<>();
+        if (source == null) {
+            return copiedHeaders;
+        }
+        for (HttpHeader header : source) {
+            copiedHeaders.add(new HttpHeader(header.isEnabled(), header.getKey(), header.getValue()));
+        }
+        return copiedHeaders;
+    }
+
+    private List<HttpParam> copyParams(List<HttpParam> source) {
+        List<HttpParam> copiedParams = new ArrayList<>();
+        if (source == null) {
+            return copiedParams;
+        }
+        for (HttpParam param : source) {
+            copiedParams.add(new HttpParam(param.isEnabled(), param.getKey(), param.getValue()));
+        }
+        return copiedParams;
+    }
+
+    private List<HttpFormData> copyFormData(List<HttpFormData> source) {
+        List<HttpFormData> copiedFormData = new ArrayList<>();
+        if (source == null) {
+            return copiedFormData;
+        }
+        for (HttpFormData formData : source) {
+            copiedFormData.add(new HttpFormData(
+                    formData.isEnabled(),
+                    formData.getKey(),
+                    formData.getType(),
+                    formData.getValue()
+            ));
+        }
+        return copiedFormData;
+    }
+
+    private List<HttpFormUrlencoded> copyUrlencoded(List<HttpFormUrlencoded> source) {
+        List<HttpFormUrlencoded> copiedUrlencoded = new ArrayList<>();
+        if (source == null) {
+            return copiedUrlencoded;
+        }
+        for (HttpFormUrlencoded formUrlencoded : source) {
+            copiedUrlencoded.add(new HttpFormUrlencoded(
+                    formUrlencoded.isEnabled(),
+                    formUrlencoded.getKey(),
+                    formUrlencoded.getValue()
+            ));
+        }
+        return copiedUrlencoded;
+    }
+
+    private String resolveBodyType(PreparedRequest request) {
+        if (request.formDataList != null && !request.formDataList.isEmpty()) {
+            return RequestBodyPanel.BODY_TYPE_FORM_DATA;
+        }
+        if (request.urlencodedList != null && !request.urlencodedList.isEmpty()) {
+            return RequestBodyPanel.BODY_TYPE_FORM_URLENCODED;
+        }
+        String bodyType = request.bodyType;
+        if (bodyType == null || bodyType.isBlank()) {
+            return (request.okHttpRequestBody != null && !request.okHttpRequestBody.isBlank())
+                    || (request.body != null && !request.body.isBlank())
+                    ? RequestBodyPanel.BODY_TYPE_RAW
+                    : RequestBodyPanel.BODY_TYPE_NONE;
+        }
+        return bodyType;
+    }
+
+    private RequestItemProtocolEnum resolveProtocol(RequestHistoryItem item) {
+        if (item.response != null && item.response.isSse) {
+            return RequestItemProtocolEnum.SSE;
+        }
+        String url = item.url != null ? item.url.toLowerCase(Locale.ROOT) : "";
+        if (url.startsWith("ws://") || url.startsWith("wss://")) {
+            return RequestItemProtocolEnum.WEBSOCKET;
+        }
+        return RequestItemProtocolEnum.HTTP;
+    }
+
+    private static HistoryVisualInfo summarizeRequestTarget(String url) {
+        if (url == null || url.isBlank()) {
+            return new HistoryVisualInfo("-", "-", "");
+        }
+        try {
+            URI uri = URI.create(url);
+            String host = uri.getHost();
+            String path = uri.getPath();
+            String query = uri.getQuery();
+
+            String title = (path != null && !path.isBlank() && !"/".equals(path))
+                    ? path
+                    : (host != null && !host.isBlank() ? host : url);
+            if (query != null && !query.isBlank()) {
+                title = title + "?" + query;
+            }
+            String subtitle = host != null && !host.isBlank()
+                    ? host
+                    : uri.getScheme() != null ? uri.getScheme() : url;
+            return new HistoryVisualInfo(title, subtitle, url);
+        } catch (Exception ignored) {
+            return new HistoryVisualInfo(url, "-", url);
+        }
+    }
+
+    private static String abbreviateMiddle(String value, int maxLength) {
+        if (value == null || value.length() <= maxLength) {
+            return value == null ? "" : value;
+        }
+        int head = Math.max(12, maxLength / 2);
+        int tail = Math.max(10, maxLength - head - 3);
+        return value.substring(0, head) + "..." + value.substring(value.length() - tail);
+    }
+
+    private String highlightMatches(String value) {
+        if (value == null || value.isBlank() || searchField == null) {
+            return escapeHtml(value);
+        }
+        String keyword = searchField.getText().trim();
+        if (keyword.isEmpty()) {
+            return escapeHtml(value);
+        }
+        boolean caseSensitive = searchField.isCaseSensitive();
+        boolean wholeWord = searchField.isWholeWord();
+        String source = caseSensitive ? value : value.toLowerCase(Locale.ROOT);
+        String expected = caseSensitive ? keyword : keyword.toLowerCase(Locale.ROOT);
+        String highlightColor = ModernColors.isDarkTheme() ? "#5b4b00" : "#fff1a8";
+
+        StringBuilder builder = new StringBuilder();
+        int cursor = 0;
+        while (cursor < value.length()) {
+            int matchStart = findMatchStart(source, expected, cursor, wholeWord);
+            if (matchStart < 0) {
+                builder.append(escapeHtml(value.substring(cursor)));
+                break;
+            }
+            int matchEnd = matchStart + expected.length();
+            builder.append(escapeHtml(value.substring(cursor, matchStart)));
+            builder.append("<span style='background:").append(highlightColor)
+                    .append(";border-radius:3px;padding:0 1px;'>")
+                    .append(escapeHtml(value.substring(matchStart, matchEnd)))
+                    .append("</span>");
+            cursor = matchEnd;
+        }
+        return builder.toString();
+    }
+
+    private int findMatchStart(String source, String expected, int fromIndex, boolean wholeWord) {
+        int matchStart = source.indexOf(expected, fromIndex);
+        if (!wholeWord) {
+            return matchStart;
+        }
+        while (matchStart >= 0) {
+            int before = matchStart - 1;
+            int after = matchStart + expected.length();
+            boolean leftBoundary = before < 0 || !Character.isLetterOrDigit(source.charAt(before));
+            boolean rightBoundary = after >= source.length() || !Character.isLetterOrDigit(source.charAt(after));
+            if (leftBoundary && rightBoundary) {
+                return matchStart;
+            }
+            matchStart = source.indexOf(expected, matchStart + expected.length());
+        }
+        return -1;
+    }
+
+    private void updateOverviewCards(RequestHistoryItem item, HistoryVisualInfo visualInfo,
+                                     String protocol, String duration, String status, String timestamp) {
+        if (item == null || item.request == null) {
+            return;
+        }
+        PreparedRequest request = item.request;
+        setOverviewCardState(endpointValueLabel, endpointDetailLabel,
+                abbreviateMiddle(visualInfo.subtitle(), 30),
+                abbreviateMiddle(visualInfo.title(), 42));
+        setOverviewCardState(payloadValueLabel, payloadDetailLabel,
+                resolveBodyTypeLabel(request),
+                protocol);
+
+        int params = countEnabledParams(request.paramsList);
+        int headers = countEnabledHeaders(request);
+        int formData = countEnabledFormData(request.formDataList);
+        int urlencoded = countEnabledUrlencoded(request.urlencodedList);
+        setOverviewCardState(structureValueLabel, structureDetailLabel,
+                buildStructureSummary(params, headers, formData, urlencoded),
+                buildScriptSummary(request));
+        setOverviewCardState(resultValueLabel, resultDetailLabel,
+                status + " · " + duration,
+                timestamp);
+    }
+
+    private String buildStructureSummary(int params, int headers, int formData, int urlencoded) {
+        return I18nUtil.getMessage(MessageKeys.HISTORY_OVERVIEW_PARAMS) + " " + params
+                + " · " + I18nUtil.getMessage(MessageKeys.HISTORY_OVERVIEW_HEADERS_SHORT) + " " + headers
+                + " · " + I18nUtil.getMessage(MessageKeys.HISTORY_OVERVIEW_FORM_DATA_SHORT) + " " + formData
+                + " · " + I18nUtil.getMessage(MessageKeys.HISTORY_OVERVIEW_URLENCODED_SHORT) + " " + urlencoded;
+    }
+
+    private String buildScriptSummary(PreparedRequest request) {
+        List<String> tags = new ArrayList<>();
+        if (request.prescript != null && !request.prescript.isBlank()) {
+            tags.add(I18nUtil.getMessage(MessageKeys.HISTORY_OVERVIEW_PRESCRIPT));
+        }
+        if (request.postscript != null && !request.postscript.isBlank()) {
+            tags.add(I18nUtil.getMessage(MessageKeys.HISTORY_OVERVIEW_POSTSCRIPT));
+        }
+        return tags.isEmpty() ? "-" : String.join(" / ", tags);
+    }
+
+    private void setOverviewCardState(JLabel valueLabel, JLabel detailLabel, String value, String detail) {
+        if (valueLabel != null) {
+            valueLabel.setText(escapeHtml(value == null ? "" : value));
+            valueLabel.setToolTipText(value);
+        }
+        if (detailLabel != null) {
+            detailLabel.setText(escapeHtml(detail == null ? "" : detail));
+            detailLabel.setToolTipText(detail);
+        }
+    }
+
+    private String resolveBodyTypeLabel(PreparedRequest request) {
+        String bodyType = resolveBodyType(request);
+        return switch (bodyType) {
+            case RequestBodyPanel.BODY_TYPE_FORM_DATA -> I18nUtil.getMessage(MessageKeys.HISTORY_OVERVIEW_BODY_FORM_DATA);
+            case RequestBodyPanel.BODY_TYPE_FORM_URLENCODED -> I18nUtil.getMessage(MessageKeys.HISTORY_OVERVIEW_BODY_URLENCODED);
+            case RequestBodyPanel.BODY_TYPE_RAW -> I18nUtil.getMessage(MessageKeys.HISTORY_OVERVIEW_BODY_RAW);
+            default -> I18nUtil.getMessage(MessageKeys.HISTORY_OVERVIEW_BODY_NONE);
+        };
+    }
+
+    private int countEnabledParams(List<HttpParam> paramsList) {
+        if (paramsList == null) {
+            return 0;
+        }
+        int count = 0;
+        for (HttpParam param : paramsList) {
+            if (param != null && param.isEnabled() && param.getKey() != null && !param.getKey().isBlank()) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private int countEnabledHeaders(PreparedRequest request) {
+        List<HttpHeader> headersList = request.headersList;
+        if (headersList != null && !headersList.isEmpty()) {
+            int count = 0;
+            for (HttpHeader header : headersList) {
+                if (header != null && header.isEnabled() && header.getKey() != null && !header.getKey().isBlank()) {
+                    count++;
+                }
+            }
+            return count;
+        }
+        return request.okHttpHeaders != null ? request.okHttpHeaders.size() : 0;
+    }
+
+    private int countEnabledFormData(List<HttpFormData> formDataList) {
+        if (formDataList == null) {
+            return 0;
+        }
+        int count = 0;
+        for (HttpFormData formData : formDataList) {
+            if (formData != null && formData.isEnabled() && formData.getKey() != null && !formData.getKey().isBlank()) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private int countEnabledUrlencoded(List<HttpFormUrlencoded> urlencodedList) {
+        if (urlencodedList == null) {
+            return 0;
+        }
+        int count = 0;
+        for (HttpFormUrlencoded urlencoded : urlencodedList) {
+            if (urlencoded != null && urlencoded.isEnabled() && urlencoded.getKey() != null && !urlencoded.getKey().isBlank()) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private String buildTabTitle(RequestHistoryItem item) {
+        try {
+            URI uri = URI.create(item.url);
+            String path = uri.getPath();
+            if (path != null && !path.isBlank() && !"/".equals(path)) {
+                int slashIndex = path.lastIndexOf('/');
+                String lastSegment = slashIndex >= 0 ? path.substring(slashIndex + 1) : path;
+                if (!lastSegment.isBlank()) {
+                    return lastSegment;
+                }
+                return path;
+            }
+            if (uri.getHost() != null && !uri.getHost().isBlank()) {
+                return uri.getHost();
+            }
+        } catch (Exception ignored) {
+            // Fall back to method-based title below.
+        }
+        return item.method != null && !item.method.isBlank()
+                ? item.method.toUpperCase(Locale.ROOT)
+                : I18nUtil.getMessage(MessageKeys.NEW_REQUEST);
+    }
+
+    private String getDateGroupLabel(long timestamp) {
+        updateDateCache();
+        return buildDateGroupLabel(timestamp, todayStartCache, yesterdayStartCache, dateFormatter);
+    }
+
+    private String buildDateGroupLabel(long timestamp,
+                                       long todayStart,
+                                       long yesterdayStart,
+                                       SimpleDateFormat formatter) {
+        if (timestamp >= todayStart) {
+            return I18nUtil.getMessage(MessageKeys.HISTORY_TODAY);
+        }
+        if (timestamp >= yesterdayStart) {
+            return I18nUtil.getMessage(MessageKeys.HISTORY_YESTERDAY);
+        }
+        return formatter.format(new Date(timestamp));
+    }
+
     private void updateDateCache() {
         long now = System.currentTimeMillis();
-        // 如果缓存的今天时间戳是0或者已经过了今天，重新计算
         if (todayStartCache == 0 || now >= todayStartCache + 24 * 60 * 60 * 1000L) {
             Calendar today = Calendar.getInstance();
             today.set(Calendar.HOUR_OF_DAY, 0);
@@ -375,67 +1650,30 @@ public class HistoryPanel extends SingletonBasePanel {
     }
 
     private void clearRequestHistory() {
-        // 清空持久化的历史记录
         BeanFactory.getBean(HistoryPersistenceService.class).clearHistory();
-
-        // 清空UI列表
-        isUpdating = true;
-        try {
-            historyListModel.clear();
-            clearDetailPanes();
-        } finally {
-            isUpdating = false;
-        }
-        historyDetailPanel.setVisible(true);
+        allHistoryItems.clear();
+        rebuildHistoryListModel(null);
     }
 
-    /**
-     * 加载持久化的历史记录（优化：异步加载）
-     */
     private void loadPersistedHistory() {
         if (historyListModel == null) {
             return;
         }
 
-        // 在后台线程加载和分组数据
-        SwingWorker<List<Object>, Void> worker = new SwingWorker<>() {
+        SwingWorker<List<RequestHistoryItem>, Void> worker = new SwingWorker<>() {
             @Override
-            protected List<Object> doInBackground() {
-                List<RequestHistoryItem> persistedHistory = BeanFactory.getBean(HistoryPersistenceService.class).getHistory();
-                List<Object> result = new ArrayList<>();
-
-                // 按天分组
-                Map<String, List<RequestHistoryItem>> dayMap = new LinkedHashMap<>();
-                updateDateCache();
-
-                for (RequestHistoryItem item : persistedHistory) {
-                    String groupLabel = getDateGroupLabel(item.requestTime);
-                    dayMap.computeIfAbsent(groupLabel, k -> new ArrayList<>()).add(item);
-                }
-
-                // 构建显示列表
-                for (Map.Entry<String, List<RequestHistoryItem>> entry : dayMap.entrySet()) {
-                    result.add(entry.getKey()); // 日期分组标题
-                    result.addAll(entry.getValue());
-                }
-
-                return result;
+            protected List<RequestHistoryItem> doInBackground() {
+                return BeanFactory.getBean(HistoryPersistenceService.class).getHistory();
             }
 
             @Override
             protected void done() {
                 try {
-                    List<Object> items = get();
-                    isUpdating = true;
-                    try {
-                        historyListModel.clear();
-                        for (Object item : items) {
-                            historyListModel.addElement(item);
-                        }
-                    } finally {
-                        isUpdating = false;
-                    }
-                } catch (Exception e) {
+                    List<RequestHistoryItem> items = get();
+                    allHistoryItems.clear();
+                    allHistoryItems.addAll(items);
+                    rebuildHistoryListModel(null);
+                } catch (Exception ignored) {
                     // Ignore if cancelled or interrupted
                 }
             }
@@ -443,10 +1681,30 @@ public class HistoryPanel extends SingletonBasePanel {
         worker.execute();
     }
 
-    /**
-     * 刷新历史记录显示（当设置变更时调用）
-     */
     public void refreshHistory() {
         loadPersistedHistory();
+    }
+
+    private static Color resolveStatusColor(int statusCode) {
+        if (statusCode >= 200 && statusCode < 400) {
+            return new Color(46, 125, 50);
+        }
+        if (statusCode >= 400 || statusCode <= 0) {
+            return new Color(198, 40, 40);
+        }
+        return ModernColors.getTextSecondary();
+    }
+
+    private static String toHex(Color color) {
+        return String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
+    }
+
+    private static String escapeHtml(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;");
     }
 }

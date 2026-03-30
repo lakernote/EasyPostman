@@ -7,6 +7,7 @@ import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.panel.collections.right.request.sub.NetworkLogPanel;
 import com.laker.postman.panel.collections.right.request.sub.NetworkLogStage;
+import com.laker.postman.service.http.NetworkErrorMessageResolver;
 import com.laker.postman.service.http.ssl.CertificateCapturingSSLSocketFactory;
 import com.laker.postman.service.http.ssl.SSLCertificateValidator;
 import com.laker.postman.service.http.ssl.SSLConfigurationUtil;
@@ -446,7 +447,7 @@ public class EasyConsoleEventListener extends EventListener {
         if (!collectEventInfo) {
             return;
         }
-        info.setErrorMessage(ioe.getMessage());
+        info.setErrorMessage(NetworkErrorMessageResolver.toUserFriendlyMessage(ioe));
         info.setError(ioe);
         log(NetworkLogStage.REQUEST_FAILED, ioe.getMessage() + "\n" + getStackTrace(ioe));
     }
@@ -535,7 +536,7 @@ public class EasyConsoleEventListener extends EventListener {
         if (!collectEventInfo) {
             return;
         }
-        info.setErrorMessage(ioe.getMessage());
+        info.setErrorMessage(NetworkErrorMessageResolver.toUserFriendlyMessage(ioe));
         info.setError(ioe);
         String errorMsg = ioe.getMessage() != null ? ioe.getMessage() : ioe.getClass().getSimpleName();
         log(NetworkLogStage.RESPONSE_FAILED, errorMsg + "\n" + getStackTrace(ioe));
@@ -556,7 +557,7 @@ public class EasyConsoleEventListener extends EventListener {
             return;
         }
         info.setCallFailed(System.currentTimeMillis());
-        info.setErrorMessage(ioe.getMessage());
+        info.setErrorMessage(NetworkErrorMessageResolver.toUserFriendlyMessage(ioe));
         info.setError(ioe);
         String errorMsg = ioe.getMessage() != null ? ioe.getMessage() : ioe.getClass().getSimpleName();
         log(NetworkLogStage.CALL_FAILED, errorMsg);

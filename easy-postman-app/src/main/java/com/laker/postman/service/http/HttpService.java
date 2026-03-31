@@ -59,17 +59,12 @@ public class HttpService {
      */
     private static OkHttpClient buildDynamicClient(OkHttpClient baseClient,
                                                    PreparedRequest preparedRequest,
-                                                   int timeoutMs,
-                                                   boolean isolateConnectionPool) {
+                                                   int timeoutMs) {
         OkHttpClient.Builder builder = baseClient.newBuilder();
-        if (isolateConnectionPool) {
-            // Avoid reusing sockets that were established under a different SSL verification mode.
-            builder.connectionPool(new ConnectionPool());
-        }
         // 添加自动解压拦截器
         builder.addNetworkInterceptor(new CompressionDecompressNetworkInterceptor());
 
-        applyRequestSettings(builder, preparedRequest, isolateConnectionPool);
+        applyRequestSettings(builder, preparedRequest);
 
         // 只有至少需要一种信息收集时才创建 EventListener
         // 如果三个开关都是 false，则不创建（最小性能开销）
@@ -128,12 +123,11 @@ public class HttpService {
                         resolveSslVerificationMode(req)
                 )
                 : OkHttpClientManager.getClient(baseUri, req.followRedirects);
-        return buildDynamicClient(baseClient, req, req.requestTimeoutMs, false);
+        return buildDynamicClient(baseClient, req, req.requestTimeoutMs);
     }
 
     private static void applyRequestSettings(OkHttpClient.Builder builder,
-                                             PreparedRequest preparedRequest,
-                                             boolean overrideSslConfiguration) {
+                                             PreparedRequest preparedRequest) {
         if (!preparedRequest.cookieJarEnabled) {
             builder.cookieJar(CookieJar.NO_COOKIES);
         }
@@ -146,29 +140,6 @@ public class HttpService {
         } else if (HttpRequestItem.HTTP_VERSION_HTTP_2.equals(httpVersion)) {
             builder.protocols(List.of(Protocol.HTTP_2, Protocol.HTTP_1_1));
         }
-
-        if (overrideSslConfiguration) {
-            applySslVerificationSetting(builder, preparedRequest);
-        }
-    }
-
-    private static void applySslVerificationSetting(OkHttpClient.Builder builder, PreparedRequest preparedRequest) {
-        URI uri;
-        try {
-            uri = URI.create(preparedRequest.url);
-        } catch (Exception e) {
-            return;
-        }
-
-        String scheme = uri.getScheme();
-        boolean secureScheme = "https".equalsIgnoreCase(scheme) || "wss".equalsIgnoreCase(scheme);
-        if (!secureScheme) {
-            return;
-        }
-
-        SSLConfigurationUtil.SSLVerificationMode mode = resolveSslVerificationMode(preparedRequest);
-
-        SSLConfigurationUtil.configureSSL(builder, mode, uri.getHost(), resolveSecurePort(scheme, uri.getPort()));
     }
 
     static boolean shouldIsolateConnectionPool(PreparedRequest preparedRequest) {

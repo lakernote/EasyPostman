@@ -179,6 +179,8 @@ public class HttpServiceTest {
                     strictClient.sslSocketFactory().getClass().getName()
                             .equals(lenientBaseClient.sslSocketFactory().getClass().getName())
             );
+            assertSame(strictClient.dispatcher(), lenientBaseClient.dispatcher());
+            assertFalse(strictClient.connectionPool() == lenientBaseClient.connectionPool());
         } finally {
             props.clear();
             props.putAll(backup);

@@ -158,7 +158,8 @@ public class OkHttpClientManager {
     public static OkHttpClient createClientForSslMode(String baseUri,
                                                       boolean followRedirects,
                                                       SSLConfigurationUtil.SSLVerificationMode sslMode) {
-        return createClient(baseUri, followRedirects, sslMode);
+        Dispatcher sharedDispatcher = getClient(baseUri, followRedirects).dispatcher();
+        return createClient(baseUri, followRedirects, sslMode, sharedDispatcher);
     }
 
     /**
@@ -255,7 +256,13 @@ public class OkHttpClientManager {
         Dispatcher dispatcher = new Dispatcher();
         dispatcher.setMaxRequests(maxRequests);
         dispatcher.setMaxRequestsPerHost(maxRequestsPerHost);
+        return createClient(baseUri, followRedirects, sslMode, dispatcher);
+    }
 
+    private static OkHttpClient createClient(String baseUri,
+                                             boolean followRedirects,
+                                             SSLConfigurationUtil.SSLVerificationMode sslMode,
+                                             Dispatcher dispatcher) {
         OkHttpClient.Builder builder = new OkHttpClient.Builder()
                 .connectTimeout(0, TimeUnit.MILLISECONDS)
                 .readTimeout(0, TimeUnit.MILLISECONDS)

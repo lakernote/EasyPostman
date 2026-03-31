@@ -121,8 +121,7 @@ public class HttpService {
         String baseUri = extractBaseUri(req.url);
         boolean isolateSslConfiguration = shouldIsolateConnectionPool(req);
         OkHttpClient baseClient = isolateSslConfiguration
-                // When request-level SSL mode differs from the cached global client,
-                // rebuild the base client in the target mode instead of inheriting SSL state.
+                // Rebuild from the target SSL mode so strict requests do not inherit lenient TLS components.
                 ? OkHttpClientManager.createClientForSslMode(
                         baseUri,
                         req.followRedirects,

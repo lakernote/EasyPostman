@@ -317,6 +317,7 @@ public class SSLConfigurationUtil {
         } else if (mode == SSLVerificationMode.LENIENT) {
             return new LenientHostnameVerifier();
         }
+        // Keep OkHttp's built-in strict verifier for TLS sessions created by OkHttp itself.
         return new OkHttpClient().hostnameVerifier();
     }
 

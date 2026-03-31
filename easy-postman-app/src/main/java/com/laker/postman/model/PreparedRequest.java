@@ -24,7 +24,7 @@ public class PreparedRequest {
     public boolean isMultipart;
     public boolean followRedirects = true; // 默认自动重定向
     public boolean cookieJarEnabled = true; // 默认启用 Cookie Jar
-    public boolean sslVerificationEnabled = true; // 默认启用 SSL 校验
+    public boolean sslVerificationEnabled = false; // 默认禁用 SSL 校验
     public String httpVersion = HttpRequestItem.HTTP_VERSION_AUTO; // HTTP 协议偏好
     public int requestTimeoutMs = 0; // 0 表示不超时
 

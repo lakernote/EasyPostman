@@ -2,6 +2,7 @@ package com.laker.postman.service.setting;
 
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.model.TrustedCertificateEntry;
+import com.laker.postman.model.PreparedRequest;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Field;
@@ -9,6 +10,7 @@ import java.util.List;
 import java.util.Properties;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class SettingManagerTrustedCertificateTest {
@@ -62,6 +64,30 @@ public class SettingManagerTrustedCertificateTest {
             props.clear();
             props.putAll(backup);
         }
+    }
+
+    @Test
+    public void shouldDisableRequestAndProxySslVerificationByDefaultWhenUnset() throws Exception {
+        Properties props = getSettingsProperties();
+        Properties backup = new Properties();
+        backup.putAll(props);
+
+        try {
+            props.clear();
+
+            assertTrue(SettingManager.isRequestSslVerificationDisabled());
+            assertTrue(SettingManager.isProxySslVerificationDisabled());
+        } finally {
+            props.clear();
+            props.putAll(backup);
+        }
+    }
+
+    @Test
+    public void preparedRequestShouldDefaultToLenientSslVerification() {
+        PreparedRequest request = new PreparedRequest();
+
+        assertFalse(request.sslVerificationEnabled);
     }
 
     private static Properties getSettingsProperties() throws Exception {

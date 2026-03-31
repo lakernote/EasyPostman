@@ -925,7 +925,7 @@ public class SettingManager {
         if (val != null) {
             return Boolean.parseBoolean(val);
         }
-        return false; // 默认启用 SSL 验证
+        return true; // 默认禁用代理 SSL 验证，避免代理环境阻断请求
     }
 
     public static void setProxySslVerificationDisabled(boolean disabled) {

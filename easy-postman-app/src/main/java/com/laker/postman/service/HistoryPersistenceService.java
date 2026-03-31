@@ -405,7 +405,7 @@ public class HistoryPersistenceService {
         request.followRedirects = requestJson.getBool("followRedirects", true);
         request.isMultipart = requestJson.getBool("isMultipart", false);
         request.cookieJarEnabled = requestJson.getBool("cookieJarEnabled", true);
-        request.sslVerificationEnabled = requestJson.getBool("sslVerificationEnabled", true);
+        request.sslVerificationEnabled = requestJson.getBool("sslVerificationEnabled", false);
         request.httpVersion = requestJson.getStr("httpVersion");
         request.requestTimeoutMs = requestJson.getInt("requestTimeoutMs", 0);
         request.collectBasicInfo = requestJson.getBool("collectBasicInfo", true);

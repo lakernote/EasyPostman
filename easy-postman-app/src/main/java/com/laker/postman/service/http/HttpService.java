@@ -119,8 +119,17 @@ public class HttpService {
      */
     private static OkHttpClient buildCustomClient(PreparedRequest req) {
         String baseUri = extractBaseUri(req.url);
-        OkHttpClient baseClient = OkHttpClientManager.getClient(baseUri, req.followRedirects);
-        return buildDynamicClient(baseClient, req, req.requestTimeoutMs, shouldIsolateConnectionPool(req));
+        boolean isolateSslConfiguration = shouldIsolateConnectionPool(req);
+        OkHttpClient baseClient = isolateSslConfiguration
+                // When request-level SSL mode differs from the cached global client,
+                // rebuild the base client in the target mode instead of inheriting SSL state.
+                ? OkHttpClientManager.createClientForSslMode(
+                        baseUri,
+                        req.followRedirects,
+                        resolveSslVerificationMode(req)
+                )
+                : OkHttpClientManager.getClient(baseUri, req.followRedirects);
+        return buildDynamicClient(baseClient, req, req.requestTimeoutMs, false);
     }
 
     private static void applyRequestSettings(OkHttpClient.Builder builder,

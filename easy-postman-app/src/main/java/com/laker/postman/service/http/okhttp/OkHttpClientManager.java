@@ -145,41 +145,20 @@ public class OkHttpClientManager {
         String proxyKey = getProxyConfigKey(baseUri);
         String key = baseUri + "|" + followRedirects + "|" + proxyKey;
 
-        return clientMap.computeIfAbsent(key, k -> {
-            // 配置 Dispatcher 并发参数
-            Dispatcher dispatcher = new Dispatcher();
-            dispatcher.setMaxRequests(maxRequests);
-            dispatcher.setMaxRequestsPerHost(maxRequestsPerHost);
+        return clientMap.computeIfAbsent(key, k -> createClient(
+                baseUri,
+                followRedirects,
+                resolveSslVerificationMode(baseUri)
+        ));
+    }
 
-            OkHttpClient.Builder builder = new OkHttpClient.Builder()
-                    // 连接超时
-                    .connectTimeout(0, TimeUnit.MILLISECONDS)
-                    // 读超时
-                    .readTimeout(0, TimeUnit.MILLISECONDS)
-                    // 写超时
-                    .writeTimeout(0, TimeUnit.MILLISECONDS)
-                    // 配置 Dispatcher
-                    .dispatcher(dispatcher)
-                    // 连接池配置
-                    .connectionPool(new ConnectionPool(maxIdleConnections, keepAliveDuration, TimeUnit.SECONDS))
-                    // 失败自动重试
-                    .retryOnConnectionFailure(true)
-                    // 是否自动跟随重定向
-                    .followRedirects(followRedirects)
-                    .cache(null)
-                    .pingInterval(30, TimeUnit.SECONDS);
-
-            // 使用全局 JavaNetCookieJar
-            builder.cookieJar(GLOBAL_COOKIE_JAR);
-
-            // 配置网络代理
-            configureProxy(builder, baseUri);
-
-            // 配置SSL设置
-            configureSSLSettings(builder, baseUri);
-
-            return builder.build();
-        });
+    /**
+     * 创建一个不参与缓存的客户端，用于请求级 SSL 模式覆盖。
+     */
+    public static OkHttpClient createClientForSslMode(String baseUri,
+                                                      boolean followRedirects,
+                                                      SSLConfigurationUtil.SSLVerificationMode sslMode) {
+        return createClient(baseUri, followRedirects, sslMode);
     }
 
     /**
@@ -270,13 +249,38 @@ public class OkHttpClientManager {
     /**
      * 配置SSL设置（统一处理所有HTTPS连接的SSL配置）
      */
-    private static void configureSSLSettings(OkHttpClient.Builder builder, String baseUri) {
+    private static OkHttpClient createClient(String baseUri,
+                                             boolean followRedirects,
+                                             SSLConfigurationUtil.SSLVerificationMode sslMode) {
+        Dispatcher dispatcher = new Dispatcher();
+        dispatcher.setMaxRequests(maxRequests);
+        dispatcher.setMaxRequestsPerHost(maxRequestsPerHost);
+
+        OkHttpClient.Builder builder = new OkHttpClient.Builder()
+                .connectTimeout(0, TimeUnit.MILLISECONDS)
+                .readTimeout(0, TimeUnit.MILLISECONDS)
+                .writeTimeout(0, TimeUnit.MILLISECONDS)
+                .dispatcher(dispatcher)
+                .connectionPool(new ConnectionPool(maxIdleConnections, keepAliveDuration, TimeUnit.SECONDS))
+                .retryOnConnectionFailure(true)
+                .followRedirects(followRedirects)
+                .cache(null)
+                .pingInterval(30, TimeUnit.SECONDS);
+
+        builder.cookieJar(GLOBAL_COOKIE_JAR);
+        configureProxy(builder, baseUri);
+        configureSSLSettings(builder, baseUri, sslMode);
+        return builder.build();
+    }
+
+    private static void configureSSLSettings(OkHttpClient.Builder builder,
+                                             String baseUri,
+                                             SSLConfigurationUtil.SSLVerificationMode mode) {
         URI uri = tryParseUri(baseUri, "SSL configuration");
         if (uri == null || !isSecureScheme(uri.getScheme())) {
             return;
         }
 
-        SSLConfigurationUtil.SSLVerificationMode mode = resolveSslVerificationMode(baseUri);
         if (mode == SSLConfigurationUtil.SSLVerificationMode.LENIENT) {
             log.warn("SSL verification disabled by user settings");
         }

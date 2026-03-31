@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Properties;
 
 import static org.testng.Assert.assertSame;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
@@ -134,6 +135,51 @@ public class HttpServiceTest {
             assertFalse(HttpService.shouldIsolateConnectionPool(request));
         } finally {
             ProxySelector.setDefault(originalSelector);
+            props.clear();
+            props.putAll(backup);
+            OkHttpClientManager.clearClientCache();
+        }
+    }
+
+    @Test
+    public void strictRequestShouldNotReuseLenientSslComponents() throws Exception {
+        Properties props = getSettingsProperties();
+        Properties backup = new Properties();
+        backup.putAll(props);
+
+        try {
+            props.clear();
+            props.setProperty("proxy_enabled", "false");
+            props.setProperty("ssl_verification_enabled", "false");
+            props.setProperty("proxy_ssl_verification_disabled", "false");
+            OkHttpClientManager.clearClientCache();
+
+            PreparedRequest request = new PreparedRequest();
+            request.url = "https://api.example.com/data";
+            request.followRedirects = true;
+            request.sslVerificationEnabled = true;
+
+            OkHttpClient lenientBaseClient = OkHttpClientManager.getClient("https://api.example.com", true);
+            OkHttpClient strictClient = invokeBuildCustomClient(request);
+            OkHttpClient strictDefaultClient = new OkHttpClient();
+
+            assertEquals(
+                    strictClient.hostnameVerifier().getClass().getName(),
+                    strictDefaultClient.hostnameVerifier().getClass().getName()
+            );
+            assertEquals(
+                    strictClient.sslSocketFactory().getClass().getName(),
+                    strictDefaultClient.sslSocketFactory().getClass().getName()
+            );
+            assertFalse(
+                    strictClient.hostnameVerifier().getClass().getName()
+                            .equals(lenientBaseClient.hostnameVerifier().getClass().getName())
+            );
+            assertFalse(
+                    strictClient.sslSocketFactory().getClass().getName()
+                            .equals(lenientBaseClient.sslSocketFactory().getClass().getName())
+            );
+        } finally {
             props.clear();
             props.putAll(backup);
             OkHttpClientManager.clearClientCache();

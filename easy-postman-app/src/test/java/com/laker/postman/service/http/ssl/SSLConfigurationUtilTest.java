@@ -13,6 +13,7 @@ import java.security.KeyStore;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertTrue;
@@ -52,11 +53,13 @@ public class SSLConfigurationUtilTest {
         HostnameVerifier lenientVerifier = (hostname, session) -> true;
         OkHttpClient.Builder builder = new OkHttpClient.Builder()
                 .hostnameVerifier(lenientVerifier);
+        String expectedVerifierClass = new OkHttpClient().hostnameVerifier().getClass().getName();
 
         SSLConfigurationUtil.configureSSL(builder, SSLConfigurationUtil.SSLVerificationMode.STRICT, null, 0);
 
         OkHttpClient client = builder.build();
         assertNotSame(client.hostnameVerifier(), lenientVerifier);
+        assertEquals(client.hostnameVerifier().getClass().getName(), expectedVerifierClass);
     }
 
     private static X509TrustManager getDefaultTrustManager() throws Exception {

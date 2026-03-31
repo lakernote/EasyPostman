@@ -66,6 +66,7 @@ public class ResponsePanel extends JPanel {
     private final SSEResponsePanel sseResponsePanel;
     private final LoadingOverlay loadingOverlay;
     private boolean isHorizontalLayout = false; // 标记当前是否为水平布局
+    private boolean hasResponseData = false;
 
     public ResponsePanel(RequestItemProtocolEnum protocol, boolean enableSaveButton) {
         this.protocol = protocol;
@@ -438,6 +439,14 @@ public class ResponsePanel extends JPanel {
     }
 
     public void setResponseTabButtonsEnable(boolean enable) {
+        if (!SwingUtilities.isEventDispatchThread()) {
+            SwingUtilities.invokeLater(() -> setResponseTabButtonsEnable(enable));
+            return;
+        }
+        if (tabButtons.length > 0 && tabButtons[0].isEnabled() == enable
+                && (tabComboBox == null || tabComboBox.isEnabled() == enable)) {
+            return;
+        }
         for (JButton btn : tabButtons) {
             btn.setEnabled(enable);
         }
@@ -586,6 +595,7 @@ public class ResponsePanel extends JPanel {
     }
 
     public void clearAll() {
+        hasResponseData = false;
         // 清空状态栏
         setStatus(0); // 清空状态码
         responseTimeLabel.setText("");
@@ -614,6 +624,22 @@ public class ResponsePanel extends JPanel {
         }
     }
 
+    public void clearInFlightRequestDetails() {
+        if (networkLogPanel != null) {
+            networkLogPanel.clearLog();
+            networkLogPanel.clearAllDetails();
+        }
+        clearTiming();
+    }
+
+    public boolean hasResponseData() {
+        return hasResponseData;
+    }
+
+    public void markResponseDataLoaded() {
+        hasResponseData = true;
+    }
+
     private void updateResponseHeadersTabLabel(int count) {
         if (tabButtons.length <= TAB_INDEX_RESPONSE_HEADERS) {
             return;
@@ -635,6 +661,10 @@ public class ResponsePanel extends JPanel {
      * @param type "http" 显示HTTP相关tabs，"sse" 显示SSE相关tabs
      */
     public void switchTabButtonHttpOrSse(String type) {
+        if (!SwingUtilities.isEventDispatchThread()) {
+            SwingUtilities.invokeLater(() -> switchTabButtonHttpOrSse(type));
+            return;
+        }
         if (!protocol.isHttpProtocol()) {
             return;
         }
@@ -652,7 +682,7 @@ public class ResponsePanel extends JPanel {
         tabButtons[TAB_INDEX_RESPONSE_BODY].setVisible(true);
         tabButtons[TAB_INDEX_LOG].setVisible(false);
         refreshTabSelector();
-        tabButtons[TAB_INDEX_RESPONSE_BODY].doClick();
+        selectVisibleTabIfNeeded(TAB_INDEX_RESPONSE_BODY);
     }
 
     /**
@@ -662,7 +692,23 @@ public class ResponsePanel extends JPanel {
         tabButtons[TAB_INDEX_RESPONSE_BODY].setVisible(false);
         tabButtons[TAB_INDEX_LOG].setVisible(true);
         refreshTabSelector();
-        tabButtons[TAB_INDEX_LOG].doClick();
+        selectVisibleTabIfNeeded(TAB_INDEX_LOG);
+    }
+
+    private void selectVisibleTabIfNeeded(int fallbackTabIndex) {
+        if (selectedTabIndex >= 0 && selectedTabIndex < tabButtons.length && tabButtons[selectedTabIndex].isVisible()) {
+            CardLayout cl = (CardLayout) cardPanel.getLayout();
+            cl.show(cardPanel, tabNames[selectedTabIndex]);
+            return;
+        }
+        if (fallbackTabIndex >= 0 && fallbackTabIndex < tabButtons.length && tabButtons[fallbackTabIndex].isVisible()) {
+            if (selectedTabIndex == fallbackTabIndex) {
+                CardLayout cl = (CardLayout) cardPanel.getLayout();
+                cl.show(cardPanel, tabNames[fallbackTabIndex]);
+                return;
+            }
+            tabButtons[fallbackTabIndex].doClick();
+        }
     }
 
     private void clearTiming() {

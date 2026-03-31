@@ -17,6 +17,9 @@ import java.util.List;
 
 @Slf4j
 public class DefaultRequestsFactory {
+    private static final String BASIC_HTTP_EXAMPLES_GROUP_NAME = "Basic HTTP Examples";
+    private static final String SCRIPT_EXAMPLES_EN_GROUP_NAME = "Script Examples (EN)";
+    private static final String SCRIPT_EXAMPLES_ZH_GROUP_NAME = "脚本示例（中文）";
 
     public static final String REQUEST = "request";
     public static final String APPLICATION_JSON = "application/json";
@@ -30,9 +33,9 @@ public class DefaultRequestsFactory {
 
     public static void create(DefaultMutableTreeNode rootTreeNode, DefaultTreeModel treeModel) {
         try {
+            createBasicHttpExamples(rootTreeNode);
             createEnglishScriptExamples(rootTreeNode);
             createChineseScriptExamples(rootTreeNode);
-            createBasicHttpExamples(rootTreeNode);
             treeModel.reload();
         } catch (Exception ex) {
             log.error("Failed to create default request groups", ex);
@@ -40,7 +43,7 @@ public class DefaultRequestsFactory {
     }
 
     private static void createEnglishScriptExamples(DefaultMutableTreeNode rootTreeNode) {
-        RequestGroup group = new RequestGroup("Script Examples (EN)");
+        RequestGroup group = new RequestGroup(SCRIPT_EXAMPLES_EN_GROUP_NAME);
         group.setDescription("""
                 Run request 1 first, then request 2.
                 
@@ -135,7 +138,7 @@ public class DefaultRequestsFactory {
     }
 
     private static void createChineseScriptExamples(DefaultMutableTreeNode rootTreeNode) {
-        RequestGroup group = new RequestGroup("脚本示例（中文）");
+        RequestGroup group = new RequestGroup(SCRIPT_EXAMPLES_ZH_GROUP_NAME);
         group.setDescription("""
                 先执行请求 1，再执行请求 2。
                 
@@ -230,7 +233,7 @@ public class DefaultRequestsFactory {
     }
 
     private static void createBasicHttpExamples(DefaultMutableTreeNode rootTreeNode) {
-        RequestGroup defaultGroup = new RequestGroup("Basic HTTP Examples");
+        RequestGroup defaultGroup = new RequestGroup(BASIC_HTTP_EXAMPLES_GROUP_NAME);
         defaultGroup.setDescription("""
                 General-purpose examples for common request types.
                 These requests are independent from the official script examples.

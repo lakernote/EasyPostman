@@ -312,6 +312,7 @@ public class RequestEditSubPanel extends JPanel {
                 this::sendRequest,
                 this::isBaseHttpProtocol,
                 this::isEffectiveHttpProtocol,
+                this::isEffectiveSseProtocol,
                 this::isEffectiveWebSocketProtocol
         );
         requestStreamUiHelper = new RequestStreamUiHelper(responsePanel, TIME_FORMATTER);
@@ -385,6 +386,7 @@ public class RequestEditSubPanel extends JPanel {
                 this::isDisposed
         );
         requestProtocolDispatchHelper = new RequestProtocolDispatchHelper(
+                responsePanel,
                 httpRequestExecutionHelper,
                 sseRequestExecutionHelper,
                 webSocketRequestExecutionHelper,

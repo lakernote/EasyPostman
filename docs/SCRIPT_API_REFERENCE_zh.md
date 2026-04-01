@@ -48,6 +48,7 @@
 | `pm.setGlobalVariable(key, value)` | 设置全局变量（实际存储在环境变量中） | `pm.setGlobalVariable('baseUrl', 'https://api.com')` |
 | `pm.getGlobalVariable(key)`        | 获取全局变量（实际从环境变量读取）  | `pm.getGlobalVariable('baseUrl')`                    |
 | `pm.getResponseCookie(name)`       | 获取响应中的 Cookie      | `pm.getResponseCookie('sessionId')`                  |
+| `pm.sendRequest(options, callback)` | 在脚本中发送额外 HTTP 请求 | `pm.sendRequest({ url: 'https://api.com' }, (err, resp) => {})` |
 
 ### 外部数据源对象
 
@@ -57,6 +58,43 @@
 | `pm.kafka` | Kafka 查询、发消息、消费消息 | `listTopics(options)`、`send(options)`、`poll(options)` |
 | `pm.es` / `pm.elasticsearch` | Elasticsearch 请求与查询 | `request(options)`、`query(options)` |
 | `pm.influx` / `pm.influxdb` | InfluxDB Flux / InfluxQL 查询与写入 | `query(options)`、`write(options)`、`request(options)` |
+
+### pm.sendRequest()
+
+`pm.sendRequest()` 已支持在脚本中主动发起额外 HTTP 请求，适用于前置脚本里刷新 token、拉取签名、预热上下文数据等场景。
+
+回调函数签名为 `(err, response)`：
+
+- `err`：请求失败时返回错误对象，包含 `message`、`name`
+- `response`：成功时返回响应包装对象，可使用 `response.code`、`response.status`、`response.headers.get()`、`response.text()`、`response.json()`
+
+支持的请求格式：
+
+- 直接传 URL 字符串，默认 `GET`
+- 传对象：`url`、`method`、`header`、`body`
+- `body.mode` 当前支持 `raw`、`formdata`、`urlencoded`
+
+示例：
+
+```javascript
+pm.sendRequest({
+    url: 'https://httpbin.org/get?source=easy-postman&from=pre-script',
+    method: 'GET',
+    header: {
+        'X-Debug-Token': pm.environment.get('debugToken') || 'demo-token'
+    }
+}, function (err, response) {
+    if (err) {
+        console.error('请求失败:', err.message);
+        return;
+    }
+
+    const data = response.json();
+    pm.environment.set('lastHttpbinUrl', data.url || '');
+    pm.environment.set('lastHttpbinSource', data.args?.source || '');
+    console.log('httpbin args:', data.args);
+});
+```
 
 ---
 
@@ -2244,8 +2282,35 @@ const currentTime = Date.now();
 // 检查 token 是否过期（提前5分钟刷新）
 if (!tokenExpireTime || currentTime > (parseInt(tokenExpireTime) - 300000)) {
     console.log('Token 即将过期或已过期，需要刷新');
-    // 在实际环境中，这里应该触发刷新 token 的逻辑
-    // 由于不支持 pm.sendRequest，建议在测试流程中手动添加刷新 token 的请求
+    pm.sendRequest({
+        url: pm.environment.get('authUrl'),
+        method: 'POST',
+        header: {
+            'Content-Type': 'application/json'
+        },
+        body: {
+            mode: 'raw',
+            raw: JSON.stringify({
+                refreshToken: pm.environment.get('refreshToken')
+            })
+        }
+    }, function (err, response) {
+        if (err) {
+            console.error('刷新 token 失败:', err.message);
+            return;
+        }
+
+        const data = response.json();
+        const token = data.accessToken || data.token;
+        if (token) {
+            pm.environment.set('authToken', token);
+            pm.request.headers.upsert({
+                key: 'Authorization',
+                value: 'Bearer ' + token
+            });
+            console.log('✓ Token 刷新成功，已更新认证头');
+        }
+    });
 } else {
     const token = pm.environment.get('authToken');
     if (token) {
@@ -2981,7 +3046,6 @@ pm.environment.set('performanceStats', JSON.stringify(stats));
     - 库代码会被缓存，重复加载不会影响性能
 
 8. **不支持的功能**
-    - ❌ `pm.sendRequest()` - 不支持在脚本中发送 HTTP 请求
     - ❌ `pm.iterationData` - 不支持迭代数据（但支持 CSV 数据驱动）
     - ❌ `pm.info` - 不支持请求元信息访问
     - ❌ 完整的 Chai.js 断言库

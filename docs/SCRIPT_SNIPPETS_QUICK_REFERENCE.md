@@ -11,6 +11,7 @@
 - [获取时间戳](#获取时间戳)
 - [添加请求头](#添加请求头)
 - [添加查询参数](#添加查询参数)
+- [前置脚本发送 HTTP 请求](#前置脚本发送-http-请求)
 
 ### 认证相关
 - [Bearer Token 认证](#bearer-token-认证)
@@ -126,6 +127,29 @@ pm.request.params.add({
 });
 ```
 
+### 前置脚本发送 HTTP 请求
+```javascript
+// Pre-request Script
+pm.sendRequest({
+    url: 'https://httpbin.org/get?source=easy-postman&from=pre-script',
+    method: 'GET',
+    header: {
+        'X-Debug-Token': pm.environment.get('debugToken') || 'demo-token'
+    }
+}, function (err, response) {
+    if (err) {
+        console.error('请求失败:', err.message);
+        return;
+    }
+
+    const data = response.json();
+    pm.environment.set('lastHttpbinUrl', data.url || '');
+    pm.environment.set('lastHttpbinSource', data.args?.source || '');
+    console.log('响应状态:', response.code, response.status);
+    console.log('httpbin args:', data.args);
+});
+```
+
 ---
 
 ## 认证相关
@@ -205,7 +229,34 @@ const tokenExpireTime = pm.environment.get('tokenExpireTime');
 const currentTime = Date.now();
 
 if (!tokenExpireTime || currentTime > (parseInt(tokenExpireTime) - 300000)) {
-    console.warn('⚠ Token 即将过期，请手动刷新');
+    pm.sendRequest({
+        url: pm.environment.get('authUrl'),
+        method: 'POST',
+        header: {
+            'Content-Type': 'application/json'
+        },
+        body: {
+            mode: 'raw',
+            raw: JSON.stringify({
+                refreshToken: pm.environment.get('refreshToken')
+            })
+        }
+    }, function (err, response) {
+        if (err) {
+            console.error('刷新失败:', err.message);
+            return;
+        }
+
+        const data = response.json();
+        const token = data.accessToken || data.token;
+        if (token) {
+            pm.environment.set('authToken', token);
+            pm.request.headers.upsert({
+                key: 'Authorization',
+                value: 'Bearer ' + token
+            });
+        }
+    });
 } else {
     const token = pm.environment.get('authToken');
     pm.request.headers.upsert({

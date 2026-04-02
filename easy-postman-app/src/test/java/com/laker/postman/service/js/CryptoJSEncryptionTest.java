@@ -302,6 +302,38 @@ public class CryptoJSEncryptionTest {
         }
     }
 
+    @Test(description = "测试 decodeURIComponent 保留加号")
+    public void testDecodeURIComponentKeepsPlusSign() {
+        try (Context context = Context.newBuilder("js")
+                .allowAllAccess(true)
+                .allowNativeAccess(true)
+                .build()) {
+
+            JsPolyfillInjector.injectAll(context);
+
+            Value decoded = context.eval("js", "decodeURIComponent('a+b%20c')");
+            assertEquals(decoded.asString(), "a+b c", "decodeURIComponent 不应把 + 解码为空格");
+        }
+    }
+
+    @Test(description = "测试 decodeURI 保留 URL 保留字符")
+    public void testDecodeUriKeepsReservedCharactersEscaped() {
+        try (Context context = Context.newBuilder("js")
+                .allowAllAccess(true)
+                .allowNativeAccess(true)
+                .build()) {
+
+            JsPolyfillInjector.injectAll(context);
+
+            Value decoded = context.eval("js", "decodeURI('https://example.com/a%2Fb?q=a%2Bb%20c&x=%E6%B5%8B%E8%AF%95#frag')");
+            assertEquals(
+                    decoded.asString(),
+                    "https://example.com/a%2Fb?q=a%2Bb c&x=测试#frag",
+                    "decodeURI 应保留路径和查询中的保留字符编码"
+            );
+        }
+    }
+
     @Test(description = "测试环境变量获取和设置")
     public void testEnvironmentVariables() {
         Environment env = new Environment();
@@ -527,4 +559,3 @@ public class CryptoJSEncryptionTest {
         }
     }
 }
-

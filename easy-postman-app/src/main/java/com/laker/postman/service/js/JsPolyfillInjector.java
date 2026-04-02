@@ -1,9 +1,11 @@
 package com.laker.postman.service.js;
 
+import com.laker.postman.service.http.HttpUtil;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.proxy.ProxyExecutable;
 
 import java.nio.charset.StandardCharsets;
@@ -110,6 +112,14 @@ public class JsPolyfillInjector {
      * 注入 URL 编解码函数
      */
     private static void injectUrlEncodingFunctions(Context context) {
+        if (hasGlobalFunction(context, "encodeURIComponent")
+                && hasGlobalFunction(context, "decodeURIComponent")
+                && hasGlobalFunction(context, "encodeURI")
+                && hasGlobalFunction(context, "decodeURI")) {
+            log.debug("Using native JavaScript URL encoding functions");
+            return;
+        }
+
         // encodeURIComponent - URL 编码
         injectFunction(context, "encodeURIComponent", args -> {
             String str = args[0].asString();
@@ -125,7 +135,7 @@ public class JsPolyfillInjector {
         // decodeURIComponent - URL 解码
         injectFunction(context, "decodeURIComponent", args -> {
             String str = args[0].asString();
-            return java.net.URLDecoder.decode(str, StandardCharsets.UTF_8);
+            return HttpUtil.decodeURIComponent(str);
         });
 
         // encodeURI - URL 编码（保留特殊字符）
@@ -157,8 +167,41 @@ public class JsPolyfillInjector {
         // decodeURI - URL 解码
         injectFunction(context, "decodeURI", args -> {
             String str = args[0].asString();
-            return java.net.URLDecoder.decode(str, StandardCharsets.UTF_8);
+            return decodeUriFallback(str);
         });
+    }
+
+    private static boolean hasGlobalFunction(Context context, String name) {
+        try {
+            Value result = context.eval("js", "typeof globalThis['" + escapeForJs(name) + "'] === 'function'");
+            return result != null && result.asBoolean();
+        } catch (Exception e) {
+            log.debug("Failed to inspect global function {}: {}", name, e.getMessage());
+            return false;
+        }
+    }
+
+    private static String escapeForJs(String value) {
+        return value.replace("\\", "\\\\").replace("'", "\\'");
+    }
+
+    private static String decodeUriFallback(String value) {
+        if (value == null || value.isEmpty()) {
+            return value;
+        }
+
+        return HttpUtil.decodeURIComponent(value)
+                .replace("#", "%23")
+                .replace("&", "%26")
+                .replace("+", "%2B")
+                .replace(",", "%2C")
+                .replace("/", "%2F")
+                .replace(":", "%3A")
+                .replace(";", "%3B")
+                .replace("=", "%3D")
+                .replace("?", "%3F")
+                .replace("@", "%40")
+                .replace("$", "%24");
     }
 
     /**

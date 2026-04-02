@@ -113,7 +113,7 @@ final class RequestFormDataHelper {
             return;
         }
 
-        urlField.setText(originalRequest.getUrl());
+        urlField.setText(HttpUtil.decodeUrlQueryForDisplay(originalRequest.getUrl()));
         urlField.setCaretPosition(0);
         methodBox.setSelectedItem(originalRequest.getMethod());
         paramsPanel.setParamsList(copyList(originalRequest.getParams()));

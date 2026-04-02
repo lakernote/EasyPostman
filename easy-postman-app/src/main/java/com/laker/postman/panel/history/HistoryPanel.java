@@ -1280,7 +1280,8 @@ public class HistoryPanel extends SingletonBasePanel {
         requestItem.setName("");
         requestItem.setProtocol(protocol);
         requestItem.setMethod(request.method != null ? request.method : item.method);
-        requestItem.setUrl(request.url != null ? request.url : item.url);
+        String historyUrl = request.url != null ? request.url : item.url;
+        requestItem.setUrl(com.laker.postman.service.http.HttpUtil.decodeUrlQueryForDisplay(historyUrl));
         requestItem.setHeadersList(copyHeaders(request));
         requestItem.setParamsList(copyParams(request.paramsList));
         requestItem.setFormDataList(copyFormData(request.formDataList));

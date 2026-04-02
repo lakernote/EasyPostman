@@ -14,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -73,8 +75,9 @@ public class HttpUtil {
     }
 
     /**
-     * Postman 的行为是：对于 params，只有空格和部分特殊字符会被编码，像 : 这样的字符不会被编码。
-     * 只对空格、&、=、?、# 这些必须编码的字符进行编码，: 不编码。
+     * 对 query param 的 key/value 做最小必要编码：
+     * 空白字符、非 ASCII 字符以及会破坏 query 结构的保留字符会按 UTF-8 百分号编码；
+     * 像 ':' 这类允许保留的字符保持原样。
      * 对已编码的 %XX 不再重复编码。
      */
     public static String encodeURIComponent(String s) {
@@ -82,25 +85,41 @@ public class HttpUtil {
         StringBuilder sb = new StringBuilder();
         int i = 0;
         while (i < s.length()) {
+            int codePoint = s.codePointAt(i);
             char c = s.charAt(i);
+            int charCount = Character.charCount(codePoint);
             // 检查是否为已编码的 %XX
             if (c == '%' && i + 2 < s.length()
                     && isHexChar(s.charAt(i + 1))
                     && isHexChar(s.charAt(i + 2))) {
                 sb.append(s, i, i + 3);
                 i += 3;
-            } else if (c == ' ') {
-                sb.append("%20");
-                i++;
-            } else if (c == '&' || c == '=' || c == '?' || c == '#') {
-                sb.append(String.format("%%%02X", (int) c));
-                i++;
+            } else if (shouldPercentEncode(codePoint)) {
+                appendPercentEncodedUtf8(sb, new String(Character.toChars(codePoint)));
+                i += charCount;
             } else {
-                sb.append(c);
-                i++;
+                sb.appendCodePoint(codePoint);
+                i += charCount;
             }
         }
         return sb.toString();
+    }
+
+    private static boolean shouldPercentEncode(int codePoint) {
+        return codePoint <= 0x20
+                || codePoint >= 0x7F
+                || codePoint == '%'
+                || codePoint == '&'
+                || codePoint == '='
+                || codePoint == '?'
+                || codePoint == '#';
+    }
+
+    private static void appendPercentEncodedUtf8(StringBuilder sb, String value) {
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        for (byte b : bytes) {
+            sb.append(String.format("%%%02X", b & 0xFF));
+        }
     }
 
     private static boolean isHexChar(char c) {
@@ -111,12 +130,73 @@ public class HttpUtil {
      * 对 URL 参数进行解码（%XX -> 字符），安全处理非法编码
      */
     public static String decodeURIComponent(String s) {
-        if (s == null || !s.contains("%")) return s;
-        try {
-            return java.net.URLDecoder.decode(s, java.nio.charset.StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            return s; // 解码失败时原样返回
+        if (s == null || !s.contains("%")) {
+            return s;
         }
+
+        StringBuilder decoded = new StringBuilder();
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        int i = 0;
+        while (i < s.length()) {
+            char c = s.charAt(i);
+            if (c == '%' && i + 2 < s.length()
+                    && isHexChar(s.charAt(i + 1))
+                    && isHexChar(s.charAt(i + 2))) {
+                bytes.reset();
+                while (i + 2 < s.length() && s.charAt(i) == '%'
+                        && isHexChar(s.charAt(i + 1))
+                        && isHexChar(s.charAt(i + 2))) {
+                    bytes.write(Integer.parseInt(s.substring(i + 1, i + 3), 16));
+                    i += 3;
+                }
+                decoded.append(bytes.toString(StandardCharsets.UTF_8));
+            } else {
+                decoded.append(c);
+                i++;
+            }
+        }
+        return decoded.toString();
+    }
+
+    /**
+     * 仅对 URL 的 query string 做展示解码，避免历史/回放时把真实请求 URL 展示成 %XX。
+     * base URL、path 和 fragment 保持原样，避免改变 URL 结构语义。
+     */
+    public static String decodeUrlQueryForDisplay(String url) {
+        if (url == null || url.isEmpty()) {
+            return url;
+        }
+
+        int queryIndex = url.indexOf('?');
+        if (queryIndex < 0 || queryIndex == url.length() - 1) {
+            return url;
+        }
+
+        int fragmentIndex = url.indexOf('#', queryIndex + 1);
+        String prefix = url.substring(0, queryIndex + 1);
+        String query = fragmentIndex >= 0
+                ? url.substring(queryIndex + 1, fragmentIndex)
+                : url.substring(queryIndex + 1);
+        String suffix = fragmentIndex >= 0 ? url.substring(fragmentIndex) : "";
+
+        StringBuilder decodedQuery = new StringBuilder();
+        String[] pairs = query.split("&", -1);
+        for (int idx = 0; idx < pairs.length; idx++) {
+            String pair = pairs[idx];
+            int eqIdx = pair.indexOf('=');
+            if (eqIdx >= 0) {
+                decodedQuery.append(decodeURIComponent(pair.substring(0, eqIdx)))
+                        .append("=")
+                        .append(decodeURIComponent(pair.substring(eqIdx + 1)));
+            } else {
+                decodedQuery.append(decodeURIComponent(pair));
+            }
+            if (idx < pairs.length - 1) {
+                decodedQuery.append("&");
+            }
+        }
+
+        return prefix + decodedQuery + suffix;
     }
 
 

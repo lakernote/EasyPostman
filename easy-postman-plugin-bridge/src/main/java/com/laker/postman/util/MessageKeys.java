@@ -1099,6 +1099,7 @@ public final class MessageKeys {
     public static final String SETTINGS_VALIDATION_KEEP_ALIVE_ERROR = "settings.validation.keep_alive.error";
     public static final String SETTINGS_VALIDATION_TREND_SAMPLING_ERROR = "settings.validation.trend_sampling.error";
     public static final String SETTINGS_VALIDATION_THRESHOLD_ERROR = "settings.validation.threshold.error";
+    public static final String SETTINGS_VALIDATION_SLOW_REQUEST_THRESHOLD_ERROR = "settings.validation.slow_request_threshold.error";
     public static final String SETTINGS_VALIDATION_MAX_HISTORY_ERROR = "settings.validation.max_history.error";
     public static final String SETTINGS_VALIDATION_MAX_OPENED_REQUESTS_ERROR = "settings.validation.max_opened_requests_error";
     public static final String SETTINGS_VALIDATION_PORT_ERROR = "settings.validation.port.error";

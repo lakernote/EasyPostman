@@ -90,6 +90,25 @@ public class SettingManagerTrustedCertificateTest {
         assertFalse(request.sslVerificationEnabled);
     }
 
+    @Test
+    public void shouldNormalizeSlowRequestThresholdToNonNegative() throws Exception {
+        Properties props = getSettingsProperties();
+        Properties backup = new Properties();
+        backup.putAll(props);
+
+        try {
+            props.clear();
+            props.setProperty("jmeter_slow_request_threshold", "-20");
+            assertEquals(SettingManager.getJmeterSlowRequestThreshold(), 0);
+
+            SettingManager.setJmeterSlowRequestThreshold(-50);
+            assertEquals(props.getProperty("jmeter_slow_request_threshold"), "0");
+        } finally {
+            props.clear();
+            props.putAll(backup);
+        }
+    }
+
     private static Properties getSettingsProperties() throws Exception {
         Field propsField = SettingManager.class.getDeclaredField("props");
         propsField.setAccessible(true);

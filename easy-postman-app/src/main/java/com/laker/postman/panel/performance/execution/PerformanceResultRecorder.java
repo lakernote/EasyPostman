@@ -41,42 +41,70 @@ public class PerformanceResultRecorder {
             return;
         }
 
-        long cost = executionResult.response == null ? executionResult.fallbackCostMs : executionResult.response.costMs;
-        long endTime = executionResult.requestStartTime + cost;
-        if (executionResult.response != null) {
-            endTime = executionResult.response.endTime > 0
-                    ? executionResult.response.endTime
-                    : executionResult.requestStartTime + cost;
-        }
-
-        executionResult.request.simplify();
-        if (executionResult.response != null) {
-            executionResult.response.simplify();
-            if (!executionResult.request.collectEventInfo) {
-                executionResult.response.httpEventInfo = null;
-            }
-        }
-
-        ResultNodeInfo resultNodeInfo = new ResultNodeInfo(
-                executionResult.apiName,
-                executionResult.errorMsg,
-                executionResult.request,
+        long cost = resolveCostMs(executionResult);
+        long endTime = resolveEndTime(executionResult, cost);
+        boolean actualSuccess = ResultNodeInfo.isActuallySuccessful(
+                executionResult.executionFailed,
                 executionResult.response,
-                executionResult.testResults,
-                executionResult.executionFailed
+                executionResult.testResults
         );
-        boolean actualSuccess = resultNodeInfo.isActuallySuccessful();
+        int slowRequestThresholdMs = slowRequestThresholdSupplier.getAsInt();
 
+        updateStatistics(executionResult, cost, endTime, actualSuccess);
+
+        if (!shouldRecordResult(efficientMode, actualSuccess, cost, slowRequestThresholdMs)) {
+            return;
+        }
+
+        resultTablePanel.addResult(PerformanceResultNodeInfoMapper.toDisplayNodeInfo(executionResult));
+    }
+
+    static boolean shouldRecordResult(boolean efficientMode,
+                                      boolean actualSuccess,
+                                      long costMs,
+                                      int slowRequestThresholdMs) {
+        if (!efficientMode) {
+            return true;
+        }
+        if (!actualSuccess) {
+            return true;
+        }
+        return slowRequestThresholdMs > 0 && costMs >= slowRequestThresholdMs;
+    }
+
+    private long resolveCostMs(PerformanceRequestExecutionResult executionResult) {
+        return executionResult.response == null ? executionResult.fallbackCostMs : executionResult.response.costMs;
+    }
+
+    private long resolveEndTime(PerformanceRequestExecutionResult executionResult, long costMs) {
+        if (executionResult.response == null) {
+            return executionResult.requestStartTime + costMs;
+        }
+        return executionResult.response.endTime > 0
+                ? executionResult.response.endTime
+                : executionResult.requestStartTime + costMs;
+    }
+
+    private void updateStatistics(PerformanceRequestExecutionResult executionResult,
+                                  long costMs,
+                                  long endTime,
+                                  boolean actualSuccess) {
         synchronized (statsLock) {
-            allRequestResults.add(new RequestResult(executionResult.requestStartTime, endTime, actualSuccess, executionResult.apiId));
-            apiCostMap.computeIfAbsent(executionResult.apiId, key -> Collections.synchronizedList(new ArrayList<>())).add(cost);
+            allRequestResults.add(new RequestResult(
+                    executionResult.requestStartTime,
+                    endTime,
+                    actualSuccess,
+                    executionResult.apiId
+            ));
+            apiCostMap
+                    .computeIfAbsent(executionResult.apiId, key -> Collections.synchronizedList(new ArrayList<>()))
+                    .add(costMs);
             if (actualSuccess) {
                 apiSuccessMap.merge(executionResult.apiId, 1, Integer::sum);
             } else {
                 apiFailMap.merge(executionResult.apiId, 1, Integer::sum);
             }
         }
-
-        resultTablePanel.addResult(resultNodeInfo, efficientMode, slowRequestThresholdSupplier.getAsInt());
     }
+
 }

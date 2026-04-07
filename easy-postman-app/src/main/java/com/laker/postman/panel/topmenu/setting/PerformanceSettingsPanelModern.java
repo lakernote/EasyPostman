@@ -143,6 +143,11 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
                 I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_MAX_IDLE_ERROR)
         );
         setupValidator(
+                jmeterSlowRequestThresholdField,
+                this::isPositiveInteger,
+                I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_SLOW_REQUEST_THRESHOLD_ERROR)
+        );
+        setupValidator(
                 trendSamplingField,
                 this::isValidTrendSamplingInterval,
                 I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_TREND_SAMPLING_ERROR)

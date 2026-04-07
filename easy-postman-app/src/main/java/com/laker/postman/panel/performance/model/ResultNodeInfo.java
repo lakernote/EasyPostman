@@ -8,25 +8,39 @@ import java.util.List;
 
 public class ResultNodeInfo {
 
-    /** 接口名称 */
+    /**
+     * 接口名称
+     */
     public final String name;
 
-    /** 错误信息 */
+    /**
+     * 错误信息
+     */
     public final String errorMsg;
 
-    /** 请求 */
+    /**
+     * 请求
+     */
     public final PreparedRequest req;
 
-    /** 响应 */
+    /**
+     * 响应
+     */
     public final HttpResponse resp;
 
-    /** 断言结果 */
+    /**
+     * 断言结果
+     */
     public final List<TestResult> testResults;
 
-    /** 耗时（毫秒）——在构造时就算好 */
+    /**
+     * 耗时（毫秒）——在构造时就算好
+     */
     public final int costMs;
 
-    /** HTTP响应状态码 */
+    /**
+     * HTTP响应状态码
+     */
     public final int responseCode;
 
     /**
@@ -40,19 +54,8 @@ public class ResultNodeInfo {
             String errorMsg,
             PreparedRequest req,
             HttpResponse resp,
-            List<TestResult> testResults
-    ) {
-        this(name, errorMsg, req, resp, testResults, false);
-    }
-
-    public ResultNodeInfo(
-            String name,
-            String errorMsg,
-            PreparedRequest req,
-            HttpResponse resp,
             List<TestResult> testResults,
-            boolean executionFailed
-    ) {
+            boolean executionFailed) {
         this.name = name;
         this.errorMsg = errorMsg;
         this.req = req;
@@ -67,7 +70,9 @@ public class ResultNodeInfo {
         this.responseCode = resp != null ? resp.code : 0;
     }
 
-    /** 是否有断言失败 */
+    /**
+     * 是否有断言失败
+     */
     public boolean hasAssertionFailed() {
         if (testResults == null) return false;
         for (TestResult r : testResults) {
@@ -84,6 +89,12 @@ public class ResultNodeInfo {
      * 4. 无响应 → false
      */
     public boolean isActuallySuccessful() {
+        return isActuallySuccessful(executionFailed, resp, testResults);
+    }
+
+    public static boolean isActuallySuccessful(boolean executionFailed,
+                                               HttpResponse resp,
+                                               List<TestResult> testResults) {
         // 1. 执行层面明确失败，直接返回 false
         if (executionFailed) {
             return false;
@@ -91,7 +102,12 @@ public class ResultNodeInfo {
 
         // 2. 如果有断言结果，以断言为准
         if (testResults != null && !testResults.isEmpty()) {
-            return !hasAssertionFailed();
+            for (TestResult result : testResults) {
+                if (!result.passed) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         // 3. 如果没有断言，以 HTTP 状态码为准

@@ -27,6 +27,7 @@ public class SettingManager {
     private static final int DEFAULT_SCRIPT_REMOTE_CONNECT_TIMEOUT_MS = 3000;
     private static final int DEFAULT_SCRIPT_REMOTE_READ_TIMEOUT_MS = 5000;
     private static final int DEFAULT_SCRIPT_REMOTE_MAX_BYTES = 512 * 1024;
+    private static final int DEFAULT_JMETER_SLOW_REQUEST_THRESHOLD_MS = 10000;
     public static final String PROXY_MODE_MANUAL = "MANUAL";
     public static final String PROXY_MODE_SYSTEM = "SYSTEM";
     public static final String PROXY_TYPE_HTTP = "HTTP";
@@ -198,16 +199,16 @@ public class SettingManager {
         String val = props.getProperty("jmeter_slow_request_threshold");
         if (val != null) {
             try {
-                return Integer.parseInt(val);
+                return Math.max(0, Integer.parseInt(val));
             } catch (NumberFormatException e) {
-                return 3000;
+                return DEFAULT_JMETER_SLOW_REQUEST_THRESHOLD_MS;
             }
         }
-        return 3000;
+        return DEFAULT_JMETER_SLOW_REQUEST_THRESHOLD_MS;
     }
 
     public static void setJmeterSlowRequestThreshold(int thresholdMs) {
-        props.setProperty("jmeter_slow_request_threshold", String.valueOf(thresholdMs));
+        props.setProperty("jmeter_slow_request_threshold", String.valueOf(Math.max(0, thresholdMs)));
         save();
     }
 

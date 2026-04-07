@@ -45,6 +45,7 @@ public class ClosableTabComponent extends JPanel {
     private static final int CLOSE_DIAMETER    = 11;   // 关闭按钮圆圈直径
     private static final int CLOSE_MARGIN      = 0;    // 关闭按钮距右边距
     private static final int CLOSE_TEXT_SPACING = 0;   // 关闭按钮与文字间距
+    private static final int CLOSE_HIT_PADDING = 3;    // 扩大关闭按钮命中区域，提升易用性
     private static final int LABEL_LEFT_PAD    = 4;    // 标题 label 左内边距
 
     // ── 数据 ─────────────────────────────────────────────────────────────────
@@ -56,6 +57,7 @@ public class ClosableTabComponent extends JPanel {
     @Getter private boolean dirty      = false; // 红点：内容已修改
     @Getter private boolean newRequest = false; // 黄点：新建未保存
     @Getter private boolean previewMode = false; // 斜体：临时预览 Tab
+    private boolean hoverTab = false;            // 鼠标是否在整个 Tab 上
     private boolean hoverClose = false;          // 鼠标是否在关闭按钮上
 
     // ── 构造器 ───────────────────────────────────────────────────────────────
@@ -83,11 +85,12 @@ public class ClosableTabComponent extends JPanel {
         // 鼠标：hover 显示关闭按钮、关闭按钮点击、选中 Tab
         addMouseMotionListener(new MouseMotionAdapter() {
             @Override public void mouseMoved(MouseEvent e) {
-                setHoverClose(true);
+                updateHoverState(e.getX(), e.getY());
             }
         });
         addMouseListener(new MouseAdapter() {
-            @Override public void mouseExited(MouseEvent e)  { setHoverClose(false); }
+            @Override public void mouseEntered(MouseEvent e) { updateHoverState(e.getX(), e.getY()); }
+            @Override public void mouseExited(MouseEvent e)  { updateHoverState(-1, -1); }
             @Override public void mousePressed(MouseEvent e) { handleMousePress(e); }
         });
 
@@ -138,8 +141,14 @@ public class ClosableTabComponent extends JPanel {
 
     // ── 鼠标事件处理 ─────────────────────────────────────────────────────────
 
-    private void setHoverClose(boolean hover) {
-        if (hoverClose != hover) { hoverClose = hover; repaint(); }
+    private void updateHoverState(int x, int y) {
+        boolean nextHoverTab = contains(x, y);
+        boolean nextHoverClose = nextHoverTab && isInCloseButton(x, y);
+        if (hoverTab != nextHoverTab || hoverClose != nextHoverClose) {
+            hoverTab = nextHoverTab;
+            hoverClose = nextHoverClose;
+            repaint();
+        }
     }
 
     private void handleMousePress(MouseEvent e) {
@@ -183,7 +192,9 @@ public class ClosableTabComponent extends JPanel {
 
     /** 判断坐标是否在关闭按钮上（供自身和 TabbedPaneDragHandler 使用） */
     public boolean isInCloseButton(int x, int y) {
-        return closeButtonBounds().contains(x, y);
+        Rectangle hitBounds = closeButtonBounds();
+        hitBounds.grow(CLOSE_HIT_PADDING, CLOSE_HIT_PADDING);
+        return hitBounds.contains(x, y);
     }
 
     // ── 绘制 ─────────────────────────────────────────────────────────────────
@@ -200,9 +211,14 @@ public class ClosableTabComponent extends JPanel {
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
         if (hoverClose) {
-            // 关闭按钮：背景圆 + X 线
             g2.setColor(closeButtonBg());
             g2.fillOval(x, y, r, r);
+            g2.setColor(closeButtonFg());
+            g2.setStroke(new BasicStroke(1.5f));
+            int pad = 2;
+            g2.drawLine(x + pad, y + pad, x + r - pad, y + r - pad);
+            g2.drawLine(x + r - pad, y + pad, x + pad, y + r - pad);
+        } else if (hoverTab) {
             g2.setColor(closeButtonFg());
             g2.setStroke(new BasicStroke(1.5f));
             int pad = 2;
@@ -223,8 +239,13 @@ public class ClosableTabComponent extends JPanel {
     private boolean isDark() { return FlatLaf.isLafDark(); }
 
     private Color closeButtonBg() {
+        Color hoverColor = UIManager.getColor("TabbedPane.hoverColor");
+        if (hoverColor != null) {
+            return new Color(hoverColor.getRed(), hoverColor.getGreen(), hoverColor.getBlue(),
+                    isDark() ? 180 : 140);
+        }
         Color base = tabbedPane.getBackground();
-        return new Color(base.getRed(), base.getGreen(), base.getBlue(), isDark() ? 200 : 180);
+        return new Color(base.getRed(), base.getGreen(), base.getBlue(), isDark() ? 180 : 120);
     }
 
     private Color closeButtonFg() { return isDark() ? Color.WHITE : Color.BLACK; }

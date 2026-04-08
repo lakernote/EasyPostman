@@ -23,6 +23,7 @@ import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.MouseInputAdapter;
+import javax.swing.text.Caret;
 import javax.swing.undo.CannotRedoException;
 import javax.swing.undo.CannotUndoException;
 import javax.swing.undo.UndoManager;
@@ -440,6 +441,16 @@ public class RequestBodyPanel extends JPanel {
                 Color borderColor = isDefined ? getDefinedVariableBorderColor() : getUndefinedVariableBorderColor();
                 paintVariableBadge((Graphics2D) g, seg, text, fillColor, borderColor);
             }
+
+            paintCaretAboveBadges(g);
+        }
+
+        private void paintCaretAboveBadges(Graphics g) {
+            Caret caret = getCaret();
+            if (caret == null || !hasFocus() || !isEnabled()) {
+                return;
+            }
+            caret.paint(g);
         }
 
         private void paintVariableBadge(Graphics2D g, VariableSegment seg, String text, Color fillColor, Color borderColor) {

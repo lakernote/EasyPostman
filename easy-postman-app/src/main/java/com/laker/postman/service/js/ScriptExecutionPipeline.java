@@ -288,6 +288,7 @@ public class ScriptExecutionPipeline {
         Map<String, Object> bindings = new java.util.LinkedHashMap<>();
         bindings.put("request", req);
         bindings.put("env", activeEnv);
+        bindings.put("globals", postman.globals);
         bindings.put("postman", postman);
         bindings.put("pm", postman);
 

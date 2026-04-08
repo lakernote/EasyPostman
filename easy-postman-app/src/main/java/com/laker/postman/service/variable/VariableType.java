@@ -29,6 +29,11 @@ public enum VariableType {
     ENVIRONMENT(MessageKeys.VARIABLE_TYPE_ENVIRONMENT, "E", new Color(46, 125, 50), 5),
 
     /**
+     * 全局变量 - 应用级共享变量
+     */
+    GLOBAL(MessageKeys.VARIABLE_TYPE_GLOBAL, "G", new Color(67, 56, 202), 8),
+
+    /**
      * 内置函数 - 动态函数，如 $guid, $timestamp 等
      */
     BUILT_IN(MessageKeys.VARIABLE_TYPE_BUILT_IN, "$", new Color(156, 39, 176), 10);

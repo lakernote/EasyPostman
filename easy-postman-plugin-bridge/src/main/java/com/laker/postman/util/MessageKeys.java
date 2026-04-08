@@ -321,6 +321,7 @@ public final class MessageKeys {
     public static final String VARIABLE_TYPE_TEMPORARY = "variable.type.temporary";
     public static final String VARIABLE_TYPE_GROUP = "variable.type.group";
     public static final String VARIABLE_TYPE_ENVIRONMENT = "variable.type.environment";
+    public static final String VARIABLE_TYPE_GLOBAL = "variable.type.global";
     public static final String VARIABLE_TYPE_BUILT_IN = "variable.type.built_in";
     public static final String VARIABLE_TYPE_UNDEFINED = "variable.type.undefined";
 
@@ -400,6 +401,13 @@ public final class MessageKeys {
     // ============ Cookie相关 ============
     public static final String COOKIES_TITLE = "cookies.title";
     public static final String COOKIES_MANAGER_TITLE = "cookies.manager_title";
+    public static final String GLOBAL_VARIABLES_TITLE = "global.variables.title";
+    public static final String GLOBAL_VARIABLES_MANAGER_TITLE = "global.variables.manager_title";
+    public static final String GLOBAL_VARIABLES_SUBTITLE = "global.variables.subtitle";
+    public static final String GLOBAL_VARIABLES_SHORTCUT_HINT = "global.variables.shortcut_hint";
+    public static final String GLOBAL_VARIABLES_SEARCH_PLACEHOLDER = "global.variables.search_placeholder";
+    public static final String GLOBAL_VARIABLES_SAVE_SUCCESS = "global.variables.save_success";
+    public static final String GLOBAL_VARIABLES_BULK_EDIT_TITLE = "global.variables.bulk_edit.title";
     public static final String COOKIE_DIALOG_CLEAR_CONFIRM = "cookie.dialog.clear_confirm";
     public static final String COOKIE_DIALOG_CLEAR_CONFIRM_TITLE = "cookie.dialog.clear_confirm_title";
     public static final String COOKIE_DIALOG_ADD_TITLE = "cookie.dialog.add_title";

@@ -3,6 +3,7 @@ package com.laker.postman.model.script;
 import com.laker.postman.model.*;
 import com.laker.postman.plugin.bridge.PluginAccess;
 import com.laker.postman.service.EnvironmentService;
+import com.laker.postman.service.GlobalVariablesService;
 import com.laker.postman.service.http.HttpService;
 import lombok.extern.slf4j.Slf4j;
 import org.graalvm.polyglot.Value;
@@ -19,7 +20,7 @@ import java.util.*;
  * <h3>主要功能模块：</h3>
  * <ul>
  *   <li><b>环境变量管理</b>: pm.environment.set/get - 操作当前激活的环境变量</li>
- *   <li><b>全局变量管理</b>: pm.globals.set/get - 操作全局变量（实际使用环境变量实现）</li>
+ *   <li><b>全局变量管理</b>: pm.globals.set/get - 操作应用级全局变量</li>
  *   <li><b>临时变量管理</b>: pm.variables.set/get - 操作请求生命周期内的临时变量</li>
  *   <li><b>Cookie 操作</b>: pm.cookies.get/set/delete - 管理请求的 Cookie</li>
  *   <li><b>测试断言</b>: pm.test() - 执行测试断言并记录结果</li>
@@ -61,6 +62,11 @@ public class PostmanApiContext {
      * 环境变量别名 - Postman 中 pm.env 和 pm.environment 指向同一对象
      */
     public Environment env;
+
+    /**
+     * 全局变量对象 - 对应 pm.globals
+     */
+    public Environment globals;
 
     /**
      * 响应对象 - 对应 pm.response，仅在后置脚本中可用
@@ -119,6 +125,7 @@ public class PostmanApiContext {
     public PostmanApiContext(Environment environment) {
         this.environment = environment;
         this.env = environment; // Postman 中 env 和 environment 是同一个对象
+        this.globals = GlobalVariablesService.getInstance().getGlobalVariables();
         this.cookies = new CookieApi(); // 初始化 cookies
         this.test = new TestApi(this); // 初始化 test API
         this.elasticsearch = new ScriptElasticsearchApi();
@@ -190,14 +197,14 @@ public class PostmanApiContext {
     }
 
     /**
-     * 设置全局变量（实际使用环境变量实现）
+     * 设置全局变量
      * 对应脚本中的: pm.globals.set(key, value)
      *
      * @param key   变量名
      * @param value 变量值
      */
     public void setGlobalVariable(String key, String value) {
-        setEnvironmentVariable(key, value);
+        globals.set(key, value);
     }
 
     /**
@@ -208,18 +215,18 @@ public class PostmanApiContext {
      * @param value 变量值（任意类型）
      */
     public void setGlobalVariable(String key, Object value) {
-        setEnvironmentVariable(key, value);
+        globals.set(key, value);
     }
 
     /**
-     * 获取全局变量（实际使用环境变量实现）
+     * 获取全局变量
      * 对应脚本中的: pm.globals.get(key)
      *
      * @param key 变量名
      * @return 变量值，不存在则返回 null
      */
     public String getGlobalVariable(String key) {
-        return getEnvironmentVariable(key);
+        return globals.get(key);
     }
 
     /**

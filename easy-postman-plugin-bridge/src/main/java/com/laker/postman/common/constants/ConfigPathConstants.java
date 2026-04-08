@@ -51,6 +51,11 @@ public class ConfigPathConstants {
     public static final String ENVIRONMENTS = DEFAULT_WORKSPACE_DIR + "environments.json";
 
     /**
+     * 全局变量配置文件（应用级，不跟随工作区切换）
+     */
+    public static final String GLOBAL_VARIABLES = getDataRootPath() + "global_variables.json";
+
+    /**
      * 功能测试配置文件
      */
     public static final String FUNCTIONAL_CONFIG = getDataRootPath() + "functional_config.json";

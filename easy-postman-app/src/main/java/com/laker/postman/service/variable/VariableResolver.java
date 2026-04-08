@@ -1,6 +1,7 @@
 package com.laker.postman.service.variable;
 
 import com.laker.postman.model.VariableInfo;
+import com.laker.postman.service.GlobalVariablesService;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -13,7 +14,7 @@ import java.util.regex.Pattern;
  * <p>
  * 解析字符串中的 {{variableName}} 占位符，支持嵌套解析
  * <p>
- * 变量优先级：临时变量 > 分组变量 > 环境变量 > 内置函数
+ * 变量优先级：临时变量 > 分组变量 > 环境变量 > 全局变量 > 内置函数
  */
 @Slf4j
 @UtilityClass
@@ -31,6 +32,7 @@ public class VariableResolver {
                 TemporaryVariableService.getInstance(),
                 GroupVariableService.getInstance(),
                 EnvironmentVariableService.getInstance(),
+                GlobalVariablesService.getInstance(),
                 BuiltInFunctionService.getInstance()
         ));
         providers.sort(Comparator.comparingInt(VariableProvider::getPriority));

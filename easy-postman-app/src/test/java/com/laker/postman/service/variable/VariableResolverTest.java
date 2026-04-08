@@ -2,6 +2,7 @@ package com.laker.postman.service.variable;
 
 import com.laker.postman.model.Environment;
 import com.laker.postman.service.EnvironmentService;
+import com.laker.postman.service.GlobalVariablesService;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -20,7 +21,9 @@ public class VariableResolverTest {
 
     private Environment testEnv;
     private String originalDataFilePath;
+    private String originalGlobalDataFilePath;
     private Path tempEnvFile;
+    private Path tempGlobalFile;
 
     @BeforeMethod
     public void setUp() {
@@ -29,10 +32,14 @@ public class VariableResolverTest {
         try {
             tempEnvFile = Files.createTempFile("easy-postman-env-test-", ".json");
             Files.writeString(tempEnvFile, "[]");
+            tempGlobalFile = Files.createTempFile("easy-postman-global-test-", ".json");
+            Files.writeString(tempGlobalFile, "{}");
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize temporary environment file", e);
         }
         EnvironmentService.setDataFilePath(tempEnvFile.toString());
+        originalGlobalDataFilePath = GlobalVariablesService.getInstance().getDataFilePath();
+        GlobalVariablesService.getInstance().setDataFilePath(tempGlobalFile.toString());
 
         // 清空临时变量
         VariableResolver.clearTemporaryVariables();
@@ -65,9 +72,19 @@ public class VariableResolverTest {
             if (originalDataFilePath != null && !originalDataFilePath.isBlank()) {
                 EnvironmentService.setDataFilePath(originalDataFilePath);
             }
+            if (originalGlobalDataFilePath != null && !originalGlobalDataFilePath.isBlank()) {
+                GlobalVariablesService.getInstance().setDataFilePath(originalGlobalDataFilePath);
+            }
             if (tempEnvFile != null) {
                 try {
                     Files.deleteIfExists(tempEnvFile);
+                } catch (Exception ignored) {
+                    // ignore cleanup failures
+                }
+            }
+            if (tempGlobalFile != null) {
+                try {
+                    Files.deleteIfExists(tempGlobalFile);
                 } catch (Exception ignored) {
                     // ignore cleanup failures
                 }
@@ -131,6 +148,18 @@ public class VariableResolverTest {
         // 临时变量优先级更高，应该使用临时变量的值
         String result = VariableResolver.resolve("{{userModule}}/list");
         assertEquals("https://temp.example.com/api/user/list", result);
+    }
+
+    /**
+     * 测试全局变量在环境变量未命中时可被解析
+     */
+    @Test
+    public void testGlobalVariableResolution() {
+        GlobalVariablesService.getInstance().getGlobalVariables().set("globalBaseUrl", "https://global.example.com");
+        GlobalVariablesService.getInstance().saveGlobalVariables();
+
+        String result = VariableResolver.resolve("{{globalBaseUrl}}/api");
+        assertEquals(result, "https://global.example.com/api");
     }
 
     /**

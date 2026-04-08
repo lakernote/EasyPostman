@@ -1,10 +1,12 @@
 package com.laker.postman.service.js;
 
+import cn.hutool.json.JSONUtil;
 import com.laker.postman.model.Environment;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpParam;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.service.EnvironmentService;
+import com.laker.postman.service.GlobalVariablesService;
 import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.variable.VariableResolver;
 import org.testng.annotations.AfterMethod;
@@ -22,7 +24,9 @@ import static org.testng.Assert.assertTrue;
 public class ScriptExecutionPipelineTest {
 
     private String originalDataFilePath;
+    private String originalGlobalDataFilePath;
     private Path tempEnvFile;
+    private Path tempGlobalFile;
     private Environment testEnv;
 
     @BeforeMethod
@@ -32,11 +36,15 @@ public class ScriptExecutionPipelineTest {
         try {
             tempEnvFile = Files.createTempFile("easy-postman-script-pipeline-", ".json");
             Files.writeString(tempEnvFile, "[]");
+            tempGlobalFile = Files.createTempFile("easy-postman-script-pipeline-globals-", ".json");
+            Files.writeString(tempGlobalFile, "{}");
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize temporary environment file", e);
         }
 
         EnvironmentService.setDataFilePath(tempEnvFile.toString());
+        originalGlobalDataFilePath = GlobalVariablesService.getInstance().getDataFilePath();
+        GlobalVariablesService.getInstance().setDataFilePath(tempGlobalFile.toString());
         VariableResolver.clearTemporaryVariables();
 
         testEnv = new Environment();
@@ -57,9 +65,19 @@ public class ScriptExecutionPipelineTest {
             if (originalDataFilePath != null && !originalDataFilePath.isBlank()) {
                 EnvironmentService.setDataFilePath(originalDataFilePath);
             }
+            if (originalGlobalDataFilePath != null && !originalGlobalDataFilePath.isBlank()) {
+                GlobalVariablesService.getInstance().setDataFilePath(originalGlobalDataFilePath);
+            }
             if (tempEnvFile != null) {
                 try {
                     Files.deleteIfExists(tempEnvFile);
+                } catch (Exception ignored) {
+                    // ignore cleanup failures
+                }
+            }
+            if (tempGlobalFile != null) {
+                try {
+                    Files.deleteIfExists(tempGlobalFile);
                 } catch (Exception ignored) {
                     // ignore cleanup failures
                 }
@@ -107,5 +125,43 @@ public class ScriptExecutionPipelineTest {
         assertTrue(request.url.contains("mode=temporary-mode"));
         assertEquals(request.headersList.get(0).getValue(), "trace-123");
         assertEquals(request.body, "{\"session\":\"session-456\"}");
+    }
+
+    @Test
+    public void shouldResolveGlobalsSetInPreScript() throws Exception {
+        PreparedRequest request = new PreparedRequest();
+        request.id = "script-pipeline-global-request";
+        request.method = "GET";
+        request.url = "{{globalBaseUrl}}/users";
+        request.headersList = new ArrayList<>(List.of(
+                new HttpHeader(true, "X-App-Name", "{{appName}}")
+        ));
+        request.paramsList = new ArrayList<>();
+        request.formDataList = new ArrayList<>();
+        request.urlencodedList = new ArrayList<>();
+
+        ScriptExecutionPipeline pipeline = ScriptExecutionPipeline.builder()
+                .request(request)
+                .preScript("""
+                        pm.globals.set('globalBaseUrl', 'https://global.example.com');
+                        pm.globals.set('appName', 'easy-postman');
+                        """)
+                .postScript("")
+                .build();
+
+        ScriptExecutionResult preResult = pipeline.executePreScript();
+
+        assertTrue(preResult.isSuccess(), "Pre-request script should execute successfully");
+        assertEquals(VariableResolver.resolve("{{globalBaseUrl}}"), "https://global.example.com");
+        assertEquals(VariableResolver.resolve("{{appName}}"), "easy-postman");
+
+        PreparedRequestBuilder.replaceVariablesAfterPreScript(request);
+
+        assertEquals(request.url, "https://global.example.com/users");
+        assertEquals(request.headersList.get(0).getValue(), "easy-postman");
+
+        Environment persistedGlobals = JSONUtil.toBean(Files.readString(tempGlobalFile), Environment.class);
+        assertEquals(persistedGlobals.get("globalBaseUrl"), "https://global.example.com");
+        assertEquals(persistedGlobals.get("appName"), "easy-postman");
     }
 }

@@ -9,6 +9,7 @@ import com.laker.postman.model.TabInfo;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.sidebar.cookie.CookieManagerDialog;
+import com.laker.postman.panel.sidebar.global.GlobalVariablesDialog;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.startup.StartupDiagnostics;
 import com.laker.postman.util.*;
@@ -64,11 +65,13 @@ public class SidebarTabPanel extends SingletonBasePanel {
     private JLabel consoleLabel;
     private JLabel sidebarToggleLabel; // 侧边栏展开/收起按钮
     private JLabel layoutToggleLabel; // 布局切换按钮
+    private JLabel globalVariablesLabel;
     private JLabel cookieLabel;
     private JLabel versionLabel;
     private ConsolePanel consolePanel;
     private boolean sidebarExpanded = false; // 侧边栏展开状态
     private CookieManagerDialog cookieManagerDialog; // Cookie管理器对话框实例
+    private GlobalVariablesDialog globalVariablesDialog; // 全局变量对话框实例
     private int lastSelectedIndex = -1; // 记录上一次选中的索引，用于优化颜色更新
 
     // 字体缓存，避免重复创建
@@ -161,6 +164,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
         createSidebarToggleLabel();
         createConsoleLabel();
         createLayoutToggleLabel();
+        createGlobalVariablesLabel();
         createCookieLabel();
         createVersionLabel();
 
@@ -173,6 +177,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
         bottomRightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         bottomRightPanel.setOpaque(false);
         bottomRightPanel.add(versionLabel);
+        bottomRightPanel.add(globalVariablesLabel);
         bottomRightPanel.add(cookieLabel);
         bottomRightPanel.add(layoutToggleLabel);
     }
@@ -219,6 +224,24 @@ public class SidebarTabPanel extends SingletonBasePanel {
             @Override
             public void mousePressed(MouseEvent e) {
                 setConsoleExpanded(true);
+            }
+        });
+    }
+
+    /**
+     * 创建全局变量标签
+     */
+    private void createGlobalVariablesLabel() {
+        globalVariablesLabel = new JLabel(I18nUtil.getMessage(MessageKeys.GLOBAL_VARIABLES_TITLE));
+        globalVariablesLabel.setIcon(IconUtil.createThemed("icons/global-variables.svg", 20, 20));
+        globalVariablesLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        globalVariablesLabel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
+        globalVariablesLabel.setFocusable(true);
+        globalVariablesLabel.setEnabled(true);
+        globalVariablesLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                showGlobalVariablesDialog();
             }
         });
     }
@@ -306,6 +329,26 @@ public class SidebarTabPanel extends SingletonBasePanel {
         Window window = SwingUtilities.getWindowAncestor(this);
         cookieManagerDialog = new CookieManagerDialog(window);
         cookieManagerDialog.setVisible(true);
+    }
+
+    /**
+     * 显示全局变量对话框
+     */
+    private void showGlobalVariablesDialog() {
+        if (globalVariablesDialog == null) {
+            Window window = SwingUtilities.getWindowAncestor(this);
+            globalVariablesDialog = new GlobalVariablesDialog(window);
+        }
+
+        if (globalVariablesDialog.isVisible()) {
+            globalVariablesDialog.toFront();
+            globalVariablesDialog.requestFocus();
+            return;
+        }
+
+        globalVariablesDialog.setVisible(true);
+        globalVariablesDialog.toFront();
+        globalVariablesDialog.requestFocus();
     }
 
     /**

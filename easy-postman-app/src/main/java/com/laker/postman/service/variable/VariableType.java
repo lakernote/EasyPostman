@@ -21,7 +21,7 @@ public enum VariableType {
     /**
      * 分组变量 - 从请求所在分组继承的变量
      */
-    GROUP(MessageKeys.VARIABLE_TYPE_GROUP, "G", new Color(3, 169, 244), 2),
+    GROUP(MessageKeys.VARIABLE_TYPE_GROUP, "C", new Color(13, 148, 136), 2),
 
     /**
      * 环境变量 - 从当前激活的环境中获取

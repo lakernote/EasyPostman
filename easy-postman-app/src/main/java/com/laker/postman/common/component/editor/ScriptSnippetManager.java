@@ -504,7 +504,6 @@ public class ScriptSnippetManager {
     private static void addPmEnvironment(DefaultCompletionProvider provider) {
         provider.addCompletion(new BasicCompletion(provider, "pm.environment",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_ENVIRONMENT)));
-        provider.addCompletion(new BasicCompletion(provider, "pm.environment.name", "Current environment name"));
         provider.addCompletion(new BasicCompletion(provider, "pm.environment.set",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_ENV_SET)));
         provider.addCompletion(new BasicCompletion(provider, "pm.environment.get",

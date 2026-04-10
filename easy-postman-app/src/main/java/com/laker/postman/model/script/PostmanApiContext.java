@@ -56,17 +56,17 @@ public class PostmanApiContext {
     /**
      * 环境变量对象 - 对应 pm.environment
      */
-    public Environment environment;
+    public ScriptScopedVariablesApi environment;
 
     /**
      * 环境变量别名 - Postman 中 pm.env 和 pm.environment 指向同一对象
      */
-    public Environment env;
+    public ScriptScopedVariablesApi env;
 
     /**
      * 全局变量对象 - 对应 pm.globals
      */
-    public Environment globals;
+    public ScriptScopedVariablesApi globals;
 
     /**
      * 响应对象 - 对应 pm.response，仅在后置脚本中可用
@@ -76,7 +76,7 @@ public class PostmanApiContext {
     /**
      * 临时变量管理器 - 对应 pm.variables，用于存储请求生命周期内的变量
      */
-    public TemporaryVariablesApi variables = new TemporaryVariablesApi();
+    public ScriptVariablesApi variables = new ScriptVariablesApi();
 
     /**
      * 请求对象包装器 - 对应 pm.request，提供对请求的 JavaScript 访问接口
@@ -123,9 +123,15 @@ public class PostmanApiContext {
      * @param environment 当前激活的环境对象
      */
     public PostmanApiContext(Environment environment) {
-        this.environment = environment;
-        this.env = environment; // Postman 中 env 和 environment 是同一个对象
-        this.globals = GlobalVariablesService.getInstance().getGlobalVariables();
+        this.environment = new ScriptScopedVariablesApi(
+                environment,
+                environment == null ? null : () -> EnvironmentService.saveEnvironment(environment)
+        );
+        this.env = this.environment; // Postman 中 env 和 environment 指向同一对象
+        this.globals = new ScriptScopedVariablesApi(
+                GlobalVariablesService.getInstance().getGlobalVariables(),
+                null
+        );
         this.cookies = new CookieApi(); // 初始化 cookies
         this.test = new TestApi(this); // 初始化 test API
         this.elasticsearch = new ScriptElasticsearchApi();
@@ -170,7 +176,6 @@ public class PostmanApiContext {
      */
     public void setEnvironmentVariable(String key, String value) {
         environment.set(key, value);
-        EnvironmentService.saveEnvironment(environment);
     }
 
     /**
@@ -182,7 +187,6 @@ public class PostmanApiContext {
      */
     public void setEnvironmentVariable(String key, Object value) {
         environment.set(key, value);
-        EnvironmentService.saveEnvironment(environment);
     }
 
     /**
@@ -227,6 +231,10 @@ public class PostmanApiContext {
      */
     public String getGlobalVariable(String key) {
         return globals.get(key);
+    }
+
+    public Map<String, String> snapshotLocalVariables() {
+        return variables.toLocalObject();
     }
 
     /**

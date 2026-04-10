@@ -192,7 +192,7 @@ public class ScriptExecutionPipeline {
             return;
         }
 
-        Map<String, String> tempVariables = pm.variables.toObject();
+        Map<String, String> tempVariables = pm.snapshotLocalVariables();
         if (tempVariables != null && !tempVariables.isEmpty()) {
             VariableResolver.setAllTemporaryVariables(tempVariables);
             log.debug("Synced {} temporary variables from pm.variables", tempVariables.size());

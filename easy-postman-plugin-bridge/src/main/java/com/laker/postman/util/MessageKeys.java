@@ -318,7 +318,8 @@ public final class MessageKeys {
     public static final String BULK_EDIT_SUPPORTED_FORMATS = "bulk.edit.supported.formats";
 
     // ============ Variable Type 变量类型 ============
-    public static final String VARIABLE_TYPE_TEMPORARY = "variable.type.temporary";
+    public static final String VARIABLE_TYPE_VARIABLE = "variable.type.variable";
+    public static final String VARIABLE_TYPE_ITERATION_DATA = "variable.type.iteration_data";
     public static final String VARIABLE_TYPE_GROUP = "variable.type.group";
     public static final String VARIABLE_TYPE_ENVIRONMENT = "variable.type.environment";
     public static final String VARIABLE_TYPE_GLOBAL = "variable.type.global";

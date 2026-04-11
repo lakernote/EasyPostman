@@ -120,7 +120,6 @@ public class PostmanJavaScriptTokenMaker extends JavaScriptTokenMaker {
         postmanWordsToHighlight.put("variables", TokenTypes.ANNOTATION);
         postmanWordsToHighlight.put("cookies", TokenTypes.ANNOTATION);
         postmanWordsToHighlight.put("iterationData", TokenTypes.ANNOTATION);
-        postmanWordsToHighlight.put("collectionVariables", TokenTypes.ANNOTATION);
         postmanWordsToHighlight.put("info", TokenTypes.ANNOTATION);
         postmanWordsToHighlight.put("execution", TokenTypes.ANNOTATION);
 

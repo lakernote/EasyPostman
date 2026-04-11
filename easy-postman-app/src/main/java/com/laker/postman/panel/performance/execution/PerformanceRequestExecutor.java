@@ -14,7 +14,7 @@ import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.service.js.ScriptExecutionResult;
 import com.laker.postman.service.setting.SettingManager;
-import com.laker.postman.service.variable.VariableResolver;
+import com.laker.postman.service.variable.ExecutionVariableContext;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,6 @@ import okhttp3.sse.EventSource;
 import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
@@ -50,23 +49,20 @@ public class PerformanceRequestExecutor {
 
     public PerformanceRequestExecutionResult execute(DefaultMutableTreeNode requestNode,
                                                      JMeterTreeNode requestData,
-                                                     Map<String, String> csvRow) {
+                                                     ExecutionVariableContext iterationContext) {
         String apiId = requestData.httpRequestItem.getId();
         String apiName = requestData.httpRequestItem.getName();
         boolean webSocketRequest = isWebSocketRequest(requestData.httpRequestItem);
 
         ApiMetadata.register(apiId, apiName);
-        VariableResolver.clearTemporaryVariables();
 
         PreparedRequest req = PreparedRequestBuilder.build(requestData.httpRequestItem);
-        ScriptExecutionPipeline pipeline = ScriptExecutionPipeline.builder()
-                .request(req)
-                .preScript(req.prescript)
-                .postScript(req.postscript)
-                .build();
-        if (csvRow != null) {
-            pipeline.addCsvDataBindings(csvRow);
-        }
+        ScriptExecutionPipeline pipeline = ScriptExecutionPipeline.forRequestExecution(
+                requestData.httpRequestItem,
+                req,
+                iterationContext,
+                true
+        );
 
         String errorMsg = "";
         List<TestResult> testResults = new ArrayList<>();
@@ -82,7 +78,7 @@ public class PerformanceRequestExecutor {
             return null;
         }
         if (preOk) {
-            PreparedRequestBuilder.replaceVariablesAfterPreScript(req);
+            pipeline.finalizeRequest();
         }
 
         long requestStartTime = System.currentTimeMillis();

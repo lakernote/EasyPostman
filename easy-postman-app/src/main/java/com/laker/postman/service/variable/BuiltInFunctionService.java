@@ -16,7 +16,7 @@ import java.util.*;
  * <p>
  * 负责处理所有内置动态函数，如 $guid, $timestamp, $randomInt 等
  * <ul>
- *   <li>优先级最低（优先级 = 3）</li>
+ *   <li>优先级最低</li>
  *   <li>每次调用都会生成新的随机值</li>
  * </ul>
  */

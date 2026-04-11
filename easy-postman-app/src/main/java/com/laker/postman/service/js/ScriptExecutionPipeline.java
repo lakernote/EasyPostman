@@ -2,17 +2,24 @@ package com.laker.postman.service.js;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.model.Environment;
+import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.script.PostmanApiContext;
 import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.service.EnvironmentService;
-import com.laker.postman.service.variable.VariableResolver;
+import com.laker.postman.service.http.PreparedRequestBuilder;
+import com.laker.postman.service.http.RequestFinalizer;
+import com.laker.postman.service.variable.ExecutionContextScope;
+import com.laker.postman.service.variable.ExecutionVariableContext;
+import com.laker.postman.service.variable.RequestContext;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * 脚本执行流水线
@@ -33,6 +40,20 @@ import java.util.Map;
 @Builder
 @Getter
 public class ScriptExecutionPipeline {
+    public static ScriptExecutionPipeline forRequestExecution(HttpRequestItem item,
+                                                              PreparedRequest request,
+                                                              ExecutionVariableContext sharedExecutionContext,
+                                                              boolean useCache) {
+        return ScriptExecutionPipeline.builder()
+                .request(request)
+                .preScript(request.prescript)
+                .postScript(request.postscript)
+                .sharedExecutionContext(sharedExecutionContext)
+                .requestNode(RequestContext.getCurrentRequestNode())
+                .deferredAuthorization(PreparedRequestBuilder.resolveDeferredAuthorization(item, useCache))
+                .build();
+    }
+
     /**
      * 准备好的请求对象
      */
@@ -65,37 +86,54 @@ public class ScriptExecutionPipeline {
     private final JsScriptExecutor.OutputCallback outputCallback;
 
     /**
+     * 当前脚本所属的请求节点，用于分组变量解析。
+     */
+    private final DefaultMutableTreeNode requestNode;
+
+    /**
+     * 可选的共享上下文。Functional / Performance 这类“同一轮多请求”
+     * 场景会显式传入它，避免再依赖线程残留来共享 pm.variables。
+     */
+    private final ExecutionVariableContext sharedExecutionContext;
+
+    /**
+     * 延迟到执行上下文挂载后再生成的自动认证配置。
+     * 这样同一轮共享变量可用于 Basic/Bearer 认证，同时 pre-script 仍可删除/覆盖该请求头。
+     */
+    private PreparedRequestBuilder.DeferredAuthorization deferredAuthorization;
+
+    private transient ExecutionVariableContext runtimeExecutionContext;
+
+    /**
      * 执行前置脚本
      *
      * @return 执行结果
      */
     public ScriptExecutionResult executePreScript() {
-        // 准备绑定变量
-        if (bindings == null) {
-            bindings = preparePreRequestBindings(request);
-        }
+        return withExecutionContext(() -> {
+            if (bindings == null) {
+                bindings = preparePreRequestBindings(request);
+            }
 
-        // 清空之前的测试结果
-        clearTestResults();
+            clearTestResults();
 
-        // 执行前置脚本
-        try {
-            ScriptExecutionContext context = ScriptExecutionContext.builder()
-                    .script(preScript)
-                    .scriptType(ScriptExecutionContext.ScriptType.PRE_REQUEST)
-                    .bindings(bindings)
-                    .outputCallback(getEffectiveOutputCallback("[PreScript Console]\n"))
-                    .build();
+            try {
+                ScriptExecutionContext context = ScriptExecutionContext.builder()
+                        .script(preScript)
+                        .scriptType(ScriptExecutionContext.ScriptType.PRE_REQUEST)
+                        .bindings(bindings)
+                        .outputCallback(getEffectiveOutputCallback("[PreScript Console]\n"))
+                        .build();
 
-            executeScript(context);
-            syncTemporaryVariablesFromPm();
-            return ScriptExecutionResult.success();
+                executeScript(context);
+                return ScriptExecutionResult.success();
 
-        } catch (ScriptExecutionException ex) {
-            log.error("Pre-script execution failed: {}", ex.getMessage(), ex);
-            ConsolePanel.appendLog("[PreScript Error]\n" + ex.getMessage(), ConsolePanel.LogType.ERROR);
-            return ScriptExecutionResult.failure(ex.getMessage(), ex);
-        }
+            } catch (ScriptExecutionException ex) {
+                log.error("Pre-script execution failed: {}", ex.getMessage(), ex);
+                ConsolePanel.appendLog("[PreScript Error]\n" + ex.getMessage(), ConsolePanel.LogType.ERROR);
+                return ScriptExecutionResult.failure(ex.getMessage(), ex);
+            }
+        });
     }
 
     /**
@@ -105,45 +143,41 @@ public class ScriptExecutionPipeline {
      * @return 执行结果（包含测试结果）
      */
     public ScriptExecutionResult executePostScript(HttpResponse response) {
-        if (bindings == null) {
-            throw new IllegalStateException("Bindings not initialized. Please call executePreScript() first or provide bindings.");
-        }
-
-        // 添加响应绑定
-        addResponseBindings(bindings, response);
-
-        // 清空之前的测试结果
-        clearTestResults();
-
-        // 执行后置脚本
-        try {
-            ScriptExecutionContext context = ScriptExecutionContext.builder()
-                    .script(postScript)
-                    .scriptType(ScriptExecutionContext.ScriptType.POST_REQUEST)
-                    .bindings(bindings)
-                    .outputCallback(getEffectiveOutputCallback("[PostScript Console]\n"))
-                    .build();
-
-            executeScript(context);
-
-            // 收集测试结果
-            PostmanApiContext pm = (PostmanApiContext) bindings.get("pm");
-            if (pm != null && pm.testResults != null) {
-                return ScriptExecutionResult.success(pm.testResults);
+        return withExecutionContext(() -> {
+            if (bindings == null) {
+                throw new IllegalStateException("Bindings not initialized. Please call executePreScript() first or provide bindings.");
             }
-            return ScriptExecutionResult.success();
 
-        } catch (ScriptExecutionException ex) {
-            log.error("Post-script execution failed: {}", ex.getMessage(), ex);
-            ConsolePanel.appendLog("[PostScript Error]\n" + ex.getMessage(), ConsolePanel.LogType.ERROR);
+            addResponseBindings(bindings, response);
+            clearTestResults();
 
-            // 即使失败也返回已有的测试结果
-            PostmanApiContext pm = (PostmanApiContext) bindings.get("pm");
-            if (pm != null && pm.testResults != null) {
-                return ScriptExecutionResult.failure(ex.getMessage(), ex, pm.testResults);
+            try {
+                ScriptExecutionContext context = ScriptExecutionContext.builder()
+                        .script(postScript)
+                        .scriptType(ScriptExecutionContext.ScriptType.POST_REQUEST)
+                        .bindings(bindings)
+                        .outputCallback(getEffectiveOutputCallback("[PostScript Console]\n"))
+                        .build();
+
+                executeScript(context);
+
+                PostmanApiContext pm = (PostmanApiContext) bindings.get("pm");
+                if (pm != null && pm.testResults != null) {
+                    return ScriptExecutionResult.success(pm.testResults);
+                }
+                return ScriptExecutionResult.success();
+
+            } catch (ScriptExecutionException ex) {
+                log.error("Post-script execution failed: {}", ex.getMessage(), ex);
+                ConsolePanel.appendLog("[PostScript Error]\n" + ex.getMessage(), ConsolePanel.LogType.ERROR);
+
+                PostmanApiContext pm = (PostmanApiContext) bindings.get("pm");
+                if (pm != null && pm.testResults != null) {
+                    return ScriptExecutionResult.failure(ex.getMessage(), ex, pm.testResults);
+                }
+                return ScriptExecutionResult.failure(ex.getMessage(), ex);
             }
-            return ScriptExecutionResult.failure(ex.getMessage(), ex);
-        }
+        });
     }
 
     /**
@@ -173,29 +207,6 @@ public class ScriptExecutionPipeline {
             if (pm != null && pm.testResults != null) {
                 pm.testResults.clear();
             }
-        }
-    }
-
-    /**
-     * Keep pm.variables and the placeholder resolver in sync so {{tempVar}}
-     * can be used in headers, params, and body after the pre-request script runs.
-     */
-    private void syncTemporaryVariablesFromPm() {
-        VariableResolver.clearTemporaryVariables();
-
-        if (bindings == null) {
-            return;
-        }
-
-        PostmanApiContext pm = (PostmanApiContext) bindings.get("pm");
-        if (pm == null || pm.variables == null) {
-            return;
-        }
-
-        Map<String, String> tempVariables = pm.snapshotLocalVariables();
-        if (tempVariables != null && !tempVariables.isEmpty()) {
-            VariableResolver.setAllTemporaryVariables(tempVariables);
-            log.debug("Synced {} temporary variables from pm.variables", tempVariables.size());
         }
     }
 
@@ -234,30 +245,37 @@ public class ScriptExecutionPipeline {
     }
 
     /**
-     * 为 CSV 数据添加变量绑定
-     *
-     * @param csvData CSV 数据行
+     * 前置脚本执行成功后，统一进入最终收尾阶段。
+     * 这里不再散落处理变量替换 / Authorization 兜底规则，
+     * 而是全部委托给 RequestFinalizer，保证各发送入口行为一致。
      */
-    public void addCsvDataBindings(Map<String, String> csvData) {
-        if (bindings == null) {
-            bindings = preparePreRequestBindings(request);
-        }
+    public void finalizeRequest() {
+        withExecutionContext(() -> RequestFinalizer.finalizeForSend(request, deferredAuthorization));
+        deferredAuthorization = null;
+    }
 
-        if (csvData != null && !csvData.isEmpty()) {
-            PostmanApiContext pm = (PostmanApiContext) bindings.get("pm");
-            if (pm != null) {
-                // 设置 CSV 数据到 pm.variables
-                for (Map.Entry<String, String> entry : csvData.entrySet()) {
-                    pm.variables.set(entry.getKey(), entry.getValue());
-                }
+    public void withExecutionContext(Runnable action) {
+        withExecutionContext(() -> {
+            action.run();
+            return null;
+        });
+    }
 
-                // 同步到 VariableResolver，以便在 HTTP 请求变量替换时使用
-                VariableResolver.setAllTemporaryVariables(csvData);
-                log.debug("已同步 {} 个 CSV 变量到 VariableResolver", csvData.size());
-            }
+    public <T> T withExecutionContext(Supplier<T> action) {
+        try (ExecutionContextScope ignored = ExecutionContextScope.open(getOrCreateExecutionContext(), requestNode)) {
+            return action.get();
         }
     }
 
+    private ExecutionVariableContext getOrCreateExecutionContext() {
+        if (runtimeExecutionContext != null) {
+            return runtimeExecutionContext;
+        }
+        runtimeExecutionContext = sharedExecutionContext != null
+                ? sharedExecutionContext
+                : new ExecutionVariableContext();
+        return runtimeExecutionContext;
+    }
 
     /**
      * 执行脚本（通用方法）
@@ -289,6 +307,7 @@ public class ScriptExecutionPipeline {
         bindings.put("request", req);
         bindings.put("env", activeEnv);
         bindings.put("globals", postman.globals);
+        bindings.put("iterationData", postman.iterationData);
         bindings.put("postman", postman);
         bindings.put("pm", postman);
 

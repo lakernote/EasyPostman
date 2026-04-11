@@ -111,7 +111,7 @@ public class EasyTextField extends FlatTextField {
                     int w = fm.stringWidth(before);
                     x += w;
                 }
-                // 判断变量状态：环境变量、临时变量或内置函数
+                // 判断变量状态：执行上下文变量、环境变量或内置函数
                 boolean isDefined = VariableResolver.isVariableDefined(seg.name);
                 Color bgColor = isDefined
                         ? ModernColors.getDefinedVariableBadgeBackground()

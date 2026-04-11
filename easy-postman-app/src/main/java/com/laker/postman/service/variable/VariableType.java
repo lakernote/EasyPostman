@@ -14,14 +14,19 @@ import java.awt.*;
 @Getter
 public enum VariableType {
     /**
-     * 临时变量 - 优先级最高，仅在当前请求执行过程中有效
+     * 执行上下文变量 - 优先级最高，在当前请求或当前运行上下文中有效
      */
-    TEMPORARY(MessageKeys.VARIABLE_TYPE_TEMPORARY, "T", new Color(255, 152, 0), 1),
+    VARIABLE(MessageKeys.VARIABLE_TYPE_VARIABLE, "V", new Color(255, 152, 0), 1),
+
+    /**
+     * 迭代数据变量 - 当前 CSV/JSON 行数据
+     */
+    ITERATION_DATA(MessageKeys.VARIABLE_TYPE_ITERATION_DATA, "D", new Color(25, 118, 210), 2),
 
     /**
      * 分组变量 - 从请求所在分组继承的变量
      */
-    GROUP(MessageKeys.VARIABLE_TYPE_GROUP, "C", new Color(13, 148, 136), 2),
+    GROUP(MessageKeys.VARIABLE_TYPE_GROUP, "C", new Color(13, 148, 136), 3),
 
     /**
      * 环境变量 - 从当前激活的环境中获取

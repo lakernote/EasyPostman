@@ -55,7 +55,6 @@ public class JsListWrapper<T> {
 
         String key = String.valueOf(k);
         String value = String.valueOf(v);
-
         switch (type) {
             case HEADER:
                 HttpHeader header = new HttpHeader();
@@ -122,7 +121,6 @@ public class JsListWrapper<T> {
      */
     public void add(String key, String value) {
         if (key == null || value == null) return;
-
         switch (type) {
             case HEADER:
                 HttpHeader header = new HttpHeader();
@@ -180,7 +178,6 @@ public class JsListWrapper<T> {
 
         String key = String.valueOf(k);
         String value = String.valueOf(v);
-
         // 先尝试更新已存在的项
         boolean updated = false;
         switch (type) {
@@ -248,7 +245,6 @@ public class JsListWrapper<T> {
      */
     public void upsert(String key, String value) {
         if (key == null || value == null) return;
-
         boolean updated = false;
         switch (type) {
             case HEADER:
@@ -315,7 +311,6 @@ public class JsListWrapper<T> {
      */
     public void remove(String key) {
         if (key == null) return;
-
         switch (type) {
             case HEADER:
                 @SuppressWarnings("unchecked")

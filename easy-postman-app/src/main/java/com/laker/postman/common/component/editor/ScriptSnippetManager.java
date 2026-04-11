@@ -118,7 +118,7 @@ public class ScriptSnippetManager {
         addPmEnvironment(provider);
         addPmGlobals(provider);
         addPmVariables(provider);
-        addPmCollectionVariables(provider);
+        addPmIterationData(provider);
         addPmRequest(provider);
         addPmResponse(provider);
         addPmCookies(provider);
@@ -552,16 +552,14 @@ public class ScriptSnippetManager {
     }
 
     /**
-     * 添加 pm.collectionVariables - 集合变量
+     * 添加 pm.iterationData - 迭代数据
      */
-    private static void addPmCollectionVariables(DefaultCompletionProvider provider) {
-        provider.addCompletion(new BasicCompletion(provider, "pm.collectionVariables", "Collection variables object"));
-        provider.addCompletion(new BasicCompletion(provider, "pm.collectionVariables.set", "Set collection variable"));
-        provider.addCompletion(new BasicCompletion(provider, "pm.collectionVariables.get", "Get collection variable"));
-        provider.addCompletion(new BasicCompletion(provider, "pm.collectionVariables.has", "Check if exists"));
-        provider.addCompletion(new BasicCompletion(provider, "pm.collectionVariables.unset", "Delete variable"));
-        provider.addCompletion(new BasicCompletion(provider, "pm.collectionVariables.clear", "Clear all"));
-        provider.addCompletion(new BasicCompletion(provider, "pm.collectionVariables.toObject", "Convert to object"));
+    private static void addPmIterationData(DefaultCompletionProvider provider) {
+        provider.addCompletion(new BasicCompletion(provider, "pm.iterationData", "Iteration data object"));
+        provider.addCompletion(new BasicCompletion(provider, "pm.iterationData.get", "Get iteration data value"));
+        provider.addCompletion(new BasicCompletion(provider, "pm.iterationData.has", "Check if iteration data exists"));
+        provider.addCompletion(new BasicCompletion(provider, "pm.iterationData.toObject", "Convert iteration data to object"));
+        provider.addCompletion(new BasicCompletion(provider, "pm.iterationData.toJSON", "Convert iteration data to JSON"));
     }
 
     /**

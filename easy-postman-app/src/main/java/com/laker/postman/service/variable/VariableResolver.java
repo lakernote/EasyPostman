@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
  * <p>
  * 解析字符串中的 {{variableName}} 占位符，支持嵌套解析
  * <p>
- * 变量优先级：临时变量 > 分组变量 > 环境变量 > 全局变量 > 内置函数
+ * 变量优先级：执行变量 > 迭代数据 > 分组变量 > 环境变量 > 全局变量 > 内置函数
  */
 @Slf4j
 @UtilityClass
@@ -29,7 +29,8 @@ public class VariableResolver {
 
     static {
         List<VariableProvider> providers = new ArrayList<>(Arrays.asList(
-                TemporaryVariableService.getInstance(),
+                VariablesService.getInstance(),
+                IterationDataVariableService.getInstance(),
                 GroupVariableService.getInstance(),
                 EnvironmentVariableService.getInstance(),
                 GlobalVariablesService.getInstance(),
@@ -37,20 +38,6 @@ public class VariableResolver {
         ));
         providers.sort(Comparator.comparingInt(VariableProvider::getPriority));
         PROVIDERS = Collections.unmodifiableList(providers);
-    }
-
-    /**
-     * 批量设置临时变量
-     */
-    public static void setAllTemporaryVariables(Map<String, String> variables) {
-        TemporaryVariableService.getInstance().setAll(variables);
-    }
-
-    /**
-     * 清空临时变量
-     */
-    public static void clearTemporaryVariables() {
-        TemporaryVariableService.getInstance().clear();
     }
 
     /**

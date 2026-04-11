@@ -1,5 +1,6 @@
 package com.laker.postman.service.variable;
 
+import com.laker.postman.model.script.ScriptVariablesApi;
 import com.laker.postman.model.Environment;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.GlobalVariablesService;
@@ -41,8 +42,8 @@ public class VariableResolverTest {
         originalGlobalDataFilePath = GlobalVariablesService.getInstance().getDataFilePath();
         GlobalVariablesService.getInstance().setDataFilePath(tempGlobalFile.toString());
 
-        // 清空临时变量
-        VariableResolver.clearTemporaryVariables();
+        // 清空执行上下文，避免测试之间共享 pm.variables / pm.iterationData
+        clearExecutionContext();
 
         // 创建测试环境
         testEnv = new Environment();
@@ -66,7 +67,8 @@ public class VariableResolverTest {
             if (testEnv != null && testEnv.getId() != null) {
                 EnvironmentService.deleteEnvironment(testEnv.getId());
             }
-            VariableResolver.clearTemporaryVariables();
+            clearExecutionContext();
+            RequestContext.clearCurrentRequestNode();
         } finally {
             // 恢复原始环境文件路径
             if (originalDataFilePath != null && !originalDataFilePath.isBlank()) {
@@ -136,18 +138,78 @@ public class VariableResolverTest {
     }
 
     /**
-     * 测试临时变量优先级
+     * 测试执行上下文变量优先级
      */
     @Test
-    public void testTemporaryVariablePriority() {
-        // 设置临时变量，覆盖环境变量
+    public void testExecutionScopedVariablePriority() {
+        // 设置执行上下文变量，覆盖环境变量
         Map<String, String> tempVars = new HashMap<>();
         tempVars.put("baseUrl", "https://temp.example.com");
-        VariableResolver.setAllTemporaryVariables(tempVars);
+        VariablesService.getInstance().setAll(tempVars);
 
-        // 临时变量优先级更高，应该使用临时变量的值
+        // 执行上下文变量优先级更高，应该使用它的值
         String result = VariableResolver.resolve("{{userModule}}/list");
         assertEquals("https://temp.example.com/api/user/list", result);
+    }
+
+    @Test
+    public void testIterationDataPriority() {
+        IterationDataVariableService.getInstance().replaceAll(Map.of("baseUrl", "https://csv.example.com"));
+
+        String result = VariableResolver.resolve("{{userModule}}/list");
+        assertEquals("https://csv.example.com/api/user/list", result);
+        assertEquals(VariableResolver.getVariableType("baseUrl"), VariableType.ITERATION_DATA);
+    }
+
+    @Test
+    public void testClearVariablesClearsValuesButKeepsExecutionContextUsable() {
+        VariablesService variablesService = VariablesService.getInstance();
+
+        variablesService.set("token", "old-token");
+        Map<String, String> originalContext = variablesService.getCurrentContextMap();
+        assertNotNull(originalContext);
+
+        variablesService.clearValues();
+
+        assertTrue(variablesService.getAll().isEmpty(), "Execution-scoped values should be cleared");
+        assertSame(variablesService.getCurrentContextMap(), originalContext,
+                "clearVariables should keep the current execution context attached");
+
+        variablesService.set("token", "new-token");
+        assertEquals(VariableResolver.resolve("{{token}}"), "new-token");
+        assertSame(variablesService.getCurrentContextMap(), originalContext,
+                "Values recreated after clearVariables should stay on the same context map");
+    }
+
+    @Test
+    public void testClearExecutionContextDetachesVariablesAndIterationData() {
+        VariablesService variablesService = VariablesService.getInstance();
+        IterationDataVariableService iterationDataService = IterationDataVariableService.getInstance();
+
+        variablesService.set("requestId", "req-001");
+        iterationDataService.replaceAll(Map.of("csvUserId", "user-001"));
+
+        assertNotNull(variablesService.getCurrentContextMap());
+        assertNotNull(iterationDataService.getCurrentContextMap());
+
+        clearExecutionContext();
+
+        assertNull(variablesService.getCurrentContextMap(),
+                "Execution-scoped variable context should be detached after clearExecutionContext");
+        assertNull(iterationDataService.getCurrentContextMap(),
+                "Iteration-data context should be detached after clearExecutionContext");
+        assertFalse(VariableResolver.isVariableDefined("requestId"));
+        assertFalse(VariableResolver.isVariableDefined("csvUserId"));
+    }
+
+    @Test
+    public void testScriptVariablesDoesNotExposeBuiltInFunctionsAsStoredVariables() {
+        ScriptVariablesApi scriptVariablesApi = new ScriptVariablesApi();
+
+        assertFalse(scriptVariablesApi.has("$guid"));
+        assertFalse(scriptVariablesApi.has("$timestamp"));
+        assertNull(scriptVariablesApi.get("$guid"));
+        assertNull(scriptVariablesApi.get("$timestamp"));
     }
 
     /**
@@ -236,6 +298,11 @@ public class VariableResolverTest {
         assertFalse(VariableResolver.isVariableDefined("undefined"));
         assertFalse(VariableResolver.isVariableDefined(null));
         assertFalse(VariableResolver.isVariableDefined(""));
+    }
+
+    private void clearExecutionContext() {
+        VariablesService.getInstance().detachContext();
+        IterationDataVariableService.getInstance().detachContext();
     }
 
 }

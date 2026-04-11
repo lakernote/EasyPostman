@@ -2,6 +2,7 @@ package com.laker.postman.model.script;
 
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import lombok.Getter;
 
 import java.util.Collection;
 import java.util.Map;
@@ -16,6 +17,12 @@ public class Expectation {
     private boolean negated = false;
 
     public final Expectation to = this;
+    /**
+     * -- GETTER --
+     *  获取 not 链式属性，用于反转断言
+     */
+    @Getter
+    public Expectation not;
     public final Expectation be = this;
     public final Expectation have = this;
     public final Expectation been = this;
@@ -32,16 +39,16 @@ public class Expectation {
     public final Expectation an = this;
 
     public Expectation(Object actual) {
-        this.actual = actual;
+        this(actual, false, true);
     }
 
-    /**
-     * 获取 not 链式属性，用于反转断言
-     */
-    public Expectation getNot() {
-        Expectation negatedExpectation = new Expectation(actual);
-        negatedExpectation.negated = !this.negated;
-        return negatedExpectation;
+    private Expectation(Object actual, boolean negated, boolean createNegatedMirror) {
+        this.actual = actual;
+        this.negated = negated;
+        if (createNegatedMirror) {
+            this.not = new Expectation(actual, !negated, false);
+            this.not.not = this;
+        }
     }
 
     public void include(Object expected) {

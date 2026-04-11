@@ -11,6 +11,7 @@ import com.laker.postman.panel.performance.model.RequestResult;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
 import com.laker.postman.service.setting.SettingManager;
+import com.laker.postman.service.variable.ExecutionVariableContext;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
@@ -749,13 +750,15 @@ final class PerformanceExecutionEngine {
     }
 
     private void runTaskIteration(DefaultMutableTreeNode groupNode) {
+        ExecutionVariableContext iterationContext = new ExecutionVariableContext();
+        iterationContext.replaceIterationData(resolveCsvRowForCurrentThread());
         for (int i = 0; i < groupNode.getChildCount() && runningSupplier.getAsBoolean(); i++) {
             DefaultMutableTreeNode child = (DefaultMutableTreeNode) groupNode.getChildAt(i);
             Object userObj = child.getUserObject();
             if (userObj instanceof JMeterTreeNode jtNode && !jtNode.enabled) {
                 continue;
             }
-            executeRequestNode(userObj, child);
+            executeRequestNode(userObj, child, iterationContext);
         }
     }
 
@@ -765,7 +768,8 @@ final class PerformanceExecutionEngine {
         }
     }
 
-    private void executeRequestNode(Object userObj, DefaultMutableTreeNode child) {
+    private void executeRequestNode(Object userObj, DefaultMutableTreeNode child,
+                                    ExecutionVariableContext iterationContext) {
         if (!runningSupplier.getAsBoolean()) {
             return;
         }
@@ -774,7 +778,7 @@ final class PerformanceExecutionEngine {
             PerformanceRequestExecutionResult executionResult = requestExecutor.execute(
                     child,
                     jtNode,
-                    resolveCsvRowForCurrentThread()
+                    iterationContext
             );
             if (executionResult == null) {
                 return;

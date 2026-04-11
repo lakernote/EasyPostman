@@ -20,7 +20,7 @@ import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.service.js.ScriptExecutionResult;
-import com.laker.postman.service.variable.VariableResolver;
+import com.laker.postman.service.variable.ExecutionVariableContext;
 import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -238,11 +238,14 @@ public class FunctionalPanel extends SingletonBasePanel {
         for (int iteration = 0; iteration < iterations && !isStopped; iteration++) {
             // 获取当前迭代的 CSV 数据
             Map<String, String> currentCsvRow = getCsvDataForIteration(iteration);
+            ExecutionVariableContext iterationContext = new ExecutionVariableContext();
+            iterationContext.replaceIterationData(currentCsvRow);
 
             // 创建当前迭代的结果记录
             IterationResult iterationResult = new IterationResult(iteration, currentCsvRow);
 
-            totalFinished = processIterationRequests(rowCount, selectedCount, iterations, totalFinished, iterationResult, currentCsvRow);
+            totalFinished = processIterationRequests(rowCount, selectedCount, iterations, totalFinished,
+                    iterationResult, currentCsvRow, iterationContext);
 
             // 完成当前迭代并添加到历史记录（无论是否停止，都要保存当前迭代的结果）
             iterationResult.complete();
@@ -254,7 +257,6 @@ public class FunctionalPanel extends SingletonBasePanel {
             if (isStopped) break;
         }
 
-        // 完成整个批量执行
         executionHistory.complete();
         finalizeExecution();
     }
@@ -268,7 +270,8 @@ public class FunctionalPanel extends SingletonBasePanel {
 
     private int processIterationRequests(int rowCount, int selectedCount, int iterations,
                                          int totalFinished, IterationResult iterationResult,
-                                         Map<String, String> currentCsvRow) {
+                                         Map<String, String> currentCsvRow,
+                                         ExecutionVariableContext iterationContext) {
         int finished = totalFinished;
 
         for (int i = 0; i < rowCount && !isStopped; i++) {
@@ -279,7 +282,8 @@ public class FunctionalPanel extends SingletonBasePanel {
             }
 
             if (row.selected) {
-                finished = executeAndRecordRequest(row, currentCsvRow, iterationResult, finished, selectedCount, iterations);
+                finished = executeAndRecordRequest(row, currentCsvRow, iterationResult, finished,
+                        selectedCount, iterations, iterationContext);
             }
         }
 
@@ -296,7 +300,8 @@ public class FunctionalPanel extends SingletonBasePanel {
 
     private int executeAndRecordRequest(RunnerRowData row, Map<String, String> currentCsvRow,
                                         IterationResult iterationResult, int totalFinished,
-                                        int selectedCount, int iterations) {
+                                        int selectedCount, int iterations,
+                                        ExecutionVariableContext iterationContext) {
         // 找到当前行的索引
         int rowIndex = -1;
         for (int i = 0; i < tableModel.getRowCount(); i++) {
@@ -315,7 +320,7 @@ public class FunctionalPanel extends SingletonBasePanel {
             });
         }
 
-        BatchResult result = executeSingleRequestWithCsv(row, currentCsvRow);
+        BatchResult result = executeSingleRequestWithCsv(row, iterationContext);
 
         // 更新表格中的执行结果
         if (currentRowIndex >= 0) {
@@ -382,7 +387,7 @@ public class FunctionalPanel extends SingletonBasePanel {
         AssertionResult assertion;
     }
 
-    private BatchResult executeSingleRequestWithCsv(RunnerRowData row, Map<String, String> csvRowData) {
+    private BatchResult executeSingleRequestWithCsv(RunnerRowData row, ExecutionVariableContext iterationContext) {
         if (isStopped) return new BatchResult(); // 检查停止标志，直接返回空结果
         BatchResult result = new BatchResult();
         long start = System.currentTimeMillis();
@@ -397,27 +402,21 @@ public class FunctionalPanel extends SingletonBasePanel {
         req.enableNetworkLog = false;  // 不输出 NetworkLogPanel，避免 UI 开销
 
         result.req = req;
-        // 每次执行前清理临时变量
-        VariableResolver.clearTemporaryVariables();
 
         // 创建脚本执行流水线（使用 req 中合并后的脚本）
-        ScriptExecutionPipeline pipeline = ScriptExecutionPipeline.builder()
-                .request(req)
-                .preScript(req.prescript)
-                .postScript(req.postscript)
-                .build();
-
-        // 添加 CSV 数据到脚本执行环境
-        if (csvRowData != null) {
-            pipeline.addCsvDataBindings(csvRowData);
-        }
+        ScriptExecutionPipeline pipeline = ScriptExecutionPipeline.forRequestExecution(
+                item,
+                req,
+                iterationContext,
+                true
+        );
 
         // 执行前置脚本
         ScriptExecutionResult preResult = pipeline.executePreScript();
 
         // 前置脚本执行完成后，进行变量替换
         if (preResult.isSuccess()) {
-            PreparedRequestBuilder.replaceVariablesAfterPreScript(req);
+            pipeline.finalizeRequest();
         }
 
         HttpResponse resp = null;
@@ -925,7 +924,3 @@ public class FunctionalPanel extends SingletonBasePanel {
         }
     }
 }
-
-
-
-

@@ -65,7 +65,7 @@ public class HttpRequestFactory {
         testItem.setProtocol(RequestItemProtocolEnum.WEBSOCKET);
         testItem.setId(IdUtil.simpleUUID());
         testItem.setName("WebSocket Example");
-        testItem.setUrl("wss://echo.websocket.org");
+        testItem.setUrl("wss://ws.ifelse.io");
         testItem.setMethod("GET");
         // Add some default headers
         List<HttpHeader> headers = new ArrayList<>();
@@ -85,7 +85,7 @@ public class HttpRequestFactory {
         testItem.setProtocol(RequestItemProtocolEnum.SSE);
         testItem.setId(IdUtil.simpleUUID());
         testItem.setName("SSE Example");
-        testItem.setUrl("https://sse.dev/test");
+        testItem.setUrl("https://stream.wikimedia.org/v2/stream/recentchange");
         testItem.setMethod("GET");
         // Add some default headers
         List<HttpHeader> headers = new ArrayList<>();

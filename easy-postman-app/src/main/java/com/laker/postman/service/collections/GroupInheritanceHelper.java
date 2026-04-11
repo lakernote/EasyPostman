@@ -405,12 +405,16 @@ public class GroupInheritanceHelper {
             return new ArrayList<>();
         }
 
+        return mergeVariables(groupChain);
+    }
+
+    private static List<Variable> mergeVariables(List<RequestGroup> groups) {
         // 使用 LinkedHashMap 保持插入顺序，同时支持覆盖
         // Key 使用变量名，内层覆盖外层
         Map<String, Variable> mergedMap = new LinkedHashMap<>();
 
         // 外层到内层顺序添加，内层会覆盖外层的同名变量
-        for (RequestGroup group : groupChain) {
+        for (RequestGroup group : groups) {
             if (CollUtil.isNotEmpty(group.getVariables())) {
                 for (Variable variable : group.getVariables()) {
                     if (variable != null && variable.getKey() != null && !variable.getKey().trim().isEmpty()) {

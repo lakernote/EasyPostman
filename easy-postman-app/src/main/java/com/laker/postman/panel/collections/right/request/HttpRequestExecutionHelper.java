@@ -159,27 +159,29 @@ final class HttpRequestExecutionHelper {
 
             @Override
             protected void done() {
-                if (disposedSupplier.getAsBoolean()) {
-                    httpSseStreamOpenedSetter.accept(false);
+                try {
+                    if (disposedSupplier.getAsBoolean()) {
+                        httpSseStreamOpenedSetter.accept(false);
+                        return;
+                    }
+                    boolean keepSseView = (resp != null && resp.isSse) || (isCancelled() && httpSseStreamOpenedSupplier.get());
+                    responsePanel.switchTabButtonHttpOrSse(keepSseView ? "sse" : "http");
+                    requestExecutionUiHelper.updateUIForResponse(resp);
+                    if (resp != null && !resp.isSse) {
+                        requestResponseHelper.handleResponse(pipeline, req, resp);
+                    } else if (resp != null) {
+                        requestResponseHelper.recordExchange(req, resp);
+                        responsePanel.setRequestDetails(req);
+                        responsePanel.setResponseDetails(resp);
+                        requestResponseHelper.saveHistory(req, resp, "SSE request");
+                    }
+                    if (!keepSseView) {
+                        httpSseStreamOpenedSetter.accept(false);
+                    }
+                } finally {
+                    requestExecutionUiHelper.resetSendButton();
                     clearCurrentWorker.run();
-                    return;
                 }
-                boolean keepSseView = (resp != null && resp.isSse) || (isCancelled() && httpSseStreamOpenedSupplier.get());
-                responsePanel.switchTabButtonHttpOrSse(keepSseView ? "sse" : "http");
-                requestExecutionUiHelper.updateUIForResponse(resp);
-                if (resp != null && !resp.isSse) {
-                    requestResponseHelper.handleResponse(pipeline, req, resp);
-                } else if (resp != null) {
-                    requestResponseHelper.recordExchange(req, resp);
-                    responsePanel.setRequestDetails(req);
-                    responsePanel.setResponseDetails(resp);
-                    requestResponseHelper.saveHistory(req, resp, "SSE request");
-                }
-                if (!keepSseView) {
-                    httpSseStreamOpenedSetter.accept(false);
-                }
-                requestExecutionUiHelper.resetSendButton();
-                clearCurrentWorker.run();
             }
         };
     }

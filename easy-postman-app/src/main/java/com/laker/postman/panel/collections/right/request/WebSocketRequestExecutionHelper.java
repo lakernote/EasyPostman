@@ -186,8 +186,7 @@ final class WebSocketRequestExecutionHelper {
                     }
                     log.debug("closed WebSocket: code={}, reason={}", code, reason);
                     appendTerminalEvent(MessageType.CLOSED, code + " " + reason);
-                    finishTerminalResponse(() -> {
-                    });
+                    finishTerminalResponse();
                 }
 
                 @Override
@@ -273,6 +272,11 @@ final class WebSocketRequestExecutionHelper {
             currentWebSocketSetter.accept(null);
             finalizeResponse();
             SwingUtilities.invokeLater(() -> runUiTeardown(afterUiReset));
+        }
+
+        private void finishTerminalResponse() {
+            finishTerminalResponse(() -> {
+            });
         }
 
         private void finalizeResponse() {

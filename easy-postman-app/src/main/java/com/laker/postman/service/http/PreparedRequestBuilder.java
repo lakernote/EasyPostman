@@ -2,7 +2,6 @@ package com.laker.postman.service.http;
 
 import com.laker.postman.model.*;
 import com.laker.postman.service.collections.InheritanceService;
-import com.laker.postman.service.variable.RequestContext;
 import com.laker.postman.service.variable.VariableResolver;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +20,13 @@ import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel
 @Slf4j
 @UtilityClass
 public class PreparedRequestBuilder {
+
+    public record DeferredAuthorization(String authType,
+                                        String authUsername,
+                                        String authPassword,
+                                        String authToken,
+                                        String previewAuthorizationHeaderValue) {
+    }
 
 
     /**
@@ -84,7 +90,7 @@ public class PreparedRequestBuilder {
      */
     public static PreparedRequest build(HttpRequestItem item, boolean useCache) {
         // 1. 先应用 group 继承（如果适用）
-        HttpRequestItem effectiveItem = inheritanceService.applyInheritance(item, useCache);
+        HttpRequestItem effectiveItem = resolveEffectiveItem(item, useCache);
 
         // 2. 构建 PreparedRequest
         PreparedRequest req = new PreparedRequest();
@@ -106,7 +112,7 @@ public class PreparedRequestBuilder {
 
         // 填充 List 数据，支持相同 key
         // 每次执行都使用独立副本，避免并发压测时线程间互相污染变量替换结果
-        req.headersList = cloneHeaders(buildHeadersListWithAuth(effectiveItem));
+        req.headersList = cloneHeaders(buildHeadersListWithResolvedAuth(effectiveItem));
         req.formDataList = cloneFormData(effectiveItem.getFormDataList());
         req.urlencodedList = cloneUrlencoded(effectiveItem.getUrlencodedList());
         req.paramsList = cloneParams(effectiveItem.getParamsList());
@@ -118,32 +124,15 @@ public class PreparedRequestBuilder {
         return req;
     }
 
-
-    /**
-     * 在前置脚本执行后，替换所有变量占位符
-     * <p>
-     * 注意：此方法会在完成后清除 RequestContext 的 ThreadLocal
-     */
-    public static void replaceVariablesAfterPreScript(PreparedRequest req) {
-        try {
-            // 替换 List 中的变量，支持相同 key
-            replaceVariablesInHeadersList(req.headersList);
-            replaceVariablesInFormDataList(req.formDataList);
-            replaceVariablesInUrlencodedList(req.urlencodedList);
-
-            // 先替换 URL 和 paramsList 中的变量，然后再重建 URL
-            // 这样可以避免重复参数的问题（例如：URL 中有 {{a}}=3，paramsList 中也有 {{a}}=3）
-            req.url = VariableResolver.resolve(req.url);
-            replaceVariablesInParamsList(req.paramsList);
-            // 变量替换完成后，用 buildEncodedUrl 一次性完成去重 + URL 编码，生成最终可发送的 URL
-            req.url = HttpRequestUtil.buildEncodedUrl(req.url, req.paramsList);
-
-            // 替换Body中的变量
-            req.body = VariableResolver.resolve(req.body);
-        } finally {
-            // 清除全局请求上下文，释放资源
-            RequestContext.clearCurrentRequestNode();
-        }
+    public static DeferredAuthorization resolveDeferredAuthorization(HttpRequestItem item, boolean useCache) {
+        HttpRequestItem effectiveItem = resolveEffectiveItem(item, useCache);
+        return new DeferredAuthorization(
+                effectiveItem.getAuthType(),
+                effectiveItem.getAuthUsername(),
+                effectiveItem.getAuthPassword(),
+                effectiveItem.getAuthToken(),
+                resolvePreviewAuthorizationHeaderValue(effectiveItem)
+        );
     }
 
     /**
@@ -192,70 +181,74 @@ public class PreparedRequestBuilder {
         return false;
     }
 
-    /**
-     * 构建包含认证信息的 headersList
-     * 如果配置了认证，会自动添加 Authorization 头（如果不存在）
-     * <p>
-     * 优化点：
-     * - 提前判断认证类型，避免不必要的遍历
-     * - 使用 Stream API 简化代码
-     */
-    private static List<HttpHeader> buildHeadersListWithAuth(HttpRequestItem item) {
-        List<HttpHeader> headersList = new ArrayList<>();
-
-        // 复制原始的 headers
-        if (item.getHeadersList() != null) {
-            headersList.addAll(item.getHeadersList());
-        }
-
-        // 提前判断：如果认证类型无效，直接返回
-        String authType = item.getAuthType();
-        if (authType == null ||
-                (!AUTH_TYPE_BASIC.equals(authType) && !AUTH_TYPE_BEARER.equals(authType))) {
-            return headersList;
-        }
-
-        // 检查是否已有 Authorization 头（使用 Stream API）
-        boolean hasAuthHeader = item.getHeadersList() != null &&
-                item.getHeadersList().stream()
-                        .anyMatch(h -> h.isEnabled() && HEADER_AUTHORIZATION.equalsIgnoreCase(h.getKey()));
-
-        // 如果已有 Authorization 头，直接返回
-        if (hasAuthHeader) {
-            return headersList;
-        }
-
-        // 添加认证头
-        HttpHeader authHeader = createAuthHeader(item, authType);
-        if (authHeader != null) {
-            headersList.add(authHeader);
-        }
-
-        return headersList;
+    private static HttpRequestItem resolveEffectiveItem(HttpRequestItem item, boolean useCache) {
+        return inheritanceService.applyInheritance(item, useCache);
     }
 
     /**
-     * 创建认证头
+     * 保持 pre-script 阶段对 auth tab 自动请求头的可见性。
+     * <p>
+     * 这里只在当前上下文已经能解析出凭据时才预生成 Authorization，
+     * 对于依赖 shared execution context / pre-script 新写入变量的场景，
+     * 仍交给 RequestFinalizer 在发送前兜底补齐。
      */
-    private static HttpHeader createAuthHeader(HttpRequestItem item, String authType) {
-        if (AUTH_TYPE_BASIC.equals(authType)) {
-            return createBasicAuthHeader(item);
-        } else if (AUTH_TYPE_BEARER.equals(authType)) {
-            return createBearerAuthHeader(item);
+    private static List<HttpHeader> buildHeadersListWithResolvedAuth(HttpRequestItem item) {
+        List<HttpHeader> headers = cloneHeaders(item.getHeadersList());
+        if (headers == null) {
+            headers = new ArrayList<>();
+        }
+
+        if (hasEnabledAuthorizationHeader(headers)) {
+            return headers;
+        }
+
+        HttpHeader authHeader = tryCreateResolvableAuthHeader(item);
+        if (authHeader != null) {
+            headers.add(authHeader);
+        }
+        return headers;
+    }
+
+    private static String resolvePreviewAuthorizationHeaderValue(HttpRequestItem item) {
+        if (item == null || hasEnabledAuthorizationHeader(item.getHeadersList())) {
+            return null;
+        }
+        HttpHeader authHeader = tryCreateResolvableAuthHeader(item);
+        return authHeader != null ? authHeader.getValue() : null;
+    }
+
+    private static boolean hasEnabledAuthorizationHeader(List<HttpHeader> headers) {
+        if (headers == null || headers.isEmpty()) {
+            return false;
+        }
+        return headers.stream()
+                .anyMatch(h -> h != null && h.isEnabled() && HEADER_AUTHORIZATION.equalsIgnoreCase(h.getKey()));
+    }
+
+    private static HttpHeader tryCreateResolvableAuthHeader(HttpRequestItem item) {
+        if (item == null || item.getAuthType() == null) {
+            return null;
+        }
+        if (AUTH_TYPE_BASIC.equals(item.getAuthType())) {
+            return createResolvableBasicAuthHeader(item.getAuthUsername(), item.getAuthPassword());
+        }
+        if (AUTH_TYPE_BEARER.equals(item.getAuthType())) {
+            return createResolvableBearerAuthHeader(item.getAuthToken());
         }
         return null;
     }
 
-    /**
-     * 创建 Basic 认证头
-     */
-    private static HttpHeader createBasicAuthHeader(HttpRequestItem item) {
-        String username = VariableResolver.resolve(item.getAuthUsername());
-        if (username == null || username.isEmpty()) {
+    private static HttpHeader createResolvableBasicAuthHeader(String rawUsername, String rawPassword) {
+        String username = VariableResolver.resolve(rawUsername);
+        if (username == null || username.isEmpty() || containsUnresolvedPlaceholder(username)) {
             return null;
         }
 
-        String password = VariableResolver.resolve(item.getAuthPassword());
+        String password = VariableResolver.resolve(rawPassword);
+        if (containsUnresolvedPlaceholder(password)) {
+            return null;
+        }
+
         String credentials = username + ":" + (password == null ? "" : password);
         String token = java.util.Base64.getEncoder().encodeToString(credentials.getBytes());
 
@@ -266,12 +259,9 @@ public class PreparedRequestBuilder {
         return authHeader;
     }
 
-    /**
-     * 创建 Bearer 认证头
-     */
-    private static HttpHeader createBearerAuthHeader(HttpRequestItem item) {
-        String token = VariableResolver.resolve(item.getAuthToken());
-        if (token == null || token.isEmpty()) {
+    private static HttpHeader createResolvableBearerAuthHeader(String rawToken) {
+        String token = VariableResolver.resolve(rawToken);
+        if (token == null || token.isEmpty() || containsUnresolvedPlaceholder(token)) {
             return null;
         }
 
@@ -282,44 +272,8 @@ public class PreparedRequestBuilder {
         return authHeader;
     }
 
-    private static void replaceVariablesInHeadersList(List<HttpHeader> list) {
-        if (list == null) return;
-        for (HttpHeader item : list) {
-            if (item.isEnabled()) {
-                item.setKey(VariableResolver.resolve(item.getKey()));
-                item.setValue(VariableResolver.resolve(item.getValue()));
-            }
-        }
-    }
-
-    private static void replaceVariablesInFormDataList(List<HttpFormData> list) {
-        if (list == null) return;
-        for (HttpFormData item : list) {
-            if (item.isEnabled()) {
-                item.setKey(VariableResolver.resolve(item.getKey()));
-                item.setValue(VariableResolver.resolve(item.getValue()));
-            }
-        }
-    }
-
-    private static void replaceVariablesInUrlencodedList(List<HttpFormUrlencoded> list) {
-        if (list == null) return;
-        for (HttpFormUrlencoded item : list) {
-            if (item.isEnabled()) {
-                item.setKey(VariableResolver.resolve(item.getKey()));
-                item.setValue(VariableResolver.resolve(item.getValue()));
-            }
-        }
-    }
-
-    private static void replaceVariablesInParamsList(List<HttpParam> list) {
-        if (list == null) return;
-        for (HttpParam item : list) {
-            if (item.isEnabled()) {
-                item.setKey(VariableResolver.resolve(item.getKey()));
-                item.setValue(VariableResolver.resolve(item.getValue()));
-            }
-        }
+    private static boolean containsUnresolvedPlaceholder(String value) {
+        return value != null && value.contains("{{") && value.contains("}}");
     }
 
     private static List<HttpHeader> cloneHeaders(List<HttpHeader> list) {

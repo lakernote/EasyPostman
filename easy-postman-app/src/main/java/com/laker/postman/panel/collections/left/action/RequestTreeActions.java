@@ -16,6 +16,7 @@ import com.laker.postman.service.collections.RequestsPersistence;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.http.HttpRequestFactory;
 import com.laker.postman.service.http.PreparedRequestBuilder;
+import com.laker.postman.service.http.RequestFinalizer;
 import com.laker.postman.service.postman.PostmanCollectionExporter;
 import com.laker.postman.service.workspace.WorkspaceTransferHelper;
 import com.laker.postman.util.*;
@@ -626,7 +627,7 @@ public class RequestTreeActions {
         HttpRequestItem item = (HttpRequestItem) obj[1];
         try {
             PreparedRequest req = PreparedRequestBuilder.build(item);
-            PreparedRequestBuilder.replaceVariablesAfterPreScript(req);
+            RequestFinalizer.finalizeForSend(req, item, true);
             String curl = CurlParser.toCurl(req);
 
             Toolkit.getDefaultToolkit().getSystemClipboard()

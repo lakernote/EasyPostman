@@ -21,7 +21,8 @@ import java.util.*;
  * <ul>
  *   <li><b>环境变量管理</b>: pm.environment.set/get - 操作当前激活的环境变量</li>
  *   <li><b>全局变量管理</b>: pm.globals.set/get - 操作应用级全局变量</li>
- *   <li><b>临时变量管理</b>: pm.variables.set/get - 操作请求生命周期内的临时变量</li>
+ *   <li><b>执行变量管理</b>: pm.variables.set/get - 操作当前运行上下文内的变量</li>
+ *   <li><b>迭代数据管理</b>: pm.iterationData.get - 访问当前数据驱动行</li>
  *   <li><b>Cookie 操作</b>: pm.cookies.get/set/delete - 管理请求的 Cookie</li>
  *   <li><b>测试断言</b>: pm.test() - 执行测试断言并记录结果</li>
  *   <li><b>请求访问</b>: pm.request - 访问和修改当前请求信息</li>
@@ -74,9 +75,14 @@ public class PostmanApiContext {
     public ResponseAssertion response;
 
     /**
-     * 临时变量管理器 - 对应 pm.variables，用于存储请求生命周期内的变量
+     * 执行变量管理器 - 对应 pm.variables，用于存储当前运行上下文内的变量
      */
     public ScriptVariablesApi variables = new ScriptVariablesApi();
+
+    /**
+     * 迭代数据管理器 - 对应 pm.iterationData，用于存储当前 CSV/JSON 行数据
+     */
+    public IterationDataApi iterationData = new IterationDataApi();
 
     /**
      * 请求对象包装器 - 对应 pm.request，提供对请求的 JavaScript 访问接口
@@ -233,10 +239,6 @@ public class PostmanApiContext {
         return globals.get(key);
     }
 
-    public Map<String, String> snapshotLocalVariables() {
-        return variables.toLocalObject();
-    }
-
     /**
      * 执行测试断言（保持向后兼容）
      * 对应脚本中的: pm.test(name, function)
@@ -349,7 +351,7 @@ public class PostmanApiContext {
     }
 
     /**
-     * 设置临时变量
+     * 设置执行变量
      * 对应脚本中的: pm.setVariable(key, value)
      *
      * @param key   变量名
@@ -360,7 +362,7 @@ public class PostmanApiContext {
     }
 
     /**
-     * 获取临时变量
+     * 获取执行变量
      * 对应脚本中的: pm.getVariable(key)
      *
      * @param key 变量名

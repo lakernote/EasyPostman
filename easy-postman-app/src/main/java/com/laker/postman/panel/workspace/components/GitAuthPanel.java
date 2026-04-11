@@ -68,12 +68,12 @@ public class GitAuthPanel extends JPanel {
     }
 
     private void setupLayout() {
-        setLayout(new BorderLayout());
+        setLayout(new GridBagLayout());
 
         // 认证类型选择
         JPanel typePanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.insets = new Insets(4, 5, 4, 5);
         gbc.anchor = GridBagConstraints.WEST;
 
         gbc.gridx = 0;
@@ -84,16 +84,34 @@ public class GitAuthPanel extends JPanel {
         gbc.weightx = 1.0;
         typePanel.add(authTypeCombo, gbc);
 
-        add(typePanel, BorderLayout.NORTH);
+        GridBagConstraints rootGbc = new GridBagConstraints();
+        rootGbc.gridx = 0;
+        rootGbc.weightx = 1.0;
+        rootGbc.fill = GridBagConstraints.HORIZONTAL;
+        rootGbc.anchor = GridBagConstraints.NORTHWEST;
+        rootGbc.gridy = 0;
+        add(typePanel, rootGbc);
 
         // 认证详情面板
-        authDetailsPanel = new JPanel(new CardLayout());
+        authDetailsPanel = new JPanel(new CardLayout()) {
+            @Override
+            public Dimension getPreferredSize() {
+                for (Component component : getComponents()) {
+                    if (component.isVisible()) {
+                        return component.getPreferredSize();
+                    }
+                }
+                return super.getPreferredSize();
+            }
+        };
         authDetailsPanel.add(createNoAuthPanel(), GitAuthType.NONE.name());
         authDetailsPanel.add(createPasswordAuthPanel(), GitAuthType.PASSWORD.name());
         authDetailsPanel.add(createTokenAuthPanel(), GitAuthType.TOKEN.name());
         authDetailsPanel.add(createSshAuthPanel(), GitAuthType.SSH_KEY.name());
 
-        add(authDetailsPanel, BorderLayout.CENTER);
+        rootGbc.gridy = 1;
+        rootGbc.insets = new Insets(2, 0, 0, 0);
+        add(authDetailsPanel, rootGbc);
     }
 
     private void setupEventHandlers() {
@@ -128,7 +146,7 @@ public class GitAuthPanel extends JPanel {
     }
 
     private JPanel createNoAuthPanel() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 2));
         JLabel label = new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_AUTH_NONE));
         label.setFont(FontsUtil.getDefaultFontWithOffset(Font.ITALIC, -1));
         label.setForeground(Color.GRAY);
@@ -139,7 +157,7 @@ public class GitAuthPanel extends JPanel {
     private JPanel createPasswordAuthPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 8, 8, 8);
+        gbc.insets = new Insets(5, 8, 5, 8);
         gbc.anchor = GridBagConstraints.WEST;
 
         gbc.gridx = 0;
@@ -166,7 +184,7 @@ public class GitAuthPanel extends JPanel {
     private JPanel createTokenAuthPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 8, 8, 8);
+        gbc.insets = new Insets(5, 8, 5, 8);
         gbc.anchor = GridBagConstraints.WEST;
 
         gbc.gridx = 0;
@@ -193,7 +211,7 @@ public class GitAuthPanel extends JPanel {
     private JPanel createSshAuthPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 8, 8, 8);
+        gbc.insets = new Insets(5, 8, 5, 8);
         gbc.anchor = GridBagConstraints.WEST;
 
         // SSH 私钥路径行
@@ -207,13 +225,13 @@ public class GitAuthPanel extends JPanel {
         gbc.gridx = 2;
         gbc.fill = GridBagConstraints.NONE;
         gbc.weightx = 0;
-        gbc.insets = new Insets(8, 3, 8, 8);
+        gbc.insets = new Insets(5, 3, 5, 8);
         panel.add(sshKeyBrowseButton, gbc);
 
         // SSH 密码行
         gbc.gridx = 0;
         gbc.gridy = 1;
-        gbc.insets = new Insets(8, 8, 8, 8);
+        gbc.insets = new Insets(5, 8, 5, 8);
         panel.add(new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_SSH_PASSPHRASE) + ":"), gbc);
         gbc.gridx = 1;
         gbc.gridwidth = 2;
@@ -232,6 +250,12 @@ public class GitAuthPanel extends JPanel {
         }
         authDetailsPanel.revalidate();
         authDetailsPanel.repaint();
+        SwingUtilities.invokeLater(() -> {
+            Window window = SwingUtilities.getWindowAncestor(this);
+            if (window != null) {
+                window.pack();
+            }
+        });
     }
 
     /**

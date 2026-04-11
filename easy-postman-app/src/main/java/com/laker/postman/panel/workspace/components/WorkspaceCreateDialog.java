@@ -1,6 +1,7 @@
 package com.laker.postman.panel.workspace.components;
 
 import cn.hutool.core.util.RandomUtil;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.common.exception.WorkspaceCreateException;
 import com.laker.postman.model.GitAuthType;
@@ -29,6 +30,7 @@ import java.io.File;
 public class WorkspaceCreateDialog extends ProgressDialog {
 
     private static final String DEFAULT_BRANCH = "master";
+    private static final int DIALOG_MIN_WIDTH = 580;
     public static final String WORKSPACES = "workspaces";
 
     @Getter
@@ -42,6 +44,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
     private JTextField pathField;
     private JButton browseButton;
     private JCheckBox autoGeneratePathCheckBox;
+    private JScrollPane descriptionScrollPane;
 
     // Git相关组件
     private JPanel gitPanel;
@@ -64,9 +67,12 @@ public class WorkspaceCreateDialog extends ProgressDialog {
     private void initComponents() {
         // 基本信息
         nameField = new JTextField(10);
-        descriptionArea = new JTextArea(3, 10);
+        descriptionArea = new JTextArea(2, 10);
         descriptionArea.setLineWrap(true);
         descriptionArea.setWrapStyleWord(true);
+        descriptionArea.setBackground(ModernColors.getInputBackgroundColor());
+        descriptionScrollPane = new JScrollPane(descriptionArea);
+        descriptionScrollPane.getViewport().setBackground(ModernColors.getInputBackgroundColor());
 
         // 工作区类型
         localTypeRadio = new JRadioButton(I18nUtil.getMessage(MessageKeys.WORKSPACE_TYPE_LOCAL), true);
@@ -152,16 +158,31 @@ public class WorkspaceCreateDialog extends ProgressDialog {
         containerPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 10, 15));
 
         // 创建内容面板 - 使用滚动面板以适应不同屏幕大小
-        JPanel contentPanel = new JPanel(new BorderLayout());
+        JPanel contentPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints contentGbc = new GridBagConstraints();
+        contentGbc.gridx = 0;
+        contentGbc.weightx = 1.0;
+        contentGbc.fill = GridBagConstraints.HORIZONTAL;
+        contentGbc.anchor = GridBagConstraints.NORTHWEST;
 
         // 基本信息面板
         JPanel basicPanel = createBasicInfoPanel();
-        contentPanel.add(basicPanel, BorderLayout.NORTH);
+        contentGbc.gridy = 0;
+        contentGbc.weighty = 0;
+        contentPanel.add(basicPanel, contentGbc);
 
         // Git配置面板
         gitPanel = createGitPanel();
         gitPanel.setVisible(false);
-        contentPanel.add(gitPanel, BorderLayout.CENTER);
+        contentGbc.gridy = 1;
+        contentGbc.insets = new Insets(10, 0, 0, 0);
+        contentPanel.add(gitPanel, contentGbc);
+
+        contentGbc.gridy = 2;
+        contentGbc.weighty = 1.0;
+        contentGbc.fill = GridBagConstraints.BOTH;
+        contentGbc.insets = new Insets(0, 0, 0, 0);
+        contentPanel.add(Box.createVerticalGlue(), contentGbc);
 
         // 为内容面板添加滚动支持
         JScrollPane scrollPane = new JScrollPane(contentPanel);
@@ -186,8 +207,9 @@ public class WorkspaceCreateDialog extends ProgressDialog {
 
         add(containerPanel, BorderLayout.CENTER);
 
-        // 设置对话框的初始大小
-        setPreferredSize(new Dimension(550, 520));
+        // 保持一个稳定的最小宽度，高度由当前可见内容决定
+        setPreferredSize(new Dimension(DIALOG_MIN_WIDTH, getPreferredSize().height));
+        setMinimumSize(new Dimension(DIALOG_MIN_WIDTH, 0));
     }
 
     @Override
@@ -276,7 +298,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
         ));
 
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 8, 8, 8);
+        gbc.insets = new Insets(6, 8, 6, 8);
         gbc.anchor = GridBagConstraints.WEST;
 
         // 工作区名称
@@ -300,7 +322,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
         gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.BOTH;
         gbc.weightx = 1.0;
-        panel.add(new JScrollPane(descriptionArea), gbc);
+        panel.add(descriptionScrollPane, gbc);
 
         // 工作区类型
         gbc.gridx = 0;
@@ -340,7 +362,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
     }
 
     private JPanel createGitPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
+        JPanel panel = new JPanel(new GridBagLayout());
         panel.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createEtchedBorder(),
                 "Git " + I18nUtil.getMessage(MessageKeys.WORKSPACE_INFO),
@@ -349,16 +371,25 @@ public class WorkspaceCreateDialog extends ProgressDialog {
                 FontsUtil.getDefaultFont(Font.BOLD)
         ));
 
+        GridBagConstraints rootGbc = new GridBagConstraints();
+        rootGbc.gridx = 0;
+        rootGbc.weightx = 1.0;
+        rootGbc.fill = GridBagConstraints.HORIZONTAL;
+        rootGbc.anchor = GridBagConstraints.NORTHWEST;
+
         // Git模式选择
-        JPanel modePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel modePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         modePanel.add(cloneRadio);
+        modePanel.add(Box.createHorizontalStrut(18));
         modePanel.add(initRadio);
-        panel.add(modePanel, BorderLayout.NORTH);
+        rootGbc.gridy = 0;
+        rootGbc.insets = new Insets(6, 8, 2, 8);
+        panel.add(modePanel, rootGbc);
 
         // Git URL、分支配置
         JPanel gitConfigPanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.insets = new Insets(4, 5, 4, 5);
         gbc.anchor = GridBagConstraints.WEST;
 
         // Git URL
@@ -382,10 +413,21 @@ public class WorkspaceCreateDialog extends ProgressDialog {
         gbc.weightx = 1.0;
         gitConfigPanel.add(branchField, gbc);
 
-        panel.add(gitConfigPanel, BorderLayout.CENTER);
+        rootGbc.gridy = 1;
+        rootGbc.insets = new Insets(0, 8, 2, 8);
+        panel.add(gitConfigPanel, rootGbc);
 
         // Git认证面板
-        panel.add(gitAuthPanel, BorderLayout.SOUTH);
+        rootGbc.gridy = 2;
+        rootGbc.insets = new Insets(0, 8, 6, 8);
+        panel.add(gitAuthPanel, rootGbc);
+
+        // 占位空行，确保内容始终贴顶显示，而不是拉伸中间表单区域
+        rootGbc.gridy = 3;
+        rootGbc.weighty = 1.0;
+        rootGbc.fill = GridBagConstraints.BOTH;
+        rootGbc.insets = new Insets(0, 0, 0, 0);
+        panel.add(Box.createVerticalGlue(), rootGbc);
 
         return panel;
     }
@@ -394,14 +436,11 @@ public class WorkspaceCreateDialog extends ProgressDialog {
         boolean isGit = gitTypeRadio.isSelected();
         gitPanel.setVisible(isGit);
 
-        // 调整对话框大小以适应内容
-        if (isGit) {
-            setPreferredSize(new Dimension(550, 680));
-        } else {
-            setPreferredSize(new Dimension(550, 420));
-        }
-
+        setPreferredSize(null);
         pack();
+        if (getWidth() < DIALOG_MIN_WIDTH) {
+            setSize(new Dimension(DIALOG_MIN_WIDTH, getHeight()));
+        }
         setLocationRelativeTo(getParent());
     }
 

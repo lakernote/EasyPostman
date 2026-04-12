@@ -204,7 +204,6 @@ public class AddRequestDialog {
         HttpRequestItem defaultRequest = HttpRequestFactory.createDefaultRequest();
         defaultRequest.setProtocol(protocol);
         defaultRequest.setName(requestName);
-        defaultRequest.getHeadersList().add(new HttpHeader(true, USER_AGENT, EASY_POSTMAN_CLIENT));
 
         configureRequestByProtocol(defaultRequest, protocol);
 
@@ -253,4 +252,3 @@ public class AddRequestDialog {
         dialog.setVisible(true);
     }
 }
-

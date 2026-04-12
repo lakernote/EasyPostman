@@ -72,10 +72,10 @@ public class EasyConsoleEventListener extends EventListener {
                 }
                 NetworkLogPanel netPanel = editSubPanel.getResponsePanel().getNetworkLogPanel();
                 netPanel.appendLog(stage, msg, elapsedMs);
-            } catch (Exception ignore) {
+            } catch (Throwable ignore) {
                 // ignore
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             // 防止日志异常影响主流程
         }
     }

@@ -47,7 +47,7 @@ public class RedirectHandler {
             RedirectInfo info = buildRedirectInfo(workingReq.url, resp);
             if (info.statusCode >= 300 && info.statusCode < 400 && info.location != null) {
                 URL nextUrl = info.location.startsWith("http") ? new URL(info.location) : new URL(prevUrl, info.location);
-                boolean isCrossDomain = !prevUrl.getHost().equalsIgnoreCase(nextUrl.getHost());
+                boolean isCrossDomain = isCrossOrigin(prevUrl, nextUrl);
 
                 redirectCount++;
                 logRedirect(req.id, info);
@@ -78,14 +78,17 @@ public class RedirectHandler {
     /**
      * 准备重定向请求
      */
-    private static PreparedRequest prepareRedirectRequest(PreparedRequest currentReq, String newUrl, int statusCode, boolean isCrossDomain) {
+    static PreparedRequest prepareRedirectRequest(PreparedRequest currentReq, String newUrl, int statusCode, boolean isCrossDomain) {
         PreparedRequest redirectReq = currentReq.shallowCopy();
         redirectReq.url = newUrl;
+        boolean preserveRequestBody = statusCode == 307 || statusCode == 308;
 
         // 根据状态码处理 method 和 body
-        if (statusCode == 301 || statusCode == 302 || statusCode == 303) {
-            // 301/302/303 重定向：改为 GET，清空 body
-            redirectReq.method = "GET";
+        if (!preserveRequestBody) {
+            // 301/302/303 重定向：HEAD 保持不变，其余改为 GET，并清空 body
+            if (!"HEAD".equalsIgnoreCase(redirectReq.method)) {
+                redirectReq.method = "GET";
+            }
             redirectReq.body = null;
             redirectReq.isMultipart = false;
             redirectReq.formDataList = null;
@@ -94,7 +97,12 @@ public class RedirectHandler {
         // 307/308 保持原 method 和 body
 
         // 处理 headers：移除特定 header
-        redirectReq.headersList = cleanHeadersList(redirectReq.headersList, isCrossDomain);
+        redirectReq.headersList = cleanHeadersList(
+                redirectReq.headersList,
+                isCrossDomain,
+                preserveRequestBody,
+                redirectReq.isMultipart
+        );
 
         return redirectReq;
     }
@@ -103,20 +111,38 @@ public class RedirectHandler {
     /**
      * 清理 List 结构的 headersList
      */
-    private static List<HttpHeader> cleanHeadersList(List<HttpHeader> headersList, boolean isCrossDomain) {
+    static List<HttpHeader> cleanHeadersList(List<HttpHeader> headersList,
+                                             boolean isCrossDomain,
+                                             boolean preserveRequestBody,
+                                             boolean isMultipartRequest) {
         if (headersList == null) {
             return Collections.emptyList();
         }
 
         List<HttpHeader> cleaned = new ArrayList<>(headersList);
+        boolean shouldRemoveContentType = !preserveRequestBody || isMultipartRequest;
         cleaned.removeIf(h -> h.isEnabled() && (
                 "Content-Length".equalsIgnoreCase(h.getKey()) ||
                         "Host".equalsIgnoreCase(h.getKey()) ||
-                        "Content-Type".equalsIgnoreCase(h.getKey()) ||
+                        (shouldRemoveContentType && "Content-Type".equalsIgnoreCase(h.getKey())) ||
                         (isCrossDomain && ("Authorization".equalsIgnoreCase(h.getKey()) || "Cookie".equalsIgnoreCase(h.getKey())))
         ));
 
         return cleaned;
+    }
+
+    static boolean isCrossOrigin(URL previousUrl, URL nextUrl) {
+        if (previousUrl == null || nextUrl == null) {
+            return false;
+        }
+        return !previousUrl.getProtocol().equalsIgnoreCase(nextUrl.getProtocol())
+                || !previousUrl.getHost().equalsIgnoreCase(nextUrl.getHost())
+                || effectivePort(previousUrl) != effectivePort(nextUrl);
+    }
+
+    private static int effectivePort(URL url) {
+        int explicitPort = url.getPort();
+        return explicitPort != -1 ? explicitPort : url.getDefaultPort();
     }
 
     /**

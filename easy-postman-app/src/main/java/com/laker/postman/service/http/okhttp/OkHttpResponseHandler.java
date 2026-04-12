@@ -177,6 +177,21 @@ public class OkHttpResponseHandler {
         return ct.contains(SSE_CONTENT_TYPE);
     }
 
+    private static boolean isIncompleteResponseBodyError(IOException exception) {
+        Throwable current = exception;
+        while (current != null) {
+            if (current instanceof EOFException) {
+                return true;
+            }
+            String message = current.getMessage();
+            if (message != null && message.toLowerCase().contains("unexpected end of stream")) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
 
     /**
      * 保存输入流到临时文件，返回文件对象和写入的字节数
@@ -344,7 +359,10 @@ public class OkHttpResponseHandler {
                 // 标记是否为图片类型，供 UI 层预览使用
                 String ct = okResponse.header(CONTENT_TYPE_HEADER, "");
                 response.isImage = ct != null && ct.toLowerCase().startsWith("image/");
-            } catch (EOFException e) {
+            } catch (IOException e) {
+                if (!isIncompleteResponseBodyError(e)) {
+                    throw e;
+                }
                 // 处理下载过程中连接中断的情况
                 log.error("Failed to download complete binary response: {}", e.getMessage());
                 response.body = I18nUtil.getMessage(MessageKeys.RESPONSE_INCOMPLETE, e.getMessage());
@@ -392,14 +410,14 @@ public class OkHttpResponseHandler {
             byte[] bytes;
             try {
                 bytes = body.bytes();
-            } catch (EOFException e) {
-                // 处理响应体不完整的情况（网络中断、服务器过早关闭连接等）
-                log.error("Failed to read complete response body: {}", e.getMessage());
-                response.body = I18nUtil.getMessage(MessageKeys.RESPONSE_INCOMPLETE, e.getMessage());
-                response.bodySize = 0;
-                response.filePath = null;
-                return;
             } catch (IOException e) {
+                if (isIncompleteResponseBodyError(e)) {
+                    log.error("Failed to read complete response body: {}", e.getMessage());
+                    response.body = I18nUtil.getMessage(MessageKeys.RESPONSE_INCOMPLETE, e.getMessage());
+                    response.bodySize = 0;
+                    response.filePath = null;
+                    return;
+                }
                 // 处理其他 IO 异常
                 log.error("Error reading response body: {}", e.getMessage(), e);
                 throw e;

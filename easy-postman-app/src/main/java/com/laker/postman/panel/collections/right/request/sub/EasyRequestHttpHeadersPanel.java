@@ -4,6 +4,7 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.button.EditButton;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.HttpHeader;
+import com.laker.postman.service.http.HttpRequestFactory;
 import com.laker.postman.util.*;
 
 import javax.swing.*;
@@ -32,7 +33,7 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
     private static final String ACCEPT = "Accept";
     private static final String ACCEPT_ENCODING = "Accept-Encoding";
     private static final String CONNECTION = "Connection";
-    private static final String USER_AGENT_VALUE = "EasyPostman/" + SystemUtil.getCurrentVersion();
+    private static final String USER_AGENT_VALUE = HttpRequestFactory.EASY_POSTMAN_CLIENT;
     private static final String ACCEPT_VALUE = "*/*";
     private static final String ACCEPT_ENCODING_VALUE = "gzip, deflate, br";
     private static final String CONNECTION_VALUE = "keep-alive";

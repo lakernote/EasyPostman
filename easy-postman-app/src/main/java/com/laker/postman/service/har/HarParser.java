@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.*;
+import static com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel.*;
 
 /**
  * HAR (HTTP Archive) 格式解析器
@@ -185,7 +186,7 @@ public class HarParser {
 
                 if (mimeType.contains("application/json")) {
                     req.setBody(text);
-                    req.setBodyType("raw");
+                    req.setBodyType(BODY_TYPE_RAW);
                 } else if (mimeType.contains("application/x-www-form-urlencoded")) {
                     // 解析 urlencoded 数据
                     List<HttpFormUrlencoded> urlencodedList = new ArrayList<>();
@@ -208,6 +209,7 @@ public class HarParser {
                         }
                     }
                     req.setUrlencodedList(urlencodedList);
+                    req.setBodyType(BODY_TYPE_FORM_URLENCODED);
                 } else if (mimeType.contains("multipart/form-data")) {
                     // 解析 multipart/form-data
                     List<HttpFormData> formDataList = new ArrayList<>();
@@ -226,10 +228,11 @@ public class HarParser {
                         }
                     }
                     req.setFormDataList(formDataList);
+                    req.setBodyType(BODY_TYPE_FORM_DATA);
                 } else if (!text.isEmpty()) {
                     // 其他类型作为 raw body
                     req.setBody(text);
-                    req.setBodyType("raw");
+                    req.setBodyType(BODY_TYPE_RAW);
                 }
             }
             return req;
@@ -263,4 +266,3 @@ public class HarParser {
         }
     }
 }
-

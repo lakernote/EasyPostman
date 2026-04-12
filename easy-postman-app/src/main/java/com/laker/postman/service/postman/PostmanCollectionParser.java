@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.*;
+import static com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel.*;
 
 /**
  * Postman Collection解析器
@@ -51,7 +52,7 @@ public class PostmanCollectionParser {
                 RequestGroup collectionGroup = new RequestGroup(collectionName);
 
                 // 解析集合描述
-                String description = info.getStr("description");
+                String description = extractDescription(info.get("description"));
                 if (description != null && !description.isEmpty()) {
                     collectionGroup.setDescription(description);
                 }
@@ -109,9 +110,13 @@ public class PostmanCollectionParser {
                 RequestGroup group = new RequestGroup(folderName);
 
                 // 解析文件夹描述
-                String description = item.getStr("description");
+                String description = extractDescription(item.get("description"));
                 if (description != null && !description.isEmpty()) {
                     group.setDescription(description);
+                }
+
+                if (item.containsKey("variable")) {
+                    group.setVariables(parseVariables(item.getJSONArray("variable")));
                 }
 
                 // 解析分组级别的认证
@@ -176,8 +181,8 @@ public class PostmanCollectionParser {
             String listen = eObj.getStr("listen");
             JSONObject script = eObj.getJSONObject("script");
             if (script != null) {
-                JSONArray exec = script.getJSONArray("exec");
-                if (exec != null) {
+                Object execObj = script.get("exec");
+                if (execObj instanceof JSONArray exec) {
                     for (Object line : exec) {
                         if ("test".equals(listen)) {
                             testScript.append(line).append("\n");
@@ -185,13 +190,19 @@ public class PostmanCollectionParser {
                             preScript.append(line).append("\n");
                         }
                     }
+                } else if (execObj instanceof String exec) {
+                    if ("test".equals(listen)) {
+                        testScript.append(exec).append("\n");
+                    } else if ("prerequest".equals(listen)) {
+                        preScript.append(exec).append("\n");
+                    }
                 }
             }
         }
 
         return new ScriptPair(
-            preScript.isEmpty() ? null : preScript.toString(),
-            testScript.isEmpty() ? null : testScript.toString()
+                preScript.isEmpty() ? null : preScript.toString(),
+                testScript.isEmpty() ? null : testScript.toString()
         );
     }
 
@@ -243,6 +254,30 @@ public class PostmanCollectionParser {
     }
 
     /**
+     * 解析 Postman 的 header 原始字符串
+     */
+    private static List<HttpHeader> parseHeaders(String rawHeaders) {
+        if (rawHeaders == null || rawHeaders.isBlank()) {
+            return new ArrayList<>();
+        }
+
+        List<HttpHeader> headersList = new ArrayList<>();
+        String[] lines = rawHeaders.split("\\r?\\n");
+        for (String line : lines) {
+            int separatorIndex = line.indexOf(':');
+            if (separatorIndex <= 0) {
+                continue;
+            }
+            String key = line.substring(0, separatorIndex).trim();
+            String value = line.substring(separatorIndex + 1).trim();
+            if (!key.isEmpty()) {
+                headersList.add(new HttpHeader(true, key, value));
+            }
+        }
+        return headersList;
+    }
+
+    /**
      * 解析Postman的variable数组
      */
     private static List<Variable> parseVariables(JSONArray variables) {
@@ -276,7 +311,14 @@ public class PostmanCollectionParser {
             String key = oObj.getStr("key", "");
             boolean enabled = !oObj.getBool(KEY_DISABLED, false);
             if ("file".equals(formType)) {
-                formDataList.add(new HttpFormData(enabled, key, HttpFormData.TYPE_FILE, oObj.getStr("src", "")));
+                Object srcObj = oObj.get("src");
+                String src = "";
+                if (srcObj instanceof JSONArray srcArray && !srcArray.isEmpty()) {
+                    src = String.valueOf(srcArray.get(0));
+                } else if (srcObj != null) {
+                    src = String.valueOf(srcObj);
+                }
+                formDataList.add(new HttpFormData(enabled, key, HttpFormData.TYPE_FILE, src));
             } else {
                 formDataList.add(new HttpFormData(enabled, key, HttpFormData.TYPE_TEXT, oObj.getStr(KEY_VALUE, "")));
             }
@@ -308,10 +350,13 @@ public class PostmanCollectionParser {
         HttpRequestItem req = new HttpRequestItem();
         req.setId(UUID.randomUUID().toString());
         req.setName(item.getStr("name", "未命名请求"));
-        JSONObject request = item.getJSONObject("request");
-        if (request != null) {
+        Object requestObj = item.get("request");
+        if (requestObj instanceof String requestUrl) {
+            req.setMethod("GET");
+            req.setUrl(requestUrl);
+        } else if (requestObj instanceof JSONObject request) {
             // 解析请求描述
-            String description = request.getStr("description");
+            String description = extractDescription(request.get("description"));
             if (description != null && !description.isEmpty()) {
                 req.setDescription(description);
             }
@@ -320,7 +365,7 @@ public class PostmanCollectionParser {
             // url
             Object urlObj = request.get("url");
             if (urlObj instanceof JSONObject urlJson) {
-                req.setUrl(urlJson.getStr("raw", ""));
+                req.setUrl(buildRawUrl(urlJson));
                 // 解析query参数
                 JSONArray queryArr = urlJson.getJSONArray("query");
                 List<HttpParam> params = parseQueryParams(queryArr);
@@ -331,8 +376,13 @@ public class PostmanCollectionParser {
                 req.setUrl(urlStr);
             }
             // headers
-            JSONArray headers = request.getJSONArray(KEY_HEADER);
-            List<HttpHeader> headersList = parseHeaders(headers);
+            List<HttpHeader> headersList = new ArrayList<>();
+            Object headersObj = request.get(KEY_HEADER);
+            if (headersObj instanceof JSONArray headers) {
+                headersList = parseHeaders(headers);
+            } else if (headersObj instanceof String rawHeaders) {
+                headersList = parseHeaders(rawHeaders);
+            }
             if (headersList != null && !headersList.isEmpty()) {
                 req.setHeadersList(headersList);
             }
@@ -364,6 +414,8 @@ public class PostmanCollectionParser {
                             }
                         }
                     }
+                } else if ("noauth".equals(authType)) {
+                    req.setAuthType(AUTH_TYPE_NONE);
                 } else {
                     req.setAuthType(AUTH_TYPE_NONE);
                 }
@@ -373,16 +425,36 @@ public class PostmanCollectionParser {
             if (body != null) {
                 String mode = body.getStr("mode", "");
                 if ("raw".equals(mode)) {
+                    req.setBodyType(BODY_TYPE_RAW);
                     req.setBody(body.getStr("raw", ""));
                 } else if (MODE_FORMDATA.equals(mode)) {
+                    req.setBodyType(BODY_TYPE_FORM_DATA);
                     List<HttpFormData> formDataList = parseFormData(body.getJSONArray(MODE_FORMDATA));
                     if (!formDataList.isEmpty()) {
                         req.setFormDataList(formDataList);
                     }
                 } else if (MODE_URLENCODED.equals(mode)) {
+                    req.setBodyType(BODY_TYPE_FORM_URLENCODED);
                     List<HttpFormUrlencoded> urlencodedList = parseUrlencoded(body.getJSONArray(MODE_URLENCODED));
                     if (!urlencodedList.isEmpty()) {
                         req.setUrlencodedList(urlencodedList);
+                    }
+                } else if ("graphql".equals(mode)) {
+                    req.setBodyType(BODY_TYPE_RAW);
+                    JSONObject graphql = body.getJSONObject("graphql");
+                    if (graphql != null) {
+                        req.setBody(graphql.toString());
+                    }
+                } else if ("file".equals(mode)) {
+                    req.setBodyType(BODY_TYPE_RAW);
+                    JSONObject file = body.getJSONObject("file");
+                    if (file != null) {
+                        String content = file.getStr("content", "");
+                        if (!content.isBlank()) {
+                            req.setBody(content);
+                        } else {
+                            req.setBody(file.getStr("src", ""));
+                        }
                     }
                 }
             }
@@ -414,6 +486,85 @@ public class PostmanCollectionParser {
         }
 
         return req;
+    }
+
+    private static String extractDescription(Object descriptionObj) {
+        if (descriptionObj instanceof String description) {
+            return description;
+        }
+        if (descriptionObj instanceof JSONObject description) {
+            String content = description.getStr("content", "");
+            if (!content.isEmpty()) {
+                return content;
+            }
+        }
+        return null;
+    }
+
+    private static String buildRawUrl(JSONObject urlJson) {
+        String raw = urlJson.getStr("raw", "");
+        if (!raw.isBlank()) {
+            return raw;
+        }
+
+        StringBuilder url = new StringBuilder();
+        String protocol = urlJson.getStr("protocol", "");
+        if (!protocol.isBlank()) {
+            url.append(protocol).append("://");
+        }
+
+        Object hostObj = urlJson.get("host");
+        if (hostObj instanceof JSONArray hostArray) {
+            for (int i = 0; i < hostArray.size(); i++) {
+                if (i > 0) {
+                    url.append(".");
+                }
+                url.append(hostArray.getStr(i));
+            }
+        } else if (hostObj instanceof String host) {
+            url.append(host);
+        }
+
+        String port = urlJson.getStr("port", "");
+        if (!port.isBlank()) {
+            url.append(":").append(port);
+        }
+
+        Object pathObj = urlJson.get("path");
+        if (pathObj instanceof JSONArray pathArray) {
+            for (Object segment : pathArray) {
+                url.append("/");
+                if (segment instanceof JSONObject pathVar) {
+                    url.append(pathVar.getStr("value", ""));
+                } else {
+                    url.append(String.valueOf(segment));
+                }
+            }
+        } else if (pathObj instanceof String path) {
+            if (!path.startsWith("/")) {
+                url.append("/");
+            }
+            url.append(path);
+        }
+
+        JSONArray query = urlJson.getJSONArray("query");
+        if (query != null && !query.isEmpty()) {
+            boolean first = true;
+            for (Object q : query) {
+                JSONObject qObj = (JSONObject) q;
+                if (qObj.getBool(KEY_DISABLED, false)) {
+                    continue;
+                }
+                url.append(first ? "?" : "&");
+                first = false;
+                url.append(qObj.getStr("key", ""));
+                if (qObj.containsKey(KEY_VALUE)) {
+                    url.append("=").append(qObj.getStr(KEY_VALUE, ""));
+                }
+            }
+        }
+
+        return url.toString();
     }
 
     /**

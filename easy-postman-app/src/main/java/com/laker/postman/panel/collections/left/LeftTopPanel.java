@@ -501,6 +501,9 @@ public class LeftTopPanel extends SingletonBasePanel {
                     leftPanel.getTreeModel().reload();
                     leftPanel.getPersistence().saveRequestGroups();
                     leftPanel.getRequestTree().expandPath(new TreePath(collectionNode.getPath()));
+
+                    importEnvironmentsFromParseResult(parseResult);
+
                     NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_SUCCESS));
                 } else {
                     NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_APIPOST_INVALID));

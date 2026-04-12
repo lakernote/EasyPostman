@@ -1,14 +1,11 @@
 package com.laker.postman.service.apipost;
 
-import com.laker.postman.model.*;
+import com.laker.postman.model.Environment;
+import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.service.common.CollectionParseResult;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-
-import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.*;
+import static com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel.BODY_TYPE_RAW;
 import static org.testng.Assert.*;
 
 /**
@@ -109,5 +106,81 @@ public class ApiPostCollectionParserTest {
                 """;
         CollectionParseResult result = ApiPostCollectionParser.parseApiPostCollection(json);
         assertNull(result);
+    }
+
+    @Test
+    public void testParseApiPostCollection_WithScriptsAndEnvironments() {
+        String json = """
+                {
+                  "name": "ApiPost Demo",
+                  "global": {
+                    "envs": [
+                      {
+                        "name": "开发环境",
+                        "server_list": [
+                          {
+                            "uri": "https://dev.example.com"
+                          }
+                        ],
+                        "env_var_list": {
+                          "token": "abc"
+                        }
+                      }
+                    ]
+                  },
+                  "apis": [
+                    {
+                      "target_id": "req1",
+                      "target_type": "api",
+                      "parent_id": "0",
+                      "name": "Create User",
+                      "method": "POST",
+                      "url": "https://api.example.com/users",
+                      "description": "create user desc",
+                      "request": {
+                        "pre_tasks": [
+                          {
+                            "script": "pm.environment.set('token', 'abc');"
+                          }
+                        ],
+                        "post_tasks": [
+                          {
+                            "code": "pm.test('ok', function () {});"
+                          }
+                        ],
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\\"name\\":\\"Alice\\"}"
+                        },
+                        "header": {
+                          "parameter": []
+                        },
+                        "query": {
+                          "parameter": []
+                        },
+                        "cookie": {
+                          "parameter": []
+                        }
+                      }
+                    }
+                  ]
+                }
+                """;
+
+        CollectionParseResult result = ApiPostCollectionParser.parseApiPostCollection(json);
+        assertNotNull(result);
+        assertEquals(result.getEnvironments().size(), 1);
+
+        Environment env = result.getEnvironments().get(0);
+        assertEquals(env.getName(), "开发环境");
+        assertEquals(env.getVariable("baseUrl"), "https://dev.example.com");
+        assertEquals(env.getVariable("token"), "abc");
+
+        HttpRequestItem request = result.getChildren().get(0).asRequest();
+        assertEquals(request.getDescription(), "create user desc");
+        assertEquals(request.getBodyType(), BODY_TYPE_RAW);
+        assertEquals(request.getBody(), "{\"name\":\"Alice\"}");
+        assertEquals(request.getPrescript(), "pm.environment.set('token', 'abc');");
+        assertEquals(request.getPostscript(), "pm.test('ok', function () {});");
     }
 }

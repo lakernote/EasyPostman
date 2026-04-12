@@ -2,6 +2,7 @@ package com.laker.postman.service.swagger;
 
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import com.laker.postman.model.*;
 import com.laker.postman.service.common.CollectionNode;
 import com.laker.postman.service.common.CollectionParseResult;
@@ -12,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.*;
 
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.*;
+import static com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel.*;
 
 /**
  * OpenAPI 3.x 格式解析器
@@ -21,59 +23,36 @@ import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel
 @UtilityClass
 class OpenApi3Parser {
 
-    /**
-     * 解析 OpenAPI 3.x 格式
-     *
-     * @param openApiRoot OpenAPI 3.x JSON 对象
-     * @return 解析结果
-     */
     static CollectionParseResult parse(JSONObject openApiRoot) {
-        // 获取基本信息
         JSONObject info = openApiRoot.getJSONObject("info");
         String title = info != null ? info.getStr("title", "OpenAPI") : "OpenAPI";
         String version = info != null ? info.getStr("version", "") : "";
         String collectionName = version.isEmpty() ? title : title + " (" + version + ")";
 
-        // 创建根分组
         RequestGroup collectionGroup = new RequestGroup(collectionName);
         CollectionParseResult result = new CollectionParseResult(collectionGroup);
 
-        // 解析 servers 并创建环境变量
         parseServersToEnvironments(openApiRoot, result, title);
+        parseExtensionEnvironments(openApiRoot, result, title);
 
-        // 获取服务器列表，决定是否使用变量引用
         JSONArray servers = openApiRoot.getJSONArray("servers");
-        String baseUrl = "";
-
-        if (servers != null && !servers.isEmpty()) {
-            // 如果定义了 servers，使用 {{baseUrl}} 变量引用
-            baseUrl = "{{baseUrl}}";
+        String baseUrl = (servers != null && !servers.isEmpty()) ? "{{baseUrl}}" : "";
+        if (!baseUrl.isEmpty()) {
             log.debug("检测到 {} 个服务器配置，请求URL将使用 {{{{baseUrl}}}} 变量", servers.size());
         }
 
-
-        // 解析全局安全配置
         JSONObject components = openApiRoot.getJSONObject("components");
-        JSONObject securitySchemes = null;
-        if (components != null) {
-            securitySchemes = components.getJSONObject("securitySchemes");
-        }
+        JSONObject securitySchemes = components != null ? components.getJSONObject("securitySchemes") : null;
 
-        // 解析 paths
         JSONObject paths = openApiRoot.getJSONObject("paths");
         if (paths == null || paths.isEmpty()) {
             log.warn("OpenAPI 文件中没有定义任何路径");
             return result;
         }
 
-        // 按 tag 组织请求
         Map<String, CollectionNode> tagNodes = new HashMap<>();
-
-        // 遍历所有路径
         for (String path : paths.keySet()) {
             JSONObject pathItem = paths.getJSONObject(path);
-
-            // 遍历该路径下的所有 HTTP 方法
             for (String method : pathItem.keySet()) {
                 if (SwaggerCommonUtil.isNotHttpMethod(method)) {
                     continue;
@@ -81,54 +60,41 @@ class OpenApi3Parser {
 
                 JSONObject operation = pathItem.getJSONObject(method);
                 HttpRequestItem requestItem = parseOperation(
+                        openApiRoot,
                         method.toUpperCase(),
                         path,
+                        pathItem,
                         operation,
                         baseUrl,
                         securitySchemes
                 );
-
-                if (requestItem != null) {
-                    // 获取 tags，用于分组
-                    String tag = getTag(operation);
-
-                    // 创建或获取 tag 节点
-                    CollectionNode tagNode = getOrCreateTagNode(tagNodes, tag);
-                    tagNode.addChild(new CollectionNode(NodeType.REQUEST, requestItem));
+                if (requestItem == null) {
+                    continue;
                 }
+
+                CollectionNode tagNode = getOrCreateTagNode(tagNodes, getTag(operation));
+                tagNode.addChild(new CollectionNode(NodeType.REQUEST, requestItem));
             }
         }
 
-        // 添加所有 tag 节点到结果
         tagNodes.values().forEach(result::addChild);
-
         return result;
     }
 
-    /**
-     * 获取 tag 名称
-     */
     private static String getTag(JSONObject operation) {
         JSONArray tags = operation.getJSONArray("tags");
         return (tags != null && !tags.isEmpty()) ? tags.getStr(0) : "Default";
     }
 
-    /**
-     * 获取或创建 tag 节点
-     */
     private static CollectionNode getOrCreateTagNode(Map<String, CollectionNode> tagNodes, String tag) {
-        return tagNodes.computeIfAbsent(tag, k -> {
-            RequestGroup group = new RequestGroup(k);
-            return new CollectionNode(NodeType.GROUP, group);
-        });
+        return tagNodes.computeIfAbsent(tag, key -> new CollectionNode(NodeType.GROUP, new RequestGroup(key)));
     }
 
-    /**
-     * 解析 OpenAPI 3.x 的单个操作
-     */
     private static HttpRequestItem parseOperation(
+            JSONObject openApiRoot,
             String method,
             String path,
+            JSONObject pathItem,
             JSONObject operation,
             String baseUrl,
             JSONObject securitySchemes) {
@@ -137,54 +103,44 @@ class OpenApi3Parser {
         req.setId(UUID.randomUUID().toString());
         req.setMethod(method);
 
-        // 设置请求名称
         String summary = operation.getStr("summary", "");
         String operationId = operation.getStr("operationId", "");
-        String requestName = summary;
-        if (requestName.isEmpty()) {
-            requestName = operationId.isEmpty() ? method + " " + path : operationId;
-        }
-        req.setName(requestName);
+        req.setName(summary.isEmpty() ? (operationId.isEmpty() ? method + " " + path : operationId) : summary);
+        req.setDescription(operation.getStr("description", ""));
+        req.setUrl(baseUrl.isEmpty() ? path : baseUrl + path);
 
-        // 设置 URL
-        String fullUrl = baseUrl.isEmpty() ? path : baseUrl + path;
-        req.setUrl(fullUrl);
-
-        // 解析参数
-        parseParameters(operation, req);
-
-        // 解析请求体
-        parseRequestBody(operation, req);
-
-        // 解析安全配置
-        parseSecurity(operation, req, securitySchemes);
-
+        parseParameters(openApiRoot, pathItem, operation, req);
+        parseRequestBody(openApiRoot, operation, req);
+        parseScripts(operation, req);
+        parseSecurity(openApiRoot, operation, req, securitySchemes);
         return req;
     }
 
-    /**
-     * 解析 OpenAPI 3.x 的参数
-     */
-    private static void parseParameters(JSONObject operation, HttpRequestItem req) {
-        JSONArray parameters = operation.getJSONArray("parameters");
-        if (parameters == null || parameters.isEmpty()) {
+    private static void parseParameters(JSONObject openApiRoot, JSONObject pathItem, JSONObject operation, HttpRequestItem req) {
+        List<JSONObject> parameters = SwaggerCommonUtil.mergeParameters(openApiRoot, pathItem, operation);
+        if (parameters.isEmpty()) {
             return;
         }
 
         List<HttpParam> queryParams = new ArrayList<>();
-        List<HttpHeader> headers = new ArrayList<>();
+        List<HttpHeader> headers = req.getHeadersList() == null ? new ArrayList<>() : new ArrayList<>(req.getHeadersList());
 
-        for (Object paramObj : parameters) {
-            JSONObject param = (JSONObject) paramObj;
+        for (JSONObject param : parameters) {
+            if (param == null) {
+                continue;
+            }
+
             String in = param.getStr("in", "");
             String name = param.getStr("name", "");
-
-            // 从 schema 中获取默认值
-            String value = "";
-            JSONObject schema = param.getJSONObject("schema");
-            if (schema != null && schema.containsKey("default")) {
-                value = schema.get("default").toString();
+            if (name.isBlank()) {
+                continue;
             }
+
+            JSONObject schema = SwaggerCommonUtil.resolveRefObject(openApiRoot, param.getJSONObject("schema"));
+            Object defaultValue = schema != null && schema.containsKey("default")
+                    ? schema.get("default")
+                    : param.get("example");
+            String value = defaultValue == null ? "" : String.valueOf(defaultValue);
 
             switch (in) {
                 case "query":
@@ -193,12 +149,11 @@ class OpenApi3Parser {
                 case "header":
                     headers.add(new HttpHeader(true, name, value));
                     break;
-                case "path":
-                    // Path 参数直接在 URL 中
-                    break;
                 case "cookie":
-                    // Cookie 参数可以作为 header 处理
                     headers.add(new HttpHeader(true, "Cookie", name + "=" + value));
+                    break;
+                case "path":
+                default:
                     break;
             }
         }
@@ -211,84 +166,144 @@ class OpenApi3Parser {
         }
     }
 
-    /**
-     * 解析 OpenAPI 3.x 的请求体
-     */
-    private static void parseRequestBody(JSONObject operation, HttpRequestItem req) {
-        JSONObject requestBody = operation.getJSONObject("requestBody");
+    private static void parseRequestBody(JSONObject openApiRoot, JSONObject operation, HttpRequestItem req) {
+        JSONObject requestBody = SwaggerCommonUtil.resolveRefObject(openApiRoot, operation.getJSONObject("requestBody"));
         if (requestBody == null) {
             return;
         }
 
         JSONObject content = requestBody.getJSONObject("content");
-        if (content == null) {
+        if (content == null || content.isEmpty()) {
             return;
         }
 
-        // 优先查找 application/json
-        JSONObject jsonContent = content.getJSONObject("application/json");
-        if (jsonContent != null) {
-            JSONObject schema = jsonContent.getJSONObject("schema");
-            if (schema != null) {
-                String exampleBody = SwaggerCommonUtil.generateExampleFromSchema(schema);
-                req.setBody(exampleBody);
+        String mediaType = selectPreferredMediaType(content);
+        JSONObject mediaContent = content.getJSONObject(mediaType);
+        if (mediaContent == null) {
+            return;
+        }
 
-                // 添加 Content-Type header
-                List<HttpHeader> headers = req.getHeadersList();
-                if (headers == null) {
-                    headers = new ArrayList<>();
-                }
-                headers.add(new HttpHeader(true, "Content-Type", "application/json"));
-                req.setHeadersList(headers);
+        if (req.getHeadersList() == null) {
+            req.setHeadersList(new ArrayList<>());
+        }
+        SwaggerCommonUtil.upsertHeader(req.getHeadersList(), "Content-Type", mediaType);
+
+        if ("application/x-www-form-urlencoded".equals(mediaType)) {
+            req.setBodyType(BODY_TYPE_FORM_URLENCODED);
+            req.setUrlencodedList(buildUrlEncoded(openApiRoot, mediaContent));
+            return;
+        }
+
+        if ("multipart/form-data".equals(mediaType)) {
+            req.setBodyType(BODY_TYPE_FORM_DATA);
+            req.setFormDataList(buildFormData(openApiRoot, mediaContent));
+            return;
+        }
+
+        req.setBodyType(BODY_TYPE_RAW);
+        String exampleBody = SwaggerCommonUtil.extractExampleFromMediaType(openApiRoot, mediaContent);
+        req.setBody(exampleBody);
+    }
+
+    private static String selectPreferredMediaType(JSONObject content) {
+        if (content.containsKey("application/json")) {
+            return "application/json";
+        }
+        if (content.containsKey("application/x-www-form-urlencoded")) {
+            return "application/x-www-form-urlencoded";
+        }
+        if (content.containsKey("multipart/form-data")) {
+            return "multipart/form-data";
+        }
+        for (String key : content.keySet()) {
+            if (key != null && key.toLowerCase().contains("json")) {
+                return key;
             }
-        } else if (content.containsKey("application/x-www-form-urlencoded")) {
-            // 处理表单数据
-            JSONObject formContent = content.getJSONObject("application/x-www-form-urlencoded");
-            JSONObject schema = formContent.getJSONObject("schema");
-            if (schema != null) {
-                List<HttpFormUrlencoded> urlencoded = new ArrayList<>();
-                JSONObject properties = schema.getJSONObject("properties");
-                if (properties != null) {
-                    for (String key : properties.keySet()) {
-                        urlencoded.add(new HttpFormUrlencoded(true, key, ""));
-                    }
-                }
-                req.setUrlencodedList(urlencoded);
+        }
+        return content.keySet().iterator().next();
+    }
+
+    private static List<HttpFormUrlencoded> buildUrlEncoded(JSONObject openApiRoot, JSONObject mediaContent) {
+        List<HttpFormUrlencoded> urlencoded = new ArrayList<>();
+        JSONObject schema = SwaggerCommonUtil.resolveRefObject(openApiRoot, mediaContent.getJSONObject("schema"));
+        JSONObject example = parseExampleObject(SwaggerCommonUtil.extractExampleFromMediaType(openApiRoot, mediaContent));
+        JSONObject properties = schema != null ? schema.getJSONObject("properties") : null;
+
+        if (properties != null) {
+            for (String key : properties.keySet()) {
+                Object value = example != null ? example.get(key) : "";
+                urlencoded.add(new HttpFormUrlencoded(true, key, value == null ? "" : String.valueOf(value)));
             }
-        } else if (content.containsKey("multipart/form-data")) {
-            // 处理 multipart 表单
-            JSONObject formContent = content.getJSONObject("multipart/form-data");
-            JSONObject schema = formContent.getJSONObject("schema");
-            if (schema != null) {
-                List<HttpFormData> formData = new ArrayList<>();
-                JSONObject properties = schema.getJSONObject("properties");
-                if (properties != null) {
-                    for (String key : properties.keySet()) {
-                        JSONObject propSchema = properties.getJSONObject(key);
-                        String format = propSchema.getStr("format", "");
-                        if ("binary".equals(format)) {
-                            formData.add(new HttpFormData(true, key, HttpFormData.TYPE_FILE, ""));
-                        } else {
-                            formData.add(new HttpFormData(true, key, HttpFormData.TYPE_TEXT, ""));
-                        }
-                    }
-                }
-                req.setFormDataList(formData);
+        } else if (example != null) {
+            for (String key : example.keySet()) {
+                Object value = example.get(key);
+                urlencoded.add(new HttpFormUrlencoded(true, key, value == null ? "" : String.valueOf(value)));
             }
+        }
+        return urlencoded;
+    }
+
+    private static List<HttpFormData> buildFormData(JSONObject openApiRoot, JSONObject mediaContent) {
+        List<HttpFormData> formData = new ArrayList<>();
+        JSONObject schema = SwaggerCommonUtil.resolveRefObject(openApiRoot, mediaContent.getJSONObject("schema"));
+        JSONObject example = parseExampleObject(SwaggerCommonUtil.extractExampleFromMediaType(openApiRoot, mediaContent));
+        JSONObject properties = schema != null ? schema.getJSONObject("properties") : null;
+
+        if (properties == null && example != null) {
+            for (String key : example.keySet()) {
+                Object value = example.get(key);
+                formData.add(new HttpFormData(true, key, HttpFormData.TYPE_TEXT, value == null ? "" : String.valueOf(value)));
+            }
+            return formData;
+        }
+
+        if (properties == null) {
+            return formData;
+        }
+
+        for (String key : properties.keySet()) {
+            JSONObject propSchema = SwaggerCommonUtil.resolveRefObject(openApiRoot, properties.getJSONObject(key));
+            String format = propSchema != null ? propSchema.getStr("format", "") : "";
+            Object value = example != null ? example.get(key) : "";
+            if ("binary".equalsIgnoreCase(format)) {
+                formData.add(new HttpFormData(true, key, HttpFormData.TYPE_FILE, value == null ? "" : String.valueOf(value)));
+            } else {
+                formData.add(new HttpFormData(true, key, HttpFormData.TYPE_TEXT, value == null ? "" : String.valueOf(value)));
+            }
+        }
+        return formData;
+    }
+
+    private static JSONObject parseExampleObject(String exampleText) {
+        if (exampleText == null || exampleText.isBlank() || !JSONUtil.isTypeJSON(exampleText)) {
+            return null;
+        }
+        try {
+            return JSONUtil.parseObj(exampleText);
+        } catch (Exception ignored) {
+            return null;
         }
     }
 
-    /**
-     * 解析 OpenAPI 3.x 的安全配置
-     */
-    private static void parseSecurity(JSONObject operation, HttpRequestItem req, JSONObject securitySchemes) {
+    private static void parseScripts(JSONObject operation, HttpRequestItem req) {
+        String prescript = SwaggerCommonUtil.extractExtensionScript(operation, true);
+        if (!prescript.isBlank()) {
+            req.setPrescript(prescript);
+        }
+
+        String postscript = SwaggerCommonUtil.extractExtensionScript(operation, false);
+        if (!postscript.isBlank()) {
+            req.setPostscript(postscript);
+        }
+    }
+
+    private static void parseSecurity(JSONObject openApiRoot, JSONObject operation, HttpRequestItem req, JSONObject securitySchemes) {
         JSONArray security = operation.getJSONArray("security");
         if (security == null || security.isEmpty() || securitySchemes == null) {
             req.setAuthType(AUTH_TYPE_NONE);
             return;
         }
 
-        // 获取第一个安全定义
         JSONObject firstSecurity = security.getJSONObject(0);
         if (firstSecurity == null || firstSecurity.isEmpty()) {
             req.setAuthType(AUTH_TYPE_NONE);
@@ -296,7 +311,7 @@ class OpenApi3Parser {
         }
 
         String securityName = firstSecurity.keySet().iterator().next();
-        JSONObject securityScheme = securitySchemes.getJSONObject(securityName);
+        JSONObject securityScheme = SwaggerCommonUtil.resolveRefObject(openApiRoot, securitySchemes.getJSONObject(securityName));
         if (securityScheme == null) {
             req.setAuthType(AUTH_TYPE_NONE);
             return;
@@ -306,11 +321,11 @@ class OpenApi3Parser {
         switch (type) {
             case "http":
                 String scheme = securityScheme.getStr("scheme", "");
-                if ("basic".equals(scheme)) {
+                if ("basic".equalsIgnoreCase(scheme)) {
                     req.setAuthType(AUTH_TYPE_BASIC);
                     req.setAuthUsername("");
                     req.setAuthPassword("");
-                } else if ("bearer".equals(scheme)) {
+                } else if ("bearer".equalsIgnoreCase(scheme)) {
                     req.setAuthType(AUTH_TYPE_BEARER);
                     req.setAuthToken("");
                 }
@@ -324,11 +339,8 @@ class OpenApi3Parser {
                         req.setAuthType(AUTH_TYPE_BEARER);
                         req.setAuthToken("");
                     } else {
-                        List<HttpHeader> headers = req.getHeadersList();
-                        if (headers == null) {
-                            headers = new ArrayList<>();
-                        }
-                        headers.add(new HttpHeader(true, name, ""));
+                        List<HttpHeader> headers = req.getHeadersList() == null ? new ArrayList<>() : req.getHeadersList();
+                        SwaggerCommonUtil.upsertHeader(headers, name, "");
                         req.setHeadersList(headers);
                     }
                 }
@@ -339,12 +351,13 @@ class OpenApi3Parser {
                 req.setAuthType(AUTH_TYPE_BEARER);
                 req.setAuthToken("");
                 break;
+
+            default:
+                req.setAuthType(AUTH_TYPE_NONE);
+                break;
         }
     }
 
-    /**
-     * 解析 servers 并创建环境变量
-     */
     private static void parseServersToEnvironments(JSONObject openApiRoot, CollectionParseResult result, String apiTitle) {
         JSONArray servers = openApiRoot.getJSONArray("servers");
         if (servers == null || servers.isEmpty()) {
@@ -353,43 +366,74 @@ class OpenApi3Parser {
         }
 
         log.info("解析到 {} 个服务器配置，将创建对应的环境变量", servers.size());
-
         for (int i = 0; i < servers.size(); i++) {
             JSONObject server = servers.getJSONObject(i);
             String url = server.getStr("url", "");
-            String description = server.getStr("description", "");
-
-            if (url.isEmpty()) {
+            if (url.isBlank()) {
                 continue;
             }
 
-            // 创建环境名称
-            String envName;
-            if (!description.isEmpty()) {
-                envName = apiTitle + " - " + description;
-            } else {
-                envName = apiTitle + " - Server " + (i + 1);
-            }
-
-            // 创建环境
+            String description = server.getStr("description", "");
+            String envName = description.isBlank() ? apiTitle + " - Server " + (i + 1) : apiTitle + " - " + description;
             Environment env = new Environment(envName);
             env.setId(UUID.randomUUID().toString());
-
-            // 添加 baseUrl 变量
             env.addVariable("baseUrl", url);
 
-            // 解析 server variables（如果有）
             JSONObject variables = server.getJSONObject("variables");
-            if (variables != null && !variables.isEmpty()) {
+            if (variables != null) {
                 for (String varName : variables.keySet()) {
                     JSONObject varObj = variables.getJSONObject(varName);
-                    String defaultValue = varObj.getStr("default", "");
-                    env.addVariable(varName, defaultValue);
+                    env.addVariable(varName, varObj.getStr("default", ""));
                 }
             }
 
             result.addEnvironment(env);
-            log.debug("创建环境: {} -> {}", envName, url);
+        }
+    }
+
+    private static void parseExtensionEnvironments(JSONObject openApiRoot, CollectionParseResult result, String apiTitle) {
+        for (String key : openApiRoot.keySet()) {
+            if (!key.toLowerCase().startsWith("x-")) {
+                continue;
+            }
+            JSONObject extension = openApiRoot.getJSONObject(key);
+            if (extension == null) {
+                continue;
+            }
+            JSONArray envs = extension.getJSONArray("envs");
+            if (envs == null || envs.isEmpty()) {
+                envs = extension.getJSONArray("environments");
+            }
+            if (envs == null || envs.isEmpty()) {
+                continue;
+            }
+
+            for (int i = 0; i < envs.size(); i++) {
+                JSONObject envObj = envs.getJSONObject(i);
+                if (envObj == null) {
+                    continue;
+                }
+
+                String envName = SwaggerCommonUtil.firstNonBlank(
+                        envObj.getStr("name", ""),
+                        envObj.getStr("title", ""),
+                        apiTitle + " - Env " + (i + 1)
+                );
+                Environment env = new Environment(envName);
+                env.setId(UUID.randomUUID().toString());
+
+                List<String> urls = SwaggerCommonUtil.extractServerUrlsFromExtensionEnv(envObj);
+                if (!urls.isEmpty()) {
+                    env.set("baseUrl", urls.get(0));
+                }
+
+                SwaggerCommonUtil.addVariablesFromUnknownStructure(env, envObj.get("variables"));
+                SwaggerCommonUtil.addVariablesFromUnknownStructure(env, envObj.get("env_var_list"));
+
+                if (!env.getVariableList().isEmpty()) {
+                    result.addEnvironment(env);
+                }
+            }
         }
     }
 }

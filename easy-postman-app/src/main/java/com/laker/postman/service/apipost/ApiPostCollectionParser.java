@@ -14,34 +14,23 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.*;
 
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.*;
+import static com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel.*;
 
 /**
  * ApiPost Collection解析器
  * 负责解析ApiPost导出的JSON格式
- * 此类只负责解析，不涉及 UI 层的 TreeNode 组装
- *
- * @author L.cm
  */
 @Slf4j
 @UtilityClass
 public class ApiPostCollectionParser {
 
-    // 常量定义
     private static final String KEY_PARAMETER = "parameter";
     private static final String KEY_IS_CHECKED = "is_checked";
     private static final String KEY_VALUE = "value";
 
-    /**
-     * 解析完整的 Apipost Collection JSON，返回解析结果
-     *
-     * @param json Apipost Collection JSON 字符串
-     * @return 解析结果，如果解析失败返回 null
-     */
     public static CollectionParseResult parseApiPostCollection(String json) {
         try {
             JSONObject apipostRoot = JSONUtil.parseObj(json);
-
-            // 验证是否为有效的Apipost格式
             if (!apipostRoot.containsKey("apis") || !apipostRoot.containsKey("name")) {
                 return null;
             }
@@ -52,35 +41,26 @@ public class ApiPostCollectionParser {
                 return null;
             }
 
-            // 构建ID到节点的映射
             Map<String, CollectionNode> idToNodeMap = new HashMap<>();
-
-            // 第一遍：创建所有文件夹节点
             for (Object apiObj : apis) {
                 JSONObject api = (JSONObject) apiObj;
-                String targetType = api.getStr("target_type", "");
-                if ("folder".equals(targetType)) {
-                    String targetId = api.getStr("target_id");
-                    String folderName = api.getStr("name", "未命名文件夹");
-                    RequestGroup group = new RequestGroup(folderName);
-
-                    // 解析文件夹级别的认证
-                    JSONObject request = api.getJSONObject("request");
-                    if (request != null) {
-                        JSONObject auth = request.getJSONObject("auth");
-                        if (auth != null) {
-                            AuthParserUtil.parseApiPostAuthToGroup(auth, group);
-                        }
-                    }
-
-                    CollectionNode folderNode = new CollectionNode(NodeType.GROUP, group);
-                    idToNodeMap.put(targetId, folderNode);
+                if (!"folder".equals(api.getStr("target_type", ""))) {
+                    continue;
                 }
+
+                RequestGroup group = new RequestGroup(api.getStr("name", "未命名文件夹"));
+                group.setDescription(api.getStr("description", ""));
+                JSONObject request = api.getJSONObject("request");
+                if (request != null) {
+                    JSONObject auth = request.getJSONObject("auth");
+                    if (auth != null) {
+                        AuthParserUtil.parseApiPostAuthToGroup(auth, group);
+                    }
+                }
+                idToNodeMap.put(api.getStr("target_id"), new CollectionNode(NodeType.GROUP, group));
             }
 
-            // 第二遍：构建树形结构，收集顶级节点
             List<CollectionNode> topLevelNodes = new ArrayList<>();
-
             for (Object apiObj : apis) {
                 JSONObject api = (JSONObject) apiObj;
                 String targetId = api.getStr("target_id");
@@ -88,7 +68,6 @@ public class ApiPostCollectionParser {
                 String targetType = api.getStr("target_type", "");
 
                 CollectionNode currentNode = null;
-
                 if ("folder".equals(targetType)) {
                     currentNode = idToNodeMap.get(targetId);
                 } else if ("api".equals(targetType)) {
@@ -98,32 +77,30 @@ public class ApiPostCollectionParser {
                     }
                 }
 
-                if (currentNode != null) {
-                    if ("0".equals(parentId)) {
-                        // 顶级节点
-                        topLevelNodes.add(currentNode);
+                if (currentNode == null) {
+                    continue;
+                }
+
+                if ("0".equals(parentId)) {
+                    topLevelNodes.add(currentNode);
+                } else {
+                    CollectionNode parentNode = idToNodeMap.get(parentId);
+                    if (parentNode != null) {
+                        parentNode.addChild(currentNode);
                     } else {
-                        // 查找父节点
-                        CollectionNode parentNode = idToNodeMap.get(parentId);
-                        if (parentNode != null) {
-                            parentNode.addChild(currentNode);
-                        } else {
-                            // 如果找不到父节点，也作为顶级节点
-                            topLevelNodes.add(currentNode);
-                        }
+                        topLevelNodes.add(currentNode);
                     }
                 }
             }
 
-            // 创建一个以项目名为名称的根文件夹
             RequestGroup collectionGroup = new RequestGroup(projectName);
+            collectionGroup.setDescription(apipostRoot.getStr("intro", ""));
 
-            // 解析全局认证（如果存在）
             JSONObject global = apipostRoot.getJSONObject("global");
             if (global != null) {
-                JSONObject globalAuth = global.getJSONObject("global_param");
-                if (globalAuth != null) {
-                    JSONObject auth = globalAuth.getJSONObject("auth");
+                JSONObject globalParam = global.getJSONObject("global_param");
+                if (globalParam != null) {
+                    JSONObject auth = globalParam.getJSONObject("auth");
                     if (auth != null) {
                         AuthParserUtil.parseApiPostAuthToGroup(auth, collectionGroup);
                     }
@@ -131,12 +108,10 @@ public class ApiPostCollectionParser {
             }
 
             CollectionParseResult result = new CollectionParseResult(collectionGroup);
-
-            // 将所有顶级节点添加到根节点下
             for (CollectionNode node : topLevelNodes) {
                 result.addChild(node);
             }
-
+            parseApiPostEnvironments(global, result, projectName);
             return result;
         } catch (Exception e) {
             log.error("解析Apipost Collection失败", e);
@@ -144,10 +119,6 @@ public class ApiPostCollectionParser {
         }
     }
 
-
-    /**
-     * 解析单个Apipost API为HttpRequestItem
-     */
     private static HttpRequestItem parseApiPostApi(JSONObject api) {
         try {
             HttpRequestItem req = new HttpRequestItem();
@@ -155,165 +126,25 @@ public class ApiPostCollectionParser {
             req.setName(api.getStr("name", "未命名接口"));
             req.setMethod(api.getStr("method", "GET"));
             req.setUrl(api.getStr("url", ""));
+            req.setDescription(api.getStr("description", ""));
 
             JSONObject request = api.getJSONObject("request");
             if (request != null) {
-                // 解析认证
-                JSONObject auth = request.getJSONObject("auth");
-                if (auth != null) {
-                    String authType = auth.getStr("type", "");
-                    if ("inherit".equals(authType)) {
-                        req.setAuthType(AUTH_TYPE_INHERIT);
-                    } else if ("noauth".equals(authType)) {
-                        req.setAuthType(AUTH_TYPE_NONE);
-                    } else if ("basic".equals(authType)) {
-                        req.setAuthType(AUTH_TYPE_BASIC);
-                        JSONObject basic = auth.getJSONObject("basic");
-                        if (basic != null) {
-                            req.setAuthUsername(basic.getStr("username", ""));
-                            req.setAuthPassword(basic.getStr("password", ""));
-                        }
-                    } else if ("bearer".equals(authType)) {
-                        req.setAuthType(AUTH_TYPE_BEARER);
-                        JSONObject bearer = auth.getJSONObject("bearer");
-                        if (bearer != null) {
-                            req.setAuthToken(bearer.getStr("key", ""));
-                        }
-                    } else {
-                        // 其他认证类型暂不支持，设为无认证
-                        req.setAuthType(AUTH_TYPE_NONE);
-                    }
-                }
-
-                // 解析请求头
-                JSONObject header = request.getJSONObject("header");
-                if (header != null) {
-                    JSONArray parameters = header.getJSONArray(KEY_PARAMETER);
-                    if (parameters != null && !parameters.isEmpty()) {
-                        List<HttpHeader> headersList = new ArrayList<>();
-                        for (Object paramObj : parameters) {
-                            JSONObject param = (JSONObject) paramObj;
-                            boolean enabled = param.getInt(KEY_IS_CHECKED, 1) == 1;
-                            headersList.add(new HttpHeader(enabled, param.getStr("key", ""), param.getStr(KEY_VALUE, "")));
-                        }
-                        req.setHeadersList(headersList);
-                    }
-                }
-
-                // 解析查询参数
-                JSONObject query = request.getJSONObject("query");
-                if (query != null) {
-                    JSONArray parameters = query.getJSONArray(KEY_PARAMETER);
-                    if (parameters != null && !parameters.isEmpty()) {
-                        List<HttpParam> paramsList = new ArrayList<>();
-                        for (Object paramObj : parameters) {
-                            JSONObject param = (JSONObject) paramObj;
-                            boolean enabled = param.getInt(KEY_IS_CHECKED, 1) == 1;
-                            paramsList.add(new HttpParam(enabled, param.getStr("key", ""), param.getStr(KEY_VALUE, "")));
-                        }
-                        req.setParamsList(paramsList);
-                    }
-                }
-
-                // 解析Cookie
-                JSONObject cookie = request.getJSONObject("cookie");
-                if (cookie != null) {
-                    JSONArray parameters = cookie.getJSONArray(KEY_PARAMETER);
-                    if (parameters != null && !parameters.isEmpty()) {
-                        List<String> cookiePairs = new ArrayList<>();
-                        for (Object paramObj : parameters) {
-                            JSONObject param = (JSONObject) paramObj;
-                            boolean enabled = param.getInt(KEY_IS_CHECKED, 1) == 1;
-                            if (enabled) {
-                                cookiePairs.add(param.getStr("key", "") + "=" + param.getStr(KEY_VALUE, ""));
-                            }
-                        }
-
-                        if (!cookiePairs.isEmpty()) {
-                            // 确保headersList已初始化
-                            if (req.getHeadersList() == null) {
-                                req.setHeadersList(new ArrayList<>());
-                            }
-
-                            // 检查是否已存在Cookie头
-                            boolean hasCookieHeader = false;
-                            for (HttpHeader h : req.getHeadersList()) {
-                                if ("Cookie".equalsIgnoreCase(h.getKey())) {
-                                    String currentValue = h.getValue();
-                                    String newValue = currentValue.isEmpty()
-                                            ? String.join("; ", cookiePairs)
-                                            : currentValue + "; " + String.join("; ", cookiePairs);
-                                    h.setValue(newValue);
-                                    hasCookieHeader = true;
-                                    break;
-                                }
-                            }
-                            if (!hasCookieHeader) {
-                                req.getHeadersList().add(new HttpHeader(true, "Cookie", String.join("; ", cookiePairs)));
-                            }
-                        }
-                    }
-                }
-
-                // 解析请求体
-                JSONObject body = request.getJSONObject("body");
-                if (body != null) {
-                    String mode = body.getStr("mode", "");
-                    if ("urlencoded".equals(mode)) {
-                        JSONArray parameters = body.getJSONArray(KEY_PARAMETER);
-                        if (parameters != null && !parameters.isEmpty()) {
-                            List<HttpFormUrlencoded> urlencodedList = new ArrayList<>();
-                            for (Object paramObj : parameters) {
-                                JSONObject param = (JSONObject) paramObj;
-                                boolean enabled = param.getInt(KEY_IS_CHECKED, 1) == 1;
-                                urlencodedList.add(new HttpFormUrlencoded(enabled, param.getStr("key", ""), param.getStr(KEY_VALUE, "")));
-                            }
-                            req.setUrlencodedList(urlencodedList);
-                        }
-                    } else if ("formdata".equals(mode)) {
-                        JSONArray parameters = body.getJSONArray(KEY_PARAMETER);
-                        if (parameters != null && !parameters.isEmpty()) {
-                            List<HttpFormData> formDataList = new ArrayList<>();
-                            for (Object paramObj : parameters) {
-                                JSONObject param = (JSONObject) paramObj;
-                                boolean enabled = param.getInt(KEY_IS_CHECKED, 1) == 1;
-                                String fieldType = param.getStr("field_type", "string");
-                                String key = param.getStr("key", "");
-
-                                // 判断是文件还是文本
-                                if ("file".equals(fieldType) || param.containsKey("file_name")) {
-                                    String fileName = param.getStr("file_name", "");
-                                    formDataList.add(new HttpFormData(enabled, key, HttpFormData.TYPE_FILE, fileName));
-                                } else {
-                                    String value = param.getStr(KEY_VALUE, "");
-                                    formDataList.add(new HttpFormData(enabled, key, HttpFormData.TYPE_TEXT, value));
-                                }
-                            }
-                            req.setFormDataList(formDataList);
-                        }
-                    } else if ("raw".equals(mode)) {
-                        req.setBody(body.getStr("raw", ""));
-                    } else if ("binary".equals(mode)) {
-                        // Binary模式暂不支持，设为空body
-                        req.setBody("");
-                    }
-                }
-
-                // 解析前置脚本和后置脚本
-                // 注意：Apipost的脚本格式可能与Postman不同，这里暂时跳过解析
-                // 如果后续需要支持，可以根据Apipost的实际脚本格式进行解析
+                parseAuth(request, req);
+                parseHeaders(request, req);
+                parseQuery(request, req);
+                parseCookies(request, req);
+                parseBody(request, req);
                 parseApiPostScripts(request, req);
             }
 
-            // 解析响应示例
             JSONObject response = api.getJSONObject("response");
             if (response != null) {
                 JSONArray examples = response.getJSONArray("example");
                 if (examples != null && !examples.isEmpty()) {
                     List<SavedResponse> savedResponsesList = new ArrayList<>();
                     for (Object exampleObj : examples) {
-                        JSONObject example = (JSONObject) exampleObj;
-                        SavedResponse savedResponse = parseApiPostResponse(example, req);
+                        SavedResponse savedResponse = parseApiPostResponse((JSONObject) exampleObj, req);
                         if (savedResponse != null) {
                             savedResponsesList.add(savedResponse);
                         }
@@ -321,7 +152,6 @@ public class ApiPostCollectionParser {
                     req.setResponse(savedResponsesList);
                 }
             }
-
             return req;
         } catch (Exception e) {
             log.error("解析Apipost API失败", e);
@@ -329,27 +159,275 @@ public class ApiPostCollectionParser {
         }
     }
 
-    /**
-     * 解析Apipost的脚本（前置和后置）
-     * 注意：Apipost的脚本格式可能与Postman不同，这里预留扩展点
-     */
-    private static void parseApiPostScripts(JSONObject request, HttpRequestItem req) {
-        JSONArray preTasks = request.getJSONArray("pre_tasks");
-        if (preTasks != null && !preTasks.isEmpty()) {
-            // TODO: 实现Apipost的前置脚本格式解析
-            log.debug("Apipost pre_tasks parsing not yet implemented");
+    private static void parseAuth(JSONObject request, HttpRequestItem req) {
+        JSONObject auth = request.getJSONObject("auth");
+        if (auth == null) {
+            return;
         }
 
-        JSONArray postTasks = request.getJSONArray("post_tasks");
-        if (postTasks != null && !postTasks.isEmpty()) {
-            // TODO: 实现Apipost的后置脚本格式解析
-            log.debug("Apipost post_tasks parsing not yet implemented");
+        String authType = auth.getStr("type", "");
+        if ("inherit".equals(authType)) {
+            req.setAuthType(AUTH_TYPE_INHERIT);
+            return;
+        }
+        if ("noauth".equals(authType)) {
+            req.setAuthType(AUTH_TYPE_NONE);
+            return;
+        }
+        if ("basic".equals(authType)) {
+            req.setAuthType(AUTH_TYPE_BASIC);
+            JSONObject basic = auth.getJSONObject("basic");
+            if (basic != null) {
+                req.setAuthUsername(basic.getStr("username", ""));
+                req.setAuthPassword(basic.getStr("password", ""));
+            }
+            return;
+        }
+        if ("bearer".equals(authType)) {
+            req.setAuthType(AUTH_TYPE_BEARER);
+            JSONObject bearer = auth.getJSONObject("bearer");
+            if (bearer != null) {
+                req.setAuthToken(bearer.getStr("key", ""));
+            }
+            return;
+        }
+        req.setAuthType(AUTH_TYPE_NONE);
+    }
+
+    private static void parseHeaders(JSONObject request, HttpRequestItem req) {
+        JSONObject header = request.getJSONObject("header");
+        if (header == null) {
+            return;
+        }
+        JSONArray parameters = header.getJSONArray(KEY_PARAMETER);
+        if (parameters == null || parameters.isEmpty()) {
+            return;
+        }
+
+        List<HttpHeader> headersList = new ArrayList<>();
+        for (Object paramObj : parameters) {
+            JSONObject param = (JSONObject) paramObj;
+            boolean enabled = param.getInt(KEY_IS_CHECKED, 1) == 1;
+            headersList.add(new HttpHeader(enabled, param.getStr("key", ""), param.getStr(KEY_VALUE, "")));
+        }
+        req.setHeadersList(headersList);
+    }
+
+    private static void parseQuery(JSONObject request, HttpRequestItem req) {
+        JSONObject query = request.getJSONObject("query");
+        if (query == null) {
+            return;
+        }
+        JSONArray parameters = query.getJSONArray(KEY_PARAMETER);
+        if (parameters == null || parameters.isEmpty()) {
+            return;
+        }
+
+        List<HttpParam> paramsList = new ArrayList<>();
+        for (Object paramObj : parameters) {
+            JSONObject param = (JSONObject) paramObj;
+            boolean enabled = param.getInt(KEY_IS_CHECKED, 1) == 1;
+            paramsList.add(new HttpParam(enabled, param.getStr("key", ""), param.getStr(KEY_VALUE, "")));
+        }
+        req.setParamsList(paramsList);
+    }
+
+    private static void parseCookies(JSONObject request, HttpRequestItem req) {
+        JSONObject cookie = request.getJSONObject("cookie");
+        if (cookie == null) {
+            return;
+        }
+        JSONArray parameters = cookie.getJSONArray(KEY_PARAMETER);
+        if (parameters == null || parameters.isEmpty()) {
+            return;
+        }
+
+        List<String> cookiePairs = new ArrayList<>();
+        for (Object paramObj : parameters) {
+            JSONObject param = (JSONObject) paramObj;
+            if (param.getInt(KEY_IS_CHECKED, 1) == 1) {
+                cookiePairs.add(param.getStr("key", "") + "=" + param.getStr(KEY_VALUE, ""));
+            }
+        }
+        if (cookiePairs.isEmpty()) {
+            return;
+        }
+
+        if (req.getHeadersList() == null) {
+            req.setHeadersList(new ArrayList<>());
+        }
+
+        for (HttpHeader header : req.getHeadersList()) {
+            if ("Cookie".equalsIgnoreCase(header.getKey())) {
+                String currentValue = header.getValue();
+                header.setValue(currentValue.isEmpty() ? String.join("; ", cookiePairs) : currentValue + "; " + String.join("; ", cookiePairs));
+                return;
+            }
+        }
+        req.getHeadersList().add(new HttpHeader(true, "Cookie", String.join("; ", cookiePairs)));
+    }
+
+    private static void parseBody(JSONObject request, HttpRequestItem req) {
+        JSONObject body = request.getJSONObject("body");
+        if (body == null) {
+            return;
+        }
+
+        String mode = body.getStr("mode", "");
+        if ("urlencoded".equals(mode)) {
+            req.setBodyType(BODY_TYPE_FORM_URLENCODED);
+            JSONArray parameters = body.getJSONArray(KEY_PARAMETER);
+            if (parameters != null) {
+                List<HttpFormUrlencoded> urlencodedList = new ArrayList<>();
+                for (Object paramObj : parameters) {
+                    JSONObject param = (JSONObject) paramObj;
+                    boolean enabled = param.getInt(KEY_IS_CHECKED, 1) == 1;
+                    urlencodedList.add(new HttpFormUrlencoded(enabled, param.getStr("key", ""), param.getStr(KEY_VALUE, "")));
+                }
+                req.setUrlencodedList(urlencodedList);
+            }
+            return;
+        }
+
+        if ("formdata".equals(mode)) {
+            req.setBodyType(BODY_TYPE_FORM_DATA);
+            JSONArray parameters = body.getJSONArray(KEY_PARAMETER);
+            if (parameters != null) {
+                List<HttpFormData> formDataList = new ArrayList<>();
+                for (Object paramObj : parameters) {
+                    JSONObject param = (JSONObject) paramObj;
+                    boolean enabled = param.getInt(KEY_IS_CHECKED, 1) == 1;
+                    String fieldType = param.getStr("field_type", "string");
+                    String key = param.getStr("key", "");
+                    if ("file".equals(fieldType) || param.containsKey("file_name")) {
+                        formDataList.add(new HttpFormData(enabled, key, HttpFormData.TYPE_FILE, param.getStr("file_name", "")));
+                    } else {
+                        formDataList.add(new HttpFormData(enabled, key, HttpFormData.TYPE_TEXT, param.getStr(KEY_VALUE, "")));
+                    }
+                }
+                req.setFormDataList(formDataList);
+            }
+            return;
+        }
+
+        if ("raw".equals(mode)) {
+            req.setBodyType(BODY_TYPE_RAW);
+            req.setBody(body.getStr("raw", ""));
+            return;
+        }
+
+        if ("binary".equals(mode)) {
+            req.setBodyType(BODY_TYPE_RAW);
+            req.setBody("");
         }
     }
 
-    /**
-     * 安全解析整数状态码
-     */
+    private static void parseApiPostScripts(JSONObject request, HttpRequestItem req) {
+        String preScript = extractTaskScripts(request.get("pre_tasks"));
+        if (!preScript.isBlank()) {
+            req.setPrescript(preScript);
+        }
+
+        String postScript = extractTaskScripts(request.get("post_tasks"));
+        if (!postScript.isBlank()) {
+            req.setPostscript(postScript);
+        }
+    }
+
+    private static String extractTaskScripts(Object tasksObject) {
+        List<String> scripts = new ArrayList<>();
+        collectTaskScripts(tasksObject, scripts);
+        return String.join("\n", scripts).trim();
+    }
+
+    private static void collectTaskScripts(Object node, List<String> scripts) {
+        if (node == null) {
+            return;
+        }
+        if (node instanceof String text) {
+            if (!text.isBlank()) {
+                scripts.add(text.trim());
+            }
+            return;
+        }
+        if (node instanceof JSONArray array) {
+            for (Object item : array) {
+                collectTaskScripts(item, scripts);
+            }
+            return;
+        }
+        if (node instanceof JSONObject object) {
+            for (String key : new String[]{"script", "code", "content", "value", "raw"}) {
+                String text = object.getStr(key, "");
+                if (!text.isBlank()) {
+                    scripts.add(text.trim());
+                    return;
+                }
+            }
+            for (String key : object.keySet()) {
+                collectTaskScripts(object.get(key), scripts);
+            }
+        }
+    }
+
+    private static void parseApiPostEnvironments(JSONObject global, CollectionParseResult result, String projectName) {
+        if (global == null) {
+            return;
+        }
+
+        JSONArray envs = global.getJSONArray("envs");
+        if (envs == null || envs.isEmpty()) {
+            return;
+        }
+
+        for (int i = 0; i < envs.size(); i++) {
+            JSONObject envObj = envs.getJSONObject(i);
+            if (envObj == null) {
+                continue;
+            }
+
+            String envName = envObj.getStr("name", "").isBlank()
+                    ? projectName + " - Env " + (i + 1)
+                    : envObj.getStr("name");
+            Environment env = new Environment(envName);
+            env.setId(UUID.randomUUID().toString());
+
+            JSONArray serverList = envObj.getJSONArray("server_list");
+            if (serverList != null) {
+                for (Object serverObj : serverList) {
+                    if (serverObj instanceof JSONObject server) {
+                        String uri = server.getStr("uri", "");
+                        if (!uri.isBlank()) {
+                            env.set("baseUrl", uri);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            Object envVarList = envObj.get("env_var_list");
+            if (envVarList instanceof JSONObject envMap) {
+                for (String key : envMap.keySet()) {
+                    Object rawValue = envMap.get(key);
+                    env.set(key, rawValue == null ? "" : String.valueOf(rawValue));
+                }
+            } else if (envVarList instanceof JSONArray envArray) {
+                for (Object variableObj : envArray) {
+                    if (variableObj instanceof JSONObject variable) {
+                        String key = variable.getStr("key", "");
+                        if (!key.isBlank()) {
+                            env.set(key, variable.getStr("value", ""));
+                        }
+                    }
+                }
+            }
+
+            if (!env.getVariableList().isEmpty()) {
+                result.addEnvironment(env);
+            }
+        }
+    }
+
     private static int parseStatusCode(String codeStr) {
         try {
             return Integer.parseInt(codeStr);
@@ -359,9 +437,6 @@ public class ApiPostCollectionParser {
         }
     }
 
-    /**
-     * 解析 Apipost 的单个响应示例
-     */
     private static SavedResponse parseApiPostResponse(JSONObject exampleJson, HttpRequestItem request) {
         try {
             SavedResponse savedResponse = new SavedResponse();
@@ -370,8 +445,7 @@ public class ApiPostCollectionParser {
             JSONObject expect = exampleJson.getJSONObject("expect");
             if (expect != null) {
                 savedResponse.setName(expect.getStr("name", "Response"));
-                String codeStr = expect.getStr("code", "200");
-                savedResponse.setCode(parseStatusCode(codeStr));
+                savedResponse.setCode(parseStatusCode(expect.getStr("code", "200")));
                 savedResponse.setStatus("OK");
                 savedResponse.setPreviewLanguage(expect.getStr("content_type", "json"));
             } else {
@@ -383,7 +457,6 @@ public class ApiPostCollectionParser {
 
             savedResponse.setTimestamp(System.currentTimeMillis());
 
-            // 解析响应头
             JSONArray headers = exampleJson.getJSONArray("headers");
             if (headers != null && !headers.isEmpty()) {
                 List<HttpHeader> headersList = new ArrayList<>();
@@ -394,10 +467,8 @@ public class ApiPostCollectionParser {
                 savedResponse.setHeaders(headersList);
             }
 
-            // 解析响应体
             savedResponse.setBody(exampleJson.getStr("raw", ""));
 
-            // 保存原始请求信息
             SavedResponse.OriginalRequest origReq = new SavedResponse.OriginalRequest();
             origReq.setMethod(request.getMethod());
             origReq.setUrl(request.getUrl());
@@ -408,7 +479,6 @@ public class ApiPostCollectionParser {
             origReq.setFormDataList(request.getFormDataList() != null ? new ArrayList<>(request.getFormDataList()) : new ArrayList<>());
             origReq.setUrlencodedList(request.getUrlencodedList() != null ? new ArrayList<>(request.getUrlencodedList()) : new ArrayList<>());
             savedResponse.setOriginalRequest(origReq);
-
             return savedResponse;
         } catch (Exception e) {
             log.error("解析Apipost响应失败", e);

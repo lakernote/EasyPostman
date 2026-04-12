@@ -910,4 +910,55 @@ public class IntelliJHttpParserTest {
         assertEquals(result.getChildren().size(), 2);
     }
 
+    @Test(description = "测试解析 JetBrains 官方 # @name、pre-request 和内联 response handler")
+    public void testParseJetBrainsOfficialScriptSyntax() {
+        String content = """
+                # @name CreatePet
+                < {% request.variables.set("petName", "Bella") %}
+                POST https://example.org/pets/{{petName}} HTTP/2 > {% client.global.set("createdPet", response.body.id); %}
+                Content-Type: application/json
+                
+                {
+                  "name": "{{petName}}"
+                }
+                """;
+
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "pets.http");
+        assertNotNull(result);
+        assertEquals(result.getChildren().size(), 1);
+
+        HttpRequestItem request = getRequestFromResult(result, 0);
+        assertEquals(request.getName(), "CreatePet");
+        assertEquals(request.getHttpVersion(), HttpRequestItem.HTTP_VERSION_HTTP_2);
+        assertEquals(request.getPrescript(), "pm.variables.set(\"petName\", \"Bella\")");
+        assertTrue(request.getPostscript().contains("pm.environment.set(\"createdPet\""));
+        assertTrue(request.getPostscript().contains("pm.response.json().id"));
+        assertTrue(request.getUrl().contains("{{petName}}"));
+    }
+
+    @Test(description = "测试解析多行 pre-request 脚本")
+    public void testParseMultilinePreRequestScript() {
+        String content = """
+                # @name Login
+                < {%
+                request.variables.set("user", "demo");
+                client.global.set("token", "abc");
+                %}
+                POST https://example.org/login HTTP/1.1
+                Content-Type: application/json
+                
+                {
+                  "user": "{{user}}"
+                }
+                """;
+
+        CollectionParseResult result = IntelliJHttpParser.parseHttpFile(content, "login.http");
+        assertNotNull(result);
+
+        HttpRequestItem request = getRequestFromResult(result, 0);
+        assertEquals(request.getHttpVersion(), HttpRequestItem.HTTP_VERSION_HTTP_1_1);
+        assertTrue(request.getPrescript().contains("pm.variables.set(\"user\", \"demo\")"));
+        assertTrue(request.getPrescript().contains("pm.environment.set(\"token\", \"abc\")"));
+    }
+
 }

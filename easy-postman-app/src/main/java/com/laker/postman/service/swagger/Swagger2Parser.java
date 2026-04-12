@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.*;
 
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.*;
+import static com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel.*;
 
 /**
  * Swagger 2.0 格式解析器
@@ -20,55 +21,35 @@ import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel
 @UtilityClass
 class Swagger2Parser {
 
-    /**
-     * 解析 Swagger 2.0 格式
-     *
-     * @param swaggerRoot Swagger 2.0 JSON 对象
-     * @return 解析结果
-     */
     static CollectionParseResult parse(JSONObject swaggerRoot) {
-        // 获取基本信息
         JSONObject info = swaggerRoot.getJSONObject("info");
         String title = info != null ? info.getStr("title", "Swagger API") : "Swagger API";
         String version = info != null ? info.getStr("version", "") : "";
         String collectionName = version.isEmpty() ? title : title + " (" + version + ")";
 
-        // 创建根分组
         RequestGroup collectionGroup = new RequestGroup(collectionName);
         CollectionParseResult result = new CollectionParseResult(collectionGroup);
 
-        // 解析 host/basePath 并创建环境变量
         parseSchemesToEnvironments(swaggerRoot, result, title);
+        parseExtensionEnvironments(swaggerRoot, result, title);
 
-        // 获取基础URL，如果定义了 host，使用变量引用
         String baseUrl = buildBaseUrl(swaggerRoot);
         String host = swaggerRoot.getStr("host", "");
-
-        // 如果定义了 host，使用 {{baseUrl}} 变量引用
         if (!host.isEmpty()) {
             baseUrl = "{{baseUrl}}";
             log.debug("检测到 host 配置，请求URL将使用 {{{{baseUrl}}}} 变量");
         }
 
-
-        // 解析全局安全配置
         JSONObject securityDefsMap = swaggerRoot.getJSONObject("securityDefinitions");
-
-        // 解析 paths
         JSONObject paths = swaggerRoot.getJSONObject("paths");
         if (paths == null || paths.isEmpty()) {
             log.warn("Swagger 2.0 文件中没有定义任何路径");
             return result;
         }
 
-        // 按 tag 组织请求
         Map<String, CollectionNode> tagNodes = new HashMap<>();
-
-        // 遍历所有路径
         for (String path : paths.keySet()) {
             JSONObject pathItem = paths.getJSONObject(path);
-
-            // 遍历该路径下的所有 HTTP 方法
             for (String method : pathItem.keySet()) {
                 if (SwaggerCommonUtil.isNotHttpMethod(method)) {
                     continue;
@@ -76,33 +57,27 @@ class Swagger2Parser {
 
                 JSONObject operation = pathItem.getJSONObject(method);
                 HttpRequestItem requestItem = parseOperation(
+                        swaggerRoot,
                         method.toUpperCase(),
                         path,
+                        pathItem,
                         operation,
                         baseUrl,
                         securityDefsMap
                 );
-
-                if (requestItem != null) {
-                    // 获取 tags，用于分组
-                    String tag = getTag(operation);
-
-                    // 创建或获取 tag 节点
-                    CollectionNode tagNode = getOrCreateTagNode(tagNodes, tag);
-                    tagNode.addChild(new CollectionNode(NodeType.REQUEST, requestItem));
+                if (requestItem == null) {
+                    continue;
                 }
+
+                CollectionNode tagNode = getOrCreateTagNode(tagNodes, getTag(operation));
+                tagNode.addChild(new CollectionNode(NodeType.REQUEST, requestItem));
             }
         }
 
-        // 添加所有 tag 节点到结果
         tagNodes.values().forEach(result::addChild);
-
         return result;
     }
 
-    /**
-     * 构建 Swagger 2.0 的基础 URL
-     */
     private static String buildBaseUrl(JSONObject swaggerRoot) {
         String scheme = "http";
         JSONArray schemes = swaggerRoot.getJSONArray("schemes");
@@ -112,7 +87,6 @@ class Swagger2Parser {
 
         String host = swaggerRoot.getStr("host", "");
         String basePath = swaggerRoot.getStr("basePath", "");
-
         if (host.isEmpty()) {
             return "";
         }
@@ -125,34 +99,23 @@ class Swagger2Parser {
             }
             baseUrl.append(basePath);
         }
-
         return baseUrl.toString();
     }
 
-    /**
-     * 获取 tag 名称
-     */
     private static String getTag(JSONObject operation) {
         JSONArray tags = operation.getJSONArray("tags");
         return (tags != null && !tags.isEmpty()) ? tags.getStr(0) : "Default";
     }
 
-    /**
-     * 获取或创建 tag 节点
-     */
     private static CollectionNode getOrCreateTagNode(Map<String, CollectionNode> tagNodes, String tag) {
-        return tagNodes.computeIfAbsent(tag, k -> {
-            RequestGroup group = new RequestGroup(k);
-            return new CollectionNode(NodeType.GROUP, group);
-        });
+        return tagNodes.computeIfAbsent(tag, key -> new CollectionNode(NodeType.GROUP, new RequestGroup(key)));
     }
 
-    /**
-     * 解析 Swagger 2.0 的单个操作
-     */
     private static HttpRequestItem parseOperation(
+            JSONObject swaggerRoot,
             String method,
             String path,
+            JSONObject pathItem,
             JSONObject operation,
             String baseUrl,
             JSONObject securityDefinitions) {
@@ -161,51 +124,46 @@ class Swagger2Parser {
         req.setId(UUID.randomUUID().toString());
         req.setMethod(method);
 
-        // 设置请求名称和描述
         String summary = operation.getStr("summary", "");
         String operationId = operation.getStr("operationId", "");
-        String requestName = summary;
-        if (requestName.isEmpty()) {
-            requestName = operationId.isEmpty() ? method + " " + path : operationId;
-        }
-        req.setName(requestName);
+        req.setName(summary.isEmpty() ? (operationId.isEmpty() ? method + " " + path : operationId) : summary);
+        req.setDescription(operation.getStr("description", ""));
+        req.setUrl(baseUrl.isEmpty() ? path : baseUrl + path);
 
-        // 设置 URL
-        String fullUrl = baseUrl.isEmpty() ? path : baseUrl + path;
-        req.setUrl(fullUrl);
-
-        // 解析参数
-        parseParameters(operation, req);
-
-        // 解析请求体
-        parseRequestBody(operation, req);
-
-        // 解析安全配置
-        parseSecurity(operation, req, securityDefinitions);
-
+        parseParameters(swaggerRoot, pathItem, operation, req);
+        parseRequestBody(swaggerRoot, pathItem, operation, req);
+        parseScripts(operation, req);
+        parseSecurity(swaggerRoot, operation, req, securityDefinitions);
         return req;
     }
 
-    /**
-     * 解析 Swagger 2.0 的参数
-     */
-    private static void parseParameters(JSONObject operation, HttpRequestItem req) {
-        JSONArray parameters = operation.getJSONArray("parameters");
-        if (parameters == null || parameters.isEmpty()) {
+    private static void parseParameters(JSONObject swaggerRoot, JSONObject pathItem, JSONObject operation, HttpRequestItem req) {
+        List<JSONObject> parameters = SwaggerCommonUtil.mergeParameters(swaggerRoot, pathItem, operation);
+        if (parameters.isEmpty()) {
             return;
         }
 
         List<HttpParam> queryParams = new ArrayList<>();
-        List<HttpHeader> headers = new ArrayList<>();
+        List<HttpHeader> headers = req.getHeadersList() == null ? new ArrayList<>() : new ArrayList<>(req.getHeadersList());
         List<HttpFormData> formData = new ArrayList<>();
         List<HttpFormUrlencoded> urlencoded = new ArrayList<>();
 
-        for (Object paramObj : parameters) {
-            JSONObject param = (JSONObject) paramObj;
+        for (JSONObject param : parameters) {
+            if (param == null) {
+                continue;
+            }
+
             String in = param.getStr("in", "");
             String name = param.getStr("name", "");
+            if (name.isBlank()) {
+                continue;
+            }
+
             Object defaultValue = param.get("default");
-            String value = defaultValue != null ? defaultValue.toString() : "";
+            if (defaultValue == null) {
+                defaultValue = param.get("x-example");
+            }
+            String value = defaultValue == null ? "" : String.valueOf(defaultValue);
 
             switch (in) {
                 case "query":
@@ -215,18 +173,15 @@ class Swagger2Parser {
                     headers.add(new HttpHeader(true, name, value));
                     break;
                 case "formData":
-                    String type = param.getStr("type", "");
-                    if ("file".equals(type)) {
-                        formData.add(new HttpFormData(true, name, HttpFormData.TYPE_FILE, ""));
+                    if ("file".equalsIgnoreCase(param.getStr("type", ""))) {
+                        formData.add(new HttpFormData(true, name, HttpFormData.TYPE_FILE, value));
                     } else {
                         urlencoded.add(new HttpFormUrlencoded(true, name, value));
                     }
                     break;
                 case "path":
-                    // Path 参数直接在 URL 中，不需要额外处理
-                    break;
                 case "body":
-                    // body 参数在 parseRequestBody 中处理
+                default:
                     break;
             }
         }
@@ -238,55 +193,71 @@ class Swagger2Parser {
             req.setHeadersList(headers);
         }
         if (!formData.isEmpty()) {
+            req.setBodyType(BODY_TYPE_FORM_DATA);
             req.setFormDataList(formData);
         }
         if (!urlencoded.isEmpty()) {
+            req.setBodyType(BODY_TYPE_FORM_URLENCODED);
             req.setUrlencodedList(urlencoded);
         }
     }
 
-    /**
-     * 解析 Swagger 2.0 的请求体
-     */
-    private static void parseRequestBody(JSONObject operation, HttpRequestItem req) {
-        JSONArray parameters = operation.getJSONArray("parameters");
-        if (parameters == null) {
+    private static void parseRequestBody(JSONObject swaggerRoot, JSONObject pathItem, JSONObject operation, HttpRequestItem req) {
+        List<JSONObject> parameters = SwaggerCommonUtil.mergeParameters(swaggerRoot, pathItem, operation);
+        if (parameters.isEmpty()) {
             return;
         }
 
-        for (Object paramObj : parameters) {
-            JSONObject param = (JSONObject) paramObj;
-            if ("body".equals(param.getStr("in"))) {
-                JSONObject schema = param.getJSONObject("schema");
-                if (schema != null) {
-                    // 生成示例 JSON
-                    String exampleBody = SwaggerCommonUtil.generateExampleFromSchema(schema);
-                    req.setBody(exampleBody);
-
-                    // 添加 Content-Type header
-                    List<HttpHeader> headers = req.getHeadersList();
-                    if (headers == null) {
-                        headers = new ArrayList<>();
-                    }
-                    headers.add(new HttpHeader(true, "Content-Type", "application/json"));
-                    req.setHeadersList(headers);
-                }
-                break;
+        for (JSONObject param : parameters) {
+            if (!"body".equals(param.getStr("in"))) {
+                continue;
             }
+
+            JSONObject schema = SwaggerCommonUtil.resolveRefObject(swaggerRoot, param.getJSONObject("schema"));
+            if (schema == null) {
+                return;
+            }
+
+            req.setBodyType(BODY_TYPE_RAW);
+            req.setBody(SwaggerCommonUtil.generateExampleFromSchema(swaggerRoot, schema));
+            List<HttpHeader> headers = req.getHeadersList() == null ? new ArrayList<>() : req.getHeadersList();
+            String contentType = resolveConsumesContentType(swaggerRoot, operation);
+            SwaggerCommonUtil.upsertHeader(headers, "Content-Type", contentType);
+            req.setHeadersList(headers);
+            return;
         }
     }
 
-    /**
-     * 解析 Swagger 2.0 的安全配置
-     */
-    private static void parseSecurity(JSONObject operation, HttpRequestItem req, JSONObject securityDefinitions) {
+    private static String resolveConsumesContentType(JSONObject swaggerRoot, JSONObject operation) {
+        JSONArray consumes = operation.getJSONArray("consumes");
+        if (consumes == null || consumes.isEmpty()) {
+            consumes = swaggerRoot.getJSONArray("consumes");
+        }
+        if (consumes != null && !consumes.isEmpty()) {
+            return consumes.getStr(0);
+        }
+        return "application/json";
+    }
+
+    private static void parseScripts(JSONObject operation, HttpRequestItem req) {
+        String prescript = SwaggerCommonUtil.extractExtensionScript(operation, true);
+        if (!prescript.isBlank()) {
+            req.setPrescript(prescript);
+        }
+
+        String postscript = SwaggerCommonUtil.extractExtensionScript(operation, false);
+        if (!postscript.isBlank()) {
+            req.setPostscript(postscript);
+        }
+    }
+
+    private static void parseSecurity(JSONObject swaggerRoot, JSONObject operation, HttpRequestItem req, JSONObject securityDefinitions) {
         JSONArray security = operation.getJSONArray("security");
         if (security == null || security.isEmpty() || securityDefinitions == null) {
             req.setAuthType(AUTH_TYPE_NONE);
             return;
         }
 
-        // 获取第一个安全定义
         JSONObject firstSecurity = security.getJSONObject(0);
         if (firstSecurity == null || firstSecurity.isEmpty()) {
             req.setAuthType(AUTH_TYPE_NONE);
@@ -294,7 +265,7 @@ class Swagger2Parser {
         }
 
         String securityName = firstSecurity.keySet().iterator().next();
-        JSONObject securityDef = securityDefinitions.getJSONObject(securityName);
+        JSONObject securityDef = SwaggerCommonUtil.resolveRefObject(swaggerRoot, securityDefinitions.getJSONObject(securityName));
         if (securityDef == null) {
             req.setAuthType(AUTH_TYPE_NONE);
             return;
@@ -316,11 +287,8 @@ class Swagger2Parser {
                         req.setAuthType(AUTH_TYPE_BEARER);
                         req.setAuthToken("");
                     } else {
-                        List<HttpHeader> headers = req.getHeadersList();
-                        if (headers == null) {
-                            headers = new ArrayList<>();
-                        }
-                        headers.add(new HttpHeader(true, name, ""));
+                        List<HttpHeader> headers = req.getHeadersList() == null ? new ArrayList<>() : req.getHeadersList();
+                        SwaggerCommonUtil.upsertHeader(headers, name, "");
                         req.setHeadersList(headers);
                     }
                 }
@@ -330,12 +298,13 @@ class Swagger2Parser {
                 req.setAuthType(AUTH_TYPE_BEARER);
                 req.setAuthToken("");
                 break;
+
+            default:
+                req.setAuthType(AUTH_TYPE_NONE);
+                break;
         }
     }
 
-    /**
-     * 解析 Swagger 2.0 的 host/basePath/schemes 并创建环境变量
-     */
     private static void parseSchemesToEnvironments(JSONObject swaggerRoot, CollectionParseResult result, String apiTitle) {
         String host = swaggerRoot.getStr("host", "");
         if (host.isEmpty()) {
@@ -345,19 +314,14 @@ class Swagger2Parser {
 
         String basePath = swaggerRoot.getStr("basePath", "");
         JSONArray schemes = swaggerRoot.getJSONArray("schemes");
-
-        // 如果没有定义 schemes，默认使用 http
         if (schemes == null || schemes.isEmpty()) {
             schemes = new JSONArray();
             schemes.add("http");
         }
 
         log.info("解析到 {} 个协议方案，将创建对应的环境变量", schemes.size());
-
         for (int i = 0; i < schemes.size(); i++) {
             String scheme = schemes.getStr(i);
-
-            // 构建完整 URL
             StringBuilder urlBuilder = new StringBuilder(scheme);
             urlBuilder.append("://").append(host);
             if (!basePath.isEmpty() && !"/".equals(basePath)) {
@@ -366,18 +330,55 @@ class Swagger2Parser {
                 }
                 urlBuilder.append(basePath);
             }
-            String fullUrl = urlBuilder.toString();
 
-            // 创建环境名称
-            String envName = apiTitle + " - " + scheme.toUpperCase();
-
-            // 创建环境
-            Environment env = new Environment(envName);
+            Environment env = new Environment(apiTitle + " - " + scheme.toUpperCase());
             env.setId(UUID.randomUUID().toString());
-            env.addVariable("baseUrl", fullUrl);
-
+            env.addVariable("baseUrl", urlBuilder.toString());
             result.addEnvironment(env);
-            log.debug("创建环境: {} -> {}", envName, fullUrl);
+        }
+    }
+
+    private static void parseExtensionEnvironments(JSONObject swaggerRoot, CollectionParseResult result, String apiTitle) {
+        for (String key : swaggerRoot.keySet()) {
+            if (!key.toLowerCase().startsWith("x-")) {
+                continue;
+            }
+            JSONObject extension = swaggerRoot.getJSONObject(key);
+            if (extension == null) {
+                continue;
+            }
+            JSONArray envs = extension.getJSONArray("envs");
+            if (envs == null || envs.isEmpty()) {
+                envs = extension.getJSONArray("environments");
+            }
+            if (envs == null || envs.isEmpty()) {
+                continue;
+            }
+
+            for (int i = 0; i < envs.size(); i++) {
+                JSONObject envObj = envs.getJSONObject(i);
+                if (envObj == null) {
+                    continue;
+                }
+
+                Environment env = new Environment(SwaggerCommonUtil.firstNonBlank(
+                        envObj.getStr("name", ""),
+                        envObj.getStr("title", ""),
+                        apiTitle + " - Env " + (i + 1)
+                ));
+                env.setId(UUID.randomUUID().toString());
+
+                List<String> urls = SwaggerCommonUtil.extractServerUrlsFromExtensionEnv(envObj);
+                if (!urls.isEmpty()) {
+                    env.set("baseUrl", urls.get(0));
+                }
+                SwaggerCommonUtil.addVariablesFromUnknownStructure(env, envObj.get("variables"));
+                SwaggerCommonUtil.addVariablesFromUnknownStructure(env, envObj.get("env_var_list"));
+
+                if (!env.getVariableList().isEmpty()) {
+                    result.addEnvironment(env);
+                }
+            }
         }
     }
 }

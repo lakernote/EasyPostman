@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BEARER;
+import static com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel.BODY_TYPE_RAW;
 import static org.testng.Assert.*;
 
 
@@ -413,5 +414,335 @@ public class SwaggerParserTest {
         // 验证 URL 格式为 {{baseUrl}}/users
         assertEquals(requestItem.getUrl(), "{{baseUrl}}/users");
         System.out.println("✅ URL 使用变量引用: " + requestItem.getUrl());
+    }
+
+    @Test
+    void testParseOpenAPI3RefBodyAndScripts() {
+        String openapi3Json = """
+                {
+                  "openapi": "3.0.0",
+                  "info": {
+                    "title": "ApiPost Export",
+                    "version": "1.0.0"
+                  },
+                  "paths": {
+                    "/users": {
+                      "post": {
+                        "summary": "Create user",
+                        "x-apipost-pre-script": "pm.environment.set('token', '123');",
+                        "requestBody": {
+                          "content": {
+                            "application/json": {
+                              "schema": {
+                                "$ref": "#/components/schemas/CreateUserRequest"
+                              }
+                            }
+                          }
+                        },
+                        "responses": {
+                          "200": {
+                            "description": "ok"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "components": {
+                    "schemas": {
+                      "CreateUserRequest": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "example": "Alice"
+                          },
+                          "age": {
+                            "type": "integer",
+                            "example": 18
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+                """;
+
+        CollectionParseResult parseResult = SwaggerParser.parseSwagger(openapi3Json);
+        assertNotNull(parseResult);
+
+        DefaultMutableTreeNode collectionNode = TreeNodeBuilder.buildFromParseResult(parseResult);
+        DefaultMutableTreeNode groupNode = (DefaultMutableTreeNode) collectionNode.getChildAt(0);
+        DefaultMutableTreeNode requestNode = (DefaultMutableTreeNode) groupNode.getChildAt(0);
+        HttpRequestItem request = (HttpRequestItem) ((Object[]) requestNode.getUserObject())[1];
+
+        assertEquals(request.getBodyType(), BODY_TYPE_RAW);
+        assertTrue(request.getBody().contains("\"Alice\""));
+        assertTrue(request.getBody().contains("\"age\":18"));
+        assertEquals(request.getPrescript(), "pm.environment.set('token', '123');");
+        assertTrue(request.getHeadersList().stream().anyMatch(h -> "Content-Type".equalsIgnoreCase(h.getKey())
+                && "application/json".equals(h.getValue())));
+    }
+
+    @Test
+    void testParseSwagger2RefBodyAndScripts() {
+        String swagger2Json = """
+                {
+                  "swagger": "2.0",
+                  "info": {
+                    "title": "ApiPost Swagger",
+                    "version": "1.0.0"
+                  },
+                  "paths": {
+                    "/orders": {
+                      "post": {
+                        "summary": "Create order",
+                        "x-apipost-pre-script": "pm.environment.set('orderId', 'demo');",
+                        "consumes": ["application/json"],
+                        "parameters": [
+                          {
+                            "name": "body",
+                            "in": "body",
+                            "schema": {
+                              "$ref": "#/definitions/CreateOrderRequest"
+                            }
+                          }
+                        ],
+                        "responses": {
+                          "200": {
+                            "description": "ok"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "definitions": {
+                    "CreateOrderRequest": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "example": "O-1"
+                        },
+                        "amount": {
+                          "type": "number",
+                          "example": 10.5
+                        }
+                      }
+                    }
+                  }
+                }
+                """;
+
+        CollectionParseResult parseResult = SwaggerParser.parseSwagger(swagger2Json);
+        assertNotNull(parseResult);
+
+        DefaultMutableTreeNode collectionNode = TreeNodeBuilder.buildFromParseResult(parseResult);
+        DefaultMutableTreeNode groupNode = (DefaultMutableTreeNode) collectionNode.getChildAt(0);
+        DefaultMutableTreeNode requestNode = (DefaultMutableTreeNode) groupNode.getChildAt(0);
+        HttpRequestItem request = (HttpRequestItem) ((Object[]) requestNode.getUserObject())[1];
+
+        assertEquals(request.getBodyType(), BODY_TYPE_RAW);
+        assertTrue(request.getBody().contains("\"O-1\""));
+        assertTrue(request.getBody().contains("\"amount\":10.5"));
+        assertEquals(request.getPrescript(), "pm.environment.set('orderId', 'demo');");
+        assertTrue(request.getHeadersList().stream().anyMatch(h -> "Content-Type".equalsIgnoreCase(h.getKey())
+                && "application/json".equals(h.getValue())));
+    }
+
+    @Test
+    void testParseOpenAPI3ComposedRequestBody() {
+        String openapi3Json = """
+                {
+                  "openapi": "3.0.0",
+                  "info": {
+                    "title": "Composed API",
+                    "version": "1.0.0"
+                  },
+                  "paths": {
+                    "/pets": {
+                      "post": {
+                        "tags": ["Pets"],
+                        "summary": "Create pet",
+                        "requestBody": {
+                          "content": {
+                            "application/json": {
+                              "schema": {
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "name": {
+                                        "type": "string",
+                                        "example": "Bella"
+                                      },
+                                      "age": {
+                                        "type": "integer",
+                                        "example": 2
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        },
+                        "responses": {
+                          "200": {
+                            "description": "ok"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+                """;
+
+        CollectionParseResult parseResult = SwaggerParser.parseSwagger(openapi3Json);
+        assertNotNull(parseResult);
+
+        DefaultMutableTreeNode collectionNode = TreeNodeBuilder.buildFromParseResult(parseResult);
+        DefaultMutableTreeNode groupNode = (DefaultMutableTreeNode) collectionNode.getChildAt(0);
+        DefaultMutableTreeNode requestNode = (DefaultMutableTreeNode) groupNode.getChildAt(0);
+        HttpRequestItem request = (HttpRequestItem) ((Object[]) requestNode.getUserObject())[1];
+
+        assertEquals(request.getBodyType(), BODY_TYPE_RAW);
+        assertTrue(request.getBody().contains("\"name\":\"Bella\""));
+        assertTrue(request.getBody().contains("\"age\":2"));
+        assertFalse("\"string\"".equals(request.getBody()));
+    }
+
+    @Test
+    void testParseOpenAPI3SecuritySchemeRefAndParameterOverride() {
+        String openapi3Json = """
+                {
+                  "openapi": "3.0.0",
+                  "info": {
+                    "title": "Secure API",
+                    "version": "1.0.0"
+                  },
+                  "components": {
+                    "securitySchemes": {
+                      "BearerAuth": {
+                        "$ref": "#/components/securitySchemes/BearerBase"
+                      },
+                      "BearerBase": {
+                        "type": "http",
+                        "scheme": "bearer"
+                      }
+                    }
+                  },
+                  "paths": {
+                    "/secure": {
+                      "parameters": [
+                        {
+                          "name": "X-Trace-Id",
+                          "in": "header",
+                          "schema": {
+                            "type": "string",
+                            "default": "path-level"
+                          }
+                        }
+                      ],
+                      "get": {
+                        "tags": ["Secure"],
+                        "summary": "Get secure data",
+                        "parameters": [
+                          {
+                            "name": "X-Trace-Id",
+                            "in": "header",
+                            "schema": {
+                              "type": "string",
+                              "default": "operation-level"
+                            }
+                          }
+                        ],
+                        "security": [
+                          {
+                            "BearerAuth": []
+                          }
+                        ],
+                        "responses": {
+                          "200": {
+                            "description": "ok"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+                """;
+
+        CollectionParseResult parseResult = SwaggerParser.parseSwagger(openapi3Json);
+        assertNotNull(parseResult);
+
+        DefaultMutableTreeNode collectionNode = TreeNodeBuilder.buildFromParseResult(parseResult);
+        DefaultMutableTreeNode groupNode = (DefaultMutableTreeNode) collectionNode.getChildAt(0);
+        DefaultMutableTreeNode requestNode = (DefaultMutableTreeNode) groupNode.getChildAt(0);
+        HttpRequestItem request = (HttpRequestItem) ((Object[]) requestNode.getUserObject())[1];
+
+        assertEquals(request.getAuthType(), AUTH_TYPE_BEARER);
+        long traceHeaderCount = request.getHeadersList().stream()
+                .filter(h -> "X-Trace-Id".equalsIgnoreCase(h.getKey()))
+                .count();
+        assertEquals(traceHeaderCount, 1L);
+        assertEquals(
+                request.getHeadersList().stream()
+                        .filter(h -> "X-Trace-Id".equalsIgnoreCase(h.getKey()))
+                        .findFirst()
+                        .orElseThrow()
+                        .getValue(),
+                "operation-level"
+        );
+    }
+
+    @Test
+    void testParseSwagger2SecurityDefinitionRef() {
+        String swagger2Json = """
+                {
+                  "swagger": "2.0",
+                  "info": {
+                    "title": "Secure Swagger API",
+                    "version": "1.0.0"
+                  },
+                  "securityDefinitions": {
+                    "bearerAuth": {
+                      "$ref": "#/securityDefinitions/bearerBase"
+                    },
+                    "bearerBase": {
+                      "type": "apiKey",
+                      "name": "Authorization",
+                      "in": "header"
+                    }
+                  },
+                  "paths": {
+                    "/protected": {
+                      "get": {
+                        "tags": ["Secure"],
+                        "summary": "Protected endpoint",
+                        "security": [
+                          {
+                            "bearerAuth": []
+                          }
+                        ],
+                        "responses": {
+                          "200": {
+                            "description": "Success"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+                """;
+
+        CollectionParseResult parseResult = SwaggerParser.parseSwagger(swagger2Json);
+        assertNotNull(parseResult);
+
+        DefaultMutableTreeNode collectionNode = TreeNodeBuilder.buildFromParseResult(parseResult);
+        DefaultMutableTreeNode groupNode = (DefaultMutableTreeNode) collectionNode.getChildAt(0);
+        DefaultMutableTreeNode requestNode = (DefaultMutableTreeNode) groupNode.getChildAt(0);
+        HttpRequestItem request = (HttpRequestItem) ((Object[]) requestNode.getUserObject())[1];
+
+        assertEquals(request.getAuthType(), AUTH_TYPE_BEARER);
     }
 }

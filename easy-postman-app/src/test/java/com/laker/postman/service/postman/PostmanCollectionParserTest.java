@@ -3,7 +3,8 @@ package com.laker.postman.service.postman;
 import com.laker.postman.service.common.CollectionParseResult;
 import org.testng.annotations.Test;
 
-
+import static com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel.BODY_TYPE_FORM_DATA;
+import static com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel.BODY_TYPE_RAW;
 import static org.testng.Assert.*;
 
 /**
@@ -381,5 +382,141 @@ public class PostmanCollectionParserTest {
         assertNotNull(result);
         assertEquals(result.getGroup().getName(), "Postman");
     }
-}
 
+    @Test
+    public void testParsePostmanCollection_RequestStringAndFolderVariables() {
+        String json = """
+                {
+                  "info": {
+                    "name": "String Request Collection",
+                    "schema": "https://schema.getpostman.com/collection/v2.1.0/collection.json"
+                  },
+                  "item": [
+                    {
+                      "name": "Folder A",
+                      "variable": [
+                        {"key": "baseUrl", "value": "https://api.example.com"}
+                      ],
+                      "item": [
+                        {
+                          "name": "Ping",
+                          "request": "https://api.example.com/ping"
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """;
+
+        CollectionParseResult result = PostmanCollectionParser.parsePostmanCollection(json);
+        assertNotNull(result);
+        assertEquals(result.getChildren().size(), 1);
+
+        var folder = result.getChildren().get(0);
+        assertTrue(folder.isGroup());
+        assertEquals(folder.asGroup().getVariables().size(), 1);
+        assertEquals(folder.asGroup().getVariables().get(0).getKey(), "baseUrl");
+        assertEquals(folder.getChildren().get(0).asRequest().getUrl(), "https://api.example.com/ping");
+    }
+
+    @Test
+    public void testParsePostmanCollection_ScriptStringAndHeaderString() {
+        String json = """
+                {
+                  "info": {
+                    "name": "Header String Collection",
+                    "schema": "https://schema.getpostman.com/collection/v2.1.0/collection.json"
+                  },
+                  "item": [
+                    {
+                      "name": "Create User",
+                      "event": [
+                        {
+                          "listen": "prerequest",
+                          "script": {
+                            "exec": "console.log('single line');"
+                          }
+                        }
+                      ],
+                      "request": {
+                        "method": "POST",
+                        "header": "Content-Type: application/json\\nX-Trace: abc",
+                        "url": {
+                          "protocol": "https",
+                          "host": ["api", "example", "com"],
+                          "path": ["users"]
+                        },
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\\"name\\":\\"Alice\\"}"
+                        }
+                      }
+                    }
+                  ]
+                }
+                """;
+
+        CollectionParseResult result = PostmanCollectionParser.parsePostmanCollection(json);
+        assertNotNull(result);
+
+        var request = result.getChildren().get(0).asRequest();
+        assertEquals(request.getUrl(), "https://api.example.com/users");
+        assertEquals(request.getBodyType(), BODY_TYPE_RAW);
+        assertEquals(request.getPrescript(), "console.log('single line');\n");
+        assertTrue(request.getHeadersList().stream().anyMatch(h -> "Content-Type".equals(h.getKey())));
+        assertTrue(request.getHeadersList().stream().anyMatch(h -> "X-Trace".equals(h.getKey()) && "abc".equals(h.getValue())));
+    }
+
+    @Test
+    public void testParsePostmanCollection_FormDataFileArrayAndGraphql() {
+        String json = """
+                {
+                  "info": {
+                    "name": "Advanced Body Collection",
+                    "schema": "https://schema.getpostman.com/collection/v2.1.0/collection.json"
+                  },
+                  "item": [
+                    {
+                      "name": "Upload Avatar",
+                      "request": {
+                        "method": "POST",
+                        "url": "https://api.example.com/upload",
+                        "body": {
+                          "mode": "formdata",
+                          "formdata": [
+                            {"key": "avatar", "type": "file", "src": ["./avatar.png"]}
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "name": "GraphQL Query",
+                      "request": {
+                        "method": "POST",
+                        "url": "https://api.example.com/graphql",
+                        "body": {
+                          "mode": "graphql",
+                          "graphql": {
+                            "query": "query Ping { ping }",
+                            "variables": "{\\"id\\":1}"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+                """;
+
+        CollectionParseResult result = PostmanCollectionParser.parsePostmanCollection(json);
+        assertNotNull(result);
+        assertEquals(result.getChildren().size(), 2);
+
+        var upload = result.getChildren().get(0).asRequest();
+        assertEquals(upload.getBodyType(), BODY_TYPE_FORM_DATA);
+        assertEquals(upload.getFormDataList().get(0).getValue(), "./avatar.png");
+
+        var graphql = result.getChildren().get(1).asRequest();
+        assertEquals(graphql.getBodyType(), BODY_TYPE_RAW);
+        assertTrue(graphql.getBody().contains("query Ping"));
+    }
+}

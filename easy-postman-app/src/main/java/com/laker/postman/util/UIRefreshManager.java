@@ -1,6 +1,7 @@
 package com.laker.postman.util;
 
 import com.laker.postman.common.IRefreshable;
+import com.laker.postman.frame.MainFrame;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -42,6 +43,10 @@ public class UIRefreshManager {
                 if (window.isDisplayable()) {
                     // 更新组件树 UI，应用新的 Look and Feel
                     SwingUtilities.updateComponentTreeUI(window);
+
+                    if (window instanceof MainFrame mainFrame) {
+                        mainFrame.refreshWindowChrome();
+                    }
 
                     // 重新验证布局
                     window.validate();
@@ -140,4 +145,3 @@ public class UIRefreshManager {
     }
 
 }
-

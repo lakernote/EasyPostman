@@ -1,5 +1,6 @@
 package com.laker.postman.frame;
 
+import com.formdev.flatlaf.FlatClientProperties;
 import com.formdev.flatlaf.util.SystemInfo;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.animation.WindowSnapshotTransition;
@@ -85,6 +86,7 @@ public class MainFrame extends JFrame {
         setName(I18nUtil.getMessage(MessageKeys.APP_NAME));
         setTitle(I18nUtil.getMessage(MessageKeys.APP_NAME));
         setIconImage(Icons.LOGO.getImage());
+        applyWindowsWindowDecorations();
         applyWindowBackground();
 
         // macOS 标题栏扩展属性要在首次显示前设置，否则首次显示后再补设置容易出现抖动。
@@ -175,6 +177,44 @@ public class MainFrame extends JFrame {
             contentComponent.setOpaque(true);
             contentComponent.setBackground(background);
         }
+        applyWindowTitleBarBackground();
+    }
+
+    /**
+     * Windows 10/11 下启用 FlatLaf 原生窗口装饰，并将 JMenuBar 嵌入标题栏，
+     * 让菜单区和右侧标题栏区域由同一套标题栏背景统一绘制。
+     */
+    private void applyWindowsWindowDecorations() {
+        JRootPane rootPane = getRootPane();
+        if (!SystemInfo.isWindows_10_orLater || rootPane == null) {
+            return;
+        }
+
+        rootPane.putClientProperty(FlatClientProperties.USE_WINDOW_DECORATIONS, Boolean.TRUE);
+        rootPane.putClientProperty(FlatClientProperties.MENU_BAR_EMBEDDED, Boolean.TRUE);
+        rootPane.putClientProperty(FlatClientProperties.TITLE_BAR_SHOW_TITLE, Boolean.FALSE);
+    }
+
+    /**
+     * 在启用 FlatLaf Windows 标题栏装饰时，显式将标题栏背景对齐到菜单栏背景，
+     * 避免嵌入式菜单栏区域与标题栏剩余区域出现色差。
+     */
+    private void applyWindowTitleBarBackground() {
+        JRootPane rootPane = getRootPane();
+        if (rootPane == null) {
+            return;
+        }
+
+        Color titleBarBackground = UIManager.getColor("MenuBar.background");
+        Color titleBarForeground = UIManager.getColor("Menu.foreground");
+        rootPane.putClientProperty(FlatClientProperties.TITLE_BAR_BACKGROUND, titleBarBackground);
+        rootPane.putClientProperty(FlatClientProperties.TITLE_BAR_FOREGROUND, titleBarForeground);
+    }
+
+    public void refreshWindowChrome() {
+        applyWindowBackground();
+        applyMacWindowAppearance();
+        repaint();
     }
 
     private void applyMacWindowAppearance() {

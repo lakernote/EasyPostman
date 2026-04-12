@@ -1,10 +1,12 @@
 package com.laker.postman.common.component;
 
 import cn.hutool.core.text.CharSequenceUtil;
+import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.button.CSVButton;
 import com.laker.postman.common.component.button.CloseButton;
+import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.util.*;
@@ -14,7 +16,12 @@ import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
 import java.awt.*;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.util.*;
 import java.util.List;
@@ -24,6 +31,14 @@ import java.util.List;
  */
 @Slf4j
 public class CsvDataPanel extends JPanel {
+
+    private static final int CSV_TABLE_MIN_COLUMN_WIDTH = 140;
+    private static final int CSV_MANUAL_DIALOG_MIN_WIDTH = 620;
+    private static final int CSV_MANAGE_DIALOG_MIN_WIDTH = 820;
+    private static final int CSV_MANAGE_DIALOG_MIN_HEIGHT = 580;
+    private static final float CSV_STRIPE_ALPHA = 0.035f;
+    private static final int CSV_TOOLBAR_BUTTON_HEIGHT = 32;
+    private static final int CSV_FOOTER_BUTTON_HEIGHT = 34;
 
     public static final class CsvState {
         private final String sourceName;
@@ -260,45 +275,50 @@ public class CsvDataPanel extends JPanel {
     private void showManualCreateDialog() {
         JDialog dialog = new JDialog(SingletonFactory.getInstance(MainFrame.class),
                 I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_DIALOG_TITLE), true);
-        dialog.setSize(550, 220);
-        dialog.setLocationRelativeTo(SingletonFactory.getInstance(MainFrame.class));
         dialog.setLayout(new BorderLayout());
+        dialog.setResizable(false);
+
+        JPanel rootPanel = new JPanel(new BorderLayout());
+        rootPanel.setBorder(BorderFactory.createEmptyBorder(18, 22, 14, 22));
+        dialog.add(rootPanel, BorderLayout.CENTER);
 
         // 顶部说明面板
-        JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 10, 15));
+        JPanel topPanel = new JPanel(new BorderLayout(0, 8));
 
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_DIALOG_TITLE));
-        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +4));
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +2));
         topPanel.add(titleLabel, BorderLayout.NORTH);
 
-        JLabel descLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_DESCRIPTION));
-        descLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用标准字体大小
-        descLabel.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
+        JLabel descLabel = new JLabel("<html><body style='width:520px'>"
+                + I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_DESCRIPTION)
+                + "</body></html>");
+        descLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         topPanel.add(descLabel, BorderLayout.CENTER);
 
-        dialog.add(topPanel, BorderLayout.NORTH);
+        rootPanel.add(topPanel, BorderLayout.NORTH);
 
         // 中间内容面板
         JPanel contentPanel = new JPanel(new GridBagLayout());
-        contentPanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 15, 15));
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(12, 0, 12, 0));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.insets = new Insets(6, 8, 6, 8);
 
         // 列标题输入
         gbc.gridx = 0;
         gbc.gridy = 0;
-        gbc.weightx = 0.3;
+        gbc.anchor = GridBagConstraints.NORTHWEST;
+        gbc.weightx = 0;
         JLabel headersLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_COLUMN_HEADERS));
         headersLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         contentPanel.add(headersLabel, gbc);
 
         gbc.gridx = 1;
-        gbc.weightx = 0.7;
+        gbc.weightx = 1.0;
         JTextField headersField = new JTextField();
         headersField.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         headersField.setText("username,password,email");
+        headersField.setColumns(36);
         contentPanel.add(headersField, gbc);
 
         // 占位符提示
@@ -309,14 +329,13 @@ public class CsvDataPanel extends JPanel {
         placeholderLabel.setForeground(ModernColors.getTextHint());
         contentPanel.add(placeholderLabel, gbc);
 
-
-        dialog.add(contentPanel, BorderLayout.CENTER);
+        rootPanel.add(contentPanel, BorderLayout.CENTER);
 
         // 底部按钮面板
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        bottomPanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
+        bottomPanel.setBorder(BorderFactory.createEmptyBorder(4, 0, 0, 0));
 
-        JButton createBtn = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK));
+        JButton createBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK), true);
         createBtn.addActionListener(e -> {
             try {
                 // 默认创建1行数据
@@ -383,12 +402,18 @@ public class CsvDataPanel extends JPanel {
             }
         });
 
-        JButton cancelBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL));
+        JButton cancelBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL), false);
         cancelBtn.addActionListener(e -> dialog.dispose());
 
         bottomPanel.add(createBtn);
         bottomPanel.add(cancelBtn);
-        dialog.add(bottomPanel, BorderLayout.SOUTH);
+        rootPanel.add(bottomPanel, BorderLayout.SOUTH);
+
+        dialog.getRootPane().setDefaultButton(createBtn);
+        dialog.pack();
+        dialog.setSize(Math.max(dialog.getWidth(), CSV_MANUAL_DIALOG_MIN_WIDTH), dialog.getHeight());
+        dialog.setLocationRelativeTo(SingletonFactory.getInstance(MainFrame.class));
+        SwingUtilities.invokeLater(headersField::requestFocusInWindow);
 
         dialog.setVisible(true);
     }
@@ -419,6 +444,9 @@ public class CsvDataPanel extends JPanel {
         descArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         descArea.setEditable(false);
         descArea.setOpaque(false);
+        descArea.setFocusable(false);
+        descArea.setRequestFocusEnabled(false);
+        descArea.setCaretPosition(0);
         descArea.setLineWrap(true);
         descArea.setWrapStyleWord(true);
         JScrollPane descScroll = new JScrollPane(descArea,
@@ -462,26 +490,26 @@ public class CsvDataPanel extends JPanel {
         actionPanel.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.CSV_OPERATIONS)));
         actionPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JButton selectFileBtn = new JButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_SELECT_FILE));
+        JButton selectFileBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_SELECT_FILE), false);
         selectFileBtn.setIcon(IconUtil.createThemed("icons/file.svg", 16, 16));
         selectFileBtn.setHorizontalAlignment(SwingConstants.LEFT);
         selectFileBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
         selectFileBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
 
-        JButton createManualBtn = new JButton(I18nUtil.getMessage(MessageKeys.CSV_MENU_CREATE_MANUAL));
+        JButton createManualBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.CSV_MENU_CREATE_MANUAL), false);
         createManualBtn.setIcon(new FlatSVGIcon("icons/plus.svg", 16, 16));
         createManualBtn.setHorizontalAlignment(SwingConstants.LEFT);
         createManualBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
         createManualBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
 
-        JButton manageDataBtn = new JButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_MANAGE_DATA));
+        JButton manageDataBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_MANAGE_DATA), false);
         manageDataBtn.setIcon(IconUtil.createThemed("icons/code.svg", 16, 16));
         manageDataBtn.setHorizontalAlignment(SwingConstants.LEFT);
         manageDataBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
         manageDataBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
         manageDataBtn.setEnabled(csvData != null && !csvData.isEmpty());
 
-        JButton clearBtn = new JButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_CLEAR_DATA));
+        JButton clearBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_CLEAR_DATA), false);
         clearBtn.setIcon(IconUtil.createThemed("icons/clear.svg", 16, 16));
         clearBtn.setHorizontalAlignment(SwingConstants.LEFT);
         clearBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -529,7 +557,7 @@ public class CsvDataPanel extends JPanel {
         // ── SOUTH：关闭按钮（固定，始终可见）──
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 8));
         bottomPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.getDividerBorderColor()));
-        JButton closeBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLOSE));
+        JButton closeBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLOSE), false);
         closeBtn.addActionListener(e -> dialog.dispose());
         bottomPanel.add(closeBtn);
         dialog.add(bottomPanel, BorderLayout.SOUTH);
@@ -548,8 +576,9 @@ public class CsvDataPanel extends JPanel {
         }
 
         JDialog manageDialog = new JDialog((Frame) null, I18nUtil.getMessage(MessageKeys.CSV_DATA_MANAGEMENT), true);
-        manageDialog.setSize(700, 550);
-        manageDialog.setLocationRelativeTo(null);
+        manageDialog.setSize(860, 620);
+        manageDialog.setMinimumSize(new Dimension(CSV_MANAGE_DIALOG_MIN_WIDTH, CSV_MANAGE_DIALOG_MIN_HEIGHT));
+        manageDialog.setLocationRelativeTo(SingletonFactory.getInstance(MainFrame.class));
         manageDialog.setLayout(new BorderLayout());
 
         // 顶部信息面板
@@ -607,44 +636,7 @@ public class CsvDataPanel extends JPanel {
         };
 
         JTable csvTable = new JTable(editTableModel);
-        csvTable.setRowHeight(28); // 与 EasyTablePanel 一致的行高
-        csvTable.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用标准字体大小
-        csvTable.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD)); // 使用标准字体大小（粗体）
-        csvTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-
-        // 设置空值渲染器 - 优化后的主题适配版本
-        DefaultTableCellRenderer emptyCellRenderer = new DefaultTableCellRenderer() {
-            @Override
-            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-
-                // 检查单元格是否为空
-                boolean isEmpty = (value == null || value.toString().trim().isEmpty());
-
-                if (isEmpty) {
-                    // 空单元格：使用主题适配的空单元格背景色（有区分度）
-                    setBackground(isSelected ? table.getSelectionBackground() : ModernColors.getEmptyCellBackground());
-                } else {
-                    // 有值单元格：使用选中背景或表格背景
-                    setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
-                }
-
-                return c;
-            }
-        };
-
-        // 封装设置渲染器的方法
-        Runnable applyEmptyCellRenderer = () -> {
-            for (int i = 0; i < csvTable.getColumnCount(); i++) {
-                csvTable.getColumnModel().getColumn(i).setCellRenderer(emptyCellRenderer);
-            }
-        };
-
-        // 为所有列设置渲染器
-        applyEmptyCellRenderer.run();
-        for (int i = 0; i < headers.size(); i++) {
-            csvTable.getColumnModel().getColumn(i).setPreferredWidth(120);
-        }
+        configureCsvTable(csvTable);
 
         // 创建带样式的滚动面板
         JScrollPane scrollPane = new JScrollPane(csvTable);
@@ -652,32 +644,36 @@ public class CsvDataPanel extends JPanel {
         scrollPane.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(ModernColors.getBorderLightColor()), // 主题适配的边框色
                 BorderFactory.createEmptyBorder(8, 8, 8, 8))); // 参考 EasyTablePanel 的边框样式
+        installResponsiveTableLayout(csvTable, scrollPane);
 
         // 创建表格容器面板，应用背景色
         JPanel tablePanel = new JPanel(new BorderLayout());
-        tablePanel.setBorder(BorderFactory.createEmptyBorder(0, 5, 5, 5));
+        tablePanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 8, 10));
         tablePanel.add(scrollPane, BorderLayout.CENTER);
 
         manageDialog.add(tablePanel, BorderLayout.CENTER);
 
         // 底部面板
-        JPanel bottomPanel = new JPanel(new BorderLayout());
-        bottomPanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 5, 10));
+        JPanel bottomPanel = new JPanel(new BorderLayout(0, 10));
+        bottomPanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
 
         // 工具栏
-        JPanel toolPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel toolPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
 
-        JButton bulkEditBtn = new JButton(I18nUtil.getMessage(MessageKeys.CSV_BULK_EDIT));
+        JButton bulkEditBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.CSV_BULK_EDIT), false);
         bulkEditBtn.setIcon(IconUtil.createThemed("icons/edit.svg", 16, 16));
+        styleToolbarButton(bulkEditBtn);
         List<String> finalHeaders = headers;
-        bulkEditBtn.addActionListener(e -> showBulkEditDialog(manageDialog, editTableModel, csvTable, finalHeaders, applyEmptyCellRenderer));
+        bulkEditBtn.addActionListener(e -> showBulkEditDialog(manageDialog, editTableModel, csvTable, finalHeaders, () -> csvTable.repaint()));
 
-        JButton addRowBtn = new JButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_ADD_ROW));
+        JButton addRowBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_ADD_ROW), false);
         addRowBtn.setIcon(IconUtil.createThemed("icons/plus.svg", 16, 16));
+        styleToolbarButton(addRowBtn);
         addRowBtn.addActionListener(e -> editTableModel.addRow(new Object[finalHeaders.size()]));
 
-        JButton deleteRowBtn = new JButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_DELETE_ROW));
+        JButton deleteRowBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_DELETE_ROW), false);
         deleteRowBtn.setIcon(IconUtil.createThemed("icons/clear.svg", 16, 16));
+        styleToolbarButton(deleteRowBtn);
         deleteRowBtn.addActionListener(e -> {
             // 先停止单元格编辑，避免编辑状态下删除行导致问题
             if (csvTable.isEditing()) {
@@ -702,24 +698,23 @@ public class CsvDataPanel extends JPanel {
             }
         });
 
-        JButton addColumnBtn = new JButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_ADD_COLUMN));
+        JButton addColumnBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_ADD_COLUMN), false);
         addColumnBtn.setIcon(IconUtil.createThemed("icons/plus.svg", 16, 16));
+        styleToolbarButton(addColumnBtn);
         addColumnBtn.addActionListener(e -> {
             String columnName = JOptionPane.showInputDialog(manageDialog, I18nUtil.getMessage(MessageKeys.CSV_ENTER_COLUMN_NAME),
                     I18nUtil.getMessage(MessageKeys.CSV_ADD_COLUMN), JOptionPane.PLAIN_MESSAGE);
             if (columnName != null && !columnName.trim().isEmpty()) {
                 columnName = columnName.trim();
                 editTableModel.addColumn(columnName);
-                // 重新设置列宽
-                for (int i = 0; i < csvTable.getColumnCount(); i++) {
-                    csvTable.getColumnModel().getColumn(i).setPreferredWidth(120);
-                }
-                applyEmptyCellRenderer.run(); // 新增列后重新设置渲染器
+                csvTable.repaint();
+                refreshResponsiveTableLayout(csvTable, scrollPane);
             }
         });
 
-        JButton deleteColumnBtn = new JButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_DELETE_COLUMN));
+        JButton deleteColumnBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_DELETE_COLUMN), false);
         deleteColumnBtn.setIcon(IconUtil.createThemed("icons/clear.svg", 16, 16));
+        styleToolbarButton(deleteColumnBtn);
         deleteColumnBtn.addActionListener(e -> {
             // 先停止单元格编辑，避免编辑状态下删除列导致问题
             if (csvTable.isEditing()) {
@@ -779,11 +774,8 @@ public class CsvDataPanel extends JPanel {
                     editTableModel.setColumnIdentifiers(columnIdentifiers);
                 }
 
-                // 重新设置列宽
-                for (int i = 0; i < csvTable.getColumnCount(); i++) {
-                    csvTable.getColumnModel().getColumn(i).setPreferredWidth(120);
-                }
-                applyEmptyCellRenderer.run(); // 删除列后重新设置渲染器
+                csvTable.repaint();
+                refreshResponsiveTableLayout(csvTable, scrollPane);
             }
         });
 
@@ -803,14 +795,22 @@ public class CsvDataPanel extends JPanel {
         helpText.setOpaque(false);
         helpText.setLineWrap(true);
         helpText.setWrapStyleWord(true);
-        helpPanel.add(helpText, BorderLayout.CENTER);
+        JScrollPane helpScrollPane = new JScrollPane(helpText,
+                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        helpScrollPane.setBorder(BorderFactory.createEmptyBorder());
+        helpScrollPane.setOpaque(false);
+        helpScrollPane.getViewport().setOpaque(false);
+        helpScrollPane.setPreferredSize(new Dimension(0, 112));
+        helpPanel.add(helpScrollPane, BorderLayout.CENTER);
         bottomPanel.add(helpPanel, BorderLayout.CENTER);
 
         // 按钮面板
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 
-        JButton saveBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_SAVE));
+        JButton saveBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.BUTTON_SAVE), true);
         saveBtn.setIcon(IconUtil.createThemed("icons/save.svg", 16, 16));
+        styleFooterButton(saveBtn);
         saveBtn.addActionListener(e -> {
             try {
                 // 先停止单元格编辑，确保正在编辑的内容被保存
@@ -875,7 +875,8 @@ public class CsvDataPanel extends JPanel {
             }
         });
 
-        JButton cancelBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL));
+        JButton cancelBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL), false);
+        styleFooterButton(cancelBtn);
         cancelBtn.addActionListener(e -> manageDialog.dispose());
 
         buttonPanel.add(saveBtn);
@@ -1071,6 +1072,315 @@ public class CsvDataPanel extends JPanel {
             return "\"" + value.replace("\"", "\"\"") + "\"";
         }
         return value;
+    }
+
+    private void installResponsiveTableLayout(JTable table, JScrollPane scrollPane) {
+        refreshResponsiveTableLayout(table, scrollPane);
+        scrollPane.getViewport().addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                SwingUtilities.invokeLater(() -> refreshResponsiveTableLayout(table, scrollPane));
+            }
+        });
+    }
+
+    private void refreshResponsiveTableLayout(JTable table, JScrollPane scrollPane) {
+        int columnCount = table.getColumnCount();
+        if (columnCount <= 0) {
+            return;
+        }
+
+        int viewportWidth = scrollPane.getViewport().getExtentSize().width;
+        if (viewportWidth <= 0) {
+            viewportWidth = scrollPane.getViewport().getWidth();
+        }
+        if (viewportWidth <= 0) {
+            viewportWidth = scrollPane.getPreferredSize().width;
+        }
+
+        if (viewportWidth <= 0) {
+            table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+            for (int i = 0; i < columnCount; i++) {
+                table.getColumnModel().getColumn(i).setPreferredWidth(CSV_TABLE_MIN_COLUMN_WIDTH);
+            }
+            return;
+        }
+
+        int usableViewportWidth = Math.max(viewportWidth - 16, 0);
+        int minTotalWidth = CSV_TABLE_MIN_COLUMN_WIDTH * columnCount;
+
+        if (usableViewportWidth >= minTotalWidth) {
+            table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+            int calculatedWidth = usableViewportWidth / columnCount;
+            for (int i = 0; i < columnCount; i++) {
+                table.getColumnModel().getColumn(i).setPreferredWidth(calculatedWidth);
+            }
+        } else {
+            table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+            for (int i = 0; i < columnCount; i++) {
+                table.getColumnModel().getColumn(i).setPreferredWidth(CSV_TABLE_MIN_COLUMN_WIDTH);
+            }
+        }
+
+        table.revalidate();
+        table.repaint();
+    }
+
+    private void styleToolbarButton(JButton button) {
+        button.setPreferredSize(null);
+        button.setMinimumSize(new Dimension(0, CSV_TOOLBAR_BUTTON_HEIGHT));
+        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, CSV_TOOLBAR_BUTTON_HEIGHT));
+    }
+
+    private void styleFooterButton(JButton button) {
+        Dimension preferred = button.getPreferredSize();
+        int width = Math.max(112, preferred.width + 6);
+        button.setPreferredSize(new Dimension(width, CSV_FOOTER_BUTTON_HEIGHT));
+    }
+
+    private void configureCsvTable(JTable table) {
+        Color tableBackground = UIManager.getColor("Table.background");
+        if (tableBackground == null) {
+            tableBackground = Color.WHITE;
+        }
+        Color softSelection = blendColor(tableBackground, ModernColors.PRIMARY, ModernColors.isDarkTheme() ? 0.28f : 0.14f);
+
+        table.setRowHeight(30);
+        table.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        table.setForeground(ModernColors.getTextPrimary());
+        table.setBackground(tableBackground);
+        table.setSelectionBackground(softSelection);
+        table.setSelectionForeground(ModernColors.getTextPrimary());
+        table.setGridColor(ModernColors.getBorderLightColor());
+        table.setShowHorizontalLines(true);
+        table.setShowVerticalLines(true);
+        table.setIntercellSpacing(new Dimension(1, 1));
+        table.setRowMargin(0);
+        table.setOpaque(true);
+        table.setFillsViewportHeight(true);
+        table.setCellSelectionEnabled(true);
+        table.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        table.setSurrendersFocusOnKeystroke(true);
+        table.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
+        table.putClientProperty("JTable.autoStartsEdit", Boolean.TRUE);
+        table.putClientProperty("csv.hoveredRow", -1);
+
+        JTableHeader header = table.getTableHeader();
+        header.setFont(FontsUtil.getDefaultFont(Font.BOLD));
+        header.setReorderingAllowed(false);
+        header.setResizingAllowed(true);
+        header.setBackground(UIManager.getColor("TableHeader.background"));
+        header.setForeground(ModernColors.getTextPrimary());
+        header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getBorderLightColor()));
+        header.setPreferredSize(new Dimension(header.getPreferredSize().width, 34));
+
+        table.setDefaultRenderer(Object.class, new CsvTableCellRenderer());
+        table.setDefaultEditor(Object.class, createCsvCellEditor());
+        setupCsvTableKeyboardNavigation(table);
+
+        table.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                int row = table.rowAtPoint(e.getPoint());
+                Object oldValue = table.getClientProperty("csv.hoveredRow");
+                int oldRow = oldValue instanceof Integer ? (Integer) oldValue : -1;
+                if (row != oldRow) {
+                    table.putClientProperty("csv.hoveredRow", row);
+                    table.repaint();
+                }
+            }
+        });
+
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                if (!SwingUtilities.isLeftMouseButton(e)) {
+                    return;
+                }
+                int row = table.rowAtPoint(e.getPoint());
+                int col = table.columnAtPoint(e.getPoint());
+                if (row < 0 || col < 0 || !table.isCellEditable(row, col)) {
+                    return;
+                }
+                SwingUtilities.invokeLater(() -> {
+                    if (table.editCellAt(row, col)) {
+                        selectAllEditorText(table.getEditorComponent());
+                    }
+                });
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                table.putClientProperty("csv.hoveredRow", -1);
+                table.repaint();
+            }
+        });
+    }
+
+    private void setupCsvTableKeyboardNavigation(JTable table) {
+        InputMap inputMap = table.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+        ActionMap actionMap = table.getActionMap();
+
+        inputMap.put(KeyStroke.getKeyStroke("TAB"), "csv.nextCell");
+        inputMap.put(KeyStroke.getKeyStroke("shift TAB"), "csv.prevCell");
+        inputMap.put(KeyStroke.getKeyStroke("ENTER"), "csv.downCell");
+        inputMap.put(KeyStroke.getKeyStroke("shift ENTER"), "csv.upCell");
+
+        actionMap.put("csv.nextCell", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                navigateCsvTable(table, 0, 1);
+            }
+        });
+        actionMap.put("csv.prevCell", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                navigateCsvTable(table, 0, -1);
+            }
+        });
+        actionMap.put("csv.downCell", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                navigateCsvTable(table, 1, 0);
+            }
+        });
+        actionMap.put("csv.upCell", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                navigateCsvTable(table, -1, 0);
+            }
+        });
+    }
+
+    private void navigateCsvTable(JTable table, int rowDelta, int columnDelta) {
+        int row = table.getSelectedRow();
+        int column = table.getSelectedColumn();
+        if (row < 0 || column < 0) {
+            row = 0;
+            column = 0;
+        }
+
+        if (table.isEditing()) {
+            int editingRow = table.getEditingRow();
+            int editingColumn = table.getEditingColumn();
+            if (!table.getCellEditor().stopCellEditing()) {
+                return;
+            }
+            if (editingRow >= 0) {
+                row = editingRow;
+            }
+            if (editingColumn >= 0) {
+                column = editingColumn;
+            }
+        }
+
+        int targetRow = row + rowDelta;
+        int targetColumn = column + columnDelta;
+
+        if (columnDelta != 0) {
+            if (targetColumn >= table.getColumnCount()) {
+                targetColumn = 0;
+                targetRow = Math.min(row + 1, table.getRowCount() - 1);
+            } else if (targetColumn < 0) {
+                targetColumn = table.getColumnCount() - 1;
+                targetRow = Math.max(row - 1, 0);
+            }
+        }
+
+        targetRow = Math.max(0, Math.min(targetRow, table.getRowCount() - 1));
+        targetColumn = Math.max(0, Math.min(targetColumn, table.getColumnCount() - 1));
+
+        table.changeSelection(targetRow, targetColumn, false, false);
+        final int nextRow = targetRow;
+        final int nextColumn = targetColumn;
+        SwingUtilities.invokeLater(() -> {
+            if (table.editCellAt(nextRow, nextColumn)) {
+                selectAllEditorText(table.getEditorComponent());
+            } else {
+                table.requestFocusInWindow();
+            }
+        });
+    }
+
+    private DefaultCellEditor createCsvCellEditor() {
+        JTextField editorField = new JTextField();
+        editorField.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
+        editorField.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        editorField.setBackground(ModernColors.getInputBackgroundColor());
+        editorField.setForeground(ModernColors.getTextPrimary());
+        editorField.setCaretColor(ModernColors.PRIMARY);
+        editorField.setSelectionColor(blendColor(ModernColors.getInputBackgroundColor(), ModernColors.PRIMARY, 0.12f));
+        editorField.setSelectedTextColor(ModernColors.getTextPrimary());
+
+        return new DefaultCellEditor(editorField) {
+            @Override
+            public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+                Component component = super.getTableCellEditorComponent(table, value, isSelected, row, column);
+                if (component instanceof JTextField textField) {
+                    textField.setText(value == null ? "" : String.valueOf(value));
+                    textField.setBackground(ModernColors.getInputBackgroundColor());
+                    textField.setForeground(ModernColors.getTextPrimary());
+                    textField.setSelectionColor(blendColor(ModernColors.getInputBackgroundColor(), ModernColors.PRIMARY, 0.12f));
+                    textField.setSelectedTextColor(ModernColors.getTextPrimary());
+                    textField.setBorder(BorderFactory.createCompoundBorder(
+                            BorderFactory.createLineBorder(blendColor(ModernColors.getInputBackgroundColor(), ModernColors.PRIMARY, 0.35f)),
+                            BorderFactory.createEmptyBorder(0, 8, 0, 8)));
+                    SwingUtilities.invokeLater(textField::selectAll);
+                }
+                return component;
+            }
+        };
+    }
+
+    private void selectAllEditorText(Component editorComponent) {
+        if (editorComponent instanceof JTextField textField) {
+            textField.requestFocusInWindow();
+            textField.selectAll();
+        }
+    }
+
+    private static Color getStripeBackground(Color base) {
+        Color alternate = UIManager.getColor("Table.alternateRowColor");
+        if (alternate != null) {
+            return alternate;
+        }
+        return blendColor(base, FlatLaf.isLafDark() ? Color.WHITE : Color.BLACK, CSV_STRIPE_ALPHA);
+    }
+
+    private static Color blendColor(Color base, Color blend, float alpha) {
+        int r = Math.min(255, Math.max(0, Math.round(base.getRed() * (1 - alpha) + blend.getRed() * alpha)));
+        int g = Math.min(255, Math.max(0, Math.round(base.getGreen() * (1 - alpha) + blend.getGreen() * alpha)));
+        int b = Math.min(255, Math.max(0, Math.round(base.getBlue() * (1 - alpha) + blend.getBlue() * alpha)));
+        return new Color(r, g, b);
+    }
+
+    private static final class CsvTableCellRenderer extends DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+                                                       boolean hasFocus, int row, int column) {
+            super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
+            setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+
+            String text = value == null ? "" : String.valueOf(value);
+            boolean isEmpty = text.trim().isEmpty();
+            setText(text);
+
+            if (isSelected) {
+                setBackground(table.getSelectionBackground());
+                setForeground(table.getSelectionForeground());
+            } else {
+                Object hoveredValue = table.getClientProperty("csv.hoveredRow");
+                int hoveredRow = hoveredValue instanceof Integer ? (Integer) hoveredValue : -1;
+                Color base = row % 2 == 0 ? table.getBackground() : getStripeBackground(table.getBackground());
+                if (row == hoveredRow) {
+                    base = blendColor(base, table.getSelectionBackground(), 0.32f);
+                }
+                setBackground(isEmpty ? blendColor(base, ModernColors.getEmptyCellBackground(), 0.55f) : base);
+                setForeground(ModernColors.getTextPrimary());
+            }
+            return this;
+        }
     }
 
     /**

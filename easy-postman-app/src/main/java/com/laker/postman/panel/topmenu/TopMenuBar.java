@@ -196,12 +196,12 @@ public class TopMenuBar extends SingletonBaseMenuBar implements IRefreshable {
         JMenu fileMenu = new JMenu(I18nUtil.getMessage(MessageKeys.MENU_FILE));
 
         JMenuItem exportCollectionsMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.MENU_FILE_EXPORT_COLLECTIONS));
-        exportCollectionsMenuItem.setIcon(new FlatSVGIcon("icons/export.svg", 16, 16));
+        exportCollectionsMenuItem.setIcon(IconUtil.createThemed("icons/export.svg", 16, 16));
         exportCollectionsMenuItem.addActionListener(e -> exportAllCollections());
         fileMenu.add(exportCollectionsMenuItem);
 
         JMenuItem exportEnvironmentsMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.MENU_FILE_EXPORT_ENVIRONMENTS));
-        exportEnvironmentsMenuItem.setIcon(new FlatSVGIcon("icons/export.svg", 16, 16));
+        exportEnvironmentsMenuItem.setIcon(IconUtil.createThemed("icons/export.svg", 16, 16));
         exportEnvironmentsMenuItem.addActionListener(e -> SingletonFactory.getInstance(EnvironmentPanel.class).exportEnvironments());
         fileMenu.add(exportEnvironmentsMenuItem);
 

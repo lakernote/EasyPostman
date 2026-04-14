@@ -1,6 +1,7 @@
 package com.laker.postman.service.curl;
 
 import com.laker.postman.model.*;
+import com.laker.postman.util.CurlImportUtil;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -935,7 +936,7 @@ public class CurlParserTest {
         CurlRequest result = CurlParser.parse(curl);
 
         assertEquals(result.url, "https://example.com/api?name=John%20Doe&age=30&tags=a,b,c");
-        assertEquals(findParamValue(result.paramsList, "name"), "John%20Doe");
+        assertEquals(findParamValue(result.paramsList, "name"), "John Doe");
         assertEquals(findParamValue(result.paramsList, "age"), "30");
         assertEquals(findParamValue(result.paramsList, "tags"), "a,b,c");
     }
@@ -1139,10 +1140,40 @@ public class CurlParserTest {
         assertNotNull(result.urlencodedList);
         assertEquals(result.urlencodedList.size(), 3);
 
-        assertEquals(findUrlencodedValue(result.urlencodedList, "key1"), "value%20with%20spaces");
-        assertEquals(findUrlencodedValue(result.urlencodedList, "key2"), "value%3Dwith%3Dequals");
+        assertEquals(findUrlencodedValue(result.urlencodedList, "key1"), "value with spaces");
+        assertEquals(findUrlencodedValue(result.urlencodedList, "key2"), "value=with=equals");
         assertEquals(findUrlencodedValue(result.urlencodedList, "key3"), "normal");
 
         assertNull(result.body);
+    }
+
+    @Test(description = "测试 curl 导入时对中文 query 和 urlencoded 参数做解码")
+    public void testDecodeChineseParametersFromCurlImport() {
+        String curl = """
+                curl 'https://example.com/api?name=%E5%BC%A0%E4%B8%89&city=%E5%8C%97%E4%BA%AC' \\
+                  -H 'Content-Type: application/x-www-form-urlencoded' \\
+                  --data-raw 'keyword=%E4%B8%AD%E6%96%87%E5%85%B3%E9%94%AE%E8%AF%8D&note=%E6%B5%8B%E8%AF%95'
+                """;
+
+        CurlRequest result = CurlParser.parse(curl);
+
+        assertEquals(findParamValue(result.paramsList, "name"), "张三");
+        assertEquals(findParamValue(result.paramsList, "city"), "北京");
+        assertEquals(findUrlencodedValue(result.urlencodedList, "keyword"), "中文关键词");
+        assertEquals(findUrlencodedValue(result.urlencodedList, "note"), "测试");
+    }
+
+    @Test(description = "测试导入请求对象时 URL query 以可读文本显示")
+    public void testCurlImportUtilDecodesUrlQueryForDisplay() {
+        String curl = "curl 'https://example.com/api?keyword=%E4%B8%AD%E6%96%87&name=%E5%BC%A0%E4%B8%89'";
+
+        HttpRequestItem item = CurlImportUtil.fromCurl(curl);
+
+        assertNotNull(item);
+        assertEquals(item.getUrl(), "https://example.com/api?keyword=中文&name=张三");
+        assertEquals(item.getParamsList().size(), 2);
+        assertEquals(item.getParamsList().get(0).getValue(), "中文");
+        assertEquals(item.getParamsList().get(1).getValue(), "张三");
+        assertEquals(item.getBody(), "");
     }
 }

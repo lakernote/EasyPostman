@@ -48,14 +48,16 @@ public class CurlImportUtil {
 
         HttpRequestItem item = new HttpRequestItem();
         item.setName(null);
-        item.setUrl(curlRequest.url);
+        item.setUrl(HttpUtil.decodeUrlQueryForDisplay(curlRequest.url));
         item.setMethod(curlRequest.method);
 
         if (CollUtil.isNotEmpty(curlRequest.headersList)) {
             item.setHeadersList(curlRequest.headersList);
         }
 
-        item.setBody(curlRequest.body);
+        // Keep imported requests aligned with the editor's default empty-string body state
+        // so opening a saved curl import does not look dirty immediately.
+        item.setBody(curlRequest.body != null ? curlRequest.body : "");
 
         if (CollUtil.isNotEmpty(curlRequest.paramsList)) {
             item.setParamsList(curlRequest.paramsList);

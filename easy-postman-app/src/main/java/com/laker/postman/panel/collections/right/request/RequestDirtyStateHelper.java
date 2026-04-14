@@ -42,11 +42,7 @@ final class RequestDirtyStateHelper {
 
         // 脏检查始终基于“原始快照 vs 当前表单快照”，这样 UI 不需要了解比较细节。
         HttpRequestItem current = currentRequestFromModelSupplier.get();
-        boolean modified = !equalsIgnoringResponse(originalRequestItem, current);
-        if (modified) {
-            log.debug("Request form has been modified, Request Name: {}", current.getName());
-        }
-        return modified;
+        return !equalsIgnoringResponse(originalRequestItem, current);
     }
 
     void updateTabDirty() {

@@ -1,6 +1,7 @@
 package com.laker.postman.service.curl;
 
 import com.laker.postman.model.*;
+import com.laker.postman.service.http.HttpUtil;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -173,9 +174,11 @@ public class CurlParser {
             for (String dataParam : dataParams) {
                 String[] kv = dataParam.split("=", 2);
                 if (kv.length == 2) {
-                    req.paramsList.add(new HttpParam(true, kv[0], kv[1]));
+                    req.paramsList.add(new HttpParam(true,
+                            HttpUtil.decodeURIComponent(kv[0]),
+                            HttpUtil.decodeURIComponent(kv[1])));
                 } else if (kv.length == 1) {
-                    req.paramsList.add(new HttpParam(true, kv[0], ""));
+                    req.paramsList.add(new HttpParam(true, HttpUtil.decodeURIComponent(kv[0]), ""));
                 }
             }
         } else {
@@ -232,11 +235,14 @@ public class CurlParser {
                             // 按 = 分割，限制分割次数为 2（因为值中可能包含 =）
                             String[] kv = pair.split("=", 2);
                             if (kv.length == 2) {
-                                req.urlencodedList.add(new HttpFormUrlencoded(true, kv[0].trim(), kv[1].trim()));
+                                req.urlencodedList.add(new HttpFormUrlencoded(true,
+                                        HttpUtil.decodeURIComponent(kv[0].trim()),
+                                        HttpUtil.decodeURIComponent(kv[1].trim())));
                                 hasValidPairs = true;
                             } else if (kv.length == 1 && !kv[0].trim().isEmpty()) {
                                 // 只有 key 没有 value，也作为 urlencoded 字段
-                                req.urlencodedList.add(new HttpFormUrlencoded(true, kv[0].trim(), ""));
+                                req.urlencodedList.add(new HttpFormUrlencoded(true,
+                                        HttpUtil.decodeURIComponent(kv[0].trim()), ""));
                                 hasValidPairs = true;
                             }
                         }
@@ -275,9 +281,11 @@ public class CurlParser {
             for (String param : query.split("&")) {
                 String[] kv = param.split("=", 2);
                 if (kv.length == 2) {
-                    req.paramsList.add(new HttpParam(true, kv[0], kv[1]));
+                    req.paramsList.add(new HttpParam(true,
+                            HttpUtil.decodeURIComponent(kv[0]),
+                            HttpUtil.decodeURIComponent(kv[1])));
                 } else if (kv.length == 1) {
-                    req.paramsList.add(new HttpParam(true, kv[0], ""));
+                    req.paramsList.add(new HttpParam(true, HttpUtil.decodeURIComponent(kv[0]), ""));
                 }
             }
         }

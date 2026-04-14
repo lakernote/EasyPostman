@@ -31,6 +31,7 @@ import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.util.CurlImportUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -534,37 +535,12 @@ public class LeftTopPanel extends SingletonBasePanel {
                 NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_PARSE_FAIL));
                 return;
             }
-            // 构造HttpRequestItem
-            HttpRequestItem item = new HttpRequestItem();
-            item.setName(curlRequest.url);
-            item.setUrl(curlRequest.url);
-            item.setMethod(curlRequest.method);
-
-            if (curlRequest.headersList != null && !curlRequest.headersList.isEmpty()) {
-                item.setHeadersList(curlRequest.headersList);
+            HttpRequestItem item = CurlImportUtil.fromCurlRequest(curlRequest);
+            if (item == null) {
+                NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_PARSE_FAIL));
+                return;
             }
-
-            item.setBody(curlRequest.body);
-
-            if (curlRequest.paramsList != null && !curlRequest.paramsList.isEmpty()) {
-                item.setParamsList(curlRequest.paramsList);
-            }
-
-            if (curlRequest.formDataList != null && !curlRequest.formDataList.isEmpty()) {
-                item.setFormDataList(curlRequest.formDataList);
-            }
-
-            if (curlRequest.urlencodedList != null && !curlRequest.urlencodedList.isEmpty()) {
-                item.setUrlencodedList(curlRequest.urlencodedList);
-            }
-
-            if (HttpUtil.isSSERequest(item)) {
-                item.setProtocol(RequestItemProtocolEnum.SSE);
-            } else if (HttpUtil.isWebSocketRequest(item.getUrl())) {
-                item.setProtocol(RequestItemProtocolEnum.WEBSOCKET);
-            } else {
-                item.setProtocol(RequestItemProtocolEnum.HTTP);
-            }
+            item.setName(item.getUrl());
             // 统一用RequestEditPanel弹窗选择分组和命名
             boolean saved = saveRequestWithGroupDialog(item);
             // 导入成功后清空剪贴板

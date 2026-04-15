@@ -1,14 +1,18 @@
 package com.laker.postman.util;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.File;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
  * 统一解析应用运行形态和关键路径。
  */
+@Slf4j
 public final class AppRuntimeLayout {
 
     private static final String PORTABLE_MARKER = ".portable";
@@ -70,7 +74,10 @@ public final class AppRuntimeLayout {
             return Paths.get(override.trim()).toAbsolutePath().normalize();
         }
         if (isPortableMode(anchorClass)) {
-            return applicationRootDirectory(anchorClass).resolve("data").toAbsolutePath().normalize();
+            Path applicationRoot = applicationRootDirectory(anchorClass);
+            Path preferredDataDir = resolvePortableDataDirectory(applicationRoot, codeSourceDirectory(anchorClass));
+            Path legacyDataDir = applicationRoot.toAbsolutePath().normalize().resolve("data");
+            return harmonizePortableDataDirectory(preferredDataDir, legacyDataDir);
         }
         return Paths.get(System.getProperty("user.home"), "EasyPostman").toAbsolutePath().normalize();
     }
@@ -87,5 +94,42 @@ public final class AppRuntimeLayout {
             return false;
         }
         return directory.resolve(PORTABLE_MARKER).toFile().isFile();
+    }
+
+    static Path resolvePortableDataDirectory(Path applicationRoot, Path codeSourceDirectory) {
+        Path normalizedAppRoot = applicationRoot.toAbsolutePath().normalize();
+        Path normalizedCodeSource = codeSourceDirectory.toAbsolutePath().normalize();
+        if (!normalizedCodeSource.equals(normalizedAppRoot)
+                && "app".equalsIgnoreCase(String.valueOf(normalizedCodeSource.getFileName()))) {
+            return normalizedCodeSource.resolve("data").toAbsolutePath().normalize();
+        }
+        return normalizedAppRoot.resolve("data").toAbsolutePath().normalize();
+    }
+
+    static Path harmonizePortableDataDirectory(Path preferredDataDir, Path legacyDataDir) {
+        Path normalizedPreferred = preferredDataDir.toAbsolutePath().normalize();
+        Path normalizedLegacy = legacyDataDir.toAbsolutePath().normalize();
+        if (normalizedPreferred.equals(normalizedLegacy)) {
+            return normalizedPreferred;
+        }
+
+        if (Files.exists(normalizedLegacy) && !Files.exists(normalizedPreferred)) {
+            try {
+                Path parent = normalizedPreferred.getParent();
+                if (parent != null) {
+                    Files.createDirectories(parent);
+                }
+                Files.move(normalizedLegacy, normalizedPreferred);
+                log.info("Migrated portable data directory: {} -> {}", normalizedLegacy, normalizedPreferred);
+            } catch (Exception e) {
+                log.warn("Failed to migrate portable data directory: {} -> {}",
+                        normalizedLegacy, normalizedPreferred, e);
+            }
+        }
+
+        if (Files.exists(normalizedPreferred) || !Files.exists(normalizedLegacy)) {
+            return normalizedPreferred;
+        }
+        return normalizedLegacy;
     }
 }

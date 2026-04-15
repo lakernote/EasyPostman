@@ -3,9 +3,11 @@ package com.laker.postman.common.component.dialog;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.frame.MainFrame;
+import com.laker.postman.model.GitRepoSource;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.model.WorkspaceType;
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
@@ -209,10 +211,9 @@ public class WorkspaceSelectionDialog extends JDialog {
             super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
 
             if (value instanceof Workspace workspace) {
-                // 根据工作区类型设置图标
-                FlatSVGIcon icon = workspace.getType() == WorkspaceType.GIT
-                        ? new FlatSVGIcon("icons/git.svg", 20, 20)
-                        : new FlatSVGIcon("icons/local.svg", 18, 18);
+                FlatSVGIcon icon = workspace.getType() == WorkspaceType.LOCAL
+                        ? IconUtil.createThemed("icons/local.svg", 20, 20)
+                        : createGitIcon(workspace);
                 setIcon(icon);
 
                 // 构建显示文本：名称 + 类型 + 描述
@@ -240,6 +241,16 @@ public class WorkspaceSelectionDialog extends JDialog {
             }
 
             return this;
+        }
+
+        private FlatSVGIcon createGitIcon(Workspace workspace) {
+            if (workspace.getGitRemoteUrl() == null || workspace.getGitRemoteUrl().trim().isEmpty()) {
+                return IconUtil.create("icons/git-warning.svg", 20, 20);
+            }
+            if (workspace.getGitRepoSource() == GitRepoSource.CLONED) {
+                return IconUtil.create("icons/git-remote.svg", 20, 20);
+            }
+            return IconUtil.create("icons/git.svg", 20, 20);
         }
     }
 }

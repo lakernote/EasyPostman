@@ -1,6 +1,7 @@
 package com.laker.postman.panel.workspace.components;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.model.GitRepoSource;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.model.WorkspaceType;
 import com.laker.postman.service.WorkspaceService;
@@ -36,14 +37,13 @@ public class WorkspaceListCellRenderer extends DefaultListCellRenderer {
     private void configureWorkspaceIcon(Workspace workspace) {
         FlatSVGIcon icon;
         if (workspace.getType() == WorkspaceType.LOCAL) {
-            icon = IconUtil.createThemed("icons/local.svg", 18, 18);
+            icon = IconUtil.createThemed("icons/local.svg", 20, 20);
+        } else if (workspace.getGitRemoteUrl() == null || workspace.getGitRemoteUrl().trim().isEmpty()) {
+            icon = IconUtil.create("icons/git-warning.svg", 20, 20);
+        } else if (workspace.getGitRepoSource() == GitRepoSource.CLONED) {
+            icon = IconUtil.create("icons/git-remote.svg", 20, 20);
         } else {
-            // 如果 Git 工作区没有配置远程 URL，使用橙色警告图标
-            if (workspace.getGitRemoteUrl() == null || workspace.getGitRemoteUrl().trim().isEmpty()) {
-                icon = IconUtil.create("icons/git-warning.svg", 20, 20);
-            } else {
-                icon = IconUtil.create("icons/git.svg", 20, 20);
-            }
+            icon = IconUtil.create("icons/git.svg", 20, 20);
         }
         setIcon(icon);
     }

@@ -134,8 +134,17 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# 自动识别 jpackage 产出的 DEB 文件名，避免架构提示写死为 amd64
+DEB_FILE=$(find "${OUTPUT_DIR}" -maxdepth 1 -type f -name "*.deb" | sort | tail -n 1)
+
 # 完成提示
 echo "🎉 DEB 包打包完成！输出路径：$(pwd)/${OUTPUT_DIR}"
-echo "📝 安装命令: sudo dpkg -i ${OUTPUT_DIR}/EasyPostman_${VERSION}-1_amd64.deb"
-echo "📝 或使用: sudo apt install ${OUTPUT_DIR}/EasyPostman_${VERSION}-1_amd64.deb"
+if [ -n "${DEB_FILE}" ]; then
+    DEB_BASENAME=$(basename "${DEB_FILE}")
+    echo "📝 安装命令: sudo dpkg -i ${OUTPUT_DIR}/${DEB_BASENAME}"
+    echo "📝 或使用: sudo apt install ${OUTPUT_DIR}/${DEB_BASENAME}"
+else
+    echo "📝 安装命令: sudo dpkg -i ${OUTPUT_DIR}/<generated-package>.deb"
+    echo "📝 或使用: sudo apt install ${OUTPUT_DIR}/<generated-package>.deb"
+fi
 echo "📝 卸载命令: sudo dpkg -r easypostman"

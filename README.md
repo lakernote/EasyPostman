@@ -99,7 +99,10 @@ EasyPostman provides developers with a **local, privacy-first** API debugging ex
 | 🍏 **macOS (Intel)** | `EasyPostman-{version}-macos-x86_64.dmg` | Intel-based Mac |
 | 🪟 **Windows (Installer)** | `EasyPostman-{version}-windows-x64.exe` | Auto-update support |
 | 🪟 **Windows (Portable)** | `EasyPostman-{version}-windows-x64-portable.zip` | No install needed |
-| 🐧 **Ubuntu / Debian** | `easypostman_{version}_amd64.deb` | DEB package |
+| 🐧 **Ubuntu / Debian (x64)** | `easypostman_{version}_amd64.deb` | For `x86_64` / `amd64` systems |
+| 🐧 **Ubuntu / Debian (ARM64)** | `easypostman_{version}_arm64.deb` | For `aarch64` / `arm64` systems |
+| 🐧 **RHEL / Rocky / CentOS / Fedora (x64)** | `EasyPostman-{version}-1.x86_64.rpm` | Available on GitHub Releases only |
+| 🐧 **RHEL / Rocky / CentOS / Fedora (ARM64)** | `EasyPostman-{version}-1.aarch64.rpm` | Available on GitHub Releases only |
 | ☕ **Cross-platform JAR** | `easy-postman-{version}.jar` | Requires Java 17+ |
 
 > ⚠️ **First Run Notice**
@@ -109,7 +112,7 @@ EasyPostman provides developers with a **local, privacy-first** API debugging ex
 >
 > The app is 100% open-source. Warnings appear because we don't purchase code signing certificates.
 
-> 🌏 **Gitee Mirror** only provides macOS (ARM) DMG and Windows packages. For other platforms, use GitHub Releases.
+> 🌏 **Gitee Mirror** only provides macOS (ARM) DMG and Windows packages. Linux DEB/RPM packages are published on GitHub Releases only.
 
 ---
 
@@ -125,8 +128,16 @@ EasyPostman provides developers with a **local, privacy-first** API debugging ex
 | macOS | Open DMG → drag to Applications |
 | Windows Installer | Run `.exe`, follow wizard |
 | Windows Portable | Extract ZIP → run `EasyPostman.exe` |
-| Linux DEB | `sudo dpkg -i easypostman_{version}_amd64.deb` |
+| Linux DEB (x64) | `sudo dpkg -i easypostman_{version}_amd64.deb` |
+| Linux DEB (ARM64) | `sudo dpkg -i easypostman_{version}_arm64.deb` |
+| Linux RPM (x64) | `sudo rpm -ivh EasyPostman-{version}-1.x86_64.rpm` |
+| Linux RPM (ARM64) | `sudo rpm -ivh EasyPostman-{version}-1.aarch64.rpm` |
 | JAR | `java -jar easy-postman-{version}.jar` |
+
+If you're not sure which Linux package to use, run `uname -m` first:
+
+- `x86_64` -> use `amd64.deb` or `x86_64.rpm`
+- `aarch64` -> use `arm64.deb` or `aarch64.rpm`
 
 ### Option 2: Build from Source
 

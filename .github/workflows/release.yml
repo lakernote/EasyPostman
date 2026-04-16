@@ -650,8 +650,8 @@ jobs:
           path: dist/*.jar
           retention-days: 7
 
-  build-ubuntu:
-    name: Build Ubuntu DEB（构建 Ubuntu 安装包）
+  build-ubuntu-amd64:
+    name: Build Ubuntu DEB amd64（构建 Ubuntu x64 安装包）
     runs-on: ubuntu-22.04
     needs: [ get-version, build-jar-artifact ]
     if: github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')
@@ -746,8 +746,294 @@ jobs:
       - name: Upload as Artifact（上传为构建产物）
         uses: actions/upload-artifact@v4
         with:
-          name: EasyPostman-Ubuntu-DEB
+          name: EasyPostman-Ubuntu-DEB-amd64
           path: dist/*.deb
+          retention-days: 7
+
+  build-ubuntu-arm64:
+    name: Build Ubuntu DEB arm64（构建 Ubuntu ARM64 安装包）
+    runs-on: ubuntu-22.04-arm
+    needs: [ get-version, build-jar-artifact ]
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')
+
+    steps:
+      - name: Checkout（检出代码）
+        uses: actions/checkout@v4
+
+      - name: Setup Java（配置 Java）
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+          check-latest: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download Fat JAR（下载跨平台 Fat JAR）
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: target
+
+      - name: Install dependencies（安装系统依赖）
+        run: |
+          sudo apt-get update
+          # 安装 GTK3、WebKit 和打包工具
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev binutils
+
+      - name: Create runtime with jlink（使用 jlink 创建 Linux 精简 JRE）
+        run: |
+          rm -rf target/runtime
+          # 创建 Linux 平台的 JRE
+          jlink \
+            --add-modules ${{ env.JLINK_MODULES }} \
+            --strip-debug \
+            --no-header-files \
+            --no-man-pages \
+            --compress=2 \
+            --output target/runtime
+
+      - name: Prepare dist-input（准备打包输入目录）
+        run: |
+          VERSION="${{ needs.get-version.outputs.version }}"
+          rm -rf target/dist-input
+          mkdir -p target/dist-input
+          cp target/easy-postman-$VERSION.jar target/dist-input/easy-postman.jar
+
+      - name: Create DEB with jpackage（使用 jpackage 创建 DEB 安装包）
+        run: |
+          VERSION="${{ needs.get-version.outputs.version }}"
+          mkdir -p dist
+          
+          # 解析通用 Java 选项
+          IFS='|' read -ra JAVA_OPTS_COMMON <<< "${{ env.JAVA_OPTIONS_COMMON }}"
+          # 解析 Linux 特定选项
+          IFS='|' read -ra JAVA_OPTS_LINUX <<< "${{ env.JAVA_OPTIONS_LINUX }}"
+          
+          # 构建 jpackage 参数数组
+          JPACKAGE_ARGS=(
+            --input target/dist-input
+            --main-jar "easy-postman.jar"
+            --main-class com.laker.postman.App
+            --runtime-image target/runtime
+            --type deb
+            --name "EasyPostman"
+            --app-version "$VERSION"
+            --dest dist
+            --vendor "Laker"
+            --copyright "© 2025 Laker"
+            --description "A modern API testing tool similar to Postman"
+            --linux-shortcut
+            --linux-menu-group "Development"
+            --linux-app-category "Development"
+          )
+          
+          # 添加通用 Java 选项
+          for opt in "${JAVA_OPTS_COMMON[@]}"; do
+            JPACKAGE_ARGS+=(--java-options "$opt")
+          done
+          
+          # 添加 Linux 特定选项
+          for opt in "${JAVA_OPTS_LINUX[@]}"; do
+            if [ -n "$opt" ]; then
+              JPACKAGE_ARGS+=(--java-options "$opt")
+            fi
+          done
+          
+          # 执行 jpackage
+          jpackage "${JPACKAGE_ARGS[@]}"
+
+      - name: Upload as Artifact（上传为构建产物）
+        uses: actions/upload-artifact@v4
+        with:
+          name: EasyPostman-Ubuntu-DEB-arm64
+          path: dist/*.deb
+          retention-days: 7
+
+  build-rpm-amd64:
+    name: Build RPM amd64（构建 RPM x64 安装包）
+    runs-on: ubuntu-22.04
+    needs: [ get-version, build-jar-artifact ]
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')
+
+    steps:
+      - name: Checkout（检出代码）
+        uses: actions/checkout@v4
+
+      - name: Setup Java（配置 Java）
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+          check-latest: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download Fat JAR（下载跨平台 Fat JAR）
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: target
+
+      - name: Install dependencies（安装系统依赖）
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev binutils rpm
+
+      - name: Create runtime with jlink（使用 jlink 创建 Linux 精简 JRE）
+        run: |
+          rm -rf target/runtime
+          jlink \
+            --add-modules ${{ env.JLINK_MODULES }} \
+            --strip-debug \
+            --no-header-files \
+            --no-man-pages \
+            --compress=2 \
+            --output target/runtime
+
+      - name: Prepare dist-input（准备打包输入目录）
+        run: |
+          VERSION="${{ needs.get-version.outputs.version }}"
+          rm -rf target/dist-input
+          mkdir -p target/dist-input
+          cp target/easy-postman-$VERSION.jar target/dist-input/easy-postman.jar
+
+      - name: Create RPM with jpackage（使用 jpackage 创建 RPM 安装包）
+        run: |
+          VERSION="${{ needs.get-version.outputs.version }}"
+          mkdir -p dist
+          
+          IFS='|' read -ra JAVA_OPTS_COMMON <<< "${{ env.JAVA_OPTIONS_COMMON }}"
+          IFS='|' read -ra JAVA_OPTS_LINUX <<< "${{ env.JAVA_OPTIONS_LINUX }}"
+          
+          JPACKAGE_ARGS=(
+            --input target/dist-input
+            --main-jar "easy-postman.jar"
+            --main-class com.laker.postman.App
+            --runtime-image target/runtime
+            --type rpm
+            --name "EasyPostman"
+            --app-version "$VERSION"
+            --dest dist
+            --vendor "Laker"
+            --copyright "© 2025 Laker"
+            --description "A modern API testing tool similar to Postman"
+            --linux-shortcut
+            --linux-menu-group "Development"
+            --linux-app-category "Development"
+            --linux-rpm-license-type "MIT"
+          )
+          
+          for opt in "${JAVA_OPTS_COMMON[@]}"; do
+            JPACKAGE_ARGS+=(--java-options "$opt")
+          done
+          
+          for opt in "${JAVA_OPTS_LINUX[@]}"; do
+            if [ -n "$opt" ]; then
+              JPACKAGE_ARGS+=(--java-options "$opt")
+            fi
+          done
+          
+          jpackage "${JPACKAGE_ARGS[@]}"
+
+      - name: Upload as Artifact（上传为构建产物）
+        uses: actions/upload-artifact@v4
+        with:
+          name: EasyPostman-RPM-amd64
+          path: dist/*.rpm
+          retention-days: 7
+
+  build-rpm-arm64:
+    name: Build RPM arm64（构建 RPM ARM64 安装包）
+    runs-on: ubuntu-22.04-arm
+    needs: [ get-version, build-jar-artifact ]
+    if: github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')
+
+    steps:
+      - name: Checkout（检出代码）
+        uses: actions/checkout@v4
+
+      - name: Setup Java（配置 Java）
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+          check-latest: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download Fat JAR（下载跨平台 Fat JAR）
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: target
+
+      - name: Install dependencies（安装系统依赖）
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev binutils rpm
+
+      - name: Create runtime with jlink（使用 jlink 创建 Linux 精简 JRE）
+        run: |
+          rm -rf target/runtime
+          jlink \
+            --add-modules ${{ env.JLINK_MODULES }} \
+            --strip-debug \
+            --no-header-files \
+            --no-man-pages \
+            --compress=2 \
+            --output target/runtime
+
+      - name: Prepare dist-input（准备打包输入目录）
+        run: |
+          VERSION="${{ needs.get-version.outputs.version }}"
+          rm -rf target/dist-input
+          mkdir -p target/dist-input
+          cp target/easy-postman-$VERSION.jar target/dist-input/easy-postman.jar
+
+      - name: Create RPM with jpackage（使用 jpackage 创建 RPM 安装包）
+        run: |
+          VERSION="${{ needs.get-version.outputs.version }}"
+          mkdir -p dist
+          
+          IFS='|' read -ra JAVA_OPTS_COMMON <<< "${{ env.JAVA_OPTIONS_COMMON }}"
+          IFS='|' read -ra JAVA_OPTS_LINUX <<< "${{ env.JAVA_OPTIONS_LINUX }}"
+          
+          JPACKAGE_ARGS=(
+            --input target/dist-input
+            --main-jar "easy-postman.jar"
+            --main-class com.laker.postman.App
+            --runtime-image target/runtime
+            --type rpm
+            --name "EasyPostman"
+            --app-version "$VERSION"
+            --dest dist
+            --vendor "Laker"
+            --copyright "© 2025 Laker"
+            --description "A modern API testing tool similar to Postman"
+            --linux-shortcut
+            --linux-menu-group "Development"
+            --linux-app-category "Development"
+            --linux-rpm-license-type "MIT"
+          )
+          
+          for opt in "${JAVA_OPTS_COMMON[@]}"; do
+            JPACKAGE_ARGS+=(--java-options "$opt")
+          done
+          
+          for opt in "${JAVA_OPTS_LINUX[@]}"; do
+            if [ -n "$opt" ]; then
+              JPACKAGE_ARGS+=(--java-options "$opt")
+            fi
+          done
+          
+          jpackage "${JPACKAGE_ARGS[@]}"
+
+      - name: Upload as Artifact（上传为构建产物）
+        uses: actions/upload-artifact@v4
+        with:
+          name: EasyPostman-RPM-arm64
+          path: dist/*.rpm
           retention-days: 7
 
   # ============================================================
@@ -757,8 +1043,8 @@ jobs:
   # ============================================================
   upload-to-github-release:
     name: Upload All to GitHub Release（统一上传到 GitHub Release）
-    if: (github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')) && github.event_name == 'release'
-    needs: [ build-windows-portable, build-windows-exe, build-macos-intel, build-macos-arm, build-jar, build-ubuntu ]
+    if: always() && (github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')) && github.event_name == 'release'
+    needs: [ build-windows-portable, build-windows-exe, build-macos-intel, build-macos-arm, build-jar, build-ubuntu-amd64, build-ubuntu-arm64, build-rpm-amd64, build-rpm-arm64 ]
     runs-on: ubuntu-latest
     steps:
       - name: Download all release artifacts（下载所有平台构建产物）
@@ -784,6 +1070,7 @@ jobs:
             all-artifacts/*-macos-arm64.dmg
             all-artifacts/*.jar
             all-artifacts/*.deb
+            all-artifacts/*.rpm
           fail_on_unmatched_files: false
           overwrite_files: true
         env:

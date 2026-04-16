@@ -136,8 +136,17 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# 自动识别 jpackage 产出的 RPM 文件名，避免架构提示写死为 x86_64
+RPM_FILE=$(find "${OUTPUT_DIR}" -maxdepth 1 -type f -name "*.rpm" | sort | tail -n 1)
+
 # 完成提示
 echo "🎉 RPM 包打包完成！输出路径：$(pwd)/${OUTPUT_DIR}"
-echo "📝 安装命令: sudo rpm -ivh ${OUTPUT_DIR}/EasyPostman-${VERSION}-1.x86_64.rpm"
-echo "📝 或使用: sudo yum install ${OUTPUT_DIR}/EasyPostman-${VERSION}-1.x86_64.rpm"
+if [ -n "${RPM_FILE}" ]; then
+    RPM_BASENAME=$(basename "${RPM_FILE}")
+    echo "📝 安装命令: sudo rpm -ivh ${OUTPUT_DIR}/${RPM_BASENAME}"
+    echo "📝 或使用: sudo yum install ${OUTPUT_DIR}/${RPM_BASENAME}"
+else
+    echo "📝 安装命令: sudo rpm -ivh ${OUTPUT_DIR}/<generated-package>.rpm"
+    echo "📝 或使用: sudo yum install ${OUTPUT_DIR}/<generated-package>.rpm"
+fi
 echo "📝 卸载命令: sudo rpm -e EasyPostman"

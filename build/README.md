@@ -6,8 +6,8 @@
 
 - `mac.sh`: macOS DMG
 - `win-exe.bat`: Windows EXE / portable
-- `linux-deb.sh`: Debian / Ubuntu DEB
-- `linux-rpm.sh`: RPM
+- `linux-deb.sh`: Debian / Ubuntu DEB（产物架构跟随当前打包机器，例如 `amd64` / `arm64`）
+- `linux-rpm.sh`: RPM（产物架构跟随当前打包机器）
 
 统一约定：
 

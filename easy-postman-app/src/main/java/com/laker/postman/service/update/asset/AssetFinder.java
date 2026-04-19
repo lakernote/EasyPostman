@@ -54,6 +54,25 @@ public class AssetFinder {
     }
 
     /**
+     * 按多个模式依次查找资源，返回首个命中的下载 URL
+     */
+    public String findFirstByPatterns(JSONArray assets, String... patterns) {
+        if (patterns == null) {
+            return null;
+        }
+        for (String pattern : patterns) {
+            if (pattern == null || pattern.isBlank()) {
+                continue;
+            }
+            String url = findByPattern(assets, pattern);
+            if (url != null) {
+                return url;
+            }
+        }
+        return null;
+    }
+
+    /**
      * 查找通用 DMG 文件（不包含架构后缀）
      *
      * @param assets 资源列表

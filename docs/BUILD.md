@@ -177,7 +177,7 @@ chmod +x build/linux-deb.sh
 ./build/linux-deb.sh
 ```
 
-**Output**: `target/easypostman_{version}_amd64.deb`
+**Output**: a DEB file under `dist/` for the current build machine architecture, for example `dist/*.deb`
 
 #### Manual Build
 
@@ -198,7 +198,7 @@ jpackage \
 #### Install DEB Package
 
 ```bash
-sudo dpkg -i target/easypostman_{version}_amd64.deb
+sudo dpkg -i dist/<generated-package>.deb
 
 # If dependencies missing
 sudo apt-get install -f
@@ -223,7 +223,7 @@ chmod +x build/linux-rpm.sh
 ./build/linux-rpm.sh
 ```
 
-**Output**: `target/easypostman-{version}-1.x86_64.rpm`
+**Output**: an RPM file under `dist/` for the current build machine architecture, for example `dist/*.rpm`
 
 ---
 

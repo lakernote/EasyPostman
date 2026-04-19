@@ -203,7 +203,7 @@ chmod +x build/linux-deb.sh
 ./build/linux-deb.sh
 ```
 
-**输出**: `dist/EasyPostman_{版本号}-1_amd64.deb` 或 jpackage 生成的同类 DEB 文件
+**输出**: `dist/` 目录下生成与当前打包机器架构对应的 DEB 文件，例如 `dist/*.deb`
 
 #### 手动构建
 
@@ -224,7 +224,7 @@ jpackage \
 #### 安装 DEB 包
 
 ```bash
-sudo dpkg -i dist/EasyPostman_{版本号}-1_amd64.deb
+sudo dpkg -i dist/<generated-package>.deb
 
 # 如果缺少依赖
 sudo apt-get install -f
@@ -249,7 +249,7 @@ chmod +x build/linux-rpm.sh
 ./build/linux-rpm.sh
 ```
 
-**输出**: `dist/EasyPostman-{版本号}-1.x86_64.rpm`
+**输出**: `dist/` 目录下生成与当前打包机器架构对应的 RPM 文件，例如 `dist/*.rpm`
 
 ---
 

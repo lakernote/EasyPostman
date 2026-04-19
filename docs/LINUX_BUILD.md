@@ -58,16 +58,16 @@ jpackage --version
 
 3. **生成的文件**
    ```
-   dist/EasyPostman_3.0.4-1_amd64.deb
+   dist/<generated-package>.deb
    ```
 
 4. **安装 DEB 包**
    ```bash
    # 推荐方式：使用 apt 安装（自动处理依赖）
-   sudo apt install ./dist/EasyPostman_3.0.4-1_amd64.deb
+   sudo apt install ./dist/<generated-package>.deb
    
    # 或者先用 dpkg 安装，再修复依赖
-   sudo dpkg -i dist/EasyPostman_3.0.4-1_amd64.deb
+   sudo dpkg -i dist/<generated-package>.deb
    sudo apt-get install -f
    
    # 卸载
@@ -89,18 +89,18 @@ jpackage --version
 
 3. **生成的文件**
    ```
-   dist/EasyPostman-3.0.4-1.x86_64.rpm
+   dist/<generated-package>.rpm
    ```
 
 4. **安装 RPM 包**
    ```bash
    # 使用 rpm 安装
-   sudo rpm -ivh dist/EasyPostMan-3.0.4-1.x86_64.rpm
+   sudo rpm -ivh dist/<generated-package>.rpm
    
    # 或使用 yum/dnf（会自动处理依赖）
-   sudo yum install dist/EasyPostMan-3.0.4-1.x86_64.rpm
+   sudo yum install dist/<generated-package>.rpm
    # 或
-   sudo dnf install dist/EasyPostMan-3.0.4-1.x86_64.rpm
+   sudo dnf install dist/<generated-package>.rpm
    
    # 卸载
    sudo rpm -e EasyPostMan
@@ -237,12 +237,12 @@ objcopy --version
 ```bash
 # 方式 1：先安装依赖，再安装 DEB 包
 sudo apt-get install xdg-utils
-sudo dpkg -i dist/EasyPostman_3.0.4-1_amd64.deb
+sudo dpkg -i dist/<generated-package>.deb
 
 # 方式 2：使用 apt-get 自动处理依赖（推荐）
 sudo apt-get install -f
 # 这会自动安装缺失的依赖并完成 easypostman 的配置
 
 # 方式 3：使用 apt 直接安装（会自动处理依赖）
-sudo apt install ./dist/EasyPostman_3.0.4-1_amd64.deb
+sudo apt install ./dist/<generated-package>.deb
 ```

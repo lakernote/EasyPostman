@@ -28,6 +28,12 @@ if ! command -v objcopy &> /dev/null; then
     echo "   sudo apt-get install binutils"
     exit 1
 fi
+# 检查 zstd 是否可用（兼容旧版 dpkg 的 xz 重打包需要）
+if ! command -v zstd &> /dev/null; then
+    echo "❌ 未检测到 zstd，请先安装："
+    echo "   sudo apt-get install zstd"
+    exit 1
+fi
 
 # 获取项目根目录路径（包含 pom.xml）
 PROJECT_ROOT=$(cd "$(dirname "$0")/.."; pwd)
@@ -136,6 +142,11 @@ fi
 
 # 自动识别 jpackage 产出的 DEB 文件名，避免架构提示写死为 amd64
 DEB_FILE=$(find "${OUTPUT_DIR}" -maxdepth 1 -type f -name "*.deb" | sort | tail -n 1)
+
+if [ -n "${DEB_FILE}" ]; then
+    echo "📦 重新封装 DEB 内部压缩格式为 xz，提升旧版 dpkg 兼容性..."
+    bash "${PROJECT_ROOT}/build/repack-deb-to-xz.sh" "${DEB_FILE}"
+fi
 
 # 完成提示
 echo "🎉 DEB 包打包完成！输出路径：$(pwd)/${OUTPUT_DIR}"

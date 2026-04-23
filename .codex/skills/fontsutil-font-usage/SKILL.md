@@ -1,6 +1,6 @@
 ---
 name: fontsutil-font-usage
-description: Use when modifying EasyPostman Swing UI fonts, especially when dialogs, labels, tables, tabs, or renderers look too large or too small, or when a change is about font size consistency with the user's configured UI font size. Prefer FontsUtil.getDefaultFontWithOffset(...) over hard-coded point sizes.
+description: Use when modifying EasyPostman Swing UI fonts, especially when dialogs, labels, tables, tabs, or renderers look too large or too small, or when a change needs to stay consistent with the user's configured UI font size.
 ---
 
 # FontsUtil Font Usage

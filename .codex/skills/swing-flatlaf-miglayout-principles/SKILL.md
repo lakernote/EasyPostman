@@ -55,7 +55,7 @@ Use this skill when editing Swing form layouts in this repo. The goal is not jus
 ## Repo-specific guidance
 
 - Kafka top connection form is the known reference case:
-  `src/main/java/com/laker/postman/panel/toolbox/kafka/connection/ui/KafkaConnectionPanel.java`
+  `easy-postman-plugins/plugin-kafka/src/main/java/com/laker/postman/plugin/kafka/connection/ui/KafkaConnectionPanel.java`
 - The correct direction there was:
   - keep the layout in MigLayout
   - add `novisualpadding`

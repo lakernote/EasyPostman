@@ -1,6 +1,6 @@
 ---
 name: swing-ui-test-headless-guard
-description: Use when adding or updating EasyPostman Swing/TestNG UI tests that may run in headless CI. Extract and reuse the shared skip logic from AbstractSwingUiTest instead of duplicating DISPLAY/headless checks in each test.
+description: Use when adding or updating EasyPostman Swing/TestNG UI tests that may run in headless CI or no-display Linux environments.
 ---
 
 # Swing UI Test Headless Guard

@@ -37,6 +37,7 @@ public abstract class ModernSettingsPanel extends JPanel {
     protected boolean hasUnsavedChanges = false;
     protected JPanel warningPanel;
     protected JLabel warningLabel;
+    private boolean initialized;
 
     private static final int BORDER_RADIUS = 8;     // 圆角半径
     private static final int LABEL_WIDTH = 220;     // 标签宽度
@@ -163,8 +164,27 @@ public abstract class ModernSettingsPanel extends JPanel {
     }
 
     protected ModernSettingsPanel() {
+    }
+
+    private void initializePanel() {
+        if (initialized) {
+            return;
+        }
         initUI();
         registerListeners();
+        initialized = true;
+    }
+
+    @Override
+    public void addNotify() {
+        initializePanel();
+        super.addNotify();
+    }
+
+    @Override
+    public Dimension getPreferredSize() {
+        initializePanel();
+        return super.getPreferredSize();
     }
 
     private void initUI() {

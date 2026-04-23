@@ -1451,6 +1451,11 @@ public final class MessageKeys {
     public static final String SETTINGS_UI_FONT_APPLIED = "settings.ui.font.applied";
     public static final String SETTINGS_UI_FONT_RESTART_RECOMMENDED = "settings.ui.font.restart_recommended";
     public static final String SETTINGS_VALIDATION_FONT_SIZE_ERROR = "settings.validation.font_size_error";
+    public static final String SETTINGS_UI_FONT_STATUS_SYSTEM_DEFAULT = "settings.ui.font.status.system_default";
+    public static final String SETTINGS_UI_FONT_STATUS_FULL = "settings.ui.font.status.full";
+    public static final String SETTINGS_UI_FONT_STATUS_NO_EMOJI = "settings.ui.font.status.no_emoji";
+    public static final String SETTINGS_UI_FONT_STATUS_NO_CJK = "settings.ui.font.status.no_cjk";
+    public static final String SETTINGS_UI_FONT_UNSUPPORTED_WARNING = "settings.ui.font.unsupported_warning";
 
     // WebSocket面板相关
     public static final String WEBSOCKET_PANEL_LABEL_SEND_MESSAGE = "websocket.panel.label.send_message";

@@ -4,6 +4,7 @@ import com.laker.postman.common.exception.GetInstanceException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -86,5 +87,17 @@ public class SingletonFactory {
 
             throw new GetInstanceException("创建单例失败: " + clazz.getName(), e);
         }
+    }
+
+    public static <T> Optional<T> getExistingInstance(Class<T> clazz) {
+        if (clazz == null) {
+            throw new IllegalArgumentException("Class must not be null");
+        }
+
+        Object instance = INSTANCE_MAP.get(clazz);
+        if (clazz.isInstance(instance)) {
+            return Optional.of(clazz.cast(instance));
+        }
+        return Optional.empty();
     }
 }

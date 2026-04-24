@@ -1,6 +1,7 @@
 package com.laker.postman.panel.performance;
 
 import com.laker.postman.common.SingletonBasePanel;
+import com.laker.postman.common.DebouncedSaveSupport;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.common.component.button.RefreshButton;
@@ -113,6 +114,7 @@ public class PerformancePanel extends SingletonBasePanel {
     private transient PerformanceRunControlSupport runControlSupport;
     private transient PerformanceRequestEditorSupport requestEditorSupport;
     private final transient PerformanceSaveShortcutSupport saveShortcutSupport = new PerformanceSaveShortcutSupport();
+    private final transient DebouncedSaveSupport autoSaveSupport = new DebouncedSaveSupport(500, this::saveConfigAsync);
 
     @Override
     protected void initUI() {
@@ -120,15 +122,7 @@ public class PerformancePanel extends SingletonBasePanel {
         this.persistenceService = SingletonFactory.getInstance(PerformancePersistenceService.class);
         initTimerManager();
         efficientMode = persistenceService.loadEfficientMode();
-
-        DefaultMutableTreeNode root;
-        DefaultMutableTreeNode savedRoot = persistenceService.load(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TEST_PLAN));
-        if (savedRoot != null) {
-            root = savedRoot;
-        } else {
-            root = new DefaultMutableTreeNode(new JMeterTreeNode(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TEST_PLAN), NodeType.ROOT));
-            PerformanceTreeSupport.createDefaultRequest(root);
-        }
+        DefaultMutableTreeNode root = loadPersistedOrDefaultRoot();
 
         treeModel = new DefaultTreeModel(root);
         treeSupport = new PerformanceTreeSupport(treeModel);
@@ -291,6 +285,61 @@ public class PerformancePanel extends SingletonBasePanel {
         setupSaveShortcut();
     }
 
+    public void switchWorkspaceAndRefreshUI() {
+        if (!isReadyForWorkspaceSwitch()) {
+            return;
+        }
+
+        // 切换 workspace 前取消待保存任务，避免旧性能方案或 CSV 快照延迟写入新 workspace。
+        autoSaveSupport.cancel();
+        if (running) {
+            stopRun();
+        }
+
+        efficientMode = persistenceService.loadEfficientMode();
+        DefaultMutableTreeNode root = loadPersistedOrDefaultRoot();
+        treeModel.setRoot(root);
+        treeSupport.syncAllRequestStructures(root);
+        currentRequestNode = null;
+        if (efficientCheckBox != null) {
+            efficientCheckBox.setSelected(efficientMode);
+        }
+        if (csvDataPanel != null) {
+            csvDataPanel.restoreState(persistenceService.loadCsvState());
+        }
+        clearCachedPerformanceResults();
+        propertyCardLayout.show(propertyPanel, EMPTY);
+        for (int i = 0; i < jmeterTree.getRowCount(); i++) {
+            jmeterTree.expandRow(i);
+        }
+        selectFirstThreadGroup();
+    }
+
+    private boolean isReadyForWorkspaceSwitch() {
+        return treeModel != null
+                && persistenceService != null
+                && treeSupport != null
+                && jmeterTree != null
+                && propertyPanel != null
+                && propertyCardLayout != null
+                && threadGroupPanel != null
+                && performanceResultTablePanel != null
+                && performanceReportPanel != null
+                && performanceTrendPanel != null
+                && executionEngine != null;
+    }
+
+    private DefaultMutableTreeNode loadPersistedOrDefaultRoot() {
+        DefaultMutableTreeNode savedRoot = persistenceService.load(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TEST_PLAN));
+        if (savedRoot != null) {
+            return savedRoot;
+        }
+
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new JMeterTreeNode(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TEST_PLAN), NodeType.ROOT));
+        PerformanceTreeSupport.createDefaultRequest(root);
+        return root;
+    }
+
     @Override
     public void updateUI() {
         super.updateUI();
@@ -376,6 +425,7 @@ public class PerformancePanel extends SingletonBasePanel {
      * 4. 显示成功提示
      */
     private void handleSaveShortcut() {
+        autoSaveSupport.cancel();
         propertyPanelSupport.forceCommitAllSpinners();
 
         saveAllPropertyPanelData();
@@ -457,6 +507,11 @@ public class PerformancePanel extends SingletonBasePanel {
      * 保存当前配置
      */
     private void saveConfig() {
+        // 树节点编辑、属性面板和 CSV 变化都会触发保存，统一防抖减少频繁写盘。
+        autoSaveSupport.requestSave();
+    }
+
+    private void saveConfigAsync() {
         try {
             // 保存所有属性面板数据到树节点
             saveAllPropertyPanelData();
@@ -473,7 +528,18 @@ public class PerformancePanel extends SingletonBasePanel {
      * 保存性能测试配置（供外部调用，如退出时）
      */
     public void save() {
-        saveConfig();
+        try {
+            autoSaveSupport.cancel();
+            if (treeModel == null || persistenceService == null) {
+                return;
+            }
+            propertyPanelSupport.forceCommitAllSpinners();
+            saveAllPropertyPanelData();
+            DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();
+            persistenceService.save(root, efficientMode, csvDataPanel != null ? csvDataPanel.exportState() : null);
+        } catch (Exception e) {
+            log.error("Failed to save performance config", e);
+        }
     }
 
     /**

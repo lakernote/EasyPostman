@@ -417,9 +417,9 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     }
 
     /**
-     * 切换到指定工作区的请求集合文件，并刷新树UI
+     * 切换到指定工作区的请求集合文件，并在集合树加载完成后执行回调。
      */
-    public void switchWorkspaceAndRefreshUI(String collectionFilePath) {
+    public void switchWorkspaceAndRefreshUI(String collectionFilePath, Runnable onSuccessCallback) {
         // 使用 AsyncTaskExecutor 异步切换工作区
         EasyTaskExecutor.builder()
                 .threadName("SwitchWorkspace-Loader")
@@ -434,6 +434,9 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                     SingletonFactory.getInstance(RequestEditPanel.class).getTabbedPane().removeAll();
                     SingletonFactory.getInstance(RequestEditPanel.class).addPlusTab();
                     expandFirstGroup();
+                    if (onSuccessCallback != null) {
+                        onSuccessCallback.run();
+                    }
                 })
                 .onError(error -> {
                     // EDT线程：处理错误

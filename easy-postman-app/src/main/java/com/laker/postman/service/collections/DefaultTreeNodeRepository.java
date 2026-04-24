@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreeNode;
+import java.awt.GraphicsEnvironment;
 import java.util.Optional;
 
 import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.REQUEST;
@@ -43,6 +44,10 @@ public class DefaultTreeNodeRepository implements TreeNodeRepository {
 
     @Override
     public Optional<DefaultMutableTreeNode> getRootNode() {
+        if (GraphicsEnvironment.isHeadless()) {
+            return Optional.empty();
+        }
+
         try {
             RequestCollectionsLeftPanel leftPanel =
                     SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);

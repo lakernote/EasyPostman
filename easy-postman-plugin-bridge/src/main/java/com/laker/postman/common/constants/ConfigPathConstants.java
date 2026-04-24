@@ -133,4 +133,24 @@ public class ConfigPathConstants {
         }
         return workspace.getPath() + "environments.json";
     }
+
+    /**
+     * 获取指定工作区的功能测试配置文件路径。
+     */
+    public static String getFunctionalConfigPath(Workspace workspace) {
+        if (workspace == null || workspace.getPath() == null || workspace.getPath().isBlank()) {
+            return DEFAULT_WORKSPACE_DIR + "functional_config.json";
+        }
+        return workspace.getPath() + "functional_config.json";
+    }
+
+    /**
+     * 获取指定工作区的性能测试配置文件路径。
+     */
+    public static String getPerformanceConfigPath(Workspace workspace) {
+        if (workspace == null || workspace.getPath() == null || workspace.getPath().isBlank()) {
+            return DEFAULT_WORKSPACE_DIR + "performance_config.json";
+        }
+        return workspace.getPath() + "performance_config.json";
+    }
 }

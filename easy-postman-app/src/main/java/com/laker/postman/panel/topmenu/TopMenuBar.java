@@ -19,6 +19,8 @@ import com.laker.postman.model.Workspace;
 import com.laker.postman.model.WorkspaceType;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
+import com.laker.postman.panel.functional.FunctionalPanel;
+import com.laker.postman.panel.performance.PerformancePanel;
 import com.laker.postman.panel.topmenu.help.ChangelogDialog;
 import com.laker.postman.panel.topmenu.plugin.PluginManagerDialog;
 import com.laker.postman.panel.topmenu.setting.ModernSettingsDialog;
@@ -521,6 +523,7 @@ public class TopMenuBar extends SingletonBaseMenuBar implements IRefreshable {
                 return;
             }
 
+            saveCurrentWorkspaceScopedPanels();
             workspaceService.switchWorkspace(workspace.getId());
 
             // 切换环境变量文件
@@ -529,16 +532,24 @@ public class TopMenuBar extends SingletonBaseMenuBar implements IRefreshable {
 
             // 切换请求集合文件
             SingletonFactory.getInstance(RequestCollectionsLeftPanel.class)
-                    .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace));
+                    .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace), () -> {
+                        SingletonFactory.getInstance(PerformancePanel.class).switchWorkspaceAndRefreshUI();
+                        SingletonFactory.getInstance(FunctionalPanel.class).switchWorkspaceAndRefreshUI();
 
-            // 重新加载菜单栏（根据新工作区类型更新 Git 工具栏显示状态）
-            refresh();
+                        // 重新加载菜单栏（根据新工作区类型更新 Git 工具栏显示状态）
+                        refresh();
 
-            log.info("Switched to workspace: {}", workspace.getName());
+                        log.info("Switched to workspace: {}", workspace.getName());
+                    });
         } catch (Exception e) {
             log.error("Failed to switch workspace", e);
             NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.WORKSPACE_OPERATION_FAILED_DETAIL, e.getMessage()));
         }
+    }
+
+    private void saveCurrentWorkspaceScopedPanels() {
+        SingletonFactory.getExistingInstance(FunctionalPanel.class).ifPresent(FunctionalPanel::save);
+        SingletonFactory.getExistingInstance(PerformancePanel.class).ifPresent(PerformancePanel::save);
     }
 
     /**
@@ -684,6 +695,7 @@ public class TopMenuBar extends SingletonBaseMenuBar implements IRefreshable {
      * @param operation Git 操作类型
      */
     private void performGitOperation(Workspace workspace, GitOperation operation) {
+        saveCurrentWorkspaceScopedPanels();
         GitOperationDialog dialog = new GitOperationDialog(
                 SwingUtilities.getWindowAncestor(this),
                 workspace,
@@ -695,7 +707,10 @@ public class TopMenuBar extends SingletonBaseMenuBar implements IRefreshable {
             // Pull 操作后需要刷新相关面板以显示最新数据
             if (operation == GitOperation.PULL) {
                 SingletonFactory.getInstance(RequestCollectionsLeftPanel.class)
-                        .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace));
+                        .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace), () -> {
+                            SingletonFactory.getInstance(FunctionalPanel.class).switchWorkspaceAndRefreshUI();
+                            SingletonFactory.getInstance(PerformancePanel.class).switchWorkspaceAndRefreshUI();
+                        });
                 SingletonFactory.getInstance(EnvironmentPanel.class)
                         .switchWorkspaceAndRefreshUI(SystemUtil.getEnvPathForWorkspace(workspace));
             }

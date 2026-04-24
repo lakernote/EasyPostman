@@ -171,6 +171,7 @@ final class PerformancePanelViewFactory {
             }
             efficientModeSetterAction.accept(efficientCheckBox.isSelected());
             saveAllPropertyPanelDataAction.run();
+            saveConfigAction.run();
         });
         btnPanel.add(efficientCheckBox);
 

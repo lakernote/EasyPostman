@@ -9,6 +9,7 @@ import com.laker.postman.ioc.Component;
 import com.laker.postman.ioc.PostConstruct;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.functional.table.RunnerRowData;
 import com.laker.postman.service.collections.RequestCollectionsService;
@@ -42,8 +43,11 @@ public class FunctionalPersistenceService {
     }
 
     private void ensureDirExists() {
+        ensureDirExists(getConfigFilePath());
+    }
+
+    private void ensureDirExists(Path configPath) {
         try {
-            Path configPath = getConfigFilePath();
             Path configDir = configPath.getParent();
             if (configDir != null && !Files.exists(configDir)) {
                 Files.createDirectories(configDir);
@@ -65,7 +69,12 @@ public class FunctionalPersistenceService {
      * 保存功能测试配置
      */
     public void save(List<RunnerRowData> rows, CsvDataPanel.CsvState csvState) {
+        save(getConfigFilePath(), rows, csvState);
+    }
+
+    private void save(Path configPath, List<RunnerRowData> rows, CsvDataPanel.CsvState csvState) {
         try {
+            ensureDirExists(configPath);
             JSONObject root = new JSONObject();
             root.set("version", "1.0");
             root.set("rows", serializeRows(rows));
@@ -75,7 +84,7 @@ public class FunctionalPersistenceService {
 
             // 写入文件
             String jsonString = JSONUtil.toJsonPrettyStr(root);
-            Files.writeString(getConfigFilePath(), jsonString, StandardCharsets.UTF_8);
+            Files.writeString(configPath, jsonString, StandardCharsets.UTF_8);
 
             log.info("Successfully saved {} functional test configurations", rows.size());
         } catch (IOException e) {
@@ -94,7 +103,9 @@ public class FunctionalPersistenceService {
      * 异步保存配置
      */
     public void saveAsync(List<RunnerRowData> rows, CsvDataPanel.CsvState csvState) {
-        Thread saveThread = new Thread(() -> save(rows, csvState));
+        // 异步线程启动前先固定路径，防止用户切换 workspace 后把旧数据写到新 workspace。
+        Path configPath = getConfigFilePath();
+        Thread saveThread = new Thread(() -> save(configPath, rows, csvState), "functional-config-save");
         saveThread.setDaemon(true);
         saveThread.start();
     }
@@ -105,7 +116,8 @@ public class FunctionalPersistenceService {
      */
     public List<RunnerRowData> load() {
         List<RunnerRowData> rows = new ArrayList<>();
-        File file = getConfigFilePath().toFile();
+        Path configPath = getConfigFilePath();
+        File file = configPath.toFile();
 
         if (!file.exists()) {
             log.info("No functional test config file found, starting fresh");
@@ -126,7 +138,7 @@ public class FunctionalPersistenceService {
             }
 
             // 读取文件
-            String jsonString = Files.readString(getConfigFilePath(), StandardCharsets.UTF_8);
+            String jsonString = Files.readString(configPath, StandardCharsets.UTF_8);
             if (jsonString.trim().isEmpty()) {
                 return rows;
             }
@@ -146,7 +158,8 @@ public class FunctionalPersistenceService {
     }
 
     public CsvDataPanel.CsvState loadCsvState() {
-        File file = getConfigFilePath().toFile();
+        Path configPath = getConfigFilePath();
+        File file = configPath.toFile();
 
         if (!file.exists()) {
             return null;
@@ -158,7 +171,7 @@ public class FunctionalPersistenceService {
                 return null;
             }
 
-            String jsonString = Files.readString(getConfigFilePath(), StandardCharsets.UTF_8);
+            String jsonString = Files.readString(configPath, StandardCharsets.UTF_8);
             if (jsonString.trim().isEmpty()) {
                 return null;
             }
@@ -329,6 +342,27 @@ public class FunctionalPersistenceService {
     }
 
     protected Path getConfigFilePath() {
+        Workspace workspace = getCurrentWorkspace();
+        Path workspaceConfigPath = Paths.get(ConfigPathConstants.getFunctionalConfigPath(workspace));
+        return WorkspaceScopedConfigSupport.resolveConfigPath(
+                workspace,
+                workspaceConfigPath,
+                getLegacyConfigFilePath(),
+                "functional",
+                log
+        );
+    }
+
+    protected Workspace getCurrentWorkspace() {
+        try {
+            return WorkspaceService.getInstance().getCurrentWorkspace();
+        } catch (Exception e) {
+            log.debug("Failed to resolve current workspace for functional config path", e);
+            return null;
+        }
+    }
+
+    protected Path getLegacyConfigFilePath() {
         return Paths.get(FILE_PATH);
     }
 }

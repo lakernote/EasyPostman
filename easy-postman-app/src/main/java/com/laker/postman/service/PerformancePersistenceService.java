@@ -8,6 +8,7 @@ import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.ioc.Component;
 import com.laker.postman.ioc.PostConstruct;
 import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.performance.assertion.AssertionData;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
@@ -44,8 +45,11 @@ public class PerformancePersistenceService {
     }
 
     private void ensureDirExists() {
+        ensureDirExists(getConfigFilePath());
+    }
+
+    private void ensureDirExists(Path configPath) {
         try {
-            Path configPath = getConfigFilePath();
             Path configDir = configPath.getParent();
             if (configDir != null && !Files.exists(configDir)) {
                 Files.createDirectories(configDir);
@@ -81,7 +85,12 @@ public class PerformancePersistenceService {
      * @param csvState      CSV 快照状态
      */
     public void save(DefaultMutableTreeNode rootNode, boolean efficientMode, CsvDataPanel.CsvState csvState) {
+        save(getConfigFilePath(), rootNode, efficientMode, csvState);
+    }
+
+    private void save(Path configPath, DefaultMutableTreeNode rootNode, boolean efficientMode, CsvDataPanel.CsvState csvState) {
         try {
+            ensureDirExists(configPath);
             JSONObject jsonRoot = new JSONObject();
             jsonRoot.set("version", "1.0");
             jsonRoot.set("efficientMode", efficientMode);
@@ -92,7 +101,7 @@ public class PerformancePersistenceService {
 
             // 写入文件
             String jsonString = JSONUtil.toJsonPrettyStr(jsonRoot);
-            Files.writeString(getConfigFilePath(), jsonString, StandardCharsets.UTF_8);
+            Files.writeString(configPath, jsonString, StandardCharsets.UTF_8);
 
             log.info("Successfully saved performance test configuration (efficientMode: {})", efficientMode);
         } catch (IOException e) {
@@ -125,7 +134,9 @@ public class PerformancePersistenceService {
      * @param csvState      CSV 快照状态
      */
     public void saveAsync(DefaultMutableTreeNode rootNode, boolean efficientMode, CsvDataPanel.CsvState csvState) {
-        Thread saveThread = new Thread(() -> save(rootNode, efficientMode, csvState));
+        // 异步线程启动前先固定路径，防止用户切换 workspace 后把旧性能方案写到新 workspace。
+        Path configPath = getConfigFilePath();
+        Thread saveThread = new Thread(() -> save(configPath, rootNode, efficientMode, csvState), "performance-config-save");
         saveThread.setDaemon(true);
         saveThread.start();
     }
@@ -300,7 +311,8 @@ public class PerformancePersistenceService {
      * 通过ID从集合中获取最新的请求配置，确保与集合保持同步
      */
     public DefaultMutableTreeNode load(String rootName) {
-        File file = getConfigFilePath().toFile();
+        Path configPath = getConfigFilePath();
+        File file = configPath.toFile();
 
         if (!file.exists()) {
             log.info("No performance test config file found, starting fresh");
@@ -321,7 +333,7 @@ public class PerformancePersistenceService {
             }
 
             // 读取文件
-            String jsonString = Files.readString(getConfigFilePath(), StandardCharsets.UTF_8);
+            String jsonString = Files.readString(configPath, StandardCharsets.UTF_8);
             if (jsonString.trim().isEmpty()) {
                 return null;
             }
@@ -359,7 +371,8 @@ public class PerformancePersistenceService {
      * @return 高效模式设置，如果配置文件不存在或读取失败则返回 true（默认值）
      */
     public boolean loadEfficientMode() {
-        File file = getConfigFilePath().toFile();
+        Path configPath = getConfigFilePath();
+        File file = configPath.toFile();
 
         if (!file.exists()) {
             log.debug("No performance test config file found, using default efficientMode: true");
@@ -372,7 +385,7 @@ public class PerformancePersistenceService {
                 return true;
             }
 
-            String jsonString = Files.readString(getConfigFilePath(), StandardCharsets.UTF_8);
+            String jsonString = Files.readString(configPath, StandardCharsets.UTF_8);
             if (jsonString.trim().isEmpty()) {
                 return true;
             }
@@ -390,7 +403,8 @@ public class PerformancePersistenceService {
     }
 
     public CsvDataPanel.CsvState loadCsvState() {
-        File file = getConfigFilePath().toFile();
+        Path configPath = getConfigFilePath();
+        File file = configPath.toFile();
 
         if (!file.exists()) {
             return null;
@@ -402,7 +416,7 @@ public class PerformancePersistenceService {
                 return null;
             }
 
-            String jsonString = Files.readString(getConfigFilePath(), StandardCharsets.UTF_8);
+            String jsonString = Files.readString(configPath, StandardCharsets.UTF_8);
             if (jsonString.trim().isEmpty()) {
                 return null;
             }
@@ -716,6 +730,27 @@ public class PerformancePersistenceService {
     }
 
     protected Path getConfigFilePath() {
+        Workspace workspace = getCurrentWorkspace();
+        Path workspaceConfigPath = Paths.get(ConfigPathConstants.getPerformanceConfigPath(workspace));
+        return WorkspaceScopedConfigSupport.resolveConfigPath(
+                workspace,
+                workspaceConfigPath,
+                getLegacyConfigFilePath(),
+                "performance",
+                log
+        );
+    }
+
+    protected Workspace getCurrentWorkspace() {
+        try {
+            return WorkspaceService.getInstance().getCurrentWorkspace();
+        } catch (Exception e) {
+            log.debug("Failed to resolve current workspace for performance config path", e);
+            return null;
+        }
+    }
+
+    protected Path getLegacyConfigFilePath() {
         return Paths.get(FILE_PATH);
     }
 }

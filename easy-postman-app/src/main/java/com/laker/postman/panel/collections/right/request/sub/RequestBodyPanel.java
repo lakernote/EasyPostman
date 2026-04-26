@@ -3,6 +3,7 @@ package com.laker.postman.panel.collections.right.request.sub;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.common.component.SearchableTextArea;
+import com.laker.postman.common.component.ViewportClippedTokenPainter;
 import com.laker.postman.common.component.button.*;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.common.component.table.FormDataTablePanel;
@@ -302,6 +303,7 @@ public class RequestBodyPanel extends JPanel {
         bodyArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON_WITH_COMMENTS); // 默认JSON高亮
         bodyArea.setCodeFoldingEnabled(true); // 启用代码折叠
         bodyArea.setLineWrap(false); // 禁用自动换行以提升大文本性能
+        bodyArea.setTokenPainterFactory(ignored -> new ViewportClippedTokenPainter());
 
         // 加载编辑器主题 - 支持亮色和暗色主题自适应
         EditorThemeUtil.loadTheme(bodyArea);

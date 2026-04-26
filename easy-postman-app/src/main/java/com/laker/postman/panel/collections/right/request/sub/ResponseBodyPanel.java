@@ -4,6 +4,7 @@ import cn.hutool.core.util.XmlUtil;
 import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.common.component.SearchableTextArea;
+import com.laker.postman.common.component.ViewportClippedTokenPainter;
 import com.laker.postman.common.component.button.*;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.HttpResponse;
@@ -77,6 +78,7 @@ public class ResponseBodyPanel extends JPanel {
         responseBodyPane.setCodeFoldingEnabled(true);
         responseBodyPane.setLineWrap(false); // 禁用自动换行以提升大文本性能
         responseBodyPane.setHighlightCurrentLine(false); // 关闭选中行高亮
+        responseBodyPane.setTokenPainterFactory(textArea -> new ViewportClippedTokenPainter());
 
         // 加载编辑器主题 - 支持亮色和暗色主题自适应（必须在 setFont 之前，否则主题会覆盖字体）
         EditorThemeUtil.loadTheme(responseBodyPane);

@@ -463,7 +463,7 @@ public class SearchReplacePanel extends JPanel {
     }
 
     /**
-     * 创建搜索上下文
+     * 创建搜索上下文。禁用 markAll，避免搜索/替换时触发全量高亮扫描。
      */
     private SearchContext createSearchContext() {
         SearchContext context = new SearchContext();
@@ -472,6 +472,7 @@ public class SearchReplacePanel extends JPanel {
         context.setMatchCase(searchField.isCaseSensitive());
         context.setRegularExpression(false);  // 不支持正则表达式
         context.setWholeWord(searchField.isWholeWord());
+        context.setMarkAll(false);
         return context;
     }
 
@@ -510,37 +511,26 @@ public class SearchReplacePanel extends JPanel {
                 return 0;
             }
 
-            // 保存当前状态
-            int savedCaret = textArea.getCaretPosition();
-            int savedSelStart = textArea.getSelectionStart();
-            int savedSelEnd = textArea.getSelectionEnd();
-
-            try {
-                // 从文档开头开始计数
-                textArea.setCaretPosition(0);
-                SearchContext context = createSearchContext();
-                context.setSearchForward(true);
-
-                int count = 0;
-                while (true) {
-                    SearchResult tempResult = SearchEngine.find(textArea, context);
-                    if (!tempResult.wasFound()) {
-                        break;
-                    }
-                    count++;
-                }
-
-                return count;
-            } finally {
-                // 恢复光标和选择
-                textArea.setCaretPosition(savedCaret);
-                textArea.setSelectionStart(savedSelStart);
-                textArea.setSelectionEnd(savedSelEnd);
-            }
+            return countMatches(textArea.getText(), searchText);
         } catch (Exception e) {
             log.warn("Failed to calculate total matches", e);
             return 0;
         }
+    }
+
+    private int countMatches(String text, String searchText) {
+        if (searchText.isEmpty()) {
+            return 0;
+        }
+
+        int count = 0;
+        int searchLength = searchText.length();
+        int matchStart = findNextMatch(text, searchText, 0);
+        while (matchStart >= 0) {
+            count++;
+            matchStart = findNextMatch(text, searchText, matchStart + searchLength);
+        }
+        return count;
     }
 
     /**
@@ -553,26 +543,20 @@ public class SearchReplacePanel extends JPanel {
                 return 1;
             }
 
-            // 从文档开头开始计数
-            textArea.setCaretPosition(0);
-            SearchContext context = createSearchContext();
-            context.setSearchForward(true);
-
+            String text = textArea.getText();
+            int searchLength = searchText.length();
             int index = 0;
+            int matchStart = findNextMatch(text, searchText, 0);
 
-            while (true) {
-                SearchResult tempResult = SearchEngine.find(textArea, context);
-                if (!tempResult.wasFound()) {
-                    break;
-                }
+            while (matchStart >= 0) {
                 index++;
-
-                int matchStart = tempResult.getMatchRange().getStartOffset();
 
                 // 找到第一个起始位置 >= 当前选中位置的匹配项
                 if (matchStart >= selStart) {
                     return index;
                 }
+
+                matchStart = findNextMatch(text, searchText, matchStart + searchLength);
             }
 
             // 如果所有匹配都在选中位置之前，返回总数
@@ -581,6 +565,46 @@ public class SearchReplacePanel extends JPanel {
             log.warn("Failed to calculate current index", e);
             return 1;
         }
+    }
+
+    private int findNextMatch(String text, String searchText, int fromIndex) {
+        int searchLength = searchText.length();
+        int lastStart = text.length() - searchLength;
+        if (searchLength == 0 || fromIndex > lastStart) {
+            return -1;
+        }
+
+        boolean matchCase = searchField.isCaseSensitive();
+        boolean wholeWord = searchField.isWholeWord();
+        char firstChar = searchText.charAt(0);
+
+        for (int index = Math.max(0, fromIndex); index <= lastStart; index++) {
+            if (!charsEqual(text.charAt(index), firstChar, matchCase)) {
+                continue;
+            }
+            if (!text.regionMatches(!matchCase, index, searchText, 0, searchLength)) {
+                continue;
+            }
+            if (!wholeWord || isWholeWord(text, index, searchLength)) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    private boolean charsEqual(char left, char right, boolean matchCase) {
+        return matchCase
+                ? left == right
+                : (Character.toLowerCase(left) == Character.toLowerCase(right)
+                || Character.toUpperCase(left) == Character.toUpperCase(right));
+    }
+
+    private boolean isWholeWord(String text, int offset, int length) {
+        boolean wordBoundaryBefore = offset == 0 || !Character.isLetterOrDigit(text.charAt(offset - 1));
+        int afterOffset = offset + length;
+        boolean wordBoundaryAfter = afterOffset >= text.length()
+                || !Character.isLetterOrDigit(text.charAt(afterOffset));
+        return wordBoundaryBefore && wordBoundaryAfter;
     }
 
     /**
@@ -596,17 +620,7 @@ public class SearchReplacePanel extends JPanel {
             // 获取当前选中的位置
             int currentSelStart = textArea.getSelectionStart();
 
-            // 保存当前状态
-            int savedCaret = textArea.getCaretPosition();
-
-            int result = calculateCurrentIndex(currentSelStart);
-
-            // 恢复光标
-            textArea.setCaretPosition(savedCaret);
-            textArea.setSelectionStart(currentSelStart);
-            textArea.setSelectionEnd(textArea.getSelectionEnd());
-
-            return result;
+            return calculateCurrentIndex(currentSelStart);
         } catch (Exception e) {
             log.warn("Failed to calculate match index", e);
             return 1;

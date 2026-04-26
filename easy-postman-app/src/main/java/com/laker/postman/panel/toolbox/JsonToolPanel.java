@@ -2,6 +2,7 @@ package com.laker.postman.panel.toolbox;
 
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.component.SearchableTextArea;
+import com.laker.postman.common.component.ViewportClippedTokenPainter;
 import com.laker.postman.util.EditorThemeUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.JsonUtil;
@@ -157,6 +158,7 @@ public class JsonToolPanel extends JPanel {
         textArea.setTabsEmulated(true); // 用空格模拟Tab
         textArea.setMarkOccurrences(true); // 标记相同内容
         textArea.setAnimateBracketMatching(true); // 括号匹配动画
+        textArea.setTokenPainterFactory(ignored -> new ViewportClippedTokenPainter());
         EditorThemeUtil.loadTheme(textArea);
         return textArea;
     }

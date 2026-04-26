@@ -49,6 +49,24 @@ public class AppReleaseSelectorTest {
         assertEquals(latest.getStr("tag_name"), "v5.3.17");
     }
 
+    @Test
+    public void shouldPickNewestStableAppReleaseWhenSourceReturnsOldestFirst() {
+        JSONArray releases = new JSONArray();
+        releases.add(release("v4.3.40", false, false));
+        releases.add(release("plugin-redis-v5.3.18", false, false));
+        releases.add(release("plugin-kafka-v5.3.18", false, false));
+        releases.add(release("v5.3.18", false, false));
+        releases.add(release("plugin-kafka-v5.3.23", false, false));
+        releases.add(release("v5.4.14", false, false));
+        releases.add(release("v5.4.20", false, false));
+        releases.add(release("v5.4.23", false, false));
+
+        JSONObject latest = AppReleaseSelector.selectLatestStableAppRelease(releases);
+
+        assertNotNull(latest);
+        assertEquals(latest.getStr("tag_name"), "v5.4.23");
+    }
+
     private static JSONObject release(String tagName, boolean draft, boolean prerelease) {
         JSONObject release = new JSONObject();
         release.set("tag_name", tagName);

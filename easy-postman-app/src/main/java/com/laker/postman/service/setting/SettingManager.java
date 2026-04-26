@@ -14,6 +14,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Consumer;
 
 @Slf4j
 public class SettingManager {
@@ -28,6 +29,12 @@ public class SettingManager {
     private static final int DEFAULT_SCRIPT_REMOTE_READ_TIMEOUT_MS = 5000;
     private static final int DEFAULT_SCRIPT_REMOTE_MAX_BYTES = 512 * 1024;
     private static final int DEFAULT_JMETER_SLOW_REQUEST_THRESHOLD_MS = 10000;
+    private static final String AUTO_UPDATE_CHECK_ENABLED_KEY = "auto_update_check_enabled";
+    private static final String AUTO_UPDATE_CHECK_FREQUENCY_KEY = "auto_update_check_frequency";
+    private static final String LAST_UPDATE_CHECK_TIME_KEY = "last_update_check_time";
+    private static final String UPDATE_SOURCE_PREFERENCE_KEY = "update_source_preference";
+    private static final String JMETER_SLOW_REQUEST_THRESHOLD_KEY = "jmeter_slow_request_threshold";
+    private static final Object SETTINGS_IO_LOCK = new Object();
     public static final String PROXY_MODE_MANUAL = "MANUAL";
     public static final String PROXY_MODE_SYSTEM = "SYSTEM";
     public static final String PROXY_TYPE_HTTP = "HTTP";
@@ -45,13 +52,9 @@ public class SettingManager {
     }
 
     public static void load() {
-        File file = new File(CONFIG_FILE);
-        if (file.exists()) {
-            try (FileInputStream fis = new FileInputStream(file)) {
-                props.load(fis);
-            } catch (IOException e) {
-                // ignore
-            }
+        synchronized (SETTINGS_IO_LOCK) {
+            props.clear();
+            props.putAll(loadProperties(new File(CONFIG_FILE)));
         }
     }
 
@@ -69,10 +72,79 @@ public class SettingManager {
     }
 
     public static void save() {
-        try (FileOutputStream fos = new FileOutputStream(CONFIG_FILE)) {
-            props.store(fos, "EasyPostman Settings");
+        synchronized (SETTINGS_IO_LOCK) {
+            Properties merged = loadProperties(new File(CONFIG_FILE));
+            merged.putAll(props);
+            storeProperties(merged, new File(CONFIG_FILE));
+            refreshInMemorySettings(merged);
+        }
+    }
+
+    static Properties saveProperty(File configFile, String key, String value) {
+        synchronized (SETTINGS_IO_LOCK) {
+            Properties merged = loadProperties(configFile);
+            if (value == null) {
+                merged.remove(key);
+            } else {
+                merged.setProperty(key, value);
+            }
+            storeProperties(merged, configFile);
+            return merged;
+        }
+    }
+
+    private static void setAndSaveProperty(String key, String value) {
+        updateAndSaveProperties(settings -> applyProperty(settings, key, value));
+    }
+
+    private static void updateAndSaveProperties(Consumer<Properties> updater) {
+        synchronized (SETTINGS_IO_LOCK) {
+            Properties merged = loadProperties(new File(CONFIG_FILE));
+            merged.putAll(props);
+            updater.accept(merged);
+            storeProperties(merged, new File(CONFIG_FILE));
+            refreshInMemorySettings(merged);
+        }
+    }
+
+    private static void applyProperty(Properties settings, String key, String value) {
+        if (value == null) {
+            settings.remove(key);
+        } else {
+            settings.setProperty(key, value);
+        }
+    }
+
+    private static void refreshInMemorySettings(Properties settings) {
+        props.clear();
+        props.putAll(settings);
+    }
+
+    private static Properties loadProperties(File file) {
+        Properties loaded = new Properties();
+        if (file == null || !file.exists()) {
+            return loaded;
+        }
+        try (FileInputStream fis = new FileInputStream(file)) {
+            loaded.load(fis);
         } catch (IOException e) {
-            // ignore
+            log.warn("Failed to load settings from {}", file, e);
+        }
+        return loaded;
+    }
+
+    private static void storeProperties(Properties properties, File file) {
+        if (file == null) {
+            return;
+        }
+        File parent = file.getParentFile();
+        if (parent != null && !parent.exists() && !parent.mkdirs()) {
+            log.warn("Failed to create settings directory: {}", parent);
+        }
+        try (FileOutputStream fos = new FileOutputStream(file)) {
+            properties.store(fos, "EasyPostman Settings");
+        } catch (IOException e) {
+            log.warn("Failed to save settings to {}", file, e);
         }
     }
 
@@ -89,8 +161,7 @@ public class SettingManager {
     }
 
     public static void setMaxBodySize(int size) {
-        props.setProperty("max_body_size", String.valueOf(size));
-        save();
+        setAndSaveProperty("max_body_size", String.valueOf(size));
     }
 
     public static int getRequestTimeout() {
@@ -106,8 +177,7 @@ public class SettingManager {
     }
 
     public static void setRequestTimeout(int timeout) {
-        props.setProperty("request_timeout", String.valueOf(timeout));
-        save();
+        setAndSaveProperty("request_timeout", String.valueOf(timeout));
     }
 
     public static int getMaxDownloadSize() {
@@ -123,8 +193,7 @@ public class SettingManager {
     }
 
     public static void setMaxDownloadSize(int size) {
-        props.setProperty("max_download_size", String.valueOf(size));
-        save();
+        setAndSaveProperty("max_download_size", String.valueOf(size));
     }
 
     public static int getJmeterMaxIdleConnections() {
@@ -140,8 +209,7 @@ public class SettingManager {
     }
 
     public static void setJmeterMaxIdleConnections(int maxIdle) {
-        props.setProperty("jmeter_max_idle_connections", String.valueOf(maxIdle));
-        save();
+        setAndSaveProperty("jmeter_max_idle_connections", String.valueOf(maxIdle));
     }
 
     public static long getJmeterKeepAliveSeconds() {
@@ -157,8 +225,7 @@ public class SettingManager {
     }
 
     public static void setJmeterKeepAliveSeconds(long seconds) {
-        props.setProperty("jmeter_keep_alive_seconds", String.valueOf(seconds));
-        save();
+        setAndSaveProperty("jmeter_keep_alive_seconds", String.valueOf(seconds));
     }
 
     public static int getJmeterMaxRequests() {
@@ -174,8 +241,7 @@ public class SettingManager {
     }
 
     public static void setJmeterMaxRequests(int maxRequests) {
-        props.setProperty("jmeter_max_requests", String.valueOf(maxRequests));
-        save();
+        setAndSaveProperty("jmeter_max_requests", String.valueOf(maxRequests));
     }
 
     public static int getJmeterMaxRequestsPerHost() {
@@ -191,12 +257,11 @@ public class SettingManager {
     }
 
     public static void setJmeterMaxRequestsPerHost(int maxRequestsPerHost) {
-        props.setProperty("jmeter_max_requests_per_host", String.valueOf(maxRequestsPerHost));
-        save();
+        setAndSaveProperty("jmeter_max_requests_per_host", String.valueOf(maxRequestsPerHost));
     }
 
     public static int getJmeterSlowRequestThreshold() {
-        String val = props.getProperty("jmeter_slow_request_threshold");
+        String val = props.getProperty(JMETER_SLOW_REQUEST_THRESHOLD_KEY);
         if (val != null) {
             try {
                 return Math.max(0, Integer.parseInt(val));
@@ -208,8 +273,7 @@ public class SettingManager {
     }
 
     public static void setJmeterSlowRequestThreshold(int thresholdMs) {
-        props.setProperty("jmeter_slow_request_threshold", String.valueOf(Math.max(0, thresholdMs)));
-        save();
+        setAndSaveProperty(JMETER_SLOW_REQUEST_THRESHOLD_KEY, String.valueOf(Math.max(0, thresholdMs)));
     }
 
     public static int getTrendSamplingIntervalSeconds() {
@@ -229,8 +293,7 @@ public class SettingManager {
     public static void setTrendSamplingIntervalSeconds(int seconds) {
         // 限制范围：1-60秒
         int interval = Math.max(1, Math.min(60, seconds));
-        props.setProperty("trend_sampling_interval_seconds", String.valueOf(interval));
-        save();
+        setAndSaveProperty("trend_sampling_interval_seconds", String.valueOf(interval));
     }
 
     public static boolean isPerformanceEventLoggingEnabled() {
@@ -242,8 +305,7 @@ public class SettingManager {
     }
 
     public static void setPerformanceEventLoggingEnabled(boolean enabled) {
-        props.setProperty("performance_event_logging_enabled", String.valueOf(enabled));
-        save();
+        setAndSaveProperty("performance_event_logging_enabled", String.valueOf(enabled));
     }
 
     public static boolean isShowDownloadProgressDialog() {
@@ -255,8 +317,7 @@ public class SettingManager {
     }
 
     public static void setShowDownloadProgressDialog(boolean show) {
-        props.setProperty("show_download_progress_dialog", String.valueOf(show));
-        save();
+        setAndSaveProperty("show_download_progress_dialog", String.valueOf(show));
     }
 
     public static int getDownloadProgressDialogThreshold() {
@@ -272,8 +333,7 @@ public class SettingManager {
     }
 
     public static void setDownloadProgressDialogThreshold(int threshold) {
-        props.setProperty("download_progress_dialog_threshold", String.valueOf(threshold));
-        save();
+        setAndSaveProperty("download_progress_dialog_threshold", String.valueOf(threshold));
     }
 
     public static boolean isFollowRedirects() {
@@ -285,8 +345,7 @@ public class SettingManager {
     }
 
     public static void setFollowRedirects(boolean follow) {
-        props.setProperty("follow_redirects", String.valueOf(follow));
-        save();
+        setAndSaveProperty("follow_redirects", String.valueOf(follow));
     }
 
     /**
@@ -302,8 +361,7 @@ public class SettingManager {
     }
 
     public static void setRequestSslVerificationDisabled(boolean disabled) {
-        props.setProperty("ssl_verification_enabled", String.valueOf(!disabled));
-        save();
+        setAndSaveProperty("ssl_verification_enabled", String.valueOf(!disabled));
         // 清除客户端缓存以应用新的 SSL 设置
         OkHttpClientManager.clearClientCache();
     }
@@ -322,8 +380,7 @@ public class SettingManager {
 
     public static void setDefaultProtocol(String protocol) {
         if (protocol != null && (protocol.equals("http") || protocol.equals("https"))) {
-            props.setProperty("default_protocol", protocol);
-            save();
+            setAndSaveProperty("default_protocol", protocol);
         }
     }
 
@@ -336,8 +393,7 @@ public class SettingManager {
     }
 
     public static void setRemoteJsRequireEnabled(boolean enabled) {
-        props.setProperty(SCRIPT_REMOTE_REQUIRE_ENABLED, String.valueOf(enabled));
-        save();
+        setAndSaveProperty(SCRIPT_REMOTE_REQUIRE_ENABLED, String.valueOf(enabled));
     }
 
     public static boolean isInsecureRemoteJsRequireEnabled() {
@@ -349,8 +405,7 @@ public class SettingManager {
     }
 
     public static void setInsecureRemoteJsRequireEnabled(boolean enabled) {
-        props.setProperty(SCRIPT_REMOTE_REQUIRE_ALLOW_HTTP, String.valueOf(enabled));
-        save();
+        setAndSaveProperty(SCRIPT_REMOTE_REQUIRE_ALLOW_HTTP, String.valueOf(enabled));
     }
 
     public static String getRemoteJsRequireAllowedHosts() {
@@ -359,8 +414,7 @@ public class SettingManager {
     }
 
     public static void setRemoteJsRequireAllowedHosts(String hosts) {
-        props.setProperty(SCRIPT_REMOTE_REQUIRE_ALLOWED_HOSTS, hosts != null ? hosts.trim() : "");
-        save();
+        setAndSaveProperty(SCRIPT_REMOTE_REQUIRE_ALLOWED_HOSTS, hosts != null ? hosts.trim() : "");
     }
 
     public static int getRemoteJsRequireConnectTimeoutMs() {
@@ -368,8 +422,7 @@ public class SettingManager {
     }
 
     public static void setRemoteJsRequireConnectTimeoutMs(int timeoutMs) {
-        props.setProperty(SCRIPT_REMOTE_REQUIRE_CONNECT_TIMEOUT_MS, String.valueOf(Math.max(1, timeoutMs)));
-        save();
+        setAndSaveProperty(SCRIPT_REMOTE_REQUIRE_CONNECT_TIMEOUT_MS, String.valueOf(Math.max(1, timeoutMs)));
     }
 
     public static int getRemoteJsRequireReadTimeoutMs() {
@@ -377,8 +430,7 @@ public class SettingManager {
     }
 
     public static void setRemoteJsRequireReadTimeoutMs(int timeoutMs) {
-        props.setProperty(SCRIPT_REMOTE_REQUIRE_READ_TIMEOUT_MS, String.valueOf(Math.max(1, timeoutMs)));
-        save();
+        setAndSaveProperty(SCRIPT_REMOTE_REQUIRE_READ_TIMEOUT_MS, String.valueOf(Math.max(1, timeoutMs)));
     }
 
     public static int getRemoteJsRequireMaxBytes() {
@@ -386,8 +438,7 @@ public class SettingManager {
     }
 
     public static void setRemoteJsRequireMaxBytes(int maxBytes) {
-        props.setProperty(SCRIPT_REMOTE_REQUIRE_MAX_BYTES, String.valueOf(Math.max(1, maxBytes)));
-        save();
+        setAndSaveProperty(SCRIPT_REMOTE_REQUIRE_MAX_BYTES, String.valueOf(Math.max(1, maxBytes)));
     }
 
     /**
@@ -402,8 +453,7 @@ public class SettingManager {
     }
 
     public static void setCustomTrustMaterialEnabled(boolean enabled) {
-        props.setProperty("custom_trust_material_enabled", String.valueOf(enabled));
-        save();
+        setAndSaveProperty("custom_trust_material_enabled", String.valueOf(enabled));
         OkHttpClientManager.clearClientCache();
     }
 
@@ -439,17 +489,18 @@ public class SettingManager {
 
     public static void setCustomTrustMaterialEntries(List<TrustedCertificateEntry> entries) {
         List<TrustedCertificateEntry> sanitizedEntries = sanitizeTrustedCertificateEntries(entries);
-        if (sanitizedEntries.isEmpty()) {
-            props.remove("custom_trust_material_entries");
-            props.setProperty("custom_trust_material_path", "");
-            props.setProperty("custom_trust_material_password", "");
-        } else {
-            props.setProperty("custom_trust_material_entries", JSONUtil.toJsonStr(sanitizedEntries));
-            TrustedCertificateEntry firstEntry = sanitizedEntries.get(0);
-            props.setProperty("custom_trust_material_path", firstEntry.getPath());
-            props.setProperty("custom_trust_material_password", firstEntry.getPassword() != null ? firstEntry.getPassword() : "");
-        }
-        save();
+        updateAndSaveProperties(settings -> {
+            if (sanitizedEntries.isEmpty()) {
+                settings.remove("custom_trust_material_entries");
+                settings.setProperty("custom_trust_material_path", "");
+                settings.setProperty("custom_trust_material_password", "");
+            } else {
+                settings.setProperty("custom_trust_material_entries", JSONUtil.toJsonStr(sanitizedEntries));
+                TrustedCertificateEntry firstEntry = sanitizedEntries.get(0);
+                settings.setProperty("custom_trust_material_path", firstEntry.getPath());
+                settings.setProperty("custom_trust_material_password", firstEntry.getPassword() != null ? firstEntry.getPassword() : "");
+            }
+        });
         OkHttpClientManager.clearClientCache();
     }
 
@@ -535,8 +586,7 @@ public class SettingManager {
     }
 
     public static void setMaxHistoryCount(int count) {
-        props.setProperty("max_history_count", String.valueOf(count));
-        save();
+        setAndSaveProperty("max_history_count", String.valueOf(count));
     }
 
     public static int getMaxOpenedRequestsCount() {
@@ -552,8 +602,7 @@ public class SettingManager {
     }
 
     public static void setMaxOpenedRequestsCount(int count) {
-        props.setProperty("max_opened_requests_count", String.valueOf(count));
-        save();
+        setAndSaveProperty("max_opened_requests_count", String.valueOf(count));
     }
 
     /**
@@ -568,8 +617,7 @@ public class SettingManager {
     }
 
     public static void setAutoFormatResponse(boolean autoFormat) {
-        props.setProperty("auto_format_response", String.valueOf(autoFormat));
-        save();
+        setAndSaveProperty("auto_format_response", String.valueOf(autoFormat));
     }
 
     /**
@@ -584,8 +632,7 @@ public class SettingManager {
     }
 
     public static void setStartupSplashEnabled(boolean enabled) {
-        props.setProperty("startup_splash_enabled", String.valueOf(enabled));
-        save();
+        setAndSaveProperty("startup_splash_enabled", String.valueOf(enabled));
     }
 
     /**
@@ -600,8 +647,7 @@ public class SettingManager {
     }
 
     public static void setSidebarExpanded(boolean expanded) {
-        props.setProperty("sidebar_expanded", String.valueOf(expanded));
-        save();
+        setAndSaveProperty("sidebar_expanded", String.valueOf(expanded));
     }
 
     public static List<String> getSidebarTabOrder() {
@@ -621,12 +667,7 @@ public class SettingManager {
     }
 
     public static void setSidebarTabOrder(Collection<String> tabOrder) {
-        if (tabOrder == null || tabOrder.isEmpty()) {
-            props.remove("sidebar_tab_order");
-        } else {
-            props.setProperty("sidebar_tab_order", String.join(",", tabOrder));
-        }
-        save();
+        setAndSaveProperty("sidebar_tab_order", tabOrder == null || tabOrder.isEmpty() ? null : String.join(",", tabOrder));
     }
 
     public static Set<String> getHiddenSidebarTabs() {
@@ -646,12 +687,7 @@ public class SettingManager {
     }
 
     public static void setHiddenSidebarTabs(Collection<String> hiddenTabs) {
-        if (hiddenTabs == null || hiddenTabs.isEmpty()) {
-            props.remove("sidebar_hidden_tabs");
-        } else {
-            props.setProperty("sidebar_hidden_tabs", String.join(",", hiddenTabs));
-        }
-        save();
+        setAndSaveProperty("sidebar_hidden_tabs", hiddenTabs == null || hiddenTabs.isEmpty() ? null : String.join(",", hiddenTabs));
     }
 
     public static List<SidebarTab> getOrderedSidebarTabs() {
@@ -674,8 +710,7 @@ public class SettingManager {
     }
 
     public static void setLayoutVertical(boolean vertical) {
-        props.setProperty("layout_vertical", String.valueOf(vertical));
-        save();
+        setAndSaveProperty("layout_vertical", String.valueOf(vertical));
     }
 
     /**
@@ -690,8 +725,7 @@ public class SettingManager {
     }
 
     public static void setNotificationPosition(NotificationPosition position) {
-        props.setProperty("notification_position", position.name());
-        save();
+        setAndSaveProperty("notification_position", position.name());
     }
 
     // ===== 自动更新设置 =====
@@ -700,7 +734,7 @@ public class SettingManager {
      * 是否启用自动检查更新
      */
     public static boolean isAutoUpdateCheckEnabled() {
-        String val = props.getProperty("auto_update_check_enabled");
+        String val = props.getProperty(AUTO_UPDATE_CHECK_ENABLED_KEY);
         if (val != null) {
             return Boolean.parseBoolean(val);
         }
@@ -708,8 +742,7 @@ public class SettingManager {
     }
 
     public static void setAutoUpdateCheckEnabled(boolean enabled) {
-        props.setProperty("auto_update_check_enabled", String.valueOf(enabled));
-        save();
+        setAndSaveProperty(AUTO_UPDATE_CHECK_ENABLED_KEY, String.valueOf(enabled));
     }
 
     /**
@@ -717,7 +750,7 @@ public class SettingManager {
      * 支持的值：startup（每次启动）、daily（每日）、weekly（每周）、monthly（每月）
      */
     public static String getAutoUpdateCheckFrequency() {
-        String val = props.getProperty("auto_update_check_frequency");
+        String val = props.getProperty(AUTO_UPDATE_CHECK_FREQUENCY_KEY);
         if (val != null && (val.equals("startup") || val.equals("daily") || val.equals("weekly") || val.equals("monthly"))) {
             return val;
         }
@@ -725,9 +758,9 @@ public class SettingManager {
     }
 
     public static void setAutoUpdateCheckFrequency(String frequency) {
-        if (frequency != null && (frequency.equals("startup") || frequency.equals("daily") || frequency.equals("weekly") || frequency.equals("monthly"))) {
-            props.setProperty("auto_update_check_frequency", frequency);
-            save();
+        String normalized = frequency == null ? "" : frequency.trim().toLowerCase(Locale.ROOT);
+        if (normalized.equals("startup") || normalized.equals("daily") || normalized.equals("weekly") || normalized.equals("monthly")) {
+            setAndSaveProperty(AUTO_UPDATE_CHECK_FREQUENCY_KEY, normalized);
         }
     }
 
@@ -735,7 +768,7 @@ public class SettingManager {
      * 获取上次检查更新的时间戳（毫秒）
      */
     public static long getLastUpdateCheckTime() {
-        String val = props.getProperty("last_update_check_time");
+        String val = props.getProperty(LAST_UPDATE_CHECK_TIME_KEY);
         if (val != null) {
             try {
                 return Long.parseLong(val);
@@ -750,8 +783,7 @@ public class SettingManager {
      * 设置上次检查更新的时间戳（毫秒）
      */
     public static void setLastUpdateCheckTime(long timestamp) {
-        props.setProperty("last_update_check_time", String.valueOf(timestamp));
-        save();
+        setAndSaveProperty(LAST_UPDATE_CHECK_TIME_KEY, String.valueOf(timestamp));
     }
 
     /**
@@ -762,7 +794,7 @@ public class SettingManager {
      * - "gitee": 始终使用 Gitee
      */
     public static String getUpdateSourcePreference() {
-        String val = props.getProperty("update_source_preference");
+        String val = props.getProperty(UPDATE_SOURCE_PREFERENCE_KEY);
         if (val != null && (val.equals("github") || val.equals("gitee") || val.equals("auto"))) {
             return val;
         }
@@ -771,9 +803,10 @@ public class SettingManager {
     }
 
     public static void setUpdateSourcePreference(String preference) {
-        if (preference != null && (preference.equals("auto") || preference.equals("github") || preference.equals("gitee"))) {
-            props.setProperty("update_source_preference", preference);
-            save();
+        String normalized = preference == null ? "" : preference.trim().toLowerCase(Locale.ROOT);
+        if (normalized.equals("auto") || normalized.equals("github") || normalized.equals("gitee")) {
+            setAndSaveProperty(UPDATE_SOURCE_PREFERENCE_KEY, normalized);
+            log.info("Update source preference saved: {}", normalized);
         }
     }
 
@@ -791,8 +824,7 @@ public class SettingManager {
     }
 
     public static void setProxyEnabled(boolean enabled) {
-        props.setProperty("proxy_enabled", String.valueOf(enabled));
-        save();
+        setAndSaveProperty("proxy_enabled", String.valueOf(enabled));
     }
 
     /**
@@ -807,8 +839,7 @@ public class SettingManager {
     }
 
     public static void setProxyMode(String mode) {
-        props.setProperty("proxy_mode", PROXY_MODE_SYSTEM.equalsIgnoreCase(mode) ? PROXY_MODE_SYSTEM : PROXY_MODE_MANUAL);
-        save();
+        setAndSaveProperty("proxy_mode", PROXY_MODE_SYSTEM.equalsIgnoreCase(mode) ? PROXY_MODE_SYSTEM : PROXY_MODE_MANUAL);
     }
 
     public static boolean isSystemProxyMode() {
@@ -835,8 +866,7 @@ public class SettingManager {
     }
 
     public static void setProxyType(String type) {
-        props.setProperty("proxy_type", normalizeProxyType(type));
-        save();
+        setAndSaveProperty("proxy_type", normalizeProxyType(type));
     }
 
     public static String normalizeProxyType(String type) {
@@ -855,8 +885,7 @@ public class SettingManager {
     }
 
     public static void setProxyHost(String host) {
-        props.setProperty("proxy_host", host);
-        save();
+        setAndSaveProperty("proxy_host", host);
     }
 
     /**
@@ -880,8 +909,7 @@ public class SettingManager {
     }
 
     public static void setProxyPort(int port) {
-        props.setProperty("proxy_port", String.valueOf(port));
-        save();
+        setAndSaveProperty("proxy_port", String.valueOf(port));
     }
 
     /**
@@ -896,8 +924,7 @@ public class SettingManager {
     }
 
     public static void setProxyUsername(String username) {
-        props.setProperty("proxy_username", username);
-        save();
+        setAndSaveProperty("proxy_username", username);
     }
 
     /**
@@ -912,8 +939,7 @@ public class SettingManager {
     }
 
     public static void setProxyPassword(String password) {
-        props.setProperty("proxy_password", password);
-        save();
+        setAndSaveProperty("proxy_password", password);
     }
 
 
@@ -930,8 +956,7 @@ public class SettingManager {
     }
 
     public static void setProxySslVerificationDisabled(boolean disabled) {
-        props.setProperty("proxy_ssl_verification_disabled", String.valueOf(disabled));
-        save();
+        setAndSaveProperty("proxy_ssl_verification_disabled", String.valueOf(disabled));
         // 清除客户端缓存以应用新的 SSL 设置
         OkHttpClientManager.clearClientCache();
     }
@@ -951,8 +976,7 @@ public class SettingManager {
     }
 
     public static void setUiFontName(String fontName) {
-        props.setProperty("ui_font_name", fontName != null ? fontName : "");
-        save();
+        setAndSaveProperty("ui_font_name", fontName != null ? fontName : "");
     }
 
     /**
@@ -983,8 +1007,7 @@ public class SettingManager {
     public static void setUiFontSize(int size) {
         // 限制范围：10-24
         int fontSize = Math.max(10, Math.min(24, size));
-        props.setProperty("ui_font_size", String.valueOf(fontSize));
-        save();
+        setAndSaveProperty("ui_font_size", String.valueOf(fontSize));
     }
 
     private static int getPositiveIntSetting(String key, int defaultValue) {

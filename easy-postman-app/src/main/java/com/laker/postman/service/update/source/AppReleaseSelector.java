@@ -3,6 +3,11 @@ package com.laker.postman.service.update.source;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.core.util.StrUtil;
+import com.laker.postman.service.update.version.VersionComparator;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * 只选择宿主应用正式版 release，排除插件 release、草稿和预发布。
@@ -25,12 +30,21 @@ final class AppReleaseSelector {
             return releases;
         }
 
-        JSONArray filtered = new JSONArray();
+        List<JSONObject> stableAppReleases = new ArrayList<>();
         for (int i = 0; i < releases.size(); i++) {
             JSONObject release = releases.getJSONObject(i);
             if (!isStableAppRelease(release)) {
                 continue;
             }
+            stableAppReleases.add(release);
+        }
+
+        stableAppReleases.sort(Comparator
+                .comparing((JSONObject release) -> release.getStr("tag_name"), VersionComparator::compare)
+                .reversed());
+
+        JSONArray filtered = new JSONArray();
+        for (JSONObject release : stableAppReleases) {
             filtered.add(release);
             if (limit > 0 && filtered.size() >= limit) {
                 break;

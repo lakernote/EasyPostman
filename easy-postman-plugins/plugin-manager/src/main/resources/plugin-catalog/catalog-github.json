@@ -1,6 +1,6 @@
 {
   "name": "EasyPostman Official Plugin Catalog (GitHub)",
-  "generatedAt": "2026-03-23T13:24:53Z",
+  "generatedAt": "2026-04-27T15:04:24Z",
   "plugins": [
     {
       "id": "plugin-capture",
@@ -56,6 +56,14 @@
       "description": "Kafka toolbox panel, pm.kafka script API, completions and snippets.",
       "homepage": "https://github.com/lakernote/EasyPostman",
       "releases": [
+        {
+          "version": "5.4.26",
+          "downloadUrl": "https://github.com/lakernote/EasyPostman/releases/download/plugin-kafka-v5.4.26/easy-postman-5.4.26-plugin-kafka.jar",
+          "sha256": "5e2012c9655c93fd41d469e145b01a2a5b709f7c4b0734d002d3868db2d59094",
+          "minAppVersion": "5.4.27",
+          "minPlatformVersion": "1.0.0",
+          "maxPlatformVersion": "1.0.0"
+        },
         {
           "version": "5.3.23",
           "downloadUrl": "https://github.com/lakernote/EasyPostman/releases/download/plugin-kafka-v5.3.23/easy-postman-5.3.23-plugin-kafka.jar",

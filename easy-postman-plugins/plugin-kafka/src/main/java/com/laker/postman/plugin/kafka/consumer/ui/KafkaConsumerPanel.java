@@ -24,6 +24,10 @@ import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 import static com.laker.postman.plugin.kafka.KafkaI18n.t;
 
@@ -33,6 +37,8 @@ public class KafkaConsumerPanel extends JPanel {
     private static final String LABEL_DISABLED_FG = "Label.disabledForeground";
     private static final String CARD_CONSUME_START = "consume-start";
     private static final String CARD_CONSUME_STOP = "consume-stop";
+    private static final String EMPTY_VALUE = "—";
+    private static final DateTimeFormatter DETAIL_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 
     public final JTextField topicField;
     public final JTextField groupIdField;
@@ -55,7 +61,9 @@ public class KafkaConsumerPanel extends JPanel {
     private final JLabel detailPartitionLabel;
     private final JLabel detailOffsetLabel;
     private final JLabel detailKeyLabel;
-    private final JLabel detailTimeLabel;
+    private final JLabel detailMessageTimeLabel;
+    private final JLabel detailConsumeTimeLabel;
+    private final JLabel detailLagLabel;
     private final JLabel consumeStartValueLabel;
 
     public KafkaConsumerPanel(Runnable startAction, Runnable stopAction, Runnable clearAction, Runnable selectionChanged) {
@@ -192,8 +200,7 @@ public class KafkaConsumerPanel extends JPanel {
         advancedToggleBtn.addActionListener(e -> advancedPanel.setVisible(advancedToggleBtn.isSelected()));
 
         String[] columns = {
-                t(MessageKeys.TOOLBOX_KAFKA_COL_TIME),
-                t(MessageKeys.TOOLBOX_KAFKA_COL_RECORD_TIME),
+                t(MessageKeys.TOOLBOX_KAFKA_COL_MESSAGE_TIME),
                 t(MessageKeys.TOOLBOX_KAFKA_COL_TOPIC),
                 t(MessageKeys.TOOLBOX_KAFKA_COL_PARTITION),
                 t(MessageKeys.TOOLBOX_KAFKA_COL_OFFSET),
@@ -215,16 +222,22 @@ public class KafkaConsumerPanel extends JPanel {
         JPanel detailPanel = new JPanel(new BorderLayout(0, 0));
         detailPanel.setMinimumSize(new Dimension(0, 0));
 
-        JPanel detailHeader = new JPanel(new MigLayout("insets 4 10 4 8, fillx", "[]8[]8[]8[]8[]push[]4[]", "[]"));
+        JPanel detailHeader = new JPanel(new MigLayout("insets 4 10 4 8, fillx", "[]8[]8[]8[]8[]push[]4[]", "[]2[]"));
         detailHeader.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)));
 
         detailTopicLabel = buildChipLabel("Topic: —", ModernColors.INFO);
         detailPartitionLabel = buildChipLabel("Partition: —", new Color(120, 80, 200));
         detailOffsetLabel = buildChipLabel("Offset: —", new Color(20, 150, 100));
         detailKeyLabel = buildChipLabel("Key: —", new Color(180, 100, 0));
-        detailTimeLabel = buildChipLabel("—", null);
-        detailTimeLabel.setFont(detailTimeLabel.getFont().deriveFont(Font.PLAIN, 10f));
-        detailTimeLabel.setForeground(UIManager.getColor(LABEL_DISABLED_FG));
+        detailMessageTimeLabel = buildMetaLabel(t(MessageKeys.TOOLBOX_KAFKA_DETAIL_MESSAGE_TIME, EMPTY_VALUE));
+        detailConsumeTimeLabel = buildMetaLabel(t(MessageKeys.TOOLBOX_KAFKA_DETAIL_CONSUME_TIME, EMPTY_VALUE));
+        detailLagLabel = buildMetaLabel(t(MessageKeys.TOOLBOX_KAFKA_DETAIL_LAG, EMPTY_VALUE));
+
+        JPanel timeInfoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        timeInfoPanel.setOpaque(false);
+        timeInfoPanel.add(detailMessageTimeLabel);
+        timeInfoPanel.add(detailConsumeTimeLabel);
+        timeInfoPanel.add(detailLagLabel);
 
         CopyButton copyValueBtn = new CopyButton();
         copyValueBtn.setToolTipText(t(MessageKeys.TOOLBOX_KAFKA_COPY_VALUE));
@@ -241,9 +254,9 @@ public class KafkaConsumerPanel extends JPanel {
         detailHeader.add(detailPartitionLabel);
         detailHeader.add(detailOffsetLabel);
         detailHeader.add(detailKeyLabel);
-        detailHeader.add(detailTimeLabel);
-        detailHeader.add(copyValueBtn);
-        detailHeader.add(closeDetailBtn);
+        detailHeader.add(copyValueBtn, "pushx, align right");
+        detailHeader.add(closeDetailBtn, "wrap");
+        detailHeader.add(timeInfoPanel, "span, growx");
 
         detailArea = new RSyntaxTextArea();
         detailArea.setEditable(false);
@@ -319,7 +332,9 @@ public class KafkaConsumerPanel extends JPanel {
         detailPartitionLabel.setText("Partition: —");
         detailOffsetLabel.setText("Offset: —");
         detailKeyLabel.setText("Key: —");
-        detailTimeLabel.setText("—");
+        detailMessageTimeLabel.setText(t(MessageKeys.TOOLBOX_KAFKA_DETAIL_MESSAGE_TIME, EMPTY_VALUE));
+        detailConsumeTimeLabel.setText(t(MessageKeys.TOOLBOX_KAFKA_DETAIL_CONSUME_TIME, EMPTY_VALUE));
+        detailLagLabel.setText(t(MessageKeys.TOOLBOX_KAFKA_DETAIL_LAG, EMPTY_VALUE));
     }
 
     public void updateDetail(KafkaConsumedMessage msg) {
@@ -330,8 +345,10 @@ public class KafkaConsumerPanel extends JPanel {
         detailTopicLabel.setText("Topic: " + msg.topic());
         detailPartitionLabel.setText("Partition: " + msg.partition());
         detailOffsetLabel.setText("Offset: " + msg.offset());
-        detailKeyLabel.setText("Key: " + (msg.key() == null || msg.key().isBlank() ? "—" : msg.key()));
-        detailTimeLabel.setText(msg.receiveTime());
+        detailKeyLabel.setText("Key: " + displayValue(msg.key()));
+        detailMessageTimeLabel.setText(t(MessageKeys.TOOLBOX_KAFKA_DETAIL_MESSAGE_TIME, displayValue(msg.recordTime())));
+        detailConsumeTimeLabel.setText(t(MessageKeys.TOOLBOX_KAFKA_DETAIL_CONSUME_TIME, displayValue(msg.receiveTime())));
+        detailLagLabel.setText(t(MessageKeys.TOOLBOX_KAFKA_DETAIL_LAG, formatLag(msg)));
 
         String value = msg.value() == null ? "" : msg.value().trim();
         if (KafkaPanelSupport.isJsonText(value)) {
@@ -356,6 +373,52 @@ public class KafkaConsumerPanel extends JPanel {
                     .setContents(new java.awt.datatransfer.StringSelection(txt), null);
             NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_KAFKA_VALUE_COPIED));
         }
+    }
+
+    private String formatLag(KafkaConsumedMessage msg) {
+        if (msg == null || msg.recordTime() == null || msg.recordTime().isBlank()
+                || msg.receiveTime() == null || msg.receiveTime().isBlank()) {
+            return EMPTY_VALUE;
+        }
+        try {
+            LocalDateTime recordTime = LocalDateTime.parse(msg.recordTime(), DETAIL_TIME_FORMATTER);
+            LocalDateTime consumeTime = LocalDateTime.parse(msg.receiveTime(), DETAIL_TIME_FORMATTER);
+            return formatDuration(Duration.between(recordTime, consumeTime).toMillis());
+        } catch (RuntimeException ignored) {
+            return EMPTY_VALUE;
+        }
+    }
+
+    private String formatDuration(long millis) {
+        String prefix = millis < 0 ? "-" : "";
+        long absMillis = Math.abs(millis);
+        if (absMillis < 1000) {
+            return prefix + absMillis + " ms";
+        }
+        if (absMillis < 60_000) {
+            String seconds = String.format(Locale.ROOT, "%.1f", absMillis / 1000.0);
+            if (seconds.endsWith(".0")) {
+                seconds = seconds.substring(0, seconds.length() - 2);
+            }
+            return prefix + seconds + " s";
+        }
+        long totalSeconds = absMillis / 1000;
+        if (totalSeconds < 3600) {
+            return String.format(Locale.ROOT, "%s%dm %02ds", prefix, totalSeconds / 60, totalSeconds % 60);
+        }
+        return String.format(Locale.ROOT, "%s%dh %02dm", prefix, totalSeconds / 3600, (totalSeconds % 3600) / 60);
+    }
+
+    private static String displayValue(String value) {
+        return value == null || value.isBlank() ? EMPTY_VALUE : value;
+    }
+
+    private JLabel buildMetaLabel(String text) {
+        JLabel lbl = new JLabel(text);
+        lbl.setFont(lbl.getFont().deriveFont(Font.PLAIN, 10f));
+        lbl.setForeground(UIManager.getColor(LABEL_DISABLED_FG));
+        lbl.setBorder(new EmptyBorder(0, 0, 0, 0));
+        return lbl;
     }
 
     private JLabel buildChipLabel(String text, Color bgColor) {

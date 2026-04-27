@@ -5,6 +5,7 @@ import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.util.*;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
@@ -59,8 +60,15 @@ public class EnhancedTablePanel extends JPanel {
 
     // ── Hover ─────────────────────────────────────────────────────────────
     private int hoveredRow = -1;
+    @Setter
     private boolean autoResizeOnRefresh = true;
+    @Setter
     private Consumer<JPopupMenu> contextMenuCustomizer;
+    /**
+     * 当前可见页数据发生变化后调用。适合详情面板按当前选中行重新同步内容。
+     */
+    @Setter
+    private Runnable viewDataChangedListener;
 
     // ── UI 常量 ───────────────────────────────────────────────────────────
     private static final String SEPARATOR_FG = "Separator.foreground";
@@ -160,12 +168,28 @@ public class EnhancedTablePanel extends JPanel {
         applyFilterAndSort();
     }
 
-    public void setAutoResizeOnRefresh(boolean autoResizeOnRefresh) {
-        this.autoResizeOnRefresh = autoResizeOnRefresh;
+    /**
+     * 获取当前视图页中的行数据。EnhancedTablePanel 使用自有分页/过滤/排序，
+     * JTable 的 convertRowIndexToModel 无法映射回 allRows。
+     */
+    public Object[] getVisibleRowData(int viewRow) {
+        if (viewRow < 0 || table == null || viewRow >= table.getRowCount()) {
+            return null;
+        }
+        int dataIndex = getPageOffset() + viewRow;
+        if (dataIndex < 0 || dataIndex >= filteredRows.size()) {
+            return null;
+        }
+        Object[] row = filteredRows.get(dataIndex);
+        return row == null ? null : row.clone();
     }
 
-    public void setContextMenuCustomizer(Consumer<JPopupMenu> contextMenuCustomizer) {
-        this.contextMenuCustomizer = contextMenuCustomizer;
+    public Object[] getSelectedRowData() {
+        return table == null ? null : getVisibleRowData(table.getSelectedRow());
+    }
+
+    public boolean hasActiveSort() {
+        return sortCol >= 0 && sortCol < currentColumns.length;
     }
 
     /**
@@ -180,6 +204,7 @@ public class EnhancedTablePanel extends JPanel {
         tableModel.setRowCount(0);
         updatePaginationControls();
         updateEmptyState();
+        notifyViewDataChanged();
     }
 
     /**
@@ -191,14 +216,14 @@ public class EnhancedTablePanel extends JPanel {
 
     /**
      * 增量追加单行数据（无需重排序/重过滤，性能优于全量 setData）。
-     * 若当前有过滤条件则回退到全量刷新以保证过滤正确性。
+     * 若当前有过滤或排序条件则回退到全量刷新以保证视图正确性。
      */
     public void addRow(Object[] row) {
         if (row == null) return;
         allRows.add(row);
         updateHintLabel();
-        if (filterText != null && !filterText.isBlank()) {
-            // 有过滤条件时全量刷新保证正确性
+        if ((filterText != null && !filterText.isBlank()) || hasActiveSort()) {
+            // 有过滤/排序条件时全量刷新保证新增行进入正确位置
             applyFilterAndSort();
             return;
         }
@@ -213,6 +238,7 @@ public class EnhancedTablePanel extends JPanel {
         }
         updatePaginationControls();
         updateEmptyState();
+        notifyViewDataChanged();
     }
 
     // ═══════════════════ UI Build ════════════════════════════════════════
@@ -716,6 +742,13 @@ public class EnhancedTablePanel extends JPanel {
         updateEmptyState();
         if (autoResizeOnRefresh) {
             SwingUtilities.invokeLater(this::autoResizeColumns);
+        }
+        notifyViewDataChanged();
+    }
+
+    private void notifyViewDataChanged() {
+        if (viewDataChangedListener != null) {
+            SwingUtilities.invokeLater(viewDataChangedListener);
         }
     }
 

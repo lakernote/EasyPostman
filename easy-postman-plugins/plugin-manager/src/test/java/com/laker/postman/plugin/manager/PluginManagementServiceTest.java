@@ -77,7 +77,7 @@ public class PluginManagementServiceTest {
     }
 
     @Test
-    public void shouldKeepAllDisplayInstalledPluginsButSortPreferredVersionFirst() throws Exception {
+    public void shouldDisplayOnlyPreferredInstalledPluginVersion() throws Exception {
         Path droppedJar = appDir.resolve("plugins").resolve("plugin-kafka-5.3.18.jar");
         writePluginJar(droppedJar, "plugin-kafka", "5.3.18", LoadedStubPlugin.class.getName(), "", "");
         PluginRuntime.initialize();
@@ -89,12 +89,11 @@ public class PluginManagementServiceTest {
                 PluginManagementService.getInstalledPlugins()
         );
 
-        assertEquals(displayPlugins.size(), 2);
+        assertEquals(displayPlugins.size(), 1);
         assertEquals(displayPlugins.get(0).descriptor().id(), "plugin-kafka");
         assertEquals(displayPlugins.get(0).descriptor().version(), "5.3.23");
         assertEquals(displayPlugins.get(0).jarPath(), managedJar);
         assertFalse(displayPlugins.get(0).loaded());
-        assertEquals(displayPlugins.get(1).jarPath(), droppedJar);
     }
 
     @Test

@@ -20,6 +20,7 @@ public final class MessageKeys {
     public static final String TOOLBOX_KAFKA_COL_KEY = "toolbox.kafka.col.key";
     public static final String TOOLBOX_KAFKA_COL_OFFSET = "toolbox.kafka.col.offset";
     public static final String TOOLBOX_KAFKA_COL_PARTITION = "toolbox.kafka.col.partition";
+    public static final String TOOLBOX_KAFKA_COL_MESSAGE_TIME = "toolbox.kafka.col.message.time";
     public static final String TOOLBOX_KAFKA_COL_RECORD_TIME = "toolbox.kafka.col.record.time";
     public static final String TOOLBOX_KAFKA_COL_TIME = "toolbox.kafka.col.time";
     public static final String TOOLBOX_KAFKA_COL_TOPIC = "toolbox.kafka.col.topic";
@@ -101,4 +102,7 @@ public final class MessageKeys {
     public static final String TOOLBOX_KAFKA_COPY_VALUE = "toolbox.kafka.copy.value";
     public static final String TOOLBOX_KAFKA_CLOSE_DETAIL = "toolbox.kafka.close.detail";
     public static final String TOOLBOX_KAFKA_VALUE_COPIED = "toolbox.kafka.value.copied";
+    public static final String TOOLBOX_KAFKA_DETAIL_MESSAGE_TIME = "toolbox.kafka.detail.message.time";
+    public static final String TOOLBOX_KAFKA_DETAIL_CONSUME_TIME = "toolbox.kafka.detail.consume.time";
+    public static final String TOOLBOX_KAFKA_DETAIL_LAG = "toolbox.kafka.detail.lag";
 }

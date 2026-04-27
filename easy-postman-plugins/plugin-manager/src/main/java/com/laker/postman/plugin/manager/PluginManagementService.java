@@ -90,9 +90,7 @@ public class PluginManagementService {
         if (plugins == null || plugins.isEmpty()) {
             return List.of();
         }
-        return plugins.stream()
-                .filter(plugin -> plugin != null && plugin.descriptor() != null
-                        && plugin.descriptor().id() != null && !plugin.descriptor().id().isBlank())
+        return buildPreferredInstalledPluginMap(plugins).values().stream()
                 .sorted(DISPLAY_GROUP_COMPARATOR.thenComparing(DISPLAY_PLUGIN_PRIORITY.reversed()))
                 .toList();
     }

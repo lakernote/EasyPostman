@@ -87,6 +87,7 @@ public class KafkaPanel extends JPanel {
         }
         producerPanel = new KafkaProducerPanel(this::sendMessage);
         consumerPanel = new KafkaConsumerPanel(this::startConsuming, this::stopConsuming, this::clearConsumedMessages, this::updateDetailBySelection);
+        consumerPanel.messageTablePanel.setViewDataChangedListener(this::updateDetailBySelection);
         consumerPanel.autoOffsetCombo.addActionListener(e -> updateConsumeStartValueEnabledState());
         topicPanel = new KafkaTopicPanel(this::loadTopics, this::applyTopicSelection);
         consumerPanel.topicField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
@@ -614,9 +615,9 @@ public class KafkaPanel extends JPanel {
      * 全量重建消息表格（用于 trim 后或 clear 后）
      */
     private void rebuildMessageTable() {
+        MessageRowKey selectedKey = selectedMessageRowKey();
         List<Object[]> rows = consumedMessages.stream()
                 .map(item -> new Object[]{
-                        item.receiveTime(),
                         item.recordTime(),
                         item.topic(),
                         item.partition(),
@@ -625,29 +626,29 @@ public class KafkaPanel extends JPanel {
                         item.headers(),
                         item.value()
                 }).toList();
-        consumerPanel.messageTablePanel.setData(rows);
+        consumerPanel.messageTablePanel.setDataPreserveView(rows);
+        restoreMessageSelection(selectedKey);
     }
 
     private void refreshMessageTable() {
-        int tableRowCount = consumerPanel.messageTablePanel.getTable().getRowCount();
-        // 若 consumedMessages 因 trim 缩减，全量重建
-        if (consumedMessages.size() < tableRowCount) {
+        int tableRowCount = consumerPanel.messageTablePanel.getTotalRowCount();
+        // 若 consumedMessages 因 trim 缩减，或用户已排序，则全量重建以保持表格视图顺序正确
+        if (consumedMessages.size() < tableRowCount || consumerPanel.messageTablePanel.hasActiveSort()) {
             rebuildMessageTable();
-            return;
-        }
-        // 增量追加新行，避免全量 setData 导致 UI 闪烁和性能开销
-        for (int i = tableRowCount; i < consumedMessages.size(); i++) {
-            KafkaConsumedMessage item = consumedMessages.get(i);
-            consumerPanel.messageTablePanel.addRow(new Object[]{
-                    item.receiveTime(),
-                    item.recordTime(),
-                    item.topic(),
-                    item.partition(),
-                    item.offset(),
-                    item.key(),
-                    item.headers(),
-                    item.value()
-            });
+        } else {
+            // 增量追加新行，避免无排序场景下持续消费时频繁重建表格
+            for (int i = tableRowCount; i < consumedMessages.size(); i++) {
+                KafkaConsumedMessage item = consumedMessages.get(i);
+                consumerPanel.messageTablePanel.addRow(new Object[]{
+                        item.recordTime(),
+                        item.topic(),
+                        item.partition(),
+                        item.offset(),
+                        item.key(),
+                        item.headers(),
+                        item.value()
+                });
+            }
         }
         // 自动滚动到最新行
         if (consumerPanel.messageTablePanel.getTable().getRowCount() > 0) {
@@ -657,19 +658,123 @@ public class KafkaPanel extends JPanel {
         }
     }
 
+    private MessageRowKey selectedMessageRowKey() {
+        Object[] row = consumerPanel.messageTablePanel.getSelectedRowData();
+        if (row == null) {
+            return null;
+        }
+        return messageRowKey(row);
+    }
+
+    private void restoreMessageSelection(MessageRowKey selectedKey) {
+        if (selectedKey == null) {
+            return;
+        }
+        JTable table = consumerPanel.messageTablePanel.getTable();
+        for (int row = 0; row < table.getRowCount(); row++) {
+            Object[] rowData = consumerPanel.messageTablePanel.getVisibleRowData(row);
+            MessageRowKey rowKey = messageRowKey(rowData);
+            if (selectedKey.equals(rowKey)) {
+                table.setRowSelectionInterval(row, row);
+                table.scrollRectToVisible(table.getCellRect(row, 0, true));
+                return;
+            }
+        }
+    }
+
     private void updateDetailBySelection() {
-        int viewRow = consumerPanel.messageTablePanel.getTable().getSelectedRow();
-        if (viewRow < 0) {
+        Object[] row = consumerPanel.messageTablePanel.getSelectedRowData();
+        if (row == null) {
             consumerPanel.clearDetail();
             return;
         }
-        // 将视图行索引转换为模型行索引，防止排序后错位
-        int modelRow = consumerPanel.messageTablePanel.getTable().convertRowIndexToModel(viewRow);
-        if (modelRow < 0 || modelRow >= consumedMessages.size()) {
-            consumerPanel.clearDetail();
-            return;
+        consumerPanel.updateDetail(messageFromTableRow(row));
+    }
+
+    private KafkaConsumedMessage messageFromTableRow(Object[] row) {
+        MessageRowKey key = messageRowKey(row);
+        KafkaConsumedMessage message = findConsumedMessage(key);
+        if (message != null) {
+            return message;
         }
-        consumerPanel.updateDetail(consumedMessages.get(modelRow));
+        return new KafkaConsumedMessage(
+                "",
+                cellString(row, 0),
+                cellString(row, 1),
+                cellInt(row, 2),
+                cellLong(row, 3),
+                cellString(row, 4),
+                cellString(row, 5),
+                cellString(row, 6));
+    }
+
+    private KafkaConsumedMessage findConsumedMessage(MessageRowKey key) {
+        if (key == null) {
+            return null;
+        }
+        for (int i = consumedMessages.size() - 1; i >= 0; i--) {
+            KafkaConsumedMessage item = consumedMessages.get(i);
+            if (key.equals(messageRowKey(item))) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    private static MessageRowKey messageRowKey(Object[] row) {
+        if (row == null) {
+            return null;
+        }
+        return new MessageRowKey(
+                cellString(row, 1),
+                cellString(row, 2),
+                cellString(row, 3));
+    }
+
+    private static MessageRowKey messageRowKey(KafkaConsumedMessage item) {
+        if (item == null) {
+            return null;
+        }
+        return new MessageRowKey(
+                item.topic(),
+                String.valueOf(item.partition()),
+                String.valueOf(item.offset()));
+    }
+
+    private static String cellString(Object[] row, int index) {
+        Object value = cell(row, index);
+        return value == null ? "" : value.toString();
+    }
+
+    private static int cellInt(Object[] row, int index) {
+        Object value = cell(row, index);
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        try {
+            return Integer.parseInt(value == null ? "0" : value.toString());
+        } catch (NumberFormatException ex) {
+            return 0;
+        }
+    }
+
+    private static long cellLong(Object[] row, int index) {
+        Object value = cell(row, index);
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        try {
+            return Long.parseLong(value == null ? "0" : value.toString());
+        } catch (NumberFormatException ex) {
+            return 0L;
+        }
+    }
+
+    private static Object cell(Object[] row, int index) {
+        return row == null || index < 0 || index >= row.length ? null : row[index];
+    }
+
+    private record MessageRowKey(String topic, String partition, String offset) {
     }
 
     private void updateEditorFont() {

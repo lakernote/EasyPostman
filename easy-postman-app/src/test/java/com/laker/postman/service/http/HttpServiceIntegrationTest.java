@@ -505,6 +505,28 @@ public class HttpServiceIntegrationTest {
     }
 
     @Test
+    public void shouldReturnRedirectResponseWithoutFollowingWhenDisabled() throws Exception {
+        server = createServer();
+        server.enqueue(new MockResponse()
+                .setResponseCode(302)
+                .addHeader("Location", serverUrl("/target"))
+                .setBody("redirect"));
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody("target"));
+
+        PreparedRequest request = createRequest("GET", serverUrl("/start"));
+        request.followRedirects = false;
+
+        HttpResponse response = RedirectHandler.executeWithRedirects(request, 10, null);
+        RecordedRequest recordedRequest = server.takeRequest();
+
+        assertEquals(response.code, 302);
+        assertEquals(recordedRequest.getPath(), "/start");
+        assertEquals(server.getRequestCount(), 1);
+    }
+
+    @Test
     public void shouldTransformPostToGetOn302Redirect() throws Exception {
         PreparedRequest request = createRequest("POST", "http://127.0.0.1/start");
         request.body = "{\"hello\":\"world\"}";

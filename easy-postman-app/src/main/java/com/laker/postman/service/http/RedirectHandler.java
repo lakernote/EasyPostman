@@ -33,19 +33,23 @@ public class RedirectHandler {
         workingReq.collectEventInfo = true;  // 收集完整事件信息（DNS、连接等）
         workingReq.enableNetworkLog = true;  // 启用网络日志面板输出
 
+        if (!workingReq.followRedirects || maxRedirects <= 0) {
+            return executeAndSyncRequestMetadata(req, workingReq, callback);
+        }
+
         URL prevUrl = new URL(workingReq.url);
         int redirectCount = 0;
 
-        while (redirectCount <= maxRedirects) {
-            HttpResponse resp = HttpSingleRequestExecutor.executeHttp(workingReq, callback);
-
-            // 更新原始请求对象的 OkHttp 相关字段
-            req.okHttpHeaders = workingReq.okHttpHeaders;
-            req.okHttpRequestBody = workingReq.okHttpRequestBody;
+        while (true) {
+            HttpResponse resp = executeAndSyncRequestMetadata(req, workingReq, callback);
 
             // 判断是否重定向
             RedirectInfo info = buildRedirectInfo(workingReq.url, resp);
             if (info.statusCode >= 300 && info.statusCode < 400 && info.location != null) {
+                if (redirectCount >= maxRedirects) {
+                    return resp;
+                }
+
                 URL nextUrl = info.location.startsWith("http") ? new URL(info.location) : new URL(prevUrl, info.location);
                 boolean isCrossDomain = isCrossOrigin(prevUrl, nextUrl);
 
@@ -59,7 +63,17 @@ public class RedirectHandler {
                 return resp;
             }
         }
-        return null;
+    }
+
+    private static HttpResponse executeAndSyncRequestMetadata(PreparedRequest originalReq,
+                                                              PreparedRequest workingReq,
+                                                              SseResEventListener callback) throws Exception {
+        HttpResponse resp = HttpSingleRequestExecutor.executeHttp(workingReq, callback);
+
+        // 更新原始请求对象的 OkHttp 相关字段
+        originalReq.okHttpHeaders = workingReq.okHttpHeaders;
+        originalReq.okHttpRequestBody = workingReq.okHttpRequestBody;
+        return resp;
     }
 
     /**

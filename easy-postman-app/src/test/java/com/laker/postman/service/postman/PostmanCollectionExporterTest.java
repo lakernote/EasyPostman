@@ -2,6 +2,7 @@ package com.laker.postman.service.postman;
 
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
+import com.laker.postman.model.AuthType;
 import com.laker.postman.model.HttpFormData;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpRequestItem;
@@ -250,6 +251,30 @@ public class PostmanCollectionExporterTest {
     }
 
     @Test
+    public void testToPostmanItem_WithDigestAuth() {
+        HttpRequestItem item = new HttpRequestItem();
+        item.setName("Digest API");
+        item.setMethod("GET");
+        item.setUrl("https://api.example.com/digest");
+        item.setAuthType(AuthType.DIGEST.getConstant());
+        item.setAuthUsername("digest-user");
+        item.setAuthPassword("digest-pass");
+
+        JSONObject postmanItem = PostmanCollectionExporter.toPostmanItem(item);
+
+        JSONObject auth = postmanItem.getJSONObject("request").getJSONObject("auth");
+        assertNotNull(auth);
+        assertEquals(auth.getStr("type"), "digest");
+        JSONArray digest = auth.getJSONArray("digest");
+        assertNotNull(digest);
+        assertEquals(digest.size(), 2);
+        assertEquals(((JSONObject) digest.get(0)).getStr("key"), "username");
+        assertEquals(((JSONObject) digest.get(0)).getStr("value"), "digest-user");
+        assertEquals(((JSONObject) digest.get(1)).getStr("key"), "password");
+        assertEquals(((JSONObject) digest.get(1)).getStr("value"), "digest-pass");
+    }
+
+    @Test
     public void testToPostmanItem_WithScripts() {
         // 准备测试数据
         HttpRequestItem item = new HttpRequestItem();
@@ -437,4 +462,3 @@ public class PostmanCollectionExporterTest {
         assertTrue(path.contains("123"));
     }
 }
-

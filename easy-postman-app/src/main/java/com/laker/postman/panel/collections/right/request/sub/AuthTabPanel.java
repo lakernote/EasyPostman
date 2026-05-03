@@ -27,10 +27,13 @@ public class AuthTabPanel extends JPanel {
     public static final String AUTH_TYPE_NONE = AuthType.NONE.getConstant();
     public static final String AUTH_TYPE_BASIC = AuthType.BASIC.getConstant();
     public static final String AUTH_TYPE_BEARER = AuthType.BEARER.getConstant();
+    public static final String AUTH_TYPE_DIGEST = AuthType.DIGEST.getConstant();
 
     private final JComboBox<AuthType> typeCombo;
     private final JTextField usernameField;
     private final JTextField passwordField;
+    private final JTextField digestUsernameField;
+    private final JTextField digestPasswordField;
     private final JTextField tokenField;
     private AuthType currentType = AuthType.INHERIT;
     private final List<Runnable> dirtyListeners = new ArrayList<>();
@@ -78,6 +81,12 @@ public class AuthTabPanel extends JPanel {
         passwordField = new EasyTextField(20);
         passwordField.setPreferredSize(new Dimension(200, 32));
 
+        digestUsernameField = new EasyTextField(20);
+        digestUsernameField.setPreferredSize(new Dimension(200, 32));
+
+        digestPasswordField = new EasyTextField(20);
+        digestPasswordField.setPreferredSize(new Dimension(200, 32));
+
         tokenField = new EasyTextField("", 30, I18nUtil.getMessage(MessageKeys.AUTH_TOKEN_PLACEHOLDER));
         tokenField.setPreferredSize(new Dimension(250, 32));
 
@@ -105,11 +114,16 @@ public class AuthTabPanel extends JPanel {
         // Bearer Token Panel
         cardPanel.add(createBearerPanel(), AUTH_TYPE_BEARER);
 
+        // Digest Auth Panel
+        cardPanel.add(createDigestAuthPanel(), AUTH_TYPE_DIGEST);
+
         add(cardPanel, BorderLayout.CENTER);
 
         // 监听认证类型切换
         typeCombo.addActionListener(e -> {
+            AuthType previousType = currentType;
             currentType = (AuthType) typeCombo.getSelectedItem();
+            syncCredentialFields(previousType, currentType);
             CardLayout cl = (CardLayout) cardPanel.getLayout();
             cl.show(cardPanel, currentType.getConstant());
             fireDirty();
@@ -131,6 +145,8 @@ public class AuthTabPanel extends JPanel {
         };
         usernameField.getDocument().addDocumentListener(docListener);
         passwordField.getDocument().addDocumentListener(docListener);
+        digestUsernameField.getDocument().addDocumentListener(docListener);
+        digestPasswordField.getDocument().addDocumentListener(docListener);
         tokenField.getDocument().addDocumentListener(docListener);
 
         // 默认显示继承面板
@@ -354,6 +370,89 @@ public class AuthTabPanel extends JPanel {
         return panel;
     }
 
+    /**
+     * 创建 Digest Auth 面板
+     */
+    private JPanel createDigestAuthPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(new EmptyBorder(8, 0, 0, 0));
+
+        JPanel infoPanel = new JPanel(new BorderLayout(10, 0));
+        infoPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(ModernColors.ACCENT_LIGHT, 1),
+                new EmptyBorder(8, 12, 8, 12)
+        ));
+
+        JLabel iconLabel = new JLabel("ℹ");
+        iconLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
+        infoPanel.add(iconLabel, BorderLayout.WEST);
+
+        JLabel textLabel = new JLabel(
+                "<html><div style='line-height: 1.5;'>" +
+                        "<b style='color: " + getTitleColorHex() + "; font-size: 10px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_DIGEST) + "</b><br>" +
+                        "<span style='color: " + getDescColorHex() + "; font-size: 9px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_DIGEST_DESC) + "</span>" +
+                        "</div></html>"
+        );
+        infoPanel.add(textLabel, BorderLayout.CENTER);
+
+        panel.add(infoPanel, BorderLayout.NORTH);
+
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setBorder(new EmptyBorder(8, 0, 0, 0));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(4, 6, 4, 6);
+        gbc.anchor = GridBagConstraints.WEST;
+
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        JLabel usernameLabel = new JLabel(I18nUtil.getMessage(MessageKeys.AUTH_USERNAME));
+        usernameLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        usernameLabel.setForeground(ModernColors.getTextSecondary());
+        formPanel.add(usernameLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        formPanel.add(digestUsernameField, gbc);
+
+        gbc.gridx = 2;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        formPanel.add(Box.createHorizontalGlue(), gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        JLabel passwordLabel = new JLabel(I18nUtil.getMessage(MessageKeys.AUTH_PASSWORD));
+        passwordLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        passwordLabel.setForeground(ModernColors.getTextSecondary());
+        formPanel.add(passwordLabel, gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        formPanel.add(digestPasswordField, gbc);
+
+        gbc.gridx = 2;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        formPanel.add(Box.createHorizontalGlue(), gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.gridwidth = 3;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        formPanel.add(Box.createGlue(), gbc);
+
+        panel.add(formPanel, BorderLayout.CENTER);
+
+        return panel;
+    }
+
     public String getAuthType() {
         AuthType selected = (AuthType) typeCombo.getSelectedItem();
         return selected != null ? selected.getConstant() : AUTH_TYPE_INHERIT;
@@ -366,19 +465,23 @@ public class AuthTabPanel extends JPanel {
     }
 
     public String getUsername() {
-        return usernameField.getText();
+        return currentType == AuthType.DIGEST ? digestUsernameField.getText() : usernameField.getText();
     }
 
     public void setUsername(String u) {
-        usernameField.setText(u == null ? "" : u);
+        String value = u == null ? "" : u;
+        usernameField.setText(value);
+        digestUsernameField.setText(value);
     }
 
     public String getPassword() {
-        return passwordField.getText();
+        return currentType == AuthType.DIGEST ? digestPasswordField.getText() : passwordField.getText();
     }
 
     public void setPassword(String p) {
-        passwordField.setText(p == null ? "" : p);
+        String value = p == null ? "" : p;
+        passwordField.setText(value);
+        digestPasswordField.setText(value);
     }
 
     public String getToken() {
@@ -398,5 +501,23 @@ public class AuthTabPanel extends JPanel {
 
     private void fireDirty() {
         for (Runnable l : dirtyListeners) l.run();
+    }
+
+    private void syncCredentialFields(AuthType previousType, AuthType nextType) {
+        if (!usesUsernamePassword(previousType) || !usesUsernamePassword(nextType) || previousType == nextType) {
+            return;
+        }
+
+        JTextField sourceUsername = previousType == AuthType.DIGEST ? digestUsernameField : usernameField;
+        JTextField sourcePassword = previousType == AuthType.DIGEST ? digestPasswordField : passwordField;
+        JTextField targetUsername = nextType == AuthType.DIGEST ? digestUsernameField : usernameField;
+        JTextField targetPassword = nextType == AuthType.DIGEST ? digestPasswordField : passwordField;
+
+        targetUsername.setText(sourceUsername.getText());
+        targetPassword.setText(sourcePassword.getText());
+    }
+
+    private boolean usesUsernamePassword(AuthType type) {
+        return type == AuthType.BASIC || type == AuthType.DIGEST;
     }
 }

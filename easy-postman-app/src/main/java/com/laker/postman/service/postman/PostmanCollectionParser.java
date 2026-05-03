@@ -414,6 +414,20 @@ public class PostmanCollectionParser {
                             }
                         }
                     }
+                } else if ("digest".equals(authType)) {
+                    req.setAuthType(AUTH_TYPE_DIGEST);
+                    JSONArray digestArr = auth.getJSONArray("digest");
+                    if (digestArr != null) {
+                        for (Object o : digestArr) {
+                            JSONObject oObj = (JSONObject) o;
+                            if ("username".equals(oObj.getStr("key"))) {
+                                req.setAuthUsername(oObj.getStr("value", ""));
+                            }
+                            if ("password".equals(oObj.getStr("key"))) {
+                                req.setAuthPassword(oObj.getStr("value", ""));
+                            }
+                        }
+                    }
                 } else if ("noauth".equals(authType)) {
                     req.setAuthType(AUTH_TYPE_NONE);
                 } else {

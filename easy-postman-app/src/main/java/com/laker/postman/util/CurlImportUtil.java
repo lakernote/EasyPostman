@@ -2,6 +2,7 @@ package com.laker.postman.util;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
+import com.laker.postman.model.AuthType;
 import com.laker.postman.model.CurlRequest;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
@@ -69,6 +70,13 @@ public class CurlImportUtil {
 
         if (CollUtil.isNotEmpty(curlRequest.urlencodedList)) {
             item.setUrlencodedList(curlRequest.urlencodedList);
+        }
+
+        if (AuthType.DIGEST.getConstant().equals(curlRequest.authType)
+                && CharSequenceUtil.isNotBlank(curlRequest.authUsername)) {
+            item.setAuthType(AuthType.DIGEST.getConstant());
+            item.setAuthUsername(curlRequest.authUsername);
+            item.setAuthPassword(curlRequest.authPassword != null ? curlRequest.authPassword : "");
         }
 
         // 智能判断协议类型

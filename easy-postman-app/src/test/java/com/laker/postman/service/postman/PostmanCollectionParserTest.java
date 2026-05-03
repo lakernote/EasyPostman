@@ -1,5 +1,6 @@
 package com.laker.postman.service.postman;
 
+import com.laker.postman.model.AuthType;
 import com.laker.postman.service.common.CollectionParseResult;
 import org.testng.annotations.Test;
 
@@ -89,6 +90,42 @@ public class PostmanCollectionParserTest {
         assertTrue(folderNode.isGroup());
         assertEquals(folderNode.asGroup().getName(), "User API");
         assertEquals(folderNode.getChildren().size(), 2);
+    }
+
+    @Test
+    public void testParsePostmanCollection_WithDigestAuth() {
+        String json = """
+                {
+                    "info": {
+                        "name": "Digest Collection"
+                    },
+                    "item": [
+                        {
+                            "name": "Digest Request",
+                            "request": {
+                                "method": "GET",
+                                "url": "https://api.example.com/digest",
+                                "auth": {
+                                    "type": "digest",
+                                    "digest": [
+                                        {"key": "username", "value": "digest-user"},
+                                        {"key": "password", "value": "digest-pass"}
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                }
+                """;
+
+        CollectionParseResult result = PostmanCollectionParser.parsePostmanCollection(json);
+
+        assertNotNull(result);
+        assertEquals(result.getChildren().size(), 1);
+        var request = result.getChildren().get(0).asRequest();
+        assertEquals(request.getAuthType(), AuthType.DIGEST.getConstant());
+        assertEquals(request.getAuthUsername(), "digest-user");
+        assertEquals(request.getAuthPassword(), "digest-pass");
     }
 
     @Test

@@ -3,6 +3,7 @@ package com.laker.postman.service.http;
 import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.model.TransportAuth;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.service.http.okhttp.*;
 import com.laker.postman.service.http.ssl.SSLConfigurationUtil;
@@ -132,6 +133,8 @@ public class HttpService {
             builder.cookieJar(CookieJar.NO_COOKIES);
         }
 
+        applyDigestAuthenticator(builder, preparedRequest);
+
         String httpVersion = preparedRequest.httpVersion != null
                 ? preparedRequest.httpVersion
                 : HttpRequestItem.HTTP_VERSION_AUTO;
@@ -140,6 +143,30 @@ public class HttpService {
         } else if (HttpRequestItem.HTTP_VERSION_HTTP_2.equals(httpVersion)) {
             builder.protocols(List.of(Protocol.HTTP_2, Protocol.HTTP_1_1));
         }
+    }
+
+    private static void applyDigestAuthenticator(OkHttpClient.Builder builder,
+                                                 PreparedRequest preparedRequest) {
+        TransportAuth auth = preparedRequest != null ? preparedRequest.transportAuth : null;
+        if (auth == null || !auth.isDigest()) {
+            return;
+        }
+        if (isBlank(auth.username) || containsUnresolvedPlaceholder(auth.username)
+                || containsUnresolvedPlaceholder(auth.password)) {
+            return;
+        }
+        builder.authenticator(new DigestAuthenticator(
+                auth.username,
+                auth.password == null ? "" : auth.password
+        ));
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
+    }
+
+    private static boolean containsUnresolvedPlaceholder(String value) {
+        return value != null && value.contains("{{") && value.contains("}}");
     }
 
     static boolean shouldIsolateConnectionPool(PreparedRequest preparedRequest) {

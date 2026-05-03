@@ -6,6 +6,7 @@ import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpParam;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.model.TransportAuth;
 import com.laker.postman.service.variable.RequestContext;
 import com.laker.postman.service.variable.VariableResolver;
 import lombok.experimental.UtilityClass;
@@ -16,6 +17,7 @@ import java.util.List;
 import static com.laker.postman.common.constants.HttpConstants.HEADER_AUTHORIZATION;
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BASIC;
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BEARER;
+import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_DIGEST;
 
 /**
  * 发送前的最终收尾逻辑：
@@ -68,12 +70,25 @@ public class RequestFinalizer {
 
     private void applyDeferredAuthorization(PreparedRequest request,
                                             PreparedRequestBuilder.DeferredAuthorization deferredAuthorization) {
-        if (request == null || deferredAuthorization == null) {
+        if (request == null) {
+            return;
+        }
+        request.transportAuth = null;
+
+        if (deferredAuthorization == null) {
             return;
         }
 
         HttpHeader authHeader = createAuthHeader(deferredAuthorization);
         List<HttpHeader> authorizationHeaders = findEnabledAuthorizationHeaders(request.headersList);
+        List<HttpHeader> previewHeaders = findPreviewAuthorizationHeaders(authorizationHeaders, deferredAuthorization);
+        if (previewHeaders.size() != authorizationHeaders.size()) {
+            removeAuthorizationHeaders(request.headersList, previewHeaders);
+            return;
+        }
+
+        applyTransportAuthorization(request, deferredAuthorization);
+
         if (authorizationHeaders.isEmpty()) {
             if (authHeader == null) {
                 return;
@@ -82,12 +97,6 @@ public class RequestFinalizer {
                 request.headersList = new ArrayList<>();
             }
             request.headersList.add(authHeader);
-            return;
-        }
-
-        List<HttpHeader> previewHeaders = findPreviewAuthorizationHeaders(authorizationHeaders, deferredAuthorization);
-        if (previewHeaders.size() != authorizationHeaders.size()) {
-            removeAuthorizationHeaders(request.headersList, previewHeaders);
             return;
         }
 
@@ -100,6 +109,27 @@ public class RequestFinalizer {
         primaryPreviewHeader.setValue(authHeader.getValue());
         primaryPreviewHeader.setEnabled(true);
         removeAuthorizationHeaders(request.headersList, previewHeaders.subList(1, previewHeaders.size()));
+    }
+
+    private void applyTransportAuthorization(PreparedRequest request,
+                                             PreparedRequestBuilder.DeferredAuthorization deferredAuthorization) {
+        if (!AUTH_TYPE_DIGEST.equals(deferredAuthorization.authType())) {
+            return;
+        }
+
+        String username = VariableResolver.resolve(deferredAuthorization.authUsername());
+        String password = VariableResolver.resolve(deferredAuthorization.authPassword());
+        if (username == null || username.isEmpty()
+                || containsUnresolvedPlaceholder(username)
+                || containsUnresolvedPlaceholder(password)) {
+            return;
+        }
+
+        request.transportAuth = new TransportAuth(
+                AUTH_TYPE_DIGEST,
+                username,
+                password == null ? "" : password
+        );
     }
 
     private List<HttpHeader> findEnabledAuthorizationHeaders(List<HttpHeader> headersList) {

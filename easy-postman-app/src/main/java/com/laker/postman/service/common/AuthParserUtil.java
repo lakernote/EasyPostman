@@ -20,8 +20,9 @@ import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel
 public class AuthParserUtil {
 
     // 常量定义
-    private static final String AUTH_TYPE_BASIC = "basic";
-    private static final String AUTH_TYPE_BEARER = "bearer";
+    private static final String POSTMAN_AUTH_TYPE_BASIC = "basic";
+    private static final String POSTMAN_AUTH_TYPE_BEARER = "bearer";
+    private static final String POSTMAN_AUTH_TYPE_DIGEST = "digest";
     private static final String KEY_VALUE = "value";
 
     /**
@@ -41,9 +42,9 @@ public class AuthParserUtil {
      */
     public static void parsePostmanAuthToGroup(JSONObject auth, RequestGroup group) {
         String authType = auth.getStr("type", "");
-        if (AUTH_TYPE_BASIC.equals(authType)) {
+        if (POSTMAN_AUTH_TYPE_BASIC.equals(authType)) {
             group.setAuthType(AUTH_TYPE_BASIC);
-            JSONArray basicArr = auth.getJSONArray(AUTH_TYPE_BASIC);
+            JSONArray basicArr = auth.getJSONArray(POSTMAN_AUTH_TYPE_BASIC);
             String username = null;
             String password = null;
             if (basicArr != null) {
@@ -59,14 +60,28 @@ public class AuthParserUtil {
             }
             group.setAuthUsername(username);
             group.setAuthPassword(password);
-        } else if (AUTH_TYPE_BEARER.equals(authType)) {
+        } else if (POSTMAN_AUTH_TYPE_BEARER.equals(authType)) {
             group.setAuthType(AUTH_TYPE_BEARER);
-            JSONArray bearerArr = auth.getJSONArray(AUTH_TYPE_BEARER);
+            JSONArray bearerArr = auth.getJSONArray(POSTMAN_AUTH_TYPE_BEARER);
             if (bearerArr != null && !bearerArr.isEmpty()) {
                 for (Object o : bearerArr) {
                     JSONObject oObj = (JSONObject) o;
                     if ("token".equals(oObj.getStr("key"))) {
                         group.setAuthToken(oObj.getStr(KEY_VALUE, ""));
+                    }
+                }
+            }
+        } else if (POSTMAN_AUTH_TYPE_DIGEST.equals(authType)) {
+            group.setAuthType(AUTH_TYPE_DIGEST);
+            JSONArray digestArr = auth.getJSONArray(POSTMAN_AUTH_TYPE_DIGEST);
+            if (digestArr != null) {
+                for (Object o : digestArr) {
+                    JSONObject oObj = (JSONObject) o;
+                    if ("username".equals(oObj.getStr("key"))) {
+                        group.setAuthUsername(oObj.getStr(KEY_VALUE, ""));
+                    }
+                    if ("password".equals(oObj.getStr("key"))) {
+                        group.setAuthPassword(oObj.getStr(KEY_VALUE, ""));
                     }
                 }
             }
@@ -81,18 +96,25 @@ public class AuthParserUtil {
      */
     public static void parseApiPostAuthToGroup(JSONObject auth, RequestGroup group) {
         String authType = auth.getStr("type", "");
-        if (AUTH_TYPE_BASIC.equals(authType)) {
+        if (POSTMAN_AUTH_TYPE_BASIC.equals(authType)) {
             group.setAuthType(AUTH_TYPE_BASIC);
-            JSONObject basic = auth.getJSONObject(AUTH_TYPE_BASIC);
+            JSONObject basic = auth.getJSONObject(POSTMAN_AUTH_TYPE_BASIC);
             if (basic != null) {
                 group.setAuthUsername(basic.getStr("username", ""));
                 group.setAuthPassword(basic.getStr("password", ""));
             }
-        } else if (AUTH_TYPE_BEARER.equals(authType)) {
+        } else if (POSTMAN_AUTH_TYPE_BEARER.equals(authType)) {
             group.setAuthType(AUTH_TYPE_BEARER);
-            JSONObject bearer = auth.getJSONObject(AUTH_TYPE_BEARER);
+            JSONObject bearer = auth.getJSONObject(POSTMAN_AUTH_TYPE_BEARER);
             if (bearer != null) {
                 group.setAuthToken(bearer.getStr("key", ""));
+            }
+        } else if (POSTMAN_AUTH_TYPE_DIGEST.equals(authType)) {
+            group.setAuthType(AUTH_TYPE_DIGEST);
+            JSONObject digest = auth.getJSONObject(POSTMAN_AUTH_TYPE_DIGEST);
+            if (digest != null) {
+                group.setAuthUsername(digest.getStr("username", ""));
+                group.setAuthPassword(digest.getStr("password", ""));
             }
         } else if ("inherit".equals(authType)) {
             group.setAuthType(AUTH_TYPE_INHERIT);

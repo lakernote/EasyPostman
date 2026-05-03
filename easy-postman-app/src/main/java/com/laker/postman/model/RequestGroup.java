@@ -19,9 +19,9 @@ public class RequestGroup implements Serializable {
     private String id = ""; // 唯一标识符
     private String name = ""; // 分组名称
     private String description = ""; // 分组描述
-    private String authType = AuthType.INHERIT.getConstant(); // 认证类型（none/basic/bearer/inherit），分组默认继承父级认证
-    private String authUsername = ""; // Basic用户名
-    private String authPassword = ""; // Basic密码
+    private String authType = AuthType.INHERIT.getConstant(); // 认证类型（none/basic/bearer/digest/inherit），分组默认继承父级认证
+    private String authUsername = ""; // Basic/Digest用户名
+    private String authPassword = ""; // Basic/Digest密码
     private String authToken = "";    // Bearer Token
     // 前置脚本（请求前执行）
     private String prescript = "";
@@ -43,7 +43,7 @@ public class RequestGroup implements Serializable {
 
     /**
      * 判断分组是否有认证配置
-     * 需要同时排除 NONE 和 INHERIT 类型，只有配置了实际认证（Basic/Bearer 等）才返回 true
+     * 需要同时排除 NONE 和 INHERIT 类型，只有配置了实际认证（Basic/Bearer/Digest 等）才返回 true
      */
     public boolean hasAuth() {
         return authType != null
@@ -79,4 +79,3 @@ public class RequestGroup implements Serializable {
         return variables != null && !variables.isEmpty();
     }
 }
-

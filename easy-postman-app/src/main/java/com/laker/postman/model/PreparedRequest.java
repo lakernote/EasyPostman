@@ -27,6 +27,7 @@ public class PreparedRequest {
     public boolean sslVerificationEnabled = false; // 默认禁用 SSL 校验
     public String httpVersion = HttpRequestItem.HTTP_VERSION_AUTO; // HTTP 协议偏好
     public int requestTimeoutMs = 0; // 0 表示不超时
+    public TransportAuth transportAuth; // 发送阶段需要的传输层认证元数据（例如 Digest challenge 认证）
 
     // 事件监听控制（精细化控制）
     public boolean collectBasicInfo = true; // 收集基本信息（headers、body），默认开启
@@ -59,6 +60,7 @@ public class PreparedRequest {
         copy.sslVerificationEnabled = this.sslVerificationEnabled;
         copy.httpVersion = this.httpVersion;
         copy.requestTimeoutMs = this.requestTimeoutMs;
+        copy.transportAuth = this.transportAuth != null ? this.transportAuth.shallowCopy() : null;
         copy.collectBasicInfo = this.collectBasicInfo;
         copy.collectEventInfo = this.collectEventInfo;
         copy.enableNetworkLog = this.enableNetworkLog;
@@ -74,12 +76,13 @@ public class PreparedRequest {
     /**
      * 简化对象，将渲染时不需要的字段置为 null，减少内存占用
      * 保留的字段：url, method, okHttpHeaders, formDataList, urlencodedList, okHttpRequestBody
-     * 置为 null 的字段：id, body, bodyType, headersList, paramsList
+     * 置为 null 的字段：id, body, bodyType, transportAuth, headersList, paramsList
      */
     public void simplify() {
         this.id = null;
         this.body = null;
         this.bodyType = null;
+        this.transportAuth = null;
         this.headersList = null;  // 渲染用的是 okHttpHeaders
         this.paramsList = null;   // 渲染时不显示
         // isMultipart, followRedirects, logEvent 是基本类型，不占内存

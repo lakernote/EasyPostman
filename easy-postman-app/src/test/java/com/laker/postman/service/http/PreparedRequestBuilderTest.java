@@ -3,6 +3,8 @@ package com.laker.postman.service.http;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.model.AuthType;
+import com.laker.postman.model.TransportAuth;
 import com.laker.postman.service.setting.SettingManager;
 import org.testng.annotations.Test;
 
@@ -49,6 +51,7 @@ public class PreparedRequestBuilderTest {
             }
         }
         assertTrue(hasAuth, "Authorization header should be added for basic auth");
+        assertNull(req.transportAuth, "Basic auth should not keep transport auth metadata");
     }
 
     @Test
@@ -82,6 +85,65 @@ public class PreparedRequestBuilderTest {
             }
         }
         assertTrue(hasAuth, "Authorization header should be added for bearer token");
+        assertNull(req.transportAuth, "Bearer auth should not keep transport auth metadata");
+    }
+
+    @Test
+    public void testDigestAuthDoesNotAddPreviewAuthorizationHeader() {
+        HttpRequestItem item = new HttpRequestItem();
+        item.setId("test-digest");
+        item.setMethod("GET");
+        item.setUrl("https://api.example.com/digest");
+        item.setAuthType(AuthType.DIGEST.getConstant());
+        item.setAuthUsername("digest-user");
+        item.setAuthPassword("digest-pass");
+
+        List<HttpHeader> headers = new ArrayList<>();
+        headers.add(createHeader("Accept", "application/json", true));
+        item.setHeadersList(headers);
+
+        PreparedRequest req = PreparedRequestBuilder.build(item);
+
+        assertNotNull(req);
+        assertNotNull(req.transportAuth);
+        assertEquals(req.transportAuth.type, AuthType.DIGEST.getConstant());
+        assertEquals(req.transportAuth.username, "digest-user");
+        assertEquals(req.transportAuth.password, "digest-pass");
+        for (HttpHeader header : req.headersList) {
+            assertNotEquals(header.getKey(), "Authorization",
+                    "Digest auth should wait for WWW-Authenticate challenge before adding Authorization");
+        }
+    }
+
+    @Test
+    public void testPreparedRequestSimplifyClearsTransportAuth() {
+        PreparedRequest req = new PreparedRequest();
+        req.transportAuth = new TransportAuth(AuthType.DIGEST.getConstant(), "digest-user", "digest-pass");
+
+        req.simplify();
+
+        assertNull(req.transportAuth);
+    }
+
+    @Test
+    public void testDigestTransportAuthIsSkippedWhenAuthorizationHeaderIsExplicit() {
+        HttpRequestItem item = new HttpRequestItem();
+        item.setId("test-digest-explicit-auth");
+        item.setMethod("GET");
+        item.setUrl("https://api.example.com/digest");
+        item.setAuthType(AuthType.DIGEST.getConstant());
+        item.setAuthUsername("digest-user");
+        item.setAuthPassword("digest-pass");
+
+        List<HttpHeader> headers = new ArrayList<>();
+        headers.add(createHeader("Authorization", "Custom Auth Value", true));
+        item.setHeadersList(headers);
+
+        PreparedRequest req = PreparedRequestBuilder.build(item);
+        RequestFinalizer.finalizeForSend(req, item, true);
+
+        assertNull(req.transportAuth, "Explicit Authorization should suppress Digest transport auth");
+        assertEquals(findHeaderValue(req.headersList, "Authorization"), "Custom Auth Value");
     }
 
     @Test
@@ -241,5 +303,17 @@ public class PreparedRequestBuilderTest {
         header.setValue(value);
         header.setEnabled(enabled);
         return header;
+    }
+
+    private String findHeaderValue(List<HttpHeader> headers, String key) {
+        if (headers == null) {
+            return null;
+        }
+        for (HttpHeader header : headers) {
+            if (header != null && header.getKey() != null && header.getKey().equalsIgnoreCase(key)) {
+                return header.getValue();
+            }
+        }
+        return null;
     }
 }

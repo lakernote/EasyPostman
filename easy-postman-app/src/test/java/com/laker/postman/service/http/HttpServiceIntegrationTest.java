@@ -1,11 +1,13 @@
 package com.laker.postman.service.http;
 
+import com.laker.postman.model.AuthType;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpFormData;
 import com.laker.postman.model.HttpFormUrlencoded;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.model.TransportAuth;
 import com.laker.postman.service.http.okhttp.OkHttpClientManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -27,10 +29,14 @@ import java.awt.GraphicsEnvironment;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.URL;
+import java.security.MessageDigest;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPOutputStream;
 
@@ -136,6 +142,89 @@ public class HttpServiceIntegrationTest {
 
         assertEquals(recordedRequest.getHeader("Valid-Header"), "value");
         assertEquals(recordedRequest.getHeader("Bad:Header"), null);
+    }
+
+    @Test
+    public void shouldRetryWithDigestAuthorizationAfterChallenge() throws Exception {
+        server = createServer();
+        String realm = "testrealm@host.com";
+        String nonce = "dcd98b7102dd2f0e8b11d0f600bfb0c093";
+        String opaque = "5ccc069c403ebaf9f0171e9517f40e41";
+        server.setDispatcher(new Dispatcher() {
+            @Override
+            public MockResponse dispatch(RecordedRequest recordedRequest) {
+                String authorization = recordedRequest.getHeader("Authorization");
+                if (authorization == null) {
+                    return digestChallenge(realm, nonce, opaque, false).setBody("unauthorized");
+                }
+                if (isValidDigestAuthorization(recordedRequest, realm, nonce, opaque, "Mufasa", "Circle Of Life")) {
+                    return new MockResponse().setResponseCode(200).setBody("ok");
+                }
+                return new MockResponse().setResponseCode(401).setBody("bad digest");
+            }
+        });
+
+        PreparedRequest request = createRequest("GET", serverUrl("/digest"));
+        request.transportAuth = new TransportAuth(AuthType.DIGEST.getConstant(), "Mufasa", "Circle Of Life");
+
+        HttpResponse response = HttpService.sendRequest(request, null);
+        RecordedRequest firstRequest = server.takeRequest(1, TimeUnit.SECONDS);
+        RecordedRequest retryRequest = server.takeRequest(1, TimeUnit.SECONDS);
+
+        assertEquals(response.code, 200);
+        assertNotNull(firstRequest);
+        assertNotNull(retryRequest);
+        assertEquals(firstRequest.getHeader("Authorization"), null);
+        String authorization = retryRequest.getHeader("Authorization");
+        assertNotNull(authorization);
+        assertTrue(authorization.startsWith("Digest "));
+        assertTrue(authorization.contains("username=\"Mufasa\""));
+        assertTrue(authorization.contains("realm=\"testrealm@host.com\""));
+        assertTrue(authorization.contains("nonce=\"dcd98b7102dd2f0e8b11d0f600bfb0c093\""));
+        assertTrue(authorization.contains("uri=\"/digest\""));
+        assertTrue(authorization.contains("qop=auth"));
+        assertTrue(authorization.contains("opaque=\"5ccc069c403ebaf9f0171e9517f40e41\""));
+        assertTrue(authorization.contains("response=\""));
+    }
+
+    @Test
+    public void shouldRetryDigestAuthorizationWhenServerMarksNonceStale() throws Exception {
+        server = createServer();
+        String realm = "testrealm@host.com";
+        String opaque = "stale-opaque";
+        server.setDispatcher(new Dispatcher() {
+            @Override
+            public MockResponse dispatch(RecordedRequest recordedRequest) {
+                String authorization = recordedRequest.getHeader("Authorization");
+                if (authorization == null) {
+                    return digestChallenge(realm, "old-nonce", opaque, false).setBody("unauthorized");
+                }
+                if (authorization.contains("nonce=\"old-nonce\"")
+                        && isValidDigestAuthorization(recordedRequest, realm, "old-nonce", opaque, "Mufasa", "Circle Of Life")) {
+                    return digestChallenge(realm, "new-nonce", opaque, true).setBody("stale");
+                }
+                if (isValidDigestAuthorization(recordedRequest, realm, "new-nonce", opaque, "Mufasa", "Circle Of Life")) {
+                    return new MockResponse().setResponseCode(200).setBody("ok");
+                }
+                return new MockResponse().setResponseCode(401).setBody("bad digest");
+            }
+        });
+
+        PreparedRequest request = createRequest("GET", serverUrl("/digest-stale"));
+        request.transportAuth = new TransportAuth(AuthType.DIGEST.getConstant(), "Mufasa", "Circle Of Life");
+
+        HttpResponse response = HttpService.sendRequest(request, null);
+        RecordedRequest firstRequest = server.takeRequest(1, TimeUnit.SECONDS);
+        RecordedRequest staleRequest = server.takeRequest(1, TimeUnit.SECONDS);
+        RecordedRequest refreshedRequest = server.takeRequest(1, TimeUnit.SECONDS);
+
+        assertEquals(response.code, 200);
+        assertNotNull(firstRequest);
+        assertNotNull(staleRequest);
+        assertNotNull(refreshedRequest);
+        assertEquals(firstRequest.getHeader("Authorization"), null);
+        assertTrue(staleRequest.getHeader("Authorization").contains("nonce=\"old-nonce\""));
+        assertTrue(refreshedRequest.getHeader("Authorization").contains("nonce=\"new-nonce\""));
     }
 
     @Test
@@ -824,5 +913,81 @@ public class HttpServiceIntegrationTest {
             }
         }
         return null;
+    }
+
+    private MockResponse digestChallenge(String realm, String nonce, String opaque, boolean stale) {
+        String challenge = "Digest realm=\"" + realm + "\", " +
+                "qop=\"auth\", " +
+                "nonce=\"" + nonce + "\", " +
+                "opaque=\"" + opaque + "\"";
+        if (stale) {
+            challenge += ", stale=true";
+        }
+        return new MockResponse()
+                .setResponseCode(401)
+                .addHeader("WWW-Authenticate", challenge);
+    }
+
+    private boolean isValidDigestAuthorization(RecordedRequest request,
+                                               String realm,
+                                               String nonce,
+                                               String opaque,
+                                               String username,
+                                               String password) {
+        Map<String, String> attributes = parseDigestAuthorization(request.getHeader("Authorization"));
+        if (!username.equals(attributes.get("username"))
+                || !realm.equals(attributes.get("realm"))
+                || !nonce.equals(attributes.get("nonce"))
+                || !opaque.equals(attributes.get("opaque"))
+                || !"auth".equals(attributes.get("qop"))
+                || request.getPath() == null
+                || !request.getPath().equals(attributes.get("uri"))) {
+            return false;
+        }
+
+        String nc = attributes.get("nc");
+        String cnonce = attributes.get("cnonce");
+        if (nc == null || cnonce == null) {
+            return false;
+        }
+
+        String ha1 = md5Hex(username + ":" + realm + ":" + password);
+        String ha2 = md5Hex(request.getMethod() + ":" + attributes.get("uri"));
+        String expected = md5Hex(ha1 + ":" + nonce + ":" + nc + ":" + cnonce + ":auth:" + ha2);
+        return expected.equals(attributes.get("response"));
+    }
+
+    private Map<String, String> parseDigestAuthorization(String authorization) {
+        Map<String, String> attributes = new HashMap<>();
+        if (authorization == null || !authorization.regionMatches(true, 0, "Digest ", 0, "Digest ".length())) {
+            return attributes;
+        }
+
+        for (String token : authorization.substring("Digest ".length()).split(", ")) {
+            String[] pair = token.split("=", 2);
+            if (pair.length != 2) {
+                continue;
+            }
+            String value = pair[1];
+            if (value.startsWith("\"") && value.endsWith("\"")) {
+                value = value.substring(1, value.length() - 1);
+            }
+            attributes.put(pair[0], value);
+        }
+        return attributes;
+    }
+
+    private String md5Hex(String value) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("MD5");
+            byte[] bytes = digest.digest(value.getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder(bytes.length * 2);
+            for (byte b : bytes) {
+                sb.append(String.format(Locale.ROOT, "%02x", b & 0xff));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            throw new AssertionError(e);
+        }
     }
 }

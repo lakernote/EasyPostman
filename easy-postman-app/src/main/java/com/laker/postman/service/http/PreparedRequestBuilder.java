@@ -13,6 +13,7 @@ import java.util.Set;
 import static com.laker.postman.common.constants.HttpConstants.HEADER_AUTHORIZATION;
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BASIC;
 import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BEARER;
+import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_DIGEST;
 
 /**
  * 负责构建 PreparedRequest
@@ -109,6 +110,7 @@ public class PreparedRequestBuilder {
         req.sslVerificationEnabled = RequestSettingsResolver.resolveSslVerificationEnabled(effectiveItem);
         req.httpVersion = RequestSettingsResolver.resolveHttpVersion(effectiveItem);
         req.requestTimeoutMs = RequestSettingsResolver.resolveRequestTimeoutMs(effectiveItem);
+        req.transportAuth = createTransportAuth(effectiveItem);
 
         // 填充 List 数据，支持相同 key
         // 每次执行都使用独立副本，避免并发压测时线程间互相污染变量替换结果
@@ -122,6 +124,13 @@ public class PreparedRequestBuilder {
         req.postscript = effectiveItem.getPostscript();
 
         return req;
+    }
+
+    private static TransportAuth createTransportAuth(HttpRequestItem item) {
+        if (item == null || !AUTH_TYPE_DIGEST.equals(item.getAuthType())) {
+            return null;
+        }
+        return new TransportAuth(item.getAuthType(), item.getAuthUsername(), item.getAuthPassword());
     }
 
     public static DeferredAuthorization resolveDeferredAuthorization(HttpRequestItem item, boolean useCache) {
@@ -234,6 +243,9 @@ public class PreparedRequestBuilder {
         }
         if (AUTH_TYPE_BEARER.equals(item.getAuthType())) {
             return createResolvableBearerAuthHeader(item.getAuthToken());
+        }
+        if (AUTH_TYPE_DIGEST.equals(item.getAuthType())) {
+            return null;
         }
         return null;
     }

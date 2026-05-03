@@ -65,6 +65,12 @@ public class PostmanCollectionExporter {
                 JSONArray arr = new JSONArray();
                 arr.add(new JSONObject().put("key", "token").put("value", rootGroup.getAuthToken()));
                 auth.put("bearer", arr);
+            } else if (AUTH_TYPE_DIGEST.equals(rootGroup.getAuthType())) {
+                auth.put("type", "digest");
+                JSONArray arr = new JSONArray();
+                arr.add(new JSONObject().put("key", "username").put("value", rootGroup.getAuthUsername()));
+                arr.add(new JSONObject().put("key", "password").put("value", rootGroup.getAuthPassword()));
+                auth.put("digest", arr);
             }
             collection.put("auth", auth);
         }
@@ -149,6 +155,12 @@ public class PostmanCollectionExporter {
                                 JSONArray arr = new JSONArray();
                                 arr.add(new JSONObject().put("key", "token").put("value", group.getAuthToken()));
                                 auth.put("bearer", arr);
+                            } else if (AUTH_TYPE_DIGEST.equals(group.getAuthType())) {
+                                auth.put("type", "digest");
+                                JSONArray arr = new JSONArray();
+                                arr.add(new JSONObject().put("key", "username").put("value", group.getAuthUsername()));
+                                arr.add(new JSONObject().put("key", "password").put("value", group.getAuthPassword()));
+                                auth.put("digest", arr);
                             }
                             folder.put("auth", auth);
                         }
@@ -325,6 +337,12 @@ public class PostmanCollectionExporter {
                 JSONArray arr = new JSONArray();
                 arr.add(new JSONObject().put("key", "token").put("value", item.getAuthToken()));
                 auth.put("bearer", arr);
+            } else if (AUTH_TYPE_DIGEST.equals(item.getAuthType())) {
+                auth.put("type", "digest");
+                JSONArray arr = new JSONArray();
+                arr.add(new JSONObject().put("key", "username").put("value", item.getAuthUsername()));
+                arr.add(new JSONObject().put("key", "password").put("value", item.getAuthPassword()));
+                auth.put("digest", arr);
             }
             request.put("auth", auth);
         }
@@ -513,4 +531,3 @@ public class PostmanCollectionExporter {
         return respJson;
     }
 }
-

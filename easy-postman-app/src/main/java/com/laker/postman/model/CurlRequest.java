@@ -16,4 +16,7 @@ public class CurlRequest {
     // 用于存储 application/x-www-form-urlencoded 类型的数据
     public List<HttpFormUrlencoded> urlencodedList;
     public boolean followRedirects = false; // 是否跟随重定向
+    public String authType;
+    public String authUsername;
+    public String authPassword;
 }

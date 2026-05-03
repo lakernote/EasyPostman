@@ -12,7 +12,8 @@ public enum AuthType {
     INHERIT("Inherit auth from parent", MessageKeys.AUTH_TYPE_INHERIT),
     NONE("No Auth", MessageKeys.AUTH_TYPE_NONE),
     BASIC("Basic Auth", MessageKeys.AUTH_TYPE_BASIC),
-    BEARER("Bearer Token", MessageKeys.AUTH_TYPE_BEARER);
+    BEARER("Bearer Token", MessageKeys.AUTH_TYPE_BEARER),
+    DIGEST("Digest Auth", MessageKeys.AUTH_TYPE_DIGEST);
 
     private final String constant;
     private final String i18nKey;
@@ -61,4 +62,3 @@ public enum AuthType {
         return getDisplayText();
     }
 }
-

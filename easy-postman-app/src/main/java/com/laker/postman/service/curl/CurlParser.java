@@ -73,6 +73,22 @@ public class CurlParser {
                 req.followRedirects = true;
                 continue;
             }
+            if (token.equals("--digest")) {
+                req.authType = AuthType.DIGEST.getConstant();
+                continue;
+            }
+            if ((token.equals("--user") || token.equals("-u")) && i + 1 < tokens.size()) {
+                applyUserOption(req, tokens.get(++i));
+                continue;
+            }
+            if (token.startsWith("--user=")) {
+                applyUserOption(req, token.substring("--user=".length()));
+                continue;
+            }
+            if (token.startsWith("-u") && token.length() > 2) {
+                applyUserOption(req, token.substring(2));
+                continue;
+            }
             // 1. URL 处理 (使用最后一个 URL，符合 curl 实际行为)
             if (token.equals("--url") && i + 1 < tokens.size()) {
                 req.url = tokens.get(++i);
@@ -292,6 +308,20 @@ public class CurlParser {
         return req;
     }
 
+    private static void applyUserOption(CurlRequest req, String userOption) {
+        if (req == null || userOption == null) {
+            return;
+        }
+        int separator = userOption.indexOf(':');
+        if (separator < 0) {
+            req.authUsername = userOption;
+            req.authPassword = "";
+            return;
+        }
+        req.authUsername = userOption.substring(0, separator);
+        req.authPassword = userOption.substring(separator + 1);
+    }
+
     /**
      * 解析 multipart/form-data 格式的请求体
      *
@@ -493,6 +523,12 @@ public class CurlParser {
         if (preparedRequest.method != null && !"GET".equalsIgnoreCase(preparedRequest.method)) {
             sb.append(" -X ").append(preparedRequest.method.toUpperCase());
         }
+        // Digest auth is challenge-based, so export curl's native auth flags instead of a static Authorization header.
+        TransportAuth auth = preparedRequest.transportAuth;
+        if (auth != null && auth.isDigest() && !isBlank(auth.username)) {
+            sb.append(" --digest");
+            sb.append(" --user ").append(escapeShellArg(auth.username + ":" + (auth.password == null ? "" : auth.password)));
+        }
         // url
         if (preparedRequest.url != null) {
             sb.append(" \"").append(preparedRequest.url).append("\"");
@@ -540,6 +576,10 @@ public class CurlParser {
         } else {
             return "'" + s + "'";
         }
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 
 

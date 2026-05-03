@@ -259,6 +259,35 @@ public class CurlParserTest {
         assertTrue(curlCommand.contains("-F 'file=@/path/to/file.txt'"));
     }
 
+    @Test(description = "测试PreparedRequest转cURL - Digest认证")
+    public void testToCurlWithDigestAuth() {
+        PreparedRequest preparedRequest = new PreparedRequest();
+        preparedRequest.method = "GET";
+        preparedRequest.url = "https://api.example.com/digest";
+        preparedRequest.transportAuth = new TransportAuth(AuthType.DIGEST.getConstant(), "digest-user", "digest pass");
+
+        String curlCommand = CurlParser.toCurl(preparedRequest);
+
+        assertTrue(curlCommand.contains(" --digest"));
+        assertTrue(curlCommand.contains(" --user 'digest-user:digest pass'"));
+    }
+
+    @Test(description = "测试Digest认证cURL导出后可重新导入")
+    public void testDigestCurlRoundTripImport() {
+        PreparedRequest preparedRequest = new PreparedRequest();
+        preparedRequest.method = "GET";
+        preparedRequest.url = "https://api.example.com/digest";
+        preparedRequest.transportAuth = new TransportAuth(AuthType.DIGEST.getConstant(), "digest-user", "digest pass");
+
+        String curlCommand = CurlParser.toCurl(preparedRequest);
+        HttpRequestItem item = CurlImportUtil.fromCurl(curlCommand);
+
+        assertNotNull(item);
+        assertEquals(item.getAuthType(), AuthType.DIGEST.getConstant());
+        assertEquals(item.getAuthUsername(), "digest-user");
+        assertEquals(item.getAuthPassword(), "digest pass");
+    }
+
     @Test(description = "测试PreparedRequest转cURL - GET请求")
     public void testToCurlGetRequest() {
         PreparedRequest preparedRequest = new PreparedRequest();

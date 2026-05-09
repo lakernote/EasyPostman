@@ -1141,6 +1141,9 @@ public final class MessageKeys {
     public static final String RESPONSE_SAVE_REQUEST_NOT_SAVED = "response.save.request_not_saved";
     public static final String RESPONSE_BODY_COPY_JSON_KEY = "response.body.copy_json_key";
     public static final String RESPONSE_BODY_COPY_JSON_VALUE = "response.body.copy_json_value";
+    public static final String RESPONSE_BODY_CONTEXT_COPY_SELECTED = "response.body.context.copy_selected";
+    public static final String RESPONSE_BODY_CONTEXT_COPY_ALL = "response.body.context.copy_all";
+    public static final String RESPONSE_BODY_CONTEXT_SELECT_ALL = "response.body.context.select_all";
     public static final String RESPONSE_BODY_CONTEXT_FOLDING = "response.body.context.folding";
     public static final String RESPONSE_BODY_CONTEXT_TOGGLE_CURRENT_FOLD = "response.body.context.toggle_current_fold";
     public static final String RESPONSE_BODY_CONTEXT_COLLAPSE_COMMENT_FOLDS = "response.body.context.collapse_comment_folds";

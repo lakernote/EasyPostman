@@ -366,7 +366,9 @@ public class ResponseBodyPanel extends JPanel {
 
     private JPopupMenu createResponseBodyPopupMenu(JMenuItem copyKeyItem, JMenuItem copyValueItem) {
         JPopupMenu defaultMenu = responseBodyPane.getPopupMenu();
-        JMenuItem copySelectionItem = findActionMenuItem(defaultMenu, RTextArea.COPY_ACTION);
+        JMenuItem copySelectedItem = findActionMenuItem(defaultMenu, RTextArea.COPY_ACTION);
+        JMenuItem copyAllItem = createPopupMenuItem(MessageKeys.RESPONSE_BODY_CONTEXT_COPY_ALL);
+        copyAllItem.addActionListener(e -> copyToClipboard());
         JMenuItem selectAllItem = findActionMenuItem(defaultMenu, RTextArea.SELECT_ALL_ACTION);
         JMenu foldingMenu = findFoldingMenu(defaultMenu);
 
@@ -374,7 +376,8 @@ public class ResponseBodyPanel extends JPanel {
         popupMenu.add(copyKeyItem);
         popupMenu.add(copyValueItem);
         popupMenu.addSeparator();
-        addIfPresent(popupMenu, copySelectionItem);
+        addIfPresent(popupMenu, copySelectedItem);
+        popupMenu.add(copyAllItem);
         addIfPresent(popupMenu, selectAllItem);
         if (foldingMenu != null) {
             popupMenu.addSeparator();
@@ -430,9 +433,9 @@ public class ResponseBodyPanel extends JPanel {
 
         Action action = menuItem.getAction();
         if (action == RTextArea.getAction(RTextArea.COPY_ACTION)) {
-            menuItem.setText(I18nUtil.getMessage(MessageKeys.BUTTON_COPY));
+            menuItem.setText(I18nUtil.getMessage(MessageKeys.RESPONSE_BODY_CONTEXT_COPY_SELECTED));
         } else if (action == RTextArea.getAction(RTextArea.SELECT_ALL_ACTION)) {
-            menuItem.setText(I18nUtil.getMessage(MessageKeys.RESPONSE_HEADERS_SELECT_ALL));
+            menuItem.setText(I18nUtil.getMessage(MessageKeys.RESPONSE_BODY_CONTEXT_SELECT_ALL));
         }
     }
 
@@ -458,10 +461,22 @@ public class ResponseBodyPanel extends JPanel {
             return;
         }
         int offset = responseBodyPane.viewToModel2D(e.getPoint());
+        rememberJsonPopupOffset(offset);
+    }
+
+    void rememberJsonPopupOffset(int offset) {
         if (offset >= 0 && offset <= responseBodyPane.getDocument().getLength()) {
             jsonContextPopupOffset = offset;
-            responseBodyPane.setCaretPosition(offset);
+            if (!isOffsetInsideSelection(offset)) {
+                responseBodyPane.setCaretPosition(offset);
+            }
         }
+    }
+
+    private boolean isOffsetInsideSelection(int offset) {
+        int selectionStart = responseBodyPane.getSelectionStart();
+        int selectionEnd = responseBodyPane.getSelectionEnd();
+        return selectionStart != selectionEnd && offset >= selectionStart && offset < selectionEnd;
     }
 
     private JsonCopyTargetResolver.CopyTarget resolveCurrentJsonCopyTarget() {

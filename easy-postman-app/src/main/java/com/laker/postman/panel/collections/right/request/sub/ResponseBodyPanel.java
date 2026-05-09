@@ -16,8 +16,12 @@ import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -52,6 +56,8 @@ public class ResponseBodyPanel extends JPanel {
     private final CopyButton copyButton;
     private final WrapToggleButton wrapButton;
     private final SearchableTextArea searchableTextArea; // 带搜索功能的文本编辑器
+    private JsonCopyTargetResolver.CopyTarget currentJsonCopyTarget;
+    private int jsonContextPopupOffset = -1;
 
     // 常量定义
     private static final int LARGE_RESPONSE_THRESHOLD = 500 * 1024; // 500KB threshold
@@ -81,6 +87,7 @@ public class ResponseBodyPanel extends JPanel {
         // 关闭括号匹配的小浮层提示，避免响应体中长 JSON 滚动查看时遮挡内容
         responseBodyPane.setShowMatchedBracketPopup(false);
         responseBodyPane.setTokenPainterFactory(textArea -> new ViewportClippedTokenPainter());
+        installJsonCopyContextMenu();
 
         // 加载编辑器主题 - 支持亮色和暗色主题自适应（必须在 setFont 之前，否则主题会覆盖字体）
         EditorThemeUtil.loadTheme(responseBodyPane);
@@ -303,6 +310,98 @@ public class ResponseBodyPanel extends JPanel {
             return;
         }
 
+        copyTextToClipboard(text);
+    }
+
+    private void installJsonCopyContextMenu() {
+        JPopupMenu popupMenu = responseBodyPane.getPopupMenu();
+        if (popupMenu == null) {
+            popupMenu = new JPopupMenu();
+            responseBodyPane.setPopupMenu(popupMenu);
+        }
+
+        JMenuItem copyKeyItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.RESPONSE_BODY_COPY_JSON_KEY));
+        JMenuItem copyValueItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.RESPONSE_BODY_COPY_JSON_VALUE));
+        copyKeyItem.addActionListener(e -> copyJsonTarget(true));
+        copyValueItem.addActionListener(e -> copyJsonTarget(false));
+
+        popupMenu.addSeparator();
+        popupMenu.add(copyKeyItem);
+        popupMenu.add(copyValueItem);
+
+        responseBodyPane.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                rememberJsonPopupOffset(e);
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                rememberJsonPopupOffset(e);
+            }
+        });
+
+        popupMenu.addPopupMenuListener(new PopupMenuListener() {
+            @Override
+            public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
+                currentJsonCopyTarget = resolveCurrentJsonCopyTarget();
+                copyKeyItem.setEnabled(currentJsonCopyTarget != null && currentJsonCopyTarget.key() != null);
+                copyValueItem.setEnabled(currentJsonCopyTarget != null && currentJsonCopyTarget.value() != null);
+            }
+
+            @Override
+            public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
+                clearJsonPopupTarget();
+            }
+
+            @Override
+            public void popupMenuCanceled(PopupMenuEvent e) {
+                clearJsonPopupTarget();
+            }
+        });
+    }
+
+    private void rememberJsonPopupOffset(MouseEvent e) {
+        if (!e.isPopupTrigger()) {
+            return;
+        }
+        int offset = responseBodyPane.viewToModel2D(e.getPoint());
+        if (offset >= 0 && offset <= responseBodyPane.getDocument().getLength()) {
+            jsonContextPopupOffset = offset;
+            responseBodyPane.setCaretPosition(offset);
+        }
+    }
+
+    private JsonCopyTargetResolver.CopyTarget resolveCurrentJsonCopyTarget() {
+        String text = responseBodyPane.getText();
+        if (text == null || text.isEmpty()) {
+            return null;
+        }
+        int offset = jsonContextPopupOffset >= 0 ? jsonContextPopupOffset : responseBodyPane.getCaretPosition();
+        return JsonCopyTargetResolver.resolve(text, offset).orElse(null);
+    }
+
+    private void copyJsonTarget(boolean copyKey) {
+        JsonCopyTargetResolver.CopyTarget target = currentJsonCopyTarget != null
+                ? currentJsonCopyTarget
+                : resolveCurrentJsonCopyTarget();
+        if (target == null) {
+            return;
+        }
+
+        String text = copyKey ? target.key() : target.value();
+        if (text == null) {
+            return;
+        }
+        copyTextToClipboard(text);
+    }
+
+    private void clearJsonPopupTarget() {
+        currentJsonCopyTarget = null;
+        jsonContextPopupOffset = -1;
+    }
+
+    private void copyTextToClipboard(String text) {
         try {
             Toolkit.getDefaultToolkit().getSystemClipboard()
                     .setContents(new StringSelection(text), null);

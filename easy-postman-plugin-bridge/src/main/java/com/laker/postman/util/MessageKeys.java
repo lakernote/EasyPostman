@@ -1139,6 +1139,8 @@ public final class MessageKeys {
     public static final String RESPONSE_SAVE_ERROR = "response.save.error";
     public static final String RESPONSE_SAVE_NO_RESPONSE = "response.save.no_response";
     public static final String RESPONSE_SAVE_REQUEST_NOT_SAVED = "response.save.request_not_saved";
+    public static final String RESPONSE_BODY_COPY_JSON_KEY = "response.body.copy_json_key";
+    public static final String RESPONSE_BODY_COPY_JSON_VALUE = "response.body.copy_json_value";
 
     // ============ CSV Data Panel related ============
     public static final String CSV_STATUS_NO_DATA = "csv.status.no_data";

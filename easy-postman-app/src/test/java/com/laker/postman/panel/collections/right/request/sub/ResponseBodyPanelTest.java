@@ -61,6 +61,16 @@ public class ResponseBodyPanelTest extends AbstractSwingUiTest {
         assertFalse(panel.getResponseBodyPane().getShowMatchedBracketPopup());
     }
 
+    @Test
+    public void shouldExposeJsonCopyActionsInResponseEditorPopupMenu() throws Exception {
+        ResponseBodyPanel panel = createPanelWithResponse(responseWithBody("{\"data\":\"value\"}"));
+
+        JPopupMenu popupMenu = panel.getResponseBodyPane().getPopupMenu();
+
+        assertTrue(hasMenuItem(popupMenu, "复制 Key") || hasMenuItem(popupMenu, "Copy Key"));
+        assertTrue(hasMenuItem(popupMenu, "复制值") || hasMenuItem(popupMenu, "Copy Value"));
+    }
+
     private ResponseBodyPanel createPanelWithResponse(HttpResponse response) throws Exception {
         ResponseBodyPanel[] holder = new ResponseBodyPanel[1];
         SwingUtilities.invokeAndWait(() -> {
@@ -116,5 +126,14 @@ public class ResponseBodyPanelTest extends AbstractSwingUiTest {
         } catch (ReflectiveOperationException e) {
             throw new AssertionError(e);
         }
+    }
+
+    private boolean hasMenuItem(JPopupMenu popupMenu, String text) {
+        for (Component component : popupMenu.getComponents()) {
+            if (component instanceof JMenuItem menuItem && text.equals(menuItem.getText())) {
+                return true;
+            }
+        }
+        return false;
     }
 }

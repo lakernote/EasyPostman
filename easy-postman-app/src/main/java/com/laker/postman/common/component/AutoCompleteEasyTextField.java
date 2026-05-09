@@ -299,7 +299,7 @@ public class AutoCompleteEasyTextField extends EasyTextField {
 
         try {
             Point location = getLocationOnScreen();
-            Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+            Rectangle screenBounds = getCurrentScreenBounds();
 
             int popupWidth = Math.max(getWidth(), MIN_POPUP_WIDTH);
             int popupHeight = Math.min(listModel.getSize() * ROW_HEIGHT + POPUP_BORDER_WIDTH,
@@ -309,17 +309,20 @@ public class AutoCompleteEasyTextField extends EasyTextField {
             int y = location.y + getHeight();
 
             // 检查右边界
-            if (x + popupWidth > screenSize.width) {
-                x = screenSize.width - popupWidth - 10;
+            if (x + popupWidth > screenBounds.x + screenBounds.width) {
+                x = screenBounds.x + screenBounds.width - popupWidth - 10;
+            }
+            if (x < screenBounds.x) {
+                x = screenBounds.x;
             }
 
             // 检查下边界，如果空间不够则显示在上方
-            if (y + popupHeight > screenSize.height) {
+            if (y + popupHeight > screenBounds.y + screenBounds.height) {
                 y = location.y - popupHeight;
                 // 如果上方也不够，则尽可能显示在下方
-                if (y < 0) {
+                if (y < screenBounds.y) {
                     y = location.y + getHeight();
-                    popupHeight = Math.min(popupHeight, screenSize.height - y - 10);
+                    popupHeight = Math.min(popupHeight, screenBounds.y + screenBounds.height - y - 10);
                 }
             }
 
@@ -333,6 +336,15 @@ public class AutoCompleteEasyTextField extends EasyTextField {
             // 组件不可见时忽略
             hidePopup();
         }
+    }
+
+    private Rectangle getCurrentScreenBounds() {
+        GraphicsConfiguration graphicsConfiguration = getGraphicsConfiguration();
+        if (graphicsConfiguration != null) {
+            return graphicsConfiguration.getBounds();
+        }
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        return new Rectangle(0, 0, screenSize.width, screenSize.height);
     }
 
     private void hidePopup() {

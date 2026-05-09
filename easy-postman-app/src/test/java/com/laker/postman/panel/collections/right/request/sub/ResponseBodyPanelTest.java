@@ -3,6 +3,8 @@ package com.laker.postman.panel.collections.right.request.sub;
 import com.laker.postman.common.component.button.WrapToggleButton;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.test.AbstractSwingUiTest;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.testng.annotations.Test;
 
@@ -67,8 +69,21 @@ public class ResponseBodyPanelTest extends AbstractSwingUiTest {
 
         JPopupMenu popupMenu = panel.getResponseBodyPane().getPopupMenu();
 
-        assertTrue(hasMenuItem(popupMenu, "复制 Key") || hasMenuItem(popupMenu, "Copy Key"));
-        assertTrue(hasMenuItem(popupMenu, "复制值") || hasMenuItem(popupMenu, "Copy Value"));
+        assertTrue(hasMenuItem(popupMenu, I18nUtil.getMessage(MessageKeys.RESPONSE_BODY_COPY_JSON_KEY)));
+        assertTrue(hasMenuItem(popupMenu, I18nUtil.getMessage(MessageKeys.RESPONSE_BODY_COPY_JSON_VALUE)));
+    }
+
+    @Test
+    public void shouldUseCompactLocalizedResponseEditorPopupMenu() throws Exception {
+        ResponseBodyPanel panel = createPanelWithResponse(responseWithBody("{\"data\":\"value\"}"));
+
+        JPopupMenu popupMenu = panel.getResponseBodyPane().getPopupMenu();
+
+        assertFalse(hasAnyMenuItem(popupMenu, "Undo", "Can't Redo", "Cut", "Paste", "Delete",
+                "撤销", "无法恢复", "剪切", "粘贴", "删除"));
+        assertTrue(hasMenuItem(popupMenu, I18nUtil.getMessage(MessageKeys.BUTTON_COPY)));
+        assertTrue(hasMenuItem(popupMenu, I18nUtil.getMessage(MessageKeys.RESPONSE_HEADERS_SELECT_ALL)));
+        assertTrue(hasMenuItem(popupMenu, I18nUtil.getMessage(MessageKeys.RESPONSE_BODY_CONTEXT_FOLDING)));
     }
 
     private ResponseBodyPanel createPanelWithResponse(HttpResponse response) throws Exception {
@@ -131,6 +146,15 @@ public class ResponseBodyPanelTest extends AbstractSwingUiTest {
     private boolean hasMenuItem(JPopupMenu popupMenu, String text) {
         for (Component component : popupMenu.getComponents()) {
             if (component instanceof JMenuItem menuItem && text.equals(menuItem.getText())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean hasAnyMenuItem(JPopupMenu popupMenu, String... texts) {
+        for (String text : texts) {
+            if (hasMenuItem(popupMenu, text)) {
                 return true;
             }
         }

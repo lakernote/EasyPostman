@@ -87,11 +87,22 @@ public class ViewportClippedTokenPainter implements TokenPainter {
         g.setColor(fg);
 
         ClipRange clipRange = resolveClipRange(g, clipStart);
-        if (token.length() > LONG_TOKEN_THRESHOLD) {
-            return paintLongToken(text, start, end, g, x, y, fm, fg, bg, underline, host, e, clipRange);
+        Shape originalClip = null;
+        if (clipRange.narrowsActualClip()) {
+            originalClip = g.getClip();
+            constrainActualClip(g, clipRange);
         }
+        try {
+            if (token.length() > LONG_TOKEN_THRESHOLD) {
+                return paintLongToken(text, start, end, g, x, y, fm, fg, bg, underline, host, e, clipRange);
+            }
 
-        return paintRange(text, start, end, g, x, y, fm, fg, bg, underline, host, e, clipRange);
+            return paintRange(text, start, end, g, x, y, fm, fg, bg, underline, host, e, clipRange);
+        } finally {
+            if (originalClip != null) {
+                g.setClip(originalClip);
+            }
+        }
     }
 
     private float paintLongToken(char[] text, int start, int end, Graphics2D g, float x, float y,
@@ -210,9 +221,20 @@ public class ViewportClippedTokenPainter implements TokenPainter {
 
     private ClipRange resolveClipRange(Graphics2D g, float clipStart) {
         Rectangle clip = g.getClipBounds();
-        float left = clip != null ? Math.max(clip.x, clipStart) : clipStart;
-        float right = clip != null ? clip.x + clip.width : Float.POSITIVE_INFINITY;
-        return new ClipRange(left, right);
+        if (clip == null) {
+            return new ClipRange(clipStart, Float.POSITIVE_INFINITY, null);
+        }
+
+        float left = Math.max(clip.x, clipStart);
+        float right = clip.x + clip.width;
+        return new ClipRange(left, right, clip);
+    }
+
+    private void constrainActualClip(Graphics2D g, ClipRange clipRange) {
+        Rectangle clip = clipRange.clipBounds;
+        int left = (int) Math.floor(clipRange.left);
+        int right = (int) Math.ceil(clipRange.right);
+        g.clipRect(left, clip.y, Math.max(0, right - left), clip.height);
     }
 
     private boolean isRangeVisible(float x, float nextX, ClipRange clipRange) {
@@ -222,10 +244,23 @@ public class ViewportClippedTokenPainter implements TokenPainter {
     private static class ClipRange {
         private final float left;
         private final float right;
+        private final Rectangle clipBounds;
 
-        private ClipRange(float left, float right) {
+        private ClipRange(float left, float right, Rectangle clipBounds) {
             this.left = left;
             this.right = right;
+            this.clipBounds = clipBounds;
+        }
+
+        private boolean narrowsActualClip() {
+            if (clipBounds == null || !Float.isFinite(right)) {
+                return false;
+            }
+
+            int actualLeft = (int) Math.floor(left);
+            int actualRight = (int) Math.ceil(right);
+            int clipRight = clipBounds.x + clipBounds.width;
+            return actualLeft > clipBounds.x || actualRight < clipRight;
         }
     }
 }

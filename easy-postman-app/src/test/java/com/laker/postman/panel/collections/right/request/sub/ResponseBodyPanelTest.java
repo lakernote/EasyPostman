@@ -54,6 +54,13 @@ public class ResponseBodyPanelTest extends AbstractSwingUiTest {
                 "com.laker.postman.common.component.ViewportClippedTokenPainter");
     }
 
+    @Test
+    public void shouldDisableMatchedBracketPopupForResponseEditor() throws Exception {
+        ResponseBodyPanel panel = createPanelWithResponse(responseWithBody(longLineJson()));
+
+        assertFalse(panel.getResponseBodyPane().getShowMatchedBracketPopup());
+    }
+
     private ResponseBodyPanel createPanelWithResponse(HttpResponse response) throws Exception {
         ResponseBodyPanel[] holder = new ResponseBodyPanel[1];
         SwingUtilities.invokeAndWait(() -> {

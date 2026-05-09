@@ -78,6 +78,8 @@ public class ResponseBodyPanel extends JPanel {
         responseBodyPane.setCodeFoldingEnabled(true);
         responseBodyPane.setLineWrap(false); // 禁用自动换行以提升大文本性能
         responseBodyPane.setHighlightCurrentLine(false); // 关闭选中行高亮
+        // 关闭括号匹配的小浮层提示，避免响应体中长 JSON 滚动查看时遮挡内容
+        responseBodyPane.setShowMatchedBracketPopup(false);
         responseBodyPane.setTokenPainterFactory(textArea -> new ViewportClippedTokenPainter());
 
         // 加载编辑器主题 - 支持亮色和暗色主题自适应（必须在 setFont 之前，否则主题会覆盖字体）

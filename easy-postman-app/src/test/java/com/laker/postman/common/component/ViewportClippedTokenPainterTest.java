@@ -50,6 +50,20 @@ public class ViewportClippedTokenPainterTest {
         assertEquals(graphics.drawCharsCalls, 1);
     }
 
+    @Test
+    public void shouldConstrainActualClipToLogicalClipStart() {
+        RSyntaxTextArea host = new RSyntaxTextArea();
+        Token token = token("a".repeat(600));
+        RecordingGraphics2D graphics = graphicsWithClip(0, 0, 160, 40);
+
+        new ViewportClippedTokenPainter()
+                .paint(token, graphics, 0f, 20f, host, fixedTabExpander(), 80f, true);
+
+        assertTrue(graphics.drawCharsCalls > 0);
+        assertTrue(graphics.leftMostClipAtDraw >= 80,
+                "Text drawing must be clipped to clipStart so horizontally scrolled text cannot bleed into the gutter");
+    }
+
     private Token token(String text) {
         char[] chars = text.toCharArray();
         return new TokenImpl(chars, 0, chars.length - 1, 0, TokenTypes.IDENTIFIER, 0);
@@ -69,6 +83,7 @@ public class ViewportClippedTokenPainterTest {
     private static class RecordingGraphics2D extends Graphics2D {
         private final Graphics2D delegate;
         private int drawCharsCalls;
+        private int leftMostClipAtDraw = Integer.MAX_VALUE;
 
         private RecordingGraphics2D(Graphics2D delegate) {
             this.delegate = delegate;
@@ -77,6 +92,10 @@ public class ViewportClippedTokenPainterTest {
         @Override
         public void drawChars(char[] data, int offset, int length, int x, int y) {
             drawCharsCalls++;
+            Rectangle clip = delegate.getClipBounds();
+            if (clip != null) {
+                leftMostClipAtDraw = Math.min(leftMostClipAtDraw, clip.x);
+            }
             delegate.drawChars(data, offset, length, x, y);
         }
 

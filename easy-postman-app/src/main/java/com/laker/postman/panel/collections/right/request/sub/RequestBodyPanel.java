@@ -30,6 +30,7 @@ import javax.swing.undo.CannotUndoException;
 import javax.swing.undo.UndoManager;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.Optional;
 
 /**
  * 请求Body相关的独立面板，支持none、form-data、x-www-form-urlencoded、raw
@@ -579,15 +580,32 @@ public class RequestBodyPanel extends JPanel {
             return;
         }
         String selectedFormat = (String) rawTypeComboBox.getSelectedItem();
-        if (RAW_TYPE_JSON.equals(selectedFormat)) {
-            String prettyJson = JsonUtil.toJsonPrettyStr(bodyText);
-            bodyArea.setText(prettyJson);
-        } else if (RAW_TYPE_XML.equals(selectedFormat)) {
-            bodyArea.setText(XmlUtil.formatXml(bodyText));
-        } else {
-            log.debug("Unsupported format type or content is not JSON/XML");
+        Optional<String> formatted = formatBodyTextForDisplay(selectedFormat, bodyText);
+        if (formatted.isPresent()) {
+            bodyArea.setText(formatted.get());
+            return;
         }
 
+        JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.REQUEST_BODY_FORMAT_INVALID));
+    }
+
+    static Optional<String> formatBodyTextForDisplay(String selectedFormat, String bodyText) {
+        if (RAW_TYPE_JSON.equals(selectedFormat)) {
+            if (!JsonUtil.isTypeJSON(bodyText)) {
+                return Optional.empty();
+            }
+            try {
+                return Optional.of(JsonUtil.toJsonPrettyStr(bodyText));
+            } catch (RuntimeException ex) {
+                log.debug("JSON body format failed", ex);
+                return Optional.empty();
+            }
+        }
+        if (RAW_TYPE_XML.equals(selectedFormat)) {
+            return Optional.of(XmlUtil.formatXml(bodyText));
+        }
+        log.debug("Unsupported format type or content is not JSON/XML");
+        return Optional.empty();
     }
 
     /**

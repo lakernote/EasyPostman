@@ -419,7 +419,9 @@ public class RequestEditPanel extends SingletonBasePanel {
 
         if (isNewRequest) {
             // 新请求：弹出对话框让用户输入名称和选择文件夹
-            saveNewRequest(collectionPanel, currentItem);
+            if (!saveNewRequest(collectionPanel, currentItem)) {
+                return false;
+            }
         } else {
             updateExistingRequest(collectionPanel, currentItem);
         }
@@ -679,10 +681,10 @@ public class RequestEditPanel extends SingletonBasePanel {
     /**
      * 保存新请求（分组选择优化为树结构）
      */
-    private void saveNewRequest(RequestCollectionsLeftPanel collectionPanel, HttpRequestItem item) {
+    private boolean saveNewRequest(RequestCollectionsLeftPanel collectionPanel, HttpRequestItem item) {
         TreeModel groupTreeModel = collectionPanel.getGroupTreeModel();
         Object[] result = showGroupAndNameDialog(groupTreeModel, item.getName());
-        if (result == null) return;
+        if (result == null) return false;
         Object[] groupObj = (Object[]) result[0];
         String requestName = (String) result[1];
         item.setName(requestName);
@@ -700,6 +702,7 @@ public class RequestEditPanel extends SingletonBasePanel {
                 subPanel.initPanelData(item);
             }
         }
+        return true;
     }
 
     /**

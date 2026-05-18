@@ -58,7 +58,7 @@ public class CurlImportUtil {
 
         // Keep imported requests aligned with the editor's default empty-string body state
         // so opening a saved curl import does not look dirty immediately.
-        item.setBody(curlRequest.body != null ? curlRequest.body : "");
+        item.setBody(formatBodyForDisplay(curlRequest.body));
 
         if (CollUtil.isNotEmpty(curlRequest.paramsList)) {
             item.setParamsList(curlRequest.paramsList);
@@ -89,5 +89,15 @@ public class CurlImportUtil {
         }
 
         return item;
+    }
+
+    private static String formatBodyForDisplay(String body) {
+        if (body == null) {
+            return "";
+        }
+        if (!JsonUtil.isTypeJSON(body)) {
+            return body;
+        }
+        return JsonUtil.toJsonPrettyStr(body);
     }
 }

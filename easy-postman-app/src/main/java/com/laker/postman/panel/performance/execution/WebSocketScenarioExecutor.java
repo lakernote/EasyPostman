@@ -5,9 +5,9 @@ import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.script.TestResult;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
-import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
+import com.laker.postman.service.variable.VariableResolver;
 import okhttp3.Response;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
@@ -266,7 +266,8 @@ public class WebSocketScenarioExecutor {
                                     }
                                     long now = System.currentTimeMillis();
                                     long deadline = switch (stepCfg.completionMode) {
-                                        case FIRST_MESSAGE, MATCHED_MESSAGE -> awaitStartTime + Math.max(100, stepCfg.firstMessageTimeoutMs);
+                                        case FIRST_MESSAGE, MATCHED_MESSAGE ->
+                                                awaitStartTime + Math.max(100, stepCfg.firstMessageTimeoutMs);
                                         case FIXED_DURATION -> awaitStartTime + Math.max(100, stepCfg.holdConnectionMs);
                                         case MESSAGE_COUNT -> (firstMatchTime < 0
                                                 ? awaitStartTime + Math.max(100, stepCfg.firstMessageTimeoutMs)
@@ -383,7 +384,7 @@ public class WebSocketScenarioExecutor {
                 ? cfg.sendContentSource
                 : WebSocketPerformanceData.SendContentSource.REQUEST_BODY;
         if (contentSource == WebSocketPerformanceData.SendContentSource.CUSTOM_TEXT) {
-            return cfg.customSendBody == null ? "" : cfg.customSendBody;
+            return VariableResolver.resolve(cfg.customSendBody == null ? "" : cfg.customSendBody);
         }
         return req.body;
     }

@@ -5,6 +5,8 @@ import okhttp3.Response;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 
+import java.awt.GraphicsEnvironment;
+
 // 日志增强WebSocketListener
 public class LogWebSocketListener extends WebSocketListener {
     private final WebSocketListener delegate;
@@ -15,7 +17,7 @@ public class LogWebSocketListener extends WebSocketListener {
 
     @Override
     public void onOpen(WebSocket webSocket, Response response) {
-        ConsolePanel.appendLog("[WebSocket] onOpen: " + response, ConsolePanel.LogType.SUCCESS);
+        appendLogSafely("[WebSocket] onOpen: " + response, ConsolePanel.LogType.SUCCESS);
         delegate.onOpen(webSocket, response);
     }
 
@@ -33,19 +35,30 @@ public class LogWebSocketListener extends WebSocketListener {
 
     @Override
     public void onClosing(WebSocket webSocket, int code, String reason) {
-        ConsolePanel.appendLog("[WebSocket] onClosing: code=" + code + ", reason=" + reason, ConsolePanel.LogType.WARN);
+        appendLogSafely("[WebSocket] onClosing: code=" + code + ", reason=" + reason, ConsolePanel.LogType.WARN);
         delegate.onClosing(webSocket, code, reason);
     }
 
     @Override
     public void onClosed(WebSocket webSocket, int code, String reason) {
-        ConsolePanel.appendLog("[WebSocket] onClosed: code=" + code + ", reason=" + reason, ConsolePanel.LogType.DEBUG);
+        appendLogSafely("[WebSocket] onClosed: code=" + code + ", reason=" + reason, ConsolePanel.LogType.DEBUG);
         delegate.onClosed(webSocket, code, reason);
     }
 
     @Override
     public void onFailure(WebSocket webSocket, Throwable t, Response response) {
-        ConsolePanel.appendLog("[WebSocket] onFailure: " + (t != null ? t.getMessage() : "Unknown error"), ConsolePanel.LogType.ERROR);
+        appendLogSafely("[WebSocket] onFailure: " + (t != null ? t.getMessage() : "Unknown error"), ConsolePanel.LogType.ERROR);
         delegate.onFailure(webSocket, t, response);
+    }
+
+    private void appendLogSafely(String message, ConsolePanel.LogType type) {
+        if (GraphicsEnvironment.isHeadless()) {
+            return;
+        }
+        try {
+            ConsolePanel.appendLog(message, type);
+        } catch (RuntimeException ignored) {
+            // Logging must not break WebSocket lifecycle callbacks.
+        }
     }
 }

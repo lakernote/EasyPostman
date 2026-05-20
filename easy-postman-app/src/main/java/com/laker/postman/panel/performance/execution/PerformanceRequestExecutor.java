@@ -92,7 +92,11 @@ public class PerformanceRequestExecutor {
                 configurePreparedRequest(req);
                 sseRequest = isSseRequest(requestData.httpRequestItem, req);
                 webSocketRequest = isWebSocketRequest(requestData.httpRequestItem);
-                ProtocolExecutionResult protocolResult = executeTransport(req, requestNode, requestData, sseRequest, webSocketRequest);
+                boolean transportSseRequest = sseRequest;
+                boolean transportWebSocketRequest = webSocketRequest;
+                ProtocolExecutionResult protocolResult = pipeline.withExecutionContextThrowing(() ->
+                        executeTransport(req, requestNode, requestData, transportSseRequest, transportWebSocketRequest)
+                );
                 resp = protocolResult.response;
                 errorMsg = CharSequenceUtil.blankToDefault(protocolResult.errorMsg, errorMsg);
                 executionFailed = protocolResult.executionFailed;

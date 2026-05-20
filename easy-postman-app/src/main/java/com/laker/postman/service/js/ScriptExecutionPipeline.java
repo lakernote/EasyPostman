@@ -267,6 +267,17 @@ public class ScriptExecutionPipeline {
         }
     }
 
+    public <T> T withExecutionContextThrowing(ThrowingSupplier<T> action) throws Exception {
+        try (ExecutionContextScope ignored = ExecutionContextScope.open(getOrCreateExecutionContext(), requestNode)) {
+            return action.get();
+        }
+    }
+
+    @FunctionalInterface
+    public interface ThrowingSupplier<T> {
+        T get() throws Exception;
+    }
+
     private ExecutionVariableContext getOrCreateExecutionContext() {
         if (runtimeExecutionContext != null) {
             return runtimeExecutionContext;

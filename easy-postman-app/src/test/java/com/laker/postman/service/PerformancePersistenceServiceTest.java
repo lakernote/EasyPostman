@@ -2,8 +2,13 @@ package com.laker.postman.service;
 
 import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.model.Workspace;
+import com.laker.postman.panel.performance.assertion.AssertionData;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
+import com.laker.postman.panel.performance.model.SsePerformanceData;
+import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
+import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
+import com.laker.postman.panel.performance.timer.TimerData;
 import org.testng.annotations.Test;
 
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -205,6 +210,120 @@ public class PerformancePersistenceServiceTest {
         String json = Files.readString(configPath, StandardCharsets.UTF_8);
         assertFalse(json.contains("\"csvState\""));
         assertNull(service.loadCsvState());
+    }
+
+    @Test(description = "应保存并恢复 WebSocket 发送和等待步骤的独立配置")
+    public void shouldPersistWebSocketStepConfigs() throws IOException {
+        Path tempDir = Files.createTempDirectory("performance-persistence-ws-step");
+        Path configPath = tempDir.resolve("performance_config.json");
+        TestablePerformancePersistenceService service = new TestablePerformancePersistenceService(configPath);
+        service.init();
+
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new JMeterTreeNode("Plan", NodeType.ROOT));
+        DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(new JMeterTreeNode("WebSocket Example", NodeType.REQUEST));
+
+        JMeterTreeNode sendNode = new JMeterTreeNode("WS Send", NodeType.WS_SEND);
+        sendNode.webSocketPerformanceData = new WebSocketPerformanceData();
+        sendNode.webSocketPerformanceData.sendMode = WebSocketPerformanceData.SendMode.REQUEST_BODY_ON_CONNECT;
+        sendNode.webSocketPerformanceData.sendContentSource = WebSocketPerformanceData.SendContentSource.CUSTOM_TEXT;
+        sendNode.webSocketPerformanceData.customSendBody = "a-{{user-a}}";
+        requestNode.add(new DefaultMutableTreeNode(sendNode));
+
+        JMeterTreeNode awaitNode = new JMeterTreeNode("WS Await", NodeType.WS_AWAIT);
+        awaitNode.webSocketPerformanceData = new WebSocketPerformanceData();
+        awaitNode.webSocketPerformanceData.completionMode = WebSocketPerformanceData.CompletionMode.MATCHED_MESSAGE;
+        awaitNode.webSocketPerformanceData.firstMessageTimeoutMs = 10000;
+        awaitNode.webSocketPerformanceData.messageFilter = "a";
+        requestNode.add(new DefaultMutableTreeNode(awaitNode));
+
+        root.add(requestNode);
+
+        service.save(root, false, null);
+
+        DefaultMutableTreeNode loadedRoot = service.load("Loaded Plan");
+        DefaultMutableTreeNode loadedRequestNode = (DefaultMutableTreeNode) loadedRoot.getChildAt(0);
+        JMeterTreeNode loadedSendNode = (JMeterTreeNode) ((DefaultMutableTreeNode) loadedRequestNode.getChildAt(0)).getUserObject();
+        JMeterTreeNode loadedAwaitNode = (JMeterTreeNode) ((DefaultMutableTreeNode) loadedRequestNode.getChildAt(1)).getUserObject();
+
+        assertNotNull(loadedSendNode.webSocketPerformanceData);
+        assertEquals(loadedSendNode.webSocketPerformanceData.sendContentSource,
+                WebSocketPerformanceData.SendContentSource.CUSTOM_TEXT);
+        assertEquals(loadedSendNode.webSocketPerformanceData.customSendBody, "a-{{user-a}}");
+        assertNotNull(loadedAwaitNode.webSocketPerformanceData);
+        assertEquals(loadedAwaitNode.webSocketPerformanceData.completionMode,
+                WebSocketPerformanceData.CompletionMode.MATCHED_MESSAGE);
+        assertEquals(loadedAwaitNode.webSocketPerformanceData.messageFilter, "a");
+    }
+
+    @Test(description = "应保存并恢复所有性能节点配置对象")
+    public void shouldPersistAllPerformanceNodeConfigs() throws IOException {
+        Path tempDir = Files.createTempDirectory("performance-persistence-all-nodes");
+        Path configPath = tempDir.resolve("performance_config.json");
+        TestablePerformancePersistenceService service = new TestablePerformancePersistenceService(configPath);
+        service.init();
+
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new JMeterTreeNode("Plan", NodeType.ROOT));
+
+        JMeterTreeNode threadGroup = new JMeterTreeNode("Users", NodeType.THREAD_GROUP);
+        threadGroup.threadGroupData = new ThreadGroupData();
+        threadGroup.threadGroupData.numThreads = 7;
+        threadGroup.threadGroupData.loops = 3;
+        DefaultMutableTreeNode threadGroupNode = new DefaultMutableTreeNode(threadGroup);
+        root.add(threadGroupNode);
+
+        JMeterTreeNode sseRequest = new JMeterTreeNode("SSE Request", NodeType.REQUEST);
+        sseRequest.ssePerformanceData = new SsePerformanceData();
+        sseRequest.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.MESSAGE_COUNT;
+        sseRequest.ssePerformanceData.firstMessageTimeoutMs = 1234;
+        sseRequest.ssePerformanceData.holdConnectionMs = 5678;
+        sseRequest.ssePerformanceData.targetMessageCount = 9;
+        sseRequest.ssePerformanceData.eventNameFilter = "orders";
+        DefaultMutableTreeNode sseRequestNode = new DefaultMutableTreeNode(sseRequest);
+        sseRequestNode.add(new DefaultMutableTreeNode(new JMeterTreeNode("SSE Connect", NodeType.SSE_CONNECT)));
+        sseRequestNode.add(new DefaultMutableTreeNode(new JMeterTreeNode("SSE Await", NodeType.SSE_AWAIT)));
+        threadGroupNode.add(sseRequestNode);
+
+        JMeterTreeNode wsRequest = new JMeterTreeNode("WS Request", NodeType.REQUEST);
+        wsRequest.webSocketPerformanceData = new WebSocketPerformanceData();
+        wsRequest.webSocketPerformanceData.connectTimeoutMs = 4321;
+        DefaultMutableTreeNode wsRequestNode = new DefaultMutableTreeNode(wsRequest);
+        wsRequestNode.add(new DefaultMutableTreeNode(new JMeterTreeNode("WS Connect", NodeType.WS_CONNECT)));
+
+        JMeterTreeNode assertion = new JMeterTreeNode("Status Assertion", NodeType.ASSERTION);
+        assertion.assertionData = new AssertionData();
+        assertion.assertionData.type = "Response Code";
+        assertion.assertionData.operator = "=";
+        assertion.assertionData.value = "200";
+        wsRequestNode.add(new DefaultMutableTreeNode(assertion));
+
+        JMeterTreeNode timer = new JMeterTreeNode("Think Time", NodeType.TIMER);
+        timer.timerData = new TimerData();
+        timer.timerData.delayMs = 250;
+        wsRequestNode.add(new DefaultMutableTreeNode(timer));
+        threadGroupNode.add(wsRequestNode);
+
+        service.save(root, false, null);
+
+        DefaultMutableTreeNode loadedRoot = service.load("Loaded Plan");
+        DefaultMutableTreeNode loadedThreadGroupNode = (DefaultMutableTreeNode) loadedRoot.getChildAt(0);
+        JMeterTreeNode loadedThreadGroup = (JMeterTreeNode) loadedThreadGroupNode.getUserObject();
+        DefaultMutableTreeNode loadedSseRequestNode = (DefaultMutableTreeNode) loadedThreadGroupNode.getChildAt(0);
+        JMeterTreeNode loadedSseRequest = (JMeterTreeNode) loadedSseRequestNode.getUserObject();
+        DefaultMutableTreeNode loadedWsRequestNode = (DefaultMutableTreeNode) loadedThreadGroupNode.getChildAt(1);
+        JMeterTreeNode loadedWsRequest = (JMeterTreeNode) loadedWsRequestNode.getUserObject();
+        JMeterTreeNode loadedAssertion = (JMeterTreeNode) ((DefaultMutableTreeNode) loadedWsRequestNode.getChildAt(1)).getUserObject();
+        JMeterTreeNode loadedTimer = (JMeterTreeNode) ((DefaultMutableTreeNode) loadedWsRequestNode.getChildAt(2)).getUserObject();
+
+        assertEquals(loadedThreadGroup.threadGroupData.numThreads, 7);
+        assertEquals(loadedThreadGroup.threadGroupData.loops, 3);
+        assertEquals(loadedSseRequest.ssePerformanceData.completionMode, SsePerformanceData.CompletionMode.MESSAGE_COUNT);
+        assertEquals(loadedSseRequest.ssePerformanceData.firstMessageTimeoutMs, 1234);
+        assertEquals(loadedSseRequest.ssePerformanceData.holdConnectionMs, 5678);
+        assertEquals(loadedSseRequest.ssePerformanceData.targetMessageCount, 9);
+        assertEquals(loadedSseRequest.ssePerformanceData.eventNameFilter, "orders");
+        assertEquals(loadedWsRequest.webSocketPerformanceData.connectTimeoutMs, 4321);
+        assertEquals(loadedAssertion.assertionData.value, "200");
+        assertEquals(loadedTimer.timerData.delayMs, 250);
     }
 
     private static Map<String, String> row(String... keyValues) {

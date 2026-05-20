@@ -3,21 +3,28 @@ package com.laker.postman.panel.performance.result;
 import com.laker.postman.panel.performance.model.RequestResult;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.NotificationUtil;
 import com.laker.postman.util.TimeDisplayUtil;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.datatransfer.StringSelection;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class PerformanceReportPanel extends JPanel {
 
     private static final int FAIL_COLUMN_INDEX = 3;
     private static final int SUCCESS_RATE_COLUMN_INDEX = 4;
+    private static final int QPS_COLUMN_INDEX = 5;
+    private static final int AVG_COLUMN_INDEX = 6;
+    private static final int P95_COLUMN_INDEX = 10;
+    private static final int P99_COLUMN_INDEX = 11;
 
     // 百分位数常量
     private static final double PERCENTILE_90 = 0.90;
@@ -68,7 +75,18 @@ public class PerformanceReportPanel extends JPanel {
         JTable reportTable = createReportTable();
 
         JScrollPane tableScroll = new JScrollPane(reportTable);
+        add(createToolbar(), BorderLayout.NORTH);
         add(tableScroll, BorderLayout.CENTER);
+    }
+
+    private JPanel createToolbar() {
+        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        toolbar.setBorder(BorderFactory.createEmptyBorder(0, 0, 6, 0));
+
+        JButton copyReportButton = new JButton(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COPY_MARKDOWN_BUTTON));
+        copyReportButton.addActionListener(e -> copyMarkdownReport());
+        toolbar.add(copyReportButton);
+        return toolbar;
     }
 
     private DefaultTableModel createTableModel() {
@@ -322,6 +340,83 @@ public class PerformanceReportPanel extends JPanel {
         }
     }
 
+    void copyMarkdownReport() {
+        Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(buildMarkdownReport()), null);
+        NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_MARKDOWN_COPIED));
+    }
+
+    String buildMarkdownReport() {
+        if (reportTableModel.getRowCount() == 0) {
+            return I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_MARKDOWN_EMPTY);
+        }
+
+        int totalRow = reportTableModel.getRowCount() - 1;
+        StringBuilder markdown = new StringBuilder(1024);
+        markdown.append("# ")
+                .append(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_MARKDOWN_TITLE))
+                .append("\n\n");
+        markdown.append("## ")
+                .append(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_TOTAL_ROW))
+                .append("\n\n");
+        markdown.append("| ")
+                .append(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_TOTAL))
+                .append(" | ")
+                .append(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_SUCCESS))
+                .append(" | ")
+                .append(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_FAIL))
+                .append(" | ")
+                .append(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_SUCCESS_RATE))
+                .append(" | QPS | ")
+                .append(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG))
+                .append(" | P95 | P99 |\n");
+        markdown.append("| --- | --- | --- | --- | --- | --- | --- | --- |\n");
+        markdown.append("| ")
+                .append(valueAt(totalRow, 1)).append(" | ")
+                .append(valueAt(totalRow, 2)).append(" | ")
+                .append(valueAt(totalRow, FAIL_COLUMN_INDEX)).append(" | ")
+                .append(valueAt(totalRow, SUCCESS_RATE_COLUMN_INDEX)).append(" | ")
+                .append(valueAt(totalRow, QPS_COLUMN_INDEX)).append(" | ")
+                .append(valueAt(totalRow, AVG_COLUMN_INDEX)).append(" | ")
+                .append(valueAt(totalRow, P95_COLUMN_INDEX)).append(" | ")
+                .append(valueAt(totalRow, P99_COLUMN_INDEX)).append(" |\n\n");
+
+        markdown.append("## ")
+                .append(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_API_NAME))
+                .append("\n\n");
+        markdown.append("| ")
+                .append(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_API_NAME))
+                .append(" | ")
+                .append(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_TOTAL))
+                .append(" | ")
+                .append(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_SUCCESS_RATE))
+                .append(" | QPS | ")
+                .append(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG))
+                .append(" | P95 |\n");
+        markdown.append("| --- | --- | --- | --- | --- | --- |\n");
+        for (int row = 0; row < reportTableModel.getRowCount(); row++) {
+            if (totalRowName.equals(valueAt(row, 0))) {
+                continue;
+            }
+            markdown.append("| ")
+                    .append(escapeMarkdownCell(valueAt(row, 0))).append(" | ")
+                    .append(valueAt(row, 1)).append(" | ")
+                    .append(valueAt(row, SUCCESS_RATE_COLUMN_INDEX)).append(" | ")
+                    .append(valueAt(row, QPS_COLUMN_INDEX)).append(" | ")
+                    .append(valueAt(row, AVG_COLUMN_INDEX)).append(" | ")
+                    .append(valueAt(row, P95_COLUMN_INDEX)).append(" |\n");
+        }
+        return markdown.toString();
+    }
+
+    private String valueAt(int row, int column) {
+        Object value = reportTableModel.getValueAt(row, column);
+        return value == null ? "" : value.toString();
+    }
+
+    private String escapeMarkdownCell(String value) {
+        return value == null ? "" : value.replace("|", "\\|").replace("\n", " ");
+    }
+
     private ApiMetrics calculateApiMetrics(String apiId, List<Long> costs,
                                            Map<String, Integer> apiSuccessMap,
                                            Map<String, Integer> apiFailMap,
@@ -507,8 +602,8 @@ public class PerformanceReportPanel extends JPanel {
                     total,
                     success,
                     fail,
-                    String.format("%.2f%%", rate),
-                    Math.round(qps),
+                    String.format(Locale.ROOT, "%.2f%%", rate),
+                    String.format(Locale.ROOT, "%.2f", qps),
                     TimeDisplayUtil.formatElapsedTime(avg),
                     TimeDisplayUtil.formatElapsedTime(min),
                     TimeDisplayUtil.formatElapsedTime(max),

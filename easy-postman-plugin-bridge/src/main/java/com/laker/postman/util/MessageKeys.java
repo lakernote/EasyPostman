@@ -696,6 +696,10 @@ public final class MessageKeys {
     public static final String PERFORMANCE_REPORT_COLUMN_P95 = "performance.report.column.p95";
     public static final String PERFORMANCE_REPORT_COLUMN_P99 = "performance.report.column.p99";
     public static final String PERFORMANCE_REPORT_TOTAL_ROW = "performance.report.total_row";
+    public static final String PERFORMANCE_REPORT_COPY_MARKDOWN_BUTTON = "performance.report.copy_markdown.button";
+    public static final String PERFORMANCE_REPORT_MARKDOWN_TITLE = "performance.report.markdown.title";
+    public static final String PERFORMANCE_REPORT_MARKDOWN_EMPTY = "performance.report.markdown.empty";
+    public static final String PERFORMANCE_REPORT_MARKDOWN_COPIED = "performance.report.markdown.copied";
 
     // ============ 性能趋势相关 ============
     public static final String PERFORMANCE_TREND_THREADS = "performance.trend.threads";

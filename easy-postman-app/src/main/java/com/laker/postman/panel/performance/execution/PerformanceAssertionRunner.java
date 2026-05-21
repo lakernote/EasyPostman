@@ -73,6 +73,8 @@ public final class PerformanceAssertionRunner {
                                          HttpResponse resp,
                                          List<TestResult> testResults,
                                          AtomicReference<String> errorMsgRef) {
+        // 压测线程不能因为空响应体导致断言阶段抛异常；空 body 应按断言失败处理并继续记录样本。
+        String responseBody = resp != null && resp.body != null ? resp.body : "";
         for (DefaultMutableTreeNode sub : assertionNodes) {
             Object subObj = sub.getUserObject();
             if (!(subObj instanceof JMeterTreeNode subNode) || subNode.type != NodeType.ASSERTION || subNode.assertionData == null) {
@@ -89,18 +91,22 @@ public final class PerformanceAssertionRunner {
                 String valStr = assertion.value;
                 try {
                     int expect = Integer.parseInt(valStr);
-                    if ("=".equals(op)) pass = (resp.code == expect);
-                    else if (">".equals(op)) pass = (resp.code > expect);
-                    else if ("<".equals(op)) pass = (resp.code < expect);
+                    if (resp != null) {
+                        if ("=".equals(op)) pass = (resp.code == expect);
+                        else if (">".equals(op)) pass = (resp.code > expect);
+                        else if ("<".equals(op)) pass = (resp.code < expect);
+                    }
                 } catch (Exception ignored) {
                     log.warn("断言响应码格式错误: {}", valStr);
                 }
             } else if (ASSERTION_TYPE_CONTAINS.equals(type)) {
-                pass = resp.body.contains(assertion.content);
+                pass = CharSequenceUtil.isNotBlank(responseBody)
+                        && CharSequenceUtil.isNotBlank(assertion.content)
+                        && responseBody.contains(assertion.content);
             } else if (ASSERTION_TYPE_JSON_PATH.equals(type)) {
                 String jsonPath = assertion.value;
                 String expect = assertion.content;
-                String actual = JsonPathUtil.extractJsonPath(resp.body, jsonPath);
+                String actual = JsonPathUtil.extractJsonPath(responseBody, jsonPath);
                 pass = Objects.equals(actual, expect);
             }
             if (!pass && CharSequenceUtil.isBlank(errorMsgRef.get())) {

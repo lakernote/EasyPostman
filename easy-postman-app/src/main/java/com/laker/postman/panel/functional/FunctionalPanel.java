@@ -921,6 +921,8 @@ public class FunctionalPanel extends SingletonBasePanel {
             RunnerRowData row = rows.get(i);
             if (row != null && row.requestItem != null && item.getId().equals(row.requestItem.getId())) {
                 row.requestItem = item;
+                // collection 保存后请求配置可能已变更，必须同步重建派生请求，避免执行历史继续引用旧 URL。
+                row.preparedRequest = PreparedRequestBuilder.build(item);
                 row.name = item.getName();
                 row.url = item.getUrl();
                 row.method = item.getMethod();

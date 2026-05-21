@@ -122,8 +122,8 @@ final class PerformanceRequestSyncSupport {
         log.debug("[refreshFromCollections] saveAllPropertyPanelData 执行完毕");
 
         clearCachedResultAction.run();
+        // 这里只释放压测结果引用；不要主动 System.gc()，避免刷新集合时触发全局停顿。
         ApiMetadata.clear();
-        System.gc();
 
         List<DefaultMutableTreeNode> nodesToRemove = new ArrayList<>();
         DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();

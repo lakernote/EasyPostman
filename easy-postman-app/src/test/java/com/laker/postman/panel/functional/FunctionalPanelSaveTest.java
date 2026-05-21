@@ -54,6 +54,26 @@ public class FunctionalPanelSaveTest {
         );
     }
 
+    @Test(description = "Collections 保存同步到 FunctionalPanel 时应同时刷新 preparedRequest")
+    public void shouldRefreshPreparedRequestWhenSyncingCollectionItem() throws Exception {
+        FunctionalPanel panel = newPanelWithoutInit();
+        FunctionalRunnerTableModel tableModel = new FunctionalRunnerTableModel();
+        HttpRequestItem oldItem = requestItem();
+        PreparedRequest oldPrepared = new PreparedRequest();
+        oldPrepared.url = "https://old.example.com";
+        tableModel.addRow(new RunnerRowData(oldItem, oldPrepared));
+        setField(panel, "tableModel", tableModel);
+
+        HttpRequestItem latestItem = requestItem();
+        latestItem.setUrl("https://new.example.com");
+
+        panel.syncRequestItem(latestItem);
+
+        RunnerRowData row = tableModel.getRow(0);
+        assertEquals(row.url, "https://new.example.com");
+        assertEquals(row.preparedRequest.url, "https://new.example.com");
+    }
+
     private static FunctionalPanel newPanelWithoutInit() throws Exception {
         SingletonBasePanel.setCreatingAllowed(true);
         try {

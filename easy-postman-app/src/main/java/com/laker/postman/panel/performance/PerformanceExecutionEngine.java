@@ -538,7 +538,7 @@ final class PerformanceExecutionEngine {
                 int threadsToRemove = activeWorkerThreads.get() - targetThreads;
                 if (threadsToRemove > 0) {
                     threadEndTimes.keySet().stream()
-                            .filter(t -> t.isAlive() && threadEndTimes.get(t) == Long.MAX_VALUE)
+                            .filter(t -> t.isAlive() && isOpenEndedWorker(threadEndTimes, t))
                             .limit(threadsToRemove)
                             .forEach(t -> threadEndTimes.put(t, now + 500));
                 }
@@ -593,7 +593,7 @@ final class PerformanceExecutionEngine {
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
         AtomicInteger activeWorkerThreads = new AtomicInteger(0);
         ConcurrentHashMap<Thread, Long> threadEndTimes = new ConcurrentHashMap<>();
-        int totalSteps = Math.max(1, (endThreads - startThreads) / step);
+        int totalSteps = calculateStairsTotalSteps(startThreads, endThreads, step);
         AtomicInteger currentStair = new AtomicInteger(0);
         AtomicLong lastStairChangeTime = new AtomicLong(System.currentTimeMillis());
 
@@ -738,7 +738,7 @@ final class PerformanceExecutionEngine {
             int threadsToRemove = current - targetThreads;
             long now = System.currentTimeMillis();
             List<Thread> availableThreads = threadEndTimes.keySet().stream()
-                    .filter(t -> t.isAlive() && threadEndTimes.get(t) == Long.MAX_VALUE)
+                    .filter(t -> t.isAlive() && isOpenEndedWorker(threadEndTimes, t))
                     .limit(threadsToRemove)
                     .toList();
 
@@ -808,6 +808,18 @@ final class PerformanceExecutionEngine {
             threadEndTimes.put(thread, Long.MAX_VALUE);
             thread.start();
         }
+    }
+
+    static int calculateStairsTotalSteps(int startThreads, int endThreads, int step) {
+        // 阶梯步长不能整除线程差时也要补齐最后一阶，否则执行永远到不了用户设置的最终线程数。
+        int threadRange = Math.max(0, endThreads - startThreads);
+        int safeStep = Math.max(1, step);
+        return Math.max(1, (threadRange + safeStep - 1) / safeStep);
+    }
+
+    private static boolean isOpenEndedWorker(ConcurrentHashMap<Thread, Long> threadEndTimes, Thread thread) {
+        // worker 退出时会并发 remove 自己；调度线程看到旧 key 时要按“已结束”处理，避免拆箱 null。
+        return Long.valueOf(Long.MAX_VALUE).equals(threadEndTimes.get(thread));
     }
 
     private void runTaskIteration(DefaultMutableTreeNode groupNode, int iterationCount) {

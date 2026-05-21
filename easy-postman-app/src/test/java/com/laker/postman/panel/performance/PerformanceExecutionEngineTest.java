@@ -7,10 +7,14 @@ import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
 import org.testng.annotations.Test;
 
 import javax.swing.tree.DefaultMutableTreeNode;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -102,5 +106,74 @@ public class PerformanceExecutionEngineTest {
         );
 
         assertEquals(engine.estimateTotalRequests(root), 400L);
+    }
+
+    @Test
+    public void stairsStepCountShouldRoundUpWhenStepDoesNotDivideThreadRange() {
+        assertEquals(PerformanceExecutionEngine.calculateStairsTotalSteps(1, 10, 4), 3);
+    }
+
+    @Test(timeOut = 3000)
+    public void adjustSpikeThreadCountShouldIgnoreStaleThreadEndEntries() throws Exception {
+        PerformanceExecutionEngine engine = new PerformanceExecutionEngine(
+                null,
+                () -> true,
+                () -> true,
+                () -> 4,
+                null,
+                new PerformanceStatsCollector(),
+                null
+        );
+        ThreadGroupData threadGroupData = new ThreadGroupData();
+        Thread worker = new Thread(() -> {
+            try {
+                Thread.sleep(1_000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        });
+        worker.start();
+
+        ConcurrentHashMap<Thread, Long> staleThreadEndTimes = new ConcurrentHashMap<>() {
+            @Override
+            public Long get(Object key) {
+                if (key == worker) {
+                    return null;
+                }
+                return super.get(key);
+            }
+        };
+        staleThreadEndTimes.put(worker, Long.MAX_VALUE);
+
+        try {
+            Method method = PerformanceExecutionEngine.class.getDeclaredMethod(
+                    "adjustSpikeThreadCount",
+                    DefaultMutableTreeNode.class,
+                    ThreadGroupData.class,
+                    AtomicInteger.class,
+                    int.class,
+                    int.class,
+                    BiConsumer.class,
+                    int.class,
+                    ConcurrentHashMap.class
+            );
+            method.setAccessible(true);
+
+            method.invoke(
+                    engine,
+                    null,
+                    threadGroupData,
+                    new AtomicInteger(1),
+                    0,
+                    1,
+                    (BiConsumer<Integer, Integer>) (active, total) -> {
+                    },
+                    1,
+                    staleThreadEndTimes
+            );
+        } finally {
+            worker.interrupt();
+            worker.join(1_000);
+        }
     }
 }

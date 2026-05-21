@@ -47,6 +47,12 @@ public class WebSocketScenarioExecutorTest {
     }
 
     @Test
+    public void shouldRetainAwaitMessagePreviewByUtf8Bytes() {
+        assertEquals(WebSocketScenarioExecutor.retainUtf8Prefix("你好abc", 4), "你");
+        assertEquals(WebSocketScenarioExecutor.retainUtf8Prefix("🙂abc", 4), "🙂");
+    }
+
+    @Test
     public void shouldResolveCustomSendBodyWithExecutionAndIterationVariables() throws Exception {
         VariablesService.getInstance().detachContext();
         IterationDataVariableService.getInstance().detachContext();

@@ -8,7 +8,7 @@ import com.laker.postman.panel.performance.execution.PerformanceResultRecorder;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
-import com.laker.postman.panel.performance.model.RequestResult;
+import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
 import com.laker.postman.service.setting.SettingManager;
@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
+import java.util.function.IntSupplier;
 
 @Slf4j
 final class PerformanceExecutionEngine {
@@ -58,12 +59,9 @@ final class PerformanceExecutionEngine {
     PerformanceExecutionEngine(Component dialogParent,
                                BooleanSupplier runningSupplier,
                                BooleanSupplier efficientModeSupplier,
+                               IntSupplier responseBodyPreviewLimitKbSupplier,
                                CsvDataPanel csvDataPanel,
-                               List<RequestResult> allRequestResults,
-                               Map<String, List<Long>> apiCostMap,
-                               Map<String, Integer> apiSuccessMap,
-                               Map<String, Integer> apiFailMap,
-                               Object statsLock,
+                               PerformanceStatsCollector statsCollector,
                                PerformanceResultTablePanel performanceResultTablePanel) {
         this.dialogParent = dialogParent;
         this.runningSupplier = runningSupplier;
@@ -74,14 +72,12 @@ final class PerformanceExecutionEngine {
                 this::isCancelledOrInterrupted,
                 activeSseSources,
                 activeWebSockets,
-                realtimeMetrics
+                realtimeMetrics,
+                efficientModeSupplier,
+                responseBodyPreviewLimitKbSupplier
         );
         this.resultRecorder = new PerformanceResultRecorder(
-                allRequestResults,
-                apiCostMap,
-                apiSuccessMap,
-                apiFailMap,
-                statsLock,
+                statsCollector,
                 performanceResultTablePanel,
                 SettingManager::getJmeterSlowRequestThreshold
         );

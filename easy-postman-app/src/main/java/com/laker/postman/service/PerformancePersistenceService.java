@@ -88,7 +88,10 @@ public class PerformancePersistenceService {
         save(getConfigFilePath(), rootNode, efficientMode, csvState);
     }
 
-    private void save(Path configPath, DefaultMutableTreeNode rootNode, boolean efficientMode, CsvDataPanel.CsvState csvState) {
+    private void save(Path configPath,
+                      DefaultMutableTreeNode rootNode,
+                      boolean efficientMode,
+                      CsvDataPanel.CsvState csvState) {
         try {
             ensureDirExists(configPath);
             JSONObject jsonRoot = new JSONObject();
@@ -136,7 +139,10 @@ public class PerformancePersistenceService {
     public void saveAsync(DefaultMutableTreeNode rootNode, boolean efficientMode, CsvDataPanel.CsvState csvState) {
         // 异步线程启动前先固定路径，防止用户切换 workspace 后把旧性能方案写到新 workspace。
         Path configPath = getConfigFilePath();
-        Thread saveThread = new Thread(() -> save(configPath, rootNode, efficientMode, csvState), "performance-config-save");
+        Thread saveThread = new Thread(
+                () -> save(configPath, rootNode, efficientMode, csvState),
+                "performance-config-save"
+        );
         saveThread.setDaemon(true);
         saveThread.start();
     }

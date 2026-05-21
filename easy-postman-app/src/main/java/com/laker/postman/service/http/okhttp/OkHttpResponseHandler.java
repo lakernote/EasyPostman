@@ -3,6 +3,7 @@ package com.laker.postman.service.http.okhttp;
 import com.laker.postman.common.component.DownloadProgressDialog;
 import com.laker.postman.common.exception.DownloadCancelledException;
 import com.laker.postman.model.HttpResponse;
+import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.service.http.EasyHttpHeaders;
 import com.laker.postman.service.http.sse.SseResEventListener;
 import com.laker.postman.service.setting.SettingManager;
@@ -72,6 +73,14 @@ public class OkHttpResponseHandler {
      * @throws IOException 读取响应体时可能抛出的异常
      */
     public static void handleResponse(Response okResponse, HttpResponse response, SseResEventListener callback) throws IOException {
+        handleResponse(okResponse, response, callback, PreparedRequest.ResponseBodyMode.FULL, 64 * 1024);
+    }
+
+    public static void handleResponse(Response okResponse,
+                                      HttpResponse response,
+                                      SseResEventListener callback,
+                                      PreparedRequest.ResponseBodyMode bodyMode,
+                                      int previewLimitBytes) throws IOException {
         response.code = okResponse.code();
         response.headers = new LinkedHashMap<>();
         for (String name : okResponse.headers().names()) {
@@ -111,6 +120,8 @@ public class OkHttpResponseHandler {
                     callback.onClosed(response);
                 }
             }
+        } else if (bodyMode != null && bodyMode != PreparedRequest.ResponseBodyMode.FULL) {
+            handleLightweightResponse(okResponse, response, bodyMode, previewLimitBytes);
         } else if (FileExtensionUtil.isBinaryType(contentType)) {
             handleBinaryResponse(okResponse, response);
         } else {
@@ -120,6 +131,79 @@ public class OkHttpResponseHandler {
             okResponse.body().close();
         }
         okResponse.close();
+    }
+
+    private static void handleLightweightResponse(Response okResponse,
+                                                  HttpResponse response,
+                                                  PreparedRequest.ResponseBodyMode bodyMode,
+                                                  int previewLimitBytes) throws IOException {
+        ResponseBody body = okResponse.body();
+        if (body == null) {
+            response.body = "";
+            response.bodySize = 0;
+            response.filePath = null;
+            return;
+        }
+
+        int limit = Math.max(0, previewLimitBytes);
+        boolean keepPreview = bodyMode == PreparedRequest.ResponseBodyMode.PREVIEW
+                && limit > 0
+                && !FileExtensionUtil.isBinaryType(okResponse.header(CONTENT_TYPE_HEADER, ""));
+        ByteArrayOutputStream preview = keepPreview ? new ByteArrayOutputStream(Math.min(limit, 64 * 1024)) : null;
+        byte[] buffer = new byte[64 * 1024];
+        long totalBytes = 0;
+
+        try (InputStream inputStream = body.byteStream()) {
+            int len;
+            while ((len = inputStream.read(buffer)) != -1) {
+                if (keepPreview && preview.size() < limit) {
+                    int allowed = Math.min(len, limit - preview.size());
+                    preview.write(buffer, 0, allowed);
+                }
+                totalBytes += len;
+            }
+        } catch (IOException e) {
+            if (isIncompleteResponseBodyError(e)) {
+                log.error("Failed to read complete response body preview: {}", e.getMessage());
+                response.body = I18nUtil.getMessage(MessageKeys.RESPONSE_INCOMPLETE, e.getMessage());
+                response.bodySize = totalBytes;
+                response.filePath = null;
+                return;
+            }
+            log.error("Error reading response body preview: {}", e.getMessage(), e);
+            throw e;
+        }
+
+        response.bodySize = totalBytes;
+        response.filePath = null;
+        String extension = FileExtensionUtil.guessExtension(okResponse.header(CONTENT_TYPE_HEADER));
+        response.fileName = FileExtensionUtil.generateSmartFileName(extension != null ? extension : ".txt");
+
+        if (!keepPreview) {
+            response.body = I18nUtil.getMessage(MessageKeys.RESPONSE_BODY_SKIPPED_PERFORMANCE, totalBytes);
+            return;
+        }
+
+        Charset charset = resolveCharset(body);
+        response.body = new String(preview.toByteArray(), charset);
+        if (totalBytes > preview.size()) {
+            response.body += I18nUtil.getMessage(
+                    MessageKeys.RESPONSE_BODY_TRUNCATED_PERFORMANCE,
+                    totalBytes,
+                    preview.size()
+            );
+        }
+    }
+
+    private static Charset resolveCharset(ResponseBody body) {
+        MediaType mediaType = body.contentType();
+        if (mediaType != null) {
+            Charset detectedCharset = mediaType.charset();
+            if (detectedCharset != null) {
+                return detectedCharset;
+            }
+        }
+        return StandardCharsets.UTF_8;
     }
 
     /**

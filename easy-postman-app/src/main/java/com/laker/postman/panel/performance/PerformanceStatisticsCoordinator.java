@@ -1,7 +1,8 @@
 package com.laker.postman.panel.performance;
 
-import com.laker.postman.panel.performance.model.RequestResult;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
+import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
+import com.laker.postman.panel.performance.model.PerformanceStatsSnapshot;
 import com.laker.postman.panel.performance.model.PerformanceTrendSnapshot;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceTrendPanel;
@@ -11,11 +12,7 @@ import org.jfree.data.time.Millisecond;
 import org.jfree.data.time.RegularTimePeriod;
 
 import javax.swing.*;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.IntSupplier;
 import java.util.function.LongFunction;
@@ -25,11 +22,7 @@ import java.util.function.LongSupplier;
 @RequiredArgsConstructor
 final class PerformanceStatisticsCoordinator {
 
-    private final Object statsLock;
-    private final List<RequestResult> allRequestResults;
-    private final Map<String, List<Long>> apiCostMap;
-    private final Map<String, Integer> apiSuccessMap;
-    private final Map<String, Integer> apiFailMap;
+    private final PerformanceStatsCollector statsCollector;
     private final PerformanceReportPanel performanceReportPanel;
     private final PerformanceTrendPanel performanceTrendPanel;
     private final JTabbedPane resultTabbedPane;
@@ -53,13 +46,8 @@ final class PerformanceStatisticsCoordinator {
 
     void updateReportWithLatestData() {
         CompletableFuture.runAsync(() -> {
-            StatsSnapshot snapshot = copySnapshot();
-            SwingUtilities.invokeLater(() -> performanceReportPanel.updateReport(
-                    snapshot.apiCostMapCopy(),
-                    snapshot.apiSuccessMapCopy(),
-                    snapshot.apiFailMapCopy(),
-                    snapshot.resultsCopy()
-            ));
+            PerformanceStatsSnapshot snapshot = statsCollector.snapshot();
+            SwingUtilities.invokeLater(() -> performanceReportPanel.updateReport(snapshot));
         }).exceptionally(ex -> {
             log.error("报表更新失败", ex);
             return null;
@@ -72,13 +60,7 @@ final class PerformanceStatisticsCoordinator {
             return;
         }
 
-        StatsSnapshot snapshot = copySnapshot();
-        performanceReportPanel.updateReport(
-                snapshot.apiCostMapCopy(),
-                snapshot.apiSuccessMapCopy(),
-                snapshot.apiFailMapCopy(),
-                snapshot.resultsCopy()
-        );
+        performanceReportPanel.updateReport(statsCollector.snapshot());
     }
 
     void sampleTrendData() {
@@ -88,13 +70,10 @@ final class PerformanceStatisticsCoordinator {
         long now = System.currentTimeMillis();
         RegularTimePeriod period = createTrendPeriod(now);
         long samplingIntervalMs = samplingIntervalSupplier.getAsLong();
-        long windowStart = now - samplingIntervalMs;
         PerformanceRealtimeMetrics.Sample realtimeMetrics = sampleRealtimeMetrics(now);
 
         CompletableFuture.runAsync(() -> {
-            PerformanceTrendSnapshot snapshot = PerformanceTrendSnapshot.fromResults(
-                    copyResults(),
-                    windowStart,
+            PerformanceTrendSnapshot snapshot = statsCollector.sampleTrendSnapshot(
                     now,
                     users,
                     activeWebSockets,
@@ -126,9 +105,7 @@ final class PerformanceStatisticsCoordinator {
         RegularTimePeriod period = createTrendPeriod(now);
         long samplingIntervalMs = samplingIntervalSupplier.getAsLong();
         PerformanceRealtimeMetrics.Sample realtimeMetrics = sampleRealtimeMetrics(now);
-        PerformanceTrendSnapshot snapshot = PerformanceTrendSnapshot.fromResults(
-                copyResults(),
-                now - samplingIntervalMs,
+        PerformanceTrendSnapshot snapshot = statsCollector.sampleTrendSnapshot(
                 now,
                 users,
                 activeWebSockets,
@@ -142,28 +119,6 @@ final class PerformanceStatisticsCoordinator {
         performanceTrendPanel.addOrUpdate(period, snapshot);
     }
 
-    private StatsSnapshot copySnapshot() {
-        synchronized (statsLock) {
-            List<RequestResult> resultsCopy = new ArrayList<>(allRequestResults);
-            Map<String, List<Long>> apiCostMapCopy = new HashMap<>();
-            for (Map.Entry<String, List<Long>> entry : apiCostMap.entrySet()) {
-                apiCostMapCopy.put(entry.getKey(), new ArrayList<>(entry.getValue()));
-            }
-            return new StatsSnapshot(
-                    resultsCopy,
-                    apiCostMapCopy,
-                    new HashMap<>(apiSuccessMap),
-                    new HashMap<>(apiFailMap)
-            );
-        }
-    }
-
-    private List<RequestResult> copyResults() {
-        synchronized (statsLock) {
-            return new ArrayList<>(allRequestResults);
-        }
-    }
-
     private PerformanceRealtimeMetrics.Sample sampleRealtimeMetrics(long nowMs) {
         return realtimeMetricsSampler == null
                 ? PerformanceRealtimeMetrics.Sample.empty()
@@ -174,11 +129,4 @@ final class PerformanceStatisticsCoordinator {
         return new Millisecond(new Date(timestampMs));
     }
 
-    private record StatsSnapshot(
-            List<RequestResult> resultsCopy,
-            Map<String, List<Long>> apiCostMapCopy,
-            Map<String, Integer> apiSuccessMapCopy,
-            Map<String, Integer> apiFailMapCopy
-    ) {
-    }
 }

@@ -34,6 +34,8 @@ public class PreparedRequest {
     public boolean collectBasicInfo = true; // 收集基本信息（headers、body），默认开启
     public boolean collectEventInfo = true; // 收集完整事件信息（DNS、连接、SSL等），默认开启
     public boolean enableNetworkLog = false; // 启用网络日志面板输出，默认关闭
+    public ResponseBodyMode responseBodyMode = ResponseBodyMode.FULL;
+    public int responseBodyPreviewLimitBytes = 64 * 1024;
 
     // 脚本字段（已应用 group 继承）
     public String prescript;
@@ -66,6 +68,8 @@ public class PreparedRequest {
         copy.collectBasicInfo = this.collectBasicInfo;
         copy.collectEventInfo = this.collectEventInfo;
         copy.enableNetworkLog = this.enableNetworkLog;
+        copy.responseBodyMode = this.responseBodyMode;
+        copy.responseBodyPreviewLimitBytes = this.responseBodyPreviewLimitBytes;
         copy.prescript = this.prescript;
         copy.postscript = this.postscript;
         copy.headersList = this.headersList;
@@ -89,5 +93,11 @@ public class PreparedRequest {
         this.headersList = null;  // 渲染用的是 okHttpHeaders
         this.paramsList = null;   // 渲染时不显示
         // isMultipart, followRedirects, logEvent 是基本类型，不占内存
+    }
+
+    public enum ResponseBodyMode {
+        FULL,
+        PREVIEW,
+        METADATA_ONLY
     }
 }

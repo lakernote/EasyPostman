@@ -9,7 +9,6 @@ import okhttp3.Response;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Set;
@@ -44,6 +43,7 @@ public class SseSampleExecutor {
     private final Predicate<Throwable> cancelledChecker;
     private final Set<EventSource> activeSources;
     private final PerformanceRealtimeMetrics realtimeMetrics;
+    private final int responseBodyPreviewLimitBytes;
 
     public SseSampleExecutor(BooleanSupplier runningSupplier,
                              Predicate<Throwable> cancelledChecker,
@@ -55,10 +55,19 @@ public class SseSampleExecutor {
                              Predicate<Throwable> cancelledChecker,
                              Set<EventSource> activeSources,
                              PerformanceRealtimeMetrics realtimeMetrics) {
+        this(runningSupplier, cancelledChecker, activeSources, realtimeMetrics, BoundedTextAccumulator.DEFAULT_PREVIEW_BYTES);
+    }
+
+    public SseSampleExecutor(BooleanSupplier runningSupplier,
+                             Predicate<Throwable> cancelledChecker,
+                             Set<EventSource> activeSources,
+                             PerformanceRealtimeMetrics realtimeMetrics,
+                             int responseBodyPreviewLimitBytes) {
         this.runningSupplier = runningSupplier;
         this.cancelledChecker = cancelledChecker;
         this.activeSources = activeSources;
         this.realtimeMetrics = realtimeMetrics == null ? new PerformanceRealtimeMetrics() : realtimeMetrics;
+        this.responseBodyPreviewLimitBytes = Math.max(1, responseBodyPreviewLimitBytes);
     }
 
     public Result execute(PreparedRequest req, SsePerformanceData cfg) {
@@ -73,7 +82,7 @@ public class SseSampleExecutor {
         AtomicReference<String> completionReasonRef = new AtomicReference<>("pending");
         AtomicReference<String> lastEventIdRef = new AtomicReference<>("");
         AtomicReference<String> lastEventTypeRef = new AtomicReference<>("");
-        StringBuffer matchedEventBody = new StringBuffer();
+        BoundedTextAccumulator matchedEventBody = new BoundedTextAccumulator(responseBodyPreviewLimitBytes);
         AtomicLong firstMessageLatencyMs = new AtomicLong(-1);
         AtomicInteger eventCount = new AtomicInteger(0);
         AtomicInteger matchedMessageCount = new AtomicInteger(0);
@@ -276,8 +285,8 @@ public class SseSampleExecutor {
         long endTime = System.currentTimeMillis();
         resp.endTime = endTime;
         resp.costMs = endTime - requestStartTime;
-        resp.body = matchedEventBody.toString();
-        resp.bodySize = resp.body.getBytes(StandardCharsets.UTF_8).length;
+        resp.body = matchedEventBody.value();
+        resp.bodySize = matchedEventBody.totalUtf8Bytes();
         if (resp.headers == null) {
             resp.headers = new LinkedHashMap<>();
         }
@@ -310,17 +319,39 @@ public class SseSampleExecutor {
         return CharSequenceUtil.isBlank(filter) || (data != null && data.contains(filter.trim()));
     }
 
-    private void appendEvent(StringBuffer buffer, String id, String type, String data) {
+    private void appendEvent(BoundedTextAccumulator buffer, String id, String type, String data) {
         if (id != null && !id.isBlank()) {
-            buffer.append("id: ").append(id).append('\n');
+            buffer.append("id: ");
+            buffer.append(id);
+            buffer.append("\n");
         }
         if (type != null && !type.isBlank()) {
-            buffer.append("event: ").append(type).append('\n');
+            buffer.append("event: ");
+            buffer.append(type);
+            buffer.append("\n");
         }
         String eventData = data == null ? "" : data;
-        for (String line : eventData.split("\\R", -1)) {
-            buffer.append("data: ").append(line).append('\n');
+        appendDataLines(buffer, eventData);
+        buffer.append("\n");
+    }
+
+    private void appendDataLines(BoundedTextAccumulator buffer, String eventData) {
+        int lineStart = 0;
+        for (int i = 0; i < eventData.length(); i++) {
+            char ch = eventData.charAt(i);
+            if (ch != '\n' && ch != '\r') {
+                continue;
+            }
+            buffer.append("data: ");
+            buffer.append(eventData, lineStart, i);
+            buffer.append("\n");
+            if (ch == '\r' && i + 1 < eventData.length() && eventData.charAt(i + 1) == '\n') {
+                i++;
+            }
+            lineStart = i + 1;
         }
-        buffer.append('\n');
+        buffer.append("data: ");
+        buffer.append(eventData, lineStart, eventData.length());
+        buffer.append("\n");
     }
 }

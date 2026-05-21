@@ -2,6 +2,7 @@ package com.laker.postman.panel.performance.result;
 
 import com.laker.postman.panel.performance.model.ApiMetadata;
 import com.laker.postman.panel.performance.model.PerformanceProtocol;
+import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
 import com.laker.postman.panel.performance.model.RequestResult;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
@@ -51,5 +52,25 @@ public class PerformanceProtocolReportDataTest {
         assertEquals(reportData.sseRows().get(0).receivedMessages(), 7);
         assertEquals(reportData.sseRows().get(0).matchedMessages(), 4);
         assertEquals(reportData.sseRows().get(0).topCompletionReason(), "message_target_timeout");
+    }
+
+    @Test
+    public void shouldBuildRowsFromAggregatedStatsSnapshot() {
+        ApiMetadata.register("http-api", "HTTP API");
+        PerformanceStatsCollector collector = new PerformanceStatsCollector();
+        collector.record(new RequestResult(1_000, 1_100, true, "http-api", PerformanceProtocol.HTTP));
+        collector.record(new RequestResult(1_100, 1_300, false, "http-api", PerformanceProtocol.HTTP));
+
+        PerformanceProtocolReportData reportData = PerformanceProtocolReportData.fromStatsSnapshot(
+                collector.snapshot(),
+                "Total"
+        );
+
+        assertEquals(reportData.httpRows().get(0).name(), "HTTP API");
+        assertEquals(reportData.httpRows().get(0).total(), 2L);
+        assertEquals(reportData.httpRows().get(0).success(), 1L);
+        assertEquals(reportData.httpRows().get(0).fail(), 1L);
+        assertEquals(reportData.httpRows().get(1).name(), "Total");
+        assertEquals(reportData.httpRows().get(1).total(), 2L);
     }
 }

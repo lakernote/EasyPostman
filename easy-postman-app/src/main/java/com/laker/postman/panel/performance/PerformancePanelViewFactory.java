@@ -193,7 +193,8 @@ final class PerformancePanelViewFactory {
         progressPanel.add(new MemoryLabel());
         topPanel.add(progressPanel, BorderLayout.EAST);
 
-        return new ToolbarSection(topPanel, runBtn, stopBtn, refreshBtn, efficientCheckBox, csvDataPanel, progressLabel);
+        return new ToolbarSection(topPanel, runBtn, stopBtn, refreshBtn, efficientCheckBox,
+                csvDataPanel, progressLabel);
     }
 
     private RequestEditorSection createRequestEditorSection(RequestEditSubPanel requestEditSubPanel,

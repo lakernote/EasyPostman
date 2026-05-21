@@ -5,6 +5,7 @@ import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.script.TestResult;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
@@ -14,11 +15,13 @@ import com.laker.postman.service.variable.VariableResolver;
 import okhttp3.Response;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
+import okio.ByteString;
 
 import javax.swing.tree.DefaultMutableTreeNode;
-import java.nio.charset.StandardCharsets;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
@@ -32,6 +35,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 
 public class WebSocketScenarioExecutor {
+    private static final int MAX_RETAINED_AWAIT_MESSAGES = 1024;
 
     public static final class Result {
         public final HttpResponse response;
@@ -54,6 +58,7 @@ public class WebSocketScenarioExecutor {
     private final Predicate<Throwable> cancelledChecker;
     private final Set<WebSocket> activeWebSockets;
     private final PerformanceRealtimeMetrics realtimeMetrics;
+    private final int responseBodyPreviewLimitBytes;
 
     public WebSocketScenarioExecutor(BooleanSupplier runningSupplier,
                                      Predicate<Throwable> cancelledChecker,
@@ -65,10 +70,20 @@ public class WebSocketScenarioExecutor {
                                      Predicate<Throwable> cancelledChecker,
                                      Set<WebSocket> activeWebSockets,
                                      PerformanceRealtimeMetrics realtimeMetrics) {
+        this(runningSupplier, cancelledChecker, activeWebSockets, realtimeMetrics,
+                BoundedTextAccumulator.DEFAULT_PREVIEW_BYTES);
+    }
+
+    public WebSocketScenarioExecutor(BooleanSupplier runningSupplier,
+                                     Predicate<Throwable> cancelledChecker,
+                                     Set<WebSocket> activeWebSockets,
+                                     PerformanceRealtimeMetrics realtimeMetrics,
+                                     int responseBodyPreviewLimitBytes) {
         this.runningSupplier = runningSupplier;
         this.cancelledChecker = cancelledChecker;
         this.activeWebSockets = activeWebSockets;
         this.realtimeMetrics = realtimeMetrics == null ? new PerformanceRealtimeMetrics() : realtimeMetrics;
+        this.responseBodyPreviewLimitBytes = Math.max(1, responseBodyPreviewLimitBytes);
     }
 
     public Result execute(PreparedRequest req,
@@ -86,13 +101,16 @@ public class WebSocketScenarioExecutor {
         AtomicReference<String> completionReasonRef = new AtomicReference<>("pending");
         AtomicReference<String> lastMessageRef = new AtomicReference<>("");
         AtomicReference<WebSocketPerformanceData> lastStepCfgRef = new AtomicReference<>(requestCfg);
-        StringBuffer matchedMessageBody = new StringBuffer();
+        BoundedTextAccumulator responseBody = new BoundedTextAccumulator(responseBodyPreviewLimitBytes);
         AtomicLong firstMessageLatencyMs = new AtomicLong(-1);
         AtomicBoolean firstReceivedMessageRecorded = new AtomicBoolean(false);
+        AtomicInteger receivedMessageCount = new AtomicInteger(0);
         AtomicInteger matchedMessageCount = new AtomicInteger(0);
         AtomicInteger sentMessageCount = new AtomicInteger(0);
         List<TestResult> stepTestResults = new ArrayList<>();
-        List<ReceivedWebSocketMessage> receivedMessages = new ArrayList<>();
+        Deque<ReceivedWebSocketMessage> receivedMessages = new ArrayDeque<>();
+        AtomicLong receivedMessagesRetainedBytes = new AtomicLong(0);
+        boolean keepReceivedMessages = hasEnabledAwaitStep(requestNode);
         Object messageLock = new Object();
         CountDownLatch openLatch = new CountDownLatch(1);
 
@@ -115,11 +133,15 @@ public class WebSocketScenarioExecutor {
 
             @Override
             public void onMessage(WebSocket webSocket, okio.ByteString bytes) {
-                appendMessage(bytes.hex());
+                appendMessage(toHexPreview(bytes));
             }
 
             private void appendMessage(String payload) {
-                lastMessageRef.set(payload == null ? "" : payload);
+                String value = payload == null ? "" : payload;
+                lastMessageRef.set(headerPreview(value));
+                responseBody.append(value);
+                responseBody.append("\n\n");
+                receivedMessageCount.incrementAndGet();
                 long receivedAtMs = System.currentTimeMillis();
                 realtimeMetrics.recordWebSocketReceived();
                 if (firstReceivedMessageRecorded.compareAndSet(false, true)) {
@@ -128,10 +150,15 @@ public class WebSocketScenarioExecutor {
                     realtimeMetrics.recordWebSocketFirstMessageLatency(latencyMs);
                 }
                 synchronized (messageLock) {
-                    receivedMessages.add(new ReceivedWebSocketMessage(
-                            payload == null ? "" : payload,
-                            receivedAtMs
-                    ));
+                    if (keepReceivedMessages) {
+                        addReceivedMessage(
+                                receivedMessages,
+                                value,
+                                receivedAtMs,
+                                receivedMessagesRetainedBytes,
+                                responseBodyPreviewLimitBytes
+                        );
+                    }
                     messageLock.notifyAll();
                 }
             }
@@ -191,7 +218,6 @@ public class WebSocketScenarioExecutor {
                 webSocket.cancel();
             }
 
-            int messageCursor = 0;
             if (!failed.get() && !interrupted.get()) {
                 for (int i = 0; i < requestNode.getChildCount() && runningSupplier.getAsBoolean() && !failed.get() && !interrupted.get(); i++) {
                     DefaultMutableTreeNode childNode = (DefaultMutableTreeNode) requestNode.getChildAt(i);
@@ -260,12 +286,13 @@ public class WebSocketScenarioExecutor {
                             long awaitStartTime = System.currentTimeMillis();
                             long firstMatchTime = -1;
                             int stepMatchedCount = 0;
-                            StringBuffer stepBody = new StringBuffer();
+                            BoundedTextAccumulator stepBody = new BoundedTextAccumulator(responseBodyPreviewLimitBytes);
                             boolean completed = false;
                             while (runningSupplier.getAsBoolean() && !failed.get() && !interrupted.get() && !completed) {
                                 synchronized (messageLock) {
-                                    while (messageCursor < receivedMessages.size()) {
-                                        ReceivedWebSocketMessage message = receivedMessages.get(messageCursor++);
+                                    while (!receivedMessages.isEmpty()) {
+                                        ReceivedWebSocketMessage message = receivedMessages.removeFirst();
+                                        receivedMessagesRetainedBytes.addAndGet(-message.retainedUtf8Bytes());
                                         String payload = message.payload();
                                         boolean match = switch (stepCfg.completionMode) {
                                             case FIRST_MESSAGE -> true;
@@ -285,7 +312,6 @@ public class WebSocketScenarioExecutor {
                                         matchedMessageCount.incrementAndGet();
                                         realtimeMetrics.recordWebSocketMatched();
                                         appendMessage(stepBody, payload);
-                                        appendMessage(matchedMessageBody, payload);
                                         if (stepCfg.completionMode == WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE
                                                 || stepCfg.completionMode == WebSocketPerformanceData.CompletionMode.MATCHED_MESSAGE) {
                                             completionReasonRef.set(stepCfg.completionMode == WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE
@@ -341,8 +367,8 @@ public class WebSocketScenarioExecutor {
                             stepResp.code = resp.code;
                             stepResp.protocol = resp.protocol;
                             stepResp.headers = resp.headers;
-                            stepResp.body = stepBody.toString();
-                            stepResp.bodySize = stepResp.body.getBytes(StandardCharsets.UTF_8).length;
+                            stepResp.body = stepBody.value();
+                            stepResp.bodySize = stepBody.totalUtf8Bytes();
                             PerformanceAssertionRunner.runAssertionNodes(
                                     PerformanceAssertionRunner.collectDirectAssertionNodes(childNode),
                                     stepResp,
@@ -395,12 +421,8 @@ public class WebSocketScenarioExecutor {
         long endTime = System.currentTimeMillis();
         resp.endTime = endTime;
         resp.costMs = endTime - requestStartTime;
-        List<ReceivedWebSocketMessage> receivedSnapshot;
-        synchronized (messageLock) {
-            receivedSnapshot = new ArrayList<>(receivedMessages);
-        }
-        resp.body = buildResponseBody(extractPayloads(receivedSnapshot));
-        resp.bodySize = resp.body.getBytes(StandardCharsets.UTF_8).length;
+        resp.body = responseBody.value();
+        resp.bodySize = responseBody.totalUtf8Bytes();
         if (resp.headers == null) {
             resp.headers = new LinkedHashMap<>();
         }
@@ -415,7 +437,7 @@ public class WebSocketScenarioExecutor {
         resp.addHeader("X-Easy-WS-Send-Interval-Ms", Collections.singletonList(String.valueOf(Math.max(0, headerCfg.sendIntervalMs))));
         resp.addHeader("X-Easy-WS-Mode", Collections.singletonList(headerCfg.completionMode.name()));
         resp.addHeader("X-Easy-WS-Message-Filter", Collections.singletonList(CharSequenceUtil.blankToDefault(headerCfg.messageFilter, "")));
-        resp.addHeader("X-Easy-WS-Received-Count", Collections.singletonList(String.valueOf(receivedSnapshot.size())));
+        resp.addHeader("X-Easy-WS-Received-Count", Collections.singletonList(String.valueOf(receivedMessageCount.get())));
         resp.addHeader("X-Easy-WS-Sent-Count", Collections.singletonList(String.valueOf(sentMessageCount.get())));
         resp.addHeader("X-Easy-WS-Message-Count", Collections.singletonList(String.valueOf(matchedMessageCount.get())));
         resp.addHeader("X-Easy-WS-First-Message-Latency-Ms", Collections.singletonList(firstMessageLatencyMs.get() >= 0 ? String.valueOf(firstMessageLatencyMs.get()) : ""));
@@ -428,7 +450,7 @@ public class WebSocketScenarioExecutor {
         return new Result(resp, errorRef.get(), failed.get(), interrupted.get(), stepTestResults);
     }
 
-    private record ReceivedWebSocketMessage(String payload, long receivedAtMs) {
+    private record ReceivedWebSocketMessage(String payload, long receivedAtMs, int retainedUtf8Bytes) {
     }
 
     private boolean matchesMessage(WebSocketPerformanceData cfg, String payload) {
@@ -476,16 +498,17 @@ public class WebSocketScenarioExecutor {
         return req != null ? req.body : "";
     }
 
-    private void appendMessage(StringBuffer buffer, String payload) {
+    private void appendMessage(BoundedTextAccumulator buffer, String payload) {
         String value = payload == null ? "" : payload;
-        buffer.append(value).append("\n\n");
+        buffer.append(value);
+        buffer.append("\n\n");
     }
 
     static String buildResponseBody(List<String> messages) {
         if (messages == null || messages.isEmpty()) {
             return "";
         }
-        StringBuffer buffer = new StringBuffer();
+        StringBuilder buffer = new StringBuilder();
         for (String message : messages) {
             String value = message == null ? "" : message;
             buffer.append(value).append("\n\n");
@@ -493,15 +516,115 @@ public class WebSocketScenarioExecutor {
         return buffer.toString();
     }
 
-    private List<String> extractPayloads(List<ReceivedWebSocketMessage> messages) {
-        if (messages == null || messages.isEmpty()) {
-            return List.of();
+    private static void addReceivedMessage(Deque<ReceivedWebSocketMessage> messages,
+                                           String payload,
+                                           long receivedAtMs,
+                                           AtomicLong retainedBytes,
+                                           int maxRetainedBytes) {
+        int limit = Math.max(1, maxRetainedBytes);
+        String retainedPayload = retainUtf8Prefix(payload, limit);
+        int messageBytes = utf8Length(retainedPayload);
+        while (!messages.isEmpty()
+                && (messages.size() >= MAX_RETAINED_AWAIT_MESSAGES
+                || retainedBytes.get() + messageBytes > limit)) {
+            ReceivedWebSocketMessage removed = messages.removeFirst();
+            retainedBytes.addAndGet(-removed.retainedUtf8Bytes());
         }
-        List<String> payloads = new ArrayList<>(messages.size());
-        for (ReceivedWebSocketMessage message : messages) {
-            payloads.add(message == null ? "" : message.payload());
+        messages.addLast(new ReceivedWebSocketMessage(retainedPayload, receivedAtMs, messageBytes));
+        retainedBytes.addAndGet(messageBytes);
+    }
+
+    static String retainUtf8Prefix(String value, int maxUtf8Bytes) {
+        if (value == null || value.isEmpty() || maxUtf8Bytes <= 0) {
+            return "";
         }
-        return payloads;
+        int bytes = 0;
+        int index = 0;
+        while (index < value.length()) {
+            CharSpan span = charSpan(value, index, value.length());
+            if (bytes + span.utf8Bytes > maxUtf8Bytes) {
+                break;
+            }
+            bytes += span.utf8Bytes;
+            index += span.charCount;
+        }
+        return value.substring(0, index);
+    }
+
+    private boolean hasEnabledAwaitStep(DefaultMutableTreeNode requestNode) {
+        if (requestNode == null) {
+            return false;
+        }
+        for (int i = 0; i < requestNode.getChildCount(); i++) {
+            DefaultMutableTreeNode childNode = (DefaultMutableTreeNode) requestNode.getChildAt(i);
+            Object childObj = childNode.getUserObject();
+            if (childObj instanceof JMeterTreeNode stepNode && stepNode.enabled && stepNode.type == NodeType.WS_AWAIT) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String headerPreview(String value) {
+        if (value == null || value.length() <= 1024) {
+            return value == null ? "" : value;
+        }
+        return value.substring(0, 1024) + "\n[truncated; total chars: " + value.length() + "]";
+    }
+
+    private String toHexPreview(ByteString bytes) {
+        if (bytes == null || bytes.size() == 0) {
+            return "";
+        }
+        int byteLimit = Math.min(bytes.size(), Math.max(1, responseBodyPreviewLimitBytes / 2));
+        StringBuilder builder = new StringBuilder(byteLimit * 2 + 80);
+        for (int i = 0; i < byteLimit; i++) {
+            int value = bytes.getByte(i) & 0xff;
+            if (value < 16) {
+                builder.append('0');
+            }
+            builder.append(Integer.toHexString(value));
+        }
+        if (bytes.size() > byteLimit) {
+            builder.append("\n\n[truncated binary message; total bytes: ")
+                    .append(bytes.size())
+                    .append(", retained bytes: ")
+                    .append(byteLimit)
+                    .append("]");
+        }
+        return builder.toString();
+    }
+
+    private static int utf8Length(String value) {
+        if (value == null || value.isEmpty()) {
+            return 0;
+        }
+        int bytes = 0;
+        for (int i = 0; i < value.length(); ) {
+            CharSpan span = charSpan(value, i, value.length());
+            bytes += span.utf8Bytes;
+            i += span.charCount;
+        }
+        return bytes;
+    }
+
+    private static CharSpan charSpan(CharSequence text, int index, int end) {
+        char ch = text.charAt(index);
+        if (ch <= 0x7F) {
+            return new CharSpan(1, 1);
+        }
+        if (ch <= 0x7FF) {
+            return new CharSpan(1, 2);
+        }
+        if (Character.isHighSurrogate(ch)
+                && index + 1 < end
+                && Character.isLowSurrogate(text.charAt(index + 1))) {
+            return new CharSpan(2, 4);
+        }
+        return new CharSpan(1, 3);
+    }
+
+    private record CharSpan(int charCount, int utf8Bytes) {
     }
 
     private WebSocketPerformanceData copyData(WebSocketPerformanceData source) {

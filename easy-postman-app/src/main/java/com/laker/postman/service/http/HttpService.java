@@ -228,7 +228,7 @@ public class HttpService {
     private static HttpResponse executeRequest(PreparedRequest req, Request request, SseResEventListener callback) throws Exception {
         OkHttpClient client = buildCustomClient(req);
         Call call = client.newCall(request);
-        return callWithRequest(call, client, callback);
+        return callWithRequest(req, call, client, callback);
     }
 
     /**
@@ -250,7 +250,7 @@ public class HttpService {
     }
 
 
-    private static HttpResponse callWithRequest(Call call, OkHttpClient client, SseResEventListener callback) throws IOException {
+    private static HttpResponse callWithRequest(PreparedRequest req, Call call, OkHttpClient client, SseResEventListener callback) throws IOException {
         long startTime = System.currentTimeMillis();
         HttpResponse httpResponse = new HttpResponse();
         ConnectionPool pool = client.connectionPool();
@@ -262,7 +262,13 @@ public class HttpService {
         } finally {
             attachHttpEventInfo(httpResponse, startTime);
         }
-        OkHttpResponseHandler.handleResponse(okResponse, httpResponse, callback);
+        OkHttpResponseHandler.handleResponse(
+                okResponse,
+                httpResponse,
+                callback,
+                req.responseBodyMode,
+                req.responseBodyPreviewLimitBytes
+        );
         httpResponse.endTime = System.currentTimeMillis();
         httpResponse.costMs = httpResponse.endTime - startTime;
         // 响应后主动通知Cookie变化，刷新CookieTablePanel

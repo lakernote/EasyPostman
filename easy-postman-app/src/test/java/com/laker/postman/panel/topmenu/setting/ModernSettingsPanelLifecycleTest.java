@@ -3,6 +3,7 @@ package com.laker.postman.panel.topmenu.setting;
 import org.testng.annotations.Test;
 
 import javax.swing.*;
+import java.lang.reflect.Field;
 import java.util.List;
 
 import static org.testng.Assert.assertEquals;
@@ -18,6 +19,14 @@ public class ModernSettingsPanelLifecycleTest {
         assertTrue(panel.buildContentCalled);
         assertTrue(panel.registerListenersCalled);
         assertEquals(panel.fieldCountAtBuildContent, 1);
+    }
+
+    @Test(description = "设置对话框默认高度应能容纳压力测试页新增字段")
+    public void settingsDialogPreferredHeightShouldFitPerformanceSettings() throws Exception {
+        Field heightField = ModernSettingsDialog.class.getDeclaredField("PREFERRED_HEIGHT");
+        heightField.setAccessible(true);
+
+        assertTrue(heightField.getInt(null) >= 640);
     }
 
     private static final class SampleSettingsPanel extends ModernSettingsPanel {

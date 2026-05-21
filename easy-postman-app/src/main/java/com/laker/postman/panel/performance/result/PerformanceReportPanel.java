@@ -3,8 +3,9 @@ package com.laker.postman.panel.performance.result;
 import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
 import com.laker.postman.common.component.button.SegmentedToggleButton;
-import com.laker.postman.panel.performance.model.RequestResult;
 import com.laker.postman.panel.performance.model.PerformanceProtocol;
+import com.laker.postman.panel.performance.model.PerformanceStatsSnapshot;
+import com.laker.postman.panel.performance.model.RequestResult;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -442,12 +443,16 @@ public class PerformanceReportPanel extends JPanel {
                              Map<String, Integer> apiSuccessMap,
                              Map<String, Integer> apiFailMap,
                              List<RequestResult> allRequestResults) {
+        updateReport(PerformanceProtocolReportData.fromResults(allRequestResults, totalRowName));
+    }
+
+    public void updateReport(PerformanceStatsSnapshot statsSnapshot) {
+        updateReport(PerformanceProtocolReportData.fromStatsSnapshot(statsSnapshot, totalRowName));
+    }
+
+    private void updateReport(PerformanceProtocolReportData reportData) {
         clearReport();
 
-        PerformanceProtocolReportData reportData = PerformanceProtocolReportData.fromResults(
-                allRequestResults,
-                totalRowName
-        );
         for (PerformanceProtocolReportData.HttpReportRow row : reportData.httpRows()) {
             addReportRow(reportTableModel, toHttpRowData(row));
         }

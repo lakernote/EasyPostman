@@ -37,7 +37,11 @@ public class SettingManager {
     private static final String JMETER_SLOW_REQUEST_THRESHOLD_KEY = "jmeter_slow_request_threshold";
     private static final String JMETER_JS_CONTEXT_POOL_SIZE_KEY = "jmeter_js_context_pool_size";
     private static final String JMETER_JS_CONTEXT_ACQUIRE_TIMEOUT_MS_KEY = "jmeter_js_context_acquire_timeout_ms";
+    private static final String PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB_KEY = "performance_response_body_preview_limit_kb";
     private static final Object SETTINGS_IO_LOCK = new Object();
+    public static final int DEFAULT_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB = 64;
+    public static final int MIN_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB = 1;
+    public static final int MAX_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB = 1024;
     public static final String PROXY_MODE_MANUAL = "MANUAL";
     public static final String PROXY_MODE_SYSTEM = "SYSTEM";
     public static final String PROXY_TYPE_HTTP = "HTTP";
@@ -334,6 +338,36 @@ public class SettingManager {
 
     public static void setPerformanceEventLoggingEnabled(boolean enabled) {
         setAndSaveProperty("performance_event_logging_enabled", String.valueOf(enabled));
+    }
+
+    public static int getPerformanceResponseBodyPreviewLimitKb() {
+        String val = props.getProperty(PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB_KEY);
+        if (val != null) {
+            try {
+                return sanitizePerformanceResponseBodyPreviewLimitKb(Integer.parseInt(val));
+            } catch (NumberFormatException e) {
+                return DEFAULT_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB;
+            }
+        }
+        return DEFAULT_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB;
+    }
+
+    public static void setPerformanceResponseBodyPreviewLimitKb(int limitKb) {
+        setAndSaveProperty(PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB_KEY,
+                String.valueOf(sanitizePerformanceResponseBodyPreviewLimitKb(limitKb)));
+    }
+
+    public static int sanitizePerformanceResponseBodyPreviewLimitKb(Integer limitKb) {
+        if (limitKb == null
+                || limitKb < MIN_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB
+                || limitKb > MAX_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB) {
+            return DEFAULT_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB;
+        }
+        return limitKb;
+    }
+
+    public static int performanceResponseBodyPreviewLimitBytes(int limitKb) {
+        return sanitizePerformanceResponseBodyPreviewLimitKb(limitKb) * 1024;
     }
 
     public static boolean isShowDownloadProgressDialog() {

@@ -1,38 +1,25 @@
 package com.laker.postman.panel.performance.execution;
 
+import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
 import com.laker.postman.panel.performance.model.RequestResult;
 import com.laker.postman.panel.performance.model.PerformanceProtocol;
 import com.laker.postman.panel.performance.model.ResultNodeInfo;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntSupplier;
 
 public class PerformanceResultRecorder {
 
-    private final List<RequestResult> allRequestResults;
-    private final Map<String, List<Long>> apiCostMap;
-    private final Map<String, Integer> apiSuccessMap;
-    private final Map<String, Integer> apiFailMap;
-    private final Object statsLock;
+    private final PerformanceStatsCollector statsCollector;
     private final PerformanceResultTablePanel resultTablePanel;
     private final IntSupplier slowRequestThresholdSupplier;
 
-    public PerformanceResultRecorder(List<RequestResult> allRequestResults,
-                                     Map<String, List<Long>> apiCostMap,
-                                     Map<String, Integer> apiSuccessMap,
-                                     Map<String, Integer> apiFailMap,
-                                     Object statsLock,
+    public PerformanceResultRecorder(PerformanceStatsCollector statsCollector,
                                      PerformanceResultTablePanel resultTablePanel,
                                      IntSupplier slowRequestThresholdSupplier) {
-        this.allRequestResults = allRequestResults;
-        this.apiCostMap = apiCostMap;
-        this.apiSuccessMap = apiSuccessMap;
-        this.apiFailMap = apiFailMap;
-        this.statsLock = statsLock;
+        this.statsCollector = statsCollector;
         this.resultTablePanel = resultTablePanel;
         this.slowRequestThresholdSupplier = slowRequestThresholdSupplier;
     }
@@ -57,7 +44,9 @@ public class PerformanceResultRecorder {
             return;
         }
 
-        resultTablePanel.addResult(PerformanceResultNodeInfoMapper.toDisplayNodeInfo(executionResult));
+        if (resultTablePanel != null) {
+            resultTablePanel.addResult(PerformanceResultNodeInfoMapper.toDisplayNodeInfo(executionResult));
+        }
     }
 
     static boolean shouldRecordResult(boolean efficientMode,
@@ -90,16 +79,8 @@ public class PerformanceResultRecorder {
                                   long costMs,
                                   long endTime,
                                   boolean actualSuccess) {
-        synchronized (statsLock) {
-            allRequestResults.add(toRequestResult(executionResult, costMs, endTime, actualSuccess));
-            apiCostMap
-                    .computeIfAbsent(executionResult.apiId, key -> Collections.synchronizedList(new ArrayList<>()))
-                    .add(costMs);
-            if (actualSuccess) {
-                apiSuccessMap.merge(executionResult.apiId, 1, Integer::sum);
-            } else {
-                apiFailMap.merge(executionResult.apiId, 1, Integer::sum);
-            }
+        if (statsCollector != null) {
+            statsCollector.record(toRequestResult(executionResult, costMs, endTime, actualSuccess));
         }
     }
 

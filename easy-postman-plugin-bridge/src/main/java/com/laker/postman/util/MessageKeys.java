@@ -1121,6 +1121,8 @@ public final class MessageKeys {
     public static final String SETTINGS_JMETER_JS_CONTEXT_ACQUIRE_TIMEOUT_TOOLTIP = "settings.jmeter.js_context_acquire_timeout.tooltip";
     public static final String SETTINGS_JMETER_SLOW_REQUEST_THRESHOLD = "settings.jmeter.slow_request_threshold";
     public static final String SETTINGS_JMETER_SLOW_REQUEST_THRESHOLD_TOOLTIP = "settings.jmeter.slow_request_threshold.tooltip";
+    public static final String SETTINGS_JMETER_RESPONSE_BODY_PREVIEW_LIMIT = "settings.jmeter.response_body_preview_limit";
+    public static final String SETTINGS_JMETER_RESPONSE_BODY_PREVIEW_LIMIT_TOOLTIP = "settings.jmeter.response_body_preview_limit.tooltip";
     public static final String SETTINGS_JMETER_TREND_SAMPLING = "settings.jmeter.trend_sampling";
     public static final String SETTINGS_JMETER_TREND_SAMPLING_TOOLTIP = "settings.jmeter.trend_sampling.tooltip";
     public static final String SETTINGS_JMETER_EVENT_LOGGING = "settings.jmeter.event_logging";
@@ -1175,6 +1177,7 @@ public final class MessageKeys {
     public static final String SETTINGS_VALIDATION_TREND_SAMPLING_ERROR = "settings.validation.trend_sampling.error";
     public static final String SETTINGS_VALIDATION_THRESHOLD_ERROR = "settings.validation.threshold.error";
     public static final String SETTINGS_VALIDATION_SLOW_REQUEST_THRESHOLD_ERROR = "settings.validation.slow_request_threshold.error";
+    public static final String SETTINGS_VALIDATION_RESPONSE_BODY_PREVIEW_LIMIT_ERROR = "settings.validation.response_body_preview_limit.error";
     public static final String SETTINGS_VALIDATION_MAX_HISTORY_ERROR = "settings.validation.max_history.error";
     public static final String SETTINGS_VALIDATION_MAX_OPENED_REQUESTS_ERROR = "settings.validation.max_opened_requests_error";
     public static final String SETTINGS_VALIDATION_PORT_ERROR = "settings.validation.port.error";
@@ -1283,6 +1286,8 @@ public final class MessageKeys {
     public static final String BODY_TOO_LARGE_SAVED = "body.too_large.saved";
     public static final String SSE_STREAM_UNSUPPORTED = "sse.stream.unsupported";
     public static final String RESPONSE_INCOMPLETE = "response.incomplete";
+    public static final String RESPONSE_BODY_SKIPPED_PERFORMANCE = "response.body.skipped.performance";
+    public static final String RESPONSE_BODY_TRUNCATED_PERFORMANCE = "response.body.truncated.performance";
 
     // ============ ResponseAssertion 国际化 ============
     public static final String RESPONSE_ASSERTION_STATUS_FAILED = "response.assertion.status_failed";

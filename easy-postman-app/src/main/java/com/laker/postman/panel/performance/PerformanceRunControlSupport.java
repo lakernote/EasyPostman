@@ -3,7 +3,8 @@ package com.laker.postman.panel.performance;
 import com.laker.postman.common.component.button.RefreshButton;
 import com.laker.postman.common.component.button.StartButton;
 import com.laker.postman.common.component.button.StopButton;
-import com.laker.postman.panel.performance.model.RequestResult;
+import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
+import com.laker.postman.panel.performance.model.PerformanceStatsSnapshot;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import com.laker.postman.panel.performance.result.PerformanceTrendPanel;
@@ -17,8 +18,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -46,11 +45,7 @@ final class PerformanceRunControlSupport {
     private final PerformanceResultTablePanel performanceResultTablePanel;
     private final PerformanceReportPanel performanceReportPanel;
     private final PerformanceTrendPanel performanceTrendPanel;
-    private final List<RequestResult> allRequestResults;
-    private final Object statsLock;
-    private final Map<String, List<Long>> apiCostMap;
-    private final Map<String, Integer> apiSuccessMap;
-    private final Map<String, Integer> apiFailMap;
+    private final PerformanceStatsCollector statsCollector;
     private final Runnable clearCachedPerformanceResultsAction;
 
     Thread startRun(DefaultMutableTreeNode rootNode,
@@ -164,12 +159,9 @@ final class PerformanceRunControlSupport {
         statisticsCoordinator.updateReportWithLatestDataSync();
 
         long totalTime = System.currentTimeMillis() - startTimeSupplier.getAsLong();
-        int totalRequests;
-        long successCount;
-        synchronized (statsLock) {
-            totalRequests = allRequestResults.size();
-            successCount = allRequestResults.stream().filter(r -> r.success).count();
-        }
+        PerformanceStatsSnapshot statsSnapshot = statsCollector.snapshot();
+        long totalRequests = statsSnapshot.totalRequests();
+        long successCount = statsSnapshot.successRequests();
 
         String message = I18nUtil.getMessage(
                 MessageKeys.PERFORMANCE_MSG_EXECUTION_COMPLETED,

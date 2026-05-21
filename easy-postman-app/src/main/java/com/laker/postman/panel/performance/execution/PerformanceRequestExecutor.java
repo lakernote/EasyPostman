@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
+import java.util.function.IntSupplier;
 import java.util.function.Predicate;
 
 @Slf4j
@@ -39,6 +40,8 @@ public class PerformanceRequestExecutor {
     private final Set<EventSource> activeSseSources;
     private final Set<WebSocket> activeWebSockets;
     private final PerformanceRealtimeMetrics realtimeMetrics;
+    private final BooleanSupplier efficientModeSupplier;
+    private final IntSupplier responseBodyPreviewLimitKbSupplier;
 
     public PerformanceRequestExecutor(BooleanSupplier runningSupplier,
                                       Predicate<Throwable> cancelledChecker,
@@ -52,11 +55,26 @@ public class PerformanceRequestExecutor {
                                       Set<EventSource> activeSseSources,
                                       Set<WebSocket> activeWebSockets,
                                       PerformanceRealtimeMetrics realtimeMetrics) {
+        this(runningSupplier, cancelledChecker, activeSseSources, activeWebSockets, realtimeMetrics, () -> false,
+                () -> SettingManager.DEFAULT_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB);
+    }
+
+    public PerformanceRequestExecutor(BooleanSupplier runningSupplier,
+                                      Predicate<Throwable> cancelledChecker,
+                                      Set<EventSource> activeSseSources,
+                                      Set<WebSocket> activeWebSockets,
+                                      PerformanceRealtimeMetrics realtimeMetrics,
+                                      BooleanSupplier efficientModeSupplier,
+                                      IntSupplier responseBodyPreviewLimitKbSupplier) {
         this.runningSupplier = runningSupplier;
         this.cancelledChecker = cancelledChecker;
         this.activeSseSources = activeSseSources;
         this.activeWebSockets = activeWebSockets;
         this.realtimeMetrics = realtimeMetrics == null ? new PerformanceRealtimeMetrics() : realtimeMetrics;
+        this.efficientModeSupplier = efficientModeSupplier == null ? () -> false : efficientModeSupplier;
+        this.responseBodyPreviewLimitKbSupplier = responseBodyPreviewLimitKbSupplier == null
+                ? () -> SettingManager.DEFAULT_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB
+                : responseBodyPreviewLimitKbSupplier;
     }
 
     public PerformanceRequestExecutionResult execute(DefaultMutableTreeNode requestNode,
@@ -109,6 +127,17 @@ public class PerformanceRequestExecutor {
                 protocol = resolvePerformanceProtocol(webSocketRequest, sseRequest);
                 boolean transportSseRequest = sseRequest;
                 boolean transportWebSocketRequest = webSocketRequest;
+                if (!transportSseRequest && !transportWebSocketRequest) {
+                    List<DefaultMutableTreeNode> assertionNodes = PerformanceAssertionRunner.collectAssertionNodes(requestNode, false, false);
+                    req.responseBodyMode = resolveHttpResponseBodyMode(
+                            efficientModeSupplier.getAsBoolean(),
+                            assertionNodes,
+                            req.postscript
+                    );
+                    req.responseBodyPreviewLimitBytes = resolveResponseBodyPreviewLimitBytes(
+                            responseBodyPreviewLimitKbSupplier.getAsInt()
+                    );
+                }
                 ProtocolExecutionResult protocolResult = pipeline.withExecutionContextThrowing(() ->
                         executeTransport(req, requestNode, requestData, transportSseRequest, transportWebSocketRequest,
                                 requestBodyTemplate, pipeline)
@@ -192,6 +221,23 @@ public class PerformanceRequestExecutor {
         req.enableNetworkLog = false;
     }
 
+    static PreparedRequest.ResponseBodyMode resolveHttpResponseBodyMode(boolean efficientMode,
+                                                                        List<DefaultMutableTreeNode> assertionNodes,
+                                                                        String postscript) {
+        if (!efficientMode) {
+            return PreparedRequest.ResponseBodyMode.FULL;
+        }
+        if (PerformanceAssertionRunner.requiresResponseBody(assertionNodes)
+                || CharSequenceUtil.isNotBlank(postscript)) {
+            return PreparedRequest.ResponseBodyMode.PREVIEW;
+        }
+        return PreparedRequest.ResponseBodyMode.METADATA_ONLY;
+    }
+
+    static int resolveResponseBodyPreviewLimitBytes(int previewLimitKb) {
+        return SettingManager.performanceResponseBodyPreviewLimitBytes(previewLimitKb);
+    }
+
     private ProtocolExecutionResult executeTransport(PreparedRequest req,
                                                      DefaultMutableTreeNode requestNode,
                                                      JMeterTreeNode requestData,
@@ -204,7 +250,8 @@ public class PerformanceRequestExecutor {
                     runningSupplier,
                     cancelledChecker,
                     activeWebSockets,
-                    realtimeMetrics
+                    realtimeMetrics,
+                    resolveResponseBodyPreviewLimitBytes(responseBodyPreviewLimitKbSupplier.getAsInt())
             ).execute(req, requestNode, requestData.webSocketPerformanceData, requestBodyTemplate, pipeline);
             return new ProtocolExecutionResult(result.response, result.errorMsg, result.executionFailed, result.interrupted, result.testResults);
         }
@@ -213,7 +260,8 @@ public class PerformanceRequestExecutor {
                     runningSupplier,
                     cancelledChecker,
                     activeSseSources,
-                    realtimeMetrics
+                    realtimeMetrics,
+                    resolveResponseBodyPreviewLimitBytes(responseBodyPreviewLimitKbSupplier.getAsInt())
             ).execute(req, requestData.ssePerformanceData);
             return new ProtocolExecutionResult(result.response, result.errorMsg, result.executionFailed, result.interrupted, new ArrayList<>());
         }

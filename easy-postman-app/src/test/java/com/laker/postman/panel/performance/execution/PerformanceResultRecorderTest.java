@@ -2,8 +2,12 @@ package com.laker.postman.panel.performance.execution;
 
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
+import com.laker.postman.panel.performance.model.PerformanceStatsSnapshot;
 import com.laker.postman.panel.performance.model.PerformanceProtocol;
 import com.laker.postman.panel.performance.model.RequestResult;
+import com.laker.postman.panel.performance.model.ResultNodeInfo;
+import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -58,5 +62,57 @@ public class PerformanceResultRecorderTest {
         assertEquals(result.matchedMessages, 3);
         assertEquals(result.firstMessageLatencyMs, 120L);
         assertEquals(result.completionReason, "matched_message");
+    }
+
+    @Test
+    public void shouldAggregateFastSuccessesWithoutRecordingDetailsInEfficientMode() {
+        PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
+        RecordingResultTablePanel tablePanel = new RecordingResultTablePanel();
+        try {
+            PerformanceResultRecorder recorder = new PerformanceResultRecorder(
+                    statsCollector,
+                    tablePanel,
+                    () -> 3_000
+            );
+
+            for (int i = 0; i < 10_000; i++) {
+                HttpResponse response = new HttpResponse();
+                response.code = 200;
+                response.costMs = 100;
+                response.endTime = i + 100L;
+
+                recorder.record(new PerformanceRequestExecutionResult(
+                        "api",
+                        "API",
+                        new PreparedRequest(),
+                        response,
+                        "",
+                        List.of(),
+                        false,
+                        false,
+                        PerformanceProtocol.HTTP,
+                        i,
+                        0
+                ), true);
+            }
+
+            PerformanceStatsSnapshot snapshot = statsCollector.snapshot();
+
+            assertEquals(snapshot.totalRequests(), 10_000L);
+            assertEquals(snapshot.successRequests(), 10_000L);
+            assertEquals(snapshot.retainedRequestResultCount(), 0L);
+            assertEquals(tablePanel.recordedRows, 0);
+        } finally {
+            tablePanel.dispose();
+        }
+    }
+
+    private static final class RecordingResultTablePanel extends PerformanceResultTablePanel {
+        private int recordedRows;
+
+        @Override
+        public void addResult(ResultNodeInfo info) {
+            recordedRows++;
+        }
     }
 }

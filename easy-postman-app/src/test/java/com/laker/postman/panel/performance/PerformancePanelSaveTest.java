@@ -177,7 +177,9 @@ public class PerformancePanelSaveTest {
         private DefaultMutableTreeNode savedRoot;
 
         @Override
-        public void save(DefaultMutableTreeNode rootNode, boolean efficientMode, CsvDataPanel.CsvState csvState) {
+        public void save(DefaultMutableTreeNode rootNode,
+                         boolean efficientMode,
+                         CsvDataPanel.CsvState csvState) {
             saveCount.incrementAndGet();
             savedRoot = rootNode;
         }

@@ -1,6 +1,7 @@
 package com.laker.postman.panel.performance.result;
 
 import com.laker.postman.panel.performance.model.PerformanceProtocol;
+import com.laker.postman.panel.performance.model.PerformanceStatsSnapshot;
 import com.laker.postman.panel.performance.model.RequestResult;
 
 import java.util.ArrayList;
@@ -39,6 +40,17 @@ final class PerformanceProtocolReportData {
         );
     }
 
+    static PerformanceProtocolReportData fromStatsSnapshot(PerformanceStatsSnapshot snapshot, String totalRowName) {
+        if (snapshot == null) {
+            return new PerformanceProtocolReportData(List.of(), List.of(), List.of());
+        }
+        return new PerformanceProtocolReportData(
+                buildHttpRows(snapshot, totalRowName),
+                buildStreamRows(snapshot, PerformanceProtocol.WEBSOCKET, totalRowName),
+                buildStreamRows(snapshot, PerformanceProtocol.SSE, totalRowName)
+        );
+    }
+
     List<HttpReportRow> httpRows() {
         return httpRows;
     }
@@ -64,6 +76,21 @@ final class PerformanceProtocolReportData {
         return rows;
     }
 
+    private static List<HttpReportRow> buildHttpRows(PerformanceStatsSnapshot snapshot, String totalRowName) {
+        List<HttpReportRow> rows = new ArrayList<>();
+        for (PerformanceStatsSnapshot.ApiSummary summary : snapshot.summaries()) {
+            if (summary.protocol() == PerformanceProtocol.HTTP) {
+                rows.add(toHttpRow(summary));
+            }
+        }
+        sortByName(rows);
+        PerformanceStatsSnapshot.ApiSummary total = snapshot.totalFor(PerformanceProtocol.HTTP, totalRowName);
+        if (total != null && total.total() > 0) {
+            rows.add(toHttpRow(total));
+        }
+        return rows;
+    }
+
     private static List<StreamReportRow> buildStreamRows(List<RequestResult> results,
                                                          PerformanceProtocol protocol,
                                                          String totalRowName) {
@@ -75,6 +102,23 @@ final class PerformanceProtocolReportData {
         sortByName(rows);
         if (!rows.isEmpty()) {
             rows.add(toStreamRow(totalRowName, flatten(byApi)));
+        }
+        return rows;
+    }
+
+    private static List<StreamReportRow> buildStreamRows(PerformanceStatsSnapshot snapshot,
+                                                         PerformanceProtocol protocol,
+                                                         String totalRowName) {
+        List<StreamReportRow> rows = new ArrayList<>();
+        for (PerformanceStatsSnapshot.ApiSummary summary : snapshot.summaries()) {
+            if (summary.protocol() == protocol) {
+                rows.add(toStreamRow(summary));
+            }
+        }
+        sortByName(rows);
+        PerformanceStatsSnapshot.ApiSummary total = snapshot.totalFor(protocol, totalRowName);
+        if (total != null && total.total() > 0) {
+            rows.add(toStreamRow(total));
         }
         return rows;
     }
@@ -111,6 +155,24 @@ final class PerformanceProtocolReportData {
                 fail,
                 successRate(total, success),
                 calculateSamplesPerSecond(total, results),
+                stats.avg(),
+                stats.min(),
+                stats.max(),
+                stats.p90(),
+                stats.p95(),
+                stats.p99()
+        );
+    }
+
+    private static HttpReportRow toHttpRow(PerformanceStatsSnapshot.ApiSummary summary) {
+        PerformanceStatsSnapshot.DurationStats stats = summary.durationStats();
+        return new HttpReportRow(
+                summary.name(),
+                summary.total(),
+                summary.success(),
+                summary.fail(),
+                summary.successRate(),
+                summary.samplesPerSecond(),
                 stats.avg(),
                 stats.min(),
                 stats.max(),
@@ -165,6 +227,27 @@ final class PerformanceProtocolReportData {
                 stats.avg(),
                 stats.p95(),
                 topCompletionReason(completionReasons)
+        );
+    }
+
+    private static StreamReportRow toStreamRow(PerformanceStatsSnapshot.ApiSummary summary) {
+        PerformanceStatsSnapshot.DurationStats stats = summary.durationStats();
+        return new StreamReportRow(
+                summary.name(),
+                summary.total(),
+                summary.success(),
+                summary.fail(),
+                summary.successRate(),
+                summary.sentMessages(),
+                summary.receivedMessages(),
+                summary.matchedMessages(),
+                summary.sendRate(),
+                summary.receiveRate(),
+                summary.matchedRate(),
+                summary.avgFirstMessageLatencyMs(),
+                stats.avg(),
+                stats.p95(),
+                summary.topCompletionReason()
         );
     }
 
@@ -256,9 +339,9 @@ final class PerformanceProtocolReportData {
     }
 
     record HttpReportRow(String name,
-                         int total,
-                         int success,
-                         int fail,
+                         long total,
+                         long success,
+                         long fail,
                          double successRate,
                          double qps,
                          long avg,
@@ -270,13 +353,13 @@ final class PerformanceProtocolReportData {
     }
 
     record StreamReportRow(String name,
-                           int total,
-                           int success,
-                           int fail,
+                           long total,
+                           long success,
+                           long fail,
                            double successRate,
-                           int sentMessages,
-                           int receivedMessages,
-                           int matchedMessages,
+                           long sentMessages,
+                           long receivedMessages,
+                           long matchedMessages,
                            double sendRate,
                            double receiveRate,
                            double matchedRate,

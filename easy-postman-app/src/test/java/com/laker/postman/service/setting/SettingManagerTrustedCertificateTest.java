@@ -119,6 +119,57 @@ public class SettingManagerTrustedCertificateTest {
     }
 
     @Test
+    public void shouldReadAndNormalizePerformanceResponseBodyPreviewLimit() throws Exception {
+        Properties props = getSettingsProperties();
+        Properties backup = new Properties();
+        backup.putAll(props);
+
+        try {
+            props.clear();
+            assertEquals(SettingManager.getPerformanceResponseBodyPreviewLimitKb(), 64);
+
+            props.setProperty("performance_response_body_preview_limit_kb", "4");
+            assertEquals(SettingManager.getPerformanceResponseBodyPreviewLimitKb(), 4);
+
+            props.setProperty("performance_response_body_preview_limit_kb", "0");
+            assertEquals(SettingManager.getPerformanceResponseBodyPreviewLimitKb(), 64);
+
+            props.setProperty("performance_response_body_preview_limit_kb", "2048");
+            assertEquals(SettingManager.getPerformanceResponseBodyPreviewLimitKb(), 64);
+
+            props.setProperty("performance_response_body_preview_limit_kb", "abc");
+            assertEquals(SettingManager.getPerformanceResponseBodyPreviewLimitKb(), 64);
+        } finally {
+            props.clear();
+            props.putAll(backup);
+        }
+    }
+
+    @Test
+    public void shouldPersistSanitizedPerformanceResponseBodyPreviewLimit() throws Exception {
+        Properties props = getSettingsProperties();
+        Properties backup = new Properties();
+        backup.putAll(props);
+        Path configPath = Path.of(ConfigPathConstants.EASY_POSTMAN_SETTINGS);
+        boolean configExisted = Files.exists(configPath);
+        String originalConfig = configExisted ? Files.readString(configPath) : null;
+
+        try {
+            props.clear();
+
+            SettingManager.setPerformanceResponseBodyPreviewLimitKb(4);
+            assertEquals(props.getProperty("performance_response_body_preview_limit_kb"), "4");
+
+            SettingManager.setPerformanceResponseBodyPreviewLimitKb(0);
+            assertEquals(props.getProperty("performance_response_body_preview_limit_kb"), "64");
+        } finally {
+            props.clear();
+            props.putAll(backup);
+            restoreConfig(configPath, configExisted, originalConfig);
+        }
+    }
+
+    @Test
     public void shouldPreserveUpdateSourceWhenPersistingLastCheckTimeFromStaleSettings() throws Exception {
         Path tempFile = Files.createTempFile("easy-postman-settings", ".properties");
         Properties diskSettings = new Properties();

@@ -56,6 +56,7 @@ public class PerformancePersistenceServiceTest {
 
         Path configPath = workspaceDir.resolve("performance_config.json");
         assertTrue(Files.exists(configPath));
+        assertFalse(Files.readString(configPath).contains("responseBodyPreviewLimitKb"));
 
         DefaultMutableTreeNode loadedRoot = service.load("Loaded Plan");
         assertNotNull(loadedRoot);

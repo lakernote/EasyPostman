@@ -41,4 +41,27 @@ public class PerformanceTrendSnapshotTest {
         assertEquals(snapshot.sse().receivedMessages(), 5);
         assertEquals(snapshot.sse().matchedMessages(), 4);
     }
+
+    @Test
+    public void shouldUseSamplingWindowForPerSecondRates() {
+        RequestResult first = new RequestResult(1_000, 1_010, true, "http-api", PerformanceProtocol.HTTP);
+        RequestResult second = new RequestResult(1_020, 1_030, true, "http-api", PerformanceProtocol.HTTP);
+        RequestResult ws = new RequestResult(1_040, 1_050, true, "ws-api", PerformanceProtocol.WEBSOCKET);
+        ws.sentMessages = 4;
+        ws.receivedMessages = 6;
+
+        PerformanceTrendSnapshot snapshot = PerformanceTrendSnapshot.fromResults(
+                List.of(first, second, ws),
+                1_000,
+                2_000,
+                3,
+                1,
+                0,
+                1_000
+        );
+
+        assertEquals(snapshot.http().sampleRate(), 2.0);
+        assertEquals(snapshot.webSocket().sentRate(), 4.0);
+        assertEquals(snapshot.webSocket().receivedRate(), 6.0);
+    }
 }

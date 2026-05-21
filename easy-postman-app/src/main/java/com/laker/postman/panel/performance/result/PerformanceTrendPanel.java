@@ -150,6 +150,7 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         rangeAxis.setLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
         rangeAxis.setTickLabelPaint(getTextColor());
         rangeAxis.setLabelPaint(getTextColor());
+        rangeAxis.setAutoRangeMinimumSize(1.0);
         rangeAxis.setUpperMargin(0.2);
         rangeAxis.setAutoRangeIncludesZero(true);
 

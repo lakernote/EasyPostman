@@ -733,6 +733,7 @@ public final class MessageKeys {
 
     // ============ 性能趋势相关 ============
     public static final String PERFORMANCE_TREND_THREADS = "performance.trend.threads";
+    public static final String PERFORMANCE_TREND_VIRTUAL_USERS = "performance.trend.virtual_users";
     public static final String PERFORMANCE_TREND_RESPONSE_TIME_MS = "performance.trend.response_time_ms";
     public static final String PERFORMANCE_TREND_QPS = "performance.trend.qps";
     public static final String PERFORMANCE_TREND_ERROR_RATE_PERCENT = "performance.trend.error_rate_percent";

@@ -31,13 +31,7 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
     private static final String SEPARATE_VIEW = "separate";
     private static final String COMBINED_VIEW = "combined";
 
-    private final TimeSeries overviewUsersSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_THREADS));
-    private final TimeSeries overviewSampleRateSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_SAMPLE_RATE));
-    private final TimeSeries overviewErrorRateSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_ERROR_RATE_PERCENT));
-    private final TimeSeries httpRateSeries = new TimeSeries(PerformanceProtocol.HTTP.getDisplayName());
-    private final TimeSeries webSocketRateSeries = new TimeSeries(PerformanceProtocol.WEBSOCKET.getDisplayName());
-    private final TimeSeries sseRateSeries = new TimeSeries(PerformanceProtocol.SSE.getDisplayName());
-
+    private final TimeSeries httpVirtualUsersSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_VIRTUAL_USERS));
     private final TimeSeries httpRpsSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_QPS));
     private final TimeSeries httpAvgResponseSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_RESPONSE_TIME_MS));
     private final TimeSeries httpErrorRateSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_ERROR_RATE_PERCENT));
@@ -63,7 +57,6 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
     protected void initUI() {
         setLayout(new BorderLayout());
         JTabbedPane protocolTabs = new JTabbedPane();
-        protocolTabs.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_OVERVIEW), createOverviewPanel());
         protocolTabs.addTab(PerformanceProtocol.HTTP.getDisplayName(), createHttpPanel());
         protocolTabs.addTab(PerformanceProtocol.WEBSOCKET.getDisplayName(), createWebSocketPanel());
         protocolTabs.addTab(PerformanceProtocol.SSE.getDisplayName(), createSsePanel());
@@ -75,21 +68,10 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         // Charts are updated by PerformanceStatisticsCoordinator.
     }
 
-    private JPanel createOverviewPanel() {
-        return createTrendView(
-                MessageKeys.PERFORMANCE_TREND_METRICS,
-                new SeriesSpec(overviewUsersSeries, getThreadsLineColor(), true),
-                new SeriesSpec(overviewSampleRateSeries, getQpsLineColor(), true),
-                new SeriesSpec(overviewErrorRateSeries, getErrorRateLineColor(), true),
-                new SeriesSpec(httpRateSeries, getResponseTimeLineColor(), false),
-                new SeriesSpec(webSocketRateSeries, getMatchedLineColor(), false),
-                new SeriesSpec(sseRateSeries, getDurationLineColor(), false)
-        );
-    }
-
     private JPanel createHttpPanel() {
         return createTrendView(
                 MessageKeys.PERFORMANCE_TREND_METRICS,
+                new SeriesSpec(httpVirtualUsersSeries, getThreadsLineColor(), true),
                 new SeriesSpec(httpRpsSeries, getQpsLineColor(), true),
                 new SeriesSpec(httpAvgResponseSeries, getResponseTimeLineColor(), true),
                 new SeriesSpec(httpErrorRateSeries, getErrorRateLineColor(), true)
@@ -192,9 +174,7 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
 
     public void clearTrendDataset() {
         TimeSeries[] allSeries = {
-                overviewUsersSeries, overviewSampleRateSeries, overviewErrorRateSeries,
-                httpRateSeries, webSocketRateSeries, sseRateSeries,
-                httpRpsSeries, httpAvgResponseSeries, httpErrorRateSeries,
+                httpVirtualUsersSeries, httpRpsSeries, httpAvgResponseSeries, httpErrorRateSeries,
                 wsActiveSeries, wsSentRateSeries, wsReceivedRateSeries, wsFirstMessageLatencySeries,
                 wsSessionDurationSeries, wsErrorRateSeries,
                 sseActiveSeries, sseEventRateSeries, sseMatchedRateSeries, sseFirstEventLatencySeries,
@@ -210,13 +190,7 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
             return;
         }
 
-        overviewUsersSeries.addOrUpdate(period, snapshot.activeUsers());
-        overviewSampleRateSeries.addOrUpdate(period, snapshot.overview().sampleRate());
-        overviewErrorRateSeries.addOrUpdate(period, snapshot.overview().failurePercent());
-        httpRateSeries.addOrUpdate(period, snapshot.http().sampleRate());
-        webSocketRateSeries.addOrUpdate(period, snapshot.webSocket().sampleRate());
-        sseRateSeries.addOrUpdate(period, snapshot.sse().sampleRate());
-
+        httpVirtualUsersSeries.addOrUpdate(period, snapshot.activeUsers());
         httpRpsSeries.addOrUpdate(period, snapshot.http().sampleRate());
         httpAvgResponseSeries.addOrUpdate(period, snapshot.http().avgDurationMs());
         httpErrorRateSeries.addOrUpdate(period, snapshot.http().failurePercent());
@@ -241,9 +215,7 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         if (period == null) {
             return;
         }
-        overviewUsersSeries.addOrUpdate(period, users);
-        overviewSampleRateSeries.addOrUpdate(period, qps);
-        overviewErrorRateSeries.addOrUpdate(period, errorPercent);
+        httpVirtualUsersSeries.addOrUpdate(period, users);
         httpRpsSeries.addOrUpdate(period, qps);
         httpAvgResponseSeries.addOrUpdate(period, responseTime);
         httpErrorRateSeries.addOrUpdate(period, errorPercent);
@@ -327,11 +299,11 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
                 splitCharts.add(new SplitChart(spec, createSplitChartPanel(spec)));
             }
 
-            separateButton = createViewModeButton(
+            separateButton = new SegmentToggleButton(
                     I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_SEPARATE_CHARTS),
                     true
             );
-            combinedButton = createViewModeButton(
+            combinedButton = new SegmentToggleButton(
                     I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_COMBINED_CHART),
                     false
             );
@@ -341,7 +313,7 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
             separateButton.addActionListener(e -> showChartMode(SEPARATE_VIEW));
             combinedButton.addActionListener(e -> showChartMode(COMBINED_VIEW));
 
-            JPanel modePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+            JPanel modePanel = new SegmentGroupPanel();
             modePanel.add(separateButton);
             modePanel.add(combinedButton);
 
@@ -365,17 +337,6 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
 
         private JPanel panel() {
             return panel;
-        }
-
-        private JToggleButton createViewModeButton(String text, boolean selected) {
-            JToggleButton button = new JToggleButton(text, selected);
-            button.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-            button.setFocusPainted(false);
-            button.setMargin(new Insets(3, 10, 3, 10));
-            button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            button.putClientProperty(com.formdev.flatlaf.FlatClientProperties.BUTTON_TYPE,
-                    com.formdev.flatlaf.FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
-            return button;
         }
 
         private int selectedCount() {
@@ -457,6 +418,67 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
     }
 
     private record SplitChart(SeriesSpec spec, ChartPanel chartPanel) {
+    }
+
+    private final class SegmentGroupPanel extends JPanel {
+        private SegmentGroupPanel() {
+            super(new FlowLayout(FlowLayout.RIGHT, 2, 2));
+            setOpaque(false);
+            setBorder(BorderFactory.createEmptyBorder(1, 2, 1, 2));
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(getSegmentBackgroundColor());
+            g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
+            g2.setColor(getChartBorderColor());
+            g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
+            g2.dispose();
+            super.paintComponent(g);
+        }
+    }
+
+    private final class SegmentToggleButton extends JToggleButton {
+        private SegmentToggleButton(String text, boolean selected) {
+            super(text, selected);
+            setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+            setBorder(BorderFactory.createEmptyBorder(5, 12, 5, 12));
+            setContentAreaFilled(false);
+            setBorderPainted(false);
+            setFocusPainted(false);
+            setOpaque(false);
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            if (isSelected()) {
+                g2.setColor(getSelectedSegmentColor());
+                g2.fillRoundRect(2, 2, getWidth() - 4, getHeight() - 4, 6, 6);
+            } else if (getModel().isRollover()) {
+                g2.setColor(getSegmentHoverColor());
+                g2.fillRoundRect(2, 2, getWidth() - 4, getHeight() - 4, 6, 6);
+            }
+            g2.dispose();
+            setForeground(isSelected() ? Color.WHITE : getTextColor());
+            super.paintComponent(g);
+        }
+    }
+
+    private Color getSegmentBackgroundColor() {
+        return isDarkTheme() ? new Color(58, 58, 58) : new Color(238, 242, 247);
+    }
+
+    private Color getSegmentHoverColor() {
+        return isDarkTheme() ? new Color(70, 70, 70) : new Color(228, 236, 246);
+    }
+
+    private Color getSelectedSegmentColor() {
+        return isDarkTheme() ? new Color(79, 156, 249) : new Color(24, 144, 255);
     }
 
     private static final class ScrollableChartGridPanel extends JPanel implements Scrollable {

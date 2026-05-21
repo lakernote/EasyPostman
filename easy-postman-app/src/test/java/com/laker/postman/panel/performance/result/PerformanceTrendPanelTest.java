@@ -1,6 +1,7 @@
 package com.laker.postman.panel.performance.result;
 
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.panel.performance.model.PerformanceProtocol;
 import com.laker.postman.test.AbstractSwingUiTest;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -19,30 +20,48 @@ import static org.testng.Assert.assertTrue;
 public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
 
     @Test
-    public void shouldDefaultToSeparateChartsAndSwitchToCombinedWithMetricSelection() {
+    public void shouldUseProtocolTabsAndDefaultToSeparateChartsWithHttpVirtualUsers() {
         PerformanceTrendPanel panel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
         JTabbedPane tabs = findFirst(panel, JTabbedPane.class);
-        Component overviewTab = tabs.getComponentAt(0);
+        assertEquals(tabs.getTabCount(), 3);
+        assertEquals(tabs.getTitleAt(0), PerformanceProtocol.HTTP.getDisplayName());
+        assertEquals(tabs.getTitleAt(1), PerformanceProtocol.WEBSOCKET.getDisplayName());
+        assertEquals(tabs.getTitleAt(2), PerformanceProtocol.SSE.getDisplayName());
+
+        Component httpTab = tabs.getComponentAt(0);
 
         JToggleButton separateButton = findToggleButton(
-                overviewTab,
+                httpTab,
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_SEPARATE_CHARTS)
         );
         JToggleButton combinedButton = findToggleButton(
-                overviewTab,
+                httpTab,
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_COMBINED_CHART)
         );
 
         assertTrue(separateButton.isSelected());
         assertFalse(combinedButton.isSelected());
-        assertEquals(countVisibleCharts(overviewTab), 3);
+        assertEquals(countVisibleCharts(httpTab), 4);
+        assertTrue(hasCheckBox(
+                httpTab,
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_VIRTUAL_USERS)
+        ));
 
         combinedButton.doClick();
 
         assertTrue(combinedButton.isSelected());
         assertFalse(separateButton.isSelected());
-        assertEquals(countVisibleCharts(overviewTab), 1);
-        assertFalse(findAll(overviewTab, JCheckBox.class).isEmpty());
+        assertEquals(countVisibleCharts(httpTab), 1);
+        assertFalse(findAll(httpTab, JCheckBox.class).isEmpty());
+    }
+
+    private static boolean hasCheckBox(Component root, String text) {
+        for (JCheckBox checkBox : findAll(root, JCheckBox.class)) {
+            if (text.equals(checkBox.getText())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static int countVisibleCharts(Component root) {

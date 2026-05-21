@@ -6,6 +6,7 @@ import com.laker.postman.test.AbstractSwingUiTest;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import org.jfree.chart.ChartPanel;
+import org.jfree.chart.axis.NumberAxis;
 import org.testng.annotations.Test;
 
 import javax.swing.*;
@@ -46,6 +47,8 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
                 httpTab,
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_VIRTUAL_USERS)
         ));
+        assertTrue(((NumberAxis) findAll(httpTab, ChartPanel.class).get(0).getChart().getXYPlot().getRangeAxis())
+                .getNumberFormatOverride() != null);
 
         combinedButton.doClick();
 

@@ -43,7 +43,7 @@ public class PerformanceTrendSnapshotTest {
     }
 
     @Test
-    public void shouldUseSamplingWindowForPerSecondRates() {
+    public void shouldUseActualResultSpanForPerSecondRatesLikeLegacyTrend() {
         RequestResult first = new RequestResult(1_000, 1_010, true, "http-api", PerformanceProtocol.HTTP);
         RequestResult second = new RequestResult(1_020, 1_030, true, "http-api", PerformanceProtocol.HTTP);
         RequestResult ws = new RequestResult(1_040, 1_050, true, "ws-api", PerformanceProtocol.WEBSOCKET);
@@ -60,7 +60,7 @@ public class PerformanceTrendSnapshotTest {
                 1_000
         );
 
-        assertEquals(snapshot.http().sampleRate(), 2.0);
+        assertEquals(snapshot.http().sampleRate(), 100.0);
         assertEquals(snapshot.webSocket().sentRate(), 4.0);
         assertEquals(snapshot.webSocket().receivedRate(), 6.0);
     }

@@ -44,7 +44,6 @@ final class PerformanceExecutionEngine {
     private final PerformanceRequestExecutor requestExecutor;
     private final PerformanceResultRecorder resultRecorder;
     private final AtomicInteger activeThreads = new AtomicInteger(0);
-    private final AtomicInteger peakActiveThreads = new AtomicInteger(0);
     private final AtomicInteger virtualUserCounter = new AtomicInteger(0);
     private final ThreadLocal<Integer> threadVirtualUserIndex = new ThreadLocal<>();
     private final ThreadLocal<Integer> threadIterationIndex = ThreadLocal.withInitial(() -> 0);
@@ -89,25 +88,6 @@ final class PerformanceExecutionEngine {
         return activeThreads.get();
     }
 
-    int getTrendVirtualUsers() {
-        int active = activeThreads.get();
-        if (active > 0) {
-            peakActiveThreads.accumulateAndGet(active, Math::max);
-            return active;
-        }
-        return peakActiveThreads.get();
-    }
-
-    private int incrementActiveThreads() {
-        int active = activeThreads.incrementAndGet();
-        peakActiveThreads.accumulateAndGet(active, Math::max);
-        return active;
-    }
-
-    private int decrementActiveThreads() {
-        return activeThreads.decrementAndGet();
-    }
-
     int getActiveWebSockets() {
         return activeWebSockets.size();
     }
@@ -122,7 +102,6 @@ final class PerformanceExecutionEngine {
 
     void resetVirtualUsers() {
         virtualUserCounter.set(0);
-        peakActiveThreads.set(0);
     }
 
     int getTotalThreads(DefaultMutableTreeNode rootNode) {
@@ -302,7 +281,7 @@ final class PerformanceExecutionEngine {
             executor.submit(() -> {
                 threadVirtualUserIndex.set(vuIndex);
                 threadIterationIndex.set(0);
-                incrementActiveThreads();
+                activeThreads.incrementAndGet();
                 updateProgress(progressUpdater, totalThreads);
                 try {
                     if (useTime) {
@@ -313,7 +292,7 @@ final class PerformanceExecutionEngine {
                         runTask(groupNode, loops);
                     }
                 } finally {
-                    decrementActiveThreads();
+                    activeThreads.decrementAndGet();
                     updateProgress(progressUpdater, totalThreads);
                     threadVirtualUserIndex.remove();
                     threadIterationIndex.remove();
@@ -396,7 +375,7 @@ final class PerformanceExecutionEngine {
                     executor.submit(() -> {
                         threadVirtualUserIndex.set(vuIndex);
                         threadIterationIndex.set(0);
-                        incrementActiveThreads();
+                        activeThreads.incrementAndGet();
                         updateProgress(progressUpdater, totalThreads);
                         try {
                             while (runningSupplier.getAsBoolean()
@@ -405,7 +384,7 @@ final class PerformanceExecutionEngine {
                             }
                         } finally {
                             activeWorkerThreads.decrementAndGet();
-                            decrementActiveThreads();
+                            activeThreads.decrementAndGet();
                             updateProgress(progressUpdater, totalThreads);
                             threadVirtualUserIndex.remove();
                             threadIterationIndex.remove();
@@ -468,7 +447,7 @@ final class PerformanceExecutionEngine {
             Thread thread = new Thread(() -> {
                 threadVirtualUserIndex.set(vuIndex);
                 threadIterationIndex.set(0);
-                incrementActiveThreads();
+                activeThreads.incrementAndGet();
                 updateProgress(progressUpdater, totalThreads);
                 try {
                     Thread currentThread = Thread.currentThread();
@@ -479,7 +458,7 @@ final class PerformanceExecutionEngine {
                     }
                 } finally {
                     activeWorkerThreads.decrementAndGet();
-                    decrementActiveThreads();
+                    activeThreads.decrementAndGet();
                     updateProgress(progressUpdater, totalThreads);
                     threadEndTimes.remove(Thread.currentThread());
                     threadVirtualUserIndex.remove();
@@ -588,7 +567,7 @@ final class PerformanceExecutionEngine {
             Thread thread = new Thread(() -> {
                 threadVirtualUserIndex.set(vuIndex);
                 threadIterationIndex.set(0);
-                incrementActiveThreads();
+                activeThreads.incrementAndGet();
                 updateProgress(progressUpdater, totalThreads);
                 try {
                     Thread currentThread = Thread.currentThread();
@@ -599,7 +578,7 @@ final class PerformanceExecutionEngine {
                     }
                 } finally {
                     activeWorkerThreads.decrementAndGet();
-                    decrementActiveThreads();
+                    activeThreads.decrementAndGet();
                     updateProgress(progressUpdater, totalThreads);
                     threadEndTimes.remove(Thread.currentThread());
                     threadVirtualUserIndex.remove();
@@ -695,7 +674,7 @@ final class PerformanceExecutionEngine {
                 Thread thread = new Thread(() -> {
                     threadVirtualUserIndex.set(vuIndex);
                     threadIterationIndex.set(0);
-                    incrementActiveThreads();
+                    activeThreads.incrementAndGet();
                     updateProgress(progressUpdater, totalThreads);
                     try {
                         Thread currentThread = Thread.currentThread();
@@ -706,7 +685,7 @@ final class PerformanceExecutionEngine {
                         }
                     } finally {
                         activeWorkerThreads.decrementAndGet();
-                        decrementActiveThreads();
+                        activeThreads.decrementAndGet();
                         updateProgress(progressUpdater, totalThreads);
                         threadEndTimes.remove(Thread.currentThread());
                         threadVirtualUserIndex.remove();
@@ -769,7 +748,7 @@ final class PerformanceExecutionEngine {
             Thread thread = new Thread(() -> {
                 threadVirtualUserIndex.set(vuIndex);
                 threadIterationIndex.set(0);
-                incrementActiveThreads();
+                activeThreads.incrementAndGet();
                 updateProgress(progressUpdater, totalThreads);
                 try {
                     Thread currentThread = Thread.currentThread();
@@ -780,7 +759,7 @@ final class PerformanceExecutionEngine {
                     }
                 } finally {
                     activeWorkerThreads.decrementAndGet();
-                    decrementActiveThreads();
+                    activeThreads.decrementAndGet();
                     updateProgress(progressUpdater, totalThreads);
                     threadEndTimes.remove(Thread.currentThread());
                     threadVirtualUserIndex.remove();

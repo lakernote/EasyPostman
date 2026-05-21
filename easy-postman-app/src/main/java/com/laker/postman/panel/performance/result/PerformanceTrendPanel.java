@@ -22,6 +22,7 @@ import org.jfree.data.xy.XYDataset;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
+import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -71,34 +72,34 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
     private JPanel createHttpPanel() {
         return createTrendView(
                 MessageKeys.PERFORMANCE_TREND_METRICS,
-                new SeriesSpec(httpVirtualUsersSeries, getThreadsLineColor(), true),
-                new SeriesSpec(httpRpsSeries, getQpsLineColor(), true),
-                new SeriesSpec(httpAvgResponseSeries, getResponseTimeLineColor(), true),
-                new SeriesSpec(httpErrorRateSeries, getErrorRateLineColor(), true)
+                new SeriesSpec(httpVirtualUsersSeries, getThreadsLineColor(), true, AxisFormat.INTEGER),
+                new SeriesSpec(httpRpsSeries, getQpsLineColor(), true, AxisFormat.DECIMAL),
+                new SeriesSpec(httpAvgResponseSeries, getResponseTimeLineColor(), true, AxisFormat.DECIMAL),
+                new SeriesSpec(httpErrorRateSeries, getErrorRateLineColor(), true, AxisFormat.DECIMAL)
         );
     }
 
     private JPanel createWebSocketPanel() {
         return createTrendView(
                 MessageKeys.PERFORMANCE_TREND_METRICS,
-                new SeriesSpec(wsActiveSeries, getThreadsLineColor(), true),
-                new SeriesSpec(wsSentRateSeries, getMatchedLineColor(), true),
-                new SeriesSpec(wsReceivedRateSeries, getQpsLineColor(), true),
-                new SeriesSpec(wsFirstMessageLatencySeries, getResponseTimeLineColor(), true),
-                new SeriesSpec(wsSessionDurationSeries, getDurationLineColor(), true),
-                new SeriesSpec(wsErrorRateSeries, getErrorRateLineColor(), true)
+                new SeriesSpec(wsActiveSeries, getThreadsLineColor(), true, AxisFormat.INTEGER),
+                new SeriesSpec(wsSentRateSeries, getMatchedLineColor(), true, AxisFormat.DECIMAL),
+                new SeriesSpec(wsReceivedRateSeries, getQpsLineColor(), true, AxisFormat.DECIMAL),
+                new SeriesSpec(wsFirstMessageLatencySeries, getResponseTimeLineColor(), true, AxisFormat.DECIMAL),
+                new SeriesSpec(wsSessionDurationSeries, getDurationLineColor(), true, AxisFormat.DECIMAL),
+                new SeriesSpec(wsErrorRateSeries, getErrorRateLineColor(), true, AxisFormat.DECIMAL)
         );
     }
 
     private JPanel createSsePanel() {
         return createTrendView(
                 MessageKeys.PERFORMANCE_TREND_METRICS,
-                new SeriesSpec(sseActiveSeries, getThreadsLineColor(), true),
-                new SeriesSpec(sseEventRateSeries, getQpsLineColor(), true),
-                new SeriesSpec(sseMatchedRateSeries, getMatchedLineColor(), true),
-                new SeriesSpec(sseFirstEventLatencySeries, getResponseTimeLineColor(), true),
-                new SeriesSpec(sseStreamDurationSeries, getDurationLineColor(), true),
-                new SeriesSpec(sseErrorRateSeries, getErrorRateLineColor(), true)
+                new SeriesSpec(sseActiveSeries, getThreadsLineColor(), true, AxisFormat.INTEGER),
+                new SeriesSpec(sseEventRateSeries, getQpsLineColor(), true, AxisFormat.DECIMAL),
+                new SeriesSpec(sseMatchedRateSeries, getMatchedLineColor(), true, AxisFormat.DECIMAL),
+                new SeriesSpec(sseFirstEventLatencySeries, getResponseTimeLineColor(), true, AxisFormat.DECIMAL),
+                new SeriesSpec(sseStreamDurationSeries, getDurationLineColor(), true, AxisFormat.DECIMAL),
+                new SeriesSpec(sseErrorRateSeries, getErrorRateLineColor(), true, AxisFormat.DECIMAL)
         );
     }
 
@@ -113,6 +114,10 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
     }
 
     private ChartPanel createChartPanel(TimeSeriesCollection dataset, String title, boolean legend) {
+        return createChartPanel(dataset, title, legend, AxisFormat.DECIMAL);
+    }
+
+    private ChartPanel createChartPanel(TimeSeriesCollection dataset, String title, boolean legend, AxisFormat axisFormat) {
         JFreeChart chart = ChartFactory.createTimeSeriesChart(
                 title,
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_TIME),
@@ -153,6 +158,9 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         rangeAxis.setAutoRangeMinimumSize(1.0);
         rangeAxis.setUpperMargin(0.2);
         rangeAxis.setAutoRangeIncludesZero(true);
+        if (axisFormat == AxisFormat.INTEGER) {
+            rangeAxis.setNumberFormatOverride(NumberFormat.getIntegerInstance());
+        }
 
         ChartPanel panel = new ChartPanel(chart);
         panel.setMouseWheelEnabled(true);
@@ -396,7 +404,7 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         private ChartPanel createSplitChartPanel(SeriesSpec spec) {
             TimeSeriesCollection dataset = new TimeSeriesCollection();
             dataset.addSeries(spec.series());
-            ChartPanel chartPanel = createChartPanel(dataset, spec.series().getKey().toString(), false);
+            ChartPanel chartPanel = createChartPanel(dataset, spec.series().getKey().toString(), false, spec.axisFormat());
             chartPanel.setPreferredSize(new Dimension(420, 220));
             XYLineAndShapeRenderer renderer = createTrendRenderer();
             renderer.setSeriesPaint(0, spec.color());
@@ -412,7 +420,12 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         }
     }
 
-    private record SeriesSpec(TimeSeries series, Color color, boolean selected) {
+    private record SeriesSpec(TimeSeries series, Color color, boolean selected, AxisFormat axisFormat) {
+    }
+
+    private enum AxisFormat {
+        DECIMAL,
+        INTEGER
     }
 
     private record SeriesControl(SeriesSpec spec, JCheckBox checkBox) {

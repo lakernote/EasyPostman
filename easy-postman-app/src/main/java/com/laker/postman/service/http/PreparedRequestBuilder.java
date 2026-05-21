@@ -96,6 +96,7 @@ public class PreparedRequestBuilder {
         // 2. 构建 PreparedRequest
         PreparedRequest req = new PreparedRequest();
         req.id = effectiveItem.getId();
+        req.name = effectiveItem.getName();
         req.method = effectiveItem.getMethod();
         req.body = effectiveItem.getBody();
         req.bodyType = effectiveItem.getBodyType();

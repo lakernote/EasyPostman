@@ -12,6 +12,7 @@ import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.service.variable.ExecutionVariableContext;
+import com.laker.postman.service.variable.IterationDataRuntimeSupport;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
@@ -45,6 +46,7 @@ final class PerformanceExecutionEngine {
     private final AtomicInteger activeThreads = new AtomicInteger(0);
     private final AtomicInteger virtualUserCounter = new AtomicInteger(0);
     private final ThreadLocal<Integer> threadVirtualUserIndex = new ThreadLocal<>();
+    private final ThreadLocal<Integer> threadIterationIndex = ThreadLocal.withInitial(() -> 0);
     private final Set<EventSource> activeSseSources = ConcurrentHashMap.newKeySet();
     private final Set<WebSocket> activeWebSockets = ConcurrentHashMap.newKeySet();
 
@@ -270,12 +272,13 @@ final class PerformanceExecutionEngine {
             final int vuIndex = virtualUserCounter.getAndIncrement();
             executor.submit(() -> {
                 threadVirtualUserIndex.set(vuIndex);
+                threadIterationIndex.set(0);
                 activeThreads.incrementAndGet();
                 updateProgress(progressUpdater, totalThreads);
                 try {
                     if (useTime) {
                         while (System.currentTimeMillis() < endTime && runningSupplier.getAsBoolean()) {
-                            runTaskIteration(groupNode);
+                            runTaskIteration(groupNode, 0);
                         }
                     } else {
                         runTask(groupNode, loops);
@@ -284,6 +287,7 @@ final class PerformanceExecutionEngine {
                     activeThreads.decrementAndGet();
                     updateProgress(progressUpdater, totalThreads);
                     threadVirtualUserIndex.remove();
+                    threadIterationIndex.remove();
                 }
             });
         }
@@ -362,18 +366,20 @@ final class PerformanceExecutionEngine {
                     final int vuIndex = virtualUserCounter.getAndIncrement();
                     executor.submit(() -> {
                         threadVirtualUserIndex.set(vuIndex);
+                        threadIterationIndex.set(0);
                         activeThreads.incrementAndGet();
                         updateProgress(progressUpdater, totalThreads);
                         try {
                             while (runningSupplier.getAsBoolean()
                                     && System.currentTimeMillis() - startTime < totalDuration * 1000L) {
-                                runTaskIteration(groupNode);
+                                runTaskIteration(groupNode, 0);
                             }
                         } finally {
                             activeWorkerThreads.decrementAndGet();
                             activeThreads.decrementAndGet();
                             updateProgress(progressUpdater, totalThreads);
                             threadVirtualUserIndex.remove();
+                            threadIterationIndex.remove();
                         }
                     });
                 }
@@ -432,6 +438,7 @@ final class PerformanceExecutionEngine {
             final int vuIndex = virtualUserCounter.getAndIncrement();
             Thread thread = new Thread(() -> {
                 threadVirtualUserIndex.set(vuIndex);
+                threadIterationIndex.set(0);
                 activeThreads.incrementAndGet();
                 updateProgress(progressUpdater, totalThreads);
                 try {
@@ -439,7 +446,7 @@ final class PerformanceExecutionEngine {
                     while (runningSupplier.getAsBoolean()
                             && System.currentTimeMillis() - startTime < totalTime * 1000L
                             && System.currentTimeMillis() < threadEndTimes.getOrDefault(currentThread, Long.MAX_VALUE)) {
-                        runTaskIteration(groupNode);
+                        runTaskIteration(groupNode, 0);
                     }
                 } finally {
                     activeWorkerThreads.decrementAndGet();
@@ -447,6 +454,7 @@ final class PerformanceExecutionEngine {
                     updateProgress(progressUpdater, totalThreads);
                     threadEndTimes.remove(Thread.currentThread());
                     threadVirtualUserIndex.remove();
+                    threadIterationIndex.remove();
                 }
             });
             threadEndTimes.put(thread, Long.MAX_VALUE);
@@ -550,6 +558,7 @@ final class PerformanceExecutionEngine {
             final int vuIndex = virtualUserCounter.getAndIncrement();
             Thread thread = new Thread(() -> {
                 threadVirtualUserIndex.set(vuIndex);
+                threadIterationIndex.set(0);
                 activeThreads.incrementAndGet();
                 updateProgress(progressUpdater, totalThreads);
                 try {
@@ -557,7 +566,7 @@ final class PerformanceExecutionEngine {
                     while (runningSupplier.getAsBoolean()
                             && System.currentTimeMillis() - startTime < totalTime * 1000L
                             && System.currentTimeMillis() < threadEndTimes.getOrDefault(currentThread, Long.MAX_VALUE)) {
-                        runTaskIteration(groupNode);
+                        runTaskIteration(groupNode, 0);
                     }
                 } finally {
                     activeWorkerThreads.decrementAndGet();
@@ -565,6 +574,7 @@ final class PerformanceExecutionEngine {
                     updateProgress(progressUpdater, totalThreads);
                     threadEndTimes.remove(Thread.currentThread());
                     threadVirtualUserIndex.remove();
+                    threadIterationIndex.remove();
                 }
             });
             threadEndTimes.put(thread, Long.MAX_VALUE);
@@ -655,6 +665,7 @@ final class PerformanceExecutionEngine {
                 final int vuIndex = virtualUserCounter.getAndIncrement();
                 Thread thread = new Thread(() -> {
                     threadVirtualUserIndex.set(vuIndex);
+                    threadIterationIndex.set(0);
                     activeThreads.incrementAndGet();
                     updateProgress(progressUpdater, totalThreads);
                     try {
@@ -662,7 +673,7 @@ final class PerformanceExecutionEngine {
                         while (runningSupplier.getAsBoolean()
                                 && System.currentTimeMillis() - startTime < totalTime * 1000L
                                 && System.currentTimeMillis() < threadEndTimes.getOrDefault(currentThread, Long.MAX_VALUE)) {
-                            runTaskIteration(groupNode);
+                            runTaskIteration(groupNode, 0);
                         }
                     } finally {
                         activeWorkerThreads.decrementAndGet();
@@ -670,6 +681,7 @@ final class PerformanceExecutionEngine {
                         updateProgress(progressUpdater, totalThreads);
                         threadEndTimes.remove(Thread.currentThread());
                         threadVirtualUserIndex.remove();
+                        threadIterationIndex.remove();
                     }
                 });
                 threadEndTimes.put(thread, Long.MAX_VALUE);
@@ -727,6 +739,7 @@ final class PerformanceExecutionEngine {
             final int vuIndex = virtualUserCounter.getAndIncrement();
             Thread thread = new Thread(() -> {
                 threadVirtualUserIndex.set(vuIndex);
+                threadIterationIndex.set(0);
                 activeThreads.incrementAndGet();
                 updateProgress(progressUpdater, totalThreads);
                 try {
@@ -734,7 +747,7 @@ final class PerformanceExecutionEngine {
                     while (runningSupplier.getAsBoolean()
                             && System.currentTimeMillis() - startTime < totalTime * 1000L
                             && System.currentTimeMillis() < threadEndTimes.getOrDefault(currentThread, Long.MAX_VALUE)) {
-                        runTaskIteration(groupNode);
+                        runTaskIteration(groupNode, 0);
                     }
                 } finally {
                     activeWorkerThreads.decrementAndGet();
@@ -742,6 +755,7 @@ final class PerformanceExecutionEngine {
                     updateProgress(progressUpdater, totalThreads);
                     threadEndTimes.remove(Thread.currentThread());
                     threadVirtualUserIndex.remove();
+                    threadIterationIndex.remove();
                 }
             });
             threadEndTimes.put(thread, Long.MAX_VALUE);
@@ -749,9 +763,13 @@ final class PerformanceExecutionEngine {
         }
     }
 
-    private void runTaskIteration(DefaultMutableTreeNode groupNode) {
+    private void runTaskIteration(DefaultMutableTreeNode groupNode, int iterationCount) {
+        int iterationIndex = threadIterationIndex.get();
+        threadIterationIndex.set(iterationIndex + 1);
         ExecutionVariableContext iterationContext = new ExecutionVariableContext();
-        iterationContext.replaceIterationData(resolveCsvRowForCurrentThread());
+        iterationContext.setIterationInfo(iterationIndex, iterationCount);
+        iterationContext.replaceIterationData(
+                IterationDataRuntimeSupport.prepare(resolveCsvRowForCurrentThread()));
         for (int i = 0; i < groupNode.getChildCount() && runningSupplier.getAsBoolean(); i++) {
             DefaultMutableTreeNode child = (DefaultMutableTreeNode) groupNode.getChildAt(i);
             Object userObj = child.getUserObject();
@@ -764,7 +782,7 @@ final class PerformanceExecutionEngine {
 
     private void runTask(DefaultMutableTreeNode groupNode, int loops) {
         for (int l = 0; l < loops && runningSupplier.getAsBoolean(); l++) {
-            runTaskIteration(groupNode);
+            runTaskIteration(groupNode, loops);
         }
     }
 

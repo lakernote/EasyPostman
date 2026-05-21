@@ -36,7 +36,7 @@ public class BuiltInFunctionService implements VariableProvider {
     private static final String[] BUILT_IN_FUNCTIONS = {
             "$guid", "$uuid", "$randomUUID",
             "$timestamp", "$isoTimestamp",
-            "$randomInt", "$randomAlphaNumeric", "$randomBoolean",
+            "$randomInt", "$randomAlphaNumeric", "$randomBoolean", "$randomTF",
             "$randomIP", "$randomEmail",
             "$randomFullName", "$randomFirstName", "$randomLastName",
             "$randomColor", "$randomDate", "$randomTime",
@@ -143,6 +143,10 @@ public class BuiltInFunctionService implements VariableProvider {
 
             case "$randomBoolean":
                 result = String.valueOf(RANDOM.nextBoolean());
+                break;
+
+            case "$randomTF":
+                result = RANDOM.nextBoolean() ? "T" : "F";
                 break;
 
             case "$randomIP":

@@ -115,6 +115,10 @@ public class ScriptExecutionPipeline {
                 bindings = preparePreRequestBindings(request);
             }
 
+            PostmanApiContext pm = (PostmanApiContext) bindings.get("pm");
+            if (pm != null && pm.info != null) {
+                pm.info.eventName = "prerequest";
+            }
             clearTestResults();
 
             try {
@@ -149,6 +153,10 @@ public class ScriptExecutionPipeline {
             }
 
             addResponseBindings(bindings, response);
+            PostmanApiContext pm = (PostmanApiContext) bindings.get("pm");
+            if (pm != null && pm.info != null) {
+                pm.info.eventName = "test";
+            }
             clearTestResults();
 
             try {
@@ -161,7 +169,6 @@ public class ScriptExecutionPipeline {
 
                 executeScript(context);
 
-                PostmanApiContext pm = (PostmanApiContext) bindings.get("pm");
                 if (pm != null && pm.testResults != null) {
                     return ScriptExecutionResult.success(pm.testResults);
                 }
@@ -171,7 +178,6 @@ public class ScriptExecutionPipeline {
                 log.error("Post-script execution failed: {}", ex.getMessage(), ex);
                 ConsolePanel.appendLog("[PostScript Error]\n" + ex.getMessage(), ConsolePanel.LogType.ERROR);
 
-                PostmanApiContext pm = (PostmanApiContext) bindings.get("pm");
                 if (pm != null && pm.testResults != null) {
                     return ScriptExecutionResult.failure(ex.getMessage(), ex, pm.testResults);
                 }

@@ -24,6 +24,7 @@ public class PreparedRequestBuilderTest {
         // Arrange
         HttpRequestItem item = new HttpRequestItem();
         item.setId("test-1");
+        item.setName("OAuth Token");
         item.setMethod("POST");
         item.setUrl("https://idbrokerbts.webex.com/idb/oauth2/v1/access_token");
         item.setAuthType("Basic Auth");  // 使用正确的常量
@@ -39,6 +40,7 @@ public class PreparedRequestBuilderTest {
 
         // Assert
         assertNotNull(req);
+        assertEquals(req.name, "OAuth Token");
         assertNotNull(req.headersList);
 
         // 验证 Authorization 头被添加
@@ -118,10 +120,12 @@ public class PreparedRequestBuilderTest {
     @Test
     public void testPreparedRequestSimplifyClearsTransportAuth() {
         PreparedRequest req = new PreparedRequest();
+        req.name = "Request name";
         req.transportAuth = new TransportAuth(AuthType.DIGEST.getConstant(), "digest-user", "digest-pass");
 
         req.simplify();
 
+        assertNull(req.name);
         assertNull(req.transportAuth);
     }
 

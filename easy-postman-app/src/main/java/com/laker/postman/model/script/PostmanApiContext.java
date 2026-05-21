@@ -5,6 +5,7 @@ import com.laker.postman.plugin.bridge.PluginAccess;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.GlobalVariablesService;
 import com.laker.postman.service.http.HttpService;
+import com.laker.postman.service.variable.IterationInfoService;
 import lombok.extern.slf4j.Slf4j;
 import org.graalvm.polyglot.Value;
 
@@ -85,6 +86,11 @@ public class PostmanApiContext {
     public IterationDataApi iterationData = new IterationDataApi();
 
     /**
+     * 运行元信息 - 对应 Postman 的 pm.info。
+     */
+    public PostmanInfoApi info;
+
+    /**
      * 请求对象包装器 - 对应 pm.request，提供对请求的 JavaScript 访问接口
      */
     public ScriptRequestAccessor request;
@@ -140,6 +146,7 @@ public class PostmanApiContext {
         );
         this.cookies = new CookieApi(); // 初始化 cookies
         this.test = new TestApi(this); // 初始化 test API
+        this.info = new PostmanInfoApi(IterationInfoService.getInstance().getCurrentInfo());
         this.elasticsearch = new ScriptElasticsearchApi();
         this.es = this.elasticsearch;
         this.influxdb = new ScriptInfluxDbApi();
@@ -269,6 +276,9 @@ public class PostmanApiContext {
      */
     public void setRequest(PreparedRequest preparedRequest) {
         this.request = new ScriptRequestAccessor(preparedRequest);
+        if (this.info != null) {
+            this.info.setRequest(preparedRequest);
+        }
     }
 
     /**

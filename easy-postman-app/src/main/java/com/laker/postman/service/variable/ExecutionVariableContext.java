@@ -13,6 +13,8 @@ public class ExecutionVariableContext {
 
     private final Map<String, String> variables;
     private final Map<String, String> iterationData;
+    private int iterationIndex;
+    private int iterationCount = 1;
 
     public ExecutionVariableContext() {
         this(new ConcurrentHashMap<>(), new ConcurrentHashMap<>());
@@ -29,6 +31,19 @@ public class ExecutionVariableContext {
 
     public Map<String, String> getIterationData() {
         return iterationData;
+    }
+
+    public int getIterationIndex() {
+        return iterationIndex;
+    }
+
+    public int getIterationCount() {
+        return iterationCount;
+    }
+
+    public void setIterationInfo(int iterationIndex, int iterationCount) {
+        this.iterationIndex = Math.max(0, iterationIndex);
+        this.iterationCount = Math.max(0, iterationCount);
     }
 
     public void replaceIterationData(Map<String, String> values) {

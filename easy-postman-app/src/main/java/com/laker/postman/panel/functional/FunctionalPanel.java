@@ -22,6 +22,7 @@ import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.service.js.ScriptExecutionResult;
 import com.laker.postman.service.variable.ExecutionVariableContext;
+import com.laker.postman.service.variable.IterationDataRuntimeSupport;
 import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -249,14 +250,16 @@ public class FunctionalPanel extends SingletonBasePanel {
         for (int iteration = 0; iteration < iterations && isExecutionActive(generation); iteration++) {
             // 获取当前迭代的 CSV 数据
             Map<String, String> currentCsvRow = getCsvDataForIteration(iteration);
+            Map<String, String> currentIterationData = IterationDataRuntimeSupport.prepare(currentCsvRow);
             ExecutionVariableContext iterationContext = new ExecutionVariableContext();
-            iterationContext.replaceIterationData(currentCsvRow);
+            iterationContext.setIterationInfo(iteration, iterations);
+            iterationContext.replaceIterationData(currentIterationData);
 
             // 创建当前迭代的结果记录
-            IterationResult iterationResult = new IterationResult(iteration, currentCsvRow);
+            IterationResult iterationResult = new IterationResult(iteration, currentIterationData);
 
             totalFinished = processIterationRequests(rowCount, selectedCount, iterations, totalFinished,
-                    iterationResult, currentCsvRow, iterationContext, generation);
+                    iterationResult, currentIterationData, iterationContext, generation);
 
             // 完成当前迭代并添加到历史记录（无论是否停止，都要保存当前迭代的结果）
             iterationResult.complete();

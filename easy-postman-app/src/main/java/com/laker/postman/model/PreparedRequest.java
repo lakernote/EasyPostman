@@ -10,6 +10,7 @@ import java.util.List;
  */
 public class PreparedRequest {
     public String id;
+    public String name;
     public String url;
     public String method;
 
@@ -48,6 +49,7 @@ public class PreparedRequest {
     public PreparedRequest shallowCopy() {
         PreparedRequest copy = new PreparedRequest();
         copy.id = this.id;
+        copy.name = this.name;
         copy.url = this.url;
         copy.method = this.method;
         copy.okHttpHeaders = this.okHttpHeaders;
@@ -76,10 +78,11 @@ public class PreparedRequest {
     /**
      * 简化对象，将渲染时不需要的字段置为 null，减少内存占用
      * 保留的字段：url, method, okHttpHeaders, formDataList, urlencodedList, okHttpRequestBody
-     * 置为 null 的字段：id, body, bodyType, transportAuth, headersList, paramsList
+     * 置为 null 的字段：id, name, body, bodyType, transportAuth, headersList, paramsList
      */
     public void simplify() {
         this.id = null;
+        this.name = null;
         this.body = null;
         this.bodyType = null;
         this.transportAuth = null;

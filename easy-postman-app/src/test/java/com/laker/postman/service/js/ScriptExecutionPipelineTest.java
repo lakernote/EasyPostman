@@ -1011,6 +1011,60 @@ public class ScriptExecutionPipelineTest {
         });
     }
 
+    @Test
+    public void shouldExposePostmanStyleIterationInfoInScripts() {
+        ExecutionVariableContext sharedContext = new ExecutionVariableContext();
+        sharedContext.setIterationInfo(2, 5);
+        sharedContext.replaceIterationData(Map.of("userId", "user-003"));
+
+        PreparedRequest request = new PreparedRequest();
+        request.id = "script-pipeline-pm-info-request";
+        request.name = "PM Info Demo";
+        request.method = "GET";
+        request.url = "https://example.com";
+        request.headersList = new ArrayList<>();
+        request.paramsList = new ArrayList<>();
+        request.formDataList = new ArrayList<>();
+        request.urlencodedList = new ArrayList<>();
+
+        ScriptExecutionPipeline pipeline = ScriptExecutionPipeline.builder()
+                .request(request)
+                .preScript("""
+                        pm.variables.set('iteration', String(pm.info.iteration));
+                        pm.variables.set('iterationCount', String(pm.info.iterationCount));
+                        pm.variables.set('eventName', pm.info.eventName);
+                        pm.variables.set('requestName', pm.info.requestName);
+                        pm.variables.set('requestId', pm.info.requestId);
+                        pm.variables.set('dataI', pm.iterationData.get('i') === null ? 'missing' : pm.iterationData.get('i'));
+                        """)
+                .postScript("""
+                        pm.variables.set('postEventName', pm.info.eventName);
+                        """)
+                .sharedExecutionContext(sharedContext)
+                .build();
+
+        assertTrue(pipeline.executePreScript().isSuccess(), "Pre-request script should execute successfully");
+        pipeline.withExecutionContext(() -> {
+            assertEquals(VariableResolver.resolve("{{iteration}}"), "2");
+            assertEquals(VariableResolver.resolve("{{iterationCount}}"), "5");
+            assertEquals(VariableResolver.resolve("{{eventName}}"), "prerequest");
+            assertEquals(VariableResolver.resolve("{{requestName}}"), "PM Info Demo");
+            assertEquals(VariableResolver.resolve("{{requestId}}"), "script-pipeline-pm-info-request");
+            assertEquals(VariableResolver.resolve("{{dataI}}"), "missing");
+        });
+
+        HttpResponse response = new HttpResponse();
+        response.code = 200;
+        response.headers = new java.util.LinkedHashMap<>();
+        response.body = "{\"ok\":true}";
+
+        ScriptExecutionResult postResult = pipeline.executePostScript(response);
+
+        assertTrue(postResult.isSuccess(), "Post-request script should execute successfully");
+        pipeline.withExecutionContext(() ->
+                assertEquals(VariableResolver.resolve("{{postEventName}}"), "test"));
+    }
+
     private void clearExecutionContext() {
         VariablesService.getInstance().detachContext();
         IterationDataVariableService.getInstance().detachContext();

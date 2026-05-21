@@ -115,6 +115,14 @@ public class VariableResolverTest {
                 "{{userModule}}/list should resolve to https://api.example.com/api/user/list");
     }
 
+    @Test
+    public void testRandomTfBuiltInVariableResolution() {
+        String result = VariableResolver.resolve("{{$randomTF}}");
+
+        assertTrue("T".equals(result) || "F".equals(result),
+                "$randomTF should resolve to T or F, but was: " + result);
+    }
+
     /**
      * 测试多个嵌套变量在同一字符串中
      */

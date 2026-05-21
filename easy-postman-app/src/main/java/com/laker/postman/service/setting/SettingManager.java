@@ -29,11 +29,14 @@ public class SettingManager {
     private static final int DEFAULT_SCRIPT_REMOTE_READ_TIMEOUT_MS = 5000;
     private static final int DEFAULT_SCRIPT_REMOTE_MAX_BYTES = 512 * 1024;
     private static final int DEFAULT_JMETER_SLOW_REQUEST_THRESHOLD_MS = 10000;
+    private static final int DEFAULT_JMETER_JS_CONTEXT_ACQUIRE_TIMEOUT_MS = 3_000;
     private static final String AUTO_UPDATE_CHECK_ENABLED_KEY = "auto_update_check_enabled";
     private static final String AUTO_UPDATE_CHECK_FREQUENCY_KEY = "auto_update_check_frequency";
     private static final String LAST_UPDATE_CHECK_TIME_KEY = "last_update_check_time";
     private static final String UPDATE_SOURCE_PREFERENCE_KEY = "update_source_preference";
     private static final String JMETER_SLOW_REQUEST_THRESHOLD_KEY = "jmeter_slow_request_threshold";
+    private static final String JMETER_JS_CONTEXT_POOL_SIZE_KEY = "jmeter_js_context_pool_size";
+    private static final String JMETER_JS_CONTEXT_ACQUIRE_TIMEOUT_MS_KEY = "jmeter_js_context_acquire_timeout_ms";
     private static final Object SETTINGS_IO_LOCK = new Object();
     public static final String PROXY_MODE_MANUAL = "MANUAL";
     public static final String PROXY_MODE_SYSTEM = "SYSTEM";
@@ -258,6 +261,31 @@ public class SettingManager {
 
     public static void setJmeterMaxRequestsPerHost(int maxRequestsPerHost) {
         setAndSaveProperty("jmeter_max_requests_per_host", String.valueOf(maxRequestsPerHost));
+    }
+
+    public static int getDefaultJmeterJsContextPoolSize() {
+        return Math.max(16, Runtime.getRuntime().availableProcessors() * 4);
+    }
+
+    public static int getJmeterJsContextPoolSize() {
+        return getPositiveIntSetting(JMETER_JS_CONTEXT_POOL_SIZE_KEY, getDefaultJmeterJsContextPoolSize());
+    }
+
+    public static void setJmeterJsContextPoolSize(int poolSize) {
+        int normalized = poolSize > 0 ? poolSize : getDefaultJmeterJsContextPoolSize();
+        setAndSaveProperty(JMETER_JS_CONTEXT_POOL_SIZE_KEY, String.valueOf(normalized));
+    }
+
+    public static int getJmeterJsContextAcquireTimeoutMs() {
+        return getPositiveIntSetting(
+                JMETER_JS_CONTEXT_ACQUIRE_TIMEOUT_MS_KEY,
+                DEFAULT_JMETER_JS_CONTEXT_ACQUIRE_TIMEOUT_MS
+        );
+    }
+
+    public static void setJmeterJsContextAcquireTimeoutMs(int timeoutMs) {
+        int normalized = timeoutMs > 0 ? timeoutMs : DEFAULT_JMETER_JS_CONTEXT_ACQUIRE_TIMEOUT_MS;
+        setAndSaveProperty(JMETER_JS_CONTEXT_ACQUIRE_TIMEOUT_MS_KEY, String.valueOf(normalized));
     }
 
     public static int getJmeterSlowRequestThreshold() {

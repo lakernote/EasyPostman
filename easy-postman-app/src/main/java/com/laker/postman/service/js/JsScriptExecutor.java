@@ -6,6 +6,8 @@ import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.proxy.ProxyExecutable;
 
+import com.laker.postman.service.setting.SettingManager;
+
 import java.util.Map;
 
 /**
@@ -20,10 +22,12 @@ import java.util.Map;
 public class JsScriptExecutor {
 
     /**
-     * Context 池 - 默认大小为 CPU 核心数的 4 倍，最少 16 个
+     * Context 池 - 默认大小为 CPU 核心数的 4 倍，最少 16 个。
      */
-    private static final JsContextPool CONTEXT_POOL;
-    private static final int CONTEXT_ACQUIRE_TIMEOUT_MS = 5000; // 获取 Context 超时时间
+    private static volatile JsContextPool contextPool;
+    private static volatile int contextPoolSize;
+    private static volatile int contextAcquireTimeoutMs; // 获取 Context 超时时间
+    private static final Object CONTEXT_POOL_LOCK = new Object();
 
     /**
      * ThreadLocal 存储当前正在执行的原始脚本，用于错误报告
@@ -31,15 +35,37 @@ public class JsScriptExecutor {
     private static final ThreadLocal<String> CURRENT_SCRIPT = new ThreadLocal<>();
 
     static {
-        int poolSize = Math.max(16, Runtime.getRuntime().availableProcessors() * 4);
-        CONTEXT_POOL = new JsContextPool(poolSize);
-        log.info("Initialized JS Context Pool with size: {}", poolSize);
+        reconfigureContextPoolFromSettings();
 
         // 注册 shutdown hook，在应用退出时关闭池
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             log.info("Shutting down JS Context Pool...");
-            CONTEXT_POOL.shutdown();
+            JsContextPool pool = contextPool;
+            if (pool != null) {
+                pool.shutdown();
+            }
         }));
+    }
+
+    public static void reconfigureContextPoolFromSettings() {
+        int resolvedPoolSize = SettingManager.getJmeterJsContextPoolSize();
+        int resolvedAcquireTimeoutMs = SettingManager.getJmeterJsContextAcquireTimeoutMs();
+
+        synchronized (CONTEXT_POOL_LOCK) {
+            contextAcquireTimeoutMs = resolvedAcquireTimeoutMs;
+            if (contextPool == null || contextPoolSize != resolvedPoolSize) {
+                JsContextPool oldPool = contextPool;
+                contextPool = new JsContextPool(resolvedPoolSize);
+                contextPoolSize = resolvedPoolSize;
+                log.info("Initialized JS Context Pool with size: {}, acquire timeout: {}ms",
+                        resolvedPoolSize, resolvedAcquireTimeoutMs);
+                if (oldPool != null) {
+                    oldPool.retire();
+                }
+            } else {
+                log.info("Updated JS Context Pool acquire timeout: {}ms", resolvedAcquireTimeoutMs);
+            }
+        }
     }
 
     /**
@@ -85,13 +111,25 @@ public class JsScriptExecutor {
         }
 
         JsContextPool.PooledContext pooledContext = null;
+        JsContextPool borrowedPool = null;
 
         try {
             // 保存原始脚本到 ThreadLocal，用于错误报告
             CURRENT_SCRIPT.set(script);
 
             // 从池中获取 Context
-            pooledContext = CONTEXT_POOL.borrowContext(CONTEXT_ACQUIRE_TIMEOUT_MS);
+            while (pooledContext == null) {
+                borrowedPool = contextPool;
+                try {
+                    pooledContext = borrowedPool.borrowContext(contextAcquireTimeoutMs);
+                } catch (IllegalStateException e) {
+                    if (borrowedPool != contextPool && borrowedPool.isRetired()) {
+                        log.debug("Retrying JS context borrow after old pool was retired");
+                        continue;
+                    }
+                    throw e;
+                }
+            }
             Context context = pooledContext.getContext();
 
             // 注入输出回调（如果有）
@@ -127,8 +165,8 @@ public class JsScriptExecutor {
             CURRENT_SCRIPT.remove();
 
             // 归还 Context 到池中
-            if (pooledContext != null) {
-                CONTEXT_POOL.returnContext(pooledContext);
+            if (pooledContext != null && borrowedPool != null) {
+                borrowedPool.returnContext(pooledContext);
             }
         }
     }

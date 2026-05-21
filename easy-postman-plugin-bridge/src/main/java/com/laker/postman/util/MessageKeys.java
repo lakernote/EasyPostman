@@ -1115,6 +1115,10 @@ public final class MessageKeys {
     public static final String SETTINGS_JMETER_MAX_REQUESTS_TOOLTIP = "settings.jmeter.max_requests.tooltip";
     public static final String SETTINGS_JMETER_MAX_REQUESTS_PER_HOST = "settings.jmeter.max_requests_per_host";
     public static final String SETTINGS_JMETER_MAX_REQUESTS_PER_HOST_TOOLTIP = "settings.jmeter.max_requests_per_host.tooltip";
+    public static final String SETTINGS_JMETER_JS_CONTEXT_POOL_SIZE = "settings.jmeter.js_context_pool_size";
+    public static final String SETTINGS_JMETER_JS_CONTEXT_POOL_SIZE_TOOLTIP = "settings.jmeter.js_context_pool_size.tooltip";
+    public static final String SETTINGS_JMETER_JS_CONTEXT_ACQUIRE_TIMEOUT = "settings.jmeter.js_context_acquire_timeout";
+    public static final String SETTINGS_JMETER_JS_CONTEXT_ACQUIRE_TIMEOUT_TOOLTIP = "settings.jmeter.js_context_acquire_timeout.tooltip";
     public static final String SETTINGS_JMETER_SLOW_REQUEST_THRESHOLD = "settings.jmeter.slow_request_threshold";
     public static final String SETTINGS_JMETER_SLOW_REQUEST_THRESHOLD_TOOLTIP = "settings.jmeter.slow_request_threshold.tooltip";
     public static final String SETTINGS_JMETER_TREND_SAMPLING = "settings.jmeter.trend_sampling";
@@ -1166,6 +1170,8 @@ public final class MessageKeys {
     public static final String SETTINGS_VALIDATION_SCRIPT_REMOTE_MAX_SIZE_ERROR = "settings.validation.script.remote_max_size.error";
     public static final String SETTINGS_VALIDATION_MAX_IDLE_ERROR = "settings.validation.max_idle.error";
     public static final String SETTINGS_VALIDATION_KEEP_ALIVE_ERROR = "settings.validation.keep_alive.error";
+    public static final String SETTINGS_VALIDATION_JS_CONTEXT_POOL_SIZE_ERROR = "settings.validation.js_context_pool_size.error";
+    public static final String SETTINGS_VALIDATION_JS_CONTEXT_ACQUIRE_TIMEOUT_ERROR = "settings.validation.js_context_acquire_timeout.error";
     public static final String SETTINGS_VALIDATION_TREND_SAMPLING_ERROR = "settings.validation.trend_sampling.error";
     public static final String SETTINGS_VALIDATION_THRESHOLD_ERROR = "settings.validation.threshold.error";
     public static final String SETTINGS_VALIDATION_SLOW_REQUEST_THRESHOLD_ERROR = "settings.validation.slow_request_threshold.error";

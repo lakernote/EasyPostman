@@ -46,6 +46,8 @@ public class JsContextPool {
     private final AtomicInteger currentSize = new AtomicInteger(0);
     private final AtomicInteger totalCreated = new AtomicInteger(0);
     private final AtomicInteger totalReused = new AtomicInteger(0);
+    private final AtomicInteger waitingBorrowCount = new AtomicInteger(0);
+    private volatile boolean retired = false;
     private volatile boolean closed = false;
 
     /**
@@ -98,43 +100,70 @@ public class JsContextPool {
             throw new IllegalStateException("Context pool is closed");
         }
 
-        // 1. 尝试从池中快速获取（复用）
-        PooledContext pooled = pool.poll();
-        if (pooled != null) {
-            totalReused.incrementAndGet();
-            log.debug("Reused context from pool, reuse count: {}", totalReused.get());
-            return pooled;
-        }
+        long effectiveTimeoutMs = Math.max(1, timeoutMs);
+        long deadlineNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(effectiveTimeoutMs);
 
-        // 2. 池为空，检查是否可以创建新的 Context
-        int current = currentSize.get();
-        if (current < maxSize) {
-            // 尝试原子性地增加计数
-            if (currentSize.compareAndSet(current, current + 1)) {
-                try {
-                    pooled = createNewContext();
-                    totalCreated.incrementAndGet();
-                    log.debug("Created new context #{}, pool size: {}/{}",
-                            totalCreated.get(), currentSize.get(), maxSize);
-                    return pooled;
-                } catch (Exception e) {
-                    // 创建失败，回滚计数
-                    currentSize.decrementAndGet();
-                    throw e;
-                }
+        while (true) {
+            // 1. 尝试从池中快速获取（复用）
+            PooledContext pooled = pool.poll();
+            if (pooled != null) {
+                totalReused.incrementAndGet();
+                log.debug("Reused context from pool, reuse count: {}", totalReused.get());
+                return pooled;
             }
-        }
 
-        // 3. 达到最大数量限制，阻塞等待空闲 Context
-        log.debug("Context pool exhausted ({}), waiting for available context...", current);
-        pooled = pool.poll(timeoutMs, TimeUnit.MILLISECONDS);
-        if (pooled == null) {
+            // 2. 池为空，检查是否可以创建新的 Context。CAS 失败时重试，避免突发并发下低于 maxSize 就进入等待。
+            int current = currentSize.get();
+            if (!retired && current < maxSize) {
+                if (currentSize.compareAndSet(current, current + 1)) {
+                    try {
+                        pooled = createNewContext();
+                        totalCreated.incrementAndGet();
+                        log.debug("Created new context #{}, pool size: {}/{}",
+                                totalCreated.get(), currentSize.get(), maxSize);
+                        return pooled;
+                    } catch (Exception e) {
+                        currentSize.decrementAndGet();
+                        throw e;
+                    }
+                }
+                continue;
+            }
+
+            // 3. 达到最大数量限制，阻塞等待空闲 Context
+            long remainingNanos = deadlineNanos - System.nanoTime();
+            if (remainingNanos <= 0) {
+                throw new IllegalStateException(
+                        String.format("Failed to acquire context within timeout: %dms. Pool size: %d/%d",
+                                effectiveTimeoutMs, currentSize.get(), maxSize));
+            }
+            log.debug("Context pool exhausted ({}), waiting for available context...", current);
+            waitingBorrowCount.incrementAndGet();
+            try {
+                pooled = pool.poll();
+                if (pooled != null) {
+                    totalReused.incrementAndGet();
+                    return pooled;
+                }
+                if (closed) {
+                    throw new IllegalStateException("Context pool is closed");
+                }
+                if (retired && currentSize.get() <= 0) {
+                    throw new IllegalStateException("Context pool is retired");
+                }
+                pooled = pool.poll(remainingNanos, TimeUnit.NANOSECONDS);
+                if (pooled != null) {
+                    totalReused.incrementAndGet();
+                    return pooled;
+                }
+            } finally {
+                waitingBorrowCount.decrementAndGet();
+                closeRetiredIdleContextsIfUnused();
+            }
             throw new IllegalStateException(
                     String.format("Failed to acquire context within timeout: %dms. Pool size: %d/%d",
-                            timeoutMs, currentSize.get(), maxSize));
+                            effectiveTimeoutMs, currentSize.get(), maxSize));
         }
-        totalReused.incrementAndGet();
-        return pooled;
     }
 
     /**
@@ -143,7 +172,12 @@ public class JsContextPool {
      * @param pooled Context 对象
      */
     public void returnContext(PooledContext pooled) {
-        if (pooled == null || closed) {
+        if (pooled == null) {
+            return;
+        }
+        if (closed) {
+            pooled.close();
+            decrementCurrentSize();
             return;
         }
 
@@ -151,18 +185,56 @@ public class JsContextPool {
             // 清理全局变量（只清理注入的变量，保留内置对象）
             cleanupGlobalVariables(pooled.context);
 
-            // 归还到池中供复用
-            if (!pool.offer(pooled, 100, TimeUnit.MILLISECONDS)) {
+            // 归还到池中供复用。退役池只服务已经在旧池等待的借用者，之后逐步关闭。
+            if (retired) {
+                if (waitingBorrowCount.get() > 0 && pool.offer(pooled, 100, TimeUnit.MILLISECONDS)) {
+                    return;
+                }
+                pooled.close();
+                decrementCurrentSize();
+                log.debug("Retired pool has no waiters, closed context. Pool size: {}/{}", currentSize.get(), maxSize);
+            } else if (!pool.offer(pooled, 100, TimeUnit.MILLISECONDS)) {
                 // 池已满，关闭 Context
                 pooled.close();
-                currentSize.decrementAndGet();
+                decrementCurrentSize();
                 log.debug("Pool is full, closed context. Pool size: {}/{}", currentSize.get(), maxSize);
             }
         } catch (Exception e) {
             log.warn("Failed to return context to pool: {}", e.getMessage());
             // 归还失败，关闭 Context
             pooled.close();
-            currentSize.decrementAndGet();
+            decrementCurrentSize();
+        }
+    }
+
+    private void decrementCurrentSize() {
+        currentSize.updateAndGet(value -> Math.max(0, value - 1));
+    }
+
+    /**
+     * 退役池：不再作为新共享池使用，但允许已经在此池等待的线程拿到归还的 Context。
+     */
+    void retire() {
+        retired = true;
+        closeRetiredIdleContextsIfUnused();
+    }
+
+    boolean isRetired() {
+        return retired;
+    }
+
+    int getWaitingBorrowCountForTests() {
+        return waitingBorrowCount.get();
+    }
+
+    private void closeRetiredIdleContextsIfUnused() {
+        if (!retired || closed || waitingBorrowCount.get() > 0) {
+            return;
+        }
+        PooledContext idle;
+        while ((idle = pool.poll()) != null) {
+            idle.close();
+            decrementCurrentSize();
         }
     }
 
@@ -230,13 +302,15 @@ public class JsContextPool {
     public void shutdown() {
         closed = true;
         PooledContext pooled;
+        int closedIdleCount = 0;
         while ((pooled = pool.poll()) != null) {
             pooled.close();
+            decrementCurrentSize();
+            closedIdleCount++;
         }
-        currentSize.set(0);
         double reuseRatio = totalCreated.get() > 0 ? (totalReused.get() * 100.0 / totalCreated.get()) : 0;
-        log.info("JsContextPool shutdown. Total created: {}, Total reused: {}, Reuse ratio: {}%",
-                totalCreated.get(), totalReused.get(), String.format("%.2f", reuseRatio));
+        log.info("JsContextPool shutdown. Total created: {}, Total reused: {}, Closed idle: {}, Active borrowed: {}, Reuse ratio: {}%",
+                totalCreated.get(), totalReused.get(), closedIdleCount, currentSize.get(), String.format("%.2f", reuseRatio));
     }
 
     /**

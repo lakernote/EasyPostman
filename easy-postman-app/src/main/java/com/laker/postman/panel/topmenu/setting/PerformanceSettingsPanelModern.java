@@ -1,5 +1,6 @@
 package com.laker.postman.panel.topmenu.setting;
 
+import com.laker.postman.service.js.JsScriptExecutor;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -19,6 +20,8 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
     private JTextField jmeterKeepAliveField;
     private JTextField jmeterMaxRequestsField;
     private JTextField jmeterMaxRequestsPerHostField;
+    private JTextField jsContextPoolSizeField;
+    private JTextField jsContextAcquireTimeoutField;
     private JTextField jmeterSlowRequestThresholdField;
     private JTextField trendSamplingField;
     private JCheckBox eventLoggingCheckBox;
@@ -75,6 +78,28 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
         jmeterSection.add(maxRequestsPerHostRow);
         jmeterSection.add(createVerticalSpace(FIELD_SPACING));
 
+        // JS Context 池大小
+        jsContextPoolSizeField = new JTextField(10);
+        jsContextPoolSizeField.setText(String.valueOf(SettingManager.getJmeterJsContextPoolSize()));
+        JPanel jsContextPoolSizeRow = createFieldRow(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_JS_CONTEXT_POOL_SIZE),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_JS_CONTEXT_POOL_SIZE_TOOLTIP),
+                jsContextPoolSizeField
+        );
+        jmeterSection.add(jsContextPoolSizeRow);
+        jmeterSection.add(createVerticalSpace(FIELD_SPACING));
+
+        // JS Context 获取超时
+        jsContextAcquireTimeoutField = new JTextField(10);
+        jsContextAcquireTimeoutField.setText(String.valueOf(SettingManager.getJmeterJsContextAcquireTimeoutMs()));
+        JPanel jsContextAcquireTimeoutRow = createFieldRow(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_JS_CONTEXT_ACQUIRE_TIMEOUT),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_JS_CONTEXT_ACQUIRE_TIMEOUT_TOOLTIP),
+                jsContextAcquireTimeoutField
+        );
+        jmeterSection.add(jsContextAcquireTimeoutRow);
+        jmeterSection.add(createVerticalSpace(FIELD_SPACING));
+
         // 慢请求阈值
         jmeterSlowRequestThresholdField = new JTextField(10);
         jmeterSlowRequestThresholdField.setText(String.valueOf(SettingManager.getJmeterSlowRequestThreshold()));
@@ -116,6 +141,8 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
         trackComponentValue(jmeterKeepAliveField);
         trackComponentValue(jmeterMaxRequestsField);
         trackComponentValue(jmeterMaxRequestsPerHostField);
+        trackComponentValue(jsContextPoolSizeField);
+        trackComponentValue(jsContextAcquireTimeoutField);
         trackComponentValue(jmeterSlowRequestThresholdField);
         trackComponentValue(trendSamplingField);
         trackComponentValue(eventLoggingCheckBox);
@@ -143,6 +170,16 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
                 I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_MAX_IDLE_ERROR)
         );
         setupValidator(
+                jsContextPoolSizeField,
+                this::isGreaterThanZeroInteger,
+                I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_JS_CONTEXT_POOL_SIZE_ERROR)
+        );
+        setupValidator(
+                jsContextAcquireTimeoutField,
+                this::isGreaterThanZeroInteger,
+                I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_JS_CONTEXT_ACQUIRE_TIMEOUT_ERROR)
+        );
+        setupValidator(
                 jmeterSlowRequestThresholdField,
                 this::isPositiveInteger,
                 I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_SLOW_REQUEST_THRESHOLD_ERROR)
@@ -158,6 +195,15 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
         try {
             int interval = Integer.parseInt(value.trim());
             return interval >= 1 && interval <= 60;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private boolean isGreaterThanZeroInteger(String value) {
+        try {
+            int parsed = Integer.parseInt(value.trim());
+            return parsed > 0;
         } catch (NumberFormatException e) {
             return false;
         }
@@ -204,9 +250,12 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
             SettingManager.setJmeterKeepAliveSeconds(Integer.parseInt(jmeterKeepAliveField.getText().trim()));
             SettingManager.setJmeterMaxRequests(Integer.parseInt(jmeterMaxRequestsField.getText().trim()));
             SettingManager.setJmeterMaxRequestsPerHost(Integer.parseInt(jmeterMaxRequestsPerHostField.getText().trim()));
+            SettingManager.setJmeterJsContextPoolSize(Integer.parseInt(jsContextPoolSizeField.getText().trim()));
+            SettingManager.setJmeterJsContextAcquireTimeoutMs(Integer.parseInt(jsContextAcquireTimeoutField.getText().trim()));
             SettingManager.setJmeterSlowRequestThreshold(Integer.parseInt(jmeterSlowRequestThresholdField.getText().trim()));
             SettingManager.setTrendSamplingIntervalSeconds(Integer.parseInt(trendSamplingField.getText().trim()));
             SettingManager.setPerformanceEventLoggingEnabled(eventLoggingCheckBox.isSelected());
+            JsScriptExecutor.reconfigureContextPoolFromSettings();
 
             // 重新跟踪当前值
             originalValues.clear();
@@ -214,6 +263,8 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
             trackComponentValue(jmeterKeepAliveField);
             trackComponentValue(jmeterMaxRequestsField);
             trackComponentValue(jmeterMaxRequestsPerHostField);
+            trackComponentValue(jsContextPoolSizeField);
+            trackComponentValue(jsContextAcquireTimeoutField);
             trackComponentValue(jmeterSlowRequestThresholdField);
             trackComponentValue(trendSamplingField);
             trackComponentValue(eventLoggingCheckBox);

@@ -81,7 +81,7 @@ public class WebSocketScenarioExecutor {
         AtomicInteger matchedMessageCount = new AtomicInteger(0);
         AtomicInteger sentMessageCount = new AtomicInteger(0);
         List<TestResult> stepTestResults = new ArrayList<>();
-        List<String> receivedMessages = Collections.synchronizedList(new ArrayList<>());
+        List<ReceivedWebSocketMessage> receivedMessages = new ArrayList<>();
         Object messageLock = new Object();
         CountDownLatch openLatch = new CountDownLatch(1);
 
@@ -110,7 +110,10 @@ public class WebSocketScenarioExecutor {
             private void appendMessage(String payload) {
                 lastMessageRef.set(payload == null ? "" : payload);
                 synchronized (messageLock) {
-                    receivedMessages.add(payload == null ? "" : payload);
+                    receivedMessages.add(new ReceivedWebSocketMessage(
+                            payload == null ? "" : payload,
+                            System.currentTimeMillis()
+                    ));
                     messageLock.notifyAll();
                 }
             }
@@ -242,7 +245,8 @@ public class WebSocketScenarioExecutor {
                             while (runningSupplier.getAsBoolean() && !failed.get() && !interrupted.get() && !completed) {
                                 synchronized (messageLock) {
                                     while (messageCursor < receivedMessages.size()) {
-                                        String payload = receivedMessages.get(messageCursor++);
+                                        ReceivedWebSocketMessage message = receivedMessages.get(messageCursor++);
+                                        String payload = message.payload();
                                         boolean match = switch (stepCfg.completionMode) {
                                             case FIRST_MESSAGE -> true;
                                             default -> matchesMessage(stepCfg, payload);
@@ -251,8 +255,11 @@ public class WebSocketScenarioExecutor {
                                             continue;
                                         }
                                         if (firstMatchTime < 0) {
-                                            firstMatchTime = System.currentTimeMillis();
-                                            firstMessageLatencyMs.compareAndSet(-1, firstMatchTime - requestStartTime);
+                                            firstMatchTime = message.receivedAtMs();
+                                            firstMessageLatencyMs.compareAndSet(
+                                                    -1,
+                                                    Math.max(0, firstMatchTime - requestStartTime)
+                                            );
                                         }
                                         stepMatchedCount++;
                                         matchedMessageCount.incrementAndGet();
@@ -366,11 +373,11 @@ public class WebSocketScenarioExecutor {
         long endTime = System.currentTimeMillis();
         resp.endTime = endTime;
         resp.costMs = endTime - requestStartTime;
-        List<String> receivedSnapshot;
-        synchronized (receivedMessages) {
+        List<ReceivedWebSocketMessage> receivedSnapshot;
+        synchronized (messageLock) {
             receivedSnapshot = new ArrayList<>(receivedMessages);
         }
-        resp.body = buildResponseBody(receivedSnapshot);
+        resp.body = buildResponseBody(extractPayloads(receivedSnapshot));
         resp.bodySize = resp.body.getBytes(StandardCharsets.UTF_8).length;
         if (resp.headers == null) {
             resp.headers = new LinkedHashMap<>();
@@ -397,6 +404,9 @@ public class WebSocketScenarioExecutor {
         }
 
         return new Result(resp, errorRef.get(), failed.get(), interrupted.get(), stepTestResults);
+    }
+
+    private record ReceivedWebSocketMessage(String payload, long receivedAtMs) {
     }
 
     private boolean matchesMessage(WebSocketPerformanceData cfg, String payload) {
@@ -459,6 +469,17 @@ public class WebSocketScenarioExecutor {
             buffer.append(value).append("\n\n");
         }
         return buffer.toString();
+    }
+
+    private List<String> extractPayloads(List<ReceivedWebSocketMessage> messages) {
+        if (messages == null || messages.isEmpty()) {
+            return List.of();
+        }
+        List<String> payloads = new ArrayList<>(messages.size());
+        for (ReceivedWebSocketMessage message : messages) {
+            payloads.add(message == null ? "" : message.payload());
+        }
+        return payloads;
     }
 
     private WebSocketPerformanceData copyData(WebSocketPerformanceData source) {

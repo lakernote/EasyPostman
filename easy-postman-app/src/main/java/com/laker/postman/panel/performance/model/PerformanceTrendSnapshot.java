@@ -45,6 +45,7 @@ public record PerformanceTrendSnapshot(
         int samples = filtered.size();
         int failures = 0;
         long totalDuration = 0;
+        long firstStart = Long.MAX_VALUE;
         long firstEnd = Long.MAX_VALUE;
         long lastEnd = 0;
         int sentMessages = 0;
@@ -58,6 +59,7 @@ public record PerformanceTrendSnapshot(
                 failures++;
             }
             totalDuration += result.getResponseTime();
+            firstStart = Math.min(firstStart, result.startTime);
             firstEnd = Math.min(firstEnd, result.endTime);
             lastEnd = Math.max(lastEnd, result.endTime);
             sentMessages += Math.max(0, result.sentMessages);
@@ -69,11 +71,12 @@ public record PerformanceTrendSnapshot(
             }
         }
 
-        double seconds = resolveWindowSeconds(samples, firstEnd, lastEnd, samplingIntervalMs);
-        double sampleRate = seconds > 0 ? round(samples / seconds) : 0;
-        double sentRate = seconds > 0 ? round(sentMessages / seconds) : 0;
-        double receivedRate = seconds > 0 ? round(receivedMessages / seconds) : 0;
-        double matchedRate = seconds > 0 ? round(matchedMessages / seconds) : 0;
+        double sampleSeconds = resolveEndWindowSeconds(samples, firstEnd, lastEnd, samplingIntervalMs);
+        double streamSeconds = resolveSessionWindowSeconds(samples, firstStart, lastEnd, samplingIntervalMs);
+        double sampleRate = sampleSeconds > 0 ? round(samples / sampleSeconds) : 0;
+        double sentRate = streamSeconds > 0 ? round(sentMessages / streamSeconds) : 0;
+        double receivedRate = streamSeconds > 0 ? round(receivedMessages / streamSeconds) : 0;
+        double matchedRate = streamSeconds > 0 ? round(matchedMessages / streamSeconds) : 0;
         double avgDuration = samples > 0 ? round((double) totalDuration / samples) : 0;
         double failurePercent = samples > 0 ? round((double) failures * 100 / samples) : 0;
         double avgFirstMessageLatency = firstMessageLatencyCount > 0
@@ -96,15 +99,28 @@ public record PerformanceTrendSnapshot(
         );
     }
 
-    private static double resolveWindowSeconds(int samples,
-                                               long firstEnd,
-                                               long lastEnd,
-                                               long samplingIntervalMs) {
+    private static double resolveEndWindowSeconds(int samples,
+                                                  long firstEnd,
+                                                  long lastEnd,
+                                                  long samplingIntervalMs) {
         if (samples == 0) {
             return 0;
         }
         if (firstEnd != Long.MAX_VALUE && lastEnd > firstEnd) {
             return Math.max(0.001, (lastEnd - firstEnd) / 1000.0);
+        }
+        return Math.max(0.001, samplingIntervalMs / 1000.0);
+    }
+
+    private static double resolveSessionWindowSeconds(int samples,
+                                                      long firstStart,
+                                                      long lastEnd,
+                                                      long samplingIntervalMs) {
+        if (samples == 0) {
+            return 0;
+        }
+        if (firstStart != Long.MAX_VALUE && lastEnd > firstStart) {
+            return Math.max(0.001, (lastEnd - firstStart) / 1000.0);
         }
         return Math.max(0.001, samplingIntervalMs / 1000.0);
     }

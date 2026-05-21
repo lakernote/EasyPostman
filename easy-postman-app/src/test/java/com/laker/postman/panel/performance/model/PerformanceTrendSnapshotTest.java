@@ -35,7 +35,7 @@ public class PerformanceTrendSnapshotTest {
         assertEquals(snapshot.activeSseStreams(), 4);
         assertEquals(snapshot.http().samples(), 1);
         assertEquals(snapshot.webSocket().receivedMessages(), 6);
-        assertEquals(snapshot.webSocket().receivedRate(), 6.0);
+        assertEquals(snapshot.webSocket().receivedRate(), 12.0);
         assertEquals(snapshot.webSocket().avgFirstMessageLatencyMs(), 80.0);
         assertEquals(snapshot.sse().failurePercent(), 100.0);
         assertEquals(snapshot.sse().receivedMessages(), 5);
@@ -43,17 +43,17 @@ public class PerformanceTrendSnapshotTest {
     }
 
     @Test
-    public void shouldUseActualResultSpanForPerSecondRatesLikeLegacyTrend() {
+    public void shouldUseSessionSpanForStreamMessageRates() {
         RequestResult first = new RequestResult(1_000, 1_010, true, "http-api", PerformanceProtocol.HTTP);
         RequestResult second = new RequestResult(1_020, 1_030, true, "http-api", PerformanceProtocol.HTTP);
-        RequestResult ws = new RequestResult(1_040, 1_050, true, "ws-api", PerformanceProtocol.WEBSOCKET);
-        ws.sentMessages = 4;
-        ws.receivedMessages = 6;
+        RequestResult ws = new RequestResult(1_000, 3_000, true, "ws-api", PerformanceProtocol.WEBSOCKET);
+        ws.sentMessages = 10;
+        ws.receivedMessages = 20;
 
         PerformanceTrendSnapshot snapshot = PerformanceTrendSnapshot.fromResults(
                 List.of(first, second, ws),
                 1_000,
-                2_000,
+                3_000,
                 3,
                 1,
                 0,
@@ -61,7 +61,59 @@ public class PerformanceTrendSnapshotTest {
         );
 
         assertEquals(snapshot.http().sampleRate(), 100.0);
-        assertEquals(snapshot.webSocket().sentRate(), 4.0);
-        assertEquals(snapshot.webSocket().receivedRate(), 6.0);
+        assertEquals(snapshot.webSocket().sentRate(), 5.0);
+        assertEquals(snapshot.webSocket().receivedRate(), 10.0);
+    }
+
+    @Test
+    public void shouldNotSpikeStreamRatesWhenSessionsCompleteTogether() {
+        RequestResult first = new RequestResult(0, 10_000, true, "ws-api", PerformanceProtocol.WEBSOCKET);
+        first.sentMessages = 10;
+        first.receivedMessages = 10;
+        RequestResult second = new RequestResult(0, 10_000, true, "ws-api", PerformanceProtocol.WEBSOCKET);
+        second.sentMessages = 10;
+        second.receivedMessages = 10;
+        RequestResult third = new RequestResult(0, 10_001, true, "ws-api", PerformanceProtocol.WEBSOCKET);
+        third.sentMessages = 10;
+        third.receivedMessages = 10;
+
+        PerformanceTrendSnapshot snapshot = PerformanceTrendSnapshot.fromResults(
+                List.of(first, second, third),
+                9_000,
+                11_000,
+                3,
+                0,
+                0,
+                1_000
+        );
+
+        assertEquals(snapshot.webSocket().sentRate(), 3.0);
+        assertEquals(snapshot.webSocket().receivedRate(), 3.0);
+    }
+
+    @Test
+    public void shouldNotSpikeSseEventRatesWhenStreamsCompleteTogether() {
+        RequestResult first = new RequestResult(0, 10_000, true, "sse-api", PerformanceProtocol.SSE);
+        first.receivedMessages = 10;
+        first.matchedMessages = 5;
+        RequestResult second = new RequestResult(0, 10_000, true, "sse-api", PerformanceProtocol.SSE);
+        second.receivedMessages = 10;
+        second.matchedMessages = 5;
+        RequestResult third = new RequestResult(0, 10_001, true, "sse-api", PerformanceProtocol.SSE);
+        third.receivedMessages = 10;
+        third.matchedMessages = 5;
+
+        PerformanceTrendSnapshot snapshot = PerformanceTrendSnapshot.fromResults(
+                List.of(first, second, third),
+                9_000,
+                11_000,
+                3,
+                0,
+                0,
+                1_000
+        );
+
+        assertEquals(snapshot.sse().receivedRate(), 3.0);
+        assertEquals(snapshot.sse().matchedRate(), 1.5);
     }
 }

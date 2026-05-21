@@ -268,4 +268,81 @@ public class WebSocketScenarioExecutorTest {
             IterationDataVariableService.getInstance().detachContext();
         }
     }
+
+    @Test
+    public void shouldMeasureFirstMessageLatencyWhenMessageArrivesBeforeAwaitStep() throws Exception {
+        VariablesService.getInstance().detachContext();
+        IterationDataVariableService.getInstance().detachContext();
+
+        CountDownLatch serverReceivedMessages = new CountDownLatch(3);
+
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse().withWebSocketUpgrade(new WebSocketListener() {
+                @Override
+                public void onMessage(WebSocket webSocket, String text) {
+                    serverReceivedMessages.countDown();
+                    webSocket.send("ack-" + text);
+                    if (serverReceivedMessages.getCount() == 0) {
+                        webSocket.close(1000, "done");
+                    }
+                }
+
+                @Override
+                public void onFailure(WebSocket webSocket, Throwable t, Response response) {
+                    while (serverReceivedMessages.getCount() > 0) {
+                        serverReceivedMessages.countDown();
+                    }
+                }
+            }));
+            server.start();
+
+            HttpRequestItem item = new HttpRequestItem();
+            item.setId("ws-first-message-arrival-time-test");
+            item.setName("WS First Message Arrival Time Test");
+            item.setProtocol(RequestItemProtocolEnum.WEBSOCKET);
+            item.setMethod("GET");
+            item.setUrl(server.url("/socket").toString().replaceFirst("^http", "ws"));
+
+            WebSocketPerformanceData requestCfg = new WebSocketPerformanceData();
+            requestCfg.connectTimeoutMs = 2000;
+
+            JMeterTreeNode requestData = new JMeterTreeNode("request", NodeType.REQUEST, item);
+            requestData.webSocketPerformanceData = requestCfg;
+            DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(requestData);
+
+            JMeterTreeNode sendStep = new JMeterTreeNode("send", NodeType.WS_SEND);
+            sendStep.webSocketPerformanceData = new WebSocketPerformanceData();
+            sendStep.webSocketPerformanceData.sendMode = WebSocketPerformanceData.SendMode.REQUEST_BODY_REPEAT;
+            sendStep.webSocketPerformanceData.sendContentSource = WebSocketPerformanceData.SendContentSource.CUSTOM_TEXT;
+            sendStep.webSocketPerformanceData.customSendBody = "hello";
+            sendStep.webSocketPerformanceData.sendCount = 3;
+            sendStep.webSocketPerformanceData.sendIntervalMs = 300;
+            requestNode.add(new DefaultMutableTreeNode(sendStep));
+
+            JMeterTreeNode awaitStep = new JMeterTreeNode("await", NodeType.WS_AWAIT);
+            awaitStep.webSocketPerformanceData = new WebSocketPerformanceData();
+            awaitStep.webSocketPerformanceData.completionMode = WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE;
+            awaitStep.webSocketPerformanceData.firstMessageTimeoutMs = 2000;
+            requestNode.add(new DefaultMutableTreeNode(awaitStep));
+
+            PerformanceRequestExecutor executor = new PerformanceRequestExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet(),
+                    ConcurrentHashMap.newKeySet()
+            );
+
+            PerformanceRequestExecutionResult result = executor.execute(requestNode, requestData, new ExecutionVariableContext());
+
+            assertTrue(serverReceivedMessages.await(1, TimeUnit.SECONDS), "WebSocket server should receive repeated messages");
+            long firstMessageLatency = Long.parseLong(result.response.headers
+                    .get("X-Easy-WS-First-Message-Latency-Ms")
+                    .get(0));
+            assertTrue(firstMessageLatency < 300,
+                    "First message latency should use message arrival time, actual: " + firstMessageLatency);
+        } finally {
+            VariablesService.getInstance().detachContext();
+            IterationDataVariableService.getInstance().detachContext();
+        }
+    }
 }

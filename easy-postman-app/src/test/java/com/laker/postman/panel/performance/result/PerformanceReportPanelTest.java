@@ -1,5 +1,7 @@
 package com.laker.postman.panel.performance.result;
 
+import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
+import com.laker.postman.common.component.button.SegmentedToggleButton;
 import com.laker.postman.panel.performance.model.ApiMetadata;
 import com.laker.postman.panel.performance.model.PerformanceProtocol;
 import com.laker.postman.panel.performance.model.RequestResult;
@@ -11,7 +13,6 @@ import org.testng.annotations.Test;
 
 import javax.swing.JButton;
 import javax.swing.JTabbedPane;
-import javax.swing.JToggleButton;
 import javax.swing.table.DefaultTableModel;
 import java.awt.Component;
 import java.awt.Container;
@@ -92,9 +93,10 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
     public void shouldUseCompactProtocolSwitcherInsteadOfNestedTabs() {
         PerformanceReportPanel panel = new PerformanceReportPanel();
 
-        List<JToggleButton> protocolButtons = findAll(panel, JToggleButton.class);
+        List<SegmentedToggleButton> protocolButtons = findAll(panel, SegmentedToggleButton.class);
 
         assertTrue(findAll(panel, JTabbedPane.class).isEmpty());
+        assertEquals(findAll(panel, SegmentedButtonGroupPanel.class).size(), 1);
         assertEquals(protocolButtons.size(), PerformanceProtocol.values().length);
         assertTrue(protocolButtons.stream().anyMatch(button ->
                 PerformanceProtocol.HTTP.getDisplayName().equals(button.getText()) && button.isSelected()));

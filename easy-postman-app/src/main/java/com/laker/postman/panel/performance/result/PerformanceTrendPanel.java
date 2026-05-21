@@ -2,6 +2,8 @@ package com.laker.postman.panel.performance.result;
 
 import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.common.SingletonBasePanel;
+import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
+import com.laker.postman.common.component.button.SegmentedToggleButton;
 import com.laker.postman.panel.performance.model.PerformanceProtocol;
 import com.laker.postman.panel.performance.model.PerformanceTrendSnapshot;
 import com.laker.postman.util.FontsUtil;
@@ -121,9 +123,9 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
 
     private JPanel createProtocolSwitcher(JPanel protocolCards) {
         ButtonGroup protocolGroup = new ButtonGroup();
-        JPanel switcher = new SegmentGroupPanel(FlowLayout.LEFT);
+        JPanel switcher = new SegmentedButtonGroupPanel(FlowLayout.LEFT);
         for (PerformanceProtocol protocol : PerformanceProtocol.values()) {
-            JToggleButton button = new SegmentToggleButton(
+            JToggleButton button = new SegmentedToggleButton(
                     protocol.getDisplayName(),
                     protocol == PerformanceProtocol.HTTP
             );
@@ -138,11 +140,11 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
     }
 
     private JPanel createModeSwitcher() {
-        JToggleButton separateButton = new SegmentToggleButton(
+        JToggleButton separateButton = new SegmentedToggleButton(
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_SEPARATE_CHARTS),
                 true
         );
-        JToggleButton combinedButton = new SegmentToggleButton(
+        JToggleButton combinedButton = new SegmentedToggleButton(
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_COMBINED_CHART),
                 false
         );
@@ -152,7 +154,7 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         separateButton.addActionListener(e -> showChartMode(SEPARATE_VIEW));
         combinedButton.addActionListener(e -> showChartMode(COMBINED_VIEW));
 
-        JPanel modePanel = new SegmentGroupPanel(FlowLayout.RIGHT);
+        JPanel modePanel = new SegmentedButtonGroupPanel(FlowLayout.RIGHT);
         modePanel.add(separateButton);
         modePanel.add(combinedButton);
         return modePanel;
@@ -465,67 +467,6 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
     }
 
     private record SplitChart(SeriesSpec spec, ChartPanel chartPanel) {
-    }
-
-    private final class SegmentGroupPanel extends JPanel {
-        private SegmentGroupPanel(int alignment) {
-            super(new FlowLayout(alignment, 2, 2));
-            setOpaque(false);
-            setBorder(BorderFactory.createEmptyBorder(1, 2, 1, 2));
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setColor(getSegmentBackgroundColor());
-            g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
-            g2.setColor(getChartBorderColor());
-            g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
-            g2.dispose();
-            super.paintComponent(g);
-        }
-    }
-
-    private final class SegmentToggleButton extends JToggleButton {
-        private SegmentToggleButton(String text, boolean selected) {
-            super(text, selected);
-            setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-            setBorder(BorderFactory.createEmptyBorder(5, 12, 5, 12));
-            setContentAreaFilled(false);
-            setBorderPainted(false);
-            setFocusPainted(false);
-            setOpaque(false);
-            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            if (isSelected()) {
-                g2.setColor(getSelectedSegmentColor());
-                g2.fillRoundRect(2, 2, getWidth() - 4, getHeight() - 4, 6, 6);
-            } else if (getModel().isRollover()) {
-                g2.setColor(getSegmentHoverColor());
-                g2.fillRoundRect(2, 2, getWidth() - 4, getHeight() - 4, 6, 6);
-            }
-            g2.dispose();
-            setForeground(isSelected() ? Color.WHITE : getTextColor());
-            super.paintComponent(g);
-        }
-    }
-
-    private Color getSegmentBackgroundColor() {
-        return isDarkTheme() ? new Color(58, 58, 58) : new Color(238, 242, 247);
-    }
-
-    private Color getSegmentHoverColor() {
-        return isDarkTheme() ? new Color(70, 70, 70) : new Color(228, 236, 246);
-    }
-
-    private Color getSelectedSegmentColor() {
-        return isDarkTheme() ? new Color(79, 156, 249) : new Color(24, 144, 255);
     }
 
     private static final class ScrollableChartGridPanel extends JPanel implements Scrollable {

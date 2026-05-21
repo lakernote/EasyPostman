@@ -1,6 +1,7 @@
 package com.laker.postman.panel.performance.result;
 
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
 import com.laker.postman.panel.performance.model.PerformanceProtocol;
 import com.laker.postman.test.AbstractSwingUiTest;
 import com.laker.postman.util.I18nUtil;
@@ -47,6 +48,7 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
         assertTrue(httpButton.isSelected());
         assertFalse(webSocketButton.isSelected());
         assertFalse(sseButton.isSelected());
+        assertEquals(findAll(panel, SegmentedButtonGroupPanel.class).size(), 2);
         assertTrue(separateButton.isSelected());
         assertFalse(combinedButton.isSelected());
         assertEquals(countVisibleCharts(panel), 4);

@@ -278,6 +278,7 @@ public class PerformancePersistenceServiceTest {
         sseRequest.ssePerformanceData.holdConnectionMs = 5678;
         sseRequest.ssePerformanceData.targetMessageCount = 9;
         sseRequest.ssePerformanceData.eventNameFilter = "orders";
+        sseRequest.ssePerformanceData.messageFilter = "done";
         DefaultMutableTreeNode sseRequestNode = new DefaultMutableTreeNode(sseRequest);
         sseRequestNode.add(new DefaultMutableTreeNode(new JMeterTreeNode("SSE Connect", NodeType.SSE_CONNECT)));
         sseRequestNode.add(new DefaultMutableTreeNode(new JMeterTreeNode("SSE Await", NodeType.SSE_AWAIT)));
@@ -321,6 +322,7 @@ public class PerformancePersistenceServiceTest {
         assertEquals(loadedSseRequest.ssePerformanceData.holdConnectionMs, 5678);
         assertEquals(loadedSseRequest.ssePerformanceData.targetMessageCount, 9);
         assertEquals(loadedSseRequest.ssePerformanceData.eventNameFilter, "orders");
+        assertEquals(loadedSseRequest.ssePerformanceData.messageFilter, "done");
         assertEquals(loadedWsRequest.webSocketPerformanceData.connectTimeoutMs, 4321);
         assertEquals(loadedAssertion.assertionData.value, "200");
         assertEquals(loadedTimer.timerData.delayMs, 250);

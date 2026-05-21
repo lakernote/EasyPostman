@@ -1,0 +1,56 @@
+package com.laker.postman.panel.performance.execution;
+
+import com.laker.postman.model.HttpHeader;
+import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.panel.performance.model.SsePerformanceData;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
+import org.testng.annotations.Test;
+
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
+
+public class SseSampleExecutorTest {
+
+    @Test
+    public void shouldFinishOnFirstSseMessageMatchingEventAndPayloadFilter() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse()
+                    .setHeader("Content-Type", "text/event-stream")
+                    .setBody("event: progress\n"
+                            + "data: loading\n\n"
+                            + "event: done\n"
+                            + "data: {\"status\":\"done\"}\n\n"));
+            server.start();
+
+            PreparedRequest request = new PreparedRequest();
+            request.method = "GET";
+            request.url = server.url("/stream").toString();
+            request.headersList = List.of(new HttpHeader(true, "Accept", "text/event-stream"));
+
+            SsePerformanceData cfg = new SsePerformanceData();
+            cfg.completionMode = SsePerformanceData.CompletionMode.MATCHED_MESSAGE;
+            cfg.connectTimeoutMs = 2000;
+            cfg.firstMessageTimeoutMs = 2000;
+            cfg.eventNameFilter = "done";
+            cfg.messageFilter = "status";
+
+            SseSampleExecutor.Result result = new SseSampleExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet()
+            ).execute(request, cfg);
+
+            assertFalse(result.executionFailed, result.errorMsg);
+            assertEquals(result.response.headers.get("X-Easy-SSE-Completion-Reason").get(0), "matched_message");
+            assertEquals(result.response.headers.get("X-Easy-SSE-Message-Count").get(0), "1");
+            assertTrue(result.response.body.contains("event: done"), result.response.body);
+            assertTrue(result.response.body.contains("status"), result.response.body.replace("\n", "\\n"));
+            assertFalse(result.response.body.contains("loading"));
+        }
+    }
+}

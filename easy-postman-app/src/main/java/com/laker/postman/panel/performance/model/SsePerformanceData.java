@@ -7,6 +7,7 @@ public class SsePerformanceData {
 
     public enum CompletionMode {
         FIRST_MESSAGE,
+        MATCHED_MESSAGE,
         FIXED_DURATION,
         MESSAGE_COUNT
     }
@@ -17,4 +18,5 @@ public class SsePerformanceData {
     public int holdConnectionMs = 30000;
     public int targetMessageCount = 1;
     public String eventNameFilter = "";
+    public String messageFilter = "";
 }

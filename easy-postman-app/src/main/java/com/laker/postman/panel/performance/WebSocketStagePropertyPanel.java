@@ -45,7 +45,7 @@ public class WebSocketStagePropertyPanel extends JPanel {
     private JLabel holdConnectionLabel;
     private JLabel targetMessageCountLabel;
     private JLabel sendHintLabel;
-    private JLabel fixedDurationHintLabel;
+    private JTextArea awaitHintArea;
     private JLabel closeHintLabel;
     private JMeterTreeNode currentNode;
 
@@ -190,9 +190,15 @@ public class WebSocketStagePropertyPanel extends JPanel {
         gbc.gridx = 0;
         gbc.gridwidth = 2;
         gbc.weightx = 1;
-        fixedDurationHintLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_FIXED_DURATION_HINT));
-        fixedDurationHintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
-        add(fixedDurationHintLabel, gbc);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        awaitHintArea = new JTextArea(2, 52);
+        awaitHintArea.setEditable(false);
+        awaitHintArea.setFocusable(false);
+        awaitHintArea.setOpaque(false);
+        awaitHintArea.setLineWrap(true);
+        awaitHintArea.setWrapStyleWord(true);
+        awaitHintArea.setForeground(UIManager.getColor("Label.disabledForeground"));
+        add(awaitHintArea, gbc);
     }
 
     private void buildClosePanel(GridBagConstraints gbc) {
@@ -289,7 +295,7 @@ public class WebSocketStagePropertyPanel extends JPanel {
 
     private void updateAwaitModeState() {
         if (stage != Stage.AWAIT || awaitTimeoutLabel == null || holdConnectionLabel == null
-                || targetMessageCountLabel == null || fixedDurationHintLabel == null) {
+                || targetMessageCountLabel == null || awaitHintArea == null) {
             return;
         }
         WebSocketPerformanceData.CompletionMode mode =
@@ -300,7 +306,6 @@ public class WebSocketStagePropertyPanel extends JPanel {
         boolean showHoldConnection = mode == WebSocketPerformanceData.CompletionMode.FIXED_DURATION
                 || mode == WebSocketPerformanceData.CompletionMode.MESSAGE_COUNT;
         boolean showTargetCount = mode == WebSocketPerformanceData.CompletionMode.MESSAGE_COUNT;
-        boolean showFixedHint = mode == WebSocketPerformanceData.CompletionMode.FIXED_DURATION;
 
         holdConnectionLabel.setText(I18nUtil.getMessage(
                 mode == WebSocketPerformanceData.CompletionMode.MESSAGE_COUNT
@@ -314,9 +319,21 @@ public class WebSocketStagePropertyPanel extends JPanel {
         holdConnectionSpinner.setVisible(showHoldConnection);
         targetMessageCountLabel.setVisible(showTargetCount);
         targetMessageCountSpinner.setVisible(showTargetCount);
-        fixedDurationHintLabel.setVisible(showFixedHint);
+        awaitHintArea.setText(resolveAwaitModeHint(mode));
         revalidate();
         repaint();
+    }
+
+    static String resolveAwaitModeHint(WebSocketPerformanceData.CompletionMode mode) {
+        if (mode == null) {
+            mode = WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE;
+        }
+        return switch (mode) {
+            case FIRST_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_HINT_FIRST_MESSAGE);
+            case MATCHED_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_HINT_MATCHED_MESSAGE);
+            case FIXED_DURATION -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_HINT_FIXED_DURATION);
+            case MESSAGE_COUNT -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_HINT_MESSAGE_COUNT);
+        };
     }
 
     private void addFormRow(GridBagConstraints gbc, JComponent label, JComponent field) {

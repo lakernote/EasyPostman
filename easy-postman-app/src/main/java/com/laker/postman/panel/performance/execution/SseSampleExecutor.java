@@ -124,17 +124,24 @@ public class SseSampleExecutor {
             @Override
             public void onEvent(EventSource eventSource, String id, String type, String data) {
                 String eventType = CharSequenceUtil.blankToDefault(type, "message");
-                if (matchesEvent(cfg, eventType)) {
-                    if (matchedMessageCount.incrementAndGet() == 1) {
+                if (matchesEvent(cfg, eventType) && matchesPayload(cfg, data)) {
+                    boolean firstMatchedMessage = matchedMessageCount.incrementAndGet() == 1;
+                    if (firstMatchedMessage) {
                         firstMessageLatencyMs.compareAndSet(-1, System.currentTimeMillis() - requestStartTime);
-                        completionReasonRef.compareAndSet("pending", "first_message");
-                        firstMessageLatch.countDown();
+                        completionReasonRef.compareAndSet("pending",
+                                cfg.completionMode == SsePerformanceData.CompletionMode.MATCHED_MESSAGE
+                                        ? "matched_message"
+                                        : "first_message");
                     }
                     lastEventIdRef.set(id == null ? "" : id);
                     lastEventTypeRef.set(eventType);
                     appendEvent(matchedEventBody, id, eventType, data);
+                    if (firstMatchedMessage) {
+                        firstMessageLatch.countDown();
+                    }
 
-                    if (cfg.completionMode == SsePerformanceData.CompletionMode.FIRST_MESSAGE) {
+                    if (cfg.completionMode == SsePerformanceData.CompletionMode.FIRST_MESSAGE
+                            || cfg.completionMode == SsePerformanceData.CompletionMode.MATCHED_MESSAGE) {
                         completionLatch.countDown();
                     } else if (cfg.completionMode == SsePerformanceData.CompletionMode.MESSAGE_COUNT
                             && matchedMessageCount.get() >= Math.max(1, cfg.targetMessageCount)) {
@@ -165,6 +172,25 @@ public class SseSampleExecutor {
                         failed.set(true);
                         errorRef.set("SSE first message timeout");
                         completionReasonRef.compareAndSet("pending", "first_message_timeout");
+                        closingSource.set(true);
+                        eventSource.cancel();
+                    }
+                }
+                case MATCHED_MESSAGE -> {
+                    boolean opened = openLatch.await(Math.max(100, cfg.connectTimeoutMs), TimeUnit.MILLISECONDS);
+                    if (!opened && !failed.get() && !interrupted.get()) {
+                        failed.set(true);
+                        errorRef.set("SSE connection timeout");
+                        completionReasonRef.set("connect_timeout");
+                        closingSource.set(true);
+                        eventSource.cancel();
+                    }
+                    boolean gotMatchedMessage = !failed.get() && !interrupted.get()
+                            && firstMessageLatch.await(Math.max(100, cfg.firstMessageTimeoutMs), TimeUnit.MILLISECONDS);
+                    if ((!gotMatchedMessage || matchedMessageCount.get() == 0) && !failed.get() && !interrupted.get()) {
+                        failed.set(true);
+                        errorRef.set("SSE matched message timeout");
+                        completionReasonRef.compareAndSet("pending", "matched_message_timeout");
                         closingSource.set(true);
                         eventSource.cancel();
                     }
@@ -239,6 +265,7 @@ public class SseSampleExecutor {
         }
         resp.addHeader("X-Easy-SSE-Mode", Collections.singletonList(cfg.completionMode.name()));
         resp.addHeader("X-Easy-SSE-Event-Filter", Collections.singletonList(CharSequenceUtil.blankToDefault(cfg.eventNameFilter, "")));
+        resp.addHeader("X-Easy-SSE-Message-Filter", Collections.singletonList(CharSequenceUtil.blankToDefault(cfg.messageFilter, "")));
         resp.addHeader("X-Easy-SSE-Message-Count", Collections.singletonList(String.valueOf(matchedMessageCount.get())));
         resp.addHeader("X-Easy-SSE-First-Message-Latency-Ms", Collections.singletonList(firstMessageLatencyMs.get() >= 0 ? String.valueOf(firstMessageLatencyMs.get()) : ""));
         resp.addHeader("X-Easy-SSE-Completion-Reason", Collections.singletonList(CharSequenceUtil.blankToDefault(completionReasonRef.get(), "")));
@@ -254,6 +281,14 @@ public class SseSampleExecutor {
     private boolean matchesEvent(SsePerformanceData cfg, String eventType) {
         String filter = cfg.eventNameFilter;
         return CharSequenceUtil.isBlank(filter) || CharSequenceUtil.equals(filter.trim(), eventType);
+    }
+
+    private boolean matchesPayload(SsePerformanceData cfg, String data) {
+        if (cfg.completionMode != SsePerformanceData.CompletionMode.MATCHED_MESSAGE) {
+            return true;
+        }
+        String filter = cfg.messageFilter;
+        return CharSequenceUtil.isBlank(filter) || (data != null && data.contains(filter.trim()));
     }
 
     private void appendEvent(StringBuffer buffer, String id, String type, String data) {

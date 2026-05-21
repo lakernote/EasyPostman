@@ -357,12 +357,16 @@ final class PerformanceTreeSupport {
         );
         joiner.add(getSseCompletionModeLabel(data.completionMode));
         switch (data.completionMode) {
-            case FIRST_MESSAGE -> joiner.add(formatDuration(data.firstMessageTimeoutMs));
+            case FIRST_MESSAGE, MATCHED_MESSAGE -> joiner.add(formatDuration(data.firstMessageTimeoutMs));
             case MESSAGE_COUNT -> {
                 joiner.add(String.valueOf(Math.max(1, data.targetMessageCount)));
                 joiner.add(formatDuration(data.holdConnectionMs));
             }
             case FIXED_DURATION -> joiner.add(formatDuration(data.holdConnectionMs));
+        }
+        if (data.completionMode == SsePerformanceData.CompletionMode.MATCHED_MESSAGE
+                && CharSequenceUtil.isNotBlank(data.messageFilter)) {
+            joiner.add("contains=" + data.messageFilter.trim());
         }
         if (CharSequenceUtil.isNotBlank(data.eventNameFilter)) {
             joiner.add("event=" + data.eventNameFilter.trim());
@@ -376,6 +380,7 @@ final class PerformanceTreeSupport {
         }
         return switch (mode) {
             case FIRST_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_FIRST_MESSAGE);
+            case MATCHED_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_MATCHED_MESSAGE);
             case FIXED_DURATION -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_FIXED_DURATION);
             case MESSAGE_COUNT -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_MESSAGE_COUNT);
         };

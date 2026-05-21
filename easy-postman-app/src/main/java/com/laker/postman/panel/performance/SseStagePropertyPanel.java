@@ -29,10 +29,12 @@ public class SseStagePropertyPanel extends JPanel {
     private final EasyJSpinner holdConnectionSpinner;
     private final EasyJSpinner targetMessageCountSpinner;
     private final EasyTextField eventNameFilterField;
+    private final EasyTextField messageFilterField;
     private JLabel awaitTimeoutLabel;
     private JLabel holdConnectionLabel;
     private JLabel targetMessageCountLabel;
-    private JLabel fixedDurationHintLabel;
+    private JLabel messageFilterLabel;
+    private JTextArea modeHintArea;
     private JMeterTreeNode requestNode;
 
     public SseStagePropertyPanel(Stage stage) {
@@ -54,10 +56,14 @@ public class SseStagePropertyPanel extends JPanel {
         holdConnectionSpinner = new EasyJSpinner(new SpinnerNumberModel(30000, 100, 3600000, 1000));
         targetMessageCountSpinner = new EasyJSpinner(new SpinnerNumberModel(1, 1, 100000, 1));
         eventNameFilterField = new EasyTextField(20);
+        messageFilterField = new EasyTextField(20);
 
         for (EasyJSpinner spinner : getAllSpinners()) {
             spinner.setPreferredSize(new Dimension(100, 28));
         }
+        eventNameFilterField.setPreferredSize(new Dimension(420, 28));
+        messageFilterField.setPreferredSize(new Dimension(420, 28));
+        completionModeBox.setPreferredSize(new Dimension(420, 28));
 
         completionModeBox.setRenderer(new DefaultListCellRenderer() {
             @Override
@@ -67,6 +73,7 @@ public class SseStagePropertyPanel extends JPanel {
                 if (value instanceof SsePerformanceData.CompletionMode mode) {
                     displayValue = switch (mode) {
                         case FIRST_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_FIRST_MESSAGE);
+                        case MATCHED_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_MATCHED_MESSAGE);
                         case FIXED_DURATION -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_FIXED_DURATION);
                         case MESSAGE_COUNT -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_MESSAGE_COUNT);
                     };
@@ -79,6 +86,7 @@ public class SseStagePropertyPanel extends JPanel {
             case CONNECT -> buildConnectPanel(gbc);
             case AWAIT -> buildAwaitPanel(gbc);
         }
+        addVerticalFiller(gbc);
 
         completionModeBox.addActionListener(e -> updateAwaitModeState());
         updateAwaitModeState();
@@ -100,6 +108,8 @@ public class SseStagePropertyPanel extends JPanel {
         addFormRow(gbc,
                 new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_EVENT_FILTER)),
                 eventNameFilterField);
+        messageFilterLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_MESSAGE_FILTER));
+        addFormRow(gbc, messageFilterLabel, messageFilterField);
         addFormRow(gbc, awaitTimeoutLabel, awaitTimeoutSpinner);
         addFormRow(gbc, holdConnectionLabel, holdConnectionSpinner);
         addFormRow(gbc, targetMessageCountLabel, targetMessageCountSpinner);
@@ -107,9 +117,16 @@ public class SseStagePropertyPanel extends JPanel {
         gbc.gridx = 0;
         gbc.gridwidth = 2;
         gbc.weightx = 1;
-        fixedDurationHintLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_FIXED_DURATION_HINT));
-        fixedDurationHintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
-        add(fixedDurationHintLabel, gbc);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        modeHintArea = new JTextArea(2, 52);
+        modeHintArea.setEditable(false);
+        modeHintArea.setFocusable(false);
+        modeHintArea.setOpaque(false);
+        modeHintArea.setLineWrap(true);
+        modeHintArea.setWrapStyleWord(true);
+        modeHintArea.setForeground(UIManager.getColor("Label.disabledForeground"));
+        add(modeHintArea, gbc);
+        gbc.gridy++;
     }
 
     public void setRequestNode(JMeterTreeNode requestNode) {
@@ -123,6 +140,7 @@ public class SseStagePropertyPanel extends JPanel {
         holdConnectionSpinner.setValue(data.holdConnectionMs);
         targetMessageCountSpinner.setValue(data.targetMessageCount);
         eventNameFilterField.setText(data.eventNameFilter == null ? "" : data.eventNameFilter);
+        messageFilterField.setText(data.messageFilter == null ? "" : data.messageFilter);
         updateAwaitModeState();
     }
 
@@ -140,6 +158,7 @@ public class SseStagePropertyPanel extends JPanel {
                 data.holdConnectionMs = (Integer) holdConnectionSpinner.getValue();
                 data.targetMessageCount = (Integer) targetMessageCountSpinner.getValue();
                 data.eventNameFilter = eventNameFilterField.getText().trim();
+                data.messageFilter = messageFilterField.getText().trim();
             }
         }
         requestNode.ssePerformanceData = data;
@@ -151,33 +170,52 @@ public class SseStagePropertyPanel extends JPanel {
 
     private void updateAwaitModeState() {
         if (stage != Stage.AWAIT || awaitTimeoutLabel == null || holdConnectionLabel == null
-                || targetMessageCountLabel == null || fixedDurationHintLabel == null) {
+                || targetMessageCountLabel == null || messageFilterLabel == null || modeHintArea == null) {
             return;
         }
         SsePerformanceData.CompletionMode mode = (SsePerformanceData.CompletionMode) completionModeBox.getSelectedItem();
         boolean showAwaitTimeout = mode == SsePerformanceData.CompletionMode.FIRST_MESSAGE
+                || mode == SsePerformanceData.CompletionMode.MATCHED_MESSAGE
                 || mode == SsePerformanceData.CompletionMode.MESSAGE_COUNT;
+        boolean showMessageFilter = mode == SsePerformanceData.CompletionMode.MATCHED_MESSAGE;
         boolean showHoldConnection = mode == SsePerformanceData.CompletionMode.FIXED_DURATION
                 || mode == SsePerformanceData.CompletionMode.MESSAGE_COUNT;
         boolean showTargetCount = mode == SsePerformanceData.CompletionMode.MESSAGE_COUNT;
-        boolean showFixedHint = mode == SsePerformanceData.CompletionMode.FIXED_DURATION;
 
-        awaitTimeoutLabel.setText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_FIRST_MESSAGE_TIMEOUT));
+        awaitTimeoutLabel.setText(I18nUtil.getMessage(
+                mode == SsePerformanceData.CompletionMode.MATCHED_MESSAGE
+                        ? MessageKeys.PERFORMANCE_SSE_MATCHED_MESSAGE_TIMEOUT
+                        : MessageKeys.PERFORMANCE_SSE_FIRST_MESSAGE_TIMEOUT
+        ));
         holdConnectionLabel.setText(I18nUtil.getMessage(
                 mode == SsePerformanceData.CompletionMode.MESSAGE_COUNT
                         ? MessageKeys.PERFORMANCE_SSE_MAX_WAIT_DURATION
                         : MessageKeys.PERFORMANCE_SSE_OBSERVE_DURATION
         ));
 
+        messageFilterLabel.setVisible(showMessageFilter);
+        messageFilterField.setVisible(showMessageFilter);
         awaitTimeoutLabel.setVisible(showAwaitTimeout);
         awaitTimeoutSpinner.setVisible(showAwaitTimeout);
         holdConnectionLabel.setVisible(showHoldConnection);
         holdConnectionSpinner.setVisible(showHoldConnection);
         targetMessageCountLabel.setVisible(showTargetCount);
         targetMessageCountSpinner.setVisible(showTargetCount);
-        fixedDurationHintLabel.setVisible(showFixedHint);
+        modeHintArea.setText(resolveModeHint(mode));
         revalidate();
         repaint();
+    }
+
+    private String resolveModeHint(SsePerformanceData.CompletionMode mode) {
+        if (mode == null) {
+            mode = SsePerformanceData.CompletionMode.FIRST_MESSAGE;
+        }
+        return switch (mode) {
+            case FIRST_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_HINT_FIRST_MESSAGE);
+            case MATCHED_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_HINT_MATCHED_MESSAGE);
+            case FIXED_DURATION -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_HINT_FIXED_DURATION);
+            case MESSAGE_COUNT -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_HINT_MESSAGE_COUNT);
+        };
     }
 
     private void addFormRow(GridBagConstraints gbc, JComponent label, JComponent field) {
@@ -187,12 +225,23 @@ public class SseStagePropertyPanel extends JPanel {
         add(label, gbc);
 
         gbc.gridx = 1;
-        gbc.weightx = 1;
+        gbc.weightx = 0;
         add(field, gbc);
 
         gbc.gridx = 0;
         gbc.gridy++;
         gbc.weightx = 0;
+    }
+
+    private void addVerticalFiller(GridBagConstraints gbc) {
+        gbc.gridx = 0;
+        gbc.gridwidth = 2;
+        gbc.weightx = 1;
+        gbc.weighty = 1;
+        gbc.fill = GridBagConstraints.BOTH;
+        add(Box.createVerticalGlue(), gbc);
+        gbc.weighty = 0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
     }
 
     private List<EasyJSpinner> getAllSpinners() {

@@ -268,6 +268,7 @@ public class PerformancePersistenceService {
         json.set("holdConnectionMs", data.holdConnectionMs);
         json.set("targetMessageCount", data.targetMessageCount);
         json.set("eventNameFilter", data.eventNameFilter);
+        json.set("messageFilter", data.messageFilter);
         return json;
     }
 
@@ -591,6 +592,7 @@ public class PerformancePersistenceService {
             data.holdConnectionMs = json.getInt("holdConnectionMs", data.holdConnectionMs);
             data.targetMessageCount = json.getInt("targetMessageCount", data.targetMessageCount);
             data.eventNameFilter = json.getStr("eventNameFilter", data.eventNameFilter);
+            data.messageFilter = json.getStr("messageFilter", data.messageFilter);
         } catch (Exception e) {
             log.warn("Failed to deserialize SSE performance data: {}", e.getMessage());
         }

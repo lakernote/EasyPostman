@@ -637,6 +637,7 @@ public final class MessageKeys {
     public static final String PERFORMANCE_CSV_USAGE_NOTE = "performance.csv.usage_note";
     public static final String PERFORMANCE_SSE_EVENT_FILTER = "performance.sse.event_filter";
     public static final String PERFORMANCE_SSE_COMPLETION_FIRST_MESSAGE = "performance.sse.completion.first_message";
+    public static final String PERFORMANCE_SSE_COMPLETION_MATCHED_MESSAGE = "performance.sse.completion.matched_message";
     public static final String PERFORMANCE_SSE_COMPLETION_FIXED_DURATION = "performance.sse.completion.fixed_duration";
     public static final String PERFORMANCE_SSE_COMPLETION_MESSAGE_COUNT = "performance.sse.completion.message_count";
     public static final String PERFORMANCE_SSE_NODE_CONNECT = "performance.sse.node.connect";
@@ -644,12 +645,17 @@ public final class MessageKeys {
     public static final String PERFORMANCE_SSE_CONNECT_TIMEOUT = "performance.sse.connect_timeout";
     public static final String PERFORMANCE_SSE_AWAIT_MODE = "performance.sse.await_mode";
     public static final String PERFORMANCE_SSE_AWAIT_TIMEOUT = "performance.sse.await_timeout";
-    public static final String PERFORMANCE_SSE_FIXED_DURATION_HINT = "performance.sse.fixed_duration_hint";
+    public static final String PERFORMANCE_SSE_MESSAGE_FILTER = "performance.sse.message_filter";
     public static final String PERFORMANCE_SSE_FIRST_MESSAGE_TIMEOUT = "performance.sse.first_message_timeout";
+    public static final String PERFORMANCE_SSE_MATCHED_MESSAGE_TIMEOUT = "performance.sse.matched_message_timeout";
     public static final String PERFORMANCE_SSE_HOLD_CONNECTION = "performance.sse.hold_connection";
     public static final String PERFORMANCE_SSE_OBSERVE_DURATION = "performance.sse.observe_duration";
     public static final String PERFORMANCE_SSE_MAX_WAIT_DURATION = "performance.sse.max_wait_duration";
     public static final String PERFORMANCE_SSE_TARGET_MESSAGE_COUNT = "performance.sse.target_message_count";
+    public static final String PERFORMANCE_SSE_HINT_FIRST_MESSAGE = "performance.sse.hint.first_message";
+    public static final String PERFORMANCE_SSE_HINT_MATCHED_MESSAGE = "performance.sse.hint.matched_message";
+    public static final String PERFORMANCE_SSE_HINT_FIXED_DURATION = "performance.sse.hint.fixed_duration";
+    public static final String PERFORMANCE_SSE_HINT_MESSAGE_COUNT = "performance.sse.hint.message_count";
     public static final String PERFORMANCE_WS_NODE_CONNECT = "performance.ws.node.connect";
     public static final String PERFORMANCE_WS_NODE_SEND = "performance.ws.node.send";
     public static final String PERFORMANCE_WS_NODE_AWAIT = "performance.ws.node.await";
@@ -677,6 +683,10 @@ public final class MessageKeys {
     public static final String PERFORMANCE_WS_MAX_WAIT_DURATION = "performance.ws.max_wait_duration";
     public static final String PERFORMANCE_WS_FIXED_DURATION_HINT = "performance.ws.fixed_duration_hint";
     public static final String PERFORMANCE_WS_TARGET_MESSAGE_COUNT = "performance.ws.target_message_count";
+    public static final String PERFORMANCE_WS_HINT_FIRST_MESSAGE = "performance.ws.hint.first_message";
+    public static final String PERFORMANCE_WS_HINT_MATCHED_MESSAGE = "performance.ws.hint.matched_message";
+    public static final String PERFORMANCE_WS_HINT_FIXED_DURATION = "performance.ws.hint.fixed_duration";
+    public static final String PERFORMANCE_WS_HINT_MESSAGE_COUNT = "performance.ws.hint.message_count";
     public static final String PERFORMANCE_WS_CLOSE_HINT = "performance.ws.close_hint";
     public static final String MSG_ONLY_HTTP_SUPPORTED = "msg.only_http_supported";
     public static final String MSG_ONLY_HTTP_SSE_WS_SUPPORTED = "msg.only_http_sse_ws_supported";

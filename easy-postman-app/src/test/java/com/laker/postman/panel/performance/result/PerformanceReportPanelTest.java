@@ -3,15 +3,22 @@ package com.laker.postman.panel.performance.result;
 import com.laker.postman.panel.performance.model.ApiMetadata;
 import com.laker.postman.panel.performance.model.RequestResult;
 import com.laker.postman.test.AbstractSwingUiTest;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
+import javax.swing.JButton;
 import javax.swing.table.DefaultTableModel;
+import java.awt.Component;
+import java.awt.Container;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class PerformanceReportPanelTest extends AbstractSwingUiTest {
@@ -67,9 +74,37 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
         assertTrue(markdown.contains("1.00"), markdown);
     }
 
+    @Test
+    public void shouldShowCopyDataButtonOnReportToolbar() {
+        PerformanceReportPanel panel = new PerformanceReportPanel();
+
+        List<JButton> buttons = findAll(panel, JButton.class);
+
+        assertFalse(buttons.isEmpty());
+        assertTrue(buttons.stream().anyMatch(button ->
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COPY_MARKDOWN_BUTTON).equals(button.getText())));
+    }
+
     private static DefaultTableModel getReportTableModel(PerformanceReportPanel panel) throws Exception {
         Field field = PerformanceReportPanel.class.getDeclaredField("reportTableModel");
         field.setAccessible(true);
         return (DefaultTableModel) field.get(panel);
+    }
+
+    private static <T extends Component> List<T> findAll(Component root, Class<T> type) {
+        List<T> result = new ArrayList<>();
+        collect(root, type, result);
+        return result;
+    }
+
+    private static <T extends Component> void collect(Component component, Class<T> type, List<T> result) {
+        if (type.isInstance(component)) {
+            result.add(type.cast(component));
+        }
+        if (component instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                collect(child, type, result);
+            }
+        }
     }
 }

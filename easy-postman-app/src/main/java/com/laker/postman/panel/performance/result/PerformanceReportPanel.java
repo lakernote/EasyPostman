@@ -106,7 +106,18 @@ public class PerformanceReportPanel extends JPanel {
         protocolTabs.addTab(PerformanceProtocol.HTTP.getDisplayName(), new JScrollPane(reportTable));
         protocolTabs.addTab(PerformanceProtocol.WEBSOCKET.getDisplayName(), new JScrollPane(webSocketReportTable));
         protocolTabs.addTab(PerformanceProtocol.SSE.getDisplayName(), new JScrollPane(sseReportTable));
+        add(createToolbar(), BorderLayout.NORTH);
         add(protocolTabs, BorderLayout.CENTER);
+    }
+
+    private JPanel createToolbar() {
+        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        toolbar.setBorder(BorderFactory.createEmptyBorder(0, 0, 6, 0));
+
+        JButton copyReportButton = new JButton(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COPY_MARKDOWN_BUTTON));
+        copyReportButton.addActionListener(e -> copyMarkdownReport());
+        toolbar.add(copyReportButton);
+        return toolbar;
     }
 
     private DefaultTableModel createTableModel(String[] tableColumns) {

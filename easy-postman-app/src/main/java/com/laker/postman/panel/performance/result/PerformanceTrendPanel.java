@@ -504,6 +504,10 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
 
         @Override
         public boolean getScrollableTracksViewportHeight() {
+            Container parent = getParent();
+            if (parent instanceof JViewport viewport) {
+                return getPreferredSize().height <= viewport.getHeight();
+            }
             return false;
         }
     }

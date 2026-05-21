@@ -55,6 +55,20 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
         assertFalse(findAll(httpTab, JCheckBox.class).isEmpty());
     }
 
+    @Test
+    public void shouldStretchSeparateChartGridWhenViewportIsTallerThanPreferredHeight() {
+        PerformanceTrendPanel panel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
+        JTabbedPane tabs = findFirst(panel, JTabbedPane.class);
+        Component httpTab = tabs.getComponentAt(0);
+        JScrollPane splitScrollPane = findFirst(httpTab, JScrollPane.class);
+        JViewport viewport = splitScrollPane.getViewport();
+        viewport.setExtentSize(new Dimension(1600, 900));
+
+        Component view = viewport.getView();
+
+        assertTrue(((Scrollable) view).getScrollableTracksViewportHeight());
+    }
+
     private static boolean hasCheckBox(Component root, String text) {
         for (JCheckBox checkBox : findAll(root, JCheckBox.class)) {
             if (text.equals(checkBox.getText())) {

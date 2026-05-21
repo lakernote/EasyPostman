@@ -1,7 +1,10 @@
 package com.laker.postman.panel.performance.result;
 
+import com.laker.postman.common.component.button.ModernButtonFactory;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.panel.performance.model.RequestResult;
 import com.laker.postman.panel.performance.model.PerformanceProtocol;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -102,22 +105,45 @@ public class PerformanceReportPanel extends JPanel {
         JTable webSocketReportTable = createGenericReportTable(webSocketReportTableModel);
         JTable sseReportTable = createGenericReportTable(sseReportTableModel);
 
-        JTabbedPane protocolTabs = new JTabbedPane();
-        protocolTabs.addTab(PerformanceProtocol.HTTP.getDisplayName(), new JScrollPane(reportTable));
-        protocolTabs.addTab(PerformanceProtocol.WEBSOCKET.getDisplayName(), new JScrollPane(webSocketReportTable));
-        protocolTabs.addTab(PerformanceProtocol.SSE.getDisplayName(), new JScrollPane(sseReportTable));
-        add(createToolbar(), BorderLayout.NORTH);
-        add(protocolTabs, BorderLayout.CENTER);
+        JPanel reportCards = new JPanel(new CardLayout());
+        reportCards.add(new JScrollPane(reportTable), PerformanceProtocol.HTTP.name());
+        reportCards.add(new JScrollPane(webSocketReportTable), PerformanceProtocol.WEBSOCKET.name());
+        reportCards.add(new JScrollPane(sseReportTable), PerformanceProtocol.SSE.name());
+        add(createToolbar(reportCards), BorderLayout.NORTH);
+        add(reportCards, BorderLayout.CENTER);
     }
 
-    private JPanel createToolbar() {
-        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
-        toolbar.setBorder(BorderFactory.createEmptyBorder(0, 0, 6, 0));
+    private JPanel createToolbar(JPanel reportCards) {
+        JPanel toolbar = new JPanel(new BorderLayout(8, 0));
+        toolbar.setBorder(BorderFactory.createEmptyBorder(8, 0, 8, 0));
 
-        JButton copyReportButton = new JButton(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COPY_MARKDOWN_BUTTON));
+        toolbar.add(createProtocolSwitcher(reportCards), BorderLayout.WEST);
+
+        JButton copyReportButton = ModernButtonFactory.createButton(
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COPY_MARKDOWN_BUTTON),
+                false
+        );
         copyReportButton.addActionListener(e -> copyMarkdownReport());
-        toolbar.add(copyReportButton);
+        toolbar.add(copyReportButton, BorderLayout.EAST);
         return toolbar;
+    }
+
+    private JPanel createProtocolSwitcher(JPanel reportCards) {
+        ButtonGroup protocolGroup = new ButtonGroup();
+        JPanel switcher = new SegmentGroupPanel();
+        for (PerformanceProtocol protocol : PerformanceProtocol.values()) {
+            JToggleButton button = new SegmentToggleButton(
+                    protocol.getDisplayName(),
+                    protocol == PerformanceProtocol.HTTP
+            );
+            button.addActionListener(e -> {
+                CardLayout layout = (CardLayout) reportCards.getLayout();
+                layout.show(reportCards, protocol.name());
+            });
+            protocolGroup.add(button);
+            switcher.add(button);
+        }
+        return switcher;
     }
 
     private DefaultTableModel createTableModel(String[] tableColumns) {
@@ -546,5 +572,54 @@ public class PerformanceReportPanel extends JPanel {
 
     private String escapeMarkdownCell(String value) {
         return value == null ? "" : value.replace("|", "\\|").replace("\n", " ");
+    }
+
+    private static final class SegmentGroupPanel extends JPanel {
+        private SegmentGroupPanel() {
+            super(new FlowLayout(FlowLayout.LEFT, 2, 2));
+            setOpaque(false);
+            setBorder(BorderFactory.createEmptyBorder(1, 2, 1, 2));
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(ModernColors.getBackgroundColor());
+            g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
+            g2.setColor(ModernColors.getBorderMediumColor());
+            g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
+            g2.dispose();
+            super.paintComponent(g);
+        }
+    }
+
+    private static final class SegmentToggleButton extends JToggleButton {
+        private SegmentToggleButton(String text, boolean selected) {
+            super(text, selected);
+            setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+            setBorder(BorderFactory.createEmptyBorder(5, 14, 5, 14));
+            setContentAreaFilled(false);
+            setBorderPainted(false);
+            setFocusPainted(false);
+            setOpaque(false);
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            if (isSelected()) {
+                g2.setColor(ModernColors.PRIMARY);
+                g2.fillRoundRect(2, 2, getWidth() - 4, getHeight() - 4, 6, 6);
+            } else if (getModel().isRollover()) {
+                g2.setColor(ModernColors.getHoverBackgroundColor());
+                g2.fillRoundRect(2, 2, getWidth() - 4, getHeight() - 4, 6, 6);
+            }
+            g2.dispose();
+            setForeground(isSelected() ? ModernColors.getTextInverse() : ModernColors.getTextPrimary());
+            super.paintComponent(g);
+        }
     }
 }

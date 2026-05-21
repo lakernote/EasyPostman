@@ -1,6 +1,7 @@
 package com.laker.postman.panel.performance.result;
 
 import com.laker.postman.panel.performance.model.ApiMetadata;
+import com.laker.postman.panel.performance.model.PerformanceProtocol;
 import com.laker.postman.panel.performance.model.RequestResult;
 import com.laker.postman.test.AbstractSwingUiTest;
 import com.laker.postman.util.I18nUtil;
@@ -9,6 +10,8 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import javax.swing.JButton;
+import javax.swing.JTabbedPane;
+import javax.swing.JToggleButton;
 import javax.swing.table.DefaultTableModel;
 import java.awt.Component;
 import java.awt.Container;
@@ -83,6 +86,22 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
         assertFalse(buttons.isEmpty());
         assertTrue(buttons.stream().anyMatch(button ->
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COPY_MARKDOWN_BUTTON).equals(button.getText())));
+    }
+
+    @Test
+    public void shouldUseCompactProtocolSwitcherInsteadOfNestedTabs() {
+        PerformanceReportPanel panel = new PerformanceReportPanel();
+
+        List<JToggleButton> protocolButtons = findAll(panel, JToggleButton.class);
+
+        assertTrue(findAll(panel, JTabbedPane.class).isEmpty());
+        assertEquals(protocolButtons.size(), PerformanceProtocol.values().length);
+        assertTrue(protocolButtons.stream().anyMatch(button ->
+                PerformanceProtocol.HTTP.getDisplayName().equals(button.getText()) && button.isSelected()));
+        assertTrue(protocolButtons.stream().anyMatch(button ->
+                PerformanceProtocol.WEBSOCKET.getDisplayName().equals(button.getText())));
+        assertTrue(protocolButtons.stream().anyMatch(button ->
+                PerformanceProtocol.SSE.getDisplayName().equals(button.getText())));
     }
 
     private static DefaultTableModel getReportTableModel(PerformanceReportPanel panel) throws Exception {

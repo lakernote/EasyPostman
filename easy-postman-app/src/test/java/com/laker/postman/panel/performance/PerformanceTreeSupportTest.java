@@ -80,6 +80,21 @@ public class PerformanceTreeSupportTest {
         assertNotNull(findChild(context.requestNode, NodeType.WS_CONNECT));
     }
 
+    @Test(description = "WebSocket 同步结构时不应把 await 节点下的断言搬回请求节点")
+    public void shouldKeepWebSocketAwaitAssertionsWhenSyncingStructure() {
+        TestContext context = newTestContext(RequestItemProtocolEnum.WEBSOCKET);
+        context.treeSupport.syncRequestStructure(context.requestNode, context.requestData);
+        DefaultMutableTreeNode awaitNode = newNode("Await", NodeType.WS_AWAIT);
+        DefaultMutableTreeNode assertionNode = newNode("Assertion", NodeType.ASSERTION);
+        awaitNode.add(assertionNode);
+        context.treeModel.insertNodeInto(awaitNode, context.requestNode, context.requestNode.getChildCount());
+
+        context.treeSupport.syncRequestStructure(context.requestNode, context.requestData);
+
+        assertSame(assertionNode.getParent(), awaitNode);
+        assertEquals(childTypesOf(awaitNode), List.of(NodeType.ASSERTION));
+    }
+
     @Test(description = "WebSocket 请求切回 HTTP 后应清理步骤节点，并把 await 下的断言恢复出来")
     public void shouldRemoveWebSocketNodesAndRestoreAssertionsWhenSwitchingBackToHttp() {
         TestContext context = newTestContext(RequestItemProtocolEnum.WEBSOCKET);

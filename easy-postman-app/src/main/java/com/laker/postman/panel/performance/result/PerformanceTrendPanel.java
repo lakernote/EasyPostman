@@ -33,6 +33,7 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
 
     private static final String SEPARATE_VIEW = "separate";
     private static final String COMBINED_VIEW = "combined";
+    private static final int MAX_TREND_POINTS = 3_600;
 
     private final TimeSeries httpVirtualUsersSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_VIRTUAL_USERS));
     private final TimeSeries httpRpsSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_QPS));
@@ -59,6 +60,7 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
 
     @Override
     protected void initUI() {
+        configureSeriesRetention();
         setLayout(new BorderLayout());
         JPanel protocolCards = new JPanel(new CardLayout());
         protocolCards.add(createHttpPanel(), PerformanceProtocol.HTTP.name());
@@ -71,6 +73,12 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
     @Override
     protected void registerListeners() {
         // Charts are updated by PerformanceStatisticsCoordinator.
+    }
+
+    private void configureSeriesRetention() {
+        for (TimeSeries series : allSeries()) {
+            series.setMaximumItemCount(MAX_TREND_POINTS);
+        }
     }
 
     private JPanel createHttpPanel() {
@@ -233,16 +241,19 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
     }
 
     public void clearTrendDataset() {
-        TimeSeries[] allSeries = {
+        for (TimeSeries series : allSeries()) {
+            series.clear();
+        }
+    }
+
+    private TimeSeries[] allSeries() {
+        return new TimeSeries[]{
                 httpVirtualUsersSeries, httpRpsSeries, httpAvgResponseSeries, httpErrorRateSeries,
                 wsActiveSeries, wsSentRateSeries, wsReceivedRateSeries, wsFirstMessageLatencySeries,
                 wsSessionDurationSeries, wsErrorRateSeries,
                 sseActiveSeries, sseEventRateSeries, sseMatchedRateSeries, sseFirstEventLatencySeries,
                 sseStreamDurationSeries, sseErrorRateSeries
         };
-        for (TimeSeries series : allSeries) {
-            series.clear();
-        }
     }
 
     public void addOrUpdate(RegularTimePeriod period, PerformanceTrendSnapshot snapshot) {

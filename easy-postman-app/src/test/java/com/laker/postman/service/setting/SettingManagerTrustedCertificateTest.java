@@ -119,6 +119,43 @@ public class SettingManagerTrustedCertificateTest {
     }
 
     @Test
+    public void shouldNormalizeJmeterConnectionAndDispatcherSettingsToPositiveDefaults() throws Exception {
+        Properties props = getSettingsProperties();
+        Properties backup = new Properties();
+        backup.putAll(props);
+        Path configPath = Path.of(ConfigPathConstants.EASY_POSTMAN_SETTINGS);
+        boolean configExisted = Files.exists(configPath);
+        String originalConfig = configExisted ? Files.readString(configPath) : null;
+
+        try {
+            props.clear();
+            props.setProperty("jmeter_max_idle_connections", "0");
+            props.setProperty("jmeter_keep_alive_seconds", "0");
+            props.setProperty("jmeter_max_requests", "0");
+            props.setProperty("jmeter_max_requests_per_host", "0");
+
+            assertEquals(SettingManager.getJmeterMaxIdleConnections(), 200);
+            assertEquals(SettingManager.getJmeterKeepAliveSeconds(), 60L);
+            assertEquals(SettingManager.getJmeterMaxRequests(), 1000);
+            assertEquals(SettingManager.getJmeterMaxRequestsPerHost(), 1000);
+
+            SettingManager.setJmeterMaxIdleConnections(0);
+            SettingManager.setJmeterKeepAliveSeconds(0);
+            SettingManager.setJmeterMaxRequests(0);
+            SettingManager.setJmeterMaxRequestsPerHost(0);
+
+            assertEquals(props.getProperty("jmeter_max_idle_connections"), "200");
+            assertEquals(props.getProperty("jmeter_keep_alive_seconds"), "60");
+            assertEquals(props.getProperty("jmeter_max_requests"), "1000");
+            assertEquals(props.getProperty("jmeter_max_requests_per_host"), "1000");
+        } finally {
+            props.clear();
+            props.putAll(backup);
+            restoreConfig(configPath, configExisted, originalConfig);
+        }
+    }
+
+    @Test
     public void shouldReadAndNormalizePerformanceResponseBodyPreviewLimit() throws Exception {
         Properties props = getSettingsProperties();
         Properties backup = new Properties();

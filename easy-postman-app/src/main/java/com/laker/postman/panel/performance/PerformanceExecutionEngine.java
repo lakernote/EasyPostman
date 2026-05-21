@@ -201,13 +201,7 @@ final class PerformanceExecutionEngine {
                 tgThreads.add(thread);
                 thread.start();
             }
-            for (Thread thread : tgThreads) {
-                try {
-                    thread.join();
-                } catch (InterruptedException ignored) {
-                    Thread.currentThread().interrupt();
-                }
-            }
+            joinThreadGroupThreads(tgThreads, this::cancelAllNetworkCalls);
             return;
         }
 
@@ -247,6 +241,31 @@ final class PerformanceExecutionEngine {
             }
         }
         activeWebSockets.clear();
+    }
+
+    static void joinThreadGroupThreads(List<Thread> threadGroupThreads, Runnable cancellationAction) {
+        boolean interrupted = false;
+        for (Thread thread : threadGroupThreads) {
+            while (thread.isAlive()) {
+                try {
+                    thread.join();
+                    break;
+                } catch (InterruptedException ignored) {
+                    interrupted = true;
+                    if (cancellationAction != null) {
+                        cancellationAction.run();
+                    }
+                    for (Thread candidate : threadGroupThreads) {
+                        if (candidate.isAlive()) {
+                            candidate.interrupt();
+                        }
+                    }
+                }
+            }
+        }
+        if (interrupted) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     private int countEnabledRequests(DefaultMutableTreeNode groupNode) {
@@ -326,13 +345,22 @@ final class PerformanceExecutionEngine {
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             executor.shutdownNow();
-            JOptionPane.showMessageDialog(
-                    dialogParent,
-                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_EXECUTION_INTERRUPTED, exception.getMessage()),
-                    I18nUtil.getMessage(MessageKeys.GENERAL_ERROR),
-                    JOptionPane.ERROR_MESSAGE
-            );
-            log.error(exception.getMessage(), exception);
+            if (runningSupplier.getAsBoolean()) {
+                String message = I18nUtil.getMessage(
+                        MessageKeys.PERFORMANCE_MSG_EXECUTION_INTERRUPTED,
+                        exception.getMessage()
+                );
+                String title = I18nUtil.getMessage(MessageKeys.GENERAL_ERROR);
+                SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
+                        dialogParent,
+                        message,
+                        title,
+                        JOptionPane.ERROR_MESSAGE
+                ));
+                log.error(exception.getMessage(), exception);
+            } else {
+                log.debug("固定线程模式已停止");
+            }
         }
     }
 

@@ -250,8 +250,11 @@ public class JsContextPool {
             context.eval("js", """
                     // 只删除我们注入的全局变量，保留所有内置对象
                     (function() {
-                        const injectedVars = ['pm', 'request', 'environment', 'globals',
-                                              'responseBody', 'tests', 'iterationData'];
+                        const injectedVars = [
+                            'pm', 'postman', 'request', 'env', 'environment', 'globals',
+                            'response', 'responseBody', 'responseHeaders', 'statusCode',
+                            'tests', 'iterationData'
+                        ];
                         injectedVars.forEach(varName => {
                             try {
                                 delete globalThis[varName];

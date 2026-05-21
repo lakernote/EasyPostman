@@ -6,6 +6,7 @@ import com.laker.postman.common.component.EasyJSpinner;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
+import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
 import com.laker.postman.panel.performance.timer.TimerPropertyPanel;
@@ -14,6 +15,7 @@ import org.testng.annotations.Test;
 
 import javax.swing.JFormattedTextField;
 import javax.swing.JSpinner;
+import javax.swing.Timer;
 import javax.swing.JTree;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
@@ -26,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertSame;
 
 public class PerformancePanelSaveTest {
@@ -60,6 +63,19 @@ public class PerformancePanelSaveTest {
             assertEquals(threadGroupData.numThreads, 7);
             assertEquals(persistenceService.saveCount.get(), 1);
             assertSame(persistenceService.savedRoot, root);
+        });
+    }
+
+    @Test(description = "PerformancePanel cleanup 应释放结果表的 Swing Timer")
+    public void cleanupShouldDisposeResultTablePanelTimer() throws Exception {
+        runOnEdtAndWait(() -> {
+            PerformancePanel panel = newPanelWithoutInit();
+            PerformanceResultTablePanel resultTablePanel = new PerformanceResultTablePanel();
+            setField(panel, "performanceResultTablePanel", resultTablePanel);
+
+            panel.cleanup();
+
+            assertFalse(getTimer(resultTablePanel, "uiFrameTimer").isRunning());
         });
     }
 
@@ -144,6 +160,12 @@ public class PerformancePanelSaveTest {
         Field field = target.getClass().getDeclaredField(fieldName);
         field.setAccessible(true);
         field.set(target, value);
+    }
+
+    private static Timer getTimer(Object target, String fieldName) throws Exception {
+        Field field = target.getClass().getDeclaredField(fieldName);
+        field.setAccessible(true);
+        return (Timer) field.get(target);
     }
 
     private static void runOnEdtAndWait(ThrowingRunnable action) throws Exception {

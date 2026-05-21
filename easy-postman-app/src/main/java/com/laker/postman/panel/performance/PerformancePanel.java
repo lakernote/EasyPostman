@@ -548,15 +548,18 @@ public class PerformancePanel extends SingletonBasePanel {
     public void cleanup() {
         log.info("清理 PerformancePanel 资源");
 
-        // 1. 停止定时器
+        // 1. 停止运行中的测试
+        if (running) {
+            stopRun();
+        }
+
+        // 2. 停止定时器
         if (timerManager != null) {
             timerManager.stopAll();
             timerManager.dispose();
         }
-
-        // 2. 停止运行中的测试
-        if (running) {
-            stopRun();
+        if (performanceResultTablePanel != null) {
+            performanceResultTablePanel.dispose();
         }
 
         log.debug("PerformancePanel 资源清理完成");

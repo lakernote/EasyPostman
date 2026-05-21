@@ -7,6 +7,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
@@ -43,6 +44,48 @@ public class JsContextPoolTest {
             }
             pool.shutdown();
             executor.shutdownNow();
+        }
+    }
+
+    @Test(description = "returned contexts should not retain request/response bindings from previous scripts")
+    public void shouldCleanupInjectedBindingsBeforeContextReuse() throws Exception {
+        JsContextPool pool = new JsContextPool(1);
+        JsContextPool.PooledContext borrowed = null;
+        try {
+            borrowed = pool.borrowContext(1000);
+            var context = borrowed.getContext();
+            context.eval("js", """
+                    globalThis.pm = {};
+                    globalThis.postman = {};
+                    globalThis.request = {};
+                    globalThis.env = {};
+                    globalThis.environment = {};
+                    globalThis.globals = {};
+                    globalThis.response = { body: 'large-body' };
+                    globalThis.responseBody = 'large-body';
+                    globalThis.responseHeaders = {};
+                    globalThis.statusCode = 200;
+                    globalThis.tests = {};
+                    globalThis.iterationData = {};
+                    """);
+            pool.returnContext(borrowed);
+            borrowed = null;
+
+            borrowed = pool.borrowContext(1000);
+            String retainedGlobals = borrowed.getContext().eval("js", """
+                    [
+                      'pm', 'postman', 'request', 'env', 'environment', 'globals',
+                      'response', 'responseBody', 'responseHeaders', 'statusCode',
+                      'tests', 'iterationData'
+                    ].filter(name => typeof globalThis[name] !== 'undefined').join(',')
+                    """).asString();
+
+            assertEquals(retainedGlobals, "");
+        } finally {
+            if (borrowed != null) {
+                pool.returnContext(borrowed);
+            }
+            pool.shutdown();
         }
     }
 }

@@ -259,7 +259,7 @@ final class PerformanceTreeSupport {
             DefaultMutableTreeNode child = (DefaultMutableTreeNode) requestNode.getChildAt(i);
             Object userObj = child.getUserObject();
             if (userObj instanceof JMeterTreeNode jtNode) {
-                if (jtNode.type == NodeType.WS_AWAIT) {
+                if (removeNodes && jtNode.type == NodeType.WS_AWAIT) {
                     moveChildrenByType(child, requestNode, NodeType.ASSERTION);
                 }
                 if (jtNode.type == NodeType.WS_SEND

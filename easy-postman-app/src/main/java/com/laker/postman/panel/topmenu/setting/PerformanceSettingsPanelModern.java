@@ -164,22 +164,22 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
     private void setupValidators() {
         setupValidator(
                 jmeterMaxIdleField,
-                this::isPositiveInteger,
+                this::isGreaterThanZeroInteger,
                 I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_MAX_IDLE_ERROR)
         );
         setupValidator(
                 jmeterKeepAliveField,
-                this::isPositiveInteger,
+                this::isGreaterThanZeroInteger,
                 I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_KEEP_ALIVE_ERROR)
         );
         setupValidator(
                 jmeterMaxRequestsField,
-                this::isPositiveInteger,
+                this::isGreaterThanZeroInteger,
                 I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_MAX_IDLE_ERROR)
         );
         setupValidator(
                 jmeterMaxRequestsPerHostField,
-                this::isPositiveInteger,
+                this::isGreaterThanZeroInteger,
                 I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_MAX_IDLE_ERROR)
         );
         setupValidator(

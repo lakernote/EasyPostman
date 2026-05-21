@@ -113,8 +113,11 @@ final class PerformanceRunControlSupport {
                         (active, total) -> SwingUtilities.invokeLater(() -> progressLabel.setText(active + "/" + total))
                 );
             } finally {
+                boolean stopped = !runningSupplier.getAsBoolean() || Thread.currentThread().isInterrupted();
                 waitForFinalStats();
-                SwingUtilities.invokeLater(() -> finishRunUi());
+                if (!stopped) {
+                    SwingUtilities.invokeLater(this::finishRunUi);
+                }
             }
         });
         runThread.start();

@@ -2,7 +2,8 @@ package com.laker.postman.panel.performance.result;
 
 import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.common.SingletonBasePanel;
-import com.laker.postman.common.component.placeholder.PerformanceTrendPlaceholderPanel;
+import com.laker.postman.panel.performance.model.PerformanceProtocol;
+import com.laker.postman.panel.performance.model.PerformanceTrendSnapshot;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -21,333 +22,152 @@ import org.jfree.data.xy.XYDataset;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
-import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
 
 public class PerformanceTrendPanel extends SingletonBasePanel {
 
-    private final TimeSeries userCountSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_THREADS));
-    private final TimeSeries responseTimeSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_RESPONSE_TIME_MS));
-    private final TimeSeries qpsSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_QPS));
-    private final TimeSeries errorPercentSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_ERROR_RATE_PERCENT));
+    private final TimeSeries overviewUsersSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_THREADS));
+    private final TimeSeries overviewSampleRateSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_SAMPLE_RATE));
+    private final TimeSeries overviewErrorRateSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_ERROR_RATE_PERCENT));
+    private final TimeSeries httpRateSeries = new TimeSeries(PerformanceProtocol.HTTP.getDisplayName());
+    private final TimeSeries webSocketRateSeries = new TimeSeries(PerformanceProtocol.WEBSOCKET.getDisplayName());
+    private final TimeSeries sseRateSeries = new TimeSeries(PerformanceProtocol.SSE.getDisplayName());
 
-    private final TimeSeriesCollection userCountDataset = new TimeSeriesCollection(userCountSeries);
-    private final TimeSeriesCollection responseTimeDataset = new TimeSeriesCollection(responseTimeSeries);
-    private final TimeSeriesCollection qpsDataset = new TimeSeriesCollection(qpsSeries);
-    private final TimeSeriesCollection errorPercentDataset = new TimeSeriesCollection(errorPercentSeries);
+    private final TimeSeries httpRpsSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_QPS));
+    private final TimeSeries httpAvgResponseSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_RESPONSE_TIME_MS));
+    private final TimeSeries httpErrorRateSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_ERROR_RATE_PERCENT));
 
+    private final TimeSeries wsActiveSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_ACTIVE_WS));
+    private final TimeSeries wsSentRateSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_SENT_RATE));
+    private final TimeSeries wsReceivedRateSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_RECEIVED_RATE));
+    private final TimeSeries wsFirstMessageLatencySeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_FIRST_MESSAGE_LATENCY_MS));
+    private final TimeSeries wsSessionDurationSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_SESSION_DURATION_MS));
+    private final TimeSeries wsErrorRateSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_ERROR_RATE_PERCENT));
 
-    private boolean isCombinedView = false;
-    private JPanel chartContainer;
-    private JButton toggleButton;
-    private boolean chartsInitialized;
+    private final TimeSeries sseActiveSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_ACTIVE_SSE));
+    private final TimeSeries sseEventRateSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_EVENT_RATE));
+    private final TimeSeries sseMatchedRateSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_MATCHED_RATE));
+    private final TimeSeries sseFirstEventLatencySeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_FIRST_EVENT_LATENCY_MS));
+    private final TimeSeries sseStreamDurationSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_STREAM_DURATION_MS));
+    private final TimeSeries sseErrorRateSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_ERROR_RATE_PERCENT));
 
-    // 缓存图表面板，避免切换时重复创建
-    private JPanel separateChartsPanel;
-    private ChartPanel combinedChartPanel;
-
-    // 合并视图的指标选择复选框
-    private JCheckBox threadsCheckBox;
-    private JCheckBox responseTimeCheckBox;
-    private JCheckBox qpsCheckBox;
-    private JCheckBox errorRateCheckBox;
-
-    // 日期格式化器（实例变量，避免线程安全问题）
+    private final List<TrendView> trendViews = new ArrayList<>();
     private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
-
-    /**
-     * 检查当前是否为暗色主题
-     */
-    private boolean isDarkTheme() {
-        return FlatLaf.isLafDark();
-    }
-
-    /**
-     * 获取主题适配的图表背景色
-     */
-    private Color getChartBackgroundColor() {
-        return isDarkTheme() ? new Color(43, 43, 43) : Color.WHITE;  // 更深的暗色背景，提高对比度
-    }
-
-    /**
-     * 获取主题适配的图表面板背景色
-     */
-    private Color getChartPanelBackgroundColor() {
-        return isDarkTheme() ? new Color(43, 43, 43) : Color.WHITE;  // 与图表背景一致
-    }
-
-    /**
-     * 获取主题适配的网格线颜色
-     */
-    private Color getGridLineColor() {
-        return isDarkTheme() ? new Color(90, 90, 90) : new Color(194, 211, 236);  // 更亮的网格线，增强可读性
-    }
-
-    /**
-     * 获取主题适配的文本颜色
-     */
-    private Color getTextColor() {
-        return isDarkTheme() ? new Color(200, 200, 200) : Color.BLACK;  // 更亮的文本，提高可读性
-    }
-
-    /**
-     * 获取主题适配的边框颜色
-     */
-    private Color getChartBorderColor() {
-        return isDarkTheme() ? new Color(90, 90, 90) : new Color(194, 211, 236);  // 与网格线一致
-    }
-
-    /**
-     * 获取主题适配的线程数曲线颜色（蓝色系）
-     */
-    private Color getThreadsLineColor() {
-        return isDarkTheme() ? new Color(100, 181, 246) : new Color(33, 150, 243);  // 亮蓝 : 标准蓝
-    }
-
-    /**
-     * 获取主题适配的响应时间曲线颜色（橙色系）
-     */
-    private Color getResponseTimeLineColor() {
-        return isDarkTheme() ? new Color(255, 183, 77) : new Color(255, 152, 0);  // 亮橙 : 标准橙
-    }
-
-    /**
-     * 获取主题适配的QPS曲线颜色（绿色系）
-     */
-    private Color getQpsLineColor() {
-        return isDarkTheme() ? new Color(129, 199, 132) : new Color(56, 142, 60);  // 亮绿 : 深绿
-    }
-
-    /**
-     * 获取主题适配的错误率曲线颜色（红色系）
-     */
-    private Color getErrorRateLineColor() {
-        return isDarkTheme() ? new Color(239, 83, 80) : new Color(211, 47, 47);  // 亮红 : 深红
-    }
-
 
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
-
-        // 先创建复选框（默认全选）- 必须在创建图表面板之前
-        threadsCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_THREADS), true);
-        responseTimeCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_RESPONSE_TIME_MS), false);
-        qpsCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_QPS), true);
-        errorRateCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_ERROR_RATE_PERCENT), true);
-
-        // 为复选框添加监听器，动态更新合并图表
-        threadsCheckBox.addActionListener(e -> updateCombinedChart());
-        responseTimeCheckBox.addActionListener(e -> updateCombinedChart());
-        qpsCheckBox.addActionListener(e -> updateCombinedChart());
-        errorRateCheckBox.addActionListener(e -> updateCombinedChart());
-
-        // Create toggle button
-        toggleButton = new JButton(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_COMBINED_CHART));
-        toggleButton.setFocusable(false);
-        toggleButton.addActionListener(e -> toggleChartView());
-
-        // 创建顶部面板（包含切换按钮和复选框）
-        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        topPanel.add(threadsCheckBox);
-        topPanel.add(responseTimeCheckBox);
-        topPanel.add(qpsCheckBox);
-        topPanel.add(errorRateCheckBox);
-        topPanel.add(new JSeparator(SwingConstants.VERTICAL));
-        topPanel.add(toggleButton);
-        add(topPanel, BorderLayout.NORTH);
-
-        // 初始时隐藏复选框（仅在合并视图时显示）
-        threadsCheckBox.setVisible(false);
-        responseTimeCheckBox.setVisible(false);
-        qpsCheckBox.setVisible(false);
-        errorRateCheckBox.setVisible(false);
-
-        // Create chart container
-        chartContainer = new JPanel(new BorderLayout());
-        add(chartContainer, BorderLayout.CENTER);
-
-        showDeferredPlaceholder();
+        JTabbedPane protocolTabs = new JTabbedPane();
+        protocolTabs.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_OVERVIEW), createOverviewPanel());
+        protocolTabs.addTab(PerformanceProtocol.HTTP.getDisplayName(), createHttpPanel());
+        protocolTabs.addTab(PerformanceProtocol.WEBSOCKET.getDisplayName(), createWebSocketPanel());
+        protocolTabs.addTab(PerformanceProtocol.SSE.getDisplayName(), createSsePanel());
+        add(protocolTabs, BorderLayout.CENTER);
     }
 
-    private void ensureChartsInitialized() {
-        if (chartsInitialized) {
-            return;
-        }
-        if (separateChartsPanel == null) {
-            separateChartsPanel = createSeparateChartsPanel();
-        }
-        if (isCombinedView && combinedChartPanel == null) {
-            combinedChartPanel = createCombinedChartPanel();
-        }
-        chartsInitialized = true;
-        renderCurrentChartState();
+    @Override
+    protected void registerListeners() {
+        // Charts are updated by PerformanceStatisticsCoordinator.
     }
 
-    private void showDeferredPlaceholder() {
-        chartContainer.removeAll();
-        chartContainer.add(new PerformanceTrendPlaceholderPanel(), BorderLayout.CENTER);
-        chartContainer.revalidate();
-        chartContainer.repaint();
+    private JPanel createOverviewPanel() {
+        return createTrendView(
+                MessageKeys.PERFORMANCE_TREND_METRICS,
+                new SeriesSpec(overviewUsersSeries, getThreadsLineColor(), true),
+                new SeriesSpec(overviewSampleRateSeries, getQpsLineColor(), true),
+                new SeriesSpec(overviewErrorRateSeries, getErrorRateLineColor(), true),
+                new SeriesSpec(httpRateSeries, getResponseTimeLineColor(), false),
+                new SeriesSpec(webSocketRateSeries, getMatchedLineColor(), false),
+                new SeriesSpec(sseRateSeries, getDurationLineColor(), false)
+        );
     }
 
-    /**
-     * 创建单个图表面板
-     *
-     * @param dataset       数据集
-     * @param titleKey      图表标题的国际化key
-     * @param lineColor     曲线颜色
-     * @param integerFormat 是否整数格式
-     * @param percentFormat 是否百分比格式
-     */
-    private ChartPanel createChartPanel(TimeSeriesCollection dataset, String titleKey, Color lineColor,
-                                        boolean integerFormat, boolean percentFormat) {
+    private JPanel createHttpPanel() {
+        return createTrendView(
+                MessageKeys.PERFORMANCE_TREND_METRICS,
+                new SeriesSpec(httpRpsSeries, getQpsLineColor(), true),
+                new SeriesSpec(httpAvgResponseSeries, getResponseTimeLineColor(), true),
+                new SeriesSpec(httpErrorRateSeries, getErrorRateLineColor(), true)
+        );
+    }
+
+    private JPanel createWebSocketPanel() {
+        return createTrendView(
+                MessageKeys.PERFORMANCE_TREND_METRICS,
+                new SeriesSpec(wsActiveSeries, getThreadsLineColor(), true),
+                new SeriesSpec(wsSentRateSeries, getMatchedLineColor(), true),
+                new SeriesSpec(wsReceivedRateSeries, getQpsLineColor(), true),
+                new SeriesSpec(wsFirstMessageLatencySeries, getResponseTimeLineColor(), true),
+                new SeriesSpec(wsSessionDurationSeries, getDurationLineColor(), true),
+                new SeriesSpec(wsErrorRateSeries, getErrorRateLineColor(), true)
+        );
+    }
+
+    private JPanel createSsePanel() {
+        return createTrendView(
+                MessageKeys.PERFORMANCE_TREND_METRICS,
+                new SeriesSpec(sseActiveSeries, getThreadsLineColor(), true),
+                new SeriesSpec(sseEventRateSeries, getQpsLineColor(), true),
+                new SeriesSpec(sseMatchedRateSeries, getMatchedLineColor(), true),
+                new SeriesSpec(sseFirstEventLatencySeries, getResponseTimeLineColor(), true),
+                new SeriesSpec(sseStreamDurationSeries, getDurationLineColor(), true),
+                new SeriesSpec(sseErrorRateSeries, getErrorRateLineColor(), true)
+        );
+    }
+
+    private JPanel createTrendView(String titleKey, SeriesSpec... specs) {
+        TrendView view = new TrendView(titleKey, specs);
+        trendViews.add(view);
+        return view.panel();
+    }
+
+    private ChartPanel createChartPanel(TimeSeriesCollection dataset, String titleKey) {
         String title = I18nUtil.getMessage(titleKey);
         JFreeChart chart = ChartFactory.createTimeSeriesChart(
                 title,
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_TIME),
                 title,
                 dataset,
-                false,
+                true,
                 true,
                 false
         );
-
-        // 设置图表背景色（主题适配）
         chart.setBackgroundPaint(getChartBackgroundColor());
-
-        XYPlot plot = chart.getXYPlot();
-        plot.setBackgroundPaint(getChartBackgroundColor());
-        plot.setDomainGridlinePaint(getGridLineColor());
-        plot.setRangeGridlinePaint(getGridLineColor());
-        plot.setOutlinePaint(getChartBorderColor());
-
-        XYLineAndShapeRenderer renderer = createTrendRenderer();
-        renderer.setSeriesPaint(0, lineColor);
-        plot.setRenderer(renderer);
-
-        DateAxis dateAxis = new DateAxis(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_TIME));
-        dateAxis.setDateFormatOverride(timeFormat);
-        dateAxis.setTickLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        dateAxis.setLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        dateAxis.setTickLabelPaint(getTextColor());
-        dateAxis.setLabelPaint(getTextColor());
-        plot.setDomainAxis(dateAxis);
-
-        NumberAxis rangeAxis = (NumberAxis) plot.getRangeAxis();
-        rangeAxis.setTickLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        rangeAxis.setLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        rangeAxis.setTickLabelPaint(getTextColor());
-        rangeAxis.setLabelPaint(getTextColor());
-
-        // 设置Y轴上边距，避免曲线贴到顶部
-        rangeAxis.setUpperMargin(0.2);
-
-        if (integerFormat) {
-            rangeAxis.setNumberFormatOverride(NumberFormat.getIntegerInstance());
-            rangeAxis.setAutoRangeIncludesZero(true);
-        } else if (percentFormat) {
-            NumberFormat percent = NumberFormat.getNumberInstance();
-            percent.setMaximumFractionDigits(2);
-            rangeAxis.setNumberFormatOverride(percent);
-            rangeAxis.setAutoRangeIncludesZero(true);
-        } else {
-            rangeAxis.setNumberFormatOverride(null);
-            rangeAxis.setAutoRangeIncludesZero(false);
-        }
-
-        ChartPanel panel = new ChartPanel(chart);
-        panel.setMouseWheelEnabled(true);
-        panel.setPreferredSize(new Dimension(400, 300));
-        panel.setBackground(getChartPanelBackgroundColor());
-        panel.setDisplayToolTips(true);
-
-        chart.getTitle().setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 0));
-        chart.getTitle().setPaint(getTextColor());
-
-        return panel;
-    }
-
-    /**
-     * 创建合并图表面板（所有指标在一个图表中）
-     */
-    private ChartPanel createCombinedChartPanel() {
-        // 根据复选框状态创建dataset
-        TimeSeriesCollection dataset = createDynamicDataset();
-
-        String title = I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_METRICS);
-        JFreeChart chart = ChartFactory.createTimeSeriesChart(
-                title,
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_TIME),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_METRICS),
-                dataset,
-                true,  // 显示图例
-                true,
-                false
-        );
-
-        // 设置图表背景色（主题适配）
-        chart.setBackgroundPaint(getChartBackgroundColor());
-
-        XYPlot plot = chart.getXYPlot();
-        plot.setBackgroundPaint(getChartBackgroundColor());
-        plot.setDomainGridlinePaint(getGridLineColor());
-        plot.setRangeGridlinePaint(getGridLineColor());
-        plot.setOutlinePaint(getChartBorderColor());
-
-        // 设置渲染器颜色
-        plot.setRenderer(createCombinedChartRenderer());
-
-        DateAxis dateAxis = new DateAxis(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_TIME));
-        dateAxis.setDateFormatOverride(timeFormat);
-        dateAxis.setTickLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        dateAxis.setLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        dateAxis.setTickLabelPaint(getTextColor());
-        dateAxis.setLabelPaint(getTextColor());
-        plot.setDomainAxis(dateAxis);
-
-        NumberAxis rangeAxis = (NumberAxis) plot.getRangeAxis();
-        rangeAxis.setTickLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        rangeAxis.setLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        rangeAxis.setTickLabelPaint(getTextColor());
-        rangeAxis.setLabelPaint(getTextColor());
-        rangeAxis.setUpperMargin(0.2);
-        rangeAxis.setAutoRangeIncludesZero(false);
-
-        ChartPanel panel = new ChartPanel(chart);
-        panel.setMouseWheelEnabled(true);
-        panel.setPreferredSize(new Dimension(800, 600));
-        panel.setBackground(getChartPanelBackgroundColor());
-        panel.setDisplayToolTips(true);
-
         chart.getTitle().setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 0));
         chart.getTitle().setPaint(getTextColor());
         chart.getLegend().setItemFont(FontsUtil.getDefaultFont(Font.PLAIN));
         chart.getLegend().setItemPaint(getTextColor());
         chart.getLegend().setBackgroundPaint(getChartBackgroundColor());
 
-        return panel;
-    }
+        XYPlot plot = chart.getXYPlot();
+        plot.setBackgroundPaint(getChartBackgroundColor());
+        plot.setDomainGridlinePaint(getGridLineColor());
+        plot.setRangeGridlinePaint(getGridLineColor());
+        plot.setOutlinePaint(getChartBorderColor());
 
-    /**
-     * 创建合并图表的渲染器，根据复选框状态设置颜色
-     */
-    private XYLineAndShapeRenderer createCombinedChartRenderer() {
-        XYLineAndShapeRenderer renderer = createTrendRenderer();
-        int seriesIndex = 0;
-        if (threadsCheckBox.isSelected()) {
-            renderer.setSeriesPaint(seriesIndex++, getThreadsLineColor());
-        }
-        if (responseTimeCheckBox.isSelected()) {
-            renderer.setSeriesPaint(seriesIndex++, getResponseTimeLineColor());
-        }
-        if (qpsCheckBox.isSelected()) {
-            renderer.setSeriesPaint(seriesIndex++, getQpsLineColor());
-        }
-        if (errorRateCheckBox.isSelected()) {
-            renderer.setSeriesPaint(seriesIndex, getErrorRateLineColor());
-        }
-        return renderer;
+        DateAxis dateAxis = new DateAxis(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_TIME));
+        dateAxis.setDateFormatOverride(timeFormat);
+        dateAxis.setTickLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        dateAxis.setLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        dateAxis.setTickLabelPaint(getTextColor());
+        dateAxis.setLabelPaint(getTextColor());
+        plot.setDomainAxis(dateAxis);
+
+        NumberAxis rangeAxis = (NumberAxis) plot.getRangeAxis();
+        rangeAxis.setTickLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        rangeAxis.setLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        rangeAxis.setTickLabelPaint(getTextColor());
+        rangeAxis.setLabelPaint(getTextColor());
+        rangeAxis.setUpperMargin(0.2);
+        rangeAxis.setAutoRangeIncludesZero(true);
+
+        ChartPanel panel = new ChartPanel(chart);
+        panel.setMouseWheelEnabled(true);
+        panel.setBackground(getChartPanelBackgroundColor());
+        panel.setDisplayToolTips(true);
+        return panel;
     }
 
     private XYLineAndShapeRenderer createTrendRenderer() {
@@ -356,6 +176,176 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         renderer.setDefaultShapesFilled(true);
         renderer.setDrawOutlines(false);
         return renderer;
+    }
+
+    public void clearTrendDataset() {
+        TimeSeries[] allSeries = {
+                overviewUsersSeries, overviewSampleRateSeries, overviewErrorRateSeries,
+                httpRateSeries, webSocketRateSeries, sseRateSeries,
+                httpRpsSeries, httpAvgResponseSeries, httpErrorRateSeries,
+                wsActiveSeries, wsSentRateSeries, wsReceivedRateSeries, wsFirstMessageLatencySeries,
+                wsSessionDurationSeries, wsErrorRateSeries,
+                sseActiveSeries, sseEventRateSeries, sseMatchedRateSeries, sseFirstEventLatencySeries,
+                sseStreamDurationSeries, sseErrorRateSeries
+        };
+        for (TimeSeries series : allSeries) {
+            series.clear();
+        }
+    }
+
+    public void addOrUpdate(RegularTimePeriod period, PerformanceTrendSnapshot snapshot) {
+        if (period == null || snapshot == null) {
+            return;
+        }
+
+        overviewUsersSeries.addOrUpdate(period, snapshot.activeUsers());
+        overviewSampleRateSeries.addOrUpdate(period, snapshot.overview().sampleRate());
+        overviewErrorRateSeries.addOrUpdate(period, snapshot.overview().failurePercent());
+        httpRateSeries.addOrUpdate(period, snapshot.http().sampleRate());
+        webSocketRateSeries.addOrUpdate(period, snapshot.webSocket().sampleRate());
+        sseRateSeries.addOrUpdate(period, snapshot.sse().sampleRate());
+
+        httpRpsSeries.addOrUpdate(period, snapshot.http().sampleRate());
+        httpAvgResponseSeries.addOrUpdate(period, snapshot.http().avgDurationMs());
+        httpErrorRateSeries.addOrUpdate(period, snapshot.http().failurePercent());
+
+        wsActiveSeries.addOrUpdate(period, snapshot.activeWebSocketConnections());
+        wsSentRateSeries.addOrUpdate(period, snapshot.webSocket().sentRate());
+        wsReceivedRateSeries.addOrUpdate(period, snapshot.webSocket().receivedRate());
+        wsFirstMessageLatencySeries.addOrUpdate(period, snapshot.webSocket().avgFirstMessageLatencyMs());
+        wsSessionDurationSeries.addOrUpdate(period, snapshot.webSocket().avgDurationMs());
+        wsErrorRateSeries.addOrUpdate(period, snapshot.webSocket().failurePercent());
+
+        sseActiveSeries.addOrUpdate(period, snapshot.activeSseStreams());
+        sseEventRateSeries.addOrUpdate(period, snapshot.sse().receivedRate());
+        sseMatchedRateSeries.addOrUpdate(period, snapshot.sse().matchedRate());
+        sseFirstEventLatencySeries.addOrUpdate(period, snapshot.sse().avgFirstMessageLatencyMs());
+        sseStreamDurationSeries.addOrUpdate(period, snapshot.sse().avgDurationMs());
+        sseErrorRateSeries.addOrUpdate(period, snapshot.sse().failurePercent());
+    }
+
+    public void addOrUpdate(RegularTimePeriod period, double users,
+                            double responseTime, double qps, double errorPercent) {
+        if (period == null) {
+            return;
+        }
+        overviewUsersSeries.addOrUpdate(period, users);
+        overviewSampleRateSeries.addOrUpdate(period, qps);
+        overviewErrorRateSeries.addOrUpdate(period, errorPercent);
+        httpRpsSeries.addOrUpdate(period, qps);
+        httpAvgResponseSeries.addOrUpdate(period, responseTime);
+        httpErrorRateSeries.addOrUpdate(period, errorPercent);
+    }
+
+    private boolean isDarkTheme() {
+        return FlatLaf.isLafDark();
+    }
+
+    private Color getChartBackgroundColor() {
+        return isDarkTheme() ? new Color(43, 43, 43) : Color.WHITE;
+    }
+
+    private Color getChartPanelBackgroundColor() {
+        return isDarkTheme() ? new Color(43, 43, 43) : Color.WHITE;
+    }
+
+    private Color getGridLineColor() {
+        return isDarkTheme() ? new Color(90, 90, 90) : new Color(194, 211, 236);
+    }
+
+    private Color getTextColor() {
+        return isDarkTheme() ? new Color(200, 200, 200) : Color.BLACK;
+    }
+
+    private Color getChartBorderColor() {
+        return isDarkTheme() ? new Color(90, 90, 90) : new Color(194, 211, 236);
+    }
+
+    private Color getThreadsLineColor() {
+        return isDarkTheme() ? new Color(100, 181, 246) : new Color(33, 150, 243);
+    }
+
+    private Color getResponseTimeLineColor() {
+        return isDarkTheme() ? new Color(255, 183, 77) : new Color(255, 152, 0);
+    }
+
+    private Color getQpsLineColor() {
+        return isDarkTheme() ? new Color(129, 199, 132) : new Color(56, 142, 60);
+    }
+
+    private Color getMatchedLineColor() {
+        return isDarkTheme() ? new Color(186, 104, 200) : new Color(142, 36, 170);
+    }
+
+    private Color getDurationLineColor() {
+        return isDarkTheme() ? new Color(77, 208, 225) : new Color(0, 137, 123);
+    }
+
+    private Color getErrorRateLineColor() {
+        return isDarkTheme() ? new Color(239, 83, 80) : new Color(211, 47, 47);
+    }
+
+    private final class TrendView {
+        private final JPanel panel;
+        private final TimeSeriesCollection dataset = new TimeSeriesCollection();
+        private final ChartPanel chartPanel;
+        private final List<SeriesControl> controls = new ArrayList<>();
+
+        private TrendView(String titleKey, SeriesSpec... specs) {
+            panel = new JPanel(new BorderLayout(8, 0));
+            panel.setBorder(BorderFactory.createEmptyBorder(8, 10, 10, 10));
+            JPanel controlsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+            for (SeriesSpec spec : specs) {
+                JCheckBox checkBox = new JCheckBox(spec.series().getKey().toString(), spec.selected());
+                checkBox.addActionListener(e -> {
+                    if (selectedCount() == 0) {
+                        checkBox.setSelected(true);
+                    }
+                    rebuildDataset();
+                });
+                controls.add(new SeriesControl(spec, checkBox));
+                controlsPanel.add(checkBox);
+            }
+            chartPanel = createChartPanel(dataset, titleKey);
+            panel.add(controlsPanel, BorderLayout.NORTH);
+            panel.add(chartPanel, BorderLayout.CENTER);
+            rebuildDataset();
+        }
+
+        private JPanel panel() {
+            return panel;
+        }
+
+        private int selectedCount() {
+            int count = 0;
+            for (SeriesControl control : controls) {
+                if (control.checkBox().isSelected()) {
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        private void rebuildDataset() {
+            dataset.removeAllSeries();
+            XYLineAndShapeRenderer renderer = createTrendRenderer();
+            int visibleIndex = 0;
+            for (SeriesControl control : controls) {
+                if (!control.checkBox().isSelected()) {
+                    continue;
+                }
+                dataset.addSeries(control.spec().series());
+                renderer.setSeriesPaint(visibleIndex++, control.spec().color());
+            }
+            chartPanel.getChart().getXYPlot().setRenderer(renderer);
+            chartPanel.repaint();
+        }
+    }
+
+    private record SeriesSpec(TimeSeries series, Color color, boolean selected) {
+    }
+
+    private record SeriesControl(SeriesSpec spec, JCheckBox checkBox) {
     }
 
     private static final class SinglePointAwareRenderer extends XYLineAndShapeRenderer {
@@ -370,183 +360,6 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
                 dataset = getPlot().getDataset();
             }
             return dataset != null && dataset.getItemCount(series) == 1;
-        }
-    }
-
-    /**
-     * 根据复选框状态创建动态数据集
-     */
-    private TimeSeriesCollection createDynamicDataset() {
-        TimeSeriesCollection dataset = new TimeSeriesCollection();
-        if (threadsCheckBox.isSelected()) {
-            dataset.addSeries(userCountSeries);
-        }
-        if (responseTimeCheckBox.isSelected()) {
-            dataset.addSeries(responseTimeSeries);
-        }
-        if (qpsCheckBox.isSelected()) {
-            dataset.addSeries(qpsSeries);
-        }
-        if (errorRateCheckBox.isSelected()) {
-            dataset.addSeries(errorPercentSeries);
-        }
-        return dataset;
-    }
-
-    /**
-     * 更新合并图表（当复选框状态改变时）
-     */
-    private void updateCombinedChart() {
-        ensureChartsInitialized();
-        if (!isCombinedView || combinedChartPanel == null) {
-            return;
-        }
-
-        JFreeChart chart = combinedChartPanel.getChart();
-        if (chart == null) {
-            return;
-        }
-
-        XYPlot plot = chart.getXYPlot();
-
-        // 更新数据集
-        TimeSeriesCollection newDataset = createDynamicDataset();
-        plot.setDataset(newDataset);
-
-        // 更新渲染器颜色（复用提取的方法）
-        plot.setRenderer(createCombinedChartRenderer());
-
-        // 刷新图表
-        combinedChartPanel.repaint();
-    }
-
-    /**
-     * 创建分离图表面板（4个独立图表）
-     */
-    private JPanel createSeparateChartsPanel() {
-        JPanel panel = new JPanel(new GridLayout(2, 2, 10, 10));
-
-        panel.add(createChartPanel(userCountDataset, MessageKeys.PERFORMANCE_TREND_THREADS, getThreadsLineColor(), true, false));
-        panel.add(createChartPanel(responseTimeDataset, MessageKeys.PERFORMANCE_TREND_RESPONSE_TIME_MS, getResponseTimeLineColor(), false, false));
-        panel.add(createChartPanel(qpsDataset, MessageKeys.PERFORMANCE_TREND_QPS, getQpsLineColor(), false, false));
-        panel.add(createChartPanel(errorPercentDataset, MessageKeys.PERFORMANCE_TREND_ERROR_RATE_PERCENT, getErrorRateLineColor(), false, true));
-
-        return panel;
-    }
-
-    /**
-     * 切换图表视图模式
-     */
-    private void toggleChartView() {
-        isCombinedView = !isCombinedView;
-
-        if (isCombinedView) {
-            // 显示复选框
-            threadsCheckBox.setVisible(true);
-            responseTimeCheckBox.setVisible(true);
-            qpsCheckBox.setVisible(true);
-            errorRateCheckBox.setVisible(true);
-
-            showCombinedChart();
-            toggleButton.setText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_SEPARATE_CHARTS));
-        } else {
-            // 隐藏复选框
-            threadsCheckBox.setVisible(false);
-            responseTimeCheckBox.setVisible(false);
-            qpsCheckBox.setVisible(false);
-            errorRateCheckBox.setVisible(false);
-
-            showSeparateCharts();
-            toggleButton.setText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_COMBINED_CHART));
-        }
-    }
-
-    /**
-     * 显示4个分离的图表
-     */
-    private void showSeparateCharts() {
-        ensureChartsInitialized();
-        renderCurrentChartState();
-    }
-
-    private void renderCurrentChartState() {
-        if (!chartsInitialized || chartContainer == null) {
-            return;
-        }
-        if (isCombinedView) {
-            if (combinedChartPanel == null) {
-                combinedChartPanel = createCombinedChartPanel();
-            }
-            chartContainer.removeAll();
-            chartContainer.add(combinedChartPanel, BorderLayout.CENTER);
-        } else {
-            chartContainer.removeAll();
-            chartContainer.add(separateChartsPanel, BorderLayout.CENTER);
-        }
-        chartContainer.revalidate();
-        chartContainer.repaint();
-    }
-
-    /**
-     * 显示1个合并的图表
-     */
-    private void showCombinedChart() {
-        ensureChartsInitialized();
-        renderCurrentChartState();
-    }
-
-    @Override
-    protected void registerListeners() {
-        // 监听器已在initUI中通过toggleButton.addActionListener注册
-        // 无需额外的监听器注册
-    }
-
-
-    public void clearTrendDataset() {
-        userCountSeries.clear();
-        responseTimeSeries.clear();
-        qpsSeries.clear();
-        errorPercentSeries.clear();
-    }
-
-    /**
-     * 增加或更新指标数据（批量更新优化性能）
-     *
-     * @param period       时间点
-     * @param users        用户数
-     * @param responseTime 响应时间
-     * @param qps          QPS
-     * @param errorPercent 错误率
-     */
-    public void addOrUpdate(RegularTimePeriod period, double users,
-                            double responseTime, double qps, double errorPercent) {
-        if (period == null) return;
-        ensureChartsInitialized();
-
-        // 批量更新：暂时禁用通知，避免每次 addOrUpdate 都触发重绘
-        userCountSeries.setNotify(false);
-        responseTimeSeries.setNotify(false);
-        qpsSeries.setNotify(false);
-        errorPercentSeries.setNotify(false);
-
-        try {
-            userCountSeries.addOrUpdate(period, users);
-            responseTimeSeries.addOrUpdate(period, responseTime);
-            qpsSeries.addOrUpdate(period, qps);
-            errorPercentSeries.addOrUpdate(period, errorPercent);
-        } finally {
-            // 恢复通知
-            userCountSeries.setNotify(true);
-            responseTimeSeries.setNotify(true);
-            qpsSeries.setNotify(true);
-            errorPercentSeries.setNotify(true);
-
-            // 手动触发所有图表更新
-            // 因为有4个独立的dataset，需要触发每个series的更新
-            userCountSeries.fireSeriesChanged();
-            responseTimeSeries.fireSeriesChanged();
-            qpsSeries.fireSeriesChanged();
-            errorPercentSeries.fireSeriesChanged();
         }
     }
 }

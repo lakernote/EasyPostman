@@ -8,6 +8,7 @@ import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.script.TestResult;
 import com.laker.postman.panel.performance.model.ApiMetadata;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceProtocol;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
@@ -86,12 +87,14 @@ public class PerformanceRequestExecutor {
         boolean interrupted = false;
         HttpResponse resp = null;
         boolean sseRequest = isSseRequest(requestData.httpRequestItem);
+        PerformanceProtocol protocol = resolvePerformanceProtocol(webSocketRequest, sseRequest);
 
         if (preOk && runningSupplier.getAsBoolean()) {
             try {
                 configurePreparedRequest(req);
                 sseRequest = isSseRequest(requestData.httpRequestItem, req);
                 webSocketRequest = isWebSocketRequest(requestData.httpRequestItem);
+                protocol = resolvePerformanceProtocol(webSocketRequest, sseRequest);
                 boolean transportSseRequest = sseRequest;
                 boolean transportWebSocketRequest = webSocketRequest;
                 ProtocolExecutionResult protocolResult = pipeline.withExecutionContextThrowing(() ->
@@ -154,10 +157,20 @@ public class PerformanceRequestExecutor {
                 testResults,
                 executionFailed,
                 interrupted,
-                webSocketRequest,
+                protocol,
                 requestStartTime,
                 costMs
         );
+    }
+
+    private PerformanceProtocol resolvePerformanceProtocol(boolean webSocketRequest, boolean sseRequest) {
+        if (webSocketRequest) {
+            return PerformanceProtocol.WEBSOCKET;
+        }
+        if (sseRequest) {
+            return PerformanceProtocol.SSE;
+        }
+        return PerformanceProtocol.HTTP;
     }
 
     private void configurePreparedRequest(PreparedRequest req) {

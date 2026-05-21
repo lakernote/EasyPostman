@@ -8,15 +8,26 @@ public class RequestResult {
     public long endTime;      // 结束时间（毫秒）
     public boolean success;   // 是否成功
     public String apiId;      // API唯一ID（用于统计和查询）
+    public PerformanceProtocol protocol = PerformanceProtocol.HTTP;
+    public int sentMessages;
+    public int receivedMessages;
+    public int matchedMessages;
+    public long firstMessageLatencyMs = -1;
+    public String completionReason = "";
 
     /**
      * 主构造函数
      */
     public RequestResult(long startTime, long endTime, boolean success, String apiId) {
+        this(startTime, endTime, success, apiId, PerformanceProtocol.HTTP);
+    }
+
+    public RequestResult(long startTime, long endTime, boolean success, String apiId, PerformanceProtocol protocol) {
         this.startTime = startTime;
         this.endTime = endTime;
         this.success = success;
         this.apiId = apiId;
+        this.protocol = protocol == null ? PerformanceProtocol.HTTP : protocol;
     }
 
     /**

@@ -88,6 +88,14 @@ final class PerformanceExecutionEngine {
         return activeThreads.get();
     }
 
+    int getActiveWebSockets() {
+        return activeWebSockets.size();
+    }
+
+    int getActiveSseStreams() {
+        return activeSseSources.size();
+    }
+
     void beginRun(long startTime) {
         this.startTime = startTime;
     }

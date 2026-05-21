@@ -113,6 +113,7 @@ public class PerformanceResultTablePanel extends JPanel {
         table.setRowHeight(24);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.setAutoCreateRowSorter(false);
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
         table.setFocusable(false);
         // 设置自定义渲染器
         table.setDefaultRenderer(Object.class, new ResultRowRenderer());
@@ -136,17 +137,23 @@ public class PerformanceResultTablePanel extends JPanel {
         detailTabs = new JTabbedPane();
 
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, detailTabs);
-        split.setDividerLocation(400);
+        leftPanel.setMinimumSize(new Dimension(560, 150));
+        leftPanel.setPreferredSize(new Dimension(620, 300));
+        split.setDividerLocation(620);
+        split.setResizeWeight(0.34);
         add(split, BorderLayout.CENTER);
     }
 
     // 配置排序比较器
     private void configureSorterComparators() {
-        // 列 0: Name - 字符串排序
+        // 列 0: Protocol - 字符串排序
         rowSorter.setComparator(0, Comparator.comparing(String::toString, String.CASE_INSENSITIVE_ORDER));
 
-        // 列 1: Status - 数值排序（状态码）
-        rowSorter.setComparator(1, Comparator.comparing((Object o) -> {
+        // 列 1: Name - 字符串排序
+        rowSorter.setComparator(1, Comparator.comparing(String::toString, String.CASE_INSENSITIVE_ORDER));
+
+        // 列 2: Status - 数值排序（状态码）
+        rowSorter.setComparator(2, Comparator.comparing((Object o) -> {
             String s = o.toString();
             if ("-".equals(s)) return 0;
             try {
@@ -156,33 +163,38 @@ public class PerformanceResultTablePanel extends JPanel {
             }
         }));
 
-        // 列 2: Cost (ms) - 数值排序
-        rowSorter.setComparator(2, Comparator.comparingInt(Integer.class::cast));
+        // 列 3: Duration (ms) - 数值排序
+        rowSorter.setComparator(3, Comparator.comparingInt(Integer.class::cast));
 
-        // 列 3: Assertion - 按成功/失败排序
-        rowSorter.setComparator(3, Comparator.comparing(String::toString));
+        // 列 4: Assertion - 按成功/失败排序
+        rowSorter.setComparator(4, Comparator.comparing(String::toString));
     }
 
     // 配置列宽度
     private void configureColumnWidths() {
+        // Protocol 列
+        table.getColumnModel().getColumn(0).setMinWidth(70);
+        table.getColumnModel().getColumn(0).setPreferredWidth(78);
+        table.getColumnModel().getColumn(0).setMaxWidth(95);
+
         // Name 列 - 接口名称，允许较宽显示
-        table.getColumnModel().getColumn(0).setMinWidth(150);
-        table.getColumnModel().getColumn(0).setPreferredWidth(300);
+        table.getColumnModel().getColumn(1).setMinWidth(150);
+        table.getColumnModel().getColumn(1).setPreferredWidth(240);
 
         // Status 列 - 显示 "Status"（6个字符）+ 状态码（3位数）
-        table.getColumnModel().getColumn(1).setMinWidth(70);
-        table.getColumnModel().getColumn(1).setPreferredWidth(80);
-        table.getColumnModel().getColumn(1).setMaxWidth(100);
+        table.getColumnModel().getColumn(2).setMinWidth(64);
+        table.getColumnModel().getColumn(2).setPreferredWidth(72);
+        table.getColumnModel().getColumn(2).setMaxWidth(90);
 
-        // Cost (ms) 列 - 显示 "Cost (ms)"（9个字符）+ 时间值
-        table.getColumnModel().getColumn(2).setMinWidth(95);
-        table.getColumnModel().getColumn(2).setPreferredWidth(105);
-        table.getColumnModel().getColumn(2).setMaxWidth(130);
+        // Duration (ms) 列 - 显示耗时值
+        table.getColumnModel().getColumn(3).setMinWidth(105);
+        table.getColumnModel().getColumn(3).setPreferredWidth(112);
+        table.getColumnModel().getColumn(3).setMaxWidth(130);
 
         // Assertion 列 - 显示 "Assertion"（9个字符）+ emoji
-        table.getColumnModel().getColumn(3).setMinWidth(90);
-        table.getColumnModel().getColumn(3).setPreferredWidth(100);
-        table.getColumnModel().getColumn(3).setMaxWidth(120);
+        table.getColumnModel().getColumn(4).setMinWidth(72);
+        table.getColumnModel().getColumn(4).setPreferredWidth(82);
+        table.getColumnModel().getColumn(4).setMaxWidth(100);
     }
 
     private void registerListeners() {
@@ -418,10 +430,11 @@ public class PerformanceResultTablePanel extends JPanel {
     // TableModel - 增量刷新优化
     static class ResultTableModel extends AbstractTableModel {
 
-        private static final int COL_NAME = 0;
-        private static final int COL_STATUS = 1;
-        private static final int COL_COST = 2;
-        private static final int COL_ASSERTION = 3;
+        private static final int COL_PROTOCOL = 0;
+        private static final int COL_NAME = 1;
+        private static final int COL_STATUS = 2;
+        private static final int COL_COST = 3;
+        private static final int COL_ASSERTION = 4;
 
         private final List<ResultNodeInfo> dataList = new ArrayList<>(1024);
         private boolean dirty = false;
@@ -436,12 +449,13 @@ public class PerformanceResultTablePanel extends JPanel {
 
         @Override
         public int getColumnCount() {
-            return 4;
+            return 5;
         }
 
         @Override
         public String getColumnName(int col) {
             return switch (col) {
+                case COL_PROTOCOL -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TREE_COLUMN_PROTOCOL);
                 case COL_NAME -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TREE_COLUMN_NAME);
                 case COL_STATUS -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TREE_COLUMN_STATUS);
                 case COL_COST -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TREE_COLUMN_COST);
@@ -454,6 +468,7 @@ public class PerformanceResultTablePanel extends JPanel {
         public Object getValueAt(int row, int col) {
             ResultNodeInfo r = dataList.get(row);
             return switch (col) {
+                case COL_PROTOCOL -> r.protocol.getDisplayName();
                 case COL_NAME -> r.name;
                 case COL_STATUS -> r.responseCode > 0 ? String.valueOf(r.responseCode) : "-";
                 case COL_COST -> r.costMs;
@@ -480,6 +495,7 @@ public class PerformanceResultTablePanel extends JPanel {
         @Override
         public Class<?> getColumnClass(int columnIndex) {
             return switch (columnIndex) {
+                case COL_PROTOCOL -> String.class;
                 case COL_NAME -> String.class;
                 case COL_STATUS -> String.class;
                 case COL_COST -> Integer.class;
@@ -552,23 +568,26 @@ public class PerformanceResultTablePanel extends JPanel {
 
             // 设置对齐方式和颜色
             switch (modelColumn) {
-                case 0: // 接口名称 - 左对齐
+                case 0: // 协议 - 居中
+                    setHorizontalAlignment(SwingConstants.CENTER);
+                    break;
+                case 1: // 接口名称 - 左对齐
                     setHorizontalAlignment(SwingConstants.LEFT);
                     if (!isSelected && info != null && !info.isActuallySuccessful()) {
                         setForeground(ModernColors.ERROR_DARK);
                         setFont(table.getFont().deriveFont(Font.BOLD));
                     }
                     break;
-                case 1: // 状态码 - 居中对齐，带颜色
+                case 2: // 状态码 - 居中对齐，带颜色
                     setHorizontalAlignment(SwingConstants.CENTER);
                     if (!isSelected && value != null && !"-".equals(value)) {
                         applyStatusColors(this, value.toString());
                     }
                     break;
-                case 2: // 耗时 - 右对齐
+                case 3: // 耗时 - 右对齐
                     setHorizontalAlignment(SwingConstants.RIGHT);
                     break;
-                case 3: // 断言 - 居中
+                case 4: // 断言 - 居中
                     setHorizontalAlignment(SwingConstants.CENTER);
                     break;
                 default: // 其他列 - 左对齐
@@ -591,9 +610,9 @@ public class PerformanceResultTablePanel extends JPanel {
         }
 
         private javax.swing.border.Border createCellBorder(int modelColumn, ResultNodeInfo info, boolean isSelected) {
-            int leftInset = modelColumn == 0 ? 8 : 6;
+            int leftInset = modelColumn == 1 ? 8 : 6;
 
-            if (modelColumn == 0 && info != null && !isSelected) {
+            if (modelColumn == 1 && info != null && !isSelected) {
                 Color stripeColor = info.isActuallySuccessful() ? ModernColors.SUCCESS_DARK : ModernColors.ERROR_DARK;
                 return BorderFactory.createCompoundBorder(
                         BorderFactory.createMatteBorder(0, 4, 0, 0, stripeColor),

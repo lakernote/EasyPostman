@@ -65,6 +65,7 @@ public class SseSampleExecutor {
         AtomicReference<String> lastEventTypeRef = new AtomicReference<>("");
         StringBuffer matchedEventBody = new StringBuffer();
         AtomicLong firstMessageLatencyMs = new AtomicLong(-1);
+        AtomicInteger eventCount = new AtomicInteger(0);
         AtomicInteger matchedMessageCount = new AtomicInteger(0);
         CountDownLatch openLatch = new CountDownLatch(1);
         CountDownLatch firstMessageLatch = new CountDownLatch(1);
@@ -123,6 +124,7 @@ public class SseSampleExecutor {
 
             @Override
             public void onEvent(EventSource eventSource, String id, String type, String data) {
+                eventCount.incrementAndGet();
                 String eventType = CharSequenceUtil.blankToDefault(type, "message");
                 if (matchesEvent(cfg, eventType) && matchesPayload(cfg, data)) {
                     boolean firstMatchedMessage = matchedMessageCount.incrementAndGet() == 1;
@@ -266,6 +268,7 @@ public class SseSampleExecutor {
         resp.addHeader("X-Easy-SSE-Mode", Collections.singletonList(cfg.completionMode.name()));
         resp.addHeader("X-Easy-SSE-Event-Filter", Collections.singletonList(CharSequenceUtil.blankToDefault(cfg.eventNameFilter, "")));
         resp.addHeader("X-Easy-SSE-Message-Filter", Collections.singletonList(CharSequenceUtil.blankToDefault(cfg.messageFilter, "")));
+        resp.addHeader("X-Easy-SSE-Event-Count", Collections.singletonList(String.valueOf(eventCount.get())));
         resp.addHeader("X-Easy-SSE-Message-Count", Collections.singletonList(String.valueOf(matchedMessageCount.get())));
         resp.addHeader("X-Easy-SSE-First-Message-Latency-Ms", Collections.singletonList(firstMessageLatencyMs.get() >= 0 ? String.valueOf(firstMessageLatencyMs.get()) : ""));
         resp.addHeader("X-Easy-SSE-Completion-Reason", Collections.singletonList(CharSequenceUtil.blankToDefault(completionReasonRef.get(), "")));

@@ -1,6 +1,7 @@
 package com.laker.postman.panel.performance.result;
 
 import com.laker.postman.panel.performance.model.RequestResult;
+import com.laker.postman.panel.performance.model.PerformanceProtocol;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -11,8 +12,6 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -21,23 +20,17 @@ public class PerformanceReportPanel extends JPanel {
 
     private static final int FAIL_COLUMN_INDEX = 3;
     private static final int SUCCESS_RATE_COLUMN_INDEX = 4;
-    private static final int QPS_COLUMN_INDEX = 5;
-    private static final int AVG_COLUMN_INDEX = 6;
-    private static final int P95_COLUMN_INDEX = 10;
-    private static final int P99_COLUMN_INDEX = 11;
-
-    // 百分位数常量
-    private static final double PERCENTILE_90 = 0.90;
-    private static final double PERCENTILE_95 = 0.95;
-    private static final double PERCENTILE_99 = 0.99;
-    private static final int MIN_SAMPLE_SIZE_FOR_INTERPOLATION = 10;
 
     // 成功率阈值
     private static final double SUCCESS_RATE_EXCELLENT = 99.0;
     private static final double SUCCESS_RATE_GOOD = 90.0;
 
     private final DefaultTableModel reportTableModel;
+    private final DefaultTableModel webSocketReportTableModel;
+    private final DefaultTableModel sseReportTableModel;
     private final String[] columns;
+    private final String[] webSocketColumns;
+    private final String[] sseColumns;
     private final String totalRowName;
 
     // 单例渲染器，避免重复创建
@@ -61,6 +54,37 @@ public class PerformanceReportPanel extends JPanel {
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_P95),
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_P99)
         };
+        this.webSocketColumns = new String[]{
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_API_NAME),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_SESSIONS),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_SUCCESS),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_FAIL),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_SUCCESS_RATE),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_SENT),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_RECEIVED),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_MATCHED),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_SEND_RATE),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_RECEIVE_RATE),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG_FIRST_MESSAGE),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG_SESSION),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_P95_SESSION),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_COMPLETION)
+        };
+        this.sseColumns = new String[]{
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_API_NAME),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_STREAMS),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_SUCCESS),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_FAIL),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_SUCCESS_RATE),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_EVENTS),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_MATCHED),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_EVENT_RATE),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_MATCHED_RATE),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG_FIRST_EVENT),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG_STREAM),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_P95_STREAM),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_COMPLETION)
+        };
         this.totalRowName = I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_TOTAL_ROW);
 
         // 创建单例渲染器
@@ -69,28 +93,24 @@ public class PerformanceReportPanel extends JPanel {
         this.generalRenderer = createGeneralRenderer();
 
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
 
-        reportTableModel = createTableModel();
+        reportTableModel = createTableModel(columns);
+        webSocketReportTableModel = createTableModel(webSocketColumns);
+        sseReportTableModel = createTableModel(sseColumns);
         JTable reportTable = createReportTable();
+        JTable webSocketReportTable = createGenericReportTable(webSocketReportTableModel);
+        JTable sseReportTable = createGenericReportTable(sseReportTableModel);
 
-        JScrollPane tableScroll = new JScrollPane(reportTable);
-        add(createToolbar(), BorderLayout.NORTH);
-        add(tableScroll, BorderLayout.CENTER);
+        JTabbedPane protocolTabs = new JTabbedPane();
+        protocolTabs.addTab(PerformanceProtocol.HTTP.getDisplayName(), new JScrollPane(reportTable));
+        protocolTabs.addTab(PerformanceProtocol.WEBSOCKET.getDisplayName(), new JScrollPane(webSocketReportTable));
+        protocolTabs.addTab(PerformanceProtocol.SSE.getDisplayName(), new JScrollPane(sseReportTable));
+        add(protocolTabs, BorderLayout.CENTER);
     }
 
-    private JPanel createToolbar() {
-        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
-        toolbar.setBorder(BorderFactory.createEmptyBorder(0, 0, 6, 0));
-
-        JButton copyReportButton = new JButton(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COPY_MARKDOWN_BUTTON));
-        copyReportButton.addActionListener(e -> copyMarkdownReport());
-        toolbar.add(copyReportButton);
-        return toolbar;
-    }
-
-    private DefaultTableModel createTableModel() {
-        return new DefaultTableModel(columns, 0) {
+    private DefaultTableModel createTableModel(String[] tableColumns) {
+        return new DefaultTableModel(tableColumns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -101,6 +121,7 @@ public class PerformanceReportPanel extends JPanel {
     private JTable createReportTable() {
         JTable table = new JTable(reportTableModel);
         table.setFocusable(false);
+        table.setFillsViewportHeight(true);
         // 使用 SUBSEQUENT_COLUMNS 模式：调整一列时，只影响后续列，不影响前面的列
         table.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
 
@@ -109,6 +130,65 @@ public class PerformanceReportPanel extends JPanel {
         table.getTableHeader().setFont(table.getTableHeader().getFont().deriveFont(Font.BOLD));
 
         return table;
+    }
+
+    private JTable createGenericReportTable(DefaultTableModel model) {
+        JTable table = new JTable(model);
+        table.setFocusable(false);
+        table.setFillsViewportHeight(true);
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
+        table.getTableHeader().setFont(table.getTableHeader().getFont().deriveFont(Font.BOLD));
+        DefaultTableCellRenderer centerRenderer = createCenteredRenderer(model);
+        DefaultTableCellRenderer nameRenderer = createNameRenderer(model);
+        table.getColumnModel().getColumn(0).setCellRenderer(nameRenderer);
+        for (int col = 1; col < model.getColumnCount(); col++) {
+            table.getColumnModel().getColumn(col).setCellRenderer(centerRenderer);
+        }
+        if (table.getColumnModel().getColumnCount() > 0) {
+            table.getColumnModel().getColumn(0).setMinWidth(160);
+            table.getColumnModel().getColumn(0).setPreferredWidth(220);
+            for (int col = 1; col < table.getColumnModel().getColumnCount(); col++) {
+                table.getColumnModel().getColumn(col).setMinWidth(80);
+                table.getColumnModel().getColumn(col).setPreferredWidth(col == model.getColumnCount() - 1 ? 150 : 105);
+            }
+        }
+        return table;
+    }
+
+    private DefaultTableCellRenderer createCenteredRenderer(DefaultTableModel model) {
+        return new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+                                                           boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                int modelRow = table.convertRowIndexToModel(row);
+                if (isTotalRow(model, modelRow)) {
+                    applyTotalRowStyle(c);
+                } else {
+                    applyDefaultCellStyle(c);
+                }
+                setHorizontalAlignment(SwingConstants.CENTER);
+                return c;
+            }
+        };
+    }
+
+    private DefaultTableCellRenderer createNameRenderer(DefaultTableModel model) {
+        return new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+                                                           boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                int modelRow = table.convertRowIndexToModel(row);
+                if (isTotalRow(model, modelRow)) {
+                    applyTotalRowStyle(c);
+                } else {
+                    applyDefaultCellStyle(c);
+                }
+                setHorizontalAlignment(SwingConstants.LEFT);
+                return c;
+            }
+        };
     }
 
     private void configureColumnWidths(JTable table) {
@@ -252,7 +332,11 @@ public class PerformanceReportPanel extends JPanel {
     }
 
     private boolean isTotalRow(int modelRow) {
-        Object firstColumnValue = reportTableModel.getValueAt(modelRow, 0);
+        return isTotalRow(reportTableModel, modelRow);
+    }
+
+    private boolean isTotalRow(DefaultTableModel model, int modelRow) {
+        Object firstColumnValue = model.getValueAt(modelRow, 0);
         return totalRowName.equals(firstColumnValue);
     }
 
@@ -301,18 +385,20 @@ public class PerformanceReportPanel extends JPanel {
 
     public void clearReport() {
         reportTableModel.setRowCount(0);
+        webSocketReportTableModel.setRowCount(0);
+        sseReportTableModel.setRowCount(0);
     }
 
-    private void addReportRow(Object[] rowData) {
+    private void addReportRow(DefaultTableModel model, Object[] rowData) {
         if (rowData == null) {
             throw new IllegalArgumentException("Row data cannot be null");
         }
-        if (rowData.length != reportTableModel.getColumnCount()) {
+        if (rowData.length != model.getColumnCount()) {
             throw new IllegalArgumentException(
                     String.format("Row data must match the number of columns. Expected: %d, Actual: %d",
-                            reportTableModel.getColumnCount(), rowData.length));
+                            model.getColumnCount(), rowData.length));
         }
-        reportTableModel.addRow(rowData);
+        model.addRow(rowData);
     }
 
     public void updateReport(Map<String, List<Long>> apiCostMap,
@@ -321,23 +407,81 @@ public class PerformanceReportPanel extends JPanel {
                              List<RequestResult> allRequestResults) {
         clearReport();
 
-        ReportStatistics stats = new ReportStatistics();
-
-        for (Map.Entry<String, List<Long>> entry : apiCostMap.entrySet()) {
-            String api = entry.getKey();
-            List<Long> costs = entry.getValue();
-
-            ApiMetrics metrics = calculateApiMetrics(api, costs, apiSuccessMap, apiFailMap,
-                    allRequestResults);
-            addReportRow(metrics.toRowData());
-            stats.accumulate(metrics);
+        PerformanceProtocolReportData reportData = PerformanceProtocolReportData.fromResults(
+                allRequestResults,
+                totalRowName
+        );
+        for (PerformanceProtocolReportData.HttpReportRow row : reportData.httpRows()) {
+            addReportRow(reportTableModel, toHttpRowData(row));
         }
-
-        if (stats.apiCount > 0) {
-            ApiMetrics totalMetrics = calculateTotalMetrics(stats, apiCostMap,
-                    allRequestResults);
-            addReportRow(totalMetrics.toRowData());
+        for (PerformanceProtocolReportData.StreamReportRow row : reportData.webSocketRows()) {
+            addReportRow(webSocketReportTableModel, toWebSocketRowData(row));
         }
+        for (PerformanceProtocolReportData.StreamReportRow row : reportData.sseRows()) {
+            addReportRow(sseReportTableModel, toSseRowData(row));
+        }
+    }
+
+    private Object[] toHttpRowData(PerformanceProtocolReportData.HttpReportRow row) {
+        return new Object[]{
+                row.name(),
+                row.total(),
+                row.success(),
+                row.fail(),
+                formatPercent(row.successRate()),
+                formatDecimal(row.qps()),
+                TimeDisplayUtil.formatElapsedTime(row.avg()),
+                TimeDisplayUtil.formatElapsedTime(row.min()),
+                TimeDisplayUtil.formatElapsedTime(row.max()),
+                TimeDisplayUtil.formatElapsedTime(row.p90()),
+                TimeDisplayUtil.formatElapsedTime(row.p95()),
+                TimeDisplayUtil.formatElapsedTime(row.p99())
+        };
+    }
+
+    private Object[] toWebSocketRowData(PerformanceProtocolReportData.StreamReportRow row) {
+        return new Object[]{
+                row.name(),
+                row.total(),
+                row.success(),
+                row.fail(),
+                formatPercent(row.successRate()),
+                row.sentMessages(),
+                row.receivedMessages(),
+                row.matchedMessages(),
+                formatDecimal(row.sendRate()),
+                formatDecimal(row.receiveRate()),
+                TimeDisplayUtil.formatElapsedTime(row.avgFirstMessageLatencyMs()),
+                TimeDisplayUtil.formatElapsedTime(row.avgDurationMs()),
+                TimeDisplayUtil.formatElapsedTime(row.p95DurationMs()),
+                row.topCompletionReason()
+        };
+    }
+
+    private Object[] toSseRowData(PerformanceProtocolReportData.StreamReportRow row) {
+        return new Object[]{
+                row.name(),
+                row.total(),
+                row.success(),
+                row.fail(),
+                formatPercent(row.successRate()),
+                row.receivedMessages(),
+                row.matchedMessages(),
+                formatDecimal(row.receiveRate()),
+                formatDecimal(row.matchedRate()),
+                TimeDisplayUtil.formatElapsedTime(row.avgFirstMessageLatencyMs()),
+                TimeDisplayUtil.formatElapsedTime(row.avgDurationMs()),
+                TimeDisplayUtil.formatElapsedTime(row.p95DurationMs()),
+                row.topCompletionReason()
+        };
+    }
+
+    private String formatPercent(double value) {
+        return String.format(Locale.ROOT, "%.2f%%", value);
+    }
+
+    private String formatDecimal(double value) {
+        return String.format(Locale.ROOT, "%.2f", value);
     }
 
     void copyMarkdownReport() {
@@ -346,353 +490,50 @@ public class PerformanceReportPanel extends JPanel {
     }
 
     String buildMarkdownReport() {
-        if (reportTableModel.getRowCount() == 0) {
+        if (reportTableModel.getRowCount() == 0
+                && webSocketReportTableModel.getRowCount() == 0
+                && sseReportTableModel.getRowCount() == 0) {
             return I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_MARKDOWN_EMPTY);
         }
 
-        int totalRow = reportTableModel.getRowCount() - 1;
         StringBuilder markdown = new StringBuilder(1024);
         markdown.append("# ")
                 .append(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_MARKDOWN_TITLE))
                 .append("\n\n");
-        markdown.append("## ")
-                .append(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_TOTAL_ROW))
-                .append("\n\n");
-        markdown.append("| ")
-                .append(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_TOTAL))
-                .append(" | ")
-                .append(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_SUCCESS))
-                .append(" | ")
-                .append(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_FAIL))
-                .append(" | ")
-                .append(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_SUCCESS_RATE))
-                .append(" | QPS | ")
-                .append(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG))
-                .append(" | P95 | P99 |\n");
-        markdown.append("| --- | --- | --- | --- | --- | --- | --- | --- |\n");
-        markdown.append("| ")
-                .append(valueAt(totalRow, 1)).append(" | ")
-                .append(valueAt(totalRow, 2)).append(" | ")
-                .append(valueAt(totalRow, FAIL_COLUMN_INDEX)).append(" | ")
-                .append(valueAt(totalRow, SUCCESS_RATE_COLUMN_INDEX)).append(" | ")
-                .append(valueAt(totalRow, QPS_COLUMN_INDEX)).append(" | ")
-                .append(valueAt(totalRow, AVG_COLUMN_INDEX)).append(" | ")
-                .append(valueAt(totalRow, P95_COLUMN_INDEX)).append(" | ")
-                .append(valueAt(totalRow, P99_COLUMN_INDEX)).append(" |\n\n");
-
-        markdown.append("## ")
-                .append(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_API_NAME))
-                .append("\n\n");
-        markdown.append("| ")
-                .append(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_API_NAME))
-                .append(" | ")
-                .append(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_TOTAL))
-                .append(" | ")
-                .append(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_SUCCESS_RATE))
-                .append(" | QPS | ")
-                .append(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG))
-                .append(" | P95 |\n");
-        markdown.append("| --- | --- | --- | --- | --- | --- |\n");
-        for (int row = 0; row < reportTableModel.getRowCount(); row++) {
-            if (totalRowName.equals(valueAt(row, 0))) {
-                continue;
-            }
-            markdown.append("| ")
-                    .append(escapeMarkdownCell(valueAt(row, 0))).append(" | ")
-                    .append(valueAt(row, 1)).append(" | ")
-                    .append(valueAt(row, SUCCESS_RATE_COLUMN_INDEX)).append(" | ")
-                    .append(valueAt(row, QPS_COLUMN_INDEX)).append(" | ")
-                    .append(valueAt(row, AVG_COLUMN_INDEX)).append(" | ")
-                    .append(valueAt(row, P95_COLUMN_INDEX)).append(" |\n");
-        }
+        appendMarkdownTable(markdown, PerformanceProtocol.HTTP.getDisplayName(), reportTableModel);
+        appendMarkdownTable(markdown, PerformanceProtocol.WEBSOCKET.getDisplayName(), webSocketReportTableModel);
+        appendMarkdownTable(markdown, PerformanceProtocol.SSE.getDisplayName(), sseReportTableModel);
         return markdown.toString();
     }
 
-    private String valueAt(int row, int column) {
-        Object value = reportTableModel.getValueAt(row, column);
+    private void appendMarkdownTable(StringBuilder markdown, String title, DefaultTableModel model) {
+        if (model.getRowCount() == 0) {
+            return;
+        }
+        markdown.append("## ").append(title).append("\n\n");
+        for (int col = 0; col < model.getColumnCount(); col++) {
+            markdown.append("| ").append(escapeMarkdownCell(model.getColumnName(col))).append(' ');
+        }
+        markdown.append("|\n");
+        for (int col = 0; col < model.getColumnCount(); col++) {
+            markdown.append("| --- ");
+        }
+        markdown.append("|\n");
+        for (int row = 0; row < model.getRowCount(); row++) {
+            for (int col = 0; col < model.getColumnCount(); col++) {
+                markdown.append("| ").append(escapeMarkdownCell(valueAt(model, row, col))).append(' ');
+            }
+            markdown.append("|\n");
+        }
+        markdown.append('\n');
+    }
+
+    private String valueAt(DefaultTableModel model, int row, int column) {
+        Object value = model.getValueAt(row, column);
         return value == null ? "" : value.toString();
     }
 
     private String escapeMarkdownCell(String value) {
         return value == null ? "" : value.replace("|", "\\|").replace("\n", " ");
-    }
-
-    private ApiMetrics calculateApiMetrics(String apiId, List<Long> costs,
-                                           Map<String, Integer> apiSuccessMap,
-                                           Map<String, Integer> apiFailMap,
-                                           List<RequestResult> allRequestResults) {
-        int total = costs.size();
-        int success = apiSuccessMap.getOrDefault(apiId, 0);
-        int fail = apiFailMap.getOrDefault(apiId, 0);
-
-        // 优化：一次排序获取所有统计值，避免多次流操作
-        PerformanceStats perfStats = calculatePerformanceStats(costs);
-
-        // 修复：按API ID过滤请求结果，计算该API的实际QPS
-        double qps = calculateQpsForApi(apiId, total, allRequestResults);
-        double rate = total > 0 ? (success * 100.0 / total) : 0;
-
-        // 从 ApiMetadata 中获取 apiName 用于显示（通过 getApiName() 方法）
-        String displayName = allRequestResults.stream()
-                .filter(result -> apiId.equals(result.apiId))
-                .findFirst()
-                .map(RequestResult::getApiName)  // 使用方法而不是字段
-                .orElse(apiId);  // 如果找不到，使用 ID 作为备用
-
-        return new ApiMetrics(displayName, total, success, fail, rate, qps,
-                perfStats.avg, perfStats.min, perfStats.max,
-                perfStats.p90, perfStats.p95, perfStats.p99);
-    }
-
-    private ApiMetrics calculateTotalMetrics(ReportStatistics stats,
-                                             Map<String, List<Long>> apiCostMap,
-                                             List<RequestResult> allRequestResults) {
-        // 避免除零错误
-        if (stats.apiCount == 0) {
-            return new ApiMetrics(totalRowName, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-        }
-
-        double totalRate = stats.totalApi > 0 ? (stats.totalSuccess * 100.0 / stats.totalApi) : 0;
-
-        long totalAvg = calculateTotalAverage(apiCostMap, stats.totalApi);
-        // 计算所有API的总QPS
-        double totalQps = calculateQpsForAllApis(stats.totalApi, allRequestResults);
-        long totalMin = stats.totalMin == Long.MAX_VALUE ? 0 : stats.totalMin;
-
-        PerformanceStats totalPerfStats = calculateTotalPerformanceStats(apiCostMap);
-
-        return new ApiMetrics(totalRowName, stats.totalApi, stats.totalSuccess, stats.totalFail,
-                totalRate, totalQps, totalAvg, totalMin, stats.totalMax,
-                totalPerfStats.p90, totalPerfStats.p95, totalPerfStats.p99);
-    }
-
-    /**
-     * 计算所有请求的总体性能统计（合并所有 API）
-     */
-    private PerformanceStats calculateTotalPerformanceStats(Map<String, List<Long>> apiCostMap) {
-        // 合并所有 API 的请求耗时
-        List<Long> allCosts = apiCostMap.values().stream()
-                .flatMap(List::stream)
-                .toList();
-
-        if (allCosts.isEmpty()) {
-            return new PerformanceStats(0, 0, 0, 0, 0, 0);
-        }
-
-        return calculatePerformanceStats(allCosts);
-    }
-
-
-    private long calculateTotalAverage(Map<String, List<Long>> apiCostMap, int totalApi) {
-        if (totalApi == 0) {
-            return 0;
-        }
-        long sum = apiCostMap.values().stream()
-                .flatMap(List::stream)
-                .mapToLong(Long::longValue)
-                .sum();
-        return sum / totalApi;
-    }
-
-    /**
-     * 计算指定API的QPS（使用ID进行过滤，避免重名问题）
-     */
-    private double calculateQpsForApi(String apiId, int totalRequests, List<RequestResult> allRequestResults) {
-        if (totalRequests == 0 || allRequestResults.isEmpty()) {
-            return 0;
-        }
-
-        // 【关键修复】使用 apiId 而不是 apiName 过滤请求，避免重名问题
-        List<RequestResult> apiResults = allRequestResults.stream()
-                .filter(result -> apiId.equals(result.apiId))
-                .toList();
-
-        if (apiResults.isEmpty()) {
-            return 0;
-        }
-
-        // 获取该API的最早开始时间和最晚结束时间
-        long minStart = apiResults.stream()
-                .mapToLong(result -> result.startTime)
-                .min()
-                .orElse(0);
-        long maxEnd = apiResults.stream()
-                .mapToLong(result -> result.endTime)
-                .max()
-                .orElse(minStart);
-
-        long spanMs = Math.max(1, maxEnd - minStart);
-        return totalRequests * 1000.0 / spanMs;
-    }
-
-    /**
-     * 计算所有API的总QPS
-     */
-    private double calculateQpsForAllApis(int totalRequests, List<RequestResult> allRequestResults) {
-        if (totalRequests == 0 || allRequestResults.isEmpty()) {
-            return 0;
-        }
-
-        // 获取所有请求的最早开始时间和最晚结束时间
-        long minStart = allRequestResults.stream()
-                .mapToLong(result -> result.startTime)
-                .min()
-                .orElse(0);
-        long maxEnd = allRequestResults.stream()
-                .mapToLong(result -> result.endTime)
-                .max()
-                .orElse(minStart);
-
-        long spanMs = Math.max(1, maxEnd - minStart);
-
-        return totalRequests * 1000.0 / spanMs;
-    }
-
-    private static class ReportStatistics {
-        int totalApi = 0;        // 总请求数
-        int totalSuccess = 0;    // 总成功数
-        int totalFail = 0;       // 总失败数
-        long totalMin = Long.MAX_VALUE;  // 最小耗时
-        long totalMax = 0;       // 最大耗时
-        int apiCount = 0;        // API 数量
-
-        void accumulate(ApiMetrics metrics) {
-            totalApi += metrics.total;
-            totalSuccess += metrics.success;
-            totalFail += metrics.fail;
-            totalMin = Math.min(totalMin, metrics.min);
-            totalMax = Math.max(totalMax, metrics.max);
-            apiCount++;
-        }
-    }
-
-    private static class ApiMetrics {
-        final String name;
-        final int total;
-        final int success;
-        final int fail;
-        final double rate;
-        final double qps;
-        final long avg;
-        final long min;
-        final long max;
-        final long p90;
-        final long p95;
-        final long p99;
-
-        ApiMetrics(String name, int total, int success, int fail, double rate, double qps,
-                   long avg, long min, long max, long p90, long p95, long p99) {
-            this.name = name;
-            this.total = total;
-            this.success = success;
-            this.fail = fail;
-            this.rate = rate;
-            this.qps = qps;
-            this.avg = avg;
-            this.min = min;
-            this.max = max;
-            this.p90 = p90;
-            this.p95 = p95;
-            this.p99 = p99;
-        }
-
-        Object[] toRowData() {
-            return new Object[]{
-                    name,
-                    total,
-                    success,
-                    fail,
-                    String.format(Locale.ROOT, "%.2f%%", rate),
-                    String.format(Locale.ROOT, "%.2f", qps),
-                    TimeDisplayUtil.formatElapsedTime(avg),
-                    TimeDisplayUtil.formatElapsedTime(min),
-                    TimeDisplayUtil.formatElapsedTime(max),
-                    TimeDisplayUtil.formatElapsedTime(p90),
-                    TimeDisplayUtil.formatElapsedTime(p95),
-                    TimeDisplayUtil.formatElapsedTime(p99)
-            };
-        }
-    }
-
-    /**
-     * 性能统计结果类
-     */
-    private static class PerformanceStats {
-        final long avg;
-        final long min;
-        final long max;
-        final long p90;
-        final long p95;
-        final long p99;
-
-        PerformanceStats(long avg, long min, long max, long p90, long p95, long p99) {
-            this.avg = avg;
-            this.min = min;
-            this.max = max;
-            this.p90 = p90;
-            this.p95 = p95;
-            this.p99 = p99;
-        }
-    }
-
-    /**
-     * 优化的性能统计计算：一次排序获取所有统计值
-     */
-    private PerformanceStats calculatePerformanceStats(List<Long> costs) {
-        if (costs == null || costs.isEmpty()) {
-            return new PerformanceStats(0, 0, 0, 0, 0, 0);
-        }
-
-        // 一次排序获取所有值
-        List<Long> sorted = new ArrayList<>(costs);
-        Collections.sort(sorted);
-
-        int size = sorted.size();
-        // 优化：在遍历中同时计算sum和min/max，避免多次遍历
-        long sum = 0;
-        long min = sorted.get(0);
-        long max = sorted.get(size - 1);
-        for (Long cost : sorted) {
-            sum += cost;
-        }
-        long avg = sum / size;
-        long p90 = getPercentileFromSorted(sorted, PERCENTILE_90);
-        long p95 = getPercentileFromSorted(sorted, PERCENTILE_95);
-        long p99 = getPercentileFromSorted(sorted, PERCENTILE_99);
-
-        return new PerformanceStats(avg, min, max, p90, p95, p99);
-    }
-
-    /**
-     * 从已排序的列表中获取百分位数（修复边界情况）
-     */
-    private long getPercentileFromSorted(List<Long> sortedCosts, double percentile) {
-        int size = sortedCosts.size();
-        if (size == 0) {
-            return 0;
-        }
-        if (size == 1) {
-            return sortedCosts.get(0);
-        }
-        // 对于小样本（少于10个），直接取最接近的值，避免插值误导
-        if (size < MIN_SAMPLE_SIZE_FOR_INTERPOLATION) {
-            int index = Math.min((int) Math.ceil(percentile * size) - 1, size - 1);
-            return sortedCosts.get(Math.max(0, index));
-        }
-
-        // 使用更准确的百分位数计算方法（线性插值）
-        double index = percentile * (size - 1);
-        int lowerIndex = (int) Math.floor(index);
-        int upperIndex = (int) Math.ceil(index);
-
-        if (lowerIndex == upperIndex) {
-            return sortedCosts.get(lowerIndex);
-        }
-
-        // 线性插值
-        long lowerValue = sortedCosts.get(lowerIndex);
-        long upperValue = sortedCosts.get(upperIndex);
-        double fraction = index - lowerIndex;
-        return (long) (lowerValue + (upperValue - lowerValue) * fraction);
     }
 }

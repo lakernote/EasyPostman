@@ -15,7 +15,8 @@ final class PerformanceResultNodeInfoMapper {
                 executionResult.request,
                 executionResult.response,
                 executionResult.testResults,
-                executionResult.executionFailed
+                executionResult.executionFailed,
+                executionResult.protocol
         );
     }
 

@@ -33,6 +33,8 @@ public class ResultNodeInfo {
      */
     public final List<TestResult> testResults;
 
+    public final PerformanceProtocol protocol;
+
     /**
      * 耗时（毫秒）——在构造时就算好
      */
@@ -56,12 +58,24 @@ public class ResultNodeInfo {
             HttpResponse resp,
             List<TestResult> testResults,
             boolean executionFailed) {
+        this(name, errorMsg, req, resp, testResults, executionFailed, PerformanceProtocol.HTTP);
+    }
+
+    public ResultNodeInfo(
+            String name,
+            String errorMsg,
+            PreparedRequest req,
+            HttpResponse resp,
+            List<TestResult> testResults,
+            boolean executionFailed,
+            PerformanceProtocol protocol) {
         this.name = name;
         this.errorMsg = errorMsg;
         this.req = req;
         this.resp = resp;
         this.testResults = testResults;
         this.executionFailed = executionFailed;
+        this.protocol = protocol == null ? PerformanceProtocol.HTTP : protocol;
 
         // ✅ 统一在这里算 ms（不依赖 costNs）
         this.costMs = resp != null ? (int) resp.costMs : 0;

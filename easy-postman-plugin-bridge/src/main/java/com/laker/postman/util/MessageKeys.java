@@ -691,6 +691,9 @@ public final class MessageKeys {
     public static final String MSG_ONLY_HTTP_SUPPORTED = "msg.only_http_supported";
     public static final String MSG_ONLY_HTTP_SSE_WS_SUPPORTED = "msg.only_http_sse_ws_supported";
     public static final String PERFORMANCE_MSG_SAVE_SUCCESS = "performance.msg.save_success";
+    public static final String PERFORMANCE_PROTOCOL_HTTP = "performance.protocol.http";
+    public static final String PERFORMANCE_PROTOCOL_WEBSOCKET = "performance.protocol.websocket";
+    public static final String PERFORMANCE_PROTOCOL_SSE = "performance.protocol.sse";
 
     // ============ 性能报表列相关 ============
     public static final String PERFORMANCE_REPORT_COLUMN_API_NAME = "performance.report.column.api_name";
@@ -705,6 +708,23 @@ public final class MessageKeys {
     public static final String PERFORMANCE_REPORT_COLUMN_P90 = "performance.report.column.p90";
     public static final String PERFORMANCE_REPORT_COLUMN_P95 = "performance.report.column.p95";
     public static final String PERFORMANCE_REPORT_COLUMN_P99 = "performance.report.column.p99";
+    public static final String PERFORMANCE_REPORT_COLUMN_SESSIONS = "performance.report.column.sessions";
+    public static final String PERFORMANCE_REPORT_COLUMN_STREAMS = "performance.report.column.streams";
+    public static final String PERFORMANCE_REPORT_COLUMN_SENT = "performance.report.column.sent";
+    public static final String PERFORMANCE_REPORT_COLUMN_RECEIVED = "performance.report.column.received";
+    public static final String PERFORMANCE_REPORT_COLUMN_MATCHED = "performance.report.column.matched";
+    public static final String PERFORMANCE_REPORT_COLUMN_SEND_RATE = "performance.report.column.send_rate";
+    public static final String PERFORMANCE_REPORT_COLUMN_RECEIVE_RATE = "performance.report.column.receive_rate";
+    public static final String PERFORMANCE_REPORT_COLUMN_EVENT_RATE = "performance.report.column.event_rate";
+    public static final String PERFORMANCE_REPORT_COLUMN_MATCHED_RATE = "performance.report.column.matched_rate";
+    public static final String PERFORMANCE_REPORT_COLUMN_EVENTS = "performance.report.column.events";
+    public static final String PERFORMANCE_REPORT_COLUMN_AVG_FIRST_MESSAGE = "performance.report.column.avg_first_message";
+    public static final String PERFORMANCE_REPORT_COLUMN_AVG_FIRST_EVENT = "performance.report.column.avg_first_event";
+    public static final String PERFORMANCE_REPORT_COLUMN_AVG_SESSION = "performance.report.column.avg_session";
+    public static final String PERFORMANCE_REPORT_COLUMN_AVG_STREAM = "performance.report.column.avg_stream";
+    public static final String PERFORMANCE_REPORT_COLUMN_P95_SESSION = "performance.report.column.p95_session";
+    public static final String PERFORMANCE_REPORT_COLUMN_P95_STREAM = "performance.report.column.p95_stream";
+    public static final String PERFORMANCE_REPORT_COLUMN_COMPLETION = "performance.report.column.completion";
     public static final String PERFORMANCE_REPORT_TOTAL_ROW = "performance.report.total_row";
     public static final String PERFORMANCE_REPORT_COPY_MARKDOWN_BUTTON = "performance.report.copy_markdown.button";
     public static final String PERFORMANCE_REPORT_MARKDOWN_TITLE = "performance.report.markdown.title";
@@ -722,8 +742,24 @@ public final class MessageKeys {
     public static final String PERFORMANCE_TREND_METRICS = "performance.trend.metrics";
     public static final String PERFORMANCE_TREND_PLACEHOLDER_TITLE = "performance.trend.placeholder.title";
     public static final String PERFORMANCE_TREND_PLACEHOLDER_HINT = "performance.trend.placeholder.hint";
+    public static final String PERFORMANCE_TREND_OVERVIEW = "performance.trend.overview";
+    public static final String PERFORMANCE_TREND_SAMPLE_RATE = "performance.trend.sample_rate";
+    public static final String PERFORMANCE_TREND_PROTOCOL_SAMPLE_RATE = "performance.trend.protocol_sample_rate";
+    public static final String PERFORMANCE_TREND_ACTIVE_WS = "performance.trend.active_ws";
+    public static final String PERFORMANCE_TREND_ACTIVE_SSE = "performance.trend.active_sse";
+    public static final String PERFORMANCE_TREND_SENT_RATE = "performance.trend.sent_rate";
+    public static final String PERFORMANCE_TREND_RECEIVED_RATE = "performance.trend.received_rate";
+    public static final String PERFORMANCE_TREND_EVENT_RATE = "performance.trend.event_rate";
+    public static final String PERFORMANCE_TREND_MATCHED_RATE = "performance.trend.matched_rate";
+    public static final String PERFORMANCE_TREND_MESSAGE_RATE = "performance.trend.message_rate";
+    public static final String PERFORMANCE_TREND_FIRST_MESSAGE_LATENCY_MS = "performance.trend.first_message_latency_ms";
+    public static final String PERFORMANCE_TREND_FIRST_EVENT_LATENCY_MS = "performance.trend.first_event_latency_ms";
+    public static final String PERFORMANCE_TREND_LATENCY_DURATION_MS = "performance.trend.latency_duration_ms";
+    public static final String PERFORMANCE_TREND_SESSION_DURATION_MS = "performance.trend.session_duration_ms";
+    public static final String PERFORMANCE_TREND_STREAM_DURATION_MS = "performance.trend.stream_duration_ms";
 
     // ============ 性能结果树相关 ============
+    public static final String PERFORMANCE_RESULT_TREE_COLUMN_PROTOCOL = "performance.result_tree.column.protocol";
     public static final String PERFORMANCE_RESULT_TREE_COLUMN_NAME = "performance.result_tree.column.name";
     public static final String PERFORMANCE_RESULT_TREE_COLUMN_STATUS = "performance.result_tree.column.status";
     public static final String PERFORMANCE_RESULT_TREE_COLUMN_COST = "performance.result_tree.column.cost";

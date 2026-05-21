@@ -201,6 +201,8 @@ public class PerformancePanel extends SingletonBasePanel {
                 performanceTrendPanel,
                 resultTabbedPane,
                 () -> executionEngine != null ? executionEngine.getActiveThreads() : 0,
+                () -> executionEngine != null ? executionEngine.getActiveWebSockets() : 0,
+                () -> executionEngine != null ? executionEngine.getActiveSseStreams() : 0,
                 () -> timerManager != null ? timerManager.getSamplingIntervalMs() : 1000L
         );
         timerManager.setTrendSamplingCallback(statisticsCoordinator::sampleTrendData);

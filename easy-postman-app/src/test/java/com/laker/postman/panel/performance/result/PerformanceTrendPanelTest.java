@@ -21,49 +21,64 @@ import static org.testng.Assert.assertTrue;
 public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
 
     @Test
-    public void shouldUseProtocolTabsAndDefaultToSeparateChartsWithHttpVirtualUsers() {
+    public void shouldUseTopToolbarProtocolSwitcherAndGlobalViewMode() {
         PerformanceTrendPanel panel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
-        JTabbedPane tabs = findFirst(panel, JTabbedPane.class);
-        assertEquals(tabs.getTabCount(), 3);
-        assertEquals(tabs.getTitleAt(0), PerformanceProtocol.HTTP.getDisplayName());
-        assertEquals(tabs.getTitleAt(1), PerformanceProtocol.WEBSOCKET.getDisplayName());
-        assertEquals(tabs.getTitleAt(2), PerformanceProtocol.SSE.getDisplayName());
-
-        Component httpTab = tabs.getComponentAt(0);
+        JToggleButton httpButton = findToggleButton(panel, PerformanceProtocol.HTTP.getDisplayName());
+        JToggleButton webSocketButton = findToggleButton(panel, PerformanceProtocol.WEBSOCKET.getDisplayName());
+        JToggleButton sseButton = findToggleButton(panel, PerformanceProtocol.SSE.getDisplayName());
 
         JToggleButton separateButton = findToggleButton(
-                httpTab,
+                panel,
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_SEPARATE_CHARTS)
         );
         JToggleButton combinedButton = findToggleButton(
-                httpTab,
+                panel,
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_COMBINED_CHART)
         );
 
+        if (!httpButton.isSelected()) {
+            httpButton.doClick();
+        }
+        if (!separateButton.isSelected()) {
+            separateButton.doClick();
+        }
+
+        assertTrue(findAll(panel, JTabbedPane.class).isEmpty());
+        assertTrue(httpButton.isSelected());
+        assertFalse(webSocketButton.isSelected());
+        assertFalse(sseButton.isSelected());
         assertTrue(separateButton.isSelected());
         assertFalse(combinedButton.isSelected());
-        assertEquals(countVisibleCharts(httpTab), 4);
+        assertEquals(countVisibleCharts(panel), 4);
         assertTrue(hasCheckBox(
-                httpTab,
+                panel,
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_VIRTUAL_USERS)
         ));
-        assertTrue(((NumberAxis) findAll(httpTab, ChartPanel.class).get(0).getChart().getXYPlot().getRangeAxis())
+        assertTrue(((NumberAxis) findAll(panel, ChartPanel.class).get(0).getChart().getXYPlot().getRangeAxis())
                 .getNumberFormatOverride() != null);
 
         combinedButton.doClick();
 
         assertTrue(combinedButton.isSelected());
         assertFalse(separateButton.isSelected());
-        assertEquals(countVisibleCharts(httpTab), 1);
-        assertFalse(findAll(httpTab, JCheckBox.class).isEmpty());
+        assertEquals(countVisibleCharts(panel), 1);
+        assertFalse(findAll(panel, JCheckBox.class).isEmpty());
+
+        separateButton.doClick();
     }
 
     @Test
     public void shouldStretchSeparateChartGridWhenViewportIsTallerThanPreferredHeight() {
         PerformanceTrendPanel panel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
-        JTabbedPane tabs = findFirst(panel, JTabbedPane.class);
-        Component httpTab = tabs.getComponentAt(0);
-        JScrollPane splitScrollPane = findFirst(httpTab, JScrollPane.class);
+        JToggleButton separateButton = findToggleButton(
+                panel,
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_SEPARATE_CHARTS)
+        );
+        if (!separateButton.isSelected()) {
+            separateButton.doClick();
+        }
+
+        JScrollPane splitScrollPane = findFirst(panel, JScrollPane.class);
         JViewport viewport = splitScrollPane.getViewport();
         viewport.setExtentSize(new Dimension(1600, 900));
 

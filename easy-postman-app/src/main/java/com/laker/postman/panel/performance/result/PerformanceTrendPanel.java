@@ -53,15 +53,17 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
 
     private final List<TrendView> trendViews = new ArrayList<>();
     private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
+    private String chartMode = SEPARATE_VIEW;
 
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
-        JTabbedPane protocolTabs = new JTabbedPane();
-        protocolTabs.addTab(PerformanceProtocol.HTTP.getDisplayName(), createHttpPanel());
-        protocolTabs.addTab(PerformanceProtocol.WEBSOCKET.getDisplayName(), createWebSocketPanel());
-        protocolTabs.addTab(PerformanceProtocol.SSE.getDisplayName(), createSsePanel());
-        add(protocolTabs, BorderLayout.CENTER);
+        JPanel protocolCards = new JPanel(new CardLayout());
+        protocolCards.add(createHttpPanel(), PerformanceProtocol.HTTP.name());
+        protocolCards.add(createWebSocketPanel(), PerformanceProtocol.WEBSOCKET.name());
+        protocolCards.add(createSsePanel(), PerformanceProtocol.SSE.name());
+        add(createToolbar(protocolCards), BorderLayout.NORTH);
+        add(protocolCards, BorderLayout.CENTER);
     }
 
     @Override
@@ -107,6 +109,53 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         TrendView view = new TrendView(titleKey, specs);
         trendViews.add(view);
         return view.panel();
+    }
+
+    private JPanel createToolbar(JPanel protocolCards) {
+        JPanel toolbar = new JPanel(new BorderLayout(8, 0));
+        toolbar.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
+        toolbar.add(createProtocolSwitcher(protocolCards), BorderLayout.WEST);
+        toolbar.add(createModeSwitcher(), BorderLayout.EAST);
+        return toolbar;
+    }
+
+    private JPanel createProtocolSwitcher(JPanel protocolCards) {
+        ButtonGroup protocolGroup = new ButtonGroup();
+        JPanel switcher = new SegmentGroupPanel(FlowLayout.LEFT);
+        for (PerformanceProtocol protocol : PerformanceProtocol.values()) {
+            JToggleButton button = new SegmentToggleButton(
+                    protocol.getDisplayName(),
+                    protocol == PerformanceProtocol.HTTP
+            );
+            button.addActionListener(e -> {
+                CardLayout layout = (CardLayout) protocolCards.getLayout();
+                layout.show(protocolCards, protocol.name());
+            });
+            protocolGroup.add(button);
+            switcher.add(button);
+        }
+        return switcher;
+    }
+
+    private JPanel createModeSwitcher() {
+        JToggleButton separateButton = new SegmentToggleButton(
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_SEPARATE_CHARTS),
+                true
+        );
+        JToggleButton combinedButton = new SegmentToggleButton(
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_COMBINED_CHART),
+                false
+        );
+        ButtonGroup modeGroup = new ButtonGroup();
+        modeGroup.add(separateButton);
+        modeGroup.add(combinedButton);
+        separateButton.addActionListener(e -> showChartMode(SEPARATE_VIEW));
+        combinedButton.addActionListener(e -> showChartMode(COMBINED_VIEW));
+
+        JPanel modePanel = new SegmentGroupPanel(FlowLayout.RIGHT);
+        modePanel.add(separateButton);
+        modePanel.add(combinedButton);
+        return modePanel;
     }
 
     private ChartPanel createChartPanel(TimeSeriesCollection dataset, String titleKey) {
@@ -278,6 +327,13 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         return isDarkTheme() ? new Color(239, 83, 80) : new Color(211, 47, 47);
     }
 
+    private void showChartMode(String mode) {
+        chartMode = mode;
+        for (TrendView trendView : trendViews) {
+            trendView.showChartMode(mode);
+        }
+    }
+
     private final class TrendView {
         private final JPanel panel;
         private final JPanel splitChartsPanel = new ScrollableChartGridPanel();
@@ -286,14 +342,13 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         private final ChartPanel combinedChartPanel;
         private final List<SeriesControl> controls = new ArrayList<>();
         private final List<SplitChart> splitCharts = new ArrayList<>();
-        private final JToggleButton separateButton;
-        private final JToggleButton combinedButton;
 
         private TrendView(String titleKey, SeriesSpec... specs) {
             panel = new JPanel(new BorderLayout(8, 0));
-            panel.setBorder(BorderFactory.createEmptyBorder(8, 10, 10, 10));
+            panel.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
 
             JPanel controlsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+            controlsPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
             for (SeriesSpec spec : specs) {
                 JCheckBox checkBox = new JCheckBox(spec.series().getKey().toString(), spec.selected());
                 checkBox.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
@@ -308,28 +363,6 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
                 splitCharts.add(new SplitChart(spec, createSplitChartPanel(spec)));
             }
 
-            separateButton = new SegmentToggleButton(
-                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_SEPARATE_CHARTS),
-                    true
-            );
-            combinedButton = new SegmentToggleButton(
-                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_COMBINED_CHART),
-                    false
-            );
-            ButtonGroup modeGroup = new ButtonGroup();
-            modeGroup.add(separateButton);
-            modeGroup.add(combinedButton);
-            separateButton.addActionListener(e -> showChartMode(SEPARATE_VIEW));
-            combinedButton.addActionListener(e -> showChartMode(COMBINED_VIEW));
-
-            JPanel modePanel = new SegmentGroupPanel();
-            modePanel.add(separateButton);
-            modePanel.add(combinedButton);
-
-            JPanel topPanel = new JPanel(new BorderLayout(8, 0));
-            topPanel.add(controlsPanel, BorderLayout.CENTER);
-            topPanel.add(modePanel, BorderLayout.EAST);
-
             JScrollPane splitScrollPane = new JScrollPane(splitChartsPanel);
             splitScrollPane.setBorder(BorderFactory.createEmptyBorder());
             splitScrollPane.getVerticalScrollBar().setUnitIncrement(16);
@@ -338,10 +371,10 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
             chartCards.add(splitScrollPane, SEPARATE_VIEW);
             chartCards.add(combinedChartPanel, COMBINED_VIEW);
 
-            panel.add(topPanel, BorderLayout.NORTH);
+            panel.add(controlsPanel, BorderLayout.NORTH);
             panel.add(chartCards, BorderLayout.CENTER);
             rebuildCharts();
-            showChartMode(SEPARATE_VIEW);
+            showChartMode(chartMode);
         }
 
         private JPanel panel() {
@@ -435,8 +468,8 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
     }
 
     private final class SegmentGroupPanel extends JPanel {
-        private SegmentGroupPanel() {
-            super(new FlowLayout(FlowLayout.RIGHT, 2, 2));
+        private SegmentGroupPanel(int alignment) {
+            super(new FlowLayout(alignment, 2, 2));
             setOpaque(false);
             setBorder(BorderFactory.createEmptyBorder(1, 2, 1, 2));
         }

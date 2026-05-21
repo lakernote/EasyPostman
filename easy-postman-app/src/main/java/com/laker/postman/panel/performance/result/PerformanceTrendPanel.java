@@ -28,6 +28,9 @@ import java.util.List;
 
 public class PerformanceTrendPanel extends SingletonBasePanel {
 
+    private static final String SEPARATE_VIEW = "separate";
+    private static final String COMBINED_VIEW = "combined";
+
     private final TimeSeries overviewUsersSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_THREADS));
     private final TimeSeries overviewSampleRateSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_SAMPLE_RATE));
     private final TimeSeries overviewErrorRateSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_ERROR_RATE_PERCENT));
@@ -124,22 +127,27 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
     }
 
     private ChartPanel createChartPanel(TimeSeriesCollection dataset, String titleKey) {
-        String title = I18nUtil.getMessage(titleKey);
+        return createChartPanel(dataset, I18nUtil.getMessage(titleKey), true);
+    }
+
+    private ChartPanel createChartPanel(TimeSeriesCollection dataset, String title, boolean legend) {
         JFreeChart chart = ChartFactory.createTimeSeriesChart(
                 title,
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_TIME),
                 title,
                 dataset,
-                true,
+                legend,
                 true,
                 false
         );
         chart.setBackgroundPaint(getChartBackgroundColor());
         chart.getTitle().setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 0));
         chart.getTitle().setPaint(getTextColor());
-        chart.getLegend().setItemFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        chart.getLegend().setItemPaint(getTextColor());
-        chart.getLegend().setBackgroundPaint(getChartBackgroundColor());
+        if (chart.getLegend() != null) {
+            chart.getLegend().setItemFont(FontsUtil.getDefaultFont(Font.PLAIN));
+            chart.getLegend().setItemPaint(getTextColor());
+            chart.getLegend().setBackgroundPaint(getChartBackgroundColor());
+        }
 
         XYPlot plot = chart.getXYPlot();
         plot.setBackgroundPaint(getChartBackgroundColor());
@@ -167,6 +175,10 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         panel.setMouseWheelEnabled(true);
         panel.setBackground(getChartPanelBackgroundColor());
         panel.setDisplayToolTips(true);
+        panel.setMinimumDrawWidth(0);
+        panel.setMinimumDrawHeight(0);
+        panel.setMaximumDrawWidth(Integer.MAX_VALUE);
+        panel.setMaximumDrawHeight(Integer.MAX_VALUE);
         return panel;
     }
 
@@ -287,33 +299,83 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
 
     private final class TrendView {
         private final JPanel panel;
-        private final TimeSeriesCollection dataset = new TimeSeriesCollection();
-        private final ChartPanel chartPanel;
+        private final JPanel splitChartsPanel = new ScrollableChartGridPanel();
+        private final JPanel chartCards = new JPanel(new CardLayout());
+        private final TimeSeriesCollection combinedDataset = new TimeSeriesCollection();
+        private final ChartPanel combinedChartPanel;
         private final List<SeriesControl> controls = new ArrayList<>();
+        private final List<SplitChart> splitCharts = new ArrayList<>();
+        private final JToggleButton separateButton;
+        private final JToggleButton combinedButton;
 
         private TrendView(String titleKey, SeriesSpec... specs) {
             panel = new JPanel(new BorderLayout(8, 0));
             panel.setBorder(BorderFactory.createEmptyBorder(8, 10, 10, 10));
+
             JPanel controlsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
             for (SeriesSpec spec : specs) {
                 JCheckBox checkBox = new JCheckBox(spec.series().getKey().toString(), spec.selected());
+                checkBox.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
                 checkBox.addActionListener(e -> {
                     if (selectedCount() == 0) {
                         checkBox.setSelected(true);
                     }
-                    rebuildDataset();
+                    rebuildCharts();
                 });
                 controls.add(new SeriesControl(spec, checkBox));
                 controlsPanel.add(checkBox);
+                splitCharts.add(new SplitChart(spec, createSplitChartPanel(spec)));
             }
-            chartPanel = createChartPanel(dataset, titleKey);
-            panel.add(controlsPanel, BorderLayout.NORTH);
-            panel.add(chartPanel, BorderLayout.CENTER);
-            rebuildDataset();
+
+            separateButton = createViewModeButton(
+                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_SEPARATE_CHARTS),
+                    true
+            );
+            combinedButton = createViewModeButton(
+                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_COMBINED_CHART),
+                    false
+            );
+            ButtonGroup modeGroup = new ButtonGroup();
+            modeGroup.add(separateButton);
+            modeGroup.add(combinedButton);
+            separateButton.addActionListener(e -> showChartMode(SEPARATE_VIEW));
+            combinedButton.addActionListener(e -> showChartMode(COMBINED_VIEW));
+
+            JPanel modePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+            modePanel.add(separateButton);
+            modePanel.add(combinedButton);
+
+            JPanel topPanel = new JPanel(new BorderLayout(8, 0));
+            topPanel.add(controlsPanel, BorderLayout.CENTER);
+            topPanel.add(modePanel, BorderLayout.EAST);
+
+            JScrollPane splitScrollPane = new JScrollPane(splitChartsPanel);
+            splitScrollPane.setBorder(BorderFactory.createEmptyBorder());
+            splitScrollPane.getVerticalScrollBar().setUnitIncrement(16);
+
+            combinedChartPanel = createChartPanel(combinedDataset, titleKey);
+            chartCards.add(splitScrollPane, SEPARATE_VIEW);
+            chartCards.add(combinedChartPanel, COMBINED_VIEW);
+
+            panel.add(topPanel, BorderLayout.NORTH);
+            panel.add(chartCards, BorderLayout.CENTER);
+            rebuildCharts();
+            showChartMode(SEPARATE_VIEW);
         }
 
         private JPanel panel() {
             return panel;
+        }
+
+        private JToggleButton createViewModeButton(String text, boolean selected) {
+            JToggleButton button = new JToggleButton(text, selected);
+            button.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+            button.setFocusPainted(false);
+            button.setMargin(new Insets(3, 10, 3, 10));
+            button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            button.putClientProperty(com.formdev.flatlaf.FlatClientProperties.BUTTON_TYPE,
+                    com.formdev.flatlaf.FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
+            return button;
         }
 
         private int selectedCount() {
@@ -326,19 +388,65 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
             return count;
         }
 
-        private void rebuildDataset() {
-            dataset.removeAllSeries();
+        private void rebuildCharts() {
+            rebuildCombinedChart();
+            rebuildSplitCharts();
+        }
+
+        private void rebuildCombinedChart() {
+            combinedDataset.removeAllSeries();
             XYLineAndShapeRenderer renderer = createTrendRenderer();
             int visibleIndex = 0;
             for (SeriesControl control : controls) {
                 if (!control.checkBox().isSelected()) {
                     continue;
                 }
-                dataset.addSeries(control.spec().series());
+                combinedDataset.addSeries(control.spec().series());
                 renderer.setSeriesPaint(visibleIndex++, control.spec().color());
             }
+            combinedChartPanel.getChart().getXYPlot().setRenderer(renderer);
+            combinedChartPanel.repaint();
+        }
+
+        private void rebuildSplitCharts() {
+            int selectedCount = selectedCount();
+            splitChartsPanel.removeAll();
+            splitChartsPanel.setLayout(new GridLayout(0, selectedCount == 1 ? 1 : 2, 12, 12));
+            splitChartsPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+            for (SplitChart splitChart : splitCharts) {
+                if (isSelected(splitChart.spec())) {
+                    splitChartsPanel.add(splitChart.chartPanel());
+                }
+            }
+            splitChartsPanel.revalidate();
+            splitChartsPanel.repaint();
+        }
+
+        private boolean isSelected(SeriesSpec spec) {
+            for (SeriesControl control : controls) {
+                if (control.spec() == spec) {
+                    return control.checkBox().isSelected();
+                }
+            }
+            return false;
+        }
+
+        private ChartPanel createSplitChartPanel(SeriesSpec spec) {
+            TimeSeriesCollection dataset = new TimeSeriesCollection();
+            dataset.addSeries(spec.series());
+            ChartPanel chartPanel = createChartPanel(dataset, spec.series().getKey().toString(), false);
+            chartPanel.setPreferredSize(new Dimension(420, 220));
+            XYLineAndShapeRenderer renderer = createTrendRenderer();
+            renderer.setSeriesPaint(0, spec.color());
             chartPanel.getChart().getXYPlot().setRenderer(renderer);
-            chartPanel.repaint();
+            return chartPanel;
+        }
+
+        private void showChartMode(String mode) {
+            CardLayout layout = (CardLayout) chartCards.getLayout();
+            layout.show(chartCards, mode);
+            chartCards.revalidate();
+            chartCards.repaint();
         }
     }
 
@@ -346,6 +454,36 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
     }
 
     private record SeriesControl(SeriesSpec spec, JCheckBox checkBox) {
+    }
+
+    private record SplitChart(SeriesSpec spec, ChartPanel chartPanel) {
+    }
+
+    private static final class ScrollableChartGridPanel extends JPanel implements Scrollable {
+        @Override
+        public Dimension getPreferredScrollableViewportSize() {
+            return getPreferredSize();
+        }
+
+        @Override
+        public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation, int direction) {
+            return 24;
+        }
+
+        @Override
+        public int getScrollableBlockIncrement(Rectangle visibleRect, int orientation, int direction) {
+            return Math.max(24, visibleRect.height - 24);
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportWidth() {
+            return true;
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportHeight() {
+            return false;
+        }
     }
 
     private static final class SinglePointAwareRenderer extends XYLineAndShapeRenderer {

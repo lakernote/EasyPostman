@@ -271,8 +271,10 @@ public class HttpService {
         );
         httpResponse.endTime = System.currentTimeMillis();
         httpResponse.costMs = httpResponse.endTime - startTime;
-        // 响应后主动通知Cookie变化，刷新CookieTablePanel
-        CookieService.notifyCookieChanged();
+        // 响应后主动通知Cookie变化，刷新CookieTablePanel。压测请求会关闭该通知，避免高并发下刷新 UI。
+        if (req.notifyCookieChanges) {
+            CookieService.notifyCookieChanged();
+        }
         return httpResponse;
     }
 

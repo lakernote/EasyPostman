@@ -3,24 +3,28 @@ package com.laker.postman.service.http;
 import com.laker.postman.model.CookieInfo;
 import com.laker.postman.service.http.okhttp.OkHttpClientManager;
 
+import javax.swing.SwingUtilities;
 import java.net.CookieManager;
 import java.net.CookieStore;
 import java.net.HttpCookie;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Cookie 管理相关工具类，负责监听、获取、设置 Cookie
  */
 public class CookieService {
     // 监听器列表
-    private static final List<Runnable> listeners = new ArrayList<>();
+    private static final CopyOnWriteArrayList<Runnable> listeners = new CopyOnWriteArrayList<>();
+    private static final AtomicBoolean notificationPending = new AtomicBoolean(false);
     // 全局 CookieManager
     private static final CookieManager GLOBAL_COOKIE_MANAGER = OkHttpClientManager.getGlobalCookieManager();
 
     public static void registerCookieChangeListener(Runnable listener) {
-        if (listener != null && !listeners.contains(listener)) {
-            listeners.add(listener);
+        if (listener != null) {
+            listeners.addIfAbsent(listener);
         }
     }
 
@@ -68,6 +72,20 @@ public class CookieService {
     }
 
     public static void notifyCookieChanged() {
+        if (SwingUtilities.isEventDispatchThread()) {
+            notifyListeners();
+            return;
+        }
+        if (!notificationPending.compareAndSet(false, true)) {
+            return;
+        }
+        SwingUtilities.invokeLater(() -> {
+            notificationPending.set(false);
+            notifyListeners();
+        });
+    }
+
+    private static void notifyListeners() {
         for (Runnable r : listeners) {
             try {
                 r.run();

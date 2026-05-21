@@ -117,7 +117,7 @@ final class PerformanceExecutionEngine {
                 if (!jtNode.enabled) {
                     continue;
                 }
-                ThreadGroupData tg = jtNode.threadGroupData != null ? jtNode.threadGroupData : new ThreadGroupData();
+                ThreadGroupData tg = resolveThreadGroupData(jtNode);
                 switch (tg.threadMode) {
                     case FIXED -> total += tg.numThreads;
                     case RAMP_UP -> total += tg.rampUpEndThreads;
@@ -141,7 +141,7 @@ final class PerformanceExecutionEngine {
                     continue;
                 }
 
-                ThreadGroupData tg = jtNode.threadGroupData != null ? jtNode.threadGroupData : new ThreadGroupData();
+                ThreadGroupData tg = resolveThreadGroupData(jtNode);
                 int enabledRequests = countEnabledRequests(groupNode);
                 if (enabledRequests == 0) {
                     continue;
@@ -162,10 +162,9 @@ final class PerformanceExecutionEngine {
                         total += (long) (avgThreads * tg.rampUpDuration * requestsPerSecondPerThread * enabledRequests);
                     }
                     case SPIKE -> {
-                        int totalTime = tg.spikeRampUpTime + tg.spikeHoldTime + tg.spikeRampDownTime;
                         int avgThreads = (tg.spikeMinThreads + tg.spikeMaxThreads) / 2;
                         double requestsPerSecondPerThread = 1.0 / avgRequestDuration;
-                        total += (long) (avgThreads * totalTime * requestsPerSecondPerThread * enabledRequests);
+                        total += (long) (avgThreads * tg.spikeDuration * requestsPerSecondPerThread * enabledRequests);
                     }
                     case STAIRS -> {
                         int avgThreads = (tg.stairsStartThreads + tg.stairsEndThreads) / 2;
@@ -210,7 +209,7 @@ final class PerformanceExecutionEngine {
             return;
         }
 
-        ThreadGroupData tg = jtNode.threadGroupData != null ? jtNode.threadGroupData : new ThreadGroupData();
+        ThreadGroupData tg = resolveThreadGroupData(jtNode);
         switch (tg.threadMode) {
             case FIXED -> runFixedThreads(rootNode, tg, progressUpdater, totalThreads);
             case RAMP_UP -> runRampUpThreads(rootNode, tg, progressUpdater, totalThreads);
@@ -280,6 +279,14 @@ final class PerformanceExecutionEngine {
             }
         }
         return enabledRequests;
+    }
+
+    private ThreadGroupData resolveThreadGroupData(JMeterTreeNode node) {
+        if (node.threadGroupData == null) {
+            node.threadGroupData = new ThreadGroupData();
+        }
+        node.threadGroupData.normalize();
+        return node.threadGroupData;
     }
 
     private void runFixedThreads(DefaultMutableTreeNode groupNode,

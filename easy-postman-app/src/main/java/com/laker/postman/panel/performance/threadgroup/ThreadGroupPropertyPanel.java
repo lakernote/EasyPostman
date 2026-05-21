@@ -440,6 +440,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
             data = new ThreadGroupData();
             node.threadGroupData = data;
         }
+        data.normalize();
 
         // 设置模式
         modeComboBox.setSelectedItem(data.threadMode);
@@ -536,6 +537,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
         data.stairsStep = (Integer) stairsStepSpinner.getValue();
         data.stairsHoldTime = (Integer) stairsHoldTimeSpinner.getValue();
         data.stairsDuration = (Integer) stairsDurationSpinner.getValue();
+        data.normalize();
     }
 
     // 预览数据模型

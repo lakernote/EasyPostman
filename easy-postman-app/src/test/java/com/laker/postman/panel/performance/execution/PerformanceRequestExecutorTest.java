@@ -8,9 +8,11 @@ import com.laker.postman.service.setting.SettingManager;
 import org.testng.annotations.Test;
 
 import javax.swing.tree.DefaultMutableTreeNode;
+import java.lang.reflect.Method;
 import java.util.List;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 
 public class PerformanceRequestExecutorTest {
 
@@ -69,6 +71,26 @@ public class PerformanceRequestExecutorTest {
                 PerformanceRequestExecutor.resolveResponseBodyPreviewLimitBytes(0),
                 SettingManager.DEFAULT_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB * 1024
         );
+    }
+
+    @Test
+    public void shouldDisableCookieNotificationsForPerformanceRequests() throws Exception {
+        PreparedRequest request = new PreparedRequest();
+        PerformanceRequestExecutor executor = new PerformanceRequestExecutor(
+                () -> true,
+                throwable -> false,
+                java.util.concurrent.ConcurrentHashMap.newKeySet(),
+                java.util.concurrent.ConcurrentHashMap.newKeySet()
+        );
+        Method configureMethod = PerformanceRequestExecutor.class.getDeclaredMethod(
+                "configurePreparedRequest",
+                PreparedRequest.class
+        );
+        configureMethod.setAccessible(true);
+
+        configureMethod.invoke(executor, request);
+
+        assertFalse(request.notifyCookieChanges);
     }
 
     private static DefaultMutableTreeNode assertionNode(String type, boolean enabled) {

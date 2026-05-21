@@ -34,6 +34,7 @@ public class PreparedRequest {
     public boolean collectBasicInfo = true; // 收集基本信息（headers、body），默认开启
     public boolean collectEventInfo = true; // 收集完整事件信息（DNS、连接、SSL等），默认开启
     public boolean enableNetworkLog = false; // 启用网络日志面板输出，默认关闭
+    public boolean notifyCookieChanges = true; // 请求完成后是否通知 Cookie UI 刷新
     public ResponseBodyMode responseBodyMode = ResponseBodyMode.FULL;
     public int responseBodyPreviewLimitBytes = 64 * 1024;
 
@@ -68,6 +69,7 @@ public class PreparedRequest {
         copy.collectBasicInfo = this.collectBasicInfo;
         copy.collectEventInfo = this.collectEventInfo;
         copy.enableNetworkLog = this.enableNetworkLog;
+        copy.notifyCookieChanges = this.notifyCookieChanges;
         copy.responseBodyMode = this.responseBodyMode;
         copy.responseBodyPreviewLimitBytes = this.responseBodyPreviewLimitBytes;
         copy.prescript = this.prescript;

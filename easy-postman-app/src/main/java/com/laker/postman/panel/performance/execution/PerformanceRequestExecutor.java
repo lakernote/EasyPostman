@@ -219,6 +219,7 @@ public class PerformanceRequestExecutor {
         req.collectBasicInfo = true;
         req.collectEventInfo = SettingManager.isPerformanceEventLoggingEnabled();
         req.enableNetworkLog = false;
+        req.notifyCookieChanges = false;
     }
 
     static PreparedRequest.ResponseBodyMode resolveHttpResponseBodyMode(boolean efficientMode,

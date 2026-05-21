@@ -33,6 +33,11 @@ final class PerformanceStatisticsCoordinator {
     private final LongFunction<PerformanceRealtimeMetrics.Sample> realtimeMetricsSampler;
 
     void refreshReport() {
+        if (!SwingUtilities.isEventDispatchThread()) {
+            SwingUtilities.invokeLater(this::refreshReport);
+            return;
+        }
+
         try {
             if (resultTabbedPane.getSelectedIndex() != 1) {
                 log.debug("当前未查看报表Tab，跳过刷新");

@@ -218,6 +218,7 @@ public class PerformancePersistenceService {
      * 序列化线程组数据
      */
     private JSONObject serializeThreadGroupData(ThreadGroupData data) {
+        data.normalize();
         JSONObject json = new JSONObject();
         json.set("threadMode", data.threadMode.name());
         json.set("numThreads", data.numThreads);
@@ -569,6 +570,7 @@ public class PerformancePersistenceService {
         } catch (Exception e) {
             log.warn("Failed to deserialize thread group data: {}", e.getMessage());
         }
+        data.normalize();
         return data;
     }
 

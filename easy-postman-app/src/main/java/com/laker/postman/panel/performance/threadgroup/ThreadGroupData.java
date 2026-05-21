@@ -7,6 +7,16 @@ import com.laker.postman.util.MessageKeys;
  * 线程组数据模型，支持多种线程模式
  */
 public class ThreadGroupData {
+    private static final int MIN_THREADS = 1;
+    private static final int MAX_THREADS = 1000;
+    private static final int MIN_SECONDS = 1;
+    private static final int MAX_DURATION_SECONDS = 86400;
+    private static final int MAX_PHASE_SECONDS = 3600;
+    private static final int MIN_LOOPS = 1;
+    private static final int MAX_LOOPS = 100000;
+    private static final int MIN_STEP = 1;
+    private static final int MAX_STEP = 100;
+
     // 线程组类型
     public enum ThreadMode {
         FIXED(MessageKeys.THREADGROUP_MODE_FIXED),           // 固定线程数
@@ -58,4 +68,51 @@ public class ThreadGroupData {
     public int stairsStep = 5;                        // 阶梯步长
     public int stairsHoldTime = 15;                   // 每阶段保持时间(秒)
     public int stairsDuration = 60;                  // 阶梯模式总测试持续时间(秒)
+
+    public void normalize() {
+        if (threadMode == null) {
+            threadMode = ThreadMode.FIXED;
+        }
+
+        numThreads = clamp(numThreads, MIN_THREADS, MAX_THREADS);
+        duration = clamp(duration, MIN_SECONDS, MAX_DURATION_SECONDS);
+        loops = clamp(loops, MIN_LOOPS, MAX_LOOPS);
+
+        rampUpStartThreads = clamp(rampUpStartThreads, MIN_THREADS, MAX_THREADS);
+        rampUpEndThreads = clamp(rampUpEndThreads, MIN_THREADS, MAX_THREADS);
+        if (rampUpStartThreads > rampUpEndThreads) {
+            int previousStart = rampUpStartThreads;
+            rampUpStartThreads = rampUpEndThreads;
+            rampUpEndThreads = previousStart;
+        }
+        rampUpTime = clamp(rampUpTime, MIN_SECONDS, MAX_PHASE_SECONDS);
+        rampUpDuration = clamp(rampUpDuration, MIN_SECONDS, MAX_DURATION_SECONDS);
+
+        spikeMinThreads = clamp(spikeMinThreads, MIN_THREADS, MAX_THREADS);
+        spikeMaxThreads = clamp(spikeMaxThreads, MIN_THREADS, MAX_THREADS);
+        if (spikeMinThreads > spikeMaxThreads) {
+            int previousMin = spikeMinThreads;
+            spikeMinThreads = spikeMaxThreads;
+            spikeMaxThreads = previousMin;
+        }
+        spikeRampUpTime = clamp(spikeRampUpTime, MIN_SECONDS, MAX_PHASE_SECONDS);
+        spikeHoldTime = clamp(spikeHoldTime, 0, MAX_PHASE_SECONDS);
+        spikeRampDownTime = clamp(spikeRampDownTime, MIN_SECONDS, MAX_PHASE_SECONDS);
+        spikeDuration = clamp(spikeDuration, MIN_SECONDS, MAX_DURATION_SECONDS);
+
+        stairsStartThreads = clamp(stairsStartThreads, MIN_THREADS, MAX_THREADS);
+        stairsEndThreads = clamp(stairsEndThreads, MIN_THREADS, MAX_THREADS);
+        if (stairsStartThreads > stairsEndThreads) {
+            int previousStart = stairsStartThreads;
+            stairsStartThreads = stairsEndThreads;
+            stairsEndThreads = previousStart;
+        }
+        stairsStep = clamp(stairsStep, MIN_STEP, MAX_STEP);
+        stairsHoldTime = clamp(stairsHoldTime, MIN_SECONDS, MAX_PHASE_SECONDS);
+        stairsDuration = clamp(stairsDuration, MIN_SECONDS, MAX_DURATION_SECONDS);
+    }
+
+    private static int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
+    }
 }

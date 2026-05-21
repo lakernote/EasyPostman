@@ -186,6 +186,40 @@ public class ScriptExecutionPipeline {
         });
     }
 
+    public ScriptExecutionResult executeWebSocketSendScript(String script,
+                                                            int sendIndex,
+                                                            int sendCount,
+                                                            String stepName) {
+        return withExecutionContext(() -> {
+            if (bindings == null) {
+                bindings = preparePreRequestBindings(request);
+            }
+
+            PostmanApiContext pm = (PostmanApiContext) bindings.get("pm");
+            if (pm != null && pm.info != null) {
+                pm.info.eventName = "websocket_send";
+                pm.info.setWebSocketSendInfo(sendIndex, sendCount, stepName);
+            }
+            clearTestResults();
+
+            try {
+                ScriptExecutionContext context = ScriptExecutionContext.builder()
+                        .script(script)
+                        .scriptType(ScriptExecutionContext.ScriptType.CUSTOM)
+                        .bindings(bindings)
+                        .outputCallback(getEffectiveOutputCallback("[WebSocket Send Script Console]\n"))
+                        .build();
+
+                executeScript(context);
+                return ScriptExecutionResult.success();
+            } catch (ScriptExecutionException ex) {
+                log.error("WebSocket send script execution failed: {}", ex.getMessage(), ex);
+                ConsolePanel.appendLog("[WebSocket Send Script Error]\n" + ex.getMessage(), ConsolePanel.LogType.ERROR);
+                return ScriptExecutionResult.failure(ex.getMessage(), ex);
+            }
+        });
+    }
+
     /**
      * 完整执行流程：前置脚本 -> 后置脚本
      * 如果前置脚本失败，则不执行后置脚本

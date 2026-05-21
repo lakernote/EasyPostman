@@ -7,6 +7,8 @@ import com.laker.postman.model.script.TestResult;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
+import com.laker.postman.service.js.ScriptExecutionPipeline;
+import com.laker.postman.service.js.ScriptExecutionResult;
 import com.laker.postman.service.variable.VariableResolver;
 import okhttp3.Response;
 import okhttp3.WebSocket;
@@ -61,7 +63,9 @@ public class WebSocketScenarioExecutor {
 
     public Result execute(PreparedRequest req,
                           DefaultMutableTreeNode requestNode,
-                          WebSocketPerformanceData requestCfg) {
+                          WebSocketPerformanceData requestCfg,
+                          String requestBodyTemplate,
+                          ScriptExecutionPipeline pipeline) {
         long requestStartTime = System.currentTimeMillis();
         HttpResponse resp = new HttpResponse();
         AtomicBoolean interrupted = new AtomicBoolean(false);
@@ -182,13 +186,12 @@ public class WebSocketScenarioExecutor {
                                     ? stepNode.webSocketPerformanceData
                                     : copyData(requestCfg);
                             lastStepCfgRef.set(stepCfg);
-                            String payload = resolveSendPayload(req, stepCfg);
                             WebSocketPerformanceData.SendContentSource contentSource = stepCfg.sendContentSource != null
                                     ? stepCfg.sendContentSource
                                     : WebSocketPerformanceData.SendContentSource.REQUEST_BODY;
                             if (stepCfg.sendMode == WebSocketPerformanceData.SendMode.NONE
                                     || (contentSource == WebSocketPerformanceData.SendContentSource.REQUEST_BODY
-                                    && CharSequenceUtil.isBlank(payload))) {
+                                    && CharSequenceUtil.isBlank(resolveSendPayloadTemplate(req, requestBodyTemplate, stepCfg)))) {
                                 completionReasonRef.set("send_skipped");
                                 break;
                             }
@@ -197,6 +200,20 @@ public class WebSocketScenarioExecutor {
                                     : 1;
                             int intervalMs = Math.max(0, stepCfg.sendIntervalMs);
                             for (int sendIndex = 0; sendIndex < sendTimes && runningSupplier.getAsBoolean() && !failed.get() && !interrupted.get(); sendIndex++) {
+                                ScriptExecutionResult sendScriptResult = executeSendPreScript(
+                                        pipeline,
+                                        stepCfg,
+                                        sendIndex,
+                                        sendTimes,
+                                        stepNode.name
+                                );
+                                if (!sendScriptResult.isSuccess()) {
+                                    failed.set(true);
+                                    errorRef.set("WebSocket send pre-script failed: " + sendScriptResult.getErrorMessage());
+                                    completionReasonRef.set("send_pre_script_failed");
+                                    break;
+                                }
+                                String payload = resolveSendPayload(req, requestBodyTemplate, stepCfg);
                                 boolean sent = webSocket.send(payload == null ? "" : payload);
                                 if (sent) {
                                     sentMessageCount.incrementAndGet();
@@ -334,6 +351,14 @@ public class WebSocketScenarioExecutor {
                 webSocket.close(1000, "Performance sample complete");
             } catch (Exception ignored) {
             }
+            if (!failed.get() && !interrupted.get()) {
+                try {
+                    waitForSendQueueToDrain(webSocket);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    interrupted.set(true);
+                }
+            }
             webSocket.cancel();
             activeWebSockets.remove(webSocket);
         }
@@ -379,14 +404,44 @@ public class WebSocketScenarioExecutor {
         return CharSequenceUtil.isBlank(filter) || CharSequenceUtil.contains(payload, filter.trim());
     }
 
-    private String resolveSendPayload(PreparedRequest req, WebSocketPerformanceData cfg) {
+    private void waitForSendQueueToDrain(WebSocket webSocket) throws InterruptedException {
+        long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(500);
+        while (webSocket.queueSize() > 0 && System.nanoTime() < deadline && runningSupplier.getAsBoolean()) {
+            TimeUnit.MILLISECONDS.sleep(10);
+        }
+    }
+
+    private ScriptExecutionResult executeSendPreScript(ScriptExecutionPipeline pipeline,
+                                                       WebSocketPerformanceData cfg,
+                                                       int sendIndex,
+                                                       int sendCount,
+                                                       String stepName) {
+        if (pipeline == null) {
+            return ScriptExecutionResult.success();
+        }
+        String script = cfg != null ? cfg.sendPreScript : null;
+        return pipeline.executeWebSocketSendScript(script, sendIndex, sendCount, stepName);
+    }
+
+    private String resolveSendPayload(PreparedRequest req,
+                                      String requestBodyTemplate,
+                                      WebSocketPerformanceData cfg) {
+        return VariableResolver.resolve(resolveSendPayloadTemplate(req, requestBodyTemplate, cfg));
+    }
+
+    private String resolveSendPayloadTemplate(PreparedRequest req,
+                                              String requestBodyTemplate,
+                                              WebSocketPerformanceData cfg) {
         WebSocketPerformanceData.SendContentSource contentSource = cfg.sendContentSource != null
                 ? cfg.sendContentSource
                 : WebSocketPerformanceData.SendContentSource.REQUEST_BODY;
         if (contentSource == WebSocketPerformanceData.SendContentSource.CUSTOM_TEXT) {
-            return VariableResolver.resolve(cfg.customSendBody == null ? "" : cfg.customSendBody);
+            return cfg.customSendBody == null ? "" : cfg.customSendBody;
         }
-        return req.body;
+        if (requestBodyTemplate != null) {
+            return requestBodyTemplate;
+        }
+        return req != null ? req.body : "";
     }
 
     private void appendMessage(StringBuffer buffer, String payload) {
@@ -417,6 +472,7 @@ public class WebSocketScenarioExecutor {
                 ? source.sendContentSource
                 : WebSocketPerformanceData.SendContentSource.REQUEST_BODY;
         target.customSendBody = source.customSendBody;
+        target.sendPreScript = source.sendPreScript;
         target.sendCount = source.sendCount;
         target.sendIntervalMs = source.sendIntervalMs;
         target.completionMode = source.completionMode;

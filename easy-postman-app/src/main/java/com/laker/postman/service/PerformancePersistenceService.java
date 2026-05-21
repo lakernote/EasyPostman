@@ -278,6 +278,7 @@ public class PerformancePersistenceService {
         json.set("sendMode", data.sendMode != null ? data.sendMode.name() : WebSocketPerformanceData.SendMode.REQUEST_BODY_ON_CONNECT.name());
         json.set("sendContentSource", data.sendContentSource != null ? data.sendContentSource.name() : WebSocketPerformanceData.SendContentSource.REQUEST_BODY.name());
         json.set("customSendBody", data.customSendBody);
+        json.set("sendPreScript", data.sendPreScript);
         json.set("sendCount", data.sendCount);
         json.set("sendIntervalMs", data.sendIntervalMs);
         json.set("completionMode", data.completionMode != null ? data.completionMode.name() : WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE.name());
@@ -612,6 +613,7 @@ public class PerformancePersistenceService {
                 data.sendContentSource = WebSocketPerformanceData.SendContentSource.valueOf(sendContentSource);
             }
             data.customSendBody = json.getStr("customSendBody", data.customSendBody);
+            data.sendPreScript = json.getStr("sendPreScript", data.sendPreScript);
             data.sendCount = json.getInt("sendCount", data.sendCount);
             data.sendIntervalMs = json.getInt("sendIntervalMs", data.sendIntervalMs);
             String completionMode = json.getStr("completionMode");

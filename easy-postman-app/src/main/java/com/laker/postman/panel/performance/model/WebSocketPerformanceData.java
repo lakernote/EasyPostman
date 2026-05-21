@@ -27,6 +27,7 @@ public class WebSocketPerformanceData {
     public SendMode sendMode = SendMode.REQUEST_BODY_ON_CONNECT;
     public SendContentSource sendContentSource = SendContentSource.REQUEST_BODY;
     public String customSendBody = "";
+    public String sendPreScript = "";
     public int sendCount = 1;
     public int sendIntervalMs = 1000;
     public CompletionMode completionMode = CompletionMode.FIRST_MESSAGE;

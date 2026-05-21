@@ -306,6 +306,7 @@ final class PerformanceTreeSupport {
         target.sendMode = source.sendMode;
         target.sendContentSource = source.sendContentSource;
         target.customSendBody = source.customSendBody;
+        target.sendPreScript = source.sendPreScript;
         target.sendCount = source.sendCount;
         target.sendIntervalMs = source.sendIntervalMs;
         target.completionMode = source.completionMode;

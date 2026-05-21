@@ -616,6 +616,8 @@ public final class MessageKeys {
     public static final String PERFORMANCE_MENU_ADD_WS_CLOSE = "performance.menu.add_ws_close";
     public static final String PERFORMANCE_MENU_ADD_ASSERTION = "performance.menu.add_assertion";
     public static final String PERFORMANCE_MENU_ADD_TIMER = "performance.menu.add_timer";
+    public static final String PERFORMANCE_TIMER_DELAY = "performance.timer.delay";
+    public static final String PERFORMANCE_TIMER_HINT = "performance.timer.hint";
     public static final String PERFORMANCE_MENU_RENAME = "performance.menu.rename";
     public static final String PERFORMANCE_MENU_DELETE = "performance.menu.delete";
     public static final String PERFORMANCE_MENU_ENABLE = "performance.menu.enable";
@@ -666,6 +668,11 @@ public final class MessageKeys {
     public static final String PERFORMANCE_WS_SEND_CONTENT_REQUEST_BODY = "performance.ws.send_content.request_body";
     public static final String PERFORMANCE_WS_SEND_CONTENT_CUSTOM_TEXT = "performance.ws.send_content.custom_text";
     public static final String PERFORMANCE_WS_SEND_CUSTOM_BODY = "performance.ws.send_custom_body";
+    public static final String PERFORMANCE_WS_SEND_PRE_SCRIPT = "performance.ws.send_pre_script";
+    public static final String PERFORMANCE_WS_SEND_PRE_SCRIPT_HINT = "performance.ws.send_pre_script.hint";
+    public static final String PERFORMANCE_WS_SEND_TAB_MESSAGE_TEMPLATE = "performance.ws.send.tab.message_template";
+    public static final String PERFORMANCE_WS_SEND_TAB_PRE_SCRIPT = "performance.ws.send.tab.pre_script";
+    public static final String PERFORMANCE_WS_SEND_REQUEST_BODY_SOURCE_HINT = "performance.ws.send.request_body_source_hint";
     public static final String PERFORMANCE_WS_SEND_NONE = "performance.ws.send.none";
     public static final String PERFORMANCE_WS_SEND_REQUEST_BODY = "performance.ws.send.request_body";
     public static final String PERFORMANCE_WS_SEND_REQUEST_BODY_REPEAT = "performance.ws.send.request_body_repeat";

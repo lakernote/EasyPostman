@@ -1,6 +1,9 @@
 package com.laker.postman.panel.performance.timer;
 
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.util.FontsUtil;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
 import java.awt.*;
@@ -21,7 +24,7 @@ public class TimerPropertyPanel extends JPanel {
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 1;
-        JLabel label = new JLabel("定时(ms):");
+        JLabel label = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TIMER_DELAY));
         add(label, gbc);
         gbc.gridx = 1;
         gbc.insets = new Insets(6, 0, 6, 6); // 左间距为0，右间距为6
@@ -35,8 +38,10 @@ public class TimerPropertyPanel extends JPanel {
         gbc.insets = new Insets(6, 6, 6, 6);
         gbc.anchor = GridBagConstraints.CENTER;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        JLabel helpLabel = new JLabel("<html><span style='color:gray'>定时器会在请求前延迟指定毫秒数，适用于接口限流、节奏控制等场景。</span></html>");
-        helpLabel.setFont(helpLabel.getFont().deriveFont(Font.PLAIN, 12f));
+        JLabel helpLabel = new JLabel("<html><span style='color:gray'>"
+                + I18nUtil.getMessage(MessageKeys.PERFORMANCE_TIMER_HINT)
+                + "</span></html>");
+        helpLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         add(helpLabel, gbc);
         // 占位撑满高度
         gbc.gridy = 2;

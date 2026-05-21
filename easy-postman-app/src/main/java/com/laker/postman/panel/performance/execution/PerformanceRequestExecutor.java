@@ -58,6 +58,7 @@ public class PerformanceRequestExecutor {
         ApiMetadata.register(apiId, apiName);
 
         PreparedRequest req = PreparedRequestBuilder.build(requestData.httpRequestItem);
+        String requestBodyTemplate = req.body;
         ScriptExecutionPipeline pipeline = ScriptExecutionPipeline.forRequestExecution(
                 requestData.httpRequestItem,
                 req,
@@ -98,7 +99,8 @@ public class PerformanceRequestExecutor {
                 boolean transportSseRequest = sseRequest;
                 boolean transportWebSocketRequest = webSocketRequest;
                 ProtocolExecutionResult protocolResult = pipeline.withExecutionContextThrowing(() ->
-                        executeTransport(req, requestNode, requestData, transportSseRequest, transportWebSocketRequest)
+                        executeTransport(req, requestNode, requestData, transportSseRequest, transportWebSocketRequest,
+                                requestBodyTemplate, pipeline)
                 );
                 resp = protocolResult.response;
                 errorMsg = CharSequenceUtil.blankToDefault(protocolResult.errorMsg, errorMsg);
@@ -183,13 +185,15 @@ public class PerformanceRequestExecutor {
                                                      DefaultMutableTreeNode requestNode,
                                                      JMeterTreeNode requestData,
                                                      boolean sseRequest,
-                                                     boolean webSocketRequest) throws Exception {
+                                                     boolean webSocketRequest,
+                                                     String requestBodyTemplate,
+                                                     ScriptExecutionPipeline pipeline) throws Exception {
         if (webSocketRequest) {
             WebSocketScenarioExecutor.Result result = new WebSocketScenarioExecutor(
                     runningSupplier,
                     cancelledChecker,
                     activeWebSockets
-            ).execute(req, requestNode, requestData.webSocketPerformanceData);
+            ).execute(req, requestNode, requestData.webSocketPerformanceData, requestBodyTemplate, pipeline);
             return new ProtocolExecutionResult(result.response, result.errorMsg, result.executionFailed, result.interrupted, result.testResults);
         }
         if (sseRequest) {

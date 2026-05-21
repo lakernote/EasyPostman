@@ -9,6 +9,7 @@ import com.laker.postman.model.script.TestResult;
 import com.laker.postman.panel.performance.model.ApiMetadata;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.PerformanceProtocol;
+import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
@@ -37,15 +38,25 @@ public class PerformanceRequestExecutor {
     private final Predicate<Throwable> cancelledChecker;
     private final Set<EventSource> activeSseSources;
     private final Set<WebSocket> activeWebSockets;
+    private final PerformanceRealtimeMetrics realtimeMetrics;
 
     public PerformanceRequestExecutor(BooleanSupplier runningSupplier,
                                       Predicate<Throwable> cancelledChecker,
                                       Set<EventSource> activeSseSources,
                                       Set<WebSocket> activeWebSockets) {
+        this(runningSupplier, cancelledChecker, activeSseSources, activeWebSockets, new PerformanceRealtimeMetrics());
+    }
+
+    public PerformanceRequestExecutor(BooleanSupplier runningSupplier,
+                                      Predicate<Throwable> cancelledChecker,
+                                      Set<EventSource> activeSseSources,
+                                      Set<WebSocket> activeWebSockets,
+                                      PerformanceRealtimeMetrics realtimeMetrics) {
         this.runningSupplier = runningSupplier;
         this.cancelledChecker = cancelledChecker;
         this.activeSseSources = activeSseSources;
         this.activeWebSockets = activeWebSockets;
+        this.realtimeMetrics = realtimeMetrics == null ? new PerformanceRealtimeMetrics() : realtimeMetrics;
     }
 
     public PerformanceRequestExecutionResult execute(DefaultMutableTreeNode requestNode,
@@ -192,7 +203,8 @@ public class PerformanceRequestExecutor {
             WebSocketScenarioExecutor.Result result = new WebSocketScenarioExecutor(
                     runningSupplier,
                     cancelledChecker,
-                    activeWebSockets
+                    activeWebSockets,
+                    realtimeMetrics
             ).execute(req, requestNode, requestData.webSocketPerformanceData, requestBodyTemplate, pipeline);
             return new ProtocolExecutionResult(result.response, result.errorMsg, result.executionFailed, result.interrupted, result.testResults);
         }
@@ -200,7 +212,8 @@ public class PerformanceRequestExecutor {
             SseSampleExecutor.Result result = new SseSampleExecutor(
                     runningSupplier,
                     cancelledChecker,
-                    activeSseSources
+                    activeSseSources,
+                    realtimeMetrics
             ).execute(req, requestData.ssePerformanceData);
             return new ProtocolExecutionResult(result.response, result.errorMsg, result.executionFailed, result.interrupted, new ArrayList<>());
         }

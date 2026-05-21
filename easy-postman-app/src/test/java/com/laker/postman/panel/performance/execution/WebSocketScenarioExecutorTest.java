@@ -4,6 +4,7 @@ import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
+import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import com.laker.postman.service.variable.ExecutionVariableContext;
 import com.laker.postman.service.variable.IterationDataVariableService;
@@ -103,17 +104,23 @@ public class WebSocketScenarioExecutorTest {
                     new ConcurrentHashMap<>(Map.of("csvUser", "csv-alice"))
             );
 
+            PerformanceRealtimeMetrics realtimeMetrics = new PerformanceRealtimeMetrics();
+            realtimeMetrics.reset(System.currentTimeMillis());
             PerformanceRequestExecutor executor = new PerformanceRequestExecutor(
                     () -> true,
                     throwable -> false,
                     ConcurrentHashMap.newKeySet(),
-                    ConcurrentHashMap.newKeySet()
+                    ConcurrentHashMap.newKeySet(),
+                    realtimeMetrics
             );
 
             executor.execute(requestNode, requestData, iterationContext);
+            PerformanceRealtimeMetrics.Sample sample = realtimeMetrics.sample(System.currentTimeMillis());
 
             assertTrue(serverReceivedMessage.await(1, TimeUnit.SECONDS), "WebSocket server should receive one message");
             assertEquals(receivedPayload.get(), "script-token/csv-alice");
+            assertTrue(sample.webSocketSentRate() > 0, "WebSocket sent rate should be recorded in real time");
+            assertTrue(sample.webSocketReceivedRate() > 0, "WebSocket received rate should be recorded in real time");
         } finally {
             VariablesService.getInstance().detachContext();
             IterationDataVariableService.getInstance().detachContext();

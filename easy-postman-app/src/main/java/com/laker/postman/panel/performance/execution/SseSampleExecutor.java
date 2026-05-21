@@ -3,6 +3,7 @@ package com.laker.postman.panel.performance.execution;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.SsePerformanceData;
 import okhttp3.Response;
 import okhttp3.sse.EventSource;
@@ -42,13 +43,22 @@ public class SseSampleExecutor {
     private final BooleanSupplier runningSupplier;
     private final Predicate<Throwable> cancelledChecker;
     private final Set<EventSource> activeSources;
+    private final PerformanceRealtimeMetrics realtimeMetrics;
 
     public SseSampleExecutor(BooleanSupplier runningSupplier,
                              Predicate<Throwable> cancelledChecker,
                              Set<EventSource> activeSources) {
+        this(runningSupplier, cancelledChecker, activeSources, new PerformanceRealtimeMetrics());
+    }
+
+    public SseSampleExecutor(BooleanSupplier runningSupplier,
+                             Predicate<Throwable> cancelledChecker,
+                             Set<EventSource> activeSources,
+                             PerformanceRealtimeMetrics realtimeMetrics) {
         this.runningSupplier = runningSupplier;
         this.cancelledChecker = cancelledChecker;
         this.activeSources = activeSources;
+        this.realtimeMetrics = realtimeMetrics == null ? new PerformanceRealtimeMetrics() : realtimeMetrics;
     }
 
     public Result execute(PreparedRequest req, SsePerformanceData cfg) {
@@ -125,11 +135,15 @@ public class SseSampleExecutor {
             @Override
             public void onEvent(EventSource eventSource, String id, String type, String data) {
                 eventCount.incrementAndGet();
+                realtimeMetrics.recordSseReceived();
                 String eventType = CharSequenceUtil.blankToDefault(type, "message");
                 if (matchesEvent(cfg, eventType) && matchesPayload(cfg, data)) {
                     boolean firstMatchedMessage = matchedMessageCount.incrementAndGet() == 1;
+                    realtimeMetrics.recordSseMatched();
                     if (firstMatchedMessage) {
-                        firstMessageLatencyMs.compareAndSet(-1, System.currentTimeMillis() - requestStartTime);
+                        long latencyMs = Math.max(0, System.currentTimeMillis() - requestStartTime);
+                        firstMessageLatencyMs.compareAndSet(-1, latencyMs);
+                        realtimeMetrics.recordSseFirstMessageLatency(latencyMs);
                         completionReasonRef.compareAndSet("pending",
                                 cfg.completionMode == SsePerformanceData.CompletionMode.MATCHED_MESSAGE
                                         ? "matched_message"
@@ -156,6 +170,7 @@ public class SseSampleExecutor {
 
         EventSource eventSource = HttpSingleRequestExecutor.executeSSE(req, listener);
         activeSources.add(eventSource);
+        realtimeMetrics.recordSseSessionStart(eventSource, requestStartTime);
 
         try {
             switch (cfg.completionMode) {
@@ -255,6 +270,7 @@ public class SseSampleExecutor {
             closingSource.set(true);
             eventSource.cancel();
             activeSources.remove(eventSource);
+            realtimeMetrics.recordSseSessionEnd(eventSource);
         }
 
         long endTime = System.currentTimeMillis();

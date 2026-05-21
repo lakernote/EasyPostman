@@ -5,6 +5,7 @@ import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.script.TestResult;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
@@ -52,13 +53,22 @@ public class WebSocketScenarioExecutor {
     private final BooleanSupplier runningSupplier;
     private final Predicate<Throwable> cancelledChecker;
     private final Set<WebSocket> activeWebSockets;
+    private final PerformanceRealtimeMetrics realtimeMetrics;
 
     public WebSocketScenarioExecutor(BooleanSupplier runningSupplier,
                                      Predicate<Throwable> cancelledChecker,
                                      Set<WebSocket> activeWebSockets) {
+        this(runningSupplier, cancelledChecker, activeWebSockets, new PerformanceRealtimeMetrics());
+    }
+
+    public WebSocketScenarioExecutor(BooleanSupplier runningSupplier,
+                                     Predicate<Throwable> cancelledChecker,
+                                     Set<WebSocket> activeWebSockets,
+                                     PerformanceRealtimeMetrics realtimeMetrics) {
         this.runningSupplier = runningSupplier;
         this.cancelledChecker = cancelledChecker;
         this.activeWebSockets = activeWebSockets;
+        this.realtimeMetrics = realtimeMetrics == null ? new PerformanceRealtimeMetrics() : realtimeMetrics;
     }
 
     public Result execute(PreparedRequest req,
@@ -78,6 +88,7 @@ public class WebSocketScenarioExecutor {
         AtomicReference<WebSocketPerformanceData> lastStepCfgRef = new AtomicReference<>(requestCfg);
         StringBuffer matchedMessageBody = new StringBuffer();
         AtomicLong firstMessageLatencyMs = new AtomicLong(-1);
+        AtomicBoolean firstReceivedMessageRecorded = new AtomicBoolean(false);
         AtomicInteger matchedMessageCount = new AtomicInteger(0);
         AtomicInteger sentMessageCount = new AtomicInteger(0);
         List<TestResult> stepTestResults = new ArrayList<>();
@@ -109,10 +120,17 @@ public class WebSocketScenarioExecutor {
 
             private void appendMessage(String payload) {
                 lastMessageRef.set(payload == null ? "" : payload);
+                long receivedAtMs = System.currentTimeMillis();
+                realtimeMetrics.recordWebSocketReceived();
+                if (firstReceivedMessageRecorded.compareAndSet(false, true)) {
+                    long latencyMs = Math.max(0, receivedAtMs - requestStartTime);
+                    firstMessageLatencyMs.compareAndSet(-1, latencyMs);
+                    realtimeMetrics.recordWebSocketFirstMessageLatency(latencyMs);
+                }
                 synchronized (messageLock) {
                     receivedMessages.add(new ReceivedWebSocketMessage(
                             payload == null ? "" : payload,
-                            System.currentTimeMillis()
+                            receivedAtMs
                     ));
                     messageLock.notifyAll();
                 }
@@ -161,6 +179,7 @@ public class WebSocketScenarioExecutor {
 
         WebSocket webSocket = HttpSingleRequestExecutor.executeWebSocket(req, listener);
         activeWebSockets.add(webSocket);
+        realtimeMetrics.recordWebSocketSessionStart(webSocket, requestStartTime);
 
         try {
             boolean opened = openLatch.await(Math.max(100, requestCfg.connectTimeoutMs), TimeUnit.MILLISECONDS);
@@ -220,6 +239,7 @@ public class WebSocketScenarioExecutor {
                                 boolean sent = webSocket.send(payload == null ? "" : payload);
                                 if (sent) {
                                     sentMessageCount.incrementAndGet();
+                                    realtimeMetrics.recordWebSocketSent();
                                     completionReasonRef.set("sent");
                                 } else {
                                     failed.set(true);
@@ -263,6 +283,7 @@ public class WebSocketScenarioExecutor {
                                         }
                                         stepMatchedCount++;
                                         matchedMessageCount.incrementAndGet();
+                                        realtimeMetrics.recordWebSocketMatched();
                                         appendMessage(stepBody, payload);
                                         appendMessage(matchedMessageBody, payload);
                                         if (stepCfg.completionMode == WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE
@@ -368,6 +389,7 @@ public class WebSocketScenarioExecutor {
             }
             webSocket.cancel();
             activeWebSockets.remove(webSocket);
+            realtimeMetrics.recordWebSocketSessionEnd(webSocket);
         }
 
         long endTime = System.currentTimeMillis();

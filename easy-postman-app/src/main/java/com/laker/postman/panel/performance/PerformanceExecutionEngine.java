@@ -7,6 +7,7 @@ import com.laker.postman.panel.performance.execution.PerformanceRequestExecutor;
 import com.laker.postman.panel.performance.execution.PerformanceResultRecorder;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
+import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.RequestResult;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
@@ -49,6 +50,7 @@ final class PerformanceExecutionEngine {
     private final ThreadLocal<Integer> threadIterationIndex = ThreadLocal.withInitial(() -> 0);
     private final Set<EventSource> activeSseSources = ConcurrentHashMap.newKeySet();
     private final Set<WebSocket> activeWebSockets = ConcurrentHashMap.newKeySet();
+    private final PerformanceRealtimeMetrics realtimeMetrics = new PerformanceRealtimeMetrics();
 
     @Getter
     private volatile long startTime;
@@ -71,7 +73,8 @@ final class PerformanceExecutionEngine {
                 runningSupplier,
                 this::isCancelledOrInterrupted,
                 activeSseSources,
-                activeWebSockets
+                activeWebSockets,
+                realtimeMetrics
         );
         this.resultRecorder = new PerformanceResultRecorder(
                 allRequestResults,
@@ -98,10 +101,15 @@ final class PerformanceExecutionEngine {
 
     void beginRun(long startTime) {
         this.startTime = startTime;
+        realtimeMetrics.reset(startTime);
     }
 
     void resetVirtualUsers() {
         virtualUserCounter.set(0);
+    }
+
+    PerformanceRealtimeMetrics.Sample sampleRealtimeMetrics(long nowMs) {
+        return realtimeMetrics.sample(nowMs);
     }
 
     int getTotalThreads(DefaultMutableTreeNode rootNode) {

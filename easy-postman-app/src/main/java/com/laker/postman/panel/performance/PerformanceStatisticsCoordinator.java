@@ -1,6 +1,7 @@
 package com.laker.postman.panel.performance;
 
 import com.laker.postman.panel.performance.model.RequestResult;
+import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.PerformanceTrendSnapshot;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceTrendPanel;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.IntSupplier;
+import java.util.function.LongFunction;
 import java.util.function.LongSupplier;
 
 @Slf4j
@@ -35,6 +37,7 @@ final class PerformanceStatisticsCoordinator {
     private final IntSupplier activeWebSocketsSupplier;
     private final IntSupplier activeSseStreamsSupplier;
     private final LongSupplier samplingIntervalSupplier;
+    private final LongFunction<PerformanceRealtimeMetrics.Sample> realtimeMetricsSampler;
 
     void refreshReport() {
         try {
@@ -86,6 +89,7 @@ final class PerformanceStatisticsCoordinator {
         RegularTimePeriod period = createTrendPeriod(now);
         long samplingIntervalMs = samplingIntervalSupplier.getAsLong();
         long windowStart = now - samplingIntervalMs;
+        PerformanceRealtimeMetrics.Sample realtimeMetrics = sampleRealtimeMetrics(now);
 
         CompletableFuture.runAsync(() -> {
             PerformanceTrendSnapshot snapshot = PerformanceTrendSnapshot.fromResults(
@@ -95,7 +99,8 @@ final class PerformanceStatisticsCoordinator {
                     users,
                     activeWebSockets,
                     activeSseStreams,
-                    samplingIntervalMs
+                    samplingIntervalMs,
+                    realtimeMetrics
             );
             SwingUtilities.invokeLater(() -> {
                 log.debug("采样数据 {} - 用户数: {}, HTTP: {}, WS: {}, SSE: {}",
@@ -120,6 +125,7 @@ final class PerformanceStatisticsCoordinator {
         long now = System.currentTimeMillis();
         RegularTimePeriod period = createTrendPeriod(now);
         long samplingIntervalMs = samplingIntervalSupplier.getAsLong();
+        PerformanceRealtimeMetrics.Sample realtimeMetrics = sampleRealtimeMetrics(now);
         PerformanceTrendSnapshot snapshot = PerformanceTrendSnapshot.fromResults(
                 copyResults(),
                 now - samplingIntervalMs,
@@ -127,7 +133,8 @@ final class PerformanceStatisticsCoordinator {
                 users,
                 activeWebSockets,
                 activeSseStreams,
-                samplingIntervalMs
+                samplingIntervalMs,
+                realtimeMetrics
         );
 
         log.debug("同步采样数据 {} - 用户数: {}, HTTP: {}, WS: {}, SSE: {}",
@@ -155,6 +162,12 @@ final class PerformanceStatisticsCoordinator {
         synchronized (statsLock) {
             return new ArrayList<>(allRequestResults);
         }
+    }
+
+    private PerformanceRealtimeMetrics.Sample sampleRealtimeMetrics(long nowMs) {
+        return realtimeMetricsSampler == null
+                ? PerformanceRealtimeMetrics.Sample.empty()
+                : realtimeMetricsSampler.apply(nowMs);
     }
 
     private static RegularTimePeriod createTrendPeriod(long timestampMs) {

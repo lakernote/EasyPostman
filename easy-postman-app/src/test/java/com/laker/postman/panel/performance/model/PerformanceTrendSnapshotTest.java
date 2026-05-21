@@ -116,4 +116,39 @@ public class PerformanceTrendSnapshotTest {
         assertEquals(snapshot.sse().receivedRate(), 3.0);
         assertEquals(snapshot.sse().matchedRate(), 1.5);
     }
+
+    @Test
+    public void shouldUseRealtimeStreamRatesBeforeSessionsComplete() {
+        PerformanceRealtimeMetrics.Sample realtime = new PerformanceRealtimeMetrics.Sample(
+                3.0,
+                2.0,
+                0.0,
+                120.0,
+                4_000.0,
+                4.0,
+                1.0,
+                80.0,
+                5_000.0
+        );
+
+        PerformanceTrendSnapshot snapshot = PerformanceTrendSnapshot.fromResults(
+                List.of(),
+                1_000,
+                2_000,
+                3,
+                3,
+                2,
+                1_000,
+                realtime
+        );
+
+        assertEquals(snapshot.webSocket().sentRate(), 3.0);
+        assertEquals(snapshot.webSocket().receivedRate(), 2.0);
+        assertEquals(snapshot.webSocket().avgFirstMessageLatencyMs(), 120.0);
+        assertEquals(snapshot.webSocket().avgDurationMs(), 4_000.0);
+        assertEquals(snapshot.sse().receivedRate(), 4.0);
+        assertEquals(snapshot.sse().matchedRate(), 1.0);
+        assertEquals(snapshot.sse().avgFirstMessageLatencyMs(), 80.0);
+        assertEquals(snapshot.sse().avgDurationMs(), 5_000.0);
+    }
 }

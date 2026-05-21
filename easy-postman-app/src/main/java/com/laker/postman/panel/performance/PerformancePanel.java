@@ -15,6 +15,7 @@ import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
 import com.laker.postman.panel.performance.model.ApiMetadata;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
+import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.RequestResult;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
@@ -203,7 +204,10 @@ public class PerformancePanel extends SingletonBasePanel {
                 () -> executionEngine != null ? executionEngine.getActiveThreads() : 0,
                 () -> executionEngine != null ? executionEngine.getActiveWebSockets() : 0,
                 () -> executionEngine != null ? executionEngine.getActiveSseStreams() : 0,
-                () -> timerManager != null ? timerManager.getSamplingIntervalMs() : 1000L
+                () -> timerManager != null ? timerManager.getSamplingIntervalMs() : 1000L,
+                nowMs -> executionEngine != null
+                        ? executionEngine.sampleRealtimeMetrics(nowMs)
+                        : PerformanceRealtimeMetrics.Sample.empty()
         );
         timerManager.setTrendSamplingCallback(statisticsCoordinator::sampleTrendData);
         timerManager.setReportRefreshCallback(statisticsCoordinator::refreshReport);

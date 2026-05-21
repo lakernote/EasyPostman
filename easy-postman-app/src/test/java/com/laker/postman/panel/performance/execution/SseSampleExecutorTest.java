@@ -2,6 +2,7 @@ package com.laker.postman.panel.performance.execution;
 
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.SsePerformanceData;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -39,11 +40,15 @@ public class SseSampleExecutorTest {
             cfg.eventNameFilter = "done";
             cfg.messageFilter = "status";
 
+            PerformanceRealtimeMetrics realtimeMetrics = new PerformanceRealtimeMetrics();
+            realtimeMetrics.reset(System.currentTimeMillis());
             SseSampleExecutor.Result result = new SseSampleExecutor(
                     () -> true,
                     throwable -> false,
-                    ConcurrentHashMap.newKeySet()
+                    ConcurrentHashMap.newKeySet(),
+                    realtimeMetrics
             ).execute(request, cfg);
+            PerformanceRealtimeMetrics.Sample sample = realtimeMetrics.sample(System.currentTimeMillis());
 
             assertFalse(result.executionFailed, result.errorMsg);
             assertEquals(result.response.headers.get("X-Easy-SSE-Completion-Reason").get(0), "matched_message");
@@ -51,6 +56,8 @@ public class SseSampleExecutorTest {
             assertTrue(result.response.body.contains("event: done"), result.response.body);
             assertTrue(result.response.body.contains("status"), result.response.body.replace("\n", "\\n"));
             assertFalse(result.response.body.contains("loading"));
+            assertTrue(sample.sseReceivedRate() > 0, "SSE received rate should be recorded in real time");
+            assertTrue(sample.sseMatchedRate() > 0, "SSE matched rate should be recorded in real time");
         }
     }
 }

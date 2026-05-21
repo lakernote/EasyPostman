@@ -21,6 +21,26 @@ public record PerformanceTrendSnapshot(
                                                        int activeWebSocketConnections,
                                                        int activeSseStreams,
                                                        long samplingIntervalMs) {
+        return fromResults(
+                results,
+                windowStart,
+                now,
+                activeUsers,
+                activeWebSocketConnections,
+                activeSseStreams,
+                samplingIntervalMs,
+                null
+        );
+    }
+
+    public static PerformanceTrendSnapshot fromResults(List<RequestResult> results,
+                                                       long windowStart,
+                                                       long now,
+                                                       int activeUsers,
+                                                       int activeWebSocketConnections,
+                                                       int activeSseStreams,
+                                                       long samplingIntervalMs,
+                                                       PerformanceRealtimeMetrics.Sample realtimeMetrics) {
         List<RequestResult> safeResults = results == null ? List.of() : results;
         List<RequestResult> windowResults = safeResults.stream()
                 .filter(result -> result.endTime >= windowStart && result.endTime <= now)
@@ -29,16 +49,17 @@ public record PerformanceTrendSnapshot(
                 activeUsers,
                 activeWebSocketConnections,
                 activeSseStreams,
-                calculate(windowResults, null, samplingIntervalMs),
-                calculate(windowResults, PerformanceProtocol.HTTP, samplingIntervalMs),
-                calculate(windowResults, PerformanceProtocol.WEBSOCKET, samplingIntervalMs),
-                calculate(windowResults, PerformanceProtocol.SSE, samplingIntervalMs)
+                calculate(windowResults, null, samplingIntervalMs, null),
+                calculate(windowResults, PerformanceProtocol.HTTP, samplingIntervalMs, null),
+                calculate(windowResults, PerformanceProtocol.WEBSOCKET, samplingIntervalMs, realtimeMetrics),
+                calculate(windowResults, PerformanceProtocol.SSE, samplingIntervalMs, realtimeMetrics)
         );
     }
 
     private static ProtocolWindowMetrics calculate(List<RequestResult> results,
                                                    PerformanceProtocol protocol,
-                                                   long samplingIntervalMs) {
+                                                   long samplingIntervalMs,
+                                                   PerformanceRealtimeMetrics.Sample realtimeMetrics) {
         List<RequestResult> filtered = results.stream()
                 .filter(result -> protocol == null || result.protocol == protocol)
                 .toList();
@@ -82,6 +103,22 @@ public record PerformanceTrendSnapshot(
         double avgFirstMessageLatency = firstMessageLatencyCount > 0
                 ? round((double) firstMessageLatencyTotal / firstMessageLatencyCount)
                 : 0;
+        if (realtimeMetrics != null && protocol == PerformanceProtocol.WEBSOCKET) {
+            sentRate = realtimeMetrics.webSocketSentRate();
+            receivedRate = realtimeMetrics.webSocketReceivedRate();
+            matchedRate = realtimeMetrics.webSocketMatchedRate();
+            avgFirstMessageLatency = realtimeMetrics.webSocketFirstMessageLatencyMs();
+            if (realtimeMetrics.webSocketActiveSessionDurationMs() > 0) {
+                avgDuration = realtimeMetrics.webSocketActiveSessionDurationMs();
+            }
+        } else if (realtimeMetrics != null && protocol == PerformanceProtocol.SSE) {
+            receivedRate = realtimeMetrics.sseReceivedRate();
+            matchedRate = realtimeMetrics.sseMatchedRate();
+            avgFirstMessageLatency = realtimeMetrics.sseFirstMessageLatencyMs();
+            if (realtimeMetrics.sseActiveSessionDurationMs() > 0) {
+                avgDuration = realtimeMetrics.sseActiveSessionDurationMs();
+            }
+        }
 
         return new ProtocolWindowMetrics(
                 samples,

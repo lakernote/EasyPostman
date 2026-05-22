@@ -317,7 +317,6 @@ public class SseSampleExecutor {
         resp.addHeader("X-Easy-SSE-Message-Count", Collections.singletonList(String.valueOf(matchedMessageCount.get())));
         String firstEventLatencyHeader = firstEventLatencyMs.get() >= 0 ? String.valueOf(firstEventLatencyMs.get()) : "";
         resp.addHeader("X-Easy-SSE-First-Event-Latency-Ms", Collections.singletonList(firstEventLatencyHeader));
-        resp.addHeader("X-Easy-SSE-First-Message-Latency-Ms", Collections.singletonList(firstEventLatencyHeader));
         resp.addHeader("X-Easy-SSE-Completion-Reason", Collections.singletonList(CharSequenceUtil.blankToDefault(completionReasonRef.get(), "")));
         resp.addHeader("X-Easy-SSE-Event-Id", Collections.singletonList(CharSequenceUtil.blankToDefault(lastEventIdRef.get(), "")));
         resp.addHeader("X-Easy-SSE-Event-Type", Collections.singletonList(CharSequenceUtil.blankToDefault(lastEventTypeRef.get(), "")));

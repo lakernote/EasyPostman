@@ -46,4 +46,24 @@ public class WebSocketStagePropertyPanelTest {
         assertEquals(en.getString(MessageKeys.PERFORMANCE_WS_SEND_TAB_MESSAGE_TEMPLATE), "Content");
         assertEquals(en.getString(MessageKeys.PERFORMANCE_WS_SEND_TAB_PRE_SCRIPT), "Pre-script");
     }
+
+    @Test
+    public void shouldDescribeAwaitAsNonClosingStep() {
+        ResourceBundle zh = ResourceBundle.getBundle("messages", Locale.CHINESE);
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_WS_AWAIT_MODE), "等待完成条件");
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_WS_COMPLETION_FIRST_MESSAGE), "收到任意消息");
+        String firstMessageHint = zh.getString(MessageKeys.PERFORMANCE_WS_HINT_FIRST_MESSAGE);
+        assertEquals(firstMessageHint,
+                "等待收到任意 WebSocket 消息后进入下一步；不会主动关闭连接，超过超时时间仍未收到则失败。");
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_WS_CLOSE_HINT),
+                "执行到该步骤时主动关闭当前 WebSocket 连接；Await 步骤只负责等待条件，不负责关闭连接。");
+
+        ResourceBundle en = ResourceBundle.getBundle("messages", Locale.ENGLISH);
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_WS_AWAIT_MODE), "Await Completion");
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_WS_COMPLETION_FIRST_MESSAGE), "Any Message");
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_WS_HINT_FIRST_MESSAGE),
+                "Wait for any WebSocket message, then continue to the next step. This does not close the connection. If no message arrives before the timeout, the step fails.");
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_WS_CLOSE_HINT),
+                "When this step is reached, the current WebSocket connection is actively closed. Await steps only wait for completion conditions; they do not close the connection.");
+    }
 }

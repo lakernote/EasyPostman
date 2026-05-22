@@ -29,12 +29,16 @@ public class PerformanceStatisticsCoordinatorTest extends AbstractSwingUiTest {
                 now -> null
         );
 
-        coordinator.refreshReport();
+        try {
+            coordinator.refreshReport();
 
-        assertTrue(tabbedPane.awaitAccess());
-        SwingUtilities.invokeAndWait(() -> {
-        });
-        assertFalse(tabbedPane.accessedOffEdt.get());
+            assertTrue(tabbedPane.awaitAccess());
+            SwingUtilities.invokeAndWait(() -> {
+            });
+            assertFalse(tabbedPane.accessedOffEdt.get());
+        } finally {
+            coordinator.dispose();
+        }
     }
 
     private static final class ThreadCheckingTabbedPane extends JTabbedPane {

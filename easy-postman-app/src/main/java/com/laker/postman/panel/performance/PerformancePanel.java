@@ -558,6 +558,9 @@ public class PerformancePanel extends SingletonBasePanel {
             timerManager.stopAll();
             timerManager.dispose();
         }
+        if (statisticsCoordinator != null) {
+            statisticsCoordinator.dispose();
+        }
         if (performanceResultTablePanel != null) {
             performanceResultTablePanel.dispose();
         }

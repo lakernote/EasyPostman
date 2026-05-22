@@ -13,7 +13,9 @@ import org.jfree.data.time.RegularTimePeriod;
 
 import javax.swing.*;
 import java.util.Date;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.function.IntSupplier;
 import java.util.function.LongFunction;
 import java.util.function.LongSupplier;
@@ -31,6 +33,9 @@ final class PerformanceStatisticsCoordinator {
     private final IntSupplier activeSseStreamsSupplier;
     private final LongSupplier samplingIntervalSupplier;
     private final LongFunction<PerformanceRealtimeMetrics.Sample> realtimeMetricsSampler;
+    private final ExecutorService metricsExecutor =
+            Executors.newSingleThreadExecutor(PerformanceThreadFactory.daemonFactory("PerformanceMetrics"));
+    private volatile boolean disposed;
 
     void refreshReport() {
         if (!SwingUtilities.isEventDispatchThread()) {
@@ -50,12 +55,9 @@ final class PerformanceStatisticsCoordinator {
     }
 
     void updateReportWithLatestData() {
-        CompletableFuture.runAsync(() -> {
+        submitMetricsTask("报表更新", () -> {
             PerformanceStatsSnapshot snapshot = statsCollector.snapshot();
-            SwingUtilities.invokeLater(() -> performanceReportPanel.updateReport(snapshot));
-        }).exceptionally(ex -> {
-            log.error("报表更新失败", ex);
-            return null;
+            invokeUiIfActive(() -> performanceReportPanel.updateReport(snapshot));
         });
     }
 
@@ -77,7 +79,7 @@ final class PerformanceStatisticsCoordinator {
         long samplingIntervalMs = samplingIntervalSupplier.getAsLong();
         PerformanceRealtimeMetrics.Sample realtimeMetrics = sampleRealtimeMetrics(now);
 
-        CompletableFuture.runAsync(() -> {
+        submitMetricsTask("趋势图采样", () -> {
             PerformanceTrendSnapshot snapshot = statsCollector.sampleTrendSnapshot(
                     now,
                     users,
@@ -86,14 +88,11 @@ final class PerformanceStatisticsCoordinator {
                     samplingIntervalMs,
                     realtimeMetrics
             );
-            SwingUtilities.invokeLater(() -> {
+            invokeUiIfActive(() -> {
                 log.debug("采样数据 {} - 用户数: {}, HTTP: {}, WS: {}, SSE: {}",
                         period, users, snapshot.http().samples(), snapshot.webSocket().samples(), snapshot.sse().samples());
                 performanceTrendPanel.addOrUpdate(period, snapshot);
             });
-        }).exceptionally(ex -> {
-            log.error("趋势图采样失败", ex);
-            return null;
         });
     }
 
@@ -128,6 +127,38 @@ final class PerformanceStatisticsCoordinator {
         return realtimeMetricsSampler == null
                 ? PerformanceRealtimeMetrics.Sample.empty()
                 : realtimeMetricsSampler.apply(nowMs);
+    }
+
+    void dispose() {
+        disposed = true;
+        metricsExecutor.shutdownNow();
+    }
+
+    private void submitMetricsTask(String taskName, Runnable task) {
+        if (disposed) {
+            return;
+        }
+        try {
+            metricsExecutor.execute(() -> {
+                try {
+                    task.run();
+                } catch (Exception ex) {
+                    log.error("{}失败", taskName, ex);
+                }
+            });
+        } catch (RejectedExecutionException ex) {
+            if (!disposed) {
+                log.warn("{}提交失败", taskName, ex);
+            }
+        }
+    }
+
+    private void invokeUiIfActive(Runnable uiTask) {
+        SwingUtilities.invokeLater(() -> {
+            if (!disposed) {
+                uiTask.run();
+            }
+        });
     }
 
     private static RegularTimePeriod createTrendPeriod(long timestampMs) {

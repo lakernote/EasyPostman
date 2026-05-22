@@ -18,7 +18,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
@@ -105,7 +104,7 @@ final class PerformanceRunControlSupport {
         int totalThreads = executionEngine.getTotalThreads(rootNode);
         progressLabel.setText("0/" + totalThreads);
 
-        Thread runThread = new Thread(() -> {
+        Thread runThread = PerformanceThreadFactory.newDaemonThread("PerformanceRun", () -> {
             try {
                 executionEngine.runJMeterTreeWithProgress(
                         rootNode,
@@ -136,8 +135,10 @@ final class PerformanceRunControlSupport {
         refreshBtn.setEnabled(true);
         timerManager.stopAll();
 
-        CompletableFuture.runAsync(this::waitForFinalStats)
-                .thenRun(() -> SwingUtilities.invokeLater(this::flushUiAfterStop));
+        PerformanceThreadFactory.newDaemonThread("PerformanceStopFlush", () -> {
+            waitForFinalStats();
+            SwingUtilities.invokeLater(this::flushUiAfterStop);
+        }).start();
 
         OkHttpClientManager.setDefaultConnectionPoolConfig();
     }

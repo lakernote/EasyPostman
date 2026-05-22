@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.swing.SwingUtilities;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -85,12 +86,9 @@ public class PerformanceTimerManager {
         log.info("启动性能测试定时器 - 采样间隔: {}秒, 报表刷新间隔: {}ms",
                 samplingIntervalSeconds, REPORT_REFRESH_INTERVAL_MS);
 
-        // 创建定时任务调度器（2个核心线程，足够处理采样和报表刷新）
-        scheduler = Executors.newScheduledThreadPool(2, r -> {
-            Thread t = new Thread(r, "PerformanceTimer-" + System.currentTimeMillis());
-            t.setDaemon(true);  // 守护线程，不阻止 JVM 退出
-            return t;
-        });
+        scheduler = Executors.newSingleThreadScheduledExecutor(
+                PerformanceThreadFactory.daemonFactory("PerformanceTimer")
+        );
 
         startTrendSamplingTimer();
         startReportRefreshTimer();
@@ -166,19 +164,24 @@ public class PerformanceTimerManager {
         }
 
         // 关闭调度器
-        if (scheduler != null) {
-            scheduler.shutdown();
+        ScheduledExecutorService schedulerToStop = scheduler;
+        scheduler = null;
+        if (schedulerToStop != null) {
+            schedulerToStop.shutdown();
+            if (SwingUtilities.isEventDispatchThread()) {
+                log.debug("在 EDT 上跳过等待定时器关闭，避免阻塞界面");
+                return;
+            }
             try {
-                if (!scheduler.awaitTermination(2, TimeUnit.SECONDS)) {
+                if (!schedulerToStop.awaitTermination(2, TimeUnit.SECONDS)) {
                     log.warn("定时器未能在 2 秒内正常关闭，强制停止");
-                    scheduler.shutdownNow();
+                    schedulerToStop.shutdownNow();
                 }
             } catch (InterruptedException e) {
                 log.warn("等待定时器关闭时被中断，强制停止");
-                scheduler.shutdownNow();
+                schedulerToStop.shutdownNow();
                 Thread.currentThread().interrupt();
             }
-            scheduler = null;
         }
 
         log.debug("性能测试定时器已停止");

@@ -11,6 +11,7 @@ import com.laker.postman.util.MessageKeys;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
+import javax.swing.JTable;
 import javax.swing.JButton;
 import javax.swing.JTabbedPane;
 import javax.swing.table.DefaultTableModel;
@@ -104,6 +105,24 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
                 PerformanceProtocol.WEBSOCKET.getDisplayName().equals(button.getText())));
         assertTrue(protocolButtons.stream().anyMatch(button ->
                 PerformanceProtocol.SSE.getDisplayName().equals(button.getText())));
+    }
+
+    @Test
+    public void shouldKeepReportColumnsResizableWithCompactApiNameWidth() {
+        PerformanceReportPanel panel = new PerformanceReportPanel();
+
+        List<JTable> tables = findAll(panel, JTable.class);
+
+        assertEquals(tables.size(), PerformanceProtocol.values().length);
+        for (JTable table : tables) {
+            assertEquals(table.getAutoResizeMode(), JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
+            assertTrue(table.getTableHeader().getResizingAllowed());
+            assertFalse(table.getTableHeader().getReorderingAllowed());
+            assertTrue(table.getColumnModel().getColumn(0).getPreferredWidth() <= 180);
+            for (int col = 0; col < table.getColumnModel().getColumnCount(); col++) {
+                assertEquals(table.getColumnModel().getColumn(col).getMaxWidth(), Integer.MAX_VALUE);
+            }
+        }
     }
 
     private static DefaultTableModel getReportTableModel(PerformanceReportPanel panel) throws Exception {

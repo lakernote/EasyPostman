@@ -3,7 +3,6 @@ package com.laker.postman.panel.performance.controller;
 import com.laker.postman.common.component.EasyJSpinner;
 import com.laker.postman.panel.performance.PerformanceStagePropertyLayout;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
-import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 
@@ -32,18 +31,6 @@ public class LoopPropertyPanel extends JPanel {
                 96
         );
         PerformanceStagePropertyLayout.addCenteredCompactFormRow(this, gbc, label, iterationsSpinner);
-
-        JLabel hintLabel = new JLabel("<html><span style='color:gray'>"
-                + I18nUtil.getMessage(MessageKeys.PERFORMANCE_LOOP_HINT)
-                + "</span></html>");
-        hintLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        gbc.gridx = 0;
-        gbc.gridwidth = 2;
-        gbc.weightx = 1;
-        gbc.insets = new Insets(6, 6, 4, 6);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        add(hintLabel, gbc);
-        gbc.gridy++;
 
         PerformanceStagePropertyLayout.addVerticalFiller(this, gbc, 2);
     }

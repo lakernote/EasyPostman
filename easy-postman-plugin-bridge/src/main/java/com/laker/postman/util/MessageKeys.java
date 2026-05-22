@@ -619,7 +619,6 @@ public final class MessageKeys {
     public static final String PERFORMANCE_MENU_ADD_TIMER = "performance.menu.add_timer";
     public static final String PERFORMANCE_LOOP_NODE = "performance.loop.node";
     public static final String PERFORMANCE_LOOP_ITERATIONS = "performance.loop.iterations";
-    public static final String PERFORMANCE_LOOP_HINT = "performance.loop.hint";
     public static final String PERFORMANCE_TIMER_DELAY = "performance.timer.delay";
     public static final String PERFORMANCE_TIMER_HINT = "performance.timer.hint";
     public static final String PERFORMANCE_MENU_RENAME = "performance.menu.rename";

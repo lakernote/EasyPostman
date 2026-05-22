@@ -788,6 +788,85 @@ public class RequestEditSubPanel extends JPanel {
         requestSplitLayoutHelper.updateLayoutOrientation(isVertical);
     }
 
+    public void updateRequestEditorTabsVisibility() {
+        if (!editorInitialized || reqTabs == null) {
+            return;
+        }
+
+        Component selectedComponent = reqTabs.getSelectedComponent();
+        reqTabs.removeAll();
+        addRequestEditorTabIfVisible(
+                I18nUtil.getMessage(MessageKeys.REQUEST_DOCS_TAB_TITLE),
+                descriptionEditor,
+                null,
+                SettingManager.isRequestEditorTabVisible(SettingManager.REQUEST_EDITOR_TAB_DOCS)
+        );
+        addRequestEditorTabIfVisible(
+                I18nUtil.getMessage(MessageKeys.TAB_PARAMS),
+                paramsPanel,
+                paramsTabIndicator,
+                SettingManager.isRequestEditorTabVisible(SettingManager.REQUEST_EDITOR_TAB_PARAMS)
+        );
+        addRequestEditorTabIfVisible(
+                I18nUtil.getMessage(MessageKeys.TAB_AUTHORIZATION),
+                authTabPanel,
+                authTabIndicator,
+                protocol.isHttpProtocol()
+                        && SettingManager.isRequestEditorTabVisible(SettingManager.REQUEST_EDITOR_TAB_AUTH)
+        );
+        addRequestEditorTabIfVisible(
+                I18nUtil.getMessage(MessageKeys.TAB_REQUEST_HEADERS),
+                headersPanel,
+                headersTabIndicator,
+                SettingManager.isRequestEditorTabVisible(SettingManager.REQUEST_EDITOR_TAB_HEADERS)
+        );
+        addRequestEditorTabIfVisible(
+                I18nUtil.getMessage(MessageKeys.TAB_REQUEST_BODY),
+                requestBodyPanel,
+                bodyTabIndicator,
+                SettingManager.isRequestEditorTabVisible(SettingManager.REQUEST_EDITOR_TAB_BODY)
+        );
+        addRequestEditorTabIfVisible(
+                I18nUtil.getMessage(MessageKeys.TAB_SCRIPTS),
+                scriptPanel,
+                scriptsTabIndicator,
+                SettingManager.isRequestEditorTabVisible(SettingManager.REQUEST_EDITOR_TAB_SCRIPTS)
+        );
+        addRequestEditorTabIfVisible(
+                I18nUtil.getMessage(MessageKeys.TAB_SETTINGS),
+                requestSettingsPanel,
+                settingsTabIndicator,
+                SettingManager.isRequestEditorTabVisible(SettingManager.REQUEST_EDITOR_TAB_SETTINGS)
+        );
+        if (reqTabs.getTabCount() == 0) {
+            addRequestEditorTabIfVisible(
+                    I18nUtil.getMessage(MessageKeys.TAB_PARAMS),
+                    paramsPanel,
+                    paramsTabIndicator,
+                    true
+            );
+        }
+
+        RequestTabSelectionHelper.selectFirstVisible(reqTabs, selectedComponent, paramsPanel, requestBodyPanel);
+        updateTabIndicators();
+        reqTabs.revalidate();
+        reqTabs.repaint();
+    }
+
+    private void addRequestEditorTabIfVisible(String title,
+                                              Component component,
+                                              IndicatorTabComponent indicator,
+                                              boolean visible) {
+        if (!visible) {
+            return;
+        }
+
+        reqTabs.addTab(title, component);
+        if (indicator != null) {
+            reqTabs.setTabComponentAt(reqTabs.getTabCount() - 1, indicator);
+        }
+    }
+
     @Override
     public void doLayout() {
         super.doLayout();

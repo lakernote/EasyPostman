@@ -11,6 +11,7 @@ import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionListener;
 
 final class RequestViewFactory {
@@ -30,37 +31,77 @@ final class RequestViewFactory {
         reqTabs.putClientProperty(FlatClientProperties.TABBED_PANE_SHOW_CONTENT_SEPARATOR, false);
 
         MarkdownEditorPanel descriptionEditor = new MarkdownEditorPanel();
-        reqTabs.addTab(I18nUtil.getMessage(MessageKeys.REQUEST_DOCS_TAB_TITLE), descriptionEditor);
+        addTabIfVisible(
+                reqTabs,
+                I18nUtil.getMessage(MessageKeys.REQUEST_DOCS_TAB_TITLE),
+                descriptionEditor,
+                null,
+                SettingManager.isRequestEditorTabVisible(SettingManager.REQUEST_EDITOR_TAB_DOCS)
+        );
 
         EasyRequestParamsPanel paramsPanel = new EasyRequestParamsPanel();
         IndicatorTabComponent paramsTabIndicator = new IndicatorTabComponent(I18nUtil.getMessage(MessageKeys.TAB_PARAMS));
-        reqTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_PARAMS), paramsPanel);
-        reqTabs.setTabComponentAt(1, paramsTabIndicator);
+        addTabIfVisible(
+                reqTabs,
+                I18nUtil.getMessage(MessageKeys.TAB_PARAMS),
+                paramsPanel,
+                paramsTabIndicator,
+                SettingManager.isRequestEditorTabVisible(SettingManager.REQUEST_EDITOR_TAB_PARAMS)
+        );
 
         AuthTabPanel authTabPanel = new AuthTabPanel();
         IndicatorTabComponent authTabIndicator = new IndicatorTabComponent(I18nUtil.getMessage(MessageKeys.TAB_AUTHORIZATION));
-        reqTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_AUTHORIZATION), authTabPanel);
-        reqTabs.setTabComponentAt(2, authTabIndicator);
+        addTabIfVisible(
+                reqTabs,
+                I18nUtil.getMessage(MessageKeys.TAB_AUTHORIZATION),
+                authTabPanel,
+                authTabIndicator,
+                protocol.isHttpProtocol()
+                        && SettingManager.isRequestEditorTabVisible(SettingManager.REQUEST_EDITOR_TAB_AUTH)
+        );
 
         EasyRequestHttpHeadersPanel headersPanel = new EasyRequestHttpHeadersPanel();
         IndicatorTabComponent headersTabIndicator = new IndicatorTabComponent(I18nUtil.getMessage(MessageKeys.TAB_REQUEST_HEADERS));
-        reqTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_REQUEST_HEADERS), headersPanel);
-        reqTabs.setTabComponentAt(3, headersTabIndicator);
+        addTabIfVisible(
+                reqTabs,
+                I18nUtil.getMessage(MessageKeys.TAB_REQUEST_HEADERS),
+                headersPanel,
+                headersTabIndicator,
+                SettingManager.isRequestEditorTabVisible(SettingManager.REQUEST_EDITOR_TAB_HEADERS)
+        );
 
         RequestBodyPanel requestBodyPanel = new RequestBodyPanel(protocol);
         IndicatorTabComponent bodyTabIndicator = new IndicatorTabComponent(I18nUtil.getMessage(MessageKeys.TAB_REQUEST_BODY));
-        reqTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_REQUEST_BODY), requestBodyPanel);
-        reqTabs.setTabComponentAt(4, bodyTabIndicator);
+        addTabIfVisible(
+                reqTabs,
+                I18nUtil.getMessage(MessageKeys.TAB_REQUEST_BODY),
+                requestBodyPanel,
+                bodyTabIndicator,
+                SettingManager.isRequestEditorTabVisible(SettingManager.REQUEST_EDITOR_TAB_BODY)
+        );
 
         ScriptPanel scriptPanel = new ScriptPanel();
         IndicatorTabComponent scriptsTabIndicator = new IndicatorTabComponent(I18nUtil.getMessage(MessageKeys.TAB_SCRIPTS));
-        reqTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_SCRIPTS), scriptPanel);
-        reqTabs.setTabComponentAt(5, scriptsTabIndicator);
+        addTabIfVisible(
+                reqTabs,
+                I18nUtil.getMessage(MessageKeys.TAB_SCRIPTS),
+                scriptPanel,
+                scriptsTabIndicator,
+                SettingManager.isRequestEditorTabVisible(SettingManager.REQUEST_EDITOR_TAB_SCRIPTS)
+        );
 
         RequestSettingsPanel requestSettingsPanel = new RequestSettingsPanel();
         IndicatorTabComponent settingsTabIndicator = new IndicatorTabComponent(I18nUtil.getMessage(MessageKeys.TAB_SETTINGS));
-        reqTabs.addTab(I18nUtil.getMessage(MessageKeys.TAB_SETTINGS), requestSettingsPanel);
-        reqTabs.setTabComponentAt(6, settingsTabIndicator);
+        addTabIfVisible(
+                reqTabs,
+                I18nUtil.getMessage(MessageKeys.TAB_SETTINGS),
+                requestSettingsPanel,
+                settingsTabIndicator,
+                SettingManager.isRequestEditorTabVisible(SettingManager.REQUEST_EDITOR_TAB_SETTINGS)
+        );
+        if (reqTabs.getTabCount() == 0) {
+            addTabIfVisible(reqTabs, I18nUtil.getMessage(MessageKeys.TAB_PARAMS), paramsPanel, paramsTabIndicator, true);
+        }
 
         boolean enableSaveButton = protocol.isHttpProtocol() && panelType != RequestEditSubPanelType.SAVED_RESPONSE;
         ResponsePanel responsePanel = new ResponsePanel(protocol, enableSaveButton);
@@ -93,5 +134,20 @@ final class RequestViewFactory {
                 responsePanel,
                 splitPane
         );
+    }
+
+    private static void addTabIfVisible(JTabbedPane tabs,
+                                        String title,
+                                        Component component,
+                                        IndicatorTabComponent indicator,
+                                        boolean visible) {
+        if (!visible) {
+            return;
+        }
+
+        tabs.addTab(title, component);
+        if (indicator != null) {
+            tabs.setTabComponentAt(tabs.getTabCount() - 1, indicator);
+        }
     }
 }

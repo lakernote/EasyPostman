@@ -93,7 +93,6 @@ final class PerformanceRunControlSupport {
         runBtn.setEnabled(false);
         stopBtn.setEnabled(true);
         refreshBtn.setEnabled(false);
-        resultTabbedPane.setSelectedIndex(PerformancePanelViewFactory.RESULT_TAB_TABLE);
         clearCachedPerformanceResultsAction.run();
 
         long startTime = System.currentTimeMillis();

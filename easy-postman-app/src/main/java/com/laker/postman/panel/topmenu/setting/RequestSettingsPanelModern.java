@@ -1,17 +1,23 @@
 package com.laker.postman.panel.topmenu.setting;
 
+import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.service.http.okhttp.OkHttpClientManager;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 现代化请求设置面板
  */
+@Slf4j
 public class RequestSettingsPanelModern extends ModernSettingsPanel {
     private static final int FIELD_SPACING = 8;
     private static final int SECTION_SPACING = 12;
@@ -23,6 +29,13 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
     private JCheckBox followRedirectsCheckBox;
     private JCheckBox sslVerificationDisabledCheckBox;
     private JComboBox<String> defaultProtocolComboBox;
+    private JCheckBox docsTabVisibleCheckBox;
+    private JCheckBox paramsTabVisibleCheckBox;
+    private JCheckBox authTabVisibleCheckBox;
+    private JCheckBox headersTabVisibleCheckBox;
+    private JCheckBox bodyTabVisibleCheckBox;
+    private JCheckBox scriptsTabVisibleCheckBox;
+    private JCheckBox settingsTabVisibleCheckBox;
     private JCheckBox remoteScriptRequireEnabledCheckBox;
     private JCheckBox remoteScriptRequireAllowHttpCheckBox;
     private JTextField remoteScriptAllowedHostsField;
@@ -104,6 +117,52 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
         contentPanel.add(requestSection);
         contentPanel.add(createVerticalSpace(SECTION_SPACING));
 
+        JPanel requestEditorTabSection = createModernSection(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_EDITOR_TABS_TITLE),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_EDITOR_TABS_DESCRIPTION)
+        );
+        docsTabVisibleCheckBox = createRequestEditorTabCheckBox(
+                I18nUtil.getMessage(MessageKeys.REQUEST_DOCS_TAB_TITLE),
+                SettingManager.REQUEST_EDITOR_TAB_DOCS
+        );
+        paramsTabVisibleCheckBox = createRequestEditorTabCheckBox(
+                I18nUtil.getMessage(MessageKeys.TAB_PARAMS),
+                SettingManager.REQUEST_EDITOR_TAB_PARAMS
+        );
+        authTabVisibleCheckBox = createRequestEditorTabCheckBox(
+                I18nUtil.getMessage(MessageKeys.TAB_AUTHORIZATION),
+                SettingManager.REQUEST_EDITOR_TAB_AUTH
+        );
+        headersTabVisibleCheckBox = createRequestEditorTabCheckBox(
+                I18nUtil.getMessage(MessageKeys.TAB_REQUEST_HEADERS),
+                SettingManager.REQUEST_EDITOR_TAB_HEADERS
+        );
+        bodyTabVisibleCheckBox = createRequestEditorTabCheckBox(
+                I18nUtil.getMessage(MessageKeys.TAB_REQUEST_BODY),
+                SettingManager.REQUEST_EDITOR_TAB_BODY
+        );
+        scriptsTabVisibleCheckBox = createRequestEditorTabCheckBox(
+                I18nUtil.getMessage(MessageKeys.TAB_SCRIPTS),
+                SettingManager.REQUEST_EDITOR_TAB_SCRIPTS
+        );
+        settingsTabVisibleCheckBox = createRequestEditorTabCheckBox(
+                I18nUtil.getMessage(MessageKeys.TAB_SETTINGS),
+                SettingManager.REQUEST_EDITOR_TAB_SETTINGS
+        );
+        addRequestEditorTabRow(requestEditorTabSection, docsTabVisibleCheckBox);
+        addRequestEditorTabRow(requestEditorTabSection, paramsTabVisibleCheckBox);
+        addRequestEditorTabRow(requestEditorTabSection, authTabVisibleCheckBox);
+        addRequestEditorTabRow(requestEditorTabSection, headersTabVisibleCheckBox);
+        addRequestEditorTabRow(requestEditorTabSection, bodyTabVisibleCheckBox);
+        addRequestEditorTabRow(requestEditorTabSection, scriptsTabVisibleCheckBox);
+        requestEditorTabSection.add(createCheckBoxRow(
+                settingsTabVisibleCheckBox,
+                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_EDITOR_TABS_TOOLTIP)
+        ));
+
+        contentPanel.add(requestEditorTabSection);
+        contentPanel.add(createVerticalSpace(SECTION_SPACING));
+
         JPanel scriptSection = createModernSection(
                 I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SCRIPT_TITLE),
                 I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SCRIPT_DESCRIPTION)
@@ -176,6 +235,7 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
         trackComponentValue(followRedirectsCheckBox);
         trackComponentValue(sslVerificationDisabledCheckBox);
         trackComponentValue(defaultProtocolComboBox);
+        trackRequestEditorTabCheckBoxes();
         trackComponentValue(remoteScriptRequireEnabledCheckBox);
         trackComponentValue(remoteScriptRequireAllowHttpCheckBox);
         trackComponentValue(remoteScriptAllowedHostsField);
@@ -249,6 +309,10 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
                     I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_ERROR_MESSAGE));
             return;
         }
+        if (!hasAnyRequestEditorTabSelected()) {
+            NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_REQUEST_EDITOR_TABS_ERROR));
+            return;
+        }
 
         try {
             int maxBodySizeKB = Integer.parseInt(maxBodySizeField.getText().trim());
@@ -261,6 +325,8 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
             SettingManager.setFollowRedirects(followRedirectsCheckBox.isSelected());
             SettingManager.setRequestSslVerificationDisabled(sslVerificationDisabledCheckBox.isSelected());
             SettingManager.setDefaultProtocol((String) defaultProtocolComboBox.getSelectedItem());
+            SettingManager.setHiddenRequestEditorTabs(getHiddenRequestEditorTabs());
+            refreshOpenRequestEditorTabsVisibility();
             SettingManager.setRemoteJsRequireEnabled(remoteScriptRequireEnabledCheckBox.isSelected());
             SettingManager.setInsecureRemoteJsRequireEnabled(remoteScriptRequireAllowHttpCheckBox.isSelected());
             SettingManager.setRemoteJsRequireAllowedHosts(remoteScriptAllowedHostsField.getText());
@@ -277,6 +343,7 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
             trackComponentValue(followRedirectsCheckBox);
             trackComponentValue(sslVerificationDisabledCheckBox);
             trackComponentValue(defaultProtocolComboBox);
+            trackRequestEditorTabCheckBoxes();
             trackComponentValue(remoteScriptRequireEnabledCheckBox);
             trackComponentValue(remoteScriptRequireAllowHttpCheckBox);
             trackComponentValue(remoteScriptAllowedHostsField);
@@ -309,5 +376,63 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
 
     private boolean isStrictlyPositiveInteger(String value) {
         return isInteger(value) && Integer.parseInt(value) > 0;
+    }
+
+    private JCheckBox createRequestEditorTabCheckBox(String label, String tabId) {
+        return new JCheckBox(label, SettingManager.isRequestEditorTabVisible(tabId));
+    }
+
+    private void addRequestEditorTabRow(JPanel section, JCheckBox checkBox) {
+        section.add(createCheckBoxRow(
+                checkBox,
+                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_EDITOR_TABS_TOOLTIP)
+        ));
+        section.add(createVerticalSpace(FIELD_SPACING));
+    }
+
+    private void trackRequestEditorTabCheckBoxes() {
+        trackComponentValue(docsTabVisibleCheckBox);
+        trackComponentValue(paramsTabVisibleCheckBox);
+        trackComponentValue(authTabVisibleCheckBox);
+        trackComponentValue(headersTabVisibleCheckBox);
+        trackComponentValue(bodyTabVisibleCheckBox);
+        trackComponentValue(scriptsTabVisibleCheckBox);
+        trackComponentValue(settingsTabVisibleCheckBox);
+    }
+
+    private boolean hasAnyRequestEditorTabSelected() {
+        return docsTabVisibleCheckBox.isSelected()
+                || paramsTabVisibleCheckBox.isSelected()
+                || authTabVisibleCheckBox.isSelected()
+                || headersTabVisibleCheckBox.isSelected()
+                || bodyTabVisibleCheckBox.isSelected()
+                || scriptsTabVisibleCheckBox.isSelected()
+                || settingsTabVisibleCheckBox.isSelected();
+    }
+
+    private List<String> getHiddenRequestEditorTabs() {
+        List<String> hiddenTabs = new ArrayList<>();
+        addHiddenTabIfUnchecked(hiddenTabs, docsTabVisibleCheckBox, SettingManager.REQUEST_EDITOR_TAB_DOCS);
+        addHiddenTabIfUnchecked(hiddenTabs, paramsTabVisibleCheckBox, SettingManager.REQUEST_EDITOR_TAB_PARAMS);
+        addHiddenTabIfUnchecked(hiddenTabs, authTabVisibleCheckBox, SettingManager.REQUEST_EDITOR_TAB_AUTH);
+        addHiddenTabIfUnchecked(hiddenTabs, headersTabVisibleCheckBox, SettingManager.REQUEST_EDITOR_TAB_HEADERS);
+        addHiddenTabIfUnchecked(hiddenTabs, bodyTabVisibleCheckBox, SettingManager.REQUEST_EDITOR_TAB_BODY);
+        addHiddenTabIfUnchecked(hiddenTabs, scriptsTabVisibleCheckBox, SettingManager.REQUEST_EDITOR_TAB_SCRIPTS);
+        addHiddenTabIfUnchecked(hiddenTabs, settingsTabVisibleCheckBox, SettingManager.REQUEST_EDITOR_TAB_SETTINGS);
+        return hiddenTabs;
+    }
+
+    private void addHiddenTabIfUnchecked(List<String> hiddenTabs, JCheckBox checkBox, String tabId) {
+        if (!checkBox.isSelected()) {
+            hiddenTabs.add(tabId);
+        }
+    }
+
+    private void refreshOpenRequestEditorTabsVisibility() {
+        try {
+            SingletonFactory.getInstance(RequestEditPanel.class).updateAllRequestEditorTabsVisibility();
+        } catch (Exception ex) {
+            log.debug("Failed to refresh open request editor tabs visibility", ex);
+        }
     }
 }

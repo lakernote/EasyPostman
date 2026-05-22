@@ -3,6 +3,7 @@ package com.laker.postman.panel.performance.model;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 public class PerformanceRealtimeMetricsTest {
 
@@ -27,7 +28,7 @@ public class PerformanceRealtimeMetricsTest {
 
         assertEquals(second.webSocketSentRate(), 0.0);
         assertEquals(second.webSocketReceivedRate(), 0.0);
-        assertEquals(second.webSocketFirstMessageLatencyMs(), 0.0);
+        assertTrue(Double.isNaN(second.webSocketFirstMessageLatencyMs()));
     }
 
     @Test
@@ -46,6 +47,12 @@ public class PerformanceRealtimeMetricsTest {
         assertEquals(sample.sseReceivedRate(), 2.0);
         assertEquals(sample.sseMatchedRate(), 1.0);
         assertEquals(sample.sseFirstMessageLatencyMs(), 100.0);
+
+        PerformanceRealtimeMetrics.Sample emptySample = metrics.sample(2_000);
+
+        assertEquals(emptySample.sseReceivedRate(), 0.0);
+        assertEquals(emptySample.sseMatchedRate(), 0.0);
+        assertTrue(Double.isNaN(emptySample.sseFirstMessageLatencyMs()));
     }
 
     @Test

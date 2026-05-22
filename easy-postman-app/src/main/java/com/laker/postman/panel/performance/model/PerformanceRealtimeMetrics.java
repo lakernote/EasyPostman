@@ -154,7 +154,7 @@ public class PerformanceRealtimeMetrics {
     }
 
     private static double average(long total, long count) {
-        return count > 0 ? round((double) Math.max(0, total) / count) : 0;
+        return count > 0 ? round((double) Math.max(0, total) / count) : Double.NaN;
     }
 
     private static double activeDuration(Map<Object, Long> sessionStarts, long nowMs) {
@@ -189,7 +189,7 @@ public class PerformanceRealtimeMetrics {
             double sseActiveSessionDurationMs
     ) {
         public static Sample empty() {
-            return new Sample(0, 0, 0, 0, 0, 0, 0, 0, 0);
+            return new Sample(0, 0, 0, Double.NaN, 0, 0, 0, Double.NaN, 0);
         }
     }
 }

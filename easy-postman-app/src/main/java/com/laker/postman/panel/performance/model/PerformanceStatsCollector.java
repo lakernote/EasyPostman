@@ -123,7 +123,7 @@ public final class PerformanceStatsCollector {
         double matchedRate = round(stats.matchedMessages / seconds);
         double avgDuration = stats.durations.avg();
         double avgFirstMessageLatency = stats.firstMessageLatencyCount == 0
-                ? 0
+                ? Double.NaN
                 : round((double) stats.firstMessageLatencyTotal / stats.firstMessageLatencyCount);
 
         if (realtimeMetrics != null && protocol == PerformanceProtocol.WEBSOCKET) {
@@ -194,7 +194,7 @@ public final class PerformanceStatsCollector {
                     realtimeMetrics.sseFirstMessageLatencyMs()
             );
         }
-        return new PerformanceTrendSnapshot.ProtocolWindowMetrics(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        return new PerformanceTrendSnapshot.ProtocolWindowMetrics(0, 0, 0, 0, Double.NaN, 0, 0, 0, 0, 0, 0, Double.NaN);
     }
 
     private static int clampToInt(long value) {

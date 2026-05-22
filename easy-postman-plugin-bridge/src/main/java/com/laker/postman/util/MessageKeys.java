@@ -754,6 +754,25 @@ public final class MessageKeys {
     public static final String PERFORMANCE_REPORT_MARKDOWN_TITLE = "performance.report.markdown.title";
     public static final String PERFORMANCE_REPORT_MARKDOWN_EMPTY = "performance.report.markdown.empty";
     public static final String PERFORMANCE_REPORT_MARKDOWN_COPIED = "performance.report.markdown.copied";
+    public static final String PERFORMANCE_REPORT_COMPLETION_PENDING = "performance.report.completion.pending";
+    public static final String PERFORMANCE_REPORT_COMPLETION_CLOSED = "performance.report.completion.closed";
+    public static final String PERFORMANCE_REPORT_COMPLETION_INTERRUPTED = "performance.report.completion.interrupted";
+    public static final String PERFORMANCE_REPORT_COMPLETION_FAILURE = "performance.report.completion.failure";
+    public static final String PERFORMANCE_REPORT_COMPLETION_CONNECT_TIMEOUT = "performance.report.completion.connect_timeout";
+    public static final String PERFORMANCE_REPORT_COMPLETION_SEND_SKIPPED = "performance.report.completion.send_skipped";
+    public static final String PERFORMANCE_REPORT_COMPLETION_SEND_PRE_SCRIPT_FAILED = "performance.report.completion.send_pre_script_failed";
+    public static final String PERFORMANCE_REPORT_COMPLETION_SENT = "performance.report.completion.sent";
+    public static final String PERFORMANCE_REPORT_COMPLETION_SEND_FAILED = "performance.report.completion.send_failed";
+    public static final String PERFORMANCE_REPORT_COMPLETION_FIRST_MESSAGE = "performance.report.completion.first_message";
+    public static final String PERFORMANCE_REPORT_COMPLETION_MATCHED_MESSAGE = "performance.report.completion.matched_message";
+    public static final String PERFORMANCE_REPORT_COMPLETION_MESSAGE_TARGET = "performance.report.completion.message_target";
+    public static final String PERFORMANCE_REPORT_COMPLETION_HOLD_COMPLETE = "performance.report.completion.hold_complete";
+    public static final String PERFORMANCE_REPORT_COMPLETION_MESSAGE_TARGET_TIMEOUT = "performance.report.completion.message_target_timeout";
+    public static final String PERFORMANCE_REPORT_COMPLETION_AWAIT_TIMEOUT = "performance.report.completion.await_timeout";
+    public static final String PERFORMANCE_REPORT_COMPLETION_FIRST_MESSAGE_TIMEOUT = "performance.report.completion.first_message_timeout";
+    public static final String PERFORMANCE_REPORT_COMPLETION_MATCHED_MESSAGE_TIMEOUT = "performance.report.completion.matched_message_timeout";
+    public static final String PERFORMANCE_REPORT_COMPLETION_CLOSED_EARLY = "performance.report.completion.closed_early";
+    public static final String PERFORMANCE_REPORT_COMPLETION_CLOSED_BY_STEP = "performance.report.completion.closed_by_step";
 
     // ============ 性能趋势相关 ============
     public static final String PERFORMANCE_TREND_THREADS = "performance.trend.threads";
@@ -1087,6 +1106,9 @@ public final class MessageKeys {
     public static final String SETTINGS_REQUEST_SSL_VERIFICATION_CHECKBOX = "settings.request.ssl_verification.checkbox";
     public static final String SETTINGS_REQUEST_DEFAULT_PROTOCOL = "settings.request.default_protocol";
     public static final String SETTINGS_REQUEST_DEFAULT_PROTOCOL_TOOLTIP = "settings.request.default_protocol.tooltip";
+    public static final String SETTINGS_REQUEST_EDITOR_TABS_TITLE = "settings.request.editor_tabs.title";
+    public static final String SETTINGS_REQUEST_EDITOR_TABS_DESCRIPTION = "settings.request.editor_tabs.description";
+    public static final String SETTINGS_REQUEST_EDITOR_TABS_TOOLTIP = "settings.request.editor_tabs.tooltip";
     public static final String SETTINGS_REQUEST_SCRIPT_TITLE = "settings.request.script.title";
     public static final String SETTINGS_REQUEST_SCRIPT_DESCRIPTION = "settings.request.script.description";
     public static final String SETTINGS_REQUEST_SCRIPT_REMOTE_REQUIRE_ENABLED = "settings.request.script.remote_require_enabled";
@@ -1187,6 +1209,7 @@ public final class MessageKeys {
     public static final String SETTINGS_VALIDATION_SCRIPT_REMOTE_CONNECT_TIMEOUT_ERROR = "settings.validation.script.remote_connect_timeout.error";
     public static final String SETTINGS_VALIDATION_SCRIPT_REMOTE_READ_TIMEOUT_ERROR = "settings.validation.script.remote_read_timeout.error";
     public static final String SETTINGS_VALIDATION_SCRIPT_REMOTE_MAX_SIZE_ERROR = "settings.validation.script.remote_max_size.error";
+    public static final String SETTINGS_VALIDATION_REQUEST_EDITOR_TABS_ERROR = "settings.validation.request_editor_tabs.error";
     public static final String SETTINGS_VALIDATION_MAX_IDLE_ERROR = "settings.validation.max_idle.error";
     public static final String SETTINGS_VALIDATION_KEEP_ALIVE_ERROR = "settings.validation.keep_alive.error";
     public static final String SETTINGS_VALIDATION_JS_CONTEXT_POOL_SIZE_ERROR = "settings.validation.js_context_pool_size.error";

@@ -229,26 +229,30 @@ final class RequestFormDataHelper {
                                   boolean hasFormData,
                                   boolean hasParams) {
         if (effectiveProtocol != null && effectiveProtocol.isWebSocketProtocol()) {
-            reqTabs.setSelectedComponent(requestBodyPanel);
+            RequestTabSelectionHelper.selectFirstVisible(reqTabs, requestBodyPanel, paramsPanel);
             return;
         }
         if (effectiveProtocol != null && effectiveProtocol.isSseProtocol()) {
-            reqTabs.setSelectedComponent(paramsPanel);
+            RequestTabSelectionHelper.selectFirstVisible(reqTabs, paramsPanel, requestBodyPanel);
             return;
         }
         if (CharSequenceUtil.isNotBlank(body) && !RequestBodyPanel.BODY_TYPE_NONE.equals(bodyType)) {
-            reqTabs.setSelectedComponent(requestBodyPanel);
+            RequestTabSelectionHelper.selectFirstVisible(reqTabs, requestBodyPanel, paramsPanel);
             return;
         }
         if (hasFormData) {
-            reqTabs.setSelectedComponent(requestBodyPanel);
+            RequestTabSelectionHelper.selectFirstVisible(reqTabs, requestBodyPanel, paramsPanel);
             return;
         }
         if ("POST".equals(method) || "PUT".equals(method) || "PATCH".equals(method)) {
-            reqTabs.setSelectedComponent(hasParams ? paramsPanel : requestBodyPanel);
+            if (hasParams) {
+                RequestTabSelectionHelper.selectFirstVisible(reqTabs, paramsPanel, requestBodyPanel);
+            } else {
+                RequestTabSelectionHelper.selectFirstVisible(reqTabs, requestBodyPanel, paramsPanel);
+            }
             return;
         }
-        reqTabs.setSelectedComponent(paramsPanel);
+        RequestTabSelectionHelper.selectFirstVisible(reqTabs, paramsPanel, requestBodyPanel);
     }
 
     private String resolveBodyType(HttpRequestItem item) {

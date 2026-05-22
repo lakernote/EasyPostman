@@ -25,6 +25,7 @@ public class SettingManager {
     private static final String SCRIPT_REMOTE_REQUIRE_CONNECT_TIMEOUT_MS = "script_remote_require_connect_timeout_ms";
     private static final String SCRIPT_REMOTE_REQUIRE_READ_TIMEOUT_MS = "script_remote_require_read_timeout_ms";
     private static final String SCRIPT_REMOTE_REQUIRE_MAX_BYTES = "script_remote_require_max_bytes";
+    private static final String REQUEST_EDITOR_HIDDEN_TABS_KEY = "request_editor_hidden_tabs";
     private static final int DEFAULT_SCRIPT_REMOTE_CONNECT_TIMEOUT_MS = 3000;
     private static final int DEFAULT_SCRIPT_REMOTE_READ_TIMEOUT_MS = 5000;
     private static final int DEFAULT_SCRIPT_REMOTE_MAX_BYTES = 512 * 1024;
@@ -50,6 +51,13 @@ public class SettingManager {
     public static final String PROXY_MODE_SYSTEM = "SYSTEM";
     public static final String PROXY_TYPE_HTTP = "HTTP";
     public static final String PROXY_TYPE_SOCKS = "SOCKS";
+    public static final String REQUEST_EDITOR_TAB_DOCS = "DOCS";
+    public static final String REQUEST_EDITOR_TAB_PARAMS = "PARAMS";
+    public static final String REQUEST_EDITOR_TAB_AUTH = "AUTH";
+    public static final String REQUEST_EDITOR_TAB_HEADERS = "HEADERS";
+    public static final String REQUEST_EDITOR_TAB_BODY = "BODY";
+    public static final String REQUEST_EDITOR_TAB_SCRIPTS = "SCRIPTS";
+    public static final String REQUEST_EDITOR_TAB_SETTINGS = "SETTINGS";
     private static final Properties props = new Properties();
 
     // 私有构造函数，防止实例化
@@ -420,6 +428,50 @@ public class SettingManager {
         if (protocol != null && (protocol.equals("http") || protocol.equals("https"))) {
             setAndSaveProperty("default_protocol", protocol);
         }
+    }
+
+    public static Set<String> getHiddenRequestEditorTabs() {
+        String val = props.getProperty(REQUEST_EDITOR_HIDDEN_TABS_KEY);
+        Set<String> hiddenTabs = new LinkedHashSet<>();
+        if (val == null || val.isBlank()) {
+            return hiddenTabs;
+        }
+
+        for (String token : val.split(",")) {
+            String normalized = normalizeRequestEditorTabId(token);
+            if (!normalized.isEmpty()) {
+                hiddenTabs.add(normalized);
+            }
+        }
+        return hiddenTabs;
+    }
+
+    public static void setHiddenRequestEditorTabs(Collection<String> hiddenTabs) {
+        if (hiddenTabs == null || hiddenTabs.isEmpty()) {
+            setAndSaveProperty(REQUEST_EDITOR_HIDDEN_TABS_KEY, null);
+            return;
+        }
+
+        Set<String> normalizedTabs = new LinkedHashSet<>();
+        for (String hiddenTab : hiddenTabs) {
+            String normalized = normalizeRequestEditorTabId(hiddenTab);
+            if (!normalized.isEmpty()) {
+                normalizedTabs.add(normalized);
+            }
+        }
+        setAndSaveProperty(
+                REQUEST_EDITOR_HIDDEN_TABS_KEY,
+                normalizedTabs.isEmpty() ? null : String.join(",", normalizedTabs)
+        );
+    }
+
+    public static boolean isRequestEditorTabVisible(String tabId) {
+        String normalized = normalizeRequestEditorTabId(tabId);
+        return normalized.isEmpty() || !getHiddenRequestEditorTabs().contains(normalized);
+    }
+
+    private static String normalizeRequestEditorTabId(String tabId) {
+        return tabId == null ? "" : tabId.trim().toUpperCase(Locale.ROOT);
     }
 
     public static boolean isRemoteJsRequireEnabled() {

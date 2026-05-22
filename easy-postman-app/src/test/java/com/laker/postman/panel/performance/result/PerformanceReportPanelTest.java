@@ -15,8 +15,10 @@ import javax.swing.JTable;
 import javax.swing.JButton;
 import javax.swing.JTabbedPane;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.event.MouseEvent;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
@@ -117,7 +119,6 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
 
         assertEquals(tables.size(), PerformanceProtocol.values().length);
         for (JTable table : tables) {
-            assertEquals(table.getAutoResizeMode(), JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
             assertTrue(table.getTableHeader().getResizingAllowed());
             assertFalse(table.getTableHeader().getReorderingAllowed());
             assertTrue(table.getColumnModel().getColumn(0).getPreferredWidth() <= 180);
@@ -125,6 +126,17 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
                 assertEquals(table.getColumnModel().getColumn(col).getMaxWidth(), Integer.MAX_VALUE);
             }
         }
+
+        JTable httpTable = findTableByColumnCount(tables, 12);
+        JTable webSocketTable = findTableByColumnCount(tables, 14);
+        JTable sseTable = findTableByColumnCount(tables, 16);
+
+        assertEquals(httpTable.getAutoResizeMode(), JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
+        assertEquals(webSocketTable.getAutoResizeMode(), JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
+        assertEquals(sseTable.getAutoResizeMode(), JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
+        assertTrue(sseTable.getColumnModel().getColumn(13).getPreferredWidth() >= 110);
+        assertTrue(sseTable.getColumnModel().getColumn(14).getPreferredWidth() >= 110);
+        assertEquals(headerTooltipAt(sseTable, 13), sseTable.getColumnName(13));
     }
 
     @Test
@@ -161,6 +173,21 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
     }
 
     @Test
+    public void shouldLocalizeStreamCompletionReasonValues() throws Exception {
+        ApiMetadata.register("ws", "WebSocket API");
+        RequestResult result = new RequestResult(1_000, 2_000, true, "ws", PerformanceProtocol.WEBSOCKET);
+        result.completionReason = "closed_by_step";
+
+        PerformanceReportPanel panel = new PerformanceReportPanel();
+        panel.updateReport(Map.of(), Map.of(), Map.of(), List.of(result));
+
+        DefaultTableModel model = getWebSocketReportTableModel(panel);
+
+        assertFalse("closed_by_step".equals(model.getValueAt(0, 13)));
+        assertFalse("closed_by_step".equals(model.getValueAt(1, 13)));
+    }
+
+    @Test
     public void shouldDescribeStreamReportDurationAsSampleDuration() {
         ResourceBundle zh = ResourceBundle.getBundle("messages", Locale.CHINESE);
         assertEquals(zh.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG_SESSION), "平均样本耗时");
@@ -169,6 +196,8 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
         assertEquals(zh.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_P95_STREAM), "P95 样本耗时");
         assertEquals(zh.getString(MessageKeys.PERFORMANCE_TREND_SESSION_DURATION_MS), "活跃会话时长 (ms)");
         assertEquals(zh.getString(MessageKeys.PERFORMANCE_TREND_STREAM_DURATION_MS), "活跃流时长 (ms)");
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_TREND_ACTIVE_WS), "会话数");
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_REPORT_COMPLETION_CLOSED_BY_STEP), "主动关闭");
 
         ResourceBundle en = ResourceBundle.getBundle("messages", Locale.ENGLISH);
         assertEquals(en.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG_SESSION), "Avg Sample Duration");
@@ -177,6 +206,8 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
         assertEquals(en.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_P95_STREAM), "P95 Sample Duration");
         assertEquals(en.getString(MessageKeys.PERFORMANCE_TREND_SESSION_DURATION_MS), "Active Session Duration (ms)");
         assertEquals(en.getString(MessageKeys.PERFORMANCE_TREND_STREAM_DURATION_MS), "Active Stream Duration (ms)");
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_TREND_ACTIVE_WS), "Sessions");
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_REPORT_COMPLETION_CLOSED_BY_STEP), "Closed by Step");
     }
 
     private static DefaultTableModel getReportTableModel(PerformanceReportPanel panel) throws Exception {
@@ -189,6 +220,36 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
         Field field = PerformanceReportPanel.class.getDeclaredField("sseReportTableModel");
         field.setAccessible(true);
         return (DefaultTableModel) field.get(panel);
+    }
+
+    private static DefaultTableModel getWebSocketReportTableModel(PerformanceReportPanel panel) throws Exception {
+        Field field = PerformanceReportPanel.class.getDeclaredField("webSocketReportTableModel");
+        field.setAccessible(true);
+        return (DefaultTableModel) field.get(panel);
+    }
+
+    private static JTable findTableByColumnCount(List<JTable> tables, int columnCount) {
+        for (JTable table : tables) {
+            if (table.getColumnCount() == columnCount) {
+                return table;
+            }
+        }
+        throw new AssertionError("Table not found for column count: " + columnCount);
+    }
+
+    private static String headerTooltipAt(JTable table, int column) {
+        JTableHeader header = table.getTableHeader();
+        MouseEvent event = new MouseEvent(
+                header,
+                MouseEvent.MOUSE_MOVED,
+                System.currentTimeMillis(),
+                0,
+                header.getHeaderRect(column).x + 1,
+                header.getHeaderRect(column).y + 1,
+                0,
+                false
+        );
+        return header.getToolTipText(event);
     }
 
     private static <T extends Component> List<T> findAll(Component root, Class<T> type) {

@@ -182,7 +182,12 @@ public class FileExtensionUtil {
 
         String ct = contentType.toLowerCase();
 
-        // 优先检查明确的二进制类型（避免被 isTextType 误判）
+        // 优先识别结构化文本类型，例如 application/vnd.*+json。
+        if (isTextType(contentType)) {
+            return false;
+        }
+
+        // 检查明确的二进制类型。
         // 例如：application/vnd.openxmlformats-officedocument.spreadsheetml.sheet 包含 "xml" 但是二进制文件
         if (ct.contains("application/octet-stream")
                 || ct.contains("image/")
@@ -196,7 +201,6 @@ public class FileExtensionUtil {
             return true;
         }
 
-        // 如果是文本类型，则不是二进制类型
-        return !isTextType(contentType);
+        return true;
     }
 }

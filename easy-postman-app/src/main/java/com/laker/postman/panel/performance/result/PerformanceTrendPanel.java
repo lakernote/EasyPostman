@@ -97,8 +97,6 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
                 new SeriesSpec(wsActiveSeries, getThreadsLineColor(), true, AxisFormat.INTEGER),
                 new SeriesSpec(wsSentRateSeries, getMatchedLineColor(), true, AxisFormat.DECIMAL),
                 new SeriesSpec(wsReceivedRateSeries, getQpsLineColor(), true, AxisFormat.DECIMAL),
-                new SeriesSpec(wsFirstMessageLatencySeries, getResponseTimeLineColor(), true, AxisFormat.DECIMAL),
-                new SeriesSpec(wsSessionDurationSeries, getDurationLineColor(), true, AxisFormat.DECIMAL),
                 new SeriesSpec(wsErrorRateSeries, getErrorRateLineColor(), true, AxisFormat.DECIMAL)
         );
     }
@@ -108,9 +106,6 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
                 MessageKeys.PERFORMANCE_TREND_METRICS,
                 new SeriesSpec(sseActiveSeries, getThreadsLineColor(), true, AxisFormat.INTEGER),
                 new SeriesSpec(sseEventRateSeries, getQpsLineColor(), true, AxisFormat.DECIMAL),
-                new SeriesSpec(sseMatchedRateSeries, getMatchedLineColor(), true, AxisFormat.DECIMAL),
-                new SeriesSpec(sseFirstEventLatencySeries, getResponseTimeLineColor(), true, AxisFormat.DECIMAL),
-                new SeriesSpec(sseStreamDurationSeries, getDurationLineColor(), true, AxisFormat.DECIMAL),
                 new SeriesSpec(sseErrorRateSeries, getErrorRateLineColor(), true, AxisFormat.DECIMAL)
         );
     }
@@ -234,7 +229,7 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
 
     private XYLineAndShapeRenderer createTrendRenderer() {
         XYLineAndShapeRenderer renderer = new SinglePointAwareRenderer();
-        renderer.setDefaultShape(new Ellipse2D.Double(-1.5, -1.5, 3.0, 3.0));
+        renderer.setDefaultShape(new Ellipse2D.Double(-3.0, -3.0, 6.0, 6.0));
         renderer.setDefaultShapesFilled(true);
         renderer.setDrawOutlines(false);
         return renderer;
@@ -263,22 +258,26 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
 
         httpVirtualUsersSeries.addOrUpdate(period, snapshot.activeUsers());
         httpRpsSeries.addOrUpdate(period, snapshot.http().sampleRate());
-        httpAvgResponseSeries.addOrUpdate(period, snapshot.http().avgDurationMs());
+        httpAvgResponseSeries.addOrUpdate(period, nullableMetric(snapshot.http().avgDurationMs()));
         httpErrorRateSeries.addOrUpdate(period, snapshot.http().failurePercent());
 
         wsActiveSeries.addOrUpdate(period, snapshot.activeWebSocketConnections());
         wsSentRateSeries.addOrUpdate(period, snapshot.webSocket().sentRate());
         wsReceivedRateSeries.addOrUpdate(period, snapshot.webSocket().receivedRate());
-        wsFirstMessageLatencySeries.addOrUpdate(period, snapshot.webSocket().avgFirstMessageLatencyMs());
+        wsFirstMessageLatencySeries.addOrUpdate(period, nullableMetric(snapshot.webSocket().avgFirstMessageLatencyMs()));
         wsSessionDurationSeries.addOrUpdate(period, snapshot.webSocket().avgDurationMs());
         wsErrorRateSeries.addOrUpdate(period, snapshot.webSocket().failurePercent());
 
         sseActiveSeries.addOrUpdate(period, snapshot.activeSseStreams());
         sseEventRateSeries.addOrUpdate(period, snapshot.sse().receivedRate());
         sseMatchedRateSeries.addOrUpdate(period, snapshot.sse().matchedRate());
-        sseFirstEventLatencySeries.addOrUpdate(period, snapshot.sse().avgFirstMessageLatencyMs());
+        sseFirstEventLatencySeries.addOrUpdate(period, nullableMetric(snapshot.sse().avgFirstMessageLatencyMs()));
         sseStreamDurationSeries.addOrUpdate(period, snapshot.sse().avgDurationMs());
         sseErrorRateSeries.addOrUpdate(period, snapshot.sse().failurePercent());
+    }
+
+    private Number nullableMetric(double value) {
+        return Double.isFinite(value) ? value : null;
     }
 
     public void addOrUpdate(RegularTimePeriod period, double users,
@@ -522,7 +521,23 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
             if (getPlot() != null) {
                 dataset = getPlot().getDataset();
             }
-            return dataset != null && dataset.getItemCount(series) == 1;
+            return dataset != null
+                    && finiteItemCount(dataset, series) == 1
+                    && isFinite(dataset.getYValue(series, item));
+        }
+
+        private int finiteItemCount(XYDataset dataset, int series) {
+            int count = 0;
+            for (int i = 0; i < dataset.getItemCount(series); i++) {
+                if (isFinite(dataset.getYValue(series, i))) {
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        private boolean isFinite(double value) {
+            return Double.isFinite(value);
         }
     }
 }

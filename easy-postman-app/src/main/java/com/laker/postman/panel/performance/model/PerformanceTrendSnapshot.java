@@ -98,11 +98,11 @@ public record PerformanceTrendSnapshot(
         double sentRate = streamSeconds > 0 ? round(sentMessages / streamSeconds) : 0;
         double receivedRate = streamSeconds > 0 ? round(receivedMessages / streamSeconds) : 0;
         double matchedRate = streamSeconds > 0 ? round(matchedMessages / streamSeconds) : 0;
-        double avgDuration = samples > 0 ? round((double) totalDuration / samples) : 0;
+        double avgDuration = samples > 0 ? round((double) totalDuration / samples) : Double.NaN;
         double failurePercent = samples > 0 ? round((double) failures * 100 / samples) : 0;
         double avgFirstMessageLatency = firstMessageLatencyCount > 0
                 ? round((double) firstMessageLatencyTotal / firstMessageLatencyCount)
-                : 0;
+                : Double.NaN;
         if (realtimeMetrics != null && protocol == PerformanceProtocol.WEBSOCKET) {
             sentRate = realtimeMetrics.webSocketSentRate();
             receivedRate = realtimeMetrics.webSocketReceivedRate();

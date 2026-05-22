@@ -1293,4 +1293,14 @@ public class RequestEditPanel extends SingletonBasePanel {
         }
     }
 
+    public void updateAllRequestEditorTabsVisibility() {
+        int tabCount = tabbedPane.getTabCount();
+        for (int i = 0; i < tabCount; i++) {
+            Component comp = tabbedPane.getComponentAt(i);
+            if (comp instanceof RequestEditSubPanel subPanel) {
+                subPanel.updateRequestEditorTabsVisibility();
+            }
+        }
+    }
+
 }

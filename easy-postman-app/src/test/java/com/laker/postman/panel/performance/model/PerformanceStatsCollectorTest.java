@@ -4,6 +4,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 public class PerformanceStatsCollectorTest {
 
@@ -59,6 +60,7 @@ public class PerformanceStatsCollectorTest {
         assertEquals(first.http().sampleRate(), 2.0);
         assertEquals(first.http().avgDurationMs(), 200.0);
         assertEquals(second.http().samples(), 0);
+        assertTrue(Double.isNaN(second.http().avgDurationMs()));
     }
 
     @Test

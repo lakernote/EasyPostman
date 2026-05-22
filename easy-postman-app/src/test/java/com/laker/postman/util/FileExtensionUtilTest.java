@@ -321,6 +321,15 @@ public class FileExtensionUtilTest {
         assertFalse(FileExtensionUtil.isBinaryType(xmlContentType));
     }
 
+    @Test(description = "回归测试：Vendor JSON 响应应该被识别为文本")
+    public void testVendorJsonIdentifiedAsText() {
+        String contentType = "application/vnd.spring-boot.actuator.v3+json";
+
+        assertEquals(FileExtensionUtil.guessExtension(contentType), ".json");
+        assertTrue(FileExtensionUtil.isTextType(contentType));
+        assertFalse(FileExtensionUtil.isBinaryType(contentType));
+    }
+
     @Test(description = "回归测试：验证类型判断的互斥性")
     public void testTypeExclusivity() {
         String[] allContentTypes = {
@@ -343,4 +352,3 @@ public class FileExtensionUtilTest {
         }
     }
 }
-

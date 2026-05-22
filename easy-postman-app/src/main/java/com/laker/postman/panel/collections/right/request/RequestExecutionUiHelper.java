@@ -102,7 +102,7 @@ final class RequestExecutionUiHelper {
     }
 
     void activateWebSocketBodyTab() {
-        reqTabs.setSelectedComponent(requestBodyPanel);
+        RequestTabSelectionHelper.selectFirstVisible(reqTabs, requestBodyPanel);
         requestBodyPanel.getWsSendButton().requestFocusInWindow();
     }
 }

@@ -69,14 +69,14 @@ final class RequestUiSetupHelper {
                                        ActionListener wsSendAction) {
         if (protocol.isWebSocketProtocol()) {
             requestBodyPanel.setWsSendActionListener(wsSendAction);
-            reqTabs.setSelectedComponent(requestBodyPanel);
-            reqTabs.remove(authTabPanel);
+            RequestTabSelectionHelper.removeIfPresent(reqTabs, authTabPanel);
+            RequestTabSelectionHelper.selectFirstVisible(reqTabs, requestBodyPanel, paramsPanel);
             requestBodyPanel.setWebSocketConnected(false);
         } else if (protocol.isSseProtocol()) {
-            reqTabs.setSelectedComponent(paramsPanel);
-            reqTabs.remove(authTabPanel);
+            RequestTabSelectionHelper.removeIfPresent(reqTabs, authTabPanel);
+            RequestTabSelectionHelper.selectFirstVisible(reqTabs, paramsPanel, requestBodyPanel);
         } else {
-            reqTabs.setSelectedComponent(paramsPanel);
+            RequestTabSelectionHelper.selectFirstVisible(reqTabs, paramsPanel, requestBodyPanel);
         }
     }
 

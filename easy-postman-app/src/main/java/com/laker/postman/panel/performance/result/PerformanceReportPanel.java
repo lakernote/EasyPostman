@@ -7,6 +7,7 @@ import com.laker.postman.panel.performance.model.PerformanceProtocol;
 import com.laker.postman.panel.performance.model.PerformanceStatsSnapshot;
 import com.laker.postman.panel.performance.model.RequestResult;
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
 import com.laker.postman.util.TimeDisplayUtil;
@@ -14,8 +15,11 @@ import com.laker.postman.util.TimeDisplayUtil;
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
+import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
+import java.awt.event.MouseEvent;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -113,9 +117,9 @@ public class PerformanceReportPanel extends JPanel {
         JTable sseReportTable = createGenericReportTable(sseReportTableModel);
 
         JPanel reportCards = new JPanel(new CardLayout());
-        reportCards.add(new JScrollPane(reportTable), PerformanceProtocol.HTTP.name());
-        reportCards.add(new JScrollPane(webSocketReportTable), PerformanceProtocol.WEBSOCKET.name());
-        reportCards.add(new JScrollPane(sseReportTable), PerformanceProtocol.SSE.name());
+        reportCards.add(createReportScrollPane(reportTable), PerformanceProtocol.HTTP.name());
+        reportCards.add(createReportScrollPane(webSocketReportTable), PerformanceProtocol.WEBSOCKET.name());
+        reportCards.add(createReportScrollPane(sseReportTable), PerformanceProtocol.SSE.name());
         add(createToolbar(reportCards), BorderLayout.NORTH);
         add(reportCards, BorderLayout.CENTER);
     }
@@ -163,46 +167,69 @@ public class PerformanceReportPanel extends JPanel {
     }
 
     private JTable createReportTable() {
-        JTable table = new JTable(reportTableModel);
+        JTable table = createTableWithHeaderTooltips(reportTableModel);
         table.setFocusable(false);
         table.setFillsViewportHeight(true);
-        configureResizableColumns(table);
+        configureResizableColumns(table, false);
 
         configureColumnRenderers(table);
         configureColumnWidths(table);
-        table.getTableHeader().setFont(table.getTableHeader().getFont().deriveFont(Font.BOLD));
+        table.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD));
 
         return table;
     }
 
     private JTable createGenericReportTable(DefaultTableModel model) {
-        JTable table = new JTable(model);
+        JTable table = createTableWithHeaderTooltips(model);
         table.setFocusable(false);
         table.setFillsViewportHeight(true);
-        configureResizableColumns(table);
-        table.getTableHeader().setFont(table.getTableHeader().getFont().deriveFont(Font.BOLD));
+        configureResizableColumns(table, true);
+        table.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD));
         DefaultTableCellRenderer centerRenderer = createCenteredRenderer(model);
         DefaultTableCellRenderer nameRenderer = createNameRenderer(model);
         table.getColumnModel().getColumn(0).setCellRenderer(nameRenderer);
         for (int col = 1; col < model.getColumnCount(); col++) {
             table.getColumnModel().getColumn(col).setCellRenderer(centerRenderer);
         }
-        if (table.getColumnModel().getColumnCount() > 0) {
-            table.getColumnModel().getColumn(0).setMinWidth(API_NAME_MIN_WIDTH);
-            table.getColumnModel().getColumn(0).setPreferredWidth(GENERIC_API_NAME_PREFERRED_WIDTH);
-            for (int col = 1; col < table.getColumnModel().getColumnCount(); col++) {
-                table.getColumnModel().getColumn(col).setMinWidth(72);
-                table.getColumnModel().getColumn(col).setPreferredWidth(col == model.getColumnCount() - 1 ? 140 : 96);
-            }
-        }
+        configureStreamReportColumnWidths(table);
         return table;
     }
 
-    private void configureResizableColumns(JTable table) {
-        // Keep the table filling the viewport while still allowing users to drag column borders.
+    private JTable createTableWithHeaderTooltips(DefaultTableModel model) {
+        return new JTable(model) {
+            @Override
+            protected JTableHeader createDefaultTableHeader() {
+                return new ReportTableHeader(columnModel);
+            }
+        };
+    }
+
+    private JScrollPane createReportScrollPane(JTable table) {
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        return scrollPane;
+    }
+
+    private void configureResizableColumns(JTable table, boolean denseColumns) {
+        // Fill the viewport so wide report panels do not leave a blank strip on the right.
         table.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
         table.getTableHeader().setResizingAllowed(true);
         table.getTableHeader().setReorderingAllowed(false);
+    }
+
+    private void configureStreamReportColumnWidths(JTable table) {
+        if (table.getColumnModel().getColumnCount() == 0) {
+            return;
+        }
+        int[] widths = table.getColumnCount() == webSocketColumns.length
+                ? new int[]{180, 72, 70, 60, 90, 70, 70, 70, 104, 104, 112, 118, 118, 120}
+                : new int[]{180, 72, 70, 60, 90, 70, 70, 92, 104, 112, 112, 112, 112, 118, 118, 120};
+        for (int col = 0; col < table.getColumnModel().getColumnCount() && col < widths.length; col++) {
+            int width = widths[col];
+            table.getColumnModel().getColumn(col).setMinWidth(col == 0 ? API_NAME_MIN_WIDTH : 56);
+            table.getColumnModel().getColumn(col).setPreferredWidth(width);
+        }
     }
 
     private DefaultTableCellRenderer createCenteredRenderer(DefaultTableModel model) {
@@ -497,7 +524,7 @@ public class PerformanceReportPanel extends JPanel {
                 TimeDisplayUtil.formatElapsedTime(row.avgFirstMessageLatencyMs()),
                 TimeDisplayUtil.formatElapsedTime(row.avgDurationMs()),
                 TimeDisplayUtil.formatElapsedTime(row.p95DurationMs()),
-                row.topCompletionReason()
+                formatCompletionReason(row.topCompletionReason())
         };
     }
 
@@ -518,8 +545,37 @@ public class PerformanceReportPanel extends JPanel {
                 TimeDisplayUtil.formatElapsedTime(row.p99FirstMessageLatencyMs()),
                 TimeDisplayUtil.formatElapsedTime(row.avgDurationMs()),
                 TimeDisplayUtil.formatElapsedTime(row.p95DurationMs()),
-                row.topCompletionReason()
+                formatCompletionReason(row.topCompletionReason())
         };
+    }
+
+    private String formatCompletionReason(String reason) {
+        if (reason == null || reason.isBlank() || "-".equals(reason)) {
+            return "-";
+        }
+        String key = switch (reason) {
+            case "pending" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_PENDING;
+            case "closed" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_CLOSED;
+            case "interrupted" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_INTERRUPTED;
+            case "failure" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_FAILURE;
+            case "connect_timeout" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_CONNECT_TIMEOUT;
+            case "send_skipped" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_SEND_SKIPPED;
+            case "send_pre_script_failed" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_SEND_PRE_SCRIPT_FAILED;
+            case "sent" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_SENT;
+            case "send_failed" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_SEND_FAILED;
+            case "first_message" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_FIRST_MESSAGE;
+            case "matched_message" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_MATCHED_MESSAGE;
+            case "message_target" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_MESSAGE_TARGET;
+            case "hold_complete" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_HOLD_COMPLETE;
+            case "message_target_timeout" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_MESSAGE_TARGET_TIMEOUT;
+            case "await_timeout" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_AWAIT_TIMEOUT;
+            case "first_message_timeout" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_FIRST_MESSAGE_TIMEOUT;
+            case "matched_message_timeout" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_MATCHED_MESSAGE_TIMEOUT;
+            case "closed_early" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_CLOSED_EARLY;
+            case "closed_by_step" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_CLOSED_BY_STEP;
+            default -> null;
+        };
+        return key == null ? reason : I18nUtil.getMessage(key);
     }
 
     private String formatPercent(double value) {
@@ -528,6 +584,22 @@ public class PerformanceReportPanel extends JPanel {
 
     private String formatDecimal(double value) {
         return String.format(Locale.ROOT, "%.2f", value);
+    }
+
+    private static final class ReportTableHeader extends JTableHeader {
+        private ReportTableHeader(TableColumnModel columnModel) {
+            super(columnModel);
+        }
+
+        @Override
+        public String getToolTipText(MouseEvent event) {
+            int column = columnAtPoint(event.getPoint());
+            if (column < 0) {
+                return null;
+            }
+            Object headerValue = getColumnModel().getColumn(column).getHeaderValue();
+            return headerValue == null ? null : headerValue.toString();
+        }
     }
 
     void copyMarkdownReport() {

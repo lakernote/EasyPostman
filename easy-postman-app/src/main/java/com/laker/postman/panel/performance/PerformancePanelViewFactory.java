@@ -5,6 +5,8 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.common.component.MemoryLabel;
 import com.laker.postman.common.component.button.RefreshButton;
+import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
+import com.laker.postman.common.component.button.SegmentedToggleButton;
 import com.laker.postman.common.component.button.StartButton;
 import com.laker.postman.common.component.button.StopButton;
 import com.laker.postman.common.constants.ModernColors;
@@ -30,12 +32,14 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeSelectionModel;
 import java.awt.*;
 import java.util.function.Consumer;
-import java.util.function.IntConsumer;
 
 final class PerformancePanelViewFactory {
     static final int RESULT_TAB_TREND = 0;
     static final int RESULT_TAB_REPORT = 1;
     static final int RESULT_TAB_TABLE = 2;
+    private static final String RESULT_CONTEXT_TABLE = "table";
+    private static final String RESULT_CONTEXT_REPORT = "report";
+    private static final String RESULT_CONTEXT_TREND = "trend";
 
     TreeSection createTreeSection(DefaultTreeModel treeModel) {
         JTree jmeterTree = new JTree(treeModel);
@@ -117,7 +121,12 @@ final class PerformancePanelViewFactory {
         );
     }
 
-    ResultSection createResultSection() {
+    ResultSection createResultSection(boolean trendEnabled,
+                                      boolean reportRealtimeEnabled,
+                                      Consumer<Boolean> trendEnabledSetterAction,
+                                      Consumer<Boolean> reportRefreshModeSetterAction,
+                                      Runnable reportRefreshAction,
+                                      Runnable saveConfigAction) {
         JTabbedPane resultTabbedPane = new JTabbedPane();
         PerformanceResultTablePanel performanceResultTablePanel = new PerformanceResultTablePanel();
         PerformanceTrendPanel performanceTrendPanel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
@@ -126,9 +135,30 @@ final class PerformancePanelViewFactory {
         resultTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_TREND), performanceTrendPanel);
         resultTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_REPORT), performanceReportPanel);
         resultTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_RESULT_TREE), performanceResultTablePanel);
+        resultTabbedPane.setSelectedIndex(RESULT_TAB_TABLE);
+
+        ResultToolbar resultToolbar = createResultToolbar(
+                resultTabbedPane,
+                trendEnabled,
+                reportRealtimeEnabled,
+                trendEnabledSetterAction,
+                reportRefreshModeSetterAction,
+                reportRefreshAction,
+                saveConfigAction
+        );
+
+        JPanel resultPanel = new JPanel(new BorderLayout());
+        resultPanel.add(resultToolbar.panel(), BorderLayout.NORTH);
+        resultPanel.add(resultTabbedPane, BorderLayout.CENTER);
 
         return new ResultSection(
+                resultPanel,
                 resultTabbedPane,
+                resultToolbar.resultTableButton(),
+                resultToolbar.reportButton(),
+                resultToolbar.trendButton(),
+                resultToolbar.trendCheckBox(),
+                resultToolbar.reportRefreshModeBox(),
                 performanceResultTablePanel,
                 performanceTrendPanel,
                 performanceReportPanel
@@ -137,14 +167,9 @@ final class PerformancePanelViewFactory {
 
     ToolbarSection createToolbarSection(Component parentComponent,
                                         boolean efficientMode,
-                                        boolean trendEnabled,
-                                        boolean reportRealtimeEnabled,
                                         PerformancePersistenceService persistenceService,
                                         Runnable refreshRequestsAction,
                                         Consumer<Boolean> efficientModeSetterAction,
-                                        Consumer<Boolean> trendEnabledSetterAction,
-                                        Consumer<Boolean> reportRefreshModeSetterAction,
-                                        IntConsumer resultTabSelectorAction,
                                         Runnable saveAllPropertyPanelDataAction,
                                         Runnable saveConfigAction) {
         JPanel topPanel = new JPanel(new BorderLayout());
@@ -190,56 +215,6 @@ final class PerformancePanelViewFactory {
         });
         btnPanel.add(efficientCheckBox);
 
-        JPanel resultOutputPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 3, 0));
-        resultOutputPanel.setOpaque(false);
-
-        JLabel resultOutputLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_OUTPUT_LABEL));
-        resultOutputLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        resultOutputLabel.setForeground(ModernColors.getTextSecondary());
-        resultOutputPanel.add(resultOutputLabel);
-
-        JButton resultTableButton = createToolbarLinkButton(
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_RESULT_TREE),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TABLE_TOOLTIP),
-                () -> resultTabSelectorAction.accept(RESULT_TAB_TABLE)
-        );
-        resultOutputPanel.add(resultTableButton);
-
-        JCheckBox trendCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_TREND));
-        trendCheckBox.setSelected(trendEnabled);
-        trendCheckBox.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_ENABLED_TOOLTIP));
-        trendCheckBox.addActionListener(e -> {
-            boolean selected = trendCheckBox.isSelected();
-            trendEnabledSetterAction.accept(selected);
-            resultTabSelectorAction.accept(selected ? RESULT_TAB_TREND : RESULT_TAB_TABLE);
-            saveAllPropertyPanelDataAction.run();
-            saveConfigAction.run();
-        });
-        resultOutputPanel.add(trendCheckBox);
-
-        JButton reportButton = createToolbarLinkButton(
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_REPORT),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_REPORT_TOOLTIP),
-                () -> resultTabSelectorAction.accept(RESULT_TAB_REPORT)
-        );
-        resultOutputPanel.add(reportButton);
-
-        JComboBox<String> reportRefreshModeBox = new JComboBox<>(new String[]{
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_REFRESH_END),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_REFRESH_REALTIME)
-        });
-        reportRefreshModeBox.setSelectedIndex(reportRealtimeEnabled ? 1 : 0);
-        reportRefreshModeBox.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_REFRESH_TOOLTIP));
-        reportRefreshModeBox.setFocusable(false);
-        reportRefreshModeBox.addActionListener(e -> {
-            reportRefreshModeSetterAction.accept(reportRefreshModeBox.getSelectedIndex() == 1);
-            resultTabSelectorAction.accept(RESULT_TAB_REPORT);
-            saveAllPropertyPanelDataAction.run();
-            saveConfigAction.run();
-        });
-        resultOutputPanel.add(reportRefreshModeBox);
-        btnPanel.add(resultOutputPanel);
-
         CsvDataPanel csvDataPanel = new CsvDataPanel();
         csvDataPanel.setContextHelpText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_CSV_USAGE_NOTE));
         csvDataPanel.setChangeListener(saveConfigAction);
@@ -258,22 +233,161 @@ final class PerformancePanelViewFactory {
         progressPanel.add(new MemoryLabel());
         topPanel.add(progressPanel, BorderLayout.EAST);
 
-        return new ToolbarSection(topPanel, runBtn, stopBtn, refreshBtn, efficientCheckBox, resultTableButton,
-                trendCheckBox, reportButton,
-                reportRefreshModeBox,
-                csvDataPanel, progressLabel);
+        return new ToolbarSection(topPanel, runBtn, stopBtn, refreshBtn, efficientCheckBox, csvDataPanel, progressLabel);
     }
 
-    private JButton createToolbarLinkButton(String text, String tooltip, Runnable action) {
-        JButton button = new JButton(text);
-        button.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        button.setFocusable(false);
-        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        button.setToolTipText(tooltip);
-        button.putClientProperty("JButton.buttonType", "toolBarButton");
-        button.setMargin(new Insets(2, 8, 2, 8));
-        button.addActionListener(e -> action.run());
-        return button;
+    private ResultToolbar createResultToolbar(JTabbedPane resultTabbedPane,
+                                              boolean trendEnabled,
+                                              boolean reportRealtimeEnabled,
+                                              Consumer<Boolean> trendEnabledSetterAction,
+                                              Consumer<Boolean> reportRefreshModeSetterAction,
+                                              Runnable reportRefreshAction,
+                                              Runnable saveConfigAction) {
+        JPanel toolbar = new JPanel(new BorderLayout(8, 0));
+        toolbar.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 1, 0, ModernColors.getDividerBorderColor()),
+                BorderFactory.createEmptyBorder(5, 8, 5, 8)
+        ));
+
+        JLabel viewLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_OUTPUT_LABEL));
+        viewLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        viewLabel.setForeground(ModernColors.getTextSecondary());
+
+        JToggleButton resultTableButton = new SegmentedToggleButton(
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_RESULT_TREE),
+                true
+        );
+        resultTableButton.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TABLE_TOOLTIP));
+        JToggleButton reportButton = new SegmentedToggleButton(
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_REPORT),
+                false
+        );
+        reportButton.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_REPORT_TOOLTIP));
+        JToggleButton trendButton = new SegmentedToggleButton(
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_TREND),
+                false
+        );
+        trendButton.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_ENABLED_TOOLTIP));
+
+        ButtonGroup viewGroup = new ButtonGroup();
+        viewGroup.add(resultTableButton);
+        viewGroup.add(reportButton);
+        viewGroup.add(trendButton);
+
+        JPanel switcher = new SegmentedButtonGroupPanel(FlowLayout.LEFT);
+        switcher.add(resultTableButton);
+        switcher.add(reportButton);
+        switcher.add(trendButton);
+
+        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        leftPanel.setOpaque(false);
+        leftPanel.add(viewLabel);
+        leftPanel.add(switcher);
+        toolbar.add(leftPanel, BorderLayout.WEST);
+
+        JCheckBox trendCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_ENABLED));
+        trendCheckBox.setSelected(trendEnabled);
+        trendCheckBox.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_ENABLED_TOOLTIP));
+        trendCheckBox.addActionListener(e -> {
+            boolean selected = trendCheckBox.isSelected();
+            trendEnabledSetterAction.accept(selected);
+            selectResultTab(resultTabbedPane, selected ? RESULT_TAB_TREND : RESULT_TAB_TABLE, reportRefreshAction);
+            saveConfigAction.run();
+        });
+
+        JComboBox<String> reportRefreshModeBox = new JComboBox<>(new String[]{
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_REFRESH_END),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_REFRESH_REALTIME)
+        });
+        reportRefreshModeBox.setSelectedIndex(reportRealtimeEnabled ? 1 : 0);
+        reportRefreshModeBox.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_REFRESH_TOOLTIP));
+        reportRefreshModeBox.setFocusable(false);
+        reportRefreshModeBox.addActionListener(e -> {
+            reportRefreshModeSetterAction.accept(reportRefreshModeBox.getSelectedIndex() == 1);
+            selectResultTab(resultTabbedPane, RESULT_TAB_REPORT, reportRefreshAction);
+            saveConfigAction.run();
+        });
+
+        JPanel contextCards = new JPanel(new CardLayout());
+        contextCards.setOpaque(false);
+        JPanel emptyContextPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        emptyContextPanel.setOpaque(false);
+        contextCards.add(emptyContextPanel, RESULT_CONTEXT_TABLE);
+        contextCards.add(createReportContextPanel(reportRefreshModeBox), RESULT_CONTEXT_REPORT);
+        contextCards.add(createTrendContextPanel(trendCheckBox), RESULT_CONTEXT_TREND);
+        toolbar.add(contextCards, BorderLayout.EAST);
+
+        resultTableButton.addActionListener(e -> selectResultTab(resultTabbedPane, RESULT_TAB_TABLE, reportRefreshAction));
+        reportButton.addActionListener(e -> selectResultTab(resultTabbedPane, RESULT_TAB_REPORT, reportRefreshAction));
+        trendButton.addActionListener(e -> selectResultTab(resultTabbedPane, RESULT_TAB_TREND, reportRefreshAction));
+
+        resultTabbedPane.addChangeListener(e -> {
+            syncResultToolbarState(resultTabbedPane, resultTableButton, reportButton, trendButton, contextCards);
+            if (resultTabbedPane.getSelectedIndex() == RESULT_TAB_REPORT && reportRefreshAction != null) {
+                reportRefreshAction.run();
+            }
+        });
+        syncResultToolbarState(resultTabbedPane, resultTableButton, reportButton, trendButton, contextCards);
+
+        return new ResultToolbar(
+                toolbar,
+                resultTableButton,
+                reportButton,
+                trendButton,
+                trendCheckBox,
+                reportRefreshModeBox
+        );
+    }
+
+    private JPanel createReportContextPanel(JComboBox<String> reportRefreshModeBox) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        panel.setOpaque(false);
+        JLabel label = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_REFRESH_MODE));
+        label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        label.setForeground(ModernColors.getTextSecondary());
+        panel.add(label);
+        panel.add(reportRefreshModeBox);
+        return panel;
+    }
+
+    private JPanel createTrendContextPanel(JCheckBox trendCheckBox) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        panel.setOpaque(false);
+        panel.add(trendCheckBox);
+        return panel;
+    }
+
+    private void selectResultTab(JTabbedPane resultTabbedPane, int index, Runnable reportRefreshAction) {
+        if (index < 0 || index >= resultTabbedPane.getTabCount()) {
+            return;
+        }
+        if (index == resultTabbedPane.getSelectedIndex()) {
+            if (index == RESULT_TAB_REPORT && reportRefreshAction != null) {
+                reportRefreshAction.run();
+            }
+            return;
+        }
+        resultTabbedPane.setSelectedIndex(index);
+    }
+
+    private void syncResultToolbarState(JTabbedPane resultTabbedPane,
+                                        JToggleButton resultTableButton,
+                                        JToggleButton reportButton,
+                                        JToggleButton trendButton,
+                                        JPanel contextCards) {
+        int selectedIndex = resultTabbedPane.getSelectedIndex();
+        resultTableButton.setSelected(selectedIndex == RESULT_TAB_TABLE);
+        reportButton.setSelected(selectedIndex == RESULT_TAB_REPORT);
+        trendButton.setSelected(selectedIndex == RESULT_TAB_TREND);
+
+        CardLayout contextLayout = (CardLayout) contextCards.getLayout();
+        if (selectedIndex == RESULT_TAB_REPORT) {
+            contextLayout.show(contextCards, RESULT_CONTEXT_REPORT);
+        } else if (selectedIndex == RESULT_TAB_TREND) {
+            contextLayout.show(contextCards, RESULT_CONTEXT_TREND);
+        } else {
+            contextLayout.show(contextCards, RESULT_CONTEXT_TABLE);
+        }
     }
 
     private RequestEditorSection createRequestEditorSection(RequestEditSubPanel requestEditSubPanel,
@@ -329,7 +443,13 @@ final class PerformancePanelViewFactory {
                            JPanel requestEditorHost) {
     }
 
-    record ResultSection(JTabbedPane resultTabbedPane,
+    record ResultSection(JPanel resultPanel,
+                         JTabbedPane resultTabbedPane,
+                         JToggleButton resultTableButton,
+                         JToggleButton reportButton,
+                         JToggleButton trendButton,
+                         JCheckBox trendCheckBox,
+                         JComboBox<String> reportRefreshModeBox,
                          PerformanceResultTablePanel performanceResultTablePanel,
                          PerformanceTrendPanel performanceTrendPanel,
                          PerformanceReportPanel performanceReportPanel) {
@@ -340,12 +460,16 @@ final class PerformancePanelViewFactory {
                           StopButton stopBtn,
                           RefreshButton refreshBtn,
                           JCheckBox efficientCheckBox,
-                          JButton resultTableButton,
-                          JCheckBox trendCheckBox,
-                          JButton reportButton,
-                          JComboBox<String> reportRefreshModeBox,
                           CsvDataPanel csvDataPanel,
                           JLabel progressLabel) {
+    }
+
+    private record ResultToolbar(JPanel panel,
+                                 JToggleButton resultTableButton,
+                                 JToggleButton reportButton,
+                                 JToggleButton trendButton,
+                                 JCheckBox trendCheckBox,
+                                 JComboBox<String> reportRefreshModeBox) {
     }
 
     private record RequestEditorSection(JPanel wrapperPanel, JPanel requestEditorHost) {

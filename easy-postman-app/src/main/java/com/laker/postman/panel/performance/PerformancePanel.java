@@ -190,12 +190,20 @@ public class PerformancePanel extends SingletonBasePanel {
                 this::syncRequestStructure
         );
 
-        PerformancePanelViewFactory.ResultSection resultSection = viewFactory.createResultSection();
+        PerformancePanelViewFactory.ResultSection resultSection = viewFactory.createResultSection(
+                trendEnabled,
+                reportRealtimeEnabled,
+                this::applyTrendEnabled,
+                this::applyReportRealtimeEnabled,
+                this::refreshReportSnapshot,
+                this::saveConfig
+        );
         resultTabbedPane = resultSection.resultTabbedPane();
         performanceResultTablePanel = resultSection.performanceResultTablePanel();
         performanceTrendPanel = resultSection.performanceTrendPanel();
         performanceReportPanel = resultSection.performanceReportPanel();
-        syncTrendResultTabState();
+        trendCheckBox = resultSection.trendCheckBox();
+        reportRefreshModeBox = resultSection.reportRefreshModeBox();
         statisticsCoordinator = new PerformanceStatisticsCoordinator(
                 statsCollector,
                 performanceReportPanel,
@@ -218,25 +226,20 @@ public class PerformancePanel extends SingletonBasePanel {
         mainSplit.setDividerSize(3);
         mainSplit.setContinuousLayout(true);
 
-        JSplitPane verticalSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, mainSplit, resultTabbedPane);
+        JSplitPane verticalSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, mainSplit, resultSection.resultPanel());
         verticalSplit.setDividerSize(3);
         verticalSplit.setContinuousLayout(true);
         verticalSplit.setDividerLocation(260);
         mainSplit.setMinimumSize(new Dimension(400, 150));
-        resultTabbedPane.setMinimumSize(new Dimension(400, 150));
+        resultSection.resultPanel().setMinimumSize(new Dimension(400, 150));
         add(verticalSplit, BorderLayout.CENTER);
 
         PerformancePanelViewFactory.ToolbarSection toolbarSection = viewFactory.createToolbarSection(
                 this,
                 efficientMode,
-                trendEnabled,
-                reportRealtimeEnabled,
                 persistenceService,
                 this::refreshRequestsFromCollections,
                 value -> efficientMode = value,
-                this::applyTrendEnabled,
-                this::applyReportRealtimeEnabled,
-                this::selectResultTab,
                 this::saveAllPropertyPanelData,
                 this::saveConfig
         );
@@ -245,8 +248,6 @@ public class PerformancePanel extends SingletonBasePanel {
         stopBtn = toolbarSection.stopBtn();
         refreshBtn = toolbarSection.refreshBtn();
         efficientCheckBox = toolbarSection.efficientCheckBox();
-        trendCheckBox = toolbarSection.trendCheckBox();
-        reportRefreshModeBox = toolbarSection.reportRefreshModeBox();
         csvDataPanel = toolbarSection.csvDataPanel();
         progressLabel = toolbarSection.progressLabel();
         add(topPanel, BorderLayout.NORTH);
@@ -274,7 +275,6 @@ public class PerformancePanel extends SingletonBasePanel {
                 stopBtn,
                 refreshBtn,
                 efficientCheckBox,
-                () -> trendEnabled,
                 resultTabbedPane,
                 performanceResultTablePanel,
                 performanceReportPanel,
@@ -633,26 +633,15 @@ public class PerformancePanel extends SingletonBasePanel {
         }
     }
 
-    private void selectResultTab(int index) {
-        if (resultTabbedPane == null || index < 0 || index >= resultTabbedPane.getTabCount()) {
-            return;
-        }
-        if (!resultTabbedPane.isEnabledAt(index)) {
-            return;
-        }
-        if (index == PerformancePanelViewFactory.RESULT_TAB_REPORT && statisticsCoordinator != null) {
+    private void refreshReportSnapshot() {
+        if (statisticsCoordinator != null) {
             statisticsCoordinator.updateReportWithLatestDataSync();
         }
-        resultTabbedPane.setSelectedIndex(index);
     }
 
     private void syncTrendResultTabState() {
-        if (resultTabbedPane == null || resultTabbedPane.getTabCount() <= PerformancePanelViewFactory.RESULT_TAB_TREND) {
-            return;
-        }
-        resultTabbedPane.setEnabledAt(PerformancePanelViewFactory.RESULT_TAB_TREND, trendEnabled);
-        if (!trendEnabled && resultTabbedPane.getSelectedIndex() == PerformancePanelViewFactory.RESULT_TAB_TREND) {
-            selectResultTab(PerformancePanelViewFactory.RESULT_TAB_TABLE);
+        if (trendCheckBox != null) {
+            trendCheckBox.setSelected(trendEnabled);
         }
     }
 

@@ -195,6 +195,7 @@ public class PerformancePanel extends SingletonBasePanel {
         performanceResultTablePanel = resultSection.performanceResultTablePanel();
         performanceTrendPanel = resultSection.performanceTrendPanel();
         performanceReportPanel = resultSection.performanceReportPanel();
+        syncTrendResultTabState();
         statisticsCoordinator = new PerformanceStatisticsCoordinator(
                 statsCollector,
                 performanceReportPanel,
@@ -235,6 +236,7 @@ public class PerformancePanel extends SingletonBasePanel {
                 value -> efficientMode = value,
                 this::applyTrendEnabled,
                 this::applyReportRealtimeEnabled,
+                this::selectResultTab,
                 this::saveAllPropertyPanelData,
                 this::saveConfig
         );
@@ -621,12 +623,36 @@ public class PerformancePanel extends SingletonBasePanel {
         if (timerManager != null) {
             timerManager.setTrendSamplingEnabled(enabled);
         }
+        syncTrendResultTabState();
     }
 
     private void applyReportRealtimeEnabled(boolean enabled) {
         reportRealtimeEnabled = enabled;
         if (timerManager != null) {
             timerManager.setReportRefreshEnabled(enabled);
+        }
+    }
+
+    private void selectResultTab(int index) {
+        if (resultTabbedPane == null || index < 0 || index >= resultTabbedPane.getTabCount()) {
+            return;
+        }
+        if (!resultTabbedPane.isEnabledAt(index)) {
+            return;
+        }
+        if (index == PerformancePanelViewFactory.RESULT_TAB_REPORT && statisticsCoordinator != null) {
+            statisticsCoordinator.updateReportWithLatestDataSync();
+        }
+        resultTabbedPane.setSelectedIndex(index);
+    }
+
+    private void syncTrendResultTabState() {
+        if (resultTabbedPane == null || resultTabbedPane.getTabCount() <= PerformancePanelViewFactory.RESULT_TAB_TREND) {
+            return;
+        }
+        resultTabbedPane.setEnabledAt(PerformancePanelViewFactory.RESULT_TAB_TREND, trendEnabled);
+        if (!trendEnabled && resultTabbedPane.getSelectedIndex() == PerformancePanelViewFactory.RESULT_TAB_TREND) {
+            selectResultTab(PerformancePanelViewFactory.RESULT_TAB_TABLE);
         }
     }
 

@@ -30,8 +30,12 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeSelectionModel;
 import java.awt.*;
 import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 
 final class PerformancePanelViewFactory {
+    static final int RESULT_TAB_TREND = 0;
+    static final int RESULT_TAB_REPORT = 1;
+    static final int RESULT_TAB_TABLE = 2;
 
     TreeSection createTreeSection(DefaultTreeModel treeModel) {
         JTree jmeterTree = new JTree(treeModel);
@@ -140,6 +144,7 @@ final class PerformancePanelViewFactory {
                                         Consumer<Boolean> efficientModeSetterAction,
                                         Consumer<Boolean> trendEnabledSetterAction,
                                         Consumer<Boolean> reportRefreshModeSetterAction,
+                                        IntConsumer resultTabSelectorAction,
                                         Runnable saveAllPropertyPanelDataAction,
                                         Runnable saveConfigAction) {
         JPanel topPanel = new JPanel(new BorderLayout());
@@ -185,20 +190,39 @@ final class PerformancePanelViewFactory {
         });
         btnPanel.add(efficientCheckBox);
 
-        JCheckBox trendCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_ENABLED));
+        JPanel resultOutputPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 3, 0));
+        resultOutputPanel.setOpaque(false);
+
+        JLabel resultOutputLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_OUTPUT_LABEL));
+        resultOutputLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        resultOutputLabel.setForeground(ModernColors.getTextSecondary());
+        resultOutputPanel.add(resultOutputLabel);
+
+        JButton resultTableButton = createToolbarLinkButton(
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_RESULT_TREE),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TABLE_TOOLTIP),
+                () -> resultTabSelectorAction.accept(RESULT_TAB_TABLE)
+        );
+        resultOutputPanel.add(resultTableButton);
+
+        JCheckBox trendCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_TREND));
         trendCheckBox.setSelected(trendEnabled);
         trendCheckBox.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_ENABLED_TOOLTIP));
         trendCheckBox.addActionListener(e -> {
-            trendEnabledSetterAction.accept(trendCheckBox.isSelected());
+            boolean selected = trendCheckBox.isSelected();
+            trendEnabledSetterAction.accept(selected);
+            resultTabSelectorAction.accept(selected ? RESULT_TAB_TREND : RESULT_TAB_TABLE);
             saveAllPropertyPanelDataAction.run();
             saveConfigAction.run();
         });
-        btnPanel.add(trendCheckBox);
+        resultOutputPanel.add(trendCheckBox);
 
-        JLabel reportRefreshLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_REFRESH_MODE));
-        reportRefreshLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        reportRefreshLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_REFRESH_TOOLTIP));
-        btnPanel.add(reportRefreshLabel);
+        JButton reportButton = createToolbarLinkButton(
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_REPORT),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_REPORT_TOOLTIP),
+                () -> resultTabSelectorAction.accept(RESULT_TAB_REPORT)
+        );
+        resultOutputPanel.add(reportButton);
 
         JComboBox<String> reportRefreshModeBox = new JComboBox<>(new String[]{
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_REFRESH_END),
@@ -209,10 +233,12 @@ final class PerformancePanelViewFactory {
         reportRefreshModeBox.setFocusable(false);
         reportRefreshModeBox.addActionListener(e -> {
             reportRefreshModeSetterAction.accept(reportRefreshModeBox.getSelectedIndex() == 1);
+            resultTabSelectorAction.accept(RESULT_TAB_REPORT);
             saveAllPropertyPanelDataAction.run();
             saveConfigAction.run();
         });
-        btnPanel.add(reportRefreshModeBox);
+        resultOutputPanel.add(reportRefreshModeBox);
+        btnPanel.add(resultOutputPanel);
 
         CsvDataPanel csvDataPanel = new CsvDataPanel();
         csvDataPanel.setContextHelpText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_CSV_USAGE_NOTE));
@@ -232,9 +258,22 @@ final class PerformancePanelViewFactory {
         progressPanel.add(new MemoryLabel());
         topPanel.add(progressPanel, BorderLayout.EAST);
 
-        return new ToolbarSection(topPanel, runBtn, stopBtn, refreshBtn, efficientCheckBox, trendCheckBox,
+        return new ToolbarSection(topPanel, runBtn, stopBtn, refreshBtn, efficientCheckBox, resultTableButton,
+                trendCheckBox, reportButton,
                 reportRefreshModeBox,
                 csvDataPanel, progressLabel);
+    }
+
+    private JButton createToolbarLinkButton(String text, String tooltip, Runnable action) {
+        JButton button = new JButton(text);
+        button.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        button.setFocusable(false);
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        button.setToolTipText(tooltip);
+        button.putClientProperty("JButton.buttonType", "toolBarButton");
+        button.setMargin(new Insets(2, 8, 2, 8));
+        button.addActionListener(e -> action.run());
+        return button;
     }
 
     private RequestEditorSection createRequestEditorSection(RequestEditSubPanel requestEditSubPanel,
@@ -301,7 +340,9 @@ final class PerformancePanelViewFactory {
                           StopButton stopBtn,
                           RefreshButton refreshBtn,
                           JCheckBox efficientCheckBox,
+                          JButton resultTableButton,
                           JCheckBox trendCheckBox,
+                          JButton reportButton,
                           JComboBox<String> reportRefreshModeBox,
                           CsvDataPanel csvDataPanel,
                           JLabel progressLabel) {

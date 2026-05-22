@@ -607,6 +607,9 @@ public final class MessageKeys {
     public static final String PERFORMANCE_EFFICIENT_MODE_DISABLE_WARNING = "performance.efficient_mode.disable.warning";
     public static final String PERFORMANCE_TREND_ENABLED = "performance.trend.enabled";
     public static final String PERFORMANCE_TREND_ENABLED_TOOLTIP = "performance.trend.enabled.tooltip";
+    public static final String PERFORMANCE_RESULT_OUTPUT_LABEL = "performance.result.output.label";
+    public static final String PERFORMANCE_RESULT_TABLE_TOOLTIP = "performance.result.table.tooltip";
+    public static final String PERFORMANCE_RESULT_REPORT_TOOLTIP = "performance.result.report.tooltip";
     public static final String PERFORMANCE_REPORT_REFRESH_MODE = "performance.report.refresh_mode";
     public static final String PERFORMANCE_REPORT_REFRESH_END = "performance.report.refresh.end";
     public static final String PERFORMANCE_REPORT_REFRESH_REALTIME = "performance.report.refresh.realtime";

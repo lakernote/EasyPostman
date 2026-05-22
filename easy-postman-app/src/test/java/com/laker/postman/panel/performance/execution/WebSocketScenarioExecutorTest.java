@@ -3,6 +3,7 @@ package com.laker.postman.panel.performance.execution;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.controller.LoopData;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
@@ -69,6 +70,43 @@ public class WebSocketScenarioExecutorTest {
     public void shouldRetainAwaitMessagePreviewByUtf8Bytes() {
         assertEquals(WebSocketScenarioExecutor.retainUtf8Prefix("你好abc", 4), "你");
         assertEquals(WebSocketScenarioExecutor.retainUtf8Prefix("🙂abc", 4), "🙂");
+    }
+
+    @Test
+    public void shouldWalkWebSocketScenarioLoopStepsWithoutPreExpansion() {
+        DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(new JMeterTreeNode("request", NodeType.REQUEST));
+        JMeterTreeNode loopData = new JMeterTreeNode("loop", NodeType.LOOP);
+        loopData.loopData = new LoopData();
+        loopData.loopData.iterations = 3;
+        DefaultMutableTreeNode loopNode = new DefaultMutableTreeNode(loopData);
+        DefaultMutableTreeNode sendNode = new DefaultMutableTreeNode(new JMeterTreeNode("send", NodeType.WS_SEND));
+        loopNode.add(sendNode);
+        requestNode.add(loopNode);
+
+        WebSocketScenarioStepCursor cursor = new WebSocketScenarioStepCursor(requestNode, () -> true);
+
+        assertEquals(cursor.next(), sendNode);
+        assertEquals(cursor.next(), sendNode);
+        assertEquals(cursor.next(), sendNode);
+        assertEquals(cursor.next(), null);
+    }
+
+    @Test
+    public void shouldStopWebSocketScenarioCursorWithoutCompletingLargeLoop() {
+        DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(new JMeterTreeNode("request", NodeType.REQUEST));
+        JMeterTreeNode loopData = new JMeterTreeNode("loop", NodeType.LOOP);
+        loopData.loopData = new LoopData();
+        loopData.loopData.iterations = LoopData.MAX_ITERATIONS;
+        DefaultMutableTreeNode loopNode = new DefaultMutableTreeNode(loopData);
+        DefaultMutableTreeNode sendNode = new DefaultMutableTreeNode(new JMeterTreeNode("send", NodeType.WS_SEND));
+        loopNode.add(sendNode);
+        requestNode.add(loopNode);
+
+        WebSocketScenarioStepCursor cursor = new WebSocketScenarioStepCursor(requestNode, () -> true);
+
+        assertEquals(cursor.next(), sendNode);
+        cursor.stop();
+        assertEquals(cursor.next(), null);
     }
 
     @Test
@@ -295,6 +333,87 @@ public class WebSocketScenarioExecutorTest {
 
             assertTrue(serverReceivedMessages.await(1, TimeUnit.SECONDS), "WebSocket server should receive repeated body messages");
             assertEquals(receivedPayloads, List.of("body-0", "body-1"));
+        } finally {
+            VariablesService.getInstance().detachContext();
+            IterationDataVariableService.getInstance().detachContext();
+        }
+    }
+
+    @Test
+    public void shouldRepeatWebSocketSendAndAwaitStepsInsideLoop() throws Exception {
+        VariablesService.getInstance().detachContext();
+        IterationDataVariableService.getInstance().detachContext();
+
+        CountDownLatch serverReceivedMessages = new CountDownLatch(2);
+        List<String> receivedPayloads = new CopyOnWriteArrayList<>();
+
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse().withWebSocketUpgrade(new WebSocketListener() {
+                @Override
+                public void onMessage(WebSocket webSocket, String text) {
+                    receivedPayloads.add(text);
+                    serverReceivedMessages.countDown();
+                    webSocket.send("ack-" + text + "-" + receivedPayloads.size());
+                    if (serverReceivedMessages.getCount() == 0) {
+                        webSocket.close(1000, "done");
+                    }
+                }
+
+                @Override
+                public void onFailure(WebSocket webSocket, Throwable t, Response response) {
+                    while (serverReceivedMessages.getCount() > 0) {
+                        serverReceivedMessages.countDown();
+                    }
+                }
+            }));
+            server.start();
+
+            HttpRequestItem item = new HttpRequestItem();
+            item.setId("ws-loop-send-await-test");
+            item.setName("WS Loop Send Await Test");
+            item.setProtocol(RequestItemProtocolEnum.WEBSOCKET);
+            item.setMethod("GET");
+            item.setUrl(server.url("/socket").toString().replaceFirst("^http", "ws"));
+
+            WebSocketPerformanceData requestCfg = new WebSocketPerformanceData();
+            requestCfg.connectTimeoutMs = 2000;
+
+            JMeterTreeNode requestData = new JMeterTreeNode("request", NodeType.REQUEST, item);
+            requestData.webSocketPerformanceData = requestCfg;
+            DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(requestData);
+
+            JMeterTreeNode loopData = new JMeterTreeNode("Loop", NodeType.LOOP);
+            loopData.loopData = new LoopData();
+            loopData.loopData.iterations = 2;
+            DefaultMutableTreeNode loopNode = new DefaultMutableTreeNode(loopData);
+            requestNode.add(loopNode);
+
+            JMeterTreeNode sendStep = new JMeterTreeNode("send", NodeType.WS_SEND);
+            sendStep.webSocketPerformanceData = new WebSocketPerformanceData();
+            sendStep.webSocketPerformanceData.sendMode = WebSocketPerformanceData.SendMode.REQUEST_BODY_ON_CONNECT;
+            sendStep.webSocketPerformanceData.sendContentSource = WebSocketPerformanceData.SendContentSource.CUSTOM_TEXT;
+            sendStep.webSocketPerformanceData.customSendBody = "ping";
+            loopNode.add(new DefaultMutableTreeNode(sendStep));
+
+            JMeterTreeNode awaitStep = new JMeterTreeNode("await", NodeType.WS_AWAIT);
+            awaitStep.webSocketPerformanceData = new WebSocketPerformanceData();
+            awaitStep.webSocketPerformanceData.completionMode = WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE;
+            awaitStep.webSocketPerformanceData.firstMessageTimeoutMs = 2000;
+            loopNode.add(new DefaultMutableTreeNode(awaitStep));
+
+            PerformanceRequestExecutor executor = new PerformanceRequestExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet(),
+                    ConcurrentHashMap.newKeySet()
+            );
+
+            PerformanceRequestExecutionResult result = executor.execute(requestNode, requestData, new ExecutionVariableContext());
+
+            assertTrue(serverReceivedMessages.await(1, TimeUnit.SECONDS), "WebSocket server should receive looped messages");
+            assertEquals(receivedPayloads, List.of("ping", "ping"));
+            assertEquals(result.response.headers.get("X-Easy-WS-Sent-Count").get(0), "2");
+            assertEquals(result.response.headers.get("X-Easy-WS-Received-Count").get(0), "2");
         } finally {
             VariablesService.getInstance().detachContext();
             IterationDataVariableService.getInstance().detachContext();

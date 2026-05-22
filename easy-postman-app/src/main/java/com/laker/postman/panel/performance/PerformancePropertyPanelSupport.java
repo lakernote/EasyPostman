@@ -2,6 +2,7 @@ package com.laker.postman.panel.performance;
 
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
+import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
@@ -19,6 +20,7 @@ final class PerformancePropertyPanelSupport {
 
     private final JTree jmeterTree;
     private final ThreadGroupPropertyPanel threadGroupPanel;
+    private final LoopPropertyPanel loopPanel;
     private final AssertionPropertyPanel assertionPanel;
     private final TimerPropertyPanel timerPanel;
     private final SseStagePropertyPanel sseConnectPanel;
@@ -35,6 +37,7 @@ final class PerformancePropertyPanelSupport {
 
     void forceCommitAllSpinners() {
         threadGroupPanel.forceCommitAllSpinners();
+        loopPanel.forceCommitAllSpinners();
         sseConnectPanel.forceCommitAllSpinners();
         sseAwaitPanel.forceCommitAllSpinners();
         wsConnectPanel.forceCommitAllSpinners();
@@ -49,6 +52,7 @@ final class PerformancePropertyPanelSupport {
         }
         switch (jtNode.type) {
             case THREAD_GROUP -> threadGroupPanel.saveThreadGroupData();
+            case LOOP -> loopPanel.saveLoopData();
             case REQUEST -> {
                 if (requestEditSubPanelSupplier.get() != null && currentRequestNodeSupplier.get() != null) {
                     saveRequestNodeAction.accept(currentRequestNodeSupplier.get());

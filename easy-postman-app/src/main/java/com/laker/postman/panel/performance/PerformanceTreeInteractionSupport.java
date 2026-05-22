@@ -3,6 +3,7 @@ package com.laker.postman.panel.performance;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
+import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
@@ -35,6 +36,7 @@ final class PerformanceTreeInteractionSupport {
     private final CardLayout propertyCardLayout;
     private final JPanel propertyPanel;
     private final ThreadGroupPropertyPanel threadGroupPanel;
+    private final LoopPropertyPanel loopPanel;
     private final AssertionPropertyPanel assertionPanel;
     private final TimerPropertyPanel timerPanel;
     private final SseStagePropertyPanel sseConnectPanel;
@@ -54,6 +56,7 @@ final class PerformanceTreeInteractionSupport {
     private final Consumer<DefaultMutableTreeNode> currentRequestNodeSetter;
     private final String emptyCard;
     private final String threadGroupCard;
+    private final String loopCard;
     private final String requestCard;
     private final String assertionCard;
     private final String timerCard;
@@ -92,6 +95,11 @@ final class PerformanceTreeInteractionSupport {
                 case THREAD_GROUP -> {
                     propertyCardLayout.show(propertyPanel, threadGroupCard);
                     threadGroupPanel.setThreadGroupData(jtNode);
+                    currentRequestNodeSetter.accept(null);
+                }
+                case LOOP -> {
+                    propertyCardLayout.show(propertyPanel, loopCard);
+                    loopPanel.setLoopData(jtNode);
                     currentRequestNodeSetter.accept(null);
                 }
                 case REQUEST -> {
@@ -145,6 +153,10 @@ final class PerformanceTreeInteractionSupport {
         }
         switch (jtNode.type) {
             case THREAD_GROUP -> threadGroupPanel.saveThreadGroupData();
+            case LOOP -> {
+                loopPanel.saveLoopData();
+                treeModel.nodeChanged(lastNode);
+            }
             case REQUEST -> saveRequestNodeAction.accept(lastNode);
             case ASSERTION -> assertionPanel.saveAssertionData();
             case TIMER -> timerPanel.saveTimerData();
@@ -188,6 +200,7 @@ final class PerformanceTreeInteractionSupport {
         JMenuItem addWsSend = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_WS_SEND));
         JMenuItem addWsAwait = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_WS_AWAIT));
         JMenuItem addWsClose = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_WS_CLOSE));
+        JMenuItem addLoop = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_LOOP));
         JMenuItem addAssertion = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_ASSERTION));
         JMenuItem addTimer = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_TIMER));
         JMenuItem renameNode = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_RENAME));
@@ -202,6 +215,7 @@ final class PerformanceTreeInteractionSupport {
 
         treeMenu.add(addThreadGroup);
         treeMenu.add(addRequest);
+        treeMenu.add(addLoop);
         treeMenu.add(addWsSend);
         treeMenu.add(addWsAwait);
         treeMenu.add(addWsClose);
@@ -216,6 +230,7 @@ final class PerformanceTreeInteractionSupport {
 
         Runnable updateMenuSeparators = () -> {
             boolean hasAddGroup = addThreadGroup.isVisible() || addRequest.isVisible()
+                    || addLoop.isVisible()
                     || addWsSend.isVisible() || addWsAwait.isVisible() || addWsClose.isVisible()
                     || addAssertion.isVisible() || addTimer.isVisible();
             boolean hasToggleGroup = enableNode.isVisible() || disableNode.isVisible();
@@ -232,6 +247,7 @@ final class PerformanceTreeInteractionSupport {
             saveConfigAction.run();
         });
         addRequest.addActionListener(e -> addRequestNodes());
+        addLoop.addActionListener(e -> treeSupport.addLoopNode(jmeterTree, saveConfigAction));
         addWsSend.addActionListener(e -> treeSupport.addWebSocketStepNode(jmeterTree, NodeType.WS_SEND, saveConfigAction));
         addWsAwait.addActionListener(e -> treeSupport.addWebSocketStepNode(jmeterTree, NodeType.WS_AWAIT, saveConfigAction));
         addWsClose.addActionListener(e -> treeSupport.addWebSocketStepNode(jmeterTree, NodeType.WS_CLOSE, saveConfigAction));
@@ -278,11 +294,11 @@ final class PerformanceTreeInteractionSupport {
                 }
 
                 if (selectedPaths.length > 1) {
-                    configureMultiSelectionMenu(selectedPaths, addThreadGroup, addRequest, addWsSend, addWsAwait, addWsClose,
+                    configureMultiSelectionMenu(selectedPaths, addThreadGroup, addRequest, addLoop, addWsSend, addWsAwait, addWsClose,
                             addAssertion, addTimer, renameNode, deleteNode, enableNode, disableNode, updateMenuSeparators);
                 } else {
                     configureSingleSelectionMenu((DefaultMutableTreeNode) selectedPaths[0].getLastPathComponent(),
-                            addThreadGroup, addRequest, addWsSend, addWsAwait, addWsClose, addAssertion, addTimer,
+                            addThreadGroup, addRequest, addLoop, addWsSend, addWsAwait, addWsClose, addAssertion, addTimer,
                             renameNode, deleteNode, enableNode, disableNode, updateMenuSeparators, treeMenu, e);
                     if (isRootNode((DefaultMutableTreeNode) selectedPaths[0].getLastPathComponent())) {
                         return;
@@ -299,7 +315,8 @@ final class PerformanceTreeInteractionSupport {
             return;
         }
         Object userObj = node.getUserObject();
-        if (!(userObj instanceof JMeterTreeNode jtNode) || jtNode.type != NodeType.THREAD_GROUP) {
+        if (!(userObj instanceof JMeterTreeNode jtNode)
+                || (jtNode.type != NodeType.THREAD_GROUP && !treeSupport.isRequestContainerLoop(node))) {
             JOptionPane.showMessageDialog(
                     parentComponent,
                     I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_SELECT_THREAD_GROUP),
@@ -375,6 +392,7 @@ final class PerformanceTreeInteractionSupport {
                         || jtNode.type == NodeType.SSE_CONNECT
                         || jtNode.type == NodeType.SSE_AWAIT
                         || jtNode.type == NodeType.WS_CONNECT
+                        || jtNode.type == NodeType.LOOP
                         || treeSupport.isWebSocketStepNode(jtNode.type)) {
                     return;
                 }
@@ -472,6 +490,7 @@ final class PerformanceTreeInteractionSupport {
     private void configureMultiSelectionMenu(TreePath[] selectedPaths,
                                              JMenuItem addThreadGroup,
                                              JMenuItem addRequest,
+                                             JMenuItem addLoop,
                                              JMenuItem addWsSend,
                                              JMenuItem addWsAwait,
                                              JMenuItem addWsClose,
@@ -484,6 +503,7 @@ final class PerformanceTreeInteractionSupport {
                                              Runnable updateMenuSeparators) {
         addThreadGroup.setVisible(false);
         addRequest.setVisible(false);
+        addLoop.setVisible(false);
         addWsSend.setVisible(false);
         addWsAwait.setVisible(false);
         addWsClose.setVisible(false);
@@ -513,6 +533,7 @@ final class PerformanceTreeInteractionSupport {
     private void configureSingleSelectionMenu(DefaultMutableTreeNode node,
                                               JMenuItem addThreadGroup,
                                               JMenuItem addRequest,
+                                              JMenuItem addLoop,
                                               JMenuItem addWsSend,
                                               JMenuItem addWsAwait,
                                               JMenuItem addWsClose,
@@ -533,6 +554,7 @@ final class PerformanceTreeInteractionSupport {
         if (jtNode.type == NodeType.ROOT) {
             addThreadGroup.setVisible(true);
             addRequest.setVisible(false);
+            addLoop.setVisible(false);
             addWsSend.setVisible(false);
             addWsAwait.setVisible(false);
             addWsClose.setVisible(false);
@@ -548,21 +570,23 @@ final class PerformanceTreeInteractionSupport {
         }
 
         addThreadGroup.setVisible(false);
-        addRequest.setVisible(jtNode.type == NodeType.THREAD_GROUP);
+        boolean requestContainerLoop = treeSupport.isRequestContainerLoop(node);
+        addRequest.setVisible(jtNode.type == NodeType.THREAD_GROUP || requestContainerLoop);
         boolean isSseRequestNode = jtNode.type == NodeType.REQUEST && treeSupport.isSsePerfRequest(jtNode.httpRequestItem);
         boolean isWebSocketRequestNode = jtNode.type == NodeType.REQUEST && treeSupport.isWebSocketPerfRequest(jtNode.httpRequestItem);
         boolean canManageWsSteps = treeSupport.resolveWebSocketStepParent(node) != null;
+        addLoop.setVisible(jtNode.type == NodeType.THREAD_GROUP || requestContainerLoop || canManageWsSteps);
         addWsSend.setVisible(canManageWsSteps);
         addWsAwait.setVisible(canManageWsSteps);
         addWsClose.setVisible(canManageWsSteps);
         addAssertion.setVisible((jtNode.type == NodeType.REQUEST && !isSseRequestNode && !isWebSocketRequestNode)
                 || jtNode.type == NodeType.SSE_AWAIT
                 || jtNode.type == NodeType.WS_AWAIT);
-        addTimer.setVisible(jtNode.type == NodeType.REQUEST || canManageWsSteps);
+        addTimer.setVisible(jtNode.type == NodeType.REQUEST || requestContainerLoop || canManageWsSteps);
         boolean structuralNode = jtNode.type == NodeType.SSE_CONNECT
                 || jtNode.type == NodeType.SSE_AWAIT
                 || jtNode.type == NodeType.WS_CONNECT;
-        renameNode.setVisible(!structuralNode && !treeSupport.isWebSocketStepNode(jtNode.type));
+        renameNode.setVisible(!structuralNode && jtNode.type != NodeType.LOOP && !treeSupport.isWebSocketStepNode(jtNode.type));
         deleteNode.setVisible(!structuralNode);
         enableNode.setVisible(!structuralNode && !jtNode.enabled);
         disableNode.setVisible(!structuralNode && jtNode.enabled);

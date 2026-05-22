@@ -13,6 +13,7 @@ import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
 import com.laker.postman.panel.performance.component.JMeterTreeCellRenderer;
 import com.laker.postman.panel.performance.component.TreeNodeTransferHandler;
+import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import com.laker.postman.panel.performance.result.PerformanceTrendPanel;
@@ -50,6 +51,7 @@ final class PerformancePanelViewFactory {
     PropertySection createPropertySection(Runnable refreshCurrentRequestAction,
                                           String emptyCard,
                                           String threadGroupCard,
+                                          String loopCard,
                                           String requestCard,
                                           String assertionCard,
                                           String timerCard,
@@ -65,6 +67,9 @@ final class PerformancePanelViewFactory {
 
         ThreadGroupPropertyPanel threadGroupPanel = new ThreadGroupPropertyPanel();
         propertyPanel.add(threadGroupPanel, threadGroupCard);
+
+        LoopPropertyPanel loopPanel = new LoopPropertyPanel();
+        propertyPanel.add(loopPanel, loopCard);
 
         RequestEditSubPanel requestEditSubPanel = new RequestEditSubPanel("", RequestItemProtocolEnum.HTTP, true);
         RequestEditorSection requestEditorSection = createRequestEditorSection(requestEditSubPanel, refreshCurrentRequestAction);
@@ -94,6 +99,7 @@ final class PerformancePanelViewFactory {
                 propertyPanel,
                 propertyCardLayout,
                 threadGroupPanel,
+                loopPanel,
                 assertionPanel,
                 timerPanel,
                 sseConnectPanel,
@@ -237,6 +243,7 @@ final class PerformancePanelViewFactory {
     record PropertySection(JPanel propertyPanel,
                            CardLayout propertyCardLayout,
                            ThreadGroupPropertyPanel threadGroupPanel,
+                           LoopPropertyPanel loopPanel,
                            AssertionPropertyPanel assertionPanel,
                            TimerPropertyPanel timerPanel,
                            SseStagePropertyPanel sseConnectPanel,

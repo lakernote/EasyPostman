@@ -4,6 +4,7 @@ import com.laker.postman.common.SingletonBasePanel;
 import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.common.component.EasyJSpinner;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
+import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
@@ -94,6 +95,7 @@ public class PerformancePanelSaveTest {
         return new PerformancePropertyPanelSupport(
                 jmeterTree,
                 threadGroupPanel,
+                headlessLoopPanel(),
                 new AssertionPropertyPanel(),
                 new TimerPropertyPanel(),
                 headlessSseStagePanel(),
@@ -118,6 +120,12 @@ public class PerformancePanelSaveTest {
         setField(panel, "awaitTimeoutSpinner", spinner());
         setField(panel, "holdConnectionSpinner", spinner());
         setField(panel, "targetMessageCountSpinner", spinner());
+        return panel;
+    }
+
+    private static LoopPropertyPanel headlessLoopPanel() throws Exception {
+        LoopPropertyPanel panel = allocateWithoutConstructor(LoopPropertyPanel.class);
+        setField(panel, "iterationsSpinner", spinner());
         return panel;
     }
 

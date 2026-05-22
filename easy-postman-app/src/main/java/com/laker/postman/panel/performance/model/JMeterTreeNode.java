@@ -2,6 +2,7 @@ package com.laker.postman.panel.performance.model;
 
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.performance.assertion.AssertionData;
+import com.laker.postman.panel.performance.controller.LoopData;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
 import com.laker.postman.panel.performance.timer.TimerData;
 
@@ -10,6 +11,7 @@ public class JMeterTreeNode {
     public NodeType type;
     public HttpRequestItem httpRequestItem; // 仅REQUEST节点用
     public ThreadGroupData threadGroupData; // 线程组数据
+    public LoopData loopData;             // Loop 控制器数据
     public AssertionData assertionData;   // 断言数据
     public TimerData timerData;           // 定时器数据
     public SsePerformanceData ssePerformanceData; // SSE 压测配置，仅 SSE REQUEST 节点使用
@@ -26,6 +28,7 @@ public class JMeterTreeNode {
         this.type = type;
         switch (type) {
             case THREAD_GROUP -> this.threadGroupData = (ThreadGroupData) data;
+            case LOOP -> this.loopData = (LoopData) data;
             case REQUEST -> this.httpRequestItem = (HttpRequestItem) data;
             case ASSERTION -> this.assertionData = (AssertionData) data;
             case TIMER -> this.timerData = (TimerData) data;
@@ -37,6 +40,7 @@ public class JMeterTreeNode {
     public Object getNodeData() {
         return switch (type) {
             case THREAD_GROUP -> threadGroupData;
+            case LOOP -> loopData;
             case REQUEST -> httpRequestItem;
             case ASSERTION -> assertionData;
             case TIMER -> timerData;
@@ -48,6 +52,7 @@ public class JMeterTreeNode {
     public void setNodeData(Object data) {
         switch (type) {
             case THREAD_GROUP -> this.threadGroupData = (ThreadGroupData) data;
+            case LOOP -> this.loopData = (LoopData) data;
             case REQUEST -> this.httpRequestItem = (com.laker.postman.model.HttpRequestItem) data;
             case ASSERTION -> this.assertionData = (AssertionData) data;
             case TIMER -> this.timerData = (TimerData) data;

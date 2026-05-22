@@ -12,6 +12,7 @@ import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
+import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
 import com.laker.postman.panel.performance.model.ApiMetadata;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
@@ -42,6 +43,7 @@ import java.awt.*;
 public class PerformancePanel extends SingletonBasePanel {
     public static final String EMPTY = "empty";
     public static final String THREAD_GROUP = "threadGroup";
+    public static final String LOOP = "loop";
     public static final String REQUEST = "request";
     public static final String ASSERTION = "assertion";
     public static final String TIMER = "timer";
@@ -57,6 +59,7 @@ public class PerformancePanel extends SingletonBasePanel {
     private CardLayout propertyCardLayout;
     private JTabbedPane resultTabbedPane; // 结果Tab
     private ThreadGroupPropertyPanel threadGroupPanel;
+    private LoopPropertyPanel loopPanel;
     private AssertionPropertyPanel assertionPanel;
     private TimerPropertyPanel timerPanel;
     private SseStagePropertyPanel sseConnectPanel;
@@ -129,6 +132,7 @@ public class PerformancePanel extends SingletonBasePanel {
                 this::refreshCurrentRequest,
                 EMPTY,
                 THREAD_GROUP,
+                LOOP,
                 REQUEST,
                 ASSERTION,
                 TIMER,
@@ -142,6 +146,7 @@ public class PerformancePanel extends SingletonBasePanel {
         propertyPanel = propertySection.propertyPanel();
         propertyCardLayout = propertySection.propertyCardLayout();
         threadGroupPanel = propertySection.threadGroupPanel();
+        loopPanel = propertySection.loopPanel();
         assertionPanel = propertySection.assertionPanel();
         timerPanel = propertySection.timerPanel();
         sseConnectPanel = propertySection.sseConnectPanel();
@@ -161,6 +166,7 @@ public class PerformancePanel extends SingletonBasePanel {
         propertyPanelSupport = new PerformancePropertyPanelSupport(
                 jmeterTree,
                 threadGroupPanel,
+                loopPanel,
                 assertionPanel,
                 timerPanel,
                 sseConnectPanel,
@@ -452,6 +458,7 @@ public class PerformancePanel extends SingletonBasePanel {
                 propertyCardLayout,
                 propertyPanel,
                 threadGroupPanel,
+                loopPanel,
                 assertionPanel,
                 timerPanel,
                 sseConnectPanel,
@@ -471,6 +478,7 @@ public class PerformancePanel extends SingletonBasePanel {
                 node -> currentRequestNode = node,
                 EMPTY,
                 THREAD_GROUP,
+                LOOP,
                 REQUEST,
                 ASSERTION,
                 TIMER,

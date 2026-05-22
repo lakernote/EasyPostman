@@ -1,8 +1,13 @@
 package com.laker.postman.panel.performance;
 
+import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.controller.LoopData;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
 import org.testng.annotations.Test;
 
@@ -106,6 +111,93 @@ public class PerformanceExecutionEngineTest {
         );
 
         assertEquals(engine.estimateTotalRequests(root), 400L);
+    }
+
+    @Test
+    public void estimateTotalRequestsShouldUseLongMathForNestedLoopControllers() {
+        ThreadGroupData threadGroupData = new ThreadGroupData();
+        threadGroupData.threadMode = ThreadGroupData.ThreadMode.FIXED;
+        threadGroupData.numThreads = 1;
+        threadGroupData.useTime = false;
+        threadGroupData.loops = 1;
+
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new JMeterTreeNode("root", NodeType.ROOT));
+        DefaultMutableTreeNode group = new DefaultMutableTreeNode(
+                new JMeterTreeNode("thread group", NodeType.THREAD_GROUP, threadGroupData)
+        );
+        JMeterTreeNode outerLoopData = new JMeterTreeNode("outer loop", NodeType.LOOP);
+        outerLoopData.loopData = new LoopData();
+        outerLoopData.loopData.iterations = LoopData.MAX_ITERATIONS;
+        DefaultMutableTreeNode outerLoop = new DefaultMutableTreeNode(outerLoopData);
+        JMeterTreeNode innerLoopData = new JMeterTreeNode("inner loop", NodeType.LOOP);
+        innerLoopData.loopData = new LoopData();
+        innerLoopData.loopData.iterations = LoopData.MAX_ITERATIONS;
+        DefaultMutableTreeNode innerLoop = new DefaultMutableTreeNode(innerLoopData);
+        innerLoop.add(new DefaultMutableTreeNode(new JMeterTreeNode("request", NodeType.REQUEST)));
+        outerLoop.add(innerLoop);
+        group.add(outerLoop);
+        root.add(group);
+
+        PerformanceExecutionEngine engine = new PerformanceExecutionEngine(
+                null,
+                () -> true,
+                () -> true,
+                () -> 4,
+                null,
+                new PerformanceStatsCollector(),
+                null
+        );
+
+        assertEquals(engine.estimateTotalRequests(root), 10_000_000_000L);
+    }
+
+    @Test
+    public void fixedThreadGroupShouldExecuteHttpRequestsInsideLoopController() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse().setBody("ok-1"));
+            server.enqueue(new MockResponse().setBody("ok-2"));
+            server.start();
+
+            HttpRequestItem item = new HttpRequestItem();
+            item.setId("http-loop-request");
+            item.setName("HTTP Loop Request");
+            item.setProtocol(RequestItemProtocolEnum.HTTP);
+            item.setMethod("GET");
+            item.setUrl(server.url("/loop").toString());
+
+            ThreadGroupData threadGroupData = new ThreadGroupData();
+            threadGroupData.threadMode = ThreadGroupData.ThreadMode.FIXED;
+            threadGroupData.numThreads = 1;
+            threadGroupData.useTime = false;
+            threadGroupData.loops = 1;
+
+            DefaultMutableTreeNode group = new DefaultMutableTreeNode(
+                    new JMeterTreeNode("thread group", NodeType.THREAD_GROUP, threadGroupData)
+            );
+            JMeterTreeNode loopData = new JMeterTreeNode("Loop", NodeType.LOOP);
+            loopData.loopData = new LoopData();
+            loopData.loopData.iterations = 2;
+            DefaultMutableTreeNode loopNode = new DefaultMutableTreeNode(loopData);
+            loopNode.add(new DefaultMutableTreeNode(new JMeterTreeNode(item.getName(), NodeType.REQUEST, item)));
+            group.add(loopNode);
+
+            PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
+            PerformanceExecutionEngine engine = new PerformanceExecutionEngine(
+                    null,
+                    () -> true,
+                    () -> false,
+                    () -> 4,
+                    null,
+                    statsCollector,
+                    null
+            );
+
+            engine.runJMeterTreeWithProgress(group, 1, (active, total) -> {
+            });
+
+            assertEquals(server.getRequestCount(), 2);
+            assertEquals(statsCollector.snapshot().totalRequests(), 2);
+        }
     }
 
     @Test

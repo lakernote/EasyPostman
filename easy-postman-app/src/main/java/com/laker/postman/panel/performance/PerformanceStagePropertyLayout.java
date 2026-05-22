@@ -3,19 +3,19 @@ package com.laker.postman.panel.performance;
 import javax.swing.*;
 import java.awt.*;
 
-final class PerformanceStagePropertyLayout {
-    static final int FIELD_HEIGHT = 28;
-    static final int SPINNER_FIELD_WIDTH = 118;
-    static final int TEXT_FIELD_WIDTH = 320;
+public final class PerformanceStagePropertyLayout {
+    public static final int FIELD_HEIGHT = 28;
+    public static final int SPINNER_FIELD_WIDTH = 118;
+    public static final int TEXT_FIELD_WIDTH = 320;
 
     private PerformanceStagePropertyLayout() {
     }
 
-    static void applyCompactBorder(JComponent component) {
+    public static void applyCompactBorder(JComponent component) {
         component.setBorder(BorderFactory.createEmptyBorder(8, 20, 8, 20));
     }
 
-    static GridBagConstraints createBaseConstraints() {
+    public static GridBagConstraints createBaseConstraints() {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(4, 6, 4, 6);
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -26,14 +26,14 @@ final class PerformanceStagePropertyLayout {
         return gbc;
     }
 
-    static void configureFieldWidth(JComponent component, int preferredWidth, int minimumWidth) {
+    public static void configureFieldWidth(JComponent component, int preferredWidth, int minimumWidth) {
         Dimension preferredSize = new Dimension(preferredWidth, FIELD_HEIGHT);
         Dimension minimumSize = new Dimension(minimumWidth, FIELD_HEIGHT);
         component.setPreferredSize(preferredSize);
         component.setMinimumSize(minimumSize);
     }
 
-    static void addCenteredCompactFormRow(JPanel target, GridBagConstraints gbc, JComponent label, JComponent field) {
+    public static void addCenteredCompactFormRow(JPanel target, GridBagConstraints gbc, JComponent label, JComponent field) {
         int previousFill = gbc.fill;
         int previousAnchor = gbc.anchor;
 
@@ -57,7 +57,7 @@ final class PerformanceStagePropertyLayout {
         gbc.anchor = previousAnchor;
     }
 
-    static void addVerticalFiller(JPanel target, GridBagConstraints gbc, int gridWidth) {
+    public static void addVerticalFiller(JPanel target, GridBagConstraints gbc, int gridWidth) {
         gbc.gridx = 0;
         gbc.gridwidth = gridWidth;
         gbc.weightx = 1;

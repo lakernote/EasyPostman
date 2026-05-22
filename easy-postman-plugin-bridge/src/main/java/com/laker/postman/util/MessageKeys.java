@@ -614,8 +614,12 @@ public final class MessageKeys {
     public static final String PERFORMANCE_MENU_ADD_WS_SEND = "performance.menu.add_ws_send";
     public static final String PERFORMANCE_MENU_ADD_WS_AWAIT = "performance.menu.add_ws_await";
     public static final String PERFORMANCE_MENU_ADD_WS_CLOSE = "performance.menu.add_ws_close";
+    public static final String PERFORMANCE_MENU_ADD_LOOP = "performance.menu.add_loop";
     public static final String PERFORMANCE_MENU_ADD_ASSERTION = "performance.menu.add_assertion";
     public static final String PERFORMANCE_MENU_ADD_TIMER = "performance.menu.add_timer";
+    public static final String PERFORMANCE_LOOP_NODE = "performance.loop.node";
+    public static final String PERFORMANCE_LOOP_ITERATIONS = "performance.loop.iterations";
+    public static final String PERFORMANCE_LOOP_HINT = "performance.loop.hint";
     public static final String PERFORMANCE_TIMER_DELAY = "performance.timer.delay";
     public static final String PERFORMANCE_TIMER_HINT = "performance.timer.hint";
     public static final String PERFORMANCE_MENU_RENAME = "performance.menu.rename";

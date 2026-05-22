@@ -3,6 +3,7 @@ package com.laker.postman.panel.performance;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.controller.LoopData;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.SsePerformanceData;
 import org.testng.annotations.Test;
@@ -153,6 +154,54 @@ public class PerformanceTreeSupportTest {
         assertNull(findChild(context.requestNode, NodeType.WS_CLOSE));
     }
 
+    @Test(description = "WebSocket 切回 HTTP 时应清理 Loop 中的步骤，并恢复嵌套 Await 断言")
+    public void shouldRemoveWebSocketLoopAndRestoreNestedAwaitAssertionsWhenSwitchingBackToHttp() {
+        TestContext context = newTestContext(RequestItemProtocolEnum.WEBSOCKET);
+        context.treeSupport.syncRequestStructure(context.requestNode, context.requestData);
+
+        DefaultMutableTreeNode loopNode = newLoopNode(2);
+        DefaultMutableTreeNode awaitNode = newNode("Await", NodeType.WS_AWAIT);
+        DefaultMutableTreeNode assertionNode = newNode("Assertion", NodeType.ASSERTION);
+        awaitNode.add(assertionNode);
+        loopNode.add(newNode("Send", NodeType.WS_SEND));
+        loopNode.add(awaitNode);
+        context.treeModel.insertNodeInto(loopNode, context.requestNode, context.requestNode.getChildCount());
+
+        context.requestData.httpRequestItem.setProtocol(RequestItemProtocolEnum.HTTP);
+        context.treeSupport.syncRequestStructure(context.requestNode, context.requestData);
+
+        assertEquals(childTypesOf(context.requestNode), List.of(NodeType.ASSERTION));
+        assertSame(context.requestNode.getChildAt(0), assertionNode);
+        assertNull(findChild(context.requestNode, NodeType.LOOP));
+    }
+
+    @Test(description = "WebSocket Loop 应作为步骤容器，便于在其中继续添加 Send/Await/Timer")
+    public void shouldResolveWebSocketLoopAsStepParent() {
+        TestContext context = newTestContext(RequestItemProtocolEnum.WEBSOCKET);
+        context.treeSupport.syncRequestStructure(context.requestNode, context.requestData);
+
+        DefaultMutableTreeNode loopNode = newLoopNode(2);
+        DefaultMutableTreeNode sendNode = newNode("Send", NodeType.WS_SEND);
+        loopNode.add(sendNode);
+        context.treeModel.insertNodeInto(loopNode, context.requestNode, context.requestNode.getChildCount());
+
+        assertSame(context.treeSupport.resolveWebSocketStepParent(loopNode), loopNode);
+        assertSame(context.treeSupport.resolveWebSocketStepParent(sendNode), loopNode);
+        assertFalse(context.treeSupport.isRequestContainerLoop(loopNode));
+    }
+
+    @Test(description = "线程组下的 Loop 应作为请求容器，供 HTTP/SSE/WS 请求复用")
+    public void shouldIdentifyLoopUnderThreadGroupAsRequestContainer() {
+        DefaultMutableTreeNode root = newNode("Plan", NodeType.ROOT);
+        DefaultMutableTreeNode groupNode = newNode("Group", NodeType.THREAD_GROUP);
+        DefaultMutableTreeNode loopNode = newLoopNode(3);
+        root.add(groupNode);
+        groupNode.add(loopNode);
+        PerformanceTreeSupport treeSupport = new PerformanceTreeSupport(new DefaultTreeModel(root));
+
+        assertTrue(treeSupport.isRequestContainerLoop(loopNode));
+    }
+
     private static TestContext newTestContext(RequestItemProtocolEnum protocol) {
         HttpRequestItem item = new HttpRequestItem();
         item.setName("Request");
@@ -167,6 +216,13 @@ public class PerformanceTreeSupportTest {
 
     private static DefaultMutableTreeNode newNode(String name, NodeType type) {
         return new DefaultMutableTreeNode(new JMeterTreeNode(name, type));
+    }
+
+    private static DefaultMutableTreeNode newLoopNode(int iterations) {
+        JMeterTreeNode loopData = new JMeterTreeNode("Loop", NodeType.LOOP);
+        loopData.loopData = new LoopData();
+        loopData.loopData.iterations = iterations;
+        return new DefaultMutableTreeNode(loopData);
     }
 
     private static DefaultMutableTreeNode findChild(DefaultMutableTreeNode parent, NodeType type) {

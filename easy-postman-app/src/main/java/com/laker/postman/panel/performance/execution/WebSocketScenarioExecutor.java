@@ -219,10 +219,14 @@ public class WebSocketScenarioExecutor {
             }
 
             if (!failed.get() && !interrupted.get()) {
-                for (int i = 0; i < requestNode.getChildCount() && runningSupplier.getAsBoolean() && !failed.get() && !interrupted.get(); i++) {
-                    DefaultMutableTreeNode childNode = (DefaultMutableTreeNode) requestNode.getChildAt(i);
+                WebSocketScenarioStepCursor scenarioSteps = new WebSocketScenarioStepCursor(requestNode, runningSupplier);
+                while (runningSupplier.getAsBoolean() && !failed.get() && !interrupted.get()) {
+                    DefaultMutableTreeNode childNode = scenarioSteps.next();
+                    if (childNode == null) {
+                        break;
+                    }
                     Object childObj = childNode.getUserObject();
-                    if (!(childObj instanceof JMeterTreeNode stepNode) || !stepNode.enabled) {
+                    if (!(childObj instanceof JMeterTreeNode stepNode)) {
                         continue;
                     }
                     switch (stepNode.type) {
@@ -383,7 +387,7 @@ public class WebSocketScenarioExecutor {
                                 webSocket.close(1000, "WebSocket close step");
                             } catch (Exception ignored) {
                             }
-                            i = requestNode.getChildCount();
+                            scenarioSteps.stop();
                         }
                         case TIMER -> {
                             if (stepNode.timerData != null) {
@@ -562,6 +566,10 @@ public class WebSocketScenarioExecutor {
             DefaultMutableTreeNode childNode = (DefaultMutableTreeNode) requestNode.getChildAt(i);
             Object childObj = childNode.getUserObject();
             if (childObj instanceof JMeterTreeNode stepNode && stepNode.enabled && stepNode.type == NodeType.WS_AWAIT) {
+                return true;
+            }
+            if (childObj instanceof JMeterTreeNode stepNode && stepNode.enabled && stepNode.type == NodeType.LOOP
+                    && hasEnabledAwaitStep(childNode)) {
                 return true;
             }
         }

@@ -5,10 +5,12 @@ import com.laker.postman.panel.performance.execution.PerformanceRequestExecution
 import com.laker.postman.panel.performance.execution.PerformanceRequestExecutor;
 import com.laker.postman.panel.performance.execution.PerformanceResultRecorder;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.controller.LoopData;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
+import com.laker.postman.panel.performance.threadgroup.PerformanceThreadGroupPlanner;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.service.variable.ExecutionVariableContext;
@@ -705,11 +707,7 @@ final class PerformanceExecutionEngine {
                 IterationDataRuntimeSupport.prepare(resolveCsvRowForCurrentThread()));
         for (int i = 0; i < groupNode.getChildCount() && runningSupplier.getAsBoolean(); i++) {
             DefaultMutableTreeNode child = (DefaultMutableTreeNode) groupNode.getChildAt(i);
-            Object userObj = child.getUserObject();
-            if (userObj instanceof JMeterTreeNode jtNode && !jtNode.enabled) {
-                continue;
-            }
-            executeRequestNode(userObj, child, iterationContext);
+            executePlanNode(child, iterationContext);
         }
     }
 
@@ -717,6 +715,33 @@ final class PerformanceExecutionEngine {
         for (int l = 0; l < loops && runningSupplier.getAsBoolean(); l++) {
             runTaskIteration(groupNode, loops);
         }
+    }
+
+    private void executePlanNode(DefaultMutableTreeNode node,
+                                 ExecutionVariableContext iterationContext) {
+        if (!runningSupplier.getAsBoolean()) {
+            return;
+        }
+        Object userObj = node.getUserObject();
+        if (!(userObj instanceof JMeterTreeNode jtNode) || !jtNode.enabled) {
+            return;
+        }
+        if (jtNode.type == NodeType.LOOP) {
+            LoopData loopData = jtNode.loopData != null ? jtNode.loopData : new LoopData();
+            loopData.normalize();
+            jtNode.loopData = loopData;
+            for (int iteration = 0; iteration < loopData.iterations && runningSupplier.getAsBoolean(); iteration++) {
+                for (int i = 0; i < node.getChildCount() && runningSupplier.getAsBoolean(); i++) {
+                    executePlanNode((DefaultMutableTreeNode) node.getChildAt(i), iterationContext);
+                }
+            }
+            return;
+        }
+        if (jtNode.type == NodeType.TIMER) {
+            sleepTimer(jtNode);
+            return;
+        }
+        executeRequestNode(userObj, node, iterationContext);
     }
 
     private void executeRequestNode(Object userObj, DefaultMutableTreeNode child,
@@ -750,14 +775,23 @@ final class PerformanceExecutionEngine {
                     if (!subNode.enabled) {
                         continue;
                     }
-                    try {
-                        TimeUnit.MILLISECONDS.sleep(subNode.timerData.delayMs);
-                    } catch (InterruptedException ignored) {
-                        Thread.currentThread().interrupt();
+                    sleepTimer(subNode);
+                    if (Thread.currentThread().isInterrupted()) {
                         return;
                     }
                 }
             }
+        }
+    }
+
+    private void sleepTimer(JMeterTreeNode timerNode) {
+        if (timerNode.timerData == null) {
+            return;
+        }
+        try {
+            TimeUnit.MILLISECONDS.sleep(timerNode.timerData.delayMs);
+        } catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
         }
     }
 

@@ -4,6 +4,7 @@ import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.performance.assertion.AssertionData;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.controller.LoopData;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.SsePerformanceData;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
@@ -256,6 +257,32 @@ public class PerformancePersistenceServiceTest {
         assertEquals(loadedAwaitNode.webSocketPerformanceData.completionMode,
                 WebSocketPerformanceData.CompletionMode.MATCHED_MESSAGE);
         assertEquals(loadedAwaitNode.webSocketPerformanceData.messageFilter, "a");
+    }
+
+    @Test(description = "应保存并恢复通用 Loop 控制器配置")
+    public void shouldPersistLoopControllerConfig() throws IOException {
+        Path tempDir = Files.createTempDirectory("performance-persistence-loop");
+        Path configPath = tempDir.resolve("performance_config.json");
+        TestablePerformancePersistenceService service = new TestablePerformancePersistenceService(configPath);
+        service.init();
+
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new JMeterTreeNode("Plan", NodeType.ROOT));
+        DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(new JMeterTreeNode("Users", NodeType.THREAD_GROUP));
+        JMeterTreeNode loop = new JMeterTreeNode("Loop [4x]", NodeType.LOOP);
+        loop.loopData = new LoopData();
+        loop.loopData.iterations = 4;
+        DefaultMutableTreeNode loopNode = new DefaultMutableTreeNode(loop);
+        groupNode.add(loopNode);
+        root.add(groupNode);
+
+        service.save(root, false, null);
+
+        DefaultMutableTreeNode loadedRoot = service.load("Loaded Plan");
+        DefaultMutableTreeNode loadedGroupNode = (DefaultMutableTreeNode) loadedRoot.getChildAt(0);
+        JMeterTreeNode loadedLoop = (JMeterTreeNode) ((DefaultMutableTreeNode) loadedGroupNode.getChildAt(0)).getUserObject();
+
+        assertNotNull(loadedLoop.loopData);
+        assertEquals(loadedLoop.loopData.iterations, 4);
     }
 
     @Test(description = "应保存并恢复所有性能节点配置对象")

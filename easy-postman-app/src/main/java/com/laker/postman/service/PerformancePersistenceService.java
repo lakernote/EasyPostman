@@ -12,6 +12,7 @@ import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.performance.assertion.AssertionData;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.controller.LoopData;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.SsePerformanceData;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
@@ -170,6 +171,11 @@ public class PerformancePersistenceService {
                     jsonNode.set("threadGroupData", serializeThreadGroupData(jmNode.threadGroupData));
                 }
             }
+            case LOOP -> {
+                if (jmNode.loopData != null) {
+                    jsonNode.set("loopData", serializeLoopData(jmNode.loopData));
+                }
+            }
             case REQUEST -> {
                 // 只保存请求ID，不保存完整配置
                 if (jmNode.httpRequestItem != null) {
@@ -240,6 +246,13 @@ public class PerformancePersistenceService {
         json.set("stairsStep", data.stairsStep);
         json.set("stairsHoldTime", data.stairsHoldTime);
         json.set("stairsDuration", data.stairsDuration);
+        return json;
+    }
+
+    private JSONObject serializeLoopData(LoopData data) {
+        data.normalize();
+        JSONObject json = new JSONObject();
+        json.set("iterations", data.iterations);
         return json;
     }
 
@@ -475,6 +488,14 @@ public class PerformancePersistenceService {
                         jmNode.threadGroupData = deserializeThreadGroupData(tgData);
                     }
                 }
+                case LOOP -> {
+                    JSONObject loopData = jsonNode.getJSONObject("loopData");
+                    if (loopData != null) {
+                        jmNode.loopData = deserializeLoopData(loopData);
+                    } else {
+                        jmNode.loopData = new LoopData();
+                    }
+                }
                 case REQUEST -> {
                     String requestItemId = jsonNode.getStr("requestItemId");
                     if (requestItemId != null) {
@@ -569,6 +590,15 @@ public class PerformancePersistenceService {
             data.stairsDuration = json.getInt("stairsDuration", 60);
         } catch (Exception e) {
             log.warn("Failed to deserialize thread group data: {}", e.getMessage());
+        }
+        data.normalize();
+        return data;
+    }
+
+    private LoopData deserializeLoopData(JSONObject json) {
+        LoopData data = new LoopData();
+        if (json != null) {
+            data.iterations = json.getInt("iterations", data.iterations);
         }
         data.normalize();
         return data;

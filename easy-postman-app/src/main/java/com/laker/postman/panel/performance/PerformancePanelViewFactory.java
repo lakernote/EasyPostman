@@ -140,7 +140,7 @@ final class PerformancePanelViewFactory {
         resultTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_TREND), performanceTrendPanel);
         resultTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_REPORT), performanceReportPanel);
         resultTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_RESULT_TREE), performanceResultTablePanel);
-        resultTabbedPane.setSelectedIndex(RESULT_TAB_TABLE);
+        resultTabbedPane.setSelectedIndex(RESULT_TAB_TREND);
 
         ResultToolbar resultToolbar = createResultToolbar(
                 resultTabbedPane,

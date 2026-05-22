@@ -47,7 +47,8 @@ public class PerformancePanelViewFactoryTest {
                 saveConfigCount::incrementAndGet
         );
 
-        assertEquals(resultSection.resultTabbedPane().getSelectedIndex(), PerformancePanelViewFactory.RESULT_TAB_TABLE);
+        assertEquals(resultSection.resultTabbedPane().getSelectedIndex(), PerformancePanelViewFactory.RESULT_TAB_TREND);
+        assertTrue(resultSection.trendButton().isSelected());
         assertTrue(resultSection.resultTabbedPane().getUI().getClass().getSimpleName().contains("HiddenResultTabs"));
         assertFalse(hasText(resultSection.resultPanel(), "结果视图"));
         assertFalse(hasText(resultSection.resultPanel(), "Result View"));

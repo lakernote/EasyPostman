@@ -20,7 +20,9 @@ import java.awt.Container;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.ResourceBundle;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -156,6 +158,25 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
         assertEquals(model.getValueAt(0, 10), "910 ms");
         assertEquals(model.getValueAt(0, 11), "955 ms");
         assertEquals(model.getValueAt(0, 12), "991 ms");
+    }
+
+    @Test
+    public void shouldDescribeStreamReportDurationAsSampleDuration() {
+        ResourceBundle zh = ResourceBundle.getBundle("messages", Locale.CHINESE);
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG_SESSION), "平均样本耗时");
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG_STREAM), "平均样本耗时");
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_P95_SESSION), "P95 样本耗时");
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_P95_STREAM), "P95 样本耗时");
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_TREND_SESSION_DURATION_MS), "活跃会话时长 (ms)");
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_TREND_STREAM_DURATION_MS), "活跃流时长 (ms)");
+
+        ResourceBundle en = ResourceBundle.getBundle("messages", Locale.ENGLISH);
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG_SESSION), "Avg Sample Duration");
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG_STREAM), "Avg Sample Duration");
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_P95_SESSION), "P95 Sample Duration");
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_P95_STREAM), "P95 Sample Duration");
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_TREND_SESSION_DURATION_MS), "Active Session Duration (ms)");
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_TREND_STREAM_DURATION_MS), "Active Stream Duration (ms)");
     }
 
     private static DefaultTableModel getReportTableModel(PerformanceReportPanel panel) throws Exception {

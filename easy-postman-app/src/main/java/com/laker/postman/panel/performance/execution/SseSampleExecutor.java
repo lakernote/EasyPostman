@@ -83,6 +83,7 @@ public class SseSampleExecutor {
         AtomicReference<String> lastEventIdRef = new AtomicReference<>("");
         AtomicReference<String> lastEventTypeRef = new AtomicReference<>("");
         BoundedTextAccumulator matchedEventBody = new BoundedTextAccumulator(responseBodyPreviewLimitBytes);
+        AtomicLong sampleEndTimeMs = new AtomicLong(0);
         AtomicLong firstEventLatencyMs = new AtomicLong(-1);
         AtomicBoolean firstEventRecorded = new AtomicBoolean(false);
         AtomicInteger eventCount = new AtomicInteger(0);
@@ -210,6 +211,7 @@ public class SseSampleExecutor {
                         errorRef.set("SSE connection timeout");
                         completionReasonRef.set("connect_timeout");
                         closingSource.set(true);
+                        markSampleEnd(sampleEndTimeMs);
                         eventSource.cancel();
                     }
                     boolean gotFirstMessage = !failed.get() && !interrupted.get()
@@ -219,6 +221,7 @@ public class SseSampleExecutor {
                         errorRef.set("SSE first event timeout");
                         completionReasonRef.compareAndSet("pending", "first_message_timeout");
                         closingSource.set(true);
+                        markSampleEnd(sampleEndTimeMs);
                         eventSource.cancel();
                     }
                 }
@@ -229,6 +232,7 @@ public class SseSampleExecutor {
                         errorRef.set("SSE connection timeout");
                         completionReasonRef.set("connect_timeout");
                         closingSource.set(true);
+                        markSampleEnd(sampleEndTimeMs);
                         eventSource.cancel();
                     }
                     boolean gotMatchedMessage = !failed.get() && !interrupted.get()
@@ -238,6 +242,7 @@ public class SseSampleExecutor {
                         errorRef.set("SSE matched message timeout");
                         completionReasonRef.compareAndSet("pending", "matched_message_timeout");
                         closingSource.set(true);
+                        markSampleEnd(sampleEndTimeMs);
                         eventSource.cancel();
                     }
                 }
@@ -248,6 +253,7 @@ public class SseSampleExecutor {
                         errorRef.set("SSE connection timeout");
                         completionReasonRef.set("connect_timeout");
                         closingSource.set(true);
+                        markSampleEnd(sampleEndTimeMs);
                         eventSource.cancel();
                     } else if (!failed.get() && !interrupted.get()) {
                         boolean terminated = completionLatch.await(Math.max(100, cfg.holdConnectionMs), TimeUnit.MILLISECONDS);
@@ -267,6 +273,7 @@ public class SseSampleExecutor {
                         errorRef.set("SSE connection timeout");
                         completionReasonRef.set("connect_timeout");
                         closingSource.set(true);
+                        markSampleEnd(sampleEndTimeMs);
                         eventSource.cancel();
                     }
                     boolean gotFirstMessage = !failed.get() && !interrupted.get()
@@ -276,6 +283,7 @@ public class SseSampleExecutor {
                         errorRef.set("SSE first message timeout");
                         completionReasonRef.compareAndSet("pending", "first_message_timeout");
                         closingSource.set(true);
+                        markSampleEnd(sampleEndTimeMs);
                         eventSource.cancel();
                     } else if (!failed.get() && !interrupted.get()
                             && matchedMessageCount.get() < Math.max(1, cfg.targetMessageCount)) {
@@ -286,6 +294,7 @@ public class SseSampleExecutor {
                             errorRef.set("SSE target message count timeout");
                             completionReasonRef.set("message_target_timeout");
                             closingSource.set(true);
+                            markSampleEnd(sampleEndTimeMs);
                             eventSource.cancel();
                         }
                     }
@@ -296,13 +305,14 @@ public class SseSampleExecutor {
             interrupted.set(true);
             completionReasonRef.set("interrupted");
         } finally {
+            markSampleEnd(sampleEndTimeMs);
+            realtimeMetrics.recordSseSessionEnd(eventSource);
             closingSource.set(true);
             eventSource.cancel();
             activeSources.remove(eventSource);
-            realtimeMetrics.recordSseSessionEnd(eventSource);
         }
 
-        long endTime = System.currentTimeMillis();
+        long endTime = sampleEndTimeMs.get();
         resp.endTime = endTime;
         resp.costMs = endTime - requestStartTime;
         resp.body = matchedEventBody.value();
@@ -341,6 +351,10 @@ public class SseSampleExecutor {
         }
         String filter = cfg.messageFilter;
         return CharSequenceUtil.isBlank(filter) || (data != null && data.contains(filter.trim()));
+    }
+
+    private static void markSampleEnd(AtomicLong sampleEndTimeMs) {
+        sampleEndTimeMs.compareAndSet(0, System.currentTimeMillis());
     }
 
     private void appendEvent(BoundedTextAccumulator buffer, String id, String type, String data) {

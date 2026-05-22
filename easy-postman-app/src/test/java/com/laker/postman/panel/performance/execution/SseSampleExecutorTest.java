@@ -17,6 +17,7 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class SseSampleExecutorTest {
+    private static final long SESSION_END_DELAY_MS = 220;
 
     @Test
     public void shouldFinishOnFirstSseMessageMatchingEventAndPayloadFilter() throws Exception {
@@ -107,6 +108,41 @@ public class SseSampleExecutorTest {
     }
 
     @Test
+    public void shouldExcludeSseCloseCleanupFromReportedCost() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse()
+                    .setHeader("Content-Type", "text/event-stream")
+                    .setBody("event: progress\n"
+                            + "data: loading\n\n"));
+            server.start();
+
+            PreparedRequest request = new PreparedRequest();
+            request.method = "GET";
+            request.url = server.url("/stream").toString();
+            request.headersList = List.of(new HttpHeader(true, "Accept", "text/event-stream"));
+
+            SsePerformanceData cfg = new SsePerformanceData();
+            cfg.completionMode = SsePerformanceData.CompletionMode.FIRST_MESSAGE;
+            cfg.connectTimeoutMs = 2000;
+            cfg.firstMessageTimeoutMs = 2000;
+
+            long wallStart = System.currentTimeMillis();
+            SseSampleExecutor.Result result = new SseSampleExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet(),
+                    new SlowSseSessionEndMetrics()
+            ).execute(request, cfg);
+            long wallElapsed = System.currentTimeMillis() - wallStart;
+
+            assertFalse(result.executionFailed, result.errorMsg);
+            assertTrue(wallElapsed - result.response.costMs >= SESSION_END_DELAY_MS - 50,
+                    "reported cost should exclude close cleanup delay, wallElapsed="
+                            + wallElapsed + ", costMs=" + result.response.costMs);
+        }
+    }
+
+    @Test
     public void shouldIgnoreEventFilterForFixedDurationMode() throws Exception {
         SsePerformanceData cfg = new SsePerformanceData();
         cfg.completionMode = SsePerformanceData.CompletionMode.FIXED_DURATION;
@@ -121,5 +157,21 @@ public class SseSampleExecutorTest {
         matchesEvent.setAccessible(true);
 
         assertTrue((Boolean) matchesEvent.invoke(executor, cfg, "message"));
+    }
+
+    private static final class SlowSseSessionEndMetrics extends PerformanceRealtimeMetrics {
+        @Override
+        public void recordSseSessionEnd(Object session) {
+            sleepSessionEndDelay();
+            super.recordSseSessionEnd(session);
+        }
+    }
+
+    private static void sleepSessionEndDelay() {
+        try {
+            Thread.sleep(SESSION_END_DELAY_MS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 }

@@ -1,6 +1,7 @@
 package com.laker.postman.panel.performance.execution;
 
 import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.controller.LoopData;
@@ -30,9 +31,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class WebSocketScenarioExecutorTest {
+    private static final long SESSION_END_DELAY_MS = 220;
 
     @Test
     public void shouldBuildResponseBodyFromAllReceivedMessages() {
@@ -494,6 +497,63 @@ public class WebSocketScenarioExecutorTest {
         } finally {
             VariablesService.getInstance().detachContext();
             IterationDataVariableService.getInstance().detachContext();
+        }
+    }
+
+    @Test
+    public void shouldExcludeWebSocketCloseCleanupFromReportedCost() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse().withWebSocketUpgrade(new WebSocketListener() {
+                @Override
+                public void onOpen(WebSocket webSocket, Response response) {
+                    webSocket.send("hello");
+                }
+            }));
+            server.start();
+
+            PreparedRequest request = new PreparedRequest();
+            request.method = "GET";
+            request.url = server.url("/socket").toString().replaceFirst("^http", "ws");
+
+            WebSocketPerformanceData requestCfg = new WebSocketPerformanceData();
+            requestCfg.connectTimeoutMs = 2000;
+
+            DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(new JMeterTreeNode("request", NodeType.REQUEST));
+            JMeterTreeNode awaitStep = new JMeterTreeNode("await", NodeType.WS_AWAIT);
+            awaitStep.webSocketPerformanceData = new WebSocketPerformanceData();
+            awaitStep.webSocketPerformanceData.completionMode = WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE;
+            awaitStep.webSocketPerformanceData.firstMessageTimeoutMs = 2000;
+            requestNode.add(new DefaultMutableTreeNode(awaitStep));
+
+            long wallStart = System.currentTimeMillis();
+            WebSocketScenarioExecutor.Result result = new WebSocketScenarioExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet(),
+                    new SlowWebSocketSessionEndMetrics()
+            ).execute(request, requestNode, requestCfg, "", null);
+            long wallElapsed = System.currentTimeMillis() - wallStart;
+
+            assertFalse(result.executionFailed, result.errorMsg);
+            assertTrue(wallElapsed - result.response.costMs >= SESSION_END_DELAY_MS - 50,
+                    "reported cost should exclude close cleanup delay, wallElapsed="
+                            + wallElapsed + ", costMs=" + result.response.costMs);
+        }
+    }
+
+    private static final class SlowWebSocketSessionEndMetrics extends PerformanceRealtimeMetrics {
+        @Override
+        public void recordWebSocketSessionEnd(Object session) {
+            sleepSessionEndDelay();
+            super.recordWebSocketSessionEnd(session);
+        }
+    }
+
+    private static void sleepSessionEndDelay() {
+        try {
+            Thread.sleep(SESSION_END_DELAY_MS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 }

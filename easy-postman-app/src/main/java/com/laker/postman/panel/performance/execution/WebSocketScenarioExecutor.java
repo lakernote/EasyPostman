@@ -102,6 +102,7 @@ public class WebSocketScenarioExecutor {
         AtomicReference<String> lastMessageRef = new AtomicReference<>("");
         AtomicReference<WebSocketPerformanceData> lastStepCfgRef = new AtomicReference<>(requestCfg);
         BoundedTextAccumulator responseBody = new BoundedTextAccumulator(responseBodyPreviewLimitBytes);
+        AtomicLong sampleEndTimeMs = new AtomicLong(0);
         AtomicLong firstMessageLatencyMs = new AtomicLong(-1);
         AtomicBoolean firstReceivedMessageRecorded = new AtomicBoolean(false);
         AtomicInteger receivedMessageCount = new AtomicInteger(0);
@@ -381,6 +382,7 @@ public class WebSocketScenarioExecutor {
                             );
                         }
                         case WS_CLOSE -> {
+                            markSampleEnd(sampleEndTimeMs);
                             completionReasonRef.set("closed_by_step");
                             closingSocket.set(true);
                             try {
@@ -404,6 +406,8 @@ public class WebSocketScenarioExecutor {
             interrupted.set(true);
             completionReasonRef.set("interrupted");
         } finally {
+            markSampleEnd(sampleEndTimeMs);
+            realtimeMetrics.recordWebSocketSessionEnd(webSocket);
             closingSocket.set(true);
             try {
                 webSocket.close(1000, "Performance sample complete");
@@ -419,10 +423,9 @@ public class WebSocketScenarioExecutor {
             }
             webSocket.cancel();
             activeWebSockets.remove(webSocket);
-            realtimeMetrics.recordWebSocketSessionEnd(webSocket);
         }
 
-        long endTime = System.currentTimeMillis();
+        long endTime = sampleEndTimeMs.get();
         resp.endTime = endTime;
         resp.costMs = endTime - requestStartTime;
         resp.body = responseBody.value();
@@ -455,6 +458,10 @@ public class WebSocketScenarioExecutor {
     }
 
     private record ReceivedWebSocketMessage(String payload, long receivedAtMs, int retainedUtf8Bytes) {
+    }
+
+    private static void markSampleEnd(AtomicLong sampleEndTimeMs) {
+        sampleEndTimeMs.compareAndSet(0, System.currentTimeMillis());
     }
 
     private boolean matchesMessage(WebSocketPerformanceData cfg, String payload) {

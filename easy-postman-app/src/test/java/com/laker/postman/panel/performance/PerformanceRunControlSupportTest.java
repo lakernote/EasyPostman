@@ -40,7 +40,8 @@ public class PerformanceRunControlSupportTest extends AbstractSwingUiTest {
                 () -> 0,
                 () -> 1000L,
                 () -> false,
-                now -> PerformanceRealtimeMetrics.Sample.empty()
+                now -> PerformanceRealtimeMetrics.Sample.empty(),
+                now -> PerformanceRealtimeMetrics.LiveSnapshot.empty()
         );
 
         try {

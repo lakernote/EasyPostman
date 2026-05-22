@@ -91,6 +91,16 @@ public class WebSocketScenarioExecutor {
                           WebSocketPerformanceData requestCfg,
                           String requestBodyTemplate,
                           ScriptExecutionPipeline pipeline) {
+        return execute(req, requestNode, requestCfg, requestBodyTemplate, pipeline, "", "");
+    }
+
+    public Result execute(PreparedRequest req,
+                          DefaultMutableTreeNode requestNode,
+                          WebSocketPerformanceData requestCfg,
+                          String requestBodyTemplate,
+                          ScriptExecutionPipeline pipeline,
+                          String apiId,
+                          String apiName) {
         long requestStartTime = System.currentTimeMillis();
         HttpResponse resp = new HttpResponse();
         AtomicBoolean interrupted = new AtomicBoolean(false);
@@ -129,26 +139,26 @@ public class WebSocketScenarioExecutor {
 
             @Override
             public void onMessage(WebSocket webSocket, String text) {
-                appendMessage(text);
+                appendMessage(webSocket, text);
             }
 
             @Override
             public void onMessage(WebSocket webSocket, okio.ByteString bytes) {
-                appendMessage(toHexPreview(bytes));
+                appendMessage(webSocket, toHexPreview(bytes));
             }
 
-            private void appendMessage(String payload) {
+            private void appendMessage(WebSocket webSocket, String payload) {
                 String value = payload == null ? "" : payload;
                 lastMessageRef.set(headerPreview(value));
                 responseBody.append(value);
                 responseBody.append("\n\n");
                 receivedMessageCount.incrementAndGet();
                 long receivedAtMs = System.currentTimeMillis();
-                realtimeMetrics.recordWebSocketReceived();
+                realtimeMetrics.recordWebSocketReceived(webSocket);
                 if (firstReceivedMessageRecorded.compareAndSet(false, true)) {
                     long latencyMs = Math.max(0, receivedAtMs - requestStartTime);
                     firstMessageLatencyMs.compareAndSet(-1, latencyMs);
-                    realtimeMetrics.recordWebSocketFirstMessageLatency(latencyMs);
+                    realtimeMetrics.recordWebSocketFirstMessageLatency(webSocket, latencyMs);
                 }
                 synchronized (messageLock) {
                     if (keepReceivedMessages) {
@@ -207,7 +217,12 @@ public class WebSocketScenarioExecutor {
 
         WebSocket webSocket = HttpSingleRequestExecutor.executeWebSocket(req, listener);
         activeWebSockets.add(webSocket);
-        realtimeMetrics.recordWebSocketSessionStart(webSocket, requestStartTime);
+        realtimeMetrics.recordWebSocketSessionStart(
+                webSocket,
+                requestStartTime,
+                apiId,
+                apiName
+        );
 
         try {
             boolean opened = openLatch.await(Math.max(100, requestCfg.connectTimeoutMs), TimeUnit.MILLISECONDS);
@@ -270,7 +285,7 @@ public class WebSocketScenarioExecutor {
                                 boolean sent = webSocket.send(payload == null ? "" : payload);
                                 if (sent) {
                                     sentMessageCount.incrementAndGet();
-                                    realtimeMetrics.recordWebSocketSent();
+                                    realtimeMetrics.recordWebSocketSent(webSocket);
                                     completionReasonRef.set("sent");
                                 } else {
                                     failed.set(true);
@@ -315,7 +330,7 @@ public class WebSocketScenarioExecutor {
                                         }
                                         stepMatchedCount++;
                                         matchedMessageCount.incrementAndGet();
-                                        realtimeMetrics.recordWebSocketMatched();
+                                        realtimeMetrics.recordWebSocketMatched(webSocket);
                                         appendMessage(stepBody, payload);
                                         if (stepCfg.completionMode == WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE
                                                 || stepCfg.completionMode == WebSocketPerformanceData.CompletionMode.MATCHED_MESSAGE) {

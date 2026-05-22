@@ -35,6 +35,7 @@ final class PerformanceStatisticsCoordinator {
     private final LongSupplier samplingIntervalSupplier;
     private final BooleanSupplier trendEnabledSupplier;
     private final LongFunction<PerformanceRealtimeMetrics.Sample> realtimeMetricsSampler;
+    private final LongFunction<PerformanceRealtimeMetrics.LiveSnapshot> liveMetricsSnapshotSupplier;
     private final ExecutorService metricsExecutor =
             Executors.newSingleThreadExecutor(PerformanceThreadFactory.daemonFactory("PerformanceMetrics"));
     private volatile boolean disposed;
@@ -58,7 +59,7 @@ final class PerformanceStatisticsCoordinator {
 
     void updateReportWithLatestData() {
         submitMetricsTask("报表更新", () -> {
-            PerformanceStatsSnapshot snapshot = statsCollector.snapshot();
+            PerformanceStatsSnapshot snapshot = snapshotForReport(System.currentTimeMillis());
             invokeUiIfActive(() -> performanceReportPanel.updateReport(snapshot));
         });
     }
@@ -69,7 +70,7 @@ final class PerformanceStatisticsCoordinator {
             return;
         }
 
-        performanceReportPanel.updateReport(statsCollector.snapshot());
+        performanceReportPanel.updateReport(snapshotForReport(System.currentTimeMillis()));
     }
 
     void sampleTrendData() {
@@ -136,6 +137,16 @@ final class PerformanceStatisticsCoordinator {
         return realtimeMetricsSampler == null
                 ? PerformanceRealtimeMetrics.Sample.empty()
                 : realtimeMetricsSampler.apply(nowMs);
+    }
+
+    private PerformanceStatsSnapshot snapshotForReport(long nowMs) {
+        PerformanceStatsSnapshot snapshot = statsCollector == null
+                ? new PerformanceStatsCollector().snapshot()
+                : statsCollector.snapshot();
+        PerformanceRealtimeMetrics.LiveSnapshot liveSnapshot = liveMetricsSnapshotSupplier == null
+                ? PerformanceRealtimeMetrics.LiveSnapshot.empty()
+                : liveMetricsSnapshotSupplier.apply(nowMs);
+        return snapshot.withLiveStreamMetrics(liveSnapshot);
     }
 
     private boolean isTrendEnabled() {

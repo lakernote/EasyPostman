@@ -221,7 +221,10 @@ public class PerformancePanel extends SingletonBasePanel {
                 () -> trendEnabled,
                 nowMs -> executionEngine != null
                         ? executionEngine.sampleRealtimeMetrics(nowMs)
-                        : PerformanceRealtimeMetrics.Sample.empty()
+                        : PerformanceRealtimeMetrics.Sample.empty(),
+                nowMs -> executionEngine != null
+                        ? executionEngine.liveRealtimeMetrics(nowMs)
+                        : PerformanceRealtimeMetrics.LiveSnapshot.empty()
         );
         timerManager.setTrendSamplingCallback(statisticsCoordinator::sampleTrendData);
         timerManager.setReportRefreshCallback(statisticsCoordinator::refreshReport);

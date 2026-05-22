@@ -104,6 +104,10 @@ final class PerformanceExecutionEngine {
         return realtimeMetrics.sample(nowMs);
     }
 
+    PerformanceRealtimeMetrics.LiveSnapshot liveRealtimeMetrics(long nowMs) {
+        return realtimeMetrics.liveSnapshot(nowMs);
+    }
+
     int getTotalThreads(DefaultMutableTreeNode rootNode) {
         return threadGroupPlanner.getTotalThreads(rootNode);
     }
@@ -761,7 +765,7 @@ final class PerformanceExecutionEngine {
             }
             resultRecorder.record(executionResult, efficientModeSupplier.getAsBoolean());
             if (executionResult.interrupted) {
-                log.debug("跳过被中断请求的统计: {}", jtNode.httpRequestItem.getName());
+                log.debug("请求在停止时被中断: {}", jtNode.httpRequestItem.getName());
             }
 
             if (!runningSupplier.getAsBoolean()) {

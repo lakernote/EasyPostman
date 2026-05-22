@@ -71,6 +71,10 @@ public class SseSampleExecutor {
     }
 
     public Result execute(PreparedRequest req, SsePerformanceData cfg) {
+        return execute(req, cfg, "", "");
+    }
+
+    public Result execute(PreparedRequest req, SsePerformanceData cfg, String apiId, String apiName) {
         long requestStartTime = System.currentTimeMillis();
         HttpResponse resp = new HttpResponse();
         resp.isSse = true;
@@ -146,20 +150,20 @@ public class SseSampleExecutor {
             @Override
             public void onEvent(EventSource eventSource, String id, String type, String data) {
                 eventCount.incrementAndGet();
-                realtimeMetrics.recordSseReceived();
+                realtimeMetrics.recordSseReceived(eventSource);
                 String eventType = CharSequenceUtil.blankToDefault(type, "message");
                 long eventReceivedAtMs = System.currentTimeMillis();
                 boolean firstPhysicalEvent = firstEventRecorded.compareAndSet(false, true);
                 if (firstPhysicalEvent) {
                     long latencyMs = Math.max(0, eventReceivedAtMs - requestStartTime);
                     firstEventLatencyMs.compareAndSet(-1, latencyMs);
-                    realtimeMetrics.recordSseFirstMessageLatency(latencyMs);
+                    realtimeMetrics.recordSseFirstMessageLatency(eventSource, latencyMs);
                 }
 
                 if (cfg.completionMode == SsePerformanceData.CompletionMode.FIRST_MESSAGE) {
                     if (firstPhysicalEvent) {
                         matchedMessageCount.incrementAndGet();
-                        realtimeMetrics.recordSseMatched();
+                        realtimeMetrics.recordSseMatched(eventSource);
                         lastEventIdRef.set(id == null ? "" : id);
                         lastEventTypeRef.set(eventType);
                         appendEvent(matchedEventBody, id, eventType, data);
@@ -172,7 +176,7 @@ public class SseSampleExecutor {
 
                 if (matchesEvent(cfg, eventType) && matchesPayload(cfg, data)) {
                     boolean firstMatchedMessage = matchedMessageCount.incrementAndGet() == 1;
-                    realtimeMetrics.recordSseMatched();
+                    realtimeMetrics.recordSseMatched(eventSource);
                     if (firstMatchedMessage) {
                         completionReasonRef.compareAndSet("pending",
                                 cfg.completionMode == SsePerformanceData.CompletionMode.MATCHED_MESSAGE
@@ -200,7 +204,7 @@ public class SseSampleExecutor {
 
         EventSource eventSource = HttpSingleRequestExecutor.executeSSE(req, listener);
         activeSources.add(eventSource);
-        realtimeMetrics.recordSseSessionStart(eventSource, requestStartTime);
+        realtimeMetrics.recordSseSessionStart(eventSource, requestStartTime, apiId, apiName);
 
         try {
             switch (cfg.completionMode) {

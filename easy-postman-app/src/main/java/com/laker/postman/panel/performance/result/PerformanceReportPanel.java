@@ -187,9 +187,17 @@ public class PerformanceReportPanel extends JPanel {
         table.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD));
         DefaultTableCellRenderer centerRenderer = createCenteredRenderer(model);
         DefaultTableCellRenderer nameRenderer = createNameRenderer(model);
+        DefaultTableCellRenderer streamFailRenderer = createFailRenderer(model);
+        DefaultTableCellRenderer streamRateRenderer = createRateRenderer(model);
         table.getColumnModel().getColumn(0).setCellRenderer(nameRenderer);
         for (int col = 1; col < model.getColumnCount(); col++) {
-            table.getColumnModel().getColumn(col).setCellRenderer(centerRenderer);
+            if (col == FAIL_COLUMN_INDEX) {
+                table.getColumnModel().getColumn(col).setCellRenderer(streamFailRenderer);
+            } else if (col == SUCCESS_RATE_COLUMN_INDEX) {
+                table.getColumnModel().getColumn(col).setCellRenderer(streamRateRenderer);
+            } else {
+                table.getColumnModel().getColumn(col).setCellRenderer(centerRenderer);
+            }
         }
         configureStreamReportColumnWidths(table);
         return table;
@@ -345,6 +353,7 @@ public class PerformanceReportPanel extends JPanel {
 
                 if (isTotal) {
                     applyTotalRowStyle(c);
+                    applyTotalFailForeground(c, value);
                 } else {
                     applyFailCellStyle(c, value);
                 }
@@ -366,6 +375,7 @@ public class PerformanceReportPanel extends JPanel {
 
                 if (isTotal) {
                     applyTotalRowStyle(c);
+                    applyRateForeground(c, value);
                 } else {
                     applyRateCellStyle(c, value);
                 }
@@ -397,6 +407,44 @@ public class PerformanceReportPanel extends JPanel {
         };
     }
 
+    private DefaultTableCellRenderer createFailRenderer(DefaultTableModel model) {
+        return new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+                                                           boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                int modelRow = table.convertRowIndexToModel(row);
+                if (isTotalRow(model, modelRow)) {
+                    applyTotalRowStyle(c);
+                    applyTotalFailForeground(c, value);
+                } else {
+                    applyFailCellStyle(c, value);
+                }
+                setHorizontalAlignment(SwingConstants.CENTER);
+                return c;
+            }
+        };
+    }
+
+    private DefaultTableCellRenderer createRateRenderer(DefaultTableModel model) {
+        return new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+                                                           boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                int modelRow = table.convertRowIndexToModel(row);
+                if (isTotalRow(model, modelRow)) {
+                    applyTotalRowStyle(c);
+                    applyRateForeground(c, value);
+                } else {
+                    applyRateCellStyle(c, value);
+                }
+                setHorizontalAlignment(SwingConstants.CENTER);
+                return c;
+            }
+        };
+    }
+
     private boolean isTotalRow(int modelRow) {
         return isTotalRow(reportTableModel, modelRow);
     }
@@ -413,16 +461,35 @@ public class PerformanceReportPanel extends JPanel {
     }
 
     private void applyFailCellStyle(Component c, Object value) {
+        applyFailForeground(c, value);
+        c.setBackground(UIManager.getColor("Table.background"));
+    }
+
+    private void applyFailForeground(Component c, Object value) {
         try {
             int failCount = Integer.parseInt(value == null ? "0" : value.toString());
             c.setForeground(failCount > 0 ? Color.RED : UIManager.getColor("Table.foreground"));
-            c.setBackground(UIManager.getColor("Table.background"));
         } catch (Exception e) {
-            applyDefaultCellStyle(c);
+            c.setForeground(UIManager.getColor("Table.foreground"));
+        }
+    }
+
+    private void applyTotalFailForeground(Component c, Object value) {
+        try {
+            int failCount = Integer.parseInt(value == null ? "0" : value.toString());
+            if (failCount > 0) {
+                c.setForeground(Color.RED);
+            }
+        } catch (Exception ignored) {
         }
     }
 
     private void applyRateCellStyle(Component c, Object value) {
+        applyRateForeground(c, value);
+        c.setBackground(UIManager.getColor("Table.background"));
+    }
+
+    private void applyRateForeground(Component c, Object value) {
         String rateStr = value != null ? value.toString() : "";
         if (rateStr.endsWith("%")) {
             try {
@@ -440,7 +507,6 @@ public class PerformanceReportPanel extends JPanel {
         } else {
             c.setForeground(UIManager.getColor("Table.foreground"));
         }
-        c.setBackground(UIManager.getColor("Table.background"));
     }
 
     private void applyDefaultCellStyle(Component c) {

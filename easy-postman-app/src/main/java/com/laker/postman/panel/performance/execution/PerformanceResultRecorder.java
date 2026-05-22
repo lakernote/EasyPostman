@@ -25,7 +25,11 @@ public class PerformanceResultRecorder {
     }
 
     public void record(PerformanceRequestExecutionResult executionResult, boolean efficientMode) {
-        if (executionResult == null || executionResult.interrupted) {
+        if (executionResult == null) {
+            return;
+        }
+        boolean recordableInterruptedResult = isRecordableInterruptedResult(executionResult);
+        if (executionResult.interrupted && !recordableInterruptedResult) {
             return;
         }
 
@@ -60,6 +64,44 @@ public class PerformanceResultRecorder {
             return true;
         }
         return slowRequestThresholdMs > 0 && costMs >= slowRequestThresholdMs;
+    }
+
+    private boolean isRecordableInterruptedResult(PerformanceRequestExecutionResult executionResult) {
+        if (!executionResult.interrupted || executionResult.response == null) {
+            return false;
+        }
+        if (executionResult.response.code > 0) {
+            return true;
+        }
+        if (executionResult.response.bodySize > 0
+                || (executionResult.response.body != null && !executionResult.response.body.isBlank())) {
+            return true;
+        }
+        if (executionResult.protocol == PerformanceProtocol.WEBSOCKET) {
+            return hasAnyPositiveHeader(
+                    executionResult.response.headers,
+                    "X-Easy-WS-Sent-Count",
+                    "X-Easy-WS-Received-Count",
+                    "X-Easy-WS-Message-Count"
+            );
+        }
+        if (executionResult.protocol == PerformanceProtocol.SSE) {
+            return hasAnyPositiveHeader(
+                    executionResult.response.headers,
+                    "X-Easy-SSE-Event-Count",
+                    "X-Easy-SSE-Message-Count"
+            );
+        }
+        return false;
+    }
+
+    private boolean hasAnyPositiveHeader(Map<String, List<String>> headers, String... names) {
+        for (String name : names) {
+            if (headerLong(headers, name, 0) > 0) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private long resolveCostMs(PerformanceRequestExecutionResult executionResult) {

@@ -99,6 +99,137 @@ public class PerformanceResultRecorderTest {
     }
 
     @Test
+    public void shouldRecordInterruptedStreamResultWhenResponseContainsCollectedMetrics() {
+        PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
+        RecordingResultTablePanel tablePanel = new RecordingResultTablePanel();
+        try {
+            HttpResponse response = new HttpResponse();
+            response.headers = new LinkedHashMap<>();
+            response.code = 101;
+            response.costMs = 2500;
+            response.endTime = 3500;
+            response.addHeader("X-Easy-WS-Sent-Count", List.of("12"));
+            response.addHeader("X-Easy-WS-Received-Count", List.of("7"));
+            response.addHeader("X-Easy-WS-Message-Count", List.of("3"));
+            response.addHeader("X-Easy-WS-Completion-Reason", List.of("interrupted"));
+
+            PerformanceResultRecorder recorder = new PerformanceResultRecorder(
+                    statsCollector,
+                    tablePanel,
+                    () -> 3_000
+            );
+
+            recorder.record(new PerformanceRequestExecutionResult(
+                    "api-ws",
+                    "WS API",
+                    new PreparedRequest(),
+                    response,
+                    "",
+                    List.of(),
+                    false,
+                    true,
+                    PerformanceProtocol.WEBSOCKET,
+                    1000L,
+                    0L
+            ), false);
+
+            PerformanceStatsSnapshot snapshot = statsCollector.snapshot();
+            assertEquals(snapshot.totalRequests(), 1L);
+            assertEquals(snapshot.summaries().size(), 1);
+
+            PerformanceStatsSnapshot.ApiSummary summary = snapshot.summaries().get(0);
+            assertEquals(snapshot.successRequests(), 1L);
+            assertEquals(summary.sentMessages(), 12L);
+            assertEquals(summary.receivedMessages(), 7L);
+            assertEquals(summary.matchedMessages(), 3L);
+            assertEquals(summary.topCompletionReason(), "interrupted");
+            assertEquals(tablePanel.recordedRows, 1);
+        } finally {
+            tablePanel.dispose();
+        }
+    }
+
+    @Test
+    public void shouldAggregateInterruptedStreamWithoutRecordingCleanDetailsInEfficientMode() {
+        PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
+        RecordingResultTablePanel tablePanel = new RecordingResultTablePanel();
+        try {
+            HttpResponse response = new HttpResponse();
+            response.headers = new LinkedHashMap<>();
+            response.code = 101;
+            response.costMs = 100;
+            response.endTime = 1100;
+            response.addHeader("X-Easy-WS-Sent-Count", List.of("1"));
+            response.addHeader("X-Easy-WS-Completion-Reason", List.of("interrupted"));
+
+            PerformanceResultRecorder recorder = new PerformanceResultRecorder(
+                    statsCollector,
+                    tablePanel,
+                    () -> 3_000
+            );
+
+            recorder.record(new PerformanceRequestExecutionResult(
+                    "api-ws",
+                    "WS API",
+                    new PreparedRequest(),
+                    response,
+                    "",
+                    List.of(),
+                    false,
+                    true,
+                    PerformanceProtocol.WEBSOCKET,
+                    1000L,
+                    0L
+            ), true);
+
+            assertEquals(statsCollector.snapshot().totalRequests(), 1L);
+            assertEquals(tablePanel.recordedRows, 0);
+        } finally {
+            tablePanel.dispose();
+        }
+    }
+
+    @Test
+    public void shouldRetainInterruptedStreamDetailsInEfficientModeWhenFailed() {
+        PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
+        RecordingResultTablePanel tablePanel = new RecordingResultTablePanel();
+        try {
+            HttpResponse response = new HttpResponse();
+            response.headers = new LinkedHashMap<>();
+            response.code = 101;
+            response.costMs = 100;
+            response.endTime = 1100;
+            response.addHeader("X-Easy-WS-Sent-Count", List.of("1"));
+            response.addHeader("X-Easy-WS-Completion-Reason", List.of("interrupted"));
+
+            PerformanceResultRecorder recorder = new PerformanceResultRecorder(
+                    statsCollector,
+                    tablePanel,
+                    () -> 3_000
+            );
+
+            recorder.record(new PerformanceRequestExecutionResult(
+                    "api-ws",
+                    "WS API",
+                    new PreparedRequest(),
+                    response,
+                    "",
+                    List.of(),
+                    true,
+                    true,
+                    PerformanceProtocol.WEBSOCKET,
+                    1000L,
+                    0L
+            ), true);
+
+            assertEquals(statsCollector.snapshot().totalRequests(), 1L);
+            assertEquals(tablePanel.recordedRows, 1);
+        } finally {
+            tablePanel.dispose();
+        }
+    }
+
+    @Test
     public void shouldAggregateFastSuccessesWithoutRecordingDetailsInEfficientMode() {
         PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
         RecordingResultTablePanel tablePanel = new RecordingResultTablePanel();

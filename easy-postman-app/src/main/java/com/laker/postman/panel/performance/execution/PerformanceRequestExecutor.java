@@ -253,7 +253,15 @@ public class PerformanceRequestExecutor {
                     activeWebSockets,
                     realtimeMetrics,
                     resolveResponseBodyPreviewLimitBytes(responseBodyPreviewLimitKbSupplier.getAsInt())
-            ).execute(req, requestNode, requestData.webSocketPerformanceData, requestBodyTemplate, pipeline);
+            ).execute(
+                    req,
+                    requestNode,
+                    requestData.webSocketPerformanceData,
+                    requestBodyTemplate,
+                    pipeline,
+                    requestData.httpRequestItem.getId(),
+                    requestData.httpRequestItem.getName()
+            );
             return new ProtocolExecutionResult(result.response, result.errorMsg, result.executionFailed, result.interrupted, result.testResults);
         }
         if (sseRequest) {
@@ -263,7 +271,7 @@ public class PerformanceRequestExecutor {
                     activeSseSources,
                     realtimeMetrics,
                     resolveResponseBodyPreviewLimitBytes(responseBodyPreviewLimitKbSupplier.getAsInt())
-            ).execute(req, requestData.ssePerformanceData);
+            ).execute(req, requestData.ssePerformanceData, requestData.httpRequestItem.getId(), requestData.httpRequestItem.getName());
             return new ProtocolExecutionResult(result.response, result.errorMsg, result.executionFailed, result.interrupted, new ArrayList<>());
         }
         return new ProtocolExecutionResult(HttpSingleRequestExecutor.executeHttp(req), "", false, false, new ArrayList<>());

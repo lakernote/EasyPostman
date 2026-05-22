@@ -16,6 +16,7 @@ import javax.swing.JButton;
 import javax.swing.JTabbedPane;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.event.MouseEvent;
@@ -185,6 +186,25 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
 
         assertFalse("closed_by_step".equals(model.getValueAt(0, 13)));
         assertFalse("closed_by_step".equals(model.getValueAt(1, 13)));
+    }
+
+    @Test
+    public void shouldColorStreamSuccessRateWhenFailuresExist() {
+        ApiMetadata.register("ws", "WebSocket API");
+        RequestResult success = new RequestResult(1_000, 2_000, true, "ws", PerformanceProtocol.WEBSOCKET);
+        RequestResult failure = new RequestResult(2_000, 3_000, false, "ws", PerformanceProtocol.WEBSOCKET);
+
+        PerformanceReportPanel panel = new PerformanceReportPanel();
+        panel.updateReport(Map.of(), Map.of(), Map.of(), List.of(success, failure));
+
+        JTable webSocketTable = findTableByColumnCount(findAll(panel, JTable.class), 14);
+        Component apiRateCell = webSocketTable.getCellRenderer(0, 4)
+                .getTableCellRendererComponent(webSocketTable, webSocketTable.getValueAt(0, 4), false, false, 0, 4);
+        Component totalRateCell = webSocketTable.getCellRenderer(1, 4)
+                .getTableCellRendererComponent(webSocketTable, webSocketTable.getValueAt(1, 4), false, false, 1, 4);
+
+        assertEquals(apiRateCell.getForeground(), Color.RED);
+        assertEquals(totalRateCell.getForeground(), Color.RED);
     }
 
     @Test

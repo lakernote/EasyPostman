@@ -4,6 +4,7 @@ import org.testng.annotations.Test;
 
 import java.lang.reflect.Field;
 
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 
 public class PerformanceTimerManagerBehaviorTest {
@@ -21,6 +22,39 @@ public class PerformanceTimerManagerBehaviorTest {
         try {
             manager.startAll();
             assertNull(readField(manager, "trendSamplingTask"));
+        } finally {
+            manager.dispose();
+        }
+    }
+
+    @Test
+    public void shouldNotScheduleReportRefreshByDefault() throws Exception {
+        PerformanceTimerManager manager = new PerformanceTimerManager(() -> true);
+        manager.setTrendSamplingCallback(() -> {
+        });
+        manager.setReportRefreshCallback(() -> {
+        });
+
+        try {
+            manager.startAll();
+            assertNull(readField(manager, "reportRefreshTask"));
+        } finally {
+            manager.dispose();
+        }
+    }
+
+    @Test
+    public void shouldScheduleReportRefreshWhenRealtimeReportEnabledBeforeStart() throws Exception {
+        PerformanceTimerManager manager = new PerformanceTimerManager(() -> true);
+        manager.setTrendSamplingCallback(() -> {
+        });
+        manager.setReportRefreshCallback(() -> {
+        });
+        manager.setReportRefreshEnabled(true);
+
+        try {
+            manager.startAll();
+            assertNotNull(readField(manager, "reportRefreshTask"));
         } finally {
             manager.dispose();
         }

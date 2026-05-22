@@ -607,6 +607,10 @@ public final class MessageKeys {
     public static final String PERFORMANCE_EFFICIENT_MODE_DISABLE_WARNING = "performance.efficient_mode.disable.warning";
     public static final String PERFORMANCE_TREND_ENABLED = "performance.trend.enabled";
     public static final String PERFORMANCE_TREND_ENABLED_TOOLTIP = "performance.trend.enabled.tooltip";
+    public static final String PERFORMANCE_REPORT_REFRESH_MODE = "performance.report.refresh_mode";
+    public static final String PERFORMANCE_REPORT_REFRESH_END = "performance.report.refresh.end";
+    public static final String PERFORMANCE_REPORT_REFRESH_REALTIME = "performance.report.refresh.realtime";
+    public static final String PERFORMANCE_REPORT_REFRESH_TOOLTIP = "performance.report.refresh.tooltip";
     public static final String PERFORMANCE_PROGRESS_TOOLTIP = "performance.progress.tooltip";
     public static final String PERFORMANCE_MSG_REFRESH_SUCCESS = "performance.msg.refresh_success";
     public static final String PERFORMANCE_MSG_REFRESH_WARNING = "performance.msg.refresh_warning";
@@ -684,6 +688,7 @@ public final class MessageKeys {
     public static final String PERFORMANCE_WS_SEND_REQUEST_BODY_REPEAT = "performance.ws.send.request_body_repeat";
     public static final String PERFORMANCE_WS_SEND_COUNT = "performance.ws.send_count";
     public static final String PERFORMANCE_WS_SEND_INTERVAL = "performance.ws.send_interval";
+    public static final String PERFORMANCE_WS_SEND_PER_LOOP_COUNT = "performance.ws.send.per_loop_count";
     public static final String PERFORMANCE_WS_SEND_HINT = "performance.ws.send.hint";
     public static final String PERFORMANCE_WS_AWAIT_MODE = "performance.ws.await_mode";
     public static final String PERFORMANCE_WS_COMPLETION_FIRST_MESSAGE = "performance.ws.completion.first_message";

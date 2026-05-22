@@ -76,6 +76,7 @@ public class PerformancePanel extends SingletonBasePanel {
     private RefreshButton refreshBtn;
     private JCheckBox efficientCheckBox; // 高效模式复选框
     private JCheckBox trendCheckBox; // 趋势采样开关
+    private JComboBox<String> reportRefreshModeBox; // 报表刷新模式
     private JLabel progressLabel; // 进度标签
     private JPanel topPanel; // 顶部工具栏面板，用于主题切换时更新边框
     private long startTime;
@@ -87,6 +88,7 @@ public class PerformancePanel extends SingletonBasePanel {
     // 高效模式
     private boolean efficientMode = true;
     private boolean trendEnabled = true;
+    private boolean reportRealtimeEnabled = false;
 
     private PerformanceReportPanel performanceReportPanel;
     private PerformanceResultTablePanel performanceResultTablePanel;
@@ -118,7 +120,9 @@ public class PerformancePanel extends SingletonBasePanel {
         initTimerManager();
         efficientMode = persistenceService.loadEfficientMode();
         trendEnabled = persistenceService.loadTrendEnabled();
+        reportRealtimeEnabled = persistenceService.loadReportRealtimeEnabled();
         applyTrendEnabled(trendEnabled);
+        applyReportRealtimeEnabled(reportRealtimeEnabled);
         DefaultMutableTreeNode root = loadPersistedOrDefaultRoot();
 
         treeModel = new DefaultTreeModel(root);
@@ -225,10 +229,12 @@ public class PerformancePanel extends SingletonBasePanel {
                 this,
                 efficientMode,
                 trendEnabled,
+                reportRealtimeEnabled,
                 persistenceService,
                 this::refreshRequestsFromCollections,
                 value -> efficientMode = value,
                 this::applyTrendEnabled,
+                this::applyReportRealtimeEnabled,
                 this::saveAllPropertyPanelData,
                 this::saveConfig
         );
@@ -238,6 +244,7 @@ public class PerformancePanel extends SingletonBasePanel {
         refreshBtn = toolbarSection.refreshBtn();
         efficientCheckBox = toolbarSection.efficientCheckBox();
         trendCheckBox = toolbarSection.trendCheckBox();
+        reportRefreshModeBox = toolbarSection.reportRefreshModeBox();
         csvDataPanel = toolbarSection.csvDataPanel();
         progressLabel = toolbarSection.progressLabel();
         add(topPanel, BorderLayout.NORTH);
@@ -265,6 +272,7 @@ public class PerformancePanel extends SingletonBasePanel {
                 stopBtn,
                 refreshBtn,
                 efficientCheckBox,
+                () -> trendEnabled,
                 resultTabbedPane,
                 performanceResultTablePanel,
                 performanceReportPanel,
@@ -296,7 +304,9 @@ public class PerformancePanel extends SingletonBasePanel {
 
         efficientMode = persistenceService.loadEfficientMode();
         trendEnabled = persistenceService.loadTrendEnabled();
+        reportRealtimeEnabled = persistenceService.loadReportRealtimeEnabled();
         applyTrendEnabled(trendEnabled);
+        applyReportRealtimeEnabled(reportRealtimeEnabled);
         DefaultMutableTreeNode root = loadPersistedOrDefaultRoot();
         treeModel.setRoot(root);
         treeSupport.syncAllRequestStructures(root);
@@ -306,6 +316,9 @@ public class PerformancePanel extends SingletonBasePanel {
         }
         if (trendCheckBox != null) {
             trendCheckBox.setSelected(trendEnabled);
+        }
+        if (reportRefreshModeBox != null) {
+            reportRefreshModeBox.setSelectedIndex(reportRealtimeEnabled ? 1 : 0);
         }
         if (csvDataPanel != null) {
             csvDataPanel.restoreState(persistenceService.loadCsvState());
@@ -434,7 +447,7 @@ public class PerformancePanel extends SingletonBasePanel {
         saveAllPropertyPanelData();
 
         DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();
-        persistenceService.save(root, efficientMode, trendEnabled,
+        persistenceService.save(root, efficientMode, trendEnabled, reportRealtimeEnabled,
                 csvDataPanel != null ? csvDataPanel.exportState() : null);
         NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_SAVE_SUCCESS));
     }
@@ -524,7 +537,7 @@ public class PerformancePanel extends SingletonBasePanel {
             // 获取根节点
             DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();
             // 异步保存配置
-            persistenceService.saveAsync(root, efficientMode, trendEnabled,
+            persistenceService.saveAsync(root, efficientMode, trendEnabled, reportRealtimeEnabled,
                     csvDataPanel != null ? csvDataPanel.exportState() : null);
         } catch (Exception e) {
             log.error("Failed to save performance config", e);
@@ -543,7 +556,7 @@ public class PerformancePanel extends SingletonBasePanel {
             propertyPanelSupport.forceCommitAllSpinners();
             saveAllPropertyPanelData();
             DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();
-            persistenceService.save(root, efficientMode, trendEnabled,
+            persistenceService.save(root, efficientMode, trendEnabled, reportRealtimeEnabled,
                     csvDataPanel != null ? csvDataPanel.exportState() : null);
         } catch (Exception e) {
             log.error("Failed to save performance config", e);
@@ -607,6 +620,13 @@ public class PerformancePanel extends SingletonBasePanel {
         statsCollector.setTrendEnabled(enabled);
         if (timerManager != null) {
             timerManager.setTrendSamplingEnabled(enabled);
+        }
+    }
+
+    private void applyReportRealtimeEnabled(boolean enabled) {
+        reportRealtimeEnabled = enabled;
+        if (timerManager != null) {
+            timerManager.setReportRefreshEnabled(enabled);
         }
     }
 

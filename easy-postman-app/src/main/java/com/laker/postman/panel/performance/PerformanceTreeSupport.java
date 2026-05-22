@@ -516,7 +516,10 @@ final class PerformanceTreeSupport {
             joiner.add(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_SEND_CONTENT_CUSTOM_TEXT));
         }
         if (data.sendMode == WebSocketPerformanceData.SendMode.REQUEST_BODY_REPEAT) {
-            joiner.add(Math.max(1, data.sendCount) + "x");
+            joiner.add(I18nUtil.getMessage(
+                    MessageKeys.PERFORMANCE_WS_SEND_PER_LOOP_COUNT,
+                    Math.max(1, data.sendCount)
+            ));
             joiner.add(formatDuration(Math.max(0, data.sendIntervalMs)));
         }
         return joiner.toString();

@@ -6,6 +6,7 @@ import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.controller.LoopData;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.SsePerformanceData;
+import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import org.testng.annotations.Test;
 
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -188,6 +189,24 @@ public class PerformanceTreeSupportTest {
         assertSame(context.treeSupport.resolveWebSocketStepParent(loopNode), loopNode);
         assertSame(context.treeSupport.resolveWebSocketStepParent(sendNode), loopNode);
         assertFalse(context.treeSupport.isRequestContainerLoop(loopNode));
+    }
+
+    @Test(description = "WebSocket Send 重复次数应标注为每轮次数，避免和外层 Loop 总次数混淆")
+    public void shouldShowWebSocketSendRepeatCountAsPerLoopCount() {
+        TestContext context = newTestContext(RequestItemProtocolEnum.WEBSOCKET);
+        context.treeSupport.syncRequestStructure(context.requestNode, context.requestData);
+
+        DefaultMutableTreeNode sendNode = newNode("Send", NodeType.WS_SEND);
+        JMeterTreeNode sendData = (JMeterTreeNode) sendNode.getUserObject();
+        sendData.webSocketPerformanceData = new WebSocketPerformanceData();
+        sendData.webSocketPerformanceData.sendMode = WebSocketPerformanceData.SendMode.REQUEST_BODY_REPEAT;
+        sendData.webSocketPerformanceData.sendCount = 3;
+        context.treeModel.insertNodeInto(sendNode, context.requestNode, context.requestNode.getChildCount());
+
+        context.treeSupport.syncRequestStructure(context.requestNode, context.requestData);
+
+        assertTrue(sendData.name.contains("每轮 3 次") || sendData.name.contains("Per loop 3x"), sendData.name);
+        assertFalse(sendData.name.contains(" | 3x | "), sendData.name);
     }
 
     @Test(description = "线程组下的 Loop 应作为请求容器，供 HTTP/SSE/WS 请求复用")

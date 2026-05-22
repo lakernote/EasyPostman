@@ -40,6 +40,7 @@ final class PerformanceRunControlSupport {
     private final StopButton stopBtn;
     private final RefreshButton refreshBtn;
     private final JCheckBox efficientCheckBox;
+    private final BooleanSupplier trendEnabledSupplier;
     private final JTabbedPane resultTabbedPane;
     private final PerformanceResultTablePanel performanceResultTablePanel;
     private final PerformanceReportPanel performanceReportPanel;
@@ -93,7 +94,7 @@ final class PerformanceRunControlSupport {
         runBtn.setEnabled(false);
         stopBtn.setEnabled(true);
         refreshBtn.setEnabled(false);
-        resultTabbedPane.setSelectedIndex(0);
+        resultTabbedPane.setSelectedIndex(isTrendEnabled() ? 0 : 2);
         clearCachedPerformanceResultsAction.run();
 
         long startTime = System.currentTimeMillis();
@@ -193,5 +194,9 @@ final class PerformanceRunControlSupport {
         } catch (Exception e) {
             log.warn("{}最后一次趋势图采样失败", phase, e);
         }
+    }
+
+    private boolean isTrendEnabled() {
+        return trendEnabledSupplier == null || trendEnabledSupplier.getAsBoolean();
     }
 }

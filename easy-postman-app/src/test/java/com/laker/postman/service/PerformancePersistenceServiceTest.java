@@ -186,6 +186,20 @@ public class PerformancePersistenceServiceTest {
         assertTrue(Files.readString(configPath, StandardCharsets.UTF_8).contains("\"trendEnabled\": false"));
     }
 
+    @Test(description = "应保存并恢复报表实时刷新开关，默认结束后生成")
+    public void shouldPersistAndLoadRealtimeReportRefresh() throws IOException {
+        Path tempDir = Files.createTempDirectory("performance-report-refresh");
+        Path configPath = tempDir.resolve("performance_config.json");
+        TestablePerformancePersistenceService service = new TestablePerformancePersistenceService(configPath);
+        service.init();
+
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new JMeterTreeNode("Plan", NodeType.ROOT));
+        service.save(root, true, true, true, null);
+
+        assertTrue(service.loadReportRealtimeEnabled());
+        assertTrue(Files.readString(configPath, StandardCharsets.UTF_8).contains("\"reportRealtimeEnabled\": true"));
+    }
+
     @Test(description = "旧版不含 csvState 的配置仍应兼容加载")
     public void shouldLoadLegacyConfigWithoutCsvState() throws IOException {
         Path tempDir = Files.createTempDirectory("performance-persistence-legacy");
@@ -211,6 +225,7 @@ public class PerformancePersistenceServiceTest {
         assertNull(service.loadCsvState());
         assertTrue(service.loadEfficientMode());
         assertTrue(service.loadTrendEnabled());
+        assertFalse(service.loadReportRealtimeEnabled());
         assertEquals(((JMeterTreeNode) loadedRoot.getUserObject()).name, "Legacy Plan");
     }
 

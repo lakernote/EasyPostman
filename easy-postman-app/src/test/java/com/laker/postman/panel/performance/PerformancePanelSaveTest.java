@@ -210,6 +210,7 @@ public class PerformancePanelSaveTest {
         public void save(DefaultMutableTreeNode rootNode,
                          boolean efficientMode,
                          boolean trendEnabled,
+                         boolean reportRealtimeEnabled,
                          CsvDataPanel.CsvState csvState) {
             saveCount.incrementAndGet();
             savedRoot = rootNode;

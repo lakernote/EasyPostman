@@ -61,6 +61,11 @@ public class PerformanceTimerManager {
     private volatile boolean trendSamplingEnabled = true;
 
     /**
+     * 是否启用运行中报表刷新。默认结束后统一生成，减少压测过程中的快照与表格刷新开销。
+     */
+    private volatile boolean reportRefreshEnabled = false;
+
+    /**
      * 管理器是否已启动
      */
     private final AtomicBoolean started = new AtomicBoolean(false);
@@ -88,8 +93,8 @@ public class PerformanceTimerManager {
         int samplingIntervalSeconds = SettingManager.getTrendSamplingIntervalSeconds();
         samplingIntervalMs = samplingIntervalSeconds * 1000L;
 
-        log.info("启动性能测试定时器 - 采样间隔: {}秒, 报表刷新间隔: {}ms",
-                samplingIntervalSeconds, REPORT_REFRESH_INTERVAL_MS);
+        log.info("启动性能测试定时器 - 采样间隔: {}秒, 报表实时刷新: {}",
+                samplingIntervalSeconds, reportRefreshEnabled);
 
         scheduler = Executors.newSingleThreadScheduledExecutor(
                 PerformanceThreadFactory.daemonFactory("PerformanceTimer")
@@ -100,7 +105,11 @@ public class PerformanceTimerManager {
         } else {
             log.info("趋势图采样已关闭，跳过采样定时器");
         }
-        startReportRefreshTimer();
+        if (reportRefreshEnabled) {
+            startReportRefreshTimer();
+        } else {
+            log.info("报表实时刷新已关闭，结束后统一生成报表");
+        }
     }
 
     public synchronized void setTrendSamplingEnabled(boolean enabled) {
@@ -117,6 +126,22 @@ public class PerformanceTimerManager {
             startTrendSamplingTimer();
         }
         log.info("趋势图采样已开启");
+    }
+
+    public synchronized void setReportRefreshEnabled(boolean enabled) {
+        if (reportRefreshEnabled == enabled) {
+            return;
+        }
+        reportRefreshEnabled = enabled;
+        if (!enabled) {
+            stopReportRefreshTimer();
+            log.info("报表实时刷新已关闭");
+            return;
+        }
+        if (started.get() && scheduler != null && !scheduler.isShutdown()) {
+            startReportRefreshTimer();
+        }
+        log.info("报表实时刷新已开启");
     }
 
     /**
@@ -164,8 +189,18 @@ public class PerformanceTimerManager {
      * 启动报表刷新定时器
      */
     private void startReportRefreshTimer() {
+        if (!reportRefreshEnabled) {
+            return;
+        }
         if (reportRefreshCallback == null) {
             log.warn("报表刷新回调未设置，跳过启动刷新定时器");
+            return;
+        }
+        if (scheduler == null || scheduler.isShutdown()) {
+            log.warn("定时器调度器未就绪，跳过启动报表刷新定时器");
+            return;
+        }
+        if (reportRefreshTask != null && !reportRefreshTask.isCancelled() && !reportRefreshTask.isDone()) {
             return;
         }
 
@@ -184,6 +219,13 @@ public class PerformanceTimerManager {
         log.debug("报表刷新定时器已启动 - 间隔: {}ms", REPORT_REFRESH_INTERVAL_MS);
     }
 
+    private void stopReportRefreshTimer() {
+        if (reportRefreshTask != null) {
+            reportRefreshTask.cancel(false);
+            reportRefreshTask = null;
+        }
+    }
+
     /**
      * 停止所有定时器
      */
@@ -197,10 +239,7 @@ public class PerformanceTimerManager {
 
         // 取消定时任务
         stopTrendSamplingTimer();
-        if (reportRefreshTask != null) {
-            reportRefreshTask.cancel(false);
-            reportRefreshTask = null;
-        }
+        stopReportRefreshTimer();
 
         // 关闭调度器
         ScheduledExecutorService schedulerToStop = scheduler;

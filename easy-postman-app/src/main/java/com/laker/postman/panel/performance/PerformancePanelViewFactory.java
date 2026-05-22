@@ -134,10 +134,12 @@ final class PerformancePanelViewFactory {
     ToolbarSection createToolbarSection(Component parentComponent,
                                         boolean efficientMode,
                                         boolean trendEnabled,
+                                        boolean reportRealtimeEnabled,
                                         PerformancePersistenceService persistenceService,
                                         Runnable refreshRequestsAction,
                                         Consumer<Boolean> efficientModeSetterAction,
                                         Consumer<Boolean> trendEnabledSetterAction,
+                                        Consumer<Boolean> reportRefreshModeSetterAction,
                                         Runnable saveAllPropertyPanelDataAction,
                                         Runnable saveConfigAction) {
         JPanel topPanel = new JPanel(new BorderLayout());
@@ -193,6 +195,25 @@ final class PerformancePanelViewFactory {
         });
         btnPanel.add(trendCheckBox);
 
+        JLabel reportRefreshLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_REFRESH_MODE));
+        reportRefreshLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        reportRefreshLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_REFRESH_TOOLTIP));
+        btnPanel.add(reportRefreshLabel);
+
+        JComboBox<String> reportRefreshModeBox = new JComboBox<>(new String[]{
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_REFRESH_END),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_REFRESH_REALTIME)
+        });
+        reportRefreshModeBox.setSelectedIndex(reportRealtimeEnabled ? 1 : 0);
+        reportRefreshModeBox.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_REFRESH_TOOLTIP));
+        reportRefreshModeBox.setFocusable(false);
+        reportRefreshModeBox.addActionListener(e -> {
+            reportRefreshModeSetterAction.accept(reportRefreshModeBox.getSelectedIndex() == 1);
+            saveAllPropertyPanelDataAction.run();
+            saveConfigAction.run();
+        });
+        btnPanel.add(reportRefreshModeBox);
+
         CsvDataPanel csvDataPanel = new CsvDataPanel();
         csvDataPanel.setContextHelpText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_CSV_USAGE_NOTE));
         csvDataPanel.setChangeListener(saveConfigAction);
@@ -212,6 +233,7 @@ final class PerformancePanelViewFactory {
         topPanel.add(progressPanel, BorderLayout.EAST);
 
         return new ToolbarSection(topPanel, runBtn, stopBtn, refreshBtn, efficientCheckBox, trendCheckBox,
+                reportRefreshModeBox,
                 csvDataPanel, progressLabel);
     }
 
@@ -280,6 +302,7 @@ final class PerformancePanelViewFactory {
                           RefreshButton refreshBtn,
                           JCheckBox efficientCheckBox,
                           JCheckBox trendCheckBox,
+                          JComboBox<String> reportRefreshModeBox,
                           CsvDataPanel csvDataPanel,
                           JLabel progressLabel) {
     }

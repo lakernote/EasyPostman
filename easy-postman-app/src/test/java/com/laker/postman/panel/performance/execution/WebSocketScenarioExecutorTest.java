@@ -17,6 +17,7 @@ import okhttp3.mockwebserver.MockWebServer;
 import org.testng.annotations.Test;
 
 import javax.swing.tree.DefaultMutableTreeNode;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -44,6 +45,24 @@ public class WebSocketScenarioExecutorTest {
         String body = WebSocketScenarioExecutor.buildResponseBody(Collections.emptyList());
 
         assertEquals(body, "");
+    }
+
+    @Test
+    public void shouldIgnoreMessageFilterForFixedDurationMode() throws Exception {
+        WebSocketPerformanceData cfg = new WebSocketPerformanceData();
+        cfg.completionMode = WebSocketPerformanceData.CompletionMode.FIXED_DURATION;
+        cfg.messageFilter = "done";
+        WebSocketScenarioExecutor executor = new WebSocketScenarioExecutor(
+                () -> true,
+                throwable -> false,
+                ConcurrentHashMap.newKeySet(),
+                new PerformanceRealtimeMetrics()
+        );
+
+        Method matchesMessage = WebSocketScenarioExecutor.class.getDeclaredMethod("matchesMessage", WebSocketPerformanceData.class, String.class);
+        matchesMessage.setAccessible(true);
+
+        assertTrue((Boolean) matchesMessage.invoke(executor, cfg, "anything"));
     }
 
     @Test

@@ -41,8 +41,6 @@ public class WebSocketStagePropertyPanel extends JPanel {
     private static final String POSTMAN_JS_SYNTAX = "text/postman-javascript";
     private static final String CUSTOM_BODY_CARD = "customBody";
     private static final String REQUEST_BODY_CARD = "requestBody";
-    private static final int FIELD_HEIGHT = 28;
-    private static final int SPINNER_FIELD_WIDTH = 118;
     private static final int SEND_EDITOR_MIN_HEIGHT = 190;
     private static final int SEND_EDITOR_PREFERRED_HEIGHT = 230;
 
@@ -65,7 +63,7 @@ public class WebSocketStagePropertyPanel extends JPanel {
     private final EasyComboBox<WebSocketPerformanceData.SendContentSource> sendContentSourceBox;
     private final EasyJSpinner sendCountSpinner;
     private final EasyJSpinner sendIntervalSpinner;
-    private final JComboBox<WebSocketPerformanceData.CompletionMode> completionModeBox;
+    private final EasyComboBox<WebSocketPerformanceData.CompletionMode> completionModeBox;
     private final EasyJSpinner awaitTimeoutSpinner;
     private final EasyJSpinner holdConnectionSpinner;
     private final EasyJSpinner targetMessageCountSpinner;
@@ -89,6 +87,7 @@ public class WebSocketStagePropertyPanel extends JPanel {
     private JLabel awaitTimeoutLabel;
     private JLabel holdConnectionLabel;
     private JLabel targetMessageCountLabel;
+    private JLabel messageFilterLabel;
     private JLabel sendHintLabel;
     private JTextArea awaitHintArea;
     private JLabel closeHintLabel;
@@ -97,15 +96,8 @@ public class WebSocketStagePropertyPanel extends JPanel {
     public WebSocketStagePropertyPanel(Stage stage) {
         this.stage = stage;
         setLayout(new GridBagLayout());
-        setBorder(BorderFactory.createEmptyBorder(12, 20, 12, 20));
-
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(4, 6, 4, 6);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.weightx = 0;
+        PerformanceStagePropertyLayout.applyCompactBorder(this);
+        GridBagConstraints gbc = PerformanceStagePropertyLayout.createBaseConstraints();
 
         connectTimeoutSpinner = new EasyJSpinner(new SpinnerNumberModel(10000, 100, 600000, 100));
         sendModeBox = new EasyComboBox<>(
@@ -118,7 +110,10 @@ public class WebSocketStagePropertyPanel extends JPanel {
         );
         sendCountSpinner = new EasyJSpinner(new SpinnerNumberModel(3, 1, 100000, 1));
         sendIntervalSpinner = new EasyJSpinner(new SpinnerNumberModel(1000, 0, 3600000, 100));
-        completionModeBox = new JComboBox<>(WebSocketPerformanceData.CompletionMode.values());
+        completionModeBox = new EasyComboBox<>(
+                WebSocketPerformanceData.CompletionMode.values(),
+                EasyComboBox.WidthMode.FIXED_MAX
+        );
         awaitTimeoutSpinner = new EasyJSpinner(new SpinnerNumberModel(10000, 100, 600000, 100));
         holdConnectionSpinner = new EasyJSpinner(new SpinnerNumberModel(30000, 100, 3600000, 1000));
         targetMessageCountSpinner = new EasyJSpinner(new SpinnerNumberModel(1, 1, 100000, 1));
@@ -138,10 +133,13 @@ public class WebSocketStagePropertyPanel extends JPanel {
         addEditorIndicatorListeners();
 
         for (EasyJSpinner spinner : getAllSpinners()) {
-            spinner.setPreferredSize(new Dimension(100, FIELD_HEIGHT));
+            PerformanceStagePropertyLayout.configureFieldWidth(spinner,
+                    PerformanceStagePropertyLayout.SPINNER_FIELD_WIDTH,
+                    PerformanceStagePropertyLayout.SPINNER_FIELD_WIDTH);
         }
-        configureFieldWidth(sendCountSpinner, SPINNER_FIELD_WIDTH, SPINNER_FIELD_WIDTH);
-        configureFieldWidth(sendIntervalSpinner, SPINNER_FIELD_WIDTH, SPINNER_FIELD_WIDTH);
+        PerformanceStagePropertyLayout.configureFieldWidth(messageFilterField,
+                PerformanceStagePropertyLayout.TEXT_FIELD_WIDTH,
+                PerformanceStagePropertyLayout.TEXT_FIELD_WIDTH);
 
         sendModeBox.setRenderer(new DefaultListCellRenderer() {
             @Override
@@ -197,6 +195,9 @@ public class WebSocketStagePropertyPanel extends JPanel {
             case AWAIT -> buildAwaitPanel(gbc);
             case CLOSE -> buildClosePanel(gbc);
         }
+        if (stage == Stage.CONNECT || stage == Stage.AWAIT) {
+            PerformanceStagePropertyLayout.addVerticalFiller(this, gbc, 2);
+        }
 
         sendModeBox.addActionListener(e -> updateSendModeState());
         sendContentSourceBox.addActionListener(e -> updateSendModeState());
@@ -207,7 +208,7 @@ public class WebSocketStagePropertyPanel extends JPanel {
     }
 
     private void buildConnectPanel(GridBagConstraints gbc) {
-        addFormRow(gbc,
+        PerformanceStagePropertyLayout.addCenteredCompactFormRow(this, gbc,
                 new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_CONNECT_TIMEOUT)),
                 connectTimeoutSpinner);
     }
@@ -295,17 +296,10 @@ public class WebSocketStagePropertyPanel extends JPanel {
         panel.putClientProperty("fieldLabel", label);
         int preferredWidth = Math.max(label.getPreferredSize().width, field.getPreferredSize().width);
         int minimumWidth = Math.max(label.getMinimumSize().width, field.getMinimumSize().width);
-        int preferredHeight = FIELD_HEIGHT + label.getPreferredSize().height + 3;
+        int preferredHeight = PerformanceStagePropertyLayout.FIELD_HEIGHT + label.getPreferredSize().height + 3;
         panel.setPreferredSize(new Dimension(preferredWidth, preferredHeight));
         panel.setMinimumSize(new Dimension(minimumWidth, preferredHeight));
         return panel;
-    }
-
-    private void configureFieldWidth(JComponent component, int preferredWidth, int minimumWidth) {
-        Dimension preferredSize = new Dimension(preferredWidth, FIELD_HEIGHT);
-        Dimension minimumSize = new Dimension(minimumWidth, FIELD_HEIGHT);
-        component.setPreferredSize(preferredSize);
-        component.setMinimumSize(minimumSize);
     }
 
     private void buildAwaitPanel(GridBagConstraints gbc) {
@@ -313,28 +307,43 @@ public class WebSocketStagePropertyPanel extends JPanel {
         holdConnectionLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_OBSERVE_DURATION));
         targetMessageCountLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_TARGET_MESSAGE_COUNT));
 
-        addFormRow(gbc,
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setOpaque(false);
+        GridBagConstraints rowGbc = new GridBagConstraints();
+        rowGbc.insets = new Insets(3, 6, 3, 6);
+        rowGbc.anchor = GridBagConstraints.WEST;
+        rowGbc.gridx = 0;
+        rowGbc.gridy = 0;
+
+        addCompactFormRow(formPanel, rowGbc,
                 new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_AWAIT_MODE)),
                 completionModeBox);
-        addFormRow(gbc,
-                new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_MESSAGE_FILTER)),
-                messageFilterField);
-        addFormRow(gbc, awaitTimeoutLabel, awaitTimeoutSpinner);
-        addFormRow(gbc, holdConnectionLabel, holdConnectionSpinner);
-        addFormRow(gbc, targetMessageCountLabel, targetMessageCountSpinner);
+        messageFilterLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_MESSAGE_FILTER));
+        addCompactFormRow(formPanel, rowGbc, messageFilterLabel, messageFilterField);
+        addCompactFormRow(formPanel, rowGbc, awaitTimeoutLabel, awaitTimeoutSpinner);
+        addCompactFormRow(formPanel, rowGbc, holdConnectionLabel, holdConnectionSpinner);
+        addCompactFormRow(formPanel, rowGbc, targetMessageCountLabel, targetMessageCountSpinner);
 
-        gbc.gridx = 0;
-        gbc.gridwidth = 2;
-        gbc.weightx = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        awaitHintArea = new JTextArea(2, 52);
+        rowGbc.gridx = 0;
+        rowGbc.gridwidth = 2;
+        rowGbc.weightx = 0;
+        rowGbc.fill = GridBagConstraints.HORIZONTAL;
+        awaitHintArea = new JTextArea(2, 42);
         awaitHintArea.setEditable(false);
         awaitHintArea.setFocusable(false);
         awaitHintArea.setOpaque(false);
         awaitHintArea.setLineWrap(true);
         awaitHintArea.setWrapStyleWord(true);
         awaitHintArea.setForeground(UIManager.getColor("Label.disabledForeground"));
-        add(awaitHintArea, gbc);
+        formPanel.add(awaitHintArea, rowGbc);
+
+        gbc.gridx = 0;
+        gbc.gridwidth = 2;
+        gbc.weightx = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.anchor = GridBagConstraints.NORTH;
+        add(formPanel, gbc);
+        gbc.gridy++;
     }
 
     private void buildClosePanel(GridBagConstraints gbc) {
@@ -598,12 +607,13 @@ public class WebSocketStagePropertyPanel extends JPanel {
     }
 
     private void updateAwaitModeState() {
-        if (stage != Stage.AWAIT || awaitTimeoutLabel == null || holdConnectionLabel == null
-                || targetMessageCountLabel == null || awaitHintArea == null) {
+        if (stage != Stage.AWAIT || messageFilterLabel == null || awaitTimeoutLabel == null
+                || holdConnectionLabel == null || targetMessageCountLabel == null || awaitHintArea == null) {
             return;
         }
         WebSocketPerformanceData.CompletionMode mode =
                 (WebSocketPerformanceData.CompletionMode) completionModeBox.getSelectedItem();
+        boolean showMessageFilter = WebSocketPerformanceData.usesMessageFilter(mode);
         boolean showAwaitTimeout = mode == WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE
                 || mode == WebSocketPerformanceData.CompletionMode.MATCHED_MESSAGE
                 || mode == WebSocketPerformanceData.CompletionMode.MESSAGE_COUNT;
@@ -617,6 +627,8 @@ public class WebSocketStagePropertyPanel extends JPanel {
                         : MessageKeys.PERFORMANCE_WS_OBSERVE_DURATION
         ));
 
+        messageFilterLabel.setVisible(showMessageFilter);
+        messageFilterField.setVisible(showMessageFilter);
         awaitTimeoutLabel.setVisible(showAwaitTimeout);
         awaitTimeoutSpinner.setVisible(showAwaitTimeout);
         holdConnectionLabel.setVisible(showHoldConnection);
@@ -640,15 +652,16 @@ public class WebSocketStagePropertyPanel extends JPanel {
         };
     }
 
-    private void addFormRow(GridBagConstraints gbc, JComponent label, JComponent field) {
+    private void addCompactFormRow(JPanel panel, GridBagConstraints gbc, JComponent label, JComponent field) {
         gbc.gridx = 0;
         gbc.gridwidth = 1;
         gbc.weightx = 0;
-        add(label, gbc);
+        gbc.fill = GridBagConstraints.NONE;
+        panel.add(label, gbc);
 
         gbc.gridx = 1;
-        gbc.weightx = 1;
-        add(field, gbc);
+        gbc.weightx = 0;
+        panel.add(field, gbc);
 
         gbc.gridx = 0;
         gbc.gridy++;

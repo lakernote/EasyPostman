@@ -8,6 +8,7 @@ import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.testng.annotations.Test;
 
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -59,5 +60,22 @@ public class SseSampleExecutorTest {
             assertTrue(sample.sseReceivedRate() > 0, "SSE received rate should be recorded in real time");
             assertTrue(sample.sseMatchedRate() > 0, "SSE matched rate should be recorded in real time");
         }
+    }
+
+    @Test
+    public void shouldIgnoreEventFilterForFixedDurationMode() throws Exception {
+        SsePerformanceData cfg = new SsePerformanceData();
+        cfg.completionMode = SsePerformanceData.CompletionMode.FIXED_DURATION;
+        cfg.eventNameFilter = "done";
+        SseSampleExecutor executor = new SseSampleExecutor(
+                () -> true,
+                throwable -> false,
+                ConcurrentHashMap.newKeySet()
+        );
+
+        Method matchesEvent = SseSampleExecutor.class.getDeclaredMethod("matchesEvent", SsePerformanceData.class, String.class);
+        matchesEvent.setAccessible(true);
+
+        assertTrue((Boolean) matchesEvent.invoke(executor, cfg, "message"));
     }
 }

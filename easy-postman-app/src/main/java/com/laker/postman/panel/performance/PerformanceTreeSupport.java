@@ -369,7 +369,8 @@ final class PerformanceTreeSupport {
                 && CharSequenceUtil.isNotBlank(data.messageFilter)) {
             joiner.add("contains=" + data.messageFilter.trim());
         }
-        if (CharSequenceUtil.isNotBlank(data.eventNameFilter)) {
+        if (SsePerformanceData.usesEventNameFilter(data.completionMode)
+                && CharSequenceUtil.isNotBlank(data.eventNameFilter)) {
             joiner.add("event=" + data.eventNameFilter.trim());
         }
         return joiner.toString();
@@ -434,7 +435,8 @@ final class PerformanceTreeSupport {
             }
             case FIXED_DURATION -> joiner.add(formatDuration(data.holdConnectionMs));
         }
-        if (CharSequenceUtil.isNotBlank(data.messageFilter)) {
+        if (WebSocketPerformanceData.usesMessageFilter(data.completionMode)
+                && CharSequenceUtil.isNotBlank(data.messageFilter)) {
             joiner.add("contains=" + data.messageFilter.trim());
         }
         return joiner.toString();

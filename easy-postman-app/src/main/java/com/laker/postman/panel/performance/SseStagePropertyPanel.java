@@ -1,6 +1,7 @@
 package com.laker.postman.panel.performance;
 
 import com.laker.postman.common.component.EasyJSpinner;
+import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.common.component.EasyTextField;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.SsePerformanceData;
@@ -16,7 +17,6 @@ import java.util.List;
  * SSE 生命周期节点属性面板。
  */
 public class SseStagePropertyPanel extends JPanel {
-
     public enum Stage {
         CONNECT,
         AWAIT
@@ -24,12 +24,13 @@ public class SseStagePropertyPanel extends JPanel {
 
     private final Stage stage;
     private final EasyJSpinner connectTimeoutSpinner;
-    private final JComboBox<SsePerformanceData.CompletionMode> completionModeBox;
+    private final EasyComboBox<SsePerformanceData.CompletionMode> completionModeBox;
     private final EasyJSpinner awaitTimeoutSpinner;
     private final EasyJSpinner holdConnectionSpinner;
     private final EasyJSpinner targetMessageCountSpinner;
     private final EasyTextField eventNameFilterField;
     private final EasyTextField messageFilterField;
+    private JLabel eventNameFilterLabel;
     private JLabel awaitTimeoutLabel;
     private JLabel holdConnectionLabel;
     private JLabel targetMessageCountLabel;
@@ -40,18 +41,14 @@ public class SseStagePropertyPanel extends JPanel {
     public SseStagePropertyPanel(Stage stage) {
         this.stage = stage;
         setLayout(new GridBagLayout());
-        setBorder(BorderFactory.createEmptyBorder(18, 24, 18, 24));
-
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(6, 6, 6, 6);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.weightx = 0;
+        PerformanceStagePropertyLayout.applyCompactBorder(this);
+        GridBagConstraints gbc = PerformanceStagePropertyLayout.createBaseConstraints();
 
         connectTimeoutSpinner = new EasyJSpinner(new SpinnerNumberModel(10000, 100, 600000, 100));
-        completionModeBox = new JComboBox<>(SsePerformanceData.CompletionMode.values());
+        completionModeBox = new EasyComboBox<>(
+                SsePerformanceData.CompletionMode.values(),
+                EasyComboBox.WidthMode.FIXED_MAX
+        );
         awaitTimeoutSpinner = new EasyJSpinner(new SpinnerNumberModel(10000, 100, 600000, 100));
         holdConnectionSpinner = new EasyJSpinner(new SpinnerNumberModel(30000, 100, 3600000, 1000));
         targetMessageCountSpinner = new EasyJSpinner(new SpinnerNumberModel(1, 1, 100000, 1));
@@ -59,11 +56,16 @@ public class SseStagePropertyPanel extends JPanel {
         messageFilterField = new EasyTextField(20);
 
         for (EasyJSpinner spinner : getAllSpinners()) {
-            spinner.setPreferredSize(new Dimension(100, 28));
+            PerformanceStagePropertyLayout.configureFieldWidth(spinner,
+                    PerformanceStagePropertyLayout.SPINNER_FIELD_WIDTH,
+                    PerformanceStagePropertyLayout.SPINNER_FIELD_WIDTH);
         }
-        eventNameFilterField.setPreferredSize(new Dimension(420, 28));
-        messageFilterField.setPreferredSize(new Dimension(420, 28));
-        completionModeBox.setPreferredSize(new Dimension(420, 28));
+        PerformanceStagePropertyLayout.configureFieldWidth(eventNameFilterField,
+                PerformanceStagePropertyLayout.TEXT_FIELD_WIDTH,
+                PerformanceStagePropertyLayout.TEXT_FIELD_WIDTH);
+        PerformanceStagePropertyLayout.configureFieldWidth(messageFilterField,
+                PerformanceStagePropertyLayout.TEXT_FIELD_WIDTH,
+                PerformanceStagePropertyLayout.TEXT_FIELD_WIDTH);
 
         completionModeBox.setRenderer(new DefaultListCellRenderer() {
             @Override
@@ -86,14 +88,14 @@ public class SseStagePropertyPanel extends JPanel {
             case CONNECT -> buildConnectPanel(gbc);
             case AWAIT -> buildAwaitPanel(gbc);
         }
-        addVerticalFiller(gbc);
+        PerformanceStagePropertyLayout.addVerticalFiller(this, gbc, 2);
 
         completionModeBox.addActionListener(e -> updateAwaitModeState());
         updateAwaitModeState();
     }
 
     private void buildConnectPanel(GridBagConstraints gbc) {
-        addFormRow(gbc,
+        PerformanceStagePropertyLayout.addCenteredCompactFormRow(this, gbc,
                 new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_CONNECT_TIMEOUT)),
                 connectTimeoutSpinner);
     }
@@ -102,30 +104,45 @@ public class SseStagePropertyPanel extends JPanel {
         awaitTimeoutLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_AWAIT_TIMEOUT));
         holdConnectionLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_HOLD_CONNECTION));
         targetMessageCountLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_TARGET_MESSAGE_COUNT));
-        addFormRow(gbc,
+
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setOpaque(false);
+        GridBagConstraints rowGbc = new GridBagConstraints();
+        rowGbc.insets = new Insets(3, 6, 3, 6);
+        rowGbc.anchor = GridBagConstraints.WEST;
+        rowGbc.gridx = 0;
+        rowGbc.gridy = 0;
+
+        addCompactFormRow(formPanel, rowGbc,
                 new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_AWAIT_MODE)),
                 completionModeBox);
-        addFormRow(gbc,
-                new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_EVENT_FILTER)),
-                eventNameFilterField);
+        eventNameFilterLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_EVENT_FILTER));
+        addCompactFormRow(formPanel, rowGbc, eventNameFilterLabel, eventNameFilterField);
         messageFilterLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_MESSAGE_FILTER));
-        addFormRow(gbc, messageFilterLabel, messageFilterField);
-        addFormRow(gbc, awaitTimeoutLabel, awaitTimeoutSpinner);
-        addFormRow(gbc, holdConnectionLabel, holdConnectionSpinner);
-        addFormRow(gbc, targetMessageCountLabel, targetMessageCountSpinner);
+        addCompactFormRow(formPanel, rowGbc, messageFilterLabel, messageFilterField);
+        addCompactFormRow(formPanel, rowGbc, awaitTimeoutLabel, awaitTimeoutSpinner);
+        addCompactFormRow(formPanel, rowGbc, holdConnectionLabel, holdConnectionSpinner);
+        addCompactFormRow(formPanel, rowGbc, targetMessageCountLabel, targetMessageCountSpinner);
 
-        gbc.gridx = 0;
-        gbc.gridwidth = 2;
-        gbc.weightx = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        modeHintArea = new JTextArea(2, 52);
+        rowGbc.gridx = 0;
+        rowGbc.gridwidth = 2;
+        rowGbc.weightx = 0;
+        rowGbc.fill = GridBagConstraints.HORIZONTAL;
+        modeHintArea = new JTextArea(2, 42);
         modeHintArea.setEditable(false);
         modeHintArea.setFocusable(false);
         modeHintArea.setOpaque(false);
         modeHintArea.setLineWrap(true);
         modeHintArea.setWrapStyleWord(true);
         modeHintArea.setForeground(UIManager.getColor("Label.disabledForeground"));
-        add(modeHintArea, gbc);
+        formPanel.add(modeHintArea, rowGbc);
+
+        gbc.gridx = 0;
+        gbc.gridwidth = 2;
+        gbc.weightx = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.anchor = GridBagConstraints.NORTH;
+        add(formPanel, gbc);
         gbc.gridy++;
     }
 
@@ -169,11 +186,13 @@ public class SseStagePropertyPanel extends JPanel {
     }
 
     private void updateAwaitModeState() {
-        if (stage != Stage.AWAIT || awaitTimeoutLabel == null || holdConnectionLabel == null
-                || targetMessageCountLabel == null || messageFilterLabel == null || modeHintArea == null) {
+        if (stage != Stage.AWAIT || eventNameFilterLabel == null || awaitTimeoutLabel == null
+                || holdConnectionLabel == null || targetMessageCountLabel == null
+                || messageFilterLabel == null || modeHintArea == null) {
             return;
         }
         SsePerformanceData.CompletionMode mode = (SsePerformanceData.CompletionMode) completionModeBox.getSelectedItem();
+        boolean showEventFilter = SsePerformanceData.usesEventNameFilter(mode);
         boolean showAwaitTimeout = mode == SsePerformanceData.CompletionMode.FIRST_MESSAGE
                 || mode == SsePerformanceData.CompletionMode.MATCHED_MESSAGE
                 || mode == SsePerformanceData.CompletionMode.MESSAGE_COUNT;
@@ -193,6 +212,8 @@ public class SseStagePropertyPanel extends JPanel {
                         : MessageKeys.PERFORMANCE_SSE_OBSERVE_DURATION
         ));
 
+        eventNameFilterLabel.setVisible(showEventFilter);
+        eventNameFilterField.setVisible(showEventFilter);
         messageFilterLabel.setVisible(showMessageFilter);
         messageFilterField.setVisible(showMessageFilter);
         awaitTimeoutLabel.setVisible(showAwaitTimeout);
@@ -218,30 +239,20 @@ public class SseStagePropertyPanel extends JPanel {
         };
     }
 
-    private void addFormRow(GridBagConstraints gbc, JComponent label, JComponent field) {
+    private void addCompactFormRow(JPanel panel, GridBagConstraints gbc, JComponent label, JComponent field) {
         gbc.gridx = 0;
         gbc.gridwidth = 1;
         gbc.weightx = 0;
-        add(label, gbc);
+        gbc.fill = GridBagConstraints.NONE;
+        panel.add(label, gbc);
 
         gbc.gridx = 1;
         gbc.weightx = 0;
-        add(field, gbc);
+        panel.add(field, gbc);
 
         gbc.gridx = 0;
         gbc.gridy++;
         gbc.weightx = 0;
-    }
-
-    private void addVerticalFiller(GridBagConstraints gbc) {
-        gbc.gridx = 0;
-        gbc.gridwidth = 2;
-        gbc.weightx = 1;
-        gbc.weighty = 1;
-        gbc.fill = GridBagConstraints.BOTH;
-        add(Box.createVerticalGlue(), gbc);
-        gbc.weighty = 0;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
     }
 
     private List<EasyJSpinner> getAllSpinners() {

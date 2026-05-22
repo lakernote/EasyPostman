@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
@@ -51,6 +52,41 @@ public class PerformanceTreeSupportTest {
         JMeterTreeNode awaitData = (JMeterTreeNode) awaitNode.getUserObject();
         assertTrue(awaitData.name.contains("10s"), awaitData.name);
         assertTrue(awaitData.name.contains("contains=done"), awaitData.name);
+    }
+
+    @Test(description = "SSE 固定时长模式不应在 Receive 节点标题展示事件过滤条件")
+    public void shouldHideSseEventFilterInFixedDurationAwaitNodeTitle() {
+        TestContext context = newTestContext(RequestItemProtocolEnum.SSE);
+        context.requestData.ssePerformanceData = new SsePerformanceData();
+        context.requestData.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.FIXED_DURATION;
+        context.requestData.ssePerformanceData.holdConnectionMs = 30000;
+        context.requestData.ssePerformanceData.eventNameFilter = "done";
+
+        context.treeSupport.syncRequestStructure(context.requestNode, context.requestData);
+
+        DefaultMutableTreeNode awaitNode = findChild(context.requestNode, NodeType.SSE_AWAIT);
+        assertNotNull(awaitNode);
+        JMeterTreeNode awaitData = (JMeterTreeNode) awaitNode.getUserObject();
+        assertTrue(awaitData.name.contains("30s"), awaitData.name);
+        assertFalse(awaitData.name.contains("event=done"), awaitData.name);
+    }
+
+    @Test(description = "WebSocket 固定时长等待不应在 Await 节点标题展示消息过滤条件")
+    public void shouldHideWebSocketMessageFilterInFixedDurationAwaitNodeTitle() {
+        TestContext context = newTestContext(RequestItemProtocolEnum.WEBSOCKET);
+        context.treeSupport.syncRequestStructure(context.requestNode, context.requestData);
+        DefaultMutableTreeNode awaitNode = newNode("Await", NodeType.WS_AWAIT);
+        JMeterTreeNode awaitData = (JMeterTreeNode) awaitNode.getUserObject();
+        awaitData.webSocketPerformanceData = new com.laker.postman.panel.performance.model.WebSocketPerformanceData();
+        awaitData.webSocketPerformanceData.completionMode = com.laker.postman.panel.performance.model.WebSocketPerformanceData.CompletionMode.FIXED_DURATION;
+        awaitData.webSocketPerformanceData.holdConnectionMs = 30000;
+        awaitData.webSocketPerformanceData.messageFilter = "done";
+        context.treeModel.insertNodeInto(awaitNode, context.requestNode, context.requestNode.getChildCount());
+
+        context.treeSupport.syncRequestStructure(context.requestNode, context.requestData);
+
+        assertTrue(awaitData.name.contains("30s"), awaitData.name);
+        assertFalse(awaitData.name.contains("contains=done"), awaitData.name);
     }
 
     @Test(description = "SSE 请求切回 HTTP 后应移除 SSE 固定节点，并把断言恢复到请求节点下")

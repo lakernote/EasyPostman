@@ -307,6 +307,9 @@ public class SseSampleExecutor {
     }
 
     private boolean matchesEvent(SsePerformanceData cfg, String eventType) {
+        if (!SsePerformanceData.usesEventNameFilter(cfg.completionMode)) {
+            return true;
+        }
         String filter = cfg.eventNameFilter;
         return CharSequenceUtil.isBlank(filter) || CharSequenceUtil.equals(filter.trim(), eventType);
     }

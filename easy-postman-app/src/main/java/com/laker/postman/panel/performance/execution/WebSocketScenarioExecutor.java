@@ -454,6 +454,9 @@ public class WebSocketScenarioExecutor {
     }
 
     private boolean matchesMessage(WebSocketPerformanceData cfg, String payload) {
+        if (!WebSocketPerformanceData.usesMessageFilter(cfg.completionMode)) {
+            return true;
+        }
         String filter = cfg.messageFilter;
         return CharSequenceUtil.isBlank(filter) || CharSequenceUtil.contains(payload, filter.trim());
     }

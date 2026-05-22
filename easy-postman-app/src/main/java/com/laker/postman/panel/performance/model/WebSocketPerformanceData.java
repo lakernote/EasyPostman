@@ -35,4 +35,8 @@ public class WebSocketPerformanceData {
     public int holdConnectionMs = 30000;
     public int targetMessageCount = 1;
     public String messageFilter = "";
+
+    public static boolean usesMessageFilter(CompletionMode mode) {
+        return mode == CompletionMode.MATCHED_MESSAGE || mode == CompletionMode.MESSAGE_COUNT;
+    }
 }

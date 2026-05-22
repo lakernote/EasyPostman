@@ -63,6 +63,7 @@ public final class PerformanceStatsSnapshot {
             double receiveRate,
             double matchedRate,
             long avgFirstMessageLatencyMs,
+            DurationStats firstMessageLatencyStats,
             String topCompletionReason
     ) {
         ApiSummary withName(String newName) {
@@ -83,6 +84,7 @@ public final class PerformanceStatsSnapshot {
                     receiveRate,
                     matchedRate,
                     avgFirstMessageLatencyMs,
+                    firstMessageLatencyStats,
                     topCompletionReason
             );
         }

@@ -7,6 +7,7 @@ import com.laker.postman.panel.performance.model.RequestResult;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.testng.Assert.assertEquals;
@@ -72,5 +73,29 @@ public class PerformanceProtocolReportDataTest {
         assertEquals(reportData.httpRows().get(0).fail(), 1L);
         assertEquals(reportData.httpRows().get(1).name(), "Total");
         assertEquals(reportData.httpRows().get(1).total(), 2L);
+    }
+
+    @Test
+    public void shouldCalculateSseFirstEventLatencyPercentilesFromResults() {
+        ApiMetadata.register("stream", "Stream API");
+        List<RequestResult> results = new ArrayList<>();
+        for (int i = 1; i <= 10; i++) {
+            RequestResult result = new RequestResult(i * 1_000L, i * 1_000L + 2_000L,
+                    true, "stream", PerformanceProtocol.SSE);
+            result.firstMessageLatencyMs = i * 100L;
+            result.receivedMessages = 1;
+            result.matchedMessages = 1;
+            result.completionReason = "first_message";
+            results.add(result);
+        }
+
+        PerformanceProtocolReportData reportData = PerformanceProtocolReportData.fromResults(results, "Total");
+        PerformanceProtocolReportData.StreamReportRow row = reportData.sseRows().get(0);
+
+        assertEquals(row.name(), "Stream API");
+        assertEquals(row.avgFirstMessageLatencyMs(), 550L);
+        assertEquals(row.p90FirstMessageLatencyMs(), 910L);
+        assertEquals(row.p95FirstMessageLatencyMs(), 955L);
+        assertEquals(row.p99FirstMessageLatencyMs(), 991L);
     }
 }

@@ -88,6 +88,9 @@ public class PerformanceReportPanel extends JPanel {
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_EVENT_RATE),
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_MATCHED_RATE),
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG_FIRST_EVENT),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_P90_FIRST_EVENT),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_P95_FIRST_EVENT),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_P99_FIRST_EVENT),
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG_STREAM),
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_P95_STREAM),
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_COMPLETION)
@@ -510,6 +513,9 @@ public class PerformanceReportPanel extends JPanel {
                 formatDecimal(row.receiveRate()),
                 formatDecimal(row.matchedRate()),
                 TimeDisplayUtil.formatElapsedTime(row.avgFirstMessageLatencyMs()),
+                TimeDisplayUtil.formatElapsedTime(row.p90FirstMessageLatencyMs()),
+                TimeDisplayUtil.formatElapsedTime(row.p95FirstMessageLatencyMs()),
+                TimeDisplayUtil.formatElapsedTime(row.p99FirstMessageLatencyMs()),
                 TimeDisplayUtil.formatElapsedTime(row.avgDurationMs()),
                 TimeDisplayUtil.formatElapsedTime(row.p95DurationMs()),
                 row.topCompletionReason()

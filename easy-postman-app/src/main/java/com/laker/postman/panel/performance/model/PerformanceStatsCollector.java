@@ -213,6 +213,7 @@ public final class PerformanceStatsCollector {
         private final String apiId;
         private final PerformanceProtocol protocol;
         private final DurationHistogram durations = new DurationHistogram();
+        private final DurationHistogram firstMessageLatencies = new DurationHistogram();
         private final Map<String, MutableLong> completionReasons = new HashMap<>();
         private long total;
         private long success;
@@ -243,6 +244,7 @@ public final class PerformanceStatsCollector {
             if (result.firstMessageLatencyMs >= 0) {
                 firstMessageLatencyTotal += result.firstMessageLatencyMs;
                 firstMessageLatencyCount++;
+                firstMessageLatencies.record(result.firstMessageLatencyMs);
             }
             if (protocol != PerformanceProtocol.HTTP) {
                 String reason = result.completionReason == null || result.completionReason.isBlank()
@@ -271,6 +273,7 @@ public final class PerformanceStatsCollector {
             matchedMessages = 0;
             firstMessageLatencyTotal = 0;
             firstMessageLatencyCount = 0;
+            firstMessageLatencies.clear();
             completionReasons.clear();
             durations.clear();
         }
@@ -297,6 +300,7 @@ public final class PerformanceStatsCollector {
                     receiveRate,
                     matchedRate,
                     firstMessageLatencyCount == 0 ? 0 : firstMessageLatencyTotal / firstMessageLatencyCount,
+                    firstMessageLatencies.snapshot(),
                     topCompletionReason()
             );
         }

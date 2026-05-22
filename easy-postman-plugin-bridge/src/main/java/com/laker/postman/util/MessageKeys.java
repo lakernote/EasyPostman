@@ -730,6 +730,9 @@ public final class MessageKeys {
     public static final String PERFORMANCE_REPORT_COLUMN_EVENTS = "performance.report.column.events";
     public static final String PERFORMANCE_REPORT_COLUMN_AVG_FIRST_MESSAGE = "performance.report.column.avg_first_message";
     public static final String PERFORMANCE_REPORT_COLUMN_AVG_FIRST_EVENT = "performance.report.column.avg_first_event";
+    public static final String PERFORMANCE_REPORT_COLUMN_P90_FIRST_EVENT = "performance.report.column.p90_first_event";
+    public static final String PERFORMANCE_REPORT_COLUMN_P95_FIRST_EVENT = "performance.report.column.p95_first_event";
+    public static final String PERFORMANCE_REPORT_COLUMN_P99_FIRST_EVENT = "performance.report.column.p99_first_event";
     public static final String PERFORMANCE_REPORT_COLUMN_AVG_SESSION = "performance.report.column.avg_session";
     public static final String PERFORMANCE_REPORT_COLUMN_AVG_STREAM = "performance.report.column.avg_stream";
     public static final String PERFORMANCE_REPORT_COLUMN_P95_SESSION = "performance.report.column.p95_session";

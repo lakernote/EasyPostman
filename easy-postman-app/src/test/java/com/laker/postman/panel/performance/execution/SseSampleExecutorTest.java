@@ -54,6 +54,9 @@ public class SseSampleExecutorTest {
             assertFalse(result.executionFailed, result.errorMsg);
             assertEquals(result.response.headers.get("X-Easy-SSE-Completion-Reason").get(0), "matched_message");
             assertEquals(result.response.headers.get("X-Easy-SSE-Message-Count").get(0), "1");
+            String firstEventLatency = result.response.headers.get("X-Easy-SSE-First-Message-Latency-Ms").get(0);
+            assertFalse(firstEventLatency.isBlank());
+            assertTrue(Long.parseLong(firstEventLatency) >= 0);
             assertTrue(result.response.body.contains("event: done"), result.response.body);
             assertTrue(result.response.body.contains("status"), result.response.body.replace("\n", "\\n"));
             assertFalse(result.response.body.contains("loading"));

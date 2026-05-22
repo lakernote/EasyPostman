@@ -60,4 +60,25 @@ public class PerformanceStatsCollectorTest {
         assertEquals(first.http().avgDurationMs(), 200.0);
         assertEquals(second.http().samples(), 0);
     }
+
+    @Test
+    public void shouldAggregateSseFirstEventLatencyPercentiles() {
+        ApiMetadata.register("stream", "Stream API");
+        PerformanceStatsCollector collector = new PerformanceStatsCollector();
+
+        for (int i = 1; i <= 10; i++) {
+            RequestResult result = new RequestResult(i * 1_000L, i * 1_000L + 2_000L,
+                    true, "stream", PerformanceProtocol.SSE);
+            result.firstMessageLatencyMs = i * 100L;
+            collector.record(result);
+        }
+
+        PerformanceStatsSnapshot.ApiSummary summary = collector.snapshot().summaries().get(0);
+
+        assertEquals(summary.avgFirstMessageLatencyMs(), 550L);
+        assertEquals(summary.firstMessageLatencyStats().avg(), 550L);
+        assertEquals(summary.firstMessageLatencyStats().p90(), 900L);
+        assertEquals(summary.firstMessageLatencyStats().p95(), 1000L);
+        assertEquals(summary.firstMessageLatencyStats().p99(), 1000L);
+    }
 }

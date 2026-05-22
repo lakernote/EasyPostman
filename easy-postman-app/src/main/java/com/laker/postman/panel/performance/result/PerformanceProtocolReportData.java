@@ -193,6 +193,7 @@ final class PerformanceProtocolReportData {
         int firstLatencyCount = 0;
         Map<String, Integer> completionReasons = new HashMap<>();
         List<Long> durations = new ArrayList<>();
+        List<Long> firstLatencies = new ArrayList<>();
 
         for (RequestResult result : results) {
             sentMessages += Math.max(0, result.sentMessages);
@@ -202,6 +203,7 @@ final class PerformanceProtocolReportData {
             if (result.firstMessageLatencyMs >= 0) {
                 firstLatencyTotal += result.firstMessageLatencyMs;
                 firstLatencyCount++;
+                firstLatencies.add(result.firstMessageLatencyMs);
             }
             String reason = result.completionReason == null || result.completionReason.isBlank()
                     ? "-"
@@ -210,6 +212,7 @@ final class PerformanceProtocolReportData {
         }
 
         DurationStats stats = calculateDurationStats(durations);
+        DurationStats firstLatencyStats = calculateDurationStats(firstLatencies);
         long avgFirstMessageLatency = firstLatencyCount == 0 ? 0 : firstLatencyTotal / firstLatencyCount;
         return new StreamReportRow(
                 name,
@@ -224,6 +227,9 @@ final class PerformanceProtocolReportData {
                 calculateCountPerSecond(receivedMessages, results),
                 calculateCountPerSecond(matchedMessages, results),
                 avgFirstMessageLatency,
+                firstLatencyStats.p90(),
+                firstLatencyStats.p95(),
+                firstLatencyStats.p99(),
                 stats.avg(),
                 stats.p95(),
                 topCompletionReason(completionReasons)
@@ -232,6 +238,9 @@ final class PerformanceProtocolReportData {
 
     private static StreamReportRow toStreamRow(PerformanceStatsSnapshot.ApiSummary summary) {
         PerformanceStatsSnapshot.DurationStats stats = summary.durationStats();
+        PerformanceStatsSnapshot.DurationStats firstLatencyStats = summary.firstMessageLatencyStats() == null
+                ? PerformanceStatsSnapshot.DurationStats.empty()
+                : summary.firstMessageLatencyStats();
         return new StreamReportRow(
                 summary.name(),
                 summary.total(),
@@ -245,6 +254,9 @@ final class PerformanceProtocolReportData {
                 summary.receiveRate(),
                 summary.matchedRate(),
                 summary.avgFirstMessageLatencyMs(),
+                firstLatencyStats.p90(),
+                firstLatencyStats.p95(),
+                firstLatencyStats.p99(),
                 stats.avg(),
                 stats.p95(),
                 summary.topCompletionReason()
@@ -331,7 +343,7 @@ final class PerformanceProtocolReportData {
         long lowerValue = sortedCosts.get(lowerIndex);
         long upperValue = sortedCosts.get(upperIndex);
         double fraction = index - lowerIndex;
-        return (long) (lowerValue + (upperValue - lowerValue) * fraction);
+        return Math.round(lowerValue + (upperValue - lowerValue) * fraction);
     }
 
     private interface NamedReportRow {
@@ -364,6 +376,9 @@ final class PerformanceProtocolReportData {
                            double receiveRate,
                            double matchedRate,
                            long avgFirstMessageLatencyMs,
+                           long p90FirstMessageLatencyMs,
+                           long p95FirstMessageLatencyMs,
+                           long p99FirstMessageLatencyMs,
                            long avgDurationMs,
                            long p95DurationMs,
                            String topCompletionReason) implements NamedReportRow {

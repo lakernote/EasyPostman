@@ -125,8 +125,47 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
         }
     }
 
+    @Test
+    public void shouldRenderSseFirstEventPercentileColumns() throws Exception {
+        ApiMetadata.register("stream", "Stream API");
+        List<RequestResult> results = new ArrayList<>();
+        for (int i = 1; i <= 10; i++) {
+            RequestResult result = new RequestResult(i * 1_000L, i * 1_000L + 2_000L,
+                    true, "stream", PerformanceProtocol.SSE);
+            result.firstMessageLatencyMs = i * 100L;
+            result.receivedMessages = 1;
+            result.matchedMessages = 1;
+            result.completionReason = "first_message";
+            results.add(result);
+        }
+
+        PerformanceReportPanel panel = new PerformanceReportPanel();
+        panel.updateReport(Map.of(), Map.of(), Map.of(), results);
+
+        DefaultTableModel model = getSseReportTableModel(panel);
+        assertEquals(model.getColumnCount(), 16);
+        assertEquals(model.getColumnName(9),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG_FIRST_EVENT));
+        assertEquals(model.getColumnName(10),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_P90_FIRST_EVENT));
+        assertEquals(model.getColumnName(11),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_P95_FIRST_EVENT));
+        assertEquals(model.getColumnName(12),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_P99_FIRST_EVENT));
+        assertEquals(model.getValueAt(0, 9), "550 ms");
+        assertEquals(model.getValueAt(0, 10), "910 ms");
+        assertEquals(model.getValueAt(0, 11), "955 ms");
+        assertEquals(model.getValueAt(0, 12), "991 ms");
+    }
+
     private static DefaultTableModel getReportTableModel(PerformanceReportPanel panel) throws Exception {
         Field field = PerformanceReportPanel.class.getDeclaredField("reportTableModel");
+        field.setAccessible(true);
+        return (DefaultTableModel) field.get(panel);
+    }
+
+    private static DefaultTableModel getSseReportTableModel(PerformanceReportPanel panel) throws Exception {
+        Field field = PerformanceReportPanel.class.getDeclaredField("sseReportTableModel");
         field.setAccessible(true);
         return (DefaultTableModel) field.get(panel);
     }

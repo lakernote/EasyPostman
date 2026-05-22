@@ -16,6 +16,7 @@ import java.util.Date;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 import java.util.function.LongFunction;
 import java.util.function.LongSupplier;
@@ -32,6 +33,7 @@ final class PerformanceStatisticsCoordinator {
     private final IntSupplier activeWebSocketsSupplier;
     private final IntSupplier activeSseStreamsSupplier;
     private final LongSupplier samplingIntervalSupplier;
+    private final BooleanSupplier trendEnabledSupplier;
     private final LongFunction<PerformanceRealtimeMetrics.Sample> realtimeMetricsSampler;
     private final ExecutorService metricsExecutor =
             Executors.newSingleThreadExecutor(PerformanceThreadFactory.daemonFactory("PerformanceMetrics"));
@@ -71,6 +73,10 @@ final class PerformanceStatisticsCoordinator {
     }
 
     void sampleTrendData() {
+        if (!isTrendEnabled()) {
+            log.debug("趋势图未启用，跳过采样");
+            return;
+        }
         int users = activeThreadsSupplier.getAsInt();
         int activeWebSockets = activeWebSocketsSupplier.getAsInt();
         int activeSseStreams = activeSseStreamsSupplier.getAsInt();
@@ -97,6 +103,9 @@ final class PerformanceStatisticsCoordinator {
     }
 
     void sampleTrendDataSync() {
+        if (!isTrendEnabled()) {
+            return;
+        }
         if (!SwingUtilities.isEventDispatchThread()) {
             SwingUtilities.invokeLater(this::sampleTrendDataSync);
             return;
@@ -127,6 +136,10 @@ final class PerformanceStatisticsCoordinator {
         return realtimeMetricsSampler == null
                 ? PerformanceRealtimeMetrics.Sample.empty()
                 : realtimeMetricsSampler.apply(nowMs);
+    }
+
+    private boolean isTrendEnabled() {
+        return trendEnabledSupplier == null || trendEnabledSupplier.getAsBoolean();
     }
 
     void dispose() {

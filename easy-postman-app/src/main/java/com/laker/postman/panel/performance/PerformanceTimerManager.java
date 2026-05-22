@@ -56,6 +56,11 @@ public class PerformanceTimerManager {
     private Runnable reportRefreshCallback;
 
     /**
+     * 是否启用趋势图采样。关闭时不创建采样定时任务，减少采样与图表刷新开销。
+     */
+    private volatile boolean trendSamplingEnabled = true;
+
+    /**
      * 管理器是否已启动
      */
     private final AtomicBoolean started = new AtomicBoolean(false);
@@ -90,16 +95,46 @@ public class PerformanceTimerManager {
                 PerformanceThreadFactory.daemonFactory("PerformanceTimer")
         );
 
-        startTrendSamplingTimer();
+        if (trendSamplingEnabled) {
+            startTrendSamplingTimer();
+        } else {
+            log.info("趋势图采样已关闭，跳过采样定时器");
+        }
         startReportRefreshTimer();
+    }
+
+    public synchronized void setTrendSamplingEnabled(boolean enabled) {
+        if (trendSamplingEnabled == enabled) {
+            return;
+        }
+        trendSamplingEnabled = enabled;
+        if (!enabled) {
+            stopTrendSamplingTimer();
+            log.info("趋势图采样已关闭");
+            return;
+        }
+        if (started.get() && scheduler != null && !scheduler.isShutdown()) {
+            startTrendSamplingTimer();
+        }
+        log.info("趋势图采样已开启");
     }
 
     /**
      * 启动趋势图采样定时器
      */
     private void startTrendSamplingTimer() {
+        if (!trendSamplingEnabled) {
+            return;
+        }
         if (trendSamplingCallback == null) {
             log.warn("趋势图采样回调未设置，跳过启动采样定时器");
+            return;
+        }
+        if (scheduler == null || scheduler.isShutdown()) {
+            log.warn("定时器调度器未就绪，跳过启动采样定时器");
+            return;
+        }
+        if (trendSamplingTask != null && !trendSamplingTask.isCancelled() && !trendSamplingTask.isDone()) {
             return;
         }
 
@@ -116,6 +151,13 @@ public class PerformanceTimerManager {
         }, samplingIntervalMs, samplingIntervalMs, TimeUnit.MILLISECONDS);
 
         log.debug("趋势图采样定时器已启动 - 间隔: {}ms", samplingIntervalMs);
+    }
+
+    private void stopTrendSamplingTimer() {
+        if (trendSamplingTask != null) {
+            trendSamplingTask.cancel(false);
+            trendSamplingTask = null;
+        }
     }
 
     /**
@@ -154,10 +196,7 @@ public class PerformanceTimerManager {
         log.info("停止所有性能测试定时器");
 
         // 取消定时任务
-        if (trendSamplingTask != null) {
-            trendSamplingTask.cancel(false);
-            trendSamplingTask = null;
-        }
+        stopTrendSamplingTimer();
         if (reportRefreshTask != null) {
             reportRefreshTask.cancel(false);
             reportRefreshTask = null;

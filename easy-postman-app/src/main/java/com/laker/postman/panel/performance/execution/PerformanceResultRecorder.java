@@ -109,7 +109,10 @@ public class PerformanceResultRecorder {
         } else if (executionResult.protocol == PerformanceProtocol.SSE) {
             result.receivedMessages = headerInt(executionResult.response.headers, "X-Easy-SSE-Event-Count");
             result.matchedMessages = headerInt(executionResult.response.headers, "X-Easy-SSE-Message-Count");
-            result.firstMessageLatencyMs = headerLong(executionResult.response.headers, "X-Easy-SSE-First-Message-Latency-Ms", -1);
+            result.firstMessageLatencyMs = headerLong(executionResult.response.headers, "X-Easy-SSE-First-Event-Latency-Ms", -1);
+            if (result.firstMessageLatencyMs < 0) {
+                result.firstMessageLatencyMs = headerLong(executionResult.response.headers, "X-Easy-SSE-First-Message-Latency-Ms", -1);
+            }
             result.completionReason = headerValue(executionResult.response.headers, "X-Easy-SSE-Completion-Reason");
         }
         return result;

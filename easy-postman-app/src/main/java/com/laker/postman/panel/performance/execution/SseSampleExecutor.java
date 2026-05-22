@@ -83,7 +83,8 @@ public class SseSampleExecutor {
         AtomicReference<String> lastEventIdRef = new AtomicReference<>("");
         AtomicReference<String> lastEventTypeRef = new AtomicReference<>("");
         BoundedTextAccumulator matchedEventBody = new BoundedTextAccumulator(responseBodyPreviewLimitBytes);
-        AtomicLong firstMessageLatencyMs = new AtomicLong(-1);
+        AtomicLong firstEventLatencyMs = new AtomicLong(-1);
+        AtomicBoolean firstEventRecorded = new AtomicBoolean(false);
         AtomicInteger eventCount = new AtomicInteger(0);
         AtomicInteger matchedMessageCount = new AtomicInteger(0);
         CountDownLatch openLatch = new CountDownLatch(1);
@@ -146,13 +147,32 @@ public class SseSampleExecutor {
                 eventCount.incrementAndGet();
                 realtimeMetrics.recordSseReceived();
                 String eventType = CharSequenceUtil.blankToDefault(type, "message");
+                long eventReceivedAtMs = System.currentTimeMillis();
+                boolean firstPhysicalEvent = firstEventRecorded.compareAndSet(false, true);
+                if (firstPhysicalEvent) {
+                    long latencyMs = Math.max(0, eventReceivedAtMs - requestStartTime);
+                    firstEventLatencyMs.compareAndSet(-1, latencyMs);
+                    realtimeMetrics.recordSseFirstMessageLatency(latencyMs);
+                }
+
+                if (cfg.completionMode == SsePerformanceData.CompletionMode.FIRST_MESSAGE) {
+                    if (firstPhysicalEvent) {
+                        matchedMessageCount.incrementAndGet();
+                        realtimeMetrics.recordSseMatched();
+                        lastEventIdRef.set(id == null ? "" : id);
+                        lastEventTypeRef.set(eventType);
+                        appendEvent(matchedEventBody, id, eventType, data);
+                        completionReasonRef.compareAndSet("pending", "first_message");
+                        firstMessageLatch.countDown();
+                        completionLatch.countDown();
+                    }
+                    return;
+                }
+
                 if (matchesEvent(cfg, eventType) && matchesPayload(cfg, data)) {
                     boolean firstMatchedMessage = matchedMessageCount.incrementAndGet() == 1;
                     realtimeMetrics.recordSseMatched();
                     if (firstMatchedMessage) {
-                        long latencyMs = Math.max(0, System.currentTimeMillis() - requestStartTime);
-                        firstMessageLatencyMs.compareAndSet(-1, latencyMs);
-                        realtimeMetrics.recordSseFirstMessageLatency(latencyMs);
                         completionReasonRef.compareAndSet("pending",
                                 cfg.completionMode == SsePerformanceData.CompletionMode.MATCHED_MESSAGE
                                         ? "matched_message"
@@ -196,7 +216,7 @@ public class SseSampleExecutor {
                             && firstMessageLatch.await(Math.max(100, cfg.firstMessageTimeoutMs), TimeUnit.MILLISECONDS);
                     if ((!gotFirstMessage || matchedMessageCount.get() == 0) && !failed.get() && !interrupted.get()) {
                         failed.set(true);
-                        errorRef.set("SSE first message timeout");
+                        errorRef.set("SSE first event timeout");
                         completionReasonRef.compareAndSet("pending", "first_message_timeout");
                         closingSource.set(true);
                         eventSource.cancel();
@@ -295,7 +315,9 @@ public class SseSampleExecutor {
         resp.addHeader("X-Easy-SSE-Message-Filter", Collections.singletonList(CharSequenceUtil.blankToDefault(cfg.messageFilter, "")));
         resp.addHeader("X-Easy-SSE-Event-Count", Collections.singletonList(String.valueOf(eventCount.get())));
         resp.addHeader("X-Easy-SSE-Message-Count", Collections.singletonList(String.valueOf(matchedMessageCount.get())));
-        resp.addHeader("X-Easy-SSE-First-Message-Latency-Ms", Collections.singletonList(firstMessageLatencyMs.get() >= 0 ? String.valueOf(firstMessageLatencyMs.get()) : ""));
+        String firstEventLatencyHeader = firstEventLatencyMs.get() >= 0 ? String.valueOf(firstEventLatencyMs.get()) : "";
+        resp.addHeader("X-Easy-SSE-First-Event-Latency-Ms", Collections.singletonList(firstEventLatencyHeader));
+        resp.addHeader("X-Easy-SSE-First-Message-Latency-Ms", Collections.singletonList(firstEventLatencyHeader));
         resp.addHeader("X-Easy-SSE-Completion-Reason", Collections.singletonList(CharSequenceUtil.blankToDefault(completionReasonRef.get(), "")));
         resp.addHeader("X-Easy-SSE-Event-Id", Collections.singletonList(CharSequenceUtil.blankToDefault(lastEventIdRef.get(), "")));
         resp.addHeader("X-Easy-SSE-Event-Type", Collections.singletonList(CharSequenceUtil.blankToDefault(lastEventTypeRef.get(), "")));

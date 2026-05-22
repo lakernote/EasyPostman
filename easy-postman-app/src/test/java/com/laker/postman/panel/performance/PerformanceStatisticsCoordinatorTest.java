@@ -26,6 +26,7 @@ public class PerformanceStatisticsCoordinatorTest extends AbstractSwingUiTest {
                 () -> 0,
                 () -> 0,
                 () -> 1000L,
+                () -> true,
                 now -> null
         );
 

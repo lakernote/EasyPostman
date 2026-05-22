@@ -20,6 +20,7 @@ public final class PerformanceStatsCollector {
     private final MutableStats overallStats = new MutableStats("", PerformanceProtocol.HTTP);
     private final EnumMap<PerformanceProtocol, MutableStats> trendProtocolStats = new EnumMap<>(PerformanceProtocol.class);
     private MutableStats trendOverallStats = new MutableStats("", PerformanceProtocol.HTTP);
+    private boolean trendEnabled = true;
 
     public synchronized void record(RequestResult result) {
         if (result == null) {
@@ -33,8 +34,20 @@ public final class PerformanceStatsCollector {
         protocolApiStats.computeIfAbsent(apiId, ignored -> new MutableStats(apiId, protocol)).record(result);
         protocolTotals.computeIfAbsent(protocol, ignored -> new MutableStats("", protocol)).record(result);
         overallStats.record(result);
-        trendProtocolStats.computeIfAbsent(protocol, ignored -> new MutableStats("", protocol)).record(result);
-        trendOverallStats.record(result);
+        if (trendEnabled) {
+            trendProtocolStats.computeIfAbsent(protocol, ignored -> new MutableStats("", protocol)).record(result);
+            trendOverallStats.record(result);
+        }
+    }
+
+    public synchronized void setTrendEnabled(boolean trendEnabled) {
+        if (this.trendEnabled == trendEnabled) {
+            return;
+        }
+        this.trendEnabled = trendEnabled;
+        if (!trendEnabled) {
+            clearTrendWindow();
+        }
     }
 
     public synchronized PerformanceStatsSnapshot snapshot() {
@@ -77,8 +90,7 @@ public final class PerformanceStatsCollector {
                 toWindowMetrics(trendProtocolStats.get(PerformanceProtocol.SSE),
                         PerformanceProtocol.SSE, samplingIntervalMs, realtimeMetrics)
         );
-        trendProtocolStats.clear();
-        trendOverallStats = new MutableStats("", PerformanceProtocol.HTTP);
+        clearTrendWindow();
         return snapshot;
     }
 
@@ -86,6 +98,10 @@ public final class PerformanceStatsCollector {
         apiStatsByProtocol.clear();
         protocolTotals.clear();
         overallStats.clear();
+        clearTrendWindow();
+    }
+
+    private void clearTrendWindow() {
         trendProtocolStats.clear();
         trendOverallStats = new MutableStats("", PerformanceProtocol.HTTP);
     }

@@ -605,6 +605,8 @@ public final class MessageKeys {
     public static final String PERFORMANCE_EFFICIENT_MODE_WARNING_TITLE = "performance.efficient_mode.warning.title";
     public static final String PERFORMANCE_EFFICIENT_MODE_WARNING_MSG = "performance.efficient_mode.warning.msg";
     public static final String PERFORMANCE_EFFICIENT_MODE_DISABLE_WARNING = "performance.efficient_mode.disable.warning";
+    public static final String PERFORMANCE_TREND_ENABLED = "performance.trend.enabled";
+    public static final String PERFORMANCE_TREND_ENABLED_TOOLTIP = "performance.trend.enabled.tooltip";
     public static final String PERFORMANCE_PROGRESS_TOOLTIP = "performance.progress.tooltip";
     public static final String PERFORMANCE_MSG_REFRESH_SUCCESS = "performance.msg.refresh_success";
     public static final String PERFORMANCE_MSG_REFRESH_WARNING = "performance.msg.refresh_warning";
@@ -651,6 +653,7 @@ public final class MessageKeys {
     public static final String PERFORMANCE_SSE_AWAIT_MODE = "performance.sse.await_mode";
     public static final String PERFORMANCE_SSE_AWAIT_TIMEOUT = "performance.sse.await_timeout";
     public static final String PERFORMANCE_SSE_MESSAGE_FILTER = "performance.sse.message_filter";
+    public static final String PERFORMANCE_SSE_FIRST_EVENT_TIMEOUT = "performance.sse.first_event_timeout";
     public static final String PERFORMANCE_SSE_FIRST_MESSAGE_TIMEOUT = "performance.sse.first_message_timeout";
     public static final String PERFORMANCE_SSE_MATCHED_MESSAGE_TIMEOUT = "performance.sse.matched_message_timeout";
     public static final String PERFORMANCE_SSE_HOLD_CONNECTION = "performance.sse.hold_connection";

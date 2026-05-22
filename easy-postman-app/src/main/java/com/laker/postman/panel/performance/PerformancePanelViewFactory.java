@@ -133,9 +133,11 @@ final class PerformancePanelViewFactory {
 
     ToolbarSection createToolbarSection(Component parentComponent,
                                         boolean efficientMode,
+                                        boolean trendEnabled,
                                         PerformancePersistenceService persistenceService,
                                         Runnable refreshRequestsAction,
                                         Consumer<Boolean> efficientModeSetterAction,
+                                        Consumer<Boolean> trendEnabledSetterAction,
                                         Runnable saveAllPropertyPanelDataAction,
                                         Runnable saveConfigAction) {
         JPanel topPanel = new JPanel(new BorderLayout());
@@ -181,6 +183,16 @@ final class PerformancePanelViewFactory {
         });
         btnPanel.add(efficientCheckBox);
 
+        JCheckBox trendCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_ENABLED));
+        trendCheckBox.setSelected(trendEnabled);
+        trendCheckBox.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_ENABLED_TOOLTIP));
+        trendCheckBox.addActionListener(e -> {
+            trendEnabledSetterAction.accept(trendCheckBox.isSelected());
+            saveAllPropertyPanelDataAction.run();
+            saveConfigAction.run();
+        });
+        btnPanel.add(trendCheckBox);
+
         CsvDataPanel csvDataPanel = new CsvDataPanel();
         csvDataPanel.setContextHelpText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_CSV_USAGE_NOTE));
         csvDataPanel.setChangeListener(saveConfigAction);
@@ -199,7 +211,7 @@ final class PerformancePanelViewFactory {
         progressPanel.add(new MemoryLabel());
         topPanel.add(progressPanel, BorderLayout.EAST);
 
-        return new ToolbarSection(topPanel, runBtn, stopBtn, refreshBtn, efficientCheckBox,
+        return new ToolbarSection(topPanel, runBtn, stopBtn, refreshBtn, efficientCheckBox, trendCheckBox,
                 csvDataPanel, progressLabel);
     }
 
@@ -267,6 +279,7 @@ final class PerformancePanelViewFactory {
                           StopButton stopBtn,
                           RefreshButton refreshBtn,
                           JCheckBox efficientCheckBox,
+                          JCheckBox trendCheckBox,
                           CsvDataPanel csvDataPanel,
                           JLabel progressLabel) {
     }

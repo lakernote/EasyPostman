@@ -26,6 +26,19 @@ public class SseStagePropertyPanelTest extends AbstractSwingUiTest {
         assertFalse(eventNameFilterField(panel).isVisible());
     }
 
+    @Test
+    public void shouldHideEventFilterForFirstEventMode() throws Exception {
+        SseStagePropertyPanel panel = new SseStagePropertyPanel(SseStagePropertyPanel.Stage.AWAIT);
+        JMeterTreeNode node = new JMeterTreeNode("SSE Await", NodeType.SSE_AWAIT);
+        node.ssePerformanceData = new SsePerformanceData();
+        node.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.FIRST_MESSAGE;
+        node.ssePerformanceData.eventNameFilter = "done";
+
+        panel.setRequestNode(node);
+
+        assertFalse(eventNameFilterField(panel).isVisible());
+    }
+
     private EasyTextField eventNameFilterField(SseStagePropertyPanel panel) throws Exception {
         Field field = SseStagePropertyPanel.class.getDeclaredField("eventNameFilterField");
         field.setAccessible(true);

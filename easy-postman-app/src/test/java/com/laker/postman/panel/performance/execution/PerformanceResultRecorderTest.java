@@ -65,6 +65,40 @@ public class PerformanceResultRecorderTest {
     }
 
     @Test
+    public void shouldExtractSseFirstEventLatencyFromResponseHeaders() {
+        HttpResponse response = new HttpResponse();
+        response.headers = new LinkedHashMap<>();
+        response.costMs = 5000;
+        response.endTime = 6000;
+        response.addHeader("X-Easy-SSE-Event-Count", List.of("4"));
+        response.addHeader("X-Easy-SSE-Message-Count", List.of("1"));
+        response.addHeader("X-Easy-SSE-First-Event-Latency-Ms", List.of("90"));
+        response.addHeader("X-Easy-SSE-Completion-Reason", List.of("first_message"));
+
+        PerformanceRequestExecutionResult executionResult = new PerformanceRequestExecutionResult(
+                "api-sse",
+                "SSE API",
+                new PreparedRequest(),
+                response,
+                "",
+                List.of(),
+                false,
+                false,
+                PerformanceProtocol.SSE,
+                1000L,
+                0L
+        );
+
+        RequestResult result = PerformanceResultRecorder.toRequestResult(executionResult, 5000, 6000, true);
+
+        assertEquals(result.protocol, PerformanceProtocol.SSE);
+        assertEquals(result.receivedMessages, 4);
+        assertEquals(result.matchedMessages, 1);
+        assertEquals(result.firstMessageLatencyMs, 90L);
+        assertEquals(result.completionReason, "first_message");
+    }
+
+    @Test
     public void shouldAggregateFastSuccessesWithoutRecordingDetailsInEfficientMode() {
         PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
         RecordingResultTablePanel tablePanel = new RecordingResultTablePanel();

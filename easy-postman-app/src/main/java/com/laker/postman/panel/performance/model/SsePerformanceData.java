@@ -21,6 +21,6 @@ public class SsePerformanceData {
     public String messageFilter = "";
 
     public static boolean usesEventNameFilter(CompletionMode mode) {
-        return mode != CompletionMode.FIXED_DURATION;
+        return mode == CompletionMode.MATCHED_MESSAGE || mode == CompletionMode.MESSAGE_COUNT;
     }
 }

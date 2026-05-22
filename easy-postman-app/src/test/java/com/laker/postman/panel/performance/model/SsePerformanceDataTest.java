@@ -9,7 +9,7 @@ public class SsePerformanceDataTest {
 
     @Test
     public void shouldUseEventNameFilterOnlyForMessageDrivenModes() {
-        assertTrue(SsePerformanceData.usesEventNameFilter(SsePerformanceData.CompletionMode.FIRST_MESSAGE));
+        assertFalse(SsePerformanceData.usesEventNameFilter(SsePerformanceData.CompletionMode.FIRST_MESSAGE));
         assertTrue(SsePerformanceData.usesEventNameFilter(SsePerformanceData.CompletionMode.MATCHED_MESSAGE));
         assertTrue(SsePerformanceData.usesEventNameFilter(SsePerformanceData.CompletionMode.MESSAGE_COUNT));
         assertFalse(SsePerformanceData.usesEventNameFilter(SsePerformanceData.CompletionMode.FIXED_DURATION));

@@ -62,6 +62,38 @@ public class PerformanceStatsCollectorTest {
     }
 
     @Test
+    public void shouldSkipTrendWindowAggregationWhenTrendDisabled() {
+        PerformanceStatsCollector collector = new PerformanceStatsCollector();
+        collector.setTrendEnabled(false);
+        collector.record(new RequestResult(1_000, 1_100, true, "search", PerformanceProtocol.HTTP));
+
+        PerformanceTrendSnapshot disabledSnapshot = collector.sampleTrendSnapshot(
+                2_000,
+                5,
+                0,
+                0,
+                1_000,
+                PerformanceRealtimeMetrics.Sample.empty()
+        );
+
+        assertEquals(collector.snapshot().totalRequests(), 1L);
+        assertEquals(disabledSnapshot.http().samples(), 0);
+
+        collector.setTrendEnabled(true);
+        collector.record(new RequestResult(2_000, 2_200, true, "search", PerformanceProtocol.HTTP));
+        PerformanceTrendSnapshot enabledSnapshot = collector.sampleTrendSnapshot(
+                3_000,
+                5,
+                0,
+                0,
+                1_000,
+                PerformanceRealtimeMetrics.Sample.empty()
+        );
+
+        assertEquals(enabledSnapshot.http().samples(), 1);
+    }
+
+    @Test
     public void shouldAggregateSseFirstEventLatencyPercentiles() {
         ApiMetadata.register("stream", "Stream API");
         PerformanceStatsCollector collector = new PerformanceStatsCollector();

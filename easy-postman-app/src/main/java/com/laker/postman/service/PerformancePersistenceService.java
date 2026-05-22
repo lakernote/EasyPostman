@@ -65,7 +65,7 @@ public class PerformancePersistenceService {
      * 只保存请求ID引用，不保存完整请求配置，确保与集合中的请求保持同步
      */
     public void save(DefaultMutableTreeNode rootNode) {
-        save(rootNode, true, null);
+        save(rootNode, true, true, null);
     }
 
     /**
@@ -75,7 +75,7 @@ public class PerformancePersistenceService {
      * @param efficientMode 是否开启高效模式
      */
     public void save(DefaultMutableTreeNode rootNode, boolean efficientMode) {
-        save(rootNode, efficientMode, null);
+        save(rootNode, efficientMode, true, null);
     }
 
     /**
@@ -86,18 +86,35 @@ public class PerformancePersistenceService {
      * @param csvState      CSV 快照状态
      */
     public void save(DefaultMutableTreeNode rootNode, boolean efficientMode, CsvDataPanel.CsvState csvState) {
-        save(getConfigFilePath(), rootNode, efficientMode, csvState);
+        save(rootNode, efficientMode, true, csvState);
+    }
+
+    /**
+     * 保存性能测试配置树结构
+     *
+     * @param rootNode      树根节点
+     * @param efficientMode 是否开启高效模式
+     * @param trendEnabled  是否开启趋势采样
+     * @param csvState      CSV 快照状态
+     */
+    public void save(DefaultMutableTreeNode rootNode,
+                     boolean efficientMode,
+                     boolean trendEnabled,
+                     CsvDataPanel.CsvState csvState) {
+        save(getConfigFilePath(), rootNode, efficientMode, trendEnabled, csvState);
     }
 
     private void save(Path configPath,
                       DefaultMutableTreeNode rootNode,
                       boolean efficientMode,
+                      boolean trendEnabled,
                       CsvDataPanel.CsvState csvState) {
         try {
             ensureDirExists(configPath);
             JSONObject jsonRoot = new JSONObject();
             jsonRoot.set("version", "1.0");
             jsonRoot.set("efficientMode", efficientMode);
+            jsonRoot.set("trendEnabled", trendEnabled);
             jsonRoot.set("tree", serializeTreeNode(rootNode));
             if (csvState != null) {
                 jsonRoot.set("csvState", serializeCsvState(csvState));
@@ -107,7 +124,8 @@ public class PerformancePersistenceService {
             String jsonString = JSONUtil.toJsonPrettyStr(jsonRoot);
             Files.writeString(configPath, jsonString, StandardCharsets.UTF_8);
 
-            log.info("Successfully saved performance test configuration (efficientMode: {})", efficientMode);
+            log.info("Successfully saved performance test configuration (efficientMode: {}, trendEnabled: {})",
+                    efficientMode, trendEnabled);
         } catch (IOException e) {
             log.error("Failed to save performance test config: {}", e.getMessage(), e);
         }
@@ -117,7 +135,7 @@ public class PerformancePersistenceService {
      * 异步保存配置
      */
     public void saveAsync(DefaultMutableTreeNode rootNode) {
-        saveAsync(rootNode, true, null);
+        saveAsync(rootNode, true, true, null);
     }
 
     /**
@@ -127,7 +145,7 @@ public class PerformancePersistenceService {
      * @param efficientMode 是否开启高效模式
      */
     public void saveAsync(DefaultMutableTreeNode rootNode, boolean efficientMode) {
-        saveAsync(rootNode, efficientMode, null);
+        saveAsync(rootNode, efficientMode, true, null);
     }
 
     /**
@@ -138,10 +156,25 @@ public class PerformancePersistenceService {
      * @param csvState      CSV 快照状态
      */
     public void saveAsync(DefaultMutableTreeNode rootNode, boolean efficientMode, CsvDataPanel.CsvState csvState) {
+        saveAsync(rootNode, efficientMode, true, csvState);
+    }
+
+    /**
+     * 异步保存配置
+     *
+     * @param rootNode      树根节点
+     * @param efficientMode 是否开启高效模式
+     * @param trendEnabled  是否开启趋势采样
+     * @param csvState      CSV 快照状态
+     */
+    public void saveAsync(DefaultMutableTreeNode rootNode,
+                          boolean efficientMode,
+                          boolean trendEnabled,
+                          CsvDataPanel.CsvState csvState) {
         // 异步线程启动前先固定路径，防止用户切换 workspace 后把旧性能方案写到新 workspace。
         Path configPath = getConfigFilePath();
         Thread saveThread = new Thread(
-                () -> save(configPath, rootNode, efficientMode, csvState),
+                () -> save(configPath, rootNode, efficientMode, trendEnabled, csvState),
                 "performance-config-save"
         );
         saveThread.setDaemon(true);
@@ -425,6 +458,43 @@ public class PerformancePersistenceService {
 
         } catch (Exception e) {
             log.error("Failed to load efficientMode: {}", e.getMessage());
+            return true;
+        }
+    }
+
+    /**
+     * 加载趋势采样开关。
+     *
+     * @return 趋势采样设置，如果配置文件不存在或读取失败则返回 true（默认开启）
+     */
+    public boolean loadTrendEnabled() {
+        Path configPath = getConfigFilePath();
+        File file = configPath.toFile();
+
+        if (!file.exists()) {
+            log.debug("No performance test config file found, using default trendEnabled: true");
+            return true;
+        }
+
+        try {
+            long fileSizeInBytes = file.length();
+            if (fileSizeInBytes == 0 || fileSizeInBytes > MAX_FILE_SIZE) {
+                return true;
+            }
+
+            String jsonString = Files.readString(configPath, StandardCharsets.UTF_8);
+            if (jsonString.trim().isEmpty()) {
+                return true;
+            }
+
+            JSONObject jsonRoot = JSONUtil.parseObj(jsonString);
+            Boolean trendEnabled = jsonRoot.getBool("trendEnabled", true);
+
+            log.debug("Loaded trendEnabled: {}", trendEnabled);
+            return trendEnabled;
+
+        } catch (Exception e) {
+            log.error("Failed to load trendEnabled: {}", e.getMessage());
             return true;
         }
     }

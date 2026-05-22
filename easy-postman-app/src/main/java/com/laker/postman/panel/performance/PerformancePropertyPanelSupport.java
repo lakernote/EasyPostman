@@ -38,6 +38,7 @@ final class PerformancePropertyPanelSupport {
     void forceCommitAllSpinners() {
         threadGroupPanel.forceCommitAllSpinners();
         loopPanel.forceCommitAllSpinners();
+        timerPanel.forceCommitAllSpinners();
         sseConnectPanel.forceCommitAllSpinners();
         sseAwaitPanel.forceCommitAllSpinners();
         wsConnectPanel.forceCommitAllSpinners();

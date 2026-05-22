@@ -1,5 +1,6 @@
 package com.laker.postman.panel.performance.timer;
 
+import com.laker.postman.common.component.EasyJSpinner;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -9,7 +10,7 @@ import javax.swing.*;
 import java.awt.*;
 
 public class TimerPropertyPanel extends JPanel {
-    private final JSpinner delaySpinner;
+    private final EasyJSpinner delaySpinner;
     private JMeterTreeNode currentNode;
 
     public TimerPropertyPanel() {
@@ -28,7 +29,7 @@ public class TimerPropertyPanel extends JPanel {
         add(label, gbc);
         gbc.gridx = 1;
         gbc.insets = new Insets(6, 0, 6, 6); // 左间距为0，右间距为6
-        delaySpinner = new JSpinner(new SpinnerNumberModel(1000, 0, 60000, 100));
+        delaySpinner = EasyJSpinner.intSpinner(1000, 0, 60000, 100);
         delaySpinner.setPreferredSize(new Dimension(100, 28));
         add(delaySpinner, gbc);
         // 帮助说明
@@ -69,6 +70,10 @@ public class TimerPropertyPanel extends JPanel {
             data = new TimerData();
             currentNode.timerData = data;
         }
-        data.delayMs = (Integer) delaySpinner.getValue();
+        data.delayMs = delaySpinner.getCommittedIntValue();
+    }
+
+    public void forceCommitAllSpinners() {
+        delaySpinner.forceCommit();
     }
 }

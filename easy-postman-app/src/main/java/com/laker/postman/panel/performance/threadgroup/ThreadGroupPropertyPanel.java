@@ -18,6 +18,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
     private final CardLayout cardLayout;
     private final JPanel cardPanel;
     private JMeterTreeNode currentNode;
+    private boolean updatingPreview;
 
     // 固定模式面板组件
     private final JPanel fixedPanel;
@@ -78,54 +79,54 @@ public class ThreadGroupPropertyPanel extends JPanel {
         // 1. 固定模式面板
         fixedPanel = new JPanel(new GridBagLayout());
         fixedPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        fixedNumThreadsSpinner = new EasyJSpinner(new SpinnerNumberModel(1, 1, 1000, 1));
+        fixedNumThreadsSpinner = EasyJSpinner.intSpinner(1, ThreadGroupData.MIN_THREADS, null, 1);
         fixedNumThreadsSpinner.setPreferredSize(new Dimension(80, 28));
-        fixedLoopsSpinner = new EasyJSpinner(new SpinnerNumberModel(1, 1, 100000, 1));
+        fixedLoopsSpinner = EasyJSpinner.intSpinner(1, 1, null, 1);
         fixedLoopsSpinner.setPreferredSize(new Dimension(80, 28));
         useTimeCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.THREADGROUP_FIXED_USE_TIME));
-        durationSpinner = new EasyJSpinner(new SpinnerNumberModel(60, 1, 86400, 10));
+        durationSpinner = EasyJSpinner.intSpinner(60, 1, null, 10);
         durationSpinner.setPreferredSize(new Dimension(80, 28));
 
         // 2. 递增模式面板
         rampUpPanel = new JPanel(new GridBagLayout());
         rampUpPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        rampUpStartThreadsSpinner = new EasyJSpinner(new SpinnerNumberModel(1, 1, 1000, 1));
+        rampUpStartThreadsSpinner = EasyJSpinner.intSpinner(1, ThreadGroupData.MIN_THREADS, null, 1);
         rampUpStartThreadsSpinner.setPreferredSize(new Dimension(80, 28));
-        rampUpEndThreadsSpinner = new EasyJSpinner(new SpinnerNumberModel(10, 1, 1000, 1));
+        rampUpEndThreadsSpinner = EasyJSpinner.intSpinner(10, ThreadGroupData.MIN_THREADS, null, 1);
         rampUpEndThreadsSpinner.setPreferredSize(new Dimension(80, 28));
-        rampUpTimeSpinner = new EasyJSpinner(new SpinnerNumberModel(30, 1, 3600, 5));
+        rampUpTimeSpinner = EasyJSpinner.intSpinner(30, 1, null, 5);
         rampUpTimeSpinner.setPreferredSize(new Dimension(80, 28));
-        rampUpDurationSpinner = new EasyJSpinner(new SpinnerNumberModel(120, 1, 86400, 10));
+        rampUpDurationSpinner = EasyJSpinner.intSpinner(120, 1, null, 10);
         rampUpDurationSpinner.setPreferredSize(new Dimension(80, 28));
 
         // 3. 尖刺模式面板
         spikePanel = new JPanel(new GridBagLayout());
         spikePanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        spikeMinThreadsSpinner = new EasyJSpinner(new SpinnerNumberModel(1, 1, 1000, 1));
+        spikeMinThreadsSpinner = EasyJSpinner.intSpinner(1, ThreadGroupData.MIN_THREADS, null, 1);
         spikeMinThreadsSpinner.setPreferredSize(new Dimension(80, 28));
-        spikeMaxThreadsSpinner = new EasyJSpinner(new SpinnerNumberModel(20, 1, 1000, 1));
+        spikeMaxThreadsSpinner = EasyJSpinner.intSpinner(20, ThreadGroupData.MIN_THREADS, null, 1);
         spikeMaxThreadsSpinner.setPreferredSize(new Dimension(80, 28));
-        spikeRampUpTimeSpinner = new EasyJSpinner(new SpinnerNumberModel(10, 1, 3600, 1));
+        spikeRampUpTimeSpinner = EasyJSpinner.intSpinner(10, 1, null, 1);
         spikeRampUpTimeSpinner.setPreferredSize(new Dimension(80, 28));
-        spikeHoldTimeSpinner = new EasyJSpinner(new SpinnerNumberModel(5, 0, 3600, 1));
+        spikeHoldTimeSpinner = EasyJSpinner.intSpinner(5, 0, null, 1);
         spikeHoldTimeSpinner.setPreferredSize(new Dimension(80, 28));
-        spikeRampDownTimeSpinner = new EasyJSpinner(new SpinnerNumberModel(10, 1, 3600, 1));
+        spikeRampDownTimeSpinner = EasyJSpinner.intSpinner(10, 1, null, 1);
         spikeRampDownTimeSpinner.setPreferredSize(new Dimension(80, 28));
-        spikeDurationSpinner = new EasyJSpinner(new SpinnerNumberModel(120, 1, 86400, 10));
+        spikeDurationSpinner = EasyJSpinner.intSpinner(120, 1, null, 10);
         spikeDurationSpinner.setPreferredSize(new Dimension(80, 28));
 
         // 4. 阶梯模式面板
         stairsPanel = new JPanel(new GridBagLayout());
         stairsPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        stairsStartThreadsSpinner = new EasyJSpinner(new SpinnerNumberModel(1, 1, 1000, 1));
+        stairsStartThreadsSpinner = EasyJSpinner.intSpinner(1, ThreadGroupData.MIN_THREADS, null, 1);
         stairsStartThreadsSpinner.setPreferredSize(new Dimension(80, 28));
-        stairsEndThreadsSpinner = new EasyJSpinner(new SpinnerNumberModel(20, 1, 1000, 1));
+        stairsEndThreadsSpinner = EasyJSpinner.intSpinner(20, ThreadGroupData.MIN_THREADS, null, 1);
         stairsEndThreadsSpinner.setPreferredSize(new Dimension(80, 28));
-        stairsStepSpinner = new EasyJSpinner(new SpinnerNumberModel(5, 1, 100, 1));
+        stairsStepSpinner = EasyJSpinner.intSpinner(5, 1, null, 1);
         stairsStepSpinner.setPreferredSize(new Dimension(80, 28));
-        stairsHoldTimeSpinner = new EasyJSpinner(new SpinnerNumberModel(10, 1, 3600, 1));
+        stairsHoldTimeSpinner = EasyJSpinner.intSpinner(10, 1, null, 1);
         stairsHoldTimeSpinner.setPreferredSize(new Dimension(80, 28));
-        stairsDurationSpinner = new EasyJSpinner(new SpinnerNumberModel(240, 1, 86400, 10));
+        stairsDurationSpinner = EasyJSpinner.intSpinner(240, 1, null, 10);
         stairsDurationSpinner.setPreferredSize(new Dimension(80, 28));
 
         // 设置各个面板的布局
@@ -389,6 +390,18 @@ public class ThreadGroupPropertyPanel extends JPanel {
     }
 
     private void updatePreview() {
+        if (updatingPreview) {
+            return;
+        }
+        updatingPreview = true;
+        try {
+            updatePreviewSnapshot();
+        } finally {
+            updatingPreview = false;
+        }
+    }
+
+    private void updatePreviewSnapshot() {
         ThreadGroupData.ThreadMode mode = (ThreadGroupData.ThreadMode) modeComboBox.getSelectedItem();
         if (mode == null) return;
 
@@ -397,34 +410,34 @@ public class ThreadGroupPropertyPanel extends JPanel {
 
         switch (mode) {
             case FIXED:
-                previewData.fixedThreads = (Integer) fixedNumThreadsSpinner.getValue();
+                previewData.fixedThreads = fixedNumThreadsSpinner.getCommittedIntValue();
                 previewData.useTime = useTimeCheckBox.isSelected();
-                previewData.duration = (Integer) durationSpinner.getValue();
-                previewData.loops = (Integer) fixedLoopsSpinner.getValue();
+                previewData.duration = durationSpinner.getCommittedIntValue();
+                previewData.loops = fixedLoopsSpinner.getCommittedIntValue();
                 break;
 
             case RAMP_UP:
-                previewData.rampUpStartThreads = (Integer) rampUpStartThreadsSpinner.getValue();
-                previewData.rampUpEndThreads = (Integer) rampUpEndThreadsSpinner.getValue();
-                previewData.rampUpTime = (Integer) rampUpTimeSpinner.getValue();
-                previewData.rampUpDuration = (Integer) rampUpDurationSpinner.getValue();
+                previewData.rampUpStartThreads = rampUpStartThreadsSpinner.getCommittedIntValue();
+                previewData.rampUpEndThreads = rampUpEndThreadsSpinner.getCommittedIntValue();
+                previewData.rampUpTime = rampUpTimeSpinner.getCommittedIntValue();
+                previewData.rampUpDuration = rampUpDurationSpinner.getCommittedIntValue();
                 break;
 
             case SPIKE:
-                previewData.spikeMinThreads = (Integer) spikeMinThreadsSpinner.getValue();
-                previewData.spikeMaxThreads = (Integer) spikeMaxThreadsSpinner.getValue();
-                previewData.spikeRampUpTime = (Integer) spikeRampUpTimeSpinner.getValue();
-                previewData.spikeHoldTime = (Integer) spikeHoldTimeSpinner.getValue();
-                previewData.spikeRampDownTime = (Integer) spikeRampDownTimeSpinner.getValue();
-                previewData.spikeDuration = (Integer) spikeDurationSpinner.getValue();
+                previewData.spikeMinThreads = spikeMinThreadsSpinner.getCommittedIntValue();
+                previewData.spikeMaxThreads = spikeMaxThreadsSpinner.getCommittedIntValue();
+                previewData.spikeRampUpTime = spikeRampUpTimeSpinner.getCommittedIntValue();
+                previewData.spikeHoldTime = spikeHoldTimeSpinner.getCommittedIntValue();
+                previewData.spikeRampDownTime = spikeRampDownTimeSpinner.getCommittedIntValue();
+                previewData.spikeDuration = spikeDurationSpinner.getCommittedIntValue();
                 break;
 
             case STAIRS:
-                previewData.stairsStartThreads = (Integer) stairsStartThreadsSpinner.getValue();
-                previewData.stairsEndThreads = (Integer) stairsEndThreadsSpinner.getValue();
-                previewData.stairsStep = (Integer) stairsStepSpinner.getValue();
-                previewData.stairsHoldTime = (Integer) stairsHoldTimeSpinner.getValue();
-                previewData.stairsDuration = (Integer) stairsDurationSpinner.getValue();
+                previewData.stairsStartThreads = stairsStartThreadsSpinner.getCommittedIntValue();
+                previewData.stairsEndThreads = stairsEndThreadsSpinner.getCommittedIntValue();
+                previewData.stairsStep = stairsStepSpinner.getCommittedIntValue();
+                previewData.stairsHoldTime = stairsHoldTimeSpinner.getCommittedIntValue();
+                previewData.stairsDuration = stairsDurationSpinner.getCommittedIntValue();
                 break;
         }
 
@@ -512,31 +525,31 @@ public class ThreadGroupPropertyPanel extends JPanel {
         data.threadMode = (ThreadGroupData.ThreadMode) modeComboBox.getSelectedItem();
 
         // 保存固定模式参数
-        data.numThreads = (Integer) fixedNumThreadsSpinner.getValue();
-        data.loops = (Integer) fixedLoopsSpinner.getValue();
+        data.numThreads = fixedNumThreadsSpinner.getCommittedIntValue();
+        data.loops = fixedLoopsSpinner.getCommittedIntValue();
         data.useTime = useTimeCheckBox.isSelected();
-        data.duration = (Integer) durationSpinner.getValue();
+        data.duration = durationSpinner.getCommittedIntValue();
 
         // 保存递增模式参数
-        data.rampUpStartThreads = (Integer) rampUpStartThreadsSpinner.getValue();
-        data.rampUpEndThreads = (Integer) rampUpEndThreadsSpinner.getValue();
-        data.rampUpTime = (Integer) rampUpTimeSpinner.getValue();
-        data.rampUpDuration = (Integer) rampUpDurationSpinner.getValue();
+        data.rampUpStartThreads = rampUpStartThreadsSpinner.getCommittedIntValue();
+        data.rampUpEndThreads = rampUpEndThreadsSpinner.getCommittedIntValue();
+        data.rampUpTime = rampUpTimeSpinner.getCommittedIntValue();
+        data.rampUpDuration = rampUpDurationSpinner.getCommittedIntValue();
 
         // 保存尖刺模式参数
-        data.spikeMinThreads = (Integer) spikeMinThreadsSpinner.getValue();
-        data.spikeMaxThreads = (Integer) spikeMaxThreadsSpinner.getValue();
-        data.spikeRampUpTime = (Integer) spikeRampUpTimeSpinner.getValue();
-        data.spikeHoldTime = (Integer) spikeHoldTimeSpinner.getValue();
-        data.spikeRampDownTime = (Integer) spikeRampDownTimeSpinner.getValue();
-        data.spikeDuration = (Integer) spikeDurationSpinner.getValue();
+        data.spikeMinThreads = spikeMinThreadsSpinner.getCommittedIntValue();
+        data.spikeMaxThreads = spikeMaxThreadsSpinner.getCommittedIntValue();
+        data.spikeRampUpTime = spikeRampUpTimeSpinner.getCommittedIntValue();
+        data.spikeHoldTime = spikeHoldTimeSpinner.getCommittedIntValue();
+        data.spikeRampDownTime = spikeRampDownTimeSpinner.getCommittedIntValue();
+        data.spikeDuration = spikeDurationSpinner.getCommittedIntValue();
 
         // 保存阶梯模式参数
-        data.stairsStartThreads = (Integer) stairsStartThreadsSpinner.getValue();
-        data.stairsEndThreads = (Integer) stairsEndThreadsSpinner.getValue();
-        data.stairsStep = (Integer) stairsStepSpinner.getValue();
-        data.stairsHoldTime = (Integer) stairsHoldTimeSpinner.getValue();
-        data.stairsDuration = (Integer) stairsDurationSpinner.getValue();
+        data.stairsStartThreads = stairsStartThreadsSpinner.getCommittedIntValue();
+        data.stairsEndThreads = stairsEndThreadsSpinner.getCommittedIntValue();
+        data.stairsStep = stairsStepSpinner.getCommittedIntValue();
+        data.stairsHoldTime = stairsHoldTimeSpinner.getCommittedIntValue();
+        data.stairsDuration = stairsDurationSpinner.getCommittedIntValue();
         data.normalize();
     }
 

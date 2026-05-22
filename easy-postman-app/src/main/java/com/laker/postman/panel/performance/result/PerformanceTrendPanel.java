@@ -239,6 +239,22 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         for (TimeSeries series : allSeries()) {
             series.clear();
         }
+        for (TrendView trendView : trendViews) {
+            trendView.resetAxes();
+        }
+    }
+
+    private static void resetAxes(ChartPanel chartPanel) {
+        if (chartPanel == null || chartPanel.getChart() == null) {
+            return;
+        }
+        XYPlot plot = chartPanel.getChart().getXYPlot();
+        if (plot.getDomainAxis() != null) {
+            plot.getDomainAxis().setAutoRange(true);
+        }
+        if (plot.getRangeAxis() != null) {
+            plot.getRangeAxis().setAutoRange(true);
+        }
     }
 
     private TimeSeries[] allSeries() {
@@ -462,6 +478,13 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
             layout.show(chartCards, mode);
             chartCards.revalidate();
             chartCards.repaint();
+        }
+
+        private void resetAxes() {
+            PerformanceTrendPanel.resetAxes(combinedChartPanel);
+            for (SplitChart splitChart : splitCharts) {
+                PerformanceTrendPanel.resetAxes(splitChart.chartPanel());
+            }
         }
     }
 

@@ -19,12 +19,12 @@ public class LoopPropertyPanel extends JPanel {
 
         GridBagConstraints gbc = PerformanceStagePropertyLayout.createBaseConstraints();
         JLabel label = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_LOOP_ITERATIONS));
-        iterationsSpinner = new EasyJSpinner(new SpinnerNumberModel(
+        iterationsSpinner = EasyJSpinner.intSpinner(
                 LoopData.MIN_ITERATIONS,
                 LoopData.MIN_ITERATIONS,
                 LoopData.MAX_ITERATIONS,
                 1
-        ));
+        );
         PerformanceStagePropertyLayout.configureFieldWidth(
                 iterationsSpinner,
                 PerformanceStagePropertyLayout.SPINNER_FIELD_WIDTH,
@@ -46,7 +46,7 @@ public class LoopPropertyPanel extends JPanel {
             return;
         }
         LoopData data = resolveLoopData(currentNode);
-        data.iterations = (Integer) iterationsSpinner.getValue();
+        data.iterations = iterationsSpinner.getCommittedIntValue();
         data.normalize();
         currentNode.name = buildLoopTitle(data);
     }

@@ -143,6 +143,23 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
     }
 
     @Test
+    public void clearTrendDatasetShouldRestoreAutoRangeForSplitCharts() throws Exception {
+        PerformanceTrendPanel panel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
+        panel.clearTrendDataset();
+        TimeSeries series = getTimeSeries(panel, "httpRpsSeries");
+        ChartPanel chartPanel = findChartPanelForSeries(panel, series);
+        NumberAxis rangeAxis = (NumberAxis) chartPanel.getChart().getXYPlot().getRangeAxis();
+        rangeAxis.setRange(0, 20_000);
+        rangeAxis.setAutoRange(false);
+
+        panel.clearTrendDataset();
+        panel.addOrUpdate(new Millisecond(new Date(System.currentTimeMillis())), 100, 50, 12, 0);
+
+        assertTrue(rangeAxis.isAutoRange());
+        assertTrue(rangeAxis.getUpperBound() < 20_000);
+    }
+
+    @Test
     public void shouldHideLatencyAndDurationChartsForStreamingProtocols() {
         PerformanceTrendPanel panel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
         JToggleButton separateButton = findToggleButton(

@@ -12,6 +12,7 @@ import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
 import com.laker.postman.panel.performance.timer.TimerPropertyPanel;
 import com.laker.postman.service.PerformancePersistenceService;
+import com.laker.postman.test.AbstractSwingUiTest;
 import org.testng.annotations.Test;
 
 import javax.swing.JFormattedTextField;
@@ -32,7 +33,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertSame;
 
-public class PerformancePanelSaveTest {
+public class PerformancePanelSaveTest extends AbstractSwingUiTest {
 
     @Test(description = "显式保存性能配置时应先提交仍在编辑中的 spinner 文本")
     public void shouldCommitEditedSpinnerTextBeforeExplicitSave() throws Exception {
@@ -64,6 +65,69 @@ public class PerformancePanelSaveTest {
             assertEquals(threadGroupData.numThreads, 7);
             assertEquals(persistenceService.saveCount.get(), 1);
             assertSame(persistenceService.savedRoot, root);
+        });
+    }
+
+    @Test(description = "启动压测前应先提交仍在编辑中的线程组 spinner 文本")
+    public void saveThreadGroupDataShouldCommitEditedSpinnerText() throws Exception {
+        runOnEdtAndWait(() -> {
+            ThreadGroupData threadGroupData = new ThreadGroupData();
+            threadGroupData.numThreads = 1;
+            JMeterTreeNode threadGroupTreeNode = new JMeterTreeNode("Thread Group", NodeType.THREAD_GROUP, threadGroupData);
+
+            ThreadGroupPropertyPanel threadGroupPanel = new ThreadGroupPropertyPanel();
+            threadGroupPanel.setThreadGroupData(threadGroupTreeNode);
+            EasyJSpinner numThreadsSpinner = getSpinner(threadGroupPanel, "fixedNumThreadsSpinner");
+            setEditorText(numThreadsSpinner, "7");
+            assertEquals(numThreadsSpinner.getValue(), 1);
+
+            threadGroupPanel.saveThreadGroupData();
+
+            assertEquals(threadGroupData.numThreads, 7);
+        });
+    }
+
+    @Test(description = "线程组固定用户数不应被固定上限截断")
+    public void threadGroupFixedUsersShouldAcceptLargeUserInput() throws Exception {
+        runOnEdtAndWait(() -> {
+            ThreadGroupData threadGroupData = new ThreadGroupData();
+            threadGroupData.numThreads = 1;
+            JMeterTreeNode threadGroupTreeNode = new JMeterTreeNode("Thread Group", NodeType.THREAD_GROUP, threadGroupData);
+
+            ThreadGroupPropertyPanel threadGroupPanel = new ThreadGroupPropertyPanel();
+            threadGroupPanel.setThreadGroupData(threadGroupTreeNode);
+            EasyJSpinner numThreadsSpinner = getSpinner(threadGroupPanel, "fixedNumThreadsSpinner");
+            setEditorText(numThreadsSpinner, "123456");
+
+            threadGroupPanel.forceCommitAllSpinners();
+            threadGroupPanel.saveThreadGroupData();
+
+            assertEquals(threadGroupData.numThreads, 123456);
+        });
+    }
+
+    @Test(description = "阶梯预览应使用正在编辑但尚未提交的 spinner 文本")
+    public void stairsPreviewShouldUseEditedSpinnerTextBeforeCommit() throws Exception {
+        runOnEdtAndWait(() -> {
+            ThreadGroupData threadGroupData = new ThreadGroupData();
+            threadGroupData.threadMode = ThreadGroupData.ThreadMode.STAIRS;
+            threadGroupData.stairsStartThreads = 200;
+            threadGroupData.stairsEndThreads = 2_000;
+            threadGroupData.stairsStep = 5;
+            threadGroupData.stairsHoldTime = 5;
+            threadGroupData.stairsDuration = 60;
+            JMeterTreeNode threadGroupTreeNode = new JMeterTreeNode("Thread Group", NodeType.THREAD_GROUP, threadGroupData);
+
+            ThreadGroupPropertyPanel threadGroupPanel = new ThreadGroupPropertyPanel();
+            threadGroupPanel.setThreadGroupData(threadGroupTreeNode);
+            EasyJSpinner stairsStepSpinner = getSpinner(threadGroupPanel, "stairsStepSpinner");
+            setEditorText(stairsStepSpinner, "200");
+            assertEquals(stairsStepSpinner.getValue(), 5);
+
+            invokeUpdatePreview(threadGroupPanel);
+
+            Object previewData = getPreviewData(threadGroupPanel);
+            assertEquals((Integer) getField(previewData, "stairsStep"), 200);
         });
     }
 
@@ -157,6 +221,23 @@ public class PerformancePanelSaveTest {
         Field field = ThreadGroupPropertyPanel.class.getDeclaredField(fieldName);
         field.setAccessible(true);
         return (EasyJSpinner) field.get(panel);
+    }
+
+    private static void invokeUpdatePreview(ThreadGroupPropertyPanel panel) throws Exception {
+        Method method = ThreadGroupPropertyPanel.class.getDeclaredMethod("updatePreview");
+        method.setAccessible(true);
+        method.invoke(panel);
+    }
+
+    private static Object getPreviewData(ThreadGroupPropertyPanel panel) throws Exception {
+        Object previewPanel = getField(panel, "previewPanel");
+        return getField(previewPanel, "previewData");
+    }
+
+    private static Object getField(Object target, String fieldName) throws Exception {
+        Field field = target.getClass().getDeclaredField(fieldName);
+        field.setAccessible(true);
+        return field.get(target);
     }
 
     private static void setEditorText(EasyJSpinner spinner, String text) {

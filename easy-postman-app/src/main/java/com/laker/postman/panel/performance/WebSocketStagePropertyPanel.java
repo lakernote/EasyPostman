@@ -99,7 +99,7 @@ public class WebSocketStagePropertyPanel extends JPanel {
         PerformanceStagePropertyLayout.applyCompactBorder(this);
         GridBagConstraints gbc = PerformanceStagePropertyLayout.createBaseConstraints();
 
-        connectTimeoutSpinner = new EasyJSpinner(new SpinnerNumberModel(10000, 100, 600000, 100));
+        connectTimeoutSpinner = EasyJSpinner.intSpinner(10000, 100, 600000, 100);
         sendModeBox = new EasyComboBox<>(
                 WebSocketPerformanceData.SendMode.values(),
                 EasyComboBox.WidthMode.FIXED_MAX
@@ -108,15 +108,15 @@ public class WebSocketStagePropertyPanel extends JPanel {
                 WebSocketPerformanceData.SendContentSource.values(),
                 EasyComboBox.WidthMode.FIXED_MAX
         );
-        sendCountSpinner = new EasyJSpinner(new SpinnerNumberModel(3, 1, 100000, 1));
-        sendIntervalSpinner = new EasyJSpinner(new SpinnerNumberModel(1000, 0, 3600000, 100));
+        sendCountSpinner = EasyJSpinner.intSpinner(3, 1, 100000, 1);
+        sendIntervalSpinner = EasyJSpinner.intSpinner(1000, 0, 3600000, 100);
         completionModeBox = new EasyComboBox<>(
                 WebSocketPerformanceData.CompletionMode.values(),
                 EasyComboBox.WidthMode.FIXED_MAX
         );
-        awaitTimeoutSpinner = new EasyJSpinner(new SpinnerNumberModel(10000, 100, 600000, 100));
-        holdConnectionSpinner = new EasyJSpinner(new SpinnerNumberModel(30000, 100, 3600000, 1000));
-        targetMessageCountSpinner = new EasyJSpinner(new SpinnerNumberModel(1, 1, 100000, 1));
+        awaitTimeoutSpinner = EasyJSpinner.intSpinner(10000, 100, 600000, 100);
+        holdConnectionSpinner = EasyJSpinner.intSpinner(30000, 100, 3600000, 1000);
+        targetMessageCountSpinner = EasyJSpinner.intSpinner(1, 1, 100000, 1);
         messageFilterField = new EasyTextField(20);
         customSendBodyArea = new RSyntaxTextArea(8, 40);
         configureTemplateEditor(customSendBodyArea);
@@ -549,20 +549,20 @@ public class WebSocketStagePropertyPanel extends JPanel {
                 ? currentNode.webSocketPerformanceData
                 : new WebSocketPerformanceData();
         switch (stage) {
-            case CONNECT -> data.connectTimeoutMs = (Integer) connectTimeoutSpinner.getValue();
+            case CONNECT -> data.connectTimeoutMs = connectTimeoutSpinner.getCommittedIntValue();
             case SEND -> {
                 data.sendMode = (WebSocketPerformanceData.SendMode) sendModeBox.getSelectedItem();
                 data.sendContentSource = (WebSocketPerformanceData.SendContentSource) sendContentSourceBox.getSelectedItem();
                 data.customSendBody = customSendBodyArea.getText();
                 data.sendPreScript = sendPreScriptArea.getText();
-                data.sendCount = (Integer) sendCountSpinner.getValue();
-                data.sendIntervalMs = (Integer) sendIntervalSpinner.getValue();
+                data.sendCount = sendCountSpinner.getCommittedIntValue();
+                data.sendIntervalMs = sendIntervalSpinner.getCommittedIntValue();
             }
             case AWAIT -> {
                 data.completionMode = (WebSocketPerformanceData.CompletionMode) completionModeBox.getSelectedItem();
-                data.firstMessageTimeoutMs = (Integer) awaitTimeoutSpinner.getValue();
-                data.holdConnectionMs = (Integer) holdConnectionSpinner.getValue();
-                data.targetMessageCount = (Integer) targetMessageCountSpinner.getValue();
+                data.firstMessageTimeoutMs = awaitTimeoutSpinner.getCommittedIntValue();
+                data.holdConnectionMs = holdConnectionSpinner.getCommittedIntValue();
+                data.targetMessageCount = targetMessageCountSpinner.getCommittedIntValue();
                 data.messageFilter = messageFilterField.getText().trim();
             }
             case CLOSE -> {

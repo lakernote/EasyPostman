@@ -160,7 +160,7 @@ public class EasyJSpinner extends JSpinner {
             });
 
             return true;
-        } catch (ParseException ex) {
+        } catch (ParseException | IllegalArgumentException ex) {
             // 提交失败（例如：输入无效或超出范围）
             // 保持当前文本和光标位置不变，让用户继续编辑
             // 这避免了输入过程中的异常格式化（例如 "10001" -> "0010"）
@@ -169,11 +169,43 @@ public class EasyJSpinner extends JSpinner {
     }
 
     /**
+     * 停止防抖并立即提交当前编辑文本。
+     *
+     * @return 当前编辑文本是否成功提交到 spinner 模型
+     */
+    public boolean commitCurrentEdit() {
+        debounceTimer.stop();
+        return commitValue();
+    }
+
+    /**
+     * 先提交编辑文本，再读取当前模型值。
+     */
+    public Object getCommittedValue() {
+        commitCurrentEdit();
+        return getValue();
+    }
+
+    /**
+     * 先提交编辑文本，再按 int 读取当前值。
+     */
+    public int getCommittedIntValue() {
+        return ((Number) getCommittedValue()).intValue();
+    }
+
+    /**
      * 强制提交当前值（用于 Ctrl/Cmd+S 保存时）
      */
     public void forceCommit() {
-        debounceTimer.stop();  // 停止防抖
-        commitValue();
+        commitCurrentEdit();
+    }
+
+    public static EasyJSpinner intSpinner(int value, int minimum, Integer maximum, int stepSize) {
+        return new EasyJSpinner(new SpinnerNumberModel(
+                Integer.valueOf(value),
+                Integer.valueOf(minimum),
+                maximum == null ? null : Integer.valueOf(maximum),
+                Integer.valueOf(stepSize)
+        ));
     }
 }
-

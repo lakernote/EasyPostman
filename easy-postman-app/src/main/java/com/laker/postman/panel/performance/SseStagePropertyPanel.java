@@ -44,14 +44,14 @@ public class SseStagePropertyPanel extends JPanel {
         PerformanceStagePropertyLayout.applyCompactBorder(this);
         GridBagConstraints gbc = PerformanceStagePropertyLayout.createBaseConstraints();
 
-        connectTimeoutSpinner = new EasyJSpinner(new SpinnerNumberModel(10000, 100, 600000, 100));
+        connectTimeoutSpinner = EasyJSpinner.intSpinner(10000, 100, 600000, 100);
         completionModeBox = new EasyComboBox<>(
                 SsePerformanceData.CompletionMode.values(),
                 EasyComboBox.WidthMode.FIXED_MAX
         );
-        awaitTimeoutSpinner = new EasyJSpinner(new SpinnerNumberModel(10000, 100, 600000, 100));
-        holdConnectionSpinner = new EasyJSpinner(new SpinnerNumberModel(30000, 100, 3600000, 1000));
-        targetMessageCountSpinner = new EasyJSpinner(new SpinnerNumberModel(1, 1, 100000, 1));
+        awaitTimeoutSpinner = EasyJSpinner.intSpinner(10000, 100, 600000, 100);
+        holdConnectionSpinner = EasyJSpinner.intSpinner(30000, 100, 3600000, 1000);
+        targetMessageCountSpinner = EasyJSpinner.intSpinner(1, 1, 100000, 1);
         eventNameFilterField = new EasyTextField(20);
         messageFilterField = new EasyTextField(20);
 
@@ -168,12 +168,12 @@ public class SseStagePropertyPanel extends JPanel {
         forceCommitAllSpinners();
         SsePerformanceData data = requestNode.ssePerformanceData != null ? requestNode.ssePerformanceData : new SsePerformanceData();
         switch (stage) {
-            case CONNECT -> data.connectTimeoutMs = (Integer) connectTimeoutSpinner.getValue();
+            case CONNECT -> data.connectTimeoutMs = connectTimeoutSpinner.getCommittedIntValue();
             case AWAIT -> {
                 data.completionMode = (SsePerformanceData.CompletionMode) completionModeBox.getSelectedItem();
-                data.firstMessageTimeoutMs = (Integer) awaitTimeoutSpinner.getValue();
-                data.holdConnectionMs = (Integer) holdConnectionSpinner.getValue();
-                data.targetMessageCount = (Integer) targetMessageCountSpinner.getValue();
+                data.firstMessageTimeoutMs = awaitTimeoutSpinner.getCommittedIntValue();
+                data.holdConnectionMs = holdConnectionSpinner.getCommittedIntValue();
+                data.targetMessageCount = targetMessageCountSpinner.getCommittedIntValue();
                 data.eventNameFilter = eventNameFilterField.getText().trim();
                 data.messageFilter = messageFilterField.getText().trim();
             }

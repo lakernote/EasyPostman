@@ -33,6 +33,7 @@ public class PerformancePanelViewFactoryTest {
         );
 
         assertEquals(resultSection.resultTabbedPane().getSelectedIndex(), PerformancePanelViewFactory.RESULT_TAB_TABLE);
+        assertTrue(resultSection.resultTabbedPane().getUI().getClass().getSimpleName().contains("HiddenResultTabs"));
 
         resultSection.trendButton().doClick();
         assertEquals(resultSection.resultTabbedPane().getSelectedIndex(), PerformancePanelViewFactory.RESULT_TAB_TREND);

@@ -28,6 +28,7 @@ import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
+import javax.swing.plaf.basic.BasicTabbedPaneUI;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeSelectionModel;
 import java.awt.*;
@@ -127,7 +128,7 @@ final class PerformancePanelViewFactory {
                                       Consumer<Boolean> reportRefreshModeSetterAction,
                                       Runnable reportRefreshAction,
                                       Runnable saveConfigAction) {
-        JTabbedPane resultTabbedPane = new JTabbedPane();
+        JTabbedPane resultTabbedPane = new HiddenResultTabsTabbedPane();
         PerformanceResultTablePanel performanceResultTablePanel = new PerformanceResultTablePanel();
         PerformanceTrendPanel performanceTrendPanel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
         PerformanceReportPanel performanceReportPanel = new PerformanceReportPanel();
@@ -470,6 +471,30 @@ final class PerformancePanelViewFactory {
                                  JToggleButton trendButton,
                                  JCheckBox trendCheckBox,
                                  JComboBox<String> reportRefreshModeBox) {
+    }
+
+    private static final class HiddenResultTabsTabbedPane extends JTabbedPane {
+        @Override
+        public void updateUI() {
+            setUI(new HiddenResultTabsUi());
+        }
+    }
+
+    private static final class HiddenResultTabsUi extends BasicTabbedPaneUI {
+        @Override
+        protected int calculateTabAreaHeight(int tabPlacement, int horizRunCount, int maxTabHeight) {
+            return 0;
+        }
+
+        @Override
+        protected void paintTabArea(Graphics g, int tabPlacement, int selectedIndex) {
+            // Result view switching is provided by the toolbar above this content pane.
+        }
+
+        @Override
+        protected Insets getContentBorderInsets(int tabPlacement) {
+            return new Insets(0, 0, 0, 0);
+        }
     }
 
     private record RequestEditorSection(JPanel wrapperPanel, JPanel requestEditorHost) {

@@ -124,9 +124,13 @@ final class PerformancePanelViewFactory {
 
     ResultSection createResultSection(boolean trendEnabled,
                                       boolean reportRealtimeEnabled,
+                                      boolean efficientMode,
+                                      Component parentComponent,
+                                      Consumer<Boolean> efficientModeSetterAction,
                                       Consumer<Boolean> trendEnabledSetterAction,
                                       Consumer<Boolean> reportRefreshModeSetterAction,
                                       Runnable reportRefreshAction,
+                                      Runnable saveAllPropertyPanelDataAction,
                                       Runnable saveConfigAction) {
         JTabbedPane resultTabbedPane = new HiddenResultTabsTabbedPane();
         PerformanceResultTablePanel performanceResultTablePanel = new PerformanceResultTablePanel();
@@ -142,9 +146,13 @@ final class PerformancePanelViewFactory {
                 resultTabbedPane,
                 trendEnabled,
                 reportRealtimeEnabled,
+                efficientMode,
+                parentComponent,
+                efficientModeSetterAction,
                 trendEnabledSetterAction,
                 reportRefreshModeSetterAction,
                 reportRefreshAction,
+                saveAllPropertyPanelDataAction,
                 saveConfigAction
         );
 
@@ -158,6 +166,7 @@ final class PerformancePanelViewFactory {
                 resultToolbar.resultTableButton(),
                 resultToolbar.reportButton(),
                 resultToolbar.trendButton(),
+                resultToolbar.efficientCheckBox(),
                 resultToolbar.trendCheckBox(),
                 resultToolbar.reportRefreshModeBox(),
                 performanceResultTablePanel,
@@ -166,12 +175,9 @@ final class PerformancePanelViewFactory {
         );
     }
 
-    ToolbarSection createToolbarSection(Component parentComponent,
-                                        boolean efficientMode,
+    ToolbarSection createToolbarSection(
                                         PerformancePersistenceService persistenceService,
                                         Runnable refreshRequestsAction,
-                                        Consumer<Boolean> efficientModeSetterAction,
-                                        Runnable saveAllPropertyPanelDataAction,
                                         Runnable saveConfigAction) {
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()));
@@ -186,35 +192,6 @@ final class PerformancePanelViewFactory {
         RefreshButton refreshBtn = new RefreshButton();
         refreshBtn.addActionListener(e -> refreshRequestsAction.run());
         btnPanel.add(refreshBtn);
-
-        JCheckBox efficientCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE));
-        efficientCheckBox.setSelected(efficientMode);
-        efficientCheckBox.setFont(FontsUtil.getDefaultFont(Font.BOLD));
-        efficientCheckBox.setForeground(new Color(0, 128, 0));
-        String htmlTooltip = "<html><body style='width: 400px; padding: 10px;'>" +
-                "<b style='color: #008000; font-size: 13px;'>" + I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE) + "</b><br><br>" +
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE_TOOLTIP_HTML) +
-                "</body></html>";
-        efficientCheckBox.setToolTipText(htmlTooltip);
-        efficientCheckBox.addActionListener(e -> {
-            if (!efficientCheckBox.isSelected()) {
-                int result = JOptionPane.showConfirmDialog(
-                        parentComponent,
-                        I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE_DISABLE_WARNING),
-                        I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE_WARNING_TITLE),
-                        JOptionPane.YES_NO_OPTION,
-                        JOptionPane.WARNING_MESSAGE
-                );
-                if (result != JOptionPane.YES_OPTION) {
-                    efficientCheckBox.setSelected(true);
-                    return;
-                }
-            }
-            efficientModeSetterAction.accept(efficientCheckBox.isSelected());
-            saveAllPropertyPanelDataAction.run();
-            saveConfigAction.run();
-        });
-        btnPanel.add(efficientCheckBox);
 
         CsvDataPanel csvDataPanel = new CsvDataPanel();
         csvDataPanel.setContextHelpText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_CSV_USAGE_NOTE));
@@ -234,25 +211,25 @@ final class PerformancePanelViewFactory {
         progressPanel.add(new MemoryLabel());
         topPanel.add(progressPanel, BorderLayout.EAST);
 
-        return new ToolbarSection(topPanel, runBtn, stopBtn, refreshBtn, efficientCheckBox, csvDataPanel, progressLabel);
+        return new ToolbarSection(topPanel, runBtn, stopBtn, refreshBtn, csvDataPanel, progressLabel);
     }
 
     private ResultToolbar createResultToolbar(JTabbedPane resultTabbedPane,
                                               boolean trendEnabled,
                                               boolean reportRealtimeEnabled,
+                                              boolean efficientMode,
+                                              Component parentComponent,
+                                              Consumer<Boolean> efficientModeSetterAction,
                                               Consumer<Boolean> trendEnabledSetterAction,
                                               Consumer<Boolean> reportRefreshModeSetterAction,
                                               Runnable reportRefreshAction,
+                                              Runnable saveAllPropertyPanelDataAction,
                                               Runnable saveConfigAction) {
         JPanel toolbar = new JPanel(new BorderLayout(8, 0));
         toolbar.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(1, 0, 1, 0, ModernColors.getDividerBorderColor()),
                 BorderFactory.createEmptyBorder(5, 8, 5, 8)
         ));
-
-        JLabel viewLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_OUTPUT_LABEL));
-        viewLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        viewLabel.setForeground(ModernColors.getTextSecondary());
 
         JToggleButton resultTableButton = new SegmentedToggleButton(
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_RESULT_TREE),
@@ -282,9 +259,16 @@ final class PerformancePanelViewFactory {
 
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         leftPanel.setOpaque(false);
-        leftPanel.add(viewLabel);
         leftPanel.add(switcher);
         toolbar.add(leftPanel, BorderLayout.WEST);
+
+        JCheckBox efficientCheckBox = createCompactDetailsCheckBox(
+                parentComponent,
+                efficientMode,
+                efficientModeSetterAction,
+                saveAllPropertyPanelDataAction,
+                saveConfigAction
+        );
 
         JCheckBox trendCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_ENABLED));
         trendCheckBox.setSelected(trendEnabled);
@@ -311,9 +295,7 @@ final class PerformancePanelViewFactory {
 
         JPanel contextCards = new JPanel(new CardLayout());
         contextCards.setOpaque(false);
-        JPanel emptyContextPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        emptyContextPanel.setOpaque(false);
-        contextCards.add(emptyContextPanel, RESULT_CONTEXT_TABLE);
+        contextCards.add(createTableContextPanel(efficientCheckBox), RESULT_CONTEXT_TABLE);
         contextCards.add(createReportContextPanel(reportRefreshModeBox), RESULT_CONTEXT_REPORT);
         contextCards.add(createTrendContextPanel(trendCheckBox), RESULT_CONTEXT_TREND);
         toolbar.add(contextCards, BorderLayout.EAST);
@@ -335,9 +317,46 @@ final class PerformancePanelViewFactory {
                 resultTableButton,
                 reportButton,
                 trendButton,
+                efficientCheckBox,
                 trendCheckBox,
                 reportRefreshModeBox
         );
+    }
+
+    private JCheckBox createCompactDetailsCheckBox(Component parentComponent,
+                                                   boolean efficientMode,
+                                                   Consumer<Boolean> efficientModeSetterAction,
+                                                   Runnable saveAllPropertyPanelDataAction,
+                                                   Runnable saveConfigAction) {
+        JCheckBox efficientCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_DETAIL_COMPACT));
+        efficientCheckBox.setSelected(efficientMode);
+        efficientCheckBox.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_DETAIL_COMPACT_TOOLTIP));
+        efficientCheckBox.addActionListener(e -> {
+            if (!efficientCheckBox.isSelected()) {
+                int result = JOptionPane.showConfirmDialog(
+                        parentComponent,
+                        I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_DETAIL_COMPACT_DISABLE_WARNING),
+                        I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_DETAIL_COMPACT_WARNING_TITLE),
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.WARNING_MESSAGE
+                );
+                if (result != JOptionPane.YES_OPTION) {
+                    efficientCheckBox.setSelected(true);
+                    return;
+                }
+            }
+            efficientModeSetterAction.accept(efficientCheckBox.isSelected());
+            saveAllPropertyPanelDataAction.run();
+            saveConfigAction.run();
+        });
+        return efficientCheckBox;
+    }
+
+    private JPanel createTableContextPanel(JCheckBox efficientCheckBox) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        panel.setOpaque(false);
+        panel.add(efficientCheckBox);
+        return panel;
     }
 
     private JPanel createReportContextPanel(JComboBox<String> reportRefreshModeBox) {
@@ -449,6 +468,7 @@ final class PerformancePanelViewFactory {
                          JToggleButton resultTableButton,
                          JToggleButton reportButton,
                          JToggleButton trendButton,
+                         JCheckBox efficientCheckBox,
                          JCheckBox trendCheckBox,
                          JComboBox<String> reportRefreshModeBox,
                          PerformanceResultTablePanel performanceResultTablePanel,
@@ -460,7 +480,6 @@ final class PerformancePanelViewFactory {
                           StartButton runBtn,
                           StopButton stopBtn,
                           RefreshButton refreshBtn,
-                          JCheckBox efficientCheckBox,
                           CsvDataPanel csvDataPanel,
                           JLabel progressLabel) {
     }
@@ -469,6 +488,7 @@ final class PerformancePanelViewFactory {
                                  JToggleButton resultTableButton,
                                  JToggleButton reportButton,
                                  JToggleButton trendButton,
+                                 JCheckBox efficientCheckBox,
                                  JCheckBox trendCheckBox,
                                  JComboBox<String> reportRefreshModeBox) {
     }

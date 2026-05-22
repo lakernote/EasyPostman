@@ -112,7 +112,7 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
         jmeterSection.add(slowRequestThresholdRow);
         jmeterSection.add(createVerticalSpace(FIELD_SPACING));
 
-        // 高效模式响应体预览上限
+        // 精简明细响应体预览上限
         responseBodyPreviewLimitField = new JTextField(10);
         responseBodyPreviewLimitField.setText(String.valueOf(SettingManager.getPerformanceResponseBodyPreviewLimitKb()));
         JPanel responseBodyPreviewLimitRow = createFieldRow(

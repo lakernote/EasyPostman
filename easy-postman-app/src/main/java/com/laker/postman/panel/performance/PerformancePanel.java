@@ -74,7 +74,7 @@ public class PerformancePanel extends SingletonBasePanel {
     private StartButton runBtn;
     private StopButton stopBtn;
     private RefreshButton refreshBtn;
-    private JCheckBox efficientCheckBox; // 高效模式复选框
+    private JCheckBox efficientCheckBox; // 精简明细复选框
     private JCheckBox trendCheckBox; // 趋势采样开关
     private JComboBox<String> reportRefreshModeBox; // 报表刷新模式
     private JLabel progressLabel; // 进度标签
@@ -85,7 +85,7 @@ public class PerformancePanel extends SingletonBasePanel {
     // 定时器管理器 - 统一管理趋势图采样和报表刷新定时器
     private transient PerformanceTimerManager timerManager;
 
-    // 高效模式
+    // 精简明细：报表统计完整保留，结果表只保留失败/慢请求详情
     private boolean efficientMode = true;
     private boolean trendEnabled = true;
     private boolean reportRealtimeEnabled = false;
@@ -193,15 +193,20 @@ public class PerformancePanel extends SingletonBasePanel {
         PerformancePanelViewFactory.ResultSection resultSection = viewFactory.createResultSection(
                 trendEnabled,
                 reportRealtimeEnabled,
+                efficientMode,
+                this,
+                value -> efficientMode = value,
                 this::applyTrendEnabled,
                 this::applyReportRealtimeEnabled,
                 this::refreshReportSnapshot,
+                this::saveAllPropertyPanelData,
                 this::saveConfig
         );
         resultTabbedPane = resultSection.resultTabbedPane();
         performanceResultTablePanel = resultSection.performanceResultTablePanel();
         performanceTrendPanel = resultSection.performanceTrendPanel();
         performanceReportPanel = resultSection.performanceReportPanel();
+        efficientCheckBox = resultSection.efficientCheckBox();
         trendCheckBox = resultSection.trendCheckBox();
         reportRefreshModeBox = resultSection.reportRefreshModeBox();
         statisticsCoordinator = new PerformanceStatisticsCoordinator(
@@ -235,19 +240,14 @@ public class PerformancePanel extends SingletonBasePanel {
         add(verticalSplit, BorderLayout.CENTER);
 
         PerformancePanelViewFactory.ToolbarSection toolbarSection = viewFactory.createToolbarSection(
-                this,
-                efficientMode,
                 persistenceService,
                 this::refreshRequestsFromCollections,
-                value -> efficientMode = value,
-                this::saveAllPropertyPanelData,
                 this::saveConfig
         );
         topPanel = toolbarSection.topPanel();
         runBtn = toolbarSection.runBtn();
         stopBtn = toolbarSection.stopBtn();
         refreshBtn = toolbarSection.refreshBtn();
-        efficientCheckBox = toolbarSection.efficientCheckBox();
         csvDataPanel = toolbarSection.csvDataPanel();
         progressLabel = toolbarSection.progressLabel();
         add(topPanel, BorderLayout.NORTH);

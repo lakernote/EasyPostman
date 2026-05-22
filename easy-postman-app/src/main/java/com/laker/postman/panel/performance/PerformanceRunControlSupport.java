@@ -57,13 +57,13 @@ final class PerformanceRunControlSupport {
         final int highConcurrencyThreshold = 5000;
         if (estimatedRequests >= highConcurrencyThreshold && !efficientMode) {
             String message = I18nUtil.getMessage(
-                    MessageKeys.PERFORMANCE_EFFICIENT_MODE_WARNING_MSG,
+                    MessageKeys.PERFORMANCE_RESULT_DETAIL_COMPACT_WARNING_MSG,
                     String.format("%,d", estimatedRequests)
             );
             int result = JOptionPane.showConfirmDialog(
                     parentComponent,
                     message,
-                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE_WARNING_TITLE),
+                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_DETAIL_COMPACT_WARNING_TITLE),
                     JOptionPane.YES_NO_OPTION,
                     JOptionPane.WARNING_MESSAGE
             );
@@ -72,7 +72,7 @@ final class PerformanceRunControlSupport {
                 efficientModeSetter.accept(true);
                 efficientCheckBox.setSelected(true);
                 propertyPanelSupport.saveAllPropertyPanelData();
-                NotificationUtil.showInfo("✅ " + I18nUtil.getMessage(MessageKeys.PERFORMANCE_EFFICIENT_MODE) + " enabled");
+                NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_DETAIL_COMPACT_ENABLED));
             }
         }
 

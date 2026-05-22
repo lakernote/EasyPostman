@@ -72,7 +72,7 @@ public class PerformancePersistenceService {
      * 保存性能测试配置树结构
      *
      * @param rootNode      树根节点
-     * @param efficientMode 是否开启高效模式
+     * @param efficientMode 是否开启精简明细
      */
     public void save(DefaultMutableTreeNode rootNode, boolean efficientMode) {
         save(rootNode, efficientMode, true, false, null);
@@ -82,7 +82,7 @@ public class PerformancePersistenceService {
      * 保存性能测试配置树结构
      *
      * @param rootNode      树根节点
-     * @param efficientMode 是否开启高效模式
+     * @param efficientMode 是否开启精简明细
      * @param csvState      CSV 快照状态
      */
     public void save(DefaultMutableTreeNode rootNode, boolean efficientMode, CsvDataPanel.CsvState csvState) {
@@ -93,7 +93,7 @@ public class PerformancePersistenceService {
      * 保存性能测试配置树结构
      *
      * @param rootNode      树根节点
-     * @param efficientMode 是否开启高效模式
+     * @param efficientMode 是否开启精简明细
      * @param trendEnabled  是否开启趋势采样
      * @param csvState      CSV 快照状态
      */
@@ -108,7 +108,7 @@ public class PerformancePersistenceService {
      * 保存性能测试配置树结构
      *
      * @param rootNode              树根节点
-     * @param efficientMode         是否开启高效模式
+     * @param efficientMode         是否开启精简明细
      * @param trendEnabled          是否开启趋势采样
      * @param reportRealtimeEnabled 是否运行中实时刷新报表
      * @param csvState              CSV 快照状态
@@ -161,7 +161,7 @@ public class PerformancePersistenceService {
      * 异步保存配置
      *
      * @param rootNode      树根节点
-     * @param efficientMode 是否开启高效模式
+     * @param efficientMode 是否开启精简明细
      */
     public void saveAsync(DefaultMutableTreeNode rootNode, boolean efficientMode) {
         saveAsync(rootNode, efficientMode, true, false, null);
@@ -171,7 +171,7 @@ public class PerformancePersistenceService {
      * 异步保存配置
      *
      * @param rootNode      树根节点
-     * @param efficientMode 是否开启高效模式
+     * @param efficientMode 是否开启精简明细
      * @param csvState      CSV 快照状态
      */
     public void saveAsync(DefaultMutableTreeNode rootNode, boolean efficientMode, CsvDataPanel.CsvState csvState) {
@@ -182,7 +182,7 @@ public class PerformancePersistenceService {
      * 异步保存配置
      *
      * @param rootNode      树根节点
-     * @param efficientMode 是否开启高效模式
+     * @param efficientMode 是否开启精简明细
      * @param trendEnabled  是否开启趋势采样
      * @param csvState      CSV 快照状态
      */
@@ -197,7 +197,7 @@ public class PerformancePersistenceService {
      * 异步保存配置
      *
      * @param rootNode              树根节点
-     * @param efficientMode         是否开启高效模式
+     * @param efficientMode         是否开启精简明细
      * @param trendEnabled          是否开启趋势采样
      * @param reportRealtimeEnabled 是否运行中实时刷新报表
      * @param csvState              CSV 快照状态
@@ -462,9 +462,9 @@ public class PerformancePersistenceService {
     }
 
     /**
-     * 加载高效模式设置
+     * 加载精简明细设置
      *
-     * @return 高效模式设置，如果配置文件不存在或读取失败则返回 true（默认值）
+     * @return 精简明细设置，如果配置文件不存在或读取失败则返回 true（默认值）
      */
     public boolean loadEfficientMode() {
         Path configPath = getConfigFilePath();

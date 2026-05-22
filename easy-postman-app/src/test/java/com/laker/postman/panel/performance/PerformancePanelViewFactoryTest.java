@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
 public class PerformancePanelViewFactoryTest {
@@ -50,6 +51,10 @@ public class PerformancePanelViewFactoryTest {
         assertTrue(resultSection.resultTabbedPane().getUI().getClass().getSimpleName().contains("HiddenResultTabs"));
         assertFalse(hasText(resultSection.resultPanel(), "结果视图"));
         assertFalse(hasText(resultSection.resultPanel(), "Result View"));
+        Container resultSwitcher = resultSection.trendButton().getParent();
+        assertSame(resultSwitcher.getComponent(0), resultSection.trendButton());
+        assertSame(resultSwitcher.getComponent(1), resultSection.reportButton());
+        assertSame(resultSwitcher.getComponent(2), resultSection.resultTableButton());
 
         JCheckBox compactDetailsCheckBox = resultSection.efficientCheckBox();
         assertEquals(compactDetailsCheckBox.getText(), I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_DETAIL_COMPACT));

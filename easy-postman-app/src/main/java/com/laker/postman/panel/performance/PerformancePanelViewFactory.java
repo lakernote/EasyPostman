@@ -253,9 +253,9 @@ final class PerformancePanelViewFactory {
         viewGroup.add(trendButton);
 
         JPanel switcher = new SegmentedButtonGroupPanel(FlowLayout.LEFT);
-        switcher.add(resultTableButton);
-        switcher.add(reportButton);
         switcher.add(trendButton);
+        switcher.add(reportButton);
+        switcher.add(resultTableButton);
 
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         leftPanel.setOpaque(false);

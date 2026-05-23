@@ -5,6 +5,8 @@ import com.laker.postman.common.component.button.StartButton;
 import com.laker.postman.common.component.button.StopButton;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
 import com.laker.postman.panel.performance.model.PerformanceStatsSnapshot;
+import com.laker.postman.panel.performance.plan.PerformanceTestPlan;
+import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import com.laker.postman.panel.performance.result.PerformanceTrendPanel;
@@ -53,8 +55,9 @@ final class PerformanceRunControlSupport {
                     Consumer<Boolean> efficientModeSetter) {
         propertyPanelSupport.saveAllPropertyPanelData();
         DefaultMutableTreeNode executionRootNode = PerformanceTreeSnapshot.copy(rootNode);
+        PerformanceTestPlan executionPlan = PerformanceTestPlanCompiler.compile(executionRootNode);
 
-        long estimatedRequests = executionEngine.estimateTotalRequests(executionRootNode);
+        long estimatedRequests = executionEngine.estimateTotalRequests(executionPlan);
         final int highConcurrencyThreshold = 5000;
         if (estimatedRequests >= highConcurrencyThreshold && !efficientMode) {
             String message = I18nUtil.getMessage(
@@ -101,13 +104,13 @@ final class PerformanceRunControlSupport {
         executionEngine.beginRun(startTime);
         timerManager.startAll();
 
-        int totalThreads = executionEngine.getTotalThreads(executionRootNode);
+        int totalThreads = executionEngine.getTotalThreads(executionPlan);
         progressLabel.setText("0/" + totalThreads);
 
         Thread runThread = PerformanceThreadFactory.newDaemonThread("PerformanceRun", () -> {
             try {
-                executionEngine.runJMeterTreeWithProgress(
-                        executionRootNode,
+                executionEngine.runPlanWithProgress(
+                        executionPlan,
                         totalThreads,
                         (active, total) -> SwingUtilities.invokeLater(() -> progressLabel.setText(active + "/" + total))
                 );

@@ -22,11 +22,14 @@
 
 ### 执行模型
 
-- `PerformanceExecutionEngine`：执行入口，按根节点遍历启用的线程组，并根据线程组模式调用对应调度逻辑。
-- `PerformanceThreadGroupPlanner`：负责线程数统计和请求量估算。它会先 normalize `ThreadGroupData`，再根据 FIXED、RAMP_UP、SPIKE、STAIRS 计算最大线程数和预估请求量。
-- `PerformanceVirtualUserCoordinator`：维护虚拟用户上下文，包括 active user 数、虚拟用户编号、当前迭代编号和进度回调。执行引擎不再直接维护这些 ThreadLocal。
-- `PerformanceRequestExecutor`：执行单个 HTTP/WebSocket/SSE 请求节点。
-- `PerformanceResultRecorder`：将执行结果写入统计收集器，并按高效模式决定是否保留结果明细到结果表。
+- `PerformanceTestPlanCompiler`：将执行快照从 Swing `DefaultMutableTreeNode` 编译成不可变的 JMeter 风格执行计划。计划由 `PerformanceTestPlan`、`PerformanceThreadGroupPlan`、`PerformanceLoopController`、`PerformanceTimerElement`、`PerformanceRequestSampler` 和协议阶段元素组成。
+- `PerformanceExecutionEngine`：执行门面，负责运行生命周期、实时指标、网络取消资源和旧树入口兼容。它不再直接遍历 Swing tree。
+- `PerformanceThreadGroupRunner`：执行启用的线程组，并根据 FIXED、RAMP_UP、SPIKE、STAIRS 调度虚拟用户 worker。
+- `PerformancePlanExecutor`：执行线程组内的控制器模型，按顺序处理 Loop、Timer 和 Request Sampler。
+- `PerformanceSamplerExecutor`：把 request sampler 交给现有 `PerformanceRequestExecutor`，并通过 `PerformanceResultRecorder` 记录结果。
+- `PerformanceIterationContextFactory`：为每次虚拟用户迭代创建 `ExecutionVariableContext`，设置迭代编号，并按虚拟用户编号绑定 CSV 行。
+- `PerformanceThreadGroupPlanner`：基于编译后的 plan 计算线程数和预估请求量。旧的 tree-based 方法保留，但内部会先编译 plan。
+- `PerformanceVirtualUserCoordinator`：维护虚拟用户上下文，包括 active user 数、虚拟用户编号、当前迭代编号和进度回调。
 
 ## 线程模型
 
@@ -96,12 +99,13 @@
 1. 在 `ThreadGroupData.ThreadMode` 中增加模式及配置字段，并在 `normalize()` 中定义边界。
 2. 在 `ThreadGroupPropertyPanel` 中增加配置 UI 和预览数据。
 3. 在 `PerformanceThreadGroupPlanner` 中增加最大线程数和请求量估算。
-4. 在 `PerformanceExecutionEngine` 中增加调度方法，worker 生命周期交给 `PerformanceVirtualUserCoordinator`。
+4. 在 `PerformanceThreadGroupRunner` 中增加调度方法，worker 生命周期交给 `PerformanceVirtualUserCoordinator`。
 5. 增加针对估算、调度边界、停止语义的单元测试。
 
 ## 维护原则
 
 - Swing 组件只在 EDT 读写。
+- 压测执行只能消费 `PerformanceTestPlanCompiler` 生成的执行计划，不直接依赖可变 UI 树。
 - 执行线程不直接操作 UI，只通过进度回调、结果队列和统计协调器传递状态。
 - 线程创建不要直接 `new Thread(...)`，使用 `PerformanceThreadFactory`。
 - 指标计算不要使用 `CompletableFuture.runAsync(...)` 默认线程池，使用模块内专用执行器。

@@ -1,18 +1,21 @@
 package com.laker.postman.panel.performance;
 
+import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
+import com.laker.postman.panel.performance.assertion.AssertionData;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.controller.LoopData;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
+import com.laker.postman.panel.performance.model.SsePerformanceData;
+import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
 import org.testng.annotations.Test;
 
 import javax.swing.tree.DefaultMutableTreeNode;
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ConcurrentHashMap;
@@ -201,19 +204,133 @@ public class PerformanceExecutionEngineTest {
     }
 
     @Test
+    public void compiledPlanExecutionShouldRunHttpAssertions() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse().setResponseCode(200).setBody("ok"));
+            server.start();
+
+            HttpRequestItem item = new HttpRequestItem();
+            item.setId("http-assertion-request");
+            item.setName("HTTP Assertion Request");
+            item.setProtocol(RequestItemProtocolEnum.HTTP);
+            item.setMethod("GET");
+            item.setUrl(server.url("/assertion").toString());
+
+            DefaultMutableTreeNode request = new DefaultMutableTreeNode(
+                    new JMeterTreeNode(item.getName(), NodeType.REQUEST, item)
+            );
+            request.add(responseCodeAssertion("201"));
+            DefaultMutableTreeNode group = fixedThreadGroup(1);
+            group.add(request);
+
+            PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
+            new PerformanceExecutionEngine(
+                    null,
+                    () -> true,
+                    () -> false,
+                    () -> 4,
+                    null,
+                    statsCollector,
+                    null
+            ).runJMeterTreeWithProgress(group, 1, (active, total) -> {
+            });
+
+            assertEquals(server.getRequestCount(), 1);
+            assertEquals(statsCollector.snapshot().totalRequests(), 1);
+            assertEquals(statsCollector.snapshot().successRequests(), 0);
+        }
+    }
+
+    @Test
+    public void compiledPlanExecutionShouldValidateWebSocketStagesBeforeNetwork() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse().setBody("unexpected"));
+            server.start();
+
+            HttpRequestItem item = new HttpRequestItem();
+            item.setId("compiled-ws-missing-connect");
+            item.setName("Compiled WS Missing Connect");
+            item.setProtocol(RequestItemProtocolEnum.WEBSOCKET);
+            item.setMethod("GET");
+            item.setUrl(server.url("/socket").toString().replaceFirst("^http", "ws"));
+
+            JMeterTreeNode requestData = new JMeterTreeNode(item.getName(), NodeType.REQUEST, item);
+            requestData.webSocketPerformanceData = new WebSocketPerformanceData();
+            DefaultMutableTreeNode group = fixedThreadGroup(1);
+            group.add(new DefaultMutableTreeNode(requestData));
+
+            PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
+            new PerformanceExecutionEngine(
+                    null,
+                    () -> true,
+                    () -> false,
+                    () -> 4,
+                    null,
+                    statsCollector,
+                    null
+            ).runJMeterTreeWithProgress(group, 1, (active, total) -> {
+            });
+
+            assertEquals(server.getRequestCount(), 0);
+            assertEquals(statsCollector.snapshot().totalRequests(), 1);
+            assertEquals(statsCollector.snapshot().successRequests(), 0);
+        }
+    }
+
+    @Test
+    public void compiledPlanExecutionShouldValidateSseStagesBeforeNetwork() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse()
+                    .setHeader("Content-Type", "text/event-stream")
+                    .setBody("data: unexpected\n\n"));
+            server.start();
+
+            HttpRequestItem item = new HttpRequestItem();
+            item.setId("compiled-sse-missing-stages");
+            item.setName("Compiled SSE Missing Stages");
+            item.setProtocol(RequestItemProtocolEnum.HTTP);
+            item.setMethod("GET");
+            item.setUrl(server.url("/events").toString());
+            item.setHeadersList(List.of(new HttpHeader(true, "Accept", "text/event-stream")));
+
+            JMeterTreeNode requestData = new JMeterTreeNode(item.getName(), NodeType.REQUEST, item);
+            requestData.ssePerformanceData = new SsePerformanceData();
+            DefaultMutableTreeNode group = fixedThreadGroup(1);
+            group.add(new DefaultMutableTreeNode(requestData));
+
+            PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
+            new PerformanceExecutionEngine(
+                    null,
+                    () -> true,
+                    () -> false,
+                    () -> 4,
+                    null,
+                    statsCollector,
+                    null
+            ).runJMeterTreeWithProgress(group, 1, (active, total) -> {
+            });
+
+            assertEquals(server.getRequestCount(), 0);
+            assertEquals(statsCollector.snapshot().totalRequests(), 1);
+            assertEquals(statsCollector.snapshot().successRequests(), 0);
+        }
+    }
+
+    @Test
     public void stairsStepCountShouldRoundUpWhenStepDoesNotDivideThreadRange() {
         assertEquals(PerformanceExecutionEngine.calculateStairsTotalSteps(1, 10, 4), 3);
     }
 
     @Test(timeOut = 3000)
     public void adjustSpikeThreadCountShouldIgnoreStaleThreadEndEntries() throws Exception {
-        PerformanceExecutionEngine engine = new PerformanceExecutionEngine(
+        PerformanceThreadGroupRunner runner = new PerformanceThreadGroupRunner(
                 null,
                 () -> true,
-                () -> true,
-                () -> 4,
+                () -> 0L,
+                () -> {
+                },
+                new PerformanceVirtualUserCoordinator(),
                 null,
-                new PerformanceStatsCollector(),
                 null
         );
         ThreadGroupData threadGroupData = new ThreadGroupData();
@@ -238,21 +355,7 @@ public class PerformanceExecutionEngineTest {
         staleThreadEndTimes.put(worker, Long.MAX_VALUE);
 
         try {
-            Method method = PerformanceExecutionEngine.class.getDeclaredMethod(
-                    "adjustSpikeThreadCount",
-                    DefaultMutableTreeNode.class,
-                    ThreadGroupData.class,
-                    AtomicInteger.class,
-                    int.class,
-                    int.class,
-                    BiConsumer.class,
-                    int.class,
-                    ConcurrentHashMap.class
-            );
-            method.setAccessible(true);
-
-            method.invoke(
-                    engine,
+            runner.adjustSpikeThreadCount(
                     null,
                     threadGroupData,
                     new AtomicInteger(1),
@@ -267,5 +370,22 @@ public class PerformanceExecutionEngineTest {
             worker.interrupt();
             worker.join(1_000);
         }
+    }
+
+    private static DefaultMutableTreeNode fixedThreadGroup(int loops) {
+        ThreadGroupData threadGroupData = new ThreadGroupData();
+        threadGroupData.threadMode = ThreadGroupData.ThreadMode.FIXED;
+        threadGroupData.numThreads = 1;
+        threadGroupData.useTime = false;
+        threadGroupData.loops = loops;
+        return new DefaultMutableTreeNode(new JMeterTreeNode("thread group", NodeType.THREAD_GROUP, threadGroupData));
+    }
+
+    private static DefaultMutableTreeNode responseCodeAssertion(String expectedStatus) {
+        AssertionData assertionData = new AssertionData();
+        assertionData.type = "Response Code";
+        assertionData.operator = "=";
+        assertionData.value = expectedStatus;
+        return new DefaultMutableTreeNode(new JMeterTreeNode("status assertion", NodeType.ASSERTION, assertionData));
     }
 }

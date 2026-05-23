@@ -1,49 +1,51 @@
 package com.laker.postman.panel.performance.threadgroup;
 
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.controller.LoopData;
-import com.laker.postman.panel.performance.model.NodeType;
+import com.laker.postman.panel.performance.plan.PerformanceLoopController;
+import com.laker.postman.panel.performance.plan.PerformancePlanElement;
+import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
+import com.laker.postman.panel.performance.plan.PerformanceTestPlan;
+import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
+import com.laker.postman.panel.performance.plan.PerformanceThreadGroupPlan;
 
 import javax.swing.tree.DefaultMutableTreeNode;
+import java.util.List;
 
 public final class PerformanceThreadGroupPlanner {
 
     private static final double ESTIMATED_REQUEST_DURATION_SECONDS = 0.3;
 
     public int getTotalThreads(DefaultMutableTreeNode rootNode) {
+        return getTotalThreads(PerformanceTestPlanCompiler.compile(rootNode));
+    }
+
+    public int getTotalThreads(PerformanceTestPlan plan) {
         int total = 0;
-        for (int i = 0; i < rootNode.getChildCount(); i++) {
-            DefaultMutableTreeNode child = (DefaultMutableTreeNode) rootNode.getChildAt(i);
-            Object userObj = child.getUserObject();
-            if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.THREAD_GROUP) {
-                if (!jtNode.enabled) {
-                    continue;
-                }
-                ThreadGroupData tg = resolveThreadGroupData(jtNode);
-                total += maxThreadCount(tg);
-            }
+        if (plan == null) {
+            return total;
+        }
+        for (PerformanceThreadGroupPlan groupPlan : plan.getThreadGroups()) {
+            total += maxThreadCount(groupPlan.getThreadGroupData());
         }
         return total;
     }
 
     public long estimateTotalRequests(DefaultMutableTreeNode rootNode) {
+        return estimateTotalRequests(PerformanceTestPlanCompiler.compile(rootNode));
+    }
+
+    public long estimateTotalRequests(PerformanceTestPlan plan) {
         long total = 0;
-        for (int i = 0; i < rootNode.getChildCount(); i++) {
-            DefaultMutableTreeNode groupNode = (DefaultMutableTreeNode) rootNode.getChildAt(i);
-            Object userObj = groupNode.getUserObject();
-            if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.THREAD_GROUP) {
-                if (!jtNode.enabled) {
-                    continue;
-                }
-
-                ThreadGroupData tg = resolveThreadGroupData(jtNode);
-                long enabledRequests = countEnabledRequestExecutions(groupNode);
-                if (enabledRequests == 0) {
-                    continue;
-                }
-
-                total = saturatingAdd(total, estimateThreadGroupRequests(tg, enabledRequests));
+        if (plan == null) {
+            return total;
+        }
+        for (PerformanceThreadGroupPlan groupPlan : plan.getThreadGroups()) {
+            long enabledRequests = countEnabledRequestExecutions(groupPlan.getElements());
+            if (enabledRequests == 0) {
+                continue;
             }
+
+            total = saturatingAdd(total, estimateThreadGroupRequests(groupPlan.getThreadGroupData(), enabledRequests));
         }
         return total;
     }
@@ -85,23 +87,17 @@ public final class PerformanceThreadGroupPlanner {
         return saturatedDouble((double) threadCount * durationSeconds * requestsPerSecondPerThread * enabledRequests);
     }
 
-    private static long countEnabledRequestExecutions(DefaultMutableTreeNode node) {
+    private static long countEnabledRequestExecutions(List<PerformancePlanElement> elements) {
         long total = 0;
-        for (int j = 0; j < node.getChildCount(); j++) {
-            DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(j);
-            Object childObj = child.getUserObject();
-            if (!(childObj instanceof JMeterTreeNode childJtNode) || !childJtNode.enabled) {
-                continue;
-            }
-            if (childJtNode.type == NodeType.REQUEST) {
+        for (PerformancePlanElement element : elements) {
+            if (element instanceof PerformanceRequestSampler) {
                 total++;
                 continue;
             }
-            if (childJtNode.type == NodeType.LOOP) {
-                LoopData loopData = childJtNode.loopData != null ? childJtNode.loopData : new LoopData();
-                loopData.normalize();
-                childJtNode.loopData = loopData;
-                total = saturatingAdd(total, saturatingMultiply(loopData.iterations, countEnabledRequestExecutions(child)));
+            if (element instanceof PerformanceLoopController loopController) {
+                LoopData loopData = loopController.getLoopData();
+                int iterations = loopData == null ? 1 : loopData.iterations;
+                total = saturatingAdd(total, saturatingMultiply(iterations, countEnabledRequestExecutions(loopController.getElements())));
             }
         }
         return total;
@@ -131,11 +127,4 @@ public final class PerformanceThreadGroupPlanner {
         return Math.max(0L, (long) value);
     }
 
-    public static ThreadGroupData resolveThreadGroupData(JMeterTreeNode node) {
-        if (node.threadGroupData == null) {
-            node.threadGroupData = new ThreadGroupData();
-        }
-        node.threadGroupData.normalize();
-        return node.threadGroupData;
-    }
 }

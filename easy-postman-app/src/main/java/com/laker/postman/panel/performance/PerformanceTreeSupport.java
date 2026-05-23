@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.StringJoiner;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 final class PerformanceTreeSupport {
 
@@ -207,6 +208,10 @@ final class PerformanceTreeSupport {
         return !copyableTopLevelNodes(selectedPaths).isEmpty();
     }
 
+    boolean hasDeletableNodes(TreePath[] selectedPaths) {
+        return !deletableTopLevelNodes(selectedPaths).isEmpty();
+    }
+
     List<DefaultMutableTreeNode> copyNodes(TreePath[] selectedPaths) {
         List<DefaultMutableTreeNode> nodes = copyableTopLevelNodes(selectedPaths);
         List<DefaultMutableTreeNode> copies = new ArrayList<>(nodes.size());
@@ -214,6 +219,16 @@ final class PerformanceTreeSupport {
             copies.add(copyTreeNode(node));
         }
         return copies;
+    }
+
+    List<DefaultMutableTreeNode> deleteNodes(TreePath[] selectedPaths) {
+        List<DefaultMutableTreeNode> nodes = deletableTopLevelNodes(selectedPaths);
+        for (DefaultMutableTreeNode node : nodes) {
+            if (node.getParent() != null) {
+                treeModel.removeNodeFromParent(node);
+            }
+        }
+        return nodes;
     }
 
     boolean canPasteNodes(DefaultMutableTreeNode targetNode, List<DefaultMutableTreeNode> copiedNodes) {
@@ -253,6 +268,15 @@ final class PerformanceTreeSupport {
     }
 
     private List<DefaultMutableTreeNode> copyableTopLevelNodes(TreePath[] selectedPaths) {
+        return topLevelNodes(selectedPaths, this::isCopyableNode);
+    }
+
+    private List<DefaultMutableTreeNode> deletableTopLevelNodes(TreePath[] selectedPaths) {
+        return topLevelNodes(selectedPaths, this::isDeletableNode);
+    }
+
+    private List<DefaultMutableTreeNode> topLevelNodes(TreePath[] selectedPaths,
+                                                       Predicate<DefaultMutableTreeNode> nodeFilter) {
         if (selectedPaths == null || selectedPaths.length == 0) {
             return List.of();
         }
@@ -261,7 +285,7 @@ final class PerformanceTreeSupport {
             if (path == null || !(path.getLastPathComponent() instanceof DefaultMutableTreeNode node)) {
                 continue;
             }
-            if (isCopyableNode(node)) {
+            if (nodeFilter.test(node)) {
                 selectedNodes.add(node);
             }
         }
@@ -274,6 +298,13 @@ final class PerformanceTreeSupport {
             }
         }
         return topLevelNodes;
+    }
+
+    private boolean isDeletableNode(DefaultMutableTreeNode node) {
+        if (node == null || !(node.getUserObject() instanceof JMeterTreeNode jtNode)) {
+            return false;
+        }
+        return jtNode.type != NodeType.ROOT;
     }
 
     private boolean isCopyableNode(DefaultMutableTreeNode node) {

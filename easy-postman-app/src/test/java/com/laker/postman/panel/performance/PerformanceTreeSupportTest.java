@@ -373,6 +373,49 @@ public class PerformanceTreeSupportTest {
         assertEquals(pastedData.webSocketPerformanceData.connectTimeoutMs, 15000);
     }
 
+    @Test(description = "SSE Connect、SSE Receive、WebSocket Connect 阶段节点应支持删除")
+    public void shouldDeleteProtocolStageNodes() {
+        TestContext sseContext = newTestContext(RequestItemProtocolEnum.SSE);
+        sseContext.treeSupport.syncRequestStructure(sseContext.requestNode, sseContext.requestData);
+        DefaultMutableTreeNode sseConnectNode = findChild(sseContext.requestNode, NodeType.SSE_CONNECT);
+        DefaultMutableTreeNode sseAwaitNode = findChild(sseContext.requestNode, NodeType.SSE_AWAIT);
+
+        assertTrue(sseContext.treeSupport.hasDeletableNodes(paths(sseConnectNode, sseAwaitNode)));
+        List<DefaultMutableTreeNode> deletedSseNodes = sseContext.treeSupport.deleteNodes(paths(sseConnectNode, sseAwaitNode));
+
+        assertEquals(deletedSseNodes.size(), 2);
+        assertEquals(childTypesOf(sseContext.requestNode), List.of());
+
+        TestContext wsContext = newTestContext(RequestItemProtocolEnum.WEBSOCKET);
+        wsContext.treeSupport.syncRequestStructure(wsContext.requestNode, wsContext.requestData);
+        DefaultMutableTreeNode wsConnectNode = findChild(wsContext.requestNode, NodeType.WS_CONNECT);
+
+        assertTrue(wsContext.treeSupport.hasDeletableNodes(paths(wsConnectNode)));
+        List<DefaultMutableTreeNode> deletedWsNodes = wsContext.treeSupport.deleteNodes(paths(wsConnectNode));
+
+        assertEquals(deletedWsNodes.size(), 1);
+        assertEquals(childTypesOf(wsContext.requestNode), List.of());
+    }
+
+    @Test(description = "删除多选节点时应过滤父节点子树内的重复子节点")
+    public void shouldDeleteOnlyTopLevelNodesFromMultiSelection() {
+        DefaultMutableTreeNode root = newNode("Plan", NodeType.ROOT);
+        DefaultMutableTreeNode groupNode = newNode("Group", NodeType.THREAD_GROUP);
+        DefaultMutableTreeNode requestNode = newRequestNode("request", "Request");
+        DefaultMutableTreeNode timerNode = newNode("Timer", NodeType.TIMER);
+        root.add(groupNode);
+        groupNode.add(requestNode);
+        requestNode.add(timerNode);
+        PerformanceTreeSupport treeSupport = new PerformanceTreeSupport(new DefaultTreeModel(root));
+
+        List<DefaultMutableTreeNode> deletedNodes = treeSupport.deleteNodes(paths(root, requestNode, timerNode));
+
+        assertEquals(deletedNodes.size(), 1);
+        assertSame(deletedNodes.get(0), requestNode);
+        assertEquals(childTypesOf(groupNode), List.of());
+        assertFalse(treeSupport.hasDeletableNodes(paths(root)));
+    }
+
     private static TestContext newTestContext(RequestItemProtocolEnum protocol) {
         HttpRequestItem item = new HttpRequestItem();
         item.setName("Request");

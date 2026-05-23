@@ -446,28 +446,15 @@ final class PerformanceTreeInteractionSupport {
                     return;
                 }
 
-                List<DefaultMutableTreeNode> nodesToDelete = new ArrayList<>();
-                for (TreePath path : selectedPaths) {
-                    DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
-                    Object userObj = node.getUserObject();
-                    if (userObj instanceof JMeterTreeNode jtNode
-                            && jtNode.type != NodeType.ROOT
-                            && jtNode.type != NodeType.SSE_CONNECT
-                            && jtNode.type != NodeType.SSE_AWAIT
-                            && jtNode.type != NodeType.WS_CONNECT) {
-                        nodesToDelete.add(node);
-                    }
-                }
-
-                if (nodesToDelete.isEmpty()) {
+                DefaultMutableTreeNode currentRequestNode = currentRequestNodeSupplier.get();
+                List<DefaultMutableTreeNode> deletedNodes = treeSupport.deleteNodes(selectedPaths);
+                if (deletedNodes.isEmpty()) {
                     return;
                 }
 
-                for (DefaultMutableTreeNode node : nodesToDelete) {
-                    if (node == currentRequestNodeSupplier.get()) {
-                        currentRequestNodeSetter.accept(null);
-                    }
-                    treeModel.removeNodeFromParent(node);
+                if (currentRequestNode != null && deletedNodes.stream()
+                        .anyMatch(node -> node == currentRequestNode || node.isNodeDescendant(currentRequestNode))) {
+                    currentRequestNodeSetter.accept(null);
                 }
                 saveConfigAction.run();
             }
@@ -570,7 +557,7 @@ final class PerformanceTreeInteractionSupport {
         copyNode.setVisible(treeSupport.hasCopyableNodes(selectedPaths));
         pasteNode.setVisible(false);
         renameNode.setVisible(false);
-        deleteNode.setVisible(true);
+        deleteNode.setVisible(treeSupport.hasDeletableNodes(selectedPaths));
 
         boolean hasDisabled = false;
         boolean hasEnabled = false;
@@ -653,7 +640,7 @@ final class PerformanceTreeInteractionSupport {
                 || jtNode.type == NodeType.SSE_AWAIT
                 || jtNode.type == NodeType.WS_CONNECT;
         renameNode.setVisible(!structuralNode && jtNode.type != NodeType.LOOP && !treeSupport.isWebSocketStepNode(jtNode.type));
-        deleteNode.setVisible(!structuralNode);
+        deleteNode.setVisible(treeSupport.hasDeletableNodes(new TreePath[]{new TreePath(node.getPath())}));
         enableNode.setVisible(!structuralNode && !jtNode.enabled);
         disableNode.setVisible(!structuralNode && jtNode.enabled);
         updateMenuSeparators.run();

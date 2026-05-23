@@ -2,7 +2,7 @@ package com.laker.postman.panel.performance.model;
 
 /**
  * Report-time view that keeps completed samples separate from live stream state.
- * Completed stats are the final source of truth; live metrics are a pending overlay.
+ * Completed stats are the report source of truth; live metrics remain trend-only context.
  */
 public record PerformanceReportSnapshot(
         PerformanceStatsSnapshot completedStats,

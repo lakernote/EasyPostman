@@ -38,7 +38,6 @@ public class PerformanceResultRecorderTest {
         response.addHeader("X-Easy-WS-Received-Count", List.of("4"));
         response.addHeader("X-Easy-WS-Message-Count", List.of("3"));
         response.addHeader("X-Easy-WS-First-Message-Latency-Ms", List.of("120"));
-        response.addHeader("X-Easy-WS-Completion-Reason", List.of("matched_message"));
 
         PerformanceRequestExecutionResult executionResult = new PerformanceRequestExecutionResult(
                 "api-ws",
@@ -61,7 +60,6 @@ public class PerformanceResultRecorderTest {
         assertEquals(result.receivedMessages, 4);
         assertEquals(result.matchedMessages, 3);
         assertEquals(result.firstMessageLatencyMs, 120L);
-        assertEquals(result.completionReason, "matched_message");
     }
 
     @Test
@@ -73,7 +71,6 @@ public class PerformanceResultRecorderTest {
         response.addHeader("X-Easy-SSE-Event-Count", List.of("4"));
         response.addHeader("X-Easy-SSE-Message-Count", List.of("1"));
         response.addHeader("X-Easy-SSE-First-Event-Latency-Ms", List.of("90"));
-        response.addHeader("X-Easy-SSE-Completion-Reason", List.of("first_message"));
 
         PerformanceRequestExecutionResult executionResult = new PerformanceRequestExecutionResult(
                 "api-sse",
@@ -95,7 +92,6 @@ public class PerformanceResultRecorderTest {
         assertEquals(result.receivedMessages, 4);
         assertEquals(result.matchedMessages, 1);
         assertEquals(result.firstMessageLatencyMs, 90L);
-        assertEquals(result.completionReason, "first_message");
     }
 
     @Test
@@ -111,7 +107,6 @@ public class PerformanceResultRecorderTest {
             response.addHeader("X-Easy-WS-Sent-Count", List.of("12"));
             response.addHeader("X-Easy-WS-Received-Count", List.of("7"));
             response.addHeader("X-Easy-WS-Message-Count", List.of("3"));
-            response.addHeader("X-Easy-WS-Completion-Reason", List.of("interrupted"));
 
             PerformanceResultRecorder recorder = new PerformanceResultRecorder(
                     statsCollector,
@@ -142,7 +137,6 @@ public class PerformanceResultRecorderTest {
             assertEquals(summary.sentMessages(), 12L);
             assertEquals(summary.receivedMessages(), 7L);
             assertEquals(summary.matchedMessages(), 3L);
-            assertEquals(summary.topCompletionReason(), "interrupted");
             assertEquals(tablePanel.recordedRows, 1);
         } finally {
             tablePanel.dispose();
@@ -160,7 +154,6 @@ public class PerformanceResultRecorderTest {
             response.costMs = 100;
             response.endTime = 1100;
             response.addHeader("X-Easy-WS-Sent-Count", List.of("1"));
-            response.addHeader("X-Easy-WS-Completion-Reason", List.of("interrupted"));
 
             PerformanceResultRecorder recorder = new PerformanceResultRecorder(
                     statsCollector,
@@ -200,7 +193,6 @@ public class PerformanceResultRecorderTest {
             response.costMs = 100;
             response.endTime = 1100;
             response.addHeader("X-Easy-WS-Sent-Count", List.of("1"));
-            response.addHeader("X-Easy-WS-Completion-Reason", List.of("interrupted"));
 
             PerformanceResultRecorder recorder = new PerformanceResultRecorder(
                     statsCollector,

@@ -2,15 +2,12 @@ package com.laker.postman.panel.performance.model;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.HashMap;
-import java.util.Map;
 
 final class PerformanceSampleAccumulator {
     private final String apiId;
     private final PerformanceProtocol protocol;
     private final DurationStatsHistogram durations = new DurationStatsHistogram();
     private final DurationStatsHistogram firstMessageLatencies = new DurationStatsHistogram();
-    private final Map<String, Long> completionReasons = new HashMap<>();
     private long total;
     private long success;
     private long firstStart = Long.MAX_VALUE;
@@ -42,12 +39,6 @@ final class PerformanceSampleAccumulator {
             firstMessageLatencyCount++;
             firstMessageLatencies.record(result.firstMessageLatencyMs);
         }
-        if (protocol != PerformanceProtocol.HTTP) {
-            String reason = result.completionReason == null || result.completionReason.isBlank()
-                    ? "-"
-                    : result.completionReason;
-            completionReasons.merge(reason, 1L, Long::sum);
-        }
     }
 
     void clear() {
@@ -61,7 +52,6 @@ final class PerformanceSampleAccumulator {
         firstMessageLatencyTotal = 0;
         firstMessageLatencyCount = 0;
         firstMessageLatencies.clear();
-        completionReasons.clear();
         durations.clear();
     }
 
@@ -125,24 +115,8 @@ final class PerformanceSampleAccumulator {
                 receiveRate,
                 matchedRate,
                 firstMessageLatencyCount == 0 ? 0 : firstMessageLatencyTotal / firstMessageLatencyCount,
-                firstMessageLatencies.snapshot(),
-                topCompletionReason()
+                firstMessageLatencies.snapshot()
         );
-    }
-
-    private String topCompletionReason() {
-        if (completionReasons.isEmpty()) {
-            return "-";
-        }
-        return completionReasons.entrySet().stream()
-                .max((left, right) -> {
-                    int countComparison = Long.compare(left.getValue(), right.getValue());
-                    return countComparison != 0
-                            ? countComparison
-                            : left.getKey().compareTo(right.getKey());
-                })
-                .map(Map.Entry::getKey)
-                .orElse("-");
     }
 
     private static double round(double value) {

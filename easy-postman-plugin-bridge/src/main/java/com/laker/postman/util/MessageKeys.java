@@ -748,31 +748,11 @@ public final class MessageKeys {
     public static final String PERFORMANCE_REPORT_COLUMN_AVG_STREAM = "performance.report.column.avg_stream";
     public static final String PERFORMANCE_REPORT_COLUMN_P95_SESSION = "performance.report.column.p95_session";
     public static final String PERFORMANCE_REPORT_COLUMN_P95_STREAM = "performance.report.column.p95_stream";
-    public static final String PERFORMANCE_REPORT_COLUMN_COMPLETION = "performance.report.column.completion";
     public static final String PERFORMANCE_REPORT_TOTAL_ROW = "performance.report.total_row";
     public static final String PERFORMANCE_REPORT_COPY_MARKDOWN_BUTTON = "performance.report.copy_markdown.button";
     public static final String PERFORMANCE_REPORT_MARKDOWN_TITLE = "performance.report.markdown.title";
     public static final String PERFORMANCE_REPORT_MARKDOWN_EMPTY = "performance.report.markdown.empty";
     public static final String PERFORMANCE_REPORT_MARKDOWN_COPIED = "performance.report.markdown.copied";
-    public static final String PERFORMANCE_REPORT_COMPLETION_PENDING = "performance.report.completion.pending";
-    public static final String PERFORMANCE_REPORT_COMPLETION_CLOSED = "performance.report.completion.closed";
-    public static final String PERFORMANCE_REPORT_COMPLETION_INTERRUPTED = "performance.report.completion.interrupted";
-    public static final String PERFORMANCE_REPORT_COMPLETION_FAILURE = "performance.report.completion.failure";
-    public static final String PERFORMANCE_REPORT_COMPLETION_CONNECT_TIMEOUT = "performance.report.completion.connect_timeout";
-    public static final String PERFORMANCE_REPORT_COMPLETION_SEND_SKIPPED = "performance.report.completion.send_skipped";
-    public static final String PERFORMANCE_REPORT_COMPLETION_SEND_PRE_SCRIPT_FAILED = "performance.report.completion.send_pre_script_failed";
-    public static final String PERFORMANCE_REPORT_COMPLETION_SENT = "performance.report.completion.sent";
-    public static final String PERFORMANCE_REPORT_COMPLETION_SEND_FAILED = "performance.report.completion.send_failed";
-    public static final String PERFORMANCE_REPORT_COMPLETION_FIRST_MESSAGE = "performance.report.completion.first_message";
-    public static final String PERFORMANCE_REPORT_COMPLETION_MATCHED_MESSAGE = "performance.report.completion.matched_message";
-    public static final String PERFORMANCE_REPORT_COMPLETION_MESSAGE_TARGET = "performance.report.completion.message_target";
-    public static final String PERFORMANCE_REPORT_COMPLETION_HOLD_COMPLETE = "performance.report.completion.hold_complete";
-    public static final String PERFORMANCE_REPORT_COMPLETION_MESSAGE_TARGET_TIMEOUT = "performance.report.completion.message_target_timeout";
-    public static final String PERFORMANCE_REPORT_COMPLETION_AWAIT_TIMEOUT = "performance.report.completion.await_timeout";
-    public static final String PERFORMANCE_REPORT_COMPLETION_FIRST_MESSAGE_TIMEOUT = "performance.report.completion.first_message_timeout";
-    public static final String PERFORMANCE_REPORT_COMPLETION_MATCHED_MESSAGE_TIMEOUT = "performance.report.completion.matched_message_timeout";
-    public static final String PERFORMANCE_REPORT_COMPLETION_CLOSED_EARLY = "performance.report.completion.closed_early";
-    public static final String PERFORMANCE_REPORT_COMPLETION_CLOSED_BY_STEP = "performance.report.completion.closed_by_step";
 
     // ============ 性能趋势相关 ============
     public static final String PERFORMANCE_TREND_THREADS = "performance.trend.threads";

@@ -83,7 +83,6 @@ public class SseSampleExecutor {
         AtomicBoolean failed = new AtomicBoolean(false);
         AtomicBoolean closingSource = new AtomicBoolean(false);
         AtomicReference<String> errorRef = new AtomicReference<>("");
-        AtomicReference<String> completionReasonRef = new AtomicReference<>("pending");
         AtomicReference<String> lastEventIdRef = new AtomicReference<>("");
         AtomicReference<String> lastEventTypeRef = new AtomicReference<>("");
         BoundedTextAccumulator matchedEventBody = new BoundedTextAccumulator(responseBodyPreviewLimitBytes);
@@ -115,7 +114,6 @@ public class SseSampleExecutor {
 
             @Override
             public void onClosed(EventSource eventSource) {
-                completionReasonRef.compareAndSet("pending", "closed");
                 openLatch.countDown();
                 firstMessageLatch.countDown();
                 completionLatch.countDown();
@@ -134,17 +132,13 @@ public class SseSampleExecutor {
                     resp.protocol = response.protocol().toString();
                 }
                 String message = throwable != null ? throwable.getMessage() : "";
-                if (closingSource.get()) {
-                    completionReasonRef.compareAndSet("pending", "closed");
-                } else if (failed.get()) {
-                    completionReasonRef.compareAndSet("pending", "failure");
-                } else if (!runningSupplier.getAsBoolean() || cancelledChecker.test(throwable)) {
-                    interrupted.set(true);
-                    completionReasonRef.set("interrupted");
-                } else {
-                    failed.set(true);
-                    errorRef.set(CharSequenceUtil.blankToDefault(message, "SSE request failed"));
-                    completionReasonRef.set("failure");
+                if (!closingSource.get() && !failed.get()) {
+                    if (!runningSupplier.getAsBoolean() || cancelledChecker.test(throwable)) {
+                        interrupted.set(true);
+                    } else {
+                        failed.set(true);
+                        errorRef.set(CharSequenceUtil.blankToDefault(message, "SSE request failed"));
+                    }
                 }
                 openLatch.countDown();
                 firstMessageLatch.countDown();
@@ -171,7 +165,6 @@ public class SseSampleExecutor {
                         lastEventIdRef.set(id == null ? "" : id);
                         lastEventTypeRef.set(eventType);
                         appendEvent(matchedEventBody, id, eventType, data);
-                        completionReasonRef.compareAndSet("pending", "first_message");
                         firstMessageLatch.countDown();
                         completionLatch.countDown();
                     }
@@ -181,12 +174,6 @@ public class SseSampleExecutor {
                 if (matchesEvent(cfg, eventType) && matchesPayload(cfg, data)) {
                     boolean firstMatchedMessage = matchedMessageCount.incrementAndGet() == 1;
                     realtimeMetrics.recordSseMatched(eventSource);
-                    if (firstMatchedMessage) {
-                        completionReasonRef.compareAndSet("pending",
-                                cfg.completionMode == SsePerformanceData.CompletionMode.MATCHED_MESSAGE
-                                        ? "matched_message"
-                                        : "first_message");
-                    }
                     lastEventIdRef.set(id == null ? "" : id);
                     lastEventTypeRef.set(eventType);
                     appendEvent(matchedEventBody, id, eventType, data);
@@ -199,7 +186,6 @@ public class SseSampleExecutor {
                         completionLatch.countDown();
                     } else if (cfg.completionMode == SsePerformanceData.CompletionMode.MESSAGE_COUNT
                             && matchedMessageCount.get() >= Math.max(1, cfg.targetMessageCount)) {
-                        completionReasonRef.set("message_target");
                         completionLatch.countDown();
                     }
                 }
@@ -219,7 +205,6 @@ public class SseSampleExecutor {
                     if (!opened && !failed.get() && !interrupted.get()) {
                         failed.set(true);
                         errorRef.set("SSE connection timeout");
-                        completionReasonRef.set("connect_timeout");
                         closingSource.set(true);
                         markSampleEnd(sampleEndTimeMs);
                         eventSource.cancel();
@@ -229,7 +214,6 @@ public class SseSampleExecutor {
                     if ((!gotFirstMessage || matchedMessageCount.get() == 0) && !failed.get() && !interrupted.get()) {
                         failed.set(true);
                         errorRef.set("SSE first event timeout");
-                        completionReasonRef.compareAndSet("pending", "first_message_timeout");
                         closingSource.set(true);
                         markSampleEnd(sampleEndTimeMs);
                         eventSource.cancel();
@@ -240,7 +224,6 @@ public class SseSampleExecutor {
                     if (!opened && !failed.get() && !interrupted.get()) {
                         failed.set(true);
                         errorRef.set("SSE connection timeout");
-                        completionReasonRef.set("connect_timeout");
                         closingSource.set(true);
                         markSampleEnd(sampleEndTimeMs);
                         eventSource.cancel();
@@ -250,7 +233,6 @@ public class SseSampleExecutor {
                     if ((!gotMatchedMessage || matchedMessageCount.get() == 0) && !failed.get() && !interrupted.get()) {
                         failed.set(true);
                         errorRef.set("SSE matched message timeout");
-                        completionReasonRef.compareAndSet("pending", "matched_message_timeout");
                         closingSource.set(true);
                         markSampleEnd(sampleEndTimeMs);
                         eventSource.cancel();
@@ -261,7 +243,6 @@ public class SseSampleExecutor {
                     if (!opened && !failed.get() && !interrupted.get()) {
                         failed.set(true);
                         errorRef.set("SSE connection timeout");
-                        completionReasonRef.set("connect_timeout");
                         closingSource.set(true);
                         markSampleEnd(sampleEndTimeMs);
                         eventSource.cancel();
@@ -270,9 +251,6 @@ public class SseSampleExecutor {
                         if (terminated && !failed.get() && !interrupted.get()) {
                             failed.set(true);
                             errorRef.set("SSE connection closed before hold duration finished");
-                            completionReasonRef.set("closed_early");
-                        } else if (!terminated) {
-                            completionReasonRef.set("hold_complete");
                         }
                     }
                 }
@@ -281,7 +259,6 @@ public class SseSampleExecutor {
                     if (!opened && !failed.get() && !interrupted.get()) {
                         failed.set(true);
                         errorRef.set("SSE connection timeout");
-                        completionReasonRef.set("connect_timeout");
                         closingSource.set(true);
                         markSampleEnd(sampleEndTimeMs);
                         eventSource.cancel();
@@ -291,7 +268,6 @@ public class SseSampleExecutor {
                     if ((!gotFirstMessage || matchedMessageCount.get() == 0) && !failed.get() && !interrupted.get()) {
                         failed.set(true);
                         errorRef.set("SSE first message timeout");
-                        completionReasonRef.compareAndSet("pending", "first_message_timeout");
                         closingSource.set(true);
                         markSampleEnd(sampleEndTimeMs);
                         eventSource.cancel();
@@ -302,7 +278,6 @@ public class SseSampleExecutor {
                                 && !failed.get() && !interrupted.get()) {
                             failed.set(true);
                             errorRef.set("SSE target message count timeout");
-                            completionReasonRef.set("message_target_timeout");
                             closingSource.set(true);
                             markSampleEnd(sampleEndTimeMs);
                             eventSource.cancel();
@@ -313,7 +288,6 @@ public class SseSampleExecutor {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             interrupted.set(true);
-            completionReasonRef.set("interrupted");
         } finally {
             markSampleEnd(sampleEndTimeMs);
             realtimeMetrics.recordSseSessionEnd(eventSource);
@@ -337,7 +311,6 @@ public class SseSampleExecutor {
         resp.addHeader("X-Easy-SSE-Message-Count", Collections.singletonList(String.valueOf(matchedMessageCount.get())));
         String firstEventLatencyHeader = firstEventLatencyMs.get() >= 0 ? String.valueOf(firstEventLatencyMs.get()) : "";
         resp.addHeader("X-Easy-SSE-First-Event-Latency-Ms", Collections.singletonList(firstEventLatencyHeader));
-        resp.addHeader("X-Easy-SSE-Completion-Reason", Collections.singletonList(CharSequenceUtil.blankToDefault(completionReasonRef.get(), "")));
         resp.addHeader("X-Easy-SSE-Event-Id", Collections.singletonList(CharSequenceUtil.blankToDefault(lastEventIdRef.get(), "")));
         resp.addHeader("X-Easy-SSE-Event-Type", Collections.singletonList(CharSequenceUtil.blankToDefault(lastEventTypeRef.get(), "")));
         if (CharSequenceUtil.isNotBlank(errorRef.get())) {

@@ -129,8 +129,8 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
         }
 
         JTable httpTable = findTableByColumnCount(tables, 12);
-        JTable webSocketTable = findTableByColumnCount(tables, 14);
-        JTable sseTable = findTableByColumnCount(tables, 16);
+        JTable webSocketTable = findTableByColumnCount(tables, 13);
+        JTable sseTable = findTableByColumnCount(tables, 15);
 
         assertEquals(httpTable.getAutoResizeMode(), JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
         assertEquals(webSocketTable.getAutoResizeMode(), JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
@@ -150,7 +150,6 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
             result.firstMessageLatencyMs = i * 100L;
             result.receivedMessages = 1;
             result.matchedMessages = 1;
-            result.completionReason = "first_message";
             results.add(result);
         }
 
@@ -158,7 +157,7 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
         panel.updateReport(Map.of(), Map.of(), Map.of(), results);
 
         DefaultTableModel model = getSseReportTableModel(panel);
-        assertEquals(model.getColumnCount(), 16);
+        assertEquals(model.getColumnCount(), 15);
         assertEquals(model.getColumnName(9),
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG_FIRST_EVENT));
         assertEquals(model.getColumnName(10),
@@ -174,18 +173,26 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
     }
 
     @Test
-    public void shouldLocalizeStreamCompletionReasonValues() throws Exception {
+    public void shouldNotExposeStreamCompletionReasonColumns() throws Exception {
         ApiMetadata.register("ws", "WebSocket API");
-        RequestResult result = new RequestResult(1_000, 2_000, true, "ws", PerformanceProtocol.WEBSOCKET);
-        result.completionReason = "closed_by_step";
+        ApiMetadata.register("sse", "SSE API");
+        RequestResult ws = new RequestResult(1_000, 2_000, true, "ws", PerformanceProtocol.WEBSOCKET);
+        RequestResult sse = new RequestResult(1_000, 2_000, true, "sse", PerformanceProtocol.SSE);
 
         PerformanceReportPanel panel = new PerformanceReportPanel();
-        panel.updateReport(Map.of(), Map.of(), Map.of(), List.of(result));
+        panel.updateReport(Map.of(), Map.of(), Map.of(), List.of(ws, sse));
 
-        DefaultTableModel model = getWebSocketReportTableModel(panel);
+        DefaultTableModel webSocketModel = getWebSocketReportTableModel(panel);
+        DefaultTableModel sseModel = getSseReportTableModel(panel);
 
-        assertFalse("closed_by_step".equals(model.getValueAt(0, 13)));
-        assertFalse("closed_by_step".equals(model.getValueAt(1, 13)));
+        assertEquals(webSocketModel.getColumnCount(), 13);
+        assertEquals(sseModel.getColumnCount(), 15);
+        assertFalse(hasColumn(webSocketModel, "完成原因"));
+        assertFalse(hasColumn(webSocketModel, "Completion"));
+        assertFalse(hasColumn(sseModel, "完成原因"));
+        assertFalse(hasColumn(sseModel, "Completion"));
+        assertFalse(panel.buildMarkdownReport().contains("完成原因"));
+        assertFalse(panel.buildMarkdownReport().contains("| Completion |"));
     }
 
     @Test
@@ -197,7 +204,7 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
         PerformanceReportPanel panel = new PerformanceReportPanel();
         panel.updateReport(Map.of(), Map.of(), Map.of(), List.of(success, failure));
 
-        JTable webSocketTable = findTableByColumnCount(findAll(panel, JTable.class), 14);
+        JTable webSocketTable = findTableByColumnCount(findAll(panel, JTable.class), 13);
         Component apiRateCell = webSocketTable.getCellRenderer(0, 4)
                 .getTableCellRendererComponent(webSocketTable, webSocketTable.getValueAt(0, 4), false, false, 0, 4);
         Component totalRateCell = webSocketTable.getCellRenderer(1, 4)
@@ -217,7 +224,6 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
         assertEquals(zh.getString(MessageKeys.PERFORMANCE_TREND_SESSION_DURATION_MS), "活跃会话时长 (ms)");
         assertEquals(zh.getString(MessageKeys.PERFORMANCE_TREND_STREAM_DURATION_MS), "活跃流时长 (ms)");
         assertEquals(zh.getString(MessageKeys.PERFORMANCE_TREND_ACTIVE_WS), "会话数");
-        assertEquals(zh.getString(MessageKeys.PERFORMANCE_REPORT_COMPLETION_CLOSED_BY_STEP), "主动关闭");
 
         ResourceBundle en = ResourceBundle.getBundle("messages", Locale.ENGLISH);
         assertEquals(en.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG_SESSION), "Avg Sample Duration");
@@ -227,7 +233,6 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
         assertEquals(en.getString(MessageKeys.PERFORMANCE_TREND_SESSION_DURATION_MS), "Active Session Duration (ms)");
         assertEquals(en.getString(MessageKeys.PERFORMANCE_TREND_STREAM_DURATION_MS), "Active Stream Duration (ms)");
         assertEquals(en.getString(MessageKeys.PERFORMANCE_TREND_ACTIVE_WS), "Sessions");
-        assertEquals(en.getString(MessageKeys.PERFORMANCE_REPORT_COMPLETION_CLOSED_BY_STEP), "Closed by Step");
     }
 
     private static DefaultTableModel getReportTableModel(PerformanceReportPanel panel) throws Exception {
@@ -255,6 +260,15 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
             }
         }
         throw new AssertionError("Table not found for column count: " + columnCount);
+    }
+
+    private static boolean hasColumn(DefaultTableModel model, String columnName) {
+        for (int i = 0; i < model.getColumnCount(); i++) {
+            if (columnName.equals(model.getColumnName(i))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static String headerTooltipAt(JTable table, int column) {

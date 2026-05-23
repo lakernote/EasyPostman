@@ -79,8 +79,7 @@ public class PerformanceReportPanel extends JPanel {
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_RECEIVE_RATE),
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG_FIRST_MESSAGE),
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG_SESSION),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_P95_SESSION),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_COMPLETION)
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_P95_SESSION)
         };
         this.sseColumns = new String[]{
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_API_NAME),
@@ -97,8 +96,7 @@ public class PerformanceReportPanel extends JPanel {
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_P95_FIRST_EVENT),
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_P99_FIRST_EVENT),
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG_STREAM),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_P95_STREAM),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_COMPLETION)
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_P95_STREAM)
         };
         this.totalRowName = I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_TOTAL_ROW);
 
@@ -232,8 +230,8 @@ public class PerformanceReportPanel extends JPanel {
             return;
         }
         int[] widths = table.getColumnCount() == webSocketColumns.length
-                ? new int[]{180, 72, 70, 60, 90, 70, 70, 70, 104, 104, 112, 118, 118, 120}
-                : new int[]{180, 72, 70, 60, 90, 70, 70, 92, 104, 112, 112, 112, 112, 118, 118, 120};
+                ? new int[]{180, 72, 70, 60, 90, 70, 70, 70, 104, 104, 112, 118, 118}
+                : new int[]{180, 72, 70, 60, 90, 70, 70, 92, 104, 112, 112, 112, 112, 118, 118};
         for (int col = 0; col < table.getColumnModel().getColumnCount() && col < widths.length; col++) {
             int width = widths[col];
             table.getColumnModel().getColumn(col).setMinWidth(col == 0 ? API_NAME_MIN_WIDTH : 56);
@@ -584,9 +582,9 @@ public class PerformanceReportPanel extends JPanel {
         return new Object[]{
                 row.name(),
                 row.total(),
-                formatStreamCompletedCount(row),
-                formatStreamFailedCount(row),
-                formatStreamSuccessRate(row),
+                row.success(),
+                row.fail(),
+                formatPercent(row.successRate()),
                 row.sentMessages(),
                 row.receivedMessages(),
                 row.matchedMessages(),
@@ -594,8 +592,7 @@ public class PerformanceReportPanel extends JPanel {
                 formatDecimal(row.receiveRate()),
                 TimeDisplayUtil.formatElapsedTime(row.avgFirstMessageLatencyMs()),
                 TimeDisplayUtil.formatElapsedTime(row.avgDurationMs()),
-                TimeDisplayUtil.formatElapsedTime(row.p95DurationMs()),
-                formatCompletionReason(row.topCompletionReason())
+                TimeDisplayUtil.formatElapsedTime(row.p95DurationMs())
         };
     }
 
@@ -603,9 +600,9 @@ public class PerformanceReportPanel extends JPanel {
         return new Object[]{
                 row.name(),
                 row.total(),
-                formatStreamCompletedCount(row),
-                formatStreamFailedCount(row),
-                formatStreamSuccessRate(row),
+                row.success(),
+                row.fail(),
+                formatPercent(row.successRate()),
                 row.receivedMessages(),
                 row.matchedMessages(),
                 formatDecimal(row.receiveRate()),
@@ -615,38 +612,8 @@ public class PerformanceReportPanel extends JPanel {
                 TimeDisplayUtil.formatElapsedTime(row.p95FirstMessageLatencyMs()),
                 TimeDisplayUtil.formatElapsedTime(row.p99FirstMessageLatencyMs()),
                 TimeDisplayUtil.formatElapsedTime(row.avgDurationMs()),
-                TimeDisplayUtil.formatElapsedTime(row.p95DurationMs()),
-                formatCompletionReason(row.topCompletionReason())
+                TimeDisplayUtil.formatElapsedTime(row.p95DurationMs())
         };
-    }
-
-    private String formatCompletionReason(String reason) {
-        if (reason == null || reason.isBlank() || "-".equals(reason)) {
-            return "-";
-        }
-        String key = switch (reason) {
-            case "pending" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_PENDING;
-            case "closed" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_CLOSED;
-            case "interrupted" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_INTERRUPTED;
-            case "failure" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_FAILURE;
-            case "connect_timeout" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_CONNECT_TIMEOUT;
-            case "send_skipped" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_SEND_SKIPPED;
-            case "send_pre_script_failed" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_SEND_PRE_SCRIPT_FAILED;
-            case "sent" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_SENT;
-            case "send_failed" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_SEND_FAILED;
-            case "first_message" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_FIRST_MESSAGE;
-            case "matched_message" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_MATCHED_MESSAGE;
-            case "message_target" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_MESSAGE_TARGET;
-            case "hold_complete" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_HOLD_COMPLETE;
-            case "message_target_timeout" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_MESSAGE_TARGET_TIMEOUT;
-            case "await_timeout" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_AWAIT_TIMEOUT;
-            case "first_message_timeout" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_FIRST_MESSAGE_TIMEOUT;
-            case "matched_message_timeout" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_MATCHED_MESSAGE_TIMEOUT;
-            case "closed_early" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_CLOSED_EARLY;
-            case "closed_by_step" -> MessageKeys.PERFORMANCE_REPORT_COMPLETION_CLOSED_BY_STEP;
-            default -> null;
-        };
-        return key == null ? reason : I18nUtil.getMessage(key);
     }
 
     private String formatPercent(double value) {
@@ -654,18 +621,6 @@ public class PerformanceReportPanel extends JPanel {
             return "-";
         }
         return String.format(Locale.ROOT, "%.2f%%", value);
-    }
-
-    private Object formatStreamCompletedCount(PerformanceProtocolReportData.StreamReportRow row) {
-        return row.live() ? "-" : row.success();
-    }
-
-    private Object formatStreamFailedCount(PerformanceProtocolReportData.StreamReportRow row) {
-        return row.live() ? "-" : row.fail();
-    }
-
-    private String formatStreamSuccessRate(PerformanceProtocolReportData.StreamReportRow row) {
-        return row.live() ? "-" : formatPercent(row.successRate());
     }
 
     private String formatDecimal(double value) {

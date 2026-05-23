@@ -1,7 +1,6 @@
 package com.laker.postman.panel.performance.result;
 
 import com.laker.postman.panel.performance.model.PerformanceProtocol;
-import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.PerformanceReportSnapshot;
 import com.laker.postman.panel.performance.model.PerformanceStatsSnapshot;
 import com.laker.postman.panel.performance.model.RequestResult;
@@ -9,7 +8,6 @@ import com.laker.postman.panel.performance.model.RequestResult;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,11 +55,7 @@ final class PerformanceProtocolReportData {
         if (snapshot == null) {
             return new PerformanceProtocolReportData(List.of(), List.of(), List.of());
         }
-        return new PerformanceProtocolReportData(
-                buildHttpRows(snapshot.completedStats(), totalRowName),
-                buildStreamRows(snapshot, PerformanceProtocol.WEBSOCKET, totalRowName),
-                buildStreamRows(snapshot, PerformanceProtocol.SSE, totalRowName)
-        );
+        return fromStatsSnapshot(snapshot.completedStats(), totalRowName);
     }
 
     List<HttpReportRow> httpRows() {
@@ -136,56 +130,6 @@ final class PerformanceProtocolReportData {
         return rows;
     }
 
-    private static List<StreamReportRow> buildStreamRows(PerformanceReportSnapshot snapshot,
-                                                         PerformanceProtocol protocol,
-                                                         String totalRowName) {
-        PerformanceStatsSnapshot completedStats = snapshot.completedStats();
-        List<StreamReportRow> rows = new ArrayList<>();
-        for (PerformanceStatsSnapshot.ApiSummary summary : completedStats.summaries()) {
-            if (summary.protocol() == protocol) {
-                rows.add(toStreamRow(summary));
-            }
-        }
-        sortByName(rows);
-        appendLiveStreamRows(rows, liveProtocolSnapshot(snapshot.liveSnapshot(), protocol));
-        PerformanceStatsSnapshot.ApiSummary total = completedStats.totalFor(protocol, totalRowName);
-        if (total != null && total.total() > 0) {
-            rows.add(toStreamRow(total));
-        }
-        return rows;
-    }
-
-    private static PerformanceRealtimeMetrics.LiveProtocolSnapshot liveProtocolSnapshot(
-            PerformanceRealtimeMetrics.LiveSnapshot liveSnapshot,
-            PerformanceProtocol protocol) {
-        if (liveSnapshot == null) {
-            return null;
-        }
-        if (protocol == PerformanceProtocol.WEBSOCKET) {
-            return liveSnapshot.webSocket();
-        }
-        if (protocol == PerformanceProtocol.SSE) {
-            return liveSnapshot.sse();
-        }
-        return null;
-    }
-
-    private static void appendLiveStreamRows(List<StreamReportRow> rows,
-                                             PerformanceRealtimeMetrics.LiveProtocolSnapshot live) {
-        if (live == null || live.apiSnapshots() == null || live.apiSnapshots().isEmpty()) {
-            return;
-        }
-        List<StreamReportRow> liveRows = new ArrayList<>();
-        for (PerformanceRealtimeMetrics.LiveApiSnapshot liveApi : live.apiSnapshots()) {
-            if (liveApi == null || liveApi.metrics() == null || !liveApi.metrics().hasData()) {
-                continue;
-            }
-            liveRows.add(toLiveStreamRow(liveApi));
-        }
-        sortByName(liveRows);
-        rows.addAll(liveRows);
-    }
-
     private static Map<String, List<RequestResult>> groupByApi(List<RequestResult> results, PerformanceProtocol protocol) {
         Map<String, List<RequestResult>> byApi = new LinkedHashMap<>();
         for (RequestResult result : results) {
@@ -254,7 +198,6 @@ final class PerformanceProtocolReportData {
         int matchedMessages = 0;
         long firstLatencyTotal = 0;
         int firstLatencyCount = 0;
-        Map<String, Integer> completionReasons = new HashMap<>();
         List<Long> durations = new ArrayList<>();
         List<Long> firstLatencies = new ArrayList<>();
 
@@ -268,10 +211,6 @@ final class PerformanceProtocolReportData {
                 firstLatencyCount++;
                 firstLatencies.add(result.firstMessageLatencyMs);
             }
-            String reason = result.completionReason == null || result.completionReason.isBlank()
-                    ? "-"
-                    : result.completionReason;
-            completionReasons.merge(reason, 1, Integer::sum);
         }
 
         DurationStats stats = calculateDurationStats(durations);
@@ -294,9 +233,7 @@ final class PerformanceProtocolReportData {
                 firstLatencyStats.p95(),
                 firstLatencyStats.p99(),
                 stats.avg(),
-                stats.p95(),
-                topCompletionReason(completionReasons),
-                false
+                stats.p95()
         );
     }
 
@@ -322,48 +259,8 @@ final class PerformanceProtocolReportData {
                 firstLatencyStats.p95(),
                 firstLatencyStats.p99(),
                 stats.avg(),
-                stats.p95(),
-                summary.topCompletionReason(),
-                false
+                stats.p95()
         );
-    }
-
-    private static StreamReportRow toLiveStreamRow(PerformanceRealtimeMetrics.LiveApiSnapshot liveApi) {
-        PerformanceRealtimeMetrics.LiveProtocolSnapshot metrics = liveApi.metrics();
-        PerformanceStatsSnapshot.DurationStats durationStats = metrics.activeDurationStats() == null
-                ? PerformanceStatsSnapshot.DurationStats.empty()
-                : metrics.activeDurationStats();
-        PerformanceStatsSnapshot.DurationStats firstLatencyStats = metrics.firstMessageLatencyStats() == null
-                ? PerformanceStatsSnapshot.DurationStats.empty()
-                : metrics.firstMessageLatencyStats();
-        return new StreamReportRow(
-                resolveLiveApiName(liveApi),
-                metrics.activeSessions(),
-                0,
-                0,
-                Double.NaN,
-                metrics.sentMessages(),
-                metrics.receivedMessages(),
-                metrics.matchedMessages(),
-                metrics.sendRate(),
-                metrics.receiveRate(),
-                metrics.matchedRate(),
-                metrics.avgFirstMessageLatencyMs(),
-                firstLatencyStats.p90(),
-                firstLatencyStats.p95(),
-                firstLatencyStats.p99(),
-                durationStats.avg(),
-                durationStats.p95(),
-                "pending",
-                true
-        );
-    }
-
-    private static String resolveLiveApiName(PerformanceRealtimeMetrics.LiveApiSnapshot liveApi) {
-        if (liveApi.apiName() != null && !liveApi.apiName().isBlank()) {
-            return liveApi.apiName();
-        }
-        return liveApi.apiId();
     }
 
     private static int countSuccess(List<RequestResult> results) {
@@ -392,17 +289,6 @@ final class PerformanceProtocolReportData {
         long maxEnd = results.stream().mapToLong(result -> result.endTime).max().orElse(minStart);
         long spanMs = Math.max(1, maxEnd - minStart);
         return count * 1000.0 / spanMs;
-    }
-
-    private static String topCompletionReason(Map<String, Integer> reasons) {
-        if (reasons.isEmpty()) {
-            return "-";
-        }
-        return reasons.entrySet().stream()
-                .max(Map.Entry.<String, Integer>comparingByValue()
-                        .thenComparing(Map.Entry.comparingByKey()))
-                .map(Map.Entry::getKey)
-                .orElse("-");
     }
 
     private static DurationStats calculateDurationStats(List<Long> costs) {
@@ -483,9 +369,7 @@ final class PerformanceProtocolReportData {
                            long p95FirstMessageLatencyMs,
                            long p99FirstMessageLatencyMs,
                            long avgDurationMs,
-                           long p95DurationMs,
-                           String topCompletionReason,
-                           boolean live) implements NamedReportRow {
+                           long p95DurationMs) implements NamedReportRow {
     }
 
     private record DurationStats(long avg, long min, long max, long p90, long p95, long p99) {

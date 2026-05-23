@@ -33,12 +33,10 @@ public class PerformanceProtocolReportDataTest {
         ws.receivedMessages = 5;
         ws.matchedMessages = 3;
         ws.firstMessageLatencyMs = 90;
-        ws.completionReason = "matched_message";
         RequestResult sse = new RequestResult(3_000, 4_000, false, "sse-api", PerformanceProtocol.SSE);
         sse.receivedMessages = 7;
         sse.matchedMessages = 4;
         sse.firstMessageLatencyMs = 140;
-        sse.completionReason = "message_target_timeout";
 
         PerformanceProtocolReportData reportData = PerformanceProtocolReportData.fromResults(
                 List.of(http, ws, sse),
@@ -50,11 +48,9 @@ public class PerformanceProtocolReportDataTest {
         assertEquals(reportData.webSocketRows().get(0).name(), "WS API");
         assertEquals(reportData.webSocketRows().get(0).sentMessages(), 2);
         assertEquals(reportData.webSocketRows().get(0).receivedMessages(), 5);
-        assertEquals(reportData.webSocketRows().get(0).topCompletionReason(), "matched_message");
         assertEquals(reportData.sseRows().get(0).name(), "SSE API");
         assertEquals(reportData.sseRows().get(0).receivedMessages(), 7);
         assertEquals(reportData.sseRows().get(0).matchedMessages(), 4);
-        assertEquals(reportData.sseRows().get(0).topCompletionReason(), "message_target_timeout");
     }
 
     @Test
@@ -78,7 +74,7 @@ public class PerformanceProtocolReportDataTest {
     }
 
     @Test
-    public void shouldKeepLiveStreamRowsOutOfCompletedTotals() {
+    public void shouldKeepLiveStreamRowsOutOfReports() {
         ApiMetadata.register("ws-api", "WS API");
         PerformanceStatsCollector collector = new PerformanceStatsCollector();
         RequestResult completed = new RequestResult(1_000, 1_500, true, "ws-api", PerformanceProtocol.WEBSOCKET);
@@ -86,7 +82,6 @@ public class PerformanceProtocolReportDataTest {
         completed.receivedMessages = 2;
         completed.matchedMessages = 1;
         completed.firstMessageLatencyMs = 90;
-        completed.completionReason = "matched_message";
         collector.record(completed);
 
         PerformanceRealtimeMetrics realtimeMetrics = new PerformanceRealtimeMetrics();
@@ -104,33 +99,20 @@ public class PerformanceProtocolReportDataTest {
                 "Total"
         );
 
-        assertEquals(reportData.webSocketRows().size(), 3);
+        assertEquals(reportData.webSocketRows().size(), 2);
 
         PerformanceProtocolReportData.StreamReportRow completedRow = reportData.webSocketRows().get(0);
         assertEquals(completedRow.name(), "WS API");
         assertEquals(completedRow.total(), 1L);
         assertEquals(completedRow.success(), 1L);
         assertEquals(completedRow.avgDurationMs(), 500L);
-        assertEquals(completedRow.topCompletionReason(), "matched_message");
-        assertEquals(completedRow.live(), false);
 
-        PerformanceProtocolReportData.StreamReportRow liveRow = reportData.webSocketRows().get(1);
-        assertEquals(liveRow.name(), "WS API");
-        assertEquals(liveRow.total(), 1L);
-        assertEquals(liveRow.success(), 0L);
-        assertEquals(liveRow.fail(), 0L);
-        assertEquals(liveRow.sentMessages(), 2L);
-        assertEquals(liveRow.avgDurationMs(), 2_000L);
-        assertEquals(liveRow.topCompletionReason(), "pending");
-        assertEquals(liveRow.live(), true);
-
-        PerformanceProtocolReportData.StreamReportRow totalRow = reportData.webSocketRows().get(2);
+        PerformanceProtocolReportData.StreamReportRow totalRow = reportData.webSocketRows().get(1);
         assertEquals(totalRow.name(), "Total");
         assertEquals(totalRow.total(), 1L);
         assertEquals(totalRow.success(), 1L);
         assertEquals(totalRow.sentMessages(), 1L);
         assertEquals(totalRow.avgDurationMs(), 500L);
-        assertEquals(totalRow.live(), false);
     }
 
     @Test
@@ -143,7 +125,6 @@ public class PerformanceProtocolReportDataTest {
             result.firstMessageLatencyMs = i * 100L;
             result.receivedMessages = 1;
             result.matchedMessages = 1;
-            result.completionReason = "first_message";
             results.add(result);
         }
 

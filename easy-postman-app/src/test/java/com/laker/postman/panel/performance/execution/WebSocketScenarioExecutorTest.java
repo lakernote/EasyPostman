@@ -417,6 +417,7 @@ public class WebSocketScenarioExecutorTest {
             assertEquals(receivedPayloads, List.of("ping", "ping"));
             assertEquals(result.response.headers.get("X-Easy-WS-Sent-Count").get(0), "2");
             assertEquals(result.response.headers.get("X-Easy-WS-Received-Count").get(0), "2");
+            assertFalse(result.response.headers.containsKey("X-Easy-WS-Completion-Reason"));
         } finally {
             VariablesService.getInstance().detachContext();
             IterationDataVariableService.getInstance().detachContext();

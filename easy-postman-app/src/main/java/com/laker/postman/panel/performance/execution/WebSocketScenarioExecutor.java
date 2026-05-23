@@ -108,7 +108,6 @@ public class WebSocketScenarioExecutor {
         AtomicBoolean closingSocket = new AtomicBoolean(false);
         AtomicBoolean remoteClosed = new AtomicBoolean(false);
         AtomicReference<String> errorRef = new AtomicReference<>("");
-        AtomicReference<String> completionReasonRef = new AtomicReference<>("pending");
         AtomicReference<String> lastMessageRef = new AtomicReference<>("");
         AtomicReference<WebSocketPerformanceData> lastStepCfgRef = new AtomicReference<>(requestCfg);
         BoundedTextAccumulator responseBody = new BoundedTextAccumulator(responseBodyPreviewLimitBytes);
@@ -181,7 +180,6 @@ public class WebSocketScenarioExecutor {
             @Override
             public void onClosed(WebSocket webSocket, int code, String reason) {
                 remoteClosed.set(true);
-                completionReasonRef.compareAndSet("pending", "closed");
                 openLatch.countDown();
                 synchronized (messageLock) {
                     messageLock.notifyAll();
@@ -201,15 +199,13 @@ public class WebSocketScenarioExecutor {
                     resp.protocol = response.protocol().toString();
                 }
                 String message = throwable != null ? throwable.getMessage() : "";
-                if (closingSocket.get()) {
-                    completionReasonRef.compareAndSet("pending", "closed");
-                } else if (!runningSupplier.getAsBoolean() || cancelledChecker.test(throwable)) {
-                    interrupted.set(true);
-                    completionReasonRef.set("interrupted");
-                } else {
-                    failed.set(true);
-                    errorRef.set(CharSequenceUtil.blankToDefault(message, "WebSocket request failed"));
-                    completionReasonRef.set("failure");
+                if (!closingSocket.get()) {
+                    if (!runningSupplier.getAsBoolean() || cancelledChecker.test(throwable)) {
+                        interrupted.set(true);
+                    } else {
+                        failed.set(true);
+                        errorRef.set(CharSequenceUtil.blankToDefault(message, "WebSocket request failed"));
+                    }
                 }
                 remoteClosed.set(true);
                 openLatch.countDown();
@@ -230,7 +226,6 @@ public class WebSocketScenarioExecutor {
             if (!opened && !failed.get() && !interrupted.get()) {
                 failed.set(true);
                 errorRef.set("WebSocket connection timeout");
-                completionReasonRef.set("connect_timeout");
                 closingSocket.set(true);
                 webSocket.cancel();
             }
@@ -261,7 +256,6 @@ public class WebSocketScenarioExecutor {
                             if (stepCfg.sendMode == WebSocketPerformanceData.SendMode.NONE
                                     || (contentSource == WebSocketPerformanceData.SendContentSource.REQUEST_BODY
                                     && CharSequenceUtil.isBlank(resolveSendPayloadTemplate(req, requestBodyTemplate, stepCfg)))) {
-                                completionReasonRef.set("send_skipped");
                                 break;
                             }
                             int sendTimes = stepCfg.sendMode == WebSocketPerformanceData.SendMode.REQUEST_BODY_REPEAT
@@ -279,7 +273,6 @@ public class WebSocketScenarioExecutor {
                                 if (!sendScriptResult.isSuccess()) {
                                     failed.set(true);
                                     errorRef.set("WebSocket send pre-script failed: " + sendScriptResult.getErrorMessage());
-                                    completionReasonRef.set("send_pre_script_failed");
                                     break;
                                 }
                                 String payload = resolveSendPayload(req, requestBodyTemplate, stepCfg);
@@ -287,11 +280,9 @@ public class WebSocketScenarioExecutor {
                                 if (sent) {
                                     sentMessageCount.incrementAndGet();
                                     realtimeMetrics.recordWebSocketSent(webSocket);
-                                    completionReasonRef.set("sent");
                                 } else {
                                     failed.set(true);
                                     errorRef.set("WebSocket send failed");
-                                    completionReasonRef.set("send_failed");
                                     break;
                                 }
                                 if (sendIndex < sendTimes - 1 && intervalMs > 0) {
@@ -335,14 +326,11 @@ public class WebSocketScenarioExecutor {
                                         appendMessage(stepBody, payload);
                                         if (stepCfg.completionMode == WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE
                                                 || stepCfg.completionMode == WebSocketPerformanceData.CompletionMode.MATCHED_MESSAGE) {
-                                            completionReasonRef.set(stepCfg.completionMode == WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE
-                                                    ? "first_message" : "matched_message");
                                             completed = true;
                                             break;
                                         }
                                         if (stepCfg.completionMode == WebSocketPerformanceData.CompletionMode.MESSAGE_COUNT
                                                 && stepMatchedCount >= Math.max(1, stepCfg.targetMessageCount)) {
-                                            completionReasonRef.set("message_target");
                                             completed = true;
                                             break;
                                         }
@@ -353,7 +341,6 @@ public class WebSocketScenarioExecutor {
                                     if (remoteClosed.get()) {
                                         failed.set(true);
                                         errorRef.set("WebSocket connection closed before await completed");
-                                        completionReasonRef.set("closed_early");
                                         break;
                                     }
                                     long now = System.currentTimeMillis();
@@ -367,7 +354,6 @@ public class WebSocketScenarioExecutor {
                                     };
                                     if (stepCfg.completionMode == WebSocketPerformanceData.CompletionMode.FIXED_DURATION) {
                                         if (now >= deadline) {
-                                            completionReasonRef.set("hold_complete");
                                             completed = true;
                                             break;
                                         }
@@ -376,8 +362,6 @@ public class WebSocketScenarioExecutor {
                                         errorRef.set(stepCfg.completionMode == WebSocketPerformanceData.CompletionMode.MESSAGE_COUNT
                                                 ? "WebSocket target message count timeout"
                                                 : "WebSocket await timeout");
-                                        completionReasonRef.set(stepCfg.completionMode == WebSocketPerformanceData.CompletionMode.MESSAGE_COUNT
-                                                ? "message_target_timeout" : "await_timeout");
                                         break;
                                     }
                                     long waitMs = Math.min(100, Math.max(1, deadline - now));
@@ -399,7 +383,6 @@ public class WebSocketScenarioExecutor {
                         }
                         case WS_CLOSE -> {
                             markSampleEnd(sampleEndTimeMs);
-                            completionReasonRef.set("closed_by_step");
                             closingSocket.set(true);
                             try {
                                 webSocket.close(1000, "WebSocket close step");
@@ -420,7 +403,6 @@ public class WebSocketScenarioExecutor {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             interrupted.set(true);
-            completionReasonRef.set("interrupted");
         } finally {
             markSampleEnd(sampleEndTimeMs);
             realtimeMetrics.recordWebSocketSessionEnd(webSocket);
@@ -464,7 +446,6 @@ public class WebSocketScenarioExecutor {
         resp.addHeader("X-Easy-WS-Sent-Count", Collections.singletonList(String.valueOf(sentMessageCount.get())));
         resp.addHeader("X-Easy-WS-Message-Count", Collections.singletonList(String.valueOf(matchedMessageCount.get())));
         resp.addHeader("X-Easy-WS-First-Message-Latency-Ms", Collections.singletonList(firstMessageLatencyMs.get() >= 0 ? String.valueOf(firstMessageLatencyMs.get()) : ""));
-        resp.addHeader("X-Easy-WS-Completion-Reason", Collections.singletonList(CharSequenceUtil.blankToDefault(completionReasonRef.get(), "")));
         resp.addHeader("X-Easy-WS-Last-Message", Collections.singletonList(CharSequenceUtil.blankToDefault(lastMessageRef.get(), "")));
         if (CharSequenceUtil.isNotBlank(errorRef.get())) {
             resp.addHeader("X-Easy-WS-Error", Collections.singletonList(errorRef.get()));

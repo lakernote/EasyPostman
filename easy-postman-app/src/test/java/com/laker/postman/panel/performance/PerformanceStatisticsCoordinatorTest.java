@@ -51,7 +51,7 @@ public class PerformanceStatisticsCoordinatorTest extends AbstractSwingUiTest {
     }
 
     @Test
-    public void updateReportShouldRenderLiveWebSocketTotalsBeforeSampleCompletes() throws Exception {
+    public void updateReportShouldIgnoreLiveWebSocketRowsBeforeSampleCompletes() throws Exception {
         PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
         PerformanceRealtimeMetrics metrics = new PerformanceRealtimeMetrics();
         Object webSocketSession = new Object();
@@ -86,22 +86,14 @@ public class PerformanceStatisticsCoordinatorTest extends AbstractSwingUiTest {
             SwingUtilities.invokeAndWait(coordinator::updateReportWithLatestDataSync);
 
             DefaultTableModel webSocketModel = getWebSocketReportTableModel(reportPanel);
-            assertEquals(webSocketModel.getRowCount(), 1);
-            assertEquals(webSocketModel.getValueAt(0, 0), "WS API");
-            assertEquals(webSocketModel.getValueAt(0, 1), 1L);
-            assertEquals(webSocketModel.getValueAt(0, 2), "-");
-            assertEquals(webSocketModel.getValueAt(0, 3), "-");
-            assertEquals(webSocketModel.getValueAt(0, 4), "-");
-            assertEquals(webSocketModel.getValueAt(0, 5), 2L);
-            assertEquals(webSocketModel.getValueAt(0, 6), 1L);
-            assertEquals(webSocketModel.getValueAt(0, 7), 1L);
+            assertEquals(webSocketModel.getRowCount(), 0);
         } finally {
             coordinator.dispose();
         }
     }
 
     @Test
-    public void updateReportShouldRenderLiveSseTotalsBeforeSampleCompletes() throws Exception {
+    public void updateReportShouldIgnoreLiveSseRowsBeforeSampleCompletes() throws Exception {
         PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
         PerformanceRealtimeMetrics metrics = new PerformanceRealtimeMetrics();
         Object sseSession = new Object();
@@ -135,14 +127,7 @@ public class PerformanceStatisticsCoordinatorTest extends AbstractSwingUiTest {
             SwingUtilities.invokeAndWait(coordinator::updateReportWithLatestDataSync);
 
             DefaultTableModel sseModel = getSseReportTableModel(reportPanel);
-            assertEquals(sseModel.getRowCount(), 1);
-            assertEquals(sseModel.getValueAt(0, 0), "SSE API");
-            assertEquals(sseModel.getValueAt(0, 1), 1L);
-            assertEquals(sseModel.getValueAt(0, 2), "-");
-            assertEquals(sseModel.getValueAt(0, 3), "-");
-            assertEquals(sseModel.getValueAt(0, 4), "-");
-            assertEquals(sseModel.getValueAt(0, 5), 2L);
-            assertEquals(sseModel.getValueAt(0, 6), 1L);
+            assertEquals(sseModel.getRowCount(), 0);
         } finally {
             coordinator.dispose();
         }

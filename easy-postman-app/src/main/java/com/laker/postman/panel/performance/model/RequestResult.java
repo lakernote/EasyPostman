@@ -13,7 +13,6 @@ public class RequestResult {
     public int receivedMessages;
     public int matchedMessages;
     public long firstMessageLatencyMs = -1;
-    public String completionReason = "";
 
     /**
      * 主构造函数

@@ -16,24 +16,54 @@ import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.data.time.DateRange;
 import org.jfree.data.time.RegularTimePeriod;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
 import org.jfree.data.xy.XYDataset;
 
 import javax.swing.*;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.ResourceBundle;
 
 public class PerformanceTrendPanel extends SingletonBasePanel {
 
     private static final String SEPARATE_VIEW = "separate";
     private static final String COMBINED_VIEW = "combined";
     private static final int MAX_TREND_POINTS = 3_600;
+    private static final long EMPTY_DOMAIN_WINDOW_MS = 60_000L;
+    private static final String JFREE_CHART_BUNDLE = "org.jfree.chart.LocalizationBundle";
+    private static final String SAVE_AS_PNG_COMMAND = "SAVE_AS_PNG";
+    private static final String SAVE_AS_SVG_COMMAND = "SAVE_AS_SVG";
+    private static final String SAVE_AS_PDF_COMMAND = "SAVE_AS_PDF";
+    private static final Map<String, String> CHART_POPUP_ACTION_KEYS = Map.ofEntries(
+            Map.entry(ChartPanel.PROPERTIES_COMMAND, "Properties..."),
+            Map.entry(ChartPanel.COPY_COMMAND, "Copy"),
+            Map.entry(ChartPanel.SAVE_COMMAND, "Save_as..."),
+            Map.entry(SAVE_AS_PNG_COMMAND, "PNG..."),
+            Map.entry(SAVE_AS_SVG_COMMAND, "SVG..."),
+            Map.entry(SAVE_AS_PDF_COMMAND, "PDF..."),
+            Map.entry(ChartPanel.PRINT_COMMAND, "Print..."),
+            Map.entry(ChartPanel.ZOOM_IN_BOTH_COMMAND, "All_Axes"),
+            Map.entry(ChartPanel.ZOOM_IN_DOMAIN_COMMAND, "Domain_Axis"),
+            Map.entry(ChartPanel.ZOOM_IN_RANGE_COMMAND, "Range_Axis"),
+            Map.entry(ChartPanel.ZOOM_OUT_BOTH_COMMAND, "All_Axes"),
+            Map.entry(ChartPanel.ZOOM_OUT_DOMAIN_COMMAND, "Domain_Axis"),
+            Map.entry(ChartPanel.ZOOM_OUT_RANGE_COMMAND, "Range_Axis"),
+            Map.entry(ChartPanel.ZOOM_RESET_BOTH_COMMAND, "All_Axes"),
+            Map.entry(ChartPanel.ZOOM_RESET_DOMAIN_COMMAND, "Domain_Axis"),
+            Map.entry(ChartPanel.ZOOM_RESET_RANGE_COMMAND, "Range_Axis")
+    );
 
     private final TimeSeries httpVirtualUsersSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_VIRTUAL_USERS));
     private final TimeSeries httpRpsSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_QPS));
@@ -224,7 +254,108 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
         panel.setMinimumDrawHeight(0);
         panel.setMaximumDrawWidth(Integer.MAX_VALUE);
         panel.setMaximumDrawHeight(Integer.MAX_VALUE);
+        installLocalizedChartPopupMenu(panel);
         return panel;
+    }
+
+    private static void installLocalizedChartPopupMenu(ChartPanel panel) {
+        JPopupMenu popupMenu = panel.getPopupMenu();
+        if (popupMenu == null) {
+            return;
+        }
+        localizeChartPopupMenu(popupMenu);
+        popupMenu.addPopupMenuListener(new PopupMenuListener() {
+            @Override
+            public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
+                localizeChartPopupMenu(popupMenu);
+            }
+
+            @Override
+            public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
+            }
+
+            @Override
+            public void popupMenuCanceled(PopupMenuEvent e) {
+            }
+        });
+    }
+
+    private static void localizeChartPopupMenu(JPopupMenu popupMenu) {
+        ResourceBundle bundle = chartPopupResourceBundle();
+        popupMenu.setLabel(chartPopupText(bundle, "Chart") + ":");
+        for (Component component : popupMenu.getComponents()) {
+            localizeChartPopupComponent(component, bundle);
+        }
+    }
+
+    private static void localizeChartPopupComponent(Component component, ResourceBundle bundle) {
+        if (component instanceof JMenu menu) {
+            String menuKey = resolveChartPopupMenuKey(menu);
+            if (menuKey != null) {
+                menu.setText(chartPopupText(bundle, menuKey));
+            }
+            for (Component child : menu.getMenuComponents()) {
+                localizeChartPopupComponent(child, bundle);
+            }
+            return;
+        }
+
+        if (component instanceof JMenuItem menuItem) {
+            String key = CHART_POPUP_ACTION_KEYS.get(menuItem.getActionCommand());
+            if (key != null) {
+                menuItem.setText(chartPopupText(bundle, key));
+            }
+        }
+    }
+
+    private static String resolveChartPopupMenuKey(JMenu menu) {
+        if (containsChartPopupCommand(menu, ChartPanel.SAVE_COMMAND, SAVE_AS_PNG_COMMAND,
+                SAVE_AS_SVG_COMMAND, SAVE_AS_PDF_COMMAND)) {
+            return "Save_as";
+        }
+        if (containsChartPopupCommand(menu, ChartPanel.ZOOM_IN_BOTH_COMMAND,
+                ChartPanel.ZOOM_IN_DOMAIN_COMMAND, ChartPanel.ZOOM_IN_RANGE_COMMAND)) {
+            return "Zoom_In";
+        }
+        if (containsChartPopupCommand(menu, ChartPanel.ZOOM_OUT_BOTH_COMMAND,
+                ChartPanel.ZOOM_OUT_DOMAIN_COMMAND, ChartPanel.ZOOM_OUT_RANGE_COMMAND)) {
+            return "Zoom_Out";
+        }
+        if (containsChartPopupCommand(menu, ChartPanel.ZOOM_RESET_BOTH_COMMAND,
+                ChartPanel.ZOOM_RESET_DOMAIN_COMMAND, ChartPanel.ZOOM_RESET_RANGE_COMMAND)) {
+            return "Auto_Range";
+        }
+        return null;
+    }
+
+    private static boolean containsChartPopupCommand(JMenu menu, String... commands) {
+        for (Component component : menu.getMenuComponents()) {
+            if (component instanceof JMenu childMenu && containsChartPopupCommand(childMenu, commands)) {
+                return true;
+            }
+            if (component instanceof JMenuItem menuItem && matchesCommand(menuItem.getActionCommand(), commands)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean matchesCommand(String actionCommand, String... commands) {
+        for (String command : commands) {
+            if (command.equals(actionCommand)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static ResourceBundle chartPopupResourceBundle() {
+        Locale locale = I18nUtil.isChinese() ? Locale.SIMPLIFIED_CHINESE : Locale.ENGLISH;
+        return ResourceBundle.getBundle(JFREE_CHART_BUNDLE, locale);
+    }
+
+    private static String chartPopupText(ResourceBundle bundle, String key) {
+        return bundle.containsKey(key) ? bundle.getString(key) : key;
     }
 
     private XYLineAndShapeRenderer createTrendRenderer() {
@@ -236,21 +367,27 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
     }
 
     public void clearTrendDataset() {
+        long resetTimeMs = System.currentTimeMillis();
         for (TimeSeries series : allSeries()) {
             series.clear();
         }
         for (TrendView trendView : trendViews) {
-            trendView.resetAxes();
+            trendView.resetAxes(resetTimeMs);
         }
     }
 
-    private static void resetAxes(ChartPanel chartPanel) {
+    private static void resetAxes(ChartPanel chartPanel, long resetTimeMs) {
         if (chartPanel == null || chartPanel.getChart() == null) {
             return;
         }
         XYPlot plot = chartPanel.getChart().getXYPlot();
-        if (plot.getDomainAxis() != null) {
-            plot.getDomainAxis().setAutoRange(true);
+        if (plot.getDomainAxis() instanceof DateAxis dateAxis) {
+            DateRange resetRange = new DateRange(
+                    new Date(Math.max(0, resetTimeMs - EMPTY_DOMAIN_WINDOW_MS)),
+                    new Date(resetTimeMs)
+            );
+            dateAxis.setAutoRange(true);
+            dateAxis.setRange(resetRange, false, true);
         }
         if (plot.getRangeAxis() != null) {
             plot.getRangeAxis().setAutoRange(true);
@@ -480,10 +617,10 @@ public class PerformanceTrendPanel extends SingletonBasePanel {
             chartCards.repaint();
         }
 
-        private void resetAxes() {
-            PerformanceTrendPanel.resetAxes(combinedChartPanel);
+        private void resetAxes(long resetTimeMs) {
+            PerformanceTrendPanel.resetAxes(combinedChartPanel, resetTimeMs);
             for (SplitChart splitChart : splitCharts) {
-                PerformanceTrendPanel.resetAxes(splitChart.chartPanel());
+                PerformanceTrendPanel.resetAxes(splitChart.chartPanel(), resetTimeMs);
             }
         }
     }

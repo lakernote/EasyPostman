@@ -8,6 +8,7 @@ import com.laker.postman.test.AbstractSwingUiTest;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import org.jfree.chart.ChartPanel;
+import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.time.Millisecond;
@@ -21,6 +22,9 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.ResourceBundle;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -160,6 +164,90 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
     }
 
     @Test
+    public void clearTrendDatasetShouldResetDomainAxisForAllProtocolTrendCharts() throws Exception {
+        PerformanceTrendPanel panel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
+        panel.clearTrendDataset();
+        long oldRunTime = System.currentTimeMillis() - 30 * 60 * 1000L;
+
+        panel.addOrUpdate(new Millisecond(new Date(oldRunTime)), snapshotWithAllProtocolMetrics());
+        panel.clearTrendDataset();
+
+        long now = System.currentTimeMillis();
+        for (String fieldName : List.of(
+                "httpVirtualUsersSeries",
+                "httpRpsSeries",
+                "httpAvgResponseSeries",
+                "httpErrorRateSeries",
+                "wsActiveSeries",
+                "wsSentRateSeries",
+                "wsReceivedRateSeries",
+                "wsErrorRateSeries",
+                "sseActiveSeries",
+                "sseEventRateSeries",
+                "sseErrorRateSeries"
+        )) {
+            TimeSeries series = getTimeSeries(panel, fieldName);
+            ChartPanel chartPanel = findChartPanelForSeries(panel, series);
+            DateAxis domainAxis = (DateAxis) chartPanel.getChart().getXYPlot().getDomainAxis();
+            assertDomainAxisNearNow(fieldName, domainAxis, now);
+        }
+        for (ChartPanel chartPanel : findAll(panel, ChartPanel.class)) {
+            DateAxis domainAxis = (DateAxis) chartPanel.getChart().getXYPlot().getDomainAxis();
+            assertDomainAxisNearNow(chartPanel.getChart().getTitle().getText(), domainAxis, now);
+        }
+    }
+
+    @Test
+    public void chartPopupMenuShouldFollowEasyPostmanLanguageWhenJFreeChartBundleDiffers() throws Exception {
+        boolean originalChinese = I18nUtil.isChinese();
+        ResourceBundle originalChartBundle = chartPanelLocalizationBundle();
+        try {
+            setChartPanelLocalizationBundle(Locale.SIMPLIFIED_CHINESE);
+            clearSingletonInstance(PerformanceTrendPanel.class);
+            I18nUtil.setLocale("en");
+
+            PerformanceTrendPanel panel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
+            JPopupMenu popupMenu = findFirst(panel, ChartPanel.class).getPopupMenu();
+
+            assertTrue(hasPopupLeafText(popupMenu, "Properties..."));
+            assertTrue(hasPopupLeafText(popupMenu, "Copy"));
+            assertTrue(hasPopupMenuText(popupMenu, "Save as"));
+            assertTrue(hasPopupMenuText(popupMenu, "Zoom In"));
+            assertTrue(hasPopupMenuText(popupMenu, "Auto Range"));
+            assertFalse(hasAnyPopupText(popupMenu, "属性", "复制", "另存为", "放大", "自动调整"));
+        } finally {
+            I18nUtil.setLocale(originalChinese ? "zh" : "en");
+            setChartPanelLocalizationBundle(originalChartBundle);
+            clearSingletonInstance(PerformanceTrendPanel.class);
+        }
+    }
+
+    @Test
+    public void chartPopupMenuShouldUseChineseWhenEasyPostmanLanguageIsChinese() throws Exception {
+        boolean originalChinese = I18nUtil.isChinese();
+        ResourceBundle originalChartBundle = chartPanelLocalizationBundle();
+        try {
+            setChartPanelLocalizationBundle(Locale.ENGLISH);
+            clearSingletonInstance(PerformanceTrendPanel.class);
+            I18nUtil.setLocale("zh");
+
+            PerformanceTrendPanel panel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
+            JPopupMenu popupMenu = findFirst(panel, ChartPanel.class).getPopupMenu();
+
+            assertTrue(hasPopupLeafText(popupMenu, "属性"));
+            assertTrue(hasPopupLeafText(popupMenu, "复制"));
+            assertTrue(hasPopupMenuText(popupMenu, "另存为"));
+            assertTrue(hasPopupMenuText(popupMenu, "放大"));
+            assertTrue(hasPopupMenuText(popupMenu, "自动调整"));
+            assertFalse(hasAnyPopupText(popupMenu, "Properties...", "Copy", "Save as", "Zoom In", "Auto Range"));
+        } finally {
+            I18nUtil.setLocale(originalChinese ? "zh" : "en");
+            setChartPanelLocalizationBundle(originalChartBundle);
+            clearSingletonInstance(PerformanceTrendPanel.class);
+        }
+    }
+
+    @Test
     public void shouldHideLatencyAndDurationChartsForStreamingProtocols() {
         PerformanceTrendPanel panel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
         JToggleButton separateButton = findToggleButton(
@@ -201,6 +289,22 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
         return new PerformanceTrendSnapshot(0, 0, 0, empty, empty, ws, empty);
     }
 
+    private static PerformanceTrendSnapshot snapshotWithAllProtocolMetrics() {
+        PerformanceTrendSnapshot.ProtocolWindowMetrics overview = new PerformanceTrendSnapshot.ProtocolWindowMetrics(
+                3, 0, 0, 3.0, 50.0, 1, 2, 1, 1.0, 2.0, 1.0, 30.0
+        );
+        PerformanceTrendSnapshot.ProtocolWindowMetrics http = new PerformanceTrendSnapshot.ProtocolWindowMetrics(
+                1, 0, 0, 1.0, 50.0, 0, 0, 0, 0, 0, 0, Double.NaN
+        );
+        PerformanceTrendSnapshot.ProtocolWindowMetrics ws = new PerformanceTrendSnapshot.ProtocolWindowMetrics(
+                1, 0, 0, 1.0, 60.0, 1, 1, 1, 1.0, 1.0, 1.0, 20.0
+        );
+        PerformanceTrendSnapshot.ProtocolWindowMetrics sse = new PerformanceTrendSnapshot.ProtocolWindowMetrics(
+                1, 0, 0, 1.0, 70.0, 0, 1, 1, 0, 1.0, 1.0, 25.0
+        );
+        return new PerformanceTrendSnapshot(5, 3, 2, overview, http, ws, sse);
+    }
+
     private static PerformanceTrendSnapshot.ProtocolWindowMetrics emptyMetrics() {
         return new PerformanceTrendSnapshot.ProtocolWindowMetrics(
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, Double.NaN
@@ -211,6 +315,84 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
         Field field = PerformanceTrendPanel.class.getDeclaredField(fieldName);
         field.setAccessible(true);
         return (TimeSeries) field.get(panel);
+    }
+
+    private static void assertDomainAxisNearNow(String label, DateAxis domainAxis, long now) {
+        assertTrue(
+                domainAxis.getLowerBound() >= now - 2 * 60 * 1000L,
+                label + " lowerBound=" + domainAxis.getLowerBound() + ", now=" + now
+        );
+        assertTrue(
+                domainAxis.getUpperBound() <= now + 2 * 60 * 1000L,
+                label + " upperBound=" + domainAxis.getUpperBound() + ", now=" + now
+        );
+    }
+
+    private static ResourceBundle chartPanelLocalizationBundle() throws Exception {
+        Field field = ChartPanel.class.getDeclaredField("localizationResources");
+        field.setAccessible(true);
+        return (ResourceBundle) field.get(null);
+    }
+
+    private static void setChartPanelLocalizationBundle(Locale locale) throws Exception {
+        setChartPanelLocalizationBundle(ResourceBundle.getBundle("org.jfree.chart.LocalizationBundle", locale));
+    }
+
+    private static void setChartPanelLocalizationBundle(ResourceBundle bundle) throws Exception {
+        Field field = ChartPanel.class.getDeclaredField("localizationResources");
+        field.setAccessible(true);
+        field.set(null, bundle);
+    }
+
+    private static void clearSingletonInstance(Class<?> clazz) throws Exception {
+        Field field = SingletonFactory.class.getDeclaredField("INSTANCE_MAP");
+        field.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        Map<Class<?>, Object> instances = (Map<Class<?>, Object>) field.get(null);
+        instances.remove(clazz);
+    }
+
+    private static boolean hasPopupLeafText(JPopupMenu popupMenu, String text) {
+        return hasPopupText(popupMenu, text, false);
+    }
+
+    private static boolean hasPopupMenuText(JPopupMenu popupMenu, String text) {
+        return hasPopupText(popupMenu, text, true);
+    }
+
+    private static boolean hasPopupText(Component component, String text, boolean menuOnly) {
+        if (component instanceof JMenu menu && text.equals(menu.getText())) {
+            return true;
+        }
+        if (!menuOnly && component instanceof JMenuItem item && !(component instanceof JMenu)
+                && text.equals(item.getText())) {
+            return true;
+        }
+        for (Component child : popupChildren(component)) {
+            if (hasPopupText(child, text, menuOnly)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasAnyPopupText(JPopupMenu popupMenu, String... texts) {
+        for (String text : texts) {
+            if (hasPopupText(popupMenu, text, false) || hasPopupText(popupMenu, text, true)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static Component[] popupChildren(Component component) {
+        if (component instanceof JPopupMenu popupMenu) {
+            return popupMenu.getComponents();
+        }
+        if (component instanceof JMenu menu) {
+            return menu.getMenuComponents();
+        }
+        return new Component[0];
     }
 
     private static ChartPanel findChartPanelForSeries(Component root, TimeSeries series) {

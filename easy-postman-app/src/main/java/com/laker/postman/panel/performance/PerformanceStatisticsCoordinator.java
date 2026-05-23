@@ -79,13 +79,13 @@ final class PerformanceStatisticsCoordinator {
             log.debug("趋势图未启用，跳过采样");
             return;
         }
-        int users = activeThreadsSupplier.getAsInt();
-        int activeWebSockets = activeWebSocketsSupplier.getAsInt();
-        int activeSseStreams = activeSseStreamsSupplier.getAsInt();
         long now = System.currentTimeMillis();
         RegularTimePeriod period = createTrendPeriod(now);
         long samplingIntervalMs = samplingIntervalSupplier.getAsLong();
         PerformanceRealtimeMetrics.Sample realtimeMetrics = sampleRealtimeMetrics(now);
+        int users = activeThreadsSupplier.getAsInt();
+        int activeWebSockets = resolveActiveWebSocketSessions(realtimeMetrics);
+        int activeSseStreams = resolveActiveSseStreams(realtimeMetrics);
 
         submitMetricsTask("趋势图采样", () -> {
             PerformanceTrendSnapshot snapshot = statsCollector.sampleTrendSnapshot(
@@ -113,13 +113,13 @@ final class PerformanceStatisticsCoordinator {
             return;
         }
 
-        int users = activeThreadsSupplier.getAsInt();
-        int activeWebSockets = activeWebSocketsSupplier.getAsInt();
-        int activeSseStreams = activeSseStreamsSupplier.getAsInt();
         long now = System.currentTimeMillis();
         RegularTimePeriod period = createTrendPeriod(now);
         long samplingIntervalMs = samplingIntervalSupplier.getAsLong();
         PerformanceRealtimeMetrics.Sample realtimeMetrics = sampleRealtimeMetrics(now);
+        int users = activeThreadsSupplier.getAsInt();
+        int activeWebSockets = resolveActiveWebSocketSessions(realtimeMetrics);
+        int activeSseStreams = resolveActiveSseStreams(realtimeMetrics);
         PerformanceTrendSnapshot snapshot = statsCollector.sampleTrendSnapshot(
                 now,
                 users,
@@ -135,9 +135,20 @@ final class PerformanceStatisticsCoordinator {
     }
 
     private PerformanceRealtimeMetrics.Sample sampleRealtimeMetrics(long nowMs) {
-        return realtimeMetricsSampler == null
+        PerformanceRealtimeMetrics.Sample sample = realtimeMetricsSampler == null
                 ? PerformanceRealtimeMetrics.Sample.empty()
                 : realtimeMetricsSampler.apply(nowMs);
+        return sample == null ? PerformanceRealtimeMetrics.Sample.empty() : sample;
+    }
+
+    private int resolveActiveWebSocketSessions(PerformanceRealtimeMetrics.Sample realtimeMetrics) {
+        int activeWebSockets = activeWebSocketsSupplier.getAsInt();
+        return Math.max(activeWebSockets, realtimeMetrics.webSocketActiveSessions());
+    }
+
+    private int resolveActiveSseStreams(PerformanceRealtimeMetrics.Sample realtimeMetrics) {
+        int activeSseStreams = activeSseStreamsSupplier.getAsInt();
+        return Math.max(activeSseStreams, realtimeMetrics.sseActiveSessions());
     }
 
     private PerformanceReportSnapshot snapshotForReport(long nowMs) {

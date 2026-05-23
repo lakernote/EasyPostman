@@ -1,9 +1,12 @@
 package com.laker.postman.panel.performance;
 
+import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
+import com.laker.postman.panel.performance.result.PerformanceTrendPanel;
 import com.laker.postman.test.AbstractSwingUiTest;
+import org.jfree.data.time.TimeSeries;
 import org.testng.annotations.Test;
 
 import javax.swing.JTabbedPane;
@@ -133,6 +136,47 @@ public class PerformanceStatisticsCoordinatorTest extends AbstractSwingUiTest {
         }
     }
 
+    @Test
+    public void sampleTrendShouldUseWindowPeakWebSocketSessionsWhenSocketsCloseBeforeSampling() throws Exception {
+        PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
+        PerformanceRealtimeMetrics metrics = new PerformanceRealtimeMetrics();
+        Object firstSession = new Object();
+        Object secondSession = new Object();
+        metrics.reset(0);
+        metrics.recordWebSocketSessionStart(firstSession, 1_000);
+        metrics.recordWebSocketSessionStart(secondSession, 1_100);
+        metrics.recordWebSocketSent(firstSession);
+        metrics.recordWebSocketReceived(secondSession);
+        metrics.recordWebSocketSessionEnd(firstSession);
+        metrics.recordWebSocketSessionEnd(secondSession);
+
+        PerformanceTrendPanel trendPanel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
+        trendPanel.clearTrendDataset();
+        PerformanceStatisticsCoordinator coordinator = new PerformanceStatisticsCoordinator(
+                statsCollector,
+                null,
+                trendPanel,
+                new JTabbedPane(),
+                () -> 0,
+                () -> 0,
+                () -> 0,
+                () -> 1000L,
+                () -> true,
+                metrics::sample,
+                metrics::liveSnapshot
+        );
+
+        try {
+            SwingUtilities.invokeAndWait(coordinator::sampleTrendDataSync);
+
+            TimeSeries webSocketSessions = getTrendTimeSeries(trendPanel, "wsActiveSeries");
+            assertEquals(webSocketSessions.getValue(0).intValue(), 2);
+        } finally {
+            coordinator.dispose();
+            trendPanel.clearTrendDataset();
+        }
+    }
+
     private static DefaultTableModel getWebSocketReportTableModel(PerformanceReportPanel panel) throws Exception {
         Field field = PerformanceReportPanel.class.getDeclaredField("webSocketReportTableModel");
         field.setAccessible(true);
@@ -143,6 +187,12 @@ public class PerformanceStatisticsCoordinatorTest extends AbstractSwingUiTest {
         Field field = PerformanceReportPanel.class.getDeclaredField("sseReportTableModel");
         field.setAccessible(true);
         return (DefaultTableModel) field.get(panel);
+    }
+
+    private static TimeSeries getTrendTimeSeries(PerformanceTrendPanel panel, String fieldName) throws Exception {
+        Field field = PerformanceTrendPanel.class.getDeclaredField(fieldName);
+        field.setAccessible(true);
+        return (TimeSeries) field.get(panel);
     }
 
     private static final class ThreadCheckingTabbedPane extends JTabbedPane {

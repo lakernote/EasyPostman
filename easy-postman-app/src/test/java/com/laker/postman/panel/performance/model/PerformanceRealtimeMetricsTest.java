@@ -81,4 +81,47 @@ public class PerformanceRealtimeMetricsTest {
         assertEquals(emptySample.webSocketActiveSessionDurationMs(), 0.0);
         assertEquals(emptySample.sseActiveSessionDurationMs(), 0.0);
     }
+
+    @Test
+    public void shouldReportPeakActiveStreamSessionsSeenDuringSamplingWindow() {
+        PerformanceRealtimeMetrics metrics = new PerformanceRealtimeMetrics();
+        Object firstWebSocket = new Object();
+        Object secondWebSocket = new Object();
+        Object sseStream = new Object();
+
+        metrics.reset(0);
+        metrics.recordWebSocketSessionStart(firstWebSocket, 100);
+        metrics.recordWebSocketSessionStart(secondWebSocket, 200);
+        metrics.recordSseSessionStart(sseStream, 300);
+        metrics.recordWebSocketSessionEnd(firstWebSocket);
+        metrics.recordWebSocketSessionEnd(secondWebSocket);
+        metrics.recordSseSessionEnd(sseStream);
+
+        PerformanceRealtimeMetrics.Sample sample = metrics.sample(1_000);
+        PerformanceRealtimeMetrics.Sample emptySample = metrics.sample(2_000);
+
+        assertEquals(sample.webSocketActiveSessions(), 2);
+        assertEquals(sample.sseActiveSessions(), 1);
+        assertEquals(emptySample.webSocketActiveSessions(), 0);
+        assertEquals(emptySample.sseActiveSessions(), 0);
+    }
+
+    @Test
+    public void shouldCarryOngoingActiveStreamSessionsAcrossSamplingWindows() {
+        PerformanceRealtimeMetrics metrics = new PerformanceRealtimeMetrics();
+        Object webSocket = new Object();
+        Object sseStream = new Object();
+
+        metrics.reset(0);
+        metrics.recordWebSocketSessionStart(webSocket, 100);
+        metrics.recordSseSessionStart(sseStream, 100);
+
+        PerformanceRealtimeMetrics.Sample first = metrics.sample(1_000);
+        PerformanceRealtimeMetrics.Sample second = metrics.sample(2_000);
+
+        assertEquals(first.webSocketActiveSessions(), 1);
+        assertEquals(first.sseActiveSessions(), 1);
+        assertEquals(second.webSocketActiveSessions(), 1);
+        assertEquals(second.sseActiveSessions(), 1);
+    }
 }

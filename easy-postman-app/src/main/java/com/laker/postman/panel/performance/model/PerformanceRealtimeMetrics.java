@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class PerformanceRealtimeMetrics {
@@ -21,6 +22,10 @@ public class PerformanceRealtimeMetrics {
     private final AtomicLong sseFirstMessageLatencyCount = new AtomicLong();
     private final Map<Object, StreamSessionMetrics> webSocketSessionStarts = new ConcurrentHashMap<>();
     private final Map<Object, StreamSessionMetrics> sseSessionStarts = new ConcurrentHashMap<>();
+    private final AtomicInteger activeWebSocketSessions = new AtomicInteger();
+    private final AtomicInteger peakWebSocketSessions = new AtomicInteger();
+    private final AtomicInteger activeSseSessions = new AtomicInteger();
+    private final AtomicInteger peakSseSessions = new AtomicInteger();
 
     private final AtomicLong lastSampleTimeMs = new AtomicLong();
     private final AtomicLong lastWebSocketSentMessages = new AtomicLong();
@@ -45,6 +50,10 @@ public class PerformanceRealtimeMetrics {
         sseFirstMessageLatencyCount.set(0);
         webSocketSessionStarts.clear();
         sseSessionStarts.clear();
+        activeWebSocketSessions.set(0);
+        peakWebSocketSessions.set(0);
+        activeSseSessions.set(0);
+        peakSseSessions.set(0);
 
         lastSampleTimeMs.set(nowMs);
         lastWebSocketSentMessages.set(0);
@@ -101,13 +110,19 @@ public class PerformanceRealtimeMetrics {
 
     public void recordWebSocketSessionStart(Object session, long startTimeMs, String apiId, String apiName) {
         if (session != null) {
-            webSocketSessionStarts.put(session, new StreamSessionMetrics(startTimeMs, apiId, apiName));
+            StreamSessionMetrics previous = webSocketSessionStarts.putIfAbsent(
+                    session,
+                    new StreamSessionMetrics(startTimeMs, apiId, apiName)
+            );
+            if (previous == null) {
+                updatePeak(peakWebSocketSessions, activeWebSocketSessions.incrementAndGet());
+            }
         }
     }
 
     public void recordWebSocketSessionEnd(Object session) {
-        if (session != null) {
-            webSocketSessionStarts.remove(session);
+        if (session != null && webSocketSessionStarts.remove(session) != null) {
+            decrementActive(activeWebSocketSessions);
         }
     }
 
@@ -145,13 +160,19 @@ public class PerformanceRealtimeMetrics {
 
     public void recordSseSessionStart(Object session, long startTimeMs, String apiId, String apiName) {
         if (session != null) {
-            sseSessionStarts.put(session, new StreamSessionMetrics(startTimeMs, apiId, apiName));
+            StreamSessionMetrics previous = sseSessionStarts.putIfAbsent(
+                    session,
+                    new StreamSessionMetrics(startTimeMs, apiId, apiName)
+            );
+            if (previous == null) {
+                updatePeak(peakSseSessions, activeSseSessions.incrementAndGet());
+            }
         }
     }
 
     public void recordSseSessionEnd(Object session) {
-        if (session != null) {
-            sseSessionStarts.remove(session);
+        if (session != null && sseSessionStarts.remove(session) != null) {
+            decrementActive(activeSseSessions);
         }
     }
 
@@ -176,6 +197,8 @@ public class PerformanceRealtimeMetrics {
         long currentSseMatched = sseMatchedMessages.get();
         long currentSseLatencyTotal = sseFirstMessageLatencyTotalMs.get();
         long currentSseLatencyCount = sseFirstMessageLatencyCount.get();
+        int webSocketActiveSessionCount = peakAndReset(activeWebSocketSessions, peakWebSocketSessions);
+        int sseActiveSessionCount = peakAndReset(activeSseSessions, peakSseSessions);
 
         long webSocketLatencyCountDelta = currentWebSocketLatencyCount
                 - lastWebSocketFirstMessageLatencyCount.getAndSet(currentWebSocketLatencyCount);
@@ -190,6 +213,7 @@ public class PerformanceRealtimeMetrics {
                         currentWebSocketLatencyTotal - lastWebSocketFirstMessageLatencyTotalMs.getAndSet(currentWebSocketLatencyTotal),
                         webSocketLatencyCountDelta
                 ),
+                webSocketActiveSessionCount,
                 activeDuration(webSocketSessionStarts, nowMs),
                 rate(currentSseReceived - lastSseReceivedMessages.getAndSet(currentSseReceived), seconds),
                 rate(currentSseMatched - lastSseMatchedMessages.getAndSet(currentSseMatched), seconds),
@@ -197,6 +221,7 @@ public class PerformanceRealtimeMetrics {
                         currentSseLatencyTotal - lastSseFirstMessageLatencyTotalMs.getAndSet(currentSseLatencyTotal),
                         sseLatencyCountDelta
                 ),
+                sseActiveSessionCount,
                 activeDuration(sseSessionStarts, nowMs)
         );
     }
@@ -223,6 +248,26 @@ public class PerformanceRealtimeMetrics {
             count++;
         }
         return count > 0 ? round((double) total / count) : 0;
+    }
+
+    private static void updatePeak(AtomicInteger peak, int activeSessions) {
+        int observed;
+        do {
+            observed = peak.get();
+            if (activeSessions <= observed) {
+                return;
+            }
+        } while (!peak.compareAndSet(observed, activeSessions));
+    }
+
+    private static void decrementActive(AtomicInteger activeSessions) {
+        activeSessions.updateAndGet(current -> Math.max(0, current - 1));
+    }
+
+    private static int peakAndReset(AtomicInteger activeSessions, AtomicInteger peakSessions) {
+        int current = Math.max(0, activeSessions.get());
+        int peak = peakSessions.getAndSet(current);
+        return Math.max(current, peak);
     }
 
     private static LiveProtocolSnapshot liveProtocolSnapshot(Map<Object, StreamSessionMetrics> sessions, long nowMs) {
@@ -334,14 +379,16 @@ public class PerformanceRealtimeMetrics {
             double webSocketReceivedRate,
             double webSocketMatchedRate,
             double webSocketFirstMessageLatencyMs,
+            int webSocketActiveSessions,
             double webSocketActiveSessionDurationMs,
             double sseReceivedRate,
             double sseMatchedRate,
             double sseFirstMessageLatencyMs,
+            int sseActiveSessions,
             double sseActiveSessionDurationMs
     ) {
         public static Sample empty() {
-            return new Sample(0, 0, 0, Double.NaN, 0, 0, 0, Double.NaN, 0);
+            return new Sample(0, 0, 0, Double.NaN, 0, 0, 0, 0, Double.NaN, 0, 0);
         }
     }
 

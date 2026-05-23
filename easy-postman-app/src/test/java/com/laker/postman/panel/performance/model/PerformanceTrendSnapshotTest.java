@@ -124,10 +124,12 @@ public class PerformanceTrendSnapshotTest {
                 2.0,
                 0.0,
                 120.0,
+                3,
                 4_000.0,
                 4.0,
                 1.0,
                 80.0,
+                2,
                 5_000.0
         );
 

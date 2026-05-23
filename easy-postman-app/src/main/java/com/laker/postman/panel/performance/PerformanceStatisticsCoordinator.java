@@ -1,6 +1,7 @@
 package com.laker.postman.panel.performance;
 
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
+import com.laker.postman.panel.performance.model.PerformanceReportSnapshot;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
 import com.laker.postman.panel.performance.model.PerformanceStatsSnapshot;
 import com.laker.postman.panel.performance.model.PerformanceTrendSnapshot;
@@ -59,7 +60,7 @@ final class PerformanceStatisticsCoordinator {
 
     void updateReportWithLatestData() {
         submitMetricsTask("报表更新", () -> {
-            PerformanceStatsSnapshot snapshot = snapshotForReport(System.currentTimeMillis());
+            PerformanceReportSnapshot snapshot = snapshotForReport(System.currentTimeMillis());
             invokeUiIfActive(() -> performanceReportPanel.updateReport(snapshot));
         });
     }
@@ -139,14 +140,14 @@ final class PerformanceStatisticsCoordinator {
                 : realtimeMetricsSampler.apply(nowMs);
     }
 
-    private PerformanceStatsSnapshot snapshotForReport(long nowMs) {
+    private PerformanceReportSnapshot snapshotForReport(long nowMs) {
         PerformanceStatsSnapshot snapshot = statsCollector == null
                 ? new PerformanceStatsCollector().snapshot()
                 : statsCollector.snapshot();
         PerformanceRealtimeMetrics.LiveSnapshot liveSnapshot = liveMetricsSnapshotSupplier == null
                 ? PerformanceRealtimeMetrics.LiveSnapshot.empty()
                 : liveMetricsSnapshotSupplier.apply(nowMs);
-        return snapshot.withLiveStreamMetrics(liveSnapshot);
+        return PerformanceReportSnapshot.of(snapshot, liveSnapshot);
     }
 
     private boolean isTrendEnabled() {

@@ -2,6 +2,8 @@ package com.laker.postman.panel.performance.result;
 
 import com.laker.postman.panel.performance.model.ApiMetadata;
 import com.laker.postman.panel.performance.model.PerformanceProtocol;
+import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
+import com.laker.postman.panel.performance.model.PerformanceReportSnapshot;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
 import com.laker.postman.panel.performance.model.RequestResult;
 import org.testng.annotations.AfterMethod;
@@ -73,6 +75,62 @@ public class PerformanceProtocolReportDataTest {
         assertEquals(reportData.httpRows().get(0).fail(), 1L);
         assertEquals(reportData.httpRows().get(1).name(), "Total");
         assertEquals(reportData.httpRows().get(1).total(), 2L);
+    }
+
+    @Test
+    public void shouldKeepLiveStreamRowsOutOfCompletedTotals() {
+        ApiMetadata.register("ws-api", "WS API");
+        PerformanceStatsCollector collector = new PerformanceStatsCollector();
+        RequestResult completed = new RequestResult(1_000, 1_500, true, "ws-api", PerformanceProtocol.WEBSOCKET);
+        completed.sentMessages = 1;
+        completed.receivedMessages = 2;
+        completed.matchedMessages = 1;
+        completed.firstMessageLatencyMs = 90;
+        completed.completionReason = "matched_message";
+        collector.record(completed);
+
+        PerformanceRealtimeMetrics realtimeMetrics = new PerformanceRealtimeMetrics();
+        Object activeSession = new Object();
+        realtimeMetrics.reset(0);
+        realtimeMetrics.recordWebSocketSessionStart(activeSession, 2_000, "ws-api", "WS API");
+        realtimeMetrics.recordWebSocketSent(activeSession);
+        realtimeMetrics.recordWebSocketSent(activeSession);
+        realtimeMetrics.recordWebSocketReceived(activeSession);
+        realtimeMetrics.recordWebSocketMatched(activeSession);
+        realtimeMetrics.recordWebSocketFirstMessageLatency(activeSession, 120);
+
+        PerformanceProtocolReportData reportData = PerformanceProtocolReportData.fromReportSnapshot(
+                PerformanceReportSnapshot.of(collector.snapshot(), realtimeMetrics.liveSnapshot(4_000)),
+                "Total"
+        );
+
+        assertEquals(reportData.webSocketRows().size(), 3);
+
+        PerformanceProtocolReportData.StreamReportRow completedRow = reportData.webSocketRows().get(0);
+        assertEquals(completedRow.name(), "WS API");
+        assertEquals(completedRow.total(), 1L);
+        assertEquals(completedRow.success(), 1L);
+        assertEquals(completedRow.avgDurationMs(), 500L);
+        assertEquals(completedRow.topCompletionReason(), "matched_message");
+        assertEquals(completedRow.live(), false);
+
+        PerformanceProtocolReportData.StreamReportRow liveRow = reportData.webSocketRows().get(1);
+        assertEquals(liveRow.name(), "WS API");
+        assertEquals(liveRow.total(), 1L);
+        assertEquals(liveRow.success(), 0L);
+        assertEquals(liveRow.fail(), 0L);
+        assertEquals(liveRow.sentMessages(), 2L);
+        assertEquals(liveRow.avgDurationMs(), 2_000L);
+        assertEquals(liveRow.topCompletionReason(), "pending");
+        assertEquals(liveRow.live(), true);
+
+        PerformanceProtocolReportData.StreamReportRow totalRow = reportData.webSocketRows().get(2);
+        assertEquals(totalRow.name(), "Total");
+        assertEquals(totalRow.total(), 1L);
+        assertEquals(totalRow.success(), 1L);
+        assertEquals(totalRow.sentMessages(), 1L);
+        assertEquals(totalRow.avgDurationMs(), 500L);
+        assertEquals(totalRow.live(), false);
     }
 
     @Test

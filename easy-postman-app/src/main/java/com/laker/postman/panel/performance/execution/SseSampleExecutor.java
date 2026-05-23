@@ -90,6 +90,7 @@ public class SseSampleExecutor {
         AtomicLong sampleEndTimeMs = new AtomicLong(0);
         AtomicLong firstEventLatencyMs = new AtomicLong(-1);
         AtomicBoolean firstEventRecorded = new AtomicBoolean(false);
+        AtomicBoolean sessionRegistered = new AtomicBoolean(false);
         AtomicInteger eventCount = new AtomicInteger(0);
         AtomicInteger matchedMessageCount = new AtomicInteger(0);
         CountDownLatch openLatch = new CountDownLatch(1);
@@ -106,6 +107,9 @@ public class SseSampleExecutor {
                 resp.code = response.code();
                 resp.protocol = response.protocol().toString();
                 resp.isSse = true;
+                if (sessionRegistered.compareAndSet(false, true)) {
+                    realtimeMetrics.recordSseSessionStart(eventSource, requestStartTime, apiId, apiName);
+                }
                 openLatch.countDown();
             }
 
@@ -204,7 +208,9 @@ public class SseSampleExecutor {
 
         EventSource eventSource = HttpSingleRequestExecutor.executeSSE(req, listener);
         activeSources.add(eventSource);
-        realtimeMetrics.recordSseSessionStart(eventSource, requestStartTime, apiId, apiName);
+        if (sessionRegistered.compareAndSet(false, true)) {
+            realtimeMetrics.recordSseSessionStart(eventSource, requestStartTime, apiId, apiName);
+        }
 
         try {
             switch (cfg.completionMode) {

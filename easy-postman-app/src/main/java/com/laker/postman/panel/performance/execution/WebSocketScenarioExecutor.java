@@ -118,6 +118,7 @@ public class WebSocketScenarioExecutor {
         AtomicInteger receivedMessageCount = new AtomicInteger(0);
         AtomicInteger matchedMessageCount = new AtomicInteger(0);
         AtomicInteger sentMessageCount = new AtomicInteger(0);
+        AtomicBoolean sessionRegistered = new AtomicBoolean(false);
         List<TestResult> stepTestResults = new ArrayList<>();
         Deque<ReceivedWebSocketMessage> receivedMessages = new ArrayDeque<>();
         AtomicLong receivedMessagesRetainedBytes = new AtomicLong(0);
@@ -134,6 +135,9 @@ public class WebSocketScenarioExecutor {
                 }
                 resp.code = response.code();
                 resp.protocol = response.protocol().toString();
+                if (sessionRegistered.compareAndSet(false, true)) {
+                    realtimeMetrics.recordWebSocketSessionStart(webSocket, requestStartTime, apiId, apiName);
+                }
                 openLatch.countDown();
             }
 
@@ -217,12 +221,9 @@ public class WebSocketScenarioExecutor {
 
         WebSocket webSocket = HttpSingleRequestExecutor.executeWebSocket(req, listener);
         activeWebSockets.add(webSocket);
-        realtimeMetrics.recordWebSocketSessionStart(
-                webSocket,
-                requestStartTime,
-                apiId,
-                apiName
-        );
+        if (sessionRegistered.compareAndSet(false, true)) {
+            realtimeMetrics.recordWebSocketSessionStart(webSocket, requestStartTime, apiId, apiName);
+        }
 
         try {
             boolean opened = openLatch.await(Math.max(100, requestCfg.connectTimeoutMs), TimeUnit.MILLISECONDS);

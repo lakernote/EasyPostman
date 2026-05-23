@@ -4,6 +4,7 @@ import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
 import com.laker.postman.common.component.button.SegmentedToggleButton;
 import com.laker.postman.panel.performance.model.PerformanceProtocol;
+import com.laker.postman.panel.performance.model.PerformanceReportSnapshot;
 import com.laker.postman.panel.performance.model.PerformanceStatsSnapshot;
 import com.laker.postman.panel.performance.model.RequestResult;
 import com.laker.postman.util.I18nUtil;
@@ -544,6 +545,10 @@ public class PerformanceReportPanel extends JPanel {
         updateReport(PerformanceProtocolReportData.fromStatsSnapshot(statsSnapshot, totalRowName));
     }
 
+    public void updateReport(PerformanceReportSnapshot reportSnapshot) {
+        updateReport(PerformanceProtocolReportData.fromReportSnapshot(reportSnapshot, totalRowName));
+    }
+
     private void updateReport(PerformanceProtocolReportData reportData) {
         clearReport();
 
@@ -579,9 +584,9 @@ public class PerformanceReportPanel extends JPanel {
         return new Object[]{
                 row.name(),
                 row.total(),
-                row.success(),
-                row.fail(),
-                formatPercent(row.successRate()),
+                formatStreamCompletedCount(row),
+                formatStreamFailedCount(row),
+                formatStreamSuccessRate(row),
                 row.sentMessages(),
                 row.receivedMessages(),
                 row.matchedMessages(),
@@ -598,9 +603,9 @@ public class PerformanceReportPanel extends JPanel {
         return new Object[]{
                 row.name(),
                 row.total(),
-                row.success(),
-                row.fail(),
-                formatPercent(row.successRate()),
+                formatStreamCompletedCount(row),
+                formatStreamFailedCount(row),
+                formatStreamSuccessRate(row),
                 row.receivedMessages(),
                 row.matchedMessages(),
                 formatDecimal(row.receiveRate()),
@@ -645,7 +650,22 @@ public class PerformanceReportPanel extends JPanel {
     }
 
     private String formatPercent(double value) {
+        if (Double.isNaN(value)) {
+            return "-";
+        }
         return String.format(Locale.ROOT, "%.2f%%", value);
+    }
+
+    private Object formatStreamCompletedCount(PerformanceProtocolReportData.StreamReportRow row) {
+        return row.live() ? "-" : row.success();
+    }
+
+    private Object formatStreamFailedCount(PerformanceProtocolReportData.StreamReportRow row) {
+        return row.live() ? "-" : row.fail();
+    }
+
+    private String formatStreamSuccessRate(PerformanceProtocolReportData.StreamReportRow row) {
+        return row.live() ? "-" : formatPercent(row.successRate());
     }
 
     private String formatDecimal(double value) {

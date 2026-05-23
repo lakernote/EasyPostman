@@ -1,6 +1,8 @@
 package com.laker.postman.panel.performance.result;
 
 import com.laker.postman.panel.performance.model.PerformanceProtocol;
+import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
+import com.laker.postman.panel.performance.model.PerformanceReportSnapshot;
 import com.laker.postman.panel.performance.model.PerformanceStatsSnapshot;
 import com.laker.postman.panel.performance.model.RequestResult;
 
@@ -46,6 +48,17 @@ final class PerformanceProtocolReportData {
         }
         return new PerformanceProtocolReportData(
                 buildHttpRows(snapshot, totalRowName),
+                buildStreamRows(snapshot, PerformanceProtocol.WEBSOCKET, totalRowName),
+                buildStreamRows(snapshot, PerformanceProtocol.SSE, totalRowName)
+        );
+    }
+
+    static PerformanceProtocolReportData fromReportSnapshot(PerformanceReportSnapshot snapshot, String totalRowName) {
+        if (snapshot == null) {
+            return new PerformanceProtocolReportData(List.of(), List.of(), List.of());
+        }
+        return new PerformanceProtocolReportData(
+                buildHttpRows(snapshot.completedStats(), totalRowName),
                 buildStreamRows(snapshot, PerformanceProtocol.WEBSOCKET, totalRowName),
                 buildStreamRows(snapshot, PerformanceProtocol.SSE, totalRowName)
         );
@@ -121,6 +134,56 @@ final class PerformanceProtocolReportData {
             rows.add(toStreamRow(total));
         }
         return rows;
+    }
+
+    private static List<StreamReportRow> buildStreamRows(PerformanceReportSnapshot snapshot,
+                                                         PerformanceProtocol protocol,
+                                                         String totalRowName) {
+        PerformanceStatsSnapshot completedStats = snapshot.completedStats();
+        List<StreamReportRow> rows = new ArrayList<>();
+        for (PerformanceStatsSnapshot.ApiSummary summary : completedStats.summaries()) {
+            if (summary.protocol() == protocol) {
+                rows.add(toStreamRow(summary));
+            }
+        }
+        sortByName(rows);
+        appendLiveStreamRows(rows, liveProtocolSnapshot(snapshot.liveSnapshot(), protocol));
+        PerformanceStatsSnapshot.ApiSummary total = completedStats.totalFor(protocol, totalRowName);
+        if (total != null && total.total() > 0) {
+            rows.add(toStreamRow(total));
+        }
+        return rows;
+    }
+
+    private static PerformanceRealtimeMetrics.LiveProtocolSnapshot liveProtocolSnapshot(
+            PerformanceRealtimeMetrics.LiveSnapshot liveSnapshot,
+            PerformanceProtocol protocol) {
+        if (liveSnapshot == null) {
+            return null;
+        }
+        if (protocol == PerformanceProtocol.WEBSOCKET) {
+            return liveSnapshot.webSocket();
+        }
+        if (protocol == PerformanceProtocol.SSE) {
+            return liveSnapshot.sse();
+        }
+        return null;
+    }
+
+    private static void appendLiveStreamRows(List<StreamReportRow> rows,
+                                             PerformanceRealtimeMetrics.LiveProtocolSnapshot live) {
+        if (live == null || live.apiSnapshots() == null || live.apiSnapshots().isEmpty()) {
+            return;
+        }
+        List<StreamReportRow> liveRows = new ArrayList<>();
+        for (PerformanceRealtimeMetrics.LiveApiSnapshot liveApi : live.apiSnapshots()) {
+            if (liveApi == null || liveApi.metrics() == null || !liveApi.metrics().hasData()) {
+                continue;
+            }
+            liveRows.add(toLiveStreamRow(liveApi));
+        }
+        sortByName(liveRows);
+        rows.addAll(liveRows);
     }
 
     private static Map<String, List<RequestResult>> groupByApi(List<RequestResult> results, PerformanceProtocol protocol) {
@@ -232,7 +295,8 @@ final class PerformanceProtocolReportData {
                 firstLatencyStats.p99(),
                 stats.avg(),
                 stats.p95(),
-                topCompletionReason(completionReasons)
+                topCompletionReason(completionReasons),
+                false
         );
     }
 
@@ -259,8 +323,47 @@ final class PerformanceProtocolReportData {
                 firstLatencyStats.p99(),
                 stats.avg(),
                 stats.p95(),
-                summary.topCompletionReason()
+                summary.topCompletionReason(),
+                false
         );
+    }
+
+    private static StreamReportRow toLiveStreamRow(PerformanceRealtimeMetrics.LiveApiSnapshot liveApi) {
+        PerformanceRealtimeMetrics.LiveProtocolSnapshot metrics = liveApi.metrics();
+        PerformanceStatsSnapshot.DurationStats durationStats = metrics.activeDurationStats() == null
+                ? PerformanceStatsSnapshot.DurationStats.empty()
+                : metrics.activeDurationStats();
+        PerformanceStatsSnapshot.DurationStats firstLatencyStats = metrics.firstMessageLatencyStats() == null
+                ? PerformanceStatsSnapshot.DurationStats.empty()
+                : metrics.firstMessageLatencyStats();
+        return new StreamReportRow(
+                resolveLiveApiName(liveApi),
+                metrics.activeSessions(),
+                0,
+                0,
+                Double.NaN,
+                metrics.sentMessages(),
+                metrics.receivedMessages(),
+                metrics.matchedMessages(),
+                metrics.sendRate(),
+                metrics.receiveRate(),
+                metrics.matchedRate(),
+                metrics.avgFirstMessageLatencyMs(),
+                firstLatencyStats.p90(),
+                firstLatencyStats.p95(),
+                firstLatencyStats.p99(),
+                durationStats.avg(),
+                durationStats.p95(),
+                "pending",
+                true
+        );
+    }
+
+    private static String resolveLiveApiName(PerformanceRealtimeMetrics.LiveApiSnapshot liveApi) {
+        if (liveApi.apiName() != null && !liveApi.apiName().isBlank()) {
+            return liveApi.apiName();
+        }
+        return liveApi.apiId();
     }
 
     private static int countSuccess(List<RequestResult> results) {
@@ -381,7 +484,8 @@ final class PerformanceProtocolReportData {
                            long p99FirstMessageLatencyMs,
                            long avgDurationMs,
                            long p95DurationMs,
-                           String topCompletionReason) implements NamedReportRow {
+                           String topCompletionReason,
+                           boolean live) implements NamedReportRow {
     }
 
     private record DurationStats(long avg, long min, long max, long p90, long p95, long p99) {

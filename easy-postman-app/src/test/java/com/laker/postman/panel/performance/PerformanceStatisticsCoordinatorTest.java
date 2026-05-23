@@ -86,13 +86,15 @@ public class PerformanceStatisticsCoordinatorTest extends AbstractSwingUiTest {
             SwingUtilities.invokeAndWait(coordinator::updateReportWithLatestDataSync);
 
             DefaultTableModel webSocketModel = getWebSocketReportTableModel(reportPanel);
-            assertEquals(webSocketModel.getRowCount(), 2);
+            assertEquals(webSocketModel.getRowCount(), 1);
             assertEquals(webSocketModel.getValueAt(0, 0), "WS API");
             assertEquals(webSocketModel.getValueAt(0, 1), 1L);
+            assertEquals(webSocketModel.getValueAt(0, 2), "-");
+            assertEquals(webSocketModel.getValueAt(0, 3), "-");
+            assertEquals(webSocketModel.getValueAt(0, 4), "-");
             assertEquals(webSocketModel.getValueAt(0, 5), 2L);
             assertEquals(webSocketModel.getValueAt(0, 6), 1L);
             assertEquals(webSocketModel.getValueAt(0, 7), 1L);
-            assertEquals(webSocketModel.getValueAt(1, 1), 1L);
         } finally {
             coordinator.dispose();
         }
@@ -133,12 +135,14 @@ public class PerformanceStatisticsCoordinatorTest extends AbstractSwingUiTest {
             SwingUtilities.invokeAndWait(coordinator::updateReportWithLatestDataSync);
 
             DefaultTableModel sseModel = getSseReportTableModel(reportPanel);
-            assertEquals(sseModel.getRowCount(), 2);
+            assertEquals(sseModel.getRowCount(), 1);
             assertEquals(sseModel.getValueAt(0, 0), "SSE API");
             assertEquals(sseModel.getValueAt(0, 1), 1L);
+            assertEquals(sseModel.getValueAt(0, 2), "-");
+            assertEquals(sseModel.getValueAt(0, 3), "-");
+            assertEquals(sseModel.getValueAt(0, 4), "-");
             assertEquals(sseModel.getValueAt(0, 5), 2L);
             assertEquals(sseModel.getValueAt(0, 6), 1L);
-            assertEquals(sseModel.getValueAt(1, 1), 1L);
         } finally {
             coordinator.dispose();
         }

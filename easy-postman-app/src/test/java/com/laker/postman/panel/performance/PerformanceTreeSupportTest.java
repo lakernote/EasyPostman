@@ -9,14 +9,18 @@ import com.laker.postman.panel.performance.model.SsePerformanceData;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import org.testng.annotations.Test;
 
+import javax.swing.JTree;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreePath;
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNotEquals;
+import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
@@ -221,6 +225,154 @@ public class PerformanceTreeSupportTest {
         assertTrue(treeSupport.isRequestContainerLoop(loopNode));
     }
 
+    @Test(description = "复制请求节点应复制完整子树并生成新的请求 id")
+    public void shouldCopyRequestSubtreeWithIndependentRequestId() {
+        TestContext context = newTestContext(RequestItemProtocolEnum.WEBSOCKET);
+        context.requestData.httpRequestItem.setId("original-request");
+        context.requestData.httpRequestItem.setUrl("ws://localhost:8080/ws");
+        context.treeSupport.syncRequestStructure(context.requestNode, context.requestData);
+        DefaultMutableTreeNode sendNode = newNode("Send", NodeType.WS_SEND);
+        JMeterTreeNode sendData = (JMeterTreeNode) sendNode.getUserObject();
+        sendData.webSocketPerformanceData = new WebSocketPerformanceData();
+        sendData.webSocketPerformanceData.customSendBody = "hello";
+        context.treeModel.insertNodeInto(sendNode, context.requestNode, context.requestNode.getChildCount());
+
+        List<DefaultMutableTreeNode> copied = context.treeSupport.copyNodes(paths(context.requestNode));
+
+        assertEquals(copied.size(), 1);
+        JMeterTreeNode copiedRequestData = (JMeterTreeNode) copied.get(0).getUserObject();
+        assertNotSame(copiedRequestData.httpRequestItem, context.requestData.httpRequestItem);
+        assertNotEquals(copiedRequestData.httpRequestItem.getId(), context.requestData.httpRequestItem.getId());
+        assertEquals(copiedRequestData.httpRequestItem.getUrl(), "ws://localhost:8080/ws");
+        assertEquals(childTypesOf(copied.get(0)), List.of(NodeType.WS_CONNECT, NodeType.WS_SEND));
+        JMeterTreeNode copiedSendData = (JMeterTreeNode) ((DefaultMutableTreeNode) copied.get(0).getChildAt(1)).getUserObject();
+        assertNotSame(copiedSendData.webSocketPerformanceData, sendData.webSocketPerformanceData);
+        assertEquals(copiedSendData.webSocketPerformanceData.customSendBody, "hello");
+    }
+
+    @Test(description = "多选复制时应过滤已包含在父节点子树中的重复子节点")
+    public void shouldCopyOnlyTopLevelNodesFromMultiSelection() {
+        DefaultMutableTreeNode root = newNode("Plan", NodeType.ROOT);
+        DefaultMutableTreeNode groupNode = newNode("Group", NodeType.THREAD_GROUP);
+        DefaultMutableTreeNode loopNode = newLoopNode(3);
+        DefaultMutableTreeNode nestedRequest = newRequestNode("nested", "Nested");
+        DefaultMutableTreeNode siblingRequest = newRequestNode("sibling", "Sibling");
+        root.add(groupNode);
+        groupNode.add(loopNode);
+        loopNode.add(nestedRequest);
+        groupNode.add(siblingRequest);
+        PerformanceTreeSupport treeSupport = new PerformanceTreeSupport(new DefaultTreeModel(root));
+
+        List<DefaultMutableTreeNode> copied = treeSupport.copyNodes(paths(loopNode, nestedRequest, siblingRequest));
+
+        assertEquals(copied.size(), 2);
+        assertEquals(nodeType(copied.get(0)), NodeType.LOOP);
+        assertEquals(nodeType(copied.get(1)), NodeType.REQUEST);
+        assertEquals(childTypesOf(copied.get(0)), List.of(NodeType.REQUEST));
+    }
+
+    @Test(description = "粘贴请求到另一个请求上时应作为同级插入到目标之后")
+    public void shouldPasteRequestAfterSelectedSiblingWhenTargetCannotContainRequest() {
+        DefaultMutableTreeNode root = newNode("Plan", NodeType.ROOT);
+        DefaultMutableTreeNode groupNode = newNode("Group", NodeType.THREAD_GROUP);
+        DefaultMutableTreeNode firstRequest = newRequestNode("first", "First");
+        DefaultMutableTreeNode secondRequest = newRequestNode("second", "Second");
+        root.add(groupNode);
+        groupNode.add(firstRequest);
+        groupNode.add(secondRequest);
+        DefaultTreeModel treeModel = new DefaultTreeModel(root);
+        PerformanceTreeSupport treeSupport = new PerformanceTreeSupport(treeModel);
+        List<DefaultMutableTreeNode> copied = treeSupport.copyNodes(paths(firstRequest));
+
+        List<DefaultMutableTreeNode> pasted = treeSupport.pasteNodes(new JTree(treeModel), secondRequest, copied);
+
+        assertEquals(pasted.size(), 1);
+        assertSame(groupNode.getChildAt(2), pasted.get(0));
+        JMeterTreeNode pastedData = (JMeterTreeNode) pasted.get(0).getUserObject();
+        assertNotEquals(pastedData.httpRequestItem.getId(), "first");
+        assertNotEquals(pastedData.httpRequestItem.getId(), ((JMeterTreeNode) copied.get(0).getUserObject()).httpRequestItem.getId());
+    }
+
+    @Test(description = "粘贴 WebSocket 步骤到 WebSocket 请求上时应插入步骤并保留步骤配置")
+    public void shouldPasteWebSocketStepIntoWebSocketRequest() {
+        TestContext context = newTestContext(RequestItemProtocolEnum.WEBSOCKET);
+        context.treeSupport.syncRequestStructure(context.requestNode, context.requestData);
+        DefaultMutableTreeNode sendNode = newNode("Send", NodeType.WS_SEND);
+        JMeterTreeNode sendData = (JMeterTreeNode) sendNode.getUserObject();
+        sendData.webSocketPerformanceData = new WebSocketPerformanceData();
+        sendData.webSocketPerformanceData.customSendBody = "payload";
+        context.treeModel.insertNodeInto(sendNode, context.requestNode, context.requestNode.getChildCount());
+        List<DefaultMutableTreeNode> copied = context.treeSupport.copyNodes(paths(sendNode));
+
+        List<DefaultMutableTreeNode> pasted = context.treeSupport.pasteNodes(new JTree(context.treeModel), context.requestNode, copied);
+
+        assertEquals(pasted.size(), 1);
+        assertEquals(childTypesOf(context.requestNode), List.of(NodeType.WS_CONNECT, NodeType.WS_SEND, NodeType.WS_SEND));
+        JMeterTreeNode pastedData = (JMeterTreeNode) pasted.get(0).getUserObject();
+        assertNotSame(pastedData.webSocketPerformanceData, sendData.webSocketPerformanceData);
+        assertEquals(pastedData.webSocketPerformanceData.customSendBody, "payload");
+    }
+
+    @Test(description = "SSE 固定阶段节点也应支持单独复制")
+    public void shouldCopySseStageNodesIndividually() {
+        TestContext context = newTestContext(RequestItemProtocolEnum.SSE);
+        context.treeSupport.syncRequestStructure(context.requestNode, context.requestData);
+        DefaultMutableTreeNode connectNode = findChild(context.requestNode, NodeType.SSE_CONNECT);
+        DefaultMutableTreeNode awaitNode = findChild(context.requestNode, NodeType.SSE_AWAIT);
+
+        assertTrue(context.treeSupport.hasCopyableNodes(paths(connectNode)));
+        assertTrue(context.treeSupport.hasCopyableNodes(paths(awaitNode)));
+        assertEquals(context.treeSupport.copyNodes(paths(connectNode, awaitNode)).size(), 2);
+    }
+
+    @Test(description = "粘贴 SSE 阶段节点到 SSE 请求上时应插入阶段节点")
+    public void shouldPasteSseStageNodeIntoSseRequest() {
+        TestContext context = newTestContext(RequestItemProtocolEnum.SSE);
+        context.treeSupport.syncRequestStructure(context.requestNode, context.requestData);
+        DefaultMutableTreeNode awaitNode = findChild(context.requestNode, NodeType.SSE_AWAIT);
+        JMeterTreeNode awaitData = (JMeterTreeNode) awaitNode.getUserObject();
+        awaitData.ssePerformanceData = new SsePerformanceData();
+        awaitData.ssePerformanceData.messageFilter = "ready";
+        List<DefaultMutableTreeNode> copied = context.treeSupport.copyNodes(paths(awaitNode));
+
+        List<DefaultMutableTreeNode> pasted = context.treeSupport.pasteNodes(new JTree(context.treeModel), context.requestNode, copied);
+
+        assertEquals(pasted.size(), 1);
+        assertEquals(childTypesOf(context.requestNode), List.of(NodeType.SSE_CONNECT, NodeType.SSE_AWAIT, NodeType.SSE_AWAIT));
+        JMeterTreeNode pastedData = (JMeterTreeNode) pasted.get(0).getUserObject();
+        assertNotSame(pastedData.ssePerformanceData, awaitData.ssePerformanceData);
+        assertEquals(pastedData.ssePerformanceData.messageFilter, "ready");
+    }
+
+    @Test(description = "WebSocket Connect 节点应支持单独复制")
+    public void shouldCopyWebSocketConnectNodeIndividually() {
+        TestContext context = newTestContext(RequestItemProtocolEnum.WEBSOCKET);
+        context.treeSupport.syncRequestStructure(context.requestNode, context.requestData);
+        DefaultMutableTreeNode connectNode = findChild(context.requestNode, NodeType.WS_CONNECT);
+
+        assertTrue(context.treeSupport.hasCopyableNodes(paths(connectNode)));
+        assertEquals(context.treeSupport.copyNodes(paths(connectNode)).size(), 1);
+    }
+
+    @Test(description = "粘贴 WebSocket Connect 到 WebSocket 请求上时应插入连接节点")
+    public void shouldPasteWebSocketConnectIntoWebSocketRequest() {
+        TestContext context = newTestContext(RequestItemProtocolEnum.WEBSOCKET);
+        context.treeSupport.syncRequestStructure(context.requestNode, context.requestData);
+        DefaultMutableTreeNode connectNode = findChild(context.requestNode, NodeType.WS_CONNECT);
+        JMeterTreeNode connectData = (JMeterTreeNode) connectNode.getUserObject();
+        connectData.webSocketPerformanceData = new WebSocketPerformanceData();
+        connectData.webSocketPerformanceData.connectTimeoutMs = 15000;
+        List<DefaultMutableTreeNode> copied = context.treeSupport.copyNodes(paths(connectNode));
+
+        List<DefaultMutableTreeNode> pasted = context.treeSupport.pasteNodes(new JTree(context.treeModel), context.requestNode, copied);
+
+        assertEquals(pasted.size(), 1);
+        assertEquals(childTypesOf(context.requestNode), List.of(NodeType.WS_CONNECT, NodeType.WS_CONNECT));
+        JMeterTreeNode pastedData = (JMeterTreeNode) pasted.get(0).getUserObject();
+        assertNotSame(pastedData.webSocketPerformanceData, connectData.webSocketPerformanceData);
+        assertEquals(pastedData.webSocketPerformanceData.connectTimeoutMs, 15000);
+    }
+
     private static TestContext newTestContext(RequestItemProtocolEnum protocol) {
         HttpRequestItem item = new HttpRequestItem();
         item.setName("Request");
@@ -235,6 +387,13 @@ public class PerformanceTreeSupportTest {
 
     private static DefaultMutableTreeNode newNode(String name, NodeType type) {
         return new DefaultMutableTreeNode(new JMeterTreeNode(name, type));
+    }
+
+    private static DefaultMutableTreeNode newRequestNode(String id, String name) {
+        HttpRequestItem item = new HttpRequestItem();
+        item.setId(id);
+        item.setName(name);
+        return new DefaultMutableTreeNode(new JMeterTreeNode(name, NodeType.REQUEST, item));
     }
 
     private static DefaultMutableTreeNode newLoopNode(int iterations) {
@@ -264,6 +423,18 @@ public class PerformanceTreeSupportTest {
             }
         }
         return types;
+    }
+
+    private static TreePath[] paths(DefaultMutableTreeNode... nodes) {
+        TreePath[] paths = new TreePath[nodes.length];
+        for (int i = 0; i < nodes.length; i++) {
+            paths[i] = new TreePath(nodes[i].getPath());
+        }
+        return paths;
+    }
+
+    private static NodeType nodeType(DefaultMutableTreeNode node) {
+        return ((JMeterTreeNode) node.getUserObject()).type;
     }
 
     private record TestContext(

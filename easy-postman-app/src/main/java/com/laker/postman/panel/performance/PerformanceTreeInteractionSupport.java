@@ -19,6 +19,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import java.awt.*;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
@@ -68,6 +69,7 @@ final class PerformanceTreeInteractionSupport {
     private final String wsCloseCard;
 
     private DefaultMutableTreeNode lastNode;
+    private List<DefaultMutableTreeNode> copiedNodes = List.of();
 
     void install() {
         installSelectionListener();
@@ -207,11 +209,17 @@ final class PerformanceTreeInteractionSupport {
         JMenuItem deleteNode = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_DELETE));
         JMenuItem enableNode = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ENABLE));
         JMenuItem disableNode = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_DISABLE));
+        JMenuItem copyNode = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_COPY));
+        JMenuItem pasteNode = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_PASTE));
+        int shortcutMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
         renameNode.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F2, 0));
         deleteNode.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_DELETE, 0));
+        copyNode.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C, shortcutMask));
+        pasteNode.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_V, shortcutMask));
 
         JSeparator separator1 = new JSeparator();
         JSeparator separator2 = new JSeparator();
+        JSeparator separator3 = new JSeparator();
 
         treeMenu.add(addThreadGroup);
         treeMenu.add(addRequest);
@@ -225,6 +233,9 @@ final class PerformanceTreeInteractionSupport {
         treeMenu.add(enableNode);
         treeMenu.add(disableNode);
         treeMenu.add(separator2);
+        treeMenu.add(copyNode);
+        treeMenu.add(pasteNode);
+        treeMenu.add(separator3);
         treeMenu.add(renameNode);
         treeMenu.add(deleteNode);
 
@@ -234,9 +245,11 @@ final class PerformanceTreeInteractionSupport {
                     || addWsSend.isVisible() || addWsAwait.isVisible() || addWsClose.isVisible()
                     || addAssertion.isVisible() || addTimer.isVisible();
             boolean hasToggleGroup = enableNode.isVisible() || disableNode.isVisible();
+            boolean hasClipboardGroup = copyNode.isVisible() || pasteNode.isVisible();
             boolean hasEditGroup = renameNode.isVisible() || deleteNode.isVisible();
-            separator1.setVisible(hasAddGroup && (hasToggleGroup || hasEditGroup));
-            separator2.setVisible(hasToggleGroup && hasEditGroup);
+            separator1.setVisible(hasAddGroup && (hasToggleGroup || hasClipboardGroup || hasEditGroup));
+            separator2.setVisible(hasToggleGroup && (hasClipboardGroup || hasEditGroup));
+            separator3.setVisible(hasClipboardGroup && hasEditGroup);
         };
 
         addThreadGroup.addActionListener(e -> {
@@ -256,8 +269,12 @@ final class PerformanceTreeInteractionSupport {
 
         Action renameAction = createRenameAction();
         Action deleteAction = createDeleteAction();
+        Action copyAction = createCopyAction();
+        Action pasteAction = createPasteAction();
         renameNode.addActionListener(renameAction);
         deleteNode.addActionListener(deleteAction);
+        copyNode.addActionListener(copyAction);
+        pasteNode.addActionListener(pasteAction);
 
         InputMap treeInputMap = jmeterTree.getInputMap(JComponent.WHEN_FOCUSED);
         ActionMap treeActionMap = jmeterTree.getActionMap();
@@ -265,6 +282,10 @@ final class PerformanceTreeInteractionSupport {
         treeActionMap.put("renamePerformanceNode", renameAction);
         treeInputMap.put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_DELETE, 0), "deletePerformanceNode");
         treeActionMap.put("deletePerformanceNode", deleteAction);
+        treeInputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_C, shortcutMask), "copyPerformanceNode");
+        treeActionMap.put("copyPerformanceNode", copyAction);
+        treeInputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_V, shortcutMask), "pastePerformanceNode");
+        treeActionMap.put("pastePerformanceNode", pasteAction);
 
         enableNode.addActionListener(e -> setSelectedNodesEnabled(true));
         disableNode.addActionListener(e -> setSelectedNodesEnabled(false));
@@ -295,11 +316,12 @@ final class PerformanceTreeInteractionSupport {
 
                 if (selectedPaths.length > 1) {
                     configureMultiSelectionMenu(selectedPaths, addThreadGroup, addRequest, addLoop, addWsSend, addWsAwait, addWsClose,
-                            addAssertion, addTimer, renameNode, deleteNode, enableNode, disableNode, updateMenuSeparators);
+                            addAssertion, addTimer, copyNode, pasteNode, renameNode, deleteNode, enableNode, disableNode,
+                            updateMenuSeparators);
                 } else {
                     configureSingleSelectionMenu((DefaultMutableTreeNode) selectedPaths[0].getLastPathComponent(),
                             addThreadGroup, addRequest, addLoop, addWsSend, addWsAwait, addWsClose, addAssertion, addTimer,
-                            renameNode, deleteNode, enableNode, disableNode, updateMenuSeparators, treeMenu, e);
+                            copyNode, pasteNode, renameNode, deleteNode, enableNode, disableNode, updateMenuSeparators, treeMenu, e);
                     if (isRootNode((DefaultMutableTreeNode) selectedPaths[0].getLastPathComponent())) {
                         return;
                     }
@@ -452,6 +474,40 @@ final class PerformanceTreeInteractionSupport {
         };
     }
 
+    private Action createCopyAction() {
+        return new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                TreePath[] selectedPaths = jmeterTree.getSelectionPaths();
+                if (selectedPaths == null || selectedPaths.length == 0) {
+                    return;
+                }
+                persistLastSelection();
+                List<DefaultMutableTreeNode> newCopiedNodes = treeSupport.copyNodes(selectedPaths);
+                if (!newCopiedNodes.isEmpty()) {
+                    copiedNodes = newCopiedNodes;
+                }
+            }
+        };
+    }
+
+    private Action createPasteAction() {
+        return new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                DefaultMutableTreeNode targetNode = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
+                if (targetNode == null || !treeSupport.canPasteNodes(targetNode, copiedNodes)) {
+                    return;
+                }
+                persistLastSelection();
+                List<DefaultMutableTreeNode> pastedNodes = treeSupport.pasteNodes(jmeterTree, targetNode, copiedNodes);
+                if (!pastedNodes.isEmpty()) {
+                    saveConfigAction.run();
+                }
+            }
+        };
+    }
+
     private void setSelectedNodesEnabled(boolean enabled) {
         TreePath[] selectedPaths = jmeterTree.getSelectionPaths();
         if (selectedPaths == null || selectedPaths.length == 0) {
@@ -496,6 +552,8 @@ final class PerformanceTreeInteractionSupport {
                                              JMenuItem addWsClose,
                                              JMenuItem addAssertion,
                                              JMenuItem addTimer,
+                                             JMenuItem copyNode,
+                                             JMenuItem pasteNode,
                                              JMenuItem renameNode,
                                              JMenuItem deleteNode,
                                              JMenuItem enableNode,
@@ -509,6 +567,8 @@ final class PerformanceTreeInteractionSupport {
         addWsClose.setVisible(false);
         addAssertion.setVisible(false);
         addTimer.setVisible(false);
+        copyNode.setVisible(treeSupport.hasCopyableNodes(selectedPaths));
+        pasteNode.setVisible(false);
         renameNode.setVisible(false);
         deleteNode.setVisible(true);
 
@@ -539,6 +599,8 @@ final class PerformanceTreeInteractionSupport {
                                               JMenuItem addWsClose,
                                               JMenuItem addAssertion,
                                               JMenuItem addTimer,
+                                              JMenuItem copyNode,
+                                              JMenuItem pasteNode,
                                               JMenuItem renameNode,
                                               JMenuItem deleteNode,
                                               JMenuItem enableNode,
@@ -560,6 +622,8 @@ final class PerformanceTreeInteractionSupport {
             addWsClose.setVisible(false);
             addAssertion.setVisible(false);
             addTimer.setVisible(false);
+            copyNode.setVisible(false);
+            pasteNode.setVisible(treeSupport.canPasteNodes(node, copiedNodes));
             renameNode.setVisible(false);
             deleteNode.setVisible(false);
             enableNode.setVisible(false);
@@ -583,6 +647,8 @@ final class PerformanceTreeInteractionSupport {
                 || jtNode.type == NodeType.SSE_AWAIT
                 || jtNode.type == NodeType.WS_AWAIT);
         addTimer.setVisible(jtNode.type == NodeType.REQUEST || requestContainerLoop || canManageWsSteps);
+        copyNode.setVisible(treeSupport.hasCopyableNodes(new TreePath[]{new TreePath(node.getPath())}));
+        pasteNode.setVisible(treeSupport.canPasteNodes(node, copiedNodes));
         boolean structuralNode = jtNode.type == NodeType.SSE_CONNECT
                 || jtNode.type == NodeType.SSE_AWAIT
                 || jtNode.type == NodeType.WS_CONNECT;

@@ -11,6 +11,7 @@ import com.laker.postman.panel.performance.model.SsePerformanceData;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.JsonUtil;
 import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
@@ -20,6 +21,7 @@ import javax.swing.tree.TreePath;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringJoiner;
+import java.util.UUID;
 
 final class PerformanceTreeSupport {
 
@@ -199,6 +201,265 @@ final class PerformanceTreeSupport {
             return false;
         }
         return jtNode.type == NodeType.LOOP && getParentRequestNode(node) == null;
+    }
+
+    boolean hasCopyableNodes(TreePath[] selectedPaths) {
+        return !copyableTopLevelNodes(selectedPaths).isEmpty();
+    }
+
+    List<DefaultMutableTreeNode> copyNodes(TreePath[] selectedPaths) {
+        List<DefaultMutableTreeNode> nodes = copyableTopLevelNodes(selectedPaths);
+        List<DefaultMutableTreeNode> copies = new ArrayList<>(nodes.size());
+        for (DefaultMutableTreeNode node : nodes) {
+            copies.add(copyTreeNode(node));
+        }
+        return copies;
+    }
+
+    boolean canPasteNodes(DefaultMutableTreeNode targetNode, List<DefaultMutableTreeNode> copiedNodes) {
+        return resolvePasteLocation(targetNode, copiedNodes) != null;
+    }
+
+    List<DefaultMutableTreeNode> pasteNodes(JTree jmeterTree,
+                                            DefaultMutableTreeNode targetNode,
+                                            List<DefaultMutableTreeNode> copiedNodes) {
+        PasteLocation pasteLocation = resolvePasteLocation(targetNode, copiedNodes);
+        if (pasteLocation == null) {
+            return List.of();
+        }
+
+        List<DefaultMutableTreeNode> pastedNodes = new ArrayList<>(copiedNodes.size());
+        int insertIndex = pasteLocation.index();
+        for (DefaultMutableTreeNode copiedNode : copiedNodes) {
+            DefaultMutableTreeNode pastedNode = copyTreeNode(copiedNode);
+            treeModel.insertNodeInto(pastedNode, pasteLocation.parent(),
+                    Math.min(insertIndex, pasteLocation.parent().getChildCount()));
+            pastedNodes.add(pastedNode);
+            insertIndex++;
+        }
+
+        Object root = treeModel.getRoot();
+        if (root instanceof DefaultMutableTreeNode rootNode) {
+            syncAllRequestStructures(rootNode);
+        }
+        if (jmeterTree != null) {
+            jmeterTree.expandPath(new TreePath(pasteLocation.parent().getPath()));
+            TreePath[] pastedPaths = pastedNodes.stream()
+                    .map(node -> new TreePath(node.getPath()))
+                    .toArray(TreePath[]::new);
+            jmeterTree.setSelectionPaths(pastedPaths);
+        }
+        return pastedNodes;
+    }
+
+    private List<DefaultMutableTreeNode> copyableTopLevelNodes(TreePath[] selectedPaths) {
+        if (selectedPaths == null || selectedPaths.length == 0) {
+            return List.of();
+        }
+        List<DefaultMutableTreeNode> selectedNodes = new ArrayList<>();
+        for (TreePath path : selectedPaths) {
+            if (path == null || !(path.getLastPathComponent() instanceof DefaultMutableTreeNode node)) {
+                continue;
+            }
+            if (isCopyableNode(node)) {
+                selectedNodes.add(node);
+            }
+        }
+        selectedNodes.sort(this::compareTreeOrder);
+
+        List<DefaultMutableTreeNode> topLevelNodes = new ArrayList<>();
+        for (DefaultMutableTreeNode node : selectedNodes) {
+            if (!hasSelectedAncestor(node, selectedNodes)) {
+                topLevelNodes.add(node);
+            }
+        }
+        return topLevelNodes;
+    }
+
+    private boolean isCopyableNode(DefaultMutableTreeNode node) {
+        if (node == null || !(node.getUserObject() instanceof JMeterTreeNode jtNode)) {
+            return false;
+        }
+        return jtNode.type != NodeType.ROOT;
+    }
+
+    private boolean hasSelectedAncestor(DefaultMutableTreeNode node, List<DefaultMutableTreeNode> selectedNodes) {
+        DefaultMutableTreeNode parent = (DefaultMutableTreeNode) node.getParent();
+        while (parent != null) {
+            if (selectedNodes.contains(parent)) {
+                return true;
+            }
+            parent = (DefaultMutableTreeNode) parent.getParent();
+        }
+        return false;
+    }
+
+    private int compareTreeOrder(DefaultMutableTreeNode first, DefaultMutableTreeNode second) {
+        TreePath firstPath = new TreePath(first.getPath());
+        TreePath secondPath = new TreePath(second.getPath());
+        int firstCount = firstPath.getPathCount();
+        int secondCount = secondPath.getPathCount();
+        int sharedCount = Math.min(firstCount, secondCount);
+        for (int i = 0; i < sharedCount; i++) {
+            Object firstComponent = firstPath.getPathComponent(i);
+            Object secondComponent = secondPath.getPathComponent(i);
+            if (firstComponent == secondComponent) {
+                continue;
+            }
+            DefaultMutableTreeNode firstNode = (DefaultMutableTreeNode) firstComponent;
+            DefaultMutableTreeNode secondNode = (DefaultMutableTreeNode) secondComponent;
+            DefaultMutableTreeNode parent = (DefaultMutableTreeNode) firstNode.getParent();
+            return Integer.compare(parent.getIndex(firstNode), parent.getIndex(secondNode));
+        }
+        return Integer.compare(firstCount, secondCount);
+    }
+
+    private DefaultMutableTreeNode copyTreeNode(DefaultMutableTreeNode source) {
+        JMeterTreeNode sourceData = source.getUserObject() instanceof JMeterTreeNode jtNode ? jtNode : null;
+        DefaultMutableTreeNode copy = new DefaultMutableTreeNode(copyNodeData(sourceData));
+        for (int i = 0; i < source.getChildCount(); i++) {
+            copy.add(copyTreeNode((DefaultMutableTreeNode) source.getChildAt(i)));
+        }
+        return copy;
+    }
+
+    private JMeterTreeNode copyNodeData(JMeterTreeNode source) {
+        if (source == null) {
+            return new JMeterTreeNode("", NodeType.ROOT);
+        }
+        JMeterTreeNode copy = new JMeterTreeNode(source.name, source.type);
+        copy.enabled = source.enabled;
+        copy.threadGroupData = JsonUtil.deepCopy(source.threadGroupData, com.laker.postman.panel.performance.threadgroup.ThreadGroupData.class);
+        copy.loopData = JsonUtil.deepCopy(source.loopData, LoopData.class);
+        copy.httpRequestItem = JsonUtil.deepCopy(source.httpRequestItem, HttpRequestItem.class);
+        if (copy.httpRequestItem != null) {
+            copy.httpRequestItem.setId(UUID.randomUUID().toString());
+        }
+        copy.assertionData = JsonUtil.deepCopy(source.assertionData, com.laker.postman.panel.performance.assertion.AssertionData.class);
+        copy.timerData = JsonUtil.deepCopy(source.timerData, com.laker.postman.panel.performance.timer.TimerData.class);
+        copy.ssePerformanceData = JsonUtil.deepCopy(source.ssePerformanceData, SsePerformanceData.class);
+        copy.webSocketPerformanceData = JsonUtil.deepCopy(source.webSocketPerformanceData, WebSocketPerformanceData.class);
+        return copy;
+    }
+
+    private PasteLocation resolvePasteLocation(DefaultMutableTreeNode targetNode, List<DefaultMutableTreeNode> copiedNodes) {
+        if (targetNode == null || copiedNodes == null || copiedNodes.isEmpty()) {
+            return null;
+        }
+        if (canAcceptAll(targetNode, copiedNodes)) {
+            return new PasteLocation(targetNode, targetNode.getChildCount());
+        }
+        DefaultMutableTreeNode parentNode = (DefaultMutableTreeNode) targetNode.getParent();
+        if (parentNode != null && canAcceptAll(parentNode, copiedNodes)) {
+            return new PasteLocation(parentNode, parentNode.getIndex(targetNode) + 1);
+        }
+        return null;
+    }
+
+    private boolean canAcceptAll(DefaultMutableTreeNode parentNode, List<DefaultMutableTreeNode> children) {
+        for (DefaultMutableTreeNode child : children) {
+            if (!canAcceptChild(parentNode, child)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean canAcceptChild(DefaultMutableTreeNode parentNode, DefaultMutableTreeNode childNode) {
+        if (parentNode == null || childNode == null
+                || !(childNode.getUserObject() instanceof JMeterTreeNode childData)) {
+            return false;
+        }
+        return switch (childData.type) {
+            case THREAD_GROUP -> isNodeType(parentNode, NodeType.ROOT);
+            case REQUEST -> isRequestContainerTarget(parentNode);
+            case ASSERTION -> isNodeType(parentNode, NodeType.REQUEST)
+                    || isNodeType(parentNode, NodeType.SSE_AWAIT)
+                    || isNodeType(parentNode, NodeType.WS_AWAIT);
+            case TIMER -> isNodeType(parentNode, NodeType.REQUEST)
+                    || isRequestContainerLoop(parentNode)
+                    || isWebSocketStepContainerTarget(parentNode);
+            case SSE_CONNECT, SSE_AWAIT -> isSseStageContainerTarget(parentNode);
+            case WS_CONNECT -> isWebSocketStepContainerTarget(parentNode);
+            case WS_SEND, WS_AWAIT, WS_CLOSE -> isWebSocketStepContainerTarget(parentNode);
+            case LOOP -> canAcceptLoop(parentNode, childNode);
+            case ROOT -> false;
+        };
+    }
+
+    private boolean canAcceptLoop(DefaultMutableTreeNode parentNode, DefaultMutableTreeNode loopNode) {
+        boolean hasRequest = containsNodeType(loopNode, NodeType.REQUEST);
+        boolean hasWebSocketStep = containsAnyNodeType(
+                loopNode,
+                NodeType.WS_CONNECT,
+                NodeType.WS_SEND,
+                NodeType.WS_AWAIT,
+                NodeType.WS_CLOSE
+        );
+        if (hasRequest && hasWebSocketStep) {
+            return false;
+        }
+        if (hasRequest) {
+            return isRequestContainerTarget(parentNode);
+        }
+        if (hasWebSocketStep) {
+            return isWebSocketStepContainerTarget(parentNode);
+        }
+        return isRequestContainerTarget(parentNode) || isWebSocketStepContainerTarget(parentNode);
+    }
+
+    private boolean isRequestContainerTarget(DefaultMutableTreeNode node) {
+        return isNodeType(node, NodeType.THREAD_GROUP) || isRequestContainerLoop(node);
+    }
+
+    private boolean isSseStageContainerTarget(DefaultMutableTreeNode node) {
+        if (node == null || !(node.getUserObject() instanceof JMeterTreeNode jtNode)) {
+            return false;
+        }
+        return jtNode.type == NodeType.REQUEST && isSsePerfRequest(jtNode.httpRequestItem);
+    }
+
+    private boolean isWebSocketStepContainerTarget(DefaultMutableTreeNode node) {
+        if (node == null || !(node.getUserObject() instanceof JMeterTreeNode jtNode)) {
+            return false;
+        }
+        if (jtNode.type == NodeType.REQUEST) {
+            return isWebSocketPerfRequest(jtNode.httpRequestItem);
+        }
+        return jtNode.type == NodeType.LOOP && getParentWebSocketRequestNode(node) != null;
+    }
+
+    private boolean isNodeType(DefaultMutableTreeNode node, NodeType type) {
+        return node != null
+                && node.getUserObject() instanceof JMeterTreeNode jtNode
+                && jtNode.type == type;
+    }
+
+    private boolean containsAnyNodeType(DefaultMutableTreeNode node, NodeType... types) {
+        for (NodeType type : types) {
+            if (containsNodeType(node, type)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean containsNodeType(DefaultMutableTreeNode node, NodeType type) {
+        if (node == null) {
+            return false;
+        }
+        if (node.getUserObject() instanceof JMeterTreeNode jtNode && jtNode.type == type) {
+            return true;
+        }
+        for (int i = 0; i < node.getChildCount(); i++) {
+            if (containsNodeType((DefaultMutableTreeNode) node.getChildAt(i), type)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private record PasteLocation(DefaultMutableTreeNode parent, int index) {
     }
 
     DefaultMutableTreeNode resolveWebSocketStepParent(DefaultMutableTreeNode selectedNode) {

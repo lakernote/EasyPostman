@@ -3,6 +3,7 @@ package com.laker.postman.panel.performance.result;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.HttpHeader;
+import com.laker.postman.panel.performance.model.PerformanceInternalHeaders;
 import com.laker.postman.panel.performance.model.ResultNodeInfo;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.I18nUtil;
@@ -372,12 +373,17 @@ public class PerformanceResultTablePanel extends JPanel {
                 return true;
             }
 
-            // 2. 检查请求内容（URL、Headers、Body）
+            // 2. 检查用户可见错误
+            if (info.errorMsg != null && info.errorMsg.toLowerCase().contains(keyword)) {
+                return true;
+            }
+
+            // 3. 检查请求内容（URL、Headers、Body）
             if (matchesRequest(info)) {
                 return true;
             }
 
-            // 3. 检查响应内容（Headers、Body）
+            // 4. 检查响应内容（Headers、Body）
             return matchesResponse(info);
         }
 
@@ -413,6 +419,9 @@ public class PerformanceResultTablePanel extends JPanel {
             if (info.resp.headers != null) {
                 for (var entry : info.resp.headers.entrySet()) {
                     String key = entry.getKey();
+                    if (PerformanceInternalHeaders.isInternalHeader(key)) {
+                        continue;
+                    }
                     List<String> values = entry.getValue();
                     String headerStr = (key + ": " + String.join(", ", values)).toLowerCase();
                     if (headerStr.contains(keyword)) {

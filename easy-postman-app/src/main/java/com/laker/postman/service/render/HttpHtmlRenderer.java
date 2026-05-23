@@ -2,6 +2,7 @@ package com.laker.postman.service.render;
 
 import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.model.*;
+import com.laker.postman.panel.performance.model.PerformanceInternalHeaders;
 import com.laker.postman.model.script.TestResult;
 import com.laker.postman.panel.performance.model.ResultNodeInfo;
 import com.laker.postman.service.setting.SettingManager;
@@ -10,6 +11,7 @@ import lombok.experimental.UtilityClass;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 统一的 HTTP 请求/响应 HTML 渲染工具类
@@ -50,6 +52,7 @@ public class HttpHtmlRenderer {
     private static String codeBgColor()   { return isDarkTheme() ? "#2b2b2b" : "#f8f8f8"; }
 
     private static String statusColor(int code) {
+        if (code <= 0) return COLOR_ERROR;
         if (code >= 500) return COLOR_ERROR;
         if (code >= 400) return COLOR_WARNING;
         return "#43a047";
@@ -181,14 +184,7 @@ public class HttpHtmlRenderer {
                             + escapeHtml(safeStr(resp.httpEventInfo.getRemoteAddress())), true));
         }
 
-        if (resp.headers != null && !resp.headers.isEmpty()) {
-            sb.append(sectionTitle(COLOR_SUCCESS, "Headers"));
-            int[] idx = {0};
-            resp.headers.forEach((key, values) ->
-                    sb.append(kvRow(COLOR_PRIMARY, escapeHtml(key),
-                            escapeHtml(values != null ? String.join(", ", values) : ""),
-                            idx[0]++ % 2 != 0)));
-        }
+        appendResponseHeaders(sb, resp.headers);
 
         sb.append(sectionTitle(COLOR_SUCCESS, "Body"));
         sb.append(codeBlock(truncate(resp.body)));
@@ -275,17 +271,31 @@ public class HttpHtmlRenderer {
                             + " <span style='color:" + COLOR_GRAY + ";'>→</span> "
                             + escapeHtml(safeStr(resp.httpEventInfo.getRemoteAddress())), true));
         }
-        if (resp.headers != null && !resp.headers.isEmpty()) {
-            sb.append(sectionTitle(COLOR_SUCCESS, "Headers"));
-            int[] idx = {0};
-            resp.headers.forEach((key, values) ->
-                    sb.append(kvRow(COLOR_PRIMARY, escapeHtml(key),
-                            escapeHtml(values != null ? String.join(", ", values) : ""),
-                            idx[0]++ % 2 != 0)));
-        }
+        appendResponseHeaders(sb, resp.headers);
         sb.append(sectionTitle(COLOR_SUCCESS, "Body"));
         sb.append(codeBlock(truncate(resp.body)));
         return sb.toString();
+    }
+
+    private static void appendResponseHeaders(StringBuilder sb, Map<String, List<String>> headers) {
+        if (headers == null || headers.isEmpty()) {
+            return;
+        }
+        boolean hasVisibleHeader = headers.keySet().stream()
+                .anyMatch(name -> !PerformanceInternalHeaders.isInternalHeader(name));
+        if (!hasVisibleHeader) {
+            return;
+        }
+        sb.append(sectionTitle(COLOR_SUCCESS, "Headers"));
+        int[] idx = {0};
+        headers.forEach((key, values) -> {
+            if (PerformanceInternalHeaders.isInternalHeader(key)) {
+                return;
+            }
+            sb.append(kvRow(COLOR_PRIMARY, escapeHtml(key),
+                    escapeHtml(values != null ? String.join(", ", values) : ""),
+                    idx[0]++ % 2 != 0));
+        });
     }
 
     private static String testResultRow(TestResult r, boolean alt) {

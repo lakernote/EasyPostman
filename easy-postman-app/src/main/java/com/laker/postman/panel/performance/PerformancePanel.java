@@ -399,6 +399,10 @@ public class PerformancePanel extends SingletonBasePanel {
         treeSupport.syncRequestStructure(requestNode, requestData);
     }
 
+    private void ensureRequestStructure(DefaultMutableTreeNode requestNode, JMeterTreeNode requestData) {
+        treeSupport.ensureRequestStructure(requestNode, requestData);
+    }
+
     private void saveSseStageNode(DefaultMutableTreeNode stageNode) {
         propertyPanelSupport.saveSseStageNode(stageNode);
     }
@@ -416,7 +420,17 @@ public class PerformancePanel extends SingletonBasePanel {
     }
 
     private void saveRequestNodeData(DefaultMutableTreeNode node) {
+        RequestItemProtocolEnum oldProtocol = RequestItemProtocolEnum.HTTP;
+        if (node != null && node.getUserObject() instanceof JMeterTreeNode jtNode) {
+            oldProtocol = resolveRequestProtocol(jtNode.httpRequestItem);
+        }
         requestEditorSupport.saveRequestNodeData(node, this::syncRequestStructure);
+        if (node != null && node.getUserObject() instanceof JMeterTreeNode jtNode) {
+            RequestItemProtocolEnum newProtocol = resolveRequestProtocol(jtNode.httpRequestItem);
+            if (oldProtocol != newProtocol) {
+                ensureRequestStructure(node, jtNode);
+            }
+        }
     }
 
     /**

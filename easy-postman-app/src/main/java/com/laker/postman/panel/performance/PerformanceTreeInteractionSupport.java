@@ -199,6 +199,9 @@ final class PerformanceTreeInteractionSupport {
         JPopupMenu treeMenu = new JPopupMenu();
         JMenuItem addThreadGroup = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_THREAD_GROUP));
         JMenuItem addRequest = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_REQUEST));
+        JMenuItem addSseConnect = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_SSE_CONNECT));
+        JMenuItem addSseAwait = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_SSE_AWAIT));
+        JMenuItem addWsConnect = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_WS_CONNECT));
         JMenuItem addWsSend = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_WS_SEND));
         JMenuItem addWsAwait = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_WS_AWAIT));
         JMenuItem addWsClose = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_WS_CLOSE));
@@ -224,6 +227,9 @@ final class PerformanceTreeInteractionSupport {
         treeMenu.add(addThreadGroup);
         treeMenu.add(addRequest);
         treeMenu.add(addLoop);
+        treeMenu.add(addSseConnect);
+        treeMenu.add(addSseAwait);
+        treeMenu.add(addWsConnect);
         treeMenu.add(addWsSend);
         treeMenu.add(addWsAwait);
         treeMenu.add(addWsClose);
@@ -242,6 +248,8 @@ final class PerformanceTreeInteractionSupport {
         Runnable updateMenuSeparators = () -> {
             boolean hasAddGroup = addThreadGroup.isVisible() || addRequest.isVisible()
                     || addLoop.isVisible()
+                    || addSseConnect.isVisible() || addSseAwait.isVisible()
+                    || addWsConnect.isVisible()
                     || addWsSend.isVisible() || addWsAwait.isVisible() || addWsClose.isVisible()
                     || addAssertion.isVisible() || addTimer.isVisible();
             boolean hasToggleGroup = enableNode.isVisible() || disableNode.isVisible();
@@ -261,6 +269,9 @@ final class PerformanceTreeInteractionSupport {
         });
         addRequest.addActionListener(e -> addRequestNodes());
         addLoop.addActionListener(e -> treeSupport.addLoopNode(jmeterTree, saveConfigAction));
+        addSseConnect.addActionListener(e -> treeSupport.addSseStageNode(jmeterTree, NodeType.SSE_CONNECT, saveConfigAction));
+        addSseAwait.addActionListener(e -> treeSupport.addSseStageNode(jmeterTree, NodeType.SSE_AWAIT, saveConfigAction));
+        addWsConnect.addActionListener(e -> treeSupport.addWebSocketStepNode(jmeterTree, NodeType.WS_CONNECT, saveConfigAction));
         addWsSend.addActionListener(e -> treeSupport.addWebSocketStepNode(jmeterTree, NodeType.WS_SEND, saveConfigAction));
         addWsAwait.addActionListener(e -> treeSupport.addWebSocketStepNode(jmeterTree, NodeType.WS_AWAIT, saveConfigAction));
         addWsClose.addActionListener(e -> treeSupport.addWebSocketStepNode(jmeterTree, NodeType.WS_CLOSE, saveConfigAction));
@@ -315,12 +326,14 @@ final class PerformanceTreeInteractionSupport {
                 }
 
                 if (selectedPaths.length > 1) {
-                    configureMultiSelectionMenu(selectedPaths, addThreadGroup, addRequest, addLoop, addWsSend, addWsAwait, addWsClose,
+                    configureMultiSelectionMenu(selectedPaths, addThreadGroup, addRequest, addLoop,
+                            addSseConnect, addSseAwait, addWsConnect, addWsSend, addWsAwait, addWsClose,
                             addAssertion, addTimer, copyNode, pasteNode, renameNode, deleteNode, enableNode, disableNode,
                             updateMenuSeparators);
                 } else {
                     configureSingleSelectionMenu((DefaultMutableTreeNode) selectedPaths[0].getLastPathComponent(),
-                            addThreadGroup, addRequest, addLoop, addWsSend, addWsAwait, addWsClose, addAssertion, addTimer,
+                            addThreadGroup, addRequest, addLoop,
+                            addSseConnect, addSseAwait, addWsConnect, addWsSend, addWsAwait, addWsClose, addAssertion, addTimer,
                             copyNode, pasteNode, renameNode, deleteNode, enableNode, disableNode, updateMenuSeparators, treeMenu, e);
                     if (isRootNode((DefaultMutableTreeNode) selectedPaths[0].getLastPathComponent())) {
                         return;
@@ -368,7 +381,7 @@ final class PerformanceTreeInteractionSupport {
             for (HttpRequestItem reqItem : supportedList) {
                 DefaultMutableTreeNode req = new DefaultMutableTreeNode(new JMeterTreeNode(reqItem.getName(), NodeType.REQUEST, reqItem));
                 treeModel.insertNodeInto(req, node, node.getChildCount());
-                syncRequestStructureAction.accept(req, (JMeterTreeNode) req.getUserObject());
+                treeSupport.ensureRequestStructure(req, (JMeterTreeNode) req.getUserObject());
                 newNodes.add(req);
             }
             jmeterTree.expandPath(new TreePath(node.getPath()));
@@ -534,6 +547,9 @@ final class PerformanceTreeInteractionSupport {
                                              JMenuItem addThreadGroup,
                                              JMenuItem addRequest,
                                              JMenuItem addLoop,
+                                             JMenuItem addSseConnect,
+                                             JMenuItem addSseAwait,
+                                             JMenuItem addWsConnect,
                                              JMenuItem addWsSend,
                                              JMenuItem addWsAwait,
                                              JMenuItem addWsClose,
@@ -549,6 +565,9 @@ final class PerformanceTreeInteractionSupport {
         addThreadGroup.setVisible(false);
         addRequest.setVisible(false);
         addLoop.setVisible(false);
+        addSseConnect.setVisible(false);
+        addSseAwait.setVisible(false);
+        addWsConnect.setVisible(false);
         addWsSend.setVisible(false);
         addWsAwait.setVisible(false);
         addWsClose.setVisible(false);
@@ -581,6 +600,9 @@ final class PerformanceTreeInteractionSupport {
                                               JMenuItem addThreadGroup,
                                               JMenuItem addRequest,
                                               JMenuItem addLoop,
+                                              JMenuItem addSseConnect,
+                                              JMenuItem addSseAwait,
+                                              JMenuItem addWsConnect,
                                               JMenuItem addWsSend,
                                               JMenuItem addWsAwait,
                                               JMenuItem addWsClose,
@@ -604,6 +626,9 @@ final class PerformanceTreeInteractionSupport {
             addThreadGroup.setVisible(true);
             addRequest.setVisible(false);
             addLoop.setVisible(false);
+            addSseConnect.setVisible(false);
+            addSseAwait.setVisible(false);
+            addWsConnect.setVisible(false);
             addWsSend.setVisible(false);
             addWsAwait.setVisible(false);
             addWsClose.setVisible(false);
@@ -625,8 +650,12 @@ final class PerformanceTreeInteractionSupport {
         addRequest.setVisible(jtNode.type == NodeType.THREAD_GROUP || requestContainerLoop);
         boolean isSseRequestNode = jtNode.type == NodeType.REQUEST && treeSupport.isSsePerfRequest(jtNode.httpRequestItem);
         boolean isWebSocketRequestNode = jtNode.type == NodeType.REQUEST && treeSupport.isWebSocketPerfRequest(jtNode.httpRequestItem);
+        boolean canManageSseStages = treeSupport.resolveSseStageParent(node) != null;
         boolean canManageWsSteps = treeSupport.resolveWebSocketStepParent(node) != null;
         addLoop.setVisible(jtNode.type == NodeType.THREAD_GROUP || requestContainerLoop || canManageWsSteps);
+        addSseConnect.setVisible(canManageSseStages);
+        addSseAwait.setVisible(canManageSseStages);
+        addWsConnect.setVisible(canManageWsSteps);
         addWsSend.setVisible(canManageWsSteps);
         addWsAwait.setVisible(canManageWsSteps);
         addWsClose.setVisible(canManageWsSteps);

@@ -63,6 +63,16 @@ final class PerformanceTreeSupport {
     }
 
     void syncRequestStructure(DefaultMutableTreeNode requestNode, JMeterTreeNode requestData) {
+        syncRequestStructure(requestNode, requestData, false);
+    }
+
+    void ensureRequestStructure(DefaultMutableTreeNode requestNode, JMeterTreeNode requestData) {
+        syncRequestStructure(requestNode, requestData, true);
+    }
+
+    private void syncRequestStructure(DefaultMutableTreeNode requestNode,
+                                      JMeterTreeNode requestData,
+                                      boolean ensureMissingStages) {
         if (requestNode == null || requestData == null || requestData.httpRequestItem == null) {
             return;
         }
@@ -77,33 +87,38 @@ final class PerformanceTreeSupport {
             if (requestData.ssePerformanceData == null) {
                 requestData.ssePerformanceData = new SsePerformanceData();
             }
-            DefaultMutableTreeNode connectNode = ensureFixedChildNode(
-                    requestNode,
-                    NodeType.SSE_CONNECT,
-                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_NODE_CONNECT),
-                    0
-            );
-            DefaultMutableTreeNode awaitNode = ensureFixedChildNode(
-                    requestNode,
-                    NodeType.SSE_AWAIT,
-                    buildSseAwaitNodeTitle(requestData.ssePerformanceData),
-                    1
-            );
-            moveChildrenByType(requestNode, awaitNode, NodeType.ASSERTION);
-            treeModel.nodeChanged(connectNode);
-            treeModel.nodeChanged(awaitNode);
+            if (ensureMissingStages) {
+                ensureFixedChildNode(
+                        requestNode,
+                        NodeType.SSE_CONNECT,
+                        I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_NODE_CONNECT),
+                        0
+                );
+                ensureFixedChildNode(
+                        requestNode,
+                        NodeType.SSE_AWAIT,
+                        buildSseAwaitNodeTitle(requestData.ssePerformanceData),
+                        1
+                );
+            }
+            DefaultMutableTreeNode awaitNode = findChildNode(requestNode, NodeType.SSE_AWAIT);
+            if (awaitNode != null) {
+                moveChildrenByType(requestNode, awaitNode, NodeType.ASSERTION);
+            }
+            refreshSseStageTitles(requestNode, requestData.ssePerformanceData);
         } else if (isWebSocket) {
             if (requestData.webSocketPerformanceData == null) {
                 requestData.webSocketPerformanceData = new WebSocketPerformanceData();
             }
-            DefaultMutableTreeNode connectNode = ensureFixedChildNode(
-                    requestNode,
-                    NodeType.WS_CONNECT,
-                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_CONNECT),
-                    0
-            );
+            if (ensureMissingStages) {
+                ensureFixedChildNode(
+                        requestNode,
+                        NodeType.WS_CONNECT,
+                        I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_CONNECT),
+                        0
+                );
+            }
             refreshWebSocketStepTitles(requestNode);
-            treeModel.nodeChanged(connectNode);
         }
     }
 
@@ -138,6 +153,27 @@ final class PerformanceTreeSupport {
         treeModel.insertNodeInto(newNode, parentNode, Math.min(insertIndex, parentNode.getChildCount()));
         refreshWebSocketStepTitles(requestNode);
         jmeterTree.expandPath(new TreePath(parentNode.getPath()));
+        jmeterTree.setSelectionPath(new TreePath(newNode.getPath()));
+        saveConfigAction.run();
+    }
+
+    void addSseStageNode(JTree jmeterTree, NodeType type, Runnable saveConfigAction) {
+        DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
+        DefaultMutableTreeNode requestNode = resolveSseStageParent(selectedNode);
+        if (requestNode == null || !(requestNode.getUserObject() instanceof JMeterTreeNode requestJtNode)) {
+            return;
+        }
+        if (requestJtNode.ssePerformanceData == null) {
+            requestJtNode.ssePerformanceData = new SsePerformanceData();
+        }
+        DefaultMutableTreeNode newNode = createSseStageNode(type, requestJtNode.ssePerformanceData);
+        int insertIndex = requestNode.getChildCount();
+        if (selectedNode != null && selectedNode.getParent() == requestNode) {
+            insertIndex = requestNode.getIndex(selectedNode) + 1;
+        }
+        treeModel.insertNodeInto(newNode, requestNode, Math.min(insertIndex, requestNode.getChildCount()));
+        refreshSseStageTitles(requestNode, requestJtNode.ssePerformanceData);
+        jmeterTree.expandPath(new TreePath(requestNode.getPath()));
         jmeterTree.setSelectionPath(new TreePath(newNode.getPath()));
         saveConfigAction.run();
     }
@@ -515,6 +551,20 @@ final class PerformanceTreeSupport {
         return null;
     }
 
+    DefaultMutableTreeNode resolveSseStageParent(DefaultMutableTreeNode selectedNode) {
+        if (selectedNode == null || !(selectedNode.getUserObject() instanceof JMeterTreeNode jtNode)) {
+            return null;
+        }
+        if (jtNode.type == NodeType.REQUEST && isSsePerfRequest(jtNode.httpRequestItem)) {
+            return selectedNode;
+        }
+        DefaultMutableTreeNode requestNode = getParentRequestNode(selectedNode);
+        if (requestNode == null || !(requestNode.getUserObject() instanceof JMeterTreeNode requestJtNode)) {
+            return null;
+        }
+        return isSsePerfRequest(requestJtNode.httpRequestItem) ? requestNode : null;
+    }
+
     private DefaultMutableTreeNode resolveLoopInsertParent(DefaultMutableTreeNode selectedNode) {
         if (selectedNode == null || !(selectedNode.getUserObject() instanceof JMeterTreeNode jtNode)) {
             return null;
@@ -661,9 +711,38 @@ final class PerformanceTreeSupport {
         }
     }
 
+    private DefaultMutableTreeNode createSseStageNode(NodeType type, SsePerformanceData requestData) {
+        JMeterTreeNode nodeData;
+        switch (type) {
+            case SSE_CONNECT -> nodeData = new JMeterTreeNode(
+                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_NODE_CONNECT),
+                    NodeType.SSE_CONNECT
+            );
+            case SSE_AWAIT -> nodeData = new JMeterTreeNode(buildSseAwaitNodeTitle(requestData), NodeType.SSE_AWAIT);
+            default -> throw new IllegalArgumentException("Unsupported SSE stage type: " + type);
+        }
+        return new DefaultMutableTreeNode(nodeData);
+    }
+
     private void refreshWebSocketStepTitles(DefaultMutableTreeNode requestNode) {
         for (int i = 0; i < requestNode.getChildCount(); i++) {
             refreshWebSocketScenarioNodeTitle((DefaultMutableTreeNode) requestNode.getChildAt(i));
+        }
+    }
+
+    private void refreshSseStageTitles(DefaultMutableTreeNode requestNode, SsePerformanceData data) {
+        for (int i = 0; i < requestNode.getChildCount(); i++) {
+            DefaultMutableTreeNode child = (DefaultMutableTreeNode) requestNode.getChildAt(i);
+            Object userObj = child.getUserObject();
+            if (userObj instanceof JMeterTreeNode jtNode) {
+                switch (jtNode.type) {
+                    case SSE_CONNECT -> jtNode.name = I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_NODE_CONNECT);
+                    case SSE_AWAIT -> jtNode.name = buildSseAwaitNodeTitle(data);
+                    default -> {
+                    }
+                }
+                treeModel.nodeChanged(child);
+            }
         }
     }
 
@@ -671,6 +750,7 @@ final class PerformanceTreeSupport {
         Object userObj = node.getUserObject();
         if (userObj instanceof JMeterTreeNode jtNode) {
             switch (jtNode.type) {
+                case WS_CONNECT -> jtNode.name = I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_CONNECT);
                 case WS_SEND -> jtNode.name = buildWebSocketSendNodeTitle(jtNode.webSocketPerformanceData);
                 case WS_AWAIT -> jtNode.name = buildWebSocketAwaitNodeTitle(jtNode.webSocketPerformanceData);
                 case WS_CLOSE -> jtNode.name = I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_CLOSE);
@@ -708,6 +788,10 @@ final class PerformanceTreeSupport {
     private DefaultMutableTreeNode createWebSocketStepNode(NodeType type, WebSocketPerformanceData requestDefaults) {
         JMeterTreeNode nodeData;
         switch (type) {
+            case WS_CONNECT -> {
+                nodeData = new JMeterTreeNode(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_CONNECT), NodeType.WS_CONNECT);
+                nodeData.webSocketPerformanceData = copyWebSocketData(requestDefaults);
+            }
             case WS_SEND -> {
                 nodeData = new JMeterTreeNode(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_SEND), NodeType.WS_SEND);
                 WebSocketPerformanceData stepData = copyWebSocketData(requestDefaults);

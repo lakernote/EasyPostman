@@ -620,6 +620,9 @@ public final class MessageKeys {
     public static final String PERFORMANCE_MSG_NO_REQUEST_TO_REFRESH = "performance.msg.no_request_to_refresh";
     public static final String PERFORMANCE_MENU_ADD_THREAD_GROUP = "performance.menu.add_thread_group";
     public static final String PERFORMANCE_MENU_ADD_REQUEST = "performance.menu.add_request";
+    public static final String PERFORMANCE_MENU_ADD_SSE_CONNECT = "performance.menu.add_sse_connect";
+    public static final String PERFORMANCE_MENU_ADD_SSE_AWAIT = "performance.menu.add_sse_await";
+    public static final String PERFORMANCE_MENU_ADD_WS_CONNECT = "performance.menu.add_ws_connect";
     public static final String PERFORMANCE_MENU_ADD_WS_SEND = "performance.menu.add_ws_send";
     public static final String PERFORMANCE_MENU_ADD_WS_AWAIT = "performance.menu.add_ws_await";
     public static final String PERFORMANCE_MENU_ADD_WS_CLOSE = "performance.menu.add_ws_close";

@@ -6,9 +6,9 @@ import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.script.TestResult;
+import com.laker.postman.panel.performance.PerformanceTreeRules;
 import com.laker.postman.panel.performance.model.ApiMetadata;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
-import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.PerformanceProtocol;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
@@ -248,7 +248,7 @@ public class PerformanceRequestExecutor {
                                                      String requestBodyTemplate,
                                                      ScriptExecutionPipeline pipeline) throws Exception {
         if (webSocketRequest) {
-            ProtocolExecutionResult invalidStageResult = validateProtocolStages(requestNode, false, true);
+            ProtocolExecutionResult invalidStageResult = validateProtocolStages(requestNode, PerformanceProtocol.WEBSOCKET);
             if (invalidStageResult != null) {
                 return invalidStageResult;
             }
@@ -270,7 +270,7 @@ public class PerformanceRequestExecutor {
             return new ProtocolExecutionResult(result.response, result.errorMsg, result.executionFailed, result.interrupted, result.testResults);
         }
         if (sseRequest) {
-            ProtocolExecutionResult invalidStageResult = validateProtocolStages(requestNode, true, false);
+            ProtocolExecutionResult invalidStageResult = validateProtocolStages(requestNode, PerformanceProtocol.SSE);
             if (invalidStageResult != null) {
                 return invalidStageResult;
             }
@@ -286,31 +286,13 @@ public class PerformanceRequestExecutor {
         return new ProtocolExecutionResult(HttpSingleRequestExecutor.executeHttp(req), "", false, false, new ArrayList<>());
     }
 
-    private ProtocolExecutionResult validateProtocolStages(DefaultMutableTreeNode requestNode,
-                                                           boolean sseRequest,
-                                                           boolean webSocketRequest) {
-        if (webSocketRequest && !hasEnabledDirectChild(requestNode, NodeType.WS_CONNECT)) {
-            return failedProtocolResult(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_WS_CONNECT_STAGE_REQUIRED));
-        }
-        if (sseRequest && (!hasEnabledDirectChild(requestNode, NodeType.SSE_CONNECT)
-                || !hasEnabledDirectChild(requestNode, NodeType.SSE_AWAIT))) {
-            return failedProtocolResult(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_SSE_STAGE_REQUIRED));
+    private ProtocolExecutionResult validateProtocolStages(DefaultMutableTreeNode requestNode, PerformanceProtocol protocol) {
+        PerformanceProtocolStageValidator.ValidationResult validation =
+                PerformanceProtocolStageValidator.validate(requestNode, protocol);
+        if (!validation.valid()) {
+            return failedProtocolResult(validation.message());
         }
         return null;
-    }
-
-    private boolean hasEnabledDirectChild(DefaultMutableTreeNode parent, NodeType type) {
-        if (parent == null || type == null) {
-            return false;
-        }
-        for (int i = 0; i < parent.getChildCount(); i++) {
-            DefaultMutableTreeNode child = (DefaultMutableTreeNode) parent.getChildAt(i);
-            Object userObject = child.getUserObject();
-            if (userObject instanceof JMeterTreeNode node && node.type == type && node.enabled) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private ProtocolExecutionResult failedProtocolResult(String message) {
@@ -318,8 +300,7 @@ public class PerformanceRequestExecutor {
     }
 
     private boolean isSseRequest(HttpRequestItem item) {
-        RequestItemProtocolEnum protocol = resolveProtocol(item);
-        return protocol.isSseProtocol() || (protocol.isHttpProtocol() && HttpUtil.isSSERequest(item));
+        return PerformanceTreeRules.isSsePerfRequest(item);
     }
 
     private boolean isSseRequest(HttpRequestItem item, PreparedRequest req) {
@@ -328,11 +309,11 @@ public class PerformanceRequestExecutor {
     }
 
     private boolean isWebSocketRequest(HttpRequestItem item) {
-        return resolveProtocol(item).isWebSocketProtocol();
+        return PerformanceTreeRules.isWebSocketPerfRequest(item);
     }
 
     private RequestItemProtocolEnum resolveProtocol(HttpRequestItem item) {
-        return item != null && item.getProtocol() != null ? item.getProtocol() : RequestItemProtocolEnum.HTTP;
+        return PerformanceTreeRules.resolveRequestProtocol(item);
     }
 
     private static final class ProtocolExecutionResult {

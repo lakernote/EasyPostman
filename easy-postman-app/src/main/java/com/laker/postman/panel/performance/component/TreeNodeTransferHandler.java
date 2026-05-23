@@ -1,8 +1,8 @@
 package com.laker.postman.panel.performance.component;
 
+import com.laker.postman.panel.performance.PerformanceTreeRules;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
-import com.laker.postman.service.http.HttpUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -77,12 +77,7 @@ public class TreeNodeTransferHandler extends TransferHandler {
         if (nodeToRemove == null) {
             return false;
         }
-        Object dragObj = nodeToRemove.getUserObject();
-        Object userObj = targetNode.getUserObject();
-        if (!(dragObj instanceof JMeterTreeNode dragJtNode)) {
-            return false;
-        }
-        if (!(userObj instanceof JMeterTreeNode jtNode)) {
+        if (!(nodeToRemove.getUserObject() instanceof JMeterTreeNode)) {
             return false;
         }
         // 不允许拖到自己或子孙节点
@@ -92,49 +87,7 @@ public class TreeNodeTransferHandler extends TransferHandler {
         if (isNodeDescendant(nodeToRemove, targetNode)) {
             return false;
         }
-        if (dragJtNode.type == NodeType.THREAD_GROUP) {
-            if (jtNode.type != NodeType.ROOT) {
-                return false;
-            }
-        }
-        if (dragJtNode.type == NodeType.REQUEST) {
-            if (!isRequestContainerTarget(targetNode)) {
-                return false;
-            }
-        }
-        // 断言、定时器只能在请求下
-        if (dragJtNode.type == NodeType.ASSERTION) {
-            if (jtNode.type != NodeType.REQUEST
-                    && jtNode.type != NodeType.SSE_AWAIT
-                    && jtNode.type != NodeType.WS_AWAIT) {
-                return false;
-            }
-        }
-        if (dragJtNode.type == NodeType.TIMER) {
-            if (jtNode.type != NodeType.REQUEST
-                    && !isRequestContainerLoop(targetNode)
-                    && !isWebSocketStepContainerTarget(targetNode)) {
-                return false;
-            }
-        }
-        if (dragJtNode.type == NodeType.WS_SEND
-                || dragJtNode.type == NodeType.WS_AWAIT
-                || dragJtNode.type == NodeType.WS_CLOSE) {
-            return isWebSocketStepContainerTarget(targetNode);
-        }
-        if (dragJtNode.type == NodeType.WS_CONNECT) {
-            return isWebSocketRequestTarget(targetNode);
-        }
-        if (dragJtNode.type == NodeType.SSE_CONNECT || dragJtNode.type == NodeType.SSE_AWAIT) {
-            return isSseStageContainerTarget(targetNode);
-        }
-        if (dragJtNode.type == NodeType.LOOP) {
-            if (isWebSocketScenarioNode(nodeToRemove)) {
-                return isWebSocketStepContainerTarget(targetNode);
-            }
-            return isRequestContainerTarget(targetNode);
-        }
-        return dragJtNode.type != NodeType.ROOT;
+        return PerformanceTreeRules.canAcceptChild(targetNode, nodeToRemove);
     }
 
     @Override
@@ -182,76 +135,6 @@ public class TreeNodeTransferHandler extends TransferHandler {
             if (isNodeDescendant(child, node)) return true;
         }
         return false;
-    }
-
-    private boolean isRequestContainerTarget(DefaultMutableTreeNode targetNode) {
-        if (!(targetNode.getUserObject() instanceof JMeterTreeNode jtNode)) {
-            return false;
-        }
-        return jtNode.type == NodeType.THREAD_GROUP || isRequestContainerLoop(targetNode);
-    }
-
-    private boolean isRequestContainerLoop(DefaultMutableTreeNode targetNode) {
-        if (!(targetNode.getUserObject() instanceof JMeterTreeNode jtNode) || jtNode.type != NodeType.LOOP) {
-            return false;
-        }
-        return getParentRequestNode(targetNode) == null;
-    }
-
-    private boolean isWebSocketStepContainerTarget(DefaultMutableTreeNode targetNode) {
-        if (!(targetNode.getUserObject() instanceof JMeterTreeNode jtNode)) {
-            return false;
-        }
-        if (jtNode.type == NodeType.LOOP) {
-            return isWebSocketScenarioNode(targetNode);
-        }
-        return isWebSocketRequestTarget(targetNode);
-    }
-
-    private boolean isWebSocketRequestTarget(DefaultMutableTreeNode targetNode) {
-        if (!(targetNode.getUserObject() instanceof JMeterTreeNode jtNode)) {
-            return false;
-        }
-        return jtNode.type == NodeType.REQUEST
-                && jtNode.httpRequestItem != null
-                && jtNode.httpRequestItem.getProtocol() != null
-                && jtNode.httpRequestItem.getProtocol().isWebSocketProtocol();
-    }
-
-    private boolean isSseStageContainerTarget(DefaultMutableTreeNode targetNode) {
-        if (!(targetNode.getUserObject() instanceof JMeterTreeNode jtNode)) {
-            return false;
-        }
-        if (jtNode.type != NodeType.REQUEST
-                || jtNode.httpRequestItem == null
-                || jtNode.httpRequestItem.getProtocol() == null) {
-            return false;
-        }
-        return jtNode.httpRequestItem.getProtocol().isSseProtocol()
-                || (jtNode.httpRequestItem.getProtocol().isHttpProtocol()
-                && HttpUtil.isSSERequest(jtNode.httpRequestItem));
-    }
-
-    private boolean isWebSocketScenarioNode(DefaultMutableTreeNode node) {
-        DefaultMutableTreeNode requestNode = getParentRequestNode(node);
-        if (requestNode == null || !(requestNode.getUserObject() instanceof JMeterTreeNode jtNode)) {
-            return false;
-        }
-        return jtNode.httpRequestItem != null
-                && jtNode.httpRequestItem.getProtocol() != null
-                && jtNode.httpRequestItem.getProtocol().isWebSocketProtocol();
-    }
-
-    private DefaultMutableTreeNode getParentRequestNode(DefaultMutableTreeNode node) {
-        DefaultMutableTreeNode current = node;
-        while (current != null) {
-            Object userObj = current.getUserObject();
-            if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.REQUEST) {
-                return current;
-            }
-            current = (DefaultMutableTreeNode) current.getParent();
-        }
-        return null;
     }
 
     class NodeTransferable implements Transferable {

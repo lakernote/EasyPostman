@@ -32,12 +32,11 @@ final class PerformanceTreeSupport {
     }
 
     RequestItemProtocolEnum resolveRequestProtocol(HttpRequestItem item) {
-        return item != null && item.getProtocol() != null ? item.getProtocol() : RequestItemProtocolEnum.HTTP;
+        return PerformanceTreeRules.resolveRequestProtocol(item);
     }
 
     boolean isSsePerfRequest(HttpRequestItem item) {
-        RequestItemProtocolEnum protocol = resolveRequestProtocol(item);
-        return protocol.isSseProtocol() || (protocol.isHttpProtocol() && HttpUtil.isSSERequest(item));
+        return PerformanceTreeRules.isSsePerfRequest(item);
     }
 
     boolean isSsePerfRequest(HttpRequestItem item, PreparedRequest req) {
@@ -46,7 +45,7 @@ final class PerformanceTreeSupport {
     }
 
     boolean isWebSocketPerfRequest(HttpRequestItem item) {
-        return resolveRequestProtocol(item).isWebSocketProtocol();
+        return PerformanceTreeRules.isWebSocketPerfRequest(item);
     }
 
     PerformanceProtocol resolvePerformanceProtocol(HttpRequestItem item) {
@@ -60,15 +59,7 @@ final class PerformanceTreeSupport {
     }
 
     DefaultMutableTreeNode getParentRequestNode(DefaultMutableTreeNode node) {
-        DefaultMutableTreeNode current = node;
-        while (current != null) {
-            Object userObj = current.getUserObject();
-            if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.REQUEST) {
-                return current;
-            }
-            current = (DefaultMutableTreeNode) current.getParent();
-        }
-        return null;
+        return PerformanceTreeRules.getParentRequestNode(node);
     }
 
     void syncRequestStructure(DefaultMutableTreeNode requestNode, JMeterTreeNode requestData) {
@@ -252,10 +243,7 @@ final class PerformanceTreeSupport {
     }
 
     boolean isRequestContainerLoop(DefaultMutableTreeNode node) {
-        if (node == null || !(node.getUserObject() instanceof JMeterTreeNode jtNode)) {
-            return false;
-        }
-        return jtNode.type == NodeType.LOOP && getParentRequestNode(node) == null;
+        return PerformanceTreeRules.isRequestContainerLoop(node);
     }
 
     boolean hasCopyableNodes(TreePath[] selectedPaths) {
@@ -431,106 +419,7 @@ final class PerformanceTreeSupport {
     }
 
     private boolean canAcceptChild(DefaultMutableTreeNode parentNode, DefaultMutableTreeNode childNode) {
-        if (parentNode == null || childNode == null
-                || !(childNode.getUserObject() instanceof JMeterTreeNode childData)) {
-            return false;
-        }
-        return switch (childData.type) {
-            case THREAD_GROUP -> isNodeType(parentNode, NodeType.ROOT);
-            case REQUEST -> isRequestContainerTarget(parentNode);
-            case ASSERTION -> isNodeType(parentNode, NodeType.REQUEST)
-                    || isNodeType(parentNode, NodeType.SSE_AWAIT)
-                    || isNodeType(parentNode, NodeType.WS_AWAIT);
-            case TIMER -> isNodeType(parentNode, NodeType.REQUEST)
-                    || isRequestContainerLoop(parentNode)
-                    || isWebSocketStepContainerTarget(parentNode);
-            case SSE_CONNECT, SSE_AWAIT -> isSseStageContainerTarget(parentNode);
-            case WS_CONNECT -> isWebSocketRequestTarget(parentNode);
-            case WS_SEND, WS_AWAIT, WS_CLOSE -> isWebSocketStepContainerTarget(parentNode);
-            case LOOP -> canAcceptLoop(parentNode, childNode);
-            case ROOT -> false;
-        };
-    }
-
-    private boolean canAcceptLoop(DefaultMutableTreeNode parentNode, DefaultMutableTreeNode loopNode) {
-        if (containsNodeType(loopNode, NodeType.WS_CONNECT)) {
-            return false;
-        }
-        boolean hasRequest = containsNodeType(loopNode, NodeType.REQUEST);
-        boolean hasWebSocketStep = containsAnyNodeType(
-                loopNode,
-                NodeType.WS_SEND,
-                NodeType.WS_AWAIT,
-                NodeType.WS_CLOSE
-        );
-        if (hasRequest && hasWebSocketStep) {
-            return false;
-        }
-        if (hasRequest) {
-            return isRequestContainerTarget(parentNode);
-        }
-        if (hasWebSocketStep) {
-            return isWebSocketStepContainerTarget(parentNode);
-        }
-        return isRequestContainerTarget(parentNode) || isWebSocketStepContainerTarget(parentNode);
-    }
-
-    private boolean isRequestContainerTarget(DefaultMutableTreeNode node) {
-        return isNodeType(node, NodeType.THREAD_GROUP) || isRequestContainerLoop(node);
-    }
-
-    private boolean isSseStageContainerTarget(DefaultMutableTreeNode node) {
-        if (node == null || !(node.getUserObject() instanceof JMeterTreeNode jtNode)) {
-            return false;
-        }
-        return jtNode.type == NodeType.REQUEST && isSsePerfRequest(jtNode.httpRequestItem);
-    }
-
-    private boolean isWebSocketRequestTarget(DefaultMutableTreeNode node) {
-        if (node == null || !(node.getUserObject() instanceof JMeterTreeNode jtNode)) {
-            return false;
-        }
-        return jtNode.type == NodeType.REQUEST && isWebSocketPerfRequest(jtNode.httpRequestItem);
-    }
-
-    private boolean isWebSocketStepContainerTarget(DefaultMutableTreeNode node) {
-        if (node == null || !(node.getUserObject() instanceof JMeterTreeNode jtNode)) {
-            return false;
-        }
-        if (jtNode.type == NodeType.REQUEST) {
-            return isWebSocketRequestTarget(node);
-        }
-        return jtNode.type == NodeType.LOOP && getParentWebSocketRequestNode(node) != null;
-    }
-
-    private boolean isNodeType(DefaultMutableTreeNode node, NodeType type) {
-        return node != null
-                && node.getUserObject() instanceof JMeterTreeNode jtNode
-                && jtNode.type == type;
-    }
-
-    private boolean containsAnyNodeType(DefaultMutableTreeNode node, NodeType... types) {
-        for (NodeType type : types) {
-            if (containsNodeType(node, type)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean containsNodeType(DefaultMutableTreeNode node, NodeType type) {
-        if (node == null) {
-            return false;
-        }
-        if (node.getUserObject() instanceof JMeterTreeNode jtNode && jtNode.type == type) {
-            return true;
-        }
-        for (int i = 0; i < node.getChildCount(); i++) {
-            if (containsNodeType((DefaultMutableTreeNode) node.getChildAt(i), type)) {
-                return true;
-            }
-        }
-        return false;
+        return PerformanceTreeRules.canAcceptChild(parentNode, childNode);
     }
 
     private record PasteLocation(DefaultMutableTreeNode parent, int index) {
@@ -539,7 +428,7 @@ final class PerformanceTreeSupport {
     private PasteLocation resolveWebSocketConnectPasteLocation(DefaultMutableTreeNode targetNode,
                                                               List<DefaultMutableTreeNode> copiedNodes) {
         boolean containsWebSocketConnect = copiedNodes.stream()
-                .anyMatch(node -> isNodeType(node, NodeType.WS_CONNECT));
+                .anyMatch(node -> PerformanceTreeRules.isNodeType(node, NodeType.WS_CONNECT));
         if (!containsWebSocketConnect) {
             return null;
         }
@@ -567,12 +456,12 @@ final class PerformanceTreeSupport {
         }
         if (selectedNode != null
                 && selectedNode.getParent() == requestNode
-                && isNodeType(selectedNode, NodeType.WS_CONNECT)) {
+                && PerformanceTreeRules.isNodeType(selectedNode, NodeType.WS_CONNECT)) {
             return requestNode.getIndex(selectedNode) + 1;
         }
         int insertIndex = 0;
         while (insertIndex < requestNode.getChildCount()
-                && isNodeType((DefaultMutableTreeNode) requestNode.getChildAt(insertIndex), NodeType.WS_CONNECT)) {
+                && PerformanceTreeRules.isNodeType((DefaultMutableTreeNode) requestNode.getChildAt(insertIndex), NodeType.WS_CONNECT)) {
             insertIndex++;
         }
         return insertIndex;
@@ -632,11 +521,7 @@ final class PerformanceTreeSupport {
     }
 
     private DefaultMutableTreeNode getParentWebSocketRequestNode(DefaultMutableTreeNode node) {
-        DefaultMutableTreeNode requestNode = getParentRequestNode(node);
-        if (requestNode == null || !(requestNode.getUserObject() instanceof JMeterTreeNode requestJtNode)) {
-            return null;
-        }
-        return isWebSocketPerfRequest(requestJtNode.httpRequestItem) ? requestNode : null;
+        return PerformanceTreeRules.getParentWebSocketRequestNode(node);
     }
 
     static void createDefaultRequest(DefaultMutableTreeNode root) {

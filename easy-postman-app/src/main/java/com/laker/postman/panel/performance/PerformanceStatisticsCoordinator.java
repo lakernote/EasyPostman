@@ -17,6 +17,7 @@ import java.util.Date;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 import java.util.function.LongFunction;
@@ -39,6 +40,8 @@ final class PerformanceStatisticsCoordinator {
     private final LongFunction<PerformanceRealtimeMetrics.LiveSnapshot> liveMetricsSnapshotSupplier;
     private final ExecutorService metricsExecutor =
             Executors.newSingleThreadExecutor(PerformanceThreadFactory.daemonFactory("PerformanceMetrics"));
+    private final AtomicLong runGeneration = new AtomicLong();
+    private final Object runGenerationLock = new Object();
     private volatile boolean disposed;
 
     void refreshReport() {
@@ -59,9 +62,10 @@ final class PerformanceStatisticsCoordinator {
     }
 
     void updateReportWithLatestData() {
-        submitMetricsTask("报表更新", () -> {
+        long generation = currentGeneration();
+        submitMetricsTask("报表更新", generation, () -> {
             PerformanceReportSnapshot snapshot = snapshotForReport(System.currentTimeMillis());
-            invokeUiIfActive(() -> performanceReportPanel.updateReport(snapshot));
+            invokeUiIfActive(generation, () -> performanceReportPanel.updateReport(snapshot));
         });
     }
 
@@ -86,8 +90,9 @@ final class PerformanceStatisticsCoordinator {
         int users = activeThreadsSupplier.getAsInt();
         int activeWebSockets = resolveActiveWebSocketSessions(realtimeMetrics);
         int activeSseStreams = resolveActiveSseStreams(realtimeMetrics);
+        long generation = currentGeneration();
 
-        submitMetricsTask("趋势图采样", () -> {
+        submitMetricsTask("趋势图采样", generation, () -> {
             PerformanceTrendSnapshot snapshot = statsCollector.sampleTrendSnapshot(
                     now,
                     users,
@@ -96,7 +101,7 @@ final class PerformanceStatisticsCoordinator {
                     samplingIntervalMs,
                     realtimeMetrics
             );
-            invokeUiIfActive(() -> {
+            invokeUiIfActive(generation, () -> {
                 log.debug("采样数据 {} - 用户数: {}, HTTP: {}, WS: {}, SSE: {}",
                         period, users, snapshot.http().samples(), snapshot.webSocket().samples(), snapshot.sse().samples());
                 performanceTrendPanel.addOrUpdate(period, snapshot);
@@ -167,19 +172,40 @@ final class PerformanceStatisticsCoordinator {
 
     void dispose() {
         disposed = true;
+        resetForNewRun();
         metricsExecutor.shutdownNow();
     }
 
-    private void submitMetricsTask(String taskName, Runnable task) {
+    void resetForNewRun() {
+        synchronized (runGenerationLock) {
+            runGeneration.incrementAndGet();
+        }
+    }
+
+    private long currentGeneration() {
+        return runGeneration.get();
+    }
+
+    private boolean isCurrentGeneration(long generation) {
+        return generation == currentGeneration();
+    }
+
+    private void submitMetricsTask(String taskName, long generation, Runnable task) {
         if (disposed) {
             return;
         }
         try {
             metricsExecutor.execute(() -> {
-                try {
-                    task.run();
-                } catch (Exception ex) {
-                    log.error("{}失败", taskName, ex);
+                synchronized (runGenerationLock) {
+                    if (!isCurrentGeneration(generation)) {
+                        log.debug("{}已过期，跳过旧压测轮次的异步任务", taskName);
+                        return;
+                    }
+                    try {
+                        task.run();
+                    } catch (Exception ex) {
+                        log.error("{}失败", taskName, ex);
+                    }
                 }
             });
         } catch (RejectedExecutionException ex) {
@@ -189,9 +215,9 @@ final class PerformanceStatisticsCoordinator {
         }
     }
 
-    private void invokeUiIfActive(Runnable uiTask) {
+    private void invokeUiIfActive(long generation, Runnable uiTask) {
         SwingUtilities.invokeLater(() -> {
-            if (!disposed) {
+            if (!disposed && isCurrentGeneration(generation)) {
                 uiTask.run();
             }
         });

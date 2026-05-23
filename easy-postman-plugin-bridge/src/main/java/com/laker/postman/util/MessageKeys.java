@@ -645,6 +645,8 @@ public final class MessageKeys {
     public static final String PERFORMANCE_MSG_EXECUTION_COMPLETED = "performance.msg.execution_completed";
     public static final String PERFORMANCE_MSG_PRE_SCRIPT_FAILED = "performance.msg.pre_script_failed";
     public static final String PERFORMANCE_MSG_REQUEST_FAILED = "performance.msg.request_failed";
+    public static final String PERFORMANCE_MSG_WS_CONNECT_STAGE_REQUIRED = "performance.msg.ws_connect_stage_required";
+    public static final String PERFORMANCE_MSG_SSE_STAGE_REQUIRED = "performance.msg.sse_stage_required";
     public static final String PERFORMANCE_MSG_ASSERTION_FAILED = "performance.msg.assertion_failed";
     public static final String PERFORMANCE_TEST_PLAN = "performance.test_plan";
     public static final String PERFORMANCE_THREAD_GROUP = "performance.thread_group";

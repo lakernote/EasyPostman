@@ -1,10 +1,12 @@
 package com.laker.postman.panel.performance;
 
 import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.controller.LoopData;
 import com.laker.postman.panel.performance.model.NodeType;
+import com.laker.postman.panel.performance.model.PerformanceProtocol;
 import com.laker.postman.panel.performance.model.SsePerformanceData;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import org.testng.annotations.Test;
@@ -373,6 +375,38 @@ public class PerformanceTreeSupportTest {
         assertEquals(pastedData.webSocketPerformanceData.connectTimeoutMs, 15000);
     }
 
+    @Test(description = "WebSocket Connect 粘到场景 Loop 上时应回落为请求级阶段节点")
+    public void shouldPasteWebSocketConnectAtRequestLevelWhenTargetingScenarioLoop() {
+        TestContext context = newTestContext(RequestItemProtocolEnum.WEBSOCKET);
+        context.treeSupport.ensureRequestStructure(context.requestNode, context.requestData);
+        DefaultMutableTreeNode connectNode = findChild(context.requestNode, NodeType.WS_CONNECT);
+        DefaultMutableTreeNode loopNode = newLoopNode(2);
+        context.treeModel.insertNodeInto(loopNode, context.requestNode, context.requestNode.getChildCount());
+        List<DefaultMutableTreeNode> copied = context.treeSupport.copyNodes(paths(connectNode));
+
+        List<DefaultMutableTreeNode> pasted = context.treeSupport.pasteNodes(new JTree(context.treeModel), loopNode, copied);
+
+        assertEquals(pasted.size(), 1);
+        assertEquals(childTypesOf(loopNode), List.of());
+        assertSame(pasted.get(0).getParent(), context.requestNode);
+        assertEquals(childTypesOf(context.requestNode), List.of(NodeType.WS_CONNECT, NodeType.WS_CONNECT, NodeType.LOOP));
+    }
+
+    @Test(description = "从 WebSocket Loop 内显式添加 Connect 时应补到请求根节点")
+    public void shouldAddWebSocketConnectAtRequestLevelWhenSelectionIsScenarioLoop() {
+        TestContext context = newTestContext(RequestItemProtocolEnum.WEBSOCKET);
+        DefaultMutableTreeNode loopNode = newLoopNode(2);
+        context.treeModel.insertNodeInto(loopNode, context.requestNode, context.requestNode.getChildCount());
+        JTree tree = new JTree(context.treeModel);
+        tree.setSelectionPath(new TreePath(loopNode.getPath()));
+
+        context.treeSupport.addWebSocketStepNode(tree, NodeType.WS_CONNECT, () -> {
+        });
+
+        assertEquals(childTypesOf(loopNode), List.of());
+        assertEquals(childTypesOf(context.requestNode), List.of(NodeType.WS_CONNECT, NodeType.LOOP));
+    }
+
     @Test(description = "SSE Connect、SSE Receive、WebSocket Connect 阶段节点应支持删除")
     public void shouldDeleteProtocolStageNodes() {
         TestContext sseContext = newTestContext(RequestItemProtocolEnum.SSE);
@@ -459,6 +493,19 @@ public class PerformanceTreeSupportTest {
         });
 
         assertEquals(childTypesOf(wsContext.requestNode), List.of(NodeType.WS_CONNECT));
+    }
+
+    @Test(description = "HTTP 请求添加 text/event-stream Accept 头后应识别为 SSE 结构类型")
+    public void shouldResolveHttpRequestWithEventStreamHeaderAsSseStructureKind() {
+        TestContext context = newTestContext(RequestItemProtocolEnum.HTTP);
+
+        assertEquals(context.treeSupport.resolvePerformanceProtocol(context.requestData.httpRequestItem), PerformanceProtocol.HTTP);
+
+        context.requestData.httpRequestItem.setHeadersList(List.of(
+                new HttpHeader(true, "Accept", "text/event-stream")
+        ));
+
+        assertEquals(context.treeSupport.resolvePerformanceProtocol(context.requestData.httpRequestItem), PerformanceProtocol.SSE);
     }
 
     private static TestContext newTestContext(RequestItemProtocolEnum protocol) {

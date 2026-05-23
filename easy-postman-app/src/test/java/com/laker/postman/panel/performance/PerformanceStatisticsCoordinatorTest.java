@@ -15,6 +15,8 @@ import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import java.lang.reflect.Field;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -177,6 +179,40 @@ public class PerformanceStatisticsCoordinatorTest extends AbstractSwingUiTest {
         }
     }
 
+    @Test
+    public void resetForNewRunShouldDropQueuedTrendSamplesFromPreviousRun() throws Exception {
+        PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
+        PerformanceTrendPanel trendPanel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
+        trendPanel.clearTrendDataset();
+        PerformanceStatisticsCoordinator coordinator = new PerformanceStatisticsCoordinator(
+                statsCollector,
+                null,
+                trendPanel,
+                new JTabbedPane(),
+                () -> 0,
+                () -> 0,
+                () -> 0,
+                () -> 1000L,
+                () -> true,
+                now -> PerformanceRealtimeMetrics.Sample.empty(),
+                now -> PerformanceRealtimeMetrics.LiveSnapshot.empty()
+        );
+
+        try {
+            coordinator.sampleTrendData();
+            coordinator.resetForNewRun();
+            waitForQueuedMetrics(coordinator);
+            SwingUtilities.invokeAndWait(() -> {
+            });
+
+            TimeSeries usersSeries = getTrendTimeSeries(trendPanel, "httpVirtualUsersSeries");
+            assertEquals(usersSeries.getItemCount(), 0);
+        } finally {
+            coordinator.dispose();
+            trendPanel.clearTrendDataset();
+        }
+    }
+
     private static DefaultTableModel getWebSocketReportTableModel(PerformanceReportPanel panel) throws Exception {
         Field field = PerformanceReportPanel.class.getDeclaredField("webSocketReportTableModel");
         field.setAccessible(true);
@@ -193,6 +229,15 @@ public class PerformanceStatisticsCoordinatorTest extends AbstractSwingUiTest {
         Field field = PerformanceTrendPanel.class.getDeclaredField(fieldName);
         field.setAccessible(true);
         return (TimeSeries) field.get(panel);
+    }
+
+    private static void waitForQueuedMetrics(PerformanceStatisticsCoordinator coordinator) throws Exception {
+        Field field = PerformanceStatisticsCoordinator.class.getDeclaredField("metricsExecutor");
+        field.setAccessible(true);
+        ExecutorService metricsExecutor = (ExecutorService) field.get(coordinator);
+        Future<?> future = metricsExecutor.submit(() -> {
+        });
+        future.get(1, TimeUnit.SECONDS);
     }
 
     private static final class ThreadCheckingTabbedPane extends JTabbedPane {

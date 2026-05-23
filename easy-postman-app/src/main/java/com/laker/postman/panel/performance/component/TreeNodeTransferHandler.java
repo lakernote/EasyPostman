@@ -2,6 +2,7 @@ package com.laker.postman.panel.performance.component;
 
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
+import com.laker.postman.service.http.HttpUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -40,10 +41,7 @@ public class TreeNodeTransferHandler extends TransferHandler {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
             Object userObj = node.getUserObject();
             if (userObj instanceof JMeterTreeNode jtNode) {
-                if (jtNode.type == NodeType.ROOT
-                        || jtNode.type == NodeType.SSE_CONNECT
-                        || jtNode.type == NodeType.SSE_AWAIT
-                        || jtNode.type == NodeType.WS_CONNECT) {
+                if (jtNode.type == NodeType.ROOT) {
                     return NONE;
                 }
             }
@@ -124,16 +122,19 @@ public class TreeNodeTransferHandler extends TransferHandler {
                 || dragJtNode.type == NodeType.WS_CLOSE) {
             return isWebSocketStepContainerTarget(targetNode);
         }
+        if (dragJtNode.type == NodeType.WS_CONNECT) {
+            return isWebSocketRequestTarget(targetNode);
+        }
+        if (dragJtNode.type == NodeType.SSE_CONNECT || dragJtNode.type == NodeType.SSE_AWAIT) {
+            return isSseStageContainerTarget(targetNode);
+        }
         if (dragJtNode.type == NodeType.LOOP) {
             if (isWebSocketScenarioNode(nodeToRemove)) {
                 return isWebSocketStepContainerTarget(targetNode);
             }
             return isRequestContainerTarget(targetNode);
         }
-        return dragJtNode.type != NodeType.ROOT
-                && dragJtNode.type != NodeType.SSE_CONNECT
-                && dragJtNode.type != NodeType.SSE_AWAIT
-                && dragJtNode.type != NodeType.WS_CONNECT;
+        return dragJtNode.type != NodeType.ROOT;
     }
 
     @Override
@@ -204,10 +205,31 @@ public class TreeNodeTransferHandler extends TransferHandler {
         if (jtNode.type == NodeType.LOOP) {
             return isWebSocketScenarioNode(targetNode);
         }
+        return isWebSocketRequestTarget(targetNode);
+    }
+
+    private boolean isWebSocketRequestTarget(DefaultMutableTreeNode targetNode) {
+        if (!(targetNode.getUserObject() instanceof JMeterTreeNode jtNode)) {
+            return false;
+        }
         return jtNode.type == NodeType.REQUEST
                 && jtNode.httpRequestItem != null
                 && jtNode.httpRequestItem.getProtocol() != null
                 && jtNode.httpRequestItem.getProtocol().isWebSocketProtocol();
+    }
+
+    private boolean isSseStageContainerTarget(DefaultMutableTreeNode targetNode) {
+        if (!(targetNode.getUserObject() instanceof JMeterTreeNode jtNode)) {
+            return false;
+        }
+        if (jtNode.type != NodeType.REQUEST
+                || jtNode.httpRequestItem == null
+                || jtNode.httpRequestItem.getProtocol() == null) {
+            return false;
+        }
+        return jtNode.httpRequestItem.getProtocol().isSseProtocol()
+                || (jtNode.httpRequestItem.getProtocol().isHttpProtocol()
+                && HttpUtil.isSSERequest(jtNode.httpRequestItem));
     }
 
     private boolean isWebSocketScenarioNode(DefaultMutableTreeNode node) {

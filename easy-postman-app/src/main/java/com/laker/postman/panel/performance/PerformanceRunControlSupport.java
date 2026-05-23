@@ -52,8 +52,9 @@ final class PerformanceRunControlSupport {
                     boolean efficientMode,
                     Consumer<Boolean> efficientModeSetter) {
         propertyPanelSupport.saveAllPropertyPanelData();
+        DefaultMutableTreeNode executionRootNode = PerformanceTreeSnapshot.copy(rootNode);
 
-        long estimatedRequests = executionEngine.estimateTotalRequests(rootNode);
+        long estimatedRequests = executionEngine.estimateTotalRequests(executionRootNode);
         final int highConcurrencyThreshold = 5000;
         if (estimatedRequests >= highConcurrencyThreshold && !efficientMode) {
             String message = I18nUtil.getMessage(
@@ -100,13 +101,13 @@ final class PerformanceRunControlSupport {
         executionEngine.beginRun(startTime);
         timerManager.startAll();
 
-        int totalThreads = executionEngine.getTotalThreads(rootNode);
+        int totalThreads = executionEngine.getTotalThreads(executionRootNode);
         progressLabel.setText("0/" + totalThreads);
 
         Thread runThread = PerformanceThreadFactory.newDaemonThread("PerformanceRun", () -> {
             try {
                 executionEngine.runJMeterTreeWithProgress(
-                        rootNode,
+                        executionRootNode,
                         totalThreads,
                         (active, total) -> SwingUtilities.invokeLater(() -> progressLabel.setText(active + "/" + total))
                 );

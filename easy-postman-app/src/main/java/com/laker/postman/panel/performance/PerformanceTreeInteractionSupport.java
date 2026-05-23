@@ -651,11 +651,12 @@ final class PerformanceTreeInteractionSupport {
         boolean isSseRequestNode = jtNode.type == NodeType.REQUEST && treeSupport.isSsePerfRequest(jtNode.httpRequestItem);
         boolean isWebSocketRequestNode = jtNode.type == NodeType.REQUEST && treeSupport.isWebSocketPerfRequest(jtNode.httpRequestItem);
         boolean canManageSseStages = treeSupport.resolveSseStageParent(node) != null;
+        boolean canManageWsConnect = treeSupport.resolveWebSocketConnectParent(node) != null;
         boolean canManageWsSteps = treeSupport.resolveWebSocketStepParent(node) != null;
         addLoop.setVisible(jtNode.type == NodeType.THREAD_GROUP || requestContainerLoop || canManageWsSteps);
         addSseConnect.setVisible(canManageSseStages);
         addSseAwait.setVisible(canManageSseStages);
-        addWsConnect.setVisible(canManageWsSteps);
+        addWsConnect.setVisible(canManageWsConnect);
         addWsSend.setVisible(canManageWsSteps);
         addWsAwait.setVisible(canManageWsSteps);
         addWsClose.setVisible(canManageWsSteps);

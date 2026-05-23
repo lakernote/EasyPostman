@@ -7,11 +7,11 @@ import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.controller.LoopData;
 import com.laker.postman.panel.performance.model.NodeType;
+import com.laker.postman.panel.performance.model.PerformanceProtocol;
 import com.laker.postman.panel.performance.model.SsePerformanceData;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.JsonUtil;
 import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
@@ -21,7 +21,6 @@ import javax.swing.tree.TreePath;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringJoiner;
-import java.util.UUID;
 import java.util.function.Predicate;
 
 final class PerformanceTreeSupport {
@@ -48,6 +47,16 @@ final class PerformanceTreeSupport {
 
     boolean isWebSocketPerfRequest(HttpRequestItem item) {
         return resolveRequestProtocol(item).isWebSocketProtocol();
+    }
+
+    PerformanceProtocol resolvePerformanceProtocol(HttpRequestItem item) {
+        if (isWebSocketPerfRequest(item)) {
+            return PerformanceProtocol.WEBSOCKET;
+        }
+        if (isSsePerfRequest(item)) {
+            return PerformanceProtocol.SSE;
+        }
+        return PerformanceProtocol.HTTP;
     }
 
     DefaultMutableTreeNode getParentRequestNode(DefaultMutableTreeNode node) {
@@ -134,8 +143,12 @@ final class PerformanceTreeSupport {
 
     void addWebSocketStepNode(JTree jmeterTree, NodeType type, Runnable saveConfigAction) {
         DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
-        DefaultMutableTreeNode parentNode = resolveWebSocketStepParent(selectedNode);
-        DefaultMutableTreeNode requestNode = getParentWebSocketRequestNode(parentNode);
+        DefaultMutableTreeNode parentNode = type == NodeType.WS_CONNECT
+                ? resolveWebSocketConnectParent(selectedNode)
+                : resolveWebSocketStepParent(selectedNode);
+        DefaultMutableTreeNode requestNode = type == NodeType.WS_CONNECT
+                ? parentNode
+                : getParentWebSocketRequestNode(parentNode);
         if (parentNode == null || requestNode == null || !(requestNode.getUserObject() instanceof JMeterTreeNode requestJtNode)) {
             return;
         }
@@ -143,12 +156,17 @@ final class PerformanceTreeSupport {
                 ? requestJtNode.webSocketPerformanceData
                 : new WebSocketPerformanceData();
         DefaultMutableTreeNode newNode = createWebSocketStepNode(type, defaults);
-        int insertIndex = parentNode.getChildCount();
-        if (selectedNode != null && selectedNode.getParent() == parentNode) {
-            insertIndex = parentNode.getIndex(selectedNode) + 1;
-        }
-        if (parentNode == requestNode) {
-            insertIndex = Math.max(1, insertIndex);
+        int insertIndex;
+        if (type == NodeType.WS_CONNECT) {
+            insertIndex = resolveWebSocketConnectInsertIndex(requestNode, selectedNode);
+        } else {
+            insertIndex = parentNode.getChildCount();
+            if (selectedNode != null && selectedNode.getParent() == parentNode) {
+                insertIndex = parentNode.getIndex(selectedNode) + 1;
+            }
+            if (parentNode == requestNode) {
+                insertIndex = Math.max(1, insertIndex);
+            }
         }
         treeModel.insertNodeInto(newNode, parentNode, Math.min(insertIndex, parentNode.getChildCount()));
         refreshWebSocketStepTitles(requestNode);
@@ -382,36 +400,16 @@ final class PerformanceTreeSupport {
     }
 
     private DefaultMutableTreeNode copyTreeNode(DefaultMutableTreeNode source) {
-        JMeterTreeNode sourceData = source.getUserObject() instanceof JMeterTreeNode jtNode ? jtNode : null;
-        DefaultMutableTreeNode copy = new DefaultMutableTreeNode(copyNodeData(sourceData));
-        for (int i = 0; i < source.getChildCount(); i++) {
-            copy.add(copyTreeNode((DefaultMutableTreeNode) source.getChildAt(i)));
-        }
-        return copy;
-    }
-
-    private JMeterTreeNode copyNodeData(JMeterTreeNode source) {
-        if (source == null) {
-            return new JMeterTreeNode("", NodeType.ROOT);
-        }
-        JMeterTreeNode copy = new JMeterTreeNode(source.name, source.type);
-        copy.enabled = source.enabled;
-        copy.threadGroupData = JsonUtil.deepCopy(source.threadGroupData, com.laker.postman.panel.performance.threadgroup.ThreadGroupData.class);
-        copy.loopData = JsonUtil.deepCopy(source.loopData, LoopData.class);
-        copy.httpRequestItem = JsonUtil.deepCopy(source.httpRequestItem, HttpRequestItem.class);
-        if (copy.httpRequestItem != null) {
-            copy.httpRequestItem.setId(UUID.randomUUID().toString());
-        }
-        copy.assertionData = JsonUtil.deepCopy(source.assertionData, com.laker.postman.panel.performance.assertion.AssertionData.class);
-        copy.timerData = JsonUtil.deepCopy(source.timerData, com.laker.postman.panel.performance.timer.TimerData.class);
-        copy.ssePerformanceData = JsonUtil.deepCopy(source.ssePerformanceData, SsePerformanceData.class);
-        copy.webSocketPerformanceData = JsonUtil.deepCopy(source.webSocketPerformanceData, WebSocketPerformanceData.class);
-        return copy;
+        return PerformanceTreeSnapshot.copyForPaste(source);
     }
 
     private PasteLocation resolvePasteLocation(DefaultMutableTreeNode targetNode, List<DefaultMutableTreeNode> copiedNodes) {
         if (targetNode == null || copiedNodes == null || copiedNodes.isEmpty()) {
             return null;
+        }
+        PasteLocation webSocketConnectLocation = resolveWebSocketConnectPasteLocation(targetNode, copiedNodes);
+        if (webSocketConnectLocation != null) {
+            return webSocketConnectLocation;
         }
         if (canAcceptAll(targetNode, copiedNodes)) {
             return new PasteLocation(targetNode, targetNode.getChildCount());
@@ -447,7 +445,7 @@ final class PerformanceTreeSupport {
                     || isRequestContainerLoop(parentNode)
                     || isWebSocketStepContainerTarget(parentNode);
             case SSE_CONNECT, SSE_AWAIT -> isSseStageContainerTarget(parentNode);
-            case WS_CONNECT -> isWebSocketStepContainerTarget(parentNode);
+            case WS_CONNECT -> isWebSocketRequestTarget(parentNode);
             case WS_SEND, WS_AWAIT, WS_CLOSE -> isWebSocketStepContainerTarget(parentNode);
             case LOOP -> canAcceptLoop(parentNode, childNode);
             case ROOT -> false;
@@ -455,10 +453,12 @@ final class PerformanceTreeSupport {
     }
 
     private boolean canAcceptLoop(DefaultMutableTreeNode parentNode, DefaultMutableTreeNode loopNode) {
+        if (containsNodeType(loopNode, NodeType.WS_CONNECT)) {
+            return false;
+        }
         boolean hasRequest = containsNodeType(loopNode, NodeType.REQUEST);
         boolean hasWebSocketStep = containsAnyNodeType(
                 loopNode,
-                NodeType.WS_CONNECT,
                 NodeType.WS_SEND,
                 NodeType.WS_AWAIT,
                 NodeType.WS_CLOSE
@@ -486,12 +486,19 @@ final class PerformanceTreeSupport {
         return jtNode.type == NodeType.REQUEST && isSsePerfRequest(jtNode.httpRequestItem);
     }
 
+    private boolean isWebSocketRequestTarget(DefaultMutableTreeNode node) {
+        if (node == null || !(node.getUserObject() instanceof JMeterTreeNode jtNode)) {
+            return false;
+        }
+        return jtNode.type == NodeType.REQUEST && isWebSocketPerfRequest(jtNode.httpRequestItem);
+    }
+
     private boolean isWebSocketStepContainerTarget(DefaultMutableTreeNode node) {
         if (node == null || !(node.getUserObject() instanceof JMeterTreeNode jtNode)) {
             return false;
         }
         if (jtNode.type == NodeType.REQUEST) {
-            return isWebSocketPerfRequest(jtNode.httpRequestItem);
+            return isWebSocketRequestTarget(node);
         }
         return jtNode.type == NodeType.LOOP && getParentWebSocketRequestNode(node) != null;
     }
@@ -527,6 +534,48 @@ final class PerformanceTreeSupport {
     }
 
     private record PasteLocation(DefaultMutableTreeNode parent, int index) {
+    }
+
+    private PasteLocation resolveWebSocketConnectPasteLocation(DefaultMutableTreeNode targetNode,
+                                                              List<DefaultMutableTreeNode> copiedNodes) {
+        boolean containsWebSocketConnect = copiedNodes.stream()
+                .anyMatch(node -> isNodeType(node, NodeType.WS_CONNECT));
+        if (!containsWebSocketConnect) {
+            return null;
+        }
+        DefaultMutableTreeNode requestNode = resolveWebSocketConnectParent(targetNode);
+        if (requestNode == null || !canAcceptAll(requestNode, copiedNodes)) {
+            return null;
+        }
+        return new PasteLocation(requestNode, resolveWebSocketConnectInsertIndex(requestNode, targetNode));
+    }
+
+    DefaultMutableTreeNode resolveWebSocketConnectParent(DefaultMutableTreeNode selectedNode) {
+        if (selectedNode == null || !(selectedNode.getUserObject() instanceof JMeterTreeNode jtNode)) {
+            return null;
+        }
+        if (jtNode.type == NodeType.REQUEST && isWebSocketPerfRequest(jtNode.httpRequestItem)) {
+            return selectedNode;
+        }
+        return getParentWebSocketRequestNode(selectedNode);
+    }
+
+    private int resolveWebSocketConnectInsertIndex(DefaultMutableTreeNode requestNode,
+                                                   DefaultMutableTreeNode selectedNode) {
+        if (requestNode == null) {
+            return 0;
+        }
+        if (selectedNode != null
+                && selectedNode.getParent() == requestNode
+                && isNodeType(selectedNode, NodeType.WS_CONNECT)) {
+            return requestNode.getIndex(selectedNode) + 1;
+        }
+        int insertIndex = 0;
+        while (insertIndex < requestNode.getChildCount()
+                && isNodeType((DefaultMutableTreeNode) requestNode.getChildAt(insertIndex), NodeType.WS_CONNECT)) {
+            insertIndex++;
+        }
+        return insertIndex;
     }
 
     DefaultMutableTreeNode resolveWebSocketStepParent(DefaultMutableTreeNode selectedNode) {

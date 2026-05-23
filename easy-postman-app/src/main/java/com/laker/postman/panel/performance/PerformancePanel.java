@@ -16,6 +16,7 @@ import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
 import com.laker.postman.panel.performance.model.ApiMetadata;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
+import com.laker.postman.panel.performance.model.PerformanceProtocol;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
@@ -420,13 +421,13 @@ public class PerformancePanel extends SingletonBasePanel {
     }
 
     private void saveRequestNodeData(DefaultMutableTreeNode node) {
-        RequestItemProtocolEnum oldProtocol = RequestItemProtocolEnum.HTTP;
+        PerformanceProtocol oldProtocol = PerformanceProtocol.HTTP;
         if (node != null && node.getUserObject() instanceof JMeterTreeNode jtNode) {
-            oldProtocol = resolveRequestProtocol(jtNode.httpRequestItem);
+            oldProtocol = treeSupport.resolvePerformanceProtocol(jtNode.httpRequestItem);
         }
         requestEditorSupport.saveRequestNodeData(node, this::syncRequestStructure);
         if (node != null && node.getUserObject() instanceof JMeterTreeNode jtNode) {
-            RequestItemProtocolEnum newProtocol = resolveRequestProtocol(jtNode.httpRequestItem);
+            PerformanceProtocol newProtocol = treeSupport.resolvePerformanceProtocol(jtNode.httpRequestItem);
             if (oldProtocol != newProtocol) {
                 ensureRequestStructure(node, jtNode);
             }
@@ -625,6 +626,9 @@ public class PerformancePanel extends SingletonBasePanel {
     }
 
     private void clearCachedPerformanceResults() {
+        if (statisticsCoordinator != null) {
+            statisticsCoordinator.resetForNewRun();
+        }
         performanceResultTablePanel.clearResults();
         performanceReportPanel.clearReport();
         performanceTrendPanel.clearTrendDataset();

@@ -8,6 +8,7 @@ import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.script.TestResult;
 import com.laker.postman.panel.performance.model.ApiMetadata;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.PerformanceProtocol;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
@@ -247,6 +248,10 @@ public class PerformanceRequestExecutor {
                                                      String requestBodyTemplate,
                                                      ScriptExecutionPipeline pipeline) throws Exception {
         if (webSocketRequest) {
+            ProtocolExecutionResult invalidStageResult = validateProtocolStages(requestNode, false, true);
+            if (invalidStageResult != null) {
+                return invalidStageResult;
+            }
             WebSocketScenarioExecutor.Result result = new WebSocketScenarioExecutor(
                     runningSupplier,
                     cancelledChecker,
@@ -265,6 +270,10 @@ public class PerformanceRequestExecutor {
             return new ProtocolExecutionResult(result.response, result.errorMsg, result.executionFailed, result.interrupted, result.testResults);
         }
         if (sseRequest) {
+            ProtocolExecutionResult invalidStageResult = validateProtocolStages(requestNode, true, false);
+            if (invalidStageResult != null) {
+                return invalidStageResult;
+            }
             SseSampleExecutor.Result result = new SseSampleExecutor(
                     runningSupplier,
                     cancelledChecker,
@@ -275,6 +284,37 @@ public class PerformanceRequestExecutor {
             return new ProtocolExecutionResult(result.response, result.errorMsg, result.executionFailed, result.interrupted, new ArrayList<>());
         }
         return new ProtocolExecutionResult(HttpSingleRequestExecutor.executeHttp(req), "", false, false, new ArrayList<>());
+    }
+
+    private ProtocolExecutionResult validateProtocolStages(DefaultMutableTreeNode requestNode,
+                                                           boolean sseRequest,
+                                                           boolean webSocketRequest) {
+        if (webSocketRequest && !hasEnabledDirectChild(requestNode, NodeType.WS_CONNECT)) {
+            return failedProtocolResult(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_WS_CONNECT_STAGE_REQUIRED));
+        }
+        if (sseRequest && (!hasEnabledDirectChild(requestNode, NodeType.SSE_CONNECT)
+                || !hasEnabledDirectChild(requestNode, NodeType.SSE_AWAIT))) {
+            return failedProtocolResult(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_SSE_STAGE_REQUIRED));
+        }
+        return null;
+    }
+
+    private boolean hasEnabledDirectChild(DefaultMutableTreeNode parent, NodeType type) {
+        if (parent == null || type == null) {
+            return false;
+        }
+        for (int i = 0; i < parent.getChildCount(); i++) {
+            DefaultMutableTreeNode child = (DefaultMutableTreeNode) parent.getChildAt(i);
+            Object userObject = child.getUserObject();
+            if (userObject instanceof JMeterTreeNode node && node.type == type && node.enabled) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private ProtocolExecutionResult failedProtocolResult(String message) {
+        return new ProtocolExecutionResult(null, message, true, false, new ArrayList<>());
     }
 
     private boolean isSseRequest(HttpRequestItem item) {

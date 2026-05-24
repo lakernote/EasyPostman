@@ -3,7 +3,7 @@ package com.laker.postman.ioc;
 import java.lang.annotation.*;
 
 /**
- * 标记需要自动注入的字段
+ * 标记需要自动注入的字段、构造函数或方法
  */
 @Target({ElementType.FIELD, ElementType.CONSTRUCTOR, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
@@ -14,4 +14,3 @@ public @interface Autowired {
      */
     boolean required() default true;
 }
-

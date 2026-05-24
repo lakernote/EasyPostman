@@ -193,6 +193,15 @@ public class ApplicationContext {
             // 默认使用类名首字母小写作为bean名称
             beanName = getBeanName(clazz);
         }
+        BeanDefinition existingDefinition = beanDefinitionMap.get(beanName);
+        if (existingDefinition != null) {
+            if (existingDefinition.getBeanClass().equals(clazz)) {
+                log.debug("Skipped duplicate bean registration: {} -> {}", beanName, clazz.getName());
+                return;
+            }
+            throw new BeanException("Duplicate bean name '" + beanName + "' for classes "
+                    + existingDefinition.getBeanClass().getName() + " and " + clazz.getName());
+        }
 
         // 检查作用域：默认为单例，除非明确指定为 prototype
         boolean singleton = true;
@@ -206,7 +215,7 @@ public class ApplicationContext {
         beanDefinitionMap.put(beanName, beanDefinition);
 
         // 建立类型索引
-        typeIndexMap.computeIfAbsent(clazz, k -> new ArrayList<>()).add(beanName);
+        indexType(clazz, beanName);
 
         // 同时索引所有接口和父类
         indexInterfaces(clazz, beanName);
@@ -221,15 +230,25 @@ public class ApplicationContext {
         // 索引接口
         Class<?>[] interfaces = clazz.getInterfaces();
         for (Class<?> iface : interfaces) {
-            typeIndexMap.computeIfAbsent(iface, k -> new ArrayList<>()).add(beanName);
+            indexType(iface, beanName);
         }
 
         // 索引父类
         Class<?> superClass = clazz.getSuperclass();
         if (superClass != null && superClass != Object.class) {
-            typeIndexMap.computeIfAbsent(superClass, k -> new ArrayList<>()).add(beanName);
+            indexType(superClass, beanName);
             indexInterfaces(superClass, beanName);
         }
+    }
+
+    private void indexType(Class<?> type, String beanName) {
+        typeIndexMap.compute(type, (ignored, beanNames) -> {
+            List<String> indexedBeanNames = beanNames != null ? beanNames : new ArrayList<>();
+            if (!indexedBeanNames.contains(beanName)) {
+                indexedBeanNames.add(beanName);
+            }
+            return indexedBeanNames;
+        });
     }
 
     /**
@@ -243,7 +262,7 @@ public class ApplicationContext {
         singletonObjects.put(beanName, bean);
 
         // 建立类型索引
-        typeIndexMap.computeIfAbsent(bean.getClass(), k -> new ArrayList<>()).add(beanName);
+        indexType(bean.getClass(), beanName);
         indexInterfaces(bean.getClass(), beanName);
 
         log.debug("Registered bean instance: {} -> {}", beanName, bean.getClass().getName());
@@ -335,6 +354,11 @@ public class ApplicationContext {
             }
         }
 
+        if (singletonObject == null && singletonsCurrentlyInCreation.contains(beanName)) {
+            throw new BeanCreationException(beanName,
+                    "Circular constructor dependency cannot be resolved before bean instantiation is complete");
+        }
+
         // 4. 如果所有缓存都没有，创建新的Bean
         if (singletonObject == null) {
             // 使用同步锁保证单例Bean只被创建一次
@@ -391,6 +415,7 @@ public class ApplicationContext {
             }
 
             injectFields(instance);
+            injectMethods(instance);
 
             invokePostConstruct(instance);
             invokeInitializingBean(instance);
@@ -406,6 +431,57 @@ public class ApplicationContext {
         } catch (Exception e) {
             throw new BeanCreationException(beanName, e);
         }
+    }
+
+    /**
+     * 方法注入
+     */
+    private void injectMethods(Object instance) {
+        Class<?> clazz = instance.getClass();
+
+        while (clazz != null && clazz != Object.class) {
+            Method[] methods = clazz.getDeclaredMethods();
+
+            for (Method method : methods) {
+                if (method.isAnnotationPresent(Autowired.class)) {
+                    Autowired autowired = method.getAnnotation(Autowired.class);
+                    try {
+                        Object[] arguments = resolveMethodArguments(method);
+                        method.setAccessible(true);
+                        method.invoke(instance, arguments);
+                        log.debug("Injected method '{}' in bean '{}'",
+                                method.getName(), instance.getClass().getSimpleName());
+                    } catch (NoSuchBeanException e) {
+                        if (autowired.required()) {
+                            throw new BeanCreationException(
+                                    instance.getClass().getSimpleName(),
+                                    "Failed to inject required method '" + method.getName() + "': " + e.getMessage(),
+                                    e
+                            );
+                        } else {
+                            log.debug("Skipped optional method injection: {}.{}", clazz.getSimpleName(), method.getName());
+                        }
+                    } catch (Exception e) {
+                        throw new BeanCreationException(
+                                instance.getClass().getSimpleName(),
+                                "Failed to inject method '" + method.getName() + "'",
+                                e
+                        );
+                    }
+                }
+            }
+
+            clazz = clazz.getSuperclass();
+        }
+    }
+
+    private Object[] resolveMethodArguments(Method method) {
+        Class<?>[] parameterTypes = method.getParameterTypes();
+        Object[] arguments = new Object[parameterTypes.length];
+        for (int i = 0; i < parameterTypes.length; i++) {
+            arguments[i] = getBean(parameterTypes[i]);
+        }
+        return arguments;
     }
 
     /**

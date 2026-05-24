@@ -22,9 +22,12 @@ import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.PerformanceProtocol;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
+import com.laker.postman.panel.performance.model.PerformanceResultListener;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
+import com.laker.postman.panel.performance.model.PerformanceStatsCollectorListener;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
+import com.laker.postman.panel.performance.result.PerformanceResultTableVisualizer;
 import com.laker.postman.panel.performance.result.PerformanceTrendPanel;
 import com.laker.postman.panel.performance.runtime.PerformanceExecutionEngine;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
@@ -41,6 +44,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import java.awt.*;
+import java.util.List;
 
 /**
  * 左侧多层级树（用户组-请求-断言-定时器），右侧属性区，底部Tab结果区
@@ -261,14 +265,20 @@ public class PerformancePanel extends SingletonBasePanel {
         progressLabel = toolbarSection.progressLabel();
         add(topPanel, BorderLayout.NORTH);
 
+        List<PerformanceResultListener> resultListeners = List.of(
+                new PerformanceStatsCollectorListener(statsCollector),
+                new PerformanceResultTableVisualizer(
+                        performanceResultTablePanel,
+                        SettingManager::getJmeterSlowRequestThreshold
+                )
+        );
         executionEngine = new PerformanceExecutionEngine(
                 this,
                 () -> running,
                 () -> efficientMode,
                 SettingManager::getPerformanceResponseBodyPreviewLimitKb,
                 csvDataPanel,
-                statsCollector,
-                performanceResultTablePanel
+                resultListeners
         );
         runControlSupport = new PerformanceRunControlSupport(
                 this,

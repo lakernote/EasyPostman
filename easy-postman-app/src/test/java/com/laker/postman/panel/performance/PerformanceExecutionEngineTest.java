@@ -8,9 +8,11 @@ import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.controller.LoopData;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
+import com.laker.postman.panel.performance.model.PerformanceStatsCollectorListener;
 import com.laker.postman.panel.performance.model.SsePerformanceData;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
+import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import com.laker.postman.panel.performance.runtime.PerformanceExecutionEngine;
 import com.laker.postman.panel.performance.runtime.PerformanceIterationContextFactory;
 import com.laker.postman.panel.performance.runtime.PerformancePlanExecutor;
@@ -39,6 +41,11 @@ public class PerformanceExecutionEngineTest {
     @Test
     public void executionApisShouldNotExposeSwingTreeCompatibilityMethods() {
         assertFalse(hasDefaultMutableTreeNodeParameter(PerformanceExecutionEngine.class));
+    }
+
+    @Test
+    public void executionEngineShouldNotExposeSwingResultTablePanelParameters() {
+        assertFalse(hasParameterType(PerformanceExecutionEngine.class, PerformanceResultTablePanel.class));
     }
 
     @Test(timeOut = 3000)
@@ -89,8 +96,7 @@ public class PerformanceExecutionEngineTest {
                 () -> true,
                 () -> 4,
                 null,
-                new PerformanceStatsCollector(),
-                null
+                List.of()
         );
 
         assertEquals(engine.getTotalThreads(PerformanceTestPlanCompiler.compile(root)), 1);
@@ -120,8 +126,7 @@ public class PerformanceExecutionEngineTest {
                 () -> true,
                 () -> 4,
                 null,
-                new PerformanceStatsCollector(),
-                null
+                List.of()
         );
 
         assertEquals(engine.estimateTotalRequests(PerformanceTestPlanCompiler.compile(root)), 400L);
@@ -158,8 +163,7 @@ public class PerformanceExecutionEngineTest {
                 () -> true,
                 () -> 4,
                 null,
-                new PerformanceStatsCollector(),
-                null
+                List.of()
         );
 
         assertEquals(engine.estimateTotalRequests(PerformanceTestPlanCompiler.compile(root)), 10_000_000_000L);
@@ -202,8 +206,7 @@ public class PerformanceExecutionEngineTest {
                     () -> false,
                     () -> 4,
                     null,
-                    statsCollector,
-                    null
+                    List.of(new PerformanceStatsCollectorListener(statsCollector))
             );
 
             engine.runTestPlanWithProgress(PerformanceTestPlanCompiler.compile(group), 1, (active, total) -> {
@@ -241,8 +244,7 @@ public class PerformanceExecutionEngineTest {
                     () -> false,
                     () -> 4,
                     null,
-                    statsCollector,
-                    null
+                    List.of(new PerformanceStatsCollectorListener(statsCollector))
             ).runTestPlanWithProgress(PerformanceTestPlanCompiler.compile(group), 1, (active, total) -> {
             });
 
@@ -277,8 +279,7 @@ public class PerformanceExecutionEngineTest {
                     () -> false,
                     () -> 4,
                     null,
-                    statsCollector,
-                    null
+                    List.of(new PerformanceStatsCollectorListener(statsCollector))
             ).runTestPlanWithProgress(PerformanceTestPlanCompiler.compile(group), 1, (active, total) -> {
             });
 
@@ -316,8 +317,7 @@ public class PerformanceExecutionEngineTest {
                     () -> false,
                     () -> 4,
                     null,
-                    statsCollector,
-                    null
+                    List.of(new PerformanceStatsCollectorListener(statsCollector))
             ).runTestPlanWithProgress(PerformanceTestPlanCompiler.compile(group), 1, (active, total) -> {
             });
 
@@ -401,8 +401,16 @@ public class PerformanceExecutionEngineTest {
     }
 
     private static boolean hasDefaultMutableTreeNodeParameter(Class<?> type) {
-        return java.util.Arrays.stream(type.getMethods())
+        return hasParameterType(type, DefaultMutableTreeNode.class);
+    }
+
+    private static boolean hasParameterType(Class<?> type, Class<?> parameterType) {
+        boolean methodParameter = java.util.Arrays.stream(type.getMethods())
                 .flatMap(method -> java.util.Arrays.stream(method.getParameterTypes()))
-                .anyMatch(DefaultMutableTreeNode.class::equals);
+                .anyMatch(parameterType::equals);
+        boolean constructorParameter = java.util.Arrays.stream(type.getConstructors())
+                .flatMap(constructor -> java.util.Arrays.stream(constructor.getParameterTypes()))
+                .anyMatch(parameterType::equals);
+        return methodParameter || constructorParameter;
     }
 }

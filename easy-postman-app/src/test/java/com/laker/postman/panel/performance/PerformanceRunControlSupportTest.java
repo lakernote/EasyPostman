@@ -10,14 +10,17 @@ import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
+import com.laker.postman.panel.performance.model.PerformanceStatsCollectorListener;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
+import com.laker.postman.panel.performance.result.PerformanceResultTableVisualizer;
 import com.laker.postman.panel.performance.runtime.PerformanceExecutionEngine;
 import com.laker.postman.test.AbstractSwingUiTest;
 import org.testng.annotations.Test;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -62,8 +65,10 @@ public class PerformanceRunControlSupportTest extends AbstractSwingUiTest {
                             () -> false,
                             () -> 64,
                             null,
-                            statsCollector,
-                            resultTablePanel
+                            List.of(
+                                    new PerformanceStatsCollectorListener(statsCollector),
+                                    new PerformanceResultTableVisualizer(resultTablePanel, () -> 500)
+                            )
                     ),
                     statisticsCoordinator,
                     timerManager,

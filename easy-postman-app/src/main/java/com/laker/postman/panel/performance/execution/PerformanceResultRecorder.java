@@ -1,41 +1,19 @@
 package com.laker.postman.panel.performance.execution;
 
-import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
 import com.laker.postman.panel.performance.model.PerformanceResultListener;
 import com.laker.postman.panel.performance.model.PerformanceSampleEvent;
 import com.laker.postman.panel.performance.model.PerformanceSampleResult;
-import com.laker.postman.panel.performance.model.RequestResult;
 import com.laker.postman.panel.performance.model.PerformanceProtocol;
-import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.IntSupplier;
 
 public class PerformanceResultRecorder {
 
     private final List<PerformanceResultListener> listeners;
 
-    public PerformanceResultRecorder(PerformanceStatsCollector statsCollector,
-                                     PerformanceResultTablePanel resultTablePanel,
-                                     IntSupplier slowRequestThresholdSupplier) {
-        this(defaultListeners(statsCollector, resultTablePanel, slowRequestThresholdSupplier));
-    }
-
     public PerformanceResultRecorder(List<PerformanceResultListener> listeners) {
         this.listeners = List.copyOf(listeners == null ? List.of() : listeners);
-    }
-
-    private static List<PerformanceResultListener> defaultListeners(PerformanceStatsCollector statsCollector,
-                                                                    PerformanceResultTablePanel resultTablePanel,
-                                                                    IntSupplier slowRequestThresholdSupplier) {
-        List<PerformanceResultListener> resultListeners = new ArrayList<>();
-        resultListeners.add(new PerformanceStatsResultListener(statsCollector));
-        if (resultTablePanel != null) {
-            resultListeners.add(new PerformanceResultTableListener(resultTablePanel, slowRequestThresholdSupplier));
-        }
-        return resultListeners;
     }
 
     public void record(PerformanceRequestExecutionResult executionResult, boolean efficientMode) {
@@ -55,19 +33,6 @@ public class PerformanceResultRecorder {
         for (PerformanceResultListener listener : listeners) {
             listener.onSample(event);
         }
-    }
-
-    static boolean shouldRecordResult(boolean efficientMode,
-                                      boolean actualSuccess,
-                                      long costMs,
-                                      int slowRequestThresholdMs) {
-        if (!efficientMode) {
-            return true;
-        }
-        if (!actualSuccess) {
-            return true;
-        }
-        return slowRequestThresholdMs > 0 && costMs >= slowRequestThresholdMs;
     }
 
     private boolean isRecordableInterruptedResult(PerformanceRequestExecutionResult executionResult) {
@@ -99,36 +64,13 @@ public class PerformanceResultRecorder {
         return false;
     }
 
-    private boolean hasAnyPositiveHeader(Map<String, List<String>> headers, String... names) {
+    private static boolean hasAnyPositiveHeader(Map<String, List<String>> headers, String... names) {
         for (String name : names) {
             if (headerLong(headers, name, 0) > 0) {
                 return true;
             }
         }
         return false;
-    }
-
-    static RequestResult toRequestResult(PerformanceRequestExecutionResult executionResult,
-                                         long costMs,
-                                         long endTime,
-                                         boolean actualSuccess) {
-        RequestResult result = new RequestResult(
-                executionResult.requestStartTime,
-                endTime,
-                actualSuccess,
-                executionResult.apiId,
-                executionResult.protocol
-        );
-        result.endTime = endTime;
-        PerformanceSampleResult sampleResult = PerformanceSampleResult.fromExecutionResult(executionResult);
-        if (sampleResult == null) {
-            return result;
-        }
-        result.sentMessages = sampleResult.getSentMessages();
-        result.receivedMessages = sampleResult.getReceivedMessages();
-        result.matchedMessages = sampleResult.getMatchedMessages();
-        result.firstMessageLatencyMs = sampleResult.getFirstMessageLatencyMs();
-        return result;
     }
 
     private static long headerLong(Map<String, List<String>> headers, String name, long defaultValue) {

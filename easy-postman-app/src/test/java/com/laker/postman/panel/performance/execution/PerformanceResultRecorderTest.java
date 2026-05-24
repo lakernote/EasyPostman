@@ -2,12 +2,16 @@ package com.laker.postman.panel.performance.execution;
 
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.panel.performance.model.PerformanceResultRetentionPolicy;
+import com.laker.postman.panel.performance.model.PerformanceSampleResult;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
+import com.laker.postman.panel.performance.model.PerformanceStatsCollectorListener;
 import com.laker.postman.panel.performance.model.PerformanceStatsSnapshot;
 import com.laker.postman.panel.performance.model.PerformanceProtocol;
 import com.laker.postman.panel.performance.model.RequestResult;
 import com.laker.postman.panel.performance.model.ResultNodeInfo;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
+import com.laker.postman.panel.performance.result.PerformanceResultTableVisualizer;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -20,12 +24,18 @@ import static org.testng.Assert.assertTrue;
 public class PerformanceResultRecorderTest {
 
     @Test
+    public void recorderShouldOnlyBeWiredWithExplicitResultListeners() {
+        assertFalse(hasConstructorParameter(PerformanceResultRecorder.class, PerformanceStatsCollector.class));
+        assertFalse(hasConstructorParameter(PerformanceResultRecorder.class, PerformanceResultTablePanel.class));
+    }
+
+    @Test
     public void shouldOnlyRecordSlowOrFailedResultsInEfficientMode() {
-        assertFalse(PerformanceResultRecorder.shouldRecordResult(true, true, 1200, 3000));
-        assertTrue(PerformanceResultRecorder.shouldRecordResult(true, true, 3000, 3000));
-        assertTrue(PerformanceResultRecorder.shouldRecordResult(true, false, 100, 3000));
-        assertTrue(PerformanceResultRecorder.shouldRecordResult(false, true, 100, 3000));
-        assertFalse(PerformanceResultRecorder.shouldRecordResult(true, true, 5000, 0));
+        assertFalse(PerformanceResultRetentionPolicy.shouldRecord(true, true, 1200, 3000));
+        assertTrue(PerformanceResultRetentionPolicy.shouldRecord(true, true, 3000, 3000));
+        assertTrue(PerformanceResultRetentionPolicy.shouldRecord(true, false, 100, 3000));
+        assertTrue(PerformanceResultRetentionPolicy.shouldRecord(false, true, 100, 3000));
+        assertFalse(PerformanceResultRetentionPolicy.shouldRecord(true, true, 5000, 0));
     }
 
     @Test
@@ -53,7 +63,7 @@ public class PerformanceResultRecorderTest {
                 0L
         );
 
-        RequestResult result = PerformanceResultRecorder.toRequestResult(executionResult, 5000, 6000, true);
+        RequestResult result = PerformanceSampleResult.fromExecutionResult(executionResult).toRequestResult();
 
         assertEquals(result.protocol, PerformanceProtocol.WEBSOCKET);
         assertEquals(result.sentMessages, 2);
@@ -86,7 +96,7 @@ public class PerformanceResultRecorderTest {
                 0L
         );
 
-        RequestResult result = PerformanceResultRecorder.toRequestResult(executionResult, 5000, 6000, true);
+        RequestResult result = PerformanceSampleResult.fromExecutionResult(executionResult).toRequestResult();
 
         assertEquals(result.protocol, PerformanceProtocol.SSE);
         assertEquals(result.receivedMessages, 4);
@@ -108,11 +118,7 @@ public class PerformanceResultRecorderTest {
             response.addHeader("X-Easy-WS-Received-Count", List.of("7"));
             response.addHeader("X-Easy-WS-Message-Count", List.of("3"));
 
-            PerformanceResultRecorder recorder = new PerformanceResultRecorder(
-                    statsCollector,
-                    tablePanel,
-                    () -> 3_000
-            );
+            PerformanceResultRecorder recorder = newRecorder(statsCollector, tablePanel);
 
             recorder.record(new PerformanceRequestExecutionResult(
                     "api-ws",
@@ -155,11 +161,7 @@ public class PerformanceResultRecorderTest {
             response.endTime = 1100;
             response.addHeader("X-Easy-WS-Sent-Count", List.of("1"));
 
-            PerformanceResultRecorder recorder = new PerformanceResultRecorder(
-                    statsCollector,
-                    tablePanel,
-                    () -> 3_000
-            );
+            PerformanceResultRecorder recorder = newRecorder(statsCollector, tablePanel);
 
             recorder.record(new PerformanceRequestExecutionResult(
                     "api-ws",
@@ -194,11 +196,7 @@ public class PerformanceResultRecorderTest {
             response.endTime = 1100;
             response.addHeader("X-Easy-WS-Sent-Count", List.of("1"));
 
-            PerformanceResultRecorder recorder = new PerformanceResultRecorder(
-                    statsCollector,
-                    tablePanel,
-                    () -> 3_000
-            );
+            PerformanceResultRecorder recorder = newRecorder(statsCollector, tablePanel);
 
             recorder.record(new PerformanceRequestExecutionResult(
                     "api-ws",
@@ -226,11 +224,7 @@ public class PerformanceResultRecorderTest {
         PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
         RecordingResultTablePanel tablePanel = new RecordingResultTablePanel();
         try {
-            PerformanceResultRecorder recorder = new PerformanceResultRecorder(
-                    statsCollector,
-                    tablePanel,
-                    () -> 3_000
-            );
+            PerformanceResultRecorder recorder = newRecorder(statsCollector, tablePanel);
 
             for (int i = 0; i < 10_000; i++) {
                 HttpResponse response = new HttpResponse();
@@ -271,5 +265,19 @@ public class PerformanceResultRecorderTest {
         public void addResult(ResultNodeInfo info) {
             recordedRows++;
         }
+    }
+
+    private static PerformanceResultRecorder newRecorder(PerformanceStatsCollector statsCollector,
+                                                         PerformanceResultTablePanel tablePanel) {
+        return new PerformanceResultRecorder(List.of(
+                new PerformanceStatsCollectorListener(statsCollector),
+                new PerformanceResultTableVisualizer(tablePanel, () -> 3_000)
+        ));
+    }
+
+    private static boolean hasConstructorParameter(Class<?> type, Class<?> parameterType) {
+        return java.util.Arrays.stream(type.getConstructors())
+                .flatMap(constructor -> java.util.Arrays.stream(constructor.getParameterTypes()))
+                .anyMatch(parameterType::equals);
     }
 }

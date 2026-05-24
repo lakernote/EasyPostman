@@ -1,20 +1,15 @@
-package com.laker.postman.panel.performance.execution;
+package com.laker.postman.panel.performance.result;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.panel.performance.model.PerformanceInternalHeaders;
 import com.laker.postman.panel.performance.model.PerformanceSampleResult;
 import com.laker.postman.panel.performance.model.ResultNodeInfo;
+import lombok.experimental.UtilityClass;
 
-final class PerformanceResultNodeInfoMapper {
+@UtilityClass
+public class PerformanceResultDisplayMapper {
 
-    private PerformanceResultNodeInfoMapper() {
-    }
-
-    static ResultNodeInfo toDisplayNodeInfo(PerformanceRequestExecutionResult executionResult) {
-        return toDisplayNodeInfo(PerformanceSampleResult.fromExecutionResult(executionResult));
-    }
-
-    static ResultNodeInfo toDisplayNodeInfo(PerformanceSampleResult sampleResult) {
+    public ResultNodeInfo toDisplayNodeInfo(PerformanceSampleResult sampleResult) {
         if (sampleResult == null) {
             return null;
         }
@@ -31,7 +26,7 @@ final class PerformanceResultNodeInfoMapper {
         );
     }
 
-    private static void simplifyForDisplay(PerformanceSampleResult sampleResult) {
+    private void simplifyForDisplay(PerformanceSampleResult sampleResult) {
         if (sampleResult.getRequest() != null) {
             sampleResult.getRequest().simplify();
         }
@@ -44,7 +39,7 @@ final class PerformanceResultNodeInfoMapper {
         }
     }
 
-    private static String resolveDisplayErrorMsg(PerformanceSampleResult sampleResult) {
+    private String resolveDisplayErrorMsg(PerformanceSampleResult sampleResult) {
         if (CharSequenceUtil.isNotBlank(sampleResult.getErrorMsg())) {
             return sampleResult.getErrorMsg();
         }

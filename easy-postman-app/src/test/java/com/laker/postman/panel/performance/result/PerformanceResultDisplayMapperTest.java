@@ -1,14 +1,16 @@
-package com.laker.postman.panel.performance.execution;
+package com.laker.postman.panel.performance.result;
 
 import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.panel.performance.execution.PerformanceRequestExecutionResult;
+import com.laker.postman.panel.performance.model.PerformanceSampleResult;
 import com.laker.postman.panel.performance.model.ResultNodeInfo;
 import org.testng.annotations.Test;
 
-import java.util.List;
 import java.util.LinkedHashMap;
+import java.util.List;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -16,7 +18,7 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
-public class PerformanceResultNodeInfoMapperTest {
+public class PerformanceResultDisplayMapperTest {
 
     @Test
     public void shouldSimplifyDisplayFieldsAndDropEventInfoWhenDisabled() {
@@ -48,7 +50,9 @@ public class PerformanceResultNodeInfoMapperTest {
                 0L
         );
 
-        ResultNodeInfo resultNodeInfo = PerformanceResultNodeInfoMapper.toDisplayNodeInfo(executionResult);
+        ResultNodeInfo resultNodeInfo = PerformanceResultDisplayMapper.toDisplayNodeInfo(
+                PerformanceSampleResult.fromExecutionResult(executionResult)
+        );
 
         assertSame(resultNodeInfo.req, request);
         assertSame(resultNodeInfo.resp, response);
@@ -90,7 +94,9 @@ public class PerformanceResultNodeInfoMapperTest {
                 0L
         );
 
-        ResultNodeInfo resultNodeInfo = PerformanceResultNodeInfoMapper.toDisplayNodeInfo(executionResult);
+        ResultNodeInfo resultNodeInfo = PerformanceResultDisplayMapper.toDisplayNodeInfo(
+                PerformanceSampleResult.fromExecutionResult(executionResult)
+        );
 
         assertEquals(resultNodeInfo.errorMsg, "Resource temporarily unavailable");
         assertTrue(resultNodeInfo.resp.headers.containsKey("Content-Type"));

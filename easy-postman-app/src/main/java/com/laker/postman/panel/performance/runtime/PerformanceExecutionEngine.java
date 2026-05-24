@@ -4,11 +4,9 @@ import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.panel.performance.execution.PerformanceRequestExecutor;
 import com.laker.postman.panel.performance.execution.PerformanceResultRecorder;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
-import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
+import com.laker.postman.panel.performance.model.PerformanceResultListener;
 import com.laker.postman.panel.performance.plan.PerformanceTestPlan;
-import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import com.laker.postman.panel.performance.threadgroup.PerformanceThreadGroupPlanner;
-import com.laker.postman.service.setting.SettingManager;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.WebSocket;
@@ -42,8 +40,7 @@ public final class PerformanceExecutionEngine {
                                       BooleanSupplier efficientModeSupplier,
                                       IntSupplier responseBodyPreviewLimitKbSupplier,
                                       CsvDataPanel csvDataPanel,
-                                      PerformanceStatsCollector statsCollector,
-                                      PerformanceResultTablePanel performanceResultTablePanel) {
+                                      List<PerformanceResultListener> resultListeners) {
         this.runningSupplier = runningSupplier;
         PerformanceRequestExecutor requestExecutor = new PerformanceRequestExecutor(
                 runningSupplier,
@@ -54,11 +51,7 @@ public final class PerformanceExecutionEngine {
                 efficientModeSupplier,
                 responseBodyPreviewLimitKbSupplier
         );
-        PerformanceResultRecorder resultRecorder = new PerformanceResultRecorder(
-                statsCollector,
-                performanceResultTablePanel,
-                SettingManager::getJmeterSlowRequestThreshold
-        );
+        PerformanceResultRecorder resultRecorder = new PerformanceResultRecorder(resultListeners);
         PerformanceSamplerExecutor samplerExecutor = new PerformanceSamplerExecutor(
                 runningSupplier,
                 efficientModeSupplier,

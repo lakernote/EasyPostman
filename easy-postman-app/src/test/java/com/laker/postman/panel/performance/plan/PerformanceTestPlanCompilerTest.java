@@ -71,8 +71,8 @@ public class PerformanceTestPlanCompilerTest {
         assertTrue(loop.getElements().get(1) instanceof PerformanceRequestSampler);
     }
 
-    @Test(description = "request sampler 应保留协议 stage 和用于重建局部树的子节点")
-    public void shouldPreserveProtocolStagesAndRebuildRequestTree() {
+    @Test(description = "request sampler 应保留协议 stage、controller 和 assertion 子元素")
+    public void shouldPreserveProtocolStagesControllersAndAssertions() {
         DefaultMutableTreeNode groupNode = threadGroupNode("group", true);
         DefaultMutableTreeNode requestNode = requestNode("ws request", true, RequestItemProtocolEnum.WEBSOCKET);
         DefaultMutableTreeNode connectNode = protocolStageNode("connect", NodeType.WS_CONNECT, true);
@@ -101,24 +101,12 @@ public class PerformanceTestPlanCompilerTest {
         assertEquals(connect.getWebSocketPerformanceData().connectTimeoutMs, 1234);
         assertEquals(connect.getSsePerformanceData().connectTimeoutMs, 5678);
 
-        DefaultMutableTreeNode rebuilt = sampler.toTreeNode();
-        assertEquals(rebuilt.getChildCount(), 3);
-        assertEquals(((JMeterTreeNode) ((DefaultMutableTreeNode) rebuilt.getChildAt(0)).getUserObject()).type,
-                NodeType.WS_CONNECT);
-        assertEquals(((JMeterTreeNode) ((DefaultMutableTreeNode) rebuilt.getChildAt(1)).getUserObject()).type,
-                NodeType.LOOP);
-        assertEquals(((JMeterTreeNode) ((DefaultMutableTreeNode) rebuilt.getChildAt(2)).getUserObject()).type,
-                NodeType.ASSERTION);
-
-        JMeterTreeNode rebuiltConnect =
-                (JMeterTreeNode) ((DefaultMutableTreeNode) rebuilt.getChildAt(0)).getUserObject();
-        rebuiltConnect.webSocketPerformanceData.connectTimeoutMs = 7;
-        rebuiltConnect.ssePerformanceData.connectTimeoutMs = 8;
-        DefaultMutableTreeNode rebuiltAgain = sampler.toTreeNode();
-        JMeterTreeNode rebuiltAgainConnect =
-                (JMeterTreeNode) ((DefaultMutableTreeNode) rebuiltAgain.getChildAt(0)).getUserObject();
-        assertEquals(rebuiltAgainConnect.webSocketPerformanceData.connectTimeoutMs, 1234);
-        assertEquals(rebuiltAgainConnect.ssePerformanceData.connectTimeoutMs, 5678);
+        WebSocketPerformanceData copiedWebSocketData = connect.getWebSocketPerformanceData();
+        copiedWebSocketData.connectTimeoutMs = 7;
+        SsePerformanceData copiedSseData = connect.getSsePerformanceData();
+        copiedSseData.connectTimeoutMs = 8;
+        assertEquals(connect.getWebSocketPerformanceData().connectTimeoutMs, 1234);
+        assertEquals(connect.getSsePerformanceData().connectTimeoutMs, 5678);
     }
 
     @Test(description = "编译应深拷贝 thread group、loop、timer、request、SSE/WS data")

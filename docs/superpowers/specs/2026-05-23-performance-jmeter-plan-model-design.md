@@ -36,6 +36,8 @@ The immutable plan model lives under `com.laker.postman.panel.performance.plan`.
 
 The compiler is `PerformanceTestPlanCompiler`. It reads the snapshot tree, skips disabled nodes where JMeter-style execution would skip them, normalizes `ThreadGroupData` and `LoopData`, and deep-copies mutable node data through the existing snapshot/tree-copy utilities.
 
+Plan compilation is a one-way boundary from Swing tree snapshots into execution data. Plan elements do not expose APIs to rebuild Swing tree nodes; UI tree copying and paste behavior stay in the Swing tree support layer.
+
 ## Runtime Split
 
 - `PerformanceThreadGroupRunner` owns FIXED, RAMP_UP, SPIKE, and STAIRS scheduling.

@@ -1,11 +1,9 @@
 package com.laker.postman.panel.performance.plan;
 
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.SsePerformanceData;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 
-import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -49,17 +47,5 @@ public final class PerformanceProtocolStageElement implements PerformancePlanEle
 
     public List<PerformancePlanElement> getElements() {
         return elements;
-    }
-
-    @Override
-    public DefaultMutableTreeNode toTreeNode() {
-        JMeterTreeNode node = new JMeterTreeNode(name, type);
-        node.ssePerformanceData = PerformancePlanNodeCopies.copySsePerformanceData(ssePerformanceData);
-        node.webSocketPerformanceData = PerformancePlanNodeCopies.copyWebSocketPerformanceData(webSocketPerformanceData);
-        DefaultMutableTreeNode treeNode = new DefaultMutableTreeNode(node);
-        for (PerformancePlanElement element : elements) {
-            treeNode.add(element.toTreeNode());
-        }
-        return treeNode;
     }
 }

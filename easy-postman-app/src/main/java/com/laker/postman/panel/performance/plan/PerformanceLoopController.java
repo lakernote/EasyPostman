@@ -1,10 +1,8 @@
 package com.laker.postman.panel.performance.plan;
 
 import com.laker.postman.panel.performance.controller.LoopData;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
 
-import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -39,16 +37,5 @@ public final class PerformanceLoopController implements PerformancePlanElement {
 
     public List<PerformancePlanElement> getElements() {
         return elements;
-    }
-
-    @Override
-    public DefaultMutableTreeNode toTreeNode() {
-        JMeterTreeNode node = new JMeterTreeNode(name, NodeType.LOOP);
-        node.loopData = PerformancePlanNodeCopies.copyLoopData(loopData);
-        DefaultMutableTreeNode treeNode = new DefaultMutableTreeNode(node);
-        for (PerformancePlanElement element : elements) {
-            treeNode.add(element.toTreeNode());
-        }
-        return treeNode;
     }
 }

@@ -1,10 +1,7 @@
 package com.laker.postman.panel.performance.plan;
 
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.timer.TimerData;
-
-import javax.swing.tree.DefaultMutableTreeNode;
 
 public final class PerformanceTimerElement implements PerformancePlanElement {
     private final String name;
@@ -27,12 +24,5 @@ public final class PerformanceTimerElement implements PerformancePlanElement {
 
     public TimerData getTimerData() {
         return PerformancePlanNodeCopies.copyTimerData(timerData);
-    }
-
-    @Override
-    public DefaultMutableTreeNode toTreeNode() {
-        JMeterTreeNode node = new JMeterTreeNode(name, NodeType.TIMER);
-        node.timerData = PerformancePlanNodeCopies.copyTimerData(timerData);
-        return new DefaultMutableTreeNode(node);
     }
 }

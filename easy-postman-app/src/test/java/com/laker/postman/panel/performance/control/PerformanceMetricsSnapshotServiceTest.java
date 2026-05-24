@@ -4,6 +4,7 @@ import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.PerformanceReportSnapshot;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
 import com.laker.postman.panel.performance.model.PerformanceTrendSnapshot;
+import com.laker.postman.panel.performance.model.PerformanceTrendWindowCollector;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
@@ -13,6 +14,7 @@ public class PerformanceMetricsSnapshotServiceTest {
     @Test
     public void reportSnapshotShouldNormalizeMissingInputs() {
         PerformanceMetricsSnapshotService service = new PerformanceMetricsSnapshotService(
+                null,
                 null,
                 () -> 0,
                 () -> 0,
@@ -46,6 +48,7 @@ public class PerformanceMetricsSnapshotServiceTest {
         );
         PerformanceMetricsSnapshotService service = new PerformanceMetricsSnapshotService(
                 new PerformanceStatsCollector(),
+                new PerformanceTrendWindowCollector(),
                 () -> 2,
                 () -> 1,
                 () -> 3,

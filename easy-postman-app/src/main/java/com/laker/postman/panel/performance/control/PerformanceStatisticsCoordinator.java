@@ -3,6 +3,7 @@ package com.laker.postman.panel.performance.control;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
 import com.laker.postman.panel.performance.model.PerformanceTrendSnapshot;
+import com.laker.postman.panel.performance.model.PerformanceTrendWindowCollector;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceTrendPanel;
 import com.laker.postman.panel.performance.runtime.PerformanceThreadFactory;
@@ -36,6 +37,7 @@ public final class PerformanceStatisticsCoordinator {
     private volatile boolean disposed;
 
     public PerformanceStatisticsCoordinator(PerformanceStatsCollector statsCollector,
+                                            PerformanceTrendWindowCollector trendWindowCollector,
                                             PerformanceReportPanel performanceReportPanel,
                                             PerformanceTrendPanel performanceTrendPanel,
                                             JTabbedPane resultTabbedPane,
@@ -52,6 +54,7 @@ public final class PerformanceStatisticsCoordinator {
         this.trendEnabledSupplier = trendEnabledSupplier;
         this.snapshotService = new PerformanceMetricsSnapshotService(
                 statsCollector,
+                trendWindowCollector,
                 activeThreadsSupplier,
                 activeWebSocketsSupplier,
                 activeSseStreamsSupplier,

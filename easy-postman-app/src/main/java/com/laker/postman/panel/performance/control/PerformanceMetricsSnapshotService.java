@@ -4,6 +4,7 @@ import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.PerformanceReportSnapshot;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
 import com.laker.postman.panel.performance.model.PerformanceTrendSnapshot;
+import com.laker.postman.panel.performance.model.PerformanceTrendWindowCollector;
 import lombok.RequiredArgsConstructor;
 
 import java.util.function.IntSupplier;
@@ -16,6 +17,7 @@ public final class PerformanceMetricsSnapshotService {
     private static final long DEFAULT_SAMPLING_INTERVAL_MS = 1000L;
 
     private final PerformanceStatsCollector statsCollector;
+    private final PerformanceTrendWindowCollector trendWindowCollector;
     private final IntSupplier activeThreadsSupplier;
     private final IntSupplier activeWebSocketsSupplier;
     private final IntSupplier activeSseStreamsSupplier;
@@ -32,8 +34,7 @@ public final class PerformanceMetricsSnapshotService {
 
     public PerformanceTrendSnapshot trendSnapshot(long nowMs) {
         PerformanceRealtimeMetrics.Sample realtimeMetrics = sampleRealtimeMetrics(nowMs);
-        return statsCollector().sampleTrendSnapshot(
-                nowMs,
+        return trendWindowCollector().sampleSnapshot(
                 activeUsers(),
                 activeWebSocketSessions(realtimeMetrics),
                 activeSseStreams(realtimeMetrics),
@@ -44,6 +45,10 @@ public final class PerformanceMetricsSnapshotService {
 
     private PerformanceStatsCollector statsCollector() {
         return statsCollector == null ? new PerformanceStatsCollector() : statsCollector;
+    }
+
+    private PerformanceTrendWindowCollector trendWindowCollector() {
+        return trendWindowCollector == null ? new PerformanceTrendWindowCollector() : trendWindowCollector;
     }
 
     private PerformanceRealtimeMetrics.Sample sampleRealtimeMetrics(long nowMs) {

@@ -4,6 +4,7 @@ import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.panel.performance.control.PerformanceStatisticsCoordinator;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
+import com.laker.postman.panel.performance.model.PerformanceTrendWindowCollector;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceTrendPanel;
 import com.laker.postman.test.AbstractSwingUiTest;
@@ -31,6 +32,7 @@ public class PerformanceStatisticsCoordinatorTest extends AbstractSwingUiTest {
     public void refreshReportShouldReadSelectedTabOnEdt() throws Exception {
         ThreadCheckingTabbedPane tabbedPane = new ThreadCheckingTabbedPane();
         PerformanceStatisticsCoordinator coordinator = new PerformanceStatisticsCoordinator(
+                null,
                 null,
                 null,
                 null,
@@ -76,6 +78,7 @@ public class PerformanceStatisticsCoordinatorTest extends AbstractSwingUiTest {
 
         PerformanceStatisticsCoordinator coordinator = new PerformanceStatisticsCoordinator(
                 statsCollector,
+                new PerformanceTrendWindowCollector(),
                 reportPanel,
                 null,
                 tabbedPane,
@@ -117,6 +120,7 @@ public class PerformanceStatisticsCoordinatorTest extends AbstractSwingUiTest {
 
         PerformanceStatisticsCoordinator coordinator = new PerformanceStatisticsCoordinator(
                 statsCollector,
+                new PerformanceTrendWindowCollector(),
                 reportPanel,
                 null,
                 tabbedPane,
@@ -157,6 +161,7 @@ public class PerformanceStatisticsCoordinatorTest extends AbstractSwingUiTest {
         trendPanel.clearTrendDataset();
         PerformanceStatisticsCoordinator coordinator = new PerformanceStatisticsCoordinator(
                 statsCollector,
+                new PerformanceTrendWindowCollector(),
                 null,
                 trendPanel,
                 new JTabbedPane(),
@@ -187,6 +192,7 @@ public class PerformanceStatisticsCoordinatorTest extends AbstractSwingUiTest {
         trendPanel.clearTrendDataset();
         PerformanceStatisticsCoordinator coordinator = new PerformanceStatisticsCoordinator(
                 statsCollector,
+                new PerformanceTrendWindowCollector(),
                 null,
                 trendPanel,
                 new JTabbedPane(),

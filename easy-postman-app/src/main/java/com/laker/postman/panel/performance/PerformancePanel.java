@@ -25,6 +25,7 @@ import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.PerformanceResultListener;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollectorListener;
+import com.laker.postman.panel.performance.model.PerformanceTrendWindowCollector;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import com.laker.postman.panel.performance.result.PerformanceResultTableVisualizer;
@@ -91,6 +92,7 @@ public class PerformancePanel extends SingletonBasePanel {
     private JPanel topPanel; // 顶部工具栏面板，用于主题切换时更新边框
     private long startTime;
     private final transient PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
+    private final transient PerformanceTrendWindowCollector trendWindowCollector = new PerformanceTrendWindowCollector();
 
     // 定时器管理器 - 统一管理趋势图采样和报表刷新定时器
     private transient PerformanceTimerManager timerManager;
@@ -221,6 +223,7 @@ public class PerformancePanel extends SingletonBasePanel {
         reportRefreshModeBox = resultSection.reportRefreshModeBox();
         statisticsCoordinator = new PerformanceStatisticsCoordinator(
                 statsCollector,
+                trendWindowCollector,
                 performanceReportPanel,
                 performanceTrendPanel,
                 resultTabbedPane,
@@ -267,6 +270,7 @@ public class PerformancePanel extends SingletonBasePanel {
 
         List<PerformanceResultListener> resultListeners = List.of(
                 new PerformanceStatsCollectorListener(statsCollector),
+                trendWindowCollector,
                 new PerformanceResultTableVisualizer(
                         performanceResultTablePanel,
                         SettingManager::getJmeterSlowRequestThreshold
@@ -646,14 +650,15 @@ public class PerformancePanel extends SingletonBasePanel {
         performanceReportPanel.clearReport();
         performanceTrendPanel.clearTrendDataset();
         statsCollector.clear();
-        statsCollector.setTrendEnabled(trendEnabled);
+        trendWindowCollector.clear();
+        trendWindowCollector.setEnabled(trendEnabled);
         ApiMetadata.clear();
         executionEngine.resetVirtualUsers();
     }
 
     private void applyTrendEnabled(boolean enabled) {
         trendEnabled = enabled;
-        statsCollector.setTrendEnabled(enabled);
+        trendWindowCollector.setEnabled(enabled);
         if (timerManager != null) {
             timerManager.setTrendSamplingEnabled(enabled);
         }

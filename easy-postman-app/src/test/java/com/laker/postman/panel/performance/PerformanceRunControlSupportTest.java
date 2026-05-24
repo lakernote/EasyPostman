@@ -11,6 +11,7 @@ import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollectorListener;
+import com.laker.postman.panel.performance.model.PerformanceTrendWindowCollector;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import com.laker.postman.panel.performance.result.PerformanceResultTableVisualizer;
@@ -33,12 +34,14 @@ public class PerformanceRunControlSupportTest extends AbstractSwingUiTest {
         AtomicBoolean running = new AtomicBoolean(false);
         AtomicLong startTime = new AtomicLong();
         PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
+        PerformanceTrendWindowCollector trendWindowCollector = new PerformanceTrendWindowCollector();
         PerformanceResultTablePanel resultTablePanel = new PerformanceResultTablePanel();
         PerformanceReportPanel reportPanel = new PerformanceReportPanel();
         JTabbedPane resultTabbedPane = createResultTabbedPane(resultTablePanel, reportPanel);
         PerformanceTimerManager timerManager = new PerformanceTimerManager(running::get);
         PerformanceStatisticsCoordinator statisticsCoordinator = new PerformanceStatisticsCoordinator(
                 statsCollector,
+                trendWindowCollector,
                 reportPanel,
                 null,
                 resultTabbedPane,
@@ -67,6 +70,7 @@ public class PerformanceRunControlSupportTest extends AbstractSwingUiTest {
                             null,
                             List.of(
                                     new PerformanceStatsCollectorListener(statsCollector),
+                                    trendWindowCollector,
                                     new PerformanceResultTableVisualizer(resultTablePanel, () -> 500)
                             )
                     ),

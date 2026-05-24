@@ -4,7 +4,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.assertFalse;
 
 public class PerformanceStatsCollectorTest {
 
@@ -33,66 +33,9 @@ public class PerformanceStatsCollectorTest {
     }
 
     @Test
-    public void shouldSampleTrendDataFromDeltasAndThenResetWindow() {
-        PerformanceStatsCollector collector = new PerformanceStatsCollector();
-        collector.record(new RequestResult(1_000, 1_100, true, "search", PerformanceProtocol.HTTP));
-        collector.record(new RequestResult(1_100, 1_400, false, "search", PerformanceProtocol.HTTP));
-
-        PerformanceTrendSnapshot first = collector.sampleTrendSnapshot(
-                2_000,
-                5,
-                0,
-                0,
-                1_000,
-                PerformanceRealtimeMetrics.Sample.empty()
-        );
-        PerformanceTrendSnapshot second = collector.sampleTrendSnapshot(
-                3_000,
-                5,
-                0,
-                0,
-                1_000,
-                PerformanceRealtimeMetrics.Sample.empty()
-        );
-
-        assertEquals(first.http().samples(), 2);
-        assertEquals(first.http().failures(), 1);
-        assertEquals(first.http().sampleRate(), 2.0);
-        assertEquals(first.http().avgDurationMs(), 200.0);
-        assertEquals(second.http().samples(), 0);
-        assertTrue(Double.isNaN(second.http().avgDurationMs()));
-    }
-
-    @Test
-    public void shouldSkipTrendWindowAggregationWhenTrendDisabled() {
-        PerformanceStatsCollector collector = new PerformanceStatsCollector();
-        collector.setTrendEnabled(false);
-        collector.record(new RequestResult(1_000, 1_100, true, "search", PerformanceProtocol.HTTP));
-
-        PerformanceTrendSnapshot disabledSnapshot = collector.sampleTrendSnapshot(
-                2_000,
-                5,
-                0,
-                0,
-                1_000,
-                PerformanceRealtimeMetrics.Sample.empty()
-        );
-
-        assertEquals(collector.snapshot().totalRequests(), 1L);
-        assertEquals(disabledSnapshot.http().samples(), 0);
-
-        collector.setTrendEnabled(true);
-        collector.record(new RequestResult(2_000, 2_200, true, "search", PerformanceProtocol.HTTP));
-        PerformanceTrendSnapshot enabledSnapshot = collector.sampleTrendSnapshot(
-                3_000,
-                5,
-                0,
-                0,
-                1_000,
-                PerformanceRealtimeMetrics.Sample.empty()
-        );
-
-        assertEquals(enabledSnapshot.http().samples(), 1);
+    public void statsCollectorShouldOnlyExposeReportAggregationApi() {
+        assertFalse(hasMethodNamed(PerformanceStatsCollector.class, "setTrendEnabled"));
+        assertFalse(hasMethodNamed(PerformanceStatsCollector.class, "sampleTrendSnapshot"));
     }
 
     @Test
@@ -114,5 +57,10 @@ public class PerformanceStatsCollectorTest {
         assertEquals(summary.firstMessageLatencyStats().p90(), 900L);
         assertEquals(summary.firstMessageLatencyStats().p95(), 1000L);
         assertEquals(summary.firstMessageLatencyStats().p99(), 1000L);
+    }
+
+    private static boolean hasMethodNamed(Class<?> type, String methodName) {
+        return java.util.Arrays.stream(type.getMethods())
+                .anyMatch(method -> methodName.equals(method.getName()));
     }
 }

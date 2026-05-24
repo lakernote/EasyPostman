@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public final class PerformanceRequestSampler implements PerformancePlanElement {
+public final class PerformanceRequestSampler implements PerformanceSampler {
     private final String name;
     private final HttpRequestItem httpRequestItem;
     private final SsePerformanceData ssePerformanceData;
@@ -50,7 +50,15 @@ public final class PerformanceRequestSampler implements PerformancePlanElement {
         return PerformancePlanNodeCopies.copyWebSocketPerformanceData(webSocketPerformanceData);
     }
 
+    @Override
     public List<PerformancePlanElement> getChildren() {
         return children;
+    }
+
+    @Override
+    public boolean executesChildrenInSamplerOrder() {
+        return httpRequestItem != null
+                && httpRequestItem.getProtocol() != null
+                && httpRequestItem.getProtocol().isWebSocketProtocol();
     }
 }

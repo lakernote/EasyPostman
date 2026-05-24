@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public final class PerformanceLoopController implements PerformancePlanElement {
+public final class PerformanceLoopController implements PerformanceController {
     private final String name;
     private final LoopData loopData;
     private final List<PerformancePlanElement> elements;
@@ -35,6 +35,12 @@ public final class PerformanceLoopController implements PerformancePlanElement {
         return PerformancePlanNodeCopies.copyLoopData(loopData);
     }
 
+    @Override
+    public int getIterationCount() {
+        return loopData == null ? LoopData.MIN_ITERATIONS : loopData.iterations;
+    }
+
+    @Override
     public List<PerformancePlanElement> getElements() {
         return elements;
     }

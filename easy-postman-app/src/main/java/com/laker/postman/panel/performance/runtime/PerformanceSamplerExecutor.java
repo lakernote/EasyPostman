@@ -4,6 +4,7 @@ import com.laker.postman.panel.performance.execution.PerformanceRequestExecution
 import com.laker.postman.panel.performance.execution.PerformanceRequestExecutor;
 import com.laker.postman.panel.performance.execution.PerformanceResultRecorder;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
+import com.laker.postman.panel.performance.plan.PerformanceSampler;
 import com.laker.postman.service.variable.ExecutionVariableContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,14 +20,18 @@ public final class PerformanceSamplerExecutor {
     private final PerformanceRequestExecutor requestExecutor;
     private final PerformanceResultRecorder resultRecorder;
 
-    PerformanceRequestExecutionResult execute(PerformanceRequestSampler sampler,
+    PerformanceRequestExecutionResult execute(PerformanceSampler sampler,
                                               ExecutionVariableContext iterationContext) {
         if (!runningSupplier.getAsBoolean() || sampler == null) {
             return null;
         }
+        if (!(sampler instanceof PerformanceRequestSampler requestSampler)) {
+            log.debug("Unsupported performance sampler type: {}", sampler.getClass().getName());
+            return null;
+        }
 
         PerformanceRequestExecutionResult executionResult = requestExecutor.execute(
-                sampler,
+                requestSampler,
                 iterationContext
         );
         if (executionResult == null) {
@@ -34,7 +39,7 @@ public final class PerformanceSamplerExecutor {
         }
         resultRecorder.record(executionResult, efficientModeSupplier.getAsBoolean());
         if (executionResult.interrupted) {
-            log.debug("请求在停止时被中断: {}", sampler.getName());
+            log.debug("请求在停止时被中断: {}", requestSampler.getName());
         }
         return executionResult;
     }

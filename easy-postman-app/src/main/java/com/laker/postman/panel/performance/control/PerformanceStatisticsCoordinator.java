@@ -1,14 +1,11 @@
 package com.laker.postman.panel.performance.control;
 
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
-import com.laker.postman.panel.performance.model.PerformanceReportSnapshot;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
-import com.laker.postman.panel.performance.model.PerformanceStatsSnapshot;
 import com.laker.postman.panel.performance.model.PerformanceTrendSnapshot;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceTrendPanel;
 import com.laker.postman.panel.performance.runtime.PerformanceThreadFactory;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jfree.data.time.Millisecond;
 import org.jfree.data.time.RegularTimePeriod;
@@ -25,25 +22,44 @@ import java.util.function.LongFunction;
 import java.util.function.LongSupplier;
 
 @Slf4j
-@RequiredArgsConstructor
 public final class PerformanceStatisticsCoordinator {
 
-    private final PerformanceStatsCollector statsCollector;
     private final PerformanceReportPanel performanceReportPanel;
     private final PerformanceTrendPanel performanceTrendPanel;
     private final JTabbedPane resultTabbedPane;
-    private final IntSupplier activeThreadsSupplier;
-    private final IntSupplier activeWebSocketsSupplier;
-    private final IntSupplier activeSseStreamsSupplier;
-    private final LongSupplier samplingIntervalSupplier;
     private final BooleanSupplier trendEnabledSupplier;
-    private final LongFunction<PerformanceRealtimeMetrics.Sample> realtimeMetricsSampler;
-    private final LongFunction<PerformanceRealtimeMetrics.LiveSnapshot> liveMetricsSnapshotSupplier;
+    private final PerformanceMetricsSnapshotService snapshotService;
     private final ExecutorService metricsExecutor =
             Executors.newSingleThreadExecutor(PerformanceThreadFactory.daemonFactory("PerformanceMetrics"));
     private final AtomicLong runGeneration = new AtomicLong();
     private final Object runGenerationLock = new Object();
     private volatile boolean disposed;
+
+    public PerformanceStatisticsCoordinator(PerformanceStatsCollector statsCollector,
+                                            PerformanceReportPanel performanceReportPanel,
+                                            PerformanceTrendPanel performanceTrendPanel,
+                                            JTabbedPane resultTabbedPane,
+                                            IntSupplier activeThreadsSupplier,
+                                            IntSupplier activeWebSocketsSupplier,
+                                            IntSupplier activeSseStreamsSupplier,
+                                            LongSupplier samplingIntervalSupplier,
+                                            BooleanSupplier trendEnabledSupplier,
+                                            LongFunction<PerformanceRealtimeMetrics.Sample> realtimeMetricsSampler,
+                                            LongFunction<PerformanceRealtimeMetrics.LiveSnapshot> liveMetricsSnapshotSupplier) {
+        this.performanceReportPanel = performanceReportPanel;
+        this.performanceTrendPanel = performanceTrendPanel;
+        this.resultTabbedPane = resultTabbedPane;
+        this.trendEnabledSupplier = trendEnabledSupplier;
+        this.snapshotService = new PerformanceMetricsSnapshotService(
+                statsCollector,
+                activeThreadsSupplier,
+                activeWebSocketsSupplier,
+                activeSseStreamsSupplier,
+                samplingIntervalSupplier,
+                realtimeMetricsSampler,
+                liveMetricsSnapshotSupplier
+        );
+    }
 
     public void refreshReport() {
         if (!SwingUtilities.isEventDispatchThread()) {
@@ -65,7 +81,7 @@ public final class PerformanceStatisticsCoordinator {
     public void updateReportWithLatestData() {
         long generation = currentGeneration();
         submitMetricsTask("报表更新", generation, () -> {
-            PerformanceReportSnapshot snapshot = snapshotForReport(System.currentTimeMillis());
+            var snapshot = snapshotService.reportSnapshot(System.currentTimeMillis());
             invokeUiIfActive(generation, () -> performanceReportPanel.updateReport(snapshot));
         });
     }
@@ -76,7 +92,7 @@ public final class PerformanceStatisticsCoordinator {
             return;
         }
 
-        performanceReportPanel.updateReport(snapshotForReport(System.currentTimeMillis()));
+        performanceReportPanel.updateReport(snapshotService.reportSnapshot(System.currentTimeMillis()));
     }
 
     public void sampleTrendData() {
@@ -86,25 +102,13 @@ public final class PerformanceStatisticsCoordinator {
         }
         long now = System.currentTimeMillis();
         RegularTimePeriod period = createTrendPeriod(now);
-        long samplingIntervalMs = samplingIntervalSupplier.getAsLong();
-        PerformanceRealtimeMetrics.Sample realtimeMetrics = sampleRealtimeMetrics(now);
-        int users = activeThreadsSupplier.getAsInt();
-        int activeWebSockets = resolveActiveWebSocketSessions(realtimeMetrics);
-        int activeSseStreams = resolveActiveSseStreams(realtimeMetrics);
         long generation = currentGeneration();
 
         submitMetricsTask("趋势图采样", generation, () -> {
-            PerformanceTrendSnapshot snapshot = statsCollector.sampleTrendSnapshot(
-                    now,
-                    users,
-                    activeWebSockets,
-                    activeSseStreams,
-                    samplingIntervalMs,
-                    realtimeMetrics
-            );
+            PerformanceTrendSnapshot snapshot = snapshotService.trendSnapshot(now);
             invokeUiIfActive(generation, () -> {
                 log.debug("采样数据 {} - 用户数: {}, HTTP: {}, WS: {}, SSE: {}",
-                        period, users, snapshot.http().samples(), snapshot.webSocket().samples(), snapshot.sse().samples());
+                        period, snapshot.activeUsers(), snapshot.http().samples(), snapshot.webSocket().samples(), snapshot.sse().samples());
                 performanceTrendPanel.addOrUpdate(period, snapshot);
             });
         });
@@ -121,50 +125,11 @@ public final class PerformanceStatisticsCoordinator {
 
         long now = System.currentTimeMillis();
         RegularTimePeriod period = createTrendPeriod(now);
-        long samplingIntervalMs = samplingIntervalSupplier.getAsLong();
-        PerformanceRealtimeMetrics.Sample realtimeMetrics = sampleRealtimeMetrics(now);
-        int users = activeThreadsSupplier.getAsInt();
-        int activeWebSockets = resolveActiveWebSocketSessions(realtimeMetrics);
-        int activeSseStreams = resolveActiveSseStreams(realtimeMetrics);
-        PerformanceTrendSnapshot snapshot = statsCollector.sampleTrendSnapshot(
-                now,
-                users,
-                activeWebSockets,
-                activeSseStreams,
-                samplingIntervalMs,
-                realtimeMetrics
-        );
+        PerformanceTrendSnapshot snapshot = snapshotService.trendSnapshot(now);
 
         log.debug("同步采样数据 {} - 用户数: {}, HTTP: {}, WS: {}, SSE: {}",
-                period, users, snapshot.http().samples(), snapshot.webSocket().samples(), snapshot.sse().samples());
+                period, snapshot.activeUsers(), snapshot.http().samples(), snapshot.webSocket().samples(), snapshot.sse().samples());
         performanceTrendPanel.addOrUpdate(period, snapshot);
-    }
-
-    private PerformanceRealtimeMetrics.Sample sampleRealtimeMetrics(long nowMs) {
-        PerformanceRealtimeMetrics.Sample sample = realtimeMetricsSampler == null
-                ? PerformanceRealtimeMetrics.Sample.empty()
-                : realtimeMetricsSampler.apply(nowMs);
-        return sample == null ? PerformanceRealtimeMetrics.Sample.empty() : sample;
-    }
-
-    private int resolveActiveWebSocketSessions(PerformanceRealtimeMetrics.Sample realtimeMetrics) {
-        int activeWebSockets = activeWebSocketsSupplier.getAsInt();
-        return Math.max(activeWebSockets, realtimeMetrics.webSocketActiveSessions());
-    }
-
-    private int resolveActiveSseStreams(PerformanceRealtimeMetrics.Sample realtimeMetrics) {
-        int activeSseStreams = activeSseStreamsSupplier.getAsInt();
-        return Math.max(activeSseStreams, realtimeMetrics.sseActiveSessions());
-    }
-
-    private PerformanceReportSnapshot snapshotForReport(long nowMs) {
-        PerformanceStatsSnapshot snapshot = statsCollector == null
-                ? new PerformanceStatsCollector().snapshot()
-                : statsCollector.snapshot();
-        PerformanceRealtimeMetrics.LiveSnapshot liveSnapshot = liveMetricsSnapshotSupplier == null
-                ? PerformanceRealtimeMetrics.LiveSnapshot.empty()
-                : liveMetricsSnapshotSupplier.apply(nowMs);
-        return PerformanceReportSnapshot.of(snapshot, liveSnapshot);
     }
 
     private boolean isTrendEnabled() {

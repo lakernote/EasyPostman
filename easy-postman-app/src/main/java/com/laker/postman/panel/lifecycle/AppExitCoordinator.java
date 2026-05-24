@@ -4,7 +4,7 @@ import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.exception.CancelException;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.ioc.Component;
-import com.laker.postman.panel.collections.OpenedRequestTabsSaver;
+import com.laker.postman.panel.collections.OpenedRequestTabSessionSaver;
 import com.laker.postman.panel.functional.FunctionalPanel;
 import com.laker.postman.panel.performance.PerformancePanel;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +20,7 @@ public class AppExitCoordinator {
 
         // 保存所有打开的请求（包括未保存的和已保存的）
         try {
-            OpenedRequestTabsSaver.saveOpenTabsOnExit();
+            OpenedRequestTabSessionSaver.saveOpenTabsOnExit();
         } catch (CancelException e) {
             // 用户取消了保存操作，终止退出
             return;

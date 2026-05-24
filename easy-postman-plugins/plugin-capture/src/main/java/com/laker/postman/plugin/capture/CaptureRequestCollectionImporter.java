@@ -8,8 +8,8 @@ import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestBodyTypes;
 import com.laker.postman.model.RequestGroup;
 import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
-import com.laker.postman.panel.collections.right.RequestEditPanel;
+import com.laker.postman.panel.collections.tree.CollectionTreePanel;
+import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.NotificationUtil;
 
@@ -52,8 +52,8 @@ final class CaptureRequestCollectionImporter {
             return;
         }
 
-        RequestCollectionsLeftPanel collectionPanel = UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
-        RequestEditPanel requestEditPanel = UiSingletonFactory.getInstance(RequestEditPanel.class);
+        CollectionTreePanel collectionPanel = UiSingletonFactory.getInstance(CollectionTreePanel.class);
+        RequestEditorPanel requestEditPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class);
 
         Object[] groupObj = chooseGroup(collectionPanel.getGroupTreeModel());
         if (groupObj == null) {
@@ -127,7 +127,7 @@ final class CaptureRequestCollectionImporter {
             Object selectedNode = selectedPath.getLastPathComponent();
             if (selectedNode instanceof DefaultMutableTreeNode node) {
                 Object userObj = node.getUserObject();
-                if (userObj instanceof Object[] arr && RequestCollectionsLeftPanel.GROUP.equals(arr[0])) {
+                if (userObj instanceof Object[] arr && CollectionTreePanel.GROUP.equals(arr[0])) {
                     result[0] = arr;
                     dialog.dispose();
                     return;
@@ -164,11 +164,11 @@ final class CaptureRequestCollectionImporter {
                 }
                 if (parent instanceof DefaultMutableTreeNode node) {
                     Object userObj = node.getUserObject();
-                    if (userObj instanceof Object[] arr && RequestCollectionsLeftPanel.GROUP.equals(arr[0])) {
+                    if (userObj instanceof Object[] arr && CollectionTreePanel.GROUP.equals(arr[0])) {
                         int groupCount = 0;
                         for (int i = 0; i < node.getChildCount(); i++) {
                             Object childObj = ((DefaultMutableTreeNode) node.getChildAt(i)).getUserObject();
-                            if (childObj instanceof Object[] cArr && RequestCollectionsLeftPanel.GROUP.equals(cArr[0])) {
+                            if (childObj instanceof Object[] cArr && CollectionTreePanel.GROUP.equals(cArr[0])) {
                                 groupCount++;
                             }
                         }
@@ -187,7 +187,7 @@ final class CaptureRequestCollectionImporter {
                     int groupIdx = -1;
                     for (int i = 0; i < node.getChildCount(); i++) {
                         Object childObj = ((DefaultMutableTreeNode) node.getChildAt(i)).getUserObject();
-                        if (childObj instanceof Object[] cArr && RequestCollectionsLeftPanel.GROUP.equals(cArr[0])) {
+                        if (childObj instanceof Object[] cArr && CollectionTreePanel.GROUP.equals(cArr[0])) {
                             groupIdx++;
                             if (groupIdx == index) {
                                 return node.getChildAt(i);
@@ -205,10 +205,10 @@ final class CaptureRequestCollectionImporter {
                 }
                 if (node instanceof DefaultMutableTreeNode treeNode) {
                     Object userObj = treeNode.getUserObject();
-                    if (userObj instanceof Object[] arr && RequestCollectionsLeftPanel.GROUP.equals(arr[0])) {
+                    if (userObj instanceof Object[] arr && CollectionTreePanel.GROUP.equals(arr[0])) {
                         for (int i = 0; i < treeNode.getChildCount(); i++) {
                             Object childObj = ((DefaultMutableTreeNode) treeNode.getChildAt(i)).getUserObject();
-                            if (childObj instanceof Object[] cArr && RequestCollectionsLeftPanel.GROUP.equals(cArr[0])) {
+                            if (childObj instanceof Object[] cArr && CollectionTreePanel.GROUP.equals(cArr[0])) {
                                 return false;
                             }
                         }
@@ -232,7 +232,7 @@ final class CaptureRequestCollectionImporter {
                 if (value instanceof DefaultMutableTreeNode node) {
                     Object userObj = node.getUserObject();
                     if (userObj instanceof Object[] arr
-                            && RequestCollectionsLeftPanel.GROUP.equals(arr[0])
+                            && CollectionTreePanel.GROUP.equals(arr[0])
                             && arr[1] instanceof RequestGroup group) {
                         setText(group.getName());
                         String iconName = node.getLevel() == 1 ? "icons/collection.svg" : "icons/group.svg";

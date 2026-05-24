@@ -7,8 +7,6 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreeNode;
 import java.util.Optional;
 
-import static com.laker.postman.service.collections.CollectionTreeNodeTypes.REQUEST;
-
 /**
  * 树节点仓库默认实现。
  * <p>
@@ -46,12 +44,8 @@ public class ActiveCollectionTreeNodeRepository implements TreeNodeRepository {
             return Optional.empty();
         }
 
-        Object userObj = root.getUserObject();
-        if (userObj instanceof Object[] obj &&
-                obj.length >= 2 &&
-                REQUEST.equals(obj[0]) &&
-                obj[1] instanceof HttpRequestItem req &&
-                requestId.equals(req.getId())) {
+        Optional<HttpRequestItem> request = CollectionTreeNodes.request(root);
+        if (request.isPresent() && requestId.equals(request.get().getId())) {
 
             log.trace("找到节点: {}", requestId);
             return Optional.of(root);

@@ -1,10 +1,10 @@
 package com.laker.postman.common;
 
 import com.laker.postman.common.exception.GetInstanceException;
+import com.laker.postman.frame.MainFrame;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import java.awt.Window;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.Optional;
@@ -146,7 +146,7 @@ public class UiSingletonFactory {
     private static boolean isSupportedUiSingleton(Class<?> clazz) {
         return UiSingletonPanel.class.isAssignableFrom(clazz)
                 || UiSingletonMenuBar.class.isAssignableFrom(clazz)
-                || Window.class.isAssignableFrom(clazz);
+                || MainFrame.class.equals(clazz);
     }
 
     public static <T> Optional<T> getExistingInstance(Class<T> clazz) {

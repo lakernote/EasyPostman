@@ -3,7 +3,7 @@ package com.laker.postman.panel.collections;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
+import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.experimental.UtilityClass;
@@ -29,7 +29,7 @@ public class RequestSelectionDialogSupport {
      * 弹出多选请求对话框，回调返回选中的HttpRequestItem列表
      */
     public static void showMultiSelectRequestDialog(Consumer<List<HttpRequestItem>> onSelected) {
-        RequestCollectionsLeftPanel requestCollectionsLeftPanel = UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+        CollectionTreePanel requestCollectionsLeftPanel = UiSingletonFactory.getInstance(CollectionTreePanel.class);
         JDialog dialog = new JDialog(UiSingletonFactory.getInstance(MainFrame.class),
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_MULTI_SELECT_TITLE), true);
         dialog.setSize(400, 500);

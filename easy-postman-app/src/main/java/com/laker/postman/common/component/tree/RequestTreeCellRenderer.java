@@ -6,7 +6,7 @@ import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestGroup;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.SavedResponse;
-import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
+import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.IconUtil;
@@ -92,11 +92,11 @@ public class RequestTreeCellRenderer extends DefaultTreeCellRenderer {
         DefaultMutableTreeNode node = (DefaultMutableTreeNode) value;
         Object userObject = node.getUserObject();
         if (userObject instanceof Object[] obj) {
-            if (RequestCollectionsLeftPanel.GROUP.equals(obj[0])) {
+            if (CollectionTreePanel.GROUP.equals(obj[0])) {
                 renderGroupNode(node, obj, row);
-            } else if (RequestCollectionsLeftPanel.REQUEST.equals(obj[0])) {
+            } else if (CollectionTreePanel.REQUEST.equals(obj[0])) {
                 applyRequestRendering((HttpRequestItem) obj[1]);
-            } else if (RequestCollectionsLeftPanel.SAVED_RESPONSE.equals(obj[0])) {
+            } else if (CollectionTreePanel.SAVED_RESPONSE.equals(obj[0])) {
                 applySavedResponseRendering((SavedResponse) obj[1]);
             }
         }
@@ -113,7 +113,7 @@ public class RequestTreeCellRenderer extends DefaultTreeCellRenderer {
         Object groupData = obj[1];
         String groupName = groupData instanceof RequestGroup rg ? rg.getName() : String.valueOf(groupData);
         boolean isRootLevel = node.getParent() instanceof DefaultMutableTreeNode p &&
-                RequestCollectionsLeftPanel.ROOT.equals(String.valueOf(p.getUserObject()));
+                CollectionTreePanel.ROOT.equals(String.valueOf(p.getUserObject()));
         boolean isHover = (row == hoveredRow);
 
         if (isRootLevel) {

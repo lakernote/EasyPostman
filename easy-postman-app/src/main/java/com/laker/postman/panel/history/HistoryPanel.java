@@ -16,9 +16,9 @@ import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestHistoryItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.SidebarTab;
-import com.laker.postman.panel.collections.right.RequestEditPanel;
-import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
-import com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel;
+import com.laker.postman.panel.collections.editor.RequestEditorPanel;
+import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
+import com.laker.postman.panel.collections.editor.request.sub.RequestBodyPanel;
 import com.laker.postman.panel.sidebar.SidebarTabPanel;
 import com.laker.postman.service.HistoryPersistenceService;
 import com.laker.postman.service.render.HttpHtmlRenderer;
@@ -1259,7 +1259,7 @@ public class HistoryPanel extends UiSingletonPanel {
 
         RequestItemProtocolEnum protocol = resolveProtocol(item);
         HttpRequestItem requestItem = createRequestItemFromHistory(item, protocol);
-        RequestEditPanel requestEditPanel = UiSingletonFactory.getInstance(RequestEditPanel.class);
+        RequestEditorPanel requestEditPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class);
         RequestEditSubPanel subPanel = requestEditPanel.addNewTab(buildTabTitle(item), protocol);
         subPanel.initPanelData(requestItem);
     }

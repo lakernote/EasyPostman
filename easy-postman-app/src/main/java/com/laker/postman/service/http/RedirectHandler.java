@@ -5,8 +5,8 @@ import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RedirectInfo;
-import com.laker.postman.panel.collections.right.RequestEditPanel;
-import com.laker.postman.panel.collections.right.request.sub.NetworkLogStage;
+import com.laker.postman.panel.collections.editor.RequestEditorPanel;
+import com.laker.postman.panel.collections.editor.request.sub.NetworkLogStage;
 import com.laker.postman.service.http.sse.SseResEventListener;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -167,7 +167,7 @@ public class RedirectHandler {
             String logMessage = String.format("Status: %d, URL: %s, Location: %s",
                     info.statusCode, info.url, info.location);
 
-            var editSubPanel = UiSingletonFactory.getInstance(RequestEditPanel.class)
+            var editSubPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class)
                     .getRequestEditSubPanel(requestId);
 
             if (editSubPanel != null) {

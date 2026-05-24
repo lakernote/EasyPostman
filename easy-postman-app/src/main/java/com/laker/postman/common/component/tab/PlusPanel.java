@@ -3,7 +3,7 @@ package com.laker.postman.common.component.tab;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.constants.Icons;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.panel.collections.right.RequestEditPanel;
+import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.service.setting.ShortcutManager;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -280,7 +280,7 @@ public class PlusPanel extends JPanel {
             @Override
             public void mouseClicked(MouseEvent e) {
                 if (SwingUtilities.isLeftMouseButton(e)) {
-                    UiSingletonFactory.getInstance(RequestEditPanel.class).addNewTab(I18nUtil.getMessage(MessageKeys.NEW_REQUEST));
+                    UiSingletonFactory.getInstance(RequestEditorPanel.class).addNewTab(I18nUtil.getMessage(MessageKeys.NEW_REQUEST));
                 }
             }
 

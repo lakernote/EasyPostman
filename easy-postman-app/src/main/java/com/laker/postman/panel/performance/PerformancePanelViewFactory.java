@@ -11,7 +11,7 @@ import com.laker.postman.common.component.button.StartButton;
 import com.laker.postman.common.component.button.StopButton;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
+import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
 import com.laker.postman.panel.performance.component.JMeterTreeCellRenderer;
 import com.laker.postman.panel.performance.component.TreeNodeTransferHandler;

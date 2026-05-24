@@ -17,7 +17,7 @@ import com.laker.postman.model.GitOperation;
 import com.laker.postman.model.RemoteStatus;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.model.WorkspaceType;
-import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
+import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.functional.FunctionalPanel;
 import com.laker.postman.panel.lifecycle.AppExitCoordinator;
@@ -224,10 +224,10 @@ public class TopMenuBar extends UiSingletonMenuBar implements IRefreshable {
     }
 
     private void exportAllCollections() {
-        RequestCollectionsLeftPanel leftPanel = UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+        CollectionTreePanel leftPanel = UiSingletonFactory.getInstance(CollectionTreePanel.class);
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_DIALOG_TITLE));
-        fileChooser.setSelectedFile(new File(RequestCollectionsLeftPanel.EXPORT_FILE_NAME));
+        fileChooser.setSelectedFile(new File(CollectionTreePanel.EXPORT_FILE_NAME));
         int userSelection = fileChooser.showSaveDialog(this);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToSave = fileChooser.getSelectedFile();
@@ -531,7 +531,7 @@ public class TopMenuBar extends UiSingletonMenuBar implements IRefreshable {
                     .switchWorkspaceAndRefreshUI(SystemUtil.getEnvPathForWorkspace(workspace));
 
             // 切换请求集合文件
-            UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class)
+            UiSingletonFactory.getInstance(CollectionTreePanel.class)
                     .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace), () -> {
                         UiSingletonFactory.getInstance(PerformancePanel.class).switchWorkspaceAndRefreshUI();
                         UiSingletonFactory.getInstance(FunctionalPanel.class).switchWorkspaceAndRefreshUI();
@@ -706,7 +706,7 @@ public class TopMenuBar extends UiSingletonMenuBar implements IRefreshable {
         if (dialog.isConfirmed()) {
             // Pull 操作后需要刷新相关面板以显示最新数据
             if (operation == GitOperation.PULL) {
-                UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class)
+                UiSingletonFactory.getInstance(CollectionTreePanel.class)
                         .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace), () -> {
                             UiSingletonFactory.getInstance(FunctionalPanel.class).switchWorkspaceAndRefreshUI();
                             UiSingletonFactory.getInstance(PerformancePanel.class).switchWorkspaceAndRefreshUI();

@@ -2,8 +2,8 @@ package com.laker.postman.panel.collections;
 
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.UiSingletonFactory;
-import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
-import com.laker.postman.panel.collections.right.RequestEditPanel;
+import com.laker.postman.panel.collections.tree.CollectionTreePanel;
+import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -19,11 +19,11 @@ public class RequestCollectionsPanel extends UiSingletonPanel {
         // 设置布局为 BorderLayout
         setLayout(new BorderLayout()); // 设置布局为 BorderLayout
         // 1.创建左侧的请求集合面板
-        RequestCollectionsLeftPanel requestCollectionsLeftPanel = UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+        CollectionTreePanel requestCollectionsLeftPanel = UiSingletonFactory.getInstance(CollectionTreePanel.class);
         // 2. 创建右侧的请求编辑面板
-        RequestEditPanel rightRequestEditPanel = UiSingletonFactory.getInstance(RequestEditPanel.class); // 创建请求编辑面板实例
+        RequestEditorPanel rightRequestEditorPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class); // 创建请求编辑面板实例
         // 创建水平分割面板，将左侧的集合面板和右侧的请求编辑面板放入其中
-        JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, requestCollectionsLeftPanel, rightRequestEditPanel);
+        JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, requestCollectionsLeftPanel, rightRequestEditorPanel);
         mainSplit.setContinuousLayout(true); // 分割条拖动时实时更新布局
         mainSplit.setDividerLocation(250); // 设置初始分割位置
         mainSplit.setDividerSize(3); // 设置分割条的宽度

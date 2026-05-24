@@ -34,6 +34,6 @@ public class PersistenceServiceBoundaryTest {
 
     private void assertNoUiDependency(String source) {
         assertFalse(source.contains("UiSingletonFactory"), "persistence service must not create UI singletons");
-        assertFalse(source.contains("RequestCollectionsLeftPanel"), "persistence service must not depend on collection panel");
+        assertFalse(source.contains("CollectionTreePanel"), "persistence service must not depend on collection panel");
     }
 }

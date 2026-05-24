@@ -3,10 +3,10 @@ package com.laker.postman.service.http.okhttp;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.panel.collections.right.RequestEditPanel;
-import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
-import com.laker.postman.panel.collections.right.request.sub.NetworkLogPanel;
-import com.laker.postman.panel.collections.right.request.sub.NetworkLogStage;
+import com.laker.postman.panel.collections.editor.RequestEditorPanel;
+import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
+import com.laker.postman.panel.collections.editor.request.sub.NetworkLogPanel;
+import com.laker.postman.panel.collections.editor.request.sub.NetworkLogStage;
 import com.laker.postman.service.http.NetworkErrorMessageResolver;
 import com.laker.postman.service.http.ssl.CertificateCapturingSSLSocketFactory;
 import com.laker.postman.service.http.ssl.SSLCertificateValidator;
@@ -68,7 +68,7 @@ public class EasyConsoleEventListener extends EventListener {
             // 输出到 NetworkLogPanel
             try {
                 if (editSubPanel == null) {
-                    editSubPanel = UiSingletonFactory.getInstance(RequestEditPanel.class).getRequestEditSubPanel(reqItemId);
+                    editSubPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class).getRequestEditSubPanel(reqItemId);
                 }
                 NetworkLogPanel netPanel = editSubPanel.getResponsePanel().getNetworkLogPanel();
                 netPanel.appendLog(stage, msg, elapsedMs);

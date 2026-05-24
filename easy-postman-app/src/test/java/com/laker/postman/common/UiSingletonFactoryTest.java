@@ -26,6 +26,12 @@ public class UiSingletonFactoryTest extends AbstractSwingUiTest {
     }
 
     @Test
+    public void shouldRejectRegularDialogsEvenThoughTheyAreWindows() {
+        assertThrows(IllegalArgumentException.class,
+                () -> UiSingletonFactory.getInstance(TestDialog.class));
+    }
+
+    @Test
     public void shouldInitializeUiSingletonPanelOnlyOnce() {
         TestPanel.initCount = 0;
         TestPanel.listenerCount = 0;
@@ -96,6 +102,9 @@ public class UiSingletonFactoryTest extends AbstractSwingUiTest {
         protected void registerListeners() {
             // no-op
         }
+    }
+
+    public static class TestDialog extends JDialog {
     }
 
     public static class EdtTrackingPanel extends UiSingletonPanel {

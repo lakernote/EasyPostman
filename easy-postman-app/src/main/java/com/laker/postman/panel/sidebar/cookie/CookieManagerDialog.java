@@ -1,6 +1,6 @@
 package com.laker.postman.panel.sidebar.cookie;
 
-import com.laker.postman.panel.collections.right.request.sub.CookieTablePanel;
+import com.laker.postman.panel.collections.editor.request.sub.CookieTablePanel;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 

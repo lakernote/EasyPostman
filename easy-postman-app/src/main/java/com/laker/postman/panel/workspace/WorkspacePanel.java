@@ -7,7 +7,7 @@ import com.laker.postman.common.component.button.PlusButton;
 import com.laker.postman.common.component.button.RefreshButton;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.*;
-import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
+import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.functional.FunctionalPanel;
 import com.laker.postman.panel.performance.PerformancePanel;
@@ -461,7 +461,7 @@ public class WorkspacePanel extends UiSingletonPanel {
             // 切换环境变量文件
             UiSingletonFactory.getInstance(EnvironmentPanel.class).switchWorkspaceAndRefreshUI(SystemUtil.getEnvPathForWorkspace(workspace));
             // 切换请求集合文件
-            UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class)
+            UiSingletonFactory.getInstance(CollectionTreePanel.class)
                     .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace), () -> {
                         UiSingletonFactory.getInstance(PerformancePanel.class).switchWorkspaceAndRefreshUI();
                         UiSingletonFactory.getInstance(FunctionalPanel.class).switchWorkspaceAndRefreshUI();
@@ -493,7 +493,7 @@ public class WorkspacePanel extends UiSingletonPanel {
 
         if (dialog.isConfirmed()) {
             // 刷新 requests 和 env 面板
-            UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class)
+            UiSingletonFactory.getInstance(CollectionTreePanel.class)
                     .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace), () -> {
                         UiSingletonFactory.getInstance(FunctionalPanel.class).switchWorkspaceAndRefreshUI();
                         UiSingletonFactory.getInstance(PerformancePanel.class).switchWorkspaceAndRefreshUI();
@@ -535,7 +535,7 @@ public class WorkspacePanel extends UiSingletonPanel {
 
         if (dialog.isConfirmed()) {
             // 刷新 requests 和 env 面板
-            UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class)
+            UiSingletonFactory.getInstance(CollectionTreePanel.class)
                     .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace), () -> {
                         UiSingletonFactory.getInstance(FunctionalPanel.class).switchWorkspaceAndRefreshUI();
                         UiSingletonFactory.getInstance(PerformancePanel.class).switchWorkspaceAndRefreshUI();
@@ -558,7 +558,7 @@ public class WorkspacePanel extends UiSingletonPanel {
 
         // 如果恢复了版本，需要刷新请求集合和环境变量面板
         if (dialog.isNeedRefresh()) {
-            UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class)
+            UiSingletonFactory.getInstance(CollectionTreePanel.class)
                     .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace), () -> {
                         UiSingletonFactory.getInstance(FunctionalPanel.class).switchWorkspaceAndRefreshUI();
                         UiSingletonFactory.getInstance(PerformancePanel.class).switchWorkspaceAndRefreshUI();
@@ -631,7 +631,7 @@ public class WorkspacePanel extends UiSingletonPanel {
                         UiSingletonFactory.getInstance(EnvironmentPanel.class).switchWorkspaceAndRefreshUI(
                                 SystemUtil.getEnvPathForWorkspace(newCurrentWorkspace));
                         // 切换请求集合文件
-                        UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class).switchWorkspaceAndRefreshUI(
+                        UiSingletonFactory.getInstance(CollectionTreePanel.class).switchWorkspaceAndRefreshUI(
                                 SystemUtil.getCollectionPathForWorkspace(newCurrentWorkspace), () -> {
                                     UiSingletonFactory.getInstance(FunctionalPanel.class).switchWorkspaceAndRefreshUI();
                                     UiSingletonFactory.getInstance(PerformancePanel.class).switchWorkspaceAndRefreshUI();

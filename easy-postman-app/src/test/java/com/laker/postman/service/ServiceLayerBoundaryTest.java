@@ -16,9 +16,9 @@ public class ServiceLayerBoundaryTest {
         try (var paths = Files.walk(serviceDir)) {
             for (Path sourceFile : paths.filter(path -> path.toString().endsWith(".java")).toList()) {
                 String source = Files.readString(sourceFile);
-                assertFalse(source.contains("panel.collections.right.request.sub.AuthTabPanel"),
+                assertFalse(source.contains("panel.collections.editor.request.sub.AuthTabPanel"),
                         sourceFile + " must use domain auth constants, not Swing panel constants");
-                assertFalse(source.contains("panel.collections.right.request.sub.RequestBodyPanel"),
+                assertFalse(source.contains("panel.collections.editor.request.sub.RequestBodyPanel"),
                         sourceFile + " must use domain body constants, not Swing panel constants");
                 assertFalse(source.contains("panel.functional.table.RunnerRowData"),
                         sourceFile + " must use functional runner model data, not Swing table package data");

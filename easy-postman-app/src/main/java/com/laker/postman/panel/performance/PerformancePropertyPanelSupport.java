@@ -1,6 +1,6 @@
 package com.laker.postman.panel.performance;
 
-import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
+import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;

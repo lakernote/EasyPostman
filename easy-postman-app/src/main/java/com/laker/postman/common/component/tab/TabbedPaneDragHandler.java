@@ -20,7 +20,7 @@ import java.awt.event.MouseEvent;
 @Slf4j
 public class TabbedPaneDragHandler {
 
-    // ── 回调，用于同步 RequestEditPanel 中的 previewTabIndex ─────────────────
+    // ── 回调，用于同步 RequestEditorPanel 中的 previewTabIndex ─────────────────
     public interface IndexGetter { int get(); }
     public interface IndexSetter { void set(int value); }
 

@@ -1,0 +1,802 @@
+package com.laker.postman.panel.collections.editor.request.sub;
+
+import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.component.button.EditButton;
+import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.model.HttpHeader;
+import com.laker.postman.service.http.HttpRequestFactory;
+import com.laker.postman.util.*;
+
+import javax.swing.*;
+import javax.swing.event.TableModelListener;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
+import java.awt.*;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.*;
+import java.util.List;
+
+/**
+ * 高仿Postman的Headers面板
+ * 1. 二列表格，第一列为Key，第二列为Value
+ * 2. 默认请求头 User-Agent: EasyPostman/版本号 Accept: *, Accept-Encoding: gzip, deflate, br, Connection: keep-alive
+ * 3. 左上角有Headers标签和eye图标按钮和(4)标签，点击可切换显示/隐藏 默认请求头
+ * 4. 中间是表格
+ */
+public class EasyRequestHttpHeadersPanel extends JPanel {
+    private EasyHttpHeadersTablePanel tablePanel;
+
+    // Default headers constants
+    private static final String USER_AGENT = "User-Agent";
+    private static final String ACCEPT = "Accept";
+    private static final String ACCEPT_ENCODING = "Accept-Encoding";
+    private static final String CONNECTION = "Connection";
+    private static final String USER_AGENT_VALUE = HttpRequestFactory.EASY_POSTMAN_CLIENT;
+    private static final String ACCEPT_VALUE = "*/*";
+    private static final String ACCEPT_ENCODING_VALUE = "gzip, deflate, br";
+    private static final String CONNECTION_VALUE = "keep-alive";
+
+    private static final Object[][] DEFAULT_HEADERS = {
+            {USER_AGENT, USER_AGENT_VALUE},
+            {ACCEPT, ACCEPT_VALUE},
+            {ACCEPT_ENCODING, ACCEPT_ENCODING_VALUE},
+            {CONNECTION, CONNECTION_VALUE}
+    };
+
+    private static final Set<String> DEFAULT_HEADER_KEYS = new HashSet<>();
+
+    static {
+        for (Object[] header : DEFAULT_HEADERS) {
+            DEFAULT_HEADER_KEYS.add((String) header[0]);
+        }
+    }
+
+    // UI components
+    private final FlatSVGIcon eyeOpenIcon;
+    private final FlatSVGIcon eyeCloseIcon;
+    private JButton eyeButton;
+    private JLabel countLabel;
+
+    // Table filtering
+    private transient TableRowSorter<DefaultTableModel> rowSorter;
+    private transient DefaultHeaderRowFilter defaultHeaderFilter;
+    private boolean showDefaultHeaders = false;
+
+    public EasyRequestHttpHeadersPanel() {
+        // 初始化图标（添加颜色过滤器以适配主题）
+        eyeOpenIcon = IconUtil.createThemed("icons/eye-open.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL);
+        eyeCloseIcon = IconUtil.createThemed("icons/eye-close.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL);
+
+        initializeComponents();
+        setupLayout();
+        initializeTableWithDefaults();
+        setupFiltering();
+    }
+
+
+    /**
+     * 创建眼睛按钮（用于切换默认请求头的显示/隐藏）
+     *
+     * @return 配置好的眼睛按钮
+     */
+    private JButton createEyeButton() {
+        JButton button = new JButton(eyeOpenIcon);
+        button.setFocusable(false);
+        button.setBorderPainted(false);
+        button.setContentAreaFilled(false);
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        button.addActionListener(e -> toggleDefaultHeadersVisibility());
+        return button;
+    }
+
+    /**
+     * 创建计数标签（显示隐藏的默认请求头数量）
+     *
+     * @return 配置好的计数标签
+     */
+    private JLabel createCountLabel() {
+        JLabel label = new JLabel();
+        // 设置初始文本（隐藏状态显示数量）
+        int count = DEFAULT_HEADERS.length;
+        String countText = "(" + count + ")";
+        String countHtml = "<span style='color:#009900;font-weight:bold;'>" + countText + "</span>";
+        label.setText("<html>" + countHtml + "</html>");
+
+        label.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        label.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                toggleDefaultHeadersVisibility();
+            }
+        });
+        return label;
+    }
+
+    private void initializeComponents() {
+        setLayout(new BorderLayout());
+        // 设置边距
+        setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        // Create header panel
+        JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 1, 0));
+        JLabel label = new JLabel("Headers");
+
+        // Create eye button and count label using helper methods
+        eyeButton = createEyeButton();
+        countLabel = createCountLabel();
+
+        // Create Bulk Edit button
+        EditButton bulkEditButton = new EditButton();
+        bulkEditButton.setToolTipText(I18nUtil.getMessage(MessageKeys.BULK_EDIT));
+        bulkEditButton.addActionListener(e -> showBulkEditDialog());
+
+        headerPanel.add(label);
+        headerPanel.add(eyeButton);
+        headerPanel.add(countLabel);
+        headerPanel.add(Box.createHorizontalStrut(5)); // 添加间距
+        headerPanel.add(bulkEditButton);
+
+        // Create table panel and set parent reference
+        tablePanel = new EasyHttpHeadersTablePanel();
+        tablePanel.setParentPanel(this);
+
+        add(headerPanel, BorderLayout.NORTH);
+    }
+
+    private void setupLayout() {
+        // tablePanel 已经内部包含了 JScrollPane，直接添加即可
+        add(tablePanel, BorderLayout.CENTER);
+    }
+
+    private void initializeTableWithDefaults() {
+        // 将默认请求头添加到表格
+        for (Object[] header : DEFAULT_HEADERS) {
+            tablePanel.addRow(header[0], header[1]);
+        }
+    }
+
+    private void setupFiltering() {
+        JTable table = tablePanel.getTable();
+        DefaultTableModel model = (DefaultTableModel) table.getModel();
+
+        // Initialize row sorter and filter
+        rowSorter = new TableRowSorter<>(model);
+        defaultHeaderFilter = new DefaultHeaderRowFilter();
+
+        // Disable sorting for all columns
+        for (int i = 0; i < model.getColumnCount(); i++) {
+            rowSorter.setSortable(i, false);
+        }
+
+        table.setRowSorter(rowSorter);
+
+        // Apply initial filter (hide default headers by default)
+        applyCurrentFilter();
+    }
+
+    private void updateCountLabel() {
+        if (!showDefaultHeaders) {
+            int hiddenCount = DEFAULT_HEADERS.length;
+            String countText = "(" + hiddenCount + ")";
+            String countHtml = "<span style='color:#009900;font-weight:bold;'>" + countText + "</span>";
+            countLabel.setText("<html>" + countHtml + "</html>");
+            countLabel.setVisible(true);
+        } else {
+            countLabel.setText("");
+            countLabel.setVisible(false);
+        }
+    }
+
+    private void toggleDefaultHeadersVisibility() {
+        showDefaultHeaders = !showDefaultHeaders;
+
+        // Update UI components
+        eyeButton.setIcon(showDefaultHeaders ? eyeCloseIcon : eyeOpenIcon);
+        updateCountLabel();
+
+        // Apply filter
+        applyCurrentFilter();
+    }
+
+    private void applyCurrentFilter() {
+        if (rowSorter != null && defaultHeaderFilter != null) {
+            defaultHeaderFilter.setShowDefaultHeaders(showDefaultHeaders);
+            rowSorter.setRowFilter(defaultHeaderFilter);
+        }
+    }
+
+    /**
+     * Custom row filter for managing default headers visibility
+     */
+    private static class DefaultHeaderRowFilter extends RowFilter<DefaultTableModel, Integer> {
+        private boolean showDefaultHeaders = false;
+
+        public void setShowDefaultHeaders(boolean showDefaultHeaders) {
+            this.showDefaultHeaders = showDefaultHeaders;
+        }
+
+        @Override
+        public boolean include(Entry<? extends DefaultTableModel, ? extends Integer> entry) {
+            try {
+                Object keyObj = entry.getValue(1);
+                if (keyObj == null) {
+                    return true; // Show empty rows
+                }
+
+                String key = keyObj.toString().trim();
+                if (key.isEmpty()) {
+                    return true; // Show empty key rows
+                }
+
+                boolean isDefaultHeader = DEFAULT_HEADER_KEYS.contains(key);
+                return showDefaultHeaders || !isDefaultHeader;
+            } catch (Exception e) {
+                // In case of any errors, show the row
+                return true;
+            }
+        }
+    }
+
+    // Public API methods
+
+    public void addTableModelListener(TableModelListener l) {
+        if (tablePanel != null) {
+            tablePanel.addTableModelListener(l);
+        }
+    }
+
+    /** 提交当前正在编辑的单元格（用于手动保存前确保最新输入被提交）。 */
+    public void stopCellEditing() {
+        if (tablePanel != null) {
+            tablePanel.stopCellEditing();
+        }
+    }
+
+    /**
+     * Get all headers as a list (including enabled state) for persistence
+     */
+    public List<HttpHeader> getHeadersList() {
+        List<HttpHeader> headersList = new ArrayList<>();
+
+        if (tablePanel == null) {
+            return headersList;
+        }
+
+        // Get all rows from the model (not view) to include both visible and hidden headers
+        List<Map<String, Object>> allRows = tablePanel.getRows();
+
+        for (Map<String, Object> row : allRows) {
+            Object enabledObj = row.get("Enabled");
+            Object keyObj = row.get("Key");
+            Object valueObj = row.get("Value");
+
+            boolean enabled = !(enabledObj instanceof Boolean b) || b;
+            String key = keyObj == null ? "" : keyObj.toString().trim();
+            String value = valueObj == null ? "" : valueObj.toString().trim();
+
+            // Only add non-empty headers
+            if (!key.isEmpty()) {
+                headersList.add(new HttpHeader(enabled, key, value));
+            }
+        }
+
+        return headersList;
+    }
+
+    /**
+     * 从 tableModel 直接读取 headers，不停止当前单元格编辑。
+     * 用于自动保存 / tab 指示器等后台场景，避免打断用户正在进行的输入（如 Tab 导航）。
+     */
+    public List<HttpHeader> getHeadersListFromModel() {
+        List<HttpHeader> headersList = new ArrayList<>();
+        if (tablePanel == null) return headersList;
+
+        List<Map<String, Object>> allRows = tablePanel.getRowsFromModel();
+        for (Map<String, Object> row : allRows) {
+            Object enabledObj = row.get("Enabled");
+            Object keyObj    = row.get("Key");
+            Object valueObj  = row.get("Value");
+
+            boolean enabled = !(enabledObj instanceof Boolean b) || b;
+            String key   = keyObj   == null ? "" : keyObj.toString().trim();
+            String value = valueObj == null ? "" : valueObj.toString().trim();
+
+            if (!key.isEmpty()) {
+                headersList.add(new HttpHeader(enabled, key, value));
+            }
+        }
+        return headersList;
+    }
+
+    /**
+     * Set headers from list (including enabled state) for loading from persistence
+     */
+    public void setHeadersList(List<HttpHeader> headersList) {
+        if (headersList == null || headersList.isEmpty()) {
+            // 清空并恢复默认请求头
+            tablePanel.clear();
+            initializeTableWithDefaults();
+            applyCurrentFilter();
+            return;
+        }
+
+        // Build sorted list with default headers first
+        List<HttpHeader> sortedList = buildSortedHeadersList(headersList);
+
+        // Set rows in table
+        List<Map<String, Object>> rows = new ArrayList<>();
+        for (HttpHeader header : sortedList) {
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("Enabled", header.isEnabled());
+            row.put("Key", header.getKey());
+            row.put("Value", header.getValue());
+            rows.add(row);
+        }
+
+        tablePanel.setRows(rows);
+
+        // Reapply filter after setting new data
+        applyCurrentFilter();
+    }
+
+    /**
+     * Build sorted headers list with default headers first
+     */
+    private List<HttpHeader> buildSortedHeadersList(List<HttpHeader> inputList) {
+        List<HttpHeader> sortedList = new ArrayList<>();
+        Map<String, HttpHeader> inputMap = new LinkedHashMap<>();
+
+        // Convert list to map for easy lookup
+        for (HttpHeader header : inputList) {
+            inputMap.put(header.getKey(), header);
+        }
+
+        // Add default headers first (in order)
+        for (Object[] defaultHeader : DEFAULT_HEADERS) {
+            String key = (String) defaultHeader[0];
+            HttpHeader header = findHeaderIgnoreCase(inputMap, key);
+
+            if (header != null) {
+                sortedList.add(header);
+            } else {
+                // Add default header with default value
+                String defaultValue = (String) defaultHeader[1];
+                sortedList.add(new HttpHeader(true, key, defaultValue));
+            }
+        }
+
+        // Add non-default headers
+        for (HttpHeader header : inputList) {
+            if (!isDefaultHeader(header.getKey())) {
+                sortedList.add(header);
+            }
+        }
+
+        return sortedList;
+    }
+
+    /**
+     * Find header ignoring case
+     */
+    private HttpHeader findHeaderIgnoreCase(Map<String, HttpHeader> map, String targetKey) {
+        // First try exact match
+        if (map.containsKey(targetKey)) {
+            return map.get(targetKey);
+        }
+
+        // Then try case-insensitive match
+        for (Map.Entry<String, HttpHeader> entry : map.entrySet()) {
+            if (entry.getKey().equalsIgnoreCase(targetKey)) {
+                return entry.getValue();
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Check if header is a default header (case-insensitive)
+     */
+    private boolean isDefaultHeader(String key) {
+        // First try exact match for performance
+        if (DEFAULT_HEADER_KEYS.contains(key)) {
+            return true;
+        }
+
+        // Then try case-insensitive match
+        for (String defaultKey : DEFAULT_HEADER_KEYS) {
+            if (defaultKey.equalsIgnoreCase(key)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Show default headers if they are currently hidden
+     */
+    public void ensureDefaultHeadersVisible() {
+        if (!showDefaultHeaders) {
+            toggleDefaultHeadersVisibility();
+        }
+    }
+
+    /**
+     * 聚焦到指定的 header 行并开始编辑 Value 列
+     * 用于从自定义 header 行跳转到默认 header 行
+     *
+     * @param key header 的 key 名称（大小写不敏感）
+     */
+    public void focusOnHeader(String key) {
+        if (tablePanel == null || key == null || key.trim().isEmpty()) {
+            return;
+        }
+
+        JTable table = tablePanel.getTable();
+        DefaultTableModel model = (DefaultTableModel) table.getModel();
+
+        // 在模型中查找匹配的行
+        int modelRow = findHeaderRowInModel(model, key);
+        if (modelRow < 0) {
+            return;
+        }
+
+        // 转换为视图行索引（考虑过滤器）
+        int viewRow = table.convertRowIndexToView(modelRow);
+        if (viewRow < 0) {
+            return;
+        }
+
+        // 选中并滚动到该行
+        table.setRowSelectionInterval(viewRow, viewRow);
+        table.scrollRectToVisible(table.getCellRect(viewRow, 2, true));
+
+        // 延迟启动编辑，确保UI已更新
+        startEditingValueCell(table, viewRow);
+    }
+
+    /**
+     * 在表格模型中查找指定 key 的行
+     */
+    private int findHeaderRowInModel(DefaultTableModel model, String key) {
+        for (int row = 0; row < model.getRowCount(); row++) {
+            Object keyObj = model.getValueAt(row, 1); // Column 1 is Key
+            if (keyObj != null && key.equalsIgnoreCase(keyObj.toString().trim())) {
+                return row;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * 启动 Value 单元格的编辑
+     */
+    private void startEditingValueCell(JTable table, int viewRow) {
+        SwingUtilities.invokeLater(() -> {
+            table.editCellAt(viewRow, 2); // Column 2 is Value
+            Component editor = table.getEditorComponent();
+            if (editor != null) {
+                editor.requestFocus();
+            }
+        });
+    }
+
+    /**
+     * Remove a header by key name
+     */
+    public void removeHeader(String key) {
+        if (tablePanel == null || key == null) {
+            return;
+        }
+
+        key = key.trim();
+        if (key.isEmpty()) {
+            return;
+        }
+
+        JTable table = tablePanel.getTable();
+        DefaultTableModel model = (DefaultTableModel) table.getModel();
+
+        // Find and remove rows with matching key (case-insensitive)
+        // Note: Column index 1 is now the Key column (0 is Enabled checkbox)
+        for (int i = model.getRowCount() - 1; i >= 0; i--) {
+            Object keyObj = model.getValueAt(i, 1);
+            if (keyObj != null && key.equalsIgnoreCase(keyObj.toString().trim())) {
+                model.removeRow(i);
+            }
+        }
+
+        // Reapply filter after removing data
+        applyCurrentFilter();
+    }
+
+    /**
+     * Set or update a header value. If the header exists, update its value; otherwise, add a new header
+     */
+    public void setOrUpdateHeader(String key, String value) {
+        if (tablePanel == null || key == null) {
+            return;
+        }
+
+        key = key.trim();
+        value = value == null ? "" : value.trim();
+
+        if (key.isEmpty()) {
+            return;
+        }
+
+        JTable table = tablePanel.getTable();
+        DefaultTableModel model = (DefaultTableModel) table.getModel();
+
+        // First, try to find existing header (case-insensitive)
+        // Note: Column index 1 is now the Key column (0 is Enabled checkbox)
+        boolean found = false;
+        for (int i = 0; i < model.getRowCount(); i++) {
+            Object keyObj = model.getValueAt(i, 1);
+            if (keyObj != null && key.equalsIgnoreCase(keyObj.toString().trim())) {
+                // Update existing header value
+                model.setValueAt(value, i, 2); // Column 2 is Value
+                model.setValueAt(true, i, 0); // Ensure it's enabled
+                found = true;
+                break;
+            }
+        }
+
+        // If not found, add new header
+        if (!found) {
+            // Check if this is a default header that should be added in the correct position
+            if (DEFAULT_HEADER_KEYS.contains(key)) {
+                addDefaultHeaderInOrder(key, value, model);
+            } else {
+                // Add as regular header using direct model manipulation to avoid triggering auto-append
+                addNonDefaultHeader(key, value, model);
+            }
+        }
+
+        // Reapply filter after updating data
+        applyCurrentFilter();
+    }
+
+    /**
+     * Add a default header in the correct position among other default headers
+     */
+    private void addDefaultHeaderInOrder(String key, String value, DefaultTableModel model) {
+        int insertPosition = findInsertPositionForDefaultHeader(key, model);
+        if (insertPosition >= 0) {
+            model.insertRow(insertPosition, new Object[]{true, key, value, ""});
+        } else {
+            model.addRow(new Object[]{true, key, value, ""});
+        }
+    }
+
+    /** 返回默认 header 应插入的行索引，-1 表示追加到末尾 */
+    private int findInsertPositionForDefaultHeader(String key, DefaultTableModel model) {
+        String[] defaultOrder = {USER_AGENT, ACCEPT, ACCEPT_ENCODING, CONNECTION};
+        int keyIndex = indexInArray(defaultOrder, key);
+        if (keyIndex < 0) return -1;
+
+        for (int row = 0; row < model.getRowCount(); row++) {
+            Object rowKeyObj = model.getValueAt(row, 1);
+            if (rowKeyObj == null) continue;
+            int rowKeyIndex = indexInArray(defaultOrder, rowKeyObj.toString().trim());
+            if (rowKeyIndex > keyIndex || rowKeyIndex == -1) {
+                return row;
+            }
+        }
+        return -1;
+    }
+
+    /** 返回字符串在数组中的索引，不存在返回 -1 */
+    private static int indexInArray(String[] array, String target) {
+        for (int i = 0; i < array.length; i++) {
+            if (array[i].equals(target)) return i;
+        }
+        return -1;
+    }
+
+    /**
+     * Add a non-default header intelligently to avoid creating extra blank rows
+     */
+    private void addNonDefaultHeader(String key, String value, DefaultTableModel model) {
+        // Check if the last row is empty
+        int rowCount = model.getRowCount();
+        if (rowCount > 0) {
+            int lastRow = rowCount - 1;
+            Object lastKey = model.getValueAt(lastRow, 1); // Column 1 is Key
+            Object lastValue = model.getValueAt(lastRow, 2); // Column 2 is Value
+
+            boolean lastRowIsEmpty = (lastKey == null || lastKey.toString().trim().isEmpty()) &&
+                    (lastValue == null || lastValue.toString().trim().isEmpty());
+
+            if (lastRowIsEmpty) {
+                // Replace the empty row with the new header
+                model.setValueAt(true, lastRow, 0); // Enabled
+                model.setValueAt(key, lastRow, 1); // Key
+                model.setValueAt(value, lastRow, 2); // Value
+                return;
+            }
+        }
+
+        // If no empty row at the end, add new row directly
+        model.addRow(new Object[]{true, key, value, ""});
+    }
+
+    /**
+     * 显示批量编辑对话框
+     * 支持以 "Key: Value" 格式批量粘贴和编辑请求头
+     */
+    private void showBulkEditDialog() {
+        // 1. 将当前表格数据转换为文本格式（Key: Value\n）
+        StringBuilder text = new StringBuilder();
+        List<HttpHeader> currentHeaders = getHeadersList();
+        for (HttpHeader header : currentHeaders) {
+            if (!header.getKey().isEmpty()) {
+                text.append(header.getKey()).append(": ").append(header.getValue()).append("\n");
+            }
+        }
+
+        // 2. 创建文本编辑区域
+        JTextArea textArea = new JTextArea(text.toString());
+        textArea.setLineWrap(false);
+        textArea.setTabSize(4);
+        // 设置背景色，使其看起来像可编辑区域
+        textArea.setBackground(ModernColors.getInputBackgroundColor());
+        textArea.setForeground(ModernColors.getTextPrimary());
+        textArea.setCaretColor(ModernColors.PRIMARY);
+
+        // 将光标定位到文本末尾
+        textArea.setCaretPosition(textArea.getDocument().getLength());
+
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        scrollPane.setPreferredSize(new Dimension(600, 400));
+
+        // 3. 创建提示标签 - 使用国际化，垂直排列
+        JPanel hintPanel = new JPanel();
+        hintPanel.setLayout(new BoxLayout(hintPanel, BoxLayout.Y_AXIS));
+        hintPanel.setOpaque(false);
+
+        // 主提示文本
+        JLabel hintLabel = new JLabel(I18nUtil.getMessage(MessageKeys.BULK_EDIT_HINT));
+        hintLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        hintLabel.setForeground(ModernColors.getTextPrimary());
+
+        // 支持格式说明
+        JLabel formatLabel = new JLabel(I18nUtil.getMessage(MessageKeys.BULK_EDIT_SUPPORTED_FORMATS));
+        formatLabel.setForeground(ModernColors.getTextSecondary());
+        formatLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
+        formatLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        hintPanel.add(hintLabel);
+        hintPanel.add(Box.createVerticalStrut(6)); // 添加3像素的间距
+        hintPanel.add(formatLabel);
+        hintPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+
+        // 4. 组装内容面板
+        JPanel contentPanel = new JPanel(new BorderLayout(0, 5));
+        contentPanel.add(hintPanel, BorderLayout.NORTH);
+        contentPanel.add(scrollPane, BorderLayout.CENTER);
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+
+        // 5. 创建按钮面板
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+        JButton okButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK));
+        JButton cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL));
+
+        buttonPanel.add(okButton);
+        buttonPanel.add(cancelButton);
+
+        // 6. 创建自定义对话框
+        Window window = SwingUtilities.getWindowAncestor(tablePanel);
+        JDialog dialog = new JDialog(window, I18nUtil.getMessage(MessageKeys.BULK_EDIT_HEADERS), Dialog.ModalityType.APPLICATION_MODAL);
+        dialog.setLayout(new BorderLayout());
+        dialog.add(contentPanel, BorderLayout.CENTER);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        // 设置对话框属性
+        dialog.setSize(650, 400);
+        dialog.setMinimumSize(new Dimension(500, 300));
+        dialog.setResizable(true);
+        dialog.setLocationRelativeTo(tablePanel);
+
+        // 7. 按钮事件处理
+        okButton.addActionListener(e -> {
+            parseBulkText(textArea.getText());
+            dialog.dispose();
+        });
+
+        cancelButton.addActionListener(e -> dialog.dispose());
+
+        // 8. 支持 ESC 键关闭对话框
+        dialog.getRootPane().registerKeyboardAction(
+                e -> dialog.dispose(),
+                KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
+                JComponent.WHEN_IN_FOCUSED_WINDOW
+        );
+
+        // 9. 设置默认按钮
+        dialog.getRootPane().setDefaultButton(okButton);
+
+        // 10. 显示对话框
+        dialog.setVisible(true);
+    }
+
+
+    /**
+     * 解析批量编辑的文本内容
+     * 支持格式：
+     * - Key: Value
+     * - Key:Value
+     * - Key = Value
+     * - Key=Value
+     * 空行和 # // 注释行会被忽略。
+     * 已存在 header 的 enabled 状态会被保留。
+     */
+    private void parseBulkText(String text) {
+        if (text == null || text.trim().isEmpty()) {
+            // 如果文本为空，清空所有非默认请求头
+            clearNonDefaultHeaders();
+            return;
+        }
+
+        // 构建当前 header 的 enabled 状态快照，供后续复用
+        Map<String, Boolean> enabledSnapshot = new java.util.LinkedHashMap<>();
+        for (HttpHeader existing : getHeadersList()) {
+            enabledSnapshot.put(existing.getKey().trim().toLowerCase(java.util.Locale.ROOT), existing.isEnabled());
+        }
+
+        List<HttpHeader> headers = new ArrayList<>();
+        // 兼容 \r\n（Windows 粘贴）和 \n
+        String[] lines = text.split("\\r?\\n");
+
+        for (String line : lines) {
+            line = line.trim();
+            if (line.isEmpty() || line.startsWith("#") || line.startsWith("//")) {
+                continue; // 忽略空行和注释
+            }
+
+            String key;
+            String value;
+
+            // 优先以第一个 ':' 分割（HTTP Header 标准格式），其次以第一个 '=' 分割
+            int colonIdx = line.indexOf(':');
+            int equalsIdx = line.indexOf('=');
+
+            if (colonIdx > 0) {
+                key   = line.substring(0, colonIdx).trim();
+                value = line.substring(colonIdx + 1).trim();
+            } else if (equalsIdx > 0) {
+                key   = line.substring(0, equalsIdx).trim();
+                value = line.substring(equalsIdx + 1).trim();
+            } else {
+                // 只有 key，没有分隔符 → 当作 key="" 处理
+                key   = line;
+                value = "";
+            }
+
+            if (!key.isEmpty()) {
+                // 保留原来的 enabled 状态
+                boolean enabled = enabledSnapshot.getOrDefault(key.toLowerCase(java.util.Locale.ROOT), true);
+                headers.add(new HttpHeader(enabled, key, value));
+            }
+        }
+
+        // 更新表格数据
+        setHeadersList(headers);
+    }
+
+    /**
+     * 清空所有非默认请求头
+     */
+    private void clearNonDefaultHeaders() {
+        List<HttpHeader> defaultOnlyHeaders = new ArrayList<>();
+        // 只保留默认请求头
+        for (Object[] defaultHeader : DEFAULT_HEADERS) {
+            String key = (String) defaultHeader[0];
+            String value = (String) defaultHeader[1];
+            defaultOnlyHeaders.add(new HttpHeader(true, key, value));
+        }
+        setHeadersList(defaultOnlyHeaders);
+    }
+}

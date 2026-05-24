@@ -10,7 +10,7 @@ import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.RequestSelectionDialogSupport;
-import com.laker.postman.panel.collections.right.RequestEditPanel;
+import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.panel.functional.table.FunctionalRunnerTableModel;
 import com.laker.postman.model.RunnerRowData;
 import com.laker.postman.panel.functional.table.TableRowTransferHandler;
@@ -727,8 +727,8 @@ public class FunctionalPanel extends UiSingletonPanel {
         RunnerRowData row = tableModel.getRow(rowIndex);
         if (row != null && row.requestItem != null) {
             // 打开请求编辑面板
-            RequestEditPanel editPanel =
-                    UiSingletonFactory.getInstance(RequestEditPanel.class);
+            RequestEditorPanel editPanel =
+                    UiSingletonFactory.getInstance(RequestEditorPanel.class);
             editPanel.showOrCreateTab(row.requestItem);
 
             // 切换到Collections标签

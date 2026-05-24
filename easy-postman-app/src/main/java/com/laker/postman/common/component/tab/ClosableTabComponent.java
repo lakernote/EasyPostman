@@ -5,9 +5,9 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
-import com.laker.postman.panel.collections.right.RequestEditPanel;
-import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
+import com.laker.postman.panel.collections.tree.CollectionTreePanel;
+import com.laker.postman.panel.collections.editor.RequestEditorPanel;
+import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.service.setting.ShortcutManager;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -67,7 +67,7 @@ public class ClosableTabComponent extends JPanel {
     }
 
     public ClosableTabComponent(String title, RequestItemProtocolEnum protocol, boolean isRoot) {
-        this.tabbedPane = UiSingletonFactory.getInstance(RequestEditPanel.class).getTabbedPane();
+        this.tabbedPane = UiSingletonFactory.getInstance(RequestEditorPanel.class).getTabbedPane();
         this.rawTitle = title;
 
         setOpaque(false);
@@ -95,7 +95,7 @@ public class ClosableTabComponent extends JPanel {
         });
 
         // 拖拽排序支持
-        TabbedPaneDragHandler handler = UiSingletonFactory.getInstance(RequestEditPanel.class).getDragHandler();
+        TabbedPaneDragHandler handler = UiSingletonFactory.getInstance(RequestEditorPanel.class).getDragHandler();
         if (handler != null) handler.attachTo(this);
     }
 
@@ -159,7 +159,7 @@ public class ClosableTabComponent extends JPanel {
         if (isInCloseButton(e.getX(), e.getY())) {
             // 点击关闭按钮：先选中再关闭
             tabbedPane.setSelectedIndex(idx);
-            UiSingletonFactory.getInstance(RequestEditPanel.class).closeCurrentTab();
+            UiSingletonFactory.getInstance(RequestEditorPanel.class).closeCurrentTab();
         } else {
             // 普通点击：选中并在左侧树中定位
             tabbedPane.setSelectedIndex(idx);
@@ -174,7 +174,7 @@ public class ClosableTabComponent extends JPanel {
         if (req == null || req.getId() == null) return;
         SwingUtilities.invokeLater(() -> {
             try {
-                UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class)
+                UiSingletonFactory.getInstance(CollectionTreePanel.class)
                         .locateAndSelectRequest(req.getId());
             } catch (Exception ex) {
                 log.error("定位请求节点时出错", ex);
@@ -258,7 +258,7 @@ public class ClosableTabComponent extends JPanel {
 
     private JPopupMenu buildPopupMenu() {
         JPopupMenu menu = new JPopupMenu();
-        RequestEditPanel editPanel = UiSingletonFactory.getInstance(RequestEditPanel.class);
+        RequestEditorPanel editPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class);
 
         JMenuItem closeCurrent = menuItem(MessageKeys.TAB_CLOSE_CURRENT, ShortcutManager.CLOSE_CURRENT_TAB,
                 () -> { int i = tabbedPane.indexOfTabComponent(this); if (i >= 0) { tabbedPane.setSelectedIndex(i); editPanel.closeCurrentTab(); } });
@@ -292,7 +292,7 @@ public class ClosableTabComponent extends JPanel {
     private void closeTabsToTheRight() {
         int thisIdx = tabbedPane.indexOfTabComponent(this);
         if (thisIdx < 0) return;
-        RequestEditPanel editPanel = UiSingletonFactory.getInstance(RequestEditPanel.class);
+        RequestEditorPanel editPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class);
         for (int i = tabbedPane.getTabCount() - 1; i > thisIdx; i--) {
             if (!(tabbedPane.getComponentAt(i) instanceof PlusPanel)) {
                 editPanel.removeTabAtWithCleanup(i);

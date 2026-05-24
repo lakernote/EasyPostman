@@ -7,6 +7,7 @@ import com.laker.postman.model.SavedResponse;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.panel.collections.tree.action.RequestTreeActions;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
+import com.laker.postman.service.collections.CollectionTreeNodes;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -99,21 +100,24 @@ public class RequestTreeKeyboardHandler extends KeyAdapter {
         if (!(selectedNode.getUserObject() instanceof Object[] obj)) return;
 
         if (GROUP.equals(obj[0])) {
-            handleGroupEnter(selectedNode, obj);
+            handleGroupEnter(selectedNode);
         } else if (REQUEST.equals(obj[0])) {
-            handleRequestEnter(obj);
+            CollectionTreeNodes.request(selectedNode).ifPresent(this::handleRequestEnter);
         } else if (SAVED_RESPONSE.equals(obj[0])) {
-            handleSavedResponseEnter((SavedResponse) obj[1]);
+            CollectionTreeNodes.savedResponse(selectedNode).ifPresent(this::handleSavedResponseEnter);
         }
     }
 
     /**
      * 处理分组 Enter 键事件：预览分组
      */
-    private void handleGroupEnter(DefaultMutableTreeNode node, Object[] obj) {
+    private void handleGroupEnter(DefaultMutableTreeNode node) {
         if (node.getChildCount() == 0) return;
 
-        RequestGroup group = ensureRequestGroup(obj);
+        RequestGroup group = CollectionTreeNodes.group(node).orElse(null);
+        if (group == null) {
+            return;
+        }
         RequestEditorPanel editPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class);
         editPanel.showOrCreatePreviewTabForGroup(node, group);
     }
@@ -121,8 +125,7 @@ public class RequestTreeKeyboardHandler extends KeyAdapter {
     /**
      * 处理请求 Enter 键事件：预览请求
      */
-    private void handleRequestEnter(Object[] obj) {
-        HttpRequestItem item = (HttpRequestItem) obj[1];
+    private void handleRequestEnter(HttpRequestItem item) {
         UiSingletonFactory.getInstance(RequestEditorPanel.class).showOrCreatePreviewTab(item);
     }
 
@@ -134,17 +137,4 @@ public class RequestTreeKeyboardHandler extends KeyAdapter {
         editPanel.showOrCreatePreviewTabForSavedResponse(savedResponse);
     }
 
-    /**
-     * 确保返回 RequestGroup 对象
-     */
-    private RequestGroup ensureRequestGroup(Object[] obj) {
-        Object groupData = obj[1];
-        if (groupData instanceof RequestGroup requestGroup) {
-            return requestGroup;
-        } else {
-            RequestGroup group = new RequestGroup(String.valueOf(groupData));
-            obj[1] = group;
-            return group;
-        }
-    }
 }

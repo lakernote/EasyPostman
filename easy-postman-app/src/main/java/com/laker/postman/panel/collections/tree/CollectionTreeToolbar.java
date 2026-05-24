@@ -20,6 +20,7 @@ import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.apipost.ApiPostCollectionParser;
 import com.laker.postman.service.common.CollectionParseResult;
 import com.laker.postman.service.common.TreeNodeBuilder;
+import com.laker.postman.service.collections.CollectionTreeNodes;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.har.HarParser;
 import com.laker.postman.service.http.HttpUtil;
@@ -275,7 +276,7 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
                 DefaultMutableTreeNode easyPostmanGroup = leftPanel.findGroupNode(leftPanel.getRootTreeNode(), groupName);
                 if (easyPostmanGroup == null) {
                     RequestGroup group = new RequestGroup(groupName);
-                    easyPostmanGroup = new DefaultMutableTreeNode(new Object[]{GROUP, group});
+                    easyPostmanGroup = CollectionTreeNodes.groupNode(group);
                     leftPanel.getRootTreeNode().add(easyPostmanGroup);
                 }
                 // 读取并解析文件
@@ -584,7 +585,11 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
         if (userObj instanceof Object[] obj) {
             String type = String.valueOf(obj[0]);
             if (GROUP.equals(type)) {
-                String groupName = obj[1] instanceof RequestGroup group ? group.getName() : String.valueOf(obj[1]);
+                RequestGroup group = CollectionTreeNodes.group(src).orElse(null);
+                if (group == null) {
+                    return false;
+                }
+                String groupName = group.getName();
                 DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(obj.clone());
                 boolean childMatched = false;
                 for (int i = 0; i < src.getChildCount(); i++) {
@@ -598,7 +603,10 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
                     matched = true;
                 }
             } else if (REQUEST.equals(type)) {
-                HttpRequestItem item = (HttpRequestItem) obj[1];
+                HttpRequestItem item = CollectionTreeNodes.request(src).orElse(null);
+                if (item == null) {
+                    return false;
+                }
                 boolean nameMatch = item.getName() != null &&
                         matchesText(item.getName(), keyword, caseSensitive, wholeWord);
                 boolean urlMatch = item.getUrl() != null &&

@@ -7,6 +7,7 @@ import com.laker.postman.model.RequestGroup;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.SavedResponse;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
+import com.laker.postman.service.collections.CollectionTreeNodes;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.IconUtil;
@@ -90,16 +91,13 @@ public class RequestTreeCellRenderer extends DefaultTreeCellRenderer {
         showMoreButton = false;
 
         DefaultMutableTreeNode node = (DefaultMutableTreeNode) value;
-        Object userObject = node.getUserObject();
-        if (userObject instanceof Object[] obj) {
-            if (CollectionTreePanel.GROUP.equals(obj[0])) {
-                renderGroupNode(node, obj, row);
-            } else if (CollectionTreePanel.REQUEST.equals(obj[0])) {
-                applyRequestRendering((HttpRequestItem) obj[1]);
-            } else if (CollectionTreePanel.SAVED_RESPONSE.equals(obj[0])) {
-                applySavedResponseRendering((SavedResponse) obj[1]);
-            }
-        }
+        CollectionTreeNodes.group(node).ifPresentOrElse(
+                group -> renderGroupNode(node, group, row),
+                () -> CollectionTreeNodes.request(node).ifPresentOrElse(
+                        this::applyRequestRendering,
+                        () -> CollectionTreeNodes.savedResponse(node).ifPresent(this::applySavedResponseRendering)
+                )
+        );
 
         return this;
     }
@@ -109,9 +107,8 @@ public class RequestTreeCellRenderer extends DefaultTreeCellRenderer {
      */
     private static final int BUTTONS_RESERVED_WIDTH = ADD_BUTTON_WIDTH + MORE_BUTTON_WIDTH + 4;
 
-    private void renderGroupNode(DefaultMutableTreeNode node, Object[] obj, int row) {
-        Object groupData = obj[1];
-        String groupName = groupData instanceof RequestGroup rg ? rg.getName() : String.valueOf(groupData);
+    private void renderGroupNode(DefaultMutableTreeNode node, RequestGroup group, int row) {
+        String groupName = group.getName();
         boolean isRootLevel = node.getParent() instanceof DefaultMutableTreeNode p &&
                 CollectionTreePanel.ROOT.equals(String.valueOf(p.getUserObject()));
         boolean isHover = (row == hoveredRow);

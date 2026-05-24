@@ -27,6 +27,7 @@ public final class MessageKeys {
     public static final String TOOLBOX_CAPTURE_IMPORT = "toolbox.capture.import";
     public static final String TOOLBOX_CAPTURE_IMPORT_EMPTY = "toolbox.capture.import.empty";
     public static final String TOOLBOX_CAPTURE_IMPORT_SUCCESS = "toolbox.capture.import.success";
+    public static final String TOOLBOX_CAPTURE_IMPORT_UNAVAILABLE = "toolbox.capture.import.unavailable";
     public static final String TOOLBOX_CAPTURE_IMPORT_DEFAULT_BATCH_NAME = "toolbox.capture.import.default_batch_name";
     public static final String TOOLBOX_CAPTURE_CA_ACTIONS = "toolbox.capture.ca_actions";
     public static final String TOOLBOX_CAPTURE_STATUS_DETAILS = "toolbox.capture.status.details";

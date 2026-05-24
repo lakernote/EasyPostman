@@ -4,6 +4,8 @@ import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.constants.AppConstants;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.ioc.BeanFactory;
+import com.laker.postman.plugin.bridge.AppRequestCollectionImportService;
+import com.laker.postman.plugin.bridge.RequestCollectionImportService;
 import com.laker.postman.plugin.runtime.PluginRuntime;
 import com.laker.postman.service.UpdateService;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +27,12 @@ public class StartupCoordinator {
         notifyProgress(progressListener, StartupStage.STARTING);
         BeanFactory.init(AppConstants.BASE_PACKAGE);
         StartupDiagnostics.mark("BeanFactory initialized");
+
+        PluginRuntime.getRegistry().registerService(
+                RequestCollectionImportService.class,
+                new AppRequestCollectionImportService()
+        );
+        StartupDiagnostics.mark("Host bridge services registered");
 
         notifyProgress(progressListener, StartupStage.LOADING_PLUGINS);
         PluginRuntime.initialize();

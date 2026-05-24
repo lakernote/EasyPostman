@@ -106,6 +106,11 @@ final class PluginLoader {
         }
 
         @Override
+        public <T> T getService(Class<T> type) {
+            return registry.getService(type);
+        }
+
+        @Override
         public void registerToolboxContribution(com.laker.postman.plugin.api.ToolboxContribution contribution) {
             registry.registerToolboxContribution(contribution);
         }

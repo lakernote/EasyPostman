@@ -4,6 +4,8 @@ import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import java.text.MessageFormat;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.Objects;
@@ -18,6 +20,17 @@ import java.util.concurrent.ConcurrentMap;
 @UtilityClass
 public class I18nUtil {
     private static final String BUNDLE_NAME = "messages";
+    private static final ResourceBundle EMPTY_RESOURCE_BUNDLE = new ResourceBundle() {
+        @Override
+        protected Object handleGetObject(String key) {
+            throw new MissingResourceException("Missing resource key", BUNDLE_NAME, key);
+        }
+
+        @Override
+        public Enumeration<String> getKeys() {
+            return Collections.emptyEnumeration();
+        }
+    };
     private static ResourceBundle resourceBundle;
     private static Locale currentLocale;
     private static final ConcurrentMap<BundleCacheKey, ResourceBundle> BUNDLE_CACHE = new ConcurrentHashMap<>();
@@ -75,7 +88,7 @@ public class I18nUtil {
                 log.info("Fallback to English resource bundle");
             } catch (MissingResourceException ex) {
                 log.error("Failed to load fallback English resource bundle", ex);
-                throw new IllegalStateException("Unable to load any resource bundle", ex);
+                resourceBundle = EMPTY_RESOURCE_BUNDLE;
             }
         }
     }

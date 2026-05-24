@@ -1,280 +1,84 @@
 package com.laker.postman.plugin.capture;
 
-import com.laker.postman.common.UiSingletonFactory;
-import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.frame.MainFrame;
-import com.laker.postman.model.HttpHeader;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestBodyTypes;
-import com.laker.postman.model.RequestGroup;
-import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.panel.collections.tree.CollectionTreePanel;
-import com.laker.postman.panel.collections.editor.RequestEditorPanel;
-import com.laker.postman.util.I18nUtil;
+import com.laker.postman.model.RequestImportBodyTypes;
+import com.laker.postman.model.RequestImportDraft;
+import com.laker.postman.model.RequestImportHeader;
+import com.laker.postman.model.RequestImportProtocol;
+import com.laker.postman.model.RequestImportResult;
+import com.laker.postman.plugin.bridge.RequestCollectionImportService;
 import com.laker.postman.util.NotificationUtil;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JComponent;
-import javax.swing.JDialog;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTree;
-import javax.swing.KeyStroke;
-import javax.swing.SwingUtilities;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeCellRenderer;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreeModel;
-import javax.swing.tree.TreePath;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.UUID;
 
 import static com.laker.postman.plugin.capture.CaptureI18n.t;
 
 final class CaptureRequestCollectionImporter {
+
+    private final RequestCollectionImportService importService;
+
+    CaptureRequestCollectionImporter(RequestCollectionImportService importService) {
+        this.importService = importService;
+    }
 
     void importFlows(List<CaptureFlow> flows) {
         if (flows == null || flows.isEmpty()) {
             NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_CAPTURE_IMPORT_EMPTY));
             return;
         }
-
-        CollectionTreePanel collectionPanel = UiSingletonFactory.getInstance(CollectionTreePanel.class);
-        RequestEditorPanel requestEditPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class);
-
-        Object[] groupObj = chooseGroup(collectionPanel.getGroupTreeModel());
-        if (groupObj == null) {
+        if (importService == null) {
+            NotificationUtil.showError(t(MessageKeys.TOOLBOX_CAPTURE_IMPORT_UNAVAILABLE));
             return;
         }
 
+        RequestImportResult result = importService.importRequests(toDrafts(flows));
+        if (result == null || result.status() == RequestImportResult.Status.UNAVAILABLE) {
+            NotificationUtil.showError(t(MessageKeys.TOOLBOX_CAPTURE_IMPORT_UNAVAILABLE));
+            return;
+        }
+        if (result.isImported()) {
+            NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_CAPTURE_IMPORT_SUCCESS, result.importedCount()));
+        }
+    }
+
+    List<RequestImportDraft> toDrafts(List<CaptureFlow> flows) {
+        if (flows == null || flows.isEmpty()) {
+            return List.of();
+        }
+
         Map<String, Integer> nameCounts = new LinkedHashMap<>();
-        HttpRequestItem lastImported = null;
+        List<RequestImportDraft> drafts = new ArrayList<>(flows.size());
         for (CaptureFlow flow : flows) {
-            String requestName = nextRequestName(flow, nameCounts);
-            HttpRequestItem item = toHttpRequestItem(flow, requestName);
-            collectionPanel.saveRequestToGroup(groupObj, item);
-            lastImported = item;
+            drafts.add(toDraft(flow, nextRequestName(flow, nameCounts)));
         }
-
-        if (lastImported != null) {
-            collectionPanel.locateAndSelectRequest(lastImported.getId());
-            requestEditPanel.showOrCreateTab(lastImported);
-        }
-        NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_CAPTURE_IMPORT_SUCCESS, flows.size()));
+        return drafts;
     }
 
-    private Object[] chooseGroup(TreeModel groupTreeModel) {
-        if (groupTreeModel == null || groupTreeModel.getRoot() == null) {
-            JOptionPane.showMessageDialog(null,
-                    I18nUtil.getMessage(com.laker.postman.util.MessageKeys.PLEASE_SELECT_GROUP),
-                    I18nUtil.getMessage(com.laker.postman.util.MessageKeys.SAVE_REQUEST),
-                    JOptionPane.INFORMATION_MESSAGE);
-            return null;
-        }
-
-        JTree groupTree = createGroupTree(groupTreeModel);
-        JPanel mainPanel = new JPanel(new BorderLayout(0, 10));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(16, 20, 16, 20));
-
-        JLabel groupLabel = new JLabel(I18nUtil.getMessage(com.laker.postman.util.MessageKeys.SELECT_GROUP) + ":");
-        groupLabel.setFont(groupLabel.getFont().deriveFont(groupLabel.getFont().getStyle() | java.awt.Font.BOLD, 13f));
-        mainPanel.add(groupLabel, BorderLayout.NORTH);
-
-        JScrollPane treeScroll = new JScrollPane(groupTree);
-        treeScroll.setPreferredSize(new Dimension(350, 220));
-        treeScroll.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(200, 200, 200), 1),
-                BorderFactory.createEmptyBorder(4, 4, 4, 4)
-        ));
-        mainPanel.add(treeScroll, BorderLayout.CENTER);
-
-        JDialog dialog = new JDialog(UiSingletonFactory.getInstance(MainFrame.class),
-                I18nUtil.getMessage(com.laker.postman.util.MessageKeys.SELECT_GROUP), true);
-        dialog.setLayout(new BorderLayout());
-        dialog.add(mainPanel, BorderLayout.CENTER);
-
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 12));
-        JButton cancelButton = new JButton(I18nUtil.getMessage(com.laker.postman.util.MessageKeys.BUTTON_CANCEL));
-        JButton okButton = new JButton(I18nUtil.getMessage(com.laker.postman.util.MessageKeys.GENERAL_OK));
-        cancelButton.setPreferredSize(new Dimension(80, 32));
-        okButton.setPreferredSize(new Dimension(80, 32));
-        buttonPanel.add(cancelButton);
-        buttonPanel.add(okButton);
-        dialog.add(buttonPanel, BorderLayout.SOUTH);
-
-        final Object[] result = {null};
-        Runnable okAction = () -> {
-            TreePath selectedPath = groupTree.getSelectionPath();
-            if (selectedPath == null) {
-                NotificationUtil.showWarning(I18nUtil.getMessage(com.laker.postman.util.MessageKeys.PLEASE_SELECT_GROUP));
-                groupTree.requestFocusInWindow();
-                return;
-            }
-
-            Object selectedNode = selectedPath.getLastPathComponent();
-            if (selectedNode instanceof DefaultMutableTreeNode node) {
-                Object userObj = node.getUserObject();
-                if (userObj instanceof Object[] arr && CollectionTreePanel.GROUP.equals(arr[0])) {
-                    result[0] = arr;
-                    dialog.dispose();
-                    return;
-                }
-            }
-
-            NotificationUtil.showWarning(I18nUtil.getMessage(com.laker.postman.util.MessageKeys.PLEASE_SELECT_VALID_GROUP));
-        };
-
-        okButton.addActionListener(e -> okAction.run());
-        cancelButton.addActionListener(e -> dialog.dispose());
-        dialog.getRootPane().setDefaultButton(okButton);
-        dialog.getRootPane().registerKeyboardAction(
-                e -> dialog.dispose(),
-                KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
-                JComponent.WHEN_IN_FOCUSED_WINDOW
+    private RequestImportDraft toDraft(CaptureFlow flow, String requestName) {
+        return new RequestImportDraft(
+                "",
+                requestName,
+                flow.collectionRequestUrl(),
+                flow.method(),
+                resolveProtocol(flow),
+                toHeaders(flow),
+                buildDescription(flow),
+                resolveBodyType(flow),
+                resolveBody(flow)
         );
-
-        dialog.setSize(420, 390);
-        dialog.setLocationRelativeTo(UiSingletonFactory.getInstance(MainFrame.class));
-        dialog.setResizable(false);
-        SwingUtilities.invokeLater(groupTree::requestFocusInWindow);
-        dialog.setVisible(true);
-        return (Object[]) result[0];
     }
 
-    private JTree createGroupTree(TreeModel groupTreeModel) {
-        DefaultMutableTreeNode rootNode = (DefaultMutableTreeNode) groupTreeModel.getRoot();
-        TreeModel filteredModel = new DefaultTreeModel(rootNode) {
-            @Override
-            public int getChildCount(Object parent) {
-                if (parent == rootNode) {
-                    return rootNode.getChildCount();
-                }
-                if (parent instanceof DefaultMutableTreeNode node) {
-                    Object userObj = node.getUserObject();
-                    if (userObj instanceof Object[] arr && CollectionTreePanel.GROUP.equals(arr[0])) {
-                        int groupCount = 0;
-                        for (int i = 0; i < node.getChildCount(); i++) {
-                            Object childObj = ((DefaultMutableTreeNode) node.getChildAt(i)).getUserObject();
-                            if (childObj instanceof Object[] cArr && CollectionTreePanel.GROUP.equals(cArr[0])) {
-                                groupCount++;
-                            }
-                        }
-                        return groupCount;
-                    }
-                }
-                return 0;
-            }
-
-            @Override
-            public Object getChild(Object parent, int index) {
-                if (parent == rootNode) {
-                    return rootNode.getChildAt(index);
-                }
-                if (parent instanceof DefaultMutableTreeNode node) {
-                    int groupIdx = -1;
-                    for (int i = 0; i < node.getChildCount(); i++) {
-                        Object childObj = ((DefaultMutableTreeNode) node.getChildAt(i)).getUserObject();
-                        if (childObj instanceof Object[] cArr && CollectionTreePanel.GROUP.equals(cArr[0])) {
-                            groupIdx++;
-                            if (groupIdx == index) {
-                                return node.getChildAt(i);
-                            }
-                        }
-                    }
-                }
-                return null;
-            }
-
-            @Override
-            public boolean isLeaf(Object node) {
-                if (node == rootNode) {
-                    return rootNode.getChildCount() == 0;
-                }
-                if (node instanceof DefaultMutableTreeNode treeNode) {
-                    Object userObj = treeNode.getUserObject();
-                    if (userObj instanceof Object[] arr && CollectionTreePanel.GROUP.equals(arr[0])) {
-                        for (int i = 0; i < treeNode.getChildCount(); i++) {
-                            Object childObj = ((DefaultMutableTreeNode) treeNode.getChildAt(i)).getUserObject();
-                            if (childObj instanceof Object[] cArr && CollectionTreePanel.GROUP.equals(cArr[0])) {
-                                return false;
-                            }
-                        }
-                        return true;
-                    }
-                }
-                return true;
-            }
-        };
-
-        JTree groupTree = new JTree(filteredModel);
-        groupTree.setRootVisible(false);
-        groupTree.setShowsRootHandles(true);
-        groupTree.setRowHeight(28);
-        groupTree.putClientProperty("FlatLaf.style", "wideCellRenderer: true");
-        groupTree.setCellRenderer(new DefaultTreeCellRenderer() {
-            @Override
-            public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel,
-                                                          boolean expanded, boolean leaf, int row, boolean hasFocus) {
-                super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
-                if (value instanceof DefaultMutableTreeNode node) {
-                    Object userObj = node.getUserObject();
-                    if (userObj instanceof Object[] arr
-                            && CollectionTreePanel.GROUP.equals(arr[0])
-                            && arr[1] instanceof RequestGroup group) {
-                        setText(group.getName());
-                        String iconName = node.getLevel() == 1 ? "icons/collection.svg" : "icons/group.svg";
-                        setIcon(new FlatSVGIcon(iconName, 16, 16));
-                    } else {
-                        setText("");
-                        setIcon(null);
-                    }
-                }
-                return this;
-            }
-        });
-        for (int i = 0; i < groupTree.getRowCount(); i++) {
-            groupTree.expandRow(i);
-        }
-        if (groupTree.getRowCount() > 0) {
-            groupTree.setSelectionRow(0);
-        }
-        return groupTree;
-    }
-
-    private HttpRequestItem toHttpRequestItem(CaptureFlow flow, String requestName) {
-        HttpRequestItem item = new HttpRequestItem();
-        item.setId(UUID.randomUUID().toString().replace("-", ""));
-        item.setName(requestName);
-        item.setUrl(flow.collectionRequestUrl());
-        item.setMethod(flow.method());
-        item.setProtocol(resolveProtocol(flow));
-        item.setHeadersList(toHeaders(flow));
-        item.setDescription(buildDescription(flow));
-        populateBody(flow, item);
-        return item;
-    }
-
-    private List<HttpHeader> toHeaders(CaptureFlow flow) {
-        List<HttpHeader> headers = new ArrayList<>();
+    private List<RequestImportHeader> toHeaders(CaptureFlow flow) {
+        List<RequestImportHeader> headers = new ArrayList<>();
         for (Map.Entry<String, String> entry : flow.requestHeadersSnapshot().entrySet()) {
             String key = entry.getKey();
             if (shouldSkipHeader(key, flow)) {
                 continue;
             }
-            headers.add(new HttpHeader(true, key, entry.getValue()));
+            headers.add(new RequestImportHeader(true, key, entry.getValue()));
         }
         return headers;
     }
@@ -298,30 +102,27 @@ final class CaptureRequestCollectionImporter {
         return false;
     }
 
-    private RequestItemProtocolEnum resolveProtocol(CaptureFlow flow) {
+    private RequestImportProtocol resolveProtocol(CaptureFlow flow) {
         if (flow.isWebSocketProtocol()) {
-            return RequestItemProtocolEnum.WEBSOCKET;
+            return RequestImportProtocol.WEBSOCKET;
         }
         if (flow.isSseProtocol()) {
-            return RequestItemProtocolEnum.SSE;
+            return RequestImportProtocol.SSE;
         }
-        return RequestItemProtocolEnum.HTTP;
+        return RequestImportProtocol.HTTP;
     }
 
-    private void populateBody(CaptureFlow flow, HttpRequestItem item) {
+    private String resolveBodyType(CaptureFlow flow) {
         if (flow.isWebSocketProtocol()) {
-            item.setBodyType(RequestBodyTypes.BODY_TYPE_RAW);
-            item.setBody("");
-            return;
+            return RequestImportBodyTypes.RAW;
         }
-        String bodyText = flow.requestBodyImportText();
-        if (!bodyText.isBlank()) {
-            item.setBodyType(RequestBodyTypes.BODY_TYPE_RAW);
-            item.setBody(bodyText);
-        } else {
-            item.setBodyType(RequestBodyTypes.BODY_TYPE_NONE);
-            item.setBody("");
-        }
+        return flow.requestBodyImportText().isBlank()
+                ? RequestImportBodyTypes.NONE
+                : RequestImportBodyTypes.RAW;
+    }
+
+    private String resolveBody(CaptureFlow flow) {
+        return flow.isWebSocketProtocol() ? "" : flow.requestBodyImportText();
     }
 
     private String buildDescription(CaptureFlow flow) {

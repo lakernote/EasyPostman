@@ -5,6 +5,7 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.model.*;
+import com.laker.postman.service.collections.CollectionTreeNodes;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -25,10 +26,6 @@ import static com.laker.postman.model.RequestBodyTypes.*;
  */
 @Slf4j
 public class HarParser {
-    // 常量定义
-    private static final String GROUP = "group";
-    private static final String REQUEST = "request";
-
     /**
      * 私有构造函数，防止实例化
      */
@@ -59,7 +56,7 @@ public class HarParser {
             // 创建分组节点
             String groupName = "HAR Import " + System.currentTimeMillis();
             RequestGroup collectionGroup = new RequestGroup(groupName);
-            DefaultMutableTreeNode collectionNode = new DefaultMutableTreeNode(new Object[]{GROUP, collectionGroup});
+            DefaultMutableTreeNode collectionNode = CollectionTreeNodes.groupNode(collectionGroup);
 
             // 解析 entries
             JSONArray entries = logObj.getJSONArray("entries");
@@ -73,8 +70,7 @@ public class HarParser {
                 JSONObject entry = (JSONObject) entryObj;
                 HttpRequestItem requestItem = parseHarEntry(entry);
                 if (requestItem != null) {
-                    DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(new Object[]{REQUEST, requestItem});
-                    collectionNode.add(requestNode);
+                    collectionNode.add(CollectionTreeNodes.requestNode(requestItem));
                 }
             }
 

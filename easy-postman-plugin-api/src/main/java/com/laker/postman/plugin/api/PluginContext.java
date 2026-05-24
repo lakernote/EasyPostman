@@ -29,6 +29,13 @@ public interface PluginContext {
     <T> void registerService(Class<T> type, T service);
 
     /**
+     * 获取宿主或其他插件已注册的桥接服务。
+     */
+    default <T> T getService(Class<T> type) {
+        return null;
+    }
+
+    /**
      * 注册 Toolbox 面板扩展。
      */
     void registerToolboxContribution(ToolboxContribution contribution);

@@ -2,9 +2,9 @@ package com.laker.postman.panel.collections.editor;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.IdUtil;
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.UiSingletonFactory;
+import com.laker.postman.common.component.tree.CollectionGroupTreeFactory;
 import com.laker.postman.common.component.tab.ClosableTabComponent;
 import com.laker.postman.common.component.tab.PlusPanel;
 import com.laker.postman.common.component.tab.PlusTabComponent;
@@ -479,7 +479,7 @@ public class RequestEditorPanel extends UiSingletonPanel {
         gbc.weighty = 1.0;
         gbc.fill = GridBagConstraints.BOTH;
         gbc.insets = new Insets(0, 0, 0, 0);
-        JTree groupTree = getGroupTree(groupTreeModel);
+        JTree groupTree = CollectionGroupTreeFactory.createTree(groupTreeModel);
 
         // 展开第一层节点
         for (int i = 0; i < groupTree.getRowCount(); i++) {
@@ -583,96 +583,6 @@ public class RequestEditorPanel extends UiSingletonPanel {
         dialog.setVisible(true);
 
         return (Object[]) result[0];
-    }
-
-    private static JTree getGroupTree(TreeModel groupTreeModel) {
-        DefaultMutableTreeNode rootNode = (DefaultMutableTreeNode) groupTreeModel.getRoot();
-        TreeModel filteredModel = new DefaultTreeModel(rootNode) {
-            @Override
-            public int getChildCount(Object parent) {
-                if (parent == rootNode) {
-                    // 根节点不过滤，直接返回所有子节点
-                    return rootNode.getChildCount();
-                }
-                if (parent instanceof DefaultMutableTreeNode node) {
-                    Object userObj = node.getUserObject();
-                    if (userObj instanceof Object[] arr && GROUP.equals(arr[0])) {
-                        int groupCount = 0;
-                        for (int i = 0; i < node.getChildCount(); i++) {
-                            Object childObj = ((DefaultMutableTreeNode) node.getChildAt(i)).getUserObject();
-                            if (childObj instanceof Object[] cArr && GROUP.equals(cArr[0])) {
-                                groupCount++;
-                            }
-                        }
-                        return groupCount;
-                    }
-                }
-                return 0;
-            }
-
-            @Override
-            public Object getChild(Object parent, int index) {
-                if (parent == rootNode) {
-                    return rootNode.getChildAt(index);
-                }
-                if (parent instanceof DefaultMutableTreeNode node) {
-                    int groupIdx = -1;
-                    for (int i = 0; i < node.getChildCount(); i++) {
-                        Object childObj = ((DefaultMutableTreeNode) node.getChildAt(i)).getUserObject();
-                        if (childObj instanceof Object[] cArr && GROUP.equals(cArr[0])) {
-                            groupIdx++;
-                            if (groupIdx == index) {
-                                return node.getChildAt(i);
-                            }
-                        }
-                    }
-                }
-                return null;
-            }
-
-            @Override
-            public boolean isLeaf(Object node) {
-                if (node == rootNode) {
-                    return rootNode.getChildCount() == 0;
-                }
-                if (node instanceof DefaultMutableTreeNode treeNode) {
-                    Object userObj = treeNode.getUserObject();
-                    if (userObj instanceof Object[] arr && GROUP.equals(arr[0])) {
-                        for (int i = 0; i < treeNode.getChildCount(); i++) {
-                            Object childObj = ((DefaultMutableTreeNode) treeNode.getChildAt(i)).getUserObject();
-                            if (childObj instanceof Object[] cArr && GROUP.equals(cArr[0])) {
-                                return false;
-                            }
-                        }
-                        return true;
-                    }
-                }
-                return true;
-            }
-        };
-        JTree groupTree = new JTree(filteredModel);
-        groupTree.setRootVisible(false);
-        groupTree.setShowsRootHandles(true);
-        groupTree.setCellRenderer(new DefaultTreeCellRenderer() {
-            @Override
-            public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded, boolean leaf, int row, boolean hasFocus) {
-                super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
-                if (value instanceof DefaultMutableTreeNode node) {
-                    Object userObj = node.getUserObject();
-                    if (userObj instanceof Object[] arr && GROUP.equals(arr[0]) && arr[1] instanceof RequestGroup group) {
-                        setText(group.getName());
-                        // 根节点（collection）用 collection.svg，子文件夹用 group.svg
-                        String iconName = node.getLevel() == 1 ? "icons/collection.svg" : "icons/group.svg";
-                        setIcon(new FlatSVGIcon(iconName, 16, 16));
-                    } else {
-                        setText("");
-                        setIcon(null);
-                    }
-                }
-                return this;
-            }
-        });
-        return groupTree;
     }
 
     /**

@@ -19,6 +19,7 @@ import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.http.RequestFinalizer;
 import com.laker.postman.service.postman.PostmanCollectionExporter;
 import com.laker.postman.panel.workspace.WorkspaceTransferCoordinator;
+import com.laker.postman.service.collections.CollectionTreeNodes;
 import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -98,7 +99,7 @@ public class RequestTreeActions {
         } else {
             group.setAuthType(AuthType.INHERIT.getConstant());
         }
-        DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(new Object[]{GROUP, group});
+        DefaultMutableTreeNode groupNode = CollectionTreeNodes.groupNode(group);
 
         int insertIdx = getGroupInsertIndex(parentNode);
         if (insertIdx >= 0 && insertIdx <= parentNode.getChildCount()) {
@@ -143,7 +144,7 @@ public class RequestTreeActions {
         item.setMethod("GET");
         item.setUrl("");
         item.setProtocol(RequestItemProtocolEnum.HTTP);
-        DefaultMutableTreeNode reqNode = new DefaultMutableTreeNode(new Object[]{REQUEST, item});
+        DefaultMutableTreeNode reqNode = CollectionTreeNodes.requestNode(item);
         leftPanel.getTreeModel().insertNodeInto(reqNode, groupNode, groupNode.getChildCount());
         JTree tree = leftPanel.getRequestTree();
         tree.expandPath(new TreePath(groupNode.getPath()));
@@ -170,7 +171,7 @@ public class RequestTreeActions {
         if (!(userObj instanceof Object[] obj)) return;
 
         if (GROUP.equals(obj[0])) {
-            renameGroup(selectedNode, obj);
+            renameGroup(selectedNode);
         } else if (REQUEST.equals(obj[0])) {
             renameRequest(selectedNode, obj);
         } else if (SAVED_RESPONSE.equals(obj[0])) {
@@ -181,11 +182,12 @@ public class RequestTreeActions {
     /**
      * 重命名分组
      */
-    private void renameGroup(DefaultMutableTreeNode selectedNode, Object[] obj) {
-        Object groupData = obj[1];
-        String oldName = groupData instanceof RequestGroup
-                ? ((RequestGroup) groupData).getName()
-                : String.valueOf(groupData);
+    private void renameGroup(DefaultMutableTreeNode selectedNode) {
+        RequestGroup group = CollectionTreeNodes.group(selectedNode).orElse(null);
+        if (group == null) {
+            return;
+        }
+        String oldName = group.getName();
 
         Object result = JOptionPane.showInputDialog(
                 UiSingletonFactory.getInstance(MainFrame.class),
@@ -198,7 +200,7 @@ public class RequestTreeActions {
         if (result != null) {
             String newName = result.toString().trim();
             if (!newName.isEmpty() && !newName.equals(oldName)) {
-                updateGroupName(selectedNode, obj, groupData, newName);
+                updateGroupName(selectedNode, group, newName);
             } else if (newName.isEmpty()) {
                 NotificationUtil.showWarning(
                         I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_GROUP_EMPTY)
@@ -210,12 +212,8 @@ public class RequestTreeActions {
     /**
      * 更新分组名称
      */
-    private void updateGroupName(DefaultMutableTreeNode node, Object[] obj, Object groupData, String newName) {
-        if (groupData instanceof RequestGroup group) {
-            group.setName(newName);
-        } else {
-            obj[1] = new RequestGroup(newName);
-        }
+    private void updateGroupName(DefaultMutableTreeNode node, RequestGroup group, String newName) {
+        group.setName(newName);
         leftPanel.getTreeModel().nodeChanged(node);
 
         // 缓存失效（分组名称改变会影响脚本注释）
@@ -523,7 +521,7 @@ public class RequestTreeActions {
         copy.setName(info.item.getName() + " " +
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_SUFFIX));
 
-        DefaultMutableTreeNode copyNode = new DefaultMutableTreeNode(new Object[]{REQUEST, copy});
+        DefaultMutableTreeNode copyNode = CollectionTreeNodes.requestNode(copy);
         info.parent.insert(copyNode, info.index + 1);
         leftPanel.getTreeModel().reload(info.parent);
         requestTree.expandPath(new TreePath(info.parent.getPath()));
@@ -610,7 +608,7 @@ public class RequestTreeActions {
         pasteItem.setName(copiedItem.getName() + " " +
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_SUFFIX));
 
-        DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(new Object[]{REQUEST, pasteItem});
+        DefaultMutableTreeNode newNode = CollectionTreeNodes.requestNode(pasteItem);
         parent.add(newNode);
     }
 
@@ -654,17 +652,13 @@ public class RequestTreeActions {
         if (!(userObj instanceof Object[] obj) || !GROUP.equals(obj[0])) return;
 
         DefaultMutableTreeNode copyNode = TreeNodeCloner.deepCopyGroupNode(selectedNode);
-        Object[] copyObj = (Object[]) copyNode.getUserObject();
-
-        // 正确处理 RequestGroup 对象的名称
-        String originalName = getGroupName(copyObj[1]);
-        String newName = originalName + I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_SUFFIX);
-
-        if (copyObj[1] instanceof RequestGroup requestGroup) {
-            requestGroup.setName(newName);
-        } else {
-            copyObj[1] = newName;
+        RequestGroup copiedGroup = CollectionTreeNodes.group(copyNode).orElse(null);
+        if (copiedGroup == null) {
+            return;
         }
+        String originalName = copiedGroup.getName();
+        String newName = originalName + I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_COPY_SUFFIX);
+        copiedGroup.setName(newName);
 
         DefaultMutableTreeNode parent = (DefaultMutableTreeNode) selectedNode.getParent();
         if (parent != null) {
@@ -689,8 +683,7 @@ public class RequestTreeActions {
             return;
         }
 
-        Object[] obj = (Object[]) groupNode.getUserObject();
-        String groupName = getGroupName(obj[1]);
+        String groupName = CollectionTreeNodes.group(groupNode).orElseThrow().getName();
 
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle(
@@ -727,8 +720,7 @@ public class RequestTreeActions {
     public void moveCollectionToWorkspace(DefaultMutableTreeNode selectedNode) {
         if (!isValidGroupNode(selectedNode)) return;
 
-        Object[] obj = (Object[]) selectedNode.getUserObject();
-        String collectionName = getGroupName(obj[1]);
+        String collectionName = CollectionTreeNodes.group(selectedNode).orElseThrow().getName();
 
         WorkspaceTransferCoordinator.transferToWorkspace(
                 collectionName,
@@ -778,7 +770,7 @@ public class RequestTreeActions {
         }
 
         log.info("Successfully moved collection '{}' to workspace '{}'",
-                ((Object[]) collectionNode.getUserObject())[1], targetWorkspace.getName());
+                CollectionTreeNodes.group(collectionNode).map(RequestGroup::getName).orElse(""), targetWorkspace.getName());
     }
 
     /**
@@ -828,9 +820,7 @@ public class RequestTreeActions {
     }
 
     private boolean isValidGroupNode(DefaultMutableTreeNode node) {
-        return node != null
-                && node.getUserObject() instanceof Object[] obj
-                && GROUP.equals(obj[0]);
+        return node != null && CollectionTreeNodes.isGroup(node);
     }
 
     private void showInvalidGroupWarning() {
@@ -840,12 +830,6 @@ public class RequestTreeActions {
                 I18nUtil.getMessage(MessageKeys.GENERAL_TIP),
                 JOptionPane.WARNING_MESSAGE
         );
-    }
-
-    private String getGroupName(Object groupData) {
-        return groupData instanceof RequestGroup requestGroup
-                ? requestGroup.getName()
-                : String.valueOf(groupData);
     }
 
     private void collectRequestsRecursively(DefaultMutableTreeNode node, List<HttpRequestItem> list) {

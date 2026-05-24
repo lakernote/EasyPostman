@@ -6,6 +6,7 @@ import com.laker.postman.common.component.button.CloseButton;
 import com.laker.postman.common.component.button.CopyButton;
 import com.laker.postman.common.component.table.EnhancedTablePanel;
 import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.plugin.bridge.RequestCollectionImportService;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.NotificationUtil;
@@ -72,7 +73,7 @@ public class CapturePanel extends JPanel {
     private static final String SETTING_CAPTURE_HOST_FILTER = "plugin.capture.hostFilter";
 
     private final CaptureProxyService proxyService = CaptureRuntime.proxyService();
-    private final CaptureRequestCollectionImporter requestCollectionImporter = new CaptureRequestCollectionImporter();
+    private final CaptureRequestCollectionImporter requestCollectionImporter;
     private final MacCertificateInstallService macCertificateInstallService = new MacCertificateInstallService();
     private final WindowsCertificateInstallService windowsCertificateInstallService = new WindowsCertificateInstallService();
 
@@ -127,6 +128,11 @@ public class CapturePanel extends JPanel {
     private Timer refreshTimer;
 
     public CapturePanel() {
+        this(null);
+    }
+
+    CapturePanel(RequestCollectionImportService importService) {
+        requestCollectionImporter = new CaptureRequestCollectionImporter(importService);
         initUI();
         proxyService.sessionStore().addChangeListener(this::scheduleRefreshTable);
         refreshTable();

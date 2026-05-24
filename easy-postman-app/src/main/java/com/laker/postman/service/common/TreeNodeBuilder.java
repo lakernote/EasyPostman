@@ -2,12 +2,9 @@ package com.laker.postman.service.common;
 
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.SavedResponse;
+import com.laker.postman.service.collections.CollectionTreeNodes;
 
 import javax.swing.tree.DefaultMutableTreeNode;
-
-import static com.laker.postman.service.collections.CollectionTreeNodeTypes.GROUP;
-import static com.laker.postman.service.collections.CollectionTreeNodeTypes.REQUEST;
-import static com.laker.postman.service.collections.CollectionTreeNodeTypes.SAVED_RESPONSE;
 
 /**
  * TreeNode 构建工具类
@@ -27,9 +24,7 @@ public class TreeNodeBuilder {
      */
     public static DefaultMutableTreeNode buildFromParseResult(CollectionParseResult parseResult) {
         // 创建分组节点
-        DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(
-            new Object[]{GROUP, parseResult.getGroup()}
-        );
+        DefaultMutableTreeNode groupNode = CollectionTreeNodes.groupNode(parseResult.getGroup());
 
         // 递归构建子节点
         for (CollectionNode child : parseResult.getChildren()) {
@@ -49,9 +44,7 @@ public class TreeNodeBuilder {
     private static DefaultMutableTreeNode buildFromCollectionNode(CollectionNode node) {
         if (node.isGroup()) {
             // 分组节点
-            DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(
-                new Object[]{GROUP, node.asGroup()}
-            );
+            DefaultMutableTreeNode groupNode = CollectionTreeNodes.groupNode(node.asGroup());
 
             // 递归处理子节点
             for (CollectionNode child : node.getChildren()) {
@@ -62,17 +55,12 @@ public class TreeNodeBuilder {
         } else {
             // 请求节点
             HttpRequestItem request = node.asRequest();
-            DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(
-                new Object[]{REQUEST, request}
-            );
+            DefaultMutableTreeNode requestNode = CollectionTreeNodes.requestNode(request);
 
             // 为响应创建子节点
             if (request.getResponse() != null && !request.getResponse().isEmpty()) {
                 for (SavedResponse savedResp : request.getResponse()) {
-                    DefaultMutableTreeNode responseNode = new DefaultMutableTreeNode(
-                        new Object[]{SAVED_RESPONSE, savedResp}
-                    );
-                    requestNode.add(responseNode);
+                    requestNode.add(CollectionTreeNodes.savedResponseNode(savedResp));
                 }
             }
 

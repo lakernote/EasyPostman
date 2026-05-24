@@ -16,6 +16,7 @@ import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.service.collections.CollectionTreeNodeTypes;
+import com.laker.postman.service.collections.CollectionTreeNodes;
 import com.laker.postman.service.collections.CollectionTreeRootRegistry;
 import com.laker.postman.service.collections.OpenedRequestTabsStore;
 import com.laker.postman.service.collections.CollectionTreeQueryService;
@@ -36,6 +37,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 请求集合面板，展示所有请求分组和请求项
@@ -244,20 +246,21 @@ public class CollectionTreePanel extends UiSingletonPanel {
     /**
      * 将请求保存到指定分组
      *
-     * @param group 分组信息，[type, name/RequestGroup] 形式的数组
+     * @param group 分组信息，[type, RequestGroup] 形式的数组
      * @param item  请求项
      */
     public void saveRequestToGroup(Object[] group, HttpRequestItem item) {
         if (group == null || !GROUP.equals(group[0])) {
             return;
         }
-        Object groupData = group[1];
-        String groupName = groupData instanceof RequestGroup ? ((RequestGroup) groupData).getName() : String.valueOf(groupData);
-        DefaultMutableTreeNode groupNode = findGroupNode(rootTreeNode, groupName);
+        if (!(group[1] instanceof RequestGroup targetGroup)) {
+            return;
+        }
+        DefaultMutableTreeNode groupNode = findGroupNode(rootTreeNode, targetGroup);
         if (groupNode == null) {
             return;
         }
-        DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(new Object[]{REQUEST, item});
+        DefaultMutableTreeNode requestNode = CollectionTreeNodes.requestNode(item);
         groupNode.add(requestNode);
         treeModel.reload(groupNode);
         requestTree.expandPath(new TreePath(groupNode.getPath()));
@@ -272,9 +275,8 @@ public class CollectionTreePanel extends UiSingletonPanel {
 
         Object userObj = node.getUserObject();
         if (userObj instanceof Object[] obj && GROUP.equals(obj[0])) {
-            Object groupData = obj[1];
-            String nodeName = groupData instanceof RequestGroup ? ((RequestGroup) groupData).getName() : String.valueOf(groupData);
-            if (groupName.equals(nodeName)) {
+            RequestGroup group = CollectionTreeNodes.group(node).orElse(null);
+            if (group != null && groupName.equals(group.getName())) {
                 return node;
             }
         }
@@ -289,6 +291,33 @@ public class CollectionTreePanel extends UiSingletonPanel {
         }
 
         return null;
+    }
+
+    private DefaultMutableTreeNode findGroupNode(DefaultMutableTreeNode node, RequestGroup targetGroup) {
+        if (node == null || targetGroup == null) {
+            return null;
+        }
+        RequestGroup currentGroup = CollectionTreeNodes.group(node).orElse(null);
+        if (currentGroup != null && sameGroup(currentGroup, targetGroup)) {
+            return node;
+        }
+
+        for (int i = 0; i < node.getChildCount(); i++) {
+            DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(i);
+            DefaultMutableTreeNode result = findGroupNode(child, targetGroup);
+            if (result != null) {
+                return result;
+            }
+        }
+
+        return null;
+    }
+
+    private boolean sameGroup(RequestGroup currentGroup, RequestGroup targetGroup) {
+        if (currentGroup.getId() != null && !currentGroup.getId().isBlank()) {
+            return currentGroup.getId().equals(targetGroup.getId());
+        }
+        return currentGroup == targetGroup || Objects.equals(currentGroup.getName(), targetGroup.getName());
     }
 
     /**

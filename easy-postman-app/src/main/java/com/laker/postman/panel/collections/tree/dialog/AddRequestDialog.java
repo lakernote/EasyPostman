@@ -9,6 +9,7 @@ import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.panel.collections.editor.request.sub.RequestBodyPanel;
+import com.laker.postman.service.collections.CollectionTreeNodes;
 import com.laker.postman.service.http.HttpRequestFactory;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -19,7 +20,6 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreePath;
 import java.awt.*;
 
-import static com.laker.postman.panel.collections.tree.CollectionTreePanel.REQUEST;
 import static com.laker.postman.service.collections.DefaultRequestsFactory.APPLICATION_JSON;
 import static com.laker.postman.service.collections.DefaultRequestsFactory.CONTENT_TYPE;
 import static com.laker.postman.service.http.HttpRequestFactory.*;
@@ -208,7 +208,7 @@ public class AddRequestDialog {
         configureRequestByProtocol(defaultRequest, protocol);
 
         // 添加到树中
-        DefaultMutableTreeNode reqNode = new DefaultMutableTreeNode(new Object[]{REQUEST, defaultRequest});
+        DefaultMutableTreeNode reqNode = CollectionTreeNodes.requestNode(defaultRequest);
         groupNode.add(reqNode);
         leftPanel.getTreeModel().reload(groupNode);
         JTree tree = leftPanel.getRequestTree();

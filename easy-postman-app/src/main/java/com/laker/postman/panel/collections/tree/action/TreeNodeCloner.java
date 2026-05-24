@@ -2,15 +2,13 @@ package com.laker.postman.panel.collections.tree.action;
 
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestGroup;
+import com.laker.postman.model.SavedResponse;
+import com.laker.postman.service.collections.CollectionTreeNodes;
 import com.laker.postman.util.JsonUtil;
 import lombok.experimental.UtilityClass;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.UUID;
-
-import static com.laker.postman.panel.collections.tree.CollectionTreePanel.GROUP;
-import static com.laker.postman.panel.collections.tree.CollectionTreePanel.REQUEST;
-import static com.laker.postman.panel.collections.tree.CollectionTreePanel.SAVED_RESPONSE;
 
 /**
  * 树节点克隆工具类
@@ -22,22 +20,11 @@ public class TreeNodeCloner {
      * 深拷贝分组节点及其所有子节点
      */
     public static DefaultMutableTreeNode deepCopyGroupNode(DefaultMutableTreeNode node) {
-        Object userObj = node.getUserObject();
-        Object[] obj = null;
-        if (userObj instanceof Object[] originalObj) {
-            // 创建新数组并深拷贝内容
-            obj = new Object[originalObj.length];
-            obj[0] = originalObj[0]; // type字段直接复制
-            // 深拷贝 RequestGroup 对象
-            if (originalObj[1] instanceof RequestGroup originalGroup) {
-                obj[1] = JsonUtil.deepCopy(originalGroup, RequestGroup.class);
-                // 生成新的ID
-                ((RequestGroup) obj[1]).setId(UUID.randomUUID().toString());
-            } else {
-                obj[1] = originalObj[1]; // 如果是字符串，直接复制
-            }
-        }
-        DefaultMutableTreeNode copy = new DefaultMutableTreeNode(obj);
+        RequestGroup originalGroup = CollectionTreeNodes.group(node)
+                .orElseThrow(() -> new IllegalArgumentException("Expected group node: " + node));
+        RequestGroup copiedGroup = JsonUtil.deepCopy(originalGroup, RequestGroup.class);
+        copiedGroup.setId(UUID.randomUUID().toString());
+        DefaultMutableTreeNode copy = CollectionTreeNodes.groupNode(copiedGroup);
 
         for (int i = 0; i < node.getChildCount(); i++) {
             DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(i);
@@ -52,14 +39,17 @@ public class TreeNodeCloner {
      */
     private static DefaultMutableTreeNode copyChildNode(DefaultMutableTreeNode child) {
         Object childUserObj = child.getUserObject();
-        if (!(childUserObj instanceof Object[] childObj)) {
+        if (!(childUserObj instanceof Object[])) {
             return new DefaultMutableTreeNode(childUserObj);
         }
 
-        if (GROUP.equals(childObj[0])) {
+        if (CollectionTreeNodes.isGroup(child)) {
             return deepCopyGroupNode(child);
-        } else if (REQUEST.equals(childObj[0])) {
-            return copyRequestNode(childObj);
+        } else if (CollectionTreeNodes.isRequest(child)) {
+            return copyRequestNode(child);
+        } else if (CollectionTreeNodes.isSavedResponse(child)) {
+            SavedResponse savedResponse = CollectionTreeNodes.savedResponse(child).orElseThrow();
+            return CollectionTreeNodes.savedResponseNode(savedResponse);
         }
 
         return new DefaultMutableTreeNode(childUserObj);
@@ -68,12 +58,11 @@ public class TreeNodeCloner {
     /**
      * 深拷贝请求节点
      */
-    private static DefaultMutableTreeNode copyRequestNode(Object[] childObj) {
-        HttpRequestItem item = (HttpRequestItem) childObj[1];
+    private static DefaultMutableTreeNode copyRequestNode(DefaultMutableTreeNode child) {
+        HttpRequestItem item = CollectionTreeNodes.request(child).orElseThrow();
         HttpRequestItem copyItem = JsonUtil.deepCopy(item, HttpRequestItem.class);
         copyItem.setId(java.util.UUID.randomUUID().toString());
-        Object[] reqObj = new Object[]{REQUEST, copyItem};
-        return new DefaultMutableTreeNode(reqObj);
+        return CollectionTreeNodes.requestNode(copyItem);
     }
 
     /**
@@ -104,16 +93,6 @@ public class TreeNodeCloner {
      * 判断是否应该过滤掉该节点（SavedResponse）
      */
     private static boolean shouldFilterNode(DefaultMutableTreeNode node) {
-        Object userObj = node.getUserObject();
-        if (!(userObj instanceof Object[] obj)) {
-            return false;
-        }
-
-        // 1. 检查节点类型是否为 SAVED_RESPONSE（保存的响应节点）
-        if (SAVED_RESPONSE.equals(obj[0])) {
-            return true;
-        }
-
-        return false;
+        return CollectionTreeNodes.isSavedResponse(node);
     }
 }

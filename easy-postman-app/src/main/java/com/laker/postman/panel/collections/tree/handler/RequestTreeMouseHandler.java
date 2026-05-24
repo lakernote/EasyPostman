@@ -8,6 +8,7 @@ import com.laker.postman.model.SavedResponse;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.panel.collections.tree.action.RequestTreeActions;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
+import com.laker.postman.service.collections.CollectionTreeNodes;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
@@ -266,11 +267,11 @@ public class RequestTreeMouseHandler extends MouseAdapter {
         if (!(node.getUserObject() instanceof Object[] obj)) return;
 
         if (GROUP.equals(obj[0])) {
-            handleGroupClick(e, node, obj, selPath);
+            handleGroupClick(e, node, selPath);
         } else if (REQUEST.equals(obj[0])) {
-            handleRequestClick(obj);
+            CollectionTreeNodes.request(node).ifPresent(this::handleRequestClick);
         } else if (SAVED_RESPONSE.equals(obj[0])) {
-            handleSavedResponseClick((SavedResponse) obj[1]);
+            CollectionTreeNodes.savedResponse(node).ifPresent(this::handleSavedResponseClick);
         }
     }
 
@@ -285,16 +286,19 @@ public class RequestTreeMouseHandler extends MouseAdapter {
         if (!(node.getUserObject() instanceof Object[] obj)) return;
 
         if (REQUEST.equals(obj[0])) {
-            HttpRequestItem item = (HttpRequestItem) obj[1];
-            UiSingletonFactory.getInstance(RequestEditorPanel.class).showOrCreateTab(item);
+            CollectionTreeNodes.request(node)
+                    .ifPresent(item -> UiSingletonFactory.getInstance(RequestEditorPanel.class).showOrCreateTab(item));
         } else if (GROUP.equals(obj[0])) {
-            RequestGroup group = ensureRequestGroup(obj);
+            RequestGroup group = CollectionTreeNodes.group(node).orElse(null);
+            if (group == null) {
+                return;
+            }
             RequestEditorPanel editPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class);
             editPanel.showGroupEditPanel(node, group);
             e.consume(); // 阻止展开/收起
         } else if (SAVED_RESPONSE.equals(obj[0])) {
             // 双击保存的响应：打开固定 Tab
-            handleSavedResponseDoubleClick((SavedResponse) obj[1]);
+            CollectionTreeNodes.savedResponse(node).ifPresent(this::handleSavedResponseDoubleClick);
             e.consume();
         }
     }
@@ -320,13 +324,16 @@ public class RequestTreeMouseHandler extends MouseAdapter {
     /**
      * 处理分组点击事件
      */
-    private void handleGroupClick(MouseEvent e, DefaultMutableTreeNode node, Object[] obj, TreePath selPath) {
+    private void handleGroupClick(MouseEvent e, DefaultMutableTreeNode node, TreePath selPath) {
 
         Rectangle rowBounds = requestTree.getRowBounds(requestTree.getRowForPath(selPath));
         if (rowBounds == null) return;
 
         if (!isClickOnHandle(e.getX(), selPath)) {
-            RequestGroup group = ensureRequestGroup(obj);
+            RequestGroup group = CollectionTreeNodes.group(node).orElse(null);
+            if (group == null) {
+                return;
+            }
             RequestEditorPanel editPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class);
             editPanel.showOrCreatePreviewTabForGroup(node, group);
         }
@@ -335,8 +342,7 @@ public class RequestTreeMouseHandler extends MouseAdapter {
     /**
      * 处理请求点击事件
      */
-    private void handleRequestClick(Object[] obj) {
-        HttpRequestItem item = (HttpRequestItem) obj[1];
+    private void handleRequestClick(HttpRequestItem item) {
         UiSingletonFactory.getInstance(RequestEditorPanel.class).showOrCreatePreviewTab(item);
     }
 
@@ -395,18 +401,4 @@ public class RequestTreeMouseHandler extends MouseAdapter {
         return selPath;
     }
 
-    /**
-     * 确保返回 RequestGroup 对象（升级旧格式）
-     */
-    private RequestGroup ensureRequestGroup(Object[] obj) {
-        Object groupData = obj[1];
-        if (groupData instanceof RequestGroup requestGroup) {
-            return requestGroup;
-        } else {
-            RequestGroup group = new RequestGroup(String.valueOf(groupData));
-            obj[1] = group;
-            return group;
-        }
-    }
 }
-

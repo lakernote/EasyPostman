@@ -205,7 +205,7 @@ public class RequestsPersistence {
             }
         }
 
-        DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(new Object[]{"group", group});
+        DefaultMutableTreeNode groupNode = CollectionTreeNodes.groupNode(group);
         JSONArray children = groupJson.getJSONArray("children");
         if (children != null) {
             for (Object child : children) {
@@ -228,15 +228,12 @@ public class RequestsPersistence {
                     }
 
                     // 创建请求节点
-                    DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(new Object[]{"request", item});
+                    DefaultMutableTreeNode requestNode = CollectionTreeNodes.requestNode(item);
 
                     // 为 response 创建子节点
                     if (item.getResponse() != null && !item.getResponse().isEmpty()) {
                         for (SavedResponse savedResp : item.getResponse()) {
-                            DefaultMutableTreeNode responseNode = new DefaultMutableTreeNode(
-                                    new Object[]{"response", savedResp}
-                            );
-                            requestNode.add(responseNode);
+                            requestNode.add(CollectionTreeNodes.savedResponseNode(savedResp));
                         }
                     }
 
@@ -249,45 +246,35 @@ public class RequestsPersistence {
 
     public JSONObject buildGroupJson(DefaultMutableTreeNode node) {
         JSONObject groupJson = new JSONObject();
-        Object[] obj = (Object[]) node.getUserObject();
         groupJson.set("type", "group");
 
-        // 处理分组名称和属性
-        Object groupData = obj[1];
-        if (groupData instanceof RequestGroup group) {
-            // 新格式：使用RequestGroup对象
-            groupJson.set("id", group.getId());
-            groupJson.set("name", group.getName());
-            groupJson.set("description", group.getDescription());
-            groupJson.set("authType", group.getAuthType());
-            groupJson.set("authUsername", group.getAuthUsername());
-            groupJson.set("authPassword", group.getAuthPassword());
-            groupJson.set("authToken", group.getAuthToken());
-            groupJson.set("prescript", group.getPrescript());
-            groupJson.set("postscript", group.getPostscript());
-            // 保存公共请求头
-            if (group.getHeaders() != null && !group.getHeaders().isEmpty()) {
-                groupJson.set("headers", group.getHeaders());
-            }
-            // 保存分组级别的变量
-            if (group.getVariables() != null && !group.getVariables().isEmpty()) {
-                groupJson.set("variables", group.getVariables());
-            }
-        } else if (groupData instanceof String name) {
-            // 旧格式兼容：字符串名称
-            groupJson.set("name", name);
+        RequestGroup group = CollectionTreeNodes.group(node)
+                .orElseThrow(() -> new IllegalArgumentException("Expected collection group node: " + node));
+        groupJson.set("id", group.getId());
+        groupJson.set("name", group.getName());
+        groupJson.set("description", group.getDescription());
+        groupJson.set("authType", group.getAuthType());
+        groupJson.set("authUsername", group.getAuthUsername());
+        groupJson.set("authPassword", group.getAuthPassword());
+        groupJson.set("authToken", group.getAuthToken());
+        groupJson.set("prescript", group.getPrescript());
+        groupJson.set("postscript", group.getPostscript());
+        if (group.getHeaders() != null && !group.getHeaders().isEmpty()) {
+            groupJson.set("headers", group.getHeaders());
+        }
+        if (group.getVariables() != null && !group.getVariables().isEmpty()) {
+            groupJson.set("variables", group.getVariables());
         }
 
         JSONArray children = new JSONArray();
         for (int i = 0; i < node.getChildCount(); i++) {
             DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(i);
-            Object[] childObj = (Object[]) child.getUserObject();
-            if ("group".equals(childObj[0])) {
+            if (CollectionTreeNodes.isGroup(child)) {
                 children.add(buildGroupJson(child));
-            } else if ("request".equals(childObj[0])) {
+            } else if (CollectionTreeNodes.isRequest(child)) {
                 JSONObject reqJson = new JSONObject();
                 reqJson.set("type", "request");
-                HttpRequestItem requestItem = (HttpRequestItem) childObj[1];
+                HttpRequestItem requestItem = CollectionTreeNodes.request(child).orElseThrow();
                 JSONObject itemJson = JSONUtil.parseObj(requestItem);
                 reqJson.set("data", itemJson);
                 children.add(reqJson);

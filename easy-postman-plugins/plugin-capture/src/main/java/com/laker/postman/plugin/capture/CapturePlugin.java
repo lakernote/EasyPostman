@@ -3,6 +3,7 @@ package com.laker.postman.plugin.capture;
 import com.laker.postman.plugin.api.EasyPostmanPlugin;
 import com.laker.postman.plugin.api.PluginContext;
 import com.laker.postman.plugin.api.PluginContributionSupport;
+import com.laker.postman.plugin.bridge.RequestCollectionImportService;
 
 import static com.laker.postman.plugin.capture.CaptureI18n.t;
 
@@ -10,6 +11,7 @@ public class CapturePlugin implements EasyPostmanPlugin {
 
     @Override
     public void onLoad(PluginContext context) {
+        RequestCollectionImportService importService = context.getService(RequestCollectionImportService.class);
         PluginContributionSupport.registerToolbox(
                 context,
                 "capture",
@@ -17,7 +19,7 @@ public class CapturePlugin implements EasyPostmanPlugin {
                 "icons/capture.svg",
                 "toolbox.group.dev",
                 t(MessageKeys.TOOLBOX_GROUP_DEV),
-                CapturePanel::new,
+                () -> new CapturePanel(importService),
                 CapturePlugin.class
         );
     }

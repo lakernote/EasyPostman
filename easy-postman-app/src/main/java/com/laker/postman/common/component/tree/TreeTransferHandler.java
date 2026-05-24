@@ -1,5 +1,6 @@
 package com.laker.postman.common.component.tree;
 
+import com.laker.postman.service.collections.CollectionTreeNodes;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -49,24 +50,16 @@ public class TreeTransferHandler extends TransferHandler {
         DefaultMutableTreeNode targetNode = (DefaultMutableTreeNode) dest.getLastPathComponent(); // 获取目标节点
         if (draggedNode == rootTreeNode) return false; // 禁止拖动根节点
 
-        Object draggedObj = draggedNode.getUserObject(); // 获取拖动节点的用户对象
-        Object targetObj = targetNode.getUserObject(); // 获取目标节点的用户对象
-
-        if (draggedObj instanceof Object[] && "group".equals(((Object[]) draggedObj)[0])) {
+        if (CollectionTreeNodes.isGroup(draggedNode)) {
             // 禁止拖动到自己或自己的子节点
             if (isNodeDescendant(draggedNode, targetNode)) return false;
             if (targetNode == rootTreeNode) return true;
-            return targetObj instanceof Object[] && "group".equals(((Object[]) targetObj)[0]);
+            return CollectionTreeNodes.isGroup(targetNode);
         }
 
         // 请求节点只能拖到分组节点下，且不能拖到请求节点下
-        if (draggedObj instanceof Object[] && "request".equals(((Object[]) draggedObj)[0])) {
-            return targetObj instanceof Object[] && "group".equals(((Object[]) targetObj)[0]);
-        }
-        // 分组节点不能拖到请求节点下
-        if (draggedObj instanceof Object[] && "group".equals(((Object[]) draggedObj)[0])) {
-            if (targetNode == rootTreeNode) return true;
-            return targetObj instanceof Object[] && "group".equals(((Object[]) targetObj)[0]);
+        if (CollectionTreeNodes.isRequest(draggedNode)) {
+            return CollectionTreeNodes.isGroup(targetNode);
         }
         return false;
     }
@@ -110,10 +103,7 @@ public class TreeTransferHandler extends TransferHandler {
         if (childIndex == -1) childIndex = parent.getChildCount();
         for (DefaultMutableTreeNode node : nodes) {
             // 拖动请求节点时，始终插入到分组下
-            Object nodeObj = node.getUserObject();
-            if (nodeObj instanceof Object[] && "request".equals(((Object[]) nodeObj)[0])) {
-                treeModel.insertNodeInto(node, parent, childIndex++);
-            } else if (nodeObj instanceof Object[] && "group".equals(((Object[]) nodeObj)[0])) {
+            if (CollectionTreeNodes.isRequest(node) || CollectionTreeNodes.isGroup(node)) {
                 treeModel.insertNodeInto(node, parent, childIndex++);
             }
         }

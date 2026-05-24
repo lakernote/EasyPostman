@@ -20,7 +20,6 @@ public class DefaultRequestsFactory {
     private static final String SCRIPT_EXAMPLES_EN_GROUP_NAME = "Script Examples (EN)";
     private static final String SCRIPT_EXAMPLES_ZH_GROUP_NAME = "脚本示例（中文）";
 
-    public static final String REQUEST = "request";
     public static final String BODY_TYPE_RAW = "raw";
     public static final String APPLICATION_JSON = "application/json";
     public static final String CONTENT_TYPE = "Content-Type";
@@ -65,7 +64,7 @@ public class DefaultRequestsFactory {
                 - Authorization priority: script-defined Authorization > existing Authorization header > auth tab generated Authorization
                 - Removing Authorization in pre-script does not disable auth tab; if no Authorization remains, the auth tab configuration is applied at send time
                 """);
-        DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(new Object[]{"group", group});
+        DefaultMutableTreeNode groupNode = CollectionTreeNodes.groupNode(group);
         rootTreeNode.add(groupNode);
 
         HttpRequestItem setup = HttpRequestFactory.createDefaultRequest();
@@ -362,7 +361,7 @@ public class DefaultRequestsFactory {
                 - Authorization 优先级：脚本显式写入的 Authorization > 已有 Authorization 请求头 > auth tab 自动生成的 Authorization
                 - 在 pre-script 中删除 Authorization 不表示禁用 auth tab；如果最终没有 Authorization，发送时仍会按 auth tab 配置补齐
                 """);
-        DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(new Object[]{"group", group});
+        DefaultMutableTreeNode groupNode = CollectionTreeNodes.groupNode(group);
         rootTreeNode.add(groupNode);
 
         HttpRequestItem setup = HttpRequestFactory.createDefaultRequest();
@@ -642,7 +641,7 @@ public class DefaultRequestsFactory {
                 General-purpose examples for common request types.
                 These requests are independent from the official script examples.
                 """);
-        DefaultMutableTreeNode defaultGroupNode = new DefaultMutableTreeNode(new Object[]{"group", defaultGroup});
+        DefaultMutableTreeNode defaultGroupNode = CollectionTreeNodes.groupNode(defaultGroup);
         rootTreeNode.add(defaultGroupNode);
 
         HttpRequestItem getExample = HttpRequestFactory.createDefaultRequest();
@@ -757,6 +756,6 @@ public class DefaultRequestsFactory {
     }
 
     private static void addRequestNode(DefaultMutableTreeNode parentNode, HttpRequestItem item) {
-        parentNode.add(new DefaultMutableTreeNode(new Object[]{REQUEST, item}));
+        parentNode.add(CollectionTreeNodes.requestNode(item));
     }
 }

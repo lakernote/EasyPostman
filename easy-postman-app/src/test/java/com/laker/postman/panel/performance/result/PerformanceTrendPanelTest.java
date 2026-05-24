@@ -1,6 +1,6 @@
 package com.laker.postman.panel.performance.result;
 
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
 import com.laker.postman.panel.performance.model.PerformanceProtocol;
 import com.laker.postman.panel.performance.model.PerformanceTrendSnapshot;
@@ -35,7 +35,7 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
 
     @Test
     public void shouldUseTopToolbarProtocolSwitcherAndGlobalViewMode() {
-        PerformanceTrendPanel panel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
+        PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
         JToggleButton httpButton = findToggleButton(panel, PerformanceProtocol.HTTP.getDisplayName());
         JToggleButton webSocketButton = findToggleButton(panel, PerformanceProtocol.WEBSOCKET.getDisplayName());
         JToggleButton sseButton = findToggleButton(panel, PerformanceProtocol.SSE.getDisplayName());
@@ -83,7 +83,7 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
 
     @Test
     public void shouldStretchSeparateChartGridWhenViewportIsTallerThanPreferredHeight() {
-        PerformanceTrendPanel panel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
+        PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
         JToggleButton separateButton = findToggleButton(
                 panel,
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_SEPARATE_CHARTS)
@@ -103,7 +103,7 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
 
     @Test
     public void shouldLeaveGapWhenStreamLatencyWindowHasNoSample() throws Exception {
-        PerformanceTrendPanel panel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
+        PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
         panel.clearTrendDataset();
         TimeSeries series = getTimeSeries(panel, "wsFirstMessageLatencySeries");
         long base = System.currentTimeMillis();
@@ -117,7 +117,7 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
 
     @Test
     public void shouldLeaveGapWhenHttpResponseWindowHasNoSample() throws Exception {
-        PerformanceTrendPanel panel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
+        PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
         panel.clearTrendDataset();
         TimeSeries series = getTimeSeries(panel, "httpAvgResponseSeries");
         long base = System.currentTimeMillis();
@@ -131,7 +131,7 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
 
     @Test
     public void shouldRenderSingleFinitePointWhenLaterTrendSamplesAreEmpty() throws Exception {
-        PerformanceTrendPanel panel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
+        PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
         panel.clearTrendDataset();
         TimeSeries series = getTimeSeries(panel, "httpAvgResponseSeries");
         long base = System.currentTimeMillis();
@@ -148,7 +148,7 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
 
     @Test
     public void clearTrendDatasetShouldRestoreAutoRangeForSplitCharts() throws Exception {
-        PerformanceTrendPanel panel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
+        PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
         panel.clearTrendDataset();
         TimeSeries series = getTimeSeries(panel, "httpRpsSeries");
         ChartPanel chartPanel = findChartPanelForSeries(panel, series);
@@ -165,7 +165,7 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
 
     @Test
     public void clearTrendDatasetShouldResetDomainAxisForAllProtocolTrendCharts() throws Exception {
-        PerformanceTrendPanel panel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
+        PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
         panel.clearTrendDataset();
         long oldRunTime = System.currentTimeMillis() - 30 * 60 * 1000L;
 
@@ -206,7 +206,7 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
             clearSingletonInstance(PerformanceTrendPanel.class);
             I18nUtil.setLocale("en");
 
-            PerformanceTrendPanel panel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
+            PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
             JPopupMenu popupMenu = findFirst(panel, ChartPanel.class).getPopupMenu();
 
             assertTrue(hasPopupLeafText(popupMenu, "Properties..."));
@@ -231,7 +231,7 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
             clearSingletonInstance(PerformanceTrendPanel.class);
             I18nUtil.setLocale("zh");
 
-            PerformanceTrendPanel panel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
+            PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
             JPopupMenu popupMenu = findFirst(panel, ChartPanel.class).getPopupMenu();
 
             assertTrue(hasPopupLeafText(popupMenu, "属性"));
@@ -249,7 +249,7 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
 
     @Test
     public void shouldHideLatencyAndDurationChartsForStreamingProtocols() {
-        PerformanceTrendPanel panel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
+        PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
         JToggleButton separateButton = findToggleButton(
                 panel,
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_SEPARATE_CHARTS)
@@ -345,7 +345,7 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
     }
 
     private static void clearSingletonInstance(Class<?> clazz) throws Exception {
-        Field field = SingletonFactory.class.getDeclaredField("INSTANCE_MAP");
+        Field field = UiSingletonFactory.class.getDeclaredField("INSTANCE_MAP");
         field.setAccessible(true);
         @SuppressWarnings("unchecked")
         Map<Class<?>, Object> instances = (Map<Class<?>, Object>) field.get(null);

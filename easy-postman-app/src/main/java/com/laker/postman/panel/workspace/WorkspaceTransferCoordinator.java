@@ -1,6 +1,6 @@
-package com.laker.postman.service.workspace;
+package com.laker.postman.panel.workspace;
 
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.dialog.WorkspaceSelectionDialog;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.Workspace;
@@ -10,18 +10,17 @@ import com.laker.postman.util.MessageKeys;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.*;
+import javax.swing.JOptionPane;
 import java.util.List;
 import java.util.function.BiConsumer;
 
 /**
- * 工作区转移辅助类
- * 提供通用的工作区转移流程，减少代码重复
- * 所有转移场景使用统一的国际化消息键
+ * 工作区转移 UI 协调器。
+ * 提供通用的工作区选择、确认和错误提示流程，减少面板层重复代码。
  */
 @Slf4j
 @UtilityClass
-public class WorkspaceTransferHelper {
+public class WorkspaceTransferCoordinator {
 
     /**
      * 转移数据到其他工作区的通用流程（显示成功消息）
@@ -31,26 +30,22 @@ public class WorkspaceTransferHelper {
      */
     public static void transferToWorkspace(String itemName, BiConsumer<Workspace, String> transferAction) {
         try {
-            // 1. 获取可用的工作区列表
             List<Workspace> availableWorkspaces = getAvailableWorkspaces();
             if (availableWorkspaces.isEmpty()) {
                 showNoWorkspaceAvailableMessage();
                 return;
             }
 
-            // 2. 显示工作区选择对话框
             String dialogTitle = I18nUtil.getMessage(MessageKeys.WORKSPACE_TRANSFER_SELECT_DIALOG_TITLE);
             Workspace selectedWorkspace = showWorkspaceSelectionDialog(dialogTitle, availableWorkspaces);
             if (selectedWorkspace == null) {
-                return; // 用户取消
+                return;
             }
 
-            // 3. 确认转移操作
             if (!confirmTransfer(itemName, selectedWorkspace.getName())) {
-                return; // 用户取消
+                return;
             }
 
-            // 4. 执行转移操作
             transferAction.accept(selectedWorkspace, itemName);
             log.info("Successfully transferred '{}' to workspace '{}'", itemName, selectedWorkspace.getName());
 
@@ -60,9 +55,6 @@ public class WorkspaceTransferHelper {
         }
     }
 
-    /**
-     * 获取所有可用的工作区（排除当前工作区）
-     */
     private static List<Workspace> getAvailableWorkspaces() {
         WorkspaceService workspaceService = WorkspaceService.getInstance();
         List<Workspace> allWorkspaces = workspaceService.getAllWorkspaces();
@@ -73,20 +65,14 @@ public class WorkspaceTransferHelper {
                 .toList();
     }
 
-    /**
-     * 显示工作区选择对话框
-     */
     private static Workspace showWorkspaceSelectionDialog(String title, List<Workspace> workspaces) {
         WorkspaceSelectionDialog dialog = new WorkspaceSelectionDialog(title, workspaces);
         return dialog.showDialog();
     }
 
-    /**
-     * 确认转移操作
-     */
     private static boolean confirmTransfer(String itemName, String targetWorkspaceName) {
         int confirm = JOptionPane.showConfirmDialog(
-                SingletonFactory.getInstance(MainFrame.class),
+                UiSingletonFactory.getInstance(MainFrame.class),
                 I18nUtil.getMessage(MessageKeys.WORKSPACE_TRANSFER_CONFIRM_MESSAGE, itemName, targetWorkspaceName),
                 I18nUtil.getMessage(MessageKeys.WORKSPACE_TRANSFER_CONFIRM_TITLE),
                 JOptionPane.YES_NO_OPTION,
@@ -95,27 +81,19 @@ public class WorkspaceTransferHelper {
         return confirm == JOptionPane.YES_OPTION;
     }
 
-    /**
-     * 显示没有其他可用工作区的消息
-     */
     private static void showNoWorkspaceAvailableMessage() {
         JOptionPane.showMessageDialog(
-                SingletonFactory.getInstance(MainFrame.class),
+                UiSingletonFactory.getInstance(MainFrame.class),
                 I18nUtil.getMessage(MessageKeys.WORKSPACE_NO_OTHER_AVAILABLE),
                 I18nUtil.getMessage(MessageKeys.GENERAL_TIP),
                 JOptionPane.WARNING_MESSAGE);
     }
 
-
-    /**
-     * 显示错误消息
-     */
     private static void showErrorMessage(String errorDetails) {
         JOptionPane.showMessageDialog(
-                SingletonFactory.getInstance(MainFrame.class),
+                UiSingletonFactory.getInstance(MainFrame.class),
                 I18nUtil.getMessage(MessageKeys.WORKSPACE_TRANSFER_FAIL, errorDetails),
                 I18nUtil.getMessage(MessageKeys.GENERAL_ERROR),
                 JOptionPane.ERROR_MESSAGE);
     }
-
 }

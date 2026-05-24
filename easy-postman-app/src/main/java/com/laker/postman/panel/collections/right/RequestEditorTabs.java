@@ -1,46 +1,44 @@
-package com.laker.postman.service.collections;
+package com.laker.postman.panel.collections.right;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.tab.ClosableTabComponent;
 import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
+import com.laker.postman.service.collections.ActiveCollectionTreeNodeRepository;
+import com.laker.postman.service.collections.RequestCollectionsService;
 import com.laker.postman.service.variable.RequestContext;
 import com.laker.postman.startup.StartupDiagnostics;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import lombok.extern.slf4j.Slf4j;
+import lombok.experimental.UtilityClass;
 
-import javax.swing.*;
+import javax.swing.JTabbedPane;
 import javax.swing.tree.DefaultMutableTreeNode;
-import java.awt.*;
+import java.awt.Component;
 
-@Slf4j
-public class RequestsTabsService {
+@UtilityClass
+public class RequestEditorTabs {
 
-    private RequestsTabsService() {
-        // no-op
+    public static RequestEditSubPanel openRequestTab(HttpRequestItem item) {
+        return openRequestTab(item, true, false);
     }
 
-
-    public static RequestEditSubPanel addTab(HttpRequestItem item) {
-        return addTab(item, true, false);
+    public static RequestEditSubPanel openRequestTab(HttpRequestItem item, boolean selectTab) {
+        return openRequestTab(item, selectTab, false);
     }
 
-    public static RequestEditSubPanel addTab(HttpRequestItem item, boolean selectTab) {
-        return addTab(item, selectTab, false);
-    }
-
-    public static RequestEditSubPanel addTab(HttpRequestItem item, boolean selectTab, boolean deferEditorInitialization) {
+    public static RequestEditSubPanel openRequestTab(
+            HttpRequestItem item,
+            boolean selectTab,
+            boolean deferEditorInitialization) {
         String id = item.getId();
         if (id == null || id.isEmpty()) {
             throw new IllegalArgumentException("Request item ID cannot be null or empty");
         }
         long totalStartNanos = System.nanoTime();
 
-        // 查找请求节点并设置到全局上下文（供分组变量使用）
-        DefaultTreeNodeRepository repository = SingletonFactory.getInstance(DefaultTreeNodeRepository.class);
+        ActiveCollectionTreeNodeRepository repository = new ActiveCollectionTreeNodeRepository();
         repository.getRootNode().ifPresent(rootNode -> {
             DefaultMutableTreeNode requestNode = RequestCollectionsService.findRequestNodeById(rootNode, id);
             if (requestNode != null) {
@@ -54,8 +52,10 @@ public class RequestsTabsService {
         long initPanelStartNanos = System.nanoTime();
         subPanel.initPanelData(item);
         String initPanelDuration = StartupDiagnostics.formatSince(initPanelStartNanos);
-        String tabTitle = CharSequenceUtil.isNotBlank(item.getName()) ? item.getName() : I18nUtil.getMessage(MessageKeys.NEW_REQUEST);
-        RequestEditPanel requestEditPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+        String tabTitle = CharSequenceUtil.isNotBlank(item.getName())
+                ? item.getName()
+                : I18nUtil.getMessage(MessageKeys.NEW_REQUEST);
+        RequestEditPanel requestEditPanel = UiSingletonFactory.getInstance(RequestEditPanel.class);
         JTabbedPane tabbedPane = requestEditPanel.getTabbedPane();
         int insertIndex = tabbedPane.getTabCount();
         if (insertIndex > 0 && RequestEditPanel.PLUS_TAB.equals(tabbedPane.getTitleAt(insertIndex - 1))) {
@@ -66,7 +66,6 @@ public class RequestsTabsService {
         tabbedPane.setTabComponentAt(insertIndex, new ClosableTabComponent(tabTitle, item.getProtocol()));
         boolean shouldSelectInsertedTab = selectTab;
         if (shouldSelectInsertedTab && deferEditorInitialization) {
-            // 启动恢复时只选中最后一个请求 tab，其他 tab 保持轻量壳状态即可。
             shouldSelectInsertedTab = requestEditPanel.isStartupRestoreSelectingLastTab();
         }
         if (shouldSelectInsertedTab) {
@@ -86,14 +85,15 @@ public class RequestsTabsService {
         return subPanel;
     }
 
-    public static void updateTabNew(RequestEditSubPanel panel, boolean isNew) {
-        JTabbedPane tabbedPane = SingletonFactory.getInstance(RequestEditPanel.class).getTabbedPane();
+    public static void setTabNewRequest(RequestEditSubPanel panel, boolean isNew) {
+        JTabbedPane tabbedPane = UiSingletonFactory.getInstance(RequestEditPanel.class).getTabbedPane();
         int idx = tabbedPane.indexOfComponent(panel);
-        if (idx < 0) return;
+        if (idx < 0) {
+            return;
+        }
         Component tabComp = tabbedPane.getTabComponentAt(idx);
         if (tabComp instanceof ClosableTabComponent closable) {
             closable.setNewRequest(isNew);
         }
     }
-
 }

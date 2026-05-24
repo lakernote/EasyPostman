@@ -5,8 +5,8 @@ import com.formdev.flatlaf.extras.FlatDesktop;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.formdev.flatlaf.util.SystemInfo;
 import com.laker.postman.common.IRefreshable;
-import com.laker.postman.common.SingletonBaseMenuBar;
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonMenuBar;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.combobox.EnvironmentComboBox;
 import com.laker.postman.common.component.combobox.WorkspaceComboBox;
 import com.laker.postman.common.constants.ConfigPathConstants;
@@ -20,13 +20,13 @@ import com.laker.postman.model.WorkspaceType;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.functional.FunctionalPanel;
+import com.laker.postman.panel.lifecycle.AppExitCoordinator;
 import com.laker.postman.panel.performance.PerformancePanel;
 import com.laker.postman.panel.topmenu.help.ChangelogDialog;
 import com.laker.postman.panel.topmenu.plugin.PluginManagerDialog;
 import com.laker.postman.panel.topmenu.setting.ModernSettingsDialog;
 import com.laker.postman.plugin.manager.PluginManagementService;
 import com.laker.postman.panel.workspace.components.GitOperationDialog;
-import com.laker.postman.service.ExitService;
 import com.laker.postman.service.UpdateService;
 import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.service.setting.ShortcutManager;
@@ -47,7 +47,7 @@ import java.io.IOException;
 import static com.laker.postman.util.SystemUtil.getCurrentVersion;
 
 @Slf4j
-public class TopMenuBar extends SingletonBaseMenuBar implements IRefreshable {
+public class TopMenuBar extends UiSingletonMenuBar implements IRefreshable {
     private static final String BUTTON_FOREGROUND_KEY = "Button.foreground";
 
     @Getter
@@ -123,7 +123,7 @@ public class TopMenuBar extends SingletonBaseMenuBar implements IRefreshable {
     @Override
     protected void registerListeners() {
         FlatDesktop.setAboutHandler(this::aboutActionPerformed);
-        FlatDesktop.setQuitHandler(e -> BeanFactory.getBean(ExitService.class).exit());
+        FlatDesktop.setQuitHandler(e -> BeanFactory.getBean(AppExitCoordinator.class).exitApplication());
 
         // macOS Full Window Content 模式下，JMenuBar 空白区域不属于原生标题栏，
         // 双击不会触发系统的最大化/恢复。需要手动监听双击事件来模拟该行为。
@@ -204,7 +204,7 @@ public class TopMenuBar extends SingletonBaseMenuBar implements IRefreshable {
 
         JMenuItem exportEnvironmentsMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.MENU_FILE_EXPORT_ENVIRONMENTS));
         exportEnvironmentsMenuItem.setIcon(IconUtil.createThemed("icons/export.svg", 16, 16));
-        exportEnvironmentsMenuItem.addActionListener(e -> SingletonFactory.getInstance(EnvironmentPanel.class).exportEnvironments());
+        exportEnvironmentsMenuItem.addActionListener(e -> UiSingletonFactory.getInstance(EnvironmentPanel.class).exportEnvironments());
         fileMenu.add(exportEnvironmentsMenuItem);
 
         fileMenu.addSeparator();
@@ -217,14 +217,14 @@ public class TopMenuBar extends SingletonBaseMenuBar implements IRefreshable {
         if (exitKey != null) {
             exitMenuItem.setAccelerator(exitKey);
         }
-        exitMenuItem.addActionListener(e -> BeanFactory.getBean(ExitService.class).exit());
+        exitMenuItem.addActionListener(e -> BeanFactory.getBean(AppExitCoordinator.class).exitApplication());
         fileMenu.add(logMenuItem);
         fileMenu.add(exitMenuItem);
         add(fileMenu);
     }
 
     private void exportAllCollections() {
-        RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+        RequestCollectionsLeftPanel leftPanel = UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_DIALOG_TITLE));
         fileChooser.setSelectedFile(new File(RequestCollectionsLeftPanel.EXPORT_FILE_NAME));
@@ -527,14 +527,14 @@ public class TopMenuBar extends SingletonBaseMenuBar implements IRefreshable {
             workspaceService.switchWorkspace(workspace.getId());
 
             // 切换环境变量文件
-            SingletonFactory.getInstance(EnvironmentPanel.class)
+            UiSingletonFactory.getInstance(EnvironmentPanel.class)
                     .switchWorkspaceAndRefreshUI(SystemUtil.getEnvPathForWorkspace(workspace));
 
             // 切换请求集合文件
-            SingletonFactory.getInstance(RequestCollectionsLeftPanel.class)
+            UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class)
                     .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace), () -> {
-                        SingletonFactory.getInstance(PerformancePanel.class).switchWorkspaceAndRefreshUI();
-                        SingletonFactory.getInstance(FunctionalPanel.class).switchWorkspaceAndRefreshUI();
+                        UiSingletonFactory.getInstance(PerformancePanel.class).switchWorkspaceAndRefreshUI();
+                        UiSingletonFactory.getInstance(FunctionalPanel.class).switchWorkspaceAndRefreshUI();
 
                         // 重新加载菜单栏（根据新工作区类型更新 Git 工具栏显示状态）
                         refresh();
@@ -548,8 +548,8 @@ public class TopMenuBar extends SingletonBaseMenuBar implements IRefreshable {
     }
 
     private void saveCurrentWorkspaceScopedPanels() {
-        SingletonFactory.getExistingInstance(FunctionalPanel.class).ifPresent(FunctionalPanel::save);
-        SingletonFactory.getExistingInstance(PerformancePanel.class).ifPresent(PerformancePanel::save);
+        UiSingletonFactory.getExistingInstance(FunctionalPanel.class).ifPresent(FunctionalPanel::save);
+        UiSingletonFactory.getExistingInstance(PerformancePanel.class).ifPresent(PerformancePanel::save);
     }
 
     /**
@@ -706,12 +706,12 @@ public class TopMenuBar extends SingletonBaseMenuBar implements IRefreshable {
         if (dialog.isConfirmed()) {
             // Pull 操作后需要刷新相关面板以显示最新数据
             if (operation == GitOperation.PULL) {
-                SingletonFactory.getInstance(RequestCollectionsLeftPanel.class)
+                UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class)
                         .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace), () -> {
-                            SingletonFactory.getInstance(FunctionalPanel.class).switchWorkspaceAndRefreshUI();
-                            SingletonFactory.getInstance(PerformancePanel.class).switchWorkspaceAndRefreshUI();
+                            UiSingletonFactory.getInstance(FunctionalPanel.class).switchWorkspaceAndRefreshUI();
+                            UiSingletonFactory.getInstance(PerformancePanel.class).switchWorkspaceAndRefreshUI();
                         });
-                SingletonFactory.getInstance(EnvironmentPanel.class)
+                UiSingletonFactory.getInstance(EnvironmentPanel.class)
                         .switchWorkspaceAndRefreshUI(SystemUtil.getEnvPathForWorkspace(workspace));
             }
 

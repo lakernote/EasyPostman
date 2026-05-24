@@ -1,7 +1,7 @@
 package com.laker.postman.panel.history;
 
-import com.laker.postman.common.SingletonBasePanel;
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonPanel;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.button.ClearButton;
 import com.laker.postman.common.constants.ModernColors;
@@ -53,7 +53,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * 历史记录面板
  */
-public class HistoryPanel extends SingletonBasePanel {
+public class HistoryPanel extends UiSingletonPanel {
     private static final int HISTORY_SIDEBAR_WIDTH = 360;
     private static final int HISTORY_SIDEBAR_INSET = 8;
     private static final int FILTER_DEBOUNCE_MS = 180;
@@ -1251,7 +1251,7 @@ public class HistoryPanel extends SingletonBasePanel {
             return;
         }
 
-        SidebarTabPanel sidebarTabPanel = SingletonFactory.getInstance(SidebarTabPanel.class);
+        SidebarTabPanel sidebarTabPanel = UiSingletonFactory.getInstance(SidebarTabPanel.class);
         if (!sidebarTabPanel.showTab(SidebarTab.COLLECTIONS)) {
             NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.HISTORY_OPEN_REQUEST_TAB_HIDDEN));
             return;
@@ -1259,7 +1259,7 @@ public class HistoryPanel extends SingletonBasePanel {
 
         RequestItemProtocolEnum protocol = resolveProtocol(item);
         HttpRequestItem requestItem = createRequestItemFromHistory(item, protocol);
-        RequestEditPanel requestEditPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+        RequestEditPanel requestEditPanel = UiSingletonFactory.getInstance(RequestEditPanel.class);
         RequestEditSubPanel subPanel = requestEditPanel.addNewTab(buildTabTitle(item), protocol);
         subPanel.initPanelData(requestItem);
     }

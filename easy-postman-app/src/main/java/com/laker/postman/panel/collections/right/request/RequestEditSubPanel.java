@@ -1,6 +1,6 @@
 package com.laker.postman.panel.collections.right.request;
 
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.animation.ComponentSnapshotTransition;
 import com.laker.postman.common.component.MarkdownEditorPanel;
 import com.laker.postman.common.component.placeholder.RequestEditorPlaceholderPanel;
@@ -302,7 +302,7 @@ public class RequestEditSubPanel extends JPanel {
         );
         requestDirtyStateHelper = new RequestDirtyStateHelper(
                 this::getCurrentRequestFromModel,
-                dirty -> SingletonFactory.getInstance(RequestEditPanel.class).updateTabDirty(this, dirty)
+                dirty -> UiSingletonFactory.getInstance(RequestEditPanel.class).updateTabDirty(this, dirty)
         );
         requestExecutionUiHelper = new RequestExecutionUiHelper(
                 responsePanel,
@@ -338,7 +338,7 @@ public class RequestEditSubPanel extends JPanel {
                 () -> httpSseStreamOpened,
                 this::getEffectiveProtocol,
                 newProtocol -> currentProtocol = newProtocol,
-                newProtocol -> SingletonFactory.getInstance(RequestEditPanel.class).updateTabProtocol(this, newProtocol),
+                newProtocol -> UiSingletonFactory.getInstance(RequestEditPanel.class).updateTabProtocol(this, newProtocol),
                 this::initPanelData,
                 this::updateTabDirty
         );
@@ -602,7 +602,7 @@ public class RequestEditSubPanel extends JPanel {
 
     private void promotePreviewTabToPermanent() {
         SwingUtilities.invokeLater(() -> {
-            RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+            RequestEditPanel editPanel = UiSingletonFactory.getInstance(RequestEditPanel.class);
             editPanel.promotePreviewTabToPermanent();
         });
     }

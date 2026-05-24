@@ -1,8 +1,8 @@
 package com.laker.postman.panel.topmenu;
 
-import com.laker.postman.common.SingletonBaseMenuBar;
-import com.laker.postman.common.SingletonBasePanel;
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonMenuBar;
+import com.laker.postman.common.UiSingletonPanel;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.model.GitOperation;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.functional.FunctionalPanel;
@@ -50,13 +50,13 @@ public class TopMenuBarGitOperationTest {
 
     @SuppressWarnings("unchecked")
     private static Map<Class<?>, Object> singletonMap() throws Exception {
-        Field field = SingletonFactory.class.getDeclaredField("INSTANCE_MAP");
+        Field field = UiSingletonFactory.class.getDeclaredField("INSTANCE_MAP");
         field.setAccessible(true);
         return (Map<Class<?>, Object>) field.get(null);
     }
 
     private static TopMenuBar newTopMenuBarWithoutInit() {
-        SingletonBaseMenuBar.setCreatingAllowed(true);
+        UiSingletonMenuBar.setFactoryCreationAllowed(true);
         try {
             return new TopMenuBar() {
                 @Override
@@ -68,25 +68,25 @@ public class TopMenuBarGitOperationTest {
                 }
             };
         } finally {
-            SingletonBaseMenuBar.setCreatingAllowed(false);
+            UiSingletonMenuBar.setFactoryCreationAllowed(false);
         }
     }
 
     private static RecordingFunctionalPanel newRecordingFunctionalPanel() {
-        SingletonBasePanel.setCreatingAllowed(true);
+        UiSingletonPanel.setFactoryCreationAllowed(true);
         try {
             return new RecordingFunctionalPanel();
         } finally {
-            SingletonBasePanel.setCreatingAllowed(false);
+            UiSingletonPanel.setFactoryCreationAllowed(false);
         }
     }
 
     private static RecordingPerformancePanel newRecordingPerformancePanel() {
-        SingletonBasePanel.setCreatingAllowed(true);
+        UiSingletonPanel.setFactoryCreationAllowed(true);
         try {
             return new RecordingPerformancePanel();
         } finally {
-            SingletonBasePanel.setCreatingAllowed(false);
+            UiSingletonPanel.setFactoryCreationAllowed(false);
         }
     }
 

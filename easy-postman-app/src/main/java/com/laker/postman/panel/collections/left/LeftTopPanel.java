@@ -6,8 +6,8 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.SingletonBasePanel;
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonPanel;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.button.PlusButton;
 import com.laker.postman.common.component.dialog.CurlImportDialog;
@@ -54,7 +54,7 @@ import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPan
 
 
 @Slf4j
-public class LeftTopPanel extends SingletonBasePanel {
+public class LeftTopPanel extends UiSingletonPanel {
     // 记录上次文件选择器打开的目录（应用运行期间保持）
     private static File lastSelectedDirectory = null;
 
@@ -88,7 +88,7 @@ public class LeftTopPanel extends SingletonBasePanel {
         String clipboardText = getClipboardText();
         if (clipboardText != null && clipboardText.trim().toLowerCase().startsWith("curl")) {
             int result = JOptionPane.showConfirmDialog(
-                    SingletonFactory.getInstance(MainFrame.class),
+                    UiSingletonFactory.getInstance(MainFrame.class),
                     I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_DETECTED),
                     I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_TITLE),
                     JOptionPane.YES_NO_OPTION);
@@ -110,7 +110,7 @@ public class LeftTopPanel extends SingletonBasePanel {
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_NEW_COLLECTION),
                 IconUtil.create("icons/collection.svg", IconUtil.SIZE_MEDIUM, IconUtil.SIZE_MEDIUM));
         newCollection.addActionListener(e -> {
-            RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+            RequestCollectionsLeftPanel leftPanel = UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
             RequestTreeActions actions = new RequestTreeActions(leftPanel.getRequestTree(), leftPanel);
             actions.showAddGroupDialog(leftPanel.getRootTreeNode());
         });
@@ -187,7 +187,7 @@ public class LeftTopPanel extends SingletonBasePanel {
         // 搜索过滤逻辑
         searchField.getDocument().addDocumentListener(new DocumentListener() {
             private void filterTree() {
-                RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+                RequestCollectionsLeftPanel leftPanel = UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
                 String text = searchField.getText().trim();
                 if (text.isEmpty()) {
                     searchField.setNoResult(false);
@@ -230,7 +230,7 @@ public class LeftTopPanel extends SingletonBasePanel {
         // 监听搜索选项变化，触发重新过滤
         searchField.addPropertyChangeListener("caseSensitive", evt -> {
             if (!searchField.getText().isEmpty()) {
-                RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+                RequestCollectionsLeftPanel leftPanel = UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
                 String text = searchField.getText().trim();
                 boolean caseSensitive = searchField.isCaseSensitive();
                 boolean wholeWord = searchField.isWholeWord();
@@ -244,7 +244,7 @@ public class LeftTopPanel extends SingletonBasePanel {
         });
         searchField.addPropertyChangeListener("wholeWord", evt -> {
             if (!searchField.getText().isEmpty()) {
-                RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+                RequestCollectionsLeftPanel leftPanel = UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
                 String text = searchField.getText().trim();
                 boolean caseSensitive = searchField.isCaseSensitive();
                 boolean wholeWord = searchField.isWholeWord();
@@ -261,8 +261,8 @@ public class LeftTopPanel extends SingletonBasePanel {
 
     // 导入请求集合JSON文件
     private void importRequestCollection() {
-        RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
-        MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
+        RequestCollectionsLeftPanel leftPanel = UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+        MainFrame mainFrame = UiSingletonFactory.getInstance(MainFrame.class);
         JFileChooser fileChooser = createFileChooserWithLastPath();
         fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_DIALOG_TITLE));
         int userSelection = fileChooser.showOpenDialog(mainFrame);
@@ -304,8 +304,8 @@ public class LeftTopPanel extends SingletonBasePanel {
 
     // 导入Postman集合
     private void importPostmanCollection() {
-        RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
-        MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
+        RequestCollectionsLeftPanel leftPanel = UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+        MainFrame mainFrame = UiSingletonFactory.getInstance(MainFrame.class);
         JFileChooser fileChooser = createFileChooserWithLastPath();
         fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_POSTMAN_DIALOG_TITLE));
         int userSelection = fileChooser.showOpenDialog(mainFrame);
@@ -336,8 +336,8 @@ public class LeftTopPanel extends SingletonBasePanel {
 
     // 导入HAR集合
     private void importHarCollection() {
-        RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
-        MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
+        RequestCollectionsLeftPanel leftPanel = UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+        MainFrame mainFrame = UiSingletonFactory.getInstance(MainFrame.class);
         JFileChooser fileChooser = createFileChooserWithLastPath();
         fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_HAR_DIALOG_TITLE));
         int userSelection = fileChooser.showOpenDialog(mainFrame);
@@ -365,8 +365,8 @@ public class LeftTopPanel extends SingletonBasePanel {
 
     // 导入Swagger/OpenAPI集合
     private void importSwaggerCollection() {
-        RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
-        MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
+        RequestCollectionsLeftPanel leftPanel = UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+        MainFrame mainFrame = UiSingletonFactory.getInstance(MainFrame.class);
         JFileChooser fileChooser = createFileChooserWithLastPath();
         fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_SWAGGER_DIALOG_TITLE));
         int userSelection = fileChooser.showOpenDialog(mainFrame);
@@ -422,7 +422,7 @@ public class LeftTopPanel extends SingletonBasePanel {
 
             // 刷新 TopMenuBar 的环境下拉框
             try {
-                TopMenuBar topMenuBar = SingletonFactory.getInstance(TopMenuBar.class);
+                TopMenuBar topMenuBar = UiSingletonFactory.getInstance(TopMenuBar.class);
                 if (topMenuBar.getEnvironmentComboBox() != null) {
                     topMenuBar.getEnvironmentComboBox().reload();
                     log.debug("已刷新环境下拉框");
@@ -435,8 +435,8 @@ public class LeftTopPanel extends SingletonBasePanel {
 
     // 导入HTTP文件
     private void importHttpFile() {
-        RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
-        MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
+        RequestCollectionsLeftPanel leftPanel = UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+        MainFrame mainFrame = UiSingletonFactory.getInstance(MainFrame.class);
         JFileChooser fileChooser = createFileChooserWithLastPath();
         fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_HTTP_DIALOG_TITLE));
         // 设置文件过滤器，只显示 .http 文件
@@ -483,8 +483,8 @@ public class LeftTopPanel extends SingletonBasePanel {
      * 导入 ApiPost 文档
      */
     private void importApiPostCollection() {
-        RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
-        MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
+        RequestCollectionsLeftPanel leftPanel = UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+        MainFrame mainFrame = UiSingletonFactory.getInstance(MainFrame.class);
         JFileChooser fileChooser = createFileChooserWithLastPath();
         fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_APIPOST_DIALOG_TITLE));
         int userSelection = fileChooser.showOpenDialog(mainFrame);
@@ -517,7 +517,7 @@ public class LeftTopPanel extends SingletonBasePanel {
     }
 
     private void importCurlToCollection(String defaultCurl) {
-        MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
+        MainFrame mainFrame = UiSingletonFactory.getInstance(MainFrame.class);
         String curlText;
         // 如果已经提供了 curl 文本（从剪贴板检测到的），直接使用，跳过输入对话框
         if (defaultCurl != null && !defaultCurl.trim().isEmpty()) {
@@ -559,8 +559,8 @@ public class LeftTopPanel extends SingletonBasePanel {
      * @param item 要保存的请求
      */
     private boolean saveRequestWithGroupDialog(HttpRequestItem item) {
-        RequestCollectionsLeftPanel collectionPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
-        RequestEditPanel requestEditPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+        RequestCollectionsLeftPanel collectionPanel = UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+        RequestEditPanel requestEditPanel = UiSingletonFactory.getInstance(RequestEditPanel.class);
         TreeModel groupTreeModel = collectionPanel.getGroupTreeModel();
         Object[] result = requestEditPanel.showGroupAndNameDialog(groupTreeModel, item.getName());
         if (result == null) return false;

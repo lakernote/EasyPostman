@@ -1,7 +1,7 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
 import cn.hutool.core.util.XmlUtil;
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.ViewportClippedTokenPainter;
@@ -221,7 +221,7 @@ public class ResponseBodyPanel extends JPanel {
         String defaultFileName = generateFileName();
         fileChooser.setSelectedFile(new File(defaultFileName));
 
-        int userSelection = fileChooser.showSaveDialog(SingletonFactory.getInstance(MainFrame.class));
+        int userSelection = fileChooser.showSaveDialog(UiSingletonFactory.getInstance(MainFrame.class));
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File destFile = fileChooser.getSelectedFile();
             try {

@@ -11,9 +11,9 @@ import java.util.List;
 import java.util.Set;
 
 import static com.laker.postman.common.constants.HttpConstants.HEADER_AUTHORIZATION;
-import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BASIC;
-import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BEARER;
-import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_DIGEST;
+import static com.laker.postman.model.RequestAuthTypes.AUTH_TYPE_BASIC;
+import static com.laker.postman.model.RequestAuthTypes.AUTH_TYPE_BEARER;
+import static com.laker.postman.model.RequestAuthTypes.AUTH_TYPE_DIGEST;
 
 /**
  * 负责构建 PreparedRequest

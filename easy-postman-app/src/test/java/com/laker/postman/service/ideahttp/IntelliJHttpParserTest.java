@@ -8,8 +8,8 @@ import org.testng.annotations.Test;
 
 import java.util.Base64;
 
-import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BASIC;
-import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BEARER;
+import static com.laker.postman.model.RequestAuthTypes.AUTH_TYPE_BASIC;
+import static com.laker.postman.model.RequestAuthTypes.AUTH_TYPE_BEARER;
 import static org.testng.Assert.*;
 
 /**

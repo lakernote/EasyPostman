@@ -102,12 +102,18 @@ Avoid Lombok only when explicit code is clearer for Swing lifecycle, side-effect
 ## Swing Panel Conventions
 
 All UI panels that are logically singletons must:
-1. Extend `SingletonBasePanel`
-2. Be obtained via `SingletonFactory.getInstance(MyPanel.class)` — **never `new MyPanel()`**
+1. Extend `UiSingletonPanel`
+2. Be obtained via `UiSingletonFactory.getInstance(MyPanel.class)` — **never `new MyPanel()`**
 3. Implement `initUI()` for component creation and `registerListeners()` for event wiring
-4. Call `safeInit()` after obtaining the instance (this calls `initUI()` then `registerListeners()`)
+4. Let `UiSingletonFactory` call `initializeSingletonUi()` after construction (this calls `initUI()` then `registerListeners()`)
 
-`SingletonBaseMenuBar` follows the same pattern for menu bars.
+`UiSingletonMenuBar` follows the same pattern for menu bars.
+
+Business services and repositories must be obtained through the IOC container (`BeanFactory.getBean(...)` or constructor injection), not through `UiSingletonFactory`.
+
+Classes that coordinate Swing tabs, dialogs, or panels but are not singleton components should live under `com.laker.postman.panel...` and use UI-oriented names (for example `RequestEditorTabs`, `OpenedRequestTabsSaver`) rather than `*Service`.
+
+Collection services must not fetch panels directly. Use service-side models/stores such as `OpenedRequestsStore`, `CollectionTreeNodeTypes`, and the registered root-node access in `CollectionTreeRootRegistry`; the UI layer is responsible for registering the active tree root.
 
 ---
 

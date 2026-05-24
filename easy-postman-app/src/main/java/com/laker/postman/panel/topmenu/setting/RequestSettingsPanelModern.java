@@ -1,6 +1,6 @@
 package com.laker.postman.panel.topmenu.setting;
 
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.service.http.okhttp.OkHttpClientManager;
 import com.laker.postman.service.setting.SettingManager;
@@ -430,7 +430,7 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
 
     private void refreshOpenRequestEditorTabsVisibility() {
         try {
-            SingletonFactory.getInstance(RequestEditPanel.class).updateAllRequestEditorTabsVisibility();
+            UiSingletonFactory.getInstance(RequestEditPanel.class).updateAllRequestEditorTabsVisibility();
         } catch (Exception ex) {
             log.debug("Failed to refresh open request editor tabs visibility", ex);
         }

@@ -30,6 +30,7 @@ public class PerformanceTimerManagerTest extends AbstractSwingUiTest {
         });
 
         try {
+            manager.setReportRefreshEnabled(true);
             manager.startAll();
             assertTrue(callbackEntered.await(1, TimeUnit.SECONDS));
 

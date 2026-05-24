@@ -1,11 +1,11 @@
 package com.laker.postman.panel.functional;
 
-import com.laker.postman.common.SingletonBasePanel;
+import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.panel.functional.table.FunctionalRunnerTableModel;
-import com.laker.postman.panel.functional.table.RunnerRowData;
+import com.laker.postman.model.RunnerRowData;
 import com.laker.postman.service.FunctionalPersistenceService;
 import org.testng.annotations.Test;
 
@@ -75,11 +75,11 @@ public class FunctionalPanelSaveTest {
     }
 
     private static FunctionalPanel newPanelWithoutInit() throws Exception {
-        SingletonBasePanel.setCreatingAllowed(true);
+        UiSingletonPanel.setFactoryCreationAllowed(true);
         try {
             return new FunctionalPanel();
         } finally {
-            SingletonBasePanel.setCreatingAllowed(false);
+            UiSingletonPanel.setFactoryCreationAllowed(false);
         }
     }
 

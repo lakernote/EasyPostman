@@ -1,6 +1,5 @@
-package com.laker.postman.panel.functional.table;
+package com.laker.postman.model;
 
-import com.laker.postman.model.*;
 import com.laker.postman.model.script.TestResult;
 
 import java.util.List;

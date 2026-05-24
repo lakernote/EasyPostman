@@ -1,13 +1,14 @@
 package com.laker.postman.panel.performance;
 
-import com.laker.postman.common.SingletonBasePanel;
+import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.DebouncedSaveSupport;
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.common.component.button.RefreshButton;
 import com.laker.postman.common.component.button.StartButton;
 import com.laker.postman.common.component.button.StopButton;
 import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
@@ -52,7 +53,7 @@ import java.util.List;
  * 左侧多层级树（用户组-请求-断言-定时器），右侧属性区，底部Tab结果区
  */
 @Slf4j
-public class PerformancePanel extends SingletonBasePanel {
+public class PerformancePanel extends UiSingletonPanel {
     public static final String EMPTY = "empty";
     public static final String THREAD_GROUP = "threadGroup";
     public static final String LOOP = "loop";
@@ -129,7 +130,7 @@ public class PerformancePanel extends SingletonBasePanel {
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
-        this.persistenceService = SingletonFactory.getInstance(PerformancePersistenceService.class);
+        this.persistenceService = BeanFactory.getBean(PerformancePersistenceService.class);
         initTimerManager();
         efficientMode = persistenceService.loadEfficientMode();
         trendEnabled = persistenceService.loadTrendEnabled();

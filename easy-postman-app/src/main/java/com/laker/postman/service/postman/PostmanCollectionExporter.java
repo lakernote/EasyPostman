@@ -9,7 +9,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.Arrays;
 import java.util.UUID;
 
-import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.*;
+import static com.laker.postman.model.RequestAuthTypes.*;
 
 /**
  * Postman Collection导出器

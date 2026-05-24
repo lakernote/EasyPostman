@@ -1,5 +1,6 @@
 package com.laker.postman.panel.functional.table;
 
+import com.laker.postman.model.RunnerRowData;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.TimeDisplayUtil;

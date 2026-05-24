@@ -1,6 +1,6 @@
 package com.laker.postman.service.update;
 
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -376,7 +376,7 @@ public class UpdateDownloader {
                 // 1. 在 EDT 线程中触发窗口关闭事件
                 SwingUtilities.invokeAndWait(() -> {
                     try {
-                        MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
+                        MainFrame mainFrame = UiSingletonFactory.getInstance(MainFrame.class);
 
                         // 触发 WINDOW_CLOSING 事件（会调用 WindowListener.windowClosing）
                         WindowEvent closingEvent = new WindowEvent(
@@ -401,7 +401,7 @@ public class UpdateDownloader {
                 // 3. 强制关闭窗口
                 SwingUtilities.invokeLater(() -> {
                     try {
-                        MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
+                        MainFrame mainFrame = UiSingletonFactory.getInstance(MainFrame.class);
                         mainFrame.dispose();
                         log.info("Main window disposed");
                     } catch (Exception e) {

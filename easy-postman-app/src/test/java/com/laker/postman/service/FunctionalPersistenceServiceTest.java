@@ -4,9 +4,11 @@ import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.Workspace;
-import com.laker.postman.panel.functional.table.RunnerRowData;
+import com.laker.postman.model.RunnerRowData;
+import com.laker.postman.service.collections.CollectionTreeRootRegistry;
 import org.testng.annotations.Test;
 
+import javax.swing.tree.DefaultMutableTreeNode;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -17,6 +19,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static com.laker.postman.service.collections.CollectionTreeNodeTypes.REQUEST;
 import static org.testng.Assert.*;
 
 public class FunctionalPersistenceServiceTest {
@@ -166,6 +169,21 @@ public class FunctionalPersistenceServiceTest {
         assertEquals(loadedCsvState.getSourceName(), "users.csv");
         assertEquals(loadedCsvState.getHeaders(), List.of("username", "password"));
         assertEquals(loadedCsvState.getRows().get(0).get("username"), "alice");
+    }
+
+    @Test(description = "应通过已注册的 Collection 树根节点按 ID 查找请求")
+    public void shouldFindRequestItemFromRegisteredCollectionTreeRoot() {
+        HttpRequestItem requestItem = requestItem("req-registered", "registered");
+        DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode("root");
+        rootNode.add(new DefaultMutableTreeNode(new Object[]{REQUEST, requestItem}));
+
+        try {
+            CollectionTreeRootRegistry.registerRootSupplier(() -> rootNode);
+
+            assertSame(new FunctionalPersistenceService().findRequestItemById("req-registered"), requestItem);
+        } finally {
+            CollectionTreeRootRegistry.clear();
+        }
     }
 
     private static HttpRequestItem requestItem(String id, String name) {

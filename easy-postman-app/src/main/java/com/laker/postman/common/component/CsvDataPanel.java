@@ -3,7 +3,7 @@ package com.laker.postman.common.component;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.button.CSVButton;
 import com.laker.postman.common.component.button.CloseButton;
 import com.laker.postman.common.component.button.ModernButtonFactory;
@@ -273,7 +273,7 @@ public class CsvDataPanel extends JPanel {
      * 手动创建 CSV 数据对话框
      */
     private void showManualCreateDialog() {
-        JDialog dialog = new JDialog(SingletonFactory.getInstance(MainFrame.class),
+        JDialog dialog = new JDialog(UiSingletonFactory.getInstance(MainFrame.class),
                 I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_DIALOG_TITLE), true);
         dialog.setLayout(new BorderLayout());
         dialog.setResizable(false);
@@ -412,7 +412,7 @@ public class CsvDataPanel extends JPanel {
         dialog.getRootPane().setDefaultButton(createBtn);
         dialog.pack();
         dialog.setSize(Math.max(dialog.getWidth(), CSV_MANUAL_DIALOG_MIN_WIDTH), dialog.getHeight());
-        dialog.setLocationRelativeTo(SingletonFactory.getInstance(MainFrame.class));
+        dialog.setLocationRelativeTo(UiSingletonFactory.getInstance(MainFrame.class));
         SwingUtilities.invokeLater(headersField::requestFocusInWindow);
 
         dialog.setVisible(true);
@@ -423,11 +423,11 @@ public class CsvDataPanel extends JPanel {
      * 布局：标题固定 → 说明文字可滚动 → 当前状态+操作按钮固定 → 关闭按钮固定
      */
     private void showEnhancedCsvManagementDialog() {
-        JDialog dialog = new JDialog(SingletonFactory.getInstance(MainFrame.class),
+        JDialog dialog = new JDialog(UiSingletonFactory.getInstance(MainFrame.class),
                 I18nUtil.getMessage(MessageKeys.CSV_DIALOG_MANAGEMENT_TITLE), true);
         dialog.setSize(480, 520);
         dialog.setResizable(false);
-        dialog.setLocationRelativeTo(SingletonFactory.getInstance(MainFrame.class));
+        dialog.setLocationRelativeTo(UiSingletonFactory.getInstance(MainFrame.class));
         dialog.setLayout(new BorderLayout());
 
         // ── NORTH：标题 + 可滚动说明文字 ──
@@ -578,7 +578,7 @@ public class CsvDataPanel extends JPanel {
         JDialog manageDialog = new JDialog((Frame) null, I18nUtil.getMessage(MessageKeys.CSV_DATA_MANAGEMENT), true);
         manageDialog.setSize(860, 620);
         manageDialog.setMinimumSize(new Dimension(CSV_MANAGE_DIALOG_MIN_WIDTH, CSV_MANAGE_DIALOG_MIN_HEIGHT));
-        manageDialog.setLocationRelativeTo(SingletonFactory.getInstance(MainFrame.class));
+        manageDialog.setLocationRelativeTo(UiSingletonFactory.getInstance(MainFrame.class));
         manageDialog.setLayout(new BorderLayout());
 
         // 顶部信息面板
@@ -1396,7 +1396,7 @@ public class CsvDataPanel extends JPanel {
             fileChooser.setCurrentDirectory(csvFile.getParentFile());
         }
 
-        int result = fileChooser.showOpenDialog(SingletonFactory.getInstance(MainFrame.class));
+        int result = fileChooser.showOpenDialog(UiSingletonFactory.getInstance(MainFrame.class));
         if (result == JFileChooser.APPROVE_OPTION) {
             File selectedFile = fileChooser.getSelectedFile();
 

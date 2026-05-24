@@ -5,7 +5,9 @@ import com.laker.postman.model.SavedResponse;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 
-import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.*;
+import static com.laker.postman.service.collections.CollectionTreeNodeTypes.GROUP;
+import static com.laker.postman.service.collections.CollectionTreeNodeTypes.REQUEST;
+import static com.laker.postman.service.collections.CollectionTreeNodeTypes.SAVED_RESPONSE;
 
 /**
  * TreeNode 构建工具类

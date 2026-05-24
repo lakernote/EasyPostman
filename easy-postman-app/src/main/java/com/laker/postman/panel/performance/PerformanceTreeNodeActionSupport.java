@@ -2,9 +2,9 @@ package com.laker.postman.panel.performance;
 
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
+import com.laker.postman.panel.collections.RequestSelectionDialogSupport;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
-import com.laker.postman.service.collections.RequestCollectionsService;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -71,7 +71,7 @@ final class PerformanceTreeNodeActionSupport {
             );
             return;
         }
-        RequestCollectionsService.showMultiSelectRequestDialog(selectedList -> addSelectedRequests(node, selectedList));
+        RequestSelectionDialogSupport.showMultiSelectRequestDialog(selectedList -> addSelectedRequests(node, selectedList));
     }
 
     void addAssertionNode() {

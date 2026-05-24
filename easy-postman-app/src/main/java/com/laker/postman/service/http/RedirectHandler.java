@@ -1,6 +1,6 @@
 package com.laker.postman.service.http;
 
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
@@ -167,7 +167,7 @@ public class RedirectHandler {
             String logMessage = String.format("Status: %d, URL: %s, Location: %s",
                     info.statusCode, info.url, info.location);
 
-            var editSubPanel = SingletonFactory.getInstance(RequestEditPanel.class)
+            var editSubPanel = UiSingletonFactory.getInstance(RequestEditPanel.class)
                     .getRequestEditSubPanel(requestId);
 
             if (editSubPanel != null) {

@@ -1,6 +1,6 @@
 package com.laker.postman.service.update.plugin;
 
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.ioc.Component;
 import com.laker.postman.model.UpdateCheckFrequency;
@@ -106,7 +106,7 @@ public class PluginUpdateManager {
     }
 
     private void showUpdateNotification(List<PluginUpdateCandidate> candidates) {
-        MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
+        MainFrame mainFrame = UiSingletonFactory.getInstance(MainFrame.class);
         PluginUpdateNotification.show(mainFrame, candidates, updates ->
                 PluginManagerDialog.showMarketDialog(mainFrame, updates.get(0).pluginId()));
     }
@@ -126,7 +126,7 @@ public class PluginUpdateManager {
             if (!result.hasUpdates()) {
                 return;
             }
-            MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
+            MainFrame mainFrame = UiSingletonFactory.getInstance(MainFrame.class);
             int choice = JOptionPane.showConfirmDialog(
                     mainFrame,
                     buildManualPromptMessage(result.candidates()),

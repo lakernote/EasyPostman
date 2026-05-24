@@ -5,7 +5,7 @@ import org.testng.annotations.Test;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 
-import static com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel.BODY_TYPE_FORM_URLENCODED;
+import static com.laker.postman.model.RequestBodyTypes.BODY_TYPE_FORM_URLENCODED;
 import static org.testng.Assert.*;
 
 public class HarParserTest {

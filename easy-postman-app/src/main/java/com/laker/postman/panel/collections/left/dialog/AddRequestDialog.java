@@ -1,7 +1,7 @@
 package com.laker.postman.panel.collections.left.dialog;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpRequestItem;
@@ -48,12 +48,12 @@ public class AddRequestDialog {
      */
     private void initDialog() {
         dialog = new JDialog(
-                SingletonFactory.getInstance(MainFrame.class),
+                UiSingletonFactory.getInstance(MainFrame.class),
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_ADD_REQUEST_TITLE),
                 true
         );
         dialog.setSize(400, 260);
-        dialog.setLocationRelativeTo(SingletonFactory.getInstance(MainFrame.class));
+        dialog.setLocationRelativeTo(UiSingletonFactory.getInstance(MainFrame.class));
         dialog.setLayout(new BorderLayout());
 
         JPanel mainPanel = createMainPanel();
@@ -221,7 +221,7 @@ public class AddRequestDialog {
         tree.scrollPathToVisible(newPath);
 
         // 自动打开新创建的请求
-        SingletonFactory.getInstance(RequestEditPanel.class).showOrCreateTab(defaultRequest);
+        UiSingletonFactory.getInstance(RequestEditPanel.class).showOrCreateTab(defaultRequest);
     }
 
     /**

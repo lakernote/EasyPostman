@@ -5,7 +5,7 @@ import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.service.common.CollectionParseResult;
 import org.testng.annotations.Test;
 
-import static com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel.BODY_TYPE_RAW;
+import static com.laker.postman.model.RequestBodyTypes.BODY_TYPE_RAW;
 import static org.testng.Assert.*;
 
 /**

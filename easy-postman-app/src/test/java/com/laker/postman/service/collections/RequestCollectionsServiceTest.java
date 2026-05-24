@@ -5,10 +5,12 @@ import org.testng.annotations.Test;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.List;
+import java.util.Optional;
 
-import static com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel.REQUEST;
+import static com.laker.postman.service.collections.CollectionTreeNodeTypes.REQUEST;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
+import static org.testng.Assert.assertTrue;
 
 public class RequestCollectionsServiceTest {
 
@@ -30,6 +32,25 @@ public class RequestCollectionsServiceTest {
         assertEquals(restorable.size(), 2);
         assertSame(restorable.get(0), treeResolvedRequest);
         assertSame(restorable.get(1), newRequest);
+    }
+
+    @Test
+    public void activeTreeNodeRepositoryShouldReadRegisteredRootNode() {
+        HttpRequestItem request = request("persisted", "Persisted");
+        DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode("root");
+        DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(new Object[]{REQUEST, request});
+        rootNode.add(requestNode);
+
+        try {
+            CollectionTreeRootRegistry.registerRootSupplier(() -> rootNode);
+            Optional<DefaultMutableTreeNode> result =
+                    new ActiveCollectionTreeNodeRepository().findNodeByRequestId("persisted");
+
+            assertTrue(result.isPresent());
+            assertSame(result.get(), requestNode);
+        } finally {
+            CollectionTreeRootRegistry.clear();
+        }
     }
 
 

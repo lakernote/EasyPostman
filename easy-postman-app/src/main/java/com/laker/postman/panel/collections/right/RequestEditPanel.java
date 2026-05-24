@@ -3,8 +3,8 @@ package com.laker.postman.panel.collections.right;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.IdUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.SingletonBasePanel;
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonPanel;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.tab.ClosableTabComponent;
 import com.laker.postman.common.component.tab.PlusPanel;
 import com.laker.postman.common.component.tab.PlusTabComponent;
@@ -17,9 +17,8 @@ import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.SavedResponse;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
-import com.laker.postman.service.collections.DefaultTreeNodeRepository;
+import com.laker.postman.service.collections.ActiveCollectionTreeNodeRepository;
 import com.laker.postman.service.collections.RequestCollectionsService;
-import com.laker.postman.service.collections.RequestsTabsService;
 import com.laker.postman.service.setting.ShortcutManager;
 import com.laker.postman.service.variable.RequestContext;
 import com.laker.postman.startup.StartupDiagnostics;
@@ -46,7 +45,7 @@ import static com.laker.postman.util.SystemUtil.getClipboardCurlText;
  * 请求编辑面板，支持多标签页，每个标签页为独立的请求编辑子面板
  */
 @Slf4j
-public class RequestEditPanel extends SingletonBasePanel {
+public class RequestEditPanel extends UiSingletonPanel {
     public static final String REQUEST_STRING = I18nUtil.getMessage(MessageKeys.NEW_REQUEST);
     public static final String PLUS_TAB = "+";
     public static final String GROUP = "group";
@@ -83,7 +82,7 @@ public class RequestEditPanel extends SingletonBasePanel {
         tabbedPane.setSelectedIndex(tabbedPane.getTabCount() - 1);
         // 保证“+”Tab始终在最后
         addPlusTab();
-        RequestsTabsService.updateTabNew(subPanel, true); // 设置新建状态
+        RequestEditorTabs.setTabNewRequest(subPanel, true); // 设置新建状态
         return subPanel;
     }
 
@@ -148,8 +147,7 @@ public class RequestEditPanel extends SingletonBasePanel {
         }
 
         // 设置全局请求上下文（供分组变量使用）
-        DefaultTreeNodeRepository repository =
-                SingletonFactory.getInstance(DefaultTreeNodeRepository.class);
+        ActiveCollectionTreeNodeRepository repository = new ActiveCollectionTreeNodeRepository();
         repository.getRootNode().ifPresent(rootNode -> {
             DefaultMutableTreeNode requestNode = RequestCollectionsService.findRequestNodeById(rootNode, id);
             if (requestNode != null) {
@@ -205,7 +203,7 @@ public class RequestEditPanel extends SingletonBasePanel {
         // 3. 复用或创建预览 tab
         String groupName = group.getName();
         GroupEditPanel groupEditPanel = new GroupEditPanel(groupNode, group, () -> {
-            RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+            RequestCollectionsLeftPanel leftPanel = UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
             leftPanel.getTreeModel().nodeChanged(groupNode);
             leftPanel.getPersistence().saveRequestGroups();
         });
@@ -225,8 +223,7 @@ public class RequestEditPanel extends SingletonBasePanel {
         }
 
         // 设置全局请求上下文（供分组变量使用）
-        DefaultTreeNodeRepository repository =
-                SingletonFactory.getInstance(DefaultTreeNodeRepository.class);
+        ActiveCollectionTreeNodeRepository repository = new ActiveCollectionTreeNodeRepository();
         repository.getRootNode().ifPresent(rootNode -> {
             DefaultMutableTreeNode requestNode = RequestCollectionsService.findRequestNodeById(rootNode, id);
             if (requestNode != null) {
@@ -415,7 +412,7 @@ public class RequestEditPanel extends SingletonBasePanel {
         boolean isNewRequest = currentItem.isNewRequest();
 
         // 查找请求集合面板
-        RequestCollectionsLeftPanel collectionPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+        RequestCollectionsLeftPanel collectionPanel = UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
 
         if (isNewRequest) {
             // 新请求：弹出对话框让用户输入名称和选择文件夹
@@ -498,7 +495,7 @@ public class RequestEditPanel extends SingletonBasePanel {
         mainPanel.add(treeScroll, gbc);
 
         // 创建自定义对话框以支持更好的交互
-        JDialog dialog = new JDialog(SingletonFactory.getInstance(MainFrame.class),
+        JDialog dialog = new JDialog(UiSingletonFactory.getInstance(MainFrame.class),
                 I18nUtil.getMessage(MessageKeys.SAVE_REQUEST), true);
         dialog.setLayout(new BorderLayout());
         dialog.add(mainPanel, BorderLayout.CENTER);
@@ -577,7 +574,7 @@ public class RequestEditPanel extends SingletonBasePanel {
 
         // 设置对话框属性
         dialog.setSize(420, 420);
-        dialog.setLocationRelativeTo(SingletonFactory.getInstance(MainFrame.class));
+        dialog.setLocationRelativeTo(UiSingletonFactory.getInstance(MainFrame.class));
         dialog.setResizable(false);
 
         // 显示对话框后自动聚焦到名称输入框
@@ -872,7 +869,7 @@ public class RequestEditPanel extends SingletonBasePanel {
                     // 检测剪贴板cURL
                     String curlText = getClipboardCurlText();
                     if (curlText != null) {
-                        int result = JOptionPane.showConfirmDialog(SingletonFactory.getInstance(RequestEditPanel.class),
+                        int result = JOptionPane.showConfirmDialog(UiSingletonFactory.getInstance(RequestEditPanel.class),
                                 I18nUtil.getMessage(MessageKeys.CLIPBOARD_CURL_DETECTED),
                                 I18nUtil.getMessage(MessageKeys.IMPORT_CURL), JOptionPane.YES_NO_OPTION);
                         if (result == JOptionPane.YES_OPTION) {
@@ -948,7 +945,7 @@ public class RequestEditPanel extends SingletonBasePanel {
         // 创建分组编辑面板
         GroupEditPanel groupEditPanel = new GroupEditPanel(groupNode, group, () -> {
             // 保存回调
-            RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+            RequestCollectionsLeftPanel leftPanel = UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
             leftPanel.getTreeModel().nodeChanged(groupNode);
             leftPanel.getPersistence().saveRequestGroups();
         });
@@ -977,7 +974,7 @@ public class RequestEditPanel extends SingletonBasePanel {
 
         // 只有 RequestEditSubPanel 才需要检查是否修改
         if (component instanceof RequestEditSubPanel editSubPanel && editSubPanel.isModified()) {
-            int result = JOptionPane.showConfirmDialog(SingletonFactory.getInstance(MainFrame.class),
+            int result = JOptionPane.showConfirmDialog(UiSingletonFactory.getInstance(MainFrame.class),
                     I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_SAVE_CURRENT),
                     I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_TITLE),
                     JOptionPane.YES_NO_CANCEL_OPTION,
@@ -1027,7 +1024,7 @@ public class RequestEditPanel extends SingletonBasePanel {
             // 只对 RequestEditSubPanel 检查是否修改
             if (comp instanceof RequestEditSubPanel subPanel && subPanel.isModified()) {
                 int idx = tabbedPane.indexOfComponent(comp);
-                int result = JOptionPane.showConfirmDialog(SingletonFactory.getInstance(MainFrame.class),
+                int result = JOptionPane.showConfirmDialog(UiSingletonFactory.getInstance(MainFrame.class),
                         I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_SAVE_OTHERS),
                         I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_TITLE),
                         JOptionPane.YES_NO_CANCEL_OPTION,
@@ -1066,7 +1063,7 @@ public class RequestEditPanel extends SingletonBasePanel {
             // 只对 RequestEditSubPanel 检查是否修改
             if (comp instanceof RequestEditSubPanel subPanel && subPanel.isModified()) {
                 int idx = tabbedPane.indexOfComponent(comp);
-                int result = JOptionPane.showConfirmDialog(SingletonFactory.getInstance(MainFrame.class),
+                int result = JOptionPane.showConfirmDialog(UiSingletonFactory.getInstance(MainFrame.class),
                         I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_SAVE_ALL),
                         I18nUtil.getMessage(MessageKeys.TAB_UNSAVED_CHANGES_TITLE),
                         JOptionPane.YES_NO_CANCEL_OPTION,

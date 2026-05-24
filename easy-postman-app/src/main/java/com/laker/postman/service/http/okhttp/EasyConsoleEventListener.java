@@ -1,6 +1,6 @@
 package com.laker.postman.service.http.okhttp;
 
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
@@ -68,7 +68,7 @@ public class EasyConsoleEventListener extends EventListener {
             // 输出到 NetworkLogPanel
             try {
                 if (editSubPanel == null) {
-                    editSubPanel = SingletonFactory.getInstance(RequestEditPanel.class).getRequestEditSubPanel(reqItemId);
+                    editSubPanel = UiSingletonFactory.getInstance(RequestEditPanel.class).getRequestEditSubPanel(reqItemId);
                 }
                 NetworkLogPanel netPanel = editSubPanel.getResponsePanel().getNetworkLogPanel();
                 netPanel.appendLog(stage, msg, elapsedMs);

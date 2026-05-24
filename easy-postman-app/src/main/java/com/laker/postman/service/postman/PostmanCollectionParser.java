@@ -15,8 +15,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.*;
-import static com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel.*;
+import static com.laker.postman.model.RequestAuthTypes.*;
+import static com.laker.postman.model.RequestBodyTypes.*;
 
 /**
  * Postman Collection解析器

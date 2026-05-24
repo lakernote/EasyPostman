@@ -3,7 +3,7 @@ package com.laker.postman.panel.collections.right.request.sub;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.button.ClearButton;
 import com.laker.postman.frame.MainFrame;
@@ -135,7 +135,7 @@ public class WebSocketResponsePanel extends JPanel {
                         editorPane.setEditable(false);
                         JScrollPane scrollPane = new JScrollPane(editorPane);
                         scrollPane.setPreferredSize(new Dimension(600, 400));
-                        JOptionPane.showMessageDialog(SingletonFactory.getInstance(MainFrame.class),
+                        JOptionPane.showMessageDialog(UiSingletonFactory.getInstance(MainFrame.class),
                                 scrollPane, I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_ASSERTION), JOptionPane.PLAIN_MESSAGE);
                     }
                 }

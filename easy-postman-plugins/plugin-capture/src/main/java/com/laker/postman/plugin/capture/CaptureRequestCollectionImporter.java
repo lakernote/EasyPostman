@@ -1,15 +1,15 @@
 package com.laker.postman.plugin.capture;
 
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.model.RequestBodyTypes;
 import com.laker.postman.model.RequestGroup;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
-import com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.NotificationUtil;
 
@@ -52,8 +52,8 @@ final class CaptureRequestCollectionImporter {
             return;
         }
 
-        RequestCollectionsLeftPanel collectionPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
-        RequestEditPanel requestEditPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+        RequestCollectionsLeftPanel collectionPanel = UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+        RequestEditPanel requestEditPanel = UiSingletonFactory.getInstance(RequestEditPanel.class);
 
         Object[] groupObj = chooseGroup(collectionPanel.getGroupTreeModel());
         if (groupObj == null) {
@@ -101,7 +101,7 @@ final class CaptureRequestCollectionImporter {
         ));
         mainPanel.add(treeScroll, BorderLayout.CENTER);
 
-        JDialog dialog = new JDialog(SingletonFactory.getInstance(MainFrame.class),
+        JDialog dialog = new JDialog(UiSingletonFactory.getInstance(MainFrame.class),
                 I18nUtil.getMessage(com.laker.postman.util.MessageKeys.SELECT_GROUP), true);
         dialog.setLayout(new BorderLayout());
         dialog.add(mainPanel, BorderLayout.CENTER);
@@ -147,7 +147,7 @@ final class CaptureRequestCollectionImporter {
         );
 
         dialog.setSize(420, 390);
-        dialog.setLocationRelativeTo(SingletonFactory.getInstance(MainFrame.class));
+        dialog.setLocationRelativeTo(UiSingletonFactory.getInstance(MainFrame.class));
         dialog.setResizable(false);
         SwingUtilities.invokeLater(groupTree::requestFocusInWindow);
         dialog.setVisible(true);
@@ -310,16 +310,16 @@ final class CaptureRequestCollectionImporter {
 
     private void populateBody(CaptureFlow flow, HttpRequestItem item) {
         if (flow.isWebSocketProtocol()) {
-            item.setBodyType(RequestBodyPanel.BODY_TYPE_RAW);
+            item.setBodyType(RequestBodyTypes.BODY_TYPE_RAW);
             item.setBody("");
             return;
         }
         String bodyText = flow.requestBodyImportText();
         if (!bodyText.isBlank()) {
-            item.setBodyType(RequestBodyPanel.BODY_TYPE_RAW);
+            item.setBodyType(RequestBodyTypes.BODY_TYPE_RAW);
             item.setBody(bodyText);
         } else {
-            item.setBodyType(RequestBodyPanel.BODY_TYPE_NONE);
+            item.setBodyType(RequestBodyTypes.BODY_TYPE_NONE);
             item.setBody("");
         }
     }

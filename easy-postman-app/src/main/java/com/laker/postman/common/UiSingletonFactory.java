@@ -3,18 +3,21 @@ package com.laker.postman.common;
 import com.laker.postman.common.exception.GetInstanceException;
 import lombok.extern.slf4j.Slf4j;
 
+import java.awt.Window;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 泛型单例工厂,用于创建和管理单例实例。
+ * UI 单例工厂，仅用于创建和管理主窗口、单例面板和单例菜单栏。
+ * <p>
+ * 业务 Service/Repository 应通过 IOC 容器获取，不应放入该工厂。
  */
 @Slf4j
-public class SingletonFactory {
+public class UiSingletonFactory {
     private static final Map<Class<?>, Object> INSTANCE_MAP = new ConcurrentHashMap<>();
 
-    private SingletonFactory() {
+    private UiSingletonFactory() {
         // 私有构造函数，防止实例化
     }
 
@@ -35,6 +38,11 @@ public class SingletonFactory {
         if (clazz == null) {
             throw new IllegalArgumentException("Class must not be null");
         }
+        if (!isSupportedUiSingleton(clazz)) {
+            throw new IllegalArgumentException(
+                    "UiSingletonFactory can only create UI singletons. Use BeanFactory for services: "
+                            + clazz.getName());
+        }
         // 1. 创建占位符对象，防止递归依赖
         // 每个类的占位符是唯一的，避免不同类间冲突
         Object placeholder = new Object();
@@ -48,15 +56,15 @@ public class SingletonFactory {
         }
         try {
 
-            // 对于SingletonBasePanel类型，设置创建标志
-            boolean isSingletonBasePanel = SingletonBasePanel.class.isAssignableFrom(clazz);
-            if (isSingletonBasePanel) {
-                SingletonBasePanel.setCreatingAllowed(true);
+            // 对于UiSingletonPanel类型，设置创建标志
+            boolean isUiSingletonPanel = UiSingletonPanel.class.isAssignableFrom(clazz);
+            if (isUiSingletonPanel) {
+                UiSingletonPanel.setFactoryCreationAllowed(true);
             }
 
-            boolean isSingletonBaseMenuBar = SingletonBaseMenuBar.class.isAssignableFrom(clazz);
-            if (isSingletonBaseMenuBar) {
-                SingletonBaseMenuBar.setCreatingAllowed(true);
+            boolean isUiSingletonMenuBar = UiSingletonMenuBar.class.isAssignableFrom(clazz);
+            if (isUiSingletonMenuBar) {
+                UiSingletonMenuBar.setFactoryCreationAllowed(true);
             }
 
             // 4. 反射创建实例
@@ -65,14 +73,17 @@ public class SingletonFactory {
             T instance = constructor.newInstance();
 
             // 重置创建标志
-            if (isSingletonBasePanel) {
-                SingletonBasePanel.setCreatingAllowed(false);
+            if (isUiSingletonPanel) {
+                UiSingletonPanel.setFactoryCreationAllowed(false);
+            }
+            if (isUiSingletonMenuBar) {
+                UiSingletonMenuBar.setFactoryCreationAllowed(false);
             }
 
-            if (instance instanceof SingletonBasePanel panel) {
-                panel.safeInit();
-            } else if (instance instanceof SingletonBaseMenuBar menuBar) {
-                menuBar.safeInit();
+            if (instance instanceof UiSingletonPanel panel) {
+                panel.initializeSingletonUi();
+            } else if (instance instanceof UiSingletonMenuBar menuBar) {
+                menuBar.initializeSingletonUi();
             }
             INSTANCE_MAP.put(clazz, instance); // 替换占位符为真实实例
             return instance;
@@ -81,12 +92,21 @@ public class SingletonFactory {
             INSTANCE_MAP.remove(clazz, placeholder); // 出错时移除占位符
 
             // 确保在异常情况下也重置创建标志
-            if (SingletonBasePanel.class.isAssignableFrom(clazz)) {
-                SingletonBasePanel.setCreatingAllowed(false);
+            if (UiSingletonPanel.class.isAssignableFrom(clazz)) {
+                UiSingletonPanel.setFactoryCreationAllowed(false);
+            }
+            if (UiSingletonMenuBar.class.isAssignableFrom(clazz)) {
+                UiSingletonMenuBar.setFactoryCreationAllowed(false);
             }
 
             throw new GetInstanceException("创建单例失败: " + clazz.getName(), e);
         }
+    }
+
+    private static boolean isSupportedUiSingleton(Class<?> clazz) {
+        return UiSingletonPanel.class.isAssignableFrom(clazz)
+                || UiSingletonMenuBar.class.isAssignableFrom(clazz)
+                || Window.class.isAssignableFrom(clazz);
     }
 
     public static <T> Optional<T> getExistingInstance(Class<T> clazz) {

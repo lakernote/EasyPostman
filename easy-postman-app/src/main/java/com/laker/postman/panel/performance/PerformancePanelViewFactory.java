@@ -1,7 +1,7 @@
 package com.laker.postman.panel.performance;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.common.component.MemoryLabel;
 import com.laker.postman.common.component.button.RefreshButton;
@@ -134,7 +134,7 @@ final class PerformancePanelViewFactory {
                                       Runnable saveConfigAction) {
         JTabbedPane resultTabbedPane = new HiddenResultTabsTabbedPane();
         PerformanceResultTablePanel performanceResultTablePanel = new PerformanceResultTablePanel();
-        PerformanceTrendPanel performanceTrendPanel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
+        PerformanceTrendPanel performanceTrendPanel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
         PerformanceReportPanel performanceReportPanel = new PerformanceReportPanel();
 
         resultTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_TREND), performanceTrendPanel);

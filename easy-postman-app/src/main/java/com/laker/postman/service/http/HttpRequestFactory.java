@@ -3,8 +3,8 @@ package com.laker.postman.service.http;
 import cn.hutool.core.util.IdUtil;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.model.RequestBodyTypes;
 import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel;
 import com.laker.postman.util.SystemUtil;
 import lombok.experimental.UtilityClass;
 
@@ -88,7 +88,7 @@ public class HttpRequestFactory {
         headers.add(new HttpHeader(true, CONNECTION, CONNECTION_VALUE));
         headers.add(new HttpHeader(true, CONTENT_TYPE, APPLICATION_JSON));
         testItem.setHeadersList(headers);
-        testItem.setBodyType(RequestBodyPanel.BODY_TYPE_RAW);
+        testItem.setBodyType(RequestBodyTypes.BODY_TYPE_RAW);
         return testItem;
     }
 

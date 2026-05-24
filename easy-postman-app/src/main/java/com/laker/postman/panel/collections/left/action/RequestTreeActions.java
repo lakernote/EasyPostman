@@ -2,7 +2,7 @@ package com.laker.postman.panel.collections.left.action;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.json.JSONObject;
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.tab.ClosableTabComponent;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.*;
@@ -18,7 +18,7 @@ import com.laker.postman.service.http.HttpRequestFactory;
 import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.service.http.RequestFinalizer;
 import com.laker.postman.service.postman.PostmanCollectionExporter;
-import com.laker.postman.service.workspace.WorkspaceTransferHelper;
+import com.laker.postman.panel.workspace.WorkspaceTransferCoordinator;
 import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -76,7 +76,7 @@ public class RequestTreeActions {
         if (parentNode == null) return;
 
         String groupName = JOptionPane.showInputDialog(
-                SingletonFactory.getInstance(MainFrame.class),
+                UiSingletonFactory.getInstance(MainFrame.class),
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_ADD_GROUP_PROMPT)
         );
 
@@ -153,7 +153,7 @@ public class RequestTreeActions {
         // 设置保护路径：TreeSelectionListener 会拦截 BasicTreeUI 在 mouseReleased 里
         // 触发的 selectPathForEvent，保证最终选中停留在新请求节点上
         pendingSelectPath = newPath;
-        SingletonFactory.getInstance(RequestEditPanel.class).showOrCreateTab(item);
+        UiSingletonFactory.getInstance(RequestEditPanel.class).showOrCreateTab(item);
         tree.setSelectionPath(newPath);
         tree.scrollPathToVisible(newPath);
     }
@@ -188,7 +188,7 @@ public class RequestTreeActions {
                 : String.valueOf(groupData);
 
         Object result = JOptionPane.showInputDialog(
-                SingletonFactory.getInstance(MainFrame.class),
+                UiSingletonFactory.getInstance(MainFrame.class),
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_GROUP_PROMPT),
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_GROUP_TITLE),
                 JOptionPane.PLAIN_MESSAGE,
@@ -232,7 +232,7 @@ public class RequestTreeActions {
         String oldName = item.getName();
 
         Object result = JOptionPane.showInputDialog(
-                SingletonFactory.getInstance(MainFrame.class),
+                UiSingletonFactory.getInstance(MainFrame.class),
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_REQUEST_PROMPT),
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_REQUEST_TITLE),
                 JOptionPane.PLAIN_MESSAGE,
@@ -267,7 +267,7 @@ public class RequestTreeActions {
      * 更新已打开Tab的标题
      */
     private void updateOpenedTabsTitle(HttpRequestItem item, String newName) {
-        RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+        RequestEditPanel editPanel = UiSingletonFactory.getInstance(RequestEditPanel.class);
         JTabbedPane tabbedPane = editPanel.getTabbedPane();
 
         for (int i = 0; i < tabbedPane.getTabCount(); i++) {
@@ -292,7 +292,7 @@ public class RequestTreeActions {
         String oldName = savedResponse.getName();
 
         Object result = JOptionPane.showInputDialog(
-                SingletonFactory.getInstance(MainFrame.class),
+                UiSingletonFactory.getInstance(MainFrame.class),
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_SAVED_RESPONSE_PROMPT),
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_SAVED_RESPONSE_TITLE),
                 JOptionPane.PLAIN_MESSAGE,
@@ -327,7 +327,7 @@ public class RequestTreeActions {
      * 更新已打开的保存响应Tab的标题
      */
     private void updateOpenedSavedResponseTabsTitle(SavedResponse savedResponse, String newName) {
-        RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+        RequestEditPanel editPanel = UiSingletonFactory.getInstance(RequestEditPanel.class);
         JTabbedPane tabbedPane = editPanel.getTabbedPane();
 
         for (int i = 0; i < tabbedPane.getTabCount(); i++) {
@@ -383,7 +383,7 @@ public class RequestTreeActions {
                 : I18nUtil.getMessage(MessageKeys.COLLECTIONS_DELETE_BATCH_CONFIRM, count);
 
         int confirm = JOptionPane.showConfirmDialog(
-                SingletonFactory.getInstance(MainFrame.class),
+                UiSingletonFactory.getInstance(MainFrame.class),
                 message,
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_DELETE_CONFIRM_TITLE),
                 JOptionPane.YES_NO_OPTION
@@ -398,7 +398,7 @@ public class RequestTreeActions {
     private void performDelete(List<DefaultMutableTreeNode> nodesToDelete) {
         List<TreePath> expandedPaths = TreeStateHelper.saveExpandedPaths(requestTree);
 
-        RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+        RequestEditPanel editPanel = UiSingletonFactory.getInstance(RequestEditPanel.class);
         JTabbedPane tabbedPane = editPanel.getTabbedPane();
 
         // 关闭相关Tab
@@ -454,7 +454,7 @@ public class RequestTreeActions {
      * 关闭请求的Tab
      */
     private void closeRequestTabs(HttpRequestItem item, JTabbedPane tabbedPane) {
-        RequestEditPanel requestEditPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+        RequestEditPanel requestEditPanel = UiSingletonFactory.getInstance(RequestEditPanel.class);
         for (int i = tabbedPane.getTabCount() - 1; i >= 0; i--) {
             Component comp = tabbedPane.getComponentAt(i);
             if (comp instanceof RequestEditSubPanel subPanel) {
@@ -698,7 +698,7 @@ public class RequestTreeActions {
         );
         fileChooser.setSelectedFile(new File(groupName + "-postman.json"));
 
-        int userSelection = fileChooser.showSaveDialog(SingletonFactory.getInstance(MainFrame.class));
+        int userSelection = fileChooser.showSaveDialog(UiSingletonFactory.getInstance(MainFrame.class));
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             exportToFile(groupNode, groupName, fileChooser.getSelectedFile());
         }
@@ -730,7 +730,7 @@ public class RequestTreeActions {
         Object[] obj = (Object[]) selectedNode.getUserObject();
         String collectionName = getGroupName(obj[1]);
 
-        WorkspaceTransferHelper.transferToWorkspace(
+        WorkspaceTransferCoordinator.transferToWorkspace(
                 collectionName,
                 (targetWorkspace, itemName) -> performCollectionMove(selectedNode, targetWorkspace)
         );
@@ -797,11 +797,11 @@ public class RequestTreeActions {
         if (requestsToAdd.isEmpty()) return;
 
         try {
-            FunctionalPanel functionalPanel = SingletonFactory.getInstance(FunctionalPanel.class);
+            FunctionalPanel functionalPanel = UiSingletonFactory.getInstance(FunctionalPanel.class);
             functionalPanel.loadRequests(requestsToAdd);
 
             // 切换到功能测试Tab
-            SidebarTabPanel sidebarPanel = SingletonFactory.getInstance(SidebarTabPanel.class);
+            SidebarTabPanel sidebarPanel = UiSingletonFactory.getInstance(SidebarTabPanel.class);
             JTabbedPane tabbedPane = sidebarPanel.getTabbedPane();
             tabbedPane.setSelectedIndex(3); // 功能测试Tab索引
         } catch (Exception e) {

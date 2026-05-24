@@ -1,6 +1,6 @@
 package com.laker.postman.common.component.dialog;
 
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.Snippet;
@@ -50,8 +50,8 @@ public class SnippetDialog extends JDialog {
 
 
     public SnippetDialog() {
-        super(SingletonFactory.getInstance(MainFrame.class), I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_TITLE), true);
-        Frame owner = SingletonFactory.getInstance(MainFrame.class);
+        super(UiSingletonFactory.getInstance(MainFrame.class), I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_TITLE), true);
+        Frame owner = UiSingletonFactory.getInstance(MainFrame.class);
         setLayout(new BorderLayout(10, 10));
 
         // 初始化片段数据

@@ -1,7 +1,7 @@
 package com.laker.postman.service.update;
 
 import cn.hutool.json.JSONArray;
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.UpdateInfo;
 import com.laker.postman.panel.update.AutoUpdateNotification;
@@ -41,7 +41,7 @@ public class UpdateUIManager {
      * 显示后台更新通知（右下角弹窗）
      */
     public void showUpdateNotification(UpdateInfo updateInfo) {
-        MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
+        MainFrame mainFrame = UiSingletonFactory.getInstance(MainFrame.class);
         AutoUpdateNotification.show(mainFrame, updateInfo, this::showUpdateDialog);
     }
 
@@ -50,7 +50,7 @@ public class UpdateUIManager {
      */
     public void showUpdateDialog(UpdateInfo updateInfo) {
         SwingUtilities.invokeLater(() -> {
-            MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
+            MainFrame mainFrame = UiSingletonFactory.getInstance(MainFrame.class);
 
             // 使用现代化更新对话框
             int choice = ModernUpdateDialog.showUpdateDialog(mainFrame, updateInfo);
@@ -70,7 +70,7 @@ public class UpdateUIManager {
      */
     public void showNoAssetDialog(UpdateInfo updateInfo) {
         SwingUtilities.invokeLater(() -> {
-            MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
+            MainFrame mainFrame = UiSingletonFactory.getInstance(MainFrame.class);
             boolean goToGitHub = NoAssetDialog.show(mainFrame, updateInfo);
             if (goToGitHub) {
                 openGitHubReleasePage(updateInfo.getLatestVersion());
@@ -83,7 +83,7 @@ public class UpdateUIManager {
      * 用户点击「前往 GitHub」后再弹 NoAssetDialog
      */
     public void showNoAssetNotification(UpdateInfo updateInfo) {
-        MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
+        MainFrame mainFrame = UiSingletonFactory.getInstance(MainFrame.class);
         AutoUpdateNotification.showNoAsset(mainFrame, updateInfo, this::showNoAssetDialog);
     }
 
@@ -139,7 +139,7 @@ public class UpdateUIManager {
             // 安装包暂不可用，用现代化对话框引导用户去 GitHub 手动下载
             log.warn("No installer URL found for current platform, showing NoAssetDialog");
             boolean goToGitHub = NoAssetDialog.show(
-                    SingletonFactory.getInstance(MainFrame.class), updateInfo);
+                    UiSingletonFactory.getInstance(MainFrame.class), updateInfo);
             if (goToGitHub) {
                 openGitHubReleasePage(updateInfo.getLatestVersion());
             }
@@ -172,7 +172,7 @@ public class UpdateUIManager {
         }
 
         ModernProgressDialog progressDialog = new ModernProgressDialog(
-                SingletonFactory.getInstance(MainFrame.class));
+                UiSingletonFactory.getInstance(MainFrame.class));
 
         // 1. 先注册取消回调（在 show() 阻塞 EDT 之前）
         progressDialog.setOnCancelListener(downloader::cancel);
@@ -220,7 +220,7 @@ public class UpdateUIManager {
         String message = I18nUtil.getMessage(MessageKeys.UPDATE_INSTALLER_INSTALL_PROMPT);
 
         int choice = JOptionPane.showConfirmDialog(
-                SingletonFactory.getInstance(MainFrame.class),
+                UiSingletonFactory.getInstance(MainFrame.class),
                 message,
                 I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOADING),
                 JOptionPane.YES_NO_OPTION,

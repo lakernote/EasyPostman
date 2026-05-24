@@ -2,20 +2,21 @@ package com.laker.postman.panel.functional;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.DebouncedSaveSupport;
-import com.laker.postman.common.SingletonBasePanel;
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonPanel;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.common.component.button.*;
 import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.model.*;
+import com.laker.postman.panel.collections.RequestSelectionDialogSupport;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.functional.table.FunctionalRunnerTableModel;
-import com.laker.postman.panel.functional.table.RunnerRowData;
+import com.laker.postman.model.RunnerRowData;
 import com.laker.postman.panel.functional.table.TableRowTransferHandler;
 import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.panel.sidebar.SidebarTabPanel;
 import com.laker.postman.service.FunctionalPersistenceService;
-import com.laker.postman.service.collections.RequestCollectionsService;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
@@ -38,7 +39,7 @@ import java.util.List;
 import java.util.stream.IntStream;
 
 @Slf4j
-public class FunctionalPanel extends SingletonBasePanel {
+public class FunctionalPanel extends UiSingletonPanel {
     public static final String ERROR = "Error";
     private JTable table;
     private FunctionalRunnerTableModel tableModel;
@@ -91,7 +92,7 @@ public class FunctionalPanel extends SingletonBasePanel {
 
         add(mainTabbedPane, BorderLayout.CENTER);
 
-        this.persistenceService = SingletonFactory.getInstance(FunctionalPersistenceService.class);
+        this.persistenceService = BeanFactory.getBean(FunctionalPersistenceService.class);
         loadSaved();
     }
 
@@ -727,12 +728,12 @@ public class FunctionalPanel extends SingletonBasePanel {
         if (row != null && row.requestItem != null) {
             // 打开请求编辑面板
             RequestEditPanel editPanel =
-                    SingletonFactory.getInstance(RequestEditPanel.class);
+                    UiSingletonFactory.getInstance(RequestEditPanel.class);
             editPanel.showOrCreateTab(row.requestItem);
 
             // 切换到Collections标签
             SidebarTabPanel sidebarPanel =
-                    SingletonFactory.getInstance(SidebarTabPanel.class);
+                    UiSingletonFactory.getInstance(SidebarTabPanel.class);
             sidebarPanel.getTabbedPane().setSelectedIndex(0);
         }
     }
@@ -805,7 +806,7 @@ public class FunctionalPanel extends SingletonBasePanel {
 
     // 弹出选择请求/分组对话框
     private void showLoadRequestsDialog() {
-        RequestCollectionsService.showMultiSelectRequestDialog(
+        RequestSelectionDialogSupport.showMultiSelectRequestDialog(
                 selected -> {
                     if (selected == null || selected.isEmpty()) return;
                     // 过滤只保留HTTP类型的请求

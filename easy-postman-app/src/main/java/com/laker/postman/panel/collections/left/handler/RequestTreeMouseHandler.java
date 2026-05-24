@@ -1,6 +1,6 @@
 package com.laker.postman.panel.collections.left.handler;
 
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.tree.RequestTreeCellRenderer;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestGroup;
@@ -286,10 +286,10 @@ public class RequestTreeMouseHandler extends MouseAdapter {
 
         if (REQUEST.equals(obj[0])) {
             HttpRequestItem item = (HttpRequestItem) obj[1];
-            SingletonFactory.getInstance(RequestEditPanel.class).showOrCreateTab(item);
+            UiSingletonFactory.getInstance(RequestEditPanel.class).showOrCreateTab(item);
         } else if (GROUP.equals(obj[0])) {
             RequestGroup group = ensureRequestGroup(obj);
-            RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+            RequestEditPanel editPanel = UiSingletonFactory.getInstance(RequestEditPanel.class);
             editPanel.showGroupEditPanel(node, group);
             e.consume(); // 阻止展开/收起
         } else if (SAVED_RESPONSE.equals(obj[0])) {
@@ -327,7 +327,7 @@ public class RequestTreeMouseHandler extends MouseAdapter {
 
         if (!isClickOnHandle(e.getX(), selPath)) {
             RequestGroup group = ensureRequestGroup(obj);
-            RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+            RequestEditPanel editPanel = UiSingletonFactory.getInstance(RequestEditPanel.class);
             editPanel.showOrCreatePreviewTabForGroup(node, group);
         }
     }
@@ -337,14 +337,14 @@ public class RequestTreeMouseHandler extends MouseAdapter {
      */
     private void handleRequestClick(Object[] obj) {
         HttpRequestItem item = (HttpRequestItem) obj[1];
-        SingletonFactory.getInstance(RequestEditPanel.class).showOrCreatePreviewTab(item);
+        UiSingletonFactory.getInstance(RequestEditPanel.class).showOrCreatePreviewTab(item);
     }
 
     /**
      * 处理保存的响应单击事件：预览
      */
     private void handleSavedResponseClick(SavedResponse savedResponse) {
-        RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+        RequestEditPanel editPanel = UiSingletonFactory.getInstance(RequestEditPanel.class);
         editPanel.showOrCreatePreviewTabForSavedResponse(savedResponse);
     }
 
@@ -352,7 +352,7 @@ public class RequestTreeMouseHandler extends MouseAdapter {
      * 处理保存的响应双击事件：打开固定 Tab
      */
     private void handleSavedResponseDoubleClick(SavedResponse savedResponse) {
-        RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+        RequestEditPanel editPanel = UiSingletonFactory.getInstance(RequestEditPanel.class);
         editPanel.showOrCreateTabForSavedResponse(savedResponse);
     }
 

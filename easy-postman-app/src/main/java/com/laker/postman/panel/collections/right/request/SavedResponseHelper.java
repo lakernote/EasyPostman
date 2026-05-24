@@ -1,6 +1,6 @@
 package com.laker.postman.panel.collections.right.request;
 
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
@@ -47,7 +47,7 @@ final class SavedResponseHelper {
                       HttpRequestItem originalRequestItem) {
         try {
             SavedResponse savedResponse = SavedResponse.fromRequestAndResponse(name, lastRequest, lastResponse);
-            RequestCollectionsLeftPanel leftPanel = SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
+            RequestCollectionsLeftPanel leftPanel = UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
             DefaultMutableTreeNode requestNode = findRequestNodeInTree(leftPanel.getRootTreeNode(), originalRequestItem);
 
             if (requestNode == null) {

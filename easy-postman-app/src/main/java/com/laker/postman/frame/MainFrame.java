@@ -2,7 +2,7 @@ package com.laker.postman.frame;
 
 import com.formdev.flatlaf.FlatClientProperties;
 import com.formdev.flatlaf.util.SystemInfo;
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.animation.WindowSnapshotTransition;
 import com.laker.postman.common.component.placeholder.StartupShellPlaceholderPanel;
 import com.laker.postman.common.constants.Icons;
@@ -10,9 +10,9 @@ import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.common.themes.SimpleThemeManager;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.panel.MainPanel;
+import com.laker.postman.panel.lifecycle.AppExitCoordinator;
 import com.laker.postman.panel.performance.PerformancePanel;
 import com.laker.postman.panel.topmenu.TopMenuBar;
-import com.laker.postman.service.ExitService;
 import com.laker.postman.startup.StartupDiagnostics;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -96,7 +96,7 @@ public class MainFrame extends JFrame {
 
     public void initComponents() {
         long initStartNanos = System.nanoTime();
-        setJMenuBar(SingletonFactory.getInstance(TopMenuBar.class));
+        setJMenuBar(UiSingletonFactory.getInstance(TopMenuBar.class));
         installStartupShell();
 
         // 设置最小窗口尺寸，防止窗口被拖得太小
@@ -135,7 +135,7 @@ public class MainFrame extends JFrame {
             long loadStartNanos = System.nanoTime();
             try {
                 StartupDiagnostics.mark("MainFrame content load started");
-                replaceContentWithStartupTransition(SingletonFactory.getInstance(MainPanel.class));
+                replaceContentWithStartupTransition(UiSingletonFactory.getInstance(MainPanel.class));
                 startupShellPanel = null;
                 mainContentLoaded = true;
                 notifyMainContentLoaded();
@@ -383,7 +383,7 @@ public class MainFrame extends JFrame {
                 // 清理资源并保存状态
                 cleanup();
                 saveWindowState();
-                BeanFactory.getBean(ExitService.class).exit();
+                BeanFactory.getBean(AppExitCoordinator.class).exitApplication();
             }
 
             @Override
@@ -473,7 +473,7 @@ public class MainFrame extends JFrame {
         // 清理性能测试面板资源（停止定时器等）
         try {
             PerformancePanel performancePanel =
-                    SingletonFactory.getInstance(PerformancePanel.class);
+                    UiSingletonFactory.getInstance(PerformancePanel.class);
             performancePanel.cleanup();
         } catch (Exception e) {
             log.warn("清理 PerformancePanel 资源时出错: {}", e.getMessage());

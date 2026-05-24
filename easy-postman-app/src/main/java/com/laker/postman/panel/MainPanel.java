@@ -1,7 +1,7 @@
 package com.laker.postman.panel;
 
-import com.laker.postman.common.SingletonFactory;
-import com.laker.postman.common.SingletonBasePanel;
+import com.laker.postman.common.UiSingletonFactory;
+import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.panel.sidebar.SidebarTabPanel;
 import lombok.extern.slf4j.Slf4j;
 
@@ -12,13 +12,13 @@ import java.awt.*;
  * 左侧标签页面板包含了集合、环境变量、压测三个标签页，
  */
 @Slf4j
-public class MainPanel extends SingletonBasePanel {
+public class MainPanel extends UiSingletonPanel {
 
     @Override
     protected void initUI() {
         setLayout(new BorderLayout()); // 设置布局为 BorderLayout
         // 中间SidebarTabPanel + 底部控制台面板
-        add(SingletonFactory.getInstance(SidebarTabPanel.class), BorderLayout.CENTER);
+        add(UiSingletonFactory.getInstance(SidebarTabPanel.class), BorderLayout.CENTER);
     }
 
     @Override

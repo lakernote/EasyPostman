@@ -1,6 +1,6 @@
 package com.laker.postman.panel.topmenu.setting;
 
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.NotificationPosition;
 import com.laker.postman.model.SidebarTab;
@@ -804,7 +804,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
      */
     private void updateSidebarConfiguration() {
         try {
-            SidebarTabPanel sidebarPanel = SingletonFactory.getInstance(SidebarTabPanel.class);
+            SidebarTabPanel sidebarPanel = UiSingletonFactory.getInstance(SidebarTabPanel.class);
             sidebarPanel.refreshSidebarConfiguration();
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);

@@ -1,7 +1,7 @@
 package com.laker.postman.panel.workspace.components;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.StepIndicator;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.GitOperation;
@@ -755,7 +755,7 @@ public class GitOperationDialog extends JDialog {
         SwingUtilities.invokeLater(() -> {
             try {
                 WorkspacePanel workspacePanel =
-                        SingletonFactory.getInstance(WorkspacePanel.class);
+                        UiSingletonFactory.getInstance(WorkspacePanel.class);
                 workspacePanel.logGitOperationResult(result);
             } catch (Exception e) {
                 log.warn("Failed to notify WorkspacePanel", e);

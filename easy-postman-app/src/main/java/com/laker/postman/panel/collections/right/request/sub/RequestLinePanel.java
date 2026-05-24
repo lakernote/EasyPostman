@@ -1,7 +1,7 @@
 package com.laker.postman.panel.collections.right.request.sub;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.EasyTextField;
 import com.laker.postman.common.component.button.PrimaryButton;
 import com.laker.postman.common.component.button.SecondaryButton;
@@ -142,7 +142,7 @@ public class RequestLinePanel extends JPanel {
         );
         button.setToolTipText(I18nUtil.getMessage(MessageKeys.BUTTON_SAVE_TOOLTIP));
         button.addActionListener(e -> {
-            if (SingletonFactory.getInstance(RequestEditPanel.class).saveCurrentRequest()) {
+            if (UiSingletonFactory.getInstance(RequestEditPanel.class).saveCurrentRequest()) {
                 NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.SAVE_SUCCESS));
             }
         });

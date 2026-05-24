@@ -1,6 +1,6 @@
 package com.laker.postman.startup;
 
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.constants.AppConstants;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.ioc.BeanFactory;
@@ -193,7 +193,7 @@ public class StartupCoordinator {
     }
 
     private MainFrame createMainFrame() {
-        MainFrame mainFrame = SingletonFactory.getInstance(MainFrame.class);
+        MainFrame mainFrame = UiSingletonFactory.getInstance(MainFrame.class);
         mainFrame.initComponents();
         return mainFrame;
     }

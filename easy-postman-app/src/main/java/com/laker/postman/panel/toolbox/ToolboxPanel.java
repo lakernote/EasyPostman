@@ -2,7 +2,7 @@ package com.laker.postman.panel.toolbox;
 
 import com.formdev.flatlaf.FlatClientProperties;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.SingletonBasePanel;
+import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.plugin.api.ToolboxContribution;
@@ -33,7 +33,7 @@ import java.util.function.Supplier;
  * - 图标统一使用 IconUtil 管理
  */
 @Slf4j
-public class ToolboxPanel extends SingletonBasePanel {
+public class ToolboxPanel extends UiSingletonPanel {
 
     private static final class ToolEntry {
         private final String id;

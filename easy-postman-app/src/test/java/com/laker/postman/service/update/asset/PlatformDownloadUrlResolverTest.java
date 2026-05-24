@@ -12,12 +12,15 @@ import java.nio.file.Path;
 import static org.testng.Assert.assertEquals;
 
 public class PlatformDownloadUrlResolverTest {
+    private final String originalOsName = System.getProperty("os.name");
+    private final String originalOsArch = System.getProperty("os.arch");
+    private final String originalOsReleasePath = System.getProperty("easyPostman.update.osReleasePath");
 
     @AfterMethod
     public void tearDown() {
-        System.clearProperty("os.name");
-        System.clearProperty("os.arch");
-        System.clearProperty("easyPostman.update.osReleasePath");
+        restoreProperty("os.name", originalOsName);
+        restoreProperty("os.arch", originalOsArch);
+        restoreProperty("easyPostman.update.osReleasePath", originalOsReleasePath);
     }
 
     @Test
@@ -91,5 +94,13 @@ public class PlatformDownloadUrlResolverTest {
         return new JSONObject()
                 .set("name", name)
                 .set("browser_download_url", "https://example.com/" + name);
+    }
+
+    private static void restoreProperty(String key, String value) {
+        if (value == null) {
+            System.clearProperty(key);
+            return;
+        }
+        System.setProperty(key, value);
     }
 }

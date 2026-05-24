@@ -15,9 +15,9 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BASIC;
-import static com.laker.postman.panel.collections.right.request.sub.AuthTabPanel.AUTH_TYPE_BEARER;
-import static com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel.*;
+import static com.laker.postman.model.RequestAuthTypes.AUTH_TYPE_BASIC;
+import static com.laker.postman.model.RequestAuthTypes.AUTH_TYPE_BEARER;
+import static com.laker.postman.model.RequestBodyTypes.*;
 
 /**
  * IntelliJ IDEA HTTP Client 文件解析器

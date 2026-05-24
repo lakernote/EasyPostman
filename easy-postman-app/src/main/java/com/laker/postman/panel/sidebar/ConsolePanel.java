@@ -1,7 +1,7 @@
 package com.laker.postman.panel.sidebar;
 
-import com.laker.postman.common.SingletonBasePanel;
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonPanel;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.button.AutoScrollToggleButton;
 import com.laker.postman.common.component.button.ClearButton;
@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
-public class ConsolePanel extends SingletonBasePanel {
+public class ConsolePanel extends UiSingletonPanel {
     private JTextPane consoleLogArea;
     private transient StyledDocument consoleDoc;
     private SearchTextField searchField;
@@ -561,11 +561,11 @@ public class ConsolePanel extends SingletonBasePanel {
 
     // 静态代理方法，便于外部调用
     public static void appendLog(String msg) {
-        SingletonFactory.getInstance(ConsolePanel.class).appendConsoleLog(msg);
+        UiSingletonFactory.getInstance(ConsolePanel.class).appendConsoleLog(msg);
     }
 
     public static void appendLog(String msg, LogType type) {
-        SingletonFactory.getInstance(ConsolePanel.class).appendConsoleLog(msg, type);
+        UiSingletonFactory.getInstance(ConsolePanel.class).appendConsoleLog(msg, type);
     }
 
     public void setCloseAction(ActionListener listener) {

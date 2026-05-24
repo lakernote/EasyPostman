@@ -1,6 +1,6 @@
 package com.laker.postman.panel.performance.result;
 
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.data.time.Millisecond;
 import org.jfree.data.time.TimeSeries;
@@ -21,7 +21,7 @@ public class PerformanceTrendPanelRetentionTest {
     @Test
     public void shouldLimitTrendSeriesLengthForLongRunningTests() throws Exception {
         runOnEdtAndWait(() -> {
-            PerformanceTrendPanel panel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
+            PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
             panel.clearTrendDataset();
             ChartPanel chartPanel = findFirst(panel, ChartPanel.class);
             assertNotNull(chartPanel);

@@ -7,7 +7,6 @@ import com.laker.postman.model.HttpParam;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestGroup;
 import com.laker.postman.service.http.HttpRequestFactory;
-import com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -22,6 +21,7 @@ public class DefaultRequestsFactory {
     private static final String SCRIPT_EXAMPLES_ZH_GROUP_NAME = "脚本示例（中文）";
 
     public static final String REQUEST = "request";
+    public static final String BODY_TYPE_RAW = "raw";
     public static final String APPLICATION_JSON = "application/json";
     public static final String CONTENT_TYPE = "Content-Type";
     public static final String HTTPS_HTTPBIN_ORG = "https://httpbin.org";
@@ -101,7 +101,7 @@ public class DefaultRequestsFactory {
         reuse.setDescription("Reuses environment variables in params, headers, body, and script. Execution-scoped variables are created in this run and reused immediately.");
         reuse.setMethod("POST");
         reuse.setUrl(HTTPS_HTTPBIN_ORG_POST);
-        reuse.setBodyType(RequestBodyPanel.BODY_TYPE_RAW);
+        reuse.setBodyType(BODY_TYPE_RAW);
         reuse.setHeadersList(withExtraHeaders(reuse,
                 new HttpHeader(true, CONTENT_TYPE, APPLICATION_JSON),
                 new HttpHeader(true, "X-Tenant-Id", "{{tenantId}}"),
@@ -151,7 +151,7 @@ public class DefaultRequestsFactory {
         createOrder.setDescription("Generates or accepts an orderId for the current run, echoes it through httpbin, and stores it in pm.variables for the next request.");
         createOrder.setMethod("POST");
         createOrder.setUrl(HTTPS_HTTPBIN_ORG_POST);
-        createOrder.setBodyType(RequestBodyPanel.BODY_TYPE_RAW);
+        createOrder.setBodyType(BODY_TYPE_RAW);
         createOrder.setHeadersList(withExtraHeaders(createOrder,
                 new HttpHeader(true, CONTENT_TYPE, APPLICATION_JSON),
                 new HttpHeader(true, "X-Order-Id", "{{pendingOrderId}}")));
@@ -215,7 +215,7 @@ public class DefaultRequestsFactory {
         extractOrder.setDescription("Simulates creating an order, then extracts the echoed orderId from the response body into pm.variables for the next request.");
         extractOrder.setMethod("POST");
         extractOrder.setUrl(HTTPS_HTTPBIN_ORG_POST);
-        extractOrder.setBodyType(RequestBodyPanel.BODY_TYPE_RAW);
+        extractOrder.setBodyType(BODY_TYPE_RAW);
         extractOrder.setHeadersList(withExtraHeaders(extractOrder,
                 new HttpHeader(true, CONTENT_TYPE, APPLICATION_JSON)));
         extractOrder.setBody("""
@@ -270,7 +270,7 @@ public class DefaultRequestsFactory {
         HttpRequestItem websocket = HttpRequestFactory.createDefaultWebSocketRequest();
         websocket.setName("7. WebSocket Workflow Check");
         websocket.setDescription("Run request 1 first. Then click Connect and send the default message once if needed. The callback-thread checks focus on whether pm.environment and pm.variables stay available after WebSocket messages arrive.");
-        websocket.setBodyType(RequestBodyPanel.BODY_TYPE_RAW);
+        websocket.setBodyType(BODY_TYPE_RAW);
         websocket.setBody("""
                 {
                   "type": "context-check",
@@ -398,7 +398,7 @@ public class DefaultRequestsFactory {
         reuse.setDescription("在请求参数、请求头、请求体和脚本里复用环境变量；同时创建并使用当前运行上下文的运行变量。");
         reuse.setMethod("POST");
         reuse.setUrl(HTTPS_HTTPBIN_ORG_POST);
-        reuse.setBodyType(RequestBodyPanel.BODY_TYPE_RAW);
+        reuse.setBodyType(BODY_TYPE_RAW);
         reuse.setHeadersList(withExtraHeaders(reuse,
                 new HttpHeader(true, CONTENT_TYPE, APPLICATION_JSON),
                 new HttpHeader(true, "X-Tenant-Id", "{{tenantId}}"),
@@ -448,7 +448,7 @@ public class DefaultRequestsFactory {
         createOrder.setDescription("为当前运行生成或接收一个 orderId，通过 httpbin 回显后写入 pm.variables，供下一个请求继续复用。");
         createOrder.setMethod("POST");
         createOrder.setUrl(HTTPS_HTTPBIN_ORG_POST);
-        createOrder.setBodyType(RequestBodyPanel.BODY_TYPE_RAW);
+        createOrder.setBodyType(BODY_TYPE_RAW);
         createOrder.setHeadersList(withExtraHeaders(createOrder,
                 new HttpHeader(true, CONTENT_TYPE, APPLICATION_JSON),
                 new HttpHeader(true, "X-Order-Id", "{{pendingOrderId}}")));
@@ -512,7 +512,7 @@ public class DefaultRequestsFactory {
         extractOrder.setDescription("模拟创建订单后，从响应体里提取回显的 orderId，写入 pm.variables，供下一个请求复用。");
         extractOrder.setMethod("POST");
         extractOrder.setUrl(HTTPS_HTTPBIN_ORG_POST);
-        extractOrder.setBodyType(RequestBodyPanel.BODY_TYPE_RAW);
+        extractOrder.setBodyType(BODY_TYPE_RAW);
         extractOrder.setHeadersList(withExtraHeaders(extractOrder,
                 new HttpHeader(true, CONTENT_TYPE, APPLICATION_JSON)));
         extractOrder.setBody("""
@@ -567,7 +567,7 @@ public class DefaultRequestsFactory {
         HttpRequestItem websocket = HttpRequestFactory.createDefaultWebSocketRequest();
         websocket.setName("7. WebSocket 流程校验");
         websocket.setDescription("建议先执行请求 1。然后点击连接；如果需要，再发送一次默认消息体。这个示例重点校验 WebSocket 回调线程里仍能读取 pm.environment 和 pm.variables，而不是依赖请求体里的占位符替换。");
-        websocket.setBodyType(RequestBodyPanel.BODY_TYPE_RAW);
+        websocket.setBodyType(BODY_TYPE_RAW);
         websocket.setBody("""
                 {
                   "type": "context-check",
@@ -669,7 +669,7 @@ public class DefaultRequestsFactory {
         postJson.setName("POST JSON Example");
         postJson.setMethod("POST");
         postJson.setUrl(HTTPS_HTTPBIN_ORG_POST);
-        postJson.setBodyType(RequestBodyPanel.BODY_TYPE_RAW);
+        postJson.setBodyType(BODY_TYPE_RAW);
         postJson.setHeadersList(withExtraHeaders(postJson,
                 new HttpHeader(true, CONTENT_TYPE, APPLICATION_JSON)));
         postJson.setBody("""
@@ -726,7 +726,7 @@ public class DefaultRequestsFactory {
         put.setName("PUT Example");
         put.setMethod("PUT");
         put.setUrl(HTTPS_HTTPBIN_ORG + "/put");
-        put.setBodyType(RequestBodyPanel.BODY_TYPE_RAW);
+        put.setBodyType(BODY_TYPE_RAW);
         put.setHeadersList(withExtraHeaders(put,
                 new HttpHeader(true, CONTENT_TYPE, APPLICATION_JSON)));
         put.setBody("{\"update\":true}");

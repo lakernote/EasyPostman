@@ -1,6 +1,6 @@
 package com.laker.postman.panel.collections.right.request;
 
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.script.TestResult;
@@ -81,7 +81,7 @@ final class RequestResponseHelper {
 
     void saveHistory(PreparedRequest request, HttpResponse response, String label) {
         try {
-            SingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(request, response);
+            UiSingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(request, response);
         } catch (Exception ex) {
             log.error("Error saving {} to history: {}", label, ex.getMessage(), ex);
             ConsolePanel.appendLog("[Warning] Failed to save " + label + " to history: " + ex.getMessage(), ConsolePanel.LogType.WARN);

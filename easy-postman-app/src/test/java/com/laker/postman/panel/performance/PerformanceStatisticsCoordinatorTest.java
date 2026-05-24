@@ -1,6 +1,6 @@
 package com.laker.postman.panel.performance;
 
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.panel.performance.control.PerformanceStatisticsCoordinator;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
@@ -168,7 +168,7 @@ public class PerformanceStatisticsCoordinatorTest extends AbstractSwingUiTest {
         metrics.recordWebSocketSessionEnd(firstSession);
         metrics.recordWebSocketSessionEnd(secondSession);
 
-        PerformanceTrendPanel trendPanel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
+        PerformanceTrendPanel trendPanel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
         trendPanel.clearTrendDataset();
         PerformanceStatisticsCoordinator coordinator = new PerformanceStatisticsCoordinator(
                 statsCollector,
@@ -199,7 +199,7 @@ public class PerformanceStatisticsCoordinatorTest extends AbstractSwingUiTest {
     @Test
     public void resetForNewRunShouldDropQueuedTrendSamplesFromPreviousRun() throws Exception {
         PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
-        PerformanceTrendPanel trendPanel = SingletonFactory.getInstance(PerformanceTrendPanel.class);
+        PerformanceTrendPanel trendPanel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
         trendPanel.clearTrendDataset();
         PerformanceStatisticsCoordinator coordinator = new PerformanceStatisticsCoordinator(
                 statsCollector,

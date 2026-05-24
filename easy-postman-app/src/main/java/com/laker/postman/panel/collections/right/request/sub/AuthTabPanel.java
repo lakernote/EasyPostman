@@ -4,6 +4,7 @@ import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.common.component.EasyTextField;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.AuthType;
+import com.laker.postman.model.RequestAuthTypes;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -23,11 +24,11 @@ import java.util.List;
  */
 public class AuthTabPanel extends JPanel {
     // Keep constants for backward compatibility
-    public static final String AUTH_TYPE_INHERIT = AuthType.INHERIT.getConstant();
-    public static final String AUTH_TYPE_NONE = AuthType.NONE.getConstant();
-    public static final String AUTH_TYPE_BASIC = AuthType.BASIC.getConstant();
-    public static final String AUTH_TYPE_BEARER = AuthType.BEARER.getConstant();
-    public static final String AUTH_TYPE_DIGEST = AuthType.DIGEST.getConstant();
+    public static final String AUTH_TYPE_INHERIT = RequestAuthTypes.AUTH_TYPE_INHERIT;
+    public static final String AUTH_TYPE_NONE = RequestAuthTypes.AUTH_TYPE_NONE;
+    public static final String AUTH_TYPE_BASIC = RequestAuthTypes.AUTH_TYPE_BASIC;
+    public static final String AUTH_TYPE_BEARER = RequestAuthTypes.AUTH_TYPE_BEARER;
+    public static final String AUTH_TYPE_DIGEST = RequestAuthTypes.AUTH_TYPE_DIGEST;
 
     private final JComboBox<AuthType> typeCombo;
     private final JTextField usernameField;

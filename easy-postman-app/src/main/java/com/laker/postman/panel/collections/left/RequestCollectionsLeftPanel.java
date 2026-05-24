@@ -1,20 +1,23 @@
 package com.laker.postman.panel.collections.left;
 
-import com.laker.postman.common.SingletonBasePanel;
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonPanel;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.async.EasyTaskExecutor;
 import com.laker.postman.common.component.tree.RequestTreeCellRenderer;
 import com.laker.postman.common.component.tree.TreeTransferHandler;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestGroup;
 import com.laker.postman.model.Workspace;
+import com.laker.postman.panel.collections.OpenedRequestTabsRestorer;
 import com.laker.postman.panel.collections.left.action.TreeNodeCloner;
 import com.laker.postman.panel.collections.left.handler.RequestTreeKeyboardHandler;
 import com.laker.postman.panel.collections.left.handler.RequestTreeMouseHandler;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.service.WorkspaceService;
-import com.laker.postman.service.collections.OpenedRequestsService;
+import com.laker.postman.service.collections.CollectionTreeNodeTypes;
+import com.laker.postman.service.collections.CollectionTreeRootRegistry;
+import com.laker.postman.service.collections.OpenedRequestsStore;
 import com.laker.postman.service.collections.RequestCollectionsService;
 import com.laker.postman.service.collections.RequestsPersistence;
 import com.laker.postman.service.http.PreparedRequestBuilder;
@@ -39,11 +42,11 @@ import java.util.Map;
  * 支持请求的增删改查、分组管理、拖拽排序等功能
  */
 @Slf4j
-public class RequestCollectionsLeftPanel extends SingletonBasePanel {
-    public static final String REQUEST = "request";
-    public static final String GROUP = "group";
-    public static final String ROOT = "root";
-    public static final String SAVED_RESPONSE = "response";
+public class RequestCollectionsLeftPanel extends UiSingletonPanel {
+    public static final String REQUEST = CollectionTreeNodeTypes.REQUEST;
+    public static final String GROUP = CollectionTreeNodeTypes.GROUP;
+    public static final String ROOT = CollectionTreeNodeTypes.ROOT;
+    public static final String SAVED_RESPONSE = CollectionTreeNodeTypes.SAVED_RESPONSE;
     public static final String EXPORT_FILE_NAME = "EasyPostman-Collections.json";
     // 请求集合的根节点
     @Getter
@@ -77,6 +80,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     private JScrollPane getTreeScrollPane() {
         // 初始化请求树
         rootTreeNode = new DefaultMutableTreeNode(ROOT);
+        CollectionTreeRootRegistry.registerRootSupplier(() -> rootTreeNode);
         treeModel = new DefaultTreeModel(rootTreeNode);
         Workspace currentWorkspace = WorkspaceService.getInstance().getCurrentWorkspace();
         String filePath = SystemUtil.getCollectionPathForWorkspace(currentWorkspace);
@@ -147,7 +151,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     }
 
     private JPanel getTopPanel() {
-        return SingletonFactory.getInstance(LeftTopPanel.class);
+        return UiSingletonFactory.getInstance(LeftTopPanel.class);
     }
 
 
@@ -170,7 +174,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         long loadStartNanos = System.nanoTime();
         StartupDiagnostics.mark("Request collections load started");
         persistence.initRequestGroupsFromFile();
-        List<HttpRequestItem> openedRequests = OpenedRequestsService.getAll();
+        List<HttpRequestItem> openedRequests = OpenedRequestsStore.loadAll();
         HttpRequestItem lastNonNewRequest = RequestCollectionsService.getLastNonNewRequest(openedRequests);
         StartupDiagnostics.mark("Request collections load finished in "
                 + StartupDiagnostics.formatSince(loadStartNanos)
@@ -179,7 +183,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
     }
 
     private void applyStartupSnapshot(StartupLoadSnapshot snapshot) {
-        RequestEditPanel requestEditPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+        RequestEditPanel requestEditPanel = UiSingletonFactory.getInstance(RequestEditPanel.class);
         StartupDiagnostics.mark("Collections UI ready; openedRequests=" + snapshot.openedRequests().size());
         requestEditPanel.setAutoInitializeSelectedTabOnTabAdd(true);
         restoreOpenedRequestTabs(snapshot, requestEditPanel);
@@ -195,7 +199,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         requestEditPanel.setStartupRestoreSelectingLastTab(true);
         requestEditPanel.setAutoInitializeSelectedTabOnTabAdd(false);
         requestEditPanel.addPlusTab();
-        RequestCollectionsService.restoreOpenedRequests(
+        OpenedRequestTabsRestorer.restoreOpenedRequests(
                 snapshot.openedRequests(),
                 () -> {
                     requestEditPanel.setStartupRestoreSelectingLastTab(false);
@@ -226,7 +230,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
 
     private void handleStartupLoadError(Throwable error) {
         log.error("Error loading request collections", error);
-        SingletonFactory.getInstance(RequestEditPanel.class).addPlusTab();
+        UiSingletonFactory.getInstance(RequestEditPanel.class).addPlusTab();
     }
 
 
@@ -320,7 +324,7 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
         // 保存后去除Tab红点，同时通知 FunctionalPanel 和 PerformancePanel 同步最新数据
         SwingUtilities.invokeLater(() -> {
             // 1. 去除 Collections Tab 红点
-            RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+            RequestEditPanel editPanel = UiSingletonFactory.getInstance(RequestEditPanel.class);
             JTabbedPane tabbedPane = editPanel.getTabbedPane();
             for (int i = 0; i < tabbedPane.getTabCount(); i++) {
                 Component comp = tabbedPane.getComponentAt(i);
@@ -333,10 +337,10 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 }
             }
             // 2. 同步 FunctionalPanel
-            SingletonFactory.getInstance(com.laker.postman.panel.functional.FunctionalPanel.class)
+            UiSingletonFactory.getInstance(com.laker.postman.panel.functional.FunctionalPanel.class)
                     .syncRequestItem(item);
             // 3. 同步 PerformancePanel
-            SingletonFactory.getInstance(com.laker.postman.panel.performance.PerformancePanel.class)
+            UiSingletonFactory.getInstance(com.laker.postman.panel.performance.PerformancePanel.class)
                     .syncRequestItem(item);
         });
         return true;
@@ -431,8 +435,8 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 })
                 .onSuccess(() -> {
                     // EDT线程：更新UI
-                    SingletonFactory.getInstance(RequestEditPanel.class).getTabbedPane().removeAll();
-                    SingletonFactory.getInstance(RequestEditPanel.class).addPlusTab();
+                    UiSingletonFactory.getInstance(RequestEditPanel.class).getTabbedPane().removeAll();
+                    UiSingletonFactory.getInstance(RequestEditPanel.class).addPlusTab();
                     expandFirstGroup();
                     if (onSuccessCallback != null) {
                         onSuccessCallback.run();
@@ -441,8 +445,8 @@ public class RequestCollectionsLeftPanel extends SingletonBasePanel {
                 .onError(error -> {
                     // EDT线程：处理错误
                     log.error("Error switching workspace and loading collections", error);
-                    SingletonFactory.getInstance(RequestEditPanel.class).getTabbedPane().removeAll();
-                    SingletonFactory.getInstance(RequestEditPanel.class).addPlusTab();
+                    UiSingletonFactory.getInstance(RequestEditPanel.class).getTabbedPane().removeAll();
+                    UiSingletonFactory.getInstance(RequestEditPanel.class).addPlusTab();
                 })
                 .execute();
     }

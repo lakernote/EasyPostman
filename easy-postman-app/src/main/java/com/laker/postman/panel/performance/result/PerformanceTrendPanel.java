@@ -1,7 +1,7 @@
 package com.laker.postman.panel.performance.result;
 
 import com.formdev.flatlaf.FlatLaf;
-import com.laker.postman.common.SingletonBasePanel;
+import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
 import com.laker.postman.common.component.button.SegmentedToggleButton;
 import com.laker.postman.panel.performance.model.PerformanceProtocol;
@@ -36,7 +36,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 
-public class PerformanceTrendPanel extends SingletonBasePanel {
+public class PerformanceTrendPanel extends UiSingletonPanel {
 
     private static final String SEPARATE_VIEW = "separate";
     private static final String COMBINED_VIEW = "combined";

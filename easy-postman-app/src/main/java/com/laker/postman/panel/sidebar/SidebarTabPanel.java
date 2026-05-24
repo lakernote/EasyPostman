@@ -1,8 +1,8 @@
 package com.laker.postman.panel.sidebar;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.SingletonBasePanel;
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonPanel;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.SidebarTab;
 import com.laker.postman.model.TabInfo;
@@ -37,7 +37,7 @@ import java.util.Map;
  * 左侧标签页面板
  */
 @Slf4j
-public class SidebarTabPanel extends SingletonBasePanel {
+public class SidebarTabPanel extends UiSingletonPanel {
 
     // Constants
     private static final String ICON_LABEL_NAME = "iconLabel";
@@ -122,7 +122,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
         consoleContainer.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.getDividerBorderColor()));
         consoleContainer.setOpaque(false);
         initBottomBar();
-        consolePanel = SingletonFactory.getInstance(ConsolePanel.class);
+        consolePanel = UiSingletonFactory.getInstance(ConsolePanel.class);
         // 注册关闭按钮事件
         consolePanel.setCloseAction(e -> setConsoleExpanded(false));
         setConsoleExpanded(false);
@@ -307,7 +307,7 @@ public class SidebarTabPanel extends SingletonBasePanel {
 
         // 更新所有已打开的标签页的布局
         try {
-            RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+            RequestEditPanel editPanel = UiSingletonFactory.getInstance(RequestEditPanel.class);
             editPanel.updateAllTabsLayout(newVertical);
         } catch (Exception e) {
             log.error("Failed to update layout for all tabs", e);

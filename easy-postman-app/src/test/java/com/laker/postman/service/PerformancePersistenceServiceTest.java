@@ -1,6 +1,7 @@
 package com.laker.postman.service;
 
 import com.laker.postman.common.component.CsvDataPanel;
+import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.performance.assertion.AssertionData;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
@@ -10,6 +11,7 @@ import com.laker.postman.panel.performance.model.SsePerformanceData;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
 import com.laker.postman.panel.performance.timer.TimerData;
+import com.laker.postman.service.collections.CollectionTreeRootRegistry;
 import org.testng.annotations.Test;
 
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -23,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static com.laker.postman.service.collections.CollectionTreeNodeTypes.REQUEST;
 import static org.testng.Assert.*;
 
 public class PerformancePersistenceServiceTest {
@@ -198,6 +201,28 @@ public class PerformancePersistenceServiceTest {
 
         assertTrue(service.loadReportRealtimeEnabled());
         assertTrue(Files.readString(configPath, StandardCharsets.UTF_8).contains("\"reportRealtimeEnabled\": true"));
+    }
+
+    @Test(description = "应通过已注册的 Collection 树根节点按 ID 查找请求并返回深拷贝")
+    public void shouldFindRequestItemFromRegisteredCollectionTreeRoot() {
+        HttpRequestItem requestItem = new HttpRequestItem();
+        requestItem.setId("req-registered");
+        requestItem.setName("registered");
+        requestItem.setUrl("https://example.com/registered");
+        DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode("root");
+        rootNode.add(new DefaultMutableTreeNode(new Object[]{REQUEST, requestItem}));
+
+        try {
+            CollectionTreeRootRegistry.registerRootSupplier(() -> rootNode);
+
+            HttpRequestItem result = new PerformancePersistenceService().findRequestItemById("req-registered");
+
+            assertNotSame(result, requestItem);
+            assertEquals(result.getId(), requestItem.getId());
+            assertEquals(result.getUrl(), requestItem.getUrl());
+        } finally {
+            CollectionTreeRootRegistry.clear();
+        }
     }
 
     @Test(description = "旧版不含 csvState 的配置仍应兼容加载")

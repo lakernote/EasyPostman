@@ -33,7 +33,7 @@ public class InheritanceService {
      * 创建继承服务（使用默认实现）
      */
     public InheritanceService() {
-        this(new DefaultTreeNodeRepository(), new InheritanceCache());
+        this(new ActiveCollectionTreeNodeRepository(), new InheritanceCache());
     }
 
     /**

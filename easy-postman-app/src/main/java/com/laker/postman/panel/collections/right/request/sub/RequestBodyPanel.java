@@ -8,6 +8,7 @@ import com.laker.postman.common.component.button.*;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.common.component.table.FormDataTablePanel;
 import com.laker.postman.common.component.table.FormUrlencodedTablePanel;
+import com.laker.postman.model.RequestBodyTypes;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.VariableInfo;
 import com.laker.postman.model.VariableSegment;
@@ -37,13 +38,13 @@ import java.util.Optional;
  */
 @Slf4j
 public class RequestBodyPanel extends JPanel {
-    public static final String BODY_TYPE_NONE = "none";
-    public static final String BODY_TYPE_FORM_DATA = "form-data";
-    public static final String BODY_TYPE_FORM_URLENCODED = "x-www-form-urlencoded";
-    public static final String BODY_TYPE_RAW = "raw";
-    public static final String RAW_TYPE_JSON = "JSON";
-    public static final String RAW_TYPE_TEXT = "Text";
-    public static final String RAW_TYPE_XML = "XML";
+    public static final String BODY_TYPE_NONE = RequestBodyTypes.BODY_TYPE_NONE;
+    public static final String BODY_TYPE_FORM_DATA = RequestBodyTypes.BODY_TYPE_FORM_DATA;
+    public static final String BODY_TYPE_FORM_URLENCODED = RequestBodyTypes.BODY_TYPE_FORM_URLENCODED;
+    public static final String BODY_TYPE_RAW = RequestBodyTypes.BODY_TYPE_RAW;
+    public static final String RAW_TYPE_JSON = RequestBodyTypes.RAW_TYPE_JSON;
+    public static final String RAW_TYPE_TEXT = RequestBodyTypes.RAW_TYPE_TEXT;
+    public static final String RAW_TYPE_XML = RequestBodyTypes.RAW_TYPE_XML;
 
     @Getter
     private EasyComboBox<String> bodyTypeComboBox;

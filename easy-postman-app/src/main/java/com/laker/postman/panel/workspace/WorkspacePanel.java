@@ -1,7 +1,7 @@
 package com.laker.postman.panel.workspace;
 
-import com.laker.postman.common.SingletonBasePanel;
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonPanel;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.button.ClearButton;
 import com.laker.postman.common.component.button.PlusButton;
 import com.laker.postman.common.component.button.RefreshButton;
@@ -37,7 +37,7 @@ import java.util.List;
  * 显示工作区列表，支持创建、切换、管理工作区
  */
 @Slf4j
-public class WorkspacePanel extends SingletonBasePanel {
+public class WorkspacePanel extends UiSingletonPanel {
 
     private static final String HTML_START = "<html>";
     private static final String HTML_END = "</html>";
@@ -281,7 +281,7 @@ public class WorkspacePanel extends SingletonBasePanel {
         if (dialog.isConfirmed()) {
             refreshWorkspaceList();
             // 更新顶部菜单栏的工作区下拉框（不需要重新加载整个菜单栏）
-            SingletonFactory.getInstance(TopMenuBar.class).updateWorkspaceComboBox();
+            UiSingletonFactory.getInstance(TopMenuBar.class).updateWorkspaceComboBox();
         }
     }
 
@@ -459,14 +459,14 @@ public class WorkspacePanel extends SingletonBasePanel {
             saveCurrentWorkspaceScopedPanels();
             workspaceService.switchWorkspace(workspace.getId());
             // 切换环境变量文件
-            SingletonFactory.getInstance(EnvironmentPanel.class).switchWorkspaceAndRefreshUI(SystemUtil.getEnvPathForWorkspace(workspace));
+            UiSingletonFactory.getInstance(EnvironmentPanel.class).switchWorkspaceAndRefreshUI(SystemUtil.getEnvPathForWorkspace(workspace));
             // 切换请求集合文件
-            SingletonFactory.getInstance(RequestCollectionsLeftPanel.class)
+            UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class)
                     .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace), () -> {
-                        SingletonFactory.getInstance(PerformancePanel.class).switchWorkspaceAndRefreshUI();
-                        SingletonFactory.getInstance(FunctionalPanel.class).switchWorkspaceAndRefreshUI();
+                        UiSingletonFactory.getInstance(PerformancePanel.class).switchWorkspaceAndRefreshUI();
+                        UiSingletonFactory.getInstance(FunctionalPanel.class).switchWorkspaceAndRefreshUI();
                         // 更新顶部菜单栏工作区显示
-                        SingletonFactory.getInstance(TopMenuBar.class).updateWorkspaceDisplay();
+                        UiSingletonFactory.getInstance(TopMenuBar.class).updateWorkspaceDisplay();
                         refreshWorkspaceList();
                     });
         } catch (Exception e) {
@@ -475,8 +475,8 @@ public class WorkspacePanel extends SingletonBasePanel {
     }
 
     private void saveCurrentWorkspaceScopedPanels() {
-        SingletonFactory.getExistingInstance(FunctionalPanel.class).ifPresent(FunctionalPanel::save);
-        SingletonFactory.getExistingInstance(PerformancePanel.class).ifPresent(PerformancePanel::save);
+        UiSingletonFactory.getExistingInstance(FunctionalPanel.class).ifPresent(FunctionalPanel::save);
+        UiSingletonFactory.getExistingInstance(PerformancePanel.class).ifPresent(PerformancePanel::save);
     }
 
     /**
@@ -493,13 +493,13 @@ public class WorkspacePanel extends SingletonBasePanel {
 
         if (dialog.isConfirmed()) {
             // 刷新 requests 和 env 面板
-            SingletonFactory.getInstance(RequestCollectionsLeftPanel.class)
+            UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class)
                     .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace), () -> {
-                        SingletonFactory.getInstance(FunctionalPanel.class).switchWorkspaceAndRefreshUI();
-                        SingletonFactory.getInstance(PerformancePanel.class).switchWorkspaceAndRefreshUI();
+                        UiSingletonFactory.getInstance(FunctionalPanel.class).switchWorkspaceAndRefreshUI();
+                        UiSingletonFactory.getInstance(PerformancePanel.class).switchWorkspaceAndRefreshUI();
                         refreshWorkspaceList();
                     });
-            SingletonFactory.getInstance(EnvironmentPanel.class)
+            UiSingletonFactory.getInstance(EnvironmentPanel.class)
                     .switchWorkspaceAndRefreshUI(SystemUtil.getEnvPathForWorkspace(workspace));
         }
     }
@@ -535,13 +535,13 @@ public class WorkspacePanel extends SingletonBasePanel {
 
         if (dialog.isConfirmed()) {
             // 刷新 requests 和 env 面板
-            SingletonFactory.getInstance(RequestCollectionsLeftPanel.class)
+            UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class)
                     .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace), () -> {
-                        SingletonFactory.getInstance(FunctionalPanel.class).switchWorkspaceAndRefreshUI();
-                        SingletonFactory.getInstance(PerformancePanel.class).switchWorkspaceAndRefreshUI();
+                        UiSingletonFactory.getInstance(FunctionalPanel.class).switchWorkspaceAndRefreshUI();
+                        UiSingletonFactory.getInstance(PerformancePanel.class).switchWorkspaceAndRefreshUI();
                         refreshWorkspaceList();
                     });
-            SingletonFactory.getInstance(EnvironmentPanel.class)
+            UiSingletonFactory.getInstance(EnvironmentPanel.class)
                     .switchWorkspaceAndRefreshUI(SystemUtil.getEnvPathForWorkspace(workspace));
         }
     }
@@ -558,13 +558,13 @@ public class WorkspacePanel extends SingletonBasePanel {
 
         // 如果恢复了版本，需要刷新请求集合和环境变量面板
         if (dialog.isNeedRefresh()) {
-            SingletonFactory.getInstance(RequestCollectionsLeftPanel.class)
+            UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class)
                     .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace), () -> {
-                        SingletonFactory.getInstance(FunctionalPanel.class).switchWorkspaceAndRefreshUI();
-                        SingletonFactory.getInstance(PerformancePanel.class).switchWorkspaceAndRefreshUI();
+                        UiSingletonFactory.getInstance(FunctionalPanel.class).switchWorkspaceAndRefreshUI();
+                        UiSingletonFactory.getInstance(PerformancePanel.class).switchWorkspaceAndRefreshUI();
                         refreshWorkspaceList();
                     });
-            SingletonFactory.getInstance(EnvironmentPanel.class)
+            UiSingletonFactory.getInstance(EnvironmentPanel.class)
                     .switchWorkspaceAndRefreshUI(SystemUtil.getEnvPathForWorkspace(workspace));
         }
     }
@@ -587,7 +587,7 @@ public class WorkspacePanel extends SingletonBasePanel {
                 Workspace current = workspaceService.getCurrentWorkspace();
                 if (current != null && current.getId().equals(workspace.getId())) {
                     // 只更新下拉框，不需要重新加载整个菜单栏（工作区类型未变）
-                    SingletonFactory.getInstance(TopMenuBar.class).updateWorkspaceComboBox();
+                    UiSingletonFactory.getInstance(TopMenuBar.class).updateWorkspaceComboBox();
                 }
             } catch (Exception e) {
                 log.error("Failed to rename workspace", e);
@@ -628,20 +628,20 @@ public class WorkspacePanel extends SingletonBasePanel {
                     Workspace newCurrentWorkspace = workspaceService.getCurrentWorkspace();
                     if (newCurrentWorkspace != null) {
                         // 切换环境变量文件
-                        SingletonFactory.getInstance(EnvironmentPanel.class).switchWorkspaceAndRefreshUI(
+                        UiSingletonFactory.getInstance(EnvironmentPanel.class).switchWorkspaceAndRefreshUI(
                                 SystemUtil.getEnvPathForWorkspace(newCurrentWorkspace));
                         // 切换请求集合文件
-                        SingletonFactory.getInstance(RequestCollectionsLeftPanel.class).switchWorkspaceAndRefreshUI(
+                        UiSingletonFactory.getInstance(RequestCollectionsLeftPanel.class).switchWorkspaceAndRefreshUI(
                                 SystemUtil.getCollectionPathForWorkspace(newCurrentWorkspace), () -> {
-                                    SingletonFactory.getInstance(FunctionalPanel.class).switchWorkspaceAndRefreshUI();
-                                    SingletonFactory.getInstance(PerformancePanel.class).switchWorkspaceAndRefreshUI();
+                                    UiSingletonFactory.getInstance(FunctionalPanel.class).switchWorkspaceAndRefreshUI();
+                                    UiSingletonFactory.getInstance(PerformancePanel.class).switchWorkspaceAndRefreshUI();
                                 });
 
                     }
                 }
 
                 refreshWorkspaceList();
-                SingletonFactory.getInstance(TopMenuBar.class).updateWorkspaceDisplay();
+                UiSingletonFactory.getInstance(TopMenuBar.class).updateWorkspaceDisplay();
             } catch (Exception e) {
                 log.error("Failed to delete workspace", e);
             }
@@ -671,7 +671,7 @@ public class WorkspacePanel extends SingletonBasePanel {
             // 如果转换的是当前工作区，需要更新顶部菜单栏
             Workspace current = workspaceService.getCurrentWorkspace();
             if (current != null && current.getId().equals(workspace.getId())) {
-                SingletonFactory.getInstance(TopMenuBar.class).updateWorkspaceDisplay();
+                UiSingletonFactory.getInstance(TopMenuBar.class).updateWorkspaceDisplay();
             }
 
             logSuccess("Successfully converted workspace '" + workspace.getName() + "' to Git workspace (branch: " + dialog.getBranchName() + ")");

@@ -1,6 +1,6 @@
 package com.laker.postman.panel.topmenu.setting;
 
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.panel.collections.right.RequestEditPanel;
 import com.laker.postman.panel.topmenu.TopMenuBar;
 import com.laker.postman.service.setting.ShortcutManager;
@@ -151,11 +151,11 @@ public class ShortcutSettingsPanel extends JPanel {
      */
     private void notifyShortcutChanged() {
         // 重新注册 RequestEditPanel 的快捷键
-        SingletonFactory.getInstance(
+        UiSingletonFactory.getInstance(
                 RequestEditPanel.class).reloadShortcuts();
 
         // 重新加载菜单栏（包括快捷键和 Git 工具栏等所有组件）
-        SingletonFactory.getInstance(
+        UiSingletonFactory.getInstance(
                 TopMenuBar.class).refresh();
     }
 

@@ -3,16 +3,14 @@ package com.laker.postman.service;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.laker.postman.common.SingletonFactory;
 import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.ioc.Component;
 import com.laker.postman.ioc.PostConstruct;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.Workspace;
-import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
-import com.laker.postman.panel.functional.table.RunnerRowData;
-import com.laker.postman.service.collections.RequestCollectionsService;
+import com.laker.postman.model.RunnerRowData;
+import com.laker.postman.service.collections.ActiveCollectionTreeNodeRepository;
 import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.common.constants.ConfigPathConstants;
 import lombok.extern.slf4j.Slf4j;
@@ -207,12 +205,9 @@ public class FunctionalPersistenceService {
         }
 
         try {
-            RequestCollectionsLeftPanel collectionsPanel =
-                    SingletonFactory.getInstance(RequestCollectionsLeftPanel.class);
-
-            DefaultMutableTreeNode rootNode = collectionsPanel.getRootTreeNode();
-            DefaultMutableTreeNode requestNode =
-                    RequestCollectionsService.findRequestNodeById(rootNode, requestId);
+            DefaultMutableTreeNode requestNode = new ActiveCollectionTreeNodeRepository()
+                    .findNodeByRequestId(requestId)
+                    .orElse(null);
 
             if (requestNode != null) {
                 Object userObj = requestNode.getUserObject();

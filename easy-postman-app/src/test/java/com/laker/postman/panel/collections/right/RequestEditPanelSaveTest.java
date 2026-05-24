@@ -1,6 +1,6 @@
 package com.laker.postman.panel.collections.right;
 
-import com.laker.postman.common.SingletonBasePanel;
+import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.collections.left.RequestCollectionsLeftPanel;
 import org.testng.annotations.Test;
@@ -27,7 +27,7 @@ public class RequestEditPanelSaveTest {
     }
 
     private RequestEditPanel createPanelThatCancelsSaveDialog() {
-        SingletonBasePanel.setCreatingAllowed(true);
+        UiSingletonPanel.setFactoryCreationAllowed(true);
         try {
             return new RequestEditPanel() {
                 @Override
@@ -44,12 +44,12 @@ public class RequestEditPanelSaveTest {
                 }
             };
         } finally {
-            SingletonBasePanel.setCreatingAllowed(false);
+            UiSingletonPanel.setFactoryCreationAllowed(false);
         }
     }
 
     private RequestCollectionsLeftPanel createCollectionPanel() {
-        SingletonBasePanel.setCreatingAllowed(true);
+        UiSingletonPanel.setFactoryCreationAllowed(true);
         try {
             return new RequestCollectionsLeftPanel() {
                 @Override
@@ -66,7 +66,7 @@ public class RequestEditPanelSaveTest {
                 }
             };
         } finally {
-            SingletonBasePanel.setCreatingAllowed(false);
+            UiSingletonPanel.setFactoryCreationAllowed(false);
         }
     }
 }

@@ -1,7 +1,7 @@
 package com.laker.postman.panel.collections.right;
 
 import cn.hutool.core.collection.CollUtil;
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.EasyTextField;
 import com.laker.postman.common.component.MarkdownEditorPanel;
 import com.laker.postman.common.component.tab.IndicatorTabComponent;
@@ -528,7 +528,7 @@ public class GroupEditPanel extends JPanel {
 
         // 如果名称改变了，更新 Tab 标题
         if (nameChanged) {
-            SwingUtilities.invokeLater(() -> SingletonFactory.getInstance(
+            SwingUtilities.invokeLater(() -> UiSingletonFactory.getInstance(
                     RequestEditPanel.class
             ).updateGroupTabTitle(this, newName));
         }

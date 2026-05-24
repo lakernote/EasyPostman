@@ -4,8 +4,8 @@ import com.laker.postman.model.AuthType;
 import com.laker.postman.service.common.CollectionParseResult;
 import org.testng.annotations.Test;
 
-import static com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel.BODY_TYPE_FORM_DATA;
-import static com.laker.postman.panel.collections.right.request.sub.RequestBodyPanel.BODY_TYPE_RAW;
+import static com.laker.postman.model.RequestBodyTypes.BODY_TYPE_FORM_DATA;
+import static com.laker.postman.model.RequestBodyTypes.BODY_TYPE_RAW;
 import static org.testng.Assert.*;
 
 /**

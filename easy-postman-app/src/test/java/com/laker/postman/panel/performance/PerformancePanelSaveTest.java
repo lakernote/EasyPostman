@@ -1,6 +1,6 @@
 package com.laker.postman.panel.performance;
 
-import com.laker.postman.common.SingletonBasePanel;
+import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.common.component.EasyJSpinner;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
@@ -145,11 +145,11 @@ public class PerformancePanelSaveTest extends AbstractSwingUiTest {
     }
 
     private static PerformancePanel newPanelWithoutInit() {
-        SingletonBasePanel.setCreatingAllowed(true);
+        UiSingletonPanel.setFactoryCreationAllowed(true);
         try {
             return new PerformancePanel();
         } finally {
-            SingletonBasePanel.setCreatingAllowed(false);
+            UiSingletonPanel.setFactoryCreationAllowed(false);
         }
     }
 

@@ -1,6 +1,6 @@
 package com.laker.postman.panel.collections.left.handler;
 
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestGroup;
 import com.laker.postman.model.SavedResponse;
@@ -114,7 +114,7 @@ public class RequestTreeKeyboardHandler extends KeyAdapter {
         if (node.getChildCount() == 0) return;
 
         RequestGroup group = ensureRequestGroup(obj);
-        RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+        RequestEditPanel editPanel = UiSingletonFactory.getInstance(RequestEditPanel.class);
         editPanel.showOrCreatePreviewTabForGroup(node, group);
     }
 
@@ -123,14 +123,14 @@ public class RequestTreeKeyboardHandler extends KeyAdapter {
      */
     private void handleRequestEnter(Object[] obj) {
         HttpRequestItem item = (HttpRequestItem) obj[1];
-        SingletonFactory.getInstance(RequestEditPanel.class).showOrCreatePreviewTab(item);
+        UiSingletonFactory.getInstance(RequestEditPanel.class).showOrCreatePreviewTab(item);
     }
 
     /**
      * 处理保存的响应 Enter 键事件：预览响应
      */
     private void handleSavedResponseEnter(SavedResponse savedResponse) {
-        RequestEditPanel editPanel = SingletonFactory.getInstance(RequestEditPanel.class);
+        RequestEditPanel editPanel = UiSingletonFactory.getInstance(RequestEditPanel.class);
         editPanel.showOrCreatePreviewTabForSavedResponse(savedResponse);
     }
 

@@ -1,7 +1,7 @@
 package com.laker.postman.model;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.panel.collections.RequestCollectionsPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.functional.FunctionalPanel;
@@ -30,37 +30,37 @@ public enum SidebarTab {
     COLLECTIONS(
             MessageKeys.MENU_COLLECTIONS,
             "icons/collections.svg",
-            () -> SingletonFactory.getInstance(RequestCollectionsPanel.class)
+            () -> UiSingletonFactory.getInstance(RequestCollectionsPanel.class)
     ),
     ENVIRONMENTS(
             MessageKeys.MENU_ENVIRONMENTS,
             "icons/environments.svg",
-            () -> SingletonFactory.getInstance(EnvironmentPanel.class)
+            () -> UiSingletonFactory.getInstance(EnvironmentPanel.class)
     ),
     WORKSPACES(
             MessageKeys.MENU_WORKSPACES,
             "icons/workspace.svg",
-            () -> SingletonFactory.getInstance(WorkspacePanel.class)
+            () -> UiSingletonFactory.getInstance(WorkspacePanel.class)
     ),
     FUNCTIONAL(
             MessageKeys.MENU_FUNCTIONAL,
             "icons/functional.svg",
-            () -> SingletonFactory.getInstance(FunctionalPanel.class)
+            () -> UiSingletonFactory.getInstance(FunctionalPanel.class)
     ),
     PERFORMANCE(
             MessageKeys.MENU_PERFORMANCE,
             "icons/performance.svg",
-            () -> SingletonFactory.getInstance(PerformancePanel.class)
+            () -> UiSingletonFactory.getInstance(PerformancePanel.class)
     ),
     TOOLBOX(
             MessageKeys.MENU_TOOLBOX,
             "icons/tools.svg",
-            () -> SingletonFactory.getInstance(ToolboxPanel.class)
+            () -> UiSingletonFactory.getInstance(ToolboxPanel.class)
     ),
     HISTORY(
             MessageKeys.MENU_HISTORY,
             "icons/history.svg",
-            () -> SingletonFactory.getInstance(HistoryPanel.class)
+            () -> UiSingletonFactory.getInstance(HistoryPanel.class)
     );
 
     private final String titleKey;

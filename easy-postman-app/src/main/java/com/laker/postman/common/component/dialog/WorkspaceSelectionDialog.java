@@ -1,7 +1,7 @@
 package com.laker.postman.common.component.dialog;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.GitRepoSource;
 import com.laker.postman.model.Workspace;
@@ -29,9 +29,9 @@ public class WorkspaceSelectionDialog extends JDialog {
     private final JTextField searchField;
 
     public WorkspaceSelectionDialog(String title, List<Workspace> workspaces) {
-        super(SingletonFactory.getInstance(MainFrame.class), title, true);
+        super(UiSingletonFactory.getInstance(MainFrame.class), title, true);
         setSize(500, 400);
-        setLocationRelativeTo(SingletonFactory.getInstance(MainFrame.class));
+        setLocationRelativeTo(UiSingletonFactory.getInstance(MainFrame.class));
         setLayout(new BorderLayout(10, 10));
 
         // 主面板

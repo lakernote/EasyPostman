@@ -261,6 +261,8 @@ public class PostmanApiContext {
      * @param testFunction 测试函数，使用 GraalVM Value 类型以支持 JavaScript 函数
      * @deprecated 推荐使用 test 对象，但保留此方法以保持向后兼容
      */
+    // TODO(compat-cleanup): 等脚本兼容窗口结束后，删除直接 pm.test(...) Java 入口，仅保留 test API 委托。
+    @Deprecated(forRemoval = false)
     public void test(String name, Value testFunction) {
         // 委托给 TestApi
         if (test != null) {
@@ -367,6 +369,7 @@ public class PostmanApiContext {
      * @param key   变量名
      * @param value 变量值
      */
+    // TODO(compat-cleanup): 等脚本迁移到 pm.variables.set 后，删除旧 pm.setVariable 入口。
     public void setVariable(String key, String value) {
         variables.set(key, value);
     }
@@ -378,6 +381,7 @@ public class PostmanApiContext {
      * @param key 变量名
      * @return 变量值，不存在则返回 null
      */
+    // TODO(compat-cleanup): 等脚本迁移到 pm.variables.get 后，删除旧 pm.getVariable 入口。
     public String getVariable(String key) {
         return variables.get(key);
     }

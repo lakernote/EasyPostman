@@ -34,6 +34,7 @@ final class WorkspaceScopedConfigSupport {
                                                                     String configName,
                                                                     Logger log) {
         // 只有默认工作区需要兼容旧版应用级文件；普通 workspace 必须保持目录隔离，避免误导入其它数据。
+        // TODO(compat-cleanup): 发布几个版本并确认默认 workspace 迁移完成后，删除旧应用级配置迁移分支。
         if (!WorkspaceStorageUtil.isDefaultWorkspace(workspace)) {
             return;
         }

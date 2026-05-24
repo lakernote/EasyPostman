@@ -161,20 +161,13 @@ public class GroupInheritanceHelper {
             }
 
             DefaultMutableTreeNode treeNode = (DefaultMutableTreeNode) currentNode;
-            Object userObj = treeNode.getUserObject();
-
             // 检查是否是根节点
-            if (userObj == null || "root".equals(String.valueOf(userObj))) {
+            if (treeNode.getUserObject() == null || "root".equals(String.valueOf(treeNode.getUserObject()))) {
                 break;
             }
 
-            // 检查是否是分组节点
-            if (userObj instanceof Object[] obj && obj.length >= 2 && "group".equals(obj[0])) {
-                Object groupData = obj[1];
-                if (groupData instanceof RequestGroup group) {
-                    groupChain.add(0, group); // 插入到列表头部，保持外层到内层的顺序
-                }
-            }
+            CollectionTreeNodes.group(treeNode)
+                    .ifPresent(group -> groupChain.add(0, group)); // 插入到列表头部，保持外层到内层的顺序
 
             currentNode = currentNode.getParent();
         }

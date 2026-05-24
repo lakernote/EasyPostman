@@ -17,9 +17,6 @@ public class TableUIConstants {
     public static final String SELECT_FILE_TEXT = "Select File";
     public static final String FILE_TYPE = "File";
 
-    // 颜色常量 - 基础色（保留向后兼容）
-    public static final Color PRIMARY_COLOR = new Color(66, 133, 244);  // 主题色
-
     // 图标大小
     public static final int ICON_SIZE = 14;
 
@@ -55,7 +52,7 @@ public class TableUIConstants {
      */
     public static Color getFileButtonTextColor() {
         // 主题色在两种模式下都保持一致
-        return PRIMARY_COLOR;
+        return ModernColors.PRIMARY;
     }
 
     /**

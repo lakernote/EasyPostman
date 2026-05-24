@@ -42,21 +42,6 @@ public enum AuthType {
         return INHERIT;
     }
 
-    /**
-     * Get AuthType from display text (for backward compatibility)
-     */
-    public static AuthType fromDisplayText(String displayText) {
-        if (displayText == null) {
-            return INHERIT;
-        }
-        for (AuthType type : values()) {
-            if (type.getDisplayText().equals(displayText)) {
-                return type;
-            }
-        }
-        return INHERIT;
-    }
-
     @Override
     public String toString() {
         return getDisplayText();

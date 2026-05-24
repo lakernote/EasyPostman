@@ -563,13 +563,14 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
         CollectionTreePanel collectionPanel = UiSingletonFactory.getInstance(CollectionTreePanel.class);
         RequestEditorPanel requestEditPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class);
         TreeModel groupTreeModel = collectionPanel.getGroupTreeModel();
-        Object[] result = requestEditPanel.showGroupAndNameDialog(groupTreeModel, item.getName());
-        if (result == null) return false;
-        Object[] groupObj = (Object[]) result[0];
-        String requestName = (String) result[1];
+        CollectionGroupSelectionDialog.RequestNameSelection selection = CollectionGroupSelectionDialog
+                .chooseGroupAndRequestName(groupTreeModel, item.getName())
+                .orElse(null);
+        if (selection == null) return false;
+        String requestName = selection.requestName();
         item.setName(requestName);
         item.setId(IdUtil.simpleUUID());
-        collectionPanel.saveRequestToGroup(groupObj, item);
+        collectionPanel.saveRequestToGroup(selection.group(), item);
         requestEditPanel.showOrCreateTab(item); // 打开请求编辑tab
         // tree选中新增的请求节点
         collectionPanel.locateAndSelectRequest(item.getId());
@@ -581,40 +582,30 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
     private boolean filterNodes(DefaultMutableTreeNode src, DefaultMutableTreeNode dest, String keyword,
                                 boolean caseSensitive, boolean wholeWord) {
         boolean matched = false;
-        Object userObj = src.getUserObject();
-        if (userObj instanceof Object[] obj) {
-            String type = String.valueOf(obj[0]);
-            if (GROUP.equals(type)) {
-                RequestGroup group = CollectionTreeNodes.group(src).orElse(null);
-                if (group == null) {
-                    return false;
+        if (CollectionTreeNodes.isGroup(src)) {
+            RequestGroup group = CollectionTreeNodes.group(src).orElseThrow();
+            String groupName = group.getName();
+            DefaultMutableTreeNode groupNode = CollectionTreeNodes.groupNode(group);
+            boolean childMatched = false;
+            for (int i = 0; i < src.getChildCount(); i++) {
+                DefaultMutableTreeNode child = (DefaultMutableTreeNode) src.getChildAt(i);
+                if (filterNodes(child, groupNode, keyword, caseSensitive, wholeWord)) {
+                    childMatched = true;
                 }
-                String groupName = group.getName();
-                DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(obj.clone());
-                boolean childMatched = false;
-                for (int i = 0; i < src.getChildCount(); i++) {
-                    DefaultMutableTreeNode child = (DefaultMutableTreeNode) src.getChildAt(i);
-                    if (filterNodes(child, groupNode, keyword, caseSensitive, wholeWord)) {
-                        childMatched = true;
-                    }
-                }
-                if (matchesText(groupName, keyword, caseSensitive, wholeWord) || childMatched) {
-                    dest.add(groupNode);
-                    matched = true;
-                }
-            } else if (REQUEST.equals(type)) {
-                HttpRequestItem item = CollectionTreeNodes.request(src).orElse(null);
-                if (item == null) {
-                    return false;
-                }
-                boolean nameMatch = item.getName() != null &&
-                        matchesText(item.getName(), keyword, caseSensitive, wholeWord);
-                boolean urlMatch = item.getUrl() != null &&
-                        matchesText(item.getUrl(), keyword, caseSensitive, wholeWord);
-                if (nameMatch || urlMatch) {
-                    dest.add(new DefaultMutableTreeNode(obj.clone()));
-                    matched = true;
-                }
+            }
+            if (matchesText(groupName, keyword, caseSensitive, wholeWord) || childMatched) {
+                dest.add(groupNode);
+                matched = true;
+            }
+        } else if (CollectionTreeNodes.isRequest(src)) {
+            HttpRequestItem item = CollectionTreeNodes.request(src).orElseThrow();
+            boolean nameMatch = item.getName() != null &&
+                    matchesText(item.getName(), keyword, caseSensitive, wholeWord);
+            boolean urlMatch = item.getUrl() != null &&
+                    matchesText(item.getUrl(), keyword, caseSensitive, wholeWord);
+            if (nameMatch || urlMatch) {
+                dest.add(CollectionTreeNodes.requestNode(item));
+                matched = true;
             }
         } else {
             // 处理 root 节点

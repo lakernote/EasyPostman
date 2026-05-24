@@ -30,6 +30,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.util.List;
 
+import static com.laker.postman.model.RequestAuthTypes.AUTH_TYPE_INHERIT;
+import static com.laker.postman.model.RequestAuthTypes.AUTH_TYPE_NONE;
+
 /**
  * 分组编辑面板 - 现代化版本
  * 在右侧主面板显示，参考 Postman 的设计
@@ -407,8 +410,8 @@ public class GroupEditPanel extends JPanel {
         String authType = authTabPanel.getAuthType();
         // 如果认证类型不是 "inherit" 或 "none"，则认为有内容
         return authType != null &&
-                !AuthTabPanel.AUTH_TYPE_INHERIT.equals(authType) &&
-                !AuthTabPanel.AUTH_TYPE_NONE.equals(authType);
+                !AUTH_TYPE_INHERIT.equals(authType) &&
+                !AUTH_TYPE_NONE.equals(authType);
     }
 
     /**
@@ -653,4 +656,3 @@ public class GroupEditPanel extends JPanel {
         updateOriginalSnapshot();
     }
 }
-

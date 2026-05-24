@@ -159,6 +159,7 @@ public class PluginCatalogService {
             return entries;
         }
 
+        // TODO(compat-cleanup): 官方 catalog 已切到 releases[] 后，删除旧 flat entry 解析。
         PluginCatalogEntry legacyEntry = parseFlatEntry(pluginJson, catalogBaseUri);
         return legacyEntry == null ? List.of() : List.of(legacyEntry);
     }

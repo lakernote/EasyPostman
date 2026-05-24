@@ -2,6 +2,7 @@ package com.laker.postman.panel.collections.editor;
 
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.panel.collections.tree.CollectionGroupSelectionDialog;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import org.testng.annotations.Test;
 
@@ -9,6 +10,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
 import java.lang.reflect.Method;
+import java.util.Optional;
 
 import static org.testng.Assert.assertEquals;
 
@@ -39,8 +41,11 @@ public class RequestEditorPanelSaveTest {
                 }
 
                 @Override
-                public Object[] showGroupAndNameDialog(TreeModel groupTreeModel, String defaultName) {
-                    return null;
+                protected Optional<CollectionGroupSelectionDialog.RequestNameSelection> chooseGroupAndRequestName(
+                        TreeModel groupTreeModel,
+                        String defaultName
+                ) {
+                    return Optional.empty();
                 }
             };
         } finally {

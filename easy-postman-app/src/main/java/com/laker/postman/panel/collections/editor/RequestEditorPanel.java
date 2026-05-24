@@ -4,17 +4,16 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.IdUtil;
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.UiSingletonFactory;
-import com.laker.postman.common.component.tree.CollectionGroupTreeFactory;
 import com.laker.postman.common.component.tab.ClosableTabComponent;
 import com.laker.postman.common.component.tab.PlusPanel;
 import com.laker.postman.common.component.tab.PlusTabComponent;
 import com.laker.postman.common.component.tab.TabbedPaneDragHandler;
-import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestGroup;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.SavedResponse;
+import com.laker.postman.panel.collections.tree.CollectionGroupSelectionDialog;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.service.collections.ActiveCollectionTreeNodeRepository;
@@ -37,6 +36,7 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static com.formdev.flatlaf.FlatClientProperties.*;
 import static com.laker.postman.util.SystemUtil.getClipboardCurlText;
@@ -48,7 +48,6 @@ import static com.laker.postman.util.SystemUtil.getClipboardCurlText;
 public class RequestEditorPanel extends UiSingletonPanel {
     public static final String REQUEST_STRING = I18nUtil.getMessage(MessageKeys.NEW_REQUEST);
     public static final String PLUS_TAB = "+";
-    public static final String GROUP = "group";
     @Getter
     private JTabbedPane tabbedPane; // 使用 JTabbedPane 管理多个请求编辑子面板
 
@@ -426,177 +425,17 @@ public class RequestEditorPanel extends UiSingletonPanel {
     }
 
     /**
-     * 公共方法：弹窗让用户选择分组并输入请求名称，返回分组Object[]和请求名
-     *
-     * @param groupTreeModel 分组树模型
-     * @param defaultName    默认请求名，可为null
-     * @return Object[]{Object[] groupObj, String requestName}，若取消返回null
-     */
-    public Object[] showGroupAndNameDialog(TreeModel groupTreeModel, String defaultName) {
-        if (groupTreeModel == null || groupTreeModel.getRoot() == null) {
-            JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.PLEASE_SELECT_GROUP),
-                    I18nUtil.getMessage(MessageKeys.TIP), JOptionPane.INFORMATION_MESSAGE);
-            return null;
-        }
-
-        // 创建主面板，使用GridBagLayout以获得更好的布局控制
-        JPanel mainPanel = new JPanel(new GridBagLayout());
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(16, 20, 16, 20));
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(0, 0, 12, 0);
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-
-        // 请求名称标签
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.weightx = 0;
-        JLabel nameLabel = new JLabel(I18nUtil.getMessage(MessageKeys.REQUEST_NAME) + ":");
-        nameLabel.setFont(nameLabel.getFont().deriveFont(Font.BOLD, 13f));
-        mainPanel.add(nameLabel, gbc);
-
-        // 请求名称输入框
-        gbc.gridy = 1;
-        gbc.weightx = 1.0;
-        gbc.insets = new Insets(0, 0, 20, 0);
-        JTextField nameField = new JTextField(25);
-        nameField.setPreferredSize(new Dimension(350, 32));
-        if (defaultName != null && !defaultName.trim().isEmpty()) {
-            nameField.setText(defaultName);
-            nameField.selectAll(); // 自动选中文本，方便用户直接修改
-        }
-        mainPanel.add(nameField, gbc);
-
-        // 分组选择标签
-        gbc.gridy = 2;
-        gbc.insets = new Insets(0, 0, 8, 0);
-        JLabel groupLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SELECT_GROUP) + ":");
-        groupLabel.setFont(groupLabel.getFont().deriveFont(Font.BOLD, 13f));
-        mainPanel.add(groupLabel, gbc);
-
-        // 分组树
-        gbc.gridy = 3;
-        gbc.weighty = 1.0;
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.insets = new Insets(0, 0, 0, 0);
-        JTree groupTree = CollectionGroupTreeFactory.createTree(groupTreeModel);
-
-        // 展开第一层节点
-        for (int i = 0; i < groupTree.getRowCount(); i++) {
-            groupTree.expandRow(i);
-        }
-
-        JScrollPane treeScroll = new JScrollPane(groupTree);
-        treeScroll.setPreferredSize(new Dimension(350, 200));
-        treeScroll.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(200, 200, 200), 1),
-                BorderFactory.createEmptyBorder(4, 4, 4, 4)
-        ));
-        mainPanel.add(treeScroll, gbc);
-
-        // 创建自定义对话框以支持更好的交互
-        JDialog dialog = new JDialog(UiSingletonFactory.getInstance(MainFrame.class),
-                I18nUtil.getMessage(MessageKeys.SAVE_REQUEST), true);
-        dialog.setLayout(new BorderLayout());
-        dialog.add(mainPanel, BorderLayout.CENTER);
-
-        // 按钮面板
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 12));
-        buttonPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.getDividerBorderColor()));
-
-        JButton cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL));
-        JButton okButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK));
-        okButton.setPreferredSize(new Dimension(80, 32));
-        cancelButton.setPreferredSize(new Dimension(80, 32));
-
-        // 设置确定按钮为默认按钮样式
-        okButton.setBackground(new Color(0, 123, 255));
-        okButton.setForeground(Color.WHITE);
-        okButton.setFocusPainted(false);
-        okButton.setBorderPainted(false);
-        okButton.setOpaque(true);
-
-        final Object[] result = {null};
-
-        // 确定按钮逻辑
-        Runnable okAction = () -> {
-            String requestName = nameField.getText();
-            if (requestName == null || requestName.trim().isEmpty()) {
-                NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.PLEASE_ENTER_REQUEST_NAME));
-                nameField.requestFocusInWindow();
-                return;
-            }
-
-            TreePath selectedPath = groupTree.getSelectionPath();
-            if (selectedPath == null) {
-                NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.PLEASE_SELECT_GROUP));
-                groupTree.requestFocusInWindow();
-                return;
-            }
-
-            Object selectedGroupNode = selectedPath.getLastPathComponent();
-            Object[] groupObj = null;
-            if (selectedGroupNode instanceof javax.swing.tree.DefaultMutableTreeNode node) {
-                Object userObj = node.getUserObject();
-                if (userObj instanceof Object[] arr && GROUP.equals(arr[0])) {
-                    groupObj = arr;
-                }
-            }
-
-            if (groupObj == null) {
-                NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.PLEASE_SELECT_VALID_GROUP));
-                return;
-            }
-
-            result[0] = new Object[]{groupObj, requestName.trim()};
-            dialog.dispose();
-        };
-
-        okButton.addActionListener(e -> okAction.run());
-        cancelButton.addActionListener(e -> dialog.dispose());
-
-        buttonPanel.add(cancelButton);
-        buttonPanel.add(okButton);
-        dialog.add(buttonPanel, BorderLayout.SOUTH);
-
-        // 支持回车键确认
-        nameField.addActionListener(e -> okAction.run());
-
-        // 支持ESC键取消
-        dialog.getRootPane().registerKeyboardAction(
-                e -> dialog.dispose(),
-                KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
-                JComponent.WHEN_IN_FOCUSED_WINDOW
-        );
-
-        // 设置默认按钮
-        dialog.getRootPane().setDefaultButton(okButton);
-
-        // 设置对话框属性
-        dialog.setSize(420, 420);
-        dialog.setLocationRelativeTo(UiSingletonFactory.getInstance(MainFrame.class));
-        dialog.setResizable(false);
-
-        // 显示对话框后自动聚焦到名称输入框
-        SwingUtilities.invokeLater(nameField::requestFocusInWindow);
-
-        dialog.setVisible(true);
-
-        return (Object[]) result[0];
-    }
-
-    /**
      * 保存新请求（分组选择优化为树结构）
      */
     private boolean saveNewRequest(CollectionTreePanel collectionPanel, HttpRequestItem item) {
         TreeModel groupTreeModel = collectionPanel.getGroupTreeModel();
-        Object[] result = showGroupAndNameDialog(groupTreeModel, item.getName());
-        if (result == null) return false;
-        Object[] groupObj = (Object[]) result[0];
-        String requestName = (String) result[1];
+        CollectionGroupSelectionDialog.RequestNameSelection selection = chooseGroupAndRequestName(groupTreeModel, item.getName())
+                .orElse(null);
+        if (selection == null) return false;
+        String requestName = selection.requestName();
         item.setName(requestName);
         item.setId(IdUtil.simpleUUID());
-        collectionPanel.saveRequestToGroup(groupObj, item);
+        collectionPanel.saveRequestToGroup(selection.group(), item);
         int currentTabIndex = tabbedPane.getSelectedIndex();
         if (currentTabIndex >= 0) {
             tabbedPane.setTitleAt(currentTabIndex, requestName);
@@ -610,6 +449,13 @@ public class RequestEditorPanel extends UiSingletonPanel {
             }
         }
         return true;
+    }
+
+    protected Optional<CollectionGroupSelectionDialog.RequestNameSelection> chooseGroupAndRequestName(
+            TreeModel groupTreeModel,
+            String defaultName
+    ) {
+        return CollectionGroupSelectionDialog.chooseGroupAndRequestName(groupTreeModel, defaultName);
     }
 
     /**

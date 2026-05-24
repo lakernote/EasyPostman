@@ -90,6 +90,7 @@ public class ScriptRequestAccessor {
     /**
      * 请求 URL 字符串（用于向后兼容）
      */
+    // TODO(compat-cleanup): 确认脚本迁移到 pm.request.url 后，删除 urlStr 兼容字段。
     public String urlStr;
 
     /**

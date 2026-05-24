@@ -105,7 +105,7 @@ public class RequestTreeMouseHandler extends MouseAdapter {
         TreePath path = requestTree.getPathForRow(row);
         if (path == null) return false;
         DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
-        return node.getUserObject() instanceof Object[] obj && GROUP.equals(obj[0]);
+        return CollectionTreeNodes.isGroup(node);
     }
 
     /**
@@ -264,13 +264,11 @@ public class RequestTreeMouseHandler extends MouseAdapter {
 
         DefaultMutableTreeNode node = (DefaultMutableTreeNode) selPath.getLastPathComponent();
 
-        if (!(node.getUserObject() instanceof Object[] obj)) return;
-
-        if (GROUP.equals(obj[0])) {
+        if (CollectionTreeNodes.isGroup(node)) {
             handleGroupClick(e, node, selPath);
-        } else if (REQUEST.equals(obj[0])) {
+        } else if (CollectionTreeNodes.isRequest(node)) {
             CollectionTreeNodes.request(node).ifPresent(this::handleRequestClick);
-        } else if (SAVED_RESPONSE.equals(obj[0])) {
+        } else if (CollectionTreeNodes.isSavedResponse(node)) {
             CollectionTreeNodes.savedResponse(node).ifPresent(this::handleSavedResponseClick);
         }
     }
@@ -283,12 +281,11 @@ public class RequestTreeMouseHandler extends MouseAdapter {
         if (selPath == null) return;
 
         DefaultMutableTreeNode node = (DefaultMutableTreeNode) selPath.getLastPathComponent();
-        if (!(node.getUserObject() instanceof Object[] obj)) return;
 
-        if (REQUEST.equals(obj[0])) {
+        if (CollectionTreeNodes.isRequest(node)) {
             CollectionTreeNodes.request(node)
                     .ifPresent(item -> UiSingletonFactory.getInstance(RequestEditorPanel.class).showOrCreateTab(item));
-        } else if (GROUP.equals(obj[0])) {
+        } else if (CollectionTreeNodes.isGroup(node)) {
             RequestGroup group = CollectionTreeNodes.group(node).orElse(null);
             if (group == null) {
                 return;
@@ -296,7 +293,7 @@ public class RequestTreeMouseHandler extends MouseAdapter {
             RequestEditorPanel editPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class);
             editPanel.showGroupEditPanel(node, group);
             e.consume(); // 阻止展开/收起
-        } else if (SAVED_RESPONSE.equals(obj[0])) {
+        } else if (CollectionTreeNodes.isSavedResponse(node)) {
             // 双击保存的响应：打开固定 Tab
             CollectionTreeNodes.savedResponse(node).ifPresent(this::handleSavedResponseDoubleClick);
             e.consume();

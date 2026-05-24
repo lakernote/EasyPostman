@@ -29,6 +29,7 @@ public class CollectionTreeNodesTest {
         assertSame(CollectionTreeNodes.group(groupNode).orElseThrow(), group);
         assertSame(CollectionTreeNodes.request(requestNode).orElseThrow(), request);
         assertSame(CollectionTreeNodes.savedResponse(responseNode).orElseThrow(), savedResponse);
+        assertSame(CollectionTreeNodes.groupPayload(groupNode.getUserObject()).orElseThrow(), group);
     }
 
     @Test
@@ -40,5 +41,18 @@ public class CollectionTreeNodesTest {
 
         assertFalse(CollectionTreeNodes.isRequest(malformedNode));
         assertTrue(CollectionTreeNodes.request(malformedNode).isEmpty());
+    }
+
+    @Test
+    public void shouldReplaceRequestPayloadThroughAccessor() {
+        HttpRequestItem original = new HttpRequestItem();
+        original.setId("original");
+        HttpRequestItem replacement = new HttpRequestItem();
+        replacement.setId("replacement");
+        DefaultMutableTreeNode requestNode = CollectionTreeNodes.requestNode(original);
+
+        CollectionTreeNodes.setRequest(requestNode, replacement);
+
+        assertSame(CollectionTreeNodes.request(requestNode).orElseThrow(), replacement);
     }
 }

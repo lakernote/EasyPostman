@@ -167,15 +167,12 @@ public class RequestTreeActions {
         DefaultMutableTreeNode selectedNode = getSelectedNode();
         if (selectedNode == null) return;
 
-        Object userObj = selectedNode.getUserObject();
-        if (!(userObj instanceof Object[] obj)) return;
-
-        if (GROUP.equals(obj[0])) {
+        if (CollectionTreeNodes.isGroup(selectedNode)) {
             renameGroup(selectedNode);
-        } else if (REQUEST.equals(obj[0])) {
-            renameRequest(selectedNode, obj);
-        } else if (SAVED_RESPONSE.equals(obj[0])) {
-            renameSavedResponse(selectedNode, obj);
+        } else if (CollectionTreeNodes.isRequest(selectedNode)) {
+            renameRequest(selectedNode);
+        } else if (CollectionTreeNodes.isSavedResponse(selectedNode)) {
+            renameSavedResponse(selectedNode);
         }
     }
 
@@ -225,8 +222,11 @@ public class RequestTreeActions {
     /**
      * 重命名请求
      */
-    private void renameRequest(DefaultMutableTreeNode selectedNode, Object[] obj) {
-        HttpRequestItem item = (HttpRequestItem) obj[1];
+    private void renameRequest(DefaultMutableTreeNode selectedNode) {
+        HttpRequestItem item = CollectionTreeNodes.request(selectedNode).orElse(null);
+        if (item == null) {
+            return;
+        }
         String oldName = item.getName();
 
         Object result = JOptionPane.showInputDialog(
@@ -285,8 +285,11 @@ public class RequestTreeActions {
     /**
      * 重命名保存的响应
      */
-    private void renameSavedResponse(DefaultMutableTreeNode selectedNode, Object[] obj) {
-        SavedResponse savedResponse = (SavedResponse) obj[1];
+    private void renameSavedResponse(DefaultMutableTreeNode selectedNode) {
+        SavedResponse savedResponse = CollectionTreeNodes.savedResponse(selectedNode).orElse(null);
+        if (savedResponse == null) {
+            return;
+        }
         String oldName = savedResponse.getName();
 
         Object result = JOptionPane.showInputDialog(
@@ -430,19 +433,16 @@ public class RequestTreeActions {
      * 关闭节点相关的Tab
      */
     private void closeTabsForNode(DefaultMutableTreeNode node, JTabbedPane tabbedPane) {
-        Object userObj = node.getUserObject();
-        if (!(userObj instanceof Object[] obj)) return;
-
-        if (REQUEST.equals(obj[0])) {
-            HttpRequestItem item = (HttpRequestItem) obj[1];
+        HttpRequestItem item = CollectionTreeNodes.request(node).orElse(null);
+        if (item != null) {
             // 清空保存的响应列表，确保删除时不会保留已保存的响应
             if (item.getResponse() != null) {
                 item.getResponse().clear();
             }
             closeRequestTabs(item, tabbedPane);
-        } else if (GROUP.equals(obj[0])) {
+        } else if (CollectionTreeNodes.isGroup(node)) {
             closeTabsForGroup(node, tabbedPane);
-        } else if (SAVED_RESPONSE.equals(obj[0])) {
+        } else if (CollectionTreeNodes.isSavedResponse(node)) {
             // 处理删除保存的响应节点
             deleteSavedResponseNode(node);
         }
@@ -501,9 +501,8 @@ public class RequestTreeActions {
         List<RequestCopyInfo> infos = new ArrayList<>();
         for (TreePath path : paths) {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
-            Object userObj = node.getUserObject();
-            if (userObj instanceof Object[] obj && REQUEST.equals(obj[0])) {
-                HttpRequestItem item = (HttpRequestItem) obj[1];
+            HttpRequestItem item = CollectionTreeNodes.request(node).orElse(null);
+            if (item != null) {
                 DefaultMutableTreeNode parent = (DefaultMutableTreeNode) node.getParent();
                 int idx = parent.getIndex(node);
                 infos.add(new RequestCopyInfo(item, parent, idx));
@@ -537,9 +536,8 @@ public class RequestTreeActions {
         copiedRequests.clear();
         for (TreePath path : selectedPaths) {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
-            Object userObj = node.getUserObject();
-            if (userObj instanceof Object[] obj && REQUEST.equals(obj[0])) {
-                HttpRequestItem item = (HttpRequestItem) obj[1];
+            HttpRequestItem item = CollectionTreeNodes.request(node).orElse(null);
+            if (item != null) {
                 HttpRequestItem copy = JsonUtil.deepCopy(item, HttpRequestItem.class);
                 copiedRequests.add(copy);
             }
@@ -583,17 +581,15 @@ public class RequestTreeActions {
             return leftPanel.getRootTreeNode();
         }
 
-        Object userObj = targetNode.getUserObject();
-        if (targetNode == leftPanel.getRootTreeNode() || ROOT.equals(userObj)) {
+        if (targetNode == leftPanel.getRootTreeNode() || ROOT.equals(targetNode.getUserObject())) {
             return leftPanel.getRootTreeNode();
         }
 
-        if (userObj instanceof Object[] obj) {
-            if (GROUP.equals(obj[0])) {
-                return targetNode;
-            } else if (REQUEST.equals(obj[0])) {
-                return (DefaultMutableTreeNode) targetNode.getParent();
-            }
+        if (CollectionTreeNodes.isGroup(targetNode)) {
+            return targetNode;
+        }
+        if (CollectionTreeNodes.isRequest(targetNode)) {
+            return (DefaultMutableTreeNode) targetNode.getParent();
         }
 
         return leftPanel.getRootTreeNode();
@@ -619,10 +615,8 @@ public class RequestTreeActions {
         DefaultMutableTreeNode selectedNode = getSelectedNode();
         if (selectedNode == null) return;
 
-        Object userObj = selectedNode.getUserObject();
-        if (!(userObj instanceof Object[] obj) || !REQUEST.equals(obj[0])) return;
-
-        HttpRequestItem item = (HttpRequestItem) obj[1];
+        HttpRequestItem item = CollectionTreeNodes.request(selectedNode).orElse(null);
+        if (item == null) return;
         try {
             PreparedRequest req = PreparedRequestBuilder.build(item);
             RequestFinalizer.finalizeForSend(req, item, true);
@@ -648,8 +642,7 @@ public class RequestTreeActions {
         DefaultMutableTreeNode selectedNode = getSelectedNode();
         if (selectedNode == null) return;
 
-        Object userObj = selectedNode.getUserObject();
-        if (!(userObj instanceof Object[] obj) || !GROUP.equals(obj[0])) return;
+        if (!CollectionTreeNodes.isGroup(selectedNode)) return;
 
         DefaultMutableTreeNode copyNode = TreeNodeCloner.deepCopyGroupNode(selectedNode);
         RequestGroup copiedGroup = CollectionTreeNodes.group(copyNode).orElse(null);
@@ -811,8 +804,7 @@ public class RequestTreeActions {
         if (parent == null) return -1;
         for (int i = 0; i < parent.getChildCount(); i++) {
             DefaultMutableTreeNode child = (DefaultMutableTreeNode) parent.getChildAt(i);
-            Object userObj = child.getUserObject();
-            if (userObj instanceof Object[] obj && REQUEST.equals(obj[0])) {
+            if (CollectionTreeNodes.isRequest(child)) {
                 return i;
             }
         }
@@ -833,14 +825,10 @@ public class RequestTreeActions {
     }
 
     private void collectRequestsRecursively(DefaultMutableTreeNode node, List<HttpRequestItem> list) {
-        Object userObj = node.getUserObject();
-        if (userObj instanceof Object[] obj) {
-            if (REQUEST.equals(obj[0])) {
-                list.add((HttpRequestItem) obj[1]);
-            } else if (GROUP.equals(obj[0])) {
-                for (int i = 0; i < node.getChildCount(); i++) {
-                    collectRequestsRecursively((DefaultMutableTreeNode) node.getChildAt(i), list);
-                }
+        CollectionTreeNodes.request(node).ifPresent(list::add);
+        if (CollectionTreeNodes.isGroup(node)) {
+            for (int i = 0; i < node.getChildCount(); i++) {
+                collectRequestsRecursively((DefaultMutableTreeNode) node.getChildAt(i), list);
             }
         }
     }
@@ -857,17 +845,9 @@ public class RequestTreeActions {
         DefaultMutableTreeNode parentNode = (DefaultMutableTreeNode) savedResponseNode.getParent();
         if (parentNode == null) return;
 
-        Object parentUserObj = parentNode.getUserObject();
-        if (!(parentUserObj instanceof Object[] parentObj)) return;
-        if (!REQUEST.equals(parentObj[0])) return;
-
-        // 获取父请求和要删除的响应
-        HttpRequestItem parentRequest = (HttpRequestItem) parentObj[1];
-        Object savedRespUserObj = savedResponseNode.getUserObject();
-        if (!(savedRespUserObj instanceof Object[] respObj)) return;
-        if (!SAVED_RESPONSE.equals(respObj[0])) return;
-
-        SavedResponse toDelete = (SavedResponse) respObj[1];
+        HttpRequestItem parentRequest = CollectionTreeNodes.request(parentNode).orElse(null);
+        SavedResponse toDelete = CollectionTreeNodes.savedResponse(savedResponseNode).orElse(null);
+        if (parentRequest == null || toDelete == null) return;
 
         // 从父请求的 response 列表中删除
         if (parentRequest.getResponse() != null) {

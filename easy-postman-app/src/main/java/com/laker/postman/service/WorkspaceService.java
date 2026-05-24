@@ -129,6 +129,7 @@ public class WorkspaceService {
      */
     private void migrateDefaultWorkspaceIfNeeded() {
         try {
+            // TODO(compat-cleanup): v1 默认工作区迁移窗口结束后删除该启动迁移流程。
             String rootDir = SystemUtil.getEasyPostmanPath();
             Path newDefaultDir = Paths.get(ConfigPathConstants.DEFAULT_WORKSPACE_DIR);
 

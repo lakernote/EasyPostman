@@ -97,13 +97,11 @@ public class RequestTreeKeyboardHandler extends KeyAdapter {
         DefaultMutableTreeNode selectedNode = getSelectedNode();
         if (selectedNode == null) return;
 
-        if (!(selectedNode.getUserObject() instanceof Object[] obj)) return;
-
-        if (GROUP.equals(obj[0])) {
+        if (CollectionTreeNodes.isGroup(selectedNode)) {
             handleGroupEnter(selectedNode);
-        } else if (REQUEST.equals(obj[0])) {
+        } else if (CollectionTreeNodes.isRequest(selectedNode)) {
             CollectionTreeNodes.request(selectedNode).ifPresent(this::handleRequestEnter);
-        } else if (SAVED_RESPONSE.equals(obj[0])) {
+        } else if (CollectionTreeNodes.isSavedResponse(selectedNode)) {
             CollectionTreeNodes.savedResponse(selectedNode).ifPresent(this::handleSavedResponseEnter);
         }
     }

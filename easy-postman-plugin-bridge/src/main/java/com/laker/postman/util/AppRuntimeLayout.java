@@ -76,6 +76,7 @@ public final class AppRuntimeLayout {
         if (isPortableMode(anchorClass)) {
             Path applicationRoot = applicationRootDirectory(anchorClass);
             Path preferredDataDir = resolvePortableDataDirectory(applicationRoot, codeSourceDirectory(anchorClass));
+            // TODO(compat-cleanup): 便携版 data 目录稳定迁移后删除 applicationRoot/data 兼容搬迁。
             Path legacyDataDir = applicationRoot.toAbsolutePath().normalize().resolve("data");
             return harmonizePortableDataDirectory(preferredDataDir, legacyDataDir);
         }

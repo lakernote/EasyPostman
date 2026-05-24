@@ -22,6 +22,9 @@ import javax.swing.event.DocumentListener;
 import javax.swing.text.Document;
 import java.util.List;
 
+import static com.laker.postman.model.RequestAuthTypes.AUTH_TYPE_INHERIT;
+import static com.laker.postman.model.RequestAuthTypes.AUTH_TYPE_NONE;
+
 final class RequestTabStateHelper {
     private final RequestItemProtocolEnum protocol;
     private final JTextField urlField;
@@ -140,8 +143,8 @@ final class RequestTabStateHelper {
     private boolean hasAuthContent() {
         String authType = authTabPanel.getAuthType();
         return authType != null
-                && !AuthTabPanel.AUTH_TYPE_INHERIT.equals(authType)
-                && !AuthTabPanel.AUTH_TYPE_NONE.equals(authType);
+                && !AUTH_TYPE_INHERIT.equals(authType)
+                && !AUTH_TYPE_NONE.equals(authType);
     }
 
     private boolean hasHeadersContent() {

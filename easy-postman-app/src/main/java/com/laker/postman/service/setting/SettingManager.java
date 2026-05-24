@@ -563,6 +563,7 @@ public class SettingManager {
             }
         }
 
+        // TODO(compat-cleanup): 多证书配置已使用 custom_trust_material_entries，确认旧设置迁移后删除 path/password fallback。
         String legacyPath = props.getProperty("custom_trust_material_path", "").trim();
         if (legacyPath.isEmpty()) {
             return new ArrayList<>();
@@ -582,11 +583,13 @@ public class SettingManager {
         updateAndSaveProperties(settings -> {
             if (sanitizedEntries.isEmpty()) {
                 settings.remove("custom_trust_material_entries");
+                // TODO(compat-cleanup): 删除 legacy path/password fallback 时一并停止写入这两个键。
                 settings.setProperty("custom_trust_material_path", "");
                 settings.setProperty("custom_trust_material_password", "");
             } else {
                 settings.setProperty("custom_trust_material_entries", JSONUtil.toJsonStr(sanitizedEntries));
                 TrustedCertificateEntry firstEntry = sanitizedEntries.get(0);
+                // TODO(compat-cleanup): 删除 legacy path/password fallback 时一并停止写入这两个键。
                 settings.setProperty("custom_trust_material_path", firstEntry.getPath());
                 settings.setProperty("custom_trust_material_password", firstEntry.getPassword() != null ? firstEntry.getPassword() : "");
             }

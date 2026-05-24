@@ -9,6 +9,7 @@ import com.laker.postman.model.SavedResponse;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.panel.collections.editor.request.sub.RequestLinePanel;
 import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;
+import com.laker.postman.service.collections.CollectionTreeNodes;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -56,8 +57,12 @@ final class SavedResponseHelper {
                 return;
             }
 
-            Object[] nodeObj = (Object[]) requestNode.getUserObject();
-            HttpRequestItem treeRequestItem = (HttpRequestItem) nodeObj[1];
+            HttpRequestItem treeRequestItem = CollectionTreeNodes.request(requestNode).orElse(null);
+            if (treeRequestItem == null) {
+                log.warn("请求节点数据异常，保存响应失败");
+                NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.RESPONSE_SAVE_ERROR, ""));
+                return;
+            }
             if (treeRequestItem.getResponse() == null) {
                 treeRequestItem.setResponse(new ArrayList<>());
             }
@@ -68,10 +73,7 @@ final class SavedResponseHelper {
             }
             originalRequestItem.getResponse().add(savedResponse);
 
-            DefaultMutableTreeNode responseNode = new DefaultMutableTreeNode(
-                    new Object[]{CollectionTreePanel.SAVED_RESPONSE, savedResponse}
-            );
-            requestNode.add(responseNode);
+            requestNode.add(CollectionTreeNodes.savedResponseNode(savedResponse));
 
             leftPanel.getTreeModel().reload(requestNode);
             leftPanel.getRequestTree().expandPath(new TreePath(requestNode.getPath()));
@@ -124,9 +126,8 @@ final class SavedResponseHelper {
             return null;
         }
 
-        Object userObj = node.getUserObject();
-        if (userObj instanceof Object[] obj && CollectionTreePanel.REQUEST.equals(obj[0])) {
-            HttpRequestItem nodeItem = (HttpRequestItem) obj[1];
+        HttpRequestItem nodeItem = CollectionTreeNodes.request(node).orElse(null);
+        if (nodeItem != null) {
             if (nodeItem != null && item.getId().equals(nodeItem.getId())) {
                 return node;
             }

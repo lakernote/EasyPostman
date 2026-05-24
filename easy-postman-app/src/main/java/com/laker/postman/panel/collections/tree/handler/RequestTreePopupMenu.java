@@ -2,6 +2,7 @@ package com.laker.postman.panel.collections.tree.handler;
 
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.panel.collections.tree.action.RequestTreeActions;
+import com.laker.postman.service.collections.CollectionTreeNodes;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
@@ -34,8 +35,6 @@ public class RequestTreePopupMenu {
     public void show(int x, int y) {
         JPopupMenu menu = new JPopupMenu();
         DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) requestTree.getLastSelectedPathComponent();
-        Object userObj = selectedNode != null ? selectedNode.getUserObject() : null;
-
         TreePath[] selectedPaths = requestTree.getSelectionPaths();
         boolean isMultipleSelection = selectedPaths != null && selectedPaths.length > 1;
 
@@ -46,17 +45,17 @@ public class RequestTreePopupMenu {
         }
 
         // 分组节点菜单
-        if (userObj instanceof Object[] && GROUP.equals(((Object[]) userObj)[0])) {
+        if (CollectionTreeNodes.isGroup(selectedNode)) {
             addGroupMenuItems(menu, selectedNode, isMultipleSelection);
         }
 
         // 请求节点菜单
-        if (userObj instanceof Object[] && REQUEST.equals(((Object[]) userObj)[0])) {
+        if (CollectionTreeNodes.isRequest(selectedNode)) {
             addRequestMenuItems(menu, selectedNode, isMultipleSelection);
         }
 
         // 保存的响应节点菜单 - 只显示重命名和删除，不显示粘贴等其他选项
-        if (userObj instanceof Object[] && SAVED_RESPONSE.equals(((Object[]) userObj)[0])) {
+        if (CollectionTreeNodes.isSavedResponse(selectedNode)) {
             addRenameAndDeleteMenuItems(menu, isMultipleSelection);
             menu.show(requestTree, x, y);
             return;

@@ -246,14 +246,11 @@ public class CollectionTreePanel extends UiSingletonPanel {
     /**
      * 将请求保存到指定分组
      *
-     * @param group 分组信息，[type, RequestGroup] 形式的数组
-     * @param item  请求项
+     * @param targetGroup 分组信息
+     * @param item        请求项
      */
-    public void saveRequestToGroup(Object[] group, HttpRequestItem item) {
-        if (group == null || !GROUP.equals(group[0])) {
-            return;
-        }
-        if (!(group[1] instanceof RequestGroup targetGroup)) {
+    public void saveRequestToGroup(RequestGroup targetGroup, HttpRequestItem item) {
+        if (targetGroup == null || item == null) {
             return;
         }
         DefaultMutableTreeNode groupNode = findGroupNode(rootTreeNode, targetGroup);
@@ -273,12 +270,9 @@ public class CollectionTreePanel extends UiSingletonPanel {
     public DefaultMutableTreeNode findGroupNode(DefaultMutableTreeNode node, String groupName) {
         if (node == null) return null;
 
-        Object userObj = node.getUserObject();
-        if (userObj instanceof Object[] obj && GROUP.equals(obj[0])) {
-            RequestGroup group = CollectionTreeNodes.group(node).orElse(null);
-            if (group != null && groupName.equals(group.getName())) {
-                return node;
-            }
+        RequestGroup group = CollectionTreeNodes.group(node).orElse(null);
+        if (group != null && groupName.equals(group.getName())) {
+            return node;
         }
 
 
@@ -334,8 +328,10 @@ public class CollectionTreePanel extends UiSingletonPanel {
         if (requestNode == null) {
             return false;
         }
-        Object[] userObj = (Object[]) requestNode.getUserObject();
-        HttpRequestItem originalItem = (HttpRequestItem) userObj[1];
+        HttpRequestItem originalItem = CollectionTreeNodes.request(requestNode).orElse(null);
+        if (originalItem == null) {
+            return false;
+        }
         String originalName = originalItem.getName();
         item.setName(originalName);
 
@@ -344,7 +340,7 @@ public class CollectionTreePanel extends UiSingletonPanel {
             item.setResponse(originalItem.getResponse());
         }
 
-        userObj[1] = item;
+        CollectionTreeNodes.setRequest(requestNode, item);
         treeModel.nodeChanged(requestNode);
 
         PreparedRequestBuilder.invalidateCacheForRequest(item.getId());
@@ -416,14 +412,10 @@ public class CollectionTreePanel extends UiSingletonPanel {
 
     // 递归收集请求
     private void collectRequestsRecursively(DefaultMutableTreeNode node, List<HttpRequestItem> list) {
-        Object userObj = node.getUserObject();
-        if (userObj instanceof Object[] obj) {
-            if (REQUEST.equals(obj[0])) {
-                list.add((HttpRequestItem) obj[1]);
-            } else if (GROUP.equals(obj[0])) {
-                for (int i = 0; i < node.getChildCount(); i++) {
-                    collectRequestsRecursively((DefaultMutableTreeNode) node.getChildAt(i), list);
-                }
+        CollectionTreeNodes.request(node).ifPresent(list::add);
+        if (CollectionTreeNodes.isGroup(node)) {
+            for (int i = 0; i < node.getChildCount(); i++) {
+                collectRequestsRecursively((DefaultMutableTreeNode) node.getChildAt(i), list);
             }
         }
     }

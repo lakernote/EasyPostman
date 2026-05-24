@@ -23,12 +23,11 @@ import java.util.List;
  * 支持亮色和暗色主题自适应
  */
 public class AuthTabPanel extends JPanel {
-    // Keep constants for backward compatibility
-    public static final String AUTH_TYPE_INHERIT = RequestAuthTypes.AUTH_TYPE_INHERIT;
-    public static final String AUTH_TYPE_NONE = RequestAuthTypes.AUTH_TYPE_NONE;
-    public static final String AUTH_TYPE_BASIC = RequestAuthTypes.AUTH_TYPE_BASIC;
-    public static final String AUTH_TYPE_BEARER = RequestAuthTypes.AUTH_TYPE_BEARER;
-    public static final String AUTH_TYPE_DIGEST = RequestAuthTypes.AUTH_TYPE_DIGEST;
+    private static final String AUTH_TYPE_INHERIT = RequestAuthTypes.AUTH_TYPE_INHERIT;
+    private static final String AUTH_TYPE_NONE = RequestAuthTypes.AUTH_TYPE_NONE;
+    private static final String AUTH_TYPE_BASIC = RequestAuthTypes.AUTH_TYPE_BASIC;
+    private static final String AUTH_TYPE_BEARER = RequestAuthTypes.AUTH_TYPE_BEARER;
+    private static final String AUTH_TYPE_DIGEST = RequestAuthTypes.AUTH_TYPE_DIGEST;
 
     private final JComboBox<AuthType> typeCombo;
     private final JTextField usernameField;

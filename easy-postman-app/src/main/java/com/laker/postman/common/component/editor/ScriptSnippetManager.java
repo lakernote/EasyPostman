@@ -482,6 +482,7 @@ public class ScriptSnippetManager {
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_GET_TIMESTAMP)));
 
         // 变量操作（旧版 API，保留兼容）
+        // TODO(compat-cleanup): 统计脚本侧 pm.setVariable/getVariable 使用情况后，决定是否只保留标准 pm.* 变量对象补全。
         provider.addCompletion(new BasicCompletion(provider, "pm.setVariable",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_SET_VARIABLE)));
         provider.addCompletion(new BasicCompletion(provider, "pm.getVariable",

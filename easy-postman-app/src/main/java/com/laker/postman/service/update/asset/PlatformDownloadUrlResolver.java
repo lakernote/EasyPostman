@@ -87,6 +87,7 @@ public class PlatformDownloadUrlResolver {
             return downloadUrl;
         }
 
+        // TODO(compat-cleanup): release 资产全部采用 -macos-{aarch64,x86_64}.dmg 后删除旧 DMG 命名 fallback。
         // 2. 回退到旧格式
         if (isAppleSilicon) {
             log.info("New format not found, trying legacy format: -arm64.dmg");

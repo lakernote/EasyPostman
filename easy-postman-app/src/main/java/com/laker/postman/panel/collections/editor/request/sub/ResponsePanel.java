@@ -299,9 +299,6 @@ public class ResponsePanel extends JPanel {
         for (JButton btn : tabButtons) {
             if (btn instanceof ModernTabButton modernTabButton) {
                 modernTabButton.updateSelectedIndex(selectedTabIndex);
-            } else {
-                // 兼容旧的TabButton
-                btn.repaint();
             }
         }
     }

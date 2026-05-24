@@ -186,7 +186,7 @@ public class WebSocketScenarioExecutorTest {
                     realtimeMetrics
             );
 
-            executor.execute(requestNode, requestData, iterationContext);
+            executor.execute(PerformanceTestPlanCompiler.compileRequestSampler(requestNode), iterationContext);
             PerformanceRealtimeMetrics.Sample sample = realtimeMetrics.sample(System.currentTimeMillis());
 
             assertTrue(serverReceivedMessage.await(1, TimeUnit.SECONDS), "WebSocket server should receive one message");
@@ -267,7 +267,7 @@ public class WebSocketScenarioExecutorTest {
                     ConcurrentHashMap.newKeySet()
             );
 
-            executor.execute(requestNode, requestData, iterationContext);
+            executor.execute(PerformanceTestPlanCompiler.compileRequestSampler(requestNode), iterationContext);
 
             assertTrue(serverReceivedMessages.await(1, TimeUnit.SECONDS), "WebSocket server should receive repeated messages");
             assertEquals(receivedPayloads, List.of("script-0/csv-alice", "script-1/csv-alice", "script-2/csv-alice"));
@@ -340,7 +340,10 @@ public class WebSocketScenarioExecutorTest {
                     ConcurrentHashMap.newKeySet()
             );
 
-            executor.execute(requestNode, requestData, new ExecutionVariableContext());
+            executor.execute(
+                    PerformanceTestPlanCompiler.compileRequestSampler(requestNode),
+                    new ExecutionVariableContext()
+            );
 
             assertTrue(serverReceivedMessages.await(1, TimeUnit.SECONDS), "WebSocket server should receive repeated body messages");
             assertEquals(receivedPayloads, List.of("body-0", "body-1"));
@@ -420,7 +423,10 @@ public class WebSocketScenarioExecutorTest {
                     ConcurrentHashMap.newKeySet()
             );
 
-            PerformanceRequestExecutionResult result = executor.execute(requestNode, requestData, new ExecutionVariableContext());
+            PerformanceRequestExecutionResult result = executor.execute(
+                    PerformanceTestPlanCompiler.compileRequestSampler(requestNode),
+                    new ExecutionVariableContext()
+            );
 
             assertTrue(serverReceivedMessages.await(1, TimeUnit.SECONDS), "WebSocket server should receive looped messages");
             assertEquals(receivedPayloads, List.of("ping", "ping"));
@@ -497,7 +503,10 @@ public class WebSocketScenarioExecutorTest {
                     ConcurrentHashMap.newKeySet()
             );
 
-            PerformanceRequestExecutionResult result = executor.execute(requestNode, requestData, new ExecutionVariableContext());
+            PerformanceRequestExecutionResult result = executor.execute(
+                    PerformanceTestPlanCompiler.compileRequestSampler(requestNode),
+                    new ExecutionVariableContext()
+            );
 
             assertTrue(serverReceivedMessages.await(1, TimeUnit.SECONDS), "WebSocket server should receive repeated messages");
             long firstMessageLatency = Long.parseLong(result.response.headers
@@ -542,7 +551,15 @@ public class WebSocketScenarioExecutorTest {
                     throwable -> false,
                     ConcurrentHashMap.newKeySet(),
                     new SlowWebSocketSessionEndMetrics()
-            ).execute(request, requestNode, requestCfg, "", null);
+            ).execute(
+                    request,
+                    PerformanceTestPlanCompiler.compileRequestSampler(requestNode),
+                    requestCfg,
+                    "",
+                    null,
+                    "",
+                    ""
+            );
             long wallElapsed = System.currentTimeMillis() - wallStart;
 
             assertFalse(result.executionFailed, result.errorMsg);

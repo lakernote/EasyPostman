@@ -11,7 +11,6 @@ import com.laker.postman.panel.performance.plan.PerformanceLoopController;
 import com.laker.postman.panel.performance.plan.PerformancePlanElement;
 import com.laker.postman.panel.performance.plan.PerformanceProtocolStageElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
-import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
 import com.laker.postman.panel.performance.plan.PerformanceTimerElement;
 import com.laker.postman.panel.performance.timer.TimerData;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
@@ -23,7 +22,6 @@ import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 import okio.ByteString;
 
-import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.ArrayDeque;
@@ -90,32 +88,6 @@ public class WebSocketScenarioExecutor {
         this.activeWebSockets = activeWebSockets;
         this.realtimeMetrics = realtimeMetrics == null ? new PerformanceRealtimeMetrics() : realtimeMetrics;
         this.responseBodyPreviewLimitBytes = Math.max(1, responseBodyPreviewLimitBytes);
-    }
-
-    public Result execute(PreparedRequest req,
-                          DefaultMutableTreeNode requestNode,
-                          WebSocketPerformanceData requestCfg,
-                          String requestBodyTemplate,
-                          ScriptExecutionPipeline pipeline) {
-        return execute(req, requestNode, requestCfg, requestBodyTemplate, pipeline, "", "");
-    }
-
-    public Result execute(PreparedRequest req,
-                          DefaultMutableTreeNode requestNode,
-                          WebSocketPerformanceData requestCfg,
-                          String requestBodyTemplate,
-                          ScriptExecutionPipeline pipeline,
-                          String apiId,
-                          String apiName) {
-        return execute(
-                req,
-                PerformanceTestPlanCompiler.compileRequestSampler(requestNode),
-                requestCfg,
-                requestBodyTemplate,
-                pipeline,
-                apiId,
-                apiName
-        );
     }
 
     public Result execute(PreparedRequest req,

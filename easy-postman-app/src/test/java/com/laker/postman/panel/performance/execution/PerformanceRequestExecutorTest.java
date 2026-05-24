@@ -10,7 +10,9 @@ import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.SsePerformanceData;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import com.laker.postman.panel.performance.plan.PerformanceAssertionElement;
+import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
 import com.laker.postman.service.setting.SettingManager;
+import com.laker.postman.service.variable.ExecutionVariableContext;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 import okhttp3.mockwebserver.MockResponse;
@@ -132,7 +134,10 @@ public class PerformanceRequestExecutorTest {
                     throwable -> false,
                     ConcurrentHashMap.newKeySet(),
                     ConcurrentHashMap.newKeySet()
-            ).execute(requestNode, requestData, new com.laker.postman.service.variable.ExecutionVariableContext());
+            ).execute(
+                    PerformanceTestPlanCompiler.compileRequestSampler(requestNode),
+                    new ExecutionVariableContext()
+            );
 
             assertTrue(result.executionFailed);
             assertEquals(server.getRequestCount(), 0);
@@ -164,7 +169,10 @@ public class PerformanceRequestExecutorTest {
                     throwable -> false,
                     ConcurrentHashMap.newKeySet(),
                     ConcurrentHashMap.newKeySet()
-            ).execute(requestNode, requestData, new com.laker.postman.service.variable.ExecutionVariableContext());
+            ).execute(
+                    PerformanceTestPlanCompiler.compileRequestSampler(requestNode),
+                    new ExecutionVariableContext()
+            );
 
             assertTrue(result.executionFailed);
             assertEquals(server.getRequestCount(), 0);

@@ -8,14 +8,12 @@ import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.script.TestResult;
 import com.laker.postman.panel.performance.PerformanceTreeRules;
 import com.laker.postman.panel.performance.model.ApiMetadata;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.PerformanceProtocol;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.SsePerformanceData;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import com.laker.postman.panel.performance.plan.PerformanceAssertionElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
-import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.http.PreparedRequestBuilder;
@@ -29,7 +27,6 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.WebSocket;
 import okhttp3.sse.EventSource;
 
-import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -81,16 +78,6 @@ public class PerformanceRequestExecutor {
         this.responseBodyPreviewLimitKbSupplier = responseBodyPreviewLimitKbSupplier == null
                 ? () -> SettingManager.DEFAULT_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB
                 : responseBodyPreviewLimitKbSupplier;
-    }
-
-    public PerformanceRequestExecutionResult execute(DefaultMutableTreeNode requestNode,
-                                                     JMeterTreeNode requestData,
-                                                     ExecutionVariableContext iterationContext) {
-        PerformanceRequestSampler requestSampler = PerformanceTestPlanCompiler.compileRequestSampler(requestNode);
-        if (requestSampler == null) {
-            return null;
-        }
-        return execute(requestSampler, iterationContext);
     }
 
     public PerformanceRequestExecutionResult execute(PerformanceRequestSampler requestSampler,

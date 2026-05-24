@@ -24,7 +24,6 @@ import okhttp3.sse.EventSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 import java.util.function.Predicate;
@@ -40,6 +39,7 @@ public class PerformanceRequestExecutor {
     private final BooleanSupplier efficientModeSupplier;
     private final IntSupplier responseBodyPreviewLimitKbSupplier;
     private final PerformanceRequestTransportExecutor transportExecutor;
+    private final PerformanceRequestPostProcessor postProcessor;
 
     public PerformanceRequestExecutor(BooleanSupplier runningSupplier,
                                       Predicate<Throwable> cancelledChecker,
@@ -81,6 +81,7 @@ public class PerformanceRequestExecutor {
                 this.realtimeMetrics,
                 this.responseBodyPreviewLimitKbSupplier
         );
+        this.postProcessor = new PerformanceRequestPostProcessor(this.runningSupplier);
     }
 
     public PerformanceRequestExecutionResult execute(PerformanceRequestSampler requestSampler,
@@ -172,31 +173,18 @@ public class PerformanceRequestExecutor {
                 costMs = System.currentTimeMillis() - requestStartTime;
             }
 
-            List<PerformanceAssertionElement> assertionNodes =
-                    PerformanceAssertionRunner.collectAssertionElements(requestSampler, sseRequest, webSocketRequest);
-            if (resp != null && runningSupplier.getAsBoolean() && !assertionNodes.isEmpty()) {
-                AtomicReference<String> assertionErrorRef = new AtomicReference<>(errorMsg);
-                PerformanceAssertionRunner.runAssertionElements(assertionNodes, resp, testResults, assertionErrorRef);
-                errorMsg = assertionErrorRef.get();
-            }
-            if (resp != null && runningSupplier.getAsBoolean()) {
-                ScriptExecutionResult postResult = pipeline.executePostScript(resp);
-                if (postResult.hasTestResults()) {
-                    testResults.addAll(postResult.getTestResults());
-                    if (!postResult.allTestsPassed()) {
-                        errorMsg = postResult.getTestResults().stream()
-                                .filter(test -> !test.passed)
-                                .map(test -> test.name)
-                                .findFirst()
-                                .orElse("pm.test assertion failed");
-                    }
-                }
-                if (!postResult.isSuccess()) {
-                    log.error("后置脚本执行失败: {}", postResult.getErrorMessage());
-                    errorMsg = postResult.getErrorMessage();
-                    executionFailed = true;
-                }
-            }
+            PerformanceRequestPostProcessResult postProcessResult = postProcessor.process(
+                    requestSampler,
+                    resp,
+                    sseRequest,
+                    webSocketRequest,
+                    pipeline,
+                    errorMsg,
+                    executionFailed,
+                    testResults
+            );
+            errorMsg = postProcessResult.errorMsg();
+            executionFailed = postProcessResult.executionFailed();
         } else {
             costMs = System.currentTimeMillis() - requestStartTime;
         }

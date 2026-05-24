@@ -12,6 +12,7 @@ import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
+import com.laker.postman.panel.performance.runtime.PerformanceExecutionEngine;
 import com.laker.postman.test.AbstractSwingUiTest;
 import org.testng.annotations.Test;
 

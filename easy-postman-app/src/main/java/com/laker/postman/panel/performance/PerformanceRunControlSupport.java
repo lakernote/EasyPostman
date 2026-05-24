@@ -10,6 +10,7 @@ import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import com.laker.postman.panel.performance.result.PerformanceTrendPanel;
+import com.laker.postman.panel.performance.runtime.PerformanceExecutionEngine;
 import com.laker.postman.panel.performance.runtime.PerformanceThreadFactory;
 import com.laker.postman.service.http.okhttp.OkHttpClientManager;
 import com.laker.postman.service.setting.SettingManager;

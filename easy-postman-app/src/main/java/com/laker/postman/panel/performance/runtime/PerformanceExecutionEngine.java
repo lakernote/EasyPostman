@@ -1,4 +1,4 @@
-package com.laker.postman.panel.performance;
+package com.laker.postman.panel.performance.runtime;
 
 import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.panel.performance.execution.PerformanceRequestExecutor;
@@ -8,11 +8,6 @@ import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
 import com.laker.postman.panel.performance.plan.PerformanceTestPlan;
 import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
-import com.laker.postman.panel.performance.runtime.PerformanceIterationContextFactory;
-import com.laker.postman.panel.performance.runtime.PerformancePlanExecutor;
-import com.laker.postman.panel.performance.runtime.PerformanceSamplerExecutor;
-import com.laker.postman.panel.performance.runtime.PerformanceThreadGroupRunner;
-import com.laker.postman.panel.performance.runtime.PerformanceVirtualUserCoordinator;
 import com.laker.postman.panel.performance.threadgroup.PerformanceThreadGroupPlanner;
 import com.laker.postman.service.setting.SettingManager;
 import lombok.Getter;
@@ -31,7 +26,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 
 @Slf4j
-final class PerformanceExecutionEngine {
+public final class PerformanceExecutionEngine {
 
     private final BooleanSupplier runningSupplier;
     private final PerformanceThreadGroupPlanner threadGroupPlanner = new PerformanceThreadGroupPlanner();
@@ -44,13 +39,13 @@ final class PerformanceExecutionEngine {
     @Getter
     private volatile long startTime;
 
-    PerformanceExecutionEngine(Component dialogParent,
-                               BooleanSupplier runningSupplier,
-                               BooleanSupplier efficientModeSupplier,
-                               IntSupplier responseBodyPreviewLimitKbSupplier,
-                               CsvDataPanel csvDataPanel,
-                               PerformanceStatsCollector statsCollector,
-                               PerformanceResultTablePanel performanceResultTablePanel) {
+    public PerformanceExecutionEngine(Component dialogParent,
+                                      BooleanSupplier runningSupplier,
+                                      BooleanSupplier efficientModeSupplier,
+                                      IntSupplier responseBodyPreviewLimitKbSupplier,
+                                      CsvDataPanel csvDataPanel,
+                                      PerformanceStatsCollector statsCollector,
+                                      PerformanceResultTablePanel performanceResultTablePanel) {
         this.runningSupplier = runningSupplier;
         PerformanceRequestExecutor requestExecutor = new PerformanceRequestExecutor(
                 runningSupplier,
@@ -88,67 +83,67 @@ final class PerformanceExecutionEngine {
         );
     }
 
-    int getActiveThreads() {
+    public int getActiveThreads() {
         return virtualUsers.getActiveThreads();
     }
 
-    int getActiveWebSockets() {
+    public int getActiveWebSockets() {
         return activeWebSockets.size();
     }
 
-    int getActiveSseStreams() {
+    public int getActiveSseStreams() {
         return activeSseSources.size();
     }
 
-    void beginRun(long startTime) {
+    public void beginRun(long startTime) {
         this.startTime = startTime;
         realtimeMetrics.reset(startTime);
     }
 
-    void resetVirtualUsers() {
+    public void resetVirtualUsers() {
         virtualUsers.resetVirtualUsers();
     }
 
-    PerformanceRealtimeMetrics.Sample sampleRealtimeMetrics(long nowMs) {
+    public PerformanceRealtimeMetrics.Sample sampleRealtimeMetrics(long nowMs) {
         return realtimeMetrics.sample(nowMs);
     }
 
-    PerformanceRealtimeMetrics.LiveSnapshot liveRealtimeMetrics(long nowMs) {
+    public PerformanceRealtimeMetrics.LiveSnapshot liveRealtimeMetrics(long nowMs) {
         return realtimeMetrics.liveSnapshot(nowMs);
     }
 
-    int getTotalThreads(DefaultMutableTreeNode rootNode) {
+    public int getTotalThreads(DefaultMutableTreeNode rootNode) {
         return threadGroupPlanner.getTotalThreads(PerformanceTestPlanCompiler.compile(rootNode));
     }
 
-    int getTotalThreads(PerformanceTestPlan plan) {
+    public int getTotalThreads(PerformanceTestPlan plan) {
         return threadGroupPlanner.getTotalThreads(plan);
     }
 
-    long estimateTotalRequests(DefaultMutableTreeNode rootNode) {
+    public long estimateTotalRequests(DefaultMutableTreeNode rootNode) {
         return threadGroupPlanner.estimateTotalRequests(PerformanceTestPlanCompiler.compile(rootNode));
     }
 
-    long estimateTotalRequests(PerformanceTestPlan plan) {
+    public long estimateTotalRequests(PerformanceTestPlan plan) {
         return threadGroupPlanner.estimateTotalRequests(plan);
     }
 
-    void runJMeterTreeWithProgress(DefaultMutableTreeNode rootNode,
-                                   int totalThreads,
-                                   BiConsumer<Integer, Integer> progressUpdater) {
+    public void runJMeterTreeWithProgress(DefaultMutableTreeNode rootNode,
+                                          int totalThreads,
+                                          BiConsumer<Integer, Integer> progressUpdater) {
         runPlanWithProgress(PerformanceTestPlanCompiler.compile(rootNode), totalThreads, progressUpdater);
     }
 
-    void runPlanWithProgress(PerformanceTestPlan plan,
-                             int totalThreads,
-                             BiConsumer<Integer, Integer> progressUpdater) {
+    public void runPlanWithProgress(PerformanceTestPlan plan,
+                                    int totalThreads,
+                                    BiConsumer<Integer, Integer> progressUpdater) {
         if (!runningSupplier.getAsBoolean()) {
             return;
         }
         threadGroupRunner.run(plan, totalThreads, progressUpdater);
     }
 
-    void cancelAllNetworkCalls() {
+    public void cancelAllNetworkCalls() {
         com.laker.postman.service.http.okhttp.OkHttpClientManager.cancelAllCalls();
         for (EventSource eventSource : new ArrayList<>(activeSseSources)) {
             try {
@@ -172,11 +167,11 @@ final class PerformanceExecutionEngine {
         activeWebSockets.clear();
     }
 
-    static void joinThreadGroupThreads(List<Thread> threadGroupThreads, Runnable cancellationAction) {
+    public static void joinThreadGroupThreads(List<Thread> threadGroupThreads, Runnable cancellationAction) {
         PerformanceThreadGroupRunner.joinThreadGroupThreads(threadGroupThreads, cancellationAction);
     }
 
-    static int calculateStairsTotalSteps(int startThreads, int endThreads, int step) {
+    public static int calculateStairsTotalSteps(int startThreads, int endThreads, int step) {
         return PerformanceThreadGroupRunner.calculateStairsTotalSteps(startThreads, endThreads, step);
     }
 

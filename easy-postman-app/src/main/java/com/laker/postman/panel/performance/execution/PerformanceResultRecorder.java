@@ -1,27 +1,41 @@
 package com.laker.postman.panel.performance.execution;
 
 import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
+import com.laker.postman.panel.performance.model.PerformanceResultListener;
+import com.laker.postman.panel.performance.model.PerformanceSampleEvent;
+import com.laker.postman.panel.performance.model.PerformanceSampleResult;
 import com.laker.postman.panel.performance.model.RequestResult;
 import com.laker.postman.panel.performance.model.PerformanceProtocol;
-import com.laker.postman.panel.performance.model.ResultNodeInfo;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntSupplier;
 
 public class PerformanceResultRecorder {
 
-    private final PerformanceStatsCollector statsCollector;
-    private final PerformanceResultTablePanel resultTablePanel;
-    private final IntSupplier slowRequestThresholdSupplier;
+    private final List<PerformanceResultListener> listeners;
 
     public PerformanceResultRecorder(PerformanceStatsCollector statsCollector,
                                      PerformanceResultTablePanel resultTablePanel,
                                      IntSupplier slowRequestThresholdSupplier) {
-        this.statsCollector = statsCollector;
-        this.resultTablePanel = resultTablePanel;
-        this.slowRequestThresholdSupplier = slowRequestThresholdSupplier;
+        this(defaultListeners(statsCollector, resultTablePanel, slowRequestThresholdSupplier));
+    }
+
+    public PerformanceResultRecorder(List<PerformanceResultListener> listeners) {
+        this.listeners = List.copyOf(listeners == null ? List.of() : listeners);
+    }
+
+    private static List<PerformanceResultListener> defaultListeners(PerformanceStatsCollector statsCollector,
+                                                                    PerformanceResultTablePanel resultTablePanel,
+                                                                    IntSupplier slowRequestThresholdSupplier) {
+        List<PerformanceResultListener> resultListeners = new ArrayList<>();
+        resultListeners.add(new PerformanceStatsResultListener(statsCollector));
+        if (resultTablePanel != null) {
+            resultListeners.add(new PerformanceResultTableListener(resultTablePanel, slowRequestThresholdSupplier));
+        }
+        return resultListeners;
     }
 
     public void record(PerformanceRequestExecutionResult executionResult, boolean efficientMode) {
@@ -33,23 +47,13 @@ public class PerformanceResultRecorder {
             return;
         }
 
-        long cost = resolveCostMs(executionResult);
-        long endTime = resolveEndTime(executionResult, cost);
-        boolean actualSuccess = ResultNodeInfo.isActuallySuccessful(
-                executionResult.executionFailed,
-                executionResult.response,
-                executionResult.testResults
-        );
-        int slowRequestThresholdMs = slowRequestThresholdSupplier.getAsInt();
-
-        updateStatistics(executionResult, cost, endTime, actualSuccess);
-
-        if (!shouldRecordResult(efficientMode, actualSuccess, cost, slowRequestThresholdMs)) {
+        PerformanceSampleResult sampleResult = PerformanceSampleResult.fromExecutionResult(executionResult);
+        if (sampleResult == null) {
             return;
         }
-
-        if (resultTablePanel != null) {
-            resultTablePanel.addResult(PerformanceResultNodeInfoMapper.toDisplayNodeInfo(executionResult));
+        PerformanceSampleEvent event = new PerformanceSampleEvent(sampleResult, executionResult, efficientMode);
+        for (PerformanceResultListener listener : listeners) {
+            listener.onSample(event);
         }
     }
 
@@ -104,28 +108,6 @@ public class PerformanceResultRecorder {
         return false;
     }
 
-    private long resolveCostMs(PerformanceRequestExecutionResult executionResult) {
-        return executionResult.response == null ? executionResult.fallbackCostMs : executionResult.response.costMs;
-    }
-
-    private long resolveEndTime(PerformanceRequestExecutionResult executionResult, long costMs) {
-        if (executionResult.response == null) {
-            return executionResult.requestStartTime + costMs;
-        }
-        return executionResult.response.endTime > 0
-                ? executionResult.response.endTime
-                : executionResult.requestStartTime + costMs;
-    }
-
-    private void updateStatistics(PerformanceRequestExecutionResult executionResult,
-                                  long costMs,
-                                  long endTime,
-                                  boolean actualSuccess) {
-        if (statsCollector != null) {
-            statsCollector.record(toRequestResult(executionResult, costMs, endTime, actualSuccess));
-        }
-    }
-
     static RequestResult toRequestResult(PerformanceRequestExecutionResult executionResult,
                                          long costMs,
                                          long endTime,
@@ -138,25 +120,15 @@ public class PerformanceResultRecorder {
                 executionResult.protocol
         );
         result.endTime = endTime;
-        if (executionResult.response == null) {
-            result.endTime = executionResult.requestStartTime + costMs;
+        PerformanceSampleResult sampleResult = PerformanceSampleResult.fromExecutionResult(executionResult);
+        if (sampleResult == null) {
             return result;
         }
-        if (executionResult.protocol == PerformanceProtocol.WEBSOCKET) {
-            result.sentMessages = headerInt(executionResult.response.headers, "X-Easy-WS-Sent-Count");
-            result.receivedMessages = headerInt(executionResult.response.headers, "X-Easy-WS-Received-Count");
-            result.matchedMessages = headerInt(executionResult.response.headers, "X-Easy-WS-Message-Count");
-            result.firstMessageLatencyMs = headerLong(executionResult.response.headers, "X-Easy-WS-First-Message-Latency-Ms", -1);
-        } else if (executionResult.protocol == PerformanceProtocol.SSE) {
-            result.receivedMessages = headerInt(executionResult.response.headers, "X-Easy-SSE-Event-Count");
-            result.matchedMessages = headerInt(executionResult.response.headers, "X-Easy-SSE-Message-Count");
-            result.firstMessageLatencyMs = headerLong(executionResult.response.headers, "X-Easy-SSE-First-Event-Latency-Ms", -1);
-        }
+        result.sentMessages = sampleResult.getSentMessages();
+        result.receivedMessages = sampleResult.getReceivedMessages();
+        result.matchedMessages = sampleResult.getMatchedMessages();
+        result.firstMessageLatencyMs = sampleResult.getFirstMessageLatencyMs();
         return result;
-    }
-
-    private static int headerInt(Map<String, List<String>> headers, String name) {
-        return (int) headerLong(headers, name, 0);
     }
 
     private static long headerLong(Map<String, List<String>> headers, String name, long defaultValue) {

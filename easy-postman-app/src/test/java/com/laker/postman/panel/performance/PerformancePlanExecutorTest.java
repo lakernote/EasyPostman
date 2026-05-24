@@ -63,7 +63,63 @@ public class PerformancePlanExecutorTest {
     }
 
     @Test
-    public void shouldRunHttpRequestChildTimersAfterSamplerButSkipThemForWebSocket() {
+    public void shouldApplyScopedTimersBeforeEachSamplerRegardlessOfSiblingOrder() {
+        DefaultMutableTreeNode groupNode = threadGroupNode();
+        groupNode.add(requestNode("first request", RequestItemProtocolEnum.HTTP));
+        groupNode.add(timerNode("group scoped timer", 50));
+        DefaultMutableTreeNode loopNode = loopNode(1);
+        loopNode.add(requestNode("loop request", RequestItemProtocolEnum.HTTP));
+        groupNode.add(loopNode);
+
+        List<String> events = new ArrayList<>();
+        PerformancePlanExecutor executor = newExecutor(
+                () -> true,
+                events,
+                false,
+                delayMs -> events.add("timer:" + delayMs)
+        );
+
+        executor.executeIteration(
+                PerformanceTestPlanCompiler.compile(groupNode).getThreadGroups().get(0),
+                new ExecutionVariableContext()
+        );
+
+        assertEquals(events, List.of(
+                "timer:50",
+                "request:first request",
+                "timer:50",
+                "request:loop request"
+        ));
+    }
+
+    @Test
+    public void shouldApplyHttpRequestChildTimerBeforeSampler() {
+        DefaultMutableTreeNode groupNode = threadGroupNode();
+        DefaultMutableTreeNode httpRequest = requestNode("http request", RequestItemProtocolEnum.HTTP);
+        httpRequest.add(timerNode("http child timer", 21));
+        groupNode.add(httpRequest);
+
+        List<String> events = new ArrayList<>();
+        PerformancePlanExecutor executor = newExecutor(
+                () -> true,
+                events,
+                false,
+                delayMs -> events.add("timer:" + delayMs)
+        );
+
+        executor.executeIteration(
+                PerformanceTestPlanCompiler.compile(groupNode).getThreadGroups().get(0),
+                new ExecutionVariableContext()
+        );
+
+        assertEquals(events, List.of(
+                "timer:21",
+                "request:http request"
+        ));
+    }
+
+    @Test
+    public void shouldRunHttpRequestChildTimersBeforeSamplerButSkipThemForWebSocket() {
         DefaultMutableTreeNode groupNode = threadGroupNode();
         DefaultMutableTreeNode httpRequest = requestNode("http request", RequestItemProtocolEnum.HTTP);
         httpRequest.add(timerNode("http child timer", 21));
@@ -86,8 +142,8 @@ public class PerformancePlanExecutorTest {
         );
 
         assertEquals(events, List.of(
-                "request:http request",
                 "timer:21",
+                "request:http request",
                 "request:ws request"
         ));
     }

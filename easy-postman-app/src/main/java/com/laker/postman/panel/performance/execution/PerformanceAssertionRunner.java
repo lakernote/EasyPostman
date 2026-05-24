@@ -4,6 +4,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.script.TestResult;
 import com.laker.postman.panel.performance.assertion.AssertionData;
+import com.laker.postman.panel.performance.assertion.AssertionType;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.plan.PerformanceAssertionElement;
 import com.laker.postman.panel.performance.plan.PerformancePlanElement;
@@ -21,9 +22,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 public final class PerformanceAssertionRunner {
-
-    private static final String ASSERTION_TYPE_CONTAINS = "Contains";
-    private static final String ASSERTION_TYPE_JSON_PATH = "JSONPath";
 
     private PerformanceAssertionRunner() {
     }
@@ -64,8 +62,7 @@ public final class PerformanceAssertionRunner {
             if (assertion == null) {
                 continue;
             }
-            String type = assertion.type;
-            if (ASSERTION_TYPE_CONTAINS.equals(type) || ASSERTION_TYPE_JSON_PATH.equals(type)) {
+            if (AssertionType.fromStorageValue(assertion.type).requiresResponseBody()) {
                 return true;
             }
         }
@@ -91,35 +88,45 @@ public final class PerformanceAssertionRunner {
                                      HttpResponse resp,
                                      List<TestResult> testResults,
                                      AtomicReference<String> errorMsgRef) {
-        String type = assertion.type;
+        AssertionType type = AssertionType.fromStorageValue(assertion.type);
         boolean pass = false;
-        if ("Response Code".equals(type)) {
-            String op = assertion.operator;
-            String valStr = assertion.value;
-            try {
-                int expect = Integer.parseInt(valStr);
-                if (resp != null) {
-                    if ("=".equals(op)) pass = (resp.code == expect);
-                    else if (">".equals(op)) pass = (resp.code > expect);
-                    else if ("<".equals(op)) pass = (resp.code < expect);
+        switch (type) {
+            case RESPONSE_CODE -> {
+                String op = assertion.operator;
+                String valStr = assertion.value;
+                try {
+                    int expect = Integer.parseInt(valStr);
+                    if (resp != null) {
+                        if ("=".equals(op)) pass = (resp.code == expect);
+                        else if (">".equals(op)) pass = (resp.code > expect);
+                        else if ("<".equals(op)) pass = (resp.code < expect);
+                    }
+                } catch (Exception ignored) {
+                    log.warn("断言响应码格式错误: {}", valStr);
                 }
-            } catch (Exception ignored) {
-                log.warn("断言响应码格式错误: {}", valStr);
             }
-        } else if (ASSERTION_TYPE_CONTAINS.equals(type)) {
-            pass = CharSequenceUtil.isNotBlank(responseBody)
+            case CONTAINS -> pass = CharSequenceUtil.isNotBlank(responseBody)
                     && CharSequenceUtil.isNotBlank(assertion.content)
                     && responseBody.contains(assertion.content);
-        } else if (ASSERTION_TYPE_JSON_PATH.equals(type)) {
-            String jsonPath = assertion.value;
-            String expect = assertion.content;
-            String actual = JsonPathUtil.extractJsonPath(responseBody, jsonPath);
-            pass = Objects.equals(actual, expect);
+            case JSON_PATH -> {
+                String jsonPath = assertion.value;
+                String expect = assertion.content;
+                String actual = JsonPathUtil.extractJsonPath(responseBody, jsonPath);
+                pass = Objects.equals(actual, expect);
+            }
         }
         if (!pass && CharSequenceUtil.isBlank(errorMsgRef.get())) {
-            errorMsgRef.set(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_ASSERTION_FAILED, type, assertion.content));
+            errorMsgRef.set(I18nUtil.getMessage(
+                    MessageKeys.PERFORMANCE_MSG_ASSERTION_FAILED,
+                    type.displayName(),
+                    assertion.content
+            ));
         }
-        testResults.add(new TestResult(type, pass, pass ? null : "断言失败"));
+        testResults.add(new TestResult(
+                type.getStorageValue(),
+                pass,
+                pass ? null : I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_FAILED)
+        ));
     }
 
     private static PerformanceProtocolStageElement findDirectStage(PerformanceRequestSampler requestSampler, NodeType type) {

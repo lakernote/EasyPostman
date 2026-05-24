@@ -1,12 +1,15 @@
 package com.laker.postman.panel.performance.assertion;
 
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.util.FontsUtil;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
 import java.awt.*;
 
 public class AssertionPropertyPanel extends JPanel {
-    private final JComboBox<String> typeCombo;
+    private final JComboBox<AssertionType> typeCombo;
     private final JComboBox<String> operatorCombo; // 仅Response Code用
     private final JTextField responseCodeValueField; // 仅Response Code用
     private final JTextField containsContentField; // Contains用
@@ -31,14 +34,11 @@ public class AssertionPropertyPanel extends JPanel {
         gbc.gridy = 0;
         gbc.gridwidth = 1;
         gbc.anchor = GridBagConstraints.CENTER;
-        add(new JLabel("断言类型:"), gbc);
+        add(new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_TYPE_LABEL)), gbc);
         gbc.gridx = 1;
         gbc.anchor = GridBagConstraints.CENTER;
-        typeCombo = new JComboBox<>(new String[]{
-                "Response Code",
-                "Contains",
-                "JSONPath"
-        });
+        typeCombo = new JComboBox<>(AssertionType.values());
+        typeCombo.setRenderer(new AssertionTypeRenderer());
         add(typeCombo, gbc);
 
         // 输入区采用CardLayout
@@ -57,19 +57,19 @@ public class AssertionPropertyPanel extends JPanel {
         rcGbc.gridy = 0;
         rcGbc.weightx = 0;
         rcGbc.fill = GridBagConstraints.HORIZONTAL;
-        responseCodePanel.add(new JLabel("符号:"), rcGbc);
+        responseCodePanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_OPERATOR)), rcGbc);
         rcGbc.gridx = 1;
         operatorCombo = new JComboBox<>(new String[]{"=", ">", "<"});
         responseCodePanel.add(operatorCombo, rcGbc);
         rcGbc.gridx = 2;
-        responseCodePanel.add(new JLabel("值:"), rcGbc);
+        responseCodePanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_VALUE)), rcGbc);
         rcGbc.gridx = 3;
         responseCodeValueField = new JTextField(6);
         responseCodePanel.add(responseCodeValueField, rcGbc);
 
         // Contains面板
         containsPanel = new JPanel(new BorderLayout(2, 2));
-        containsPanel.add(new JLabel("包含内容:"), BorderLayout.WEST);
+        containsPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_CONTAINS_CONTENT)), BorderLayout.WEST);
         containsContentField = new JTextField();
         containsPanel.add(containsContentField, BorderLayout.CENTER);
 
@@ -81,7 +81,7 @@ public class AssertionPropertyPanel extends JPanel {
         jpGbc.gridy = 0;
         jpGbc.weightx = 0;
         jpGbc.fill = GridBagConstraints.HORIZONTAL;
-        jsonPathPanel.add(new JLabel("JsonPath:"), jpGbc);
+        jsonPathPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_JSONPATH)), jpGbc);
         jpGbc.gridx = 1;
         jpGbc.weightx = 1.0; // 让文本框填满剩余空间
         jpGbc.fill = GridBagConstraints.HORIZONTAL; // 水平填充
@@ -91,16 +91,16 @@ public class AssertionPropertyPanel extends JPanel {
         jpGbc.gridy = 1;
         jpGbc.weightx = 0;
         jpGbc.fill = GridBagConstraints.HORIZONTAL;
-        jsonPathPanel.add(new JLabel("对比值:"), jpGbc);
+        jsonPathPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_EXPECTED_VALUE)), jpGbc);
         jpGbc.gridx = 1;
         jpGbc.weightx = 1.0;
         jpGbc.fill = GridBagConstraints.HORIZONTAL;
         jsonPathExpectField = new JTextField();
         jsonPathPanel.add(jsonPathExpectField, jpGbc);
 
-        inputPanel.add(responseCodePanel, "Response Code");
-        inputPanel.add(containsPanel, "Contains");
-        inputPanel.add(jsonPathPanel, "JSONPath");
+        inputPanel.add(responseCodePanel, AssertionType.RESPONSE_CODE.getStorageValue());
+        inputPanel.add(containsPanel, AssertionType.CONTAINS.getStorageValue());
+        inputPanel.add(jsonPathPanel, AssertionType.JSON_PATH.getStorageValue());
         add(inputPanel, gbc);
 
         // 帮助说明
@@ -108,8 +108,8 @@ public class AssertionPropertyPanel extends JPanel {
         gbc.gridx = 0;
         gbc.gridwidth = 2;
         gbc.anchor = GridBagConstraints.CENTER;
-        JLabel helpLabel = new JLabel("<html>\n<ul style='margin-left:10px'>\n<li><b>Response Code</b>: 断言响应码，支持 <b>=</b>、<b>></b>、<b><</b>，如 <code>=200</code> 表示响应码等于200</li>\n<li><b>Contains</b>: 断言响应体包含指定内容，输入要查找的字符串即可</li>\n<li><b>JSONPath</b>: 断言响应体通过 JSONPath 表达式提取的值等于对比值，支持如 <code>$.data[0].id</code> 语法</li>\n</ul>\n</html>");
-        helpLabel.setFont(helpLabel.getFont().deriveFont(Font.PLAIN, 12f));
+        JLabel helpLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_HELP));
+        helpLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         add(helpLabel, gbc);
 
         typeCombo.addActionListener(e -> updateFieldVisibility());
@@ -117,8 +117,8 @@ public class AssertionPropertyPanel extends JPanel {
     }
 
     private void updateFieldVisibility() {
-        String type = (String) typeCombo.getSelectedItem();
-        inputCardLayout.show(inputPanel, type);
+        AssertionType type = (AssertionType) typeCombo.getSelectedItem();
+        inputCardLayout.show(inputPanel, (type == null ? AssertionType.RESPONSE_CODE : type).getStorageValue());
     }
 
     public void setAssertionData(JMeterTreeNode node) {
@@ -128,13 +128,14 @@ public class AssertionPropertyPanel extends JPanel {
             data = new AssertionData();
             node.assertionData = data;
         }
-        typeCombo.setSelectedItem(data.type);
-        if ("Response Code".equals(data.type)) {
+        AssertionType type = AssertionType.fromStorageValue(data.type);
+        typeCombo.setSelectedItem(type);
+        if (type == AssertionType.RESPONSE_CODE) {
             operatorCombo.setSelectedItem(data.operator);
             responseCodeValueField.setText(data.value);
-        } else if ("Contains".equals(data.type)) {
+        } else if (type == AssertionType.CONTAINS) {
             containsContentField.setText(data.content);
-        } else if ("JSONPath".equals(data.type)) {
+        } else if (type == AssertionType.JSON_PATH) {
             jsonPathField.setText(data.value);
             jsonPathExpectField.setText(data.content);
         }
@@ -148,19 +149,36 @@ public class AssertionPropertyPanel extends JPanel {
             data = new AssertionData();
             currentNode.assertionData = data;
         }
-        data.type = (String) typeCombo.getSelectedItem();
-        if ("Response Code".equals(data.type)) {
+        AssertionType type = (AssertionType) typeCombo.getSelectedItem();
+        type = type == null ? AssertionType.RESPONSE_CODE : type;
+        data.type = type.getStorageValue();
+        if (type == AssertionType.RESPONSE_CODE) {
             data.operator = (String) operatorCombo.getSelectedItem();
             data.value = responseCodeValueField.getText();
             data.content = "";
-        } else if ("Contains".equals(data.type)) {
+        } else if (type == AssertionType.CONTAINS) {
             data.content = containsContentField.getText();
             data.operator = "=";
             data.value = "";
-        } else if ("JSONPath".equals(data.type)) {
+        } else if (type == AssertionType.JSON_PATH) {
             data.value = jsonPathField.getText();
             data.content = jsonPathExpectField.getText();
             data.operator = "=";
+        }
+    }
+
+    private static final class AssertionTypeRenderer extends DefaultListCellRenderer {
+        @Override
+        public Component getListCellRendererComponent(JList<?> list,
+                                                      Object value,
+                                                      int index,
+                                                      boolean isSelected,
+                                                      boolean cellHasFocus) {
+            Component component = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+            if (value instanceof AssertionType assertionType) {
+                setText(assertionType.displayName());
+            }
+            return component;
         }
     }
 }

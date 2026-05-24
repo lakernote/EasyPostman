@@ -633,6 +633,17 @@ public final class MessageKeys {
     public static final String PERFORMANCE_LOOP_ITERATIONS = "performance.loop.iterations";
     public static final String PERFORMANCE_TIMER_DELAY = "performance.timer.delay";
     public static final String PERFORMANCE_TIMER_HINT = "performance.timer.hint";
+    public static final String PERFORMANCE_ASSERTION_TYPE_LABEL = "performance.assertion.type_label";
+    public static final String PERFORMANCE_ASSERTION_OPERATOR = "performance.assertion.operator";
+    public static final String PERFORMANCE_ASSERTION_VALUE = "performance.assertion.value";
+    public static final String PERFORMANCE_ASSERTION_CONTAINS_CONTENT = "performance.assertion.contains_content";
+    public static final String PERFORMANCE_ASSERTION_JSONPATH = "performance.assertion.jsonpath";
+    public static final String PERFORMANCE_ASSERTION_EXPECTED_VALUE = "performance.assertion.expected_value";
+    public static final String PERFORMANCE_ASSERTION_HELP = "performance.assertion.help";
+    public static final String PERFORMANCE_ASSERTION_FAILED = "performance.assertion.failed";
+    public static final String PERFORMANCE_ASSERTION_TYPE_RESPONSE_CODE = "performance.assertion.type.response_code";
+    public static final String PERFORMANCE_ASSERTION_TYPE_CONTAINS = "performance.assertion.type.contains";
+    public static final String PERFORMANCE_ASSERTION_TYPE_JSON_PATH = "performance.assertion.type.json_path";
     public static final String PERFORMANCE_MENU_RENAME = "performance.menu.rename";
     public static final String PERFORMANCE_MENU_DELETE = "performance.menu.delete";
     public static final String PERFORMANCE_MENU_ENABLE = "performance.menu.enable";

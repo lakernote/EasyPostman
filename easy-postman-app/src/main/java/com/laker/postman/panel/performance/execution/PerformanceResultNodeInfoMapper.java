@@ -2,6 +2,7 @@ package com.laker.postman.panel.performance.execution;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.panel.performance.model.PerformanceInternalHeaders;
+import com.laker.postman.panel.performance.model.PerformanceSampleResult;
 import com.laker.postman.panel.performance.model.ResultNodeInfo;
 
 final class PerformanceResultNodeInfoMapper {
@@ -10,37 +11,46 @@ final class PerformanceResultNodeInfoMapper {
     }
 
     static ResultNodeInfo toDisplayNodeInfo(PerformanceRequestExecutionResult executionResult) {
-        String displayErrorMsg = resolveDisplayErrorMsg(executionResult);
-        simplifyForDisplay(executionResult);
+        return toDisplayNodeInfo(PerformanceSampleResult.fromExecutionResult(executionResult));
+    }
+
+    static ResultNodeInfo toDisplayNodeInfo(PerformanceSampleResult sampleResult) {
+        if (sampleResult == null) {
+            return null;
+        }
+        String displayErrorMsg = resolveDisplayErrorMsg(sampleResult);
+        simplifyForDisplay(sampleResult);
         return new ResultNodeInfo(
-                executionResult.apiName,
+                sampleResult.getApiName(),
                 displayErrorMsg,
-                executionResult.request,
-                executionResult.response,
-                executionResult.testResults,
-                executionResult.executionFailed,
-                executionResult.protocol
+                sampleResult.getRequest(),
+                sampleResult.getResponse(),
+                sampleResult.getTestResults(),
+                sampleResult.isExecutionFailed(),
+                sampleResult.getProtocol()
         );
     }
 
-    private static void simplifyForDisplay(PerformanceRequestExecutionResult executionResult) {
-        executionResult.request.simplify();
-        if (executionResult.response != null) {
-            executionResult.response.simplify();
-            if (!executionResult.request.collectEventInfo) {
-                executionResult.response.httpEventInfo = null;
+    private static void simplifyForDisplay(PerformanceSampleResult sampleResult) {
+        if (sampleResult.getRequest() != null) {
+            sampleResult.getRequest().simplify();
+        }
+        if (sampleResult.getResponse() != null) {
+            sampleResult.getResponse().simplify();
+            if (sampleResult.getRequest() == null || !sampleResult.getRequest().collectEventInfo) {
+                sampleResult.getResponse().httpEventInfo = null;
             }
-            PerformanceInternalHeaders.removeInternalHeaders(executionResult.response.headers);
+            PerformanceInternalHeaders.removeInternalHeaders(sampleResult.getResponse().headers);
         }
     }
 
-    private static String resolveDisplayErrorMsg(PerformanceRequestExecutionResult executionResult) {
-        if (CharSequenceUtil.isNotBlank(executionResult.errorMsg)) {
-            return executionResult.errorMsg;
+    private static String resolveDisplayErrorMsg(PerformanceSampleResult sampleResult) {
+        if (CharSequenceUtil.isNotBlank(sampleResult.getErrorMsg())) {
+            return sampleResult.getErrorMsg();
         }
-        if (executionResult.response == null) {
+        if (sampleResult.getResponse() == null) {
             return "";
         }
-        return PerformanceInternalHeaders.firstStreamError(executionResult.response.headers);
+        return PerformanceInternalHeaders.firstStreamError(sampleResult.getResponse().headers);
     }
 }

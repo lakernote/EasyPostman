@@ -1,17 +1,14 @@
 package com.laker.postman.panel.performance;
 
 import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
 import com.laker.postman.panel.performance.timer.TimerPropertyPanel;
-import com.laker.postman.service.collections.RequestCollectionsService;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
 import lombok.RequiredArgsConstructor;
 
 import javax.swing.*;
@@ -22,8 +19,6 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -69,10 +64,11 @@ final class PerformanceTreeInteractionSupport {
     private final String wsCloseCard;
 
     private PerformanceTreeSelectionSupport selectionSupport;
-    private List<DefaultMutableTreeNode> copiedNodes = List.of();
+    private PerformanceTreeNodeActionSupport nodeActionSupport;
 
     void install() {
         selectionSupport = createSelectionSupport();
+        nodeActionSupport = createNodeActionSupport();
         selectionSupport.install();
         installPopupMenu();
     }
@@ -119,6 +115,23 @@ final class PerformanceTreeInteractionSupport {
         );
     }
 
+    private PerformanceTreeNodeActionSupport createNodeActionSupport() {
+        return new PerformanceTreeNodeActionSupport(
+                parentComponent,
+                jmeterTree,
+                treeModel,
+                propertyCardLayout,
+                propertyPanel,
+                treeSupport,
+                this::persistLastSelection,
+                switchRequestEditorAction,
+                currentRequestNodeSupplier,
+                currentRequestNodeSetter,
+                saveConfigAction,
+                requestCard
+        );
+    }
+
     private void installPopupMenu() {
         JPopupMenu treeMenu = new JPopupMenu();
         JMenuItem addThreadGroup = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_THREAD_GROUP));
@@ -138,6 +151,29 @@ final class PerformanceTreeInteractionSupport {
         JMenuItem disableNode = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_DISABLE));
         JMenuItem copyNode = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_COPY));
         JMenuItem pasteNode = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_PASTE));
+        PerformanceTreeMenuItems menuItems = new PerformanceTreeMenuItems(
+                addThreadGroup,
+                addRequest,
+                addLoop,
+                addSseConnect,
+                addSseAwait,
+                addWsConnect,
+                addWsSend,
+                addWsAwait,
+                addWsClose,
+                addAssertion,
+                addTimer,
+                enableNode,
+                disableNode,
+                copyNode,
+                pasteNode,
+                renameNode,
+                deleteNode
+        );
+        PerformanceTreeMenuVisibilitySupport menuVisibilitySupport = new PerformanceTreeMenuVisibilitySupport(
+                treeSupport,
+                nodeActionSupport::copiedNodes
+        );
         int shortcutMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
         renameNode.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F2, 0));
         deleteNode.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_DELETE, 0));
@@ -170,28 +206,17 @@ final class PerformanceTreeInteractionSupport {
         treeMenu.add(deleteNode);
 
         Runnable updateMenuSeparators = () -> {
-            boolean hasAddGroup = addThreadGroup.isVisible() || addRequest.isVisible()
-                    || addLoop.isVisible()
-                    || addSseConnect.isVisible() || addSseAwait.isVisible()
-                    || addWsConnect.isVisible()
-                    || addWsSend.isVisible() || addWsAwait.isVisible() || addWsClose.isVisible()
-                    || addAssertion.isVisible() || addTimer.isVisible();
-            boolean hasToggleGroup = enableNode.isVisible() || disableNode.isVisible();
-            boolean hasClipboardGroup = copyNode.isVisible() || pasteNode.isVisible();
-            boolean hasEditGroup = renameNode.isVisible() || deleteNode.isVisible();
+            boolean hasAddGroup = menuItems.hasVisibleAddItem();
+            boolean hasToggleGroup = menuItems.hasVisibleToggleItem();
+            boolean hasClipboardGroup = menuItems.hasVisibleClipboardItem();
+            boolean hasEditGroup = menuItems.hasVisibleEditItem();
             separator1.setVisible(hasAddGroup && (hasToggleGroup || hasClipboardGroup || hasEditGroup));
             separator2.setVisible(hasToggleGroup && (hasClipboardGroup || hasEditGroup));
             separator3.setVisible(hasClipboardGroup && hasEditGroup);
         };
 
-        addThreadGroup.addActionListener(e -> {
-            DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();
-            DefaultMutableTreeNode group = new DefaultMutableTreeNode(new JMeterTreeNode("Thread Group", NodeType.THREAD_GROUP));
-            treeModel.insertNodeInto(group, root, root.getChildCount());
-            jmeterTree.expandPath(new TreePath(root.getPath()));
-            saveConfigAction.run();
-        });
-        addRequest.addActionListener(e -> addRequestNodes());
+        addThreadGroup.addActionListener(e -> nodeActionSupport.addThreadGroupNode());
+        addRequest.addActionListener(e -> nodeActionSupport.addRequestNodes());
         addLoop.addActionListener(e -> treeSupport.addLoopNode(jmeterTree, saveConfigAction));
         addSseConnect.addActionListener(e -> treeSupport.addSseStageNode(jmeterTree, NodeType.SSE_CONNECT, saveConfigAction));
         addSseAwait.addActionListener(e -> treeSupport.addSseStageNode(jmeterTree, NodeType.SSE_AWAIT, saveConfigAction));
@@ -199,13 +224,13 @@ final class PerformanceTreeInteractionSupport {
         addWsSend.addActionListener(e -> treeSupport.addWebSocketStepNode(jmeterTree, NodeType.WS_SEND, saveConfigAction));
         addWsAwait.addActionListener(e -> treeSupport.addWebSocketStepNode(jmeterTree, NodeType.WS_AWAIT, saveConfigAction));
         addWsClose.addActionListener(e -> treeSupport.addWebSocketStepNode(jmeterTree, NodeType.WS_CLOSE, saveConfigAction));
-        addAssertion.addActionListener(e -> addAssertionNode());
+        addAssertion.addActionListener(e -> nodeActionSupport.addAssertionNode());
         addTimer.addActionListener(e -> treeSupport.addTimerNode(jmeterTree, saveConfigAction));
 
-        Action renameAction = createRenameAction();
-        Action deleteAction = createDeleteAction();
-        Action copyAction = createCopyAction();
-        Action pasteAction = createPasteAction();
+        Action renameAction = nodeActionSupport.createRenameAction();
+        Action deleteAction = nodeActionSupport.createDeleteAction();
+        Action copyAction = nodeActionSupport.createCopyAction();
+        Action pasteAction = nodeActionSupport.createPasteAction();
         renameNode.addActionListener(renameAction);
         deleteNode.addActionListener(deleteAction);
         copyNode.addActionListener(copyAction);
@@ -222,8 +247,8 @@ final class PerformanceTreeInteractionSupport {
         treeInputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_V, shortcutMask), "pastePerformanceNode");
         treeActionMap.put("pastePerformanceNode", pasteAction);
 
-        enableNode.addActionListener(e -> setSelectedNodesEnabled(true));
-        disableNode.addActionListener(e -> setSelectedNodesEnabled(false));
+        enableNode.addActionListener(e -> nodeActionSupport.setSelectedNodesEnabled(true));
+        disableNode.addActionListener(e -> nodeActionSupport.setSelectedNodesEnabled(false));
 
         jmeterTree.addMouseListener(new MouseAdapter() {
             @Override
@@ -250,202 +275,17 @@ final class PerformanceTreeInteractionSupport {
                 }
 
                 if (selectedPaths.length > 1) {
-                    configureMultiSelectionMenu(selectedPaths, addThreadGroup, addRequest, addLoop,
-                            addSseConnect, addSseAwait, addWsConnect, addWsSend, addWsAwait, addWsClose,
-                            addAssertion, addTimer, copyNode, pasteNode, renameNode, deleteNode, enableNode, disableNode,
-                            updateMenuSeparators);
+                    menuVisibilitySupport.configureMultiSelectionMenu(selectedPaths, menuItems);
                 } else {
-                    configureSingleSelectionMenu((DefaultMutableTreeNode) selectedPaths[0].getLastPathComponent(),
-                            addThreadGroup, addRequest, addLoop,
-                            addSseConnect, addSseAwait, addWsConnect, addWsSend, addWsAwait, addWsClose, addAssertion, addTimer,
-                            copyNode, pasteNode, renameNode, deleteNode, enableNode, disableNode, updateMenuSeparators, treeMenu, e);
-                    if (isRootNode((DefaultMutableTreeNode) selectedPaths[0].getLastPathComponent())) {
-                        return;
-                    }
+                    menuVisibilitySupport.configureSingleSelectionMenu(
+                            (DefaultMutableTreeNode) selectedPaths[0].getLastPathComponent(),
+                            menuItems
+                    );
                 }
+                updateMenuSeparators.run();
                 treeMenu.show(jmeterTree, e.getX(), e.getY());
             }
         });
-    }
-
-    private void addRequestNodes() {
-        DefaultMutableTreeNode node = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
-        if (node == null) {
-            return;
-        }
-        Object userObj = node.getUserObject();
-        if (!(userObj instanceof JMeterTreeNode jtNode)
-                || (jtNode.type != NodeType.THREAD_GROUP && !treeSupport.isRequestContainerLoop(node))) {
-            JOptionPane.showMessageDialog(
-                    parentComponent,
-                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_SELECT_THREAD_GROUP),
-                    I18nUtil.getMessage(MessageKeys.GENERAL_INFO),
-                    JOptionPane.WARNING_MESSAGE
-            );
-            return;
-        }
-        RequestCollectionsService.showMultiSelectRequestDialog(selectedList -> {
-            if (selectedList == null || selectedList.isEmpty()) {
-                return;
-            }
-
-            List<HttpRequestItem> supportedList = selectedList.stream()
-                    .filter(reqItem -> {
-                        RequestItemProtocolEnum protocol = treeSupport.resolveRequestProtocol(reqItem);
-                        return protocol.isHttpProtocol() || protocol.isSseProtocol() || protocol.isWebSocketProtocol();
-                    })
-                    .toList();
-
-            if (supportedList.isEmpty()) {
-                NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.MSG_ONLY_HTTP_SSE_WS_SUPPORTED));
-                return;
-            }
-
-            List<DefaultMutableTreeNode> newNodes = new ArrayList<>();
-            for (HttpRequestItem reqItem : supportedList) {
-                DefaultMutableTreeNode req = new DefaultMutableTreeNode(new JMeterTreeNode(reqItem.getName(), NodeType.REQUEST, reqItem));
-                treeModel.insertNodeInto(req, node, node.getChildCount());
-                treeSupport.ensureRequestStructure(req, (JMeterTreeNode) req.getUserObject());
-                newNodes.add(req);
-            }
-            jmeterTree.expandPath(new TreePath(node.getPath()));
-            TreePath newPath = new TreePath(newNodes.get(0).getPath());
-            jmeterTree.setSelectionPath(newPath);
-            propertyCardLayout.show(propertyPanel, requestCard);
-            JMeterTreeNode newRequestNode = (JMeterTreeNode) newNodes.get(0).getUserObject();
-            switchRequestEditorAction.accept(newRequestNode.httpRequestItem);
-            saveConfigAction.run();
-        });
-    }
-
-    private void addAssertionNode() {
-        DefaultMutableTreeNode node = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
-        if (node == null) {
-            return;
-        }
-        DefaultMutableTreeNode parentNode = node;
-        Object userObj = node.getUserObject();
-        if (userObj instanceof JMeterTreeNode jtNode
-                && (jtNode.type == NodeType.SSE_AWAIT || jtNode.type == NodeType.WS_AWAIT)) {
-            parentNode = node;
-        }
-        DefaultMutableTreeNode assertion = new DefaultMutableTreeNode(new JMeterTreeNode("Assertion", NodeType.ASSERTION));
-        treeModel.insertNodeInto(assertion, parentNode, parentNode.getChildCount());
-        jmeterTree.expandPath(new TreePath(parentNode.getPath()));
-        saveConfigAction.run();
-    }
-
-    private Action createRenameAction() {
-        return new AbstractAction() {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent e) {
-                DefaultMutableTreeNode node = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
-                if (node == null) {
-                    return;
-                }
-                Object userObj = node.getUserObject();
-                if (!(userObj instanceof JMeterTreeNode jtNode)) {
-                    return;
-                }
-                if (jtNode.type == NodeType.ROOT
-                        || jtNode.type == NodeType.SSE_CONNECT
-                        || jtNode.type == NodeType.SSE_AWAIT
-                        || jtNode.type == NodeType.WS_CONNECT
-                        || jtNode.type == NodeType.LOOP
-                        || treeSupport.isWebSocketStepNode(jtNode.type)) {
-                    return;
-                }
-                String oldName = jtNode.name;
-                String newName = JOptionPane.showInputDialog(
-                        parentComponent,
-                        I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_RENAME_NODE),
-                        oldName
-                );
-                if (newName != null && !newName.trim().isEmpty()) {
-                    jtNode.name = newName.trim();
-                    if (jtNode.type == NodeType.REQUEST && jtNode.httpRequestItem != null) {
-                        jtNode.httpRequestItem.setName(newName.trim());
-                        switchRequestEditorAction.accept(jtNode.httpRequestItem);
-                    }
-                    treeModel.nodeChanged(node);
-                    saveConfigAction.run();
-                }
-            }
-        };
-    }
-
-    private Action createDeleteAction() {
-        return new AbstractAction() {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent e) {
-                TreePath[] selectedPaths = jmeterTree.getSelectionPaths();
-                if (selectedPaths == null || selectedPaths.length == 0) {
-                    return;
-                }
-
-                DefaultMutableTreeNode currentRequestNode = currentRequestNodeSupplier.get();
-                List<DefaultMutableTreeNode> deletedNodes = treeSupport.deleteNodes(selectedPaths);
-                if (deletedNodes.isEmpty()) {
-                    return;
-                }
-
-                if (currentRequestNode != null && deletedNodes.stream()
-                        .anyMatch(node -> node == currentRequestNode || node.isNodeDescendant(currentRequestNode))) {
-                    currentRequestNodeSetter.accept(null);
-                }
-                saveConfigAction.run();
-            }
-        };
-    }
-
-    private Action createCopyAction() {
-        return new AbstractAction() {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent e) {
-                TreePath[] selectedPaths = jmeterTree.getSelectionPaths();
-                if (selectedPaths == null || selectedPaths.length == 0) {
-                    return;
-                }
-                persistLastSelection();
-                List<DefaultMutableTreeNode> newCopiedNodes = treeSupport.copyNodes(selectedPaths);
-                if (!newCopiedNodes.isEmpty()) {
-                    copiedNodes = newCopiedNodes;
-                }
-            }
-        };
-    }
-
-    private Action createPasteAction() {
-        return new AbstractAction() {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent e) {
-                DefaultMutableTreeNode targetNode = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
-                if (targetNode == null || !treeSupport.canPasteNodes(targetNode, copiedNodes)) {
-                    return;
-                }
-                persistLastSelection();
-                List<DefaultMutableTreeNode> pastedNodes = treeSupport.pasteNodes(jmeterTree, targetNode, copiedNodes);
-                if (!pastedNodes.isEmpty()) {
-                    saveConfigAction.run();
-                }
-            }
-        };
-    }
-
-    private void setSelectedNodesEnabled(boolean enabled) {
-        TreePath[] selectedPaths = jmeterTree.getSelectionPaths();
-        if (selectedPaths == null || selectedPaths.length == 0) {
-            return;
-        }
-        for (TreePath path : selectedPaths) {
-            DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
-            Object userObj = node.getUserObject();
-            if (userObj instanceof JMeterTreeNode jtNode && jtNode.type != NodeType.ROOT) {
-                jtNode.enabled = enabled;
-                treeModel.nodeChanged(node);
-            }
-        }
-        saveConfigAction.run();
     }
 
     private void alignSelectionForPopup(TreePath clickedPath) {
@@ -467,140 +307,4 @@ final class PerformanceTreeInteractionSupport {
         }
     }
 
-    private void configureMultiSelectionMenu(TreePath[] selectedPaths,
-                                             JMenuItem addThreadGroup,
-                                             JMenuItem addRequest,
-                                             JMenuItem addLoop,
-                                             JMenuItem addSseConnect,
-                                             JMenuItem addSseAwait,
-                                             JMenuItem addWsConnect,
-                                             JMenuItem addWsSend,
-                                             JMenuItem addWsAwait,
-                                             JMenuItem addWsClose,
-                                             JMenuItem addAssertion,
-                                             JMenuItem addTimer,
-                                             JMenuItem copyNode,
-                                             JMenuItem pasteNode,
-                                             JMenuItem renameNode,
-                                             JMenuItem deleteNode,
-                                             JMenuItem enableNode,
-                                             JMenuItem disableNode,
-                                             Runnable updateMenuSeparators) {
-        addThreadGroup.setVisible(false);
-        addRequest.setVisible(false);
-        addLoop.setVisible(false);
-        addSseConnect.setVisible(false);
-        addSseAwait.setVisible(false);
-        addWsConnect.setVisible(false);
-        addWsSend.setVisible(false);
-        addWsAwait.setVisible(false);
-        addWsClose.setVisible(false);
-        addAssertion.setVisible(false);
-        addTimer.setVisible(false);
-        copyNode.setVisible(treeSupport.hasCopyableNodes(selectedPaths));
-        pasteNode.setVisible(false);
-        renameNode.setVisible(false);
-        deleteNode.setVisible(treeSupport.hasDeletableNodes(selectedPaths));
-
-        boolean hasDisabled = false;
-        boolean hasEnabled = false;
-        for (TreePath path : selectedPaths) {
-            DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
-            Object userObj = node.getUserObject();
-            if (userObj instanceof JMeterTreeNode jtNode && jtNode.type != NodeType.ROOT) {
-                if (jtNode.enabled) {
-                    hasEnabled = true;
-                } else {
-                    hasDisabled = true;
-                }
-            }
-        }
-        enableNode.setVisible(hasDisabled);
-        disableNode.setVisible(hasEnabled);
-        updateMenuSeparators.run();
-    }
-
-    private void configureSingleSelectionMenu(DefaultMutableTreeNode node,
-                                              JMenuItem addThreadGroup,
-                                              JMenuItem addRequest,
-                                              JMenuItem addLoop,
-                                              JMenuItem addSseConnect,
-                                              JMenuItem addSseAwait,
-                                              JMenuItem addWsConnect,
-                                              JMenuItem addWsSend,
-                                              JMenuItem addWsAwait,
-                                              JMenuItem addWsClose,
-                                              JMenuItem addAssertion,
-                                              JMenuItem addTimer,
-                                              JMenuItem copyNode,
-                                              JMenuItem pasteNode,
-                                              JMenuItem renameNode,
-                                              JMenuItem deleteNode,
-                                              JMenuItem enableNode,
-                                              JMenuItem disableNode,
-                                              Runnable updateMenuSeparators,
-                                              JPopupMenu treeMenu,
-                                              MouseEvent event) {
-        Object userObj = node.getUserObject();
-        if (!(userObj instanceof JMeterTreeNode jtNode)) {
-            return;
-        }
-
-        if (jtNode.type == NodeType.ROOT) {
-            addThreadGroup.setVisible(true);
-            addRequest.setVisible(false);
-            addLoop.setVisible(false);
-            addSseConnect.setVisible(false);
-            addSseAwait.setVisible(false);
-            addWsConnect.setVisible(false);
-            addWsSend.setVisible(false);
-            addWsAwait.setVisible(false);
-            addWsClose.setVisible(false);
-            addAssertion.setVisible(false);
-            addTimer.setVisible(false);
-            copyNode.setVisible(false);
-            pasteNode.setVisible(treeSupport.canPasteNodes(node, copiedNodes));
-            renameNode.setVisible(false);
-            deleteNode.setVisible(false);
-            enableNode.setVisible(false);
-            disableNode.setVisible(false);
-            updateMenuSeparators.run();
-            treeMenu.show(jmeterTree, event.getX(), event.getY());
-            return;
-        }
-
-        addThreadGroup.setVisible(false);
-        boolean requestContainerLoop = treeSupport.isRequestContainerLoop(node);
-        addRequest.setVisible(jtNode.type == NodeType.THREAD_GROUP || requestContainerLoop);
-        boolean isSseRequestNode = jtNode.type == NodeType.REQUEST && treeSupport.isSsePerfRequest(jtNode.httpRequestItem);
-        boolean isWebSocketRequestNode = jtNode.type == NodeType.REQUEST && treeSupport.isWebSocketPerfRequest(jtNode.httpRequestItem);
-        boolean canManageSseStages = treeSupport.resolveSseStageParent(node) != null;
-        boolean canManageWsConnect = treeSupport.resolveWebSocketConnectParent(node) != null;
-        boolean canManageWsSteps = treeSupport.resolveWebSocketStepParent(node) != null;
-        addLoop.setVisible(jtNode.type == NodeType.THREAD_GROUP || requestContainerLoop || canManageWsSteps);
-        addSseConnect.setVisible(canManageSseStages);
-        addSseAwait.setVisible(canManageSseStages);
-        addWsConnect.setVisible(canManageWsConnect);
-        addWsSend.setVisible(canManageWsSteps);
-        addWsAwait.setVisible(canManageWsSteps);
-        addWsClose.setVisible(canManageWsSteps);
-        addAssertion.setVisible((jtNode.type == NodeType.REQUEST && !isSseRequestNode && !isWebSocketRequestNode)
-                || jtNode.type == NodeType.SSE_AWAIT
-                || jtNode.type == NodeType.WS_AWAIT);
-        addTimer.setVisible(jtNode.type == NodeType.REQUEST || requestContainerLoop || canManageWsSteps);
-        copyNode.setVisible(treeSupport.hasCopyableNodes(new TreePath[]{new TreePath(node.getPath())}));
-        pasteNode.setVisible(treeSupport.canPasteNodes(node, copiedNodes));
-        boolean structuralNode = jtNode.type == NodeType.SSE_CONNECT
-                || jtNode.type == NodeType.SSE_AWAIT
-                || jtNode.type == NodeType.WS_CONNECT;
-        renameNode.setVisible(!structuralNode && jtNode.type != NodeType.LOOP && !treeSupport.isWebSocketStepNode(jtNode.type));
-        deleteNode.setVisible(treeSupport.hasDeletableNodes(new TreePath[]{new TreePath(node.getPath())}));
-        enableNode.setVisible(!structuralNode && !jtNode.enabled);
-        disableNode.setVisible(!structuralNode && jtNode.enabled);
-        updateMenuSeparators.run();
-    }
-
-    private boolean isRootNode(DefaultMutableTreeNode node) {
-        return node.getUserObject() instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.ROOT;
-    }
 }

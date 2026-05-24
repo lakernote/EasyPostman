@@ -1,21 +1,21 @@
-package com.laker.postman.panel.performance;
+package com.laker.postman.panel.performance.runtime;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
-final class PerformanceVirtualUserCoordinator {
+public final class PerformanceVirtualUserCoordinator {
 
     private final AtomicInteger activeThreads = new AtomicInteger(0);
     private final AtomicInteger virtualUserCounter = new AtomicInteger(0);
     private final ThreadLocal<Integer> threadVirtualUserIndex = new ThreadLocal<>();
     private final ThreadLocal<Integer> threadIterationIndex = ThreadLocal.withInitial(() -> 0);
 
-    int getActiveThreads() {
+    public int getActiveThreads() {
         return activeThreads.get();
     }
 
-    void resetVirtualUsers() {
+    public void resetVirtualUsers() {
         virtualUserCounter.set(0);
     }
 
@@ -36,10 +36,10 @@ final class PerformanceVirtualUserCoordinator {
         executor.submit(() -> run(progressUpdater, totalThreads, task));
     }
 
-    Thread newThread(String namePrefix,
-                     BiConsumer<Integer, Integer> progressUpdater,
-                     int totalThreads,
-                     Runnable task) {
+    public Thread newThread(String namePrefix,
+                            BiConsumer<Integer, Integer> progressUpdater,
+                            int totalThreads,
+                            Runnable task) {
         return PerformanceThreadFactory.newDaemonThread(
                 namePrefix,
                 () -> run(progressUpdater, totalThreads, task)

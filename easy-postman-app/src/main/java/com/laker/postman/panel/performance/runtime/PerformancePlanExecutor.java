@@ -1,4 +1,4 @@
-package com.laker.postman.panel.performance;
+package com.laker.postman.panel.performance.runtime;
 
 import com.laker.postman.panel.performance.execution.PerformanceRequestExecutionResult;
 import com.laker.postman.panel.performance.plan.PerformanceLoopController;
@@ -13,10 +13,10 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
-final class PerformancePlanExecutor {
+public final class PerformancePlanExecutor {
 
     @FunctionalInterface
-    interface TimerSleeper {
+    public interface TimerSleeper {
         void sleep(long delayMs) throws InterruptedException;
     }
 
@@ -24,21 +24,21 @@ final class PerformancePlanExecutor {
     private final PerformanceSamplerExecutor samplerExecutor;
     private final TimerSleeper timerSleeper;
 
-    PerformancePlanExecutor(BooleanSupplier runningSupplier,
-                            PerformanceSamplerExecutor samplerExecutor) {
+    public PerformancePlanExecutor(BooleanSupplier runningSupplier,
+                                   PerformanceSamplerExecutor samplerExecutor) {
         this(runningSupplier, samplerExecutor, delayMs -> TimeUnit.MILLISECONDS.sleep(delayMs));
     }
 
-    PerformancePlanExecutor(BooleanSupplier runningSupplier,
-                            PerformanceSamplerExecutor samplerExecutor,
-                            TimerSleeper timerSleeper) {
+    public PerformancePlanExecutor(BooleanSupplier runningSupplier,
+                                   PerformanceSamplerExecutor samplerExecutor,
+                                   TimerSleeper timerSleeper) {
         this.runningSupplier = runningSupplier;
         this.samplerExecutor = samplerExecutor;
         this.timerSleeper = timerSleeper;
     }
 
-    void executeIteration(PerformanceThreadGroupPlan groupPlan,
-                          ExecutionVariableContext iterationContext) {
+    public void executeIteration(PerformanceThreadGroupPlan groupPlan,
+                                 ExecutionVariableContext iterationContext) {
         if (groupPlan == null) {
             return;
         }

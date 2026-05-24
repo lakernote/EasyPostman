@@ -1,4 +1,4 @@
-package com.laker.postman.panel.performance;
+package com.laker.postman.panel.performance.runtime;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -8,7 +8,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
-final class PerformanceThreadFactory implements ThreadFactory {
+public final class PerformanceThreadFactory implements ThreadFactory {
 
     private static final ConcurrentMap<String, AtomicInteger> DIRECT_THREAD_COUNTERS = new ConcurrentHashMap<>();
 
@@ -21,11 +21,11 @@ final class PerformanceThreadFactory implements ThreadFactory {
         this.daemon = daemon;
     }
 
-    static ThreadFactory daemonFactory(String namePrefix) {
+    public static ThreadFactory daemonFactory(String namePrefix) {
         return new PerformanceThreadFactory(namePrefix, true);
     }
 
-    static Thread newDaemonThread(String namePrefix, Runnable task) {
+    public static Thread newDaemonThread(String namePrefix, Runnable task) {
         int threadNumber = DIRECT_THREAD_COUNTERS
                 .computeIfAbsent(namePrefix, ignored -> new AtomicInteger(1))
                 .getAndIncrement();

@@ -1,23 +1,19 @@
-package com.laker.postman.panel.performance;
+package com.laker.postman.panel.performance.runtime;
 
 import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.service.variable.ExecutionVariableContext;
 import com.laker.postman.service.variable.IterationDataRuntimeSupport;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Map;
 
-final class PerformanceIterationContextFactory {
+@RequiredArgsConstructor
+public final class PerformanceIterationContextFactory {
 
     private final CsvDataPanel csvDataPanel;
     private final PerformanceVirtualUserCoordinator virtualUsers;
 
-    PerformanceIterationContextFactory(CsvDataPanel csvDataPanel,
-                                       PerformanceVirtualUserCoordinator virtualUsers) {
-        this.csvDataPanel = csvDataPanel;
-        this.virtualUsers = virtualUsers;
-    }
-
-    ExecutionVariableContext create(int iterationCount) {
+    public ExecutionVariableContext create(int iterationCount) {
         int iterationIndex = virtualUsers.nextIterationIndex();
         ExecutionVariableContext iterationContext = new ExecutionVariableContext();
         iterationContext.setIterationInfo(iterationIndex, iterationCount);

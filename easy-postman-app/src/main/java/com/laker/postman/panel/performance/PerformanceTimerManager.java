@@ -1,5 +1,6 @@
 package com.laker.postman.panel.performance;
 
+import com.laker.postman.panel.performance.runtime.PerformanceThreadFactory;
 import com.laker.postman.service.setting.SettingManager;
 import lombok.Getter;
 import lombok.Setter;

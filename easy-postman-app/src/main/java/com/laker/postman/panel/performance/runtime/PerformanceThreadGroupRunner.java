@@ -1,4 +1,4 @@
-package com.laker.postman.panel.performance;
+package com.laker.postman.panel.performance.runtime;
 
 import com.laker.postman.panel.performance.plan.PerformanceTestPlan;
 import com.laker.postman.panel.performance.plan.PerformanceThreadGroupPlan;
@@ -24,7 +24,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
 
 @Slf4j
-final class PerformanceThreadGroupRunner {
+public final class PerformanceThreadGroupRunner {
 
     private final Component dialogParent;
     private final BooleanSupplier runningSupplier;
@@ -34,13 +34,13 @@ final class PerformanceThreadGroupRunner {
     private final PerformanceIterationContextFactory iterationContextFactory;
     private final PerformancePlanExecutor planExecutor;
 
-    PerformanceThreadGroupRunner(Component dialogParent,
-                                 BooleanSupplier runningSupplier,
-                                 LongSupplier startTimeSupplier,
-                                 Runnable cancellationAction,
-                                 PerformanceVirtualUserCoordinator virtualUsers,
-                                 PerformanceIterationContextFactory iterationContextFactory,
-                                 PerformancePlanExecutor planExecutor) {
+    public PerformanceThreadGroupRunner(Component dialogParent,
+                                        BooleanSupplier runningSupplier,
+                                        LongSupplier startTimeSupplier,
+                                        Runnable cancellationAction,
+                                        PerformanceVirtualUserCoordinator virtualUsers,
+                                        PerformanceIterationContextFactory iterationContextFactory,
+                                        PerformancePlanExecutor planExecutor) {
         this.dialogParent = dialogParent;
         this.runningSupplier = runningSupplier;
         this.startTimeSupplier = startTimeSupplier;
@@ -50,9 +50,9 @@ final class PerformanceThreadGroupRunner {
         this.planExecutor = planExecutor;
     }
 
-    void run(PerformanceTestPlan plan,
-             int totalThreads,
-             BiConsumer<Integer, Integer> progressUpdater) {
+    public void run(PerformanceTestPlan plan,
+                    int totalThreads,
+                    BiConsumer<Integer, Integer> progressUpdater) {
         if (!runningSupplier.getAsBoolean() || plan == null) {
             return;
         }
@@ -446,14 +446,14 @@ final class PerformanceThreadGroupRunner {
         }
     }
 
-    void adjustSpikeThreadCount(PerformanceThreadGroupPlan groupPlan,
-                                ThreadGroupData tg,
-                                AtomicInteger activeWorkerThreads,
-                                int targetThreads,
-                                int totalTime,
-                                BiConsumer<Integer, Integer> progressUpdater,
-                                int totalThreads,
-                                ConcurrentHashMap<Thread, Long> threadEndTimes) {
+    public void adjustSpikeThreadCount(PerformanceThreadGroupPlan groupPlan,
+                                       ThreadGroupData tg,
+                                       AtomicInteger activeWorkerThreads,
+                                       int targetThreads,
+                                       int totalTime,
+                                       BiConsumer<Integer, Integer> progressUpdater,
+                                       int totalThreads,
+                                       ConcurrentHashMap<Thread, Long> threadEndTimes) {
         int current = activeWorkerThreads.get();
 
         if (current < targetThreads) {
@@ -559,7 +559,7 @@ final class PerformanceThreadGroupRunner {
         thread.start();
     }
 
-    static int calculateStairsTotalSteps(int startThreads, int endThreads, int step) {
+    public static int calculateStairsTotalSteps(int startThreads, int endThreads, int step) {
         int threadRange = Math.max(0, endThreads - startThreads);
         int safeStep = Math.max(1, step);
         return Math.max(1, (threadRange + safeStep - 1) / safeStep);
@@ -584,7 +584,7 @@ final class PerformanceThreadGroupRunner {
         progressUpdater.accept(virtualUsers.getActiveThreads(), totalThreads);
     }
 
-    static void joinThreadGroupThreads(List<Thread> threadGroupThreads, Runnable cancellationAction) {
+    public static void joinThreadGroupThreads(List<Thread> threadGroupThreads, Runnable cancellationAction) {
         boolean interrupted = false;
         for (Thread thread : threadGroupThreads) {
             while (thread.isAlive()) {

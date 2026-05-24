@@ -7,11 +7,11 @@ import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.performance.controller.LoopData;
 import com.laker.postman.panel.performance.execution.PerformanceRequestExecutionResult;
 import com.laker.postman.panel.performance.execution.PerformanceRequestExecutor;
-import com.laker.postman.panel.performance.execution.PerformanceResultRecorder;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
+import com.laker.postman.panel.performance.result.PerformanceResultCollector;
 import com.laker.postman.panel.performance.runtime.PerformanceIterationContextFactory;
 import com.laker.postman.panel.performance.runtime.PerformancePlanExecutor;
 import com.laker.postman.panel.performance.runtime.PerformanceSamplerExecutor;
@@ -213,7 +213,7 @@ public class PerformancePlanExecutorTest {
                 running,
                 () -> false,
                 requestExecutor,
-                new PerformanceResultRecorder(List.of())
+                new PerformanceResultCollector(List.of())
         );
         return new PerformancePlanExecutor(running, samplerExecutor, timerSleeper);
     }

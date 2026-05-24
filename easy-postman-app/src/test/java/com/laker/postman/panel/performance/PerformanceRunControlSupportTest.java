@@ -13,6 +13,7 @@ import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollectorListener;
 import com.laker.postman.panel.performance.model.PerformanceTrendWindowCollector;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
+import com.laker.postman.panel.performance.result.PerformanceResultCollector;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import com.laker.postman.panel.performance.result.PerformanceResultTableVisualizer;
 import com.laker.postman.panel.performance.runtime.PerformanceExecutionEngine;
@@ -68,11 +69,11 @@ public class PerformanceRunControlSupportTest extends AbstractSwingUiTest {
                             () -> false,
                             () -> 64,
                             null,
-                            List.of(
+                            new PerformanceResultCollector(List.of(
                                     new PerformanceStatsCollectorListener(statsCollector),
                                     trendWindowCollector,
                                     new PerformanceResultTableVisualizer(resultTablePanel, () -> 500)
-                            )
+                            ))
                     ),
                     statisticsCoordinator,
                     timerManager,

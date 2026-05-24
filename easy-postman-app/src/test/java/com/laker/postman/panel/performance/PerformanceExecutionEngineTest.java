@@ -12,6 +12,7 @@ import com.laker.postman.panel.performance.model.PerformanceStatsCollectorListen
 import com.laker.postman.panel.performance.model.SsePerformanceData;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
+import com.laker.postman.panel.performance.result.PerformanceResultCollector;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import com.laker.postman.panel.performance.runtime.PerformanceExecutionEngine;
 import com.laker.postman.panel.performance.runtime.PerformanceIterationContextFactory;
@@ -46,6 +47,11 @@ public class PerformanceExecutionEngineTest {
     @Test
     public void executionEngineShouldNotExposeSwingResultTablePanelParameters() {
         assertFalse(hasParameterType(PerformanceExecutionEngine.class, PerformanceResultTablePanel.class));
+    }
+
+    @Test
+    public void executionEngineShouldNotExposeRawResultListenerCollections() {
+        assertFalse(hasConstructorParameter(PerformanceExecutionEngine.class, List.class));
     }
 
     @Test(timeOut = 3000)
@@ -96,7 +102,7 @@ public class PerformanceExecutionEngineTest {
                 () -> true,
                 () -> 4,
                 null,
-                List.of()
+                emptyResultCollector()
         );
 
         assertEquals(engine.getTotalThreads(PerformanceTestPlanCompiler.compile(root)), 1);
@@ -126,7 +132,7 @@ public class PerformanceExecutionEngineTest {
                 () -> true,
                 () -> 4,
                 null,
-                List.of()
+                emptyResultCollector()
         );
 
         assertEquals(engine.estimateTotalRequests(PerformanceTestPlanCompiler.compile(root)), 400L);
@@ -163,7 +169,7 @@ public class PerformanceExecutionEngineTest {
                 () -> true,
                 () -> 4,
                 null,
-                List.of()
+                emptyResultCollector()
         );
 
         assertEquals(engine.estimateTotalRequests(PerformanceTestPlanCompiler.compile(root)), 10_000_000_000L);
@@ -206,7 +212,7 @@ public class PerformanceExecutionEngineTest {
                     () -> false,
                     () -> 4,
                     null,
-                    List.of(new PerformanceStatsCollectorListener(statsCollector))
+                    statsResultCollector(statsCollector)
             );
 
             engine.runTestPlanWithProgress(PerformanceTestPlanCompiler.compile(group), 1, (active, total) -> {
@@ -244,7 +250,7 @@ public class PerformanceExecutionEngineTest {
                     () -> false,
                     () -> 4,
                     null,
-                    List.of(new PerformanceStatsCollectorListener(statsCollector))
+                    statsResultCollector(statsCollector)
             ).runTestPlanWithProgress(PerformanceTestPlanCompiler.compile(group), 1, (active, total) -> {
             });
 
@@ -279,7 +285,7 @@ public class PerformanceExecutionEngineTest {
                     () -> false,
                     () -> 4,
                     null,
-                    List.of(new PerformanceStatsCollectorListener(statsCollector))
+                    statsResultCollector(statsCollector)
             ).runTestPlanWithProgress(PerformanceTestPlanCompiler.compile(group), 1, (active, total) -> {
             });
 
@@ -317,7 +323,7 @@ public class PerformanceExecutionEngineTest {
                     () -> false,
                     () -> 4,
                     null,
-                    List.of(new PerformanceStatsCollectorListener(statsCollector))
+                    statsResultCollector(statsCollector)
             ).runTestPlanWithProgress(PerformanceTestPlanCompiler.compile(group), 1, (active, total) -> {
             });
 
@@ -404,6 +410,14 @@ public class PerformanceExecutionEngineTest {
         return hasParameterType(type, DefaultMutableTreeNode.class);
     }
 
+    private static PerformanceResultCollector emptyResultCollector() {
+        return new PerformanceResultCollector(List.of());
+    }
+
+    private static PerformanceResultCollector statsResultCollector(PerformanceStatsCollector statsCollector) {
+        return new PerformanceResultCollector(List.of(new PerformanceStatsCollectorListener(statsCollector)));
+    }
+
     private static boolean hasParameterType(Class<?> type, Class<?> parameterType) {
         boolean methodParameter = java.util.Arrays.stream(type.getMethods())
                 .flatMap(method -> java.util.Arrays.stream(method.getParameterTypes()))
@@ -412,5 +426,11 @@ public class PerformanceExecutionEngineTest {
                 .flatMap(constructor -> java.util.Arrays.stream(constructor.getParameterTypes()))
                 .anyMatch(parameterType::equals);
         return methodParameter || constructorParameter;
+    }
+
+    private static boolean hasConstructorParameter(Class<?> type, Class<?> parameterType) {
+        return java.util.Arrays.stream(type.getConstructors())
+                .flatMap(constructor -> java.util.Arrays.stream(constructor.getParameterTypes()))
+                .anyMatch(parameterType::equals);
     }
 }

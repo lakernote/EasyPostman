@@ -1,22 +1,23 @@
-package com.laker.postman.panel.performance.execution;
+package com.laker.postman.panel.performance.result;
 
+import com.laker.postman.panel.performance.execution.PerformanceRequestExecutionResult;
+import com.laker.postman.panel.performance.model.PerformanceProtocol;
 import com.laker.postman.panel.performance.model.PerformanceResultListener;
 import com.laker.postman.panel.performance.model.PerformanceSampleEvent;
 import com.laker.postman.panel.performance.model.PerformanceSampleResult;
-import com.laker.postman.panel.performance.model.PerformanceProtocol;
 
 import java.util.List;
 import java.util.Map;
 
-public class PerformanceResultRecorder {
+public final class PerformanceResultCollector {
 
     private final List<PerformanceResultListener> listeners;
 
-    public PerformanceResultRecorder(List<PerformanceResultListener> listeners) {
+    public PerformanceResultCollector(List<PerformanceResultListener> listeners) {
         this.listeners = List.copyOf(listeners == null ? List.of() : listeners);
     }
 
-    public void record(PerformanceRequestExecutionResult executionResult, boolean efficientMode) {
+    public void collect(PerformanceRequestExecutionResult executionResult, boolean efficientMode) {
         if (executionResult == null) {
             return;
         }

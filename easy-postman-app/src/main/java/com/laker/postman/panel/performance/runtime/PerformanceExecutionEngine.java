@@ -2,10 +2,9 @@ package com.laker.postman.panel.performance.runtime;
 
 import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.panel.performance.execution.PerformanceRequestExecutor;
-import com.laker.postman.panel.performance.execution.PerformanceResultRecorder;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
-import com.laker.postman.panel.performance.model.PerformanceResultListener;
 import com.laker.postman.panel.performance.plan.PerformanceTestPlan;
+import com.laker.postman.panel.performance.result.PerformanceResultCollector;
 import com.laker.postman.panel.performance.threadgroup.PerformanceThreadGroupPlanner;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +39,7 @@ public final class PerformanceExecutionEngine {
                                       BooleanSupplier efficientModeSupplier,
                                       IntSupplier responseBodyPreviewLimitKbSupplier,
                                       CsvDataPanel csvDataPanel,
-                                      List<PerformanceResultListener> resultListeners) {
+                                      PerformanceResultCollector resultCollector) {
         this.runningSupplier = runningSupplier;
         PerformanceRequestExecutor requestExecutor = new PerformanceRequestExecutor(
                 runningSupplier,
@@ -51,12 +50,11 @@ public final class PerformanceExecutionEngine {
                 efficientModeSupplier,
                 responseBodyPreviewLimitKbSupplier
         );
-        PerformanceResultRecorder resultRecorder = new PerformanceResultRecorder(resultListeners);
         PerformanceSamplerExecutor samplerExecutor = new PerformanceSamplerExecutor(
                 runningSupplier,
                 efficientModeSupplier,
                 requestExecutor,
-                resultRecorder
+                resultCollector
         );
         PerformanceIterationContextFactory iterationContextFactory = new PerformanceIterationContextFactory(
                 csvDataPanel,

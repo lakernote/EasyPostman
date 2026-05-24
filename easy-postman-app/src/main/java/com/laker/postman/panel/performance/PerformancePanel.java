@@ -27,6 +27,7 @@ import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollectorListener;
 import com.laker.postman.panel.performance.model.PerformanceTrendWindowCollector;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
+import com.laker.postman.panel.performance.result.PerformanceResultCollector;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import com.laker.postman.panel.performance.result.PerformanceResultTableVisualizer;
 import com.laker.postman.panel.performance.result.PerformanceTrendPanel;
@@ -282,7 +283,7 @@ public class PerformancePanel extends SingletonBasePanel {
                 () -> efficientMode,
                 SettingManager::getPerformanceResponseBodyPreviewLimitKb,
                 csvDataPanel,
-                resultListeners
+                new PerformanceResultCollector(resultListeners)
         );
         runControlSupport = new PerformanceRunControlSupport(
                 this,

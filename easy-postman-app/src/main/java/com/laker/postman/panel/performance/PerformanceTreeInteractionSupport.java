@@ -68,131 +68,55 @@ final class PerformanceTreeInteractionSupport {
     private final String wsAwaitCard;
     private final String wsCloseCard;
 
-    private DefaultMutableTreeNode lastNode;
+    private PerformanceTreeSelectionSupport selectionSupport;
     private List<DefaultMutableTreeNode> copiedNodes = List.of();
 
     void install() {
-        installSelectionListener();
+        selectionSupport = createSelectionSupport();
+        selectionSupport.install();
         installPopupMenu();
     }
 
-    private void installSelectionListener() {
-        jmeterTree.addTreeSelectionListener(e -> {
-            TreePath[] selectedPaths = jmeterTree.getSelectionPaths();
-            if (selectedPaths != null && selectedPaths.length > 1) {
-                return;
-            }
-
-            persistLastSelection();
-
-            DefaultMutableTreeNode node = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
-            if (node == null || !(node.getUserObject() instanceof JMeterTreeNode jtNode)) {
-                propertyCardLayout.show(propertyPanel, emptyCard);
-                currentRequestNodeSetter.accept(null);
-                lastNode = node;
-                return;
-            }
-
-            switch (jtNode.type) {
-                case THREAD_GROUP -> {
-                    propertyCardLayout.show(propertyPanel, threadGroupCard);
-                    threadGroupPanel.setThreadGroupData(jtNode);
-                    currentRequestNodeSetter.accept(null);
-                }
-                case LOOP -> {
-                    propertyCardLayout.show(propertyPanel, loopCard);
-                    loopPanel.setLoopData(jtNode);
-                    currentRequestNodeSetter.accept(null);
-                }
-                case REQUEST -> {
-                    propertyCardLayout.show(propertyPanel, requestCard);
-                    currentRequestNodeSetter.accept(node);
-                    if (jtNode.httpRequestItem != null) {
-                        syncRequestStructureAction.accept(node, jtNode);
-                        switchRequestEditorAction.accept(jtNode.httpRequestItem);
-                    }
-                }
-                case ASSERTION -> {
-                    propertyCardLayout.show(propertyPanel, assertionCard);
-                    assertionPanel.setAssertionData(jtNode);
-                    currentRequestNodeSetter.accept(null);
-                }
-                case TIMER -> {
-                    propertyCardLayout.show(propertyPanel, timerCard);
-                    timerPanel.setTimerData(jtNode);
-                    currentRequestNodeSetter.accept(null);
-                }
-                case SSE_CONNECT -> showSsePanel(node, sseConnectCard, true);
-                case SSE_AWAIT -> showSsePanel(node, sseAwaitCard, false);
-                case WS_CONNECT -> showWebSocketConnectPanel(node);
-                case WS_SEND -> {
-                    propertyCardLayout.show(propertyPanel, wsSendCard);
-                    wsSendPanel.setNode(jtNode);
-                    currentRequestNodeSetter.accept(null);
-                }
-                case WS_AWAIT -> {
-                    propertyCardLayout.show(propertyPanel, wsAwaitCard);
-                    wsAwaitPanel.setNode(jtNode);
-                    currentRequestNodeSetter.accept(null);
-                }
-                case WS_CLOSE -> {
-                    propertyCardLayout.show(propertyPanel, wsCloseCard);
-                    wsClosePanel.setNode(jtNode);
-                    currentRequestNodeSetter.accept(null);
-                }
-                default -> {
-                    propertyCardLayout.show(propertyPanel, emptyCard);
-                    currentRequestNodeSetter.accept(null);
-                }
-            }
-            lastNode = node;
-        });
-    }
-
     private void persistLastSelection() {
-        if (lastNode == null || !(lastNode.getUserObject() instanceof JMeterTreeNode jtNode)) {
-            return;
-        }
-        switch (jtNode.type) {
-            case THREAD_GROUP -> threadGroupPanel.saveThreadGroupData();
-            case LOOP -> {
-                loopPanel.saveLoopData();
-                treeModel.nodeChanged(lastNode);
-            }
-            case REQUEST -> saveRequestNodeAction.accept(lastNode);
-            case ASSERTION -> assertionPanel.saveAssertionData();
-            case TIMER -> timerPanel.saveTimerData();
-            case SSE_CONNECT, SSE_AWAIT -> saveSseStageAction.accept(lastNode);
-            case WS_CONNECT, WS_SEND, WS_AWAIT, WS_CLOSE -> saveWebSocketStageAction.accept(lastNode);
-            default -> {
-            }
-        }
+        selectionSupport.persistLastSelection();
     }
 
-    private void showSsePanel(DefaultMutableTreeNode node, String cardName, boolean connectStage) {
-        DefaultMutableTreeNode requestNode = treeSupport.getParentRequestNode(node);
-        if (requestNode != null && requestNode.getUserObject() instanceof JMeterTreeNode requestJtNode) {
-            propertyCardLayout.show(propertyPanel, cardName);
-            if (connectStage) {
-                sseConnectPanel.setRequestNode(requestJtNode);
-            } else {
-                sseAwaitPanel.setRequestNode(requestJtNode);
-            }
-        } else {
-            propertyCardLayout.show(propertyPanel, emptyCard);
-        }
-        currentRequestNodeSetter.accept(null);
-    }
-
-    private void showWebSocketConnectPanel(DefaultMutableTreeNode node) {
-        DefaultMutableTreeNode requestNode = treeSupport.getParentRequestNode(node);
-        if (requestNode != null && requestNode.getUserObject() instanceof JMeterTreeNode requestJtNode) {
-            propertyCardLayout.show(propertyPanel, wsConnectCard);
-            wsConnectPanel.setNode(requestJtNode);
-        } else {
-            propertyCardLayout.show(propertyPanel, emptyCard);
-        }
-        currentRequestNodeSetter.accept(null);
+    private PerformanceTreeSelectionSupport createSelectionSupport() {
+        return new PerformanceTreeSelectionSupport(
+                jmeterTree,
+                treeModel,
+                propertyCardLayout,
+                propertyPanel,
+                threadGroupPanel,
+                loopPanel,
+                assertionPanel,
+                timerPanel,
+                sseConnectPanel,
+                sseAwaitPanel,
+                wsConnectPanel,
+                wsSendPanel,
+                wsAwaitPanel,
+                wsClosePanel,
+                treeSupport,
+                saveRequestNodeAction,
+                saveSseStageAction,
+                saveWebSocketStageAction,
+                switchRequestEditorAction,
+                syncRequestStructureAction,
+                currentRequestNodeSetter,
+                emptyCard,
+                threadGroupCard,
+                loopCard,
+                requestCard,
+                assertionCard,
+                timerCard,
+                sseConnectCard,
+                sseAwaitCard,
+                wsConnectCard,
+                wsSendCard,
+                wsAwaitCard,
+                wsCloseCard
+        );
     }
 
     private void installPopupMenu() {

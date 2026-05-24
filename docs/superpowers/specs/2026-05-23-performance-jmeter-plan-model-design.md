@@ -17,7 +17,7 @@ The run flow becomes:
 3. `PerformanceThreadGroupRunner` runs enabled thread groups according to `ThreadGroupData.ThreadMode`.
 4. Each virtual user receives a `PerformanceIterationContext`.
 5. `PerformancePlanExecutor` walks immutable plan elements.
-6. `PerformanceSampler` executes request samplers and records results.
+6. `PerformanceSamplerExecutor` executes request samplers and records results.
 
 `PerformanceExecutionEngine` remains the public package-level facade for existing callers. It owns cancellation resources, realtime metrics, and high-level lifecycle, but no longer contains controller traversal or thread-group scheduling details.
 
@@ -27,7 +27,7 @@ The immutable plan model lives under `com.laker.postman.panel.performance.plan`.
 
 - `PerformanceTestPlan`: root plan with enabled thread groups.
 - `PerformanceThreadGroupPlan`: a compiled thread group with normalized `ThreadGroupData` and child elements.
-- `PerformancePlanElement`: sealed interface implemented by controllers, timers, and samplers.
+- `PerformancePlanElement`: interface implemented by controllers, timers, protocol stages, assertions, and samplers.
 - `PerformanceLoopController`: loop count plus nested elements.
 - `PerformanceTimerElement`: timer delay data.
 - `PerformanceRequestSampler`: original request node data plus compiled child elements. For WebSocket/SSE, protocol stage nodes stay nested under the sampler so existing protocol executors can still validate and execute their step sequence.
@@ -42,7 +42,7 @@ The compiler is `PerformanceTestPlanCompiler`. It reads the snapshot tree, skips
 - `PerformanceVirtualUserCoordinator` remains the ThreadLocal owner for active user count, virtual user index, and iteration index.
 - `PerformanceIterationContextFactory` creates `ExecutionVariableContext` and binds CSV row data for the current virtual user.
 - `PerformancePlanExecutor` handles controllers and timers.
-- `PerformanceSamplerExecutor` wraps `PerformanceRequestExecutor` and `PerformanceResultRecorder`. The hot path passes `PerformanceRequestSampler` directly; legacy tree-based request execution remains only as a compatibility entry point that compiles a sampler first.
+- `PerformanceSamplerExecutor` wraps `PerformanceRequestExecutor` and `PerformanceResultRecorder`. Request execution receives `PerformanceRequestSampler` directly; Swing tree snapshots are compiled before sampler dispatch.
 
 ## Compatibility Rules
 

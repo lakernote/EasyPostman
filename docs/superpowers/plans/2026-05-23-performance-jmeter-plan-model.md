@@ -24,9 +24,9 @@
 - Create: `easy-postman-app/src/main/java/com/laker/postman/panel/performance/plan/PerformanceTestPlanCompiler.java`
 - Test: `easy-postman-app/src/test/java/com/laker/postman/panel/performance/plan/PerformanceTestPlanCompilerTest.java`
 
-- [ ] Write compiler tests for enabled thread groups, disabled nodes, nested loop/timer/request elements, and protocol stage preservation.
-- [ ] Implement immutable records and compiler.
-- [ ] Run `mvn -q -pl easy-postman-app -am -Dtest=PerformanceTestPlanCompilerTest -Dsurefire.failIfNoSpecifiedTests=false -Djava.awt.headless=true test`.
+- [x] Write compiler tests for enabled thread groups, disabled nodes, nested loop/timer/request elements, and protocol stage preservation.
+- [x] Implement immutable plan classes and compiler.
+- [x] Run `mvn -q -pl easy-postman-app -am -Dtest=PerformanceTestPlanCompilerTest -Dsurefire.failIfNoSpecifiedTests=false -Djava.awt.headless=true test`.
 
 ### Task 2: Controller And Sampler Runtime
 
@@ -37,22 +37,21 @@
 - Modify: `easy-postman-app/src/main/java/com/laker/postman/panel/performance/PerformanceVirtualUserCoordinator.java`
 - Test: `easy-postman-app/src/test/java/com/laker/postman/panel/performance/PerformancePlanExecutorTest.java`
 
-- [ ] Write tests proving loop controllers execute nested request samplers, timers sleep through an injectable sleeper, disabled runtime elements are not present after compile, and CSV rows are selected by virtual user index.
-- [ ] Implement iteration context factory, plan executor, sampler executor, and minimal virtual-user accessors needed by the factory.
-- [ ] Run `mvn -q -pl easy-postman-app -am -Dtest=PerformancePlanExecutorTest -Dsurefire.failIfNoSpecifiedTests=false -Djava.awt.headless=true test`.
+- [x] Write tests proving loop controllers execute nested request samplers, timers sleep through an injectable sleeper, disabled runtime elements are not present after compile, and CSV rows are selected by virtual user index.
+- [x] Implement iteration context factory, plan executor, sampler executor, and minimal virtual-user accessors needed by the factory.
+- [x] Run `mvn -q -pl easy-postman-app -am -Dtest=PerformancePlanExecutorTest -Dsurefire.failIfNoSpecifiedTests=false -Djava.awt.headless=true test`.
 
 ### Task 3: Thread Group Runner Extraction
 
 **Files:**
 - Create: `easy-postman-app/src/main/java/com/laker/postman/panel/performance/PerformanceThreadGroupRunner.java`
 - Modify: `easy-postman-app/src/main/java/com/laker/postman/panel/performance/PerformanceExecutionEngine.java`
-- Test: `easy-postman-app/src/test/java/com/laker/postman/panel/performance/PerformanceThreadGroupRunnerTest.java`
-- Modify: `easy-postman-app/src/test/java/com/laker/postman/panel/performance/PerformanceExecutionEngineTest.java`
+- Test: `easy-postman-app/src/test/java/com/laker/postman/panel/performance/PerformanceExecutionEngineTest.java`
 
-- [ ] Move FIXED/RAMP_UP/SPIKE/STAIRS scheduling out of `PerformanceExecutionEngine`.
-- [ ] Keep `PerformanceExecutionEngine.runJMeterTreeWithProgress(...)` compiling the tree and delegating to the runner.
-- [ ] Preserve static helpers currently tested from `PerformanceExecutionEngine` by moving or forwarding them.
-- [ ] Run `mvn -q -pl easy-postman-app -am -Dtest=PerformanceThreadGroupRunnerTest,PerformanceExecutionEngineTest -Dsurefire.failIfNoSpecifiedTests=false -Djava.awt.headless=true test`.
+- [x] Move FIXED/RAMP_UP/SPIKE/STAIRS scheduling out of `PerformanceExecutionEngine`.
+- [x] Keep `PerformanceExecutionEngine.runJMeterTreeWithProgress(...)` compiling the tree and delegating to the runner.
+- [x] Preserve static helpers currently tested from `PerformanceExecutionEngine` by moving or forwarding them.
+- [x] Run `mvn -q -pl easy-postman-app -am -Dtest=PerformanceExecutionEngineTest -Dsurefire.failIfNoSpecifiedTests=false -Djava.awt.headless=true test`.
 
 ### Task 4: Estimate And Documentation Integration
 
@@ -61,6 +60,6 @@
 - Modify: `docs/performance-load-test-design.md`
 - Test: existing performance test set.
 
-- [ ] Add plan-based request estimation while preserving the tree-based public method.
-- [ ] Update performance design docs to describe compiled plan execution.
-- [ ] Run the focused performance tests and `mvn -q -pl easy-postman-app -am -DskipTests compile`.
+- [x] Add plan-based request estimation while preserving the tree-based public method.
+- [x] Update performance design docs to describe compiled plan execution.
+- [x] Run the focused performance tests and `mvn -q -pl easy-postman-app -am -DskipTests compile`.

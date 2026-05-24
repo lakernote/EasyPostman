@@ -87,6 +87,18 @@ Three-level circular dependency cache is implemented in `ApplicationContext` —
 
 ---
 
+## Lombok Usage
+
+When adding or refactoring Java code, use Lombok by default for boilerplate reduction where it keeps the code clearer:
+- Use `@Slf4j` instead of manually declaring logger fields.
+- Use `@RequiredArgsConstructor` for required dependency constructors, especially support/service classes with `final` fields.
+- Use `@Getter`, `@Setter`, `@Data`, `@Value`, and `@Builder` for simple models/value objects when appropriate.
+- Use `@UtilityClass` for stateless utility classes instead of private constructors plus static methods.
+
+Avoid Lombok only when explicit code is clearer for Swing lifecycle, side-effectful constructors, validation-heavy construction, or framework compatibility.
+
+---
+
 ## Swing Panel Conventions
 
 All UI panels that are logically singletons must:

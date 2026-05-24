@@ -10,20 +10,19 @@ import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
 import com.laker.postman.panel.performance.timer.TimerData;
 import com.laker.postman.util.JsonUtil;
+import lombok.experimental.UtilityClass;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.UUID;
 
-final class PerformanceTreeSnapshot {
+@UtilityClass
+public class PerformanceTreeSnapshot {
 
-    private PerformanceTreeSnapshot() {
-    }
-
-    static DefaultMutableTreeNode copy(DefaultMutableTreeNode source) {
+    public DefaultMutableTreeNode copy(DefaultMutableTreeNode source) {
         return copy(source, false);
     }
 
-    static DefaultMutableTreeNode copyForPaste(DefaultMutableTreeNode source) {
+    public DefaultMutableTreeNode copyForPaste(DefaultMutableTreeNode source) {
         return copy(source, true);
     }
 

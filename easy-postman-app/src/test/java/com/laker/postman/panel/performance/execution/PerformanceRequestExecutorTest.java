@@ -7,6 +7,7 @@ import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.performance.assertion.AssertionData;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
+import com.laker.postman.panel.performance.model.PerformanceProtocol;
 import com.laker.postman.panel.performance.model.SsePerformanceData;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import com.laker.postman.panel.performance.plan.PerformanceAssertionElement;
@@ -20,7 +21,6 @@ import okhttp3.mockwebserver.MockWebServer;
 import org.testng.annotations.Test;
 
 import javax.swing.tree.DefaultMutableTreeNode;
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -88,21 +88,17 @@ public class PerformanceRequestExecutorTest {
     }
 
     @Test
-    public void shouldDisableCookieNotificationsForPerformanceRequests() throws Exception {
-        PreparedRequest request = new PreparedRequest();
-        PerformanceRequestExecutor executor = new PerformanceRequestExecutor(
-                () -> true,
-                throwable -> false,
-                java.util.concurrent.ConcurrentHashMap.newKeySet(),
-                java.util.concurrent.ConcurrentHashMap.newKeySet()
-        );
-        Method configureMethod = PerformanceRequestExecutor.class.getDeclaredMethod(
-                "configurePreparedRequest",
-                PreparedRequest.class
-        );
-        configureMethod.setAccessible(true);
+    public void shouldResolvePerformanceProtocolPriority() {
+        assertEquals(PerformanceRequestProtocolResolver.resolvePerformanceProtocol(true, true), PerformanceProtocol.WEBSOCKET);
+        assertEquals(PerformanceRequestProtocolResolver.resolvePerformanceProtocol(false, true), PerformanceProtocol.SSE);
+        assertEquals(PerformanceRequestProtocolResolver.resolvePerformanceProtocol(false, false), PerformanceProtocol.HTTP);
+    }
 
-        configureMethod.invoke(executor, request);
+    @Test
+    public void shouldDisableCookieNotificationsForPerformanceRequests() {
+        PreparedRequest request = new PreparedRequest();
+
+        PerformanceRequestPreparationSupport.configurePreparedRequest(request);
 
         assertFalse(request.notifyCookieChanges);
     }

@@ -32,6 +32,29 @@ public class PerformanceRealtimeMetricsTest {
     }
 
     @Test
+    public void shouldNotInflateRatesWhenFinalSamplingWindowIsShort() {
+        PerformanceRealtimeMetrics metrics = new PerformanceRealtimeMetrics();
+        metrics.reset(0);
+
+        for (int i = 0; i < 10; i++) {
+            metrics.recordWebSocketSent();
+            metrics.recordWebSocketReceived();
+        }
+        PerformanceRealtimeMetrics.Sample first = metrics.sample(1_000);
+
+        for (int i = 0; i < 10; i++) {
+            metrics.recordWebSocketSent();
+            metrics.recordWebSocketReceived();
+        }
+        PerformanceRealtimeMetrics.Sample finalSample = metrics.sample(1_100);
+
+        assertEquals(first.webSocketSentRate(), 10.0);
+        assertEquals(first.webSocketReceivedRate(), 10.0);
+        assertEquals(finalSample.webSocketSentRate(), 10.0);
+        assertEquals(finalSample.webSocketReceivedRate(), 10.0);
+    }
+
+    @Test
     public void shouldCalculateSseRatesFromSamplingDeltas() {
         PerformanceRealtimeMetrics metrics = new PerformanceRealtimeMetrics();
         metrics.reset(0);

@@ -74,7 +74,7 @@ public class PerformanceProtocolReportDataTest {
     }
 
     @Test
-    public void shouldKeepLiveStreamRowsOutOfReports() {
+    public void shouldMergeLiveStreamRowsIntoRealtimeReports() {
         ApiMetadata.register("ws-api", "WS API");
         PerformanceStatsCollector collector = new PerformanceStatsCollector();
         RequestResult completed = new RequestResult(1_000, 1_500, true, "ws-api", PerformanceProtocol.WEBSOCKET);
@@ -101,18 +101,22 @@ public class PerformanceProtocolReportDataTest {
 
         assertEquals(reportData.webSocketRows().size(), 2);
 
-        PerformanceProtocolReportData.StreamReportRow completedRow = reportData.webSocketRows().get(0);
-        assertEquals(completedRow.name(), "WS API");
-        assertEquals(completedRow.total(), 1L);
-        assertEquals(completedRow.success(), 1L);
-        assertEquals(completedRow.avgDurationMs(), 500L);
+        PerformanceProtocolReportData.StreamReportRow apiRow = reportData.webSocketRows().get(0);
+        assertEquals(apiRow.name(), "WS API");
+        assertEquals(apiRow.total(), 2L);
+        assertEquals(apiRow.success(), 2L);
+        assertEquals(apiRow.sentMessages(), 3L);
+        assertEquals(apiRow.receivedMessages(), 3L);
+        assertEquals(apiRow.matchedMessages(), 2L);
+        assertEquals(apiRow.avgFirstMessageLatencyMs(), 105L);
+        assertEquals(apiRow.avgDurationMs(), 1250L);
 
         PerformanceProtocolReportData.StreamReportRow totalRow = reportData.webSocketRows().get(1);
         assertEquals(totalRow.name(), "Total");
-        assertEquals(totalRow.total(), 1L);
-        assertEquals(totalRow.success(), 1L);
-        assertEquals(totalRow.sentMessages(), 1L);
-        assertEquals(totalRow.avgDurationMs(), 500L);
+        assertEquals(totalRow.total(), 2L);
+        assertEquals(totalRow.success(), 2L);
+        assertEquals(totalRow.sentMessages(), 3L);
+        assertEquals(totalRow.avgDurationMs(), 1250L);
     }
 
     @Test

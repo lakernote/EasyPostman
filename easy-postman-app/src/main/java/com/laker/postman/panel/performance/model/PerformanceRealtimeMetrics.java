@@ -11,6 +11,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class PerformanceRealtimeMetrics {
 
+    private static final long MIN_RATE_SAMPLE_INTERVAL_MS = 1000L;
+
     private final AtomicLong webSocketSentMessages = new AtomicLong();
     private final AtomicLong webSocketReceivedMessages = new AtomicLong();
     private final AtomicLong webSocketMatchedMessages = new AtomicLong();
@@ -185,7 +187,7 @@ public class PerformanceRealtimeMetrics {
 
     public synchronized Sample sample(long nowMs) {
         long previousSampleTimeMs = lastSampleTimeMs.getAndSet(nowMs);
-        long elapsedMs = Math.max(1, nowMs - previousSampleTimeMs);
+        long elapsedMs = Math.max(MIN_RATE_SAMPLE_INTERVAL_MS, nowMs - previousSampleTimeMs);
         double seconds = elapsedMs / 1000.0;
 
         long currentWebSocketSent = webSocketSentMessages.get();

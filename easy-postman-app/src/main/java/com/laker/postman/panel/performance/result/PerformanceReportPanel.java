@@ -7,11 +7,13 @@ import com.laker.postman.panel.performance.model.PerformanceProtocol;
 import com.laker.postman.panel.performance.model.PerformanceReportSnapshot;
 import com.laker.postman.panel.performance.model.PerformanceStatsSnapshot;
 import com.laker.postman.panel.performance.model.RequestResult;
+import com.laker.postman.panel.performance.report.PerformanceProtocolReportData;
+import com.laker.postman.panel.performance.report.PerformanceReportMarkdownBuilder;
+import com.laker.postman.panel.performance.report.PerformanceReportRowMapper;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
-import com.laker.postman.util.TimeDisplayUtil;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -21,8 +23,8 @@ import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 public class PerformanceReportPanel extends JPanel {
@@ -562,69 +564,15 @@ public class PerformanceReportPanel extends JPanel {
     }
 
     private Object[] toHttpRowData(PerformanceProtocolReportData.HttpReportRow row) {
-        return new Object[]{
-                row.name(),
-                row.total(),
-                row.success(),
-                row.fail(),
-                formatPercent(row.successRate()),
-                formatDecimal(row.qps()),
-                TimeDisplayUtil.formatElapsedTime(row.avg()),
-                TimeDisplayUtil.formatElapsedTime(row.min()),
-                TimeDisplayUtil.formatElapsedTime(row.max()),
-                TimeDisplayUtil.formatElapsedTime(row.p90()),
-                TimeDisplayUtil.formatElapsedTime(row.p95()),
-                TimeDisplayUtil.formatElapsedTime(row.p99())
-        };
+        return PerformanceReportRowMapper.toHttpRowData(row);
     }
 
     private Object[] toWebSocketRowData(PerformanceProtocolReportData.StreamReportRow row) {
-        return new Object[]{
-                row.name(),
-                row.total(),
-                row.success(),
-                row.fail(),
-                formatPercent(row.successRate()),
-                row.sentMessages(),
-                row.receivedMessages(),
-                row.matchedMessages(),
-                formatDecimal(row.sendRate()),
-                formatDecimal(row.receiveRate()),
-                TimeDisplayUtil.formatElapsedTime(row.avgFirstMessageLatencyMs()),
-                TimeDisplayUtil.formatElapsedTime(row.avgDurationMs()),
-                TimeDisplayUtil.formatElapsedTime(row.p95DurationMs())
-        };
+        return PerformanceReportRowMapper.toWebSocketRowData(row);
     }
 
     private Object[] toSseRowData(PerformanceProtocolReportData.StreamReportRow row) {
-        return new Object[]{
-                row.name(),
-                row.total(),
-                row.success(),
-                row.fail(),
-                formatPercent(row.successRate()),
-                row.receivedMessages(),
-                row.matchedMessages(),
-                formatDecimal(row.receiveRate()),
-                formatDecimal(row.matchedRate()),
-                TimeDisplayUtil.formatElapsedTime(row.avgFirstMessageLatencyMs()),
-                TimeDisplayUtil.formatElapsedTime(row.p90FirstMessageLatencyMs()),
-                TimeDisplayUtil.formatElapsedTime(row.p95FirstMessageLatencyMs()),
-                TimeDisplayUtil.formatElapsedTime(row.p99FirstMessageLatencyMs()),
-                TimeDisplayUtil.formatElapsedTime(row.avgDurationMs()),
-                TimeDisplayUtil.formatElapsedTime(row.p95DurationMs())
-        };
-    }
-
-    private String formatPercent(double value) {
-        if (Double.isNaN(value)) {
-            return "-";
-        }
-        return String.format(Locale.ROOT, "%.2f%%", value);
-    }
-
-    private String formatDecimal(double value) {
-        return String.format(Locale.ROOT, "%.2f", value);
+        return PerformanceReportRowMapper.toSseRowData(row);
     }
 
     private static final class ReportTableHeader extends JTableHeader {
@@ -649,50 +597,30 @@ public class PerformanceReportPanel extends JPanel {
     }
 
     String buildMarkdownReport() {
-        if (reportTableModel.getRowCount() == 0
-                && webSocketReportTableModel.getRowCount() == 0
-                && sseReportTableModel.getRowCount() == 0) {
-            return I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_MARKDOWN_EMPTY);
-        }
-
-        StringBuilder markdown = new StringBuilder(1024);
-        markdown.append("# ")
-                .append(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_MARKDOWN_TITLE))
-                .append("\n\n");
-        appendMarkdownTable(markdown, PerformanceProtocol.HTTP.getDisplayName(), reportTableModel);
-        appendMarkdownTable(markdown, PerformanceProtocol.WEBSOCKET.getDisplayName(), webSocketReportTableModel);
-        appendMarkdownTable(markdown, PerformanceProtocol.SSE.getDisplayName(), sseReportTableModel);
-        return markdown.toString();
+        return PerformanceReportMarkdownBuilder.build(
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_MARKDOWN_TITLE),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_MARKDOWN_EMPTY),
+                List.of(
+                        reportTable(PerformanceProtocol.HTTP.getDisplayName(), reportTableModel),
+                        reportTable(PerformanceProtocol.WEBSOCKET.getDisplayName(), webSocketReportTableModel),
+                        reportTable(PerformanceProtocol.SSE.getDisplayName(), sseReportTableModel)
+                )
+        );
     }
 
-    private void appendMarkdownTable(StringBuilder markdown, String title, DefaultTableModel model) {
-        if (model.getRowCount() == 0) {
-            return;
-        }
-        markdown.append("## ").append(title).append("\n\n");
+    private PerformanceReportMarkdownBuilder.ReportTable reportTable(String title, DefaultTableModel model) {
+        List<String> tableColumns = new ArrayList<>(model.getColumnCount());
         for (int col = 0; col < model.getColumnCount(); col++) {
-            markdown.append("| ").append(escapeMarkdownCell(model.getColumnName(col))).append(' ');
+            tableColumns.add(model.getColumnName(col));
         }
-        markdown.append("|\n");
-        for (int col = 0; col < model.getColumnCount(); col++) {
-            markdown.append("| --- ");
-        }
-        markdown.append("|\n");
+        List<Object[]> rows = new ArrayList<>(model.getRowCount());
         for (int row = 0; row < model.getRowCount(); row++) {
+            Object[] rowData = new Object[model.getColumnCount()];
             for (int col = 0; col < model.getColumnCount(); col++) {
-                markdown.append("| ").append(escapeMarkdownCell(valueAt(model, row, col))).append(' ');
+                rowData[col] = model.getValueAt(row, col);
             }
-            markdown.append("|\n");
+            rows.add(rowData);
         }
-        markdown.append('\n');
-    }
-
-    private String valueAt(DefaultTableModel model, int row, int column) {
-        Object value = model.getValueAt(row, column);
-        return value == null ? "" : value.toString();
-    }
-
-    private String escapeMarkdownCell(String value) {
-        return value == null ? "" : value.replace("|", "\\|").replace("\n", " ");
+        return new PerformanceReportMarkdownBuilder.ReportTable(title, tableColumns, rows);
     }
 }

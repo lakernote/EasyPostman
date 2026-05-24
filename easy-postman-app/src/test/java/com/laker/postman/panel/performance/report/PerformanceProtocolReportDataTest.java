@@ -1,4 +1,4 @@
-package com.laker.postman.panel.performance.result;
+package com.laker.postman.panel.performance.report;
 
 import com.laker.postman.panel.performance.model.ApiMetadata;
 import com.laker.postman.panel.performance.model.PerformanceProtocol;

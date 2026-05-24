@@ -1,4 +1,4 @@
-package com.laker.postman.panel.performance.result;
+package com.laker.postman.panel.performance.report;
 
 import com.laker.postman.panel.performance.model.PerformanceProtocol;
 import com.laker.postman.panel.performance.model.PerformanceReportSnapshot;
@@ -12,7 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-final class PerformanceProtocolReportData {
+public final class PerformanceProtocolReportData {
 
     private static final double PERCENTILE_90 = 0.90;
     private static final double PERCENTILE_95 = 0.95;
@@ -31,7 +31,7 @@ final class PerformanceProtocolReportData {
         this.sseRows = sseRows;
     }
 
-    static PerformanceProtocolReportData fromResults(List<RequestResult> results, String totalRowName) {
+    public static PerformanceProtocolReportData fromResults(List<RequestResult> results, String totalRowName) {
         List<RequestResult> safeResults = results == null ? List.of() : results;
         return new PerformanceProtocolReportData(
                 buildHttpRows(safeResults, totalRowName),
@@ -40,7 +40,7 @@ final class PerformanceProtocolReportData {
         );
     }
 
-    static PerformanceProtocolReportData fromStatsSnapshot(PerformanceStatsSnapshot snapshot, String totalRowName) {
+    public static PerformanceProtocolReportData fromStatsSnapshot(PerformanceStatsSnapshot snapshot, String totalRowName) {
         if (snapshot == null) {
             return new PerformanceProtocolReportData(List.of(), List.of(), List.of());
         }
@@ -51,22 +51,22 @@ final class PerformanceProtocolReportData {
         );
     }
 
-    static PerformanceProtocolReportData fromReportSnapshot(PerformanceReportSnapshot snapshot, String totalRowName) {
+    public static PerformanceProtocolReportData fromReportSnapshot(PerformanceReportSnapshot snapshot, String totalRowName) {
         if (snapshot == null) {
             return new PerformanceProtocolReportData(List.of(), List.of(), List.of());
         }
         return fromStatsSnapshot(snapshot.completedStats(), totalRowName);
     }
 
-    List<HttpReportRow> httpRows() {
+    public List<HttpReportRow> httpRows() {
         return httpRows;
     }
 
-    List<StreamReportRow> webSocketRows() {
+    public List<StreamReportRow> webSocketRows() {
         return webSocketRows;
     }
 
-    List<StreamReportRow> sseRows() {
+    public List<StreamReportRow> sseRows() {
         return sseRows;
     }
 
@@ -335,41 +335,41 @@ final class PerformanceProtocolReportData {
         return Math.round(lowerValue + (upperValue - lowerValue) * fraction);
     }
 
-    private interface NamedReportRow {
+    public sealed interface NamedReportRow permits HttpReportRow, StreamReportRow {
         String name();
     }
 
-    record HttpReportRow(String name,
-                         long total,
-                         long success,
-                         long fail,
-                         double successRate,
-                         double qps,
-                         long avg,
-                         long min,
-                         long max,
-                         long p90,
-                         long p95,
-                         long p99) implements NamedReportRow {
+    public record HttpReportRow(String name,
+                                long total,
+                                long success,
+                                long fail,
+                                double successRate,
+                                double qps,
+                                long avg,
+                                long min,
+                                long max,
+                                long p90,
+                                long p95,
+                                long p99) implements NamedReportRow {
     }
 
-    record StreamReportRow(String name,
-                           long total,
-                           long success,
-                           long fail,
-                           double successRate,
-                           long sentMessages,
-                           long receivedMessages,
-                           long matchedMessages,
-                           double sendRate,
-                           double receiveRate,
-                           double matchedRate,
-                           long avgFirstMessageLatencyMs,
-                           long p90FirstMessageLatencyMs,
-                           long p95FirstMessageLatencyMs,
-                           long p99FirstMessageLatencyMs,
-                           long avgDurationMs,
-                           long p95DurationMs) implements NamedReportRow {
+    public record StreamReportRow(String name,
+                                  long total,
+                                  long success,
+                                  long fail,
+                                  double successRate,
+                                  long sentMessages,
+                                  long receivedMessages,
+                                  long matchedMessages,
+                                  double sendRate,
+                                  double receiveRate,
+                                  double matchedRate,
+                                  long avgFirstMessageLatencyMs,
+                                  long p90FirstMessageLatencyMs,
+                                  long p95FirstMessageLatencyMs,
+                                  long p99FirstMessageLatencyMs,
+                                  long avgDurationMs,
+                                  long p95DurationMs) implements NamedReportRow {
     }
 
     private record DurationStats(long avg, long min, long max, long p90, long p95, long p99) {

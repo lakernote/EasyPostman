@@ -9,7 +9,6 @@ import okhttp3.Response;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
 
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -164,19 +163,19 @@ public class SseSampleExecutor {
                         realtimeMetrics.recordSseMatched(eventSource);
                         lastEventIdRef.set(id == null ? "" : id);
                         lastEventTypeRef.set(eventType);
-                        appendEvent(matchedEventBody, id, eventType, data);
+                        SseEventFormatter.appendEvent(matchedEventBody, id, eventType, data);
                         firstMessageLatch.countDown();
                         completionLatch.countDown();
                     }
                     return;
                 }
 
-                if (matchesEvent(cfg, eventType) && matchesPayload(cfg, data)) {
+                if (SseSampleMatcher.matchesEvent(cfg, eventType) && SseSampleMatcher.matchesPayload(cfg, data)) {
                     boolean firstMatchedMessage = matchedMessageCount.incrementAndGet() == 1;
                     realtimeMetrics.recordSseMatched(eventSource);
                     lastEventIdRef.set(id == null ? "" : id);
                     lastEventTypeRef.set(eventType);
-                    appendEvent(matchedEventBody, id, eventType, data);
+                    SseEventFormatter.appendEvent(matchedEventBody, id, eventType, data);
                     if (firstMatchedMessage) {
                         firstMessageLatch.countDown();
                     }
@@ -301,78 +300,22 @@ public class SseSampleExecutor {
         resp.costMs = endTime - requestStartTime;
         resp.body = matchedEventBody.value();
         resp.bodySize = matchedEventBody.totalUtf8Bytes();
-        if (resp.headers == null) {
-            resp.headers = new LinkedHashMap<>();
-        }
-        resp.addHeader("X-Easy-SSE-Mode", Collections.singletonList(cfg.completionMode.name()));
-        resp.addHeader("X-Easy-SSE-Event-Filter", Collections.singletonList(CharSequenceUtil.blankToDefault(cfg.eventNameFilter, "")));
-        resp.addHeader("X-Easy-SSE-Message-Filter", Collections.singletonList(CharSequenceUtil.blankToDefault(cfg.messageFilter, "")));
-        resp.addHeader("X-Easy-SSE-Event-Count", Collections.singletonList(String.valueOf(eventCount.get())));
-        resp.addHeader("X-Easy-SSE-Message-Count", Collections.singletonList(String.valueOf(matchedMessageCount.get())));
-        String firstEventLatencyHeader = firstEventLatencyMs.get() >= 0 ? String.valueOf(firstEventLatencyMs.get()) : "";
-        resp.addHeader("X-Easy-SSE-First-Event-Latency-Ms", Collections.singletonList(firstEventLatencyHeader));
-        resp.addHeader("X-Easy-SSE-Event-Id", Collections.singletonList(CharSequenceUtil.blankToDefault(lastEventIdRef.get(), "")));
-        resp.addHeader("X-Easy-SSE-Event-Type", Collections.singletonList(CharSequenceUtil.blankToDefault(lastEventTypeRef.get(), "")));
-        if (CharSequenceUtil.isNotBlank(errorRef.get())) {
-            resp.addHeader("X-Easy-SSE-Error", Collections.singletonList(errorRef.get()));
-        }
+        SseSampleResponseBuilder.addSummaryHeaders(
+                resp,
+                cfg,
+                eventCount.get(),
+                matchedMessageCount.get(),
+                firstEventLatencyMs.get(),
+                lastEventIdRef.get(),
+                lastEventTypeRef.get(),
+                errorRef.get()
+        );
 
         return new Result(resp, errorRef.get(), failed.get(), interrupted.get());
-    }
-
-    private boolean matchesEvent(SsePerformanceData cfg, String eventType) {
-        if (!SsePerformanceData.usesEventNameFilter(cfg.completionMode)) {
-            return true;
-        }
-        String filter = cfg.eventNameFilter;
-        return CharSequenceUtil.isBlank(filter) || CharSequenceUtil.equals(filter.trim(), eventType);
-    }
-
-    private boolean matchesPayload(SsePerformanceData cfg, String data) {
-        if (cfg.completionMode != SsePerformanceData.CompletionMode.MATCHED_MESSAGE) {
-            return true;
-        }
-        String filter = cfg.messageFilter;
-        return CharSequenceUtil.isBlank(filter) || (data != null && data.contains(filter.trim()));
     }
 
     private static void markSampleEnd(AtomicLong sampleEndTimeMs) {
         sampleEndTimeMs.compareAndSet(0, System.currentTimeMillis());
     }
 
-    private void appendEvent(BoundedTextAccumulator buffer, String id, String type, String data) {
-        if (id != null && !id.isBlank()) {
-            buffer.append("id: ");
-            buffer.append(id);
-            buffer.append("\n");
-        }
-        if (type != null && !type.isBlank()) {
-            buffer.append("event: ");
-            buffer.append(type);
-            buffer.append("\n");
-        }
-        String eventData = data == null ? "" : data;
-        appendDataLines(buffer, eventData);
-        buffer.append("\n");
-    }
-
-    private void appendDataLines(BoundedTextAccumulator buffer, String eventData) {
-        int lineStart = 0;
-        for (int i = 0; i < eventData.length(); i++) {
-            char ch = eventData.charAt(i);
-            if (ch != '\n' && ch != '\r') {
-                continue;
-            }
-            buffer.append("data: ");
-            buffer.append(eventData, lineStart, i);
-            buffer.append("\n");
-            if (ch == '\r' && i + 1 < eventData.length() && eventData.charAt(i + 1) == '\n') {
-                i++;
-            }
-            lineStart = i + 1;
-        }
-        buffer.append("data: ");
-        buffer.append(eventData, lineStart, eventData.length());
-        buffer.append("\n");
-    }
 }

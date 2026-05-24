@@ -1,6 +1,7 @@
 package com.laker.postman.panel.performance.execution;
 
 import com.laker.postman.model.HttpHeader;
+import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.SsePerformanceData;
@@ -8,7 +9,6 @@ import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.testng.annotations.Test;
 
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -147,16 +147,47 @@ public class SseSampleExecutorTest {
         SsePerformanceData cfg = new SsePerformanceData();
         cfg.completionMode = SsePerformanceData.CompletionMode.FIXED_DURATION;
         cfg.eventNameFilter = "done";
-        SseSampleExecutor executor = new SseSampleExecutor(
-                () -> true,
-                throwable -> false,
-                ConcurrentHashMap.newKeySet()
+
+        assertTrue(SseSampleMatcher.matchesEvent(cfg, "message"));
+    }
+
+    @Test
+    public void shouldFormatSseEventBodyWithMultilineData() {
+        BoundedTextAccumulator buffer = new BoundedTextAccumulator(1024);
+
+        SseEventFormatter.appendEvent(buffer, "42", "done", "a\nb\r\nc");
+
+        assertEquals(buffer.value(), "id: 42\nevent: done\ndata: a\ndata: b\ndata: c\n\n");
+    }
+
+    @Test
+    public void shouldAddSseSummaryHeaders() {
+        HttpResponse response = new HttpResponse();
+        SsePerformanceData cfg = new SsePerformanceData();
+        cfg.completionMode = SsePerformanceData.CompletionMode.MATCHED_MESSAGE;
+        cfg.eventNameFilter = "done";
+        cfg.messageFilter = "status";
+
+        SseSampleResponseBuilder.addSummaryHeaders(
+                response,
+                cfg,
+                5,
+                2,
+                31,
+                "event-1",
+                "done",
+                "boom"
         );
 
-        Method matchesEvent = SseSampleExecutor.class.getDeclaredMethod("matchesEvent", SsePerformanceData.class, String.class);
-        matchesEvent.setAccessible(true);
-
-        assertTrue((Boolean) matchesEvent.invoke(executor, cfg, "message"));
+        assertEquals(response.headers.get("X-Easy-SSE-Mode").get(0), "MATCHED_MESSAGE");
+        assertEquals(response.headers.get("X-Easy-SSE-Event-Filter").get(0), "done");
+        assertEquals(response.headers.get("X-Easy-SSE-Message-Filter").get(0), "status");
+        assertEquals(response.headers.get("X-Easy-SSE-Event-Count").get(0), "5");
+        assertEquals(response.headers.get("X-Easy-SSE-Message-Count").get(0), "2");
+        assertEquals(response.headers.get("X-Easy-SSE-First-Event-Latency-Ms").get(0), "31");
+        assertEquals(response.headers.get("X-Easy-SSE-Event-Id").get(0), "event-1");
+        assertEquals(response.headers.get("X-Easy-SSE-Event-Type").get(0), "done");
+        assertEquals(response.headers.get("X-Easy-SSE-Error").get(0), "boom");
     }
 
     private static final class SlowSseSessionEndMetrics extends PerformanceRealtimeMetrics {

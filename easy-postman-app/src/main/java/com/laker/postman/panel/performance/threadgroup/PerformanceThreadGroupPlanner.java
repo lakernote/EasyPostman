@@ -4,19 +4,13 @@ import com.laker.postman.panel.performance.plan.PerformanceController;
 import com.laker.postman.panel.performance.plan.PerformancePlanElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.panel.performance.plan.PerformanceTestPlan;
-import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
 import com.laker.postman.panel.performance.plan.PerformanceThreadGroupPlan;
 
-import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.List;
 
 public final class PerformanceThreadGroupPlanner {
 
     private static final double ESTIMATED_REQUEST_DURATION_SECONDS = 0.3;
-
-    public int getTotalThreads(DefaultMutableTreeNode rootNode) {
-        return getTotalThreads(PerformanceTestPlanCompiler.compile(rootNode));
-    }
 
     public int getTotalThreads(PerformanceTestPlan plan) {
         int total = 0;
@@ -27,10 +21,6 @@ public final class PerformanceThreadGroupPlanner {
             total += maxThreadCount(groupPlan.getThreadGroupData());
         }
         return total;
-    }
-
-    public long estimateTotalRequests(DefaultMutableTreeNode rootNode) {
-        return estimateTotalRequests(PerformanceTestPlanCompiler.compile(rootNode));
     }
 
     public long estimateTotalRequests(PerformanceTestPlan plan) {

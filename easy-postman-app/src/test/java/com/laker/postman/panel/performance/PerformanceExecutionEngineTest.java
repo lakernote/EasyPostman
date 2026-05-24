@@ -10,6 +10,7 @@ import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
 import com.laker.postman.panel.performance.model.SsePerformanceData;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
+import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
 import com.laker.postman.panel.performance.runtime.PerformanceExecutionEngine;
 import com.laker.postman.panel.performance.runtime.PerformanceIterationContextFactory;
 import com.laker.postman.panel.performance.runtime.PerformancePlanExecutor;
@@ -34,6 +35,11 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class PerformanceExecutionEngineTest {
+
+    @Test
+    public void executionApisShouldNotExposeSwingTreeCompatibilityMethods() {
+        assertFalse(hasDefaultMutableTreeNodeParameter(PerformanceExecutionEngine.class));
+    }
 
     @Test(timeOut = 3000)
     public void joinThreadGroupThreadsShouldInterruptChildrenAndWaitWhenInterrupted() throws Exception {
@@ -87,7 +93,7 @@ public class PerformanceExecutionEngineTest {
                 null
         );
 
-        assertEquals(engine.getTotalThreads(root), 1);
+        assertEquals(engine.getTotalThreads(PerformanceTestPlanCompiler.compile(root)), 1);
     }
 
     @Test
@@ -118,7 +124,7 @@ public class PerformanceExecutionEngineTest {
                 null
         );
 
-        assertEquals(engine.estimateTotalRequests(root), 400L);
+        assertEquals(engine.estimateTotalRequests(PerformanceTestPlanCompiler.compile(root)), 400L);
     }
 
     @Test
@@ -156,7 +162,7 @@ public class PerformanceExecutionEngineTest {
                 null
         );
 
-        assertEquals(engine.estimateTotalRequests(root), 10_000_000_000L);
+        assertEquals(engine.estimateTotalRequests(PerformanceTestPlanCompiler.compile(root)), 10_000_000_000L);
     }
 
     @Test
@@ -200,7 +206,7 @@ public class PerformanceExecutionEngineTest {
                     null
             );
 
-            engine.runJMeterTreeWithProgress(group, 1, (active, total) -> {
+            engine.runTestPlanWithProgress(PerformanceTestPlanCompiler.compile(group), 1, (active, total) -> {
             });
 
             assertEquals(server.getRequestCount(), 2);
@@ -237,7 +243,7 @@ public class PerformanceExecutionEngineTest {
                     null,
                     statsCollector,
                     null
-            ).runJMeterTreeWithProgress(group, 1, (active, total) -> {
+            ).runTestPlanWithProgress(PerformanceTestPlanCompiler.compile(group), 1, (active, total) -> {
             });
 
             assertEquals(server.getRequestCount(), 1);
@@ -273,7 +279,7 @@ public class PerformanceExecutionEngineTest {
                     null,
                     statsCollector,
                     null
-            ).runJMeterTreeWithProgress(group, 1, (active, total) -> {
+            ).runTestPlanWithProgress(PerformanceTestPlanCompiler.compile(group), 1, (active, total) -> {
             });
 
             assertEquals(server.getRequestCount(), 0);
@@ -312,7 +318,7 @@ public class PerformanceExecutionEngineTest {
                     null,
                     statsCollector,
                     null
-            ).runJMeterTreeWithProgress(group, 1, (active, total) -> {
+            ).runTestPlanWithProgress(PerformanceTestPlanCompiler.compile(group), 1, (active, total) -> {
             });
 
             assertEquals(server.getRequestCount(), 0);
@@ -392,5 +398,11 @@ public class PerformanceExecutionEngineTest {
         assertionData.operator = "=";
         assertionData.value = expectedStatus;
         return new DefaultMutableTreeNode(new JMeterTreeNode("status assertion", NodeType.ASSERTION, assertionData));
+    }
+
+    private static boolean hasDefaultMutableTreeNodeParameter(Class<?> type) {
+        return java.util.Arrays.stream(type.getMethods())
+                .flatMap(method -> java.util.Arrays.stream(method.getParameterTypes()))
+                .anyMatch(DefaultMutableTreeNode.class::equals);
     }
 }

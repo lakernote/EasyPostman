@@ -107,7 +107,7 @@ final class PerformanceRunControlSupport {
 
         Thread runThread = PerformanceThreadFactory.newDaemonThread("PerformanceRun", () -> {
             try {
-                executionEngine.runPlanWithProgress(
+                executionEngine.runTestPlanWithProgress(
                         executionPlan,
                         totalThreads,
                         (active, total) -> runUiController.updateProgressAsync(progressLabel, active, total)

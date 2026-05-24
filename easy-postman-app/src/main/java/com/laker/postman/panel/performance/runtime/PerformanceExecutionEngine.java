@@ -6,7 +6,6 @@ import com.laker.postman.panel.performance.execution.PerformanceResultRecorder;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
 import com.laker.postman.panel.performance.plan.PerformanceTestPlan;
-import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import com.laker.postman.panel.performance.threadgroup.PerformanceThreadGroupPlanner;
 import com.laker.postman.service.setting.SettingManager;
@@ -15,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.WebSocket;
 import okhttp3.sse.EventSource;
 
-import javax.swing.tree.DefaultMutableTreeNode;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -112,31 +110,17 @@ public final class PerformanceExecutionEngine {
         return realtimeMetrics.liveSnapshot(nowMs);
     }
 
-    public int getTotalThreads(DefaultMutableTreeNode rootNode) {
-        return threadGroupPlanner.getTotalThreads(PerformanceTestPlanCompiler.compile(rootNode));
-    }
-
     public int getTotalThreads(PerformanceTestPlan plan) {
         return threadGroupPlanner.getTotalThreads(plan);
-    }
-
-    public long estimateTotalRequests(DefaultMutableTreeNode rootNode) {
-        return threadGroupPlanner.estimateTotalRequests(PerformanceTestPlanCompiler.compile(rootNode));
     }
 
     public long estimateTotalRequests(PerformanceTestPlan plan) {
         return threadGroupPlanner.estimateTotalRequests(plan);
     }
 
-    public void runJMeterTreeWithProgress(DefaultMutableTreeNode rootNode,
-                                          int totalThreads,
-                                          BiConsumer<Integer, Integer> progressUpdater) {
-        runPlanWithProgress(PerformanceTestPlanCompiler.compile(rootNode), totalThreads, progressUpdater);
-    }
-
-    public void runPlanWithProgress(PerformanceTestPlan plan,
-                                    int totalThreads,
-                                    BiConsumer<Integer, Integer> progressUpdater) {
+    public void runTestPlanWithProgress(PerformanceTestPlan plan,
+                                        int totalThreads,
+                                        BiConsumer<Integer, Integer> progressUpdater) {
         if (!runningSupplier.getAsBoolean()) {
             return;
         }

@@ -8,11 +8,18 @@ import com.laker.postman.panel.performance.plan.PerformanceTestPlan;
 import com.laker.postman.panel.performance.plan.PerformanceThreadGroupPlan;
 import org.testng.annotations.Test;
 
+import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.List;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 
 public class PerformanceThreadGroupPlannerTest {
+
+    @Test
+    public void plannerApisShouldNotExposeSwingTreeCompatibilityMethods() {
+        assertFalse(hasDefaultMutableTreeNodeParameter(PerformanceThreadGroupPlanner.class));
+    }
 
     @Test
     public void estimateTotalRequestsShouldUseControllerContract() {
@@ -53,5 +60,11 @@ public class PerformanceThreadGroupPlannerTest {
         public List<PerformancePlanElement> getElements() {
             return elements;
         }
+    }
+
+    private static boolean hasDefaultMutableTreeNodeParameter(Class<?> type) {
+        return java.util.Arrays.stream(type.getMethods())
+                .flatMap(method -> java.util.Arrays.stream(method.getParameterTypes()))
+                .anyMatch(DefaultMutableTreeNode.class::equals);
     }
 }

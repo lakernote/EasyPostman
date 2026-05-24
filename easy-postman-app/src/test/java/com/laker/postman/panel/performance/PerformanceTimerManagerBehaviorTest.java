@@ -1,5 +1,6 @@
 package com.laker.postman.panel.performance;
 
+import com.laker.postman.panel.performance.control.PerformanceTimerManager;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Field;

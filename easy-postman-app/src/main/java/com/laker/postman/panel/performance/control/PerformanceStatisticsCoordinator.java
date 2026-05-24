@@ -1,4 +1,4 @@
-package com.laker.postman.panel.performance;
+package com.laker.postman.panel.performance.control;
 
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.PerformanceReportSnapshot;
@@ -26,7 +26,7 @@ import java.util.function.LongSupplier;
 
 @Slf4j
 @RequiredArgsConstructor
-final class PerformanceStatisticsCoordinator {
+public final class PerformanceStatisticsCoordinator {
 
     private final PerformanceStatsCollector statsCollector;
     private final PerformanceReportPanel performanceReportPanel;
@@ -45,7 +45,7 @@ final class PerformanceStatisticsCoordinator {
     private final Object runGenerationLock = new Object();
     private volatile boolean disposed;
 
-    void refreshReport() {
+    public void refreshReport() {
         if (!SwingUtilities.isEventDispatchThread()) {
             SwingUtilities.invokeLater(this::refreshReport);
             return;
@@ -62,7 +62,7 @@ final class PerformanceStatisticsCoordinator {
         }
     }
 
-    void updateReportWithLatestData() {
+    public void updateReportWithLatestData() {
         long generation = currentGeneration();
         submitMetricsTask("报表更新", generation, () -> {
             PerformanceReportSnapshot snapshot = snapshotForReport(System.currentTimeMillis());
@@ -70,7 +70,7 @@ final class PerformanceStatisticsCoordinator {
         });
     }
 
-    void updateReportWithLatestDataSync() {
+    public void updateReportWithLatestDataSync() {
         if (!SwingUtilities.isEventDispatchThread()) {
             SwingUtilities.invokeLater(this::updateReportWithLatestDataSync);
             return;
@@ -79,7 +79,7 @@ final class PerformanceStatisticsCoordinator {
         performanceReportPanel.updateReport(snapshotForReport(System.currentTimeMillis()));
     }
 
-    void sampleTrendData() {
+    public void sampleTrendData() {
         if (!isTrendEnabled()) {
             log.debug("趋势图未启用，跳过采样");
             return;
@@ -110,7 +110,7 @@ final class PerformanceStatisticsCoordinator {
         });
     }
 
-    void sampleTrendDataSync() {
+    public void sampleTrendDataSync() {
         if (!isTrendEnabled()) {
             return;
         }
@@ -171,13 +171,13 @@ final class PerformanceStatisticsCoordinator {
         return trendEnabledSupplier == null || trendEnabledSupplier.getAsBoolean();
     }
 
-    void dispose() {
+    public void dispose() {
         disposed = true;
         resetForNewRun();
         metricsExecutor.shutdownNow();
     }
 
-    void resetForNewRun() {
+    public void resetForNewRun() {
         synchronized (runGenerationLock) {
             runGeneration.incrementAndGet();
         }

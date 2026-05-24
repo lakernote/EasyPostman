@@ -12,6 +12,10 @@ import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.right.request.RequestEditSubPanel;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
+import com.laker.postman.panel.performance.control.PerformanceSaveShortcutSupport;
+import com.laker.postman.panel.performance.control.PerformanceRunUiController;
+import com.laker.postman.panel.performance.control.PerformanceStatisticsCoordinator;
+import com.laker.postman.panel.performance.control.PerformanceTimerManager;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
 import com.laker.postman.panel.performance.model.ApiMetadata;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
@@ -275,9 +279,7 @@ public class PerformancePanel extends SingletonBasePanel {
                 executionEngine,
                 statisticsCoordinator,
                 timerManager,
-                runBtn,
-                stopBtn,
-                refreshBtn,
+                new PerformanceRunUiController(runBtn, stopBtn, refreshBtn),
                 efficientCheckBox,
                 resultTabbedPane,
                 performanceResultTablePanel,

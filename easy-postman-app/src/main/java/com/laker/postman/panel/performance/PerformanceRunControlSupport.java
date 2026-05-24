@@ -1,8 +1,8 @@
 package com.laker.postman.panel.performance;
 
-import com.laker.postman.common.component.button.RefreshButton;
-import com.laker.postman.common.component.button.StartButton;
-import com.laker.postman.common.component.button.StopButton;
+import com.laker.postman.panel.performance.control.PerformanceRunUiController;
+import com.laker.postman.panel.performance.control.PerformanceStatisticsCoordinator;
+import com.laker.postman.panel.performance.control.PerformanceTimerManager;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
 import com.laker.postman.panel.performance.model.PerformanceStatsSnapshot;
 import com.laker.postman.panel.performance.plan.PerformanceTestPlan;
@@ -39,9 +39,7 @@ final class PerformanceRunControlSupport {
     private final PerformanceExecutionEngine executionEngine;
     private final PerformanceStatisticsCoordinator statisticsCoordinator;
     private final PerformanceTimerManager timerManager;
-    private final StartButton runBtn;
-    private final StopButton stopBtn;
-    private final RefreshButton refreshBtn;
+    private final PerformanceRunUiController runUiController;
     private final JCheckBox efficientCheckBox;
     private final JTabbedPane resultTabbedPane;
     private final PerformanceResultTablePanel performanceResultTablePanel;
@@ -95,9 +93,7 @@ final class PerformanceRunControlSupport {
         }
 
         runningSetter.accept(true);
-        runBtn.setEnabled(false);
-        stopBtn.setEnabled(true);
-        refreshBtn.setEnabled(false);
+        runUiController.markRunning();
         clearCachedPerformanceResultsAction.run();
 
         long startTime = System.currentTimeMillis();
@@ -106,14 +102,14 @@ final class PerformanceRunControlSupport {
         timerManager.startAll();
 
         int totalThreads = executionEngine.getTotalThreads(executionPlan);
-        progressLabel.setText("0/" + totalThreads);
+        runUiController.initializeProgress(progressLabel, totalThreads);
 
         Thread runThread = PerformanceThreadFactory.newDaemonThread("PerformanceRun", () -> {
             try {
                 executionEngine.runPlanWithProgress(
                         executionPlan,
                         totalThreads,
-                        (active, total) -> SwingUtilities.invokeLater(() -> progressLabel.setText(active + "/" + total))
+                        (active, total) -> runUiController.updateProgressAsync(progressLabel, active, total)
                 );
             } finally {
                 boolean stopped = !runningSupplier.getAsBoolean() || Thread.currentThread().isInterrupted();
@@ -134,9 +130,7 @@ final class PerformanceRunControlSupport {
         }
 
         executionEngine.cancelAllNetworkCalls();
-        runBtn.setEnabled(true);
-        stopBtn.setEnabled(false);
-        refreshBtn.setEnabled(true);
+        runUiController.markIdle();
         timerManager.stopAll();
 
         PerformanceThreadFactory.newDaemonThread("PerformanceStopFlush", () -> {
@@ -157,9 +151,7 @@ final class PerformanceRunControlSupport {
 
     private void finishRunUi() {
         runningSetter.accept(false);
-        runBtn.setEnabled(true);
-        stopBtn.setEnabled(false);
-        refreshBtn.setEnabled(true);
+        runUiController.markIdle();
         timerManager.stopAll();
 
         flushPendingAndCharts("完成时");

@@ -1,6 +1,7 @@
 package com.laker.postman.panel.performance;
 
 import com.laker.postman.common.SingletonFactory;
+import com.laker.postman.panel.performance.control.PerformanceStatisticsCoordinator;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;

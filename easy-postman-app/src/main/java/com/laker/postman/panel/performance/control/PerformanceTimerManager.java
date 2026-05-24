@@ -1,4 +1,4 @@
-package com.laker.postman.panel.performance;
+package com.laker.postman.panel.performance.control;
 
 import com.laker.postman.panel.performance.runtime.PerformanceThreadFactory;
 import com.laker.postman.service.setting.SettingManager;

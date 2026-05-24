@@ -10,6 +10,7 @@ import com.laker.postman.panel.performance.model.RequestResult;
 import com.laker.postman.panel.performance.report.PerformanceProtocolReportData;
 import com.laker.postman.panel.performance.report.PerformanceReportMarkdownBuilder;
 import com.laker.postman.panel.performance.report.PerformanceReportRowMapper;
+import com.laker.postman.panel.performance.report.PerformanceReportTableSchema;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.MessageKeys;
@@ -28,12 +29,6 @@ import java.util.List;
 import java.util.Map;
 
 public class PerformanceReportPanel extends JPanel {
-
-    private static final int FAIL_COLUMN_INDEX = 3;
-    private static final int SUCCESS_RATE_COLUMN_INDEX = 4;
-    private static final int API_NAME_MIN_WIDTH = 110;
-    private static final int API_NAME_PREFERRED_WIDTH = 160;
-    private static final int GENERIC_API_NAME_PREFERRED_WIDTH = 180;
 
     // 成功率阈值
     private static final double SUCCESS_RATE_EXCELLENT = 99.0;
@@ -54,52 +49,9 @@ public class PerformanceReportPanel extends JPanel {
 
     public PerformanceReportPanel() {
         // Initialize internationalized column names
-        this.columns = new String[]{
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_API_NAME),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_TOTAL),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_SUCCESS),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_FAIL),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_SUCCESS_RATE),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_QPS),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_MIN),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_MAX),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_P90),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_P95),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_P99)
-        };
-        this.webSocketColumns = new String[]{
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_API_NAME),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_SESSIONS),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_SUCCESS),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_FAIL),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_SUCCESS_RATE),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_SENT),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_RECEIVED),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_MATCHED),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_SEND_RATE),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_RECEIVE_RATE),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG_FIRST_MESSAGE),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG_SESSION),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_P95_SESSION)
-        };
-        this.sseColumns = new String[]{
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_API_NAME),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_STREAMS),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_SUCCESS),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_FAIL),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_SUCCESS_RATE),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_EVENTS),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_MATCHED),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_EVENT_RATE),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_MATCHED_RATE),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG_FIRST_EVENT),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_P90_FIRST_EVENT),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_P95_FIRST_EVENT),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_P99_FIRST_EVENT),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG_STREAM),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_P95_STREAM)
-        };
+        this.columns = PerformanceReportTableSchema.httpColumns();
+        this.webSocketColumns = PerformanceReportTableSchema.webSocketColumns();
+        this.sseColumns = PerformanceReportTableSchema.sseColumns();
         this.totalRowName = I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_TOTAL_ROW);
 
         // 创建单例渲染器
@@ -192,9 +144,9 @@ public class PerformanceReportPanel extends JPanel {
         DefaultTableCellRenderer streamRateRenderer = createRateRenderer(model);
         table.getColumnModel().getColumn(0).setCellRenderer(nameRenderer);
         for (int col = 1; col < model.getColumnCount(); col++) {
-            if (col == FAIL_COLUMN_INDEX) {
+            if (col == PerformanceReportTableSchema.FAIL_COLUMN_INDEX) {
                 table.getColumnModel().getColumn(col).setCellRenderer(streamFailRenderer);
-            } else if (col == SUCCESS_RATE_COLUMN_INDEX) {
+            } else if (col == PerformanceReportTableSchema.SUCCESS_RATE_COLUMN_INDEX) {
                 table.getColumnModel().getColumn(col).setCellRenderer(streamRateRenderer);
             } else {
                 table.getColumnModel().getColumn(col).setCellRenderer(centerRenderer);
@@ -232,11 +184,13 @@ public class PerformanceReportPanel extends JPanel {
             return;
         }
         int[] widths = table.getColumnCount() == webSocketColumns.length
-                ? new int[]{180, 72, 70, 60, 90, 70, 70, 70, 104, 104, 112, 118, 118}
-                : new int[]{180, 72, 70, 60, 90, 70, 70, 92, 104, 112, 112, 112, 112, 118, 118};
+                ? PerformanceReportTableSchema.webSocketColumnWidths()
+                : PerformanceReportTableSchema.sseColumnWidths();
         for (int col = 0; col < table.getColumnModel().getColumnCount() && col < widths.length; col++) {
             int width = widths[col];
-            table.getColumnModel().getColumn(col).setMinWidth(col == 0 ? API_NAME_MIN_WIDTH : 56);
+            table.getColumnModel().getColumn(col).setMinWidth(
+                    col == 0 ? PerformanceReportTableSchema.API_NAME_MIN_WIDTH : 56
+            );
             table.getColumnModel().getColumn(col).setPreferredWidth(width);
         }
     }
@@ -280,8 +234,8 @@ public class PerformanceReportPanel extends JPanel {
     private void configureColumnWidths(JTable table) {
         if (table.getColumnModel().getColumnCount() > 0) {
             // API Name 列
-            table.getColumnModel().getColumn(0).setMinWidth(API_NAME_MIN_WIDTH);
-            table.getColumnModel().getColumn(0).setPreferredWidth(API_NAME_PREFERRED_WIDTH);
+            table.getColumnModel().getColumn(0).setMinWidth(PerformanceReportTableSchema.API_NAME_MIN_WIDTH);
+            table.getColumnModel().getColumn(0).setPreferredWidth(PerformanceReportTableSchema.API_NAME_PREFERRED_WIDTH);
 
             // Total 列 - 显示 "Total"（5个字符）+ 数字
             table.getColumnModel().getColumn(1).setMinWidth(65);
@@ -333,9 +287,9 @@ public class PerformanceReportPanel extends JPanel {
         // 使用单例渲染器，避免重复创建
         // 需要居中的列索引（从第2列到最后一列）
         for (int col = 1; col < columns.length; col++) {
-            if (col == FAIL_COLUMN_INDEX) {
+            if (col == PerformanceReportTableSchema.FAIL_COLUMN_INDEX) {
                 table.getColumnModel().getColumn(col).setCellRenderer(failRenderer);
-            } else if (col == SUCCESS_RATE_COLUMN_INDEX) {
+            } else if (col == PerformanceReportTableSchema.SUCCESS_RATE_COLUMN_INDEX) {
                 table.getColumnModel().getColumn(col).setCellRenderer(rateRenderer);
             } else {
                 table.getColumnModel().getColumn(col).setCellRenderer(generalRenderer);

@@ -1,11 +1,11 @@
-package com.laker.postman.panel.performance;
+package com.laker.postman.panel.performance.control;
 
 import javax.swing.*;
 import java.awt.*;
 
-final class PerformanceSaveShortcutSupport {
+public final class PerformanceSaveShortcutSupport {
 
-    void install(JComponent component, Runnable saveAction) {
+    public void install(JComponent component, Runnable saveAction) {
         InputMap inputMap = component.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
         ActionMap actionMap = component.getActionMap();
         int modifierKey = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();

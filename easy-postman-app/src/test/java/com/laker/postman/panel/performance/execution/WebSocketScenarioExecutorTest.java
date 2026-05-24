@@ -1,6 +1,7 @@
 package com.laker.postman.panel.performance.execution;
 
 import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
@@ -9,6 +10,8 @@ import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import com.laker.postman.panel.performance.plan.PerformancePlanElement;
+import com.laker.postman.panel.performance.plan.PerformanceLoopController;
+import com.laker.postman.panel.performance.plan.PerformanceProtocolStageElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
 import com.laker.postman.service.variable.ExecutionVariableContext;
@@ -42,14 +45,14 @@ public class WebSocketScenarioExecutorTest {
 
     @Test
     public void shouldBuildResponseBodyFromAllReceivedMessages() {
-        String body = WebSocketScenarioExecutor.buildResponseBody(Arrays.asList("first", "second"));
+        String body = WebSocketScenarioResponseBuilder.buildResponseBody(Arrays.asList("first", "second"));
 
         assertEquals(body, "first\n\nsecond\n\n");
     }
 
     @Test
     public void shouldReturnEmptyBodyWhenNoMessagesReceived() {
-        String body = WebSocketScenarioExecutor.buildResponseBody(Collections.emptyList());
+        String body = WebSocketScenarioResponseBuilder.buildResponseBody(Collections.emptyList());
 
         assertEquals(body, "");
     }
@@ -74,8 +77,108 @@ public class WebSocketScenarioExecutorTest {
 
     @Test
     public void shouldRetainAwaitMessagePreviewByUtf8Bytes() {
-        assertEquals(WebSocketScenarioExecutor.retainUtf8Prefix("你好abc", 4), "你");
-        assertEquals(WebSocketScenarioExecutor.retainUtf8Prefix("🙂abc", 4), "🙂");
+        assertEquals(WebSocketReceivedMessageBuffer.retainUtf8Prefix("你好abc", 4), "你");
+        assertEquals(WebSocketReceivedMessageBuffer.retainUtf8Prefix("🙂abc", 4), "🙂");
+    }
+
+    @Test
+    public void receivedMessageBufferShouldEvictOldMessagesWhenRetainedBytesExceedLimit() {
+        WebSocketReceivedMessageBuffer buffer = new WebSocketReceivedMessageBuffer(5);
+
+        buffer.add("abc", 100);
+        buffer.add("def", 200);
+
+        WebSocketReceivedMessageBuffer.Message message = buffer.removeFirst();
+        assertEquals(message.payload(), "def");
+        assertEquals(message.receivedAtMs(), 200);
+        assertTrue(buffer.isEmpty());
+    }
+
+    @Test
+    public void shouldAddWebSocketSummaryHeaders() {
+        HttpResponse response = new HttpResponse();
+        WebSocketPerformanceData cfg = new WebSocketPerformanceData();
+        cfg.sendMode = WebSocketPerformanceData.SendMode.REQUEST_BODY_REPEAT;
+        cfg.sendContentSource = WebSocketPerformanceData.SendContentSource.CUSTOM_TEXT;
+        cfg.sendCount = 3;
+        cfg.sendIntervalMs = 20;
+        cfg.completionMode = WebSocketPerformanceData.CompletionMode.MATCHED_MESSAGE;
+        cfg.messageFilter = "ack";
+
+        WebSocketScenarioResponseBuilder.addSummaryHeaders(
+                response,
+                cfg,
+                5,
+                3,
+                2,
+                42,
+                "last",
+                "boom"
+        );
+
+        assertEquals(response.headers.get("X-Easy-WS-Send-Mode").get(0), "REQUEST_BODY_REPEAT");
+        assertEquals(response.headers.get("X-Easy-WS-Send-Content-Source").get(0), "CUSTOM_TEXT");
+        assertEquals(response.headers.get("X-Easy-WS-Send-Count-Configured").get(0), "3");
+        assertEquals(response.headers.get("X-Easy-WS-Received-Count").get(0), "5");
+        assertEquals(response.headers.get("X-Easy-WS-Sent-Count").get(0), "3");
+        assertEquals(response.headers.get("X-Easy-WS-Message-Count").get(0), "2");
+        assertEquals(response.headers.get("X-Easy-WS-First-Message-Latency-Ms").get(0), "42");
+        assertEquals(response.headers.get("X-Easy-WS-Last-Message").get(0), "last");
+        assertEquals(response.headers.get("X-Easy-WS-Error").get(0), "boom");
+    }
+
+    @Test
+    public void stepSupportShouldDetectAwaitStepInsideLoop() {
+        PerformanceProtocolStageElement awaitStep = new PerformanceProtocolStageElement(
+                "await",
+                NodeType.WS_AWAIT,
+                null,
+                new WebSocketPerformanceData(),
+                List.of()
+        );
+        PerformanceLoopController loop = new PerformanceLoopController("loop", new LoopData(), List.of(awaitStep));
+        PerformanceRequestSampler sampler = new PerformanceRequestSampler(
+                "request",
+                null,
+                null,
+                null,
+                List.of(loop)
+        );
+
+        assertTrue(WebSocketScenarioStepSupport.hasEnabledAwaitStep(sampler));
+    }
+
+    @Test
+    public void stepSupportShouldUseStageConfigBeforeRequestDefault() {
+        WebSocketPerformanceData requestCfg = new WebSocketPerformanceData();
+        requestCfg.sendCount = 1;
+        WebSocketPerformanceData stageCfg = new WebSocketPerformanceData();
+        stageCfg.sendCount = 7;
+        PerformanceProtocolStageElement sendStep = new PerformanceProtocolStageElement(
+                "send",
+                NodeType.WS_SEND,
+                null,
+                stageCfg,
+                List.of()
+        );
+
+        WebSocketPerformanceData resolved = WebSocketScenarioStepSupport.webSocketData(sendStep, requestCfg);
+
+        assertEquals(resolved.sendCount, 7);
+    }
+
+    @Test
+    public void stepSupportShouldSkipBlankRequestBodyButAllowBlankCustomTextSend() {
+        PreparedRequest request = new PreparedRequest();
+        request.body = "";
+        WebSocketPerformanceData requestBodyCfg = new WebSocketPerformanceData();
+        requestBodyCfg.sendContentSource = WebSocketPerformanceData.SendContentSource.REQUEST_BODY;
+        WebSocketPerformanceData customTextCfg = new WebSocketPerformanceData();
+        customTextCfg.sendContentSource = WebSocketPerformanceData.SendContentSource.CUSTOM_TEXT;
+        customTextCfg.customSendBody = "";
+
+        assertFalse(WebSocketScenarioStepSupport.hasSendPayload(request, null, requestBodyCfg));
+        assertTrue(WebSocketScenarioStepSupport.hasSendPayload(request, null, customTextCfg));
     }
 
     @Test

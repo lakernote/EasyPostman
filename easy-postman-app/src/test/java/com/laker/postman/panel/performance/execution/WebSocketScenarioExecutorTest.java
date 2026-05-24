@@ -8,6 +8,9 @@ import com.laker.postman.panel.performance.controller.LoopData;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
+import com.laker.postman.panel.performance.plan.PerformancePlanElement;
+import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
+import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
 import com.laker.postman.service.variable.ExecutionVariableContext;
 import com.laker.postman.service.variable.IterationDataVariableService;
 import com.laker.postman.service.variable.VariablesService;
@@ -86,11 +89,12 @@ public class WebSocketScenarioExecutorTest {
         loopNode.add(sendNode);
         requestNode.add(loopNode);
 
-        WebSocketScenarioStepCursor cursor = new WebSocketScenarioStepCursor(requestNode, () -> true);
+        PerformanceRequestSampler requestSampler = PerformanceTestPlanCompiler.compileRequestSampler(requestNode);
+        WebSocketScenarioPlanStepCursor cursor = new WebSocketScenarioPlanStepCursor(requestSampler, () -> true);
 
-        assertEquals(cursor.next(), sendNode);
-        assertEquals(cursor.next(), sendNode);
-        assertEquals(cursor.next(), sendNode);
+        assertNextStep(cursor, NodeType.WS_SEND, "send");
+        assertNextStep(cursor, NodeType.WS_SEND, "send");
+        assertNextStep(cursor, NodeType.WS_SEND, "send");
         assertEquals(cursor.next(), null);
     }
 
@@ -105,9 +109,10 @@ public class WebSocketScenarioExecutorTest {
         loopNode.add(sendNode);
         requestNode.add(loopNode);
 
-        WebSocketScenarioStepCursor cursor = new WebSocketScenarioStepCursor(requestNode, () -> true);
+        PerformanceRequestSampler requestSampler = PerformanceTestPlanCompiler.compileRequestSampler(requestNode);
+        WebSocketScenarioPlanStepCursor cursor = new WebSocketScenarioPlanStepCursor(requestSampler, () -> true);
 
-        assertEquals(cursor.next(), sendNode);
+        assertNextStep(cursor, NodeType.WS_SEND, "send");
         cursor.stop();
         assertEquals(cursor.next(), null);
     }
@@ -567,5 +572,11 @@ public class WebSocketScenarioExecutorTest {
         JMeterTreeNode connectStep = new JMeterTreeNode("connect", NodeType.WS_CONNECT);
         connectStep.webSocketPerformanceData = data;
         requestNode.add(new DefaultMutableTreeNode(connectStep));
+    }
+
+    private static void assertNextStep(WebSocketScenarioPlanStepCursor cursor, NodeType expectedType, String expectedName) {
+        PerformancePlanElement next = cursor.next();
+        assertEquals(next.getType(), expectedType);
+        assertEquals(next.getName(), expectedName);
     }
 }

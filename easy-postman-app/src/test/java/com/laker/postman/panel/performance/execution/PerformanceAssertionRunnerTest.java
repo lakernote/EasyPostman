@@ -5,6 +5,9 @@ import com.laker.postman.model.script.TestResult;
 import com.laker.postman.panel.performance.assertion.AssertionData;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
+import com.laker.postman.panel.performance.plan.PerformanceAssertionElement;
+import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
+import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
 import org.testng.annotations.Test;
 
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -20,22 +23,26 @@ public class PerformanceAssertionRunnerTest {
 
     @Test
     public void shouldNotRequireResponseBodyForStatusCodeAssertions() {
-        List<DefaultMutableTreeNode> assertions = List.of(assertionNode("Response Code", true));
+        List<PerformanceAssertionElement> assertions = List.of(assertionElement("Response Code"));
 
-        assertFalse(PerformanceAssertionRunner.requiresResponseBody(assertions));
+        assertFalse(PerformanceAssertionRunner.requiresResponseBodyElements(assertions));
     }
 
     @Test
     public void shouldRequireResponseBodyForBodyAssertions() {
-        assertTrue(PerformanceAssertionRunner.requiresResponseBody(List.of(assertionNode("Contains", true))));
-        assertTrue(PerformanceAssertionRunner.requiresResponseBody(List.of(assertionNode("JSONPath", true))));
+        assertTrue(PerformanceAssertionRunner.requiresResponseBodyElements(List.of(assertionElement("Contains"))));
+        assertTrue(PerformanceAssertionRunner.requiresResponseBodyElements(List.of(assertionElement("JSONPath"))));
     }
 
     @Test
     public void shouldIgnoreDisabledBodyAssertionsWhenCheckingBodyNeed() {
-        List<DefaultMutableTreeNode> assertions = List.of(assertionNode("Contains", false));
+        DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(new JMeterTreeNode("Request", NodeType.REQUEST));
+        requestNode.add(assertionTreeNode("Contains", false));
+        PerformanceRequestSampler requestSampler = PerformanceTestPlanCompiler.compileRequestSampler(requestNode);
 
-        assertFalse(PerformanceAssertionRunner.requiresResponseBody(assertions));
+        assertFalse(PerformanceAssertionRunner.requiresResponseBodyElements(
+                PerformanceAssertionRunner.collectAssertionElements(requestSampler, false, false)
+        ));
     }
 
     @Test
@@ -43,8 +50,8 @@ public class PerformanceAssertionRunnerTest {
         List<TestResult> results = new ArrayList<>();
         AtomicReference<String> error = new AtomicReference<>("");
 
-        PerformanceAssertionRunner.runAssertionNodes(
-                List.of(assertionNode("Contains", true, "ok", "")),
+        PerformanceAssertionRunner.runAssertionElements(
+                List.of(assertionElement("Contains", "ok", "")),
                 new HttpResponse(),
                 results,
                 error
@@ -60,8 +67,8 @@ public class PerformanceAssertionRunnerTest {
         List<TestResult> results = new ArrayList<>();
         AtomicReference<String> error = new AtomicReference<>("");
 
-        PerformanceAssertionRunner.runAssertionNodes(
-                List.of(assertionNode("Contains", true, "", "")),
+        PerformanceAssertionRunner.runAssertionElements(
+                List.of(assertionElement("Contains", "", "")),
                 new HttpResponse(),
                 results,
                 error
@@ -77,8 +84,8 @@ public class PerformanceAssertionRunnerTest {
         List<TestResult> results = new ArrayList<>();
         AtomicReference<String> error = new AtomicReference<>("");
 
-        PerformanceAssertionRunner.runAssertionNodes(
-                List.of(assertionNode("JSONPath", true, "alice", "$.name")),
+        PerformanceAssertionRunner.runAssertionElements(
+                List.of(assertionElement("JSONPath", "alice", "$.name")),
                 new HttpResponse(),
                 results,
                 error
@@ -94,8 +101,8 @@ public class PerformanceAssertionRunnerTest {
         List<TestResult> results = new ArrayList<>();
         AtomicReference<String> error = new AtomicReference<>("");
 
-        PerformanceAssertionRunner.runAssertionNodes(
-                List.of(assertionNode("Response Code", true, "", "200")),
+        PerformanceAssertionRunner.runAssertionElements(
+                List.of(assertionElement("Response Code", "", "200")),
                 null,
                 results,
                 error
@@ -106,17 +113,27 @@ public class PerformanceAssertionRunnerTest {
         assertFalse(error.get().isBlank());
     }
 
-    private static DefaultMutableTreeNode assertionNode(String type, boolean enabled) {
-        return assertionNode(type, enabled, "", "");
+    private static PerformanceAssertionElement assertionElement(String type) {
+        return assertionElement(type, "", "");
     }
 
-    private static DefaultMutableTreeNode assertionNode(String type, boolean enabled, String content, String value) {
+    private static PerformanceAssertionElement assertionElement(String type, String content, String value) {
+        return new PerformanceAssertionElement(type, assertionData(type, content, value));
+    }
+
+    private static DefaultMutableTreeNode assertionTreeNode(String type, boolean enabled) {
+        AssertionData data = new AssertionData();
+        data.type = type;
+        JMeterTreeNode node = new JMeterTreeNode(type, NodeType.ASSERTION, data);
+        node.enabled = enabled;
+        return new DefaultMutableTreeNode(node);
+    }
+
+    private static AssertionData assertionData(String type, String content, String value) {
         AssertionData data = new AssertionData();
         data.type = type;
         data.content = content;
         data.value = value;
-        JMeterTreeNode node = new JMeterTreeNode(type, NodeType.ASSERTION, data);
-        node.enabled = enabled;
-        return new DefaultMutableTreeNode(node);
+        return data;
     }
 }

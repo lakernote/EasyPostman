@@ -243,19 +243,6 @@ public class PerformanceRequestExecutor {
         req.notifyCookieChanges = false;
     }
 
-    static PreparedRequest.ResponseBodyMode resolveHttpResponseBodyMode(boolean efficientMode,
-                                                                        List<DefaultMutableTreeNode> assertionNodes,
-                                                                        String postscript) {
-        if (!efficientMode) {
-            return PreparedRequest.ResponseBodyMode.FULL;
-        }
-        if (PerformanceAssertionRunner.requiresResponseBody(assertionNodes)
-                || CharSequenceUtil.isNotBlank(postscript)) {
-            return PreparedRequest.ResponseBodyMode.PREVIEW;
-        }
-        return PreparedRequest.ResponseBodyMode.METADATA_ONLY;
-    }
-
     static PreparedRequest.ResponseBodyMode resolveHttpResponseBodyModeForAssertionElements(
             boolean efficientMode,
             List<PerformanceAssertionElement> assertionNodes,

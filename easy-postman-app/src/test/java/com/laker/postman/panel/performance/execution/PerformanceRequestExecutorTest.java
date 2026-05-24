@@ -9,6 +9,7 @@ import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.SsePerformanceData;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
+import com.laker.postman.panel.performance.plan.PerformanceAssertionElement;
 import com.laker.postman.service.setting.SettingManager;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
@@ -29,7 +30,7 @@ public class PerformanceRequestExecutorTest {
 
     @Test
     public void shouldUseFullResponseBodyOutsideEfficientMode() {
-        PreparedRequest.ResponseBodyMode mode = PerformanceRequestExecutor.resolveHttpResponseBodyMode(
+        PreparedRequest.ResponseBodyMode mode = PerformanceRequestExecutor.resolveHttpResponseBodyModeForAssertionElements(
                 false,
                 List.of(),
                 ""
@@ -40,9 +41,9 @@ public class PerformanceRequestExecutorTest {
 
     @Test
     public void shouldSkipResponseBodyInEfficientModeWhenOnlyMetadataIsNeeded() {
-        PreparedRequest.ResponseBodyMode mode = PerformanceRequestExecutor.resolveHttpResponseBodyMode(
+        PreparedRequest.ResponseBodyMode mode = PerformanceRequestExecutor.resolveHttpResponseBodyModeForAssertionElements(
                 true,
-                List.of(assertionNode("Response Code", true)),
+                List.of(assertionElement("Response Code")),
                 ""
         );
 
@@ -51,9 +52,9 @@ public class PerformanceRequestExecutorTest {
 
     @Test
     public void shouldUsePreviewInEfficientModeWhenAssertionsNeedBody() {
-        PreparedRequest.ResponseBodyMode mode = PerformanceRequestExecutor.resolveHttpResponseBodyMode(
+        PreparedRequest.ResponseBodyMode mode = PerformanceRequestExecutor.resolveHttpResponseBodyModeForAssertionElements(
                 true,
-                List.of(assertionNode("Contains", true)),
+                List.of(assertionElement("Contains")),
                 ""
         );
 
@@ -62,7 +63,7 @@ public class PerformanceRequestExecutorTest {
 
     @Test
     public void shouldUsePreviewInEfficientModeWhenPostScriptMayReadBody() {
-        PreparedRequest.ResponseBodyMode mode = PerformanceRequestExecutor.resolveHttpResponseBodyMode(
+        PreparedRequest.ResponseBodyMode mode = PerformanceRequestExecutor.resolveHttpResponseBodyModeForAssertionElements(
                 true,
                 List.of(),
                 "pm.test('body', () => pm.response.text())"
@@ -170,11 +171,9 @@ public class PerformanceRequestExecutorTest {
         }
     }
 
-    private static DefaultMutableTreeNode assertionNode(String type, boolean enabled) {
+    private static PerformanceAssertionElement assertionElement(String type) {
         AssertionData data = new AssertionData();
         data.type = type;
-        JMeterTreeNode node = new JMeterTreeNode(type, NodeType.ASSERTION, data);
-        node.enabled = enabled;
-        return new DefaultMutableTreeNode(node);
+        return new PerformanceAssertionElement(type, data);
     }
 }

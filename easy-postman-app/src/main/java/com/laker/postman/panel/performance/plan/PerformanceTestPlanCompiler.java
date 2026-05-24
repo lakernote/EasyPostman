@@ -74,9 +74,18 @@ public final class PerformanceTestPlanCompiler {
             case LOOP -> compileLoop(node, data);
             case TIMER -> new PerformanceTimerElement(data.name, data.timerData);
             case REQUEST -> compileRequest(node, data);
+            case ASSERTION -> new PerformanceAssertionElement(data.name, data.assertionData);
             case SSE_CONNECT, SSE_AWAIT, WS_CONNECT, WS_SEND, WS_AWAIT, WS_CLOSE -> compileProtocolStage(node, data);
             default -> null;
         };
+    }
+
+    public static PerformanceRequestSampler compileRequestSampler(DefaultMutableTreeNode requestNode) {
+        JMeterTreeNode data = nodeData(requestNode);
+        if (data == null || !data.enabled || data.type != NodeType.REQUEST) {
+            return null;
+        }
+        return compileRequest(requestNode, data);
     }
 
     private static PerformanceLoopController compileLoop(DefaultMutableTreeNode node, JMeterTreeNode data) {
@@ -94,8 +103,7 @@ public final class PerformanceTestPlanCompiler {
                 data.httpRequestItem,
                 data.ssePerformanceData,
                 data.webSocketPerformanceData,
-                compileElements(node),
-                compileChildSnapshots(node)
+                compileElements(node)
         );
     }
 
@@ -107,29 +115,6 @@ public final class PerformanceTestPlanCompiler {
                 data.webSocketPerformanceData,
                 compileElements(node)
         );
-    }
-
-    private static List<PerformancePlanNodeSnapshot> compileChildSnapshots(DefaultMutableTreeNode parent) {
-        List<PerformancePlanNodeSnapshot> snapshots = new ArrayList<>();
-        if (parent == null) {
-            return snapshots;
-        }
-        for (int i = 0; i < parent.getChildCount(); i++) {
-            DefaultMutableTreeNode child = (DefaultMutableTreeNode) parent.getChildAt(i);
-            PerformancePlanNodeSnapshot snapshot = compileSnapshot(child);
-            if (snapshot != null) {
-                snapshots.add(snapshot);
-            }
-        }
-        return snapshots;
-    }
-
-    private static PerformancePlanNodeSnapshot compileSnapshot(DefaultMutableTreeNode node) {
-        JMeterTreeNode data = nodeData(node);
-        if (data == null || !data.enabled) {
-            return null;
-        }
-        return new PerformancePlanNodeSnapshot(data, compileChildSnapshots(node));
     }
 
     private static JMeterTreeNode nodeData(DefaultMutableTreeNode node) {

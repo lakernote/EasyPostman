@@ -4,10 +4,16 @@ import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.script.TestResult;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
+import com.laker.postman.panel.performance.plan.PerformanceLoopController;
+import com.laker.postman.panel.performance.plan.PerformancePlanElement;
+import com.laker.postman.panel.performance.plan.PerformanceProtocolStageElement;
+import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
+import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
+import com.laker.postman.panel.performance.plan.PerformanceTimerElement;
+import com.laker.postman.panel.performance.timer.TimerData;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.service.js.ScriptExecutionResult;
@@ -18,12 +24,12 @@ import okhttp3.WebSocketListener;
 import okio.ByteString;
 
 import javax.swing.tree.DefaultMutableTreeNode;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Deque;
+import java.util.ArrayDeque;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Deque;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -101,6 +107,25 @@ public class WebSocketScenarioExecutor {
                           ScriptExecutionPipeline pipeline,
                           String apiId,
                           String apiName) {
+        return execute(
+                req,
+                PerformanceTestPlanCompiler.compileRequestSampler(requestNode),
+                requestCfg,
+                requestBodyTemplate,
+                pipeline,
+                apiId,
+                apiName
+        );
+    }
+
+    public Result execute(PreparedRequest req,
+                          PerformanceRequestSampler requestSampler,
+                          WebSocketPerformanceData requestCfg,
+                          String requestBodyTemplate,
+                          ScriptExecutionPipeline pipeline,
+                          String apiId,
+                          String apiName) {
+        requestCfg = requestCfg == null ? new WebSocketPerformanceData() : requestCfg;
         long requestStartTime = System.currentTimeMillis();
         HttpResponse resp = new HttpResponse();
         AtomicBoolean interrupted = new AtomicBoolean(false);
@@ -121,7 +146,7 @@ public class WebSocketScenarioExecutor {
         List<TestResult> stepTestResults = new ArrayList<>();
         Deque<ReceivedWebSocketMessage> receivedMessages = new ArrayDeque<>();
         AtomicLong receivedMessagesRetainedBytes = new AtomicLong(0);
-        boolean keepReceivedMessages = hasEnabledAwaitStep(requestNode);
+        boolean keepReceivedMessages = hasEnabledAwaitStep(requestSampler);
         Object messageLock = new Object();
         CountDownLatch openLatch = new CountDownLatch(1);
 
@@ -231,24 +256,18 @@ public class WebSocketScenarioExecutor {
             }
 
             if (!failed.get() && !interrupted.get()) {
-                WebSocketScenarioStepCursor scenarioSteps = new WebSocketScenarioStepCursor(requestNode, runningSupplier);
+                WebSocketScenarioPlanStepCursor scenarioSteps = new WebSocketScenarioPlanStepCursor(requestSampler, runningSupplier);
                 while (runningSupplier.getAsBoolean() && !failed.get() && !interrupted.get()) {
-                    DefaultMutableTreeNode childNode = scenarioSteps.next();
-                    if (childNode == null) {
+                    PerformancePlanElement stepElement = scenarioSteps.next();
+                    if (stepElement == null) {
                         break;
                     }
-                    Object childObj = childNode.getUserObject();
-                    if (!(childObj instanceof JMeterTreeNode stepNode)) {
-                        continue;
-                    }
-                    switch (stepNode.type) {
+                    switch (stepElement.getType()) {
                         case WS_CONNECT -> {
                             // connect step is handled before scenario execution
                         }
                         case WS_SEND -> {
-                            WebSocketPerformanceData stepCfg = stepNode.webSocketPerformanceData != null
-                                    ? stepNode.webSocketPerformanceData
-                                    : copyData(requestCfg);
+                            WebSocketPerformanceData stepCfg = stepWebSocketData(stepElement, requestCfg);
                             lastStepCfgRef.set(stepCfg);
                             WebSocketPerformanceData.SendContentSource contentSource = stepCfg.sendContentSource != null
                                     ? stepCfg.sendContentSource
@@ -268,7 +287,7 @@ public class WebSocketScenarioExecutor {
                                         stepCfg,
                                         sendIndex,
                                         sendTimes,
-                                        stepNode.name
+                                        stepElement.getName()
                                 );
                                 if (!sendScriptResult.isSuccess()) {
                                     failed.set(true);
@@ -291,9 +310,7 @@ public class WebSocketScenarioExecutor {
                             }
                         }
                         case WS_AWAIT -> {
-                            WebSocketPerformanceData stepCfg = stepNode.webSocketPerformanceData != null
-                                    ? stepNode.webSocketPerformanceData
-                                    : copyData(requestCfg);
+                            WebSocketPerformanceData stepCfg = stepWebSocketData(stepElement, requestCfg);
                             lastStepCfgRef.set(stepCfg);
                             long awaitStartTime = System.currentTimeMillis();
                             long firstMatchTime = -1;
@@ -374,8 +391,10 @@ public class WebSocketScenarioExecutor {
                             stepResp.headers = resp.headers;
                             stepResp.body = stepBody.value();
                             stepResp.bodySize = stepBody.totalUtf8Bytes();
-                            PerformanceAssertionRunner.runAssertionNodes(
-                                    PerformanceAssertionRunner.collectDirectAssertionNodes(childNode),
+                            PerformanceAssertionRunner.runAssertionElements(
+                                    stepElement instanceof PerformanceProtocolStageElement stage
+                                            ? PerformanceAssertionRunner.collectDirectAssertionElements(stage.getElements())
+                                            : List.of(),
                                     stepResp,
                                     stepTestResults,
                                     errorRef
@@ -391,8 +410,11 @@ public class WebSocketScenarioExecutor {
                             scenarioSteps.stop();
                         }
                         case TIMER -> {
-                            if (stepNode.timerData != null) {
-                                TimeUnit.MILLISECONDS.sleep(stepNode.timerData.delayMs);
+                            if (stepElement instanceof PerformanceTimerElement timerElement) {
+                                TimerData timerData = timerElement.getTimerData();
+                                if (timerData != null) {
+                                    TimeUnit.MILLISECONDS.sleep(timerData.delayMs);
+                                }
                             }
                         }
                         default -> {
@@ -467,6 +489,15 @@ public class WebSocketScenarioExecutor {
         }
         String filter = cfg.messageFilter;
         return CharSequenceUtil.isBlank(filter) || CharSequenceUtil.contains(payload, filter.trim());
+    }
+
+    private WebSocketPerformanceData stepWebSocketData(PerformancePlanElement stepElement,
+                                                       WebSocketPerformanceData requestCfg) {
+        if (stepElement instanceof PerformanceProtocolStageElement stage
+                && stage.getWebSocketPerformanceData() != null) {
+            return stage.getWebSocketPerformanceData();
+        }
+        return copyData(requestCfg);
     }
 
     private void waitForSendQueueToDrain(WebSocket webSocket) throws InterruptedException {
@@ -562,18 +593,20 @@ public class WebSocketScenarioExecutor {
         return value.substring(0, index);
     }
 
-    private boolean hasEnabledAwaitStep(DefaultMutableTreeNode requestNode) {
-        if (requestNode == null) {
+    private boolean hasEnabledAwaitStep(PerformanceRequestSampler requestSampler) {
+        if (requestSampler == null) {
             return false;
         }
-        for (int i = 0; i < requestNode.getChildCount(); i++) {
-            DefaultMutableTreeNode childNode = (DefaultMutableTreeNode) requestNode.getChildAt(i);
-            Object childObj = childNode.getUserObject();
-            if (childObj instanceof JMeterTreeNode stepNode && stepNode.enabled && stepNode.type == NodeType.WS_AWAIT) {
+        return hasEnabledAwaitStep(requestSampler.getChildren());
+    }
+
+    private boolean hasEnabledAwaitStep(List<PerformancePlanElement> elements) {
+        for (PerformancePlanElement element : elements) {
+            if (element.getType() == NodeType.WS_AWAIT) {
                 return true;
             }
-            if (childObj instanceof JMeterTreeNode stepNode && stepNode.enabled && stepNode.type == NodeType.LOOP
-                    && hasEnabledAwaitStep(childNode)) {
+            if (element instanceof PerformanceLoopController loopController
+                    && hasEnabledAwaitStep(loopController.getElements())) {
                 return true;
             }
         }

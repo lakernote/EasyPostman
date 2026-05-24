@@ -11,6 +11,7 @@ import com.laker.postman.panel.performance.execution.PerformanceResultRecorder;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
+import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
 import com.laker.postman.panel.performance.timer.TimerData;
@@ -126,17 +127,17 @@ public class PerformancePlanExecutorTest {
                 ConcurrentHashMap.newKeySet()
         ) {
             @Override
-            public PerformanceRequestExecutionResult execute(DefaultMutableTreeNode requestNode,
-                                                             JMeterTreeNode requestData,
+            public PerformanceRequestExecutionResult execute(PerformanceRequestSampler requestSampler,
                                                              ExecutionVariableContext iterationContext) {
-                events.add("request:" + requestData.httpRequestItem.getName());
+                HttpRequestItem requestItem = requestSampler.getHttpRequestItem();
+                events.add("request:" + requestItem.getName());
                 HttpResponse response = new HttpResponse();
                 response.costMs = 1;
                 response.endTime = System.currentTimeMillis();
-                boolean webSocket = webSocketByName && requestData.httpRequestItem.getProtocol().isWebSocketProtocol();
+                boolean webSocket = webSocketByName && requestItem.getProtocol().isWebSocketProtocol();
                 return new PerformanceRequestExecutionResult(
-                        requestData.httpRequestItem.getId(),
-                        requestData.httpRequestItem.getName(),
+                        requestItem.getId(),
+                        requestItem.getName(),
                         null,
                         response,
                         "",

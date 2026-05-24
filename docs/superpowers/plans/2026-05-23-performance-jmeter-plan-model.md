@@ -19,6 +19,7 @@
 - Create: `easy-postman-app/src/main/java/com/laker/postman/panel/performance/plan/PerformanceLoopController.java`
 - Create: `easy-postman-app/src/main/java/com/laker/postman/panel/performance/plan/PerformanceTimerElement.java`
 - Create: `easy-postman-app/src/main/java/com/laker/postman/panel/performance/plan/PerformanceRequestSampler.java`
+- Create: `easy-postman-app/src/main/java/com/laker/postman/panel/performance/plan/PerformanceAssertionElement.java`
 - Create: `easy-postman-app/src/main/java/com/laker/postman/panel/performance/plan/PerformanceProtocolStageElement.java`
 - Create: `easy-postman-app/src/main/java/com/laker/postman/panel/performance/plan/PerformanceTestPlanCompiler.java`
 - Test: `easy-postman-app/src/test/java/com/laker/postman/panel/performance/plan/PerformanceTestPlanCompilerTest.java`
@@ -63,4 +64,3 @@
 - [ ] Add plan-based request estimation while preserving the tree-based public method.
 - [ ] Update performance design docs to describe compiled plan execution.
 - [ ] Run the focused performance tests and `mvn -q -pl easy-postman-app -am -DskipTests compile`.
-

@@ -31,7 +31,8 @@ The immutable plan model lives under `com.laker.postman.panel.performance.plan`.
 - `PerformanceLoopController`: loop count plus nested elements.
 - `PerformanceTimerElement`: timer delay data.
 - `PerformanceRequestSampler`: original request node data plus compiled child elements. For WebSocket/SSE, protocol stage nodes stay nested under the sampler so existing protocol executors can still validate and execute their step sequence.
-- `PerformanceProtocolStageElement`: immutable representation of WS/SSE stage nodes used to rebuild a request-local tree for existing protocol executors during the first phase.
+- `PerformanceAssertionElement`: immutable representation of assertion nodes used by HTTP, SSE await, and WebSocket await checks.
+- `PerformanceProtocolStageElement`: immutable representation of WS/SSE stage nodes consumed directly by plan-based protocol validation and WebSocket scenario execution.
 
 The compiler is `PerformanceTestPlanCompiler`. It reads the snapshot tree, skips disabled nodes where JMeter-style execution would skip them, normalizes `ThreadGroupData` and `LoopData`, and deep-copies mutable node data through the existing snapshot/tree-copy utilities.
 
@@ -41,7 +42,7 @@ The compiler is `PerformanceTestPlanCompiler`. It reads the snapshot tree, skips
 - `PerformanceVirtualUserCoordinator` remains the ThreadLocal owner for active user count, virtual user index, and iteration index.
 - `PerformanceIterationContextFactory` creates `ExecutionVariableContext` and binds CSV row data for the current virtual user.
 - `PerformancePlanExecutor` handles controllers and timers.
-- `PerformanceSamplerExecutor` wraps `PerformanceRequestExecutor` and `PerformanceResultRecorder`.
+- `PerformanceSamplerExecutor` wraps `PerformanceRequestExecutor` and `PerformanceResultRecorder`. The hot path passes `PerformanceRequestSampler` directly; legacy tree-based request execution remains only as a compatibility entry point that compiles a sampler first.
 
 ## Compatibility Rules
 
@@ -62,4 +63,3 @@ Add focused tests for:
 - Fixed thread groups executing HTTP requests through the compiled plan.
 - CSV iteration context preserving virtual user row selection.
 - Existing WebSocket/SSE request executor tests continuing to pass.
-

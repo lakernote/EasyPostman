@@ -86,10 +86,11 @@ public class PerformanceTestPlanCompilerTest {
                 .getThreadGroups().get(0)
                 .getElements().get(0);
 
-        assertEquals(sampler.getChildren().size(), 2);
+        assertEquals(sampler.getChildren().size(), 3);
         assertTrue(sampler.getChildren().get(0) instanceof PerformanceProtocolStageElement);
         assertEquals(sampler.getChildren().get(0).getType(), NodeType.WS_CONNECT);
         assertTrue(sampler.getChildren().get(1) instanceof PerformanceLoopController);
+        assertTrue(sampler.getChildren().get(2) instanceof PerformanceAssertionElement);
         PerformanceProtocolStageElement connect = (PerformanceProtocolStageElement) sampler.getChildren().get(0);
         assertEquals(connect.getWebSocketPerformanceData().connectTimeoutMs, 1234);
         assertEquals(connect.getSsePerformanceData().connectTimeoutMs, 5678);

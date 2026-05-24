@@ -3,12 +3,10 @@ package com.laker.postman.panel.performance;
 import com.laker.postman.panel.performance.execution.PerformanceRequestExecutionResult;
 import com.laker.postman.panel.performance.execution.PerformanceRequestExecutor;
 import com.laker.postman.panel.performance.execution.PerformanceResultRecorder;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.service.variable.ExecutionVariableContext;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.function.BooleanSupplier;
 
 @Slf4j
@@ -35,15 +33,8 @@ final class PerformanceSamplerExecutor {
             return null;
         }
 
-        DefaultMutableTreeNode requestNode = sampler.executionTreeNode();
-        Object userObj = requestNode.getUserObject();
-        if (!(userObj instanceof JMeterTreeNode requestData) || requestData.httpRequestItem == null) {
-            return null;
-        }
-
         PerformanceRequestExecutionResult executionResult = requestExecutor.execute(
-                requestNode,
-                requestData,
+                sampler,
                 iterationContext
         );
         if (executionResult == null) {
@@ -51,7 +42,7 @@ final class PerformanceSamplerExecutor {
         }
         resultRecorder.record(executionResult, efficientModeSupplier.getAsBoolean());
         if (executionResult.interrupted) {
-            log.debug("请求在停止时被中断: {}", requestData.httpRequestItem.getName());
+            log.debug("请求在停止时被中断: {}", sampler.getName());
         }
         return executionResult;
     }

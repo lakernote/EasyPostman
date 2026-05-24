@@ -4,7 +4,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
-import com.laker.postman.panel.performance.plan.PerformanceLoopController;
+import com.laker.postman.panel.performance.plan.PerformanceController;
 import com.laker.postman.panel.performance.plan.PerformancePlanElement;
 import com.laker.postman.panel.performance.plan.PerformanceProtocolStageElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
@@ -85,8 +85,8 @@ class WebSocketScenarioStepSupport {
             if (element.getType() == NodeType.WS_AWAIT) {
                 return true;
             }
-            if (element instanceof PerformanceLoopController loopController
-                    && hasEnabledAwaitStep(loopController.getElements())) {
+            if (element instanceof PerformanceController controller
+                    && hasEnabledAwaitStep(controller.getElements())) {
                 return true;
             }
         }

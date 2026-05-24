@@ -9,8 +9,9 @@ import com.laker.postman.panel.performance.controller.LoopData;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
-import com.laker.postman.panel.performance.plan.PerformancePlanElement;
+import com.laker.postman.panel.performance.plan.PerformanceController;
 import com.laker.postman.panel.performance.plan.PerformanceLoopController;
+import com.laker.postman.panel.performance.plan.PerformancePlanElement;
 import com.laker.postman.panel.performance.plan.PerformanceProtocolStageElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
@@ -149,6 +150,27 @@ public class WebSocketScenarioExecutorTest {
     }
 
     @Test
+    public void stepSupportShouldDetectAwaitStepInsideControllerContract() {
+        PerformanceProtocolStageElement awaitStep = new PerformanceProtocolStageElement(
+                "await",
+                NodeType.WS_AWAIT,
+                null,
+                new WebSocketPerformanceData(),
+                List.of()
+        );
+        PerformanceController controller = new TestController("controller", 1, List.of(awaitStep));
+        PerformanceRequestSampler sampler = new PerformanceRequestSampler(
+                "request",
+                null,
+                null,
+                null,
+                List.of(controller)
+        );
+
+        assertTrue(WebSocketScenarioStepSupport.hasEnabledAwaitStep(sampler));
+    }
+
+    @Test
     public void stepSupportShouldUseStageConfigBeforeRequestDefault() {
         WebSocketPerformanceData requestCfg = new WebSocketPerformanceData();
         requestCfg.sendCount = 1;
@@ -196,6 +218,30 @@ public class WebSocketScenarioExecutorTest {
         WebSocketScenarioPlanStepCursor cursor = new WebSocketScenarioPlanStepCursor(requestSampler, () -> true);
 
         assertNextStep(cursor, NodeType.WS_SEND, "send");
+        assertNextStep(cursor, NodeType.WS_SEND, "send");
+        assertNextStep(cursor, NodeType.WS_SEND, "send");
+        assertEquals(cursor.next(), null);
+    }
+
+    @Test
+    public void shouldWalkWebSocketScenarioControllerContractSteps() {
+        PerformanceProtocolStageElement sendStep = new PerformanceProtocolStageElement(
+                "send",
+                NodeType.WS_SEND,
+                null,
+                new WebSocketPerformanceData(),
+                List.of()
+        );
+        PerformanceController controller = new TestController("controller", 2, List.of(sendStep));
+        PerformanceRequestSampler requestSampler = new PerformanceRequestSampler(
+                "request",
+                null,
+                null,
+                null,
+                List.of(controller)
+        );
+        WebSocketScenarioPlanStepCursor cursor = new WebSocketScenarioPlanStepCursor(requestSampler, () -> true);
+
         assertNextStep(cursor, NodeType.WS_SEND, "send");
         assertNextStep(cursor, NodeType.WS_SEND, "send");
         assertEquals(cursor.next(), null);
@@ -698,5 +744,30 @@ public class WebSocketScenarioExecutorTest {
         PerformancePlanElement next = cursor.next();
         assertEquals(next.getType(), expectedType);
         assertEquals(next.getName(), expectedName);
+    }
+
+    private record TestController(String name,
+                                  int iterationCount,
+                                  List<PerformancePlanElement> elements) implements PerformanceController {
+
+        @Override
+        public String getName() {
+            return name;
+        }
+
+        @Override
+        public NodeType getType() {
+            return NodeType.LOOP;
+        }
+
+        @Override
+        public int getIterationCount() {
+            return iterationCount;
+        }
+
+        @Override
+        public List<PerformancePlanElement> getElements() {
+            return elements;
+        }
     }
 }

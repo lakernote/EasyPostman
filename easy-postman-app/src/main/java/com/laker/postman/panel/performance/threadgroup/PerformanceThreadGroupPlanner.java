@@ -1,7 +1,6 @@
 package com.laker.postman.panel.performance.threadgroup;
 
-import com.laker.postman.panel.performance.controller.LoopData;
-import com.laker.postman.panel.performance.plan.PerformanceLoopController;
+import com.laker.postman.panel.performance.plan.PerformanceController;
 import com.laker.postman.panel.performance.plan.PerformancePlanElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.panel.performance.plan.PerformanceTestPlan;
@@ -94,10 +93,14 @@ public final class PerformanceThreadGroupPlanner {
                 total++;
                 continue;
             }
-            if (element instanceof PerformanceLoopController loopController) {
-                LoopData loopData = loopController.getLoopData();
-                int iterations = loopData == null ? 1 : loopData.iterations;
-                total = saturatingAdd(total, saturatingMultiply(iterations, countEnabledRequestExecutions(loopController.getElements())));
+            if (element instanceof PerformanceController controller) {
+                total = saturatingAdd(
+                        total,
+                        saturatingMultiply(
+                                controller.getIterationCount(),
+                                countEnabledRequestExecutions(controller.getElements())
+                        )
+                );
             }
         }
         return total;

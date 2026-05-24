@@ -1,7 +1,6 @@
 package com.laker.postman.panel.performance.execution;
 
-import com.laker.postman.panel.performance.controller.LoopData;
-import com.laker.postman.panel.performance.plan.PerformanceLoopController;
+import com.laker.postman.panel.performance.plan.PerformanceController;
 import com.laker.postman.panel.performance.plan.PerformancePlanElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 
@@ -33,11 +32,9 @@ final class WebSocketScenarioPlanStepCursor {
             }
 
             PerformancePlanElement element = frame.elements.get(frame.index++);
-            if (element instanceof PerformanceLoopController loopController) {
-                LoopData loopData = loopController.getLoopData();
-                int iterations = loopData == null ? 1 : loopData.iterations;
-                if (!loopController.getElements().isEmpty()) {
-                    frames.push(new Frame(loopController.getElements(), iterations));
+            if (element instanceof PerformanceController controller) {
+                if (!controller.getElements().isEmpty()) {
+                    frames.push(new Frame(controller.getElements(), controller.getIterationCount()));
                 }
                 continue;
             }

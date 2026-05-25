@@ -547,10 +547,6 @@ public class RequestEditorPanel extends UiSingletonPanel {
         scheduleSelectedRequestTabInitialization(false);
     }
 
-    private void ensureSelectedRequestTabInitialized() {
-        ensureSelectedRequestTabInitialized(false);
-    }
-
     private void ensureSelectedRequestTabInitialized(boolean animatePlaceholderTransition) {
         Component selectedComponent = tabbedPane.getSelectedComponent();
         if (selectedComponent instanceof RequestEditSubPanel requestEditSubPanel && !requestEditSubPanel.isEditorInitialized()) {

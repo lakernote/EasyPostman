@@ -3,21 +3,17 @@ package com.laker.postman.panel;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.panel.sidebar.SidebarTabPanel;
-import lombok.extern.slf4j.Slf4j;
 
 import java.awt.*;
 
 /**
- * 包含了左侧的标签页面板和右侧的请求编辑面板。
- * 左侧标签页面板包含了集合、环境变量、压测三个标签页，
+ * 主工作区容器，当前承载侧边栏标签页及其对应内容区。
  */
-@Slf4j
 public class MainPanel extends UiSingletonPanel {
 
     @Override
     protected void initUI() {
-        setLayout(new BorderLayout()); // 设置布局为 BorderLayout
-        // 中间SidebarTabPanel + 底部控制台面板
+        setLayout(new BorderLayout());
         add(UiSingletonFactory.getInstance(SidebarTabPanel.class), BorderLayout.CENTER);
     }
 

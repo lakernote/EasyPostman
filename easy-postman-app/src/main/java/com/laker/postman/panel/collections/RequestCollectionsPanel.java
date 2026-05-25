@@ -4,32 +4,32 @@ import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
-import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import java.awt.*;
 
 /**
- * 请求集合面板，包含左侧的请求集合列表和右侧的请求编辑面板
+ * 请求集合工作区，左侧展示集合树，右侧展示请求编辑器。
  */
-@Slf4j
 public class RequestCollectionsPanel extends UiSingletonPanel {
+    private static final int DEFAULT_DIVIDER_LOCATION = 250;
+    private static final int DIVIDER_SIZE = 3;
+
     @Override
     protected void initUI() {
-        // 设置布局为 BorderLayout
-        setLayout(new BorderLayout()); // 设置布局为 BorderLayout
-        // 1.创建左侧的请求集合面板
-        CollectionTreePanel requestCollectionsLeftPanel = UiSingletonFactory.getInstance(CollectionTreePanel.class);
-        // 2. 创建右侧的请求编辑面板
-        RequestEditorPanel rightRequestEditorPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class); // 创建请求编辑面板实例
-        // 创建水平分割面板，将左侧的集合面板和右侧的请求编辑面板放入其中
-        JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, requestCollectionsLeftPanel, rightRequestEditorPanel);
-        mainSplit.setContinuousLayout(true); // 分割条拖动时实时更新布局
-        mainSplit.setDividerLocation(250); // 设置初始分割位置
-        mainSplit.setDividerSize(3); // 设置分割条的宽度
+        setLayout(new BorderLayout());
+        add(createCollectionsSplitPane(), BorderLayout.CENTER);
+    }
 
-        // 将分割面板添加到主面板
-        add(mainSplit, BorderLayout.CENTER); // 将分割面板添加到主面板的中心位置
+    private JSplitPane createCollectionsSplitPane() {
+        CollectionTreePanel collectionTreePanel = UiSingletonFactory.getInstance(CollectionTreePanel.class);
+        RequestEditorPanel requestEditorPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class);
+
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, collectionTreePanel, requestEditorPanel);
+        splitPane.setContinuousLayout(true);
+        splitPane.setDividerLocation(DEFAULT_DIVIDER_LOCATION);
+        splitPane.setDividerSize(DIVIDER_SIZE);
+        return splitPane;
     }
 
     @Override

@@ -1,13 +1,10 @@
 package com.laker.postman.frame;
 
-import com.formdev.flatlaf.FlatClientProperties;
-import com.formdev.flatlaf.util.SystemInfo;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.animation.WindowSnapshotTransition;
 import com.laker.postman.common.component.placeholder.StartupShellPlaceholderPanel;
 import com.laker.postman.common.constants.Icons;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.common.themes.SimpleThemeManager;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.panel.MainPanel;
 import com.laker.postman.panel.lifecycle.AppExitCoordinator;
@@ -24,8 +21,6 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -33,25 +28,6 @@ import java.util.function.Consumer;
  */
 @Slf4j
 public class MainFrame extends JFrame {
-
-    // 屏幕尺寸常量
-    private static final int SCREEN_WIDTH_4K = 3840;
-    private static final int SCREEN_WIDTH_2K = 2560;
-    private static final int SCREEN_WIDTH_FHD = 1920;
-    private static final int SCREEN_WIDTH_HD = 1280;
-    private static final int SCREEN_WIDTH_THRESHOLD = 1366;
-
-    // 窗口尺寸常量（增大默认尺寸，适应现代屏幕）
-    private static final int MIN_WIDTH_4K = 1920;
-    private static final int MIN_HEIGHT_4K = 1200;
-    private static final int MIN_WIDTH_2K = 1600;
-    private static final int MIN_HEIGHT_2K = 1000;
-    private static final int MIN_WIDTH_FHD = 1400;
-    private static final int MIN_HEIGHT_FHD = 900;
-    private static final int MIN_WIDTH_HD = 1280;
-    private static final int MIN_HEIGHT_HD = 800;
-    private static final int MIN_WIDTH_WXGA = 1100;
-    private static final int MIN_HEIGHT_WXGA = 700;
 
     // 防抖延迟时间（毫秒）
     private static final int DEBOUNCE_DELAY = 500;
@@ -62,14 +38,8 @@ public class MainFrame extends JFrame {
     // 防抖计时器（final 避免重复赋值）
     private final transient Timer saveStateTimer;
     private final transient WindowSnapshotTransition startupShellTransition;
+    private final transient MainFrameStartupLifecycle startupLifecycle;
     private transient JPanel startupShellPanel;
-    private transient volatile boolean mainContentLoaded;
-    private transient volatile boolean mainContentLoadRequested;
-    private transient volatile Throwable mainContentLoadFailure;
-    private transient volatile boolean startupShellPainted;
-    private final transient List<Runnable> mainContentLoadedCallbacks = new ArrayList<>();
-    private final transient List<Consumer<Throwable>> mainContentLoadFailedCallbacks = new ArrayList<>();
-    private final transient List<Runnable> startupShellPaintedCallbacks = new ArrayList<>();
 
     // 单例模式，确保只有一个实例
     private MainFrame() {
@@ -81,16 +51,12 @@ public class MainFrame extends JFrame {
         saveStateTimer = new Timer(DEBOUNCE_DELAY, e -> saveWindowState());
         saveStateTimer.setRepeats(false);
         startupShellTransition = new WindowSnapshotTransition(this);
+        startupLifecycle = new MainFrameStartupLifecycle();
 
         setName(I18nUtil.getMessage(MessageKeys.APP_NAME));
         setTitle(I18nUtil.getMessage(MessageKeys.APP_NAME));
         setIconImage(Icons.LOGO.getImage());
-        applyWindowsWindowDecorations();
-        applyWindowBackground();
-
-        // macOS 标题栏扩展属性要在首次显示前设置，否则首次显示后再补设置容易出现抖动。
-        applyMacWindowDecorations();
-        applyMacWindowAppearance();
+        MainWindowChrome.applyInitialDecorations(this);
     }
 
     public void initComponents() {
@@ -121,24 +87,18 @@ public class MainFrame extends JFrame {
     }
 
     public void loadMainContentAsync() {
-        if (mainContentLoaded || mainContentLoadRequested) {
+        if (!startupLifecycle.markMainContentLoadRequested()) {
             return;
         }
-        mainContentLoadRequested = true;
         // 主内容延后到启动壳显示后加载，避免首次展示窗口时被完整工作区初始化阻塞。
         Runnable task = () -> {
-            if (mainContentLoaded) {
-                return;
-            }
             try {
                 replaceContentWithStartupTransition(UiSingletonFactory.getInstance(MainPanel.class));
                 startupShellPanel = null;
-                mainContentLoaded = true;
-                notifyMainContentLoaded();
+                startupLifecycle.markMainContentLoaded();
             } catch (Throwable throwable) {
-                mainContentLoadFailure = throwable;
                 log.error("Failed to initialize main content", throwable);
-                notifyMainContentLoadFailed(throwable);
+                startupLifecycle.markMainContentLoadFailed(throwable);
             }
         };
 
@@ -148,87 +108,11 @@ public class MainFrame extends JFrame {
     private void installStartupShell() {
         startupShellPanel = createStartupShellPanel();
         setContentPane(startupShellPanel);
-        applyWindowBackground();
-    }
-
-    private void applyWindowBackground() {
-        Color background = ModernColors.getBackgroundColor();
-        setBackground(background);
-        if (getRootPane() != null) {
-            getRootPane().setOpaque(true);
-            getRootPane().setBackground(background);
-        }
-        if (getLayeredPane() != null) {
-            getLayeredPane().setOpaque(true);
-            getLayeredPane().setBackground(background);
-        }
-        if (getGlassPane() instanceof JComponent glassPane) {
-            glassPane.setOpaque(false);
-            glassPane.setBackground(background);
-        }
-        Container contentPane = getContentPane();
-        if (contentPane instanceof JComponent contentComponent) {
-            contentComponent.setOpaque(true);
-            contentComponent.setBackground(background);
-        }
-        applyWindowTitleBarBackground();
-    }
-
-    /**
-     * Windows 10/11 下启用 FlatLaf 原生窗口装饰，并将 JMenuBar 嵌入标题栏，
-     * 让菜单区和右侧标题栏区域由同一套标题栏背景统一绘制。
-     */
-    private void applyWindowsWindowDecorations() {
-        JRootPane rootPane = getRootPane();
-        if (!SystemInfo.isWindows_10_orLater || rootPane == null) {
-            return;
-        }
-
-        rootPane.putClientProperty(FlatClientProperties.USE_WINDOW_DECORATIONS, Boolean.TRUE);
-        rootPane.putClientProperty(FlatClientProperties.MENU_BAR_EMBEDDED, Boolean.TRUE);
-        rootPane.putClientProperty(FlatClientProperties.TITLE_BAR_SHOW_TITLE, Boolean.FALSE);
-    }
-
-    /**
-     * 在启用 FlatLaf Windows 标题栏装饰时，显式将标题栏背景对齐到菜单栏背景，
-     * 避免嵌入式菜单栏区域与标题栏剩余区域出现色差。
-     */
-    private void applyWindowTitleBarBackground() {
-        JRootPane rootPane = getRootPane();
-        if (rootPane == null) {
-            return;
-        }
-
-        Color titleBarBackground = UIManager.getColor("MenuBar.background");
-        Color titleBarForeground = UIManager.getColor("Menu.foreground");
-        rootPane.putClientProperty(FlatClientProperties.TITLE_BAR_BACKGROUND, titleBarBackground);
-        rootPane.putClientProperty(FlatClientProperties.TITLE_BAR_FOREGROUND, titleBarForeground);
+        MainWindowChrome.applyBackground(this);
     }
 
     public void refreshWindowChrome() {
-        applyWindowBackground();
-        applyMacWindowAppearance();
-        repaint();
-    }
-
-    private void applyMacWindowAppearance() {
-        if (!SystemInfo.isMacFullWindowContentSupported || getRootPane() == null) {
-            return;
-        }
-        if (SimpleThemeManager.isDarkTheme()) {
-            getRootPane().putClientProperty("apple.awt.windowAppearance", "NSAppearanceNameVibrantDark");
-        } else {
-            getRootPane().putClientProperty("apple.awt.windowAppearance", "NSAppearanceNameVibrantLight");
-        }
-    }
-
-    private void applyMacWindowDecorations() {
-        if (!SystemInfo.isMacFullWindowContentSupported || getRootPane() == null) {
-            return;
-        }
-        // 在窗口首显前一次性应用，避免显示后再切换 title bar / fullWindowContent 造成二次重绘。
-        getRootPane().putClientProperty("apple.awt.fullWindowContent", true);
-        getRootPane().putClientProperty("apple.awt.transparentTitleBar", true);
+        MainWindowChrome.refresh(this);
     }
 
     private JPanel createStartupShellPanel() {
@@ -240,8 +124,7 @@ public class MainFrame extends JFrame {
                 super.paintComponent(g);
                 if (!firstPaintHandled) {
                     firstPaintHandled = true;
-                    startupShellPainted = true;
-                    notifyStartupShellPainted();
+                    startupLifecycle.markStartupShellPainted();
                 }
             }
         };
@@ -259,96 +142,22 @@ public class MainFrame extends JFrame {
             capturedSnapshot = startupShellTransition.captureSnapshot(contentComponent);
         }
         setContentPane(nextContentPane);
-        applyWindowBackground();
+        MainWindowChrome.applyBackground(this);
         revalidate();
         repaint();
         startupShellTransition.start(capturedSnapshot);
     }
 
     public void whenMainContentLoaded(Runnable callback) {
-        if (callback == null) {
-            return;
-        }
-        if (mainContentLoaded) {
-            SwingUtilities.invokeLater(callback);
-            return;
-        }
-        synchronized (mainContentLoadedCallbacks) {
-            if (mainContentLoaded) {
-                SwingUtilities.invokeLater(callback);
-            } else {
-                mainContentLoadedCallbacks.add(callback);
-            }
-        }
+        startupLifecycle.whenMainContentLoaded(callback);
     }
 
     public void whenMainContentLoadFailed(Consumer<Throwable> callback) {
-        if (callback == null) {
-            return;
-        }
-        if (mainContentLoadFailure != null) {
-            Throwable failure = mainContentLoadFailure;
-            SwingUtilities.invokeLater(() -> callback.accept(failure));
-            return;
-        }
-        synchronized (mainContentLoadFailedCallbacks) {
-            if (mainContentLoadFailure != null) {
-                Throwable failure = mainContentLoadFailure;
-                SwingUtilities.invokeLater(() -> callback.accept(failure));
-            } else {
-                mainContentLoadFailedCallbacks.add(callback);
-            }
-        }
+        startupLifecycle.whenMainContentLoadFailed(callback);
     }
 
     public void whenStartupShellPainted(Runnable callback) {
-        if (callback == null) {
-            return;
-        }
-        if (startupShellPainted) {
-            SwingUtilities.invokeLater(callback);
-            return;
-        }
-        synchronized (startupShellPaintedCallbacks) {
-            if (startupShellPainted) {
-                SwingUtilities.invokeLater(callback);
-            } else {
-                startupShellPaintedCallbacks.add(callback);
-            }
-        }
-    }
-
-    private void notifyMainContentLoaded() {
-        List<Runnable> callbacksToRun;
-        synchronized (mainContentLoadedCallbacks) {
-            callbacksToRun = new ArrayList<>(mainContentLoadedCallbacks);
-            mainContentLoadedCallbacks.clear();
-        }
-        for (Runnable callback : callbacksToRun) {
-            SwingUtilities.invokeLater(callback);
-        }
-    }
-
-    private void notifyMainContentLoadFailed(Throwable throwable) {
-        List<Consumer<Throwable>> callbacksToRun;
-        synchronized (mainContentLoadFailedCallbacks) {
-            callbacksToRun = new ArrayList<>(mainContentLoadFailedCallbacks);
-            mainContentLoadFailedCallbacks.clear();
-        }
-        for (Consumer<Throwable> callback : callbacksToRun) {
-            SwingUtilities.invokeLater(() -> callback.accept(throwable));
-        }
-    }
-
-    private void notifyStartupShellPainted() {
-        List<Runnable> callbacksToRun;
-        synchronized (startupShellPaintedCallbacks) {
-            callbacksToRun = new ArrayList<>(startupShellPaintedCallbacks);
-            startupShellPaintedCallbacks.clear();
-        }
-        for (Runnable callback : callbacksToRun) {
-            SwingUtilities.invokeLater(callback);
-        }
+        startupLifecycle.whenStartupShellPainted(callback);
     }
 
     private void initWindowSize() {
@@ -362,7 +171,7 @@ public class MainFrame extends JFrame {
         setSize(getMinWindowSize());
 
         // 小屏幕默认最大化
-        if (cachedScreenSize.getWidth() <= SCREEN_WIDTH_THRESHOLD) {
+        if (MainWindowSizePolicy.shouldStartMaximized(cachedScreenSize.getWidth())) {
             setExtendedState(Frame.MAXIMIZED_BOTH);
         }
     }
@@ -511,25 +320,7 @@ public class MainFrame extends JFrame {
             return cachedMinWindowSize;
         }
 
-        // 使用缓存的屏幕尺寸，根据不同分辨率设置合理的窗口大小
-        double screenWidth = cachedScreenSize.getWidth();
-
-        if (screenWidth >= SCREEN_WIDTH_4K) {
-            // 4K 及以上分辨率
-            cachedMinWindowSize = new Dimension(MIN_WIDTH_4K, MIN_HEIGHT_4K);
-        } else if (screenWidth >= SCREEN_WIDTH_2K) {
-            // 2K 分辨率
-            cachedMinWindowSize = new Dimension(MIN_WIDTH_2K, MIN_HEIGHT_2K);
-        } else if (screenWidth >= SCREEN_WIDTH_FHD) {
-            // Full HD 分辨率
-            cachedMinWindowSize = new Dimension(MIN_WIDTH_FHD, MIN_HEIGHT_FHD);
-        } else if (screenWidth >= SCREEN_WIDTH_HD) {
-            // HD 分辨率
-            cachedMinWindowSize = new Dimension(MIN_WIDTH_HD, MIN_HEIGHT_HD);
-        } else {
-            // 小屏幕
-            cachedMinWindowSize = new Dimension(MIN_WIDTH_WXGA, MIN_HEIGHT_WXGA);
-        }
+        cachedMinWindowSize = MainWindowSizePolicy.minimumSizeForScreenWidth(cachedScreenSize.getWidth());
 
         log.debug("计算最小窗口尺寸: {}x{} (屏幕: {}x{})",
                 cachedMinWindowSize.width, cachedMinWindowSize.height,

@@ -22,7 +22,6 @@ import com.laker.postman.service.collections.OpenedRequestTabsStore;
 import com.laker.postman.service.collections.CollectionTreeQueryService;
 import com.laker.postman.service.collections.RequestsPersistence;
 import com.laker.postman.service.http.PreparedRequestBuilder;
-import com.laker.postman.startup.StartupDiagnostics;
 import com.laker.postman.util.SystemUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -173,20 +172,14 @@ public class CollectionTreePanel extends UiSingletonPanel {
     }
 
     private StartupLoadSnapshot loadStartupSnapshot() {
-        long loadStartNanos = System.nanoTime();
-        StartupDiagnostics.mark("Request collections load started");
         persistence.initRequestGroupsFromFile();
         List<HttpRequestItem> openedRequests = OpenedRequestTabsStore.loadAll();
         HttpRequestItem lastNonNewRequest = CollectionTreeQueryService.getLastNonNewRequest(openedRequests);
-        StartupDiagnostics.mark("Request collections load finished in "
-                + StartupDiagnostics.formatSince(loadStartNanos)
-                + ", openedRequests=" + openedRequests.size());
         return new StartupLoadSnapshot(openedRequests, lastNonNewRequest);
     }
 
     private void applyStartupSnapshot(StartupLoadSnapshot snapshot) {
         RequestEditorPanel requestEditPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class);
-        StartupDiagnostics.mark("Collections UI ready; openedRequests=" + snapshot.openedRequests().size());
         requestEditPanel.setAutoInitializeSelectedTabOnTabAdd(true);
         restoreOpenedRequestTabs(snapshot, requestEditPanel);
         restoreTreeSelection(snapshot);
@@ -197,7 +190,6 @@ public class CollectionTreePanel extends UiSingletonPanel {
             requestEditPanel.addPlusTab();
             return;
         }
-        StartupDiagnostics.mark("Restoring opened request tabs");
         requestEditPanel.setStartupRestoreSelectingLastTab(true);
         requestEditPanel.setAutoInitializeSelectedTabOnTabAdd(false);
         requestEditPanel.addPlusTab();

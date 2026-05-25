@@ -20,7 +20,6 @@ import com.laker.postman.service.collections.ActiveCollectionTreeNodeRepository;
 import com.laker.postman.service.collections.CollectionTreeQueryService;
 import com.laker.postman.service.setting.ShortcutManager;
 import com.laker.postman.service.variable.RequestContext;
-import com.laker.postman.startup.StartupDiagnostics;
 import com.laker.postman.util.CurlImportUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -559,15 +558,12 @@ public class RequestEditorPanel extends UiSingletonPanel {
         }
     }
 
-    private void scheduleSelectedRequestTabInitialization(boolean markAfterInit) {
+    private void scheduleSelectedRequestTabInitialization(boolean animatePlaceholderTransition) {
         SwingUtilities.invokeLater(() -> {
             if (startupRestoreSelectingLastTab) {
                 return;
             }
-            ensureSelectedRequestTabInitialized(markAfterInit);
-            if (markAfterInit) {
-                StartupDiagnostics.mark("Initialized selected request tab after startup restore");
-            }
+            ensureSelectedRequestTabInitialized(animatePlaceholderTransition);
         });
     }
 
@@ -593,7 +589,6 @@ public class RequestEditorPanel extends UiSingletonPanel {
             SwingUtilities.invokeLater(() -> warmUpDeferredRequestTabsSequentially(nextIndex));
             return;
         }
-        StartupDiagnostics.mark("Warm-up finished for deferred request tabs");
     }
 
     private void cancelStartupRestoreAutoSelectionIfNeeded() {
@@ -601,7 +596,6 @@ public class RequestEditorPanel extends UiSingletonPanel {
             return;
         }
         startupRestoreSelectingLastTab = false;
-        StartupDiagnostics.mark("Startup restore auto-selection cancelled after user opened another tab");
     }
 
     @Override

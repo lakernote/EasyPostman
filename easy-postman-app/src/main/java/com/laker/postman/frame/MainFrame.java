@@ -13,7 +13,6 @@ import com.laker.postman.panel.MainPanel;
 import com.laker.postman.panel.lifecycle.AppExitCoordinator;
 import com.laker.postman.panel.performance.PerformancePanel;
 import com.laker.postman.panel.topmenu.TopMenuBar;
-import com.laker.postman.startup.StartupDiagnostics;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.UserSettingsUtil;
@@ -95,7 +94,6 @@ public class MainFrame extends JFrame {
     }
 
     public void initComponents() {
-        long initStartNanos = System.nanoTime();
         setJMenuBar(UiSingletonFactory.getInstance(TopMenuBar.class));
         installStartupShell();
 
@@ -120,7 +118,6 @@ public class MainFrame extends JFrame {
         if (!isMaximized) {
             setLocationRelativeTo(null);
         }
-        StartupDiagnostics.mark("MainFrame shell initialized in " + StartupDiagnostics.formatSince(initStartNanos));
     }
 
     public void loadMainContentAsync() {
@@ -128,22 +125,19 @@ public class MainFrame extends JFrame {
             return;
         }
         mainContentLoadRequested = true;
+        // 主内容延后到启动壳显示后加载，避免首次展示窗口时被完整工作区初始化阻塞。
         Runnable task = () -> {
             if (mainContentLoaded) {
                 return;
             }
-            long loadStartNanos = System.nanoTime();
             try {
-                StartupDiagnostics.mark("MainFrame content load started");
                 replaceContentWithStartupTransition(UiSingletonFactory.getInstance(MainPanel.class));
                 startupShellPanel = null;
                 mainContentLoaded = true;
                 notifyMainContentLoaded();
-                StartupDiagnostics.mark("MainFrame content load finished in " + StartupDiagnostics.formatSince(loadStartNanos));
             } catch (Throwable throwable) {
                 mainContentLoadFailure = throwable;
                 log.error("Failed to initialize main content", throwable);
-                StartupDiagnostics.mark("MainFrame content load failed after " + StartupDiagnostics.formatSince(loadStartNanos));
                 notifyMainContentLoadFailed(throwable);
             }
         };
@@ -235,7 +229,6 @@ public class MainFrame extends JFrame {
         // 在窗口首显前一次性应用，避免显示后再切换 title bar / fullWindowContent 造成二次重绘。
         getRootPane().putClientProperty("apple.awt.fullWindowContent", true);
         getRootPane().putClientProperty("apple.awt.transparentTitleBar", true);
-        StartupDiagnostics.mark("Applied macOS window decorations before first show");
     }
 
     private JPanel createStartupShellPanel() {
@@ -248,7 +241,6 @@ public class MainFrame extends JFrame {
                 if (!firstPaintHandled) {
                     firstPaintHandled = true;
                     startupShellPainted = true;
-                    StartupDiagnostics.mark("Startup shell first paint");
                     notifyStartupShellPainted();
                 }
             }

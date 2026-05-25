@@ -8,7 +8,6 @@ import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.service.collections.ActiveCollectionTreeNodeRepository;
 import com.laker.postman.service.collections.CollectionTreeQueryService;
 import com.laker.postman.service.variable.RequestContext;
-import com.laker.postman.startup.StartupDiagnostics;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.experimental.UtilityClass;
@@ -36,7 +35,6 @@ public class RequestEditorTabController {
         if (id == null || id.isEmpty()) {
             throw new IllegalArgumentException("Request item ID cannot be null or empty");
         }
-        long totalStartNanos = System.nanoTime();
 
         ActiveCollectionTreeNodeRepository repository = new ActiveCollectionTreeNodeRepository();
         repository.getRootNode().ifPresent(rootNode -> {
@@ -46,12 +44,8 @@ public class RequestEditorTabController {
             }
         });
 
-        long panelCreateStartNanos = System.nanoTime();
         RequestEditSubPanel subPanel = new RequestEditSubPanel(id, item.getProtocol(), deferEditorInitialization);
-        String panelCreateDuration = StartupDiagnostics.formatSince(panelCreateStartNanos);
-        long initPanelStartNanos = System.nanoTime();
         subPanel.initPanelData(item);
-        String initPanelDuration = StartupDiagnostics.formatSince(initPanelStartNanos);
         String tabTitle = CharSequenceUtil.isNotBlank(item.getName())
                 ? item.getName()
                 : I18nUtil.getMessage(MessageKeys.NEW_REQUEST);
@@ -61,7 +55,6 @@ public class RequestEditorTabController {
         if (insertIndex > 0 && RequestEditorPanel.PLUS_TAB.equals(tabbedPane.getTitleAt(insertIndex - 1))) {
             insertIndex--;
         }
-        long uiInsertStartNanos = System.nanoTime();
         tabbedPane.insertTab(tabTitle, null, subPanel, null, insertIndex);
         tabbedPane.setTabComponentAt(insertIndex, new ClosableTabComponent(tabTitle, item.getProtocol()));
         boolean shouldSelectInsertedTab = selectTab;
@@ -75,13 +68,6 @@ public class RequestEditorTabController {
                 requestEditPanel.initializeSelectedTabSoon();
             }
         }
-        StartupDiagnostics.mark("Restored tab '" + tabTitle + "' in "
-                + StartupDiagnostics.formatSince(totalStartNanos)
-                + " (construct=" + panelCreateDuration
-                + ", init=" + initPanelDuration
-                + ", insert=" + StartupDiagnostics.formatSince(uiInsertStartNanos)
-                + ", select=" + shouldSelectInsertedTab
-                + ", deferred=" + deferEditorInitialization + ")");
         return subPanel;
     }
 

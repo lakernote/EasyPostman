@@ -11,7 +11,6 @@ import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.sidebar.cookie.CookieManagerDialog;
 import com.laker.postman.panel.sidebar.global.GlobalVariablesDialog;
 import com.laker.postman.service.setting.SettingManager;
-import com.laker.postman.startup.StartupDiagnostics;
 import com.laker.postman.util.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -457,7 +456,6 @@ public class SidebarTabPanel extends UiSingletonPanel {
 
     public void preloadInitialContent() {
         int selectedIndex = tabbedPane != null ? tabbedPane.getSelectedIndex() : -1;
-        StartupDiagnostics.mark("SidebarTabPanel preloading initial tab index=" + (selectedIndex >= 0 ? selectedIndex : 0));
         ensureTabComponentLoaded(selectedIndex >= 0 ? selectedIndex : 0);
         initializeAllTabColors();
     }

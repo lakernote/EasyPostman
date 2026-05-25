@@ -4,8 +4,8 @@ import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.common.constants.Icons;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.frame.MainFrame;
+import com.laker.postman.startup.StartupFailureHandler;
 import com.laker.postman.startup.StartupCoordinator;
-import com.laker.postman.startup.StartupDiagnostics;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -23,10 +23,10 @@ import java.io.Serial;
 @Slf4j
 public class SplashWindow extends JFrame {
     @Serial
-    private static final long serialVersionUID = 1L; // 添加序列化ID
-    public static final int MIN_TIME = 350; // 最小显示时间，避免闪屏但不过度拖慢启动
-    private JLabel statusLabel; // 状态标签，用于显示加载状态
-    private volatile boolean isDisposed = false; // 标记窗口是否已释放
+    private static final long serialVersionUID = 1L;
+    private static final int MIN_DISPLAY_TIME_MS = 350;
+    private JLabel statusLabel;
+    private volatile boolean isDisposed = false;
 
     public SplashWindow() {
         super();
@@ -264,14 +264,14 @@ public class SplashWindow extends JFrame {
         }
     }
 
-    public void initMainFrame(StartupCoordinator startupCoordinator) {
+    public void startMainFrameInitialization(StartupCoordinator startupCoordinator) {
         SwingWorker<MainFrame, String> worker = new SwingWorker<>() {
             @Override
             protected MainFrame doInBackground() {
                 long start = System.currentTimeMillis();
 
                 try {
-                    MainFrame mainFrame = startupCoordinator.prepareMainFrame(stage -> {
+                    MainFrame mainFrame = startupCoordinator.prepareMainFrameShell(stage -> {
                         switch (stage) {
                             case STARTING -> {
                                 publish(MessageKeys.SPLASH_STATUS_STARTING);
@@ -332,7 +332,7 @@ public class SplashWindow extends JFrame {
      */
     private void ensureMinimumDisplayTime(long startTimeMillis) {
         long elapsed = System.currentTimeMillis() - startTimeMillis;
-        long remaining = MIN_TIME - elapsed;
+        long remaining = MIN_DISPLAY_TIME_MS - elapsed;
         if (remaining <= 0) {
             return;
         }
@@ -351,15 +351,7 @@ public class SplashWindow extends JFrame {
         if (e instanceof InterruptedException) {
             Thread.currentThread().interrupt();
         }
-        log.error("加载主窗口失败", e);
-
-        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
-                null,
-                I18nUtil.getMessage(MessageKeys.SPLASH_ERROR_LOAD_MAIN),
-                I18nUtil.getMessage(MessageKeys.GENERAL_ERROR),
-                JOptionPane.ERROR_MESSAGE
-        ));
-        System.exit(1);
+        StartupFailureHandler.showStartupErrorAndExit(e);
     }
 
     /**
@@ -369,41 +361,9 @@ public class SplashWindow extends JFrame {
         if (isDisposed) return;
 
         // 先显示主窗口；一旦启动占位符稳定绘制完成就尽快退场，不再阻塞等待主内容完全加载。
-        startupCoordinator.showMainFrame(mainFrame);
-        startupCoordinator.whenStartupShellReady(
+        startupCoordinator.showMainFrameAndLoadContent(mainFrame);
+        startupCoordinator.runAfterStartupShellReady(
                 mainFrame,
-                0,
-                new StartupCoordinator.MainFrameReadinessCallbacks() {
-                    @Override
-                    public void onWaiting() {
-                        StartupDiagnostics.mark("Splash waiting for startup shell paint before fade-out");
-                    }
-
-                    @Override
-                    public void onStartupShellPainted() {
-                        StartupDiagnostics.mark("Splash fade-out gate: startup shell painted");
-                    }
-
-                    @Override
-                    public void onMainContentReady() {
-                        StartupDiagnostics.mark("Main content finished loading after splash fade-out gate opened");
-                    }
-
-                    @Override
-                    public void onStartupShellPaintFallback(int waitMs) {
-                        StartupDiagnostics.mark("Splash fade-out using shell paint fallback after " + waitMs + " ms");
-                    }
-
-                    @Override
-                    public void onHoldScheduled(int holdDelayMs) {
-                        StartupDiagnostics.mark("Splash fade-out holding for " + holdDelayMs + " ms after readiness");
-                    }
-
-                    @Override
-                    public void onReady() {
-                        StartupDiagnostics.mark("Splash closing immediately after startup shell paint");
-                    }
-                },
                 () -> closeSplash(startupCoordinator),
                 this::handleMainFrameLoadError
         );

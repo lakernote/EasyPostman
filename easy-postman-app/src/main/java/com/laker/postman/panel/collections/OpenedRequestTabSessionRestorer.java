@@ -7,7 +7,6 @@ import com.laker.postman.panel.collections.editor.RequestEditorTabController;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.service.collections.OpenedRequestTabsStore;
 import com.laker.postman.service.collections.CollectionTreeQueryService;
-import com.laker.postman.startup.StartupDiagnostics;
 import lombok.experimental.UtilityClass;
 
 import javax.swing.SwingUtilities;
@@ -27,8 +26,6 @@ public class OpenedRequestTabSessionRestorer {
                     requestItems,
                     leftPanel.getRootTreeNode()
             );
-            long restoreStartNanos = System.nanoTime();
-            StartupDiagnostics.mark("Opened requests restore prepared; validRequests=" + restorableRequests.size());
             for (int i = 0; i < restorableRequests.size(); i++) {
                 HttpRequestItem item = restorableRequests.get(i);
                 boolean selectTab = i == restorableRequests.size() - 1;
@@ -36,8 +33,6 @@ public class OpenedRequestTabSessionRestorer {
                 RequestEditorTabController.setTabNewRequest(panel, item.isNewRequest());
             }
             OpenedRequestTabsStore.clear();
-            StartupDiagnostics.mark("Opened requests restore finished in "
-                    + StartupDiagnostics.formatSince(restoreStartNanos));
             if (onComplete != null) {
                 onComplete.run();
             }

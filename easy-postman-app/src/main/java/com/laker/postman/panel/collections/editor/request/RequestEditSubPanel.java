@@ -10,7 +10,6 @@ import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.panel.collections.editor.request.sub.*;
 import com.laker.postman.service.setting.SettingManager;
-import com.laker.postman.startup.StartupDiagnostics;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -231,7 +230,6 @@ public class RequestEditSubPanel extends JPanel {
         if (editorInitialized) {
             return;
         }
-        long initStartNanos = System.nanoTime();
         ComponentSnapshotTransition.CapturedSnapshot placeholderSnapshot = animatePlaceholderTransition
                 ? captureDeferredPlaceholderSnapshot()
                 : null;
@@ -446,10 +444,6 @@ public class RequestEditSubPanel extends JPanel {
         revalidate();
         repaint();
         startDeferredPlaceholderTransition(placeholderSnapshot);
-        if (deferEditorInitialization) {
-            StartupDiagnostics.mark("Initialized deferred editor tab '" + (name != null ? name : id)
-                    + "' in " + StartupDiagnostics.formatSince(initStartNanos));
-        }
     }
 
     private void installDeferredPlaceholder() {

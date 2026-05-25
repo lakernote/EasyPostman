@@ -1,13 +1,15 @@
 package com.laker.postman.service.js;
 
+import com.laker.postman.service.setting.SettingManager;
+import lombok.Getter;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
+import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.proxy.ProxyExecutable;
 
-import com.laker.postman.service.setting.SettingManager;
-
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -28,6 +30,17 @@ public class JsScriptExecutor {
     private static volatile int contextPoolSize;
     private static volatile int contextAcquireTimeoutMs; // 获取 Context 超时时间
     private static final Object CONTEXT_POOL_LOCK = new Object();
+    private static final int SCRIPT_SOURCE_CACHE_MAX_SIZE = 512;
+    private static final Map<String, Source> SCRIPT_SOURCE_CACHE = new LinkedHashMap<>(
+            SCRIPT_SOURCE_CACHE_MAX_SIZE,
+            0.75f,
+            true
+    ) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, Source> eldest) {
+            return size() > SCRIPT_SOURCE_CACHE_MAX_SIZE;
+        }
+    };
 
     /**
      * ThreadLocal 存储当前正在执行的原始脚本，用于错误报告
@@ -140,11 +153,7 @@ public class JsScriptExecutor {
             // 注入变量（polyfill 已在池创建时注入）
             injectBindings(context, bindings);
 
-            // 使用 IIFE 包装脚本，避免 let/const 污染全局作用域
-            String wrappedScript = wrapScriptWithIIFE(script);
-
-            // 执行包装后的脚本
-            context.eval("js", wrappedScript);
+            context.eval(getCachedScriptSource(script));
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -165,7 +174,7 @@ public class JsScriptExecutor {
             CURRENT_SCRIPT.remove();
 
             // 归还 Context 到池中
-            if (pooledContext != null && borrowedPool != null) {
+            if (pooledContext != null) {
                 borrowedPool.returnContext(pooledContext);
             }
         }
@@ -196,6 +205,25 @@ public class JsScriptExecutor {
      */
     private static String wrapScriptWithIIFE(String script) {
         return "(function() {\n" + script + "\n})();";
+    }
+
+    private static Source getCachedScriptSource(String script) {
+        synchronized (SCRIPT_SOURCE_CACHE) {
+            Source source = SCRIPT_SOURCE_CACHE.get(script);
+            if (source != null) {
+                return source;
+            }
+
+            Source newSource = Source.newBuilder("js", wrapScriptWithIIFE(script), buildSourceName(script))
+                    .cached(true)
+                    .buildLiteral();
+            SCRIPT_SOURCE_CACHE.put(script, newSource);
+            return newSource;
+        }
+    }
+
+    private static String buildSourceName(String script) {
+        return "easypostman-user-script-" + Integer.toUnsignedString(script.hashCode(), 16) + ".js";
     }
 
     /**
@@ -317,6 +345,7 @@ public class JsScriptExecutor {
     /**
      * Console 方法类型枚举
      */
+    @Getter
     public enum ConsoleType {
         LOG("log"),
         ERROR("error"),
@@ -330,9 +359,6 @@ public class JsScriptExecutor {
             this.methodName = methodName;
         }
 
-        public String getMethodName() {
-            return methodName;
-        }
     }
 
     /**

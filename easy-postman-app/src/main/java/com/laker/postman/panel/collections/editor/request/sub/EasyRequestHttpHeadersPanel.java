@@ -58,6 +58,7 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
     private final FlatSVGIcon eyeCloseIcon;
     private JButton eyeButton;
     private JLabel countLabel;
+    private EditButton bulkEditButton;
 
     // Table filtering
     private transient TableRowSorter<DefaultTableModel> rowSorter;
@@ -127,7 +128,7 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
         countLabel = createCountLabel();
 
         // Create Bulk Edit button
-        EditButton bulkEditButton = new EditButton();
+        bulkEditButton = new EditButton();
         bulkEditButton.setToolTipText(I18nUtil.getMessage(MessageKeys.BULK_EDIT));
         bulkEditButton.addActionListener(e -> showBulkEditDialog());
 
@@ -557,6 +558,16 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
 
         // Reapply filter after updating data
         applyCurrentFilter();
+    }
+
+    public void setEditable(boolean editable) {
+        if (tablePanel != null) {
+            tablePanel.setEditable(editable);
+        }
+        if (bulkEditButton != null) {
+            bulkEditButton.setVisible(editable);
+            bulkEditButton.setEnabled(editable);
+        }
     }
 
     /**

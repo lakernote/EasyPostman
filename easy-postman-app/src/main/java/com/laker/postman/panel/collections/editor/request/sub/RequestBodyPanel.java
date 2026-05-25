@@ -73,6 +73,7 @@ public class RequestBodyPanel extends JPanel {
     private SearchableTextArea searchableTextArea; // 集成了搜索功能的文本编辑器（HTTP模式）
     private SearchButton searchButton; // 搜索按钮（HTTP模式）
     private WrapToggleButton wrapButton; // 换行按钮（HTTP模式）
+    private boolean editable = true;
 
     // 自动补全相关
     private JWindow autocompleteWindow;
@@ -551,7 +552,7 @@ public class RequestBodyPanel extends JPanel {
             rawTypeComboBox.setVisible(isRaw);
         }
         if (formatButton != null) {
-            formatButton.setVisible(isRaw);
+            formatButton.setVisible(editable && isRaw);
         }
         if (searchButton != null) {
             searchButton.setVisible(isRaw);
@@ -560,7 +561,7 @@ public class RequestBodyPanel extends JPanel {
             wrapButton.setVisible(isRaw);
         }
         if (bulkEditButton != null) {
-            bulkEditButton.setVisible(isBulkEditable);
+            bulkEditButton.setVisible(editable && isBulkEditable);
         }
     }
 
@@ -627,6 +628,49 @@ public class RequestBodyPanel extends JPanel {
 
     public String getRawBody() {
         return bodyArea != null ? bodyArea.getText().trim() : null;
+    }
+
+    public void setEditable(boolean editable) {
+        this.editable = editable;
+        if (bodyTypeComboBox != null) {
+            bodyTypeComboBox.setEnabled(editable);
+        }
+        if (rawTypeComboBox != null) {
+            rawTypeComboBox.setEnabled(editable);
+        }
+        if (formDataTablePanel != null) {
+            formDataTablePanel.setEditable(editable);
+        }
+        if (formUrlencodedTablePanel != null) {
+            formUrlencodedTablePanel.setEditable(editable);
+        }
+        if (bodyArea != null) {
+            bodyArea.setEditable(editable);
+        }
+        if (bulkEditButton != null) {
+            bulkEditButton.setVisible(editable && (BODY_TYPE_FORM_DATA.equals(currentBodyType)
+                    || BODY_TYPE_FORM_URLENCODED.equals(currentBodyType)));
+            bulkEditButton.setEnabled(editable);
+        }
+        if (formatButton != null) {
+            formatButton.setVisible(editable && isBodyTypeRAW());
+            formatButton.setEnabled(editable);
+        }
+        if (wsClearInputCheckBox != null) {
+            wsClearInputCheckBox.setEnabled(editable);
+        }
+        if (wsIntervalField != null) {
+            wsIntervalField.setEditable(editable);
+            wsIntervalField.setEnabled(editable);
+        }
+        if (wsTimedSendButton != null) {
+            wsTimedSendButton.setVisible(editable);
+            wsTimedSendButton.setEnabled(editable);
+        }
+        if (wsSendButton != null) {
+            wsSendButton.setVisible(editable);
+            wsSendButton.setEnabled(editable);
+        }
     }
 
     /**

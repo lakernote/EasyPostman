@@ -20,6 +20,7 @@ import java.util.List;
  */
 public class EasyRequestParamsPanel extends JPanel {
     private ParamsTablePanel tablePanel;
+    private EditButton bulkEditButton;
 
     public EasyRequestParamsPanel() {
         initializeComponents();
@@ -36,7 +37,7 @@ public class EasyRequestParamsPanel extends JPanel {
         JLabel label = new JLabel("Params");
 
         // Create Bulk Edit button
-        EditButton bulkEditButton = new EditButton();
+        bulkEditButton = new EditButton();
         bulkEditButton.setToolTipText(I18nUtil.getMessage(MessageKeys.BULK_EDIT));
         bulkEditButton.addActionListener(e -> showBulkEditDialog());
 
@@ -234,5 +235,13 @@ public class EasyRequestParamsPanel extends JPanel {
 
     public void clear() {
         tablePanel.clear();
+    }
+
+    public void setEditable(boolean editable) {
+        tablePanel.setEditable(editable);
+        if (bulkEditButton != null) {
+            bulkEditButton.setVisible(editable);
+            bulkEditButton.setEnabled(editable);
+        }
     }
 }

@@ -36,7 +36,7 @@ final class PerformanceRequestEditorSupport {
             if (requestEditorHost != null && requestEditSubPanel != null) {
                 requestEditorHost.remove(requestEditSubPanel);
             }
-            requestEditSubPanel = new RequestEditSubPanel("", protocol);
+            requestEditSubPanel = RequestEditSubPanel.performanceSnapshot("", protocol, false);
             currentRequestEditorProtocol = protocol;
             if (requestEditorHost != null) {
                 requestEditorHost.add(requestEditSubPanel, BorderLayout.CENTER);

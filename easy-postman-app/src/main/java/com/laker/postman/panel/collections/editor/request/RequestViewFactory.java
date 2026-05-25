@@ -21,6 +21,7 @@ final class RequestViewFactory {
     static RequestViewComponents create(RequestItemProtocolEnum protocol,
                                         RequestEditSubPanelType panelType,
                                         ActionListener sendAction) {
+        boolean requestOnlySnapshot = panelType == RequestEditSubPanelType.PERFORMANCE_SNAPSHOT;
         RequestLinePanel requestLinePanel = new RequestLinePanel(sendAction, protocol);
         JComboBox<String> methodBox = requestLinePanel.getMethodBox();
         JTextField urlField = requestLinePanel.getUrlField();
@@ -103,15 +104,22 @@ final class RequestViewFactory {
             addTabIfVisible(reqTabs, I18nUtil.getMessage(MessageKeys.TAB_PARAMS), paramsPanel, paramsTabIndicator, true);
         }
 
-        boolean enableSaveButton = protocol.isHttpProtocol() && panelType != RequestEditSubPanelType.SAVED_RESPONSE;
-        ResponsePanel responsePanel = new ResponsePanel(protocol, enableSaveButton);
+        boolean enableSaveButton = protocol.isHttpProtocol()
+                && panelType != RequestEditSubPanelType.SAVED_RESPONSE
+                && !requestOnlySnapshot;
+        ResponsePanel responsePanel = requestOnlySnapshot ? null : new ResponsePanel(protocol, enableSaveButton);
 
         boolean isVertical = SettingManager.isLayoutVertical();
         int orientation = isVertical ? JSplitPane.VERTICAL_SPLIT : JSplitPane.HORIZONTAL_SPLIT;
-        JSplitPane splitPane = new JSplitPane(orientation, reqTabs, responsePanel);
-        splitPane.setDividerSize(4);
-        splitPane.setOneTouchExpandable(false);
-        splitPane.setContinuousLayout(true);
+        JSplitPane splitPane = null;
+        JComponent editorContent = reqTabs;
+        if (!requestOnlySnapshot) {
+            splitPane = new JSplitPane(orientation, reqTabs, responsePanel);
+            splitPane.setDividerSize(4);
+            splitPane.setOneTouchExpandable(false);
+            splitPane.setContinuousLayout(true);
+            editorContent = splitPane;
+        }
 
         return new RequestViewComponents(
                 requestLinePanel,
@@ -132,7 +140,8 @@ final class RequestViewFactory {
                 scriptPanel,
                 scriptsTabIndicator,
                 responsePanel,
-                splitPane
+                splitPane,
+                editorContent
         );
     }
 

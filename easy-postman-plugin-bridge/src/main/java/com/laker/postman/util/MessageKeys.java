@@ -662,10 +662,6 @@ public final class MessageKeys {
     public static final String PERFORMANCE_TEST_PLAN = "performance.test_plan";
     public static final String PERFORMANCE_THREAD_GROUP = "performance.thread_group";
     public static final String PERFORMANCE_DEFAULT_REQUEST = "performance.default_request";
-    public static final String PERFORMANCE_REQUEST_COPY_INFO = "performance.request.copy_info";
-    public static final String PERFORMANCE_MSG_NO_REQUEST_SELECTED = "performance.msg.no_request_selected";
-    public static final String PERFORMANCE_MSG_REQUEST_NOT_FOUND_IN_COLLECTIONS = "performance.msg.request_not_found_in_collections";
-    public static final String PERFORMANCE_MSG_REQUEST_REFRESHED = "performance.msg.request_refreshed";
     public static final String PERFORMANCE_CSV_USAGE_NOTE = "performance.csv.usage_note";
     public static final String PERFORMANCE_SSE_EVENT_FILTER = "performance.sse.event_filter";
     public static final String PERFORMANCE_SSE_COMPLETION_FIRST_MESSAGE = "performance.sse.completion.first_message";

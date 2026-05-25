@@ -84,6 +84,9 @@ final class RequestUiSetupHelper {
                                        RequestEditSubPanelType panelType,
                                        ResponsePanel responsePanel,
                                        ActionListener saveAction) {
+        if (responsePanel == null) {
+            return;
+        }
         if (protocol.isHttpProtocol()
                 && panelType != RequestEditSubPanelType.SAVED_RESPONSE
                 && responsePanel.getSaveResponseButton() != null) {

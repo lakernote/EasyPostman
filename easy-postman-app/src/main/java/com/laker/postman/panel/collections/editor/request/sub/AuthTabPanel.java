@@ -492,6 +492,15 @@ public class AuthTabPanel extends JPanel {
         tokenField.setText(t == null ? "" : t);
     }
 
+    public void setEditable(boolean editable) {
+        typeCombo.setEnabled(editable);
+        usernameField.setEditable(editable);
+        passwordField.setEditable(editable);
+        digestUsernameField.setEditable(editable);
+        digestPasswordField.setEditable(editable);
+        tokenField.setEditable(editable);
+    }
+
     /**
      * 注册脏数据监听器
      */

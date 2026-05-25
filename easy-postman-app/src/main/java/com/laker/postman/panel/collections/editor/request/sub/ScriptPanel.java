@@ -287,6 +287,13 @@ public class ScriptPanel extends JPanel {
         return postscriptArea.getText();
     }
 
+    public void setEditable(boolean editable) {
+        prescriptArea.setEditable(editable);
+        postscriptArea.setEditable(editable);
+        snippetBtn.setVisible(editable);
+        snippetBtn.setEnabled(editable);
+    }
+
     /**
      * 添加脏监听，内容变更时回调
      */

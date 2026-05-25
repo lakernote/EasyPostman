@@ -151,7 +151,6 @@ public class PerformancePanel extends UiSingletonPanel {
                 this::syncRequestStructure
         );
         PerformancePanelViewFactory.PropertySection propertySection = viewFactory.createPropertySection(
-                this::refreshCurrentRequest,
                 EMPTY,
                 THREAD_GROUP,
                 LOOP,
@@ -451,18 +450,6 @@ public class PerformancePanel extends UiSingletonPanel {
                 ensureRequestStructure(node, jtNode);
             }
         }
-    }
-
-    /**
-     * 刷新当前选中的请求节点
-     */
-    private void refreshCurrentRequest() {
-        currentRequestNode = requestSyncSupport.refreshCurrentRequest(
-                currentRequestNode,
-                requestEditorSupport.getRequestEditSubPanel(),
-                this::switchRequestEditor,
-                this::saveConfig
-        );
     }
 
     /**

@@ -117,6 +117,14 @@ public class RequestSettingsPanel extends JScrollPane {
                 || getStoredRequestTimeoutValue() != null;
     }
 
+    public void setEditable(boolean editable) {
+        followRedirectsComboBox.setEnabled(editable);
+        useCookieJarSwitch.setEnabled(editable);
+        httpVersionComboBox.setEnabled(editable);
+        requestTimeoutField.setEditable(editable);
+        requestTimeoutField.setEnabled(editable);
+    }
+
     public void addDirtyListener(Runnable listener) {
         if (listener == null) {
             return;

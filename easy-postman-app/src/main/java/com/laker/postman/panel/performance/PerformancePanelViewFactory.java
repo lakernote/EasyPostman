@@ -24,7 +24,6 @@ import com.laker.postman.panel.performance.timer.TimerPropertyPanel;
 import com.laker.postman.service.PerformancePersistenceService;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
@@ -57,8 +56,7 @@ final class PerformancePanelViewFactory {
         return new TreeSection(jmeterTree, treeScroll);
     }
 
-    PropertySection createPropertySection(Runnable refreshCurrentRequestAction,
-                                          String emptyCard,
+    PropertySection createPropertySection(String emptyCard,
                                           String threadGroupCard,
                                           String loopCard,
                                           String requestCard,
@@ -80,8 +78,8 @@ final class PerformancePanelViewFactory {
         LoopPropertyPanel loopPanel = new LoopPropertyPanel();
         propertyPanel.add(loopPanel, loopCard);
 
-        RequestEditSubPanel requestEditSubPanel = new RequestEditSubPanel("", RequestItemProtocolEnum.HTTP, true);
-        RequestEditorSection requestEditorSection = createRequestEditorSection(requestEditSubPanel, refreshCurrentRequestAction);
+        RequestEditSubPanel requestEditSubPanel = RequestEditSubPanel.performanceSnapshot("", RequestItemProtocolEnum.HTTP, true);
+        RequestEditorSection requestEditorSection = createRequestEditorSection(requestEditSubPanel);
         propertyPanel.add(requestEditorSection.wrapperPanel(), requestCard);
 
         AssertionPropertyPanel assertionPanel = new AssertionPropertyPanel();
@@ -410,34 +408,8 @@ final class PerformancePanelViewFactory {
         }
     }
 
-    private RequestEditorSection createRequestEditorSection(RequestEditSubPanel requestEditSubPanel,
-                                                            Runnable refreshCurrentRequestAction) {
+    private RequestEditorSection createRequestEditorSection(RequestEditSubPanel requestEditSubPanel) {
         JPanel wrapper = new JPanel(new BorderLayout());
-        JPanel infoBar = new JPanel(new BorderLayout());
-        infoBar.setBackground(new Color(255, 250, 205));
-        infoBar.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230, 220, 170)),
-                BorderFactory.createEmptyBorder(4, 4, 4, 4)
-        ));
-
-        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        leftPanel.setOpaque(false);
-        leftPanel.add(new JLabel(IconUtil.create("icons/info.svg", 14, 14)));
-
-        JLabel infoText = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REQUEST_COPY_INFO));
-        infoText.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        infoText.setForeground(new Color(102, 85, 0));
-        leftPanel.add(infoText);
-
-        JButton refreshCurrentBtn = new JButton();
-        refreshCurrentBtn.setIcon(IconUtil.createThemed("icons/refresh.svg", 14, 14));
-        refreshCurrentBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        refreshCurrentBtn.setFocusable(false);
-        refreshCurrentBtn.addActionListener(e -> refreshCurrentRequestAction.run());
-        leftPanel.add(refreshCurrentBtn);
-        infoBar.add(leftPanel, BorderLayout.CENTER);
-
-        wrapper.add(infoBar, BorderLayout.NORTH);
         JPanel requestEditorHost = new JPanel(new BorderLayout());
         requestEditorHost.add(requestEditSubPanel, BorderLayout.CENTER);
         wrapper.add(requestEditorHost, BorderLayout.CENTER);

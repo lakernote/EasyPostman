@@ -47,6 +47,7 @@ public class MarkdownEditorPanel extends JPanel {
 
     private JButton undoButton;
     private JButton redoButton;
+    private boolean editable = true;
 
     public MarkdownEditorPanel() {
         initUI();
@@ -68,6 +69,7 @@ public class MarkdownEditorPanel extends JPanel {
             JPanel statusBar = createStatusBar();
             add(statusBar, BorderLayout.SOUTH);
 
+            setEditable(editable);
             updatePreviewPaneStyles();
 
             revalidate();
@@ -1223,6 +1225,23 @@ public class MarkdownEditorPanel extends JPanel {
     public void setText(String text) {
         editorArea.setText(text);
         updatePreview();
+    }
+
+    public void setEditable(boolean editable) {
+        this.editable = editable;
+        editorArea.setEditable(editable);
+        if (toolbarPanel != null) {
+            setComponentTreeEnabled(toolbarPanel, editable);
+        }
+    }
+
+    private void setComponentTreeEnabled(Component component, boolean enabled) {
+        component.setEnabled(enabled);
+        if (component instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                setComponentTreeEnabled(child, enabled);
+            }
+        }
     }
 
     /**

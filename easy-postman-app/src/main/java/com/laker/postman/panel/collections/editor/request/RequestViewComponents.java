@@ -26,6 +26,7 @@ final class RequestViewComponents {
     final IndicatorTabComponent scriptsTabIndicator;
     final ResponsePanel responsePanel;
     final JSplitPane splitPane;
+    final JComponent editorContent;
 
     RequestViewComponents(RequestLinePanel requestLinePanel,
                           JComboBox<String> methodBox,
@@ -45,7 +46,8 @@ final class RequestViewComponents {
                           ScriptPanel scriptPanel,
                           IndicatorTabComponent scriptsTabIndicator,
                           ResponsePanel responsePanel,
-                          JSplitPane splitPane) {
+                          JSplitPane splitPane,
+                          JComponent editorContent) {
         this.requestLinePanel = requestLinePanel;
         this.methodBox = methodBox;
         this.urlField = urlField;
@@ -65,5 +67,6 @@ final class RequestViewComponents {
         this.scriptsTabIndicator = scriptsTabIndicator;
         this.responsePanel = responsePanel;
         this.splitPane = splitPane;
+        this.editorContent = editorContent;
     }
 }

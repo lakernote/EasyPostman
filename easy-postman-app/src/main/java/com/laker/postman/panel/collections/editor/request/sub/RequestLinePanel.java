@@ -271,4 +271,13 @@ public class RequestLinePanel extends JPanel {
         // 添加新监听器
         sendButton.addActionListener(closeAction);
     }
+
+    public void setReadOnlySnapshotMode() {
+        methodBox.setEnabled(false);
+        urlField.setEditable(false);
+        sendButton.setVisible(false);
+        sendButton.setEnabled(false);
+        saveButton.setVisible(false);
+        saveButton.setEnabled(false);
+    }
 }

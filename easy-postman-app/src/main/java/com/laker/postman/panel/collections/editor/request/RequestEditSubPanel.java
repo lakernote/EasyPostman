@@ -146,6 +146,10 @@ public class RequestEditSubPanel extends JPanel {
         return panelType == RequestEditSubPanelType.SAVED_RESPONSE;
     }
 
+    private boolean isPerformanceSnapshot() {
+        return panelType == RequestEditSubPanelType.PERFORMANCE_SNAPSHOT;
+    }
+
     /**
      * 普通请求编辑面板构造函数
      */
@@ -155,6 +159,18 @@ public class RequestEditSubPanel extends JPanel {
 
     public RequestEditSubPanel(String id, RequestItemProtocolEnum protocol, boolean deferEditorInitialization) {
         this(id, protocol, RequestEditSubPanelType.NORMAL, null, deferEditorInitialization);
+    }
+
+    public static RequestEditSubPanel performanceSnapshot(String id,
+                                                          RequestItemProtocolEnum protocol,
+                                                          boolean deferEditorInitialization) {
+        return new RequestEditSubPanel(
+                id,
+                protocol,
+                RequestEditSubPanelType.PERFORMANCE_SNAPSHOT,
+                null,
+                deferEditorInitialization
+        );
     }
 
     /**
@@ -175,7 +191,7 @@ public class RequestEditSubPanel extends JPanel {
         this.currentProtocol = protocol;
         this.panelType = panelType;
         this.savedResponse = savedResponse;
-        this.deferEditorInitialization = deferEditorInitialization && panelType == RequestEditSubPanelType.NORMAL;
+        this.deferEditorInitialization = deferEditorInitialization && panelType != RequestEditSubPanelType.SAVED_RESPONSE;
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5)); // 设置边距为5
         setOpaque(true);
@@ -256,17 +272,21 @@ public class RequestEditSubPanel extends JPanel {
         responsePanel = components.responsePanel;
         splitPane = components.splitPane;
 
-        RequestUiSetupHelper.bindUrlField(
-                urlField,
-                requestPreparationFeedbackHelper,
-                this::detectAndParseCurl,
-                this::parseUrlParamsToParamsPanel,
-                this::autoPrependHttpsIfNeeded
-        );
+        if (!isPerformanceSnapshot()) {
+            RequestUiSetupHelper.bindUrlField(
+                    urlField,
+                    requestPreparationFeedbackHelper,
+                    this::detectAndParseCurl,
+                    this::parseUrlParamsToParamsPanel,
+                    this::autoPrependHttpsIfNeeded
+            );
+        }
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.add(requestLinePanel, BorderLayout.CENTER);
         add(topPanel, BorderLayout.NORTH);
-        RequestUiSetupHelper.bindParamsSync(paramsPanel, this::parseParamsPanelToUrl);
+        if (!isPerformanceSnapshot()) {
+            RequestUiSetupHelper.bindParamsSync(paramsPanel, this::parseParamsPanelToUrl);
+        }
         requestUrlSyncHelper = new RequestUrlSyncHelper(urlField, paramsPanel);
         requestFormDataHelper = new RequestFormDataHelper(
                 urlField,
@@ -298,125 +318,129 @@ public class RequestEditSubPanel extends JPanel {
                 settingsTabIndicator,
                 scriptsTabIndicator
         );
-        requestDirtyStateHelper = new RequestDirtyStateHelper(
-                this::getCurrentRequestFromModel,
-                dirty -> UiSingletonFactory.getInstance(RequestEditorPanel.class).updateTabDirty(this, dirty)
-        );
-        requestExecutionUiHelper = new RequestExecutionUiHelper(
-                responsePanel,
-                requestLinePanel,
-                requestBodyPanel,
-                reqTabs,
-                this::sendRequest,
-                this::isBaseHttpProtocol,
-                this::isEffectiveHttpProtocol,
-                this::isEffectiveSseProtocol,
-                this::isEffectiveWebSocketProtocol
-        );
-        requestStreamUiHelper = new RequestStreamUiHelper(responsePanel, TIME_FORMATTER);
-        requestEditorActionHelper = new RequestEditorActionHelper(
-                urlField,
-                headersPanel,
-                requestBodyPanel,
-                requestLinePanel,
-                requestStreamUiHelper,
-                responsePanel,
-                this::sendRequest,
-                this::isBaseHttpProtocol,
-                this::isEffectiveSseProtocol,
-                this::isEffectiveWebSocketProtocol,
-                () -> currentWebSocket,
-                webSocket -> currentWebSocket = webSocket,
-                () -> currentEventSource,
-                eventSource -> currentEventSource = eventSource,
-                () -> currentWorker,
-                worker -> currentWorker = worker,
-                connectionId -> currentWebSocketConnectionId = connectionId,
-                currentSseCancelled,
-                () -> httpSseStreamOpened,
-                this::getEffectiveProtocol,
-                newProtocol -> currentProtocol = newProtocol,
-                newProtocol -> UiSingletonFactory.getInstance(RequestEditorPanel.class).updateTabProtocol(this, newProtocol),
-                this::initPanelData,
-                this::updateTabDirty
-        );
-        requestResponseHelper = new RequestResponseHelper(
-                this,
-                responsePanel,
-                responsePanel::setTestResults,
-                (request, response) -> {
-                    lastRequest = request;
-                    lastResponse = response;
-                }
-        );
-        httpRequestExecutionHelper = new HttpRequestExecutionHelper(
-                responsePanel,
-                requestExecutionUiHelper,
-                requestStreamUiHelper,
-                requestResponseHelper,
-                this::convertCurrentRequestToSse,
-                opened -> httpSseStreamOpened = opened,
-                () -> httpSseStreamOpened,
-                () -> currentWorker = null,
-                this::isDisposed
-        );
-        sseRequestExecutionHelper = new SseRequestExecutionHelper(
-                responsePanel,
-                requestExecutionUiHelper,
-                requestStreamUiHelper,
-                requestResponseHelper,
-                currentSseCancelled,
-                eventSource -> currentEventSource = eventSource,
-                () -> currentEventSource = null,
-                () -> currentWorker = null,
-                this::isDisposed
-        );
-        webSocketRequestExecutionHelper = new WebSocketRequestExecutionHelper(
-                responsePanel,
-                requestExecutionUiHelper,
-                requestStreamUiHelper,
-                requestResponseHelper,
-                webSocket -> currentWebSocket = webSocket,
-                connectionId -> currentWebSocketConnectionId = connectionId,
-                () -> currentWebSocketConnectionId,
-                () -> currentWorker,
-                () -> currentWorker = null,
-                this::isDisposed
-        );
-        requestProtocolDispatchHelper = new RequestProtocolDispatchHelper(
-                responsePanel,
-                httpRequestExecutionHelper,
-                sseRequestExecutionHelper,
-                webSocketRequestExecutionHelper,
-                opened -> httpSseStreamOpened = opened,
-                worker -> currentWorker = worker,
-                MAX_REDIRECT_COUNT
-        );
-        requestSendCoordinator = new RequestSendCoordinator(
-                () -> currentWorker,
-                worker -> currentWorker = worker,
-                this::cancelCurrentRequest,
-                urlField,
-                requestPreparationFeedbackHelper,
-                requestLinePanel,
-                this::sendRequest,
-                responsePanel,
-                this::prepareRequestForSending,
-                requestExecutionUiHelper::updateUIForRequesting,
-                requestProtocolDispatchHelper::dispatch
-        );
+        if (!isPerformanceSnapshot()) {
+            requestDirtyStateHelper = new RequestDirtyStateHelper(
+                    this::getCurrentRequestFromModel,
+                    dirty -> UiSingletonFactory.getInstance(RequestEditorPanel.class).updateTabDirty(this, dirty)
+            );
+            requestExecutionUiHelper = new RequestExecutionUiHelper(
+                    responsePanel,
+                    requestLinePanel,
+                    requestBodyPanel,
+                    reqTabs,
+                    this::sendRequest,
+                    this::isBaseHttpProtocol,
+                    this::isEffectiveHttpProtocol,
+                    this::isEffectiveSseProtocol,
+                    this::isEffectiveWebSocketProtocol
+            );
+            requestStreamUiHelper = new RequestStreamUiHelper(responsePanel, TIME_FORMATTER);
+            requestEditorActionHelper = new RequestEditorActionHelper(
+                    urlField,
+                    headersPanel,
+                    requestBodyPanel,
+                    requestLinePanel,
+                    requestStreamUiHelper,
+                    responsePanel,
+                    this::sendRequest,
+                    this::isBaseHttpProtocol,
+                    this::isEffectiveSseProtocol,
+                    this::isEffectiveWebSocketProtocol,
+                    () -> currentWebSocket,
+                    webSocket -> currentWebSocket = webSocket,
+                    () -> currentEventSource,
+                    eventSource -> currentEventSource = eventSource,
+                    () -> currentWorker,
+                    worker -> currentWorker = worker,
+                    connectionId -> currentWebSocketConnectionId = connectionId,
+                    currentSseCancelled,
+                    () -> httpSseStreamOpened,
+                    this::getEffectiveProtocol,
+                    newProtocol -> currentProtocol = newProtocol,
+                    newProtocol -> UiSingletonFactory.getInstance(RequestEditorPanel.class).updateTabProtocol(this, newProtocol),
+                    this::initPanelData,
+                    this::updateTabDirty
+            );
+            requestResponseHelper = new RequestResponseHelper(
+                    this,
+                    responsePanel,
+                    responsePanel::setTestResults,
+                    (request, response) -> {
+                        lastRequest = request;
+                        lastResponse = response;
+                    }
+            );
+            httpRequestExecutionHelper = new HttpRequestExecutionHelper(
+                    responsePanel,
+                    requestExecutionUiHelper,
+                    requestStreamUiHelper,
+                    requestResponseHelper,
+                    this::convertCurrentRequestToSse,
+                    opened -> httpSseStreamOpened = opened,
+                    () -> httpSseStreamOpened,
+                    () -> currentWorker = null,
+                    this::isDisposed
+            );
+            sseRequestExecutionHelper = new SseRequestExecutionHelper(
+                    responsePanel,
+                    requestExecutionUiHelper,
+                    requestStreamUiHelper,
+                    requestResponseHelper,
+                    currentSseCancelled,
+                    eventSource -> currentEventSource = eventSource,
+                    () -> currentEventSource = null,
+                    () -> currentWorker = null,
+                    this::isDisposed
+            );
+            webSocketRequestExecutionHelper = new WebSocketRequestExecutionHelper(
+                    responsePanel,
+                    requestExecutionUiHelper,
+                    requestStreamUiHelper,
+                    requestResponseHelper,
+                    webSocket -> currentWebSocket = webSocket,
+                    connectionId -> currentWebSocketConnectionId = connectionId,
+                    () -> currentWebSocketConnectionId,
+                    () -> currentWorker,
+                    () -> currentWorker = null,
+                    this::isDisposed
+            );
+            requestProtocolDispatchHelper = new RequestProtocolDispatchHelper(
+                    responsePanel,
+                    httpRequestExecutionHelper,
+                    sseRequestExecutionHelper,
+                    webSocketRequestExecutionHelper,
+                    opened -> httpSseStreamOpened = opened,
+                    worker -> currentWorker = worker,
+                    MAX_REDIRECT_COUNT
+            );
+            requestSendCoordinator = new RequestSendCoordinator(
+                    () -> currentWorker,
+                    worker -> currentWorker = worker,
+                    this::cancelCurrentRequest,
+                    urlField,
+                    requestPreparationFeedbackHelper,
+                    requestLinePanel,
+                    this::sendRequest,
+                    responsePanel,
+                    this::prepareRequestForSending,
+                    requestExecutionUiHelper::updateUIForRequesting,
+                    requestProtocolDispatchHelper::dispatch
+            );
 
-        requestSplitLayoutHelper = new RequestSplitLayoutHelper(
-                splitPane,
-                responsePanel,
-                this::isEffectiveSseProtocol,
-                this::isEffectiveWebSocketProtocol
-        );
-        boolean isVertical = SettingManager.isLayoutVertical();
-        double initialRatio = isVertical ? requestSplitLayoutHelper.getDefaultResizeWeight() : 0.5;
-        splitPane.setResizeWeight(initialRatio);
+            requestSplitLayoutHelper = new RequestSplitLayoutHelper(
+                    splitPane,
+                    responsePanel,
+                    this::isEffectiveSseProtocol,
+                    this::isEffectiveWebSocketProtocol
+            );
+            boolean isVertical = SettingManager.isLayoutVertical();
+            double initialRatio = isVertical ? requestSplitLayoutHelper.getDefaultResizeWeight() : 0.5;
+            splitPane.setResizeWeight(initialRatio);
+        } else {
+            applyPerformanceSnapshotMode();
+        }
 
-        add(splitPane, BorderLayout.CENTER);
+        add(components.editorContent, BorderLayout.CENTER);
         RequestUiSetupHelper.applyInitialProtocolUi(
                 protocol,
                 reqTabs,
@@ -426,24 +450,41 @@ public class RequestEditSubPanel extends JPanel {
                 e -> sendWebSocketMessage()
         );
         // 监听表单内容变化，动态更新tab红点
-        addDirtyListeners();
+        if (!isPerformanceSnapshot()) {
+            addDirtyListeners();
+        }
 
         // 初始化tab指示器状态
         SwingUtilities.invokeLater(this::updateTabIndicators);
         RequestUiSetupHelper.bindSaveResponseButton(protocol, panelType, responsePanel, e -> saveResponseDialog());
-        RequestUiSetupHelper.bindBodyTypeHeaderSync(requestBodyPanel, headersPanel, () -> isLoadingData);
+        if (!isPerformanceSnapshot()) {
+            RequestUiSetupHelper.bindBodyTypeHeaderSync(requestBodyPanel, headersPanel, () -> isLoadingData);
+        }
         editorInitialized = true;
 
         if (pendingRequestItem != null) {
             populatePanelData(pendingRequestItem, pendingOriginalRequestItem != null ? pendingOriginalRequestItem : pendingRequestItem);
         }
         if (pendingLayoutVertical != null) {
-            requestSplitLayoutHelper.updateLayoutOrientation(pendingLayoutVertical);
+            if (requestSplitLayoutHelper != null) {
+                requestSplitLayoutHelper.updateLayoutOrientation(pendingLayoutVertical);
+            }
             pendingLayoutVertical = null;
         }
         revalidate();
         repaint();
         startDeferredPlaceholderTransition(placeholderSnapshot);
+    }
+
+    private void applyPerformanceSnapshotMode() {
+        requestLinePanel.setReadOnlySnapshotMode();
+        descriptionEditor.setEditable(false);
+        paramsPanel.setEditable(false);
+        authTabPanel.setEditable(false);
+        headersPanel.setEditable(false);
+        requestBodyPanel.setEditable(false);
+        requestSettingsPanel.setEditable(false);
+        scriptPanel.setEditable(false);
     }
 
     private void installDeferredPlaceholder() {
@@ -531,12 +572,18 @@ public class RequestEditSubPanel extends JPanel {
             pendingRequestItem = item;
             return;
         }
+        if (isPerformanceSnapshot()) {
+            pendingOriginalRequestItem = item;
+            pendingRequestItem = item;
+            requestSettingsPanel.rebaseline();
+            return;
+        }
         requestDirtyStateHelper.setOriginalRequestItem(item);
         requestSettingsPanel.rebaseline();
     }
 
     public HttpRequestItem getOriginalRequestItem() {
-        if (!editorInitialized) {
+        if (!editorInitialized || isPerformanceSnapshot()) {
             return pendingOriginalRequestItem;
         }
         return requestDirtyStateHelper.getOriginalRequestItem();
@@ -547,7 +594,7 @@ public class RequestEditSubPanel extends JPanel {
      * 注意：比较时排除 response 字段，因为它是历史响应数据，不属于表单编辑内容
      */
     public boolean isModified() {
-        if (!editorInitialized) {
+        if (!editorInitialized || isPerformanceSnapshot()) {
             return false;
         }
         return requestDirtyStateHelper.isModified();
@@ -569,10 +616,16 @@ public class RequestEditSubPanel extends JPanel {
      * 检查脏状态并更新tab标题
      */
     private void updateTabDirty() {
+        if (requestDirtyStateHelper == null) {
+            return;
+        }
         requestDirtyStateHelper.updateTabDirty();
     }
 
     private void sendRequest(ActionEvent e) {
+        if (requestSendCoordinator == null) {
+            return;
+        }
         requestSendCoordinator.sendRequest();
     }
 
@@ -632,11 +685,14 @@ public class RequestEditSubPanel extends JPanel {
             requestFormDataHelper.populate(item);
 
             // 设置原始数据用于脏检测
-            requestDirtyStateHelper.setOriginalRequestItem(originalItem);
+            if (requestDirtyStateHelper != null) {
+                requestDirtyStateHelper.setOriginalRequestItem(originalItem);
+            }
             requestSettingsPanel.rebaseline();
 
             // 根据请求类型智能选择默认Tab
             requestFormDataHelper.selectDefaultTabByRequestType(getEffectiveProtocol(), item);
+            updateTabIndicators();
         } finally {
             // 确保标志一定会被清除，即使发生异常
             isLoadingData = false;
@@ -671,6 +727,9 @@ public class RequestEditSubPanel extends JPanel {
 
     // 取消当前请求
     private void cancelCurrentRequest() {
+        if (requestEditorActionHelper == null) {
+            return;
+        }
         requestEditorActionHelper.cancelCurrentRequest();
     }
 
@@ -709,6 +768,9 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     private void convertCurrentRequestToSse() {
+        if (requestEditorActionHelper == null) {
+            return;
+        }
         requestEditorActionHelper.convertCurrentRequestToSse();
     }
 
@@ -717,6 +779,9 @@ public class RequestEditSubPanel extends JPanel {
      * 如果urlField内容没有协议，自动补全 http:// 或 https:// 或 ws:// 或 wss://，根据 protocol 和用户配置判断
      */
     private void autoPrependHttpsIfNeeded() {
+        if (requestEditorActionHelper == null) {
+            return;
+        }
         requestEditorActionHelper.autoPrependProtocolIfNeeded();
     }
 
@@ -777,6 +842,9 @@ public class RequestEditSubPanel extends JPanel {
     public void updateLayoutOrientation(boolean isVertical) {
         if (!editorInitialized) {
             pendingLayoutVertical = isVertical;
+            return;
+        }
+        if (requestSplitLayoutHelper == null) {
             return;
         }
         requestSplitLayoutHelper.updateLayoutOrientation(isVertical);

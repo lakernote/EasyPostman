@@ -100,7 +100,7 @@ final class PerformanceTreeNodeActionSupport {
                     return;
                 }
                 Object userObj = node.getUserObject();
-                if (!(userObj instanceof JMeterTreeNode jtNode) || !canRename(jtNode)) {
+                if (!(userObj instanceof JMeterTreeNode jtNode) || !actionPolicy().canRename(node)) {
                     return;
                 }
                 String oldName = jtNode.name;
@@ -185,15 +185,20 @@ final class PerformanceTreeNodeActionSupport {
         if (selectedPaths == null || selectedPaths.length == 0) {
             return;
         }
+        boolean changed = false;
+        PerformanceTreeActionPolicy policy = actionPolicy();
         for (TreePath path : selectedPaths) {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
             Object userObj = node.getUserObject();
-            if (userObj instanceof JMeterTreeNode jtNode && jtNode.type != NodeType.ROOT) {
+            if (userObj instanceof JMeterTreeNode jtNode && policy.canSetEnabled(node, enabled)) {
                 jtNode.enabled = enabled;
                 treeModel.nodeChanged(node);
+                changed = true;
             }
         }
-        saveConfigAction.run();
+        if (changed) {
+            saveConfigAction.run();
+        }
     }
 
     private void addSelectedRequests(DefaultMutableTreeNode parentNode, List<HttpRequestItem> selectedList) {
@@ -229,12 +234,7 @@ final class PerformanceTreeNodeActionSupport {
         saveConfigAction.run();
     }
 
-    private boolean canRename(JMeterTreeNode jtNode) {
-        return jtNode.type != NodeType.ROOT
-                && jtNode.type != NodeType.SSE_CONNECT
-                && jtNode.type != NodeType.SSE_AWAIT
-                && jtNode.type != NodeType.WS_CONNECT
-                && jtNode.type != NodeType.LOOP
-                && !treeSupport.isWebSocketStepNode(jtNode.type);
+    private PerformanceTreeActionPolicy actionPolicy() {
+        return new PerformanceTreeActionPolicy(treeSupport);
     }
 }

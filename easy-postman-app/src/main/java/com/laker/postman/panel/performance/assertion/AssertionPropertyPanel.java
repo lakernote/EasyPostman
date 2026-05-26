@@ -42,16 +42,18 @@ public class AssertionPropertyPanel extends JPanel {
     private final JTextField headerEqualsValueField;
     private final CardLayout inputCardLayout;
     private final JPanel inputPanel;
+    private final JLabel hintLabel;
     private JMeterTreeNode currentNode;
 
     public AssertionPropertyPanel() {
         setLayout(new GridBagLayout());
-        setMaximumSize(new Dimension(520, 230));
-        setPreferredSize(new Dimension(460, 200));
-        setBorder(BorderFactory.createEmptyBorder(18, 24, 18, 24));
+        setMaximumSize(new Dimension(820, 112));
+        setPreferredSize(new Dimension(560, 96));
+        setBorder(BorderFactory.createEmptyBorder(10, 18, 8, 18));
 
         typeCombo = new JComboBox<>(AssertionType.values());
         typeCombo.setRenderer(new AssertionTypeRenderer());
+        typeCombo.setPrototypeDisplayValue(AssertionType.HEADER_EQUALS);
         operatorCombo = new JComboBox<>(new String[]{"=", ">", "<", ">=", "<=", "!="});
         numericValueField = new JTextField(10);
         numericValueLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_VALUE));
@@ -63,8 +65,6 @@ public class AssertionPropertyPanel extends JPanel {
         headerEqualsNameField = new JTextField();
         headerEqualsValueField = new JTextField();
 
-        addRow(0, I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_TYPE_LABEL), typeCombo);
-
         inputCardLayout = new CardLayout();
         inputPanel = new JPanel(inputCardLayout);
         inputPanel.add(createNumericPanel(), CARD_NUMERIC);
@@ -74,16 +74,21 @@ public class AssertionPropertyPanel extends JPanel {
         inputPanel.add(createHeaderExistsPanel(), CARD_HEADER_EXISTS);
         inputPanel.add(createHeaderEqualsPanel(), CARD_HEADER_EQUALS);
 
-        GridBagConstraints inputGbc = baseGbc(0, 1);
-        inputGbc.gridwidth = 2;
-        inputGbc.weightx = 1.0;
-        add(inputPanel, inputGbc);
+        JPanel formRow = new JPanel(new GridBagLayout());
+        addToPanel(formRow, 0, 0, new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_TYPE_LABEL)), 0);
+        addToPanel(formRow, 1, 0, typeCombo, 0);
+        addToPanel(formRow, 2, 0, inputPanel, 1.0);
 
-        GridBagConstraints helpGbc = baseGbc(0, 2);
-        helpGbc.gridwidth = 2;
-        JLabel helpLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_HELP));
-        helpLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        add(helpLabel, helpGbc);
+        GridBagConstraints rowGbc = baseGbc(0, 0);
+        rowGbc.weightx = 1.0;
+        add(formRow, rowGbc);
+
+        hintLabel = new JLabel();
+        hintLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        GridBagConstraints hintGbc = baseGbc(0, 1);
+        hintGbc.insets = new Insets(2, 6, 0, 6);
+        hintGbc.weightx = 1.0;
+        add(hintLabel, hintGbc);
 
         typeCombo.addActionListener(e -> updateTypeState());
         updateTypeState();
@@ -166,6 +171,7 @@ public class AssertionPropertyPanel extends JPanel {
                         FlatClientProperties.PLACEHOLDER_TEXT,
                         I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_PLACEHOLDER_STATUS)
                 );
+                hintLabel.setText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_HINT_RESPONSE_CODE));
                 inputCardLayout.show(inputPanel, CARD_NUMERIC);
             }
             case RESPONSE_TIME -> {
@@ -174,6 +180,7 @@ public class AssertionPropertyPanel extends JPanel {
                         FlatClientProperties.PLACEHOLDER_TEXT,
                         I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_PLACEHOLDER_TIME)
                 );
+                hintLabel.setText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_HINT_RESPONSE_TIME));
                 inputCardLayout.show(inputPanel, CARD_NUMERIC);
             }
             case BODY_SIZE -> {
@@ -182,13 +189,29 @@ public class AssertionPropertyPanel extends JPanel {
                         FlatClientProperties.PLACEHOLDER_TEXT,
                         I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_PLACEHOLDER_BODY_SIZE)
                 );
+                hintLabel.setText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_HINT_BODY_SIZE));
                 inputCardLayout.show(inputPanel, CARD_NUMERIC);
             }
-            case CONTAINS -> inputCardLayout.show(inputPanel, CARD_CONTAINS);
-            case JSON_PATH -> inputCardLayout.show(inputPanel, CARD_JSON_PATH);
-            case REGEX -> inputCardLayout.show(inputPanel, CARD_REGEX);
-            case HEADER_EXISTS -> inputCardLayout.show(inputPanel, CARD_HEADER_EXISTS);
-            case HEADER_EQUALS -> inputCardLayout.show(inputPanel, CARD_HEADER_EQUALS);
+            case CONTAINS -> {
+                hintLabel.setText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_HINT_CONTAINS));
+                inputCardLayout.show(inputPanel, CARD_CONTAINS);
+            }
+            case JSON_PATH -> {
+                hintLabel.setText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_HINT_JSONPATH));
+                inputCardLayout.show(inputPanel, CARD_JSON_PATH);
+            }
+            case REGEX -> {
+                hintLabel.setText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_HINT_REGEX));
+                inputCardLayout.show(inputPanel, CARD_REGEX);
+            }
+            case HEADER_EXISTS -> {
+                hintLabel.setText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_HINT_HEADER_EXISTS));
+                inputCardLayout.show(inputPanel, CARD_HEADER_EXISTS);
+            }
+            case HEADER_EQUALS -> {
+                hintLabel.setText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_HINT_HEADER_EQUALS));
+                inputCardLayout.show(inputPanel, CARD_HEADER_EQUALS);
+            }
         }
     }
 
@@ -221,12 +244,12 @@ public class AssertionPropertyPanel extends JPanel {
                 FlatClientProperties.PLACEHOLDER_TEXT,
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_PLACEHOLDER_EXPECTED)
         );
-        JPanel panel = new JPanel(new GridBagLayout());
-        addToPanel(panel, 0, 0, new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_JSONPATH)), 0);
-        addToPanel(panel, 1, 0, jsonPathField, 1.0);
-        addToPanel(panel, 0, 1, new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_EXPECTED_VALUE)), 0);
-        addToPanel(panel, 1, 1, jsonPathExpectField, 1.0);
-        return panel;
+        return createTwoFieldPanel(
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_JSONPATH),
+                jsonPathField,
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_EXPECTED_VALUE),
+                jsonPathExpectField
+        );
     }
 
     private JPanel createRegexPanel() {
@@ -260,12 +283,12 @@ public class AssertionPropertyPanel extends JPanel {
                 FlatClientProperties.PLACEHOLDER_TEXT,
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_PLACEHOLDER_EXPECTED)
         );
-        JPanel panel = new JPanel(new GridBagLayout());
-        addToPanel(panel, 0, 0, new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_HEADER_NAME)), 0);
-        addToPanel(panel, 1, 0, headerEqualsNameField, 1.0);
-        addToPanel(panel, 0, 1, new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_EXPECTED_VALUE)), 0);
-        addToPanel(panel, 1, 1, headerEqualsValueField, 1.0);
-        return panel;
+        return createTwoFieldPanel(
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_HEADER_NAME),
+                headerEqualsNameField,
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_EXPECTED_VALUE),
+                headerEqualsValueField
+        );
     }
 
     private JPanel createSingleFieldPanel(String labelText, Component field) {
@@ -275,18 +298,23 @@ public class AssertionPropertyPanel extends JPanel {
         return panel;
     }
 
-    private void addRow(int row, String labelText, Component component) {
-        add(new JLabel(labelText), baseGbc(0, row));
-        GridBagConstraints gbc = baseGbc(1, row);
-        gbc.weightx = 1.0;
-        add(component, gbc);
+    private JPanel createTwoFieldPanel(String firstLabelText,
+                                       Component firstField,
+                                       String secondLabelText,
+                                       Component secondField) {
+        JPanel panel = new JPanel(new GridBagLayout());
+        addToPanel(panel, 0, 0, new JLabel(firstLabelText), 0);
+        addToPanel(panel, 1, 0, firstField, 0.52);
+        addToPanel(panel, 2, 0, new JLabel(secondLabelText), 0);
+        addToPanel(panel, 3, 0, secondField, 0.48);
+        return panel;
     }
 
     private void addToPanel(JPanel panel, int x, int y, Component component, double weightx) {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = x;
         gbc.gridy = y;
-        gbc.insets = new Insets(3, 4, 3, 4);
+        gbc.insets = new Insets(3, 5, 3, 5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.anchor = GridBagConstraints.WEST;
         gbc.weightx = weightx;
@@ -297,7 +325,7 @@ public class AssertionPropertyPanel extends JPanel {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = x;
         gbc.gridy = y;
-        gbc.insets = new Insets(6, 6, 6, 6);
+        gbc.insets = new Insets(4, 6, 4, 6);
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.anchor = GridBagConstraints.WEST;
         return gbc;

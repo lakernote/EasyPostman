@@ -13,6 +13,7 @@ import lombok.experimental.UtilityClass;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.UnaryOperator;
 
 import static com.laker.postman.common.constants.HttpConstants.HEADER_AUTHORIZATION;
 import static com.laker.postman.model.RequestAuthTypes.AUTH_TYPE_BASIC;
@@ -46,17 +47,24 @@ public class RequestFinalizer {
      */
     public void finalizeForSend(PreparedRequest request,
                                 PreparedRequestBuilder.DeferredAuthorization deferredAuthorization) {
+        finalizeForSend(request, deferredAuthorization, VariableResolver::resolve);
+    }
+
+    public void finalizeForSend(PreparedRequest request,
+                                PreparedRequestBuilder.DeferredAuthorization deferredAuthorization,
+                                UnaryOperator<String> variableResolver) {
+        UnaryOperator<String> resolver = variableResolver == null ? VariableResolver::resolve : variableResolver;
         try {
-            replaceVariablesInHeadersList(request.headersList);
-            replaceVariablesInFormDataList(request.formDataList);
-            replaceVariablesInUrlencodedList(request.urlencodedList);
+            replaceVariablesInHeadersList(request.headersList, resolver);
+            replaceVariablesInFormDataList(request.formDataList, resolver);
+            replaceVariablesInUrlencodedList(request.urlencodedList, resolver);
 
-            request.url = VariableResolver.resolve(request.url);
-            replaceVariablesInParamsList(request.paramsList);
+            request.url = resolver.apply(request.url);
+            replaceVariablesInParamsList(request.paramsList, resolver);
             request.url = HttpRequestUtil.buildEncodedUrl(request.url, request.paramsList);
-            request.body = VariableResolver.resolve(request.body);
+            request.body = resolver.apply(request.body);
 
-            applyDeferredAuthorization(request, deferredAuthorization);
+            applyDeferredAuthorization(request, deferredAuthorization, resolver);
         } finally {
             RequestContext.clearCurrentRequestNode();
         }
@@ -69,7 +77,8 @@ public class RequestFinalizer {
     }
 
     private void applyDeferredAuthorization(PreparedRequest request,
-                                            PreparedRequestBuilder.DeferredAuthorization deferredAuthorization) {
+                                            PreparedRequestBuilder.DeferredAuthorization deferredAuthorization,
+                                            UnaryOperator<String> resolver) {
         if (request == null) {
             return;
         }
@@ -79,7 +88,7 @@ public class RequestFinalizer {
             return;
         }
 
-        HttpHeader authHeader = createAuthHeader(deferredAuthorization);
+        HttpHeader authHeader = createAuthHeader(deferredAuthorization, resolver);
         List<HttpHeader> authorizationHeaders = findEnabledAuthorizationHeaders(request.headersList);
         List<HttpHeader> previewHeaders = findPreviewAuthorizationHeaders(authorizationHeaders, deferredAuthorization);
         if (previewHeaders.size() != authorizationHeaders.size()) {
@@ -87,7 +96,7 @@ public class RequestFinalizer {
             return;
         }
 
-        applyTransportAuthorization(request, deferredAuthorization);
+        applyTransportAuthorization(request, deferredAuthorization, resolver);
 
         if (authorizationHeaders.isEmpty()) {
             if (authHeader == null) {
@@ -112,13 +121,14 @@ public class RequestFinalizer {
     }
 
     private void applyTransportAuthorization(PreparedRequest request,
-                                             PreparedRequestBuilder.DeferredAuthorization deferredAuthorization) {
+                                             PreparedRequestBuilder.DeferredAuthorization deferredAuthorization,
+                                             UnaryOperator<String> resolver) {
         if (!AUTH_TYPE_DIGEST.equals(deferredAuthorization.authType())) {
             return;
         }
 
-        String username = VariableResolver.resolve(deferredAuthorization.authUsername());
-        String password = VariableResolver.resolve(deferredAuthorization.authPassword());
+        String username = resolver.apply(deferredAuthorization.authUsername());
+        String password = resolver.apply(deferredAuthorization.authPassword());
         if (username == null || username.isEmpty()
                 || containsUnresolvedPlaceholder(username)
                 || containsUnresolvedPlaceholder(password)) {
@@ -159,28 +169,30 @@ public class RequestFinalizer {
         headersList.removeIf(headersToRemove::contains);
     }
 
-    private HttpHeader createAuthHeader(PreparedRequestBuilder.DeferredAuthorization deferredAuthorization) {
+    private HttpHeader createAuthHeader(PreparedRequestBuilder.DeferredAuthorization deferredAuthorization,
+                                        UnaryOperator<String> resolver) {
         if (deferredAuthorization == null || deferredAuthorization.authType() == null) {
             return null;
         }
         if (AUTH_TYPE_BASIC.equals(deferredAuthorization.authType())) {
             return createBasicAuthHeader(
                     deferredAuthorization.authUsername(),
-                    deferredAuthorization.authPassword()
+                    deferredAuthorization.authPassword(),
+                    resolver
             );
         } else if (AUTH_TYPE_BEARER.equals(deferredAuthorization.authType())) {
-            return createBearerAuthHeader(deferredAuthorization.authToken());
+            return createBearerAuthHeader(deferredAuthorization.authToken(), resolver);
         }
         return null;
     }
 
-    private HttpHeader createBasicAuthHeader(String rawUsername, String rawPassword) {
-        String username = VariableResolver.resolve(rawUsername);
+    private HttpHeader createBasicAuthHeader(String rawUsername, String rawPassword, UnaryOperator<String> resolver) {
+        String username = resolver.apply(rawUsername);
         if (username == null || username.isEmpty() || containsUnresolvedPlaceholder(username)) {
             return null;
         }
 
-        String password = VariableResolver.resolve(rawPassword);
+        String password = resolver.apply(rawPassword);
         if (containsUnresolvedPlaceholder(password)) {
             return null;
         }
@@ -194,8 +206,8 @@ public class RequestFinalizer {
         return authHeader;
     }
 
-    private HttpHeader createBearerAuthHeader(String rawToken) {
-        String token = VariableResolver.resolve(rawToken);
+    private HttpHeader createBearerAuthHeader(String rawToken, UnaryOperator<String> resolver) {
+        String token = resolver.apply(rawToken);
         if (token == null || token.isEmpty() || containsUnresolvedPlaceholder(token)) {
             return null;
         }
@@ -211,42 +223,42 @@ public class RequestFinalizer {
         return value != null && value.contains("{{") && value.contains("}}");
     }
 
-    private void replaceVariablesInHeadersList(List<HttpHeader> list) {
+    private void replaceVariablesInHeadersList(List<HttpHeader> list, UnaryOperator<String> resolver) {
         if (list == null) return;
         for (HttpHeader item : list) {
             if (item.isEnabled()) {
-                item.setKey(VariableResolver.resolve(item.getKey()));
-                item.setValue(VariableResolver.resolve(item.getValue()));
+                item.setKey(resolver.apply(item.getKey()));
+                item.setValue(resolver.apply(item.getValue()));
             }
         }
     }
 
-    private void replaceVariablesInFormDataList(List<HttpFormData> list) {
+    private void replaceVariablesInFormDataList(List<HttpFormData> list, UnaryOperator<String> resolver) {
         if (list == null) return;
         for (HttpFormData item : list) {
             if (item.isEnabled()) {
-                item.setKey(VariableResolver.resolve(item.getKey()));
-                item.setValue(VariableResolver.resolve(item.getValue()));
+                item.setKey(resolver.apply(item.getKey()));
+                item.setValue(resolver.apply(item.getValue()));
             }
         }
     }
 
-    private void replaceVariablesInUrlencodedList(List<HttpFormUrlencoded> list) {
+    private void replaceVariablesInUrlencodedList(List<HttpFormUrlencoded> list, UnaryOperator<String> resolver) {
         if (list == null) return;
         for (HttpFormUrlencoded item : list) {
             if (item.isEnabled()) {
-                item.setKey(VariableResolver.resolve(item.getKey()));
-                item.setValue(VariableResolver.resolve(item.getValue()));
+                item.setKey(resolver.apply(item.getKey()));
+                item.setValue(resolver.apply(item.getValue()));
             }
         }
     }
 
-    private void replaceVariablesInParamsList(List<HttpParam> list) {
+    private void replaceVariablesInParamsList(List<HttpParam> list, UnaryOperator<String> resolver) {
         if (list == null) return;
         for (HttpParam item : list) {
             if (item.isEnabled()) {
-                item.setKey(VariableResolver.resolve(item.getKey()));
-                item.setValue(VariableResolver.resolve(item.getValue()));
+                item.setKey(resolver.apply(item.getKey()));
+                item.setValue(resolver.apply(item.getValue()));
             }
         }
     }

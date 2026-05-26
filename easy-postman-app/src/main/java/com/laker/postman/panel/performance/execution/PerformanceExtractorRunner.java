@@ -9,7 +9,6 @@ import com.laker.postman.panel.performance.plan.PerformanceExtractorElement;
 import com.laker.postman.panel.performance.plan.PerformancePlanElement;
 import com.laker.postman.panel.performance.plan.PerformanceProtocolStageElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
-import com.laker.postman.service.variable.VariableResolver;
 import com.laker.postman.service.variable.VariablesService;
 import com.laker.postman.util.JsonPathUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -83,12 +82,12 @@ public final class PerformanceExtractorRunner {
     }
 
     private static void runExtractor(ExtractorData extractor, HttpResponse response) {
-        String variableName = VariableResolver.resolve(CharSequenceUtil.nullToEmpty(extractor.variableName)).trim();
+        String variableName = PerformanceVariableResolver.resolve(CharSequenceUtil.nullToEmpty(extractor.variableName)).trim();
         if (CharSequenceUtil.isBlank(variableName)) {
             return;
         }
-        String expression = VariableResolver.resolve(CharSequenceUtil.nullToEmpty(extractor.expression)).trim();
-        String defaultValue = VariableResolver.resolve(CharSequenceUtil.nullToEmpty(extractor.defaultValue));
+        String expression = PerformanceVariableResolver.resolve(CharSequenceUtil.nullToEmpty(extractor.expression)).trim();
+        String defaultValue = PerformanceVariableResolver.resolve(CharSequenceUtil.nullToEmpty(extractor.defaultValue));
         String extractedValue = extractValue(extractor, expression, response);
         VariablesService.getInstance().set(variableName, extractedValue == null ? defaultValue : extractedValue);
     }

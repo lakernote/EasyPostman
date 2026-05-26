@@ -10,7 +10,6 @@ import com.laker.postman.panel.performance.plan.PerformanceProtocolStageElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.service.js.ScriptExecutionResult;
-import com.laker.postman.service.variable.VariableResolver;
 import lombok.experimental.UtilityClass;
 
 import java.util.List;
@@ -74,7 +73,7 @@ class WebSocketScenarioStepSupport {
     String resolveSendPayload(PreparedRequest request,
                               String requestBodyTemplate,
                               WebSocketPerformanceData config) {
-        return VariableResolver.resolve(resolveSendPayloadTemplate(request, requestBodyTemplate, config));
+        return PerformanceVariableResolver.resolve(resolveSendPayloadTemplate(request, requestBodyTemplate, config));
     }
 
     WebSocketPerformanceData copyData(WebSocketPerformanceData source) {

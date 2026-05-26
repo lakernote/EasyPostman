@@ -689,6 +689,14 @@ public final class MessageKeys {
     public static final String PERFORMANCE_ASSERTION_PLACEHOLDER_EXPECTED = "performance.assertion.placeholder.expected";
     public static final String PERFORMANCE_ASSERTION_PLACEHOLDER_REGEX = "performance.assertion.placeholder.regex";
     public static final String PERFORMANCE_ASSERTION_PLACEHOLDER_HEADER = "performance.assertion.placeholder.header";
+    public static final String PERFORMANCE_ASSERTION_HINT_RESPONSE_CODE = "performance.assertion.hint.response_code";
+    public static final String PERFORMANCE_ASSERTION_HINT_RESPONSE_TIME = "performance.assertion.hint.response_time";
+    public static final String PERFORMANCE_ASSERTION_HINT_BODY_SIZE = "performance.assertion.hint.body_size";
+    public static final String PERFORMANCE_ASSERTION_HINT_CONTAINS = "performance.assertion.hint.contains";
+    public static final String PERFORMANCE_ASSERTION_HINT_JSONPATH = "performance.assertion.hint.jsonpath";
+    public static final String PERFORMANCE_ASSERTION_HINT_REGEX = "performance.assertion.hint.regex";
+    public static final String PERFORMANCE_ASSERTION_HINT_HEADER_EXISTS = "performance.assertion.hint.header_exists";
+    public static final String PERFORMANCE_ASSERTION_HINT_HEADER_EQUALS = "performance.assertion.hint.header_equals";
     public static final String PERFORMANCE_EXTRACTOR_NODE = "performance.extractor.node";
     public static final String PERFORMANCE_EXTRACTOR_TYPE_LABEL = "performance.extractor.type_label";
     public static final String PERFORMANCE_EXTRACTOR_VARIABLE_NAME = "performance.extractor.variable_name";

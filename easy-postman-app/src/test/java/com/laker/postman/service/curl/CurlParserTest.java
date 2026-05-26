@@ -134,6 +134,67 @@ public class CurlParserTest {
         assertEquals(result.body, "{\"name\":\"John\"}");
     }
 
+    @Test(description = "批量 cURL 文本应拆分并逐条解析")
+    public void testParseMultipleCurlCommands() {
+        String curls = """
+                curl 'https://api.example.com/orders/123' \\
+                  -H 'Accept: application/json' \\
+                  -H 'Cookie: session=abc; lang=zh-CN' \\
+                  --insecure ;
+                curl 'https://api.example.com/orders/search' \\
+                  -H 'Content-Type: application/json' \\
+                  --data-raw '{"orderNo":"","pageNum":1,"pageSize":20}' \\
+                  --insecure ;
+                curl 'https://api.example.com/orders/stats?date=&status=' \\
+                  -H 'Accept: application/json' \\
+                  --insecure
+                """;
+
+        java.util.List<CurlRequest> results = CurlParser.parseMany(curls);
+
+        assertEquals(results.size(), 3);
+        assertEquals(results.get(0).url, "https://api.example.com/orders/123");
+        assertEquals(results.get(0).method, "GET");
+        assertEquals(findHeaderValue(results.get(0).headersList, "Cookie"), "session=abc; lang=zh-CN");
+        assertNull(results.get(0).body);
+
+        assertEquals(results.get(1).url, "https://api.example.com/orders/search");
+        assertEquals(results.get(1).method, "POST");
+        assertEquals(findHeaderValue(results.get(1).headersList, "Content-Type"), "application/json");
+        assertEquals(results.get(1).body, "{\"orderNo\":\"\",\"pageNum\":1,\"pageSize\":20}");
+
+        assertEquals(results.get(2).url, "https://api.example.com/orders/stats?date=&status=");
+        assertEquals(results.get(2).method, "GET");
+    }
+
+    @Test(description = "单条解析入口遇到批量 cURL 文本时只解析第一条")
+    public void testParseSingleCommandFromMultipleCurlText() {
+        String curls = """
+                curl 'https://api.example.com/first' -H 'X-First: true' ;
+                curl 'https://api.example.com/second' -H 'X-Second: true'
+                """;
+
+        CurlRequest result = CurlParser.parse(curls);
+
+        assertEquals(result.url, "https://api.example.com/first");
+        assertEquals(findHeaderValue(result.headersList, "X-First"), "true");
+        assertNull(findHeaderValue(result.headersList, "X-Second"));
+    }
+
+    @Test(description = "批量 cURL 拆分不能被引号中的分号干扰")
+    public void testSplitMultipleCurlCommandsIgnoresQuotedSemicolon() {
+        String curls = """
+                curl 'https://api.example.com/a' -H 'Cookie: a=1; b=2'
+                curl 'https://api.example.com/b' --data-raw '{"note":"a;b"}'
+                """;
+
+        java.util.List<String> commands = CurlParser.splitCommands(curls);
+
+        assertEquals(commands.size(), 2);
+        assertTrue(commands.get(0).contains("Cookie: a=1; b=2"));
+        assertTrue(commands.get(1).contains("{\"note\":\"a;b\"}"));
+    }
+
     @Test(description = "解析带URL参数的请求")
     public void testParseRequestWithUrlParameter() {
         String curl = "curl --url https://api.example.com/users -X GET";

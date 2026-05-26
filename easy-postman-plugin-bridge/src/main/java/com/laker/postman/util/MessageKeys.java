@@ -951,6 +951,8 @@ public final class MessageKeys {
     public static final String COLLECTIONS_IMPORT_CURL_DIALOG_PROMPT = "collections.import.curl.dialog_prompt";
     public static final String COLLECTIONS_IMPORT_CURL_PARSE_FAIL = "collections.import.curl.parse_fail";
     public static final String COLLECTIONS_IMPORT_CURL_PARSE_ERROR = "collections.import.curl.parse_error";
+    public static final String COLLECTIONS_IMPORT_CURL_BATCH_SUCCESS = "collections.import.curl.batch_success";
+    public static final String COLLECTIONS_IMPORT_CURL_BATCH_PARTIAL = "collections.import.curl.batch_partial";
     public static final String COLLECTIONS_IMPORT_HTTP_DIALOG_TITLE = "collections.import.http.dialog_title";
     public static final String COLLECTIONS_IMPORT_HTTP_INVALID = "collections.import.http.invalid";
     public static final String COLLECTIONS_IMPORT_HTTP_DEFAULT_GROUP = "collections.import.http.default_group";

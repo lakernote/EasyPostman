@@ -46,6 +46,11 @@ public class CurlParser {
             return req;
         }
 
+        List<String> commands = splitCommands(curl);
+        if (!commands.isEmpty()) {
+            curl = commands.get(0);
+        }
+
         // 预处理命令
         curl = preprocessCommand(curl);
 
@@ -306,6 +311,149 @@ public class CurlParser {
             }
         }
         return req;
+    }
+
+    /**
+     * 解析包含一条或多条 cURL 命令的文本。
+     *
+     * @param curlText cURL 命令文本
+     * @return 逐条解析后的请求列表
+     */
+    public static List<CurlRequest> parseMany(String curlText) {
+        List<CurlRequest> requests = new ArrayList<>();
+        for (String command : splitCommands(curlText)) {
+            requests.add(parse(command));
+        }
+        return requests;
+    }
+
+    /**
+     * 将批量粘贴的 Bash cURL 文本拆成独立命令。
+     * 支持以分号或新的 curl 命令行作为分隔符，并忽略引号中的分号。
+     *
+     * @param curlText cURL 命令文本
+     * @return 独立 cURL 命令列表
+     */
+    public static List<String> splitCommands(String curlText) {
+        List<String> commands = new ArrayList<>();
+        if (curlText == null || curlText.trim().isEmpty()) {
+            return commands;
+        }
+
+        StringBuilder current = new StringBuilder();
+        boolean inSingleQuote = false;
+        boolean inDoubleQuote = false;
+        boolean inDollarQuote = false;
+
+        for (int i = 0; i < curlText.length(); i++) {
+            char c = curlText.charAt(i);
+
+            if (inDoubleQuote || inDollarQuote) {
+                current.append(c);
+                if (c == '\\' && i + 1 < curlText.length()) {
+                    current.append(curlText.charAt(++i));
+                    continue;
+                }
+                if (inDoubleQuote && c == '"') {
+                    inDoubleQuote = false;
+                } else if (inDollarQuote && c == '\'') {
+                    inDollarQuote = false;
+                }
+                continue;
+            }
+
+            if (inSingleQuote) {
+                current.append(c);
+                if (c == '\'') {
+                    inSingleQuote = false;
+                }
+                continue;
+            }
+
+            if (c == '$' && i + 1 < curlText.length() && curlText.charAt(i + 1) == '\'') {
+                inDollarQuote = true;
+                current.append(c).append(curlText.charAt(++i));
+                continue;
+            }
+            if (c == '\'') {
+                inSingleQuote = true;
+                current.append(c);
+                continue;
+            }
+            if (c == '"') {
+                inDoubleQuote = true;
+                current.append(c);
+                continue;
+            }
+
+            if (c == ';') {
+                addCurlCommand(commands, current);
+                current.setLength(0);
+                continue;
+            }
+
+            if (isLineBreak(c)) {
+                int nextIndex = c == '\r' && i + 1 < curlText.length() && curlText.charAt(i + 1) == '\n'
+                        ? i + 2
+                        : i + 1;
+                if (!endsWithLineContinuation(current) && startsWithCurlCommandAt(curlText, nextIndex)) {
+                    addCurlCommand(commands, current);
+                    current.setLength(0);
+                    if (nextIndex == i + 2) {
+                        i++;
+                    }
+                    continue;
+                }
+            }
+
+            current.append(c);
+        }
+
+        addCurlCommand(commands, current);
+        return commands;
+    }
+
+    private static void addCurlCommand(List<String> commands, StringBuilder command) {
+        String value = command.toString().trim();
+        if (startsWithCurlCommand(value)) {
+            commands.add(value);
+        }
+    }
+
+    private static boolean startsWithCurlCommandAt(String text, int index) {
+        int i = index;
+        while (i < text.length() && Character.isWhitespace(text.charAt(i))) {
+            i++;
+        }
+        return startsWithCurlCommand(text.substring(i));
+    }
+
+    private static boolean startsWithCurlCommand(String text) {
+        if (text == null) {
+            return false;
+        }
+        String trimmed = text.trim();
+        if (trimmed.length() < 4 || !trimmed.regionMatches(true, 0, "curl", 0, 4)) {
+            return false;
+        }
+        return trimmed.length() == 4 || Character.isWhitespace(trimmed.charAt(4));
+    }
+
+    private static boolean isLineBreak(char c) {
+        return c == '\n' || c == '\r';
+    }
+
+    private static boolean endsWithLineContinuation(CharSequence value) {
+        for (int i = value.length() - 1; i >= 0; i--) {
+            char c = value.charAt(i);
+            if (c == '\n' || c == '\r') {
+                return false;
+            }
+            if (!Character.isWhitespace(c)) {
+                return c == '\\';
+            }
+        }
+        return false;
     }
 
     private static void applyUserOption(CurlRequest req, String userOption) {

@@ -50,6 +50,8 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.laker.postman.panel.collections.tree.CollectionTreePanel.*;
 
@@ -87,7 +89,7 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
     private void showPlusMenu() {
         // 先检测剪贴板是否有 cURL
         String clipboardText = getClipboardText();
-        if (clipboardText != null && clipboardText.trim().toLowerCase().startsWith("curl")) {
+        if (containsCurlCommands(clipboardText)) {
             int result = JOptionPane.showConfirmDialog(
                     UiSingletonFactory.getInstance(MainFrame.class),
                     I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_DETECTED),
@@ -531,26 +533,81 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
             if (curlText == null || curlText.trim().isEmpty()) return;
         }
         try {
-            CurlRequest curlRequest = CurlParser.parse(curlText);
-            if (curlRequest.url == null) {
+            CurlImportResult importResult = parseCurlImport(curlText);
+            if (importResult.items().isEmpty()) {
                 NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_PARSE_FAIL));
                 return;
             }
-            HttpRequestItem item = CurlImportUtil.fromCurlRequest(curlRequest);
-            if (item == null) {
-                NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_PARSE_FAIL));
-                return;
+
+            boolean batchInput = importResult.totalCommands() > 1;
+            boolean saved;
+            if (batchInput) {
+                saved = saveRequestsWithGroupDialog(importResult.items());
+            } else {
+                saved = saveRequestWithGroupDialog(importResult.items().get(0));
             }
-            item.setName(item.getUrl());
-            // 统一用RequestEditorPanel弹窗选择分组和命名
-            boolean saved = saveRequestWithGroupDialog(item);
+
             // 导入成功后清空剪贴板
             if (saved) {
                 Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(""), null);
+                notifyCurlImportResult(importResult);
             }
         } catch (Exception ex) {
             NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_PARSE_ERROR, ex.getMessage()));
         }
+    }
+
+    private boolean containsCurlCommands(String text) {
+        return text != null && !CurlParser.splitCommands(text).isEmpty();
+    }
+
+    private CurlImportResult parseCurlImport(String curlText) {
+        List<String> commands = CurlParser.splitCommands(curlText);
+        List<HttpRequestItem> items = new ArrayList<>();
+        int failedCount = 0;
+
+        for (String command : commands) {
+            try {
+                HttpRequestItem item = CurlImportUtil.fromCurlRequest(CurlParser.parse(command));
+                if (item == null) {
+                    failedCount++;
+                    continue;
+                }
+                item.setName(defaultCurlRequestName(item));
+                items.add(item);
+            } catch (Exception ex) {
+                failedCount++;
+                log.warn("Parse cURL command failed during batch import", ex);
+            }
+        }
+
+        return new CurlImportResult(items, commands.size(), failedCount);
+    }
+
+    private String defaultCurlRequestName(HttpRequestItem item) {
+        String url = item.getUrl();
+        if (url == null || url.trim().isEmpty()) {
+            return I18nUtil.getMessage(MessageKeys.REQUEST_NAME);
+        }
+        return url;
+    }
+
+    private void notifyCurlImportResult(CurlImportResult importResult) {
+        if (importResult.totalCommands() <= 1) {
+            return;
+        }
+        if (importResult.failedCount() > 0) {
+            NotificationUtil.showWarning(I18nUtil.getMessage(
+                    MessageKeys.COLLECTIONS_IMPORT_CURL_BATCH_PARTIAL,
+                    importResult.items().size(),
+                    importResult.failedCount()
+            ));
+            return;
+        }
+        NotificationUtil.showSuccess(I18nUtil.getMessage(
+                MessageKeys.COLLECTIONS_IMPORT_CURL_BATCH_SUCCESS,
+                importResult.items().size()
+        ));
     }
 
 
@@ -575,6 +632,33 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
         // tree选中新增的请求节点
         collectionPanel.locateAndSelectRequest(item.getId());
         return true;
+    }
+
+    private boolean saveRequestsWithGroupDialog(List<HttpRequestItem> items) {
+        CollectionTreePanel collectionPanel = UiSingletonFactory.getInstance(CollectionTreePanel.class);
+        RequestEditorPanel requestEditPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class);
+        TreeModel groupTreeModel = collectionPanel.getGroupTreeModel();
+        RequestGroup group = CollectionGroupSelectionDialog.chooseGroup(groupTreeModel).orElse(null);
+        if (group == null) return false;
+
+        HttpRequestItem lastItem = null;
+        for (HttpRequestItem item : items) {
+            item.setId(IdUtil.simpleUUID());
+            if (item.getName() == null || item.getName().trim().isEmpty()) {
+                item.setName(defaultCurlRequestName(item));
+            }
+            collectionPanel.saveRequestToGroup(group, item);
+            lastItem = item;
+        }
+
+        if (lastItem != null) {
+            requestEditPanel.showOrCreateTab(lastItem);
+            collectionPanel.locateAndSelectRequest(lastItem.getId());
+        }
+        return true;
+    }
+
+    private record CurlImportResult(List<HttpRequestItem> items, int totalCommands, int failedCount) {
     }
 
 

@@ -108,6 +108,40 @@ public class SseSampleExecutorTest {
     }
 
     @Test
+    public void shouldFailMessageCountModeWhenStreamClosesBeforeTargetCount() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse()
+                    .setHeader("Content-Type", "text/event-stream")
+                    .setBody("event: progress\n"
+                            + "data: loading\n\n"));
+            server.start();
+
+            PreparedRequest request = new PreparedRequest();
+            request.method = "GET";
+            request.url = server.url("/stream").toString();
+            request.headersList = List.of(new HttpHeader(true, "Accept", "text/event-stream"));
+
+            SsePerformanceData cfg = new SsePerformanceData();
+            cfg.completionMode = SsePerformanceData.CompletionMode.MESSAGE_COUNT;
+            cfg.connectTimeoutMs = 2000;
+            cfg.firstMessageTimeoutMs = 2000;
+            cfg.holdConnectionMs = 2000;
+            cfg.targetMessageCount = 3;
+
+            SseSampleExecutor.Result result = new SseSampleExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet()
+            ).execute(request, cfg);
+
+            assertTrue(result.executionFailed);
+            assertEquals(result.response.headers.get("X-Easy-SSE-Message-Count").get(0), "1");
+            assertTrue(result.errorMsg.contains("closed"), result.errorMsg);
+            assertEquals(result.response.headers.get("X-Easy-SSE-Error").get(0), result.errorMsg);
+        }
+    }
+
+    @Test
     public void shouldExcludeSseCloseCleanupFromReportedCost() throws Exception {
         try (MockWebServer server = new MockWebServer()) {
             server.enqueue(new MockResponse()

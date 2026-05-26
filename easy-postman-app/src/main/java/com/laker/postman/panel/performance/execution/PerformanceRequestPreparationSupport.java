@@ -27,7 +27,7 @@ class PerformanceRequestPreparationSupport {
         }
         if (PerformanceAssertionRunner.requiresResponseBodyElements(assertionNodes)
                 || CharSequenceUtil.isNotBlank(postscript)) {
-            return PreparedRequest.ResponseBodyMode.PREVIEW;
+            return PreparedRequest.ResponseBodyMode.FULL;
         }
         return PreparedRequest.ResponseBodyMode.METADATA_ONLY;
     }

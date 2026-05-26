@@ -53,25 +53,25 @@ public class PerformanceRequestExecutorTest {
     }
 
     @Test
-    public void shouldUsePreviewInEfficientModeWhenAssertionsNeedBody() {
+    public void shouldUseFullResponseBodyInEfficientModeWhenAssertionsNeedBody() {
         PreparedRequest.ResponseBodyMode mode = PerformanceRequestExecutor.resolveHttpResponseBodyModeForAssertionElements(
                 true,
                 List.of(assertionElement("Contains")),
                 ""
         );
 
-        assertEquals(mode, PreparedRequest.ResponseBodyMode.PREVIEW);
+        assertEquals(mode, PreparedRequest.ResponseBodyMode.FULL);
     }
 
     @Test
-    public void shouldUsePreviewInEfficientModeWhenPostScriptMayReadBody() {
+    public void shouldUseFullResponseBodyInEfficientModeWhenPostScriptMayReadBody() {
         PreparedRequest.ResponseBodyMode mode = PerformanceRequestExecutor.resolveHttpResponseBodyModeForAssertionElements(
                 true,
                 List.of(),
                 "pm.test('body', () => pm.response.text())"
         );
 
-        assertEquals(mode, PreparedRequest.ResponseBodyMode.PREVIEW);
+        assertEquals(mode, PreparedRequest.ResponseBodyMode.FULL);
     }
 
     @Test

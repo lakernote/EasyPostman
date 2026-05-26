@@ -81,6 +81,7 @@ public class SseSampleExecutor {
         AtomicBoolean interrupted = new AtomicBoolean(false);
         AtomicBoolean failed = new AtomicBoolean(false);
         AtomicBoolean closingSource = new AtomicBoolean(false);
+        AtomicBoolean connectionClosed = new AtomicBoolean(false);
         AtomicReference<String> errorRef = new AtomicReference<>("");
         AtomicReference<String> lastEventIdRef = new AtomicReference<>("");
         AtomicReference<String> lastEventTypeRef = new AtomicReference<>("");
@@ -113,6 +114,7 @@ public class SseSampleExecutor {
 
             @Override
             public void onClosed(EventSource eventSource) {
+                connectionClosed.set(true);
                 openLatch.countDown();
                 firstMessageLatch.countDown();
                 completionLatch.countDown();
@@ -254,6 +256,7 @@ public class SseSampleExecutor {
                     }
                 }
                 case MESSAGE_COUNT -> {
+                    int targetMessageCount = Math.max(1, cfg.targetMessageCount);
                     boolean opened = openLatch.await(Math.max(100, cfg.connectTimeoutMs), TimeUnit.MILLISECONDS);
                     if (!opened && !failed.get() && !interrupted.get()) {
                         failed.set(true);
@@ -271,12 +274,13 @@ public class SseSampleExecutor {
                         markSampleEnd(sampleEndTimeMs);
                         eventSource.cancel();
                     } else if (!failed.get() && !interrupted.get()
-                            && matchedMessageCount.get() < Math.max(1, cfg.targetMessageCount)) {
+                            && matchedMessageCount.get() < targetMessageCount) {
                         boolean reachedTarget = completionLatch.await(Math.max(100, cfg.holdConnectionMs), TimeUnit.MILLISECONDS);
-                        if (!reachedTarget && matchedMessageCount.get() < Math.max(1, cfg.targetMessageCount)
-                                && !failed.get() && !interrupted.get()) {
+                        if (matchedMessageCount.get() < targetMessageCount && !failed.get() && !interrupted.get()) {
                             failed.set(true);
-                            errorRef.set("SSE target message count timeout");
+                            errorRef.set(reachedTarget && connectionClosed.get()
+                                    ? "SSE connection closed before target message count reached"
+                                    : "SSE target message count timeout");
                             closingSource.set(true);
                             markSampleEnd(sampleEndTimeMs);
                             eventSource.cancel();

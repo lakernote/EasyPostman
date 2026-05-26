@@ -15,6 +15,7 @@ import com.laker.postman.panel.performance.plan.PerformancePlanElement;
 import com.laker.postman.panel.performance.plan.PerformanceProtocolStageElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
+import com.laker.postman.panel.performance.timer.TimerData;
 import com.laker.postman.service.variable.ExecutionVariableContext;
 import com.laker.postman.service.variable.IterationDataVariableService;
 import com.laker.postman.service.variable.VariablesService;
@@ -35,6 +36,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.testng.Assert.assertEquals;
@@ -670,6 +672,82 @@ public class WebSocketScenarioExecutorTest {
     }
 
     @Test
+    public void shouldReconnectAfterCloseStepWhenAnotherConnectStepFollows() throws Exception {
+        CountDownLatch serverOpenedConnections = new CountDownLatch(2);
+        CountDownLatch serverReceivedMessages = new CountDownLatch(2);
+        AtomicInteger connectionIndex = new AtomicInteger();
+        List<String> receivedPayloads = new CopyOnWriteArrayList<>();
+
+        try (MockWebServer server = new MockWebServer()) {
+            for (int i = 0; i < 2; i++) {
+                server.enqueue(new MockResponse().withWebSocketUpgrade(new WebSocketListener() {
+                    private int connectionNumber;
+
+                    @Override
+                    public void onOpen(WebSocket webSocket, Response response) {
+                        connectionNumber = connectionIndex.incrementAndGet();
+                        serverOpenedConnections.countDown();
+                    }
+
+                    @Override
+                    public void onMessage(WebSocket webSocket, String text) {
+                        receivedPayloads.add(text);
+                        serverReceivedMessages.countDown();
+                        webSocket.send("ack-" + connectionNumber + "-" + text);
+                    }
+                }));
+            }
+            server.start();
+
+            HttpRequestItem item = new HttpRequestItem();
+            item.setId("ws-reconnect-after-close-test");
+            item.setName("WS Reconnect After Close Test");
+            item.setProtocol(RequestItemProtocolEnum.WEBSOCKET);
+            item.setMethod("GET");
+            item.setUrl(server.url("/socket").toString().replaceFirst("^http", "ws"));
+
+            WebSocketPerformanceData requestCfg = new WebSocketPerformanceData();
+            requestCfg.connectTimeoutMs = 2000;
+
+            JMeterTreeNode requestData = new JMeterTreeNode("request", NodeType.REQUEST, item);
+            requestData.webSocketPerformanceData = requestCfg;
+            DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(requestData);
+            addConnectStep(requestNode, requestCfg);
+            addCustomSendStep(requestNode, "first");
+            addFirstMessageAwaitStep(requestNode);
+            addCloseStep(requestNode);
+            addTimerStep(requestNode, 10);
+            addConnectStep(requestNode, requestCfg);
+            addCustomSendStep(requestNode, "second");
+            addFirstMessageAwaitStep(requestNode);
+            addCloseStep(requestNode);
+
+            PerformanceRequestExecutor executor = new PerformanceRequestExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet(),
+                    ConcurrentHashMap.newKeySet()
+            );
+
+            PerformanceRequestExecutionResult result = executor.execute(
+                    PerformanceTestPlanCompiler.compileRequestSampler(requestNode),
+                    new ExecutionVariableContext()
+            );
+
+            assertTrue(serverOpenedConnections.await(1, TimeUnit.SECONDS),
+                    "WebSocket scenario should open a second connection after the close step");
+            assertTrue(serverReceivedMessages.await(1, TimeUnit.SECONDS),
+                    "WebSocket scenario should send on both connections");
+            assertEquals(receivedPayloads, List.of("first", "second"));
+            assertFalse(result.executionFailed, result.errorMsg);
+            assertEquals(result.response.headers.get("X-Easy-WS-Received-Count").get(0), "2");
+            assertEquals(result.response.headers.get("X-Easy-WS-Sent-Count").get(0), "2");
+            assertTrue(result.response.body.contains("ack-1-first"));
+            assertTrue(result.response.body.contains("ack-2-second"));
+        }
+    }
+
+    @Test
     public void shouldExcludeWebSocketCloseCleanupFromReportedCost() throws Exception {
         try (MockWebServer server = new MockWebServer()) {
             server.enqueue(new MockResponse().withWebSocketUpgrade(new WebSocketListener() {
@@ -738,6 +816,34 @@ public class WebSocketScenarioExecutorTest {
         JMeterTreeNode connectStep = new JMeterTreeNode("connect", NodeType.WS_CONNECT);
         connectStep.webSocketPerformanceData = data;
         requestNode.add(new DefaultMutableTreeNode(connectStep));
+    }
+
+    private static void addFirstMessageAwaitStep(DefaultMutableTreeNode requestNode) {
+        JMeterTreeNode awaitStep = new JMeterTreeNode("await", NodeType.WS_AWAIT);
+        awaitStep.webSocketPerformanceData = new WebSocketPerformanceData();
+        awaitStep.webSocketPerformanceData.completionMode = WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE;
+        awaitStep.webSocketPerformanceData.firstMessageTimeoutMs = 2000;
+        requestNode.add(new DefaultMutableTreeNode(awaitStep));
+    }
+
+    private static void addCustomSendStep(DefaultMutableTreeNode requestNode, String body) {
+        JMeterTreeNode sendStep = new JMeterTreeNode("send", NodeType.WS_SEND);
+        sendStep.webSocketPerformanceData = new WebSocketPerformanceData();
+        sendStep.webSocketPerformanceData.sendMode = WebSocketPerformanceData.SendMode.REQUEST_BODY_ON_CONNECT;
+        sendStep.webSocketPerformanceData.sendContentSource = WebSocketPerformanceData.SendContentSource.CUSTOM_TEXT;
+        sendStep.webSocketPerformanceData.customSendBody = body;
+        requestNode.add(new DefaultMutableTreeNode(sendStep));
+    }
+
+    private static void addCloseStep(DefaultMutableTreeNode requestNode) {
+        requestNode.add(new DefaultMutableTreeNode(new JMeterTreeNode("close", NodeType.WS_CLOSE)));
+    }
+
+    private static void addTimerStep(DefaultMutableTreeNode requestNode, int delayMs) {
+        JMeterTreeNode timerStep = new JMeterTreeNode("timer", NodeType.TIMER);
+        timerStep.timerData = new TimerData();
+        timerStep.timerData.delayMs = delayMs;
+        requestNode.add(new DefaultMutableTreeNode(timerStep));
     }
 
     private static void assertNextStep(WebSocketScenarioPlanStepCursor cursor, NodeType expectedType, String expectedName) {

@@ -12,6 +12,7 @@ import java.util.function.BooleanSupplier;
 final class WebSocketScenarioPlanStepCursor {
     private final BooleanSupplier runningSupplier;
     private final Deque<Frame> frames = new ArrayDeque<>();
+    private PerformancePlanElement bufferedNext;
 
     WebSocketScenarioPlanStepCursor(PerformanceRequestSampler requestSampler, BooleanSupplier runningSupplier) {
         this.runningSupplier = runningSupplier;
@@ -19,6 +20,22 @@ final class WebSocketScenarioPlanStepCursor {
     }
 
     PerformancePlanElement next() {
+        if (bufferedNext != null) {
+            PerformancePlanElement next = bufferedNext;
+            bufferedNext = null;
+            return next;
+        }
+        return readNext();
+    }
+
+    PerformancePlanElement peek() {
+        if (bufferedNext == null) {
+            bufferedNext = readNext();
+        }
+        return bufferedNext;
+    }
+
+    private PerformancePlanElement readNext() {
         while (runningSupplier.getAsBoolean() && !frames.isEmpty()) {
             Frame frame = frames.peek();
             if (frame.index >= frame.elements.size()) {
@@ -44,6 +61,7 @@ final class WebSocketScenarioPlanStepCursor {
     }
 
     void stop() {
+        bufferedNext = null;
         frames.clear();
     }
 

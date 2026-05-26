@@ -4,6 +4,7 @@ import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestItemProtocolEnum;
+import com.laker.postman.panel.performance.assertion.AssertionData;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.controller.LoopData;
 import com.laker.postman.panel.performance.model.NodeType;
@@ -16,6 +17,7 @@ import com.laker.postman.panel.performance.plan.PerformanceProtocolStageElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
 import com.laker.postman.panel.performance.timer.TimerData;
+import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.service.variable.ExecutionVariableContext;
 import com.laker.postman.service.variable.IterationDataVariableService;
 import com.laker.postman.service.variable.VariablesService;
@@ -41,6 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 public class WebSocketScenarioExecutorTest {
@@ -203,6 +206,22 @@ public class WebSocketScenarioExecutorTest {
 
         assertFalse(WebSocketScenarioStepSupport.hasSendPayload(request, null, requestBodyCfg));
         assertTrue(WebSocketScenarioStepSupport.hasSendPayload(request, null, customTextCfg));
+    }
+
+    @Test
+    public void stepSupportShouldSkipBlankSendPreScriptWithoutPreparingPipelineBindings() {
+        ScriptExecutionPipeline pipeline = ScriptExecutionPipeline.builder()
+                .request(new PreparedRequest())
+                .build();
+
+        assertTrue(WebSocketScenarioStepSupport.executeSendPreScript(
+                pipeline,
+                new WebSocketPerformanceData(),
+                0,
+                1,
+                "send"
+        ).isSuccess());
+        assertNull(pipeline.getBindings());
     }
 
     @Test
@@ -672,6 +691,198 @@ public class WebSocketScenarioExecutorTest {
     }
 
     @Test
+    public void shouldNotRetainWebSocketResponseBodyWhenAwaitHasNoBodyAssertion() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse().withWebSocketUpgrade(new WebSocketListener() {
+                @Override
+                public void onOpen(WebSocket webSocket, Response response) {
+                    webSocket.send("stats-only-message");
+                }
+            }));
+            server.start();
+
+            HttpRequestItem item = new HttpRequestItem();
+            item.setId("ws-no-body-retention-test");
+            item.setName("WS No Body Retention Test");
+            item.setProtocol(RequestItemProtocolEnum.WEBSOCKET);
+            item.setMethod("GET");
+            item.setUrl(server.url("/socket").toString().replaceFirst("^http", "ws"));
+
+            DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(
+                    new JMeterTreeNode("request", NodeType.REQUEST, item)
+            );
+            addConnectStep(requestNode, new WebSocketPerformanceData());
+            addFirstMessageAwaitStep(requestNode);
+
+            PerformanceRequestExecutor executor = new PerformanceRequestExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet(),
+                    ConcurrentHashMap.newKeySet()
+            );
+
+            PerformanceRequestExecutionResult result = executor.execute(
+                    PerformanceTestPlanCompiler.compileRequestSampler(requestNode),
+                    new ExecutionVariableContext()
+            );
+
+            assertFalse(result.executionFailed, result.errorMsg);
+            assertEquals(result.response.headers.get("X-Easy-WS-Received-Count").get(0), "1");
+            assertEquals(result.response.headers.get("X-Easy-WS-Last-Message").get(0), "stats-only-message");
+            assertEquals(result.response.body, "");
+            assertEquals(result.response.bodySize, 0);
+        }
+    }
+
+    @Test
+    public void shouldRunMessageCountBodyAssertionAgainstCompletionMessageOnly() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse().withWebSocketUpgrade(new WebSocketListener() {
+                @Override
+                public void onOpen(WebSocket webSocket, Response response) {
+                    webSocket.send("{\"name\":\"first\"}");
+                    webSocket.send("{\"name\":\"target\"}");
+                }
+            }));
+            server.start();
+
+            HttpRequestItem item = new HttpRequestItem();
+            item.setId("ws-message-count-assertion-test");
+            item.setName("WS Message Count Assertion Test");
+            item.setProtocol(RequestItemProtocolEnum.WEBSOCKET);
+            item.setMethod("GET");
+            item.setUrl(server.url("/socket").toString().replaceFirst("^http", "ws"));
+
+            DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(
+                    new JMeterTreeNode("request", NodeType.REQUEST, item)
+            );
+            addConnectStep(requestNode, new WebSocketPerformanceData());
+            JMeterTreeNode awaitStep = new JMeterTreeNode("await", NodeType.WS_AWAIT);
+            awaitStep.webSocketPerformanceData = new WebSocketPerformanceData();
+            awaitStep.webSocketPerformanceData.completionMode = WebSocketPerformanceData.CompletionMode.MESSAGE_COUNT;
+            awaitStep.webSocketPerformanceData.targetMessageCount = 2;
+            awaitStep.webSocketPerformanceData.firstMessageTimeoutMs = 2000;
+            awaitStep.webSocketPerformanceData.holdConnectionMs = 2000;
+            DefaultMutableTreeNode awaitNode = new DefaultMutableTreeNode(awaitStep);
+            awaitNode.add(assertionNode("JSONPath", "target", "$.name"));
+            requestNode.add(awaitNode);
+
+            PerformanceRequestExecutor executor = new PerformanceRequestExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet(),
+                    ConcurrentHashMap.newKeySet()
+            );
+
+            PerformanceRequestExecutionResult result = executor.execute(
+                    PerformanceTestPlanCompiler.compileRequestSampler(requestNode),
+                    new ExecutionVariableContext()
+            );
+
+            assertFalse(result.executionFailed, result.errorMsg);
+            assertEquals(result.testResults.size(), 1);
+            assertTrue(result.testResults.get(0).passed);
+            assertEquals(result.response.headers.get("X-Easy-WS-Message-Count").get(0), "2");
+        }
+    }
+
+    @Test
+    public void shouldRetainWebSocketResponseBodyForRequestLevelBodyAssertion() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse().withWebSocketUpgrade(new WebSocketListener() {
+                @Override
+                public void onOpen(WebSocket webSocket, Response response) {
+                    webSocket.send("{\"name\":\"target\"}");
+                }
+            }));
+            server.start();
+
+            HttpRequestItem item = new HttpRequestItem();
+            item.setId("ws-request-level-assertion-test");
+            item.setName("WS Request Level Assertion Test");
+            item.setProtocol(RequestItemProtocolEnum.WEBSOCKET);
+            item.setMethod("GET");
+            item.setUrl(server.url("/socket").toString().replaceFirst("^http", "ws"));
+
+            DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(
+                    new JMeterTreeNode("request", NodeType.REQUEST, item)
+            );
+            addConnectStep(requestNode, new WebSocketPerformanceData());
+            addFirstMessageAwaitStep(requestNode);
+            requestNode.add(assertionNode("JSONPath", "target", "$.name"));
+
+            PerformanceRequestExecutor executor = new PerformanceRequestExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet(),
+                    ConcurrentHashMap.newKeySet()
+            );
+
+            PerformanceRequestExecutionResult result = executor.execute(
+                    PerformanceTestPlanCompiler.compileRequestSampler(requestNode),
+                    new ExecutionVariableContext()
+            );
+
+            assertFalse(result.executionFailed, result.errorMsg);
+            assertEquals(result.testResults.size(), 1);
+            assertTrue(result.testResults.get(0).passed);
+            assertTrue(result.response.body.contains("\"name\":\"target\""));
+        }
+    }
+
+    @Test
+    public void shouldRunRequestLevelBodyAssertionAgainstLatestWebSocketMessage() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse().withWebSocketUpgrade(new WebSocketListener() {
+                @Override
+                public void onOpen(WebSocket webSocket, Response response) {
+                    webSocket.send("first-message");
+                    webSocket.send("second-message");
+                }
+            }));
+            server.start();
+
+            HttpRequestItem item = new HttpRequestItem();
+            item.setId("ws-request-level-multi-message-assertion-test");
+            item.setName("WS Request Level Multi Message Assertion Test");
+            item.setProtocol(RequestItemProtocolEnum.WEBSOCKET);
+            item.setMethod("GET");
+            item.setUrl(server.url("/socket").toString().replaceFirst("^http", "ws"));
+
+            DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(
+                    new JMeterTreeNode("request", NodeType.REQUEST, item)
+            );
+            addConnectStep(requestNode, new WebSocketPerformanceData());
+            JMeterTreeNode awaitStep = new JMeterTreeNode("await", NodeType.WS_AWAIT);
+            awaitStep.webSocketPerformanceData = new WebSocketPerformanceData();
+            awaitStep.webSocketPerformanceData.completionMode = WebSocketPerformanceData.CompletionMode.MESSAGE_COUNT;
+            awaitStep.webSocketPerformanceData.targetMessageCount = 2;
+            awaitStep.webSocketPerformanceData.firstMessageTimeoutMs = 2000;
+            awaitStep.webSocketPerformanceData.holdConnectionMs = 2000;
+            requestNode.add(new DefaultMutableTreeNode(awaitStep));
+            requestNode.add(assertionNode("Contains", "second-message", ""));
+
+            PerformanceRequestExecutor executor = new PerformanceRequestExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet(),
+                    ConcurrentHashMap.newKeySet()
+            );
+
+            PerformanceRequestExecutionResult result = executor.execute(
+                    PerformanceTestPlanCompiler.compileRequestSampler(requestNode),
+                    new ExecutionVariableContext()
+            );
+
+            assertFalse(result.executionFailed, result.errorMsg);
+            assertEquals(result.testResults.size(), 1);
+            assertTrue(result.testResults.get(0).passed);
+            assertFalse(result.response.body.contains("first-message"), result.response.body);
+            assertEquals(result.response.body, "second-message");
+        }
+    }
+
+    @Test
     public void shouldReconnectAfterCloseStepWhenAnotherConnectStepFollows() throws Exception {
         CountDownLatch serverOpenedConnections = new CountDownLatch(2);
         CountDownLatch serverReceivedMessages = new CountDownLatch(2);
@@ -742,8 +953,7 @@ public class WebSocketScenarioExecutorTest {
             assertFalse(result.executionFailed, result.errorMsg);
             assertEquals(result.response.headers.get("X-Easy-WS-Received-Count").get(0), "2");
             assertEquals(result.response.headers.get("X-Easy-WS-Sent-Count").get(0), "2");
-            assertTrue(result.response.body.contains("ack-1-first"));
-            assertTrue(result.response.body.contains("ack-2-second"));
+            assertEquals(result.response.body, "");
         }
     }
 
@@ -844,6 +1054,14 @@ public class WebSocketScenarioExecutorTest {
         timerStep.timerData = new TimerData();
         timerStep.timerData.delayMs = delayMs;
         requestNode.add(new DefaultMutableTreeNode(timerStep));
+    }
+
+    private static DefaultMutableTreeNode assertionNode(String type, String content, String value) {
+        AssertionData data = new AssertionData();
+        data.type = type;
+        data.content = content;
+        data.value = value;
+        return new DefaultMutableTreeNode(new JMeterTreeNode(type, NodeType.ASSERTION, data));
     }
 
     private static void assertNextStep(WebSocketScenarioPlanStepCursor cursor, NodeType expectedType, String expectedName) {

@@ -13,4 +13,5 @@ class PerformanceProtocolSamplerContext {
     HttpRequestItem requestItem;
     String requestBodyTemplate;
     ScriptExecutionPipeline pipeline;
+    PerformanceResponseCapturePlan capturePlan;
 }

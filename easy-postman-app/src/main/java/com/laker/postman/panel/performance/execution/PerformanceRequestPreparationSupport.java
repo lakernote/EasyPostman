@@ -1,6 +1,5 @@
 package com.laker.postman.panel.performance.execution;
 
-import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.panel.performance.plan.PerformanceAssertionElement;
 import com.laker.postman.service.setting.SettingManager;
@@ -22,14 +21,7 @@ class PerformanceRequestPreparationSupport {
             boolean efficientMode,
             List<PerformanceAssertionElement> assertionNodes,
             String postscript) {
-        if (!efficientMode) {
-            return PreparedRequest.ResponseBodyMode.FULL;
-        }
-        if (PerformanceAssertionRunner.requiresResponseBodyElements(assertionNodes)
-                || CharSequenceUtil.isNotBlank(postscript)) {
-            return PreparedRequest.ResponseBodyMode.PREVIEW;
-        }
-        return PreparedRequest.ResponseBodyMode.METADATA_ONLY;
+        return PerformanceResponseCapturePlan.resolveHttpResponseBodyMode(efficientMode, assertionNodes, postscript);
     }
 
     int resolveResponseBodyPreviewLimitBytes(int previewLimitKb) {

@@ -1,5 +1,6 @@
 package com.laker.postman.panel.performance.execution;
 
+import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.script.TestResult;
 import com.laker.postman.service.js.ScriptExecutionResult;
 import org.testng.annotations.Test;
@@ -12,6 +13,24 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class PerformanceRequestPostProcessorTest {
+
+    @Test
+    public void shouldSkipPostScriptExecutionWhenScriptIsBlank() {
+        PerformanceRequestPostProcessResult result = new PerformanceRequestPostProcessor(() -> true).process(
+                null,
+                new HttpResponse(),
+                false,
+                false,
+                null,
+                "",
+                false,
+                new ArrayList<>(),
+                PerformanceResponseCapturePlan.resolve(true, null, false, false, "")
+        );
+
+        assertEquals(result.errorMsg(), "");
+        assertFalse(result.executionFailed());
+    }
 
     @Test
     public void shouldUseFirstFailedPmTestNameAsErrorMessage() {

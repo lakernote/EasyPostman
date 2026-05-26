@@ -97,6 +97,27 @@ public class PerformanceAssertionRunnerTest {
     }
 
     @Test
+    public void shouldRunJsonPathAssertionAgainstSseDataPayload() {
+        List<TestResult> results = new ArrayList<>();
+        AtomicReference<String> error = new AtomicReference<>("");
+        HttpResponse response = new HttpResponse();
+        response.isSse = true;
+        response.body = "event: done\n"
+                + "data: {\"name\":\"target\"}\n\n";
+
+        PerformanceAssertionRunner.runAssertionElements(
+                List.of(assertionElement("JSONPath", "target", "$.name")),
+                response,
+                results,
+                error
+        );
+
+        assertEquals(results.size(), 1);
+        assertTrue(results.get(0).passed);
+        assertEquals(error.get(), "");
+    }
+
+    @Test
     public void shouldTreatStatusAssertionOnNullResponseAsFailedAssertion() {
         List<TestResult> results = new ArrayList<>();
         AtomicReference<String> error = new AtomicReference<>("");

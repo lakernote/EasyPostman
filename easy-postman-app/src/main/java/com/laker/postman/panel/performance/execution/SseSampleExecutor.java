@@ -43,6 +43,8 @@ public class SseSampleExecutor {
     private final Set<EventSource> activeSources;
     private final PerformanceRealtimeMetrics realtimeMetrics;
     private final int responseBodyPreviewLimitBytes;
+    private final boolean retainResponseBody;
+    private final boolean trackResponseBodySize;
 
     public SseSampleExecutor(BooleanSupplier runningSupplier,
                              Predicate<Throwable> cancelledChecker,
@@ -62,11 +64,33 @@ public class SseSampleExecutor {
                              Set<EventSource> activeSources,
                              PerformanceRealtimeMetrics realtimeMetrics,
                              int responseBodyPreviewLimitBytes) {
+        this(runningSupplier, cancelledChecker, activeSources, realtimeMetrics, responseBodyPreviewLimitBytes, true);
+    }
+
+    public SseSampleExecutor(BooleanSupplier runningSupplier,
+                             Predicate<Throwable> cancelledChecker,
+                             Set<EventSource> activeSources,
+                             PerformanceRealtimeMetrics realtimeMetrics,
+                             int responseBodyPreviewLimitBytes,
+                             boolean retainResponseBody) {
+        this(runningSupplier, cancelledChecker, activeSources, realtimeMetrics, responseBodyPreviewLimitBytes,
+                retainResponseBody, retainResponseBody);
+    }
+
+    public SseSampleExecutor(BooleanSupplier runningSupplier,
+                             Predicate<Throwable> cancelledChecker,
+                             Set<EventSource> activeSources,
+                             PerformanceRealtimeMetrics realtimeMetrics,
+                             int responseBodyPreviewLimitBytes,
+                             boolean retainResponseBody,
+                             boolean trackResponseBodySize) {
         this.runningSupplier = runningSupplier;
         this.cancelledChecker = cancelledChecker;
         this.activeSources = activeSources;
         this.realtimeMetrics = realtimeMetrics == null ? new PerformanceRealtimeMetrics() : realtimeMetrics;
         this.responseBodyPreviewLimitBytes = Math.max(1, responseBodyPreviewLimitBytes);
+        this.retainResponseBody = retainResponseBody;
+        this.trackResponseBodySize = trackResponseBodySize;
     }
 
     public Result execute(PreparedRequest req, SsePerformanceData cfg) {
@@ -85,7 +109,9 @@ public class SseSampleExecutor {
         AtomicReference<String> errorRef = new AtomicReference<>("");
         AtomicReference<String> lastEventIdRef = new AtomicReference<>("");
         AtomicReference<String> lastEventTypeRef = new AtomicReference<>("");
-        BoundedTextAccumulator matchedEventBody = new BoundedTextAccumulator(responseBodyPreviewLimitBytes);
+        BoundedTextAccumulator matchedEventBody = (retainResponseBody || trackResponseBodySize)
+                ? new BoundedTextAccumulator(retainResponseBody ? responseBodyPreviewLimitBytes : 0)
+                : null;
         AtomicLong sampleEndTimeMs = new AtomicLong(0);
         AtomicLong firstEventLatencyMs = new AtomicLong(-1);
         AtomicBoolean firstEventRecorded = new AtomicBoolean(false);
@@ -165,7 +191,9 @@ public class SseSampleExecutor {
                         realtimeMetrics.recordSseMatched(eventSource);
                         lastEventIdRef.set(id == null ? "" : id);
                         lastEventTypeRef.set(eventType);
-                        SseEventFormatter.appendEvent(matchedEventBody, id, eventType, data);
+                        if (matchedEventBody != null) {
+                            SseEventFormatter.appendEvent(matchedEventBody, id, eventType, data);
+                        }
                         firstMessageLatch.countDown();
                         completionLatch.countDown();
                     }
@@ -177,7 +205,9 @@ public class SseSampleExecutor {
                     realtimeMetrics.recordSseMatched(eventSource);
                     lastEventIdRef.set(id == null ? "" : id);
                     lastEventTypeRef.set(eventType);
-                    SseEventFormatter.appendEvent(matchedEventBody, id, eventType, data);
+                    if (matchedEventBody != null) {
+                        SseEventFormatter.appendEvent(matchedEventBody, id, eventType, data);
+                    }
                     if (firstMatchedMessage) {
                         firstMessageLatch.countDown();
                     }
@@ -302,8 +332,8 @@ public class SseSampleExecutor {
         long endTime = sampleEndTimeMs.get();
         resp.endTime = endTime;
         resp.costMs = endTime - requestStartTime;
-        resp.body = matchedEventBody.value();
-        resp.bodySize = matchedEventBody.totalUtf8Bytes();
+        resp.body = retainResponseBody && matchedEventBody != null ? matchedEventBody.value() : "";
+        resp.bodySize = matchedEventBody == null ? 0 : matchedEventBody.totalUtf8Bytes();
         SseSampleResponseBuilder.addSummaryHeaders(
                 resp,
                 cfg,

@@ -79,7 +79,7 @@ public final class PerformanceAssertionRunner {
             if (assertion == null) {
                 continue;
             }
-            runAssertion(assertion, responseBody, resp, testResults, errorMsgRef);
+            runAssertion(assertion, responseBodyForAssertion(assertion, resp, responseBody), resp, testResults, errorMsgRef);
         }
     }
 
@@ -127,6 +127,48 @@ public final class PerformanceAssertionRunner {
                 pass,
                 pass ? null : I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_FAILED)
         ));
+    }
+
+    private static String responseBodyForAssertion(AssertionData assertion, HttpResponse resp, String responseBody) {
+        AssertionType type = AssertionType.fromStorageValue(assertion.type);
+        if (type == AssertionType.JSON_PATH && resp != null && resp.isSse) {
+            return extractLastSseDataPayload(responseBody);
+        }
+        return responseBody;
+    }
+
+    private static String extractLastSseDataPayload(String responseBody) {
+        if (CharSequenceUtil.isBlank(responseBody)) {
+            return responseBody;
+        }
+        StringBuilder currentEventData = null;
+        String lastEventData = null;
+        String[] lines = responseBody.split("\\R", -1);
+        for (String line : lines) {
+            if (line.isBlank()) {
+                if (currentEventData != null) {
+                    lastEventData = currentEventData.toString();
+                    currentEventData = null;
+                }
+                continue;
+            }
+            if (!line.startsWith("data:")) {
+                continue;
+            }
+            String dataLine = line.length() > 5 && line.charAt(5) == ' '
+                    ? line.substring(6)
+                    : line.substring(5);
+            if (currentEventData == null) {
+                currentEventData = new StringBuilder();
+            } else {
+                currentEventData.append('\n');
+            }
+            currentEventData.append(dataLine);
+        }
+        if (currentEventData != null) {
+            lastEventData = currentEventData.toString();
+        }
+        return lastEventData == null ? responseBody : lastEventData;
     }
 
     private static PerformanceProtocolStageElement findDirectStage(PerformanceRequestSampler requestSampler, NodeType type) {

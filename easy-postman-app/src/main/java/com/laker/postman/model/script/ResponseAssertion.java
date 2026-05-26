@@ -419,9 +419,12 @@ public class ResponseAssertion {
          * @param responseAssertion 响应断言对象
          */
         public ResponseSize(ResponseAssertion responseAssertion) {
-            // 计算响应体大小
-            if (responseAssertion.response != null && responseAssertion.response.body != null) {
-                this.body = responseAssertion.response.body.getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
+            // 压测 metadata-only 模式会统计 bodySize 但不保留 body 文本。
+            HttpResponse currentResponse = responseAssertion.response;
+            if (currentResponse != null && hasCollectedBodySize(currentResponse)) {
+                this.body = currentResponse.bodySize;
+            } else if (currentResponse != null && currentResponse.body != null) {
+                this.body = currentResponse.body.getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
             } else {
                 this.body = 0;
             }
@@ -452,6 +455,17 @@ public class ResponseAssertion {
         @Override
         public String toString() {
             return String.format("body: %d bytes, header: %d bytes, total: %d bytes", body, header, total);
+        }
+
+        private static boolean hasCollectedBodySize(HttpResponse response) {
+            if (response.bodySize > 0) {
+                return true;
+            }
+            return response.body != null
+                    && response.body.equals(I18nUtil.getMessage(
+                            MessageKeys.RESPONSE_BODY_SKIPPED_PERFORMANCE,
+                            response.bodySize
+                    ));
         }
     }
 }

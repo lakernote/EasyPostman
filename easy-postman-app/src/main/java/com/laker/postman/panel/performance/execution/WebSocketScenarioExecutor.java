@@ -7,6 +7,7 @@ import com.laker.postman.model.script.TestResult;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
+import com.laker.postman.panel.performance.plan.PerformanceAssertionElement;
 import com.laker.postman.panel.performance.plan.PerformancePlanElement;
 import com.laker.postman.panel.performance.plan.PerformanceProtocolStageElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
@@ -89,6 +90,20 @@ public class WebSocketScenarioExecutor {
                           ScriptExecutionPipeline pipeline,
                           String apiId,
                           String apiName) {
+        return execute(req, requestSampler, requestCfg, requestBodyTemplate, pipeline,
+                PerformanceResponseCapturePlan.resolve(true, requestSampler, false, true,
+                        req == null ? "" : req.postscript),
+                apiId, apiName);
+    }
+
+    public Result execute(PreparedRequest req,
+                          PerformanceRequestSampler requestSampler,
+                          WebSocketPerformanceData requestCfg,
+                          String requestBodyTemplate,
+                          ScriptExecutionPipeline pipeline,
+                          PerformanceResponseCapturePlan capturePlan,
+                          String apiId,
+                          String apiName) {
         WebSocketPerformanceData baseRequestCfg = requestCfg == null ? new WebSocketPerformanceData() : requestCfg;
         long requestStartTime = System.currentTimeMillis();
         HttpResponse resp = new HttpResponse();
@@ -97,7 +112,17 @@ public class WebSocketScenarioExecutor {
         AtomicReference<String> errorRef = new AtomicReference<>("");
         AtomicReference<String> lastMessageRef = new AtomicReference<>("");
         AtomicReference<WebSocketPerformanceData> lastStepCfgRef = new AtomicReference<>(baseRequestCfg);
-        BoundedTextAccumulator responseBody = new BoundedTextAccumulator(responseBodyPreviewLimitBytes);
+        PerformanceResponseCapturePlan effectiveCapturePlan = capturePlan == null
+                ? PerformanceResponseCapturePlan.resolve(true, requestSampler, false, true,
+                        req == null ? "" : req.postscript)
+                : capturePlan;
+        boolean retainAwaitPayloads = effectiveCapturePlan.retainWebSocketAwaitPayloads();
+        boolean retainResponseBody = effectiveCapturePlan.retainStreamResponseBody();
+        boolean trackResponseBodySize = retainResponseBody || effectiveCapturePlan.trackStreamResponseBodySize();
+        BoundedTextAccumulator responseBodySizeCounter = trackResponseBodySize
+                ? new BoundedTextAccumulator(0)
+                : null;
+        AtomicReference<String> latestResponseBodyRef = new AtomicReference<>("");
         AtomicLong sampleEndTimeMs = new AtomicLong(0);
         AtomicLong firstMessageLatencyMs = new AtomicLong(-1);
         AtomicBoolean firstReceivedMessageRecorded = new AtomicBoolean(false);
@@ -105,7 +130,10 @@ public class WebSocketScenarioExecutor {
         AtomicInteger matchedMessageCount = new AtomicInteger(0);
         AtomicInteger sentMessageCount = new AtomicInteger(0);
         List<TestResult> stepTestResults = new ArrayList<>();
-        WebSocketReceivedMessageBuffer receivedMessages = new WebSocketReceivedMessageBuffer(responseBodyPreviewLimitBytes);
+        WebSocketReceivedMessageBuffer receivedMessages = new WebSocketReceivedMessageBuffer(
+                responseBodyPreviewLimitBytes,
+                retainAwaitPayloads
+        );
         boolean keepReceivedMessages = WebSocketScenarioStepSupport.hasEnabledAwaitStep(requestSampler);
         Object messageLock = new Object();
         class WebSocketScenarioSession {
@@ -158,8 +186,14 @@ public class WebSocketScenarioExecutor {
                     private void appendMessage(WebSocket webSocket, String payload) {
                         String value = payload == null ? "" : payload;
                         lastMessageRef.set(headerPreview(value));
-                        responseBody.append(value);
-                        responseBody.append("\n\n");
+                        if (retainResponseBody) {
+                            latestResponseBodyRef.set(
+                                    WebSocketReceivedMessageBuffer.retainUtf8Prefix(value, responseBodyPreviewLimitBytes)
+                            );
+                        }
+                        if (responseBodySizeCounter != null) {
+                            responseBodySizeCounter.append(value);
+                        }
                         receivedMessageCount.incrementAndGet();
                         long receivedAtMs = System.currentTimeMillis();
                         realtimeMetrics.recordWebSocketReceived(webSocket);
@@ -377,7 +411,13 @@ public class WebSocketScenarioExecutor {
                             long awaitStartTime = System.currentTimeMillis();
                             long firstMatchTime = -1;
                             int stepMatchedCount = 0;
-                            BoundedTextAccumulator stepBody = new BoundedTextAccumulator(responseBodyPreviewLimitBytes);
+                            List<PerformanceAssertionElement> stepAssertions =
+                                    stepElement instanceof PerformanceProtocolStageElement stage
+                                            ? PerformanceAssertionRunner.collectDirectAssertionElements(stage.getElements())
+                                            : List.of();
+                            boolean stepRequiresResponseBody =
+                                    PerformanceAssertionRunner.requiresResponseBodyElements(stepAssertions);
+                            String stepAssertionPayload = "";
                             boolean completed = false;
                             while (runningSupplier.getAsBoolean() && !failed.get() && !interrupted.get() && !completed) {
                                 synchronized (messageLock) {
@@ -401,7 +441,9 @@ public class WebSocketScenarioExecutor {
                                         stepMatchedCount++;
                                         matchedMessageCount.incrementAndGet();
                                         realtimeMetrics.recordWebSocketMatched(webSocket);
-                                        appendMessage(stepBody, payload);
+                                        if (stepRequiresResponseBody) {
+                                            stepAssertionPayload = payload;
+                                        }
                                         if (stepCfg.completionMode == WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE
                                                 || stepCfg.completionMode == WebSocketPerformanceData.CompletionMode.MATCHED_MESSAGE) {
                                             completed = true;
@@ -450,12 +492,17 @@ public class WebSocketScenarioExecutor {
                             stepResp.code = resp.code;
                             stepResp.protocol = resp.protocol;
                             stepResp.headers = resp.headers;
-                            stepResp.body = stepBody.value();
-                            stepResp.bodySize = stepBody.totalUtf8Bytes();
+                            if (stepRequiresResponseBody) {
+                                BoundedTextAccumulator stepBody = new BoundedTextAccumulator(responseBodyPreviewLimitBytes);
+                                stepBody.append(stepAssertionPayload);
+                                stepResp.body = stepBody.value();
+                                stepResp.bodySize = stepBody.totalUtf8Bytes();
+                            } else {
+                                stepResp.body = "";
+                                stepResp.bodySize = 0;
+                            }
                             PerformanceAssertionRunner.runAssertionElements(
-                                    stepElement instanceof PerformanceProtocolStageElement stage
-                                            ? PerformanceAssertionRunner.collectDirectAssertionElements(stage.getElements())
-                                            : List.of(),
+                                    stepAssertions,
                                     stepResp,
                                     stepTestResults,
                                     errorRef
@@ -492,8 +539,12 @@ public class WebSocketScenarioExecutor {
         long endTime = sampleEndTimeMs.get();
         resp.endTime = endTime;
         resp.costMs = endTime - requestStartTime;
-        resp.body = responseBody.value();
-        resp.bodySize = responseBody.totalUtf8Bytes();
+        if (retainResponseBody) {
+            resp.body = latestResponseBodyRef.get();
+        } else {
+            resp.body = "";
+        }
+        resp.bodySize = responseBodySizeCounter == null ? 0 : responseBodySizeCounter.totalUtf8Bytes();
         if (resp.headers == null) {
             resp.headers = new LinkedHashMap<>();
         }
@@ -531,13 +582,6 @@ public class WebSocketScenarioExecutor {
             TimeUnit.MILLISECONDS.sleep(10);
         }
     }
-
-    private void appendMessage(BoundedTextAccumulator buffer, String payload) {
-        String value = payload == null ? "" : payload;
-        buffer.append(value);
-        buffer.append("\n\n");
-    }
-
 
     private String headerPreview(String value) {
         if (value == null || value.length() <= 1024) {

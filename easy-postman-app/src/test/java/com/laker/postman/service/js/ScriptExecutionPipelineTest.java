@@ -35,6 +35,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 public class ScriptExecutionPipelineTest {
@@ -100,6 +101,41 @@ public class ScriptExecutionPipelineTest {
                 }
             }
         }
+    }
+
+    @Test
+    public void shouldNotPrepareBindingsForBlankPreScriptWhenPostScriptIsBlank() {
+        PreparedRequest request = new PreparedRequest();
+        ScriptExecutionPipeline pipeline = ScriptExecutionPipeline.builder()
+                .request(request)
+                .preScript("")
+                .postScript("")
+                .build();
+
+        ScriptExecutionResult preResult = pipeline.executePreScript();
+
+        assertTrue(preResult.isSuccess());
+        assertNull(pipeline.getBindings());
+    }
+
+    @Test
+    public void shouldPrepareBindingsLazilyForPostScriptWhenPreScriptIsBlank() {
+        PreparedRequest request = new PreparedRequest();
+        ScriptExecutionPipeline pipeline = ScriptExecutionPipeline.builder()
+                .request(request)
+                .preScript("")
+                .postScript("pm.test('status', function () { pm.response.to.have.status(200); });")
+                .build();
+        HttpResponse response = new HttpResponse();
+        response.code = 200;
+        response.headers = new java.util.LinkedHashMap<>();
+
+        assertTrue(pipeline.executePreScript().isSuccess());
+        ScriptExecutionResult postResult = pipeline.executePostScript(response);
+
+        assertTrue(postResult.isSuccess());
+        assertEquals(postResult.getTestResults().size(), 1);
+        assertTrue(postResult.getTestResults().get(0).passed);
     }
 
     @Test

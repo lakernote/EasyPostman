@@ -71,12 +71,39 @@ final class PerformanceRequestTransportExecutor {
                                     boolean webSocketRequest,
                                     String requestBodyTemplate,
                                     ScriptExecutionPipeline pipeline) throws Exception {
+        return execute(
+                request,
+                requestSampler,
+                requestItem,
+                sseRequest,
+                webSocketRequest,
+                requestBodyTemplate,
+                pipeline,
+                PerformanceResponseCapturePlan.resolve(
+                        true,
+                        requestSampler,
+                        sseRequest,
+                        webSocketRequest,
+                        request == null ? "" : request.postscript
+                )
+        );
+    }
+
+    ProtocolExecutionResult execute(PreparedRequest request,
+                                    PerformanceRequestSampler requestSampler,
+                                    HttpRequestItem requestItem,
+                                    boolean sseRequest,
+                                    boolean webSocketRequest,
+                                    String requestBodyTemplate,
+                                    ScriptExecutionPipeline pipeline,
+                                    PerformanceResponseCapturePlan capturePlan) throws Exception {
         PerformanceProtocolSamplerContext context = new PerformanceProtocolSamplerContext(
                 request,
                 requestSampler,
                 requestItem,
                 requestBodyTemplate,
-                pipeline
+                pipeline,
+                capturePlan
         );
         if (webSocketRequest) {
             return webSocketSamplerExecutor.execute(context);

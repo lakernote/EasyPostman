@@ -128,6 +128,13 @@ public class PerformanceRequestExecutor {
         HttpResponse resp = null;
         boolean sseRequest = PerformanceRequestProtocolResolver.isSseRequest(requestItem);
         PerformanceProtocol protocol = PerformanceRequestProtocolResolver.resolvePerformanceProtocol(webSocketRequest, sseRequest);
+        PerformanceResponseCapturePlan capturePlan = PerformanceResponseCapturePlan.resolve(
+                efficientModeSupplier.getAsBoolean(),
+                requestSampler,
+                sseRequest,
+                webSocketRequest,
+                req.postscript
+        );
 
         if (preOk && runningSupplier.getAsBoolean()) {
             try {
@@ -137,21 +144,23 @@ public class PerformanceRequestExecutor {
                 protocol = PerformanceRequestProtocolResolver.resolvePerformanceProtocol(webSocketRequest, sseRequest);
                 boolean transportSseRequest = sseRequest;
                 boolean transportWebSocketRequest = webSocketRequest;
+                capturePlan = PerformanceResponseCapturePlan.resolve(
+                        efficientModeSupplier.getAsBoolean(),
+                        requestSampler,
+                        transportSseRequest,
+                        transportWebSocketRequest,
+                        req.postscript
+                );
                 if (!transportSseRequest && !transportWebSocketRequest) {
-                    List<PerformanceAssertionElement> assertionNodes =
-                            PerformanceAssertionRunner.collectAssertionElements(requestSampler, false, false);
-                    req.responseBodyMode = resolveHttpResponseBodyModeForAssertionElements(
-                            efficientModeSupplier.getAsBoolean(),
-                            assertionNodes,
-                            req.postscript
-                    );
+                    req.responseBodyMode = capturePlan.httpResponseBodyMode();
                     req.responseBodyPreviewLimitBytes = resolveResponseBodyPreviewLimitBytes(
                             responseBodyPreviewLimitKbSupplier.getAsInt()
                     );
                 }
+                PerformanceResponseCapturePlan transportCapturePlan = capturePlan;
                 ProtocolExecutionResult protocolResult = pipeline.withExecutionContextThrowing(() ->
                         transportExecutor.execute(req, requestSampler, requestItem, transportSseRequest, transportWebSocketRequest,
-                                requestBodyTemplate, pipeline)
+                                requestBodyTemplate, pipeline, transportCapturePlan)
                 );
                 resp = protocolResult.response();
                 errorMsg = CharSequenceUtil.blankToDefault(protocolResult.errorMsg(), errorMsg);
@@ -181,7 +190,8 @@ public class PerformanceRequestExecutor {
                     pipeline,
                     errorMsg,
                     executionFailed,
-                    testResults
+                    testResults,
+                    capturePlan
             );
             errorMsg = postProcessResult.errorMsg();
             executionFailed = postProcessResult.executionFailed();

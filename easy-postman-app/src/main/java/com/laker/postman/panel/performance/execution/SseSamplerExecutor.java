@@ -39,7 +39,9 @@ final class SseSamplerExecutor implements PerformanceProtocolSamplerExecutor {
                 cancelledChecker,
                 activeSseSources,
                 realtimeMetrics,
-                responseBodyPreviewLimitBytes()
+                responseBodyPreviewLimitBytes(),
+                retainResponseBody(context),
+                trackResponseBodySize(context)
         ).execute(
                 context.getRequest(),
                 ssePerformanceData,
@@ -64,6 +66,22 @@ final class SseSamplerExecutor implements PerformanceProtocolSamplerExecutor {
 
     private ProtocolExecutionResult failedProtocolResult(String message) {
         return new ProtocolExecutionResult(null, message, true, false, List.of());
+    }
+
+    private boolean retainResponseBody(PerformanceProtocolSamplerContext context) {
+        PerformanceResponseCapturePlan capturePlan = context.getCapturePlan();
+        if (capturePlan != null) {
+            return capturePlan.retainStreamResponseBody();
+        }
+        return false;
+    }
+
+    private boolean trackResponseBodySize(PerformanceProtocolSamplerContext context) {
+        PerformanceResponseCapturePlan capturePlan = context.getCapturePlan();
+        if (capturePlan != null) {
+            return capturePlan.trackStreamResponseBodySize();
+        }
+        return false;
     }
 
     private int responseBodyPreviewLimitBytes() {

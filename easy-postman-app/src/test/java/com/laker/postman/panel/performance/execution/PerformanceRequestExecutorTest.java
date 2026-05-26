@@ -31,7 +31,7 @@ import static org.testng.Assert.assertTrue;
 public class PerformanceRequestExecutorTest {
 
     @Test
-    public void shouldUseFullResponseBodyOutsideEfficientMode() {
+    public void shouldKeepFullResponseBodyOutsideEfficientMode() {
         PreparedRequest.ResponseBodyMode mode = PerformanceRequestExecutor.resolveHttpResponseBodyModeForAssertionElements(
                 false,
                 List.of(),
@@ -172,6 +172,105 @@ public class PerformanceRequestExecutorTest {
 
             assertTrue(result.executionFailed);
             assertEquals(server.getRequestCount(), 0);
+        }
+    }
+
+    @Test
+    public void shouldExposeSseBodySizeToPostScriptWithoutRetainingBodyText() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse()
+                    .setHeader("Content-Type", "text/event-stream")
+                    .setBody("data: hello\n\n"));
+            server.start();
+
+            HttpRequestItem item = new HttpRequestItem();
+            item.setId("sse-size-postscript");
+            item.setName("SSE Size Postscript");
+            item.setProtocol(RequestItemProtocolEnum.HTTP);
+            item.setMethod("GET");
+            item.setUrl(server.url("/events").toString());
+            item.setHeadersList(List.of(new HttpHeader(true, "Accept", "text/event-stream")));
+            item.setPostscript("""
+                    pm.test('stream size', function () {
+                        pm.expect(pm.response.size().body).to.be.above(0);
+                    });
+                    """);
+
+            JMeterTreeNode requestData = new JMeterTreeNode(item.getName(), NodeType.REQUEST, item);
+            requestData.ssePerformanceData = new SsePerformanceData();
+            requestData.ssePerformanceData.connectTimeoutMs = 2000;
+            requestData.ssePerformanceData.firstMessageTimeoutMs = 2000;
+            DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(requestData);
+            requestNode.add(new DefaultMutableTreeNode(new JMeterTreeNode("connect", NodeType.SSE_CONNECT)));
+            requestNode.add(new DefaultMutableTreeNode(new JMeterTreeNode("await", NodeType.SSE_AWAIT)));
+
+            PerformanceRequestExecutionResult result = new PerformanceRequestExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet(),
+                    ConcurrentHashMap.newKeySet()
+            ).execute(
+                    PerformanceTestPlanCompiler.compileRequestSampler(requestNode),
+                    new ExecutionVariableContext()
+            );
+
+            assertFalse(result.executionFailed, result.errorMsg);
+            assertEquals(result.testResults.size(), 1);
+            assertTrue(result.testResults.get(0).passed);
+            assertEquals(result.response.body, "");
+            assertTrue(result.response.bodySize > 0);
+        }
+    }
+
+    @Test
+    public void shouldExposeWebSocketBodySizeToPostScriptWithoutRetainingBodyText() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse().withWebSocketUpgrade(new WebSocketListener() {
+                @Override
+                public void onOpen(WebSocket webSocket, okhttp3.Response response) {
+                    webSocket.send("hello");
+                }
+            }));
+            server.start();
+
+            HttpRequestItem item = new HttpRequestItem();
+            item.setId("ws-size-postscript");
+            item.setName("WS Size Postscript");
+            item.setProtocol(RequestItemProtocolEnum.WEBSOCKET);
+            item.setMethod("GET");
+            item.setUrl(server.url("/socket").toString().replaceFirst("^http", "ws"));
+            item.setPostscript("""
+                    pm.test('stream size', function () {
+                        pm.expect(pm.response.size().body).to.be.above(0);
+                    });
+                    """);
+
+            JMeterTreeNode requestData = new JMeterTreeNode(item.getName(), NodeType.REQUEST, item);
+            requestData.webSocketPerformanceData = new WebSocketPerformanceData();
+            requestData.webSocketPerformanceData.connectTimeoutMs = 2000;
+            DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(requestData);
+            requestNode.add(new DefaultMutableTreeNode(new JMeterTreeNode("connect", NodeType.WS_CONNECT)));
+            JMeterTreeNode awaitData = new JMeterTreeNode("await", NodeType.WS_AWAIT);
+            awaitData.webSocketPerformanceData = new WebSocketPerformanceData();
+            awaitData.webSocketPerformanceData.completionMode = WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE;
+            awaitData.webSocketPerformanceData.firstMessageTimeoutMs = 2000;
+            requestNode.add(new DefaultMutableTreeNode(awaitData));
+
+            PerformanceRequestExecutionResult result = new PerformanceRequestExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet(),
+                    ConcurrentHashMap.newKeySet()
+            ).execute(
+                    PerformanceTestPlanCompiler.compileRequestSampler(requestNode),
+                    new ExecutionVariableContext()
+            );
+
+            assertFalse(result.executionFailed, result.errorMsg);
+            assertEquals(result.testResults.size(), 1);
+            assertTrue(result.testResults.get(0).passed);
+            assertEquals(result.response.body, "");
+            assertTrue(result.response.bodySize > 0);
         }
     }
 

@@ -1,0 +1,161 @@
+package com.laker.postman.panel.performance.execution;
+
+import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.panel.performance.assertion.AssertionData;
+import com.laker.postman.panel.performance.model.NodeType;
+import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
+import com.laker.postman.panel.performance.plan.PerformanceAssertionElement;
+import com.laker.postman.panel.performance.plan.PerformancePlanElement;
+import com.laker.postman.panel.performance.plan.PerformanceProtocolStageElement;
+import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
+import org.testng.annotations.Test;
+
+import java.util.List;
+
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
+
+public class PerformanceResponseCapturePlanTest {
+
+    @Test
+    public void shouldKeepHttpFullBodyOutsideEfficientMode() {
+        PerformanceResponseCapturePlan plan = PerformanceResponseCapturePlan.resolve(
+                false,
+                sampler(List.of()),
+                false,
+                false,
+                ""
+        );
+
+        assertEquals(plan.httpResponseBodyMode(), PreparedRequest.ResponseBodyMode.FULL);
+    }
+
+    @Test
+    public void shouldKeepHttpMetadataOnlyForHeaderOnlyPostScriptInEfficientMode() {
+        PerformanceResponseCapturePlan plan = PerformanceResponseCapturePlan.resolve(
+                true,
+                sampler(List.of()),
+                false,
+                false,
+                "pm.test('header', function () { pm.response.to.have.header('Content-Type'); });"
+        );
+
+        assertTrue(plan.runPostScript());
+        assertFalse(plan.postScriptNeedsResponseBody());
+        assertEquals(plan.httpResponseBodyMode(), PreparedRequest.ResponseBodyMode.METADATA_ONLY);
+    }
+
+    @Test
+    public void shouldUseHttpPreviewForBodyPostScriptInEfficientMode() {
+        PerformanceResponseCapturePlan plan = PerformanceResponseCapturePlan.resolve(
+                true,
+                sampler(List.of()),
+                false,
+                false,
+                "pm.test('body', function () { pm.expect(pm.response.json().ok).to.equal(true); });"
+        );
+
+        assertTrue(plan.postScriptNeedsResponseBody());
+        assertEquals(plan.httpResponseBodyMode(), PreparedRequest.ResponseBodyMode.PREVIEW);
+    }
+
+    @Test
+    public void shouldTreatResponseSizePostScriptAsMetadataOnly() {
+        PerformanceResponseCapturePlan plan = PerformanceResponseCapturePlan.resolve(
+                true,
+                sampler(List.of()),
+                false,
+                false,
+                "pm.test('size', function () { pm.expect(pm.response.size().body).to.be.above(0); });"
+        );
+
+        assertFalse(plan.postScriptNeedsResponseBody());
+        assertEquals(plan.httpResponseBodyMode(), PreparedRequest.ResponseBodyMode.METADATA_ONLY);
+    }
+
+    @Test
+    public void shouldTrackStreamBodySizeForResponseSizePostScriptWithoutRetainingBody() {
+        PerformanceResponseCapturePlan plan = PerformanceResponseCapturePlan.resolve(
+                true,
+                sampler(List.of()),
+                true,
+                false,
+                "pm.test('size', function () { pm.expect(pm.response.size().body).to.be.above(0); });"
+        );
+
+        assertFalse(plan.postScriptNeedsResponseBody());
+        assertFalse(plan.retainStreamResponseBody());
+        assertTrue(plan.trackStreamResponseBodySize());
+    }
+
+    @Test
+    public void shouldRetainSseStreamBodyWhenPostScriptReadsResponseBody() {
+        PerformanceResponseCapturePlan plan = PerformanceResponseCapturePlan.resolve(
+                true,
+                sampler(List.of()),
+                true,
+                false,
+                "pm.test('body', function () { pm.expect(responseBody).to.contain('done'); });"
+        );
+
+        assertTrue(plan.runPostScript());
+        assertTrue(plan.postScriptNeedsResponseBody());
+        assertTrue(plan.retainStreamResponseBody());
+    }
+
+    @Test
+    public void shouldRetainWebSocketAwaitPayloadForFilteringWithoutRetainingResponseBody() {
+        WebSocketPerformanceData awaitCfg = new WebSocketPerformanceData();
+        awaitCfg.completionMode = WebSocketPerformanceData.CompletionMode.MATCHED_MESSAGE;
+        awaitCfg.messageFilter = "ack";
+        PerformanceProtocolStageElement awaitStep = new PerformanceProtocolStageElement(
+                "await",
+                NodeType.WS_AWAIT,
+                null,
+                awaitCfg,
+                List.of()
+        );
+
+        PerformanceResponseCapturePlan plan = PerformanceResponseCapturePlan.resolve(
+                true,
+                sampler(List.of(awaitStep)),
+                false,
+                true,
+                ""
+        );
+
+        assertTrue(plan.retainWebSocketAwaitPayloads());
+        assertFalse(plan.retainStreamResponseBody());
+    }
+
+    @Test
+    public void shouldRetainWebSocketResponseBodyForAwaitBodyAssertion() {
+        AssertionData data = new AssertionData();
+        data.type = "Contains";
+        data.content = "ack";
+        PerformanceAssertionElement assertion = new PerformanceAssertionElement("contains", data);
+        PerformanceProtocolStageElement awaitStep = new PerformanceProtocolStageElement(
+                "await",
+                NodeType.WS_AWAIT,
+                null,
+                new WebSocketPerformanceData(),
+                List.of(assertion)
+        );
+
+        PerformanceResponseCapturePlan plan = PerformanceResponseCapturePlan.resolve(
+                true,
+                sampler(List.of(awaitStep)),
+                false,
+                true,
+                ""
+        );
+
+        assertTrue(plan.retainWebSocketAwaitPayloads());
+        assertTrue(plan.retainStreamResponseBody());
+    }
+
+    private static PerformanceRequestSampler sampler(List<PerformancePlanElement> children) {
+        return new PerformanceRequestSampler("request", null, null, null, children);
+    }
+}

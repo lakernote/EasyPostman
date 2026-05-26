@@ -111,6 +111,9 @@ public class ScriptExecutionPipeline {
      */
     public ScriptExecutionResult executePreScript() {
         return withExecutionContext(() -> {
+            if (CharSequenceUtil.isBlank(preScript)) {
+                return ScriptExecutionResult.success();
+            }
             if (bindings == null) {
                 bindings = preparePreRequestBindings(request);
             }
@@ -149,7 +152,7 @@ public class ScriptExecutionPipeline {
     public ScriptExecutionResult executePostScript(HttpResponse response) {
         return withExecutionContext(() -> {
             if (bindings == null) {
-                throw new IllegalStateException("Bindings not initialized. Please call executePreScript() first or provide bindings.");
+                bindings = preparePreRequestBindings(request);
             }
 
             addResponseBindings(bindings, response);

@@ -8,16 +8,22 @@ final class WebSocketReceivedMessageBuffer {
     private static final int MAX_RETAINED_AWAIT_MESSAGES = 1024;
 
     private final int maxRetainedBytes;
+    private final boolean retainPayload;
     private final Deque<Message> messages = new ArrayDeque<>();
     private final AtomicLong retainedBytes = new AtomicLong(0);
 
     WebSocketReceivedMessageBuffer(int maxRetainedBytes) {
+        this(maxRetainedBytes, true);
+    }
+
+    WebSocketReceivedMessageBuffer(int maxRetainedBytes, boolean retainPayload) {
         this.maxRetainedBytes = Math.max(1, maxRetainedBytes);
+        this.retainPayload = retainPayload;
     }
 
     void add(String payload, long receivedAtMs) {
-        String retainedPayload = retainUtf8Prefix(payload, maxRetainedBytes);
-        int messageBytes = utf8Length(retainedPayload);
+        String retainedPayload = retainPayload ? retainUtf8Prefix(payload, maxRetainedBytes) : "";
+        int messageBytes = retainPayload ? utf8Length(retainedPayload) : 0;
         while (!messages.isEmpty()
                 && (messages.size() >= MAX_RETAINED_AWAIT_MESSAGES
                 || retainedBytes.get() + messageBytes > maxRetainedBytes)) {

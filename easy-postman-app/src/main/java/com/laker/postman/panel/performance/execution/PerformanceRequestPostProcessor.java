@@ -26,7 +26,8 @@ final class PerformanceRequestPostProcessor {
                                                 ScriptExecutionPipeline pipeline,
                                                 String errorMsg,
                                                 boolean executionFailed,
-                                                List<TestResult> testResults) {
+                                                List<TestResult> testResults,
+                                                PerformanceResponseCapturePlan capturePlan) {
         if (response == null || !runningSupplier.getAsBoolean()) {
             return new PerformanceRequestPostProcessResult(errorMsg, executionFailed);
         }
@@ -39,6 +40,9 @@ final class PerformanceRequestPostProcessor {
                 errorMsg,
                 testResults
         );
+        if (capturePlan == null || !capturePlan.runPostScript() || pipeline == null) {
+            return new PerformanceRequestPostProcessResult(currentErrorMsg, executionFailed);
+        }
         return applyPostScriptResult(
                 pipeline.executePostScript(response),
                 currentErrorMsg,

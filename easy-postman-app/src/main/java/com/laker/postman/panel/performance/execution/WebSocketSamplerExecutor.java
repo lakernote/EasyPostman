@@ -46,6 +46,7 @@ final class WebSocketSamplerExecutor implements PerformanceProtocolSamplerExecut
                 webSocketPerformanceData,
                 context.getRequestBodyTemplate(),
                 context.getPipeline(),
+                context.getCapturePlan(),
                 context.getRequestItem().getId(),
                 context.getRequestItem().getName()
         );

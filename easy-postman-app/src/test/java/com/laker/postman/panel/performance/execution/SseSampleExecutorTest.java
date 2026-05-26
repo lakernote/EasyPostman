@@ -108,6 +108,41 @@ public class SseSampleExecutorTest {
     }
 
     @Test
+    public void shouldSkipSseResponseBodyRetentionWhenDisabled() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse()
+                    .setHeader("Content-Type", "text/event-stream")
+                    .setBody("event: progress\n"
+                            + "data: loading\n\n"));
+            server.start();
+
+            PreparedRequest request = new PreparedRequest();
+            request.method = "GET";
+            request.url = server.url("/stream").toString();
+            request.headersList = List.of(new HttpHeader(true, "Accept", "text/event-stream"));
+
+            SsePerformanceData cfg = new SsePerformanceData();
+            cfg.completionMode = SsePerformanceData.CompletionMode.FIRST_MESSAGE;
+            cfg.connectTimeoutMs = 2000;
+            cfg.firstMessageTimeoutMs = 2000;
+
+            SseSampleExecutor.Result result = new SseSampleExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet(),
+                    new PerformanceRealtimeMetrics(),
+                    1024,
+                    false
+            ).execute(request, cfg);
+
+            assertFalse(result.executionFailed, result.errorMsg);
+            assertEquals(result.response.headers.get("X-Easy-SSE-Event-Count").get(0), "1");
+            assertEquals(result.response.body, "");
+            assertEquals(result.response.bodySize, 0);
+        }
+    }
+
+    @Test
     public void shouldFailMessageCountModeWhenStreamClosesBeforeTargetCount() throws Exception {
         try (MockWebServer server = new MockWebServer()) {
             server.enqueue(new MockResponse()

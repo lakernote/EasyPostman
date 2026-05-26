@@ -25,6 +25,20 @@ class WebSocketScenarioStepSupport {
         return hasEnabledAwaitStep(requestSampler.getChildren());
     }
 
+    boolean hasAwaitStepRequiringPayload(PerformanceRequestSampler requestSampler) {
+        if (requestSampler == null) {
+            return false;
+        }
+        return hasAwaitStepRequiringPayload(requestSampler.getChildren(), requestSampler.getWebSocketPerformanceData());
+    }
+
+    boolean hasAwaitStepWithResponseBodyAssertion(PerformanceRequestSampler requestSampler) {
+        if (requestSampler == null) {
+            return false;
+        }
+        return hasAwaitStepWithResponseBodyAssertion(requestSampler.getChildren());
+    }
+
     WebSocketPerformanceData webSocketData(PerformancePlanElement stepElement,
                                            WebSocketPerformanceData requestConfig) {
         if (stepElement instanceof PerformanceProtocolStageElement stage
@@ -51,6 +65,9 @@ class WebSocketScenarioStepSupport {
             return ScriptExecutionResult.success();
         }
         String script = config != null ? config.sendPreScript : null;
+        if (CharSequenceUtil.isBlank(script)) {
+            return ScriptExecutionResult.success();
+        }
         return pipeline.executeWebSocketSendScript(script, sendIndex, sendCount, stepName);
     }
 
@@ -91,6 +108,49 @@ class WebSocketScenarioStepSupport {
             }
         }
         return false;
+    }
+
+    private boolean hasAwaitStepRequiringPayload(List<PerformancePlanElement> elements,
+                                                 WebSocketPerformanceData requestConfig) {
+        for (PerformancePlanElement element : elements) {
+            if (element instanceof PerformanceProtocolStageElement stage && stage.getType() == NodeType.WS_AWAIT) {
+                WebSocketPerformanceData cfg = webSocketData(stage, requestConfig);
+                if (hasMessageFilter(cfg) || hasResponseBodyAssertion(stage)) {
+                    return true;
+                }
+            }
+            if (element instanceof PerformanceController controller
+                    && hasAwaitStepRequiringPayload(controller.getElements(), requestConfig)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean hasAwaitStepWithResponseBodyAssertion(List<PerformancePlanElement> elements) {
+        for (PerformancePlanElement element : elements) {
+            if (element instanceof PerformanceProtocolStageElement stage
+                    && stage.getType() == NodeType.WS_AWAIT
+                    && hasResponseBodyAssertion(stage)) {
+                return true;
+            }
+            if (element instanceof PerformanceController controller
+                    && hasAwaitStepWithResponseBodyAssertion(controller.getElements())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean hasMessageFilter(WebSocketPerformanceData cfg) {
+        return WebSocketPerformanceData.usesMessageFilter(cfg.completionMode)
+                && CharSequenceUtil.isNotBlank(cfg.messageFilter);
+    }
+
+    private boolean hasResponseBodyAssertion(PerformanceProtocolStageElement stage) {
+        return PerformanceAssertionRunner.requiresResponseBodyElements(
+                PerformanceAssertionRunner.collectDirectAssertionElements(stage.getElements())
+        );
     }
 
     private String resolveSendPayloadTemplate(PreparedRequest request,

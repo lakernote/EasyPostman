@@ -140,6 +140,7 @@ public class PerformanceTreeMenuVisibilitySupportTest {
         assertTrue(awaitItems.addSseConnect().isVisible());
         assertTrue(awaitItems.addSseAwait().isVisible());
         assertTrue(awaitItems.addAssertion().isVisible());
+        assertTrue(awaitItems.addExtractor().isVisible());
         assertFalse(awaitItems.enableNode().isVisible());
         assertTrue(awaitItems.disableNode().isVisible());
         assertFalse(awaitItems.renameNode().isVisible());
@@ -157,6 +158,7 @@ public class PerformanceTreeMenuVisibilitySupportTest {
                 new JMenuItem("addWsAwait"),
                 new JMenuItem("addWsClose"),
                 new JMenuItem("addAssertion"),
+                new JMenuItem("addExtractor"),
                 new JMenuItem("addTimer"),
                 new JMenuItem("enable"),
                 new JMenuItem("disable"),

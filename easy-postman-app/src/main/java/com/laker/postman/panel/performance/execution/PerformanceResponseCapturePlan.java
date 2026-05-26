@@ -3,6 +3,7 @@ package com.laker.postman.panel.performance.execution;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.panel.performance.plan.PerformanceAssertionElement;
+import com.laker.postman.panel.performance.plan.PerformanceExtractorElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 
 import java.util.List;
@@ -22,21 +23,25 @@ record PerformanceResponseCapturePlan(PreparedRequest.ResponseBodyMode httpRespo
                                                   String postscript) {
         List<PerformanceAssertionElement> assertionElements =
                 PerformanceAssertionRunner.collectAssertionElements(requestSampler, sseRequest, webSocketRequest);
+        List<PerformanceExtractorElement> extractorElements =
+                PerformanceExtractorRunner.collectExtractorElements(requestSampler, sseRequest, webSocketRequest);
         boolean assertionNeedsResponseBody = PerformanceAssertionRunner.requiresResponseBodyElements(assertionElements);
+        boolean extractorNeedsResponseBody = PerformanceExtractorRunner.requiresResponseBodyElements(extractorElements);
         boolean runPostScript = CharSequenceUtil.isNotBlank(postscript);
         boolean postScriptNeedsResponseBody = PerformancePostScriptResponseUsage.requiresResponseBody(postscript);
         boolean postScriptNeedsResponseSize = PerformancePostScriptResponseUsage.requiresResponseSize(postscript);
         boolean awaitStepNeedsResponseBody = webSocketRequest
-                && WebSocketScenarioStepSupport.hasAwaitStepWithResponseBodyAssertion(requestSampler);
+                && WebSocketScenarioStepSupport.hasAwaitStepWithResponseBodyNode(requestSampler);
         boolean retainWebSocketAwaitPayloads = webSocketRequest
                 && WebSocketScenarioStepSupport.hasAwaitStepRequiringPayload(requestSampler);
         boolean retainStreamResponseBody = assertionNeedsResponseBody
+                || extractorNeedsResponseBody
                 || postScriptNeedsResponseBody
                 || awaitStepNeedsResponseBody;
         boolean trackStreamResponseBodySize = retainStreamResponseBody || postScriptNeedsResponseSize;
 
         return new PerformanceResponseCapturePlan(
-                resolveHttpResponseBodyMode(efficientMode, assertionElements, postscript),
+                resolveHttpResponseBodyMode(efficientMode, assertionElements, extractorElements, postscript),
                 runPostScript,
                 postScriptNeedsResponseBody,
                 retainStreamResponseBody,
@@ -47,11 +52,13 @@ record PerformanceResponseCapturePlan(PreparedRequest.ResponseBodyMode httpRespo
 
     static PreparedRequest.ResponseBodyMode resolveHttpResponseBodyMode(boolean efficientMode,
                                                                         List<PerformanceAssertionElement> assertionElements,
+                                                                        List<PerformanceExtractorElement> extractorElements,
                                                                         String postscript) {
         if (!efficientMode) {
             return PreparedRequest.ResponseBodyMode.FULL;
         }
         boolean requiresResponseBody = PerformanceAssertionRunner.requiresResponseBodyElements(assertionElements)
+                || PerformanceExtractorRunner.requiresResponseBodyElements(extractorElements)
                 || PerformancePostScriptResponseUsage.requiresResponseBody(postscript);
         if (requiresResponseBody) {
             return PreparedRequest.ResponseBodyMode.PREVIEW;

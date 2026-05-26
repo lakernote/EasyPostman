@@ -5,6 +5,7 @@ import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.common.component.EasyJSpinner;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
+import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
@@ -161,6 +162,7 @@ public class PerformancePanelSaveTest extends AbstractSwingUiTest {
                 threadGroupPanel,
                 headlessLoopPanel(),
                 new AssertionPropertyPanel(),
+                new ExtractorPropertyPanel(),
                 new TimerPropertyPanel(),
                 headlessSseStagePanel(),
                 headlessSseStagePanel(),

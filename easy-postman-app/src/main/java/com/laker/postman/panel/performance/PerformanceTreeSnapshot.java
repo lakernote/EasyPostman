@@ -3,6 +3,7 @@ package com.laker.postman.panel.performance;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.performance.assertion.AssertionData;
 import com.laker.postman.panel.performance.controller.LoopData;
+import com.laker.postman.panel.performance.extractor.ExtractorData;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.SsePerformanceData;
@@ -53,6 +54,7 @@ public class PerformanceTreeSnapshot {
             copy.httpRequestItem.setId(UUID.randomUUID().toString());
         }
         copy.assertionData = JsonUtil.deepCopy(source.assertionData, AssertionData.class);
+        copy.extractorData = JsonUtil.deepCopy(source.extractorData, ExtractorData.class);
         copy.timerData = JsonUtil.deepCopy(source.timerData, TimerData.class);
         copy.ssePerformanceData = JsonUtil.deepCopy(source.ssePerformanceData, SsePerformanceData.class);
         copy.webSocketPerformanceData = JsonUtil.deepCopy(source.webSocketPerformanceData, WebSocketPerformanceData.class);

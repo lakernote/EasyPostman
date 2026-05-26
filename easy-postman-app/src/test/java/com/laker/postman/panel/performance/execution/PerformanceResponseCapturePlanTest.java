@@ -2,9 +2,11 @@ package com.laker.postman.panel.performance.execution;
 
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.panel.performance.assertion.AssertionData;
+import com.laker.postman.panel.performance.extractor.ExtractorData;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import com.laker.postman.panel.performance.plan.PerformanceAssertionElement;
+import com.laker.postman.panel.performance.plan.PerformanceExtractorElement;
 import com.laker.postman.panel.performance.plan.PerformancePlanElement;
 import com.laker.postman.panel.performance.plan.PerformanceProtocolStageElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
@@ -141,6 +143,68 @@ public class PerformanceResponseCapturePlanTest {
                 null,
                 new WebSocketPerformanceData(),
                 List.of(assertion)
+        );
+
+        PerformanceResponseCapturePlan plan = PerformanceResponseCapturePlan.resolve(
+                true,
+                sampler(List.of(awaitStep)),
+                false,
+                true,
+                ""
+        );
+
+        assertTrue(plan.retainWebSocketAwaitPayloads());
+        assertTrue(plan.retainStreamResponseBody());
+    }
+
+    @Test
+    public void shouldUseHttpPreviewForBodyExtractorInEfficientMode() {
+        ExtractorData data = new ExtractorData();
+        data.type = "JSONPath";
+        data.expression = "$.token";
+        data.variableName = "token";
+
+        PerformanceResponseCapturePlan plan = PerformanceResponseCapturePlan.resolve(
+                true,
+                sampler(List.of(new PerformanceExtractorElement("token", data))),
+                false,
+                false,
+                ""
+        );
+
+        assertEquals(plan.httpResponseBodyMode(), PreparedRequest.ResponseBodyMode.PREVIEW);
+    }
+
+    @Test
+    public void shouldKeepHttpMetadataOnlyForHeaderExtractorInEfficientMode() {
+        ExtractorData data = new ExtractorData();
+        data.type = "Header";
+        data.expression = "X-Trace";
+        data.variableName = "trace";
+
+        PerformanceResponseCapturePlan plan = PerformanceResponseCapturePlan.resolve(
+                true,
+                sampler(List.of(new PerformanceExtractorElement("trace", data))),
+                false,
+                false,
+                ""
+        );
+
+        assertEquals(plan.httpResponseBodyMode(), PreparedRequest.ResponseBodyMode.METADATA_ONLY);
+    }
+
+    @Test
+    public void shouldRetainWebSocketPayloadForAwaitBodyExtractor() {
+        ExtractorData data = new ExtractorData();
+        data.type = "Regex";
+        data.expression = "token=(\\w+)";
+        data.variableName = "token";
+        PerformanceProtocolStageElement awaitStep = new PerformanceProtocolStageElement(
+                "await",
+                NodeType.WS_AWAIT,
+                null,
+                new WebSocketPerformanceData(),
+                List.of(new PerformanceExtractorElement("token", data))
         );
 
         PerformanceResponseCapturePlan plan = PerformanceResponseCapturePlan.resolve(

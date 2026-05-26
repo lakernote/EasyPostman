@@ -18,6 +18,7 @@ import com.laker.postman.panel.performance.control.PerformanceRunUiController;
 import com.laker.postman.panel.performance.control.PerformanceStatisticsCoordinator;
 import com.laker.postman.panel.performance.control.PerformanceTimerManager;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
+import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
 import com.laker.postman.panel.performance.model.ApiMetadata;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
@@ -59,6 +60,7 @@ public class PerformancePanel extends UiSingletonPanel {
     public static final String LOOP = "loop";
     public static final String REQUEST = "request";
     public static final String ASSERTION = "assertion";
+    public static final String EXTRACTOR = "extractor";
     public static final String TIMER = "timer";
     public static final String SSE_CONNECT = "sseConnect";
     public static final String SSE_AWAIT = "sseAwait";
@@ -74,6 +76,7 @@ public class PerformancePanel extends UiSingletonPanel {
     private ThreadGroupPropertyPanel threadGroupPanel;
     private LoopPropertyPanel loopPanel;
     private AssertionPropertyPanel assertionPanel;
+    private ExtractorPropertyPanel extractorPanel;
     private TimerPropertyPanel timerPanel;
     private SseStagePropertyPanel sseConnectPanel;
     private SseStagePropertyPanel sseAwaitPanel;
@@ -156,6 +159,7 @@ public class PerformancePanel extends UiSingletonPanel {
                 LOOP,
                 REQUEST,
                 ASSERTION,
+                EXTRACTOR,
                 TIMER,
                 SSE_CONNECT,
                 SSE_AWAIT,
@@ -169,6 +173,7 @@ public class PerformancePanel extends UiSingletonPanel {
         threadGroupPanel = propertySection.threadGroupPanel();
         loopPanel = propertySection.loopPanel();
         assertionPanel = propertySection.assertionPanel();
+        extractorPanel = propertySection.extractorPanel();
         timerPanel = propertySection.timerPanel();
         sseConnectPanel = propertySection.sseConnectPanel();
         sseAwaitPanel = propertySection.sseAwaitPanel();
@@ -189,6 +194,7 @@ public class PerformancePanel extends UiSingletonPanel {
                 threadGroupPanel,
                 loopPanel,
                 assertionPanel,
+                extractorPanel,
                 timerPanel,
                 sseConnectPanel,
                 sseAwaitPanel,
@@ -363,6 +369,7 @@ public class PerformancePanel extends UiSingletonPanel {
                 && propertyPanel != null
                 && propertyCardLayout != null
                 && threadGroupPanel != null
+                && extractorPanel != null
                 && performanceResultTablePanel != null
                 && performanceReportPanel != null
                 && performanceTrendPanel != null
@@ -513,6 +520,7 @@ public class PerformancePanel extends UiSingletonPanel {
                 threadGroupPanel,
                 loopPanel,
                 assertionPanel,
+                extractorPanel,
                 timerPanel,
                 sseConnectPanel,
                 sseAwaitPanel,
@@ -534,6 +542,7 @@ public class PerformancePanel extends UiSingletonPanel {
                 LOOP,
                 REQUEST,
                 ASSERTION,
+                EXTRACTOR,
                 TIMER,
                 SSE_CONNECT,
                 SSE_AWAIT,

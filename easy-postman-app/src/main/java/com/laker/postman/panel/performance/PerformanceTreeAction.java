@@ -11,6 +11,7 @@ enum PerformanceTreeAction {
     ADD_WS_AWAIT,
     ADD_WS_CLOSE,
     ADD_ASSERTION,
+    ADD_EXTRACTOR,
     ADD_TIMER,
     ENABLE,
     DISABLE,

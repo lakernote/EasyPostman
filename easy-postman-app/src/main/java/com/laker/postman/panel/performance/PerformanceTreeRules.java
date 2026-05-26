@@ -34,7 +34,10 @@ public final class PerformanceTreeRules {
         return switch (childData.type) {
             case THREAD_GROUP -> isNodeType(parentNode, NodeType.ROOT);
             case REQUEST -> isRequestContainerTarget(parentNode);
-            case ASSERTION -> isNodeType(parentNode, NodeType.REQUEST)
+            case ASSERTION -> isHttpRequestPostProcessorTarget(parentNode)
+                    || isNodeType(parentNode, NodeType.SSE_AWAIT)
+                    || isNodeType(parentNode, NodeType.WS_AWAIT);
+            case EXTRACTOR -> isHttpRequestPostProcessorTarget(parentNode)
                     || isNodeType(parentNode, NodeType.SSE_AWAIT)
                     || isNodeType(parentNode, NodeType.WS_AWAIT);
             case TIMER -> isNodeType(parentNode, NodeType.REQUEST)
@@ -104,6 +107,13 @@ public final class PerformanceTreeRules {
             return isWebSocketRequestTarget(node);
         }
         return jtNode.type == NodeType.LOOP && getParentWebSocketRequestNode(node) != null;
+    }
+
+    private static boolean isHttpRequestPostProcessorTarget(DefaultMutableTreeNode node) {
+        if (node == null || !(node.getUserObject() instanceof JMeterTreeNode jtNode) || jtNode.type != NodeType.REQUEST) {
+            return false;
+        }
+        return !isSsePerfRequest(jtNode.httpRequestItem) && !isWebSocketPerfRequest(jtNode.httpRequestItem);
     }
 
     public static DefaultMutableTreeNode getParentRequestNode(DefaultMutableTreeNode node) {

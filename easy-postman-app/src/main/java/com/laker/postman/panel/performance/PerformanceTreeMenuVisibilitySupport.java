@@ -36,6 +36,7 @@ final class PerformanceTreeMenuVisibilitySupport {
         items.addWsAwait().setVisible(actions.contains(PerformanceTreeAction.ADD_WS_AWAIT));
         items.addWsClose().setVisible(actions.contains(PerformanceTreeAction.ADD_WS_CLOSE));
         items.addAssertion().setVisible(actions.contains(PerformanceTreeAction.ADD_ASSERTION));
+        items.addExtractor().setVisible(actions.contains(PerformanceTreeAction.ADD_EXTRACTOR));
         items.addTimer().setVisible(actions.contains(PerformanceTreeAction.ADD_TIMER));
         items.enableNode().setVisible(actions.contains(PerformanceTreeAction.ENABLE));
         items.disableNode().setVisible(actions.contains(PerformanceTreeAction.DISABLE));

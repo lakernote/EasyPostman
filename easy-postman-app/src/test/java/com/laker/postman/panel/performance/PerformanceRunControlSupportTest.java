@@ -6,6 +6,7 @@ import com.laker.postman.common.component.button.StopButton;
 import com.laker.postman.panel.performance.control.PerformanceRunUiController;
 import com.laker.postman.panel.performance.control.PerformanceStatisticsCoordinator;
 import com.laker.postman.panel.performance.control.PerformanceTimerManager;
+import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
@@ -126,6 +127,7 @@ public class PerformanceRunControlSupportTest extends AbstractSwingUiTest {
                 null,
                 null,
                 null,
+                new ExtractorPropertyPanel(),
                 null,
                 null,
                 null,

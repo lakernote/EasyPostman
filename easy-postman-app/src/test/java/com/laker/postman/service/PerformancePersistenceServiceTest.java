@@ -4,6 +4,7 @@ import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.performance.assertion.AssertionData;
+import com.laker.postman.panel.performance.extractor.ExtractorData;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.controller.LoopData;
 import com.laker.postman.panel.performance.model.NodeType;
@@ -382,6 +383,14 @@ public class PerformancePersistenceServiceTest {
         assertion.assertionData.value = "200";
         wsRequestNode.add(new DefaultMutableTreeNode(assertion));
 
+        JMeterTreeNode extractor = new JMeterTreeNode("Token Extractor", NodeType.EXTRACTOR);
+        extractor.extractorData = new ExtractorData();
+        extractor.extractorData.type = "JSONPath";
+        extractor.extractorData.expression = "$.token";
+        extractor.extractorData.variableName = "token";
+        extractor.extractorData.defaultValue = "missing";
+        wsRequestNode.add(new DefaultMutableTreeNode(extractor));
+
         JMeterTreeNode timer = new JMeterTreeNode("Think Time", NodeType.TIMER);
         timer.timerData = new TimerData();
         timer.timerData.delayMs = 250;
@@ -398,7 +407,8 @@ public class PerformancePersistenceServiceTest {
         DefaultMutableTreeNode loadedWsRequestNode = (DefaultMutableTreeNode) loadedThreadGroupNode.getChildAt(1);
         JMeterTreeNode loadedWsRequest = (JMeterTreeNode) loadedWsRequestNode.getUserObject();
         JMeterTreeNode loadedAssertion = (JMeterTreeNode) ((DefaultMutableTreeNode) loadedWsRequestNode.getChildAt(1)).getUserObject();
-        JMeterTreeNode loadedTimer = (JMeterTreeNode) ((DefaultMutableTreeNode) loadedWsRequestNode.getChildAt(2)).getUserObject();
+        JMeterTreeNode loadedExtractor = (JMeterTreeNode) ((DefaultMutableTreeNode) loadedWsRequestNode.getChildAt(2)).getUserObject();
+        JMeterTreeNode loadedTimer = (JMeterTreeNode) ((DefaultMutableTreeNode) loadedWsRequestNode.getChildAt(3)).getUserObject();
 
         assertEquals(loadedThreadGroup.threadGroupData.numThreads, 7);
         assertEquals(loadedThreadGroup.threadGroupData.loops, 3);
@@ -410,6 +420,8 @@ public class PerformancePersistenceServiceTest {
         assertEquals(loadedSseRequest.ssePerformanceData.messageFilter, "done");
         assertEquals(loadedWsRequest.webSocketPerformanceData.connectTimeoutMs, 4321);
         assertEquals(loadedAssertion.assertionData.value, "200");
+        assertEquals(loadedExtractor.extractorData.variableName, "token");
+        assertEquals(loadedExtractor.extractorData.defaultValue, "missing");
         assertEquals(loadedTimer.timerData.delayMs, 250);
     }
 

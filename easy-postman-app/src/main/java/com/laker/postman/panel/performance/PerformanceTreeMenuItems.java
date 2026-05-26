@@ -13,6 +13,7 @@ record PerformanceTreeMenuItems(
         JMenuItem addWsAwait,
         JMenuItem addWsClose,
         JMenuItem addAssertion,
+        JMenuItem addExtractor,
         JMenuItem addTimer,
         JMenuItem enableNode,
         JMenuItem disableNode,
@@ -28,7 +29,7 @@ record PerformanceTreeMenuItems(
                 || addSseConnect.isVisible() || addSseAwait.isVisible()
                 || addWsConnect.isVisible()
                 || addWsSend.isVisible() || addWsAwait.isVisible() || addWsClose.isVisible()
-                || addAssertion.isVisible() || addTimer.isVisible();
+                || addAssertion.isVisible() || addExtractor.isVisible() || addTimer.isVisible();
     }
 
     boolean hasVisibleToggleItem() {

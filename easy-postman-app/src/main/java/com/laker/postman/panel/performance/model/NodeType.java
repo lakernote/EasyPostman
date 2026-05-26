@@ -7,6 +7,7 @@ public enum NodeType {
     LOOP,
     REQUEST,
     ASSERTION,
+    EXTRACTOR,
     TIMER,
     SSE_CONNECT,
     SSE_AWAIT,

@@ -75,6 +75,7 @@ public final class PerformanceTestPlanCompiler {
             case TIMER -> new PerformanceTimerElement(data.name, data.timerData);
             case REQUEST -> compileRequest(node, data);
             case ASSERTION -> new PerformanceAssertionElement(data.name, data.assertionData);
+            case EXTRACTOR -> new PerformanceExtractorElement(data.name, data.extractorData);
             case SSE_CONNECT, SSE_AWAIT, WS_CONNECT, WS_SEND, WS_AWAIT, WS_CLOSE -> compileProtocolStage(node, data);
             default -> null;
         };

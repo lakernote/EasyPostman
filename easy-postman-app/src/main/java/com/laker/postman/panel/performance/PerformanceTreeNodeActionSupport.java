@@ -5,6 +5,7 @@ import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.RequestSelectionDialogSupport;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
+import com.laker.postman.panel.performance.tree.PerformanceTreeNodeFactory;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -88,6 +89,18 @@ final class PerformanceTreeNodeActionSupport {
         DefaultMutableTreeNode assertion = new DefaultMutableTreeNode(new JMeterTreeNode("Assertion", NodeType.ASSERTION));
         treeModel.insertNodeInto(assertion, parentNode, parentNode.getChildCount());
         jmeterTree.expandPath(new TreePath(parentNode.getPath()));
+        saveConfigAction.run();
+    }
+
+    void addExtractorNode() {
+        DefaultMutableTreeNode node = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
+        if (node == null) {
+            return;
+        }
+        DefaultMutableTreeNode extractor = PerformanceTreeNodeFactory.extractorNode();
+        treeModel.insertNodeInto(extractor, node, node.getChildCount());
+        jmeterTree.expandPath(new TreePath(node.getPath()));
+        jmeterTree.setSelectionPath(new TreePath(extractor.getPath()));
         saveConfigAction.run();
     }
 

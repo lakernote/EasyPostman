@@ -3,6 +3,7 @@ package com.laker.postman.panel.performance;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
+import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
@@ -34,6 +35,7 @@ final class PerformanceTreeInteractionSupport {
     private final ThreadGroupPropertyPanel threadGroupPanel;
     private final LoopPropertyPanel loopPanel;
     private final AssertionPropertyPanel assertionPanel;
+    private final ExtractorPropertyPanel extractorPanel;
     private final TimerPropertyPanel timerPanel;
     private final SseStagePropertyPanel sseConnectPanel;
     private final SseStagePropertyPanel sseAwaitPanel;
@@ -55,6 +57,7 @@ final class PerformanceTreeInteractionSupport {
     private final String loopCard;
     private final String requestCard;
     private final String assertionCard;
+    private final String extractorCard;
     private final String timerCard;
     private final String sseConnectCard;
     private final String sseAwaitCard;
@@ -86,6 +89,7 @@ final class PerformanceTreeInteractionSupport {
                 threadGroupPanel,
                 loopPanel,
                 assertionPanel,
+                extractorPanel,
                 timerPanel,
                 sseConnectPanel,
                 sseAwaitPanel,
@@ -105,6 +109,7 @@ final class PerformanceTreeInteractionSupport {
                 loopCard,
                 requestCard,
                 assertionCard,
+                extractorCard,
                 timerCard,
                 sseConnectCard,
                 sseAwaitCard,
@@ -144,6 +149,7 @@ final class PerformanceTreeInteractionSupport {
         JMenuItem addWsClose = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_WS_CLOSE));
         JMenuItem addLoop = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_LOOP));
         JMenuItem addAssertion = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_ASSERTION));
+        JMenuItem addExtractor = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_EXTRACTOR));
         JMenuItem addTimer = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_TIMER));
         JMenuItem renameNode = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_RENAME));
         JMenuItem deleteNode = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_DELETE));
@@ -162,6 +168,7 @@ final class PerformanceTreeInteractionSupport {
                 addWsAwait,
                 addWsClose,
                 addAssertion,
+                addExtractor,
                 addTimer,
                 enableNode,
                 disableNode,
@@ -194,6 +201,7 @@ final class PerformanceTreeInteractionSupport {
         treeMenu.add(addWsAwait);
         treeMenu.add(addWsClose);
         treeMenu.add(addAssertion);
+        treeMenu.add(addExtractor);
         treeMenu.add(addTimer);
         treeMenu.add(separator1);
         treeMenu.add(enableNode);
@@ -225,6 +233,7 @@ final class PerformanceTreeInteractionSupport {
         addWsAwait.addActionListener(e -> treeSupport.addWebSocketStepNode(jmeterTree, NodeType.WS_AWAIT, saveConfigAction));
         addWsClose.addActionListener(e -> treeSupport.addWebSocketStepNode(jmeterTree, NodeType.WS_CLOSE, saveConfigAction));
         addAssertion.addActionListener(e -> nodeActionSupport.addAssertionNode());
+        addExtractor.addActionListener(e -> nodeActionSupport.addExtractorNode());
         addTimer.addActionListener(e -> treeSupport.addTimerNode(jmeterTree, saveConfigAction));
 
         Action renameAction = nodeActionSupport.createRenameAction();

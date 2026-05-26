@@ -8,6 +8,7 @@ import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import com.laker.postman.panel.performance.plan.PerformanceAssertionElement;
+import com.laker.postman.panel.performance.plan.PerformanceExtractorElement;
 import com.laker.postman.panel.performance.plan.PerformancePlanElement;
 import com.laker.postman.panel.performance.plan.PerformanceProtocolStageElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
@@ -415,8 +416,13 @@ public class WebSocketScenarioExecutor {
                                     stepElement instanceof PerformanceProtocolStageElement stage
                                             ? PerformanceAssertionRunner.collectDirectAssertionElements(stage.getElements())
                                             : List.of();
+                            List<PerformanceExtractorElement> stepExtractors =
+                                    stepElement instanceof PerformanceProtocolStageElement stage
+                                            ? PerformanceExtractorRunner.collectDirectExtractorElements(stage.getElements())
+                                            : List.of();
                             boolean stepRequiresResponseBody =
-                                    PerformanceAssertionRunner.requiresResponseBodyElements(stepAssertions);
+                                    PerformanceAssertionRunner.requiresResponseBodyElements(stepAssertions)
+                                            || PerformanceExtractorRunner.requiresResponseBodyElements(stepExtractors);
                             String stepAssertionPayload = "";
                             boolean completed = false;
                             while (runningSupplier.getAsBoolean() && !failed.get() && !interrupted.get() && !completed) {
@@ -501,6 +507,7 @@ public class WebSocketScenarioExecutor {
                                 stepResp.body = "";
                                 stepResp.bodySize = 0;
                             }
+                            PerformanceExtractorRunner.runExtractorElements(stepExtractors, stepResp);
                             PerformanceAssertionRunner.runAssertionElements(
                                     stepAssertions,
                                     stepResp,

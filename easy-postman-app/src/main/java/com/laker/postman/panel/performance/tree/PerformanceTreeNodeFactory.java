@@ -2,6 +2,7 @@ package com.laker.postman.panel.performance.tree;
 
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.performance.controller.LoopData;
+import com.laker.postman.panel.performance.extractor.ExtractorData;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.SsePerformanceData;
@@ -39,6 +40,13 @@ public class PerformanceTreeNodeFactory {
 
     DefaultMutableTreeNode timerNode() {
         return new DefaultMutableTreeNode(new JMeterTreeNode("Timer", NodeType.TIMER));
+    }
+
+    public DefaultMutableTreeNode extractorNode() {
+        ExtractorData data = new ExtractorData();
+        return new DefaultMutableTreeNode(
+                new JMeterTreeNode(PerformanceTreeNodeTitleFormatter.extractorTitle(data), NodeType.EXTRACTOR, data)
+        );
     }
 
     DefaultMutableTreeNode sseStageNode(NodeType type, SsePerformanceData requestData) {

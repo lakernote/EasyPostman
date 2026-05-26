@@ -3,6 +3,7 @@ package com.laker.postman.panel.performance.plan;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.performance.assertion.AssertionData;
 import com.laker.postman.panel.performance.controller.LoopData;
+import com.laker.postman.panel.performance.extractor.ExtractorData;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.SsePerformanceData;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
@@ -38,6 +39,10 @@ final class PerformancePlanNodeCopies {
 
     static AssertionData copyAssertionData(AssertionData source) {
         return JsonUtil.deepCopy(source, AssertionData.class);
+    }
+
+    static ExtractorData copyExtractorData(ExtractorData source) {
+        return JsonUtil.deepCopy(source, ExtractorData.class);
     }
 
     static SsePerformanceData copySsePerformanceData(SsePerformanceData source) {

@@ -8,11 +8,15 @@ import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.plan.PerformanceAssertionElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
+import com.laker.postman.service.variable.ExecutionContextScope;
+import com.laker.postman.service.variable.ExecutionVariableContext;
 import org.testng.annotations.Test;
 
 import javax.swing.tree.DefaultMutableTreeNode;
+import java.util.LinkedHashMap;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.testng.Assert.assertEquals;
@@ -134,12 +138,86 @@ public class PerformanceAssertionRunnerTest {
         assertFalse(error.get().isBlank());
     }
 
+    @Test
+    public void shouldRunCommonNonBodyAssertions() {
+        HttpResponse response = new HttpResponse();
+        response.code = 200;
+        response.costMs = 88;
+        response.bodySize = 12;
+        response.headers = new LinkedHashMap<>();
+        response.addHeader("X-Trace", List.of("trace-001"));
+        List<TestResult> results = new ArrayList<>();
+        AtomicReference<String> error = new AtomicReference<>("");
+
+        PerformanceAssertionRunner.runAssertionElements(
+                List.of(
+                        assertionElement("Response Time", "", "100", "<"),
+                        assertionElement("Header Exists", "X-Trace", ""),
+                        assertionElement("Header Equals", "x-trace", "trace-001"),
+                        assertionElement("Body Size", "", "12", "=")
+                ),
+                response,
+                results,
+                error
+        );
+
+        assertEquals(results.size(), 4);
+        assertTrue(results.stream().allMatch(result -> result.passed));
+        assertEquals(error.get(), "");
+    }
+
+    @Test
+    public void shouldRunRegexAssertionAgainstResponseBody() {
+        HttpResponse response = new HttpResponse();
+        response.body = "{\"token\":\"abc\"}";
+        List<TestResult> results = new ArrayList<>();
+        AtomicReference<String> error = new AtomicReference<>("");
+
+        PerformanceAssertionRunner.runAssertionElements(
+                List.of(assertionElement("Regex", "\"token\":\"\\w+\"", "")),
+                response,
+                results,
+                error
+        );
+
+        assertEquals(results.size(), 1);
+        assertTrue(results.get(0).passed);
+    }
+
+    @Test
+    public void shouldResolveAssertionFieldsFromExecutionVariables() {
+        HttpResponse response = new HttpResponse();
+        response.body = "{\"token\":\"abc\"}";
+        List<TestResult> results = new ArrayList<>();
+        AtomicReference<String> error = new AtomicReference<>("");
+        ExecutionVariableContext context = new ExecutionVariableContext(Map.of("token", "abc"), Map.of());
+
+        try (ExecutionContextScope ignored = ExecutionContextScope.open(context)) {
+            PerformanceAssertionRunner.runAssertionElements(
+                    List.of(assertionElement("JSONPath", "{{token}}", "$.token")),
+                    response,
+                    results,
+                    error
+            );
+        }
+
+        assertEquals(results.size(), 1);
+        assertTrue(results.get(0).passed);
+        assertEquals(error.get(), "");
+    }
+
     private static PerformanceAssertionElement assertionElement(String type) {
         return assertionElement(type, "", "");
     }
 
     private static PerformanceAssertionElement assertionElement(String type, String content, String value) {
         return new PerformanceAssertionElement(type, assertionData(type, content, value));
+    }
+
+    private static PerformanceAssertionElement assertionElement(String type, String content, String value, String operator) {
+        AssertionData data = assertionData(type, content, value);
+        data.operator = operator;
+        return new PerformanceAssertionElement(type, data);
     }
 
     private static DefaultMutableTreeNode assertionTreeNode(String type, boolean enabled) {

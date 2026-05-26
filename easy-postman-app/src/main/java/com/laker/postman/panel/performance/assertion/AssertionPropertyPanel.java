@@ -1,124 +1,92 @@
 package com.laker.postman.panel.performance.assertion;
 
+import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.BorderFactory;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+import java.awt.CardLayout;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 
 public class AssertionPropertyPanel extends JPanel {
+    private static final String CARD_NUMERIC = "numeric";
+    private static final String CARD_CONTAINS = "contains";
+    private static final String CARD_JSON_PATH = "jsonPath";
+    private static final String CARD_REGEX = "regex";
+    private static final String CARD_HEADER_EXISTS = "headerExists";
+    private static final String CARD_HEADER_EQUALS = "headerEquals";
+
     private final JComboBox<AssertionType> typeCombo;
-    private final JComboBox<String> operatorCombo; // 仅Response Code用
-    private final JTextField responseCodeValueField; // 仅Response Code用
-    private final JTextField containsContentField; // Contains用
-    private final JTextField jsonPathField; // JSONPath用
-    private final JTextField jsonPathExpectField; // JSONPath用
-    private JMeterTreeNode currentNode;
+    private final JComboBox<String> operatorCombo;
+    private final JTextField numericValueField;
+    private final JLabel numericValueLabel;
+    private final JTextField containsContentField;
+    private final JTextField jsonPathField;
+    private final JTextField jsonPathExpectField;
+    private final JTextField regexField;
+    private final JTextField headerExistsNameField;
+    private final JTextField headerEqualsNameField;
+    private final JTextField headerEqualsValueField;
     private final CardLayout inputCardLayout;
     private final JPanel inputPanel;
-    private final JPanel responseCodePanel;
-    private final JPanel containsPanel;
-    private final JPanel jsonPathPanel;
+    private JMeterTreeNode currentNode;
 
     public AssertionPropertyPanel() {
         setLayout(new GridBagLayout());
-        setMaximumSize(new Dimension(420, 120));
-        setPreferredSize(new Dimension(380, 100));
+        setMaximumSize(new Dimension(520, 230));
+        setPreferredSize(new Dimension(460, 200));
         setBorder(BorderFactory.createEmptyBorder(18, 24, 18, 24));
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(6, 6, 6, 6);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 1;
-        gbc.anchor = GridBagConstraints.CENTER;
-        add(new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_TYPE_LABEL)), gbc);
-        gbc.gridx = 1;
-        gbc.anchor = GridBagConstraints.CENTER;
+
         typeCombo = new JComboBox<>(AssertionType.values());
         typeCombo.setRenderer(new AssertionTypeRenderer());
-        add(typeCombo, gbc);
+        operatorCombo = new JComboBox<>(new String[]{"=", ">", "<", ">=", "<=", "!="});
+        numericValueField = new JTextField(10);
+        numericValueLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_VALUE));
+        containsContentField = new JTextField();
+        jsonPathField = new JTextField();
+        jsonPathExpectField = new JTextField();
+        regexField = new JTextField();
+        headerExistsNameField = new JTextField();
+        headerEqualsNameField = new JTextField();
+        headerEqualsValueField = new JTextField();
 
-        // 输入区采用CardLayout
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.CENTER;
+        addRow(0, I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_TYPE_LABEL), typeCombo);
+
         inputCardLayout = new CardLayout();
         inputPanel = new JPanel(inputCardLayout);
+        inputPanel.add(createNumericPanel(), CARD_NUMERIC);
+        inputPanel.add(createContainsPanel(), CARD_CONTAINS);
+        inputPanel.add(createJsonPathPanel(), CARD_JSON_PATH);
+        inputPanel.add(createRegexPanel(), CARD_REGEX);
+        inputPanel.add(createHeaderExistsPanel(), CARD_HEADER_EXISTS);
+        inputPanel.add(createHeaderEqualsPanel(), CARD_HEADER_EQUALS);
 
-        // Response Code面板
-        responseCodePanel = new JPanel(new GridBagLayout());
-        GridBagConstraints rcGbc = new GridBagConstraints();
-        rcGbc.insets = new Insets(2, 2, 2, 2);
-        rcGbc.gridx = 0;
-        rcGbc.gridy = 0;
-        rcGbc.weightx = 0;
-        rcGbc.fill = GridBagConstraints.HORIZONTAL;
-        responseCodePanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_OPERATOR)), rcGbc);
-        rcGbc.gridx = 1;
-        operatorCombo = new JComboBox<>(new String[]{"=", ">", "<"});
-        responseCodePanel.add(operatorCombo, rcGbc);
-        rcGbc.gridx = 2;
-        responseCodePanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_VALUE)), rcGbc);
-        rcGbc.gridx = 3;
-        responseCodeValueField = new JTextField(6);
-        responseCodePanel.add(responseCodeValueField, rcGbc);
+        GridBagConstraints inputGbc = baseGbc(0, 1);
+        inputGbc.gridwidth = 2;
+        inputGbc.weightx = 1.0;
+        add(inputPanel, inputGbc);
 
-        // Contains面板
-        containsPanel = new JPanel(new BorderLayout(2, 2));
-        containsPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_CONTAINS_CONTENT)), BorderLayout.WEST);
-        containsContentField = new JTextField();
-        containsPanel.add(containsContentField, BorderLayout.CENTER);
-
-        // JSONPath面板
-        jsonPathPanel = new JPanel(new GridBagLayout());
-        GridBagConstraints jpGbc = new GridBagConstraints();
-        jpGbc.insets = new Insets(2, 2, 2, 2);
-        jpGbc.gridx = 0;
-        jpGbc.gridy = 0;
-        jpGbc.weightx = 0;
-        jpGbc.fill = GridBagConstraints.HORIZONTAL;
-        jsonPathPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_JSONPATH)), jpGbc);
-        jpGbc.gridx = 1;
-        jpGbc.weightx = 1.0; // 让文本框填满剩余空间
-        jpGbc.fill = GridBagConstraints.HORIZONTAL; // 水平填充
-        jsonPathField = new JTextField(10);
-        jsonPathPanel.add(jsonPathField, jpGbc);
-        jpGbc.gridx = 0;
-        jpGbc.gridy = 1;
-        jpGbc.weightx = 0;
-        jpGbc.fill = GridBagConstraints.HORIZONTAL;
-        jsonPathPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_EXPECTED_VALUE)), jpGbc);
-        jpGbc.gridx = 1;
-        jpGbc.weightx = 1.0;
-        jpGbc.fill = GridBagConstraints.HORIZONTAL;
-        jsonPathExpectField = new JTextField();
-        jsonPathPanel.add(jsonPathExpectField, jpGbc);
-
-        inputPanel.add(responseCodePanel, AssertionType.RESPONSE_CODE.getStorageValue());
-        inputPanel.add(containsPanel, AssertionType.CONTAINS.getStorageValue());
-        inputPanel.add(jsonPathPanel, AssertionType.JSON_PATH.getStorageValue());
-        add(inputPanel, gbc);
-
-        // 帮助说明
-        gbc.gridy = 2;
-        gbc.gridx = 0;
-        gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.CENTER;
+        GridBagConstraints helpGbc = baseGbc(0, 2);
+        helpGbc.gridwidth = 2;
         JLabel helpLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_HELP));
         helpLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        add(helpLabel, gbc);
+        add(helpLabel, helpGbc);
 
-        typeCombo.addActionListener(e -> updateFieldVisibility());
-        updateFieldVisibility();
-    }
-
-    private void updateFieldVisibility() {
-        AssertionType type = (AssertionType) typeCombo.getSelectedItem();
-        inputCardLayout.show(inputPanel, (type == null ? AssertionType.RESPONSE_CODE : type).getStorageValue());
+        typeCombo.addActionListener(e -> updateTypeState());
+        updateTypeState();
     }
 
     public void setAssertionData(JMeterTreeNode node) {
@@ -130,20 +98,22 @@ public class AssertionPropertyPanel extends JPanel {
         }
         AssertionType type = AssertionType.fromStorageValue(data.type);
         typeCombo.setSelectedItem(type);
-        if (type == AssertionType.RESPONSE_CODE) {
-            operatorCombo.setSelectedItem(data.operator);
-            responseCodeValueField.setText(data.value);
-        } else if (type == AssertionType.CONTAINS) {
-            containsContentField.setText(data.content);
-        } else if (type == AssertionType.JSON_PATH) {
-            jsonPathField.setText(data.value);
-            jsonPathExpectField.setText(data.content);
-        }
-        updateFieldVisibility();
+        operatorCombo.setSelectedItem(data.operator);
+        numericValueField.setText(data.value);
+        containsContentField.setText(data.content);
+        jsonPathField.setText(data.value);
+        jsonPathExpectField.setText(data.content);
+        regexField.setText(data.content);
+        headerExistsNameField.setText(data.content);
+        headerEqualsNameField.setText(data.content);
+        headerEqualsValueField.setText(data.value);
+        updateTypeState();
     }
 
     public void saveAssertionData() {
-        if (currentNode == null) return;
+        if (currentNode == null) {
+            return;
+        }
         AssertionData data = currentNode.assertionData;
         if (data == null) {
             data = new AssertionData();
@@ -152,19 +122,185 @@ public class AssertionPropertyPanel extends JPanel {
         AssertionType type = (AssertionType) typeCombo.getSelectedItem();
         type = type == null ? AssertionType.RESPONSE_CODE : type;
         data.type = type.getStorageValue();
-        if (type == AssertionType.RESPONSE_CODE) {
-            data.operator = (String) operatorCombo.getSelectedItem();
-            data.value = responseCodeValueField.getText();
-            data.content = "";
-        } else if (type == AssertionType.CONTAINS) {
-            data.content = containsContentField.getText();
-            data.operator = "=";
-            data.value = "";
-        } else if (type == AssertionType.JSON_PATH) {
-            data.value = jsonPathField.getText();
-            data.content = jsonPathExpectField.getText();
-            data.operator = "=";
+        data.operator = (String) operatorCombo.getSelectedItem();
+        switch (type) {
+            case RESPONSE_CODE, RESPONSE_TIME, BODY_SIZE -> {
+                data.value = numericValueField.getText();
+                data.content = "";
+            }
+            case CONTAINS -> {
+                data.content = containsContentField.getText();
+                data.value = "";
+                data.operator = "=";
+            }
+            case JSON_PATH -> {
+                data.value = jsonPathField.getText();
+                data.content = jsonPathExpectField.getText();
+                data.operator = "=";
+            }
+            case REGEX -> {
+                data.content = regexField.getText();
+                data.value = "";
+                data.operator = "=";
+            }
+            case HEADER_EXISTS -> {
+                data.content = headerExistsNameField.getText();
+                data.value = "";
+                data.operator = "=";
+            }
+            case HEADER_EQUALS -> {
+                data.content = headerEqualsNameField.getText();
+                data.value = headerEqualsValueField.getText();
+                data.operator = "=";
+            }
         }
+    }
+
+    private void updateTypeState() {
+        AssertionType type = (AssertionType) typeCombo.getSelectedItem();
+        type = type == null ? AssertionType.RESPONSE_CODE : type;
+        switch (type) {
+            case RESPONSE_CODE -> {
+                numericValueLabel.setText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_VALUE));
+                numericValueField.putClientProperty(
+                        FlatClientProperties.PLACEHOLDER_TEXT,
+                        I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_PLACEHOLDER_STATUS)
+                );
+                inputCardLayout.show(inputPanel, CARD_NUMERIC);
+            }
+            case RESPONSE_TIME -> {
+                numericValueLabel.setText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_RESPONSE_TIME_MS));
+                numericValueField.putClientProperty(
+                        FlatClientProperties.PLACEHOLDER_TEXT,
+                        I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_PLACEHOLDER_TIME)
+                );
+                inputCardLayout.show(inputPanel, CARD_NUMERIC);
+            }
+            case BODY_SIZE -> {
+                numericValueLabel.setText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_BODY_SIZE_BYTES));
+                numericValueField.putClientProperty(
+                        FlatClientProperties.PLACEHOLDER_TEXT,
+                        I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_PLACEHOLDER_BODY_SIZE)
+                );
+                inputCardLayout.show(inputPanel, CARD_NUMERIC);
+            }
+            case CONTAINS -> inputCardLayout.show(inputPanel, CARD_CONTAINS);
+            case JSON_PATH -> inputCardLayout.show(inputPanel, CARD_JSON_PATH);
+            case REGEX -> inputCardLayout.show(inputPanel, CARD_REGEX);
+            case HEADER_EXISTS -> inputCardLayout.show(inputPanel, CARD_HEADER_EXISTS);
+            case HEADER_EQUALS -> inputCardLayout.show(inputPanel, CARD_HEADER_EQUALS);
+        }
+    }
+
+    private JPanel createNumericPanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        addToPanel(panel, 0, 0, new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_OPERATOR)), 0);
+        addToPanel(panel, 1, 0, operatorCombo, 0);
+        addToPanel(panel, 2, 0, numericValueLabel, 0);
+        addToPanel(panel, 3, 0, numericValueField, 1.0);
+        return panel;
+    }
+
+    private JPanel createContainsPanel() {
+        containsContentField.putClientProperty(
+                FlatClientProperties.PLACEHOLDER_TEXT,
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_PLACEHOLDER_CONTAINS)
+        );
+        return createSingleFieldPanel(
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_CONTAINS_CONTENT),
+                containsContentField
+        );
+    }
+
+    private JPanel createJsonPathPanel() {
+        jsonPathField.putClientProperty(
+                FlatClientProperties.PLACEHOLDER_TEXT,
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_PLACEHOLDER_JSONPATH)
+        );
+        jsonPathExpectField.putClientProperty(
+                FlatClientProperties.PLACEHOLDER_TEXT,
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_PLACEHOLDER_EXPECTED)
+        );
+        JPanel panel = new JPanel(new GridBagLayout());
+        addToPanel(panel, 0, 0, new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_JSONPATH)), 0);
+        addToPanel(panel, 1, 0, jsonPathField, 1.0);
+        addToPanel(panel, 0, 1, new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_EXPECTED_VALUE)), 0);
+        addToPanel(panel, 1, 1, jsonPathExpectField, 1.0);
+        return panel;
+    }
+
+    private JPanel createRegexPanel() {
+        regexField.putClientProperty(
+                FlatClientProperties.PLACEHOLDER_TEXT,
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_PLACEHOLDER_REGEX)
+        );
+        return createSingleFieldPanel(
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_REGEX),
+                regexField
+        );
+    }
+
+    private JPanel createHeaderExistsPanel() {
+        headerExistsNameField.putClientProperty(
+                FlatClientProperties.PLACEHOLDER_TEXT,
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_PLACEHOLDER_HEADER)
+        );
+        return createSingleFieldPanel(
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_HEADER_NAME),
+                headerExistsNameField
+        );
+    }
+
+    private JPanel createHeaderEqualsPanel() {
+        headerEqualsNameField.putClientProperty(
+                FlatClientProperties.PLACEHOLDER_TEXT,
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_PLACEHOLDER_HEADER)
+        );
+        headerEqualsValueField.putClientProperty(
+                FlatClientProperties.PLACEHOLDER_TEXT,
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_PLACEHOLDER_EXPECTED)
+        );
+        JPanel panel = new JPanel(new GridBagLayout());
+        addToPanel(panel, 0, 0, new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_HEADER_NAME)), 0);
+        addToPanel(panel, 1, 0, headerEqualsNameField, 1.0);
+        addToPanel(panel, 0, 1, new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_EXPECTED_VALUE)), 0);
+        addToPanel(panel, 1, 1, headerEqualsValueField, 1.0);
+        return panel;
+    }
+
+    private JPanel createSingleFieldPanel(String labelText, Component field) {
+        JPanel panel = new JPanel(new GridBagLayout());
+        addToPanel(panel, 0, 0, new JLabel(labelText), 0);
+        addToPanel(panel, 1, 0, field, 1.0);
+        return panel;
+    }
+
+    private void addRow(int row, String labelText, Component component) {
+        add(new JLabel(labelText), baseGbc(0, row));
+        GridBagConstraints gbc = baseGbc(1, row);
+        gbc.weightx = 1.0;
+        add(component, gbc);
+    }
+
+    private void addToPanel(JPanel panel, int x, int y, Component component, double weightx) {
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = x;
+        gbc.gridy = y;
+        gbc.insets = new Insets(3, 4, 3, 4);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.weightx = weightx;
+        panel.add(component, gbc);
+    }
+
+    private GridBagConstraints baseGbc(int x, int y) {
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = x;
+        gbc.gridy = y;
+        gbc.insets = new Insets(6, 6, 6, 6);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.WEST;
+        return gbc;
     }
 
     private static final class AssertionTypeRenderer extends DefaultListCellRenderer {

@@ -68,6 +68,7 @@ public class PerformanceTreeActionPolicyTest {
         assertTrue(actions.contains(PerformanceTreeAction.ADD_SSE_CONNECT));
         assertTrue(actions.contains(PerformanceTreeAction.ADD_SSE_AWAIT));
         assertTrue(actions.contains(PerformanceTreeAction.ADD_ASSERTION));
+        assertTrue(actions.contains(PerformanceTreeAction.ADD_EXTRACTOR));
         assertTrue(actions.contains(PerformanceTreeAction.DISABLE));
         assertFalse(actions.contains(PerformanceTreeAction.ENABLE));
         assertFalse(actions.contains(PerformanceTreeAction.RENAME));

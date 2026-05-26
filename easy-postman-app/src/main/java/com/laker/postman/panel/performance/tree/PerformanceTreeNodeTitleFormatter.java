@@ -2,6 +2,8 @@ package com.laker.postman.panel.performance.tree;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.panel.performance.controller.LoopData;
+import com.laker.postman.panel.performance.extractor.ExtractorData;
+import com.laker.postman.panel.performance.extractor.ExtractorType;
 import com.laker.postman.panel.performance.model.SsePerformanceData;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import com.laker.postman.util.I18nUtil;
@@ -50,6 +52,26 @@ public class PerformanceTreeNodeTitleFormatter {
         normalizedData.normalize();
         return I18nUtil.getMessage(MessageKeys.PERFORMANCE_LOOP_NODE)
                 + " [" + normalizedData.iterations + "x]";
+    }
+
+    public String extractorTitle(ExtractorData data) {
+        if (data == null) {
+            return I18nUtil.getMessage(MessageKeys.PERFORMANCE_EXTRACTOR_NODE);
+        }
+        ExtractorType type = ExtractorType.fromStorageValue(data.type);
+        String variableName = CharSequenceUtil.blankToDefault(data.variableName, "?");
+        String expression = CharSequenceUtil.blankToDefault(data.expression, "");
+        StringJoiner joiner = new StringJoiner(
+                " | ",
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_EXTRACTOR_NODE) + " [",
+                "]"
+        );
+        joiner.add(type.displayName());
+        joiner.add(variableName.trim());
+        if (CharSequenceUtil.isNotBlank(expression)) {
+            joiner.add(expression.trim());
+        }
+        return joiner.toString();
     }
 
     public String webSocketSendTitle(WebSocketPerformanceData data) {

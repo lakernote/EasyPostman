@@ -127,6 +127,7 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
                     null,
                     null,
                     null,
+                    null,
                     new PerformanceTreeSupport(treeModel),
                     saveRequestAction,
                     ignored -> {
@@ -141,6 +142,7 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
                     "loop",
                     REQUEST_CARD,
                     "assertion",
+                    "extractor",
                     "timer",
                     "sseConnect",
                     "sseAwait",

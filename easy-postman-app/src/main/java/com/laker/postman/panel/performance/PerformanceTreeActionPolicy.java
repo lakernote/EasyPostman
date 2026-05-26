@@ -54,6 +54,9 @@ final class PerformanceTreeActionPolicy {
         if (canAddAssertion(jtNode)) {
             actions.add(PerformanceTreeAction.ADD_ASSERTION);
         }
+        if (canAddExtractor(jtNode)) {
+            actions.add(PerformanceTreeAction.ADD_EXTRACTOR);
+        }
         if (jtNode.type == NodeType.REQUEST || requestContainerLoop || canManageWsSteps) {
             actions.add(PerformanceTreeAction.ADD_TIMER);
         }
@@ -118,6 +121,7 @@ final class PerformanceTreeActionPolicy {
                 && jtNode.type != NodeType.ROOT
                 && !isFixedNameNode(jtNode.type)
                 && jtNode.type != NodeType.LOOP
+                && jtNode.type != NodeType.EXTRACTOR
                 && !treeSupport.isWebSocketStepNode(jtNode.type);
     }
 
@@ -137,6 +141,14 @@ final class PerformanceTreeActionPolicy {
     }
 
     private boolean canAddAssertion(JMeterTreeNode jtNode) {
+        return canAddRequestPostProcessor(jtNode);
+    }
+
+    private boolean canAddExtractor(JMeterTreeNode jtNode) {
+        return canAddRequestPostProcessor(jtNode);
+    }
+
+    private boolean canAddRequestPostProcessor(JMeterTreeNode jtNode) {
         boolean sseRequestNode = jtNode.type == NodeType.REQUEST && treeSupport.isSsePerfRequest(jtNode.httpRequestItem);
         boolean webSocketRequestNode = jtNode.type == NodeType.REQUEST && treeSupport.isWebSocketPerfRequest(jtNode.httpRequestItem);
         return (jtNode.type == NodeType.REQUEST && !sseRequestNode && !webSocketRequestNode)

@@ -63,6 +63,7 @@ public class PerformanceTreeStructureSupport {
             DefaultMutableTreeNode awaitNode = findChildNode(requestNode, NodeType.SSE_AWAIT);
             if (awaitNode != null) {
                 moveChildrenByType(requestNode, awaitNode, NodeType.ASSERTION);
+                moveChildrenByType(requestNode, awaitNode, NodeType.EXTRACTOR);
             }
             refreshSseStageTitles(requestNode, requestData.ssePerformanceData);
         } else if (isWebSocket) {
@@ -342,6 +343,7 @@ public class PerformanceTreeStructureSupport {
         DefaultMutableTreeNode awaitNode = findChildNode(requestNode, NodeType.SSE_AWAIT);
         if (removeNodes && awaitNode != null) {
             moveChildrenByType(awaitNode, requestNode, NodeType.ASSERTION);
+            moveChildrenByType(awaitNode, requestNode, NodeType.EXTRACTOR);
         }
         if (removeNodes && connectNode != null) {
             treeModel.removeNodeFromParent(connectNode);
@@ -386,6 +388,7 @@ public class PerformanceTreeStructureSupport {
         Object userObj = from.getUserObject();
         if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.WS_AWAIT) {
             moveChildrenByType(from, requestNode, NodeType.ASSERTION);
+            moveChildrenByType(from, requestNode, NodeType.EXTRACTOR);
         }
         for (int i = 0; i < from.getChildCount(); i++) {
             moveAssertionsFromWebSocketScenario((DefaultMutableTreeNode) from.getChildAt(i), requestNode);
@@ -423,6 +426,7 @@ public class PerformanceTreeStructureSupport {
                 case WS_AWAIT -> jtNode.name = PerformanceTreeNodeTitleFormatter.webSocketAwaitTitle(jtNode.webSocketPerformanceData);
                 case WS_CLOSE -> jtNode.name = I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_CLOSE);
                 case LOOP -> jtNode.name = PerformanceTreeNodeTitleFormatter.loopTitle(jtNode.loopData);
+                case EXTRACTOR -> jtNode.name = PerformanceTreeNodeTitleFormatter.extractorTitle(jtNode.extractorData);
                 default -> {
                 }
             }

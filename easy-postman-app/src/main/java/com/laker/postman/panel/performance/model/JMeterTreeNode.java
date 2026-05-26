@@ -3,6 +3,7 @@ package com.laker.postman.panel.performance.model;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.performance.assertion.AssertionData;
 import com.laker.postman.panel.performance.controller.LoopData;
+import com.laker.postman.panel.performance.extractor.ExtractorData;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
 import com.laker.postman.panel.performance.timer.TimerData;
 
@@ -13,6 +14,7 @@ public class JMeterTreeNode {
     public ThreadGroupData threadGroupData; // 线程组数据
     public LoopData loopData;             // Loop 控制器数据
     public AssertionData assertionData;   // 断言数据
+    public ExtractorData extractorData;   // 提取器数据
     public TimerData timerData;           // 定时器数据
     public SsePerformanceData ssePerformanceData; // SSE 压测配置，仅 SSE REQUEST 节点使用
     public WebSocketPerformanceData webSocketPerformanceData; // WebSocket 压测配置，REQUEST/WS 节点共用
@@ -31,6 +33,7 @@ public class JMeterTreeNode {
             case LOOP -> this.loopData = (LoopData) data;
             case REQUEST -> this.httpRequestItem = (HttpRequestItem) data;
             case ASSERTION -> this.assertionData = (AssertionData) data;
+            case EXTRACTOR -> this.extractorData = (ExtractorData) data;
             case TIMER -> this.timerData = (TimerData) data;
             case SSE_CONNECT, SSE_AWAIT, WS_CONNECT, WS_SEND, WS_AWAIT, WS_CLOSE, ROOT -> {
             }
@@ -43,6 +46,7 @@ public class JMeterTreeNode {
             case LOOP -> loopData;
             case REQUEST -> httpRequestItem;
             case ASSERTION -> assertionData;
+            case EXTRACTOR -> extractorData;
             case TIMER -> timerData;
             case SSE_CONNECT, SSE_AWAIT, WS_CONNECT, WS_SEND, WS_AWAIT, WS_CLOSE, ROOT -> null;
             default -> null;
@@ -55,6 +59,7 @@ public class JMeterTreeNode {
             case LOOP -> this.loopData = (LoopData) data;
             case REQUEST -> this.httpRequestItem = (com.laker.postman.model.HttpRequestItem) data;
             case ASSERTION -> this.assertionData = (AssertionData) data;
+            case EXTRACTOR -> this.extractorData = (ExtractorData) data;
             case TIMER -> this.timerData = (TimerData) data;
             case SSE_CONNECT, SSE_AWAIT, WS_CONNECT, WS_SEND, WS_AWAIT, WS_CLOSE, ROOT -> {
             }

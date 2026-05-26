@@ -33,6 +33,9 @@ public class PerformanceTreeRulesTest {
 
         assertTrue(PerformanceTreeRules.canAcceptChild(sseRequest, newNode(NodeType.SSE_CONNECT)));
         assertTrue(PerformanceTreeRules.canAcceptChild(sseRequest, newNode(NodeType.SSE_AWAIT)));
+        assertTrue(PerformanceTreeRules.canAcceptChild(sseAwaitNode(), newNode(NodeType.EXTRACTOR)));
+        assertTrue(PerformanceTreeRules.canAcceptChild(newRequestNode(RequestItemProtocolEnum.HTTP), newNode(NodeType.EXTRACTOR)));
+        assertFalse(PerformanceTreeRules.canAcceptChild(wsRequest, newNode(NodeType.EXTRACTOR)));
     }
 
     private static DefaultMutableTreeNode newRequestNode(RequestItemProtocolEnum protocol) {
@@ -49,5 +52,9 @@ public class PerformanceTreeRulesTest {
 
     private static DefaultMutableTreeNode newNode(NodeType type) {
         return new DefaultMutableTreeNode(new JMeterTreeNode(type.name(), type));
+    }
+
+    private static DefaultMutableTreeNode sseAwaitNode() {
+        return new DefaultMutableTreeNode(new JMeterTreeNode("SSE Await", NodeType.SSE_AWAIT));
     }
 }

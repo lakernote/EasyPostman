@@ -16,6 +16,7 @@ import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
 import com.laker.postman.panel.performance.component.JMeterTreeCellRenderer;
 import com.laker.postman.panel.performance.component.TreeNodeTransferHandler;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
+import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import com.laker.postman.panel.performance.result.PerformanceTrendPanel;
@@ -61,6 +62,7 @@ final class PerformancePanelViewFactory {
                                           String loopCard,
                                           String requestCard,
                                           String assertionCard,
+                                          String extractorCard,
                                           String timerCard,
                                           String sseConnectCard,
                                           String sseAwaitCard,
@@ -84,6 +86,8 @@ final class PerformancePanelViewFactory {
 
         AssertionPropertyPanel assertionPanel = new AssertionPropertyPanel();
         propertyPanel.add(assertionPanel, assertionCard);
+        ExtractorPropertyPanel extractorPanel = new ExtractorPropertyPanel();
+        propertyPanel.add(extractorPanel, extractorCard);
         TimerPropertyPanel timerPanel = new TimerPropertyPanel();
         propertyPanel.add(timerPanel, timerCard);
 
@@ -108,6 +112,7 @@ final class PerformancePanelViewFactory {
                 threadGroupPanel,
                 loopPanel,
                 assertionPanel,
+                extractorPanel,
                 timerPanel,
                 sseConnectPanel,
                 sseAwaitPanel,
@@ -424,6 +429,7 @@ final class PerformancePanelViewFactory {
                            ThreadGroupPropertyPanel threadGroupPanel,
                            LoopPropertyPanel loopPanel,
                            AssertionPropertyPanel assertionPanel,
+                           ExtractorPropertyPanel extractorPanel,
                            TimerPropertyPanel timerPanel,
                            SseStagePropertyPanel sseConnectPanel,
                            SseStagePropertyPanel sseAwaitPanel,

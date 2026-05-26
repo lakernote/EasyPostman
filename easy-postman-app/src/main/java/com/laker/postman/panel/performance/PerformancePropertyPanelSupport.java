@@ -3,6 +3,7 @@ package com.laker.postman.panel.performance;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
+import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
@@ -22,6 +23,7 @@ final class PerformancePropertyPanelSupport {
     private final ThreadGroupPropertyPanel threadGroupPanel;
     private final LoopPropertyPanel loopPanel;
     private final AssertionPropertyPanel assertionPanel;
+    private final ExtractorPropertyPanel extractorPanel;
     private final TimerPropertyPanel timerPanel;
     private final SseStagePropertyPanel sseConnectPanel;
     private final SseStagePropertyPanel sseAwaitPanel;
@@ -38,6 +40,7 @@ final class PerformancePropertyPanelSupport {
     void forceCommitAllSpinners() {
         threadGroupPanel.forceCommitAllSpinners();
         loopPanel.forceCommitAllSpinners();
+        extractorPanel.forceCommitAllSpinners();
         timerPanel.forceCommitAllSpinners();
         sseConnectPanel.forceCommitAllSpinners();
         sseAwaitPanel.forceCommitAllSpinners();
@@ -60,6 +63,12 @@ final class PerformancePropertyPanelSupport {
                 }
             }
             case ASSERTION -> assertionPanel.saveAssertionData();
+            case EXTRACTOR -> {
+                extractorPanel.saveExtractorData();
+                if (jmeterTree.getModel() instanceof javax.swing.tree.DefaultTreeModel treeModel) {
+                    treeModel.nodeChanged(selectedNode);
+                }
+            }
             case TIMER -> timerPanel.saveTimerData();
             case SSE_CONNECT, SSE_AWAIT -> saveSseStageNode(selectedNode);
             case WS_CONNECT, WS_SEND, WS_AWAIT, WS_CLOSE -> saveWebSocketStageNode(selectedNode);

@@ -123,6 +123,21 @@ public class VariableResolverTest {
                 "$randomTF should resolve to T or F, but was: " + result);
     }
 
+    @Test
+    public void testSimpleBuiltInFunctionResolution() {
+        VariablesService.getInstance().set("raw", "a b");
+
+        assertTrue(VariableResolver.resolve("{{__uuid()}}")
+                        .matches("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"),
+                "__uuid() should resolve to UUID");
+        assertEquals(VariableResolver.resolve("{{__randomInt(5,5)}}"), "5");
+        assertEquals(VariableResolver.resolve("{{__randomString(8)}}").length(), 8);
+        assertEquals(VariableResolver.resolve("{{__urlEncode(\"a b\")}}"), "a+b");
+        assertEquals(VariableResolver.resolve("{{__urlEncode(raw)}}"), "a+b");
+        assertEquals(VariableResolver.resolve("{{__base64(\"a:b\")}}"), "YTpi");
+        assertTrue(VariableResolver.resolve("{{__time(\"yyyy\")}}").matches("\\d{4}"));
+    }
+
     /**
      * 测试多个嵌套变量在同一字符串中
      */

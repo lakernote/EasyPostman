@@ -32,11 +32,11 @@ class WebSocketScenarioStepSupport {
         return hasAwaitStepRequiringPayload(requestSampler.getChildren(), requestSampler.getWebSocketPerformanceData());
     }
 
-    boolean hasAwaitStepWithResponseBodyAssertion(PerformanceRequestSampler requestSampler) {
+    boolean hasAwaitStepWithResponseBodyNode(PerformanceRequestSampler requestSampler) {
         if (requestSampler == null) {
             return false;
         }
-        return hasAwaitStepWithResponseBodyAssertion(requestSampler.getChildren());
+        return hasAwaitStepWithResponseBodyNode(requestSampler.getChildren());
     }
 
     WebSocketPerformanceData webSocketData(PerformancePlanElement stepElement,
@@ -115,7 +115,7 @@ class WebSocketScenarioStepSupport {
         for (PerformancePlanElement element : elements) {
             if (element instanceof PerformanceProtocolStageElement stage && stage.getType() == NodeType.WS_AWAIT) {
                 WebSocketPerformanceData cfg = webSocketData(stage, requestConfig);
-                if (hasMessageFilter(cfg) || hasResponseBodyAssertion(stage)) {
+                if (hasMessageFilter(cfg) || hasResponseBodyNode(stage)) {
                     return true;
                 }
             }
@@ -127,15 +127,15 @@ class WebSocketScenarioStepSupport {
         return false;
     }
 
-    private boolean hasAwaitStepWithResponseBodyAssertion(List<PerformancePlanElement> elements) {
+    private boolean hasAwaitStepWithResponseBodyNode(List<PerformancePlanElement> elements) {
         for (PerformancePlanElement element : elements) {
             if (element instanceof PerformanceProtocolStageElement stage
                     && stage.getType() == NodeType.WS_AWAIT
-                    && hasResponseBodyAssertion(stage)) {
+                    && hasResponseBodyNode(stage)) {
                 return true;
             }
             if (element instanceof PerformanceController controller
-                    && hasAwaitStepWithResponseBodyAssertion(controller.getElements())) {
+                    && hasAwaitStepWithResponseBodyNode(controller.getElements())) {
                 return true;
             }
         }
@@ -147,9 +147,11 @@ class WebSocketScenarioStepSupport {
                 && CharSequenceUtil.isNotBlank(cfg.messageFilter);
     }
 
-    private boolean hasResponseBodyAssertion(PerformanceProtocolStageElement stage) {
+    private boolean hasResponseBodyNode(PerformanceProtocolStageElement stage) {
         return PerformanceAssertionRunner.requiresResponseBodyElements(
                 PerformanceAssertionRunner.collectDirectAssertionElements(stage.getElements())
+        ) || PerformanceExtractorRunner.requiresResponseBodyElements(
+                PerformanceExtractorRunner.collectDirectExtractorElements(stage.getElements())
         );
     }
 

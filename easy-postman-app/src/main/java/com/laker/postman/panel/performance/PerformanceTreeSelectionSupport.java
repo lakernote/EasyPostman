@@ -3,6 +3,7 @@ package com.laker.postman.panel.performance;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
+import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
@@ -28,6 +29,7 @@ final class PerformanceTreeSelectionSupport {
     private final ThreadGroupPropertyPanel threadGroupPanel;
     private final LoopPropertyPanel loopPanel;
     private final AssertionPropertyPanel assertionPanel;
+    private final ExtractorPropertyPanel extractorPanel;
     private final TimerPropertyPanel timerPanel;
     private final SseStagePropertyPanel sseConnectPanel;
     private final SseStagePropertyPanel sseAwaitPanel;
@@ -47,6 +49,7 @@ final class PerformanceTreeSelectionSupport {
     private final String loopCard;
     private final String requestCard;
     private final String assertionCard;
+    private final String extractorCard;
     private final String timerCard;
     private final String sseConnectCard;
     private final String sseAwaitCard;
@@ -73,6 +76,10 @@ final class PerformanceTreeSelectionSupport {
             }
             case REQUEST -> saveRequestNodeAction.accept(lastNode);
             case ASSERTION -> assertionPanel.saveAssertionData();
+            case EXTRACTOR -> {
+                extractorPanel.saveExtractorData();
+                treeModel.nodeChanged(lastNode);
+            }
             case TIMER -> timerPanel.saveTimerData();
             case SSE_CONNECT, SSE_AWAIT -> saveSseStageAction.accept(lastNode);
             case WS_CONNECT, WS_SEND, WS_AWAIT, WS_CLOSE -> saveWebSocketStageAction.accept(lastNode);
@@ -122,6 +129,11 @@ final class PerformanceTreeSelectionSupport {
             case ASSERTION -> {
                 propertyCardLayout.show(propertyPanel, assertionCard);
                 assertionPanel.setAssertionData(jtNode);
+                currentRequestNodeSetter.accept(null);
+            }
+            case EXTRACTOR -> {
+                propertyCardLayout.show(propertyPanel, extractorCard);
+                extractorPanel.setExtractorData(jtNode);
                 currentRequestNodeSetter.accept(null);
             }
             case TIMER -> {

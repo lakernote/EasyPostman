@@ -29,6 +29,7 @@ public class JMeterTreeCellRenderer extends DefaultTreeCellRenderer {
                 case LOOP -> label.setIcon(new FlatSVGIcon("icons/refresh.svg", SIZE, SIZE));
                 case REQUEST -> label.setIcon(resolveRequestIcon(jtNode.httpRequestItem));
                 case ASSERTION -> label.setIcon(IconUtil.createThemed("icons/warning.svg", SIZE, SIZE));
+                case EXTRACTOR -> label.setIcon(IconUtil.createThemed("icons/global-variables.svg", SIZE, SIZE));
                 case TIMER -> label.setIcon(IconUtil.createThemed("icons/time.svg", SIZE, SIZE));
                 case SSE_CONNECT -> label.setIcon(IconUtil.createThemed("icons/connect.svg", SIZE, SIZE));
                 case SSE_AWAIT -> label.setIcon(new FlatSVGIcon("icons/time.svg", SIZE, SIZE));

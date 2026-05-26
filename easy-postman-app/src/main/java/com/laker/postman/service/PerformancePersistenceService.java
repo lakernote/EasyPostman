@@ -9,6 +9,7 @@ import com.laker.postman.ioc.PostConstruct;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.performance.assertion.AssertionData;
+import com.laker.postman.panel.performance.extractor.ExtractorData;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.controller.LoopData;
 import com.laker.postman.panel.performance.model.NodeType;
@@ -260,6 +261,11 @@ public class PerformancePersistenceService {
                     jsonNode.set("assertionData", serializeAssertionData(jmNode.assertionData));
                 }
             }
+            case EXTRACTOR -> {
+                if (jmNode.extractorData != null) {
+                    jsonNode.set("extractorData", serializeExtractorData(jmNode.extractorData));
+                }
+            }
             case TIMER -> {
                 if (jmNode.timerData != null) {
                     jsonNode.set("timerData", serializeTimerData(jmNode.timerData));
@@ -332,6 +338,17 @@ public class PerformancePersistenceService {
         json.set("content", data.content);
         json.set("operator", data.operator);
         json.set("value", data.value);
+        return json;
+    }
+
+    private JSONObject serializeExtractorData(ExtractorData data) {
+        JSONObject json = new JSONObject();
+        json.set("type", data.type);
+        json.set("expression", data.expression);
+        json.set("variableName", data.variableName);
+        json.set("defaultValue", data.defaultValue);
+        json.set("matchIndex", data.matchIndex);
+        json.set("groupIndex", data.groupIndex);
         return json;
     }
 
@@ -663,6 +680,12 @@ public class PerformancePersistenceService {
                         jmNode.assertionData = deserializeAssertionData(assertionData);
                     }
                 }
+                case EXTRACTOR -> {
+                    JSONObject extractorData = jsonNode.getJSONObject("extractorData");
+                    if (extractorData != null) {
+                        jmNode.extractorData = deserializeExtractorData(extractorData);
+                    }
+                }
                 case TIMER -> {
                     JSONObject timerData = jsonNode.getJSONObject("timerData");
                     if (timerData != null) {
@@ -754,6 +777,17 @@ public class PerformancePersistenceService {
         data.content = json.getStr("content", "");
         data.operator = json.getStr("operator", "=");
         data.value = json.getStr("value", "200");
+        return data;
+    }
+
+    private ExtractorData deserializeExtractorData(JSONObject json) {
+        ExtractorData data = new ExtractorData();
+        data.type = json.getStr("type", data.type);
+        data.expression = json.getStr("expression", "");
+        data.variableName = json.getStr("variableName", "");
+        data.defaultValue = json.getStr("defaultValue", "");
+        data.matchIndex = json.getInt("matchIndex", 1);
+        data.groupIndex = json.getInt("groupIndex", 1);
         return data;
     }
 

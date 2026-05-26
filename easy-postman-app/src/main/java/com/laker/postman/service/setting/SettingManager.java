@@ -43,10 +43,14 @@ public class SettingManager {
     private static final String JMETER_JS_CONTEXT_POOL_SIZE_KEY = "jmeter_js_context_pool_size";
     private static final String JMETER_JS_CONTEXT_ACQUIRE_TIMEOUT_MS_KEY = "jmeter_js_context_acquire_timeout_ms";
     private static final String PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB_KEY = "performance_response_body_preview_limit_kb";
+    private static final String PERFORMANCE_RESULT_ROW_LIMIT_KEY = "performance_result_row_limit";
     private static final Object SETTINGS_IO_LOCK = new Object();
     public static final int DEFAULT_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB = 64;
     public static final int MIN_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB = 1;
     public static final int MAX_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB = 1024;
+    public static final int DEFAULT_PERFORMANCE_RESULT_ROW_LIMIT = 10_000;
+    public static final int MIN_PERFORMANCE_RESULT_ROW_LIMIT = 100;
+    public static final int MAX_PERFORMANCE_RESULT_ROW_LIMIT = 100_000;
     public static final String PROXY_MODE_MANUAL = "MANUAL";
     public static final String PROXY_MODE_SYSTEM = "SYSTEM";
     public static final String PROXY_TYPE_HTTP = "HTTP";
@@ -352,6 +356,32 @@ public class SettingManager {
 
     public static int performanceResponseBodyPreviewLimitBytes(int limitKb) {
         return sanitizePerformanceResponseBodyPreviewLimitKb(limitKb) * 1024;
+    }
+
+    public static int getPerformanceResultRowLimit() {
+        String val = props.getProperty(PERFORMANCE_RESULT_ROW_LIMIT_KEY);
+        if (val != null) {
+            try {
+                return sanitizePerformanceResultRowLimit(Integer.parseInt(val));
+            } catch (NumberFormatException e) {
+                return DEFAULT_PERFORMANCE_RESULT_ROW_LIMIT;
+            }
+        }
+        return DEFAULT_PERFORMANCE_RESULT_ROW_LIMIT;
+    }
+
+    public static void setPerformanceResultRowLimit(int rowLimit) {
+        setAndSaveProperty(PERFORMANCE_RESULT_ROW_LIMIT_KEY,
+                String.valueOf(sanitizePerformanceResultRowLimit(rowLimit)));
+    }
+
+    public static int sanitizePerformanceResultRowLimit(Integer rowLimit) {
+        if (rowLimit == null
+                || rowLimit < MIN_PERFORMANCE_RESULT_ROW_LIMIT
+                || rowLimit > MAX_PERFORMANCE_RESULT_ROW_LIMIT) {
+            return DEFAULT_PERFORMANCE_RESULT_ROW_LIMIT;
+        }
+        return rowLimit;
     }
 
     public static boolean isShowDownloadProgressDialog() {

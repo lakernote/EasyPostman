@@ -23,6 +23,7 @@ public final class MessageKeys {
     public static final String MENU_HELP = "menu.help";
     public static final String MENU_HELP_UPDATE = "menu.help.update";
     public static final String MENU_HELP_CHANGELOG = "menu.help.changelog";
+    public static final String MENU_HELP_MEMORY_TUNING = "menu.help.memory_tuning";
     public static final String MENU_HELP_FEEDBACK = "menu.help.feedback";
     public static final String MENU_ABOUT = "menu.about";
     public static final String MENU_ABOUT_EASYPOSTMAN = "menu.about.easypostman";
@@ -85,6 +86,32 @@ public final class MessageKeys {
     public static final String CHANGELOG_VIEW_ON_GITEE = "changelog.view_on_gitee";
     public static final String CHANGELOG_CLOSE = "changelog.close";
     public static final String CHANGELOG_REFRESH = "changelog.refresh";
+
+    public static final String MEMORY_TUNING_TITLE = "memory_tuning.title";
+    public static final String MEMORY_TUNING_CONTENT = "memory_tuning.content";
+    public static final String MEMORY_TUNING_WHEN_TITLE = "memory_tuning.when.title";
+    public static final String MEMORY_TUNING_WHEN_BODY = "memory_tuning.when.body";
+    public static final String MEMORY_TUNING_RECOMMENDED_TITLE = "memory_tuning.recommended.title";
+    public static final String MEMORY_TUNING_RECOMMEND_COMPACT_TITLE = "memory_tuning.recommend.compact.title";
+    public static final String MEMORY_TUNING_RECOMMEND_COMPACT_DESC = "memory_tuning.recommend.compact.desc";
+    public static final String MEMORY_TUNING_RECOMMEND_PREVIEW_TITLE = "memory_tuning.recommend.preview.title";
+    public static final String MEMORY_TUNING_RECOMMEND_PREVIEW_DESC = "memory_tuning.recommend.preview.desc";
+    public static final String MEMORY_TUNING_RECOMMEND_ROW_LIMIT_TITLE = "memory_tuning.recommend.row_limit.title";
+    public static final String MEMORY_TUNING_RECOMMEND_ROW_LIMIT_DESC = "memory_tuning.recommend.row_limit.desc";
+    public static final String MEMORY_TUNING_RECOMMEND_FAILURE_TITLE = "memory_tuning.recommend.failure.title";
+    public static final String MEMORY_TUNING_RECOMMEND_FAILURE_DESC = "memory_tuning.recommend.failure.desc";
+    public static final String MEMORY_TUNING_XMX_TITLE = "memory_tuning.xmx.title";
+    public static final String MEMORY_TUNING_PLATFORM_MAC = "memory_tuning.platform.mac";
+    public static final String MEMORY_TUNING_PLATFORM_MAC_DESC = "memory_tuning.platform.mac.desc";
+    public static final String MEMORY_TUNING_PLATFORM_WINDOWS_INSTALLER = "memory_tuning.platform.windows_installer";
+    public static final String MEMORY_TUNING_PLATFORM_WINDOWS_INSTALLER_DESC = "memory_tuning.platform.windows_installer.desc";
+    public static final String MEMORY_TUNING_PLATFORM_WINDOWS_PORTABLE = "memory_tuning.platform.windows_portable";
+    public static final String MEMORY_TUNING_PLATFORM_WINDOWS_PORTABLE_DESC = "memory_tuning.platform.windows_portable.desc";
+    public static final String MEMORY_TUNING_PLATFORM_LINUX = "memory_tuning.platform.linux";
+    public static final String MEMORY_TUNING_PLATFORM_LINUX_DESC = "memory_tuning.platform.linux.desc";
+    public static final String MEMORY_TUNING_PLATFORM_JAR = "memory_tuning.platform.jar";
+    public static final String MEMORY_TUNING_PLATFORM_JAR_DESC = "memory_tuning.platform.jar.desc";
+    public static final String MEMORY_TUNING_XMX_NOTE = "memory_tuning.xmx.note";
 
 
     // ============ 错误消息 ============
@@ -1156,6 +1183,8 @@ public final class MessageKeys {
     public static final String SETTINGS_JMETER_SLOW_REQUEST_THRESHOLD_TOOLTIP = "settings.jmeter.slow_request_threshold.tooltip";
     public static final String SETTINGS_JMETER_RESPONSE_BODY_PREVIEW_LIMIT = "settings.jmeter.response_body_preview_limit";
     public static final String SETTINGS_JMETER_RESPONSE_BODY_PREVIEW_LIMIT_TOOLTIP = "settings.jmeter.response_body_preview_limit.tooltip";
+    public static final String SETTINGS_JMETER_RESULT_ROW_LIMIT = "settings.jmeter.result_row_limit";
+    public static final String SETTINGS_JMETER_RESULT_ROW_LIMIT_TOOLTIP = "settings.jmeter.result_row_limit.tooltip";
     public static final String SETTINGS_JMETER_TREND_SAMPLING = "settings.jmeter.trend_sampling";
     public static final String SETTINGS_JMETER_TREND_SAMPLING_TOOLTIP = "settings.jmeter.trend_sampling.tooltip";
     public static final String SETTINGS_JMETER_EVENT_LOGGING = "settings.jmeter.event_logging";
@@ -1212,6 +1241,7 @@ public final class MessageKeys {
     public static final String SETTINGS_VALIDATION_THRESHOLD_ERROR = "settings.validation.threshold.error";
     public static final String SETTINGS_VALIDATION_SLOW_REQUEST_THRESHOLD_ERROR = "settings.validation.slow_request_threshold.error";
     public static final String SETTINGS_VALIDATION_RESPONSE_BODY_PREVIEW_LIMIT_ERROR = "settings.validation.response_body_preview_limit.error";
+    public static final String SETTINGS_VALIDATION_RESULT_ROW_LIMIT_ERROR = "settings.validation.result_row_limit.error";
     public static final String SETTINGS_VALIDATION_MAX_HISTORY_ERROR = "settings.validation.max_history.error";
     public static final String SETTINGS_VALIDATION_MAX_OPENED_REQUESTS_ERROR = "settings.validation.max_opened_requests_error";
     public static final String SETTINGS_VALIDATION_PORT_ERROR = "settings.validation.port.error";

@@ -3,12 +3,15 @@ package com.laker.postman.panel.performance.result;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.panel.performance.model.ResultNodeInfo;
+import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.test.AbstractSwingUiTest;
 import org.testng.annotations.Test;
 
 import javax.swing.*;
 import java.awt.Container;
+import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -39,12 +42,81 @@ public class PerformanceResultTablePanelTest extends AbstractSwingUiTest {
         }
     }
 
+    @Test
+    public void compactModeShouldRetainOnlyMostRecentRows() throws Exception {
+        AtomicReference<PerformanceResultTablePanel> panelRef = new AtomicReference<>();
+        AtomicInteger rowCount = new AtomicInteger(-1);
+        AtomicReference<String> firstVisibleName = new AtomicReference<>();
+
+        SwingUtilities.invokeAndWait(() -> {
+            PerformanceResultTablePanel panel = new PerformanceResultTablePanel();
+            panelRef.set(panel);
+            int totalRows = PerformanceResultTablePanel.COMPACT_RESULT_ROW_LIMIT + 25;
+            for (int i = 0; i < totalRows; i++) {
+                panel.addResult(sampleResult("Sample-" + i), true);
+            }
+            panel.flushPendingResults();
+            JTable table = findTable(panel);
+            rowCount.set(table.getRowCount());
+            firstVisibleName.set(String.valueOf(table.getValueAt(0, 1)));
+        });
+
+        try {
+            assertEquals(rowCount.get(), PerformanceResultTablePanel.COMPACT_RESULT_ROW_LIMIT);
+            assertEquals(firstVisibleName.get(), "Sample-25");
+        } finally {
+            PerformanceResultTablePanel panel = panelRef.get();
+            if (panel != null) {
+                SwingUtilities.invokeAndWait(panel::dispose);
+            }
+        }
+    }
+
+    @Test
+    public void fullModeShouldRetainOnlyConfiguredMostRecentRows() throws Exception {
+        Properties props = getSettingsProperties();
+        Properties backup = new Properties();
+        backup.putAll(props);
+        AtomicReference<PerformanceResultTablePanel> panelRef = new AtomicReference<>();
+        AtomicInteger rowCount = new AtomicInteger(-1);
+        AtomicReference<String> firstVisibleName = new AtomicReference<>();
+
+        try {
+            props.setProperty("performance_result_row_limit", "120");
+            SwingUtilities.invokeAndWait(() -> {
+                PerformanceResultTablePanel panel = new PerformanceResultTablePanel();
+                panelRef.set(panel);
+                for (int i = 0; i < 145; i++) {
+                    panel.addResult(sampleResult("Sample-" + i), false);
+                }
+                panel.flushPendingResults();
+                JTable table = findTable(panel);
+                rowCount.set(table.getRowCount());
+                firstVisibleName.set(String.valueOf(table.getValueAt(0, 1)));
+            });
+
+            assertEquals(rowCount.get(), 120);
+            assertEquals(firstVisibleName.get(), "Sample-25");
+        } finally {
+            PerformanceResultTablePanel panel = panelRef.get();
+            if (panel != null) {
+                SwingUtilities.invokeAndWait(panel::dispose);
+            }
+            props.clear();
+            props.putAll(backup);
+        }
+    }
+
     private static ResultNodeInfo sampleResult() {
+        return sampleResult("Sample");
+    }
+
+    private static ResultNodeInfo sampleResult(String name) {
         HttpResponse response = new HttpResponse();
         response.code = 200;
         response.costMs = 12;
         return new ResultNodeInfo(
-                "Sample",
+                name,
                 "",
                 new PreparedRequest(),
                 response,
@@ -61,5 +133,11 @@ public class PerformanceResultTablePanelTest extends AbstractSwingUiTest {
         } catch (ReflectiveOperationException e) {
             throw new AssertionError("JTable not found", e);
         }
+    }
+
+    private static Properties getSettingsProperties() throws Exception {
+        Field propsField = SettingManager.class.getDeclaredField("props");
+        propsField.setAccessible(true);
+        return (Properties) propsField.get(null);
     }
 }

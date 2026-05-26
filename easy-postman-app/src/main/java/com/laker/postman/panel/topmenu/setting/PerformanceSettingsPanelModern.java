@@ -24,6 +24,7 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
     private JTextField jsContextAcquireTimeoutField;
     private JTextField jmeterSlowRequestThresholdField;
     private JTextField responseBodyPreviewLimitField;
+    private JTextField resultRowLimitField;
     private JTextField trendSamplingField;
     private JCheckBox eventLoggingCheckBox;
 
@@ -123,6 +124,17 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
         jmeterSection.add(responseBodyPreviewLimitRow);
         jmeterSection.add(createVerticalSpace(FIELD_SPACING));
 
+        // 结果表保留行数上限
+        resultRowLimitField = new JTextField(10);
+        resultRowLimitField.setText(String.valueOf(SettingManager.getPerformanceResultRowLimit()));
+        JPanel resultRowLimitRow = createFieldRow(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_RESULT_ROW_LIMIT),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_RESULT_ROW_LIMIT_TOOLTIP),
+                resultRowLimitField
+        );
+        jmeterSection.add(resultRowLimitRow);
+        jmeterSection.add(createVerticalSpace(FIELD_SPACING));
+
         // 趋势图采样间隔
         trendSamplingField = new JTextField(10);
         trendSamplingField.setText(String.valueOf(SettingManager.getTrendSamplingIntervalSeconds()));
@@ -157,6 +169,7 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
         trackComponentValue(jsContextAcquireTimeoutField);
         trackComponentValue(jmeterSlowRequestThresholdField);
         trackComponentValue(responseBodyPreviewLimitField);
+        trackComponentValue(resultRowLimitField);
         trackComponentValue(trendSamplingField);
         trackComponentValue(eventLoggingCheckBox);
     }
@@ -203,6 +216,11 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
                 I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_RESPONSE_BODY_PREVIEW_LIMIT_ERROR)
         );
         setupValidator(
+                resultRowLimitField,
+                this::isValidResultRowLimit,
+                I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_RESULT_ROW_LIMIT_ERROR)
+        );
+        setupValidator(
                 trendSamplingField,
                 this::isValidTrendSamplingInterval,
                 I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_TREND_SAMPLING_ERROR)
@@ -223,6 +241,16 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
             int limitKb = Integer.parseInt(value.trim());
             return limitKb >= SettingManager.MIN_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB
                     && limitKb <= SettingManager.MAX_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private boolean isValidResultRowLimit(String value) {
+        try {
+            int rowLimit = Integer.parseInt(value.trim());
+            return rowLimit >= SettingManager.MIN_PERFORMANCE_RESULT_ROW_LIMIT
+                    && rowLimit <= SettingManager.MAX_PERFORMANCE_RESULT_ROW_LIMIT;
         } catch (NumberFormatException e) {
             return false;
         }
@@ -282,6 +310,7 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
             SettingManager.setJmeterJsContextAcquireTimeoutMs(Integer.parseInt(jsContextAcquireTimeoutField.getText().trim()));
             SettingManager.setJmeterSlowRequestThreshold(Integer.parseInt(jmeterSlowRequestThresholdField.getText().trim()));
             SettingManager.setPerformanceResponseBodyPreviewLimitKb(Integer.parseInt(responseBodyPreviewLimitField.getText().trim()));
+            SettingManager.setPerformanceResultRowLimit(Integer.parseInt(resultRowLimitField.getText().trim()));
             SettingManager.setTrendSamplingIntervalSeconds(Integer.parseInt(trendSamplingField.getText().trim()));
             SettingManager.setPerformanceEventLoggingEnabled(eventLoggingCheckBox.isSelected());
             JsScriptExecutor.reconfigureContextPoolFromSettings();
@@ -296,6 +325,7 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
             trackComponentValue(jsContextAcquireTimeoutField);
             trackComponentValue(jmeterSlowRequestThresholdField);
             trackComponentValue(responseBodyPreviewLimitField);
+            trackComponentValue(resultRowLimitField);
             trackComponentValue(trendSamplingField);
             trackComponentValue(eventLoggingCheckBox);
             setHasUnsavedChanges(false);

@@ -5,6 +5,7 @@ import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.panel.performance.execution.PerformanceRequestExecutionResult;
+import com.laker.postman.panel.performance.model.PerformanceProtocol;
 import com.laker.postman.panel.performance.model.PerformanceSampleResult;
 import com.laker.postman.panel.performance.model.ResultNodeInfo;
 import org.testng.annotations.Test;
@@ -103,5 +104,125 @@ public class PerformanceResultDisplayMapperTest {
         assertFalse(resultNodeInfo.resp.headers.containsKey("X-Easy-WS-Sent-Count"));
         assertFalse(resultNodeInfo.resp.headers.containsKey("X-Easy-WS-Completion-Reason"));
         assertFalse(resultNodeInfo.resp.headers.containsKey("X-Easy-WS-Error"));
+    }
+
+    @Test
+    public void shouldCompactFailedStreamDetailsInEfficientMode() {
+        PreparedRequest request = new PreparedRequest();
+        request.collectEventInfo = false;
+
+        HttpResponse response = new HttpResponse();
+        response.code = 101;
+        response.costMs = 26L;
+        response.body = "x".repeat(64 * 1024);
+        response.headers = new LinkedHashMap<>();
+        response.addHeader("X-Easy-WS-Sent-Count", List.of("742"));
+        response.addHeader("X-Easy-WS-Received-Count", List.of("8"));
+        response.addHeader("X-Easy-WS-Message-Count", List.of("1"));
+        response.addHeader("X-Easy-WS-Last-Message", List.of("{\"event\":\"LAST\"}"));
+        response.addHeader("X-Easy-WS-Error", List.of("Java heap space"));
+
+        PerformanceRequestExecutionResult executionResult = new PerformanceRequestExecutionResult(
+                "api-1",
+                "WebSocket API",
+                request,
+                response,
+                "",
+                List.of(),
+                true,
+                false,
+                PerformanceProtocol.WEBSOCKET,
+                1000L,
+                0L
+        );
+
+        ResultNodeInfo resultNodeInfo = PerformanceResultDisplayMapper.toDisplayNodeInfo(
+                PerformanceSampleResult.fromExecutionResult(executionResult),
+                true
+        );
+
+        assertEquals(resultNodeInfo.errorMsg, "Java heap space");
+        assertTrue(resultNodeInfo.resp.body.contains("Error: Java heap space"));
+        assertTrue(resultNodeInfo.resp.body.contains("Status: 101"));
+        assertTrue(resultNodeInfo.resp.body.contains("Sent: 742"));
+        assertTrue(resultNodeInfo.resp.body.contains("Received: 8"));
+        assertTrue(resultNodeInfo.resp.body.contains("Matched: 1"));
+        assertTrue(resultNodeInfo.resp.body.contains("{\"event\":\"LAST\"}"));
+        assertFalse(resultNodeInfo.resp.body.contains("x".repeat(8192)));
+        assertTrue(resultNodeInfo.resp.body.length() < 4096);
+    }
+
+    @Test
+    public void shouldLimitStreamPreviewForResultTableDisplay() {
+        PreparedRequest request = new PreparedRequest();
+        request.collectEventInfo = false;
+
+        HttpResponse response = new HttpResponse();
+        response.code = 101;
+        response.costMs = 26L;
+        response.body = "a".repeat(16 * 1024);
+
+        PerformanceRequestExecutionResult executionResult = new PerformanceRequestExecutionResult(
+                "api-1",
+                "WebSocket API",
+                request,
+                response,
+                "",
+                List.of(),
+                false,
+                false,
+                PerformanceProtocol.WEBSOCKET,
+                1000L,
+                0L
+        );
+
+        ResultNodeInfo resultNodeInfo = PerformanceResultDisplayMapper.toDisplayNodeInfo(
+                PerformanceSampleResult.fromExecutionResult(executionResult),
+                false
+        );
+
+        assertTrue(resultNodeInfo.resp.body.length() < 5000);
+        assertTrue(resultNodeInfo.resp.body.contains("[truncated"));
+    }
+
+    @Test
+    public void shouldUseSseBodyAsCompactLastMessagePreview() {
+        PreparedRequest request = new PreparedRequest();
+        request.collectEventInfo = false;
+
+        HttpResponse response = new HttpResponse();
+        response.code = 200;
+        response.costMs = 26L;
+        response.body = "data: " + "event-body-".repeat(1024);
+        response.headers = new LinkedHashMap<>();
+        response.addHeader("X-Easy-SSE-Event-Count", List.of("3"));
+        response.addHeader("X-Easy-SSE-Message-Count", List.of("1"));
+        response.addHeader("X-Easy-SSE-Event-Type", List.of("answer"));
+        response.addHeader("X-Easy-SSE-Error", List.of("SSE timeout"));
+
+        PerformanceRequestExecutionResult executionResult = new PerformanceRequestExecutionResult(
+                "api-1",
+                "SSE API",
+                request,
+                response,
+                "",
+                List.of(),
+                true,
+                false,
+                PerformanceProtocol.SSE,
+                1000L,
+                0L
+        );
+
+        ResultNodeInfo resultNodeInfo = PerformanceResultDisplayMapper.toDisplayNodeInfo(
+                PerformanceSampleResult.fromExecutionResult(executionResult),
+                true
+        );
+
+        assertTrue(resultNodeInfo.resp.body.contains("Error: SSE timeout"));
+        assertTrue(resultNodeInfo.resp.body.contains("Received: 3"));
+        assertTrue(resultNodeInfo.resp.body.contains("Matched: 1"));
+        assertTrue(resultNodeInfo.resp.body.contains("data: event-body-"));
+        assertFalse(resultNodeInfo.resp.body.contains("event-body-".repeat(512)));
     }
 }

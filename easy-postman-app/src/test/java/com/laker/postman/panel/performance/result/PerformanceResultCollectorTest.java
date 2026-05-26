@@ -302,6 +302,11 @@ public class PerformanceResultCollectorTest {
         public void addResult(ResultNodeInfo info) {
             recordedRows++;
         }
+
+        @Override
+        public void addResult(ResultNodeInfo info, boolean compactRetention) {
+            recordedRows++;
+        }
     }
 
     private static PerformanceResultCollector newCollector(PerformanceStatsCollector statsCollector,

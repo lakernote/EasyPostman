@@ -29,6 +29,9 @@ public final class PerformanceResultTableVisualizer implements PerformanceResult
                 slowRequestThresholdMs)) {
             return;
         }
-        resultTablePanel.addResult(PerformanceResultDisplayMapper.toDisplayNodeInfo(sampleResult));
+        resultTablePanel.addResult(
+                PerformanceResultDisplayMapper.toDisplayNodeInfo(sampleResult, event.isEfficientMode()),
+                event.isEfficientMode()
+        );
     }
 }

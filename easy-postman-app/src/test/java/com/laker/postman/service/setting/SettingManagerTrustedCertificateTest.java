@@ -207,6 +207,57 @@ public class SettingManagerTrustedCertificateTest {
     }
 
     @Test
+    public void shouldReadAndNormalizePerformanceResultRowLimit() throws Exception {
+        Properties props = getSettingsProperties();
+        Properties backup = new Properties();
+        backup.putAll(props);
+
+        try {
+            props.clear();
+            assertEquals(SettingManager.getPerformanceResultRowLimit(), 10_000);
+
+            props.setProperty("performance_result_row_limit", "5000");
+            assertEquals(SettingManager.getPerformanceResultRowLimit(), 5000);
+
+            props.setProperty("performance_result_row_limit", "99");
+            assertEquals(SettingManager.getPerformanceResultRowLimit(), 10_000);
+
+            props.setProperty("performance_result_row_limit", "100001");
+            assertEquals(SettingManager.getPerformanceResultRowLimit(), 10_000);
+
+            props.setProperty("performance_result_row_limit", "abc");
+            assertEquals(SettingManager.getPerformanceResultRowLimit(), 10_000);
+        } finally {
+            props.clear();
+            props.putAll(backup);
+        }
+    }
+
+    @Test
+    public void shouldPersistSanitizedPerformanceResultRowLimit() throws Exception {
+        Properties props = getSettingsProperties();
+        Properties backup = new Properties();
+        backup.putAll(props);
+        Path configPath = Path.of(ConfigPathConstants.EASY_POSTMAN_SETTINGS);
+        boolean configExisted = Files.exists(configPath);
+        String originalConfig = configExisted ? Files.readString(configPath) : null;
+
+        try {
+            props.clear();
+
+            SettingManager.setPerformanceResultRowLimit(5000);
+            assertEquals(props.getProperty("performance_result_row_limit"), "5000");
+
+            SettingManager.setPerformanceResultRowLimit(99);
+            assertEquals(props.getProperty("performance_result_row_limit"), "10000");
+        } finally {
+            props.clear();
+            props.putAll(backup);
+            restoreConfig(configPath, configExisted, originalConfig);
+        }
+    }
+
+    @Test
     public void shouldPreserveUpdateSourceWhenPersistingLastCheckTimeFromStaleSettings() throws Exception {
         Path tempFile = Files.createTempFile("easy-postman-settings", ".properties");
         Properties diskSettings = new Properties();

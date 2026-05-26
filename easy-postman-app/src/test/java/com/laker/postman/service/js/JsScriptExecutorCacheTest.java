@@ -3,32 +3,40 @@ package com.laker.postman.service.js;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
-import static org.testng.Assert.fail;
+import static org.testng.Assert.assertTrue;
 
 public class JsScriptExecutorCacheTest {
 
-    @Test(description = "identical scripts should reuse the cached GraalVM Source")
-    public void identicalScriptsShouldReuseCachedSource() throws Exception {
-        clearScriptSourceCache();
-        String script = "const result = 40 + 2;";
+    @Test(description = "user script Source cache should be bounded and reuse identical scripts")
+    public void shouldBoundAndReuseUserScriptSourceCache() throws Exception {
+        Map<?, ?> cache = sourceCache();
+        cache.clear();
 
-        JsScriptExecutor.executeScript(script, Map.of(), null);
-        Object firstSource = scriptSourceCache().get(script);
-        JsScriptExecutor.executeScript(script, Map.of(), null);
-        Object secondSource = scriptSourceCache().get(script);
+        Method sourceFactory = JsScriptExecutor.class.getDeclaredMethod("getCachedScriptSource", String.class);
+        sourceFactory.setAccessible(true);
 
-        assertEquals(scriptSourceCache().size(), 1);
-        assertSame(secondSource, firstSource);
+        try {
+            Object first = sourceFactory.invoke(null, "sink.append(value);");
+            Object second = sourceFactory.invoke(null, "sink.append(value);");
+            assertSame(second, first);
+
+            for (int i = 0; i < 600; i++) {
+                sourceFactory.invoke(null, "var value" + i + " = " + i + ";");
+            }
+            assertTrue(cache.size() <= 512);
+        } finally {
+            cache.clear();
+        }
     }
 
-    @Test(description = "cached script sources should still use fresh Java bindings on each execution")
-    public void cachedSourceShouldUseFreshBindings() throws Exception {
-        clearScriptSourceCache();
+    @Test(description = "repeated script executions should still use fresh Java bindings")
+    public void repeatedExecutionShouldUseFreshBindings() throws Exception {
         String script = "sink.append(value);";
 
         StringBuilder firstSink = new StringBuilder();
@@ -45,25 +53,12 @@ public class JsScriptExecutorCacheTest {
 
         assertEquals(firstSink.toString(), "first");
         assertEquals(secondSink.toString(), "second");
-        assertEquals(scriptSourceCache().size(), 1);
-    }
-
-    private static void clearScriptSourceCache() throws Exception {
-        Map<String, Object> cache = scriptSourceCache();
-        synchronized (cache) {
-            cache.clear();
-        }
     }
 
     @SuppressWarnings("unchecked")
-    private static Map<String, Object> scriptSourceCache() {
-        try {
-            Field field = JsScriptExecutor.class.getDeclaredField("SCRIPT_SOURCE_CACHE");
-            field.setAccessible(true);
-            return (Map<String, Object>) field.get(null);
-        } catch (ReflectiveOperationException e) {
-            fail("Missing JS script source cache field", e);
-            return Map.of();
-        }
+    private static Map<Object, Object> sourceCache() throws Exception {
+        Field cacheField = JsScriptExecutor.class.getDeclaredField("SCRIPT_SOURCE_CACHE");
+        cacheField.setAccessible(true);
+        return (Map<Object, Object>) cacheField.get(null);
     }
 }

@@ -6,6 +6,7 @@ import com.laker.postman.model.HttpHeader;
 import com.laker.postman.panel.performance.model.PerformanceInternalHeaders;
 import com.laker.postman.panel.performance.model.ResultNodeInfo;
 import com.laker.postman.service.render.HttpHtmlRenderer;
+import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 性能测试结果表
@@ -39,7 +41,10 @@ public class PerformanceResultTablePanel extends JPanel {
 
     private SearchTextField searchField;
 
-    private final Queue<ResultNodeInfo> pendingQueue = new ConcurrentLinkedQueue<>();
+    static final int COMPACT_RESULT_ROW_LIMIT = 1_000;
+
+    private final Queue<PendingResult> pendingQueue = new ConcurrentLinkedQueue<>();
+    private final AtomicInteger pendingResultCount = new AtomicInteger(0);
 
     private static final int BATCH_SIZE = 2000;
 
@@ -61,11 +66,12 @@ public class PerformanceResultTablePanel extends JPanel {
 
     // 批量刷新队列数据到 TableModel
     private void flushQueueOnEDT() {
-        List<ResultNodeInfo> batch = new ArrayList<>(1024);
-        ResultNodeInfo info;
+        List<PendingResult> batch = new ArrayList<>(1024);
+        PendingResult pending;
 
-        while ((info = pendingQueue.poll()) != null) {
-            batch.add(info);
+        while ((pending = pendingQueue.poll()) != null) {
+            pendingResultCount.decrementAndGet();
+            batch.add(pending);
             if (batch.size() >= BATCH_SIZE) break;
         }
 
@@ -84,12 +90,13 @@ public class PerformanceResultTablePanel extends JPanel {
             return;
         }
 
-        List<ResultNodeInfo> batch = new ArrayList<>();
-        ResultNodeInfo info;
+        List<PendingResult> batch = new ArrayList<>();
+        PendingResult pending;
 
         // 一次性刷新所有待处理的结果
-        while ((info = pendingQueue.poll()) != null) {
-            batch.add(info);
+        while ((pending = pendingQueue.poll()) != null) {
+            pendingResultCount.decrementAndGet();
+            batch.add(pending);
         }
 
         if (!batch.isEmpty()) {
@@ -267,17 +274,39 @@ public class PerformanceResultTablePanel extends JPanel {
     }
 
     public void addResult(ResultNodeInfo info) {
+        addResult(info, false);
+    }
+
+    public void addResult(ResultNodeInfo info, boolean compactRetention) {
         if (info == null) {
             return;
         }
-        pendingQueue.offer(info);
+        int rowLimit = compactRetention
+                ? COMPACT_RESULT_ROW_LIMIT
+                : SettingManager.getPerformanceResultRowLimit();
+        pendingQueue.offer(new PendingResult(info, rowLimit));
+        pendingResultCount.incrementAndGet();
+        trimPendingQueueForRetention(rowLimit);
     }
 
     public void clearResults() {
         pendingQueue.clear();
+        pendingResultCount.set(0);
         table.clearSelection();
         tableModel.clear();
         clearDetailTabs();
+    }
+
+    private void trimPendingQueueForRetention(int rowLimit) {
+        int effectiveLimit = Math.max(1, rowLimit);
+        while (pendingResultCount.get() > effectiveLimit) {
+            PendingResult removed = pendingQueue.poll();
+            if (removed == null) {
+                pendingResultCount.set(0);
+                return;
+            }
+            pendingResultCount.decrementAndGet();
+        }
     }
 
     private void renderDetail(ResultNodeInfo info) {
@@ -437,6 +466,9 @@ public class PerformanceResultTablePanel extends JPanel {
     }
 
     // TableModel - 增量刷新优化
+    private record PendingResult(ResultNodeInfo info, int rowLimit) {
+    }
+
     static class ResultTableModel extends AbstractTableModel {
 
         private static final int COL_PROTOCOL = 0;
@@ -447,6 +479,7 @@ public class PerformanceResultTablePanel extends JPanel {
 
         private final List<ResultNodeInfo> dataList = new ArrayList<>(1024);
         private boolean dirty = false;
+        private boolean fullRefreshRequired = false;
 
         // 追踪新增行的起始位置，用于增量刷新
         private int firstNewRow = -1;
@@ -521,7 +554,7 @@ public class PerformanceResultTablePanel extends JPanel {
         }
 
 
-        void append(List<ResultNodeInfo> batch) {
+        void append(List<PendingResult> batch) {
             if (batch.isEmpty()) return;
 
             // 记录新增行的起始位置
@@ -529,13 +562,23 @@ public class PerformanceResultTablePanel extends JPanel {
                 firstNewRow = dataList.size();
             }
 
-            dataList.addAll(batch);
+            for (PendingResult pending : batch) {
+                dataList.add(pending.info());
+                trimRowsForRetention(pending.rowLimit());
+            }
             dirty = true;
         }
 
         void flushIfDirty() {
             if (!dirty) return;
             dirty = false;
+
+            if (fullRefreshRequired) {
+                fullRefreshRequired = false;
+                firstNewRow = -1;
+                fireTableDataChanged();
+                return;
+            }
 
             // 增量刷新：仅通知新增的行
             if (firstNewRow != -1 && firstNewRow < dataList.size()) {
@@ -548,8 +591,22 @@ public class PerformanceResultTablePanel extends JPanel {
         void clear() {
             dataList.clear();
             dirty = false;
+            fullRefreshRequired = false;
             firstNewRow = -1; // 重置
             fireTableDataChanged();
+        }
+
+        private void trimRowsForRetention(int rowLimit) {
+            int effectiveLimit = Math.max(1, rowLimit);
+            boolean removed = false;
+            while (dataList.size() > effectiveLimit) {
+                dataList.remove(0);
+                removed = true;
+            }
+            if (removed) {
+                fullRefreshRequired = true;
+                firstNewRow = -1;
+            }
         }
     }
 

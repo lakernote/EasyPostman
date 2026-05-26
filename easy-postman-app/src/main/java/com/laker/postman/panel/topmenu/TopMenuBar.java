@@ -23,6 +23,7 @@ import com.laker.postman.panel.functional.FunctionalPanel;
 import com.laker.postman.panel.lifecycle.AppExitCoordinator;
 import com.laker.postman.panel.performance.PerformancePanel;
 import com.laker.postman.panel.topmenu.help.ChangelogDialog;
+import com.laker.postman.panel.topmenu.help.MemoryTuningDialog;
 import com.laker.postman.panel.topmenu.plugin.PluginManagerDialog;
 import com.laker.postman.panel.topmenu.setting.ModernSettingsDialog;
 import com.laker.postman.plugin.manager.PluginManagementService;
@@ -410,12 +411,20 @@ public class TopMenuBar extends UiSingletonMenuBar implements IRefreshable {
         updateMenuItem.addActionListener(e -> checkUpdate());
         JMenuItem changelogMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.MENU_HELP_CHANGELOG));
         changelogMenuItem.addActionListener(e -> showChangelogDialog());
+        JMenuItem memoryTuningMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.MENU_HELP_MEMORY_TUNING));
+        memoryTuningMenuItem.addActionListener(e -> showMemoryTuningDialog());
         JMenuItem feedbackMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.MENU_HELP_FEEDBACK));
         feedbackMenuItem.addActionListener(e -> showFeedbackDialog());
         helpMenu.add(updateMenuItem);
         helpMenu.add(changelogMenuItem);
+        helpMenu.add(memoryTuningMenuItem);
         helpMenu.add(feedbackMenuItem);
         add(helpMenu);
+    }
+
+    private void showMemoryTuningDialog() {
+        Window window = SwingUtilities.getWindowAncestor(this);
+        MemoryTuningDialog.showDialog(window instanceof Frame frame ? frame : null);
     }
 
     private void showFeedbackDialog() {

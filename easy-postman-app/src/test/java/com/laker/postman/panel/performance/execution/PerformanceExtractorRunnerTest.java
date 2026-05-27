@@ -76,15 +76,15 @@ public class PerformanceExtractorRunnerTest {
     }
 
     @Test
-    public void shouldCollectExtractorsFromAllSseAwaitStages() {
+    public void shouldCollectExtractorsFromAllSseReadStages() {
         PerformanceRequestSampler sampler = new PerformanceRequestSampler(
                 "sse",
                 null,
                 null,
                 null,
                 List.of(
-                        stage(NodeType.SSE_AWAIT, List.of(extractor("Header", "X-A", "first"))),
-                        stage(NodeType.SSE_AWAIT, List.of(extractor("Header", "X-B", "second")))
+                        stage(NodeType.SSE_READ, List.of(extractor("Header", "X-A", "first"))),
+                        stage(NodeType.SSE_READ, List.of(extractor("Header", "X-B", "second")))
                 )
         );
 

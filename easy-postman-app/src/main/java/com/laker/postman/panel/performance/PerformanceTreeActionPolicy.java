@@ -45,14 +45,14 @@ final class PerformanceTreeActionPolicy {
         }
         if (canManageSseStages) {
             actions.add(PerformanceTreeAction.ADD_SSE_CONNECT);
-            actions.add(PerformanceTreeAction.ADD_SSE_AWAIT);
+            actions.add(PerformanceTreeAction.ADD_SSE_READ);
         }
         if (canManageWsConnect) {
             actions.add(PerformanceTreeAction.ADD_WS_CONNECT);
         }
         if (canManageWsSteps) {
             actions.add(PerformanceTreeAction.ADD_WS_SEND);
-            actions.add(PerformanceTreeAction.ADD_WS_AWAIT);
+            actions.add(PerformanceTreeAction.ADD_WS_READ);
             actions.add(PerformanceTreeAction.ADD_WS_CLOSE);
         }
         if (canAddAssertion(jtNode)) {
@@ -156,13 +156,13 @@ final class PerformanceTreeActionPolicy {
         boolean sseRequestNode = jtNode.type == NodeType.REQUEST && treeSupport.isSsePerfRequest(jtNode.httpRequestItem);
         boolean webSocketRequestNode = jtNode.type == NodeType.REQUEST && treeSupport.isWebSocketPerfRequest(jtNode.httpRequestItem);
         return (jtNode.type == NodeType.REQUEST && !sseRequestNode && !webSocketRequestNode)
-                || jtNode.type == NodeType.SSE_AWAIT
-                || jtNode.type == NodeType.WS_AWAIT;
+                || jtNode.type == NodeType.SSE_READ
+                || jtNode.type == NodeType.WS_READ;
     }
 
     private boolean isFixedNameNode(NodeType type) {
         return type == NodeType.SSE_CONNECT
-                || type == NodeType.SSE_AWAIT
+                || type == NodeType.SSE_READ
                 || type == NodeType.WS_CONNECT;
     }
 

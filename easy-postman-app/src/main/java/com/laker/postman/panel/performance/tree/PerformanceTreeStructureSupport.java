@@ -55,15 +55,15 @@ public class PerformanceTreeStructureSupport {
                 );
                 ensureFixedChildNode(
                         requestNode,
-                        NodeType.SSE_AWAIT,
-                        PerformanceTreeNodeTitleFormatter.sseAwaitTitle(requestData.ssePerformanceData),
+                        NodeType.SSE_READ,
+                        PerformanceTreeNodeTitleFormatter.sseReadTitle(requestData.ssePerformanceData),
                         1
                 );
             }
-            DefaultMutableTreeNode awaitNode = findChildNode(requestNode, NodeType.SSE_AWAIT);
-            if (awaitNode != null) {
-                moveChildrenByType(requestNode, awaitNode, NodeType.ASSERTION);
-                moveChildrenByType(requestNode, awaitNode, NodeType.EXTRACTOR);
+            DefaultMutableTreeNode readNode = findChildNode(requestNode, NodeType.SSE_READ);
+            if (readNode != null) {
+                moveChildrenByType(requestNode, readNode, NodeType.ASSERTION);
+                moveChildrenByType(requestNode, readNode, NodeType.EXTRACTOR);
             }
             refreshSseStageTitles(requestNode, requestData.ssePerformanceData);
         } else if (isWebSocket) {
@@ -211,7 +211,7 @@ public class PerformanceTreeStructureSupport {
     }
 
     public boolean isWebSocketStepNode(NodeType type) {
-        return type == NodeType.WS_SEND || type == NodeType.WS_AWAIT || type == NodeType.WS_CLOSE;
+        return type == NodeType.WS_SEND || type == NodeType.WS_READ || type == NodeType.WS_CLOSE;
     }
 
     public boolean isRequestContainerLoop(DefaultMutableTreeNode node) {
@@ -377,16 +377,16 @@ public class PerformanceTreeStructureSupport {
 
     private void cleanupSseRequestStructure(DefaultMutableTreeNode requestNode, boolean removeNodes) {
         DefaultMutableTreeNode connectNode = findChildNode(requestNode, NodeType.SSE_CONNECT);
-        DefaultMutableTreeNode awaitNode = findChildNode(requestNode, NodeType.SSE_AWAIT);
-        if (removeNodes && awaitNode != null) {
-            moveChildrenByType(awaitNode, requestNode, NodeType.ASSERTION);
-            moveChildrenByType(awaitNode, requestNode, NodeType.EXTRACTOR);
+        DefaultMutableTreeNode readNode = findChildNode(requestNode, NodeType.SSE_READ);
+        if (removeNodes && readNode != null) {
+            moveChildrenByType(readNode, requestNode, NodeType.ASSERTION);
+            moveChildrenByType(readNode, requestNode, NodeType.EXTRACTOR);
         }
         if (removeNodes && connectNode != null) {
             treeModel.removeNodeFromParent(connectNode);
         }
-        if (removeNodes && awaitNode != null) {
-            treeModel.removeNodeFromParent(awaitNode);
+        if (removeNodes && readNode != null) {
+            treeModel.removeNodeFromParent(readNode);
         }
     }
 
@@ -413,7 +413,7 @@ public class PerformanceTreeStructureSupport {
 
     private boolean isWebSocketScenarioNode(NodeType type) {
         return type == NodeType.WS_SEND
-                || type == NodeType.WS_AWAIT
+                || type == NodeType.WS_READ
                 || type == NodeType.WS_CLOSE
                 || type == NodeType.LOOP;
     }
@@ -423,7 +423,7 @@ public class PerformanceTreeStructureSupport {
             return;
         }
         Object userObj = from.getUserObject();
-        if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.WS_AWAIT) {
+        if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.WS_READ) {
             moveChildrenByType(from, requestNode, NodeType.ASSERTION);
             moveChildrenByType(from, requestNode, NodeType.EXTRACTOR);
         }
@@ -445,7 +445,7 @@ public class PerformanceTreeStructureSupport {
             if (userObj instanceof JMeterTreeNode jtNode) {
                 switch (jtNode.type) {
                     case SSE_CONNECT -> jtNode.name = I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_NODE_CONNECT);
-                    case SSE_AWAIT -> jtNode.name = PerformanceTreeNodeTitleFormatter.sseAwaitTitle(data);
+                    case SSE_READ -> jtNode.name = PerformanceTreeNodeTitleFormatter.sseReadTitle(data);
                     default -> {
                     }
                 }
@@ -460,7 +460,7 @@ public class PerformanceTreeStructureSupport {
             switch (jtNode.type) {
                 case WS_CONNECT -> jtNode.name = I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_CONNECT);
                 case WS_SEND -> jtNode.name = PerformanceTreeNodeTitleFormatter.webSocketSendTitle(jtNode.webSocketPerformanceData);
-                case WS_AWAIT -> jtNode.name = PerformanceTreeNodeTitleFormatter.webSocketAwaitTitle(jtNode.webSocketPerformanceData);
+                case WS_READ -> jtNode.name = PerformanceTreeNodeTitleFormatter.webSocketReadTitle(jtNode.webSocketPerformanceData);
                 case WS_CLOSE -> jtNode.name = I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_CLOSE);
                 case LOOP -> jtNode.name = PerformanceTreeNodeTitleFormatter.loopTitle(jtNode.loopData);
                 case EXTRACTOR -> jtNode.name = PerformanceTreeNodeTitleFormatter.extractorTitle(jtNode.extractorData);

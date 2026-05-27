@@ -233,10 +233,10 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
                     "extractor",
                     "timer",
                     "sseConnect",
-                    "sseAwait",
+                    "sseRead",
                     WS_CONNECT_CARD,
                     "wsSend",
-                    "wsAwait",
+                    "wsRead",
                     "wsClose"
             );
         }

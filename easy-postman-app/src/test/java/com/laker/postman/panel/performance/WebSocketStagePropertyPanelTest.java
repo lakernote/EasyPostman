@@ -15,9 +15,9 @@ import static org.testng.Assert.assertFalse;
 public class WebSocketStagePropertyPanelTest {
 
     @Test
-    public void shouldResolveAwaitModeHintForEveryCompletionMode() {
+    public void shouldResolveReadModeHintForEveryCompletionMode() {
         for (WebSocketPerformanceData.CompletionMode mode : WebSocketPerformanceData.CompletionMode.values()) {
-            String hint = WebSocketStagePropertyPanel.resolveAwaitModeHint(mode);
+            String hint = WebSocketStagePropertyPanel.resolveReadModeHint(mode);
 
             assertFalse(hint == null || hint.isBlank(), mode.name());
             assertFalse(!hint.contains("消息正文") && !hint.contains("message bodies"), mode.name());
@@ -25,7 +25,7 @@ public class WebSocketStagePropertyPanelTest {
     }
 
     @Test
-    public void shouldUseEasyComboBoxForAwaitMode() throws Exception {
+    public void shouldUseEasyComboBoxForReadMode() throws Exception {
         Field field = WebSocketStagePropertyPanel.class.getDeclaredField("completionModeBox");
 
         assertEquals(field.getType(), EasyComboBox.class);
@@ -51,9 +51,9 @@ public class WebSocketStagePropertyPanelTest {
     @Test
     public void shouldDescribeReadAsNonClosingStep() {
         ResourceBundle zh = ResourceBundle.getBundle("messages", Locale.CHINESE);
-        assertEquals(zh.getString(MessageKeys.PERFORMANCE_MENU_ADD_WS_AWAIT), "添加 WS Read");
-        assertEquals(zh.getString(MessageKeys.PERFORMANCE_WS_NODE_AWAIT), "WS Read");
-        assertEquals(zh.getString(MessageKeys.PERFORMANCE_WS_AWAIT_MODE), "读取方式");
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_MENU_ADD_WS_READ), "添加 WS Read");
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_WS_NODE_READ), "WS Read");
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_WS_READ_MODE), "读取方式");
         assertEquals(zh.getString(MessageKeys.PERFORMANCE_WS_COMPLETION_FIRST_MESSAGE), "读 1 条");
         assertEquals(zh.getString(MessageKeys.PERFORMANCE_WS_COMPLETION_MATCHED_MESSAGE), "读到包含文本");
         assertEquals(zh.getString(MessageKeys.PERFORMANCE_WS_COMPLETION_MESSAGE_COUNT), "读 N 条");
@@ -73,9 +73,9 @@ public class WebSocketStagePropertyPanelTest {
                 "执行到该步骤时主动关闭当前 WebSocket 连接；Read 步骤只负责读取消息，不负责关闭连接。");
 
         ResourceBundle en = ResourceBundle.getBundle("messages", Locale.ENGLISH);
-        assertEquals(en.getString(MessageKeys.PERFORMANCE_MENU_ADD_WS_AWAIT), "Add WS Read");
-        assertEquals(en.getString(MessageKeys.PERFORMANCE_WS_NODE_AWAIT), "WS Read");
-        assertEquals(en.getString(MessageKeys.PERFORMANCE_WS_AWAIT_MODE), "Read");
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_MENU_ADD_WS_READ), "Add WS Read");
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_WS_NODE_READ), "WS Read");
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_WS_READ_MODE), "Read");
         assertEquals(en.getString(MessageKeys.PERFORMANCE_WS_COMPLETION_FIRST_MESSAGE), "1 message");
         assertEquals(en.getString(MessageKeys.PERFORMANCE_WS_COMPLETION_MATCHED_MESSAGE), "Until contains");
         assertEquals(en.getString(MessageKeys.PERFORMANCE_WS_COMPLETION_MESSAGE_COUNT), "N messages");

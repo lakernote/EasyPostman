@@ -92,7 +92,7 @@ public final class PerformanceTestPlanCompiler {
             case REQUEST -> compileRequest(node, data);
             case ASSERTION -> new PerformanceAssertionElement(data.name, data.assertionData);
             case EXTRACTOR -> new PerformanceExtractorElement(data.name, data.extractorData);
-            case SSE_CONNECT, SSE_AWAIT, WS_CONNECT, WS_SEND, WS_AWAIT, WS_CLOSE -> compileProtocolStage(node, data);
+            case SSE_CONNECT, SSE_READ, WS_CONNECT, WS_SEND, WS_READ, WS_CLOSE -> compileProtocolStage(node, data);
             default -> null;
         };
     }

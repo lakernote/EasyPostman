@@ -40,21 +40,4 @@ public class WebSocketPerformanceData {
         return mode == CompletionMode.UNTIL_MATCH || mode == CompletionMode.MESSAGE_COUNT;
     }
 
-    public static CompletionMode completionModeFromStorageValue(String value) {
-        if (value == null || value.isBlank()) {
-            return CompletionMode.SINGLE_MESSAGE;
-        }
-        return switch (value) {
-            case "FIRST_MESSAGE" -> CompletionMode.SINGLE_MESSAGE;
-            case "MATCHED_MESSAGE" -> CompletionMode.UNTIL_MATCH;
-            default -> {
-                try {
-                    yield CompletionMode.valueOf(value);
-                } catch (IllegalArgumentException e) {
-                    yield CompletionMode.SINGLE_MESSAGE;
-                }
-            }
-        };
-    }
-
 }

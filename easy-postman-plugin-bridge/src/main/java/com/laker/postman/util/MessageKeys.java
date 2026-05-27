@@ -649,10 +649,10 @@ public final class MessageKeys {
     public static final String PERFORMANCE_MENU_ADD_CSV_DATA_SET = "performance.menu.add_csv_data_set";
     public static final String PERFORMANCE_MENU_ADD_REQUEST = "performance.menu.add_request";
     public static final String PERFORMANCE_MENU_ADD_SSE_CONNECT = "performance.menu.add_sse_connect";
-    public static final String PERFORMANCE_MENU_ADD_SSE_AWAIT = "performance.menu.add_sse_await";
+    public static final String PERFORMANCE_MENU_ADD_SSE_READ = "performance.menu.add_sse_read";
     public static final String PERFORMANCE_MENU_ADD_WS_CONNECT = "performance.menu.add_ws_connect";
     public static final String PERFORMANCE_MENU_ADD_WS_SEND = "performance.menu.add_ws_send";
-    public static final String PERFORMANCE_MENU_ADD_WS_AWAIT = "performance.menu.add_ws_await";
+    public static final String PERFORMANCE_MENU_ADD_WS_READ = "performance.menu.add_ws_read";
     public static final String PERFORMANCE_MENU_ADD_WS_CLOSE = "performance.menu.add_ws_close";
     public static final String PERFORMANCE_MENU_ADD_LOOP = "performance.menu.add_loop";
     public static final String PERFORMANCE_MENU_ADD_ASSERTION = "performance.menu.add_assertion";
@@ -749,10 +749,10 @@ public final class MessageKeys {
     public static final String PERFORMANCE_SSE_COMPLETION_MESSAGE_COUNT = "performance.sse.completion.message_count";
     public static final String PERFORMANCE_SSE_COMPLETION_STREAM_CLOSED = "performance.sse.completion.stream_closed";
     public static final String PERFORMANCE_SSE_NODE_CONNECT = "performance.sse.node.connect";
-    public static final String PERFORMANCE_SSE_NODE_AWAIT = "performance.sse.node.await";
+    public static final String PERFORMANCE_SSE_NODE_READ = "performance.sse.node.read";
     public static final String PERFORMANCE_SSE_CONNECT_TIMEOUT = "performance.sse.connect_timeout";
-    public static final String PERFORMANCE_SSE_AWAIT_MODE = "performance.sse.await_mode";
-    public static final String PERFORMANCE_SSE_AWAIT_TIMEOUT = "performance.sse.await_timeout";
+    public static final String PERFORMANCE_SSE_READ_MODE = "performance.sse.read_mode";
+    public static final String PERFORMANCE_SSE_READ_TIMEOUT = "performance.sse.read_timeout";
     public static final String PERFORMANCE_SSE_MESSAGE_FILTER = "performance.sse.message_filter";
     public static final String PERFORMANCE_SSE_FIRST_EVENT_TIMEOUT = "performance.sse.first_event_timeout";
     public static final String PERFORMANCE_SSE_MATCHED_MESSAGE_TIMEOUT = "performance.sse.matched_message_timeout";
@@ -767,7 +767,7 @@ public final class MessageKeys {
     public static final String PERFORMANCE_SSE_HINT_STREAM_CLOSED = "performance.sse.hint.stream_closed";
     public static final String PERFORMANCE_WS_NODE_CONNECT = "performance.ws.node.connect";
     public static final String PERFORMANCE_WS_NODE_SEND = "performance.ws.node.send";
-    public static final String PERFORMANCE_WS_NODE_AWAIT = "performance.ws.node.await";
+    public static final String PERFORMANCE_WS_NODE_READ = "performance.ws.node.read";
     public static final String PERFORMANCE_WS_NODE_CLOSE = "performance.ws.node.close";
     public static final String PERFORMANCE_WS_CONNECT_TIMEOUT = "performance.ws.connect_timeout";
     public static final String PERFORMANCE_WS_SEND_MODE = "performance.ws.send_mode";
@@ -787,7 +787,7 @@ public final class MessageKeys {
     public static final String PERFORMANCE_WS_SEND_INTERVAL = "performance.ws.send_interval";
     public static final String PERFORMANCE_WS_SEND_PER_LOOP_COUNT = "performance.ws.send.per_loop_count";
     public static final String PERFORMANCE_WS_SEND_HINT = "performance.ws.send.hint";
-    public static final String PERFORMANCE_WS_AWAIT_MODE = "performance.ws.await_mode";
+    public static final String PERFORMANCE_WS_READ_MODE = "performance.ws.read_mode";
     public static final String PERFORMANCE_WS_COMPLETION_FIRST_MESSAGE = "performance.ws.completion.first_message";
     public static final String PERFORMANCE_WS_COMPLETION_MATCHED_MESSAGE = "performance.ws.completion.matched_message";
     public static final String PERFORMANCE_WS_COMPLETION_FIXED_DURATION = "performance.ws.completion.fixed_duration";

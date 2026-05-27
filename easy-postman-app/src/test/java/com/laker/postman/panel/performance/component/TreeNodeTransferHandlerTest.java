@@ -17,7 +17,7 @@ public class TreeNodeTransferHandlerTest {
     @Test(description = "协议阶段节点的拖拽规则应与右键复制/删除规则一致")
     public void shouldAllowProtocolStageNodesAsDragSource() {
         assertEquals(sourceActionFor(NodeType.SSE_CONNECT), TransferHandler.MOVE);
-        assertEquals(sourceActionFor(NodeType.SSE_AWAIT), TransferHandler.MOVE);
+        assertEquals(sourceActionFor(NodeType.SSE_READ), TransferHandler.MOVE);
         assertEquals(sourceActionFor(NodeType.WS_CONNECT), TransferHandler.MOVE);
     }
 

@@ -17,8 +17,8 @@ public class SseStagePropertyPanelTest extends AbstractSwingUiTest {
 
     @Test
     public void shouldHideEventFilterForFixedDurationMode() throws Exception {
-        SseStagePropertyPanel panel = new SseStagePropertyPanel(SseStagePropertyPanel.Stage.AWAIT);
-        JMeterTreeNode node = new JMeterTreeNode("SSE Await", NodeType.SSE_AWAIT);
+        SseStagePropertyPanel panel = new SseStagePropertyPanel(SseStagePropertyPanel.Stage.READ);
+        JMeterTreeNode node = new JMeterTreeNode("SSE Read", NodeType.SSE_READ);
         node.ssePerformanceData = new SsePerformanceData();
         node.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.FIXED_DURATION;
         node.ssePerformanceData.eventNameFilter = "done";
@@ -30,10 +30,10 @@ public class SseStagePropertyPanelTest extends AbstractSwingUiTest {
 
     @Test
     public void shouldHideEventFilterForFirstEventMode() throws Exception {
-        SseStagePropertyPanel panel = new SseStagePropertyPanel(SseStagePropertyPanel.Stage.AWAIT);
-        JMeterTreeNode node = new JMeterTreeNode("SSE Await", NodeType.SSE_AWAIT);
+        SseStagePropertyPanel panel = new SseStagePropertyPanel(SseStagePropertyPanel.Stage.READ);
+        JMeterTreeNode node = new JMeterTreeNode("SSE Read", NodeType.SSE_READ);
         node.ssePerformanceData = new SsePerformanceData();
-        node.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.FIRST_MESSAGE;
+        node.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.SINGLE_MESSAGE;
         node.ssePerformanceData.eventNameFilter = "done";
 
         panel.setRequestNode(node);
@@ -43,8 +43,8 @@ public class SseStagePropertyPanelTest extends AbstractSwingUiTest {
 
     @Test
     public void shouldShowOnlyCloseTimeoutForStreamClosedMode() throws Exception {
-        SseStagePropertyPanel panel = new SseStagePropertyPanel(SseStagePropertyPanel.Stage.AWAIT);
-        JMeterTreeNode node = new JMeterTreeNode("SSE Await", NodeType.SSE_AWAIT);
+        SseStagePropertyPanel panel = new SseStagePropertyPanel(SseStagePropertyPanel.Stage.READ);
+        JMeterTreeNode node = new JMeterTreeNode("SSE Read", NodeType.SSE_READ);
         node.ssePerformanceData = new SsePerformanceData();
         node.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.STREAM_CLOSED;
 
@@ -52,20 +52,20 @@ public class SseStagePropertyPanelTest extends AbstractSwingUiTest {
 
         assertFalse(eventNameFilterField(panel).isVisible());
         assertFalse(messageFilterField(panel).isVisible());
-        assertFalse(awaitTimeoutSpinner(panel).isVisible());
+        assertFalse(readTimeoutSpinner(panel).isVisible());
         assertTrue(holdConnectionSpinner(panel).isVisible());
     }
 
     @Test
     public void shouldUseOnlyReceiveTimeoutForMessageCountMode() throws Exception {
-        SseStagePropertyPanel panel = new SseStagePropertyPanel(SseStagePropertyPanel.Stage.AWAIT);
-        JMeterTreeNode node = new JMeterTreeNode("SSE Await", NodeType.SSE_AWAIT);
+        SseStagePropertyPanel panel = new SseStagePropertyPanel(SseStagePropertyPanel.Stage.READ);
+        JMeterTreeNode node = new JMeterTreeNode("SSE Read", NodeType.SSE_READ);
         node.ssePerformanceData = new SsePerformanceData();
         node.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.MESSAGE_COUNT;
 
         panel.setRequestNode(node);
 
-        assertTrue(awaitTimeoutSpinner(panel).isVisible());
+        assertTrue(readTimeoutSpinner(panel).isVisible());
         assertFalse(holdConnectionSpinner(panel).isVisible());
     }
 
@@ -81,8 +81,8 @@ public class SseStagePropertyPanelTest extends AbstractSwingUiTest {
         return (EasyTextField) field.get(panel);
     }
 
-    private EasyJSpinner awaitTimeoutSpinner(SseStagePropertyPanel panel) throws Exception {
-        Field field = SseStagePropertyPanel.class.getDeclaredField("awaitTimeoutSpinner");
+    private EasyJSpinner readTimeoutSpinner(SseStagePropertyPanel panel) throws Exception {
+        Field field = SseStagePropertyPanel.class.getDeclaredField("readTimeoutSpinner");
         field.setAccessible(true);
         return (EasyJSpinner) field.get(panel);
     }

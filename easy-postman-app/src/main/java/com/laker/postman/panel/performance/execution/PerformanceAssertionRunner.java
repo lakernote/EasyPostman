@@ -36,7 +36,7 @@ public final class PerformanceAssertionRunner {
         }
         List<PerformancePlanElement> parentElements = requestSampler.getChildren();
         if (sseRequest) {
-            List<PerformanceAssertionElement> assertions = collectDirectAssertionsFromStages(requestSampler, NodeType.SSE_AWAIT);
+            List<PerformanceAssertionElement> assertions = collectDirectAssertionsFromStages(requestSampler, NodeType.SSE_READ);
             if (assertions != null) {
                 return assertions;
             }

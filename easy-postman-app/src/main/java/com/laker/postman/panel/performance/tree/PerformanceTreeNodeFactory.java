@@ -63,9 +63,9 @@ public class PerformanceTreeNodeFactory {
                     I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_NODE_CONNECT),
                     NodeType.SSE_CONNECT
             );
-            case SSE_AWAIT -> nodeData = new JMeterTreeNode(
-                    PerformanceTreeNodeTitleFormatter.sseAwaitTitle(requestData),
-                    NodeType.SSE_AWAIT
+            case SSE_READ -> nodeData = new JMeterTreeNode(
+                    PerformanceTreeNodeTitleFormatter.sseReadTitle(requestData),
+                    NodeType.SSE_READ
             );
             default -> throw new IllegalArgumentException("Unsupported SSE stage type: " + type);
         }
@@ -88,14 +88,14 @@ public class PerformanceTreeNodeFactory {
                 nodeData.webSocketPerformanceData = stepData;
                 nodeData.name = PerformanceTreeNodeTitleFormatter.webSocketSendTitle(stepData);
             }
-            case WS_AWAIT -> {
-                nodeData = new JMeterTreeNode(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_AWAIT), NodeType.WS_AWAIT);
+            case WS_READ -> {
+                nodeData = new JMeterTreeNode(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_READ), NodeType.WS_READ);
                 WebSocketPerformanceData stepData = copyWebSocketData(requestDefaults);
                 stepData.completionMode = WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE;
                 stepData.firstMessageTimeoutMs = Math.max(100, stepData.firstMessageTimeoutMs);
                 stepData.targetMessageCount = 1;
                 nodeData.webSocketPerformanceData = stepData;
-                nodeData.name = PerformanceTreeNodeTitleFormatter.webSocketAwaitTitle(stepData);
+                nodeData.name = PerformanceTreeNodeTitleFormatter.webSocketReadTitle(stepData);
             }
             case WS_CLOSE -> {
                 nodeData = new JMeterTreeNode(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_CLOSE), NodeType.WS_CLOSE);

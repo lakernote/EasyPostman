@@ -30,10 +30,10 @@ public class PerformanceRequestSnapshotUiTest extends AbstractSwingUiTest {
                 "extractor",
                 "timer",
                 "sseConnect",
-                "sseAwait",
+                "sseRead",
                 "wsConnect",
                 "wsSend",
-                "wsAwait",
+                "wsRead",
                 "wsClose"
         );
 

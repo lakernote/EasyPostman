@@ -121,39 +121,39 @@ public class PerformanceResponseCapturePlanTest {
     }
 
     @Test
-    public void shouldRetainWebSocketAwaitPayloadForFilteringWithoutRetainingResponseBody() {
-        WebSocketPerformanceData awaitCfg = new WebSocketPerformanceData();
-        awaitCfg.completionMode = WebSocketPerformanceData.CompletionMode.UNTIL_MATCH;
-        awaitCfg.messageFilter = "ack";
-        PerformanceProtocolStageElement awaitStep = new PerformanceProtocolStageElement(
-                "await",
-                NodeType.WS_AWAIT,
+    public void shouldRetainWebSocketReadPayloadForFilteringWithoutRetainingResponseBody() {
+        WebSocketPerformanceData readCfg = new WebSocketPerformanceData();
+        readCfg.completionMode = WebSocketPerformanceData.CompletionMode.UNTIL_MATCH;
+        readCfg.messageFilter = "ack";
+        PerformanceProtocolStageElement readStep = new PerformanceProtocolStageElement(
+                "read",
+                NodeType.WS_READ,
                 null,
-                awaitCfg,
+                readCfg,
                 List.of()
         );
 
         PerformanceResponseCapturePlan plan = PerformanceResponseCapturePlan.resolve(
                 true,
-                sampler(List.of(awaitStep)),
+                sampler(List.of(readStep)),
                 false,
                 true,
                 ""
         );
 
-        assertTrue(plan.retainWebSocketAwaitPayloads());
+        assertTrue(plan.retainWebSocketReadPayloads());
         assertFalse(plan.retainStreamResponseBody());
     }
 
     @Test
-    public void shouldRetainWebSocketResponseBodyForAwaitBodyAssertion() {
+    public void shouldRetainWebSocketResponseBodyForReadBodyAssertion() {
         AssertionData data = new AssertionData();
         data.type = "Contains";
         data.content = "ack";
         PerformanceAssertionElement assertion = new PerformanceAssertionElement("contains", data);
-        PerformanceProtocolStageElement awaitStep = new PerformanceProtocolStageElement(
-                "await",
-                NodeType.WS_AWAIT,
+        PerformanceProtocolStageElement readStep = new PerformanceProtocolStageElement(
+                "read",
+                NodeType.WS_READ,
                 null,
                 new WebSocketPerformanceData(),
                 List.of(assertion)
@@ -161,13 +161,13 @@ public class PerformanceResponseCapturePlanTest {
 
         PerformanceResponseCapturePlan plan = PerformanceResponseCapturePlan.resolve(
                 true,
-                sampler(List.of(awaitStep)),
+                sampler(List.of(readStep)),
                 false,
                 true,
                 ""
         );
 
-        assertTrue(plan.retainWebSocketAwaitPayloads());
+        assertTrue(plan.retainWebSocketReadPayloads());
         assertTrue(plan.retainStreamResponseBody());
     }
 
@@ -208,14 +208,14 @@ public class PerformanceResponseCapturePlanTest {
     }
 
     @Test
-    public void shouldRetainWebSocketPayloadForAwaitBodyExtractor() {
+    public void shouldRetainWebSocketPayloadForReadBodyExtractor() {
         ExtractorData data = new ExtractorData();
         data.type = "Regex";
         data.expression = "token=(\\w+)";
         data.variableName = "token";
-        PerformanceProtocolStageElement awaitStep = new PerformanceProtocolStageElement(
-                "await",
-                NodeType.WS_AWAIT,
+        PerformanceProtocolStageElement readStep = new PerformanceProtocolStageElement(
+                "read",
+                NodeType.WS_READ,
                 null,
                 new WebSocketPerformanceData(),
                 List.of(new PerformanceExtractorElement("token", data))
@@ -223,13 +223,13 @@ public class PerformanceResponseCapturePlanTest {
 
         PerformanceResponseCapturePlan plan = PerformanceResponseCapturePlan.resolve(
                 true,
-                sampler(List.of(awaitStep)),
+                sampler(List.of(readStep)),
                 false,
                 true,
                 ""
         );
 
-        assertTrue(plan.retainWebSocketAwaitPayloads());
+        assertTrue(plan.retainWebSocketReadPayloads());
         assertTrue(plan.retainStreamResponseBody());
     }
 

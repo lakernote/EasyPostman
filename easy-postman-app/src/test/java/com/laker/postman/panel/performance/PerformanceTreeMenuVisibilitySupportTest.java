@@ -102,7 +102,7 @@ public class PerformanceTreeMenuVisibilitySupportTest {
         assertTrue(items.addLoop().isVisible());
         assertTrue(items.addWsConnect().isVisible());
         assertTrue(items.addWsSend().isVisible());
-        assertTrue(items.addWsAwait().isVisible());
+        assertTrue(items.addWsRead().isVisible());
         assertTrue(items.addWsClose().isVisible());
         assertTrue(items.addTimer().isVisible());
         assertTrue(items.copyNode().isVisible());
@@ -117,9 +117,9 @@ public class PerformanceTreeMenuVisibilitySupportTest {
         TreeFixture fixture = new TreeFixture();
         fixture.requestData.httpRequestItem = requestItem(RequestItemProtocolEnum.SSE);
         DefaultMutableTreeNode disabledConnect = node(NodeType.SSE_CONNECT, false);
-        DefaultMutableTreeNode enabledAwait = node(NodeType.SSE_AWAIT, true);
+        DefaultMutableTreeNode enabledRead = node(NodeType.SSE_READ, true);
         fixture.request.add(disabledConnect);
-        fixture.request.add(enabledAwait);
+        fixture.request.add(enabledRead);
         PerformanceTreeMenuVisibilitySupport support = new PerformanceTreeMenuVisibilitySupport(
                 fixture.treeSupport,
                 List::of
@@ -129,21 +129,21 @@ public class PerformanceTreeMenuVisibilitySupportTest {
         support.configureSingleSelectionMenu(disabledConnect, connectItems);
 
         assertTrue(connectItems.addSseConnect().isVisible());
-        assertTrue(connectItems.addSseAwait().isVisible());
+        assertTrue(connectItems.addSseRead().isVisible());
         assertTrue(connectItems.enableNode().isVisible());
         assertFalse(connectItems.disableNode().isVisible());
         assertFalse(connectItems.renameNode().isVisible());
 
-        PerformanceTreeMenuItems awaitItems = newMenuItems();
-        support.configureSingleSelectionMenu(enabledAwait, awaitItems);
+        PerformanceTreeMenuItems readItems = newMenuItems();
+        support.configureSingleSelectionMenu(enabledRead, readItems);
 
-        assertTrue(awaitItems.addSseConnect().isVisible());
-        assertTrue(awaitItems.addSseAwait().isVisible());
-        assertTrue(awaitItems.addAssertion().isVisible());
-        assertTrue(awaitItems.addExtractor().isVisible());
-        assertFalse(awaitItems.enableNode().isVisible());
-        assertTrue(awaitItems.disableNode().isVisible());
-        assertFalse(awaitItems.renameNode().isVisible());
+        assertTrue(readItems.addSseConnect().isVisible());
+        assertTrue(readItems.addSseRead().isVisible());
+        assertTrue(readItems.addAssertion().isVisible());
+        assertTrue(readItems.addExtractor().isVisible());
+        assertFalse(readItems.enableNode().isVisible());
+        assertTrue(readItems.disableNode().isVisible());
+        assertFalse(readItems.renameNode().isVisible());
     }
 
     private static PerformanceTreeMenuItems newMenuItems() {
@@ -153,10 +153,10 @@ public class PerformanceTreeMenuVisibilitySupportTest {
                 new JMenuItem("addRequest"),
                 new JMenuItem("addLoop"),
                 new JMenuItem("addSseConnect"),
-                new JMenuItem("addSseAwait"),
+                new JMenuItem("addSseRead"),
                 new JMenuItem("addWsConnect"),
                 new JMenuItem("addWsSend"),
-                new JMenuItem("addWsAwait"),
+                new JMenuItem("addWsRead"),
                 new JMenuItem("addWsClose"),
                 new JMenuItem("addAssertion"),
                 new JMenuItem("addExtractor"),

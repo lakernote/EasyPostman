@@ -29,7 +29,7 @@ public class PerformanceTreeNodeTitleFormatterTest {
         data.firstMessageTimeoutMs = 10000;
         data.messageFilter = "ack";
 
-        String title = PerformanceTreeNodeTitleFormatter.webSocketAwaitTitle(data);
+        String title = PerformanceTreeNodeTitleFormatter.webSocketReadTitle(data);
 
         assertTrue(title.startsWith("WS Read"), title);
         assertTrue(title.contains("Until contains") || title.contains("读到包含文本"), title);
@@ -45,7 +45,7 @@ public class PerformanceTreeNodeTitleFormatterTest {
         data.firstMessageTimeoutMs = 2000;
         data.holdConnectionMs = 15000;
 
-        String title = PerformanceTreeNodeTitleFormatter.webSocketAwaitTitle(data);
+        String title = PerformanceTreeNodeTitleFormatter.webSocketReadTitle(data);
 
         assertTrue(title.contains("3"), title);
         assertTrue(title.contains("2s"), title);
@@ -55,19 +55,20 @@ public class PerformanceTreeNodeTitleFormatterTest {
     @Test(description = "SSE 匹配消息标题应展示消息和事件过滤条件")
     public void shouldFormatSseMatchedMessageTitle() {
         SsePerformanceData data = new SsePerformanceData();
-        data.completionMode = SsePerformanceData.CompletionMode.MATCHED_MESSAGE;
+        data.completionMode = SsePerformanceData.CompletionMode.UNTIL_MATCH;
         data.firstMessageTimeoutMs = 10000;
         data.messageFilter = "ready";
         data.eventNameFilter = "open";
 
-        String title = PerformanceTreeNodeTitleFormatter.sseAwaitTitle(data);
+        String title = PerformanceTreeNodeTitleFormatter.sseReadTitle(data);
 
+        assertTrue(title.startsWith("SSE Read"), title);
         assertTrue(title.contains("10s"), title);
         assertTrue(title.contains("contains=ready"), title);
         assertTrue(title.contains("event=open"), title);
     }
 
-    @Test(description = "SSE 按消息数标题应展示统一接收超时")
+    @Test(description = "SSE 按消息数标题应展示统一读取超时")
     public void shouldFormatSseMessageCountTitleWithReceiveTimeout() {
         SsePerformanceData data = new SsePerformanceData();
         data.completionMode = SsePerformanceData.CompletionMode.MESSAGE_COUNT;
@@ -75,7 +76,7 @@ public class PerformanceTreeNodeTitleFormatterTest {
         data.firstMessageTimeoutMs = 2000;
         data.holdConnectionMs = 15000;
 
-        String title = PerformanceTreeNodeTitleFormatter.sseAwaitTitle(data);
+        String title = PerformanceTreeNodeTitleFormatter.sseReadTitle(data);
 
         assertTrue(title.contains("3"), title);
         assertTrue(title.contains("2s"), title);
@@ -88,7 +89,7 @@ public class PerformanceTreeNodeTitleFormatterTest {
         data.completionMode = SsePerformanceData.CompletionMode.STREAM_CLOSED;
         data.holdConnectionMs = 15000;
 
-        String title = PerformanceTreeNodeTitleFormatter.sseAwaitTitle(data);
+        String title = PerformanceTreeNodeTitleFormatter.sseReadTitle(data);
 
         assertTrue(title.contains("15s"), title);
         assertTrue(title.contains("流关闭") || title.contains("Stream Closed"), title);

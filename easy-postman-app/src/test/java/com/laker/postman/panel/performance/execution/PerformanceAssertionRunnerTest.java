@@ -124,15 +124,15 @@ public class PerformanceAssertionRunnerTest {
     }
 
     @Test
-    public void shouldCollectAssertionsFromAllSseAwaitStages() {
+    public void shouldCollectAssertionsFromAllSseReadStages() {
         PerformanceRequestSampler sampler = new PerformanceRequestSampler(
                 "sse",
                 null,
                 null,
                 null,
                 List.of(
-                        stage(NodeType.SSE_AWAIT, List.of(assertionElement("Contains", "first", ""))),
-                        stage(NodeType.SSE_AWAIT, List.of(assertionElement("Contains", "second", "")))
+                        stage(NodeType.SSE_READ, List.of(assertionElement("Contains", "first", ""))),
+                        stage(NodeType.SSE_READ, List.of(assertionElement("Contains", "second", "")))
                 )
         );
 

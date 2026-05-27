@@ -8,10 +8,10 @@ record PerformanceTreeMenuItems(
         JMenuItem addRequest,
         JMenuItem addLoop,
         JMenuItem addSseConnect,
-        JMenuItem addSseAwait,
+        JMenuItem addSseRead,
         JMenuItem addWsConnect,
         JMenuItem addWsSend,
-        JMenuItem addWsAwait,
+        JMenuItem addWsRead,
         JMenuItem addWsClose,
         JMenuItem addAssertion,
         JMenuItem addExtractor,
@@ -27,9 +27,9 @@ record PerformanceTreeMenuItems(
     boolean hasVisibleAddItem() {
         return addThreadGroup.isVisible() || addCsvDataSet.isVisible() || addRequest.isVisible()
                 || addLoop.isVisible()
-                || addSseConnect.isVisible() || addSseAwait.isVisible()
+                || addSseConnect.isVisible() || addSseRead.isVisible()
                 || addWsConnect.isVisible()
-                || addWsSend.isVisible() || addWsAwait.isVisible() || addWsClose.isVisible()
+                || addWsSend.isVisible() || addWsRead.isVisible() || addWsClose.isVisible()
                 || addAssertion.isVisible() || addExtractor.isVisible() || addTimer.isVisible();
     }
 

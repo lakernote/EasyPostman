@@ -9,13 +9,10 @@ import static org.testng.Assert.assertTrue;
 public class WebSocketPerformanceDataTest {
 
     @Test
-    public void shouldNormalizeLegacyCompletionModesForStorageReads() {
-        assertEquals(WebSocketPerformanceData.completionModeFromStorageValue("FIRST_MESSAGE"),
-                WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE);
-        assertEquals(WebSocketPerformanceData.completionModeFromStorageValue("MATCHED_MESSAGE"),
-                WebSocketPerformanceData.CompletionMode.UNTIL_MATCH);
-        assertEquals(WebSocketPerformanceData.completionModeFromStorageValue("unknown"),
-                WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE);
+    public void shouldUseSingleMessageAsDefaultCompletionMode() {
+        WebSocketPerformanceData data = new WebSocketPerformanceData();
+
+        assertEquals(data.completionMode, WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE);
     }
 
     @Test

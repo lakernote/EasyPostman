@@ -5,7 +5,7 @@ import java.util.Deque;
 import java.util.concurrent.atomic.AtomicLong;
 
 final class WebSocketReceivedMessageBuffer {
-    static final int DEFAULT_MAX_RETAINED_AWAIT_MESSAGES = 1024;
+    static final int DEFAULT_MAX_RETAINED_READ_MESSAGES = 1024;
 
     private final int maxRetainedBytes;
     private final int maxRetainedMessages;
@@ -18,7 +18,7 @@ final class WebSocketReceivedMessageBuffer {
     }
 
     WebSocketReceivedMessageBuffer(int maxRetainedBytes, boolean retainPayload) {
-        this(maxRetainedBytes, retainPayload, DEFAULT_MAX_RETAINED_AWAIT_MESSAGES);
+        this(maxRetainedBytes, retainPayload, DEFAULT_MAX_RETAINED_READ_MESSAGES);
     }
 
     WebSocketReceivedMessageBuffer(int maxRetainedBytes, boolean retainPayload, int maxRetainedMessages) {

@@ -18,38 +18,38 @@ import java.util.List;
 @UtilityClass
 class WebSocketScenarioStepSupport {
 
-    boolean hasEnabledAwaitStep(PerformanceRequestSampler requestSampler) {
+    boolean hasEnabledReadStep(PerformanceRequestSampler requestSampler) {
         if (requestSampler == null) {
             return false;
         }
-        return hasEnabledAwaitStep(requestSampler.getChildren());
+        return hasEnabledReadStep(requestSampler.getChildren());
     }
 
-    boolean hasAwaitStepRequiringPayload(PerformanceRequestSampler requestSampler) {
+    boolean hasReadStepRequiringPayload(PerformanceRequestSampler requestSampler) {
         if (requestSampler == null) {
             return false;
         }
-        return hasAwaitStepRequiringPayload(requestSampler.getChildren(), requestSampler.getWebSocketPerformanceData());
+        return hasReadStepRequiringPayload(requestSampler.getChildren(), requestSampler.getWebSocketPerformanceData());
     }
 
-    boolean hasAwaitStepWithResponseBodyNode(PerformanceRequestSampler requestSampler) {
+    boolean hasReadStepWithResponseBodyNode(PerformanceRequestSampler requestSampler) {
         if (requestSampler == null) {
             return false;
         }
-        return hasAwaitStepWithResponseBodyNode(requestSampler.getChildren());
+        return hasReadStepWithResponseBodyNode(requestSampler.getChildren());
     }
 
-    int maxBufferedMessagesNeededForAwait(PerformanceRequestSampler requestSampler) {
+    int maxBufferedMessagesNeededForRead(PerformanceRequestSampler requestSampler) {
         if (requestSampler == null) {
             return 1;
         }
-        int required = maxBufferedMessagesNeededForAwait(
+        int required = maxBufferedMessagesNeededForRead(
                 requestSampler.getChildren(),
                 requestSampler.getWebSocketPerformanceData()
         );
         return required <= 0
-                ? WebSocketReceivedMessageBuffer.DEFAULT_MAX_RETAINED_AWAIT_MESSAGES
-                : Math.min(required, WebSocketReceivedMessageBuffer.DEFAULT_MAX_RETAINED_AWAIT_MESSAGES);
+                ? WebSocketReceivedMessageBuffer.DEFAULT_MAX_RETAINED_READ_MESSAGES
+                : Math.min(required, WebSocketReceivedMessageBuffer.DEFAULT_MAX_RETAINED_READ_MESSAGES);
     }
 
     WebSocketPerformanceData webSocketData(PerformancePlanElement stepElement,
@@ -110,74 +110,74 @@ class WebSocketScenarioStepSupport {
         return target;
     }
 
-    private boolean hasEnabledAwaitStep(List<PerformancePlanElement> elements) {
+    private boolean hasEnabledReadStep(List<PerformancePlanElement> elements) {
         for (PerformancePlanElement element : elements) {
-            if (element.getType() == NodeType.WS_AWAIT) {
+            if (element.getType() == NodeType.WS_READ) {
                 return true;
             }
             if (element instanceof PerformanceController controller
-                    && hasEnabledAwaitStep(controller.getElements())) {
+                    && hasEnabledReadStep(controller.getElements())) {
                 return true;
             }
         }
         return false;
     }
 
-    private boolean hasAwaitStepRequiringPayload(List<PerformancePlanElement> elements,
+    private boolean hasReadStepRequiringPayload(List<PerformancePlanElement> elements,
                                                  WebSocketPerformanceData requestConfig) {
         for (PerformancePlanElement element : elements) {
-            if (element instanceof PerformanceProtocolStageElement stage && stage.getType() == NodeType.WS_AWAIT) {
+            if (element instanceof PerformanceProtocolStageElement stage && stage.getType() == NodeType.WS_READ) {
                 WebSocketPerformanceData cfg = webSocketData(stage, requestConfig);
                 if (hasMessageFilter(cfg) || hasResponseBodyNode(stage)) {
                     return true;
                 }
             }
             if (element instanceof PerformanceController controller
-                    && hasAwaitStepRequiringPayload(controller.getElements(), requestConfig)) {
+                    && hasReadStepRequiringPayload(controller.getElements(), requestConfig)) {
                 return true;
             }
         }
         return false;
     }
 
-    private boolean hasAwaitStepWithResponseBodyNode(List<PerformancePlanElement> elements) {
+    private boolean hasReadStepWithResponseBodyNode(List<PerformancePlanElement> elements) {
         for (PerformancePlanElement element : elements) {
             if (element instanceof PerformanceProtocolStageElement stage
-                    && stage.getType() == NodeType.WS_AWAIT
+                    && stage.getType() == NodeType.WS_READ
                     && hasResponseBodyNode(stage)) {
                 return true;
             }
             if (element instanceof PerformanceController controller
-                    && hasAwaitStepWithResponseBodyNode(controller.getElements())) {
+                    && hasReadStepWithResponseBodyNode(controller.getElements())) {
                 return true;
             }
         }
         return false;
     }
 
-    private int maxBufferedMessagesNeededForAwait(List<PerformancePlanElement> elements,
+    private int maxBufferedMessagesNeededForRead(List<PerformancePlanElement> elements,
                                                   WebSocketPerformanceData requestConfig) {
         int max = 0;
         for (PerformancePlanElement element : elements) {
-            if (element instanceof PerformanceProtocolStageElement stage && stage.getType() == NodeType.WS_AWAIT) {
+            if (element instanceof PerformanceProtocolStageElement stage && stage.getType() == NodeType.WS_READ) {
                 WebSocketPerformanceData cfg = webSocketData(stage, requestConfig);
-                max = Math.max(max, bufferedMessagesNeededForAwait(cfg));
+                max = Math.max(max, bufferedMessagesNeededForRead(cfg));
             }
             if (element instanceof PerformanceController controller) {
-                max = Math.max(max, maxBufferedMessagesNeededForAwait(controller.getElements(), requestConfig));
+                max = Math.max(max, maxBufferedMessagesNeededForRead(controller.getElements(), requestConfig));
             }
         }
         return max;
     }
 
-    private int bufferedMessagesNeededForAwait(WebSocketPerformanceData cfg) {
+    private int bufferedMessagesNeededForRead(WebSocketPerformanceData cfg) {
         WebSocketPerformanceData.CompletionMode completionMode = cfg.completionMode == null
                 ? WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE
                 : cfg.completionMode;
         return switch (completionMode) {
             case SINGLE_MESSAGE, UNTIL_MATCH -> 1;
             case MESSAGE_COUNT -> Math.max(1, cfg.targetMessageCount);
-            case FIXED_DURATION -> WebSocketReceivedMessageBuffer.DEFAULT_MAX_RETAINED_AWAIT_MESSAGES;
+            case FIXED_DURATION -> WebSocketReceivedMessageBuffer.DEFAULT_MAX_RETAINED_READ_MESSAGES;
         };
     }
 

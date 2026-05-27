@@ -11,9 +11,9 @@ public enum NodeType {
     EXTRACTOR,
     TIMER,
     SSE_CONNECT,
-    SSE_AWAIT,
+    SSE_READ,
     WS_CONNECT,
     WS_SEND,
-    WS_AWAIT,
+    WS_READ,
     WS_CLOSE
 }

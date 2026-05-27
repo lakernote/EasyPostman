@@ -13,7 +13,7 @@ record PerformanceResponseCapturePlan(PreparedRequest.ResponseBodyMode httpRespo
                                       boolean runPostScript,
                                       boolean postScriptNeedsResponseBody,
                                       boolean retainStreamResponseBody,
-                                      boolean retainWebSocketAwaitPayloads,
+                                      boolean retainWebSocketReadPayloads,
                                       boolean trackStreamResponseBodySize) {
 
     static PerformanceResponseCapturePlan resolve(boolean efficientMode,
@@ -30,15 +30,15 @@ record PerformanceResponseCapturePlan(PreparedRequest.ResponseBodyMode httpRespo
         boolean runPostScript = CharSequenceUtil.isNotBlank(postscript);
         boolean postScriptNeedsResponseBody = PerformancePostScriptResponseUsage.requiresResponseBody(postscript);
         boolean postScriptNeedsResponseSize = PerformancePostScriptResponseUsage.requiresResponseSize(postscript);
-        boolean awaitStepNeedsResponseBody = webSocketRequest
-                && WebSocketScenarioStepSupport.hasAwaitStepWithResponseBodyNode(requestSampler);
-        boolean retainWebSocketAwaitPayloads = webSocketRequest
-                && WebSocketScenarioStepSupport.hasAwaitStepRequiringPayload(requestSampler);
+        boolean readStepNeedsResponseBody = webSocketRequest
+                && WebSocketScenarioStepSupport.hasReadStepWithResponseBodyNode(requestSampler);
+        boolean retainWebSocketReadPayloads = webSocketRequest
+                && WebSocketScenarioStepSupport.hasReadStepRequiringPayload(requestSampler);
         boolean retainStreamResponseBody = !efficientMode
                 || assertionNeedsResponseBody
                 || extractorNeedsResponseBody
                 || postScriptNeedsResponseBody
-                || awaitStepNeedsResponseBody;
+                || readStepNeedsResponseBody;
         boolean trackStreamResponseBodySize = retainStreamResponseBody || postScriptNeedsResponseSize;
 
         return new PerformanceResponseCapturePlan(
@@ -46,7 +46,7 @@ record PerformanceResponseCapturePlan(PreparedRequest.ResponseBodyMode httpRespo
                 runPostScript,
                 postScriptNeedsResponseBody,
                 retainStreamResponseBody,
-                retainWebSocketAwaitPayloads,
+                retainWebSocketReadPayloads,
                 trackStreamResponseBodySize
         );
     }

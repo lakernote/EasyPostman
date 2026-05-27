@@ -65,10 +65,10 @@ final class PerformancePanelViewFactory {
                                           String extractorCard,
                                           String timerCard,
                                           String sseConnectCard,
-                                          String sseAwaitCard,
+                                          String sseReadCard,
                                           String wsConnectCard,
                                           String wsSendCard,
-                                          String wsAwaitCard,
+                                          String wsReadCard,
                                           String wsCloseCard) {
         CardLayout propertyCardLayout = new CardLayout();
         JPanel propertyPanel = new JPanel(propertyCardLayout);
@@ -96,15 +96,15 @@ final class PerformancePanelViewFactory {
 
         SseStagePropertyPanel sseConnectPanel = new SseStagePropertyPanel(SseStagePropertyPanel.Stage.CONNECT);
         propertyPanel.add(sseConnectPanel, sseConnectCard);
-        SseStagePropertyPanel sseAwaitPanel = new SseStagePropertyPanel(SseStagePropertyPanel.Stage.AWAIT);
-        propertyPanel.add(sseAwaitPanel, sseAwaitCard);
+        SseStagePropertyPanel sseReadPanel = new SseStagePropertyPanel(SseStagePropertyPanel.Stage.READ);
+        propertyPanel.add(sseReadPanel, sseReadCard);
 
         WebSocketStagePropertyPanel wsConnectPanel = new WebSocketStagePropertyPanel(WebSocketStagePropertyPanel.Stage.CONNECT);
         propertyPanel.add(wsConnectPanel, wsConnectCard);
         WebSocketStagePropertyPanel wsSendPanel = new WebSocketStagePropertyPanel(WebSocketStagePropertyPanel.Stage.SEND);
         propertyPanel.add(wsSendPanel, wsSendCard);
-        WebSocketStagePropertyPanel wsAwaitPanel = new WebSocketStagePropertyPanel(WebSocketStagePropertyPanel.Stage.AWAIT);
-        propertyPanel.add(wsAwaitPanel, wsAwaitCard);
+        WebSocketStagePropertyPanel wsReadPanel = new WebSocketStagePropertyPanel(WebSocketStagePropertyPanel.Stage.READ);
+        propertyPanel.add(wsReadPanel, wsReadCard);
         WebSocketStagePropertyPanel wsClosePanel = new WebSocketStagePropertyPanel(WebSocketStagePropertyPanel.Stage.CLOSE);
         propertyPanel.add(wsClosePanel, wsCloseCard);
 
@@ -119,10 +119,10 @@ final class PerformancePanelViewFactory {
                 extractorPanel,
                 timerPanel,
                 sseConnectPanel,
-                sseAwaitPanel,
+                sseReadPanel,
                 wsConnectPanel,
                 wsSendPanel,
-                wsAwaitPanel,
+                wsReadPanel,
                 wsClosePanel,
                 requestEditSubPanel,
                 requestEditorSection.requestEditorHost()
@@ -429,10 +429,10 @@ final class PerformancePanelViewFactory {
                            ExtractorPropertyPanel extractorPanel,
                            TimerPropertyPanel timerPanel,
                            SseStagePropertyPanel sseConnectPanel,
-                           SseStagePropertyPanel sseAwaitPanel,
+                           SseStagePropertyPanel sseReadPanel,
                            WebSocketStagePropertyPanel wsConnectPanel,
                            WebSocketStagePropertyPanel wsSendPanel,
-                           WebSocketStagePropertyPanel wsAwaitPanel,
+                           WebSocketStagePropertyPanel wsReadPanel,
                            WebSocketStagePropertyPanel wsClosePanel,
                            RequestEditSubPanel requestEditSubPanel,
                            JPanel requestEditorHost) {

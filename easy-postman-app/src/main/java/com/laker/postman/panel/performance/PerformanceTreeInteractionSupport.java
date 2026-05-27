@@ -40,10 +40,10 @@ final class PerformanceTreeInteractionSupport {
     private final ExtractorPropertyPanel extractorPanel;
     private final TimerPropertyPanel timerPanel;
     private final SseStagePropertyPanel sseConnectPanel;
-    private final SseStagePropertyPanel sseAwaitPanel;
+    private final SseStagePropertyPanel sseReadPanel;
     private final WebSocketStagePropertyPanel wsConnectPanel;
     private final WebSocketStagePropertyPanel wsSendPanel;
-    private final WebSocketStagePropertyPanel wsAwaitPanel;
+    private final WebSocketStagePropertyPanel wsReadPanel;
     private final WebSocketStagePropertyPanel wsClosePanel;
     private final PerformanceTreeSupport treeSupport;
     private final Consumer<DefaultMutableTreeNode> saveRequestNodeAction;
@@ -63,10 +63,10 @@ final class PerformanceTreeInteractionSupport {
     private final String extractorCard;
     private final String timerCard;
     private final String sseConnectCard;
-    private final String sseAwaitCard;
+    private final String sseReadCard;
     private final String wsConnectCard;
     private final String wsSendCard;
-    private final String wsAwaitCard;
+    private final String wsReadCard;
     private final String wsCloseCard;
 
     private PerformanceTreeSelectionSupport selectionSupport;
@@ -96,10 +96,10 @@ final class PerformanceTreeInteractionSupport {
                 extractorPanel,
                 timerPanel,
                 sseConnectPanel,
-                sseAwaitPanel,
+                sseReadPanel,
                 wsConnectPanel,
                 wsSendPanel,
-                wsAwaitPanel,
+                wsReadPanel,
                 wsClosePanel,
                 treeSupport,
                 saveRequestNodeAction,
@@ -117,10 +117,10 @@ final class PerformanceTreeInteractionSupport {
                 extractorCard,
                 timerCard,
                 sseConnectCard,
-                sseAwaitCard,
+                sseReadCard,
                 wsConnectCard,
                 wsSendCard,
-                wsAwaitCard,
+                wsReadCard,
                 wsCloseCard
         );
     }
@@ -148,10 +148,10 @@ final class PerformanceTreeInteractionSupport {
         JMenuItem addCsvDataSet = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_CSV_DATA_SET));
         JMenuItem addRequest = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_REQUEST));
         JMenuItem addSseConnect = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_SSE_CONNECT));
-        JMenuItem addSseAwait = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_SSE_AWAIT));
+        JMenuItem addSseRead = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_SSE_READ));
         JMenuItem addWsConnect = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_WS_CONNECT));
         JMenuItem addWsSend = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_WS_SEND));
-        JMenuItem addWsAwait = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_WS_AWAIT));
+        JMenuItem addWsRead = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_WS_READ));
         JMenuItem addWsClose = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_WS_CLOSE));
         JMenuItem addLoop = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_LOOP));
         JMenuItem addAssertion = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_ASSERTION));
@@ -169,10 +169,10 @@ final class PerformanceTreeInteractionSupport {
                 addRequest,
                 addLoop,
                 addSseConnect,
-                addSseAwait,
+                addSseRead,
                 addWsConnect,
                 addWsSend,
-                addWsAwait,
+                addWsRead,
                 addWsClose,
                 addAssertion,
                 addExtractor,
@@ -203,10 +203,10 @@ final class PerformanceTreeInteractionSupport {
         treeMenu.add(addRequest);
         treeMenu.add(addLoop);
         treeMenu.add(addSseConnect);
-        treeMenu.add(addSseAwait);
+        treeMenu.add(addSseRead);
         treeMenu.add(addWsConnect);
         treeMenu.add(addWsSend);
-        treeMenu.add(addWsAwait);
+        treeMenu.add(addWsRead);
         treeMenu.add(addWsClose);
         treeMenu.add(addAssertion);
         treeMenu.add(addExtractor);
@@ -236,10 +236,10 @@ final class PerformanceTreeInteractionSupport {
         addRequest.addActionListener(e -> nodeActionSupport.addRequestNodes());
         addLoop.addActionListener(e -> treeSupport.addLoopNode(jmeterTree, saveConfigAction));
         addSseConnect.addActionListener(e -> treeSupport.addSseStageNode(jmeterTree, NodeType.SSE_CONNECT, saveConfigAction));
-        addSseAwait.addActionListener(e -> treeSupport.addSseStageNode(jmeterTree, NodeType.SSE_AWAIT, saveConfigAction));
+        addSseRead.addActionListener(e -> treeSupport.addSseStageNode(jmeterTree, NodeType.SSE_READ, saveConfigAction));
         addWsConnect.addActionListener(e -> treeSupport.addWebSocketStepNode(jmeterTree, NodeType.WS_CONNECT, saveConfigAction));
         addWsSend.addActionListener(e -> treeSupport.addWebSocketStepNode(jmeterTree, NodeType.WS_SEND, saveConfigAction));
-        addWsAwait.addActionListener(e -> treeSupport.addWebSocketStepNode(jmeterTree, NodeType.WS_AWAIT, saveConfigAction));
+        addWsRead.addActionListener(e -> treeSupport.addWebSocketStepNode(jmeterTree, NodeType.WS_READ, saveConfigAction));
         addWsClose.addActionListener(e -> treeSupport.addWebSocketStepNode(jmeterTree, NodeType.WS_CLOSE, saveConfigAction));
         addAssertion.addActionListener(e -> nodeActionSupport.addAssertionNode());
         addExtractor.addActionListener(e -> nodeActionSupport.addExtractorNode());

@@ -197,7 +197,7 @@ public class SseSampleExecutor {
                     return;
                 }
 
-                if (cfg.completionMode == SsePerformanceData.CompletionMode.FIRST_MESSAGE) {
+                if (cfg.completionMode == SsePerformanceData.CompletionMode.SINGLE_MESSAGE) {
                     if (firstPhysicalEvent) {
                         matchedMessageCount.incrementAndGet();
                         realtimeMetrics.recordSseMatched(eventSource);
@@ -224,8 +224,8 @@ public class SseSampleExecutor {
                         firstMessageLatch.countDown();
                     }
 
-                    if (cfg.completionMode == SsePerformanceData.CompletionMode.FIRST_MESSAGE
-                            || cfg.completionMode == SsePerformanceData.CompletionMode.MATCHED_MESSAGE) {
+                    if (cfg.completionMode == SsePerformanceData.CompletionMode.SINGLE_MESSAGE
+                            || cfg.completionMode == SsePerformanceData.CompletionMode.UNTIL_MATCH) {
                         completionLatch.countDown();
                     } else if (cfg.completionMode == SsePerformanceData.CompletionMode.MESSAGE_COUNT
                             && matchedMessageCount.get() >= Math.max(1, cfg.targetMessageCount)) {
@@ -243,7 +243,7 @@ public class SseSampleExecutor {
 
         try {
             switch (cfg.completionMode) {
-                case FIRST_MESSAGE -> {
+                case SINGLE_MESSAGE -> {
                     boolean opened = openLatch.await(Math.max(100, cfg.connectTimeoutMs), TimeUnit.MILLISECONDS);
                     if (!opened && !failed.get() && !interrupted.get()) {
                         failed.set(true);
@@ -262,7 +262,7 @@ public class SseSampleExecutor {
                         eventSource.cancel();
                     }
                 }
-                case MATCHED_MESSAGE -> {
+                case UNTIL_MATCH -> {
                     boolean opened = openLatch.await(Math.max(100, cfg.connectTimeoutMs), TimeUnit.MILLISECONDS);
                     if (!opened && !failed.get() && !interrupted.get()) {
                         failed.set(true);

@@ -117,11 +117,11 @@ public class WebSocketScenarioExecutor {
                 ? PerformanceResponseCapturePlan.resolve(true, requestSampler, false, true,
                         req == null ? "" : req.postscript)
                 : capturePlan;
-        boolean retainAwaitPayloads = effectiveCapturePlan.retainWebSocketAwaitPayloads();
+        boolean retainReadPayloads = effectiveCapturePlan.retainWebSocketReadPayloads();
         boolean retainResponseBody = effectiveCapturePlan.retainStreamResponseBody();
-        int retainedAwaitMessageLimit = retainAwaitPayloads
-                ? WebSocketReceivedMessageBuffer.DEFAULT_MAX_RETAINED_AWAIT_MESSAGES
-                : WebSocketScenarioStepSupport.maxBufferedMessagesNeededForAwait(requestSampler);
+        int retainedReadMessageLimit = retainReadPayloads
+                ? WebSocketReceivedMessageBuffer.DEFAULT_MAX_RETAINED_READ_MESSAGES
+                : WebSocketScenarioStepSupport.maxBufferedMessagesNeededForRead(requestSampler);
         boolean trackResponseBodySize = retainResponseBody || effectiveCapturePlan.trackStreamResponseBodySize();
         BoundedTextAccumulator responseBodySizeCounter = trackResponseBodySize
                 ? new BoundedTextAccumulator(0)
@@ -136,10 +136,10 @@ public class WebSocketScenarioExecutor {
         List<TestResult> stepTestResults = new ArrayList<>();
         WebSocketReceivedMessageBuffer receivedMessages = new WebSocketReceivedMessageBuffer(
                 responseBodyPreviewLimitBytes,
-                retainAwaitPayloads,
-                retainedAwaitMessageLimit
+                retainReadPayloads,
+                retainedReadMessageLimit
         );
-        boolean keepReceivedMessages = WebSocketScenarioStepSupport.hasEnabledAwaitStep(requestSampler);
+        boolean keepReceivedMessages = WebSocketScenarioStepSupport.hasEnabledReadStep(requestSampler);
         Object messageLock = new Object();
         class WebSocketScenarioSession {
             private final long startTimeMs = System.currentTimeMillis();
@@ -395,7 +395,7 @@ public class WebSocketScenarioExecutor {
                                 }
                             }
                         }
-                        case WS_AWAIT -> {
+                        case WS_READ -> {
                             WebSocketPerformanceData stepCfg = WebSocketScenarioStepSupport.webSocketData(stepElement, baseRequestCfg);
                             lastStepCfgRef.set(stepCfg);
                             WebSocketScenarioSession session = sessionManager.currentOpenSession();
@@ -416,7 +416,7 @@ public class WebSocketScenarioExecutor {
                             WebSocketPerformanceData.CompletionMode readMode = stepCfg.completionMode == null
                                     ? WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE
                                     : stepCfg.completionMode;
-                            long awaitStartTime = System.currentTimeMillis();
+                            long readStartTime = System.currentTimeMillis();
                             long firstMatchTime = -1;
                             int stepMatchedCount = 0;
                             List<PerformanceAssertionElement> stepAssertions =
@@ -473,15 +473,15 @@ public class WebSocketScenarioExecutor {
                                     }
                                     if (session.remoteClosed.get()) {
                                         failed.set(true);
-                                        errorRef.set("WebSocket connection closed before await completed");
+                                        errorRef.set("WebSocket connection closed before read completed");
                                         break;
                                     }
                                     long now = System.currentTimeMillis();
                                     long deadline = switch (readMode) {
                                         case SINGLE_MESSAGE, UNTIL_MATCH ->
-                                                awaitStartTime + Math.max(100, stepCfg.firstMessageTimeoutMs);
-                                        case FIXED_DURATION -> awaitStartTime + Math.max(100, stepCfg.holdConnectionMs);
-                                        case MESSAGE_COUNT -> awaitStartTime + Math.max(100, stepCfg.firstMessageTimeoutMs);
+                                                readStartTime + Math.max(100, stepCfg.firstMessageTimeoutMs);
+                                        case FIXED_DURATION -> readStartTime + Math.max(100, stepCfg.holdConnectionMs);
+                                        case MESSAGE_COUNT -> readStartTime + Math.max(100, stepCfg.firstMessageTimeoutMs);
                                     };
                                     if (readMode == WebSocketPerformanceData.CompletionMode.FIXED_DURATION) {
                                         if (now >= deadline) {

@@ -17,7 +17,7 @@ final class PerformanceProtocolStageValidator {
             return ValidationResult.invalid(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_WS_CONNECT_STAGE_REQUIRED));
         }
         if (protocol == PerformanceProtocol.SSE && (!hasEnabledDirectChild(requestSampler, NodeType.SSE_CONNECT)
-                || !hasEnabledDirectChild(requestSampler, NodeType.SSE_AWAIT))) {
+                || !hasEnabledDirectChild(requestSampler, NodeType.SSE_READ))) {
             return ValidationResult.invalid(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_SSE_STAGE_REQUIRED));
         }
         return ValidationResult.ok();

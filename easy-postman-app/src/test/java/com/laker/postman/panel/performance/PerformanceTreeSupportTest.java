@@ -29,41 +29,41 @@ import static org.testng.Assert.assertTrue;
 
 public class PerformanceTreeSupportTest {
 
-    @Test(description = "SSE 请求应自动补齐固定节点，并把断言归并到 await 节点下")
-    public void shouldCreateSseStructureAndMoveAssertionsUnderAwaitNode() {
+    @Test(description = "SSE 请求应自动补齐固定节点，并把断言归并到 Read 节点下")
+    public void shouldCreateSseStructureAndMoveAssertionsUnderReadNode() {
         TestContext context = newTestContext(RequestItemProtocolEnum.SSE);
         DefaultMutableTreeNode assertionNode = newNode("Assertion", NodeType.ASSERTION);
         context.treeModel.insertNodeInto(assertionNode, context.requestNode, context.requestNode.getChildCount());
 
         context.treeSupport.ensureRequestStructure(context.requestNode, context.requestData);
 
-        assertEquals(childTypesOf(context.requestNode), List.of(NodeType.SSE_CONNECT, NodeType.SSE_AWAIT));
-        DefaultMutableTreeNode awaitNode = findChild(context.requestNode, NodeType.SSE_AWAIT);
-        assertNotNull(awaitNode);
-        assertEquals(childTypesOf(awaitNode), List.of(NodeType.ASSERTION));
-        assertSame(awaitNode.getChildAt(0), assertionNode);
+        assertEquals(childTypesOf(context.requestNode), List.of(NodeType.SSE_CONNECT, NodeType.SSE_READ));
+        DefaultMutableTreeNode readNode = findChild(context.requestNode, NodeType.SSE_READ);
+        assertNotNull(readNode);
+        assertEquals(childTypesOf(readNode), List.of(NodeType.ASSERTION));
+        assertSame(readNode.getChildAt(0), assertionNode);
         assertNotNull(context.requestData.ssePerformanceData);
     }
 
     @Test(description = "SSE 匹配消息模式应在 Receive 节点标题展示消息过滤条件")
-    public void shouldShowSseMatchedMessageFilterInAwaitNodeTitle() {
+    public void shouldShowSseMatchedMessageFilterInReadNodeTitle() {
         TestContext context = newTestContext(RequestItemProtocolEnum.SSE);
         context.requestData.ssePerformanceData = new SsePerformanceData();
-        context.requestData.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.MATCHED_MESSAGE;
+        context.requestData.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.UNTIL_MATCH;
         context.requestData.ssePerformanceData.firstMessageTimeoutMs = 10000;
         context.requestData.ssePerformanceData.messageFilter = "done";
 
         context.treeSupport.ensureRequestStructure(context.requestNode, context.requestData);
 
-        DefaultMutableTreeNode awaitNode = findChild(context.requestNode, NodeType.SSE_AWAIT);
-        assertNotNull(awaitNode);
-        JMeterTreeNode awaitData = (JMeterTreeNode) awaitNode.getUserObject();
-        assertTrue(awaitData.name.contains("10s"), awaitData.name);
-        assertTrue(awaitData.name.contains("contains=done"), awaitData.name);
+        DefaultMutableTreeNode readNode = findChild(context.requestNode, NodeType.SSE_READ);
+        assertNotNull(readNode);
+        JMeterTreeNode readData = (JMeterTreeNode) readNode.getUserObject();
+        assertTrue(readData.name.contains("10s"), readData.name);
+        assertTrue(readData.name.contains("contains=done"), readData.name);
     }
 
     @Test(description = "SSE 固定时长模式不应在 Receive 节点标题展示事件过滤条件")
-    public void shouldHideSseEventFilterInFixedDurationAwaitNodeTitle() {
+    public void shouldHideSseEventFilterInFixedDurationReadNodeTitle() {
         TestContext context = newTestContext(RequestItemProtocolEnum.SSE);
         context.requestData.ssePerformanceData = new SsePerformanceData();
         context.requestData.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.FIXED_DURATION;
@@ -72,29 +72,29 @@ public class PerformanceTreeSupportTest {
 
         context.treeSupport.ensureRequestStructure(context.requestNode, context.requestData);
 
-        DefaultMutableTreeNode awaitNode = findChild(context.requestNode, NodeType.SSE_AWAIT);
-        assertNotNull(awaitNode);
-        JMeterTreeNode awaitData = (JMeterTreeNode) awaitNode.getUserObject();
-        assertTrue(awaitData.name.contains("30s"), awaitData.name);
-        assertFalse(awaitData.name.contains("event=done"), awaitData.name);
+        DefaultMutableTreeNode readNode = findChild(context.requestNode, NodeType.SSE_READ);
+        assertNotNull(readNode);
+        JMeterTreeNode readData = (JMeterTreeNode) readNode.getUserObject();
+        assertTrue(readData.name.contains("30s"), readData.name);
+        assertFalse(readData.name.contains("event=done"), readData.name);
     }
 
-    @Test(description = "WebSocket 固定时长等待不应在 Await 节点标题展示消息过滤条件")
-    public void shouldHideWebSocketMessageFilterInFixedDurationAwaitNodeTitle() {
+    @Test(description = "WebSocket 固定时长等待不应在 Read 节点标题展示消息过滤条件")
+    public void shouldHideWebSocketMessageFilterInFixedDurationReadNodeTitle() {
         TestContext context = newTestContext(RequestItemProtocolEnum.WEBSOCKET);
         context.treeSupport.ensureRequestStructure(context.requestNode, context.requestData);
-        DefaultMutableTreeNode awaitNode = newNode("Await", NodeType.WS_AWAIT);
-        JMeterTreeNode awaitData = (JMeterTreeNode) awaitNode.getUserObject();
-        awaitData.webSocketPerformanceData = new com.laker.postman.panel.performance.model.WebSocketPerformanceData();
-        awaitData.webSocketPerformanceData.completionMode = com.laker.postman.panel.performance.model.WebSocketPerformanceData.CompletionMode.FIXED_DURATION;
-        awaitData.webSocketPerformanceData.holdConnectionMs = 30000;
-        awaitData.webSocketPerformanceData.messageFilter = "done";
-        context.treeModel.insertNodeInto(awaitNode, context.requestNode, context.requestNode.getChildCount());
+        DefaultMutableTreeNode readNode = newNode("Read", NodeType.WS_READ);
+        JMeterTreeNode readData = (JMeterTreeNode) readNode.getUserObject();
+        readData.webSocketPerformanceData = new com.laker.postman.panel.performance.model.WebSocketPerformanceData();
+        readData.webSocketPerformanceData.completionMode = com.laker.postman.panel.performance.model.WebSocketPerformanceData.CompletionMode.FIXED_DURATION;
+        readData.webSocketPerformanceData.holdConnectionMs = 30000;
+        readData.webSocketPerformanceData.messageFilter = "done";
+        context.treeModel.insertNodeInto(readNode, context.requestNode, context.requestNode.getChildCount());
 
         context.treeSupport.ensureRequestStructure(context.requestNode, context.requestData);
 
-        assertTrue(awaitData.name.contains("30s"), awaitData.name);
-        assertFalse(awaitData.name.contains("contains=done"), awaitData.name);
+        assertTrue(readData.name.contains("30s"), readData.name);
+        assertFalse(readData.name.contains("contains=done"), readData.name);
     }
 
     @Test(description = "SSE 请求切回 HTTP 后应移除 SSE 固定节点，并把断言恢复到请求节点下")
@@ -110,7 +110,7 @@ public class PerformanceTreeSupportTest {
         assertEquals(childTypesOf(context.requestNode), List.of(NodeType.ASSERTION));
         assertSame(context.requestNode.getChildAt(0), assertionNode);
         assertNull(findChild(context.requestNode, NodeType.SSE_CONNECT));
-        assertNull(findChild(context.requestNode, NodeType.SSE_AWAIT));
+        assertNull(findChild(context.requestNode, NodeType.SSE_READ));
     }
 
     @Test(description = "WebSocket 请求应创建连接节点并初始化默认压测数据")
@@ -124,30 +124,30 @@ public class PerformanceTreeSupportTest {
         assertNotNull(findChild(context.requestNode, NodeType.WS_CONNECT));
     }
 
-    @Test(description = "WebSocket 同步结构时不应把 await 节点下的断言搬回请求节点")
-    public void shouldKeepWebSocketAwaitAssertionsWhenSyncingStructure() {
+    @Test(description = "WebSocket 同步结构时不应把 Read 节点下的断言搬回请求节点")
+    public void shouldKeepWebSocketReadAssertionsWhenSyncingStructure() {
         TestContext context = newTestContext(RequestItemProtocolEnum.WEBSOCKET);
         context.treeSupport.ensureRequestStructure(context.requestNode, context.requestData);
-        DefaultMutableTreeNode awaitNode = newNode("Await", NodeType.WS_AWAIT);
+        DefaultMutableTreeNode readNode = newNode("Read", NodeType.WS_READ);
         DefaultMutableTreeNode assertionNode = newNode("Assertion", NodeType.ASSERTION);
-        awaitNode.add(assertionNode);
-        context.treeModel.insertNodeInto(awaitNode, context.requestNode, context.requestNode.getChildCount());
+        readNode.add(assertionNode);
+        context.treeModel.insertNodeInto(readNode, context.requestNode, context.requestNode.getChildCount());
 
         context.treeSupport.ensureRequestStructure(context.requestNode, context.requestData);
 
-        assertSame(assertionNode.getParent(), awaitNode);
-        assertEquals(childTypesOf(awaitNode), List.of(NodeType.ASSERTION));
+        assertSame(assertionNode.getParent(), readNode);
+        assertEquals(childTypesOf(readNode), List.of(NodeType.ASSERTION));
     }
 
-    @Test(description = "WebSocket 请求切回 HTTP 后应清理步骤节点，并把 await 下的断言恢复出来")
+    @Test(description = "WebSocket 请求切回 HTTP 后应清理步骤节点，并把 Read 下的断言恢复出来")
     public void shouldRemoveWebSocketNodesAndRestoreAssertionsWhenSwitchingBackToHttp() {
         TestContext context = newTestContext(RequestItemProtocolEnum.WEBSOCKET);
         context.treeSupport.ensureRequestStructure(context.requestNode, context.requestData);
-        DefaultMutableTreeNode awaitNode = newNode("Await", NodeType.WS_AWAIT);
+        DefaultMutableTreeNode readNode = newNode("Read", NodeType.WS_READ);
         DefaultMutableTreeNode assertionNode = newNode("Assertion", NodeType.ASSERTION);
-        awaitNode.add(assertionNode);
+        readNode.add(assertionNode);
         context.treeModel.insertNodeInto(newNode("Send", NodeType.WS_SEND), context.requestNode, context.requestNode.getChildCount());
-        context.treeModel.insertNodeInto(awaitNode, context.requestNode, context.requestNode.getChildCount());
+        context.treeModel.insertNodeInto(readNode, context.requestNode, context.requestNode.getChildCount());
         context.treeModel.insertNodeInto(newNode("Close", NodeType.WS_CLOSE), context.requestNode, context.requestNode.getChildCount());
 
         context.requestData.httpRequestItem.setProtocol(RequestItemProtocolEnum.HTTP);
@@ -157,21 +157,21 @@ public class PerformanceTreeSupportTest {
         assertSame(context.requestNode.getChildAt(0), assertionNode);
         assertNull(findChild(context.requestNode, NodeType.WS_CONNECT));
         assertNull(findChild(context.requestNode, NodeType.WS_SEND));
-        assertNull(findChild(context.requestNode, NodeType.WS_AWAIT));
+        assertNull(findChild(context.requestNode, NodeType.WS_READ));
         assertNull(findChild(context.requestNode, NodeType.WS_CLOSE));
     }
 
-    @Test(description = "WebSocket 切回 HTTP 时应清理 Loop 中的步骤，并恢复嵌套 Await 断言")
-    public void shouldRemoveWebSocketLoopAndRestoreNestedAwaitAssertionsWhenSwitchingBackToHttp() {
+    @Test(description = "WebSocket 切回 HTTP 时应清理 Loop 中的步骤，并恢复嵌套 Read 断言")
+    public void shouldRemoveWebSocketLoopAndRestoreNestedReadAssertionsWhenSwitchingBackToHttp() {
         TestContext context = newTestContext(RequestItemProtocolEnum.WEBSOCKET);
         context.treeSupport.ensureRequestStructure(context.requestNode, context.requestData);
 
         DefaultMutableTreeNode loopNode = newLoopNode(2);
-        DefaultMutableTreeNode awaitNode = newNode("Await", NodeType.WS_AWAIT);
+        DefaultMutableTreeNode readNode = newNode("Read", NodeType.WS_READ);
         DefaultMutableTreeNode assertionNode = newNode("Assertion", NodeType.ASSERTION);
-        awaitNode.add(assertionNode);
+        readNode.add(assertionNode);
         loopNode.add(newNode("Send", NodeType.WS_SEND));
-        loopNode.add(awaitNode);
+        loopNode.add(readNode);
         context.treeModel.insertNodeInto(loopNode, context.requestNode, context.requestNode.getChildCount());
 
         context.requestData.httpRequestItem.setProtocol(RequestItemProtocolEnum.HTTP);
@@ -182,7 +182,7 @@ public class PerformanceTreeSupportTest {
         assertNull(findChild(context.requestNode, NodeType.LOOP));
     }
 
-    @Test(description = "WebSocket Loop 应作为步骤容器，便于在其中继续添加 Send/Await/Timer")
+    @Test(description = "WebSocket Loop 应作为步骤容器，便于在其中继续添加 Send/Read/Timer")
     public void shouldResolveWebSocketLoopAsStepParent() {
         TestContext context = newTestContext(RequestItemProtocolEnum.WEBSOCKET);
         context.treeSupport.ensureRequestStructure(context.requestNode, context.requestData);
@@ -320,29 +320,29 @@ public class PerformanceTreeSupportTest {
         TestContext context = newTestContext(RequestItemProtocolEnum.SSE);
         context.treeSupport.ensureRequestStructure(context.requestNode, context.requestData);
         DefaultMutableTreeNode connectNode = findChild(context.requestNode, NodeType.SSE_CONNECT);
-        DefaultMutableTreeNode awaitNode = findChild(context.requestNode, NodeType.SSE_AWAIT);
+        DefaultMutableTreeNode readNode = findChild(context.requestNode, NodeType.SSE_READ);
 
         assertTrue(context.treeSupport.hasCopyableNodes(paths(connectNode)));
-        assertTrue(context.treeSupport.hasCopyableNodes(paths(awaitNode)));
-        assertEquals(context.treeSupport.copyNodes(paths(connectNode, awaitNode)).size(), 2);
+        assertTrue(context.treeSupport.hasCopyableNodes(paths(readNode)));
+        assertEquals(context.treeSupport.copyNodes(paths(connectNode, readNode)).size(), 2);
     }
 
     @Test(description = "粘贴 SSE 阶段节点到 SSE 请求上时应插入阶段节点")
     public void shouldPasteSseStageNodeIntoSseRequest() {
         TestContext context = newTestContext(RequestItemProtocolEnum.SSE);
         context.treeSupport.ensureRequestStructure(context.requestNode, context.requestData);
-        DefaultMutableTreeNode awaitNode = findChild(context.requestNode, NodeType.SSE_AWAIT);
-        JMeterTreeNode awaitData = (JMeterTreeNode) awaitNode.getUserObject();
-        awaitData.ssePerformanceData = new SsePerformanceData();
-        awaitData.ssePerformanceData.messageFilter = "ready";
-        List<DefaultMutableTreeNode> copied = context.treeSupport.copyNodes(paths(awaitNode));
+        DefaultMutableTreeNode readNode = findChild(context.requestNode, NodeType.SSE_READ);
+        JMeterTreeNode readData = (JMeterTreeNode) readNode.getUserObject();
+        readData.ssePerformanceData = new SsePerformanceData();
+        readData.ssePerformanceData.messageFilter = "ready";
+        List<DefaultMutableTreeNode> copied = context.treeSupport.copyNodes(paths(readNode));
 
         List<DefaultMutableTreeNode> pasted = context.treeSupport.pasteNodes(new JTree(context.treeModel), context.requestNode, copied);
 
         assertEquals(pasted.size(), 1);
-        assertEquals(childTypesOf(context.requestNode), List.of(NodeType.SSE_CONNECT, NodeType.SSE_AWAIT, NodeType.SSE_AWAIT));
+        assertEquals(childTypesOf(context.requestNode), List.of(NodeType.SSE_CONNECT, NodeType.SSE_READ, NodeType.SSE_READ));
         JMeterTreeNode pastedData = (JMeterTreeNode) pasted.get(0).getUserObject();
-        assertNotSame(pastedData.ssePerformanceData, awaitData.ssePerformanceData);
+        assertNotSame(pastedData.ssePerformanceData, readData.ssePerformanceData);
         assertEquals(pastedData.ssePerformanceData.messageFilter, "ready");
     }
 
@@ -407,15 +407,15 @@ public class PerformanceTreeSupportTest {
         assertEquals(childTypesOf(context.requestNode), List.of(NodeType.WS_CONNECT, NodeType.LOOP));
     }
 
-    @Test(description = "SSE Connect、SSE Receive、WebSocket Connect 阶段节点应支持删除")
+    @Test(description = "SSE Connect、SSE Read、WebSocket Connect 阶段节点应支持删除")
     public void shouldDeleteProtocolStageNodes() {
         TestContext sseContext = newTestContext(RequestItemProtocolEnum.SSE);
         sseContext.treeSupport.ensureRequestStructure(sseContext.requestNode, sseContext.requestData);
         DefaultMutableTreeNode sseConnectNode = findChild(sseContext.requestNode, NodeType.SSE_CONNECT);
-        DefaultMutableTreeNode sseAwaitNode = findChild(sseContext.requestNode, NodeType.SSE_AWAIT);
+        DefaultMutableTreeNode sseReadNode = findChild(sseContext.requestNode, NodeType.SSE_READ);
 
-        assertTrue(sseContext.treeSupport.hasDeletableNodes(paths(sseConnectNode, sseAwaitNode)));
-        List<DefaultMutableTreeNode> deletedSseNodes = sseContext.treeSupport.deleteNodes(paths(sseConnectNode, sseAwaitNode));
+        assertTrue(sseContext.treeSupport.hasDeletableNodes(paths(sseConnectNode, sseReadNode)));
+        List<DefaultMutableTreeNode> deletedSseNodes = sseContext.treeSupport.deleteNodes(paths(sseConnectNode, sseReadNode));
 
         assertEquals(deletedSseNodes.size(), 2);
         assertEquals(childTypesOf(sseContext.requestNode), List.of());
@@ -456,7 +456,7 @@ public class PerformanceTreeSupportTest {
         sseContext.treeSupport.ensureRequestStructure(sseContext.requestNode, sseContext.requestData);
         sseContext.treeSupport.deleteNodes(paths(
                 findChild(sseContext.requestNode, NodeType.SSE_CONNECT),
-                findChild(sseContext.requestNode, NodeType.SSE_AWAIT)
+                findChild(sseContext.requestNode, NodeType.SSE_READ)
         ));
 
         sseContext.treeSupport.syncRequestStructure(sseContext.requestNode, sseContext.requestData);
@@ -480,10 +480,10 @@ public class PerformanceTreeSupportTest {
 
         sseContext.treeSupport.addSseStageNode(sseTree, NodeType.SSE_CONNECT, () -> {
         });
-        sseContext.treeSupport.addSseStageNode(sseTree, NodeType.SSE_AWAIT, () -> {
+        sseContext.treeSupport.addSseStageNode(sseTree, NodeType.SSE_READ, () -> {
         });
 
-        assertEquals(childTypesOf(sseContext.requestNode), List.of(NodeType.SSE_CONNECT, NodeType.SSE_AWAIT));
+        assertEquals(childTypesOf(sseContext.requestNode), List.of(NodeType.SSE_CONNECT, NodeType.SSE_READ));
 
         TestContext wsContext = newTestContext(RequestItemProtocolEnum.WEBSOCKET);
         JTree wsTree = new JTree(wsContext.treeModel);

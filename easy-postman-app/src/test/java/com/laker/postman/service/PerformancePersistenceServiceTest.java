@@ -325,12 +325,12 @@ public class PerformancePersistenceServiceTest {
         sendNode.webSocketPerformanceData.sendPreScript = "pm.variables.set('a', 'dynamic');";
         requestNode.add(new DefaultMutableTreeNode(sendNode));
 
-        JMeterTreeNode awaitNode = new JMeterTreeNode("WS Read", NodeType.WS_AWAIT);
-        awaitNode.webSocketPerformanceData = new WebSocketPerformanceData();
-        awaitNode.webSocketPerformanceData.completionMode = WebSocketPerformanceData.CompletionMode.UNTIL_MATCH;
-        awaitNode.webSocketPerformanceData.firstMessageTimeoutMs = 10000;
-        awaitNode.webSocketPerformanceData.messageFilter = "a";
-        requestNode.add(new DefaultMutableTreeNode(awaitNode));
+        JMeterTreeNode readNode = new JMeterTreeNode("WS Read", NodeType.WS_READ);
+        readNode.webSocketPerformanceData = new WebSocketPerformanceData();
+        readNode.webSocketPerformanceData.completionMode = WebSocketPerformanceData.CompletionMode.UNTIL_MATCH;
+        readNode.webSocketPerformanceData.firstMessageTimeoutMs = 10000;
+        readNode.webSocketPerformanceData.messageFilter = "a";
+        requestNode.add(new DefaultMutableTreeNode(readNode));
 
         root.add(requestNode);
 
@@ -339,17 +339,105 @@ public class PerformancePersistenceServiceTest {
         DefaultMutableTreeNode loadedRoot = service.load("Loaded Plan");
         DefaultMutableTreeNode loadedRequestNode = (DefaultMutableTreeNode) loadedRoot.getChildAt(0);
         JMeterTreeNode loadedSendNode = (JMeterTreeNode) ((DefaultMutableTreeNode) loadedRequestNode.getChildAt(0)).getUserObject();
-        JMeterTreeNode loadedAwaitNode = (JMeterTreeNode) ((DefaultMutableTreeNode) loadedRequestNode.getChildAt(1)).getUserObject();
+        JMeterTreeNode loadedReadNode = (JMeterTreeNode) ((DefaultMutableTreeNode) loadedRequestNode.getChildAt(1)).getUserObject();
 
         assertNotNull(loadedSendNode.webSocketPerformanceData);
         assertEquals(loadedSendNode.webSocketPerformanceData.sendContentSource,
                 WebSocketPerformanceData.SendContentSource.CUSTOM_TEXT);
         assertEquals(loadedSendNode.webSocketPerformanceData.customSendBody, "a-{{user-a}}");
         assertEquals(loadedSendNode.webSocketPerformanceData.sendPreScript, "pm.variables.set('a', 'dynamic');");
-        assertNotNull(loadedAwaitNode.webSocketPerformanceData);
-        assertEquals(loadedAwaitNode.webSocketPerformanceData.completionMode,
+        assertNotNull(loadedReadNode.webSocketPerformanceData);
+        assertEquals(loadedReadNode.webSocketPerformanceData.completionMode,
                 WebSocketPerformanceData.CompletionMode.UNTIL_MATCH);
-        assertEquals(loadedAwaitNode.webSocketPerformanceData.messageFilter, "a");
+        assertEquals(loadedReadNode.webSocketPerformanceData.messageFilter, "a");
+    }
+
+    @Test(description = "WebSocket 读取配置遇到未知枚举值时应使用默认值，并继续读取其它字段")
+    public void shouldDefaultUnknownWebSocketReadEnumsWhenLoading() throws IOException {
+        Path tempDir = Files.createTempDirectory("performance-persistence-ws-defaults");
+        Path configPath = tempDir.resolve("performance_config.json");
+        Files.writeString(configPath, """
+                {
+                  "version": "1.0",
+                  "tree": {
+                    "name": "Plan",
+                    "type": "ROOT",
+                    "enabled": true,
+                    "children": [
+                      {
+                        "name": "WebSocket Example",
+                        "type": "REQUEST",
+                        "enabled": true,
+                        "webSocketPerformanceData": {
+                          "sendMode": "LEGACY_SEND",
+                          "sendContentSource": "LEGACY_BODY",
+                          "completionMode": "MATCHED_MESSAGE",
+                          "firstMessageTimeoutMs": 2222,
+                          "targetMessageCount": 3,
+                          "messageFilter": "ack"
+                        }
+                      }
+                    ]
+                  }
+                }
+                """, StandardCharsets.UTF_8);
+        TestablePerformancePersistenceService service = new TestablePerformancePersistenceService(configPath);
+
+        DefaultMutableTreeNode loadedRoot = service.load("Loaded Plan");
+        DefaultMutableTreeNode loadedRequestNode = (DefaultMutableTreeNode) loadedRoot.getChildAt(0);
+        JMeterTreeNode loadedRequest = (JMeterTreeNode) loadedRequestNode.getUserObject();
+
+        assertEquals(loadedRequest.webSocketPerformanceData.sendMode,
+                WebSocketPerformanceData.SendMode.REQUEST_BODY_ON_CONNECT);
+        assertEquals(loadedRequest.webSocketPerformanceData.sendContentSource,
+                WebSocketPerformanceData.SendContentSource.REQUEST_BODY);
+        assertEquals(loadedRequest.webSocketPerformanceData.completionMode,
+                WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE);
+        assertEquals(loadedRequest.webSocketPerformanceData.firstMessageTimeoutMs, 2222);
+        assertEquals(loadedRequest.webSocketPerformanceData.targetMessageCount, 3);
+        assertEquals(loadedRequest.webSocketPerformanceData.messageFilter, "ack");
+    }
+
+    @Test(description = "SSE 读取配置遇到旧枚举值时应使用默认值，并继续读取其它字段")
+    public void shouldDefaultLegacySseReadEnumsWhenLoading() throws IOException {
+        Path tempDir = Files.createTempDirectory("performance-persistence-sse-defaults");
+        Path configPath = tempDir.resolve("performance_config.json");
+        Files.writeString(configPath, """
+                {
+                  "version": "1.0",
+                  "tree": {
+                    "name": "Plan",
+                    "type": "ROOT",
+                    "enabled": true,
+                    "children": [
+                      {
+                        "name": "SSE Example",
+                        "type": "REQUEST",
+                        "enabled": true,
+                        "ssePerformanceData": {
+                          "completionMode": "FIRST_MESSAGE",
+                          "firstMessageTimeoutMs": 2222,
+                          "targetMessageCount": 3,
+                          "eventNameFilter": "orders",
+                          "messageFilter": "ready"
+                        }
+                      }
+                    ]
+                  }
+                }
+                """, StandardCharsets.UTF_8);
+        TestablePerformancePersistenceService service = new TestablePerformancePersistenceService(configPath);
+
+        DefaultMutableTreeNode loadedRoot = service.load("Loaded Plan");
+        DefaultMutableTreeNode loadedRequestNode = (DefaultMutableTreeNode) loadedRoot.getChildAt(0);
+        JMeterTreeNode loadedRequest = (JMeterTreeNode) loadedRequestNode.getUserObject();
+
+        assertEquals(loadedRequest.ssePerformanceData.completionMode,
+                SsePerformanceData.CompletionMode.SINGLE_MESSAGE);
+        assertEquals(loadedRequest.ssePerformanceData.firstMessageTimeoutMs, 2222);
+        assertEquals(loadedRequest.ssePerformanceData.targetMessageCount, 3);
+        assertEquals(loadedRequest.ssePerformanceData.eventNameFilter, "orders");
+        assertEquals(loadedRequest.ssePerformanceData.messageFilter, "ready");
     }
 
     @Test(description = "应保存并恢复 WebSocket Connect 步骤的独立配置")
@@ -430,7 +518,7 @@ public class PerformancePersistenceServiceTest {
         sseRequest.ssePerformanceData.messageFilter = "done";
         DefaultMutableTreeNode sseRequestNode = new DefaultMutableTreeNode(sseRequest);
         sseRequestNode.add(new DefaultMutableTreeNode(new JMeterTreeNode("SSE Connect", NodeType.SSE_CONNECT)));
-        sseRequestNode.add(new DefaultMutableTreeNode(new JMeterTreeNode("SSE Await", NodeType.SSE_AWAIT)));
+        sseRequestNode.add(new DefaultMutableTreeNode(new JMeterTreeNode("SSE Read", NodeType.SSE_READ)));
         threadGroupNode.add(sseRequestNode);
 
         JMeterTreeNode wsRequest = new JMeterTreeNode("WS Request", NodeType.REQUEST);

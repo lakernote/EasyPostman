@@ -25,28 +25,28 @@ public class PerformanceTreeNodeTitleFormatter {
         return base + " [" + sourceName + " | " + data.getRows().size() + "]";
     }
 
-    public String sseAwaitTitle(SsePerformanceData data) {
+    public String sseReadTitle(SsePerformanceData data) {
         if (data == null) {
-            return I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_NODE_AWAIT);
+            return I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_NODE_READ);
         }
         StringJoiner joiner = new StringJoiner(
                 " | ",
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_NODE_AWAIT) + " [",
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_NODE_READ) + " [",
                 "]"
         );
         SsePerformanceData.CompletionMode mode = data.completionMode != null
                 ? data.completionMode
-                : SsePerformanceData.CompletionMode.FIRST_MESSAGE;
+                : SsePerformanceData.CompletionMode.SINGLE_MESSAGE;
         joiner.add(sseCompletionModeLabel(mode));
         switch (mode) {
-            case FIRST_MESSAGE, MATCHED_MESSAGE -> joiner.add(formatDuration(data.firstMessageTimeoutMs));
+            case SINGLE_MESSAGE, UNTIL_MATCH -> joiner.add(formatDuration(data.firstMessageTimeoutMs));
             case MESSAGE_COUNT -> {
                 joiner.add(String.valueOf(Math.max(1, data.targetMessageCount)));
                 joiner.add(formatDuration(data.firstMessageTimeoutMs));
             }
             case FIXED_DURATION, STREAM_CLOSED -> joiner.add(formatDuration(data.holdConnectionMs));
         }
-        if (mode == SsePerformanceData.CompletionMode.MATCHED_MESSAGE
+        if (mode == SsePerformanceData.CompletionMode.UNTIL_MATCH
                 && CharSequenceUtil.isNotBlank(data.messageFilter)) {
             joiner.add("contains=" + data.messageFilter.trim());
         }
@@ -119,13 +119,13 @@ public class PerformanceTreeNodeTitleFormatter {
         return joiner.toString();
     }
 
-    public String webSocketAwaitTitle(WebSocketPerformanceData data) {
+    public String webSocketReadTitle(WebSocketPerformanceData data) {
         if (data == null) {
-            return I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_AWAIT);
+            return I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_READ);
         }
         StringJoiner joiner = new StringJoiner(
                 " | ",
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_AWAIT) + " [",
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_READ) + " [",
                 "]"
         );
         WebSocketPerformanceData.CompletionMode mode = data.completionMode != null
@@ -157,10 +157,10 @@ public class PerformanceTreeNodeTitleFormatter {
     private String sseCompletionModeLabel(SsePerformanceData.CompletionMode mode) {
         SsePerformanceData.CompletionMode normalizedMode = mode != null
                 ? mode
-                : SsePerformanceData.CompletionMode.FIRST_MESSAGE;
+                : SsePerformanceData.CompletionMode.SINGLE_MESSAGE;
         return switch (normalizedMode) {
-            case FIRST_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_FIRST_MESSAGE);
-            case MATCHED_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_MATCHED_MESSAGE);
+            case SINGLE_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_FIRST_MESSAGE);
+            case UNTIL_MATCH -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_MATCHED_MESSAGE);
             case FIXED_DURATION -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_FIXED_DURATION);
             case MESSAGE_COUNT -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_MESSAGE_COUNT);
             case STREAM_CLOSED -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_STREAM_CLOSED);

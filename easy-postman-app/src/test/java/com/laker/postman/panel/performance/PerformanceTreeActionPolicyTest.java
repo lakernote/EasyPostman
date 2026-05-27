@@ -42,7 +42,7 @@ public class PerformanceTreeActionPolicyTest {
 
         assertTrue(actions.contains(PerformanceTreeAction.ADD_WS_CONNECT));
         assertTrue(actions.contains(PerformanceTreeAction.ADD_WS_SEND));
-        assertTrue(actions.contains(PerformanceTreeAction.ADD_WS_AWAIT));
+        assertTrue(actions.contains(PerformanceTreeAction.ADD_WS_READ));
         assertTrue(actions.contains(PerformanceTreeAction.ADD_WS_CLOSE));
         assertTrue(actions.contains(PerformanceTreeAction.ADD_LOOP));
         assertTrue(actions.contains(PerformanceTreeAction.ADD_TIMER));
@@ -57,16 +57,16 @@ public class PerformanceTreeActionPolicyTest {
     }
 
     @Test
-    public void sseAwaitSelectionShouldExposeStageActionsAssertionAndDisable() {
+    public void sseReadSelectionShouldExposeStageActionsAssertionAndDisable() {
         TreeFixture fixture = new TreeFixture(RequestItemProtocolEnum.SSE);
-        DefaultMutableTreeNode sseAwait = node(NodeType.SSE_AWAIT, true);
-        fixture.request.add(sseAwait);
+        DefaultMutableTreeNode sseRead = node(NodeType.SSE_READ, true);
+        fixture.request.add(sseRead);
         PerformanceTreeActionPolicy policy = new PerformanceTreeActionPolicy(fixture.treeSupport);
 
-        EnumSet<PerformanceTreeAction> actions = policy.actionsForSingleSelection(sseAwait, List.of());
+        EnumSet<PerformanceTreeAction> actions = policy.actionsForSingleSelection(sseRead, List.of());
 
         assertTrue(actions.contains(PerformanceTreeAction.ADD_SSE_CONNECT));
-        assertTrue(actions.contains(PerformanceTreeAction.ADD_SSE_AWAIT));
+        assertTrue(actions.contains(PerformanceTreeAction.ADD_SSE_READ));
         assertTrue(actions.contains(PerformanceTreeAction.ADD_ASSERTION));
         assertTrue(actions.contains(PerformanceTreeAction.ADD_EXTRACTOR));
         assertTrue(actions.contains(PerformanceTreeAction.DISABLE));

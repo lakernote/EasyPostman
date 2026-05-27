@@ -33,7 +33,7 @@ public final class PerformanceExtractorRunner {
         }
         List<PerformancePlanElement> parentElements = requestSampler.getChildren();
         if (sseRequest) {
-            List<PerformanceExtractorElement> extractors = collectDirectExtractorsFromStages(requestSampler, NodeType.SSE_AWAIT);
+            List<PerformanceExtractorElement> extractors = collectDirectExtractorsFromStages(requestSampler, NodeType.SSE_READ);
             if (extractors != null) {
                 return extractors;
             }

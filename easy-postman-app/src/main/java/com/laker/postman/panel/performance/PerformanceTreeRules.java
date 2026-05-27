@@ -36,17 +36,17 @@ public final class PerformanceTreeRules {
             case CSV_DATA_SET -> isNodeType(parentNode, NodeType.THREAD_GROUP);
             case REQUEST -> isRequestContainerTarget(parentNode);
             case ASSERTION -> isHttpRequestPostProcessorTarget(parentNode)
-                    || isNodeType(parentNode, NodeType.SSE_AWAIT)
-                    || isNodeType(parentNode, NodeType.WS_AWAIT);
+                    || isNodeType(parentNode, NodeType.SSE_READ)
+                    || isNodeType(parentNode, NodeType.WS_READ);
             case EXTRACTOR -> isHttpRequestPostProcessorTarget(parentNode)
-                    || isNodeType(parentNode, NodeType.SSE_AWAIT)
-                    || isNodeType(parentNode, NodeType.WS_AWAIT);
+                    || isNodeType(parentNode, NodeType.SSE_READ)
+                    || isNodeType(parentNode, NodeType.WS_READ);
             case TIMER -> isNodeType(parentNode, NodeType.REQUEST)
                     || isRequestContainerLoop(parentNode)
                     || isWebSocketStepContainerTarget(parentNode);
-            case SSE_CONNECT, SSE_AWAIT -> isSseStageContainerTarget(parentNode);
+            case SSE_CONNECT, SSE_READ -> isSseStageContainerTarget(parentNode);
             case WS_CONNECT -> isWebSocketRequestTarget(parentNode);
-            case WS_SEND, WS_AWAIT, WS_CLOSE -> isWebSocketStepContainerTarget(parentNode);
+            case WS_SEND, WS_READ, WS_CLOSE -> isWebSocketStepContainerTarget(parentNode);
             case LOOP -> canAcceptLoop(parentNode, childNode);
             case ROOT -> false;
         };
@@ -60,7 +60,7 @@ public final class PerformanceTreeRules {
         boolean hasWebSocketStep = containsAnyNodeType(
                 loopNode,
                 NodeType.WS_SEND,
-                NodeType.WS_AWAIT,
+                NodeType.WS_READ,
                 NodeType.WS_CLOSE
         );
         if (hasRequest && hasWebSocketStep) {

@@ -38,7 +38,7 @@ public class JMeterTreeNode {
             case ASSERTION -> this.assertionData = (AssertionData) data;
             case EXTRACTOR -> this.extractorData = (ExtractorData) data;
             case TIMER -> this.timerData = (TimerData) data;
-            case SSE_CONNECT, SSE_AWAIT, WS_CONNECT, WS_SEND, WS_AWAIT, WS_CLOSE, ROOT -> {
+            case SSE_CONNECT, SSE_READ, WS_CONNECT, WS_SEND, WS_READ, WS_CLOSE, ROOT -> {
             }
         }
     }
@@ -52,7 +52,7 @@ public class JMeterTreeNode {
             case ASSERTION -> assertionData;
             case EXTRACTOR -> extractorData;
             case TIMER -> timerData;
-            case SSE_CONNECT, SSE_AWAIT, WS_CONNECT, WS_SEND, WS_AWAIT, WS_CLOSE, ROOT -> null;
+            case SSE_CONNECT, SSE_READ, WS_CONNECT, WS_SEND, WS_READ, WS_CLOSE, ROOT -> null;
             default -> null;
         };
     }
@@ -66,7 +66,7 @@ public class JMeterTreeNode {
             case ASSERTION -> this.assertionData = (AssertionData) data;
             case EXTRACTOR -> this.extractorData = (ExtractorData) data;
             case TIMER -> this.timerData = (TimerData) data;
-            case SSE_CONNECT, SSE_AWAIT, WS_CONNECT, WS_SEND, WS_AWAIT, WS_CLOSE, ROOT -> {
+            case SSE_CONNECT, SSE_READ, WS_CONNECT, WS_SEND, WS_READ, WS_CLOSE, ROOT -> {
             }
         }
     }

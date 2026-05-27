@@ -40,11 +40,11 @@ public class PerformanceProtocolStageValidatorTest {
         assertFalse(validateRequest(requestNode, PerformanceProtocol.SSE).valid());
 
         requestNode.add(node(NodeType.SSE_CONNECT, true));
-        requestNode.add(node(NodeType.SSE_AWAIT, false));
+        requestNode.add(node(NodeType.SSE_READ, false));
 
         assertFalse(validateRequest(requestNode, PerformanceProtocol.SSE).valid());
 
-        requestNode.add(node(NodeType.SSE_AWAIT, true));
+        requestNode.add(node(NodeType.SSE_READ, true));
 
         assertTrue(validateRequest(requestNode, PerformanceProtocol.SSE).valid());
     }

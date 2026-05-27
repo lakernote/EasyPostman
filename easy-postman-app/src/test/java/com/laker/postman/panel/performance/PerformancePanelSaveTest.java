@@ -185,7 +185,7 @@ public class PerformancePanelSaveTest extends AbstractSwingUiTest {
     private static SseStagePropertyPanel headlessSseStagePanel() throws Exception {
         SseStagePropertyPanel panel = allocateWithoutConstructor(SseStagePropertyPanel.class);
         setField(panel, "connectTimeoutSpinner", spinner());
-        setField(panel, "awaitTimeoutSpinner", spinner());
+        setField(panel, "readTimeoutSpinner", spinner());
         setField(panel, "holdConnectionSpinner", spinner());
         setField(panel, "targetMessageCountSpinner", spinner());
         return panel;
@@ -202,7 +202,7 @@ public class PerformancePanelSaveTest extends AbstractSwingUiTest {
         setField(panel, "connectTimeoutSpinner", spinner());
         setField(panel, "sendCountSpinner", spinner());
         setField(panel, "sendIntervalSpinner", spinner());
-        setField(panel, "awaitTimeoutSpinner", spinner());
+        setField(panel, "readTimeoutSpinner", spinner());
         setField(panel, "holdConnectionSpinner", spinner());
         setField(panel, "targetMessageCountSpinner", spinner());
         return panel;

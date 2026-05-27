@@ -83,7 +83,7 @@ final class PerformanceTreeNodeActionSupport {
         DefaultMutableTreeNode parentNode = node;
         Object userObj = node.getUserObject();
         if (userObj instanceof JMeterTreeNode jtNode
-                && (jtNode.type == NodeType.SSE_AWAIT || jtNode.type == NodeType.WS_AWAIT)) {
+                && (jtNode.type == NodeType.SSE_READ || jtNode.type == NodeType.WS_READ)) {
             parentNode = node;
         }
         DefaultMutableTreeNode assertion = new DefaultMutableTreeNode(new JMeterTreeNode("Assertion", NodeType.ASSERTION));

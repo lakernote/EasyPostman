@@ -38,7 +38,7 @@ public class SseSampleExecutorTest {
             request.headersList = List.of(new HttpHeader(true, "Accept", "text/event-stream"));
 
             SsePerformanceData cfg = new SsePerformanceData();
-            cfg.completionMode = SsePerformanceData.CompletionMode.MATCHED_MESSAGE;
+            cfg.completionMode = SsePerformanceData.CompletionMode.UNTIL_MATCH;
             cfg.connectTimeoutMs = 2000;
             cfg.firstMessageTimeoutMs = 2000;
             cfg.eventNameFilter = "done";
@@ -85,7 +85,7 @@ public class SseSampleExecutorTest {
             request.headersList = List.of(new HttpHeader(true, "Accept", "text/event-stream"));
 
             SsePerformanceData cfg = new SsePerformanceData();
-            cfg.completionMode = SsePerformanceData.CompletionMode.FIRST_MESSAGE;
+            cfg.completionMode = SsePerformanceData.CompletionMode.SINGLE_MESSAGE;
             cfg.connectTimeoutMs = 2000;
             cfg.firstMessageTimeoutMs = 2000;
             cfg.eventNameFilter = "done";
@@ -124,7 +124,7 @@ public class SseSampleExecutorTest {
             request.headersList = List.of(new HttpHeader(true, "Accept", "text/event-stream"));
 
             SsePerformanceData cfg = new SsePerformanceData();
-            cfg.completionMode = SsePerformanceData.CompletionMode.FIRST_MESSAGE;
+            cfg.completionMode = SsePerformanceData.CompletionMode.SINGLE_MESSAGE;
             cfg.connectTimeoutMs = 2000;
             cfg.firstMessageTimeoutMs = 2000;
 
@@ -227,7 +227,7 @@ public class SseSampleExecutorTest {
             request.headersList = List.of(new HttpHeader(true, "Accept", "text/event-stream"));
 
             SsePerformanceData cfg = new SsePerformanceData();
-            cfg.completionMode = SsePerformanceData.CompletionMode.MATCHED_MESSAGE;
+            cfg.completionMode = SsePerformanceData.CompletionMode.UNTIL_MATCH;
             cfg.connectTimeoutMs = 2000;
             cfg.firstMessageTimeoutMs = 2000;
             cfg.eventNameFilter = "closed";
@@ -359,7 +359,7 @@ public class SseSampleExecutorTest {
             request.headersList = List.of(new HttpHeader(true, "Accept", "text/event-stream"));
 
             SsePerformanceData cfg = new SsePerformanceData();
-            cfg.completionMode = SsePerformanceData.CompletionMode.FIRST_MESSAGE;
+            cfg.completionMode = SsePerformanceData.CompletionMode.SINGLE_MESSAGE;
             cfg.connectTimeoutMs = 2000;
             cfg.firstMessageTimeoutMs = 2000;
 
@@ -401,7 +401,7 @@ public class SseSampleExecutorTest {
     public void shouldAddSseSummaryHeaders() {
         HttpResponse response = new HttpResponse();
         SsePerformanceData cfg = new SsePerformanceData();
-        cfg.completionMode = SsePerformanceData.CompletionMode.MATCHED_MESSAGE;
+        cfg.completionMode = SsePerformanceData.CompletionMode.UNTIL_MATCH;
         cfg.eventNameFilter = "done";
         cfg.messageFilter = "status";
 
@@ -416,7 +416,7 @@ public class SseSampleExecutorTest {
                 "boom"
         );
 
-        assertEquals(response.headers.get("X-Easy-SSE-Mode").get(0), "MATCHED_MESSAGE");
+        assertEquals(response.headers.get("X-Easy-SSE-Mode").get(0), "UNTIL_MATCH");
         assertEquals(response.headers.get("X-Easy-SSE-Event-Filter").get(0), "done");
         assertEquals(response.headers.get("X-Easy-SSE-Message-Filter").get(0), "status");
         assertEquals(response.headers.get("X-Easy-SSE-Event-Count").get(0), "5");

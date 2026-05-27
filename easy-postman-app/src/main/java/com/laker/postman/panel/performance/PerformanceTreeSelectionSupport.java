@@ -34,10 +34,10 @@ final class PerformanceTreeSelectionSupport {
     private final ExtractorPropertyPanel extractorPanel;
     private final TimerPropertyPanel timerPanel;
     private final SseStagePropertyPanel sseConnectPanel;
-    private final SseStagePropertyPanel sseAwaitPanel;
+    private final SseStagePropertyPanel sseReadPanel;
     private final WebSocketStagePropertyPanel wsConnectPanel;
     private final WebSocketStagePropertyPanel wsSendPanel;
-    private final WebSocketStagePropertyPanel wsAwaitPanel;
+    private final WebSocketStagePropertyPanel wsReadPanel;
     private final WebSocketStagePropertyPanel wsClosePanel;
     private final PerformanceTreeSupport treeSupport;
     private final Consumer<DefaultMutableTreeNode> saveRequestNodeAction;
@@ -55,10 +55,10 @@ final class PerformanceTreeSelectionSupport {
     private final String extractorCard;
     private final String timerCard;
     private final String sseConnectCard;
-    private final String sseAwaitCard;
+    private final String sseReadCard;
     private final String wsConnectCard;
     private final String wsSendCard;
-    private final String wsAwaitCard;
+    private final String wsReadCard;
     private final String wsCloseCard;
 
     private DefaultMutableTreeNode lastNode;
@@ -88,8 +88,8 @@ final class PerformanceTreeSelectionSupport {
                 treeModel.nodeChanged(lastNode);
             }
             case TIMER -> timerPanel.saveTimerData();
-            case SSE_CONNECT, SSE_AWAIT -> saveSseStageAction.accept(lastNode);
-            case WS_CONNECT, WS_SEND, WS_AWAIT, WS_CLOSE -> saveWebSocketStageAction.accept(lastNode);
+            case SSE_CONNECT, SSE_READ -> saveSseStageAction.accept(lastNode);
+            case WS_CONNECT, WS_SEND, WS_READ, WS_CLOSE -> saveWebSocketStageAction.accept(lastNode);
             default -> {
             }
         }
@@ -154,16 +154,16 @@ final class PerformanceTreeSelectionSupport {
                 currentRequestNodeSetter.accept(null);
             }
             case SSE_CONNECT -> showSsePanel(node, sseConnectCard, true);
-            case SSE_AWAIT -> showSsePanel(node, sseAwaitCard, false);
+            case SSE_READ -> showSsePanel(node, sseReadCard, false);
             case WS_CONNECT -> showWebSocketConnectPanel(node);
             case WS_SEND -> {
                 propertyCardLayout.show(propertyPanel, wsSendCard);
                 wsSendPanel.setNode(jtNode);
                 currentRequestNodeSetter.accept(null);
             }
-            case WS_AWAIT -> {
-                propertyCardLayout.show(propertyPanel, wsAwaitCard);
-                wsAwaitPanel.setNode(jtNode);
+            case WS_READ -> {
+                propertyCardLayout.show(propertyPanel, wsReadCard);
+                wsReadPanel.setNode(jtNode);
                 currentRequestNodeSetter.accept(null);
             }
             case WS_CLOSE -> {
@@ -188,7 +188,7 @@ final class PerformanceTreeSelectionSupport {
             if (connectStage) {
                 sseConnectPanel.setRequestNode(requestJtNode);
             } else {
-                sseAwaitPanel.setRequestNode(requestJtNode);
+                sseReadPanel.setRequestNode(requestJtNode);
             }
         } else {
             propertyCardLayout.show(propertyPanel, emptyCard);

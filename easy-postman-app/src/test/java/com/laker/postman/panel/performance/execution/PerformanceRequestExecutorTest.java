@@ -202,7 +202,7 @@ public class PerformanceRequestExecutorTest {
             requestData.ssePerformanceData.firstMessageTimeoutMs = 2000;
             DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(requestData);
             requestNode.add(new DefaultMutableTreeNode(new JMeterTreeNode("connect", NodeType.SSE_CONNECT)));
-            requestNode.add(new DefaultMutableTreeNode(new JMeterTreeNode("await", NodeType.SSE_AWAIT)));
+            requestNode.add(new DefaultMutableTreeNode(new JMeterTreeNode("read", NodeType.SSE_READ)));
 
             PerformanceRequestExecutionResult result = new PerformanceRequestExecutor(
                     () -> true,
@@ -250,11 +250,11 @@ public class PerformanceRequestExecutorTest {
             requestData.webSocketPerformanceData.connectTimeoutMs = 2000;
             DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(requestData);
             requestNode.add(new DefaultMutableTreeNode(new JMeterTreeNode("connect", NodeType.WS_CONNECT)));
-            JMeterTreeNode awaitData = new JMeterTreeNode("await", NodeType.WS_AWAIT);
-            awaitData.webSocketPerformanceData = new WebSocketPerformanceData();
-            awaitData.webSocketPerformanceData.completionMode = WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE;
-            awaitData.webSocketPerformanceData.firstMessageTimeoutMs = 2000;
-            requestNode.add(new DefaultMutableTreeNode(awaitData));
+            JMeterTreeNode readData = new JMeterTreeNode("read", NodeType.WS_READ);
+            readData.webSocketPerformanceData = new WebSocketPerformanceData();
+            readData.webSocketPerformanceData.completionMode = WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE;
+            readData.webSocketPerformanceData.firstMessageTimeoutMs = 2000;
+            requestNode.add(new DefaultMutableTreeNode(readData));
 
             PerformanceRequestExecutionResult result = new PerformanceRequestExecutor(
                     () -> true,

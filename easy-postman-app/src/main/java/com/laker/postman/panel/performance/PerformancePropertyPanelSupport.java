@@ -28,10 +28,10 @@ final class PerformancePropertyPanelSupport {
     private final ExtractorPropertyPanel extractorPanel;
     private final TimerPropertyPanel timerPanel;
     private final SseStagePropertyPanel sseConnectPanel;
-    private final SseStagePropertyPanel sseAwaitPanel;
+    private final SseStagePropertyPanel sseReadPanel;
     private final WebSocketStagePropertyPanel wsConnectPanel;
     private final WebSocketStagePropertyPanel wsSendPanel;
-    private final WebSocketStagePropertyPanel wsAwaitPanel;
+    private final WebSocketStagePropertyPanel wsReadPanel;
     private final WebSocketStagePropertyPanel wsClosePanel;
     private final Supplier<RequestEditSubPanel> requestEditSubPanelSupplier;
     private final Supplier<DefaultMutableTreeNode> currentRequestNodeSupplier;
@@ -45,10 +45,10 @@ final class PerformancePropertyPanelSupport {
         extractorPanel.forceCommitAllSpinners();
         timerPanel.forceCommitAllSpinners();
         sseConnectPanel.forceCommitAllSpinners();
-        sseAwaitPanel.forceCommitAllSpinners();
+        sseReadPanel.forceCommitAllSpinners();
         wsConnectPanel.forceCommitAllSpinners();
         wsSendPanel.forceCommitAllSpinners();
-        wsAwaitPanel.forceCommitAllSpinners();
+        wsReadPanel.forceCommitAllSpinners();
     }
 
     void saveAllPropertyPanelData() {
@@ -78,8 +78,8 @@ final class PerformancePropertyPanelSupport {
                 }
             }
             case TIMER -> timerPanel.saveTimerData();
-            case SSE_CONNECT, SSE_AWAIT -> saveSseStageNode(selectedNode);
-            case WS_CONNECT, WS_SEND, WS_AWAIT, WS_CLOSE -> saveWebSocketStageNode(selectedNode);
+            case SSE_CONNECT, SSE_READ -> saveSseStageNode(selectedNode);
+            case WS_CONNECT, WS_SEND, WS_READ, WS_CLOSE -> saveWebSocketStageNode(selectedNode);
             default -> {
             }
         }
@@ -95,7 +95,7 @@ final class PerformancePropertyPanelSupport {
         }
         switch (stageJtNode.type) {
             case SSE_CONNECT -> sseConnectPanel.saveData();
-            case SSE_AWAIT -> sseAwaitPanel.saveData();
+            case SSE_READ -> sseReadPanel.saveData();
             default -> {
                 return;
             }
@@ -114,7 +114,7 @@ final class PerformancePropertyPanelSupport {
         switch (stageJtNode.type) {
             case WS_CONNECT -> wsConnectPanel.saveData();
             case WS_SEND -> wsSendPanel.saveData();
-            case WS_AWAIT -> wsAwaitPanel.saveData();
+            case WS_READ -> wsReadPanel.saveData();
             case WS_CLOSE -> wsClosePanel.saveData();
             default -> {
                 return;

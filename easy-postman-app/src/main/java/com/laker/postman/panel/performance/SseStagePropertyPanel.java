@@ -19,19 +19,19 @@ import java.util.List;
 public class SseStagePropertyPanel extends JPanel {
     public enum Stage {
         CONNECT,
-        AWAIT
+        READ
     }
 
     private final Stage stage;
     private final EasyJSpinner connectTimeoutSpinner;
     private final EasyComboBox<SsePerformanceData.CompletionMode> completionModeBox;
-    private final EasyJSpinner awaitTimeoutSpinner;
+    private final EasyJSpinner readTimeoutSpinner;
     private final EasyJSpinner holdConnectionSpinner;
     private final EasyJSpinner targetMessageCountSpinner;
     private final EasyTextField eventNameFilterField;
     private final EasyTextField messageFilterField;
     private JLabel eventNameFilterLabel;
-    private JLabel awaitTimeoutLabel;
+    private JLabel readTimeoutLabel;
     private JLabel holdConnectionLabel;
     private JLabel targetMessageCountLabel;
     private JLabel messageFilterLabel;
@@ -49,7 +49,7 @@ public class SseStagePropertyPanel extends JPanel {
                 SsePerformanceData.CompletionMode.values(),
                 EasyComboBox.WidthMode.FIXED_MAX
         );
-        awaitTimeoutSpinner = EasyJSpinner.intSpinner(10000, 100, 600000, 100);
+        readTimeoutSpinner = EasyJSpinner.intSpinner(10000, 100, 600000, 100);
         holdConnectionSpinner = EasyJSpinner.intSpinner(30000, 100, 3600000, 1000);
         targetMessageCountSpinner = EasyJSpinner.intSpinner(1, 1, 100000, 1);
         eventNameFilterField = new EasyTextField(20);
@@ -74,8 +74,8 @@ public class SseStagePropertyPanel extends JPanel {
                 Object displayValue = value;
                 if (value instanceof SsePerformanceData.CompletionMode mode) {
                     displayValue = switch (mode) {
-                        case FIRST_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_FIRST_MESSAGE);
-                        case MATCHED_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_MATCHED_MESSAGE);
+                        case SINGLE_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_FIRST_MESSAGE);
+                        case UNTIL_MATCH -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_MATCHED_MESSAGE);
                         case FIXED_DURATION -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_FIXED_DURATION);
                         case MESSAGE_COUNT -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_MESSAGE_COUNT);
                         case STREAM_CLOSED -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_STREAM_CLOSED);
@@ -87,12 +87,12 @@ public class SseStagePropertyPanel extends JPanel {
 
         switch (stage) {
             case CONNECT -> buildConnectPanel(gbc);
-            case AWAIT -> buildAwaitPanel(gbc);
+            case READ -> buildReadPanel(gbc);
         }
         PerformanceStagePropertyLayout.addVerticalFiller(this, gbc, 2);
 
-        completionModeBox.addActionListener(e -> updateAwaitModeState());
-        updateAwaitModeState();
+        completionModeBox.addActionListener(e -> updateReadModeState());
+        updateReadModeState();
     }
 
     private void buildConnectPanel(GridBagConstraints gbc) {
@@ -101,8 +101,8 @@ public class SseStagePropertyPanel extends JPanel {
                 connectTimeoutSpinner);
     }
 
-    private void buildAwaitPanel(GridBagConstraints gbc) {
-        awaitTimeoutLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_AWAIT_TIMEOUT));
+    private void buildReadPanel(GridBagConstraints gbc) {
+        readTimeoutLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_READ_TIMEOUT));
         holdConnectionLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_HOLD_CONNECTION));
         targetMessageCountLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_TARGET_MESSAGE_COUNT));
 
@@ -115,13 +115,13 @@ public class SseStagePropertyPanel extends JPanel {
         rowGbc.gridy = 0;
 
         addCompactFormRow(formPanel, rowGbc,
-                new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_AWAIT_MODE)),
+                new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_READ_MODE)),
                 completionModeBox);
         eventNameFilterLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_EVENT_FILTER));
         addCompactFormRow(formPanel, rowGbc, eventNameFilterLabel, eventNameFilterField);
         messageFilterLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_MESSAGE_FILTER));
         addCompactFormRow(formPanel, rowGbc, messageFilterLabel, messageFilterField);
-        addCompactFormRow(formPanel, rowGbc, awaitTimeoutLabel, awaitTimeoutSpinner);
+        addCompactFormRow(formPanel, rowGbc, readTimeoutLabel, readTimeoutSpinner);
         addCompactFormRow(formPanel, rowGbc, holdConnectionLabel, holdConnectionSpinner);
         addCompactFormRow(formPanel, rowGbc, targetMessageCountLabel, targetMessageCountSpinner);
 
@@ -154,12 +154,12 @@ public class SseStagePropertyPanel extends JPanel {
                 : new SsePerformanceData();
         connectTimeoutSpinner.setValue(data.connectTimeoutMs);
         completionModeBox.setSelectedItem(data.completionMode);
-        awaitTimeoutSpinner.setValue(data.firstMessageTimeoutMs);
+        readTimeoutSpinner.setValue(data.firstMessageTimeoutMs);
         holdConnectionSpinner.setValue(data.holdConnectionMs);
         targetMessageCountSpinner.setValue(data.targetMessageCount);
         eventNameFilterField.setText(data.eventNameFilter == null ? "" : data.eventNameFilter);
         messageFilterField.setText(data.messageFilter == null ? "" : data.messageFilter);
-        updateAwaitModeState();
+        updateReadModeState();
     }
 
     public void saveData() {
@@ -170,9 +170,9 @@ public class SseStagePropertyPanel extends JPanel {
         SsePerformanceData data = requestNode.ssePerformanceData != null ? requestNode.ssePerformanceData : new SsePerformanceData();
         switch (stage) {
             case CONNECT -> data.connectTimeoutMs = connectTimeoutSpinner.getCommittedIntValue();
-            case AWAIT -> {
+            case READ -> {
                 data.completionMode = (SsePerformanceData.CompletionMode) completionModeBox.getSelectedItem();
-                data.firstMessageTimeoutMs = awaitTimeoutSpinner.getCommittedIntValue();
+                data.firstMessageTimeoutMs = readTimeoutSpinner.getCommittedIntValue();
                 data.holdConnectionMs = holdConnectionSpinner.getCommittedIntValue();
                 data.targetMessageCount = targetMessageCountSpinner.getCommittedIntValue();
                 data.eventNameFilter = eventNameFilterField.getText().trim();
@@ -186,18 +186,18 @@ public class SseStagePropertyPanel extends JPanel {
         getAllSpinners().forEach(EasyJSpinner::forceCommit);
     }
 
-    private void updateAwaitModeState() {
-        if (stage != Stage.AWAIT || eventNameFilterLabel == null || awaitTimeoutLabel == null
+    private void updateReadModeState() {
+        if (stage != Stage.READ || eventNameFilterLabel == null || readTimeoutLabel == null
                 || holdConnectionLabel == null || targetMessageCountLabel == null
                 || messageFilterLabel == null || modeHintArea == null) {
             return;
         }
         SsePerformanceData.CompletionMode mode = (SsePerformanceData.CompletionMode) completionModeBox.getSelectedItem();
         boolean showEventFilter = SsePerformanceData.usesEventNameFilter(mode);
-        boolean showAwaitTimeout = mode == SsePerformanceData.CompletionMode.FIRST_MESSAGE
-                || mode == SsePerformanceData.CompletionMode.MATCHED_MESSAGE
+        boolean showReadTimeout = mode == SsePerformanceData.CompletionMode.SINGLE_MESSAGE
+                || mode == SsePerformanceData.CompletionMode.UNTIL_MATCH
                 || mode == SsePerformanceData.CompletionMode.MESSAGE_COUNT;
-        boolean showMessageFilter = mode == SsePerformanceData.CompletionMode.MATCHED_MESSAGE;
+        boolean showMessageFilter = mode == SsePerformanceData.CompletionMode.UNTIL_MATCH;
         boolean showHoldConnection = mode == SsePerformanceData.CompletionMode.FIXED_DURATION
                 || mode == SsePerformanceData.CompletionMode.STREAM_CLOSED;
         boolean showTargetCount = mode == SsePerformanceData.CompletionMode.MESSAGE_COUNT;
@@ -207,20 +207,20 @@ public class SseStagePropertyPanel extends JPanel {
             default -> MessageKeys.PERFORMANCE_SSE_OBSERVE_DURATION;
         };
         holdConnectionLabel.setText(I18nUtil.getMessage(holdConnectionKey));
-        String awaitTimeoutKey = switch (mode) {
-            case FIRST_MESSAGE -> MessageKeys.PERFORMANCE_SSE_FIRST_EVENT_TIMEOUT;
-            case MATCHED_MESSAGE -> MessageKeys.PERFORMANCE_SSE_MATCHED_MESSAGE_TIMEOUT;
-            case MESSAGE_COUNT -> MessageKeys.PERFORMANCE_SSE_AWAIT_TIMEOUT;
-            case FIXED_DURATION, STREAM_CLOSED -> MessageKeys.PERFORMANCE_SSE_AWAIT_TIMEOUT;
+        String readTimeoutKey = switch (mode) {
+            case SINGLE_MESSAGE -> MessageKeys.PERFORMANCE_SSE_FIRST_EVENT_TIMEOUT;
+            case UNTIL_MATCH -> MessageKeys.PERFORMANCE_SSE_MATCHED_MESSAGE_TIMEOUT;
+            case MESSAGE_COUNT -> MessageKeys.PERFORMANCE_SSE_READ_TIMEOUT;
+            case FIXED_DURATION, STREAM_CLOSED -> MessageKeys.PERFORMANCE_SSE_READ_TIMEOUT;
         };
-        awaitTimeoutLabel.setText(I18nUtil.getMessage(awaitTimeoutKey));
+        readTimeoutLabel.setText(I18nUtil.getMessage(readTimeoutKey));
 
         eventNameFilterLabel.setVisible(showEventFilter);
         eventNameFilterField.setVisible(showEventFilter);
         messageFilterLabel.setVisible(showMessageFilter);
         messageFilterField.setVisible(showMessageFilter);
-        awaitTimeoutLabel.setVisible(showAwaitTimeout);
-        awaitTimeoutSpinner.setVisible(showAwaitTimeout);
+        readTimeoutLabel.setVisible(showReadTimeout);
+        readTimeoutSpinner.setVisible(showReadTimeout);
         holdConnectionLabel.setVisible(showHoldConnection);
         holdConnectionSpinner.setVisible(showHoldConnection);
         targetMessageCountLabel.setVisible(showTargetCount);
@@ -232,11 +232,11 @@ public class SseStagePropertyPanel extends JPanel {
 
     private String resolveModeHint(SsePerformanceData.CompletionMode mode) {
         if (mode == null) {
-            mode = SsePerformanceData.CompletionMode.FIRST_MESSAGE;
+            mode = SsePerformanceData.CompletionMode.SINGLE_MESSAGE;
         }
         return switch (mode) {
-            case FIRST_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_HINT_FIRST_MESSAGE);
-            case MATCHED_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_HINT_MATCHED_MESSAGE);
+            case SINGLE_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_HINT_FIRST_MESSAGE);
+            case UNTIL_MATCH -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_HINT_MATCHED_MESSAGE);
             case FIXED_DURATION -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_HINT_FIXED_DURATION);
             case MESSAGE_COUNT -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_HINT_MESSAGE_COUNT);
             case STREAM_CLOSED -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_HINT_STREAM_CLOSED);
@@ -260,6 +260,6 @@ public class SseStagePropertyPanel extends JPanel {
     }
 
     private List<EasyJSpinner> getAllSpinners() {
-        return Arrays.asList(connectTimeoutSpinner, awaitTimeoutSpinner, holdConnectionSpinner, targetMessageCountSpinner);
+        return Arrays.asList(connectTimeoutSpinner, readTimeoutSpinner, holdConnectionSpinner, targetMessageCountSpinner);
     }
 }

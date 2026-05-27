@@ -16,7 +16,7 @@ class SseSampleMatcher {
     }
 
     boolean matchesPayload(SsePerformanceData config, String data) {
-        if (config.completionMode != SsePerformanceData.CompletionMode.MATCHED_MESSAGE) {
+        if (config.completionMode != SsePerformanceData.CompletionMode.UNTIL_MATCH) {
             return true;
         }
         String filter = config.messageFilter;

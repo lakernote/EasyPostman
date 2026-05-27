@@ -291,12 +291,12 @@ public class PerformancePersistenceService {
                     jsonNode.set("timerData", serializeTimerData(jmNode.timerData));
                 }
             }
-            case WS_CONNECT, WS_SEND, WS_AWAIT, WS_CLOSE -> {
+            case WS_CONNECT, WS_SEND, WS_READ, WS_CLOSE -> {
                 if (jmNode.webSocketPerformanceData != null) {
                     jsonNode.set("webSocketPerformanceData", serializeWebSocketPerformanceData(jmNode.webSocketPerformanceData));
                 }
             }
-            case SSE_CONNECT, SSE_AWAIT, ROOT -> {
+            case SSE_CONNECT, SSE_READ, ROOT -> {
             }
         }
 
@@ -411,7 +411,7 @@ public class PerformancePersistenceService {
     private JSONObject serializeSsePerformanceData(SsePerformanceData data) {
         JSONObject json = new JSONObject();
         json.set("connectTimeoutMs", data.connectTimeoutMs);
-        json.set("completionMode", data.completionMode != null ? data.completionMode.name() : SsePerformanceData.CompletionMode.FIRST_MESSAGE.name());
+        json.set("completionMode", data.completionMode != null ? data.completionMode.name() : SsePerformanceData.CompletionMode.SINGLE_MESSAGE.name());
         json.set("firstMessageTimeoutMs", data.firstMessageTimeoutMs);
         json.set("holdConnectionMs", data.holdConnectionMs);
         json.set("targetMessageCount", data.targetMessageCount);
@@ -742,13 +742,13 @@ public class PerformancePersistenceService {
                         jmNode.timerData = deserializeTimerData(timerData);
                     }
                 }
-                case WS_CONNECT, WS_SEND, WS_AWAIT, WS_CLOSE -> {
+                case WS_CONNECT, WS_SEND, WS_READ, WS_CLOSE -> {
                     JSONObject wsData = jsonNode.getJSONObject("webSocketPerformanceData");
                     if (wsData != null) {
                         jmNode.webSocketPerformanceData = deserializeWebSocketPerformanceData(wsData);
                     }
                 }
-                case SSE_CONNECT, SSE_AWAIT, ROOT -> {
+                case SSE_CONNECT, SSE_READ, ROOT -> {
                 }
             }
 
@@ -847,10 +847,11 @@ public class PerformancePersistenceService {
     private SsePerformanceData deserializeSsePerformanceData(JSONObject json) {
         SsePerformanceData data = new SsePerformanceData();
         try {
-            String completionMode = json.getStr("completionMode");
-            if (completionMode != null) {
-                data.completionMode = SsePerformanceData.CompletionMode.valueOf(completionMode);
-            }
+            data.completionMode = enumValue(
+                    SsePerformanceData.CompletionMode.class,
+                    json.getStr("completionMode"),
+                    data.completionMode
+            );
             data.connectTimeoutMs = json.getInt("connectTimeoutMs", data.connectTimeoutMs);
             data.firstMessageTimeoutMs = json.getInt("firstMessageTimeoutMs", data.firstMessageTimeoutMs);
             data.holdConnectionMs = json.getInt("holdConnectionMs", data.holdConnectionMs);
@@ -867,20 +868,25 @@ public class PerformancePersistenceService {
         WebSocketPerformanceData data = new WebSocketPerformanceData();
         try {
             data.connectTimeoutMs = json.getInt("connectTimeoutMs", data.connectTimeoutMs);
-            String sendMode = json.getStr("sendMode");
-            if (sendMode != null) {
-                data.sendMode = WebSocketPerformanceData.SendMode.valueOf(sendMode);
-            }
-            String sendContentSource = json.getStr("sendContentSource");
-            if (sendContentSource != null) {
-                data.sendContentSource = WebSocketPerformanceData.SendContentSource.valueOf(sendContentSource);
-            }
+            data.sendMode = enumValue(
+                    WebSocketPerformanceData.SendMode.class,
+                    json.getStr("sendMode"),
+                    data.sendMode
+            );
+            data.sendContentSource = enumValue(
+                    WebSocketPerformanceData.SendContentSource.class,
+                    json.getStr("sendContentSource"),
+                    data.sendContentSource
+            );
             data.customSendBody = json.getStr("customSendBody", data.customSendBody);
             data.sendPreScript = json.getStr("sendPreScript", data.sendPreScript);
             data.sendCount = json.getInt("sendCount", data.sendCount);
             data.sendIntervalMs = json.getInt("sendIntervalMs", data.sendIntervalMs);
-            String completionMode = json.getStr("completionMode");
-            data.completionMode = WebSocketPerformanceData.completionModeFromStorageValue(completionMode);
+            data.completionMode = enumValue(
+                    WebSocketPerformanceData.CompletionMode.class,
+                    json.getStr("completionMode"),
+                    data.completionMode
+            );
             data.firstMessageTimeoutMs = json.getInt("firstMessageTimeoutMs", data.firstMessageTimeoutMs);
             data.holdConnectionMs = json.getInt("holdConnectionMs", data.holdConnectionMs);
             data.targetMessageCount = json.getInt("targetMessageCount", data.targetMessageCount);
@@ -889,6 +895,17 @@ public class PerformancePersistenceService {
             log.warn("Failed to deserialize WebSocket performance data: {}", e.getMessage());
         }
         return data;
+    }
+
+    private static <E extends Enum<E>> E enumValue(Class<E> enumType, String value, E defaultValue) {
+        if (value == null || value.isBlank()) {
+            return defaultValue;
+        }
+        try {
+            return Enum.valueOf(enumType, value);
+        } catch (IllegalArgumentException e) {
+            return defaultValue;
+        }
     }
 
     /**

@@ -64,10 +64,10 @@ public class PerformancePanel extends UiSingletonPanel {
     public static final String EXTRACTOR = "extractor";
     public static final String TIMER = "timer";
     public static final String SSE_CONNECT = "sseConnect";
-    public static final String SSE_AWAIT = "sseAwait";
+    public static final String SSE_READ = "sseRead";
     public static final String WS_CONNECT = "wsConnect";
     public static final String WS_SEND = "wsSend";
-    public static final String WS_AWAIT = "wsAwait";
+    public static final String WS_READ = "wsRead";
     public static final String WS_CLOSE = "wsClose";
     private JTree jmeterTree;
     private DefaultTreeModel treeModel;
@@ -81,10 +81,10 @@ public class PerformancePanel extends UiSingletonPanel {
     private ExtractorPropertyPanel extractorPanel;
     private TimerPropertyPanel timerPanel;
     private SseStagePropertyPanel sseConnectPanel;
-    private SseStagePropertyPanel sseAwaitPanel;
+    private SseStagePropertyPanel sseReadPanel;
     private WebSocketStagePropertyPanel wsConnectPanel;
     private WebSocketStagePropertyPanel wsSendPanel;
-    private WebSocketStagePropertyPanel wsAwaitPanel;
+    private WebSocketStagePropertyPanel wsReadPanel;
     private WebSocketStagePropertyPanel wsClosePanel;
     private JPanel requestEditorHost;
     private volatile boolean running = false;
@@ -161,10 +161,10 @@ public class PerformancePanel extends UiSingletonPanel {
                 EXTRACTOR,
                 TIMER,
                 SSE_CONNECT,
-                SSE_AWAIT,
+                SSE_READ,
                 WS_CONNECT,
                 WS_SEND,
-                WS_AWAIT,
+                WS_READ,
                 WS_CLOSE
         );
         propertyPanel = propertySection.propertyPanel();
@@ -176,10 +176,10 @@ public class PerformancePanel extends UiSingletonPanel {
         extractorPanel = propertySection.extractorPanel();
         timerPanel = propertySection.timerPanel();
         sseConnectPanel = propertySection.sseConnectPanel();
-        sseAwaitPanel = propertySection.sseAwaitPanel();
+        sseReadPanel = propertySection.sseReadPanel();
         wsConnectPanel = propertySection.wsConnectPanel();
         wsSendPanel = propertySection.wsSendPanel();
-        wsAwaitPanel = propertySection.wsAwaitPanel();
+        wsReadPanel = propertySection.wsReadPanel();
         wsClosePanel = propertySection.wsClosePanel();
         RequestEditSubPanel requestEditSubPanel = propertySection.requestEditSubPanel();
         requestEditorHost = propertySection.requestEditorHost();
@@ -198,10 +198,10 @@ public class PerformancePanel extends UiSingletonPanel {
                 extractorPanel,
                 timerPanel,
                 sseConnectPanel,
-                sseAwaitPanel,
+                sseReadPanel,
                 wsConnectPanel,
                 wsSendPanel,
-                wsAwaitPanel,
+                wsReadPanel,
                 wsClosePanel,
                 requestEditorSupport::getRequestEditSubPanel,
                 () -> currentRequestNode,
@@ -528,10 +528,10 @@ public class PerformancePanel extends UiSingletonPanel {
                 extractorPanel,
                 timerPanel,
                 sseConnectPanel,
-                sseAwaitPanel,
+                sseReadPanel,
                 wsConnectPanel,
                 wsSendPanel,
-                wsAwaitPanel,
+                wsReadPanel,
                 wsClosePanel,
                 treeSupport,
                 this::saveRequestNodeData,
@@ -551,10 +551,10 @@ public class PerformancePanel extends UiSingletonPanel {
                 EXTRACTOR,
                 TIMER,
                 SSE_CONNECT,
-                SSE_AWAIT,
+                SSE_READ,
                 WS_CONNECT,
                 WS_SEND,
-                WS_AWAIT,
+                WS_READ,
                 WS_CLOSE
         ).install();
     }

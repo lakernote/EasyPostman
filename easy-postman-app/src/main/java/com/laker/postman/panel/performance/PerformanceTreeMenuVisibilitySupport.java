@@ -31,10 +31,10 @@ final class PerformanceTreeMenuVisibilitySupport {
         items.addRequest().setVisible(actions.contains(PerformanceTreeAction.ADD_REQUEST));
         items.addLoop().setVisible(actions.contains(PerformanceTreeAction.ADD_LOOP));
         items.addSseConnect().setVisible(actions.contains(PerformanceTreeAction.ADD_SSE_CONNECT));
-        items.addSseAwait().setVisible(actions.contains(PerformanceTreeAction.ADD_SSE_AWAIT));
+        items.addSseRead().setVisible(actions.contains(PerformanceTreeAction.ADD_SSE_READ));
         items.addWsConnect().setVisible(actions.contains(PerformanceTreeAction.ADD_WS_CONNECT));
         items.addWsSend().setVisible(actions.contains(PerformanceTreeAction.ADD_WS_SEND));
-        items.addWsAwait().setVisible(actions.contains(PerformanceTreeAction.ADD_WS_AWAIT));
+        items.addWsRead().setVisible(actions.contains(PerformanceTreeAction.ADD_WS_READ));
         items.addWsClose().setVisible(actions.contains(PerformanceTreeAction.ADD_WS_CLOSE));
         items.addAssertion().setVisible(actions.contains(PerformanceTreeAction.ADD_ASSERTION));
         items.addExtractor().setVisible(actions.contains(PerformanceTreeAction.ADD_EXTRACTOR));

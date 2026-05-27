@@ -45,7 +45,6 @@ public class JsPolyfillInjector {
 
         // 外部 JS 库支持
         JsLibraryLoader.injectBuiltinLibraries(context);
-        JsLibraryLoader.injectRequireFunction(context);
 
         log.debug("Polyfills injected successfully");
     }

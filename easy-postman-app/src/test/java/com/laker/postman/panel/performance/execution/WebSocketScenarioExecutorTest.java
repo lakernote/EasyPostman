@@ -101,6 +101,19 @@ public class WebSocketScenarioExecutorTest {
     }
 
     @Test
+    public void receivedMessageBufferShouldCapMessagesWhenPayloadIsNotNeeded() {
+        WebSocketReceivedMessageBuffer buffer = new WebSocketReceivedMessageBuffer(1024, false, 1);
+
+        buffer.add("first", 100);
+        buffer.add("second", 200);
+
+        WebSocketReceivedMessageBuffer.Message message = buffer.removeFirst();
+        assertEquals(message.payload(), "");
+        assertEquals(message.receivedAtMs(), 200);
+        assertTrue(buffer.isEmpty());
+    }
+
+    @Test
     public void shouldAddWebSocketSummaryHeaders() {
         HttpResponse response = new HttpResponse();
         WebSocketPerformanceData cfg = new WebSocketPerformanceData();
@@ -434,7 +447,10 @@ public class WebSocketScenarioExecutorTest {
                     () -> true,
                     throwable -> false,
                     ConcurrentHashMap.newKeySet(),
-                    ConcurrentHashMap.newKeySet()
+                    ConcurrentHashMap.newKeySet(),
+                    new PerformanceRealtimeMetrics(),
+                    () -> true,
+                    () -> 64
             );
 
             executor.execute(PerformanceTestPlanCompiler.compileRequestSampler(requestNode), iterationContext);
@@ -691,7 +707,7 @@ public class WebSocketScenarioExecutorTest {
     }
 
     @Test
-    public void shouldNotRetainWebSocketResponseBodyWhenAwaitHasNoBodyAssertion() throws Exception {
+    public void shouldNotRetainWebSocketResponseBodyInEfficientModeWhenAwaitHasNoBodyAssertion() throws Exception {
         try (MockWebServer server = new MockWebServer()) {
             server.enqueue(new MockResponse().withWebSocketUpgrade(new WebSocketListener() {
                 @Override
@@ -718,7 +734,10 @@ public class WebSocketScenarioExecutorTest {
                     () -> true,
                     throwable -> false,
                     ConcurrentHashMap.newKeySet(),
-                    ConcurrentHashMap.newKeySet()
+                    ConcurrentHashMap.newKeySet(),
+                    new PerformanceRealtimeMetrics(),
+                    () -> true,
+                    () -> 64
             );
 
             PerformanceRequestExecutionResult result = executor.execute(
@@ -771,7 +790,10 @@ public class WebSocketScenarioExecutorTest {
                     () -> true,
                     throwable -> false,
                     ConcurrentHashMap.newKeySet(),
-                    ConcurrentHashMap.newKeySet()
+                    ConcurrentHashMap.newKeySet(),
+                    new PerformanceRealtimeMetrics(),
+                    () -> true,
+                    () -> 64
             );
 
             PerformanceRequestExecutionResult result = executor.execute(
@@ -827,6 +849,51 @@ public class WebSocketScenarioExecutorTest {
             assertEquals(result.testResults.size(), 1);
             assertTrue(result.testResults.get(0).passed);
             assertTrue(result.response.body.contains("\"name\":\"target\""));
+        }
+    }
+
+    @Test
+    public void shouldRetainLatestWebSocketMessageOutsideEfficientMode() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse().withWebSocketUpgrade(new WebSocketListener() {
+                @Override
+                public void onOpen(WebSocket webSocket, Response response) {
+                    webSocket.send("latest-message");
+                }
+            }));
+            server.start();
+
+            HttpRequestItem item = new HttpRequestItem();
+            item.setId("ws-non-efficient-body-test");
+            item.setName("WS Non Efficient Body Test");
+            item.setProtocol(RequestItemProtocolEnum.WEBSOCKET);
+            item.setMethod("GET");
+            item.setUrl(server.url("/socket").toString().replaceFirst("^http", "ws"));
+
+            DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(
+                    new JMeterTreeNode("request", NodeType.REQUEST, item)
+            );
+            addConnectStep(requestNode, new WebSocketPerformanceData());
+            addFirstMessageAwaitStep(requestNode);
+
+            PerformanceRequestExecutor executor = new PerformanceRequestExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet(),
+                    ConcurrentHashMap.newKeySet(),
+                    new PerformanceRealtimeMetrics(),
+                    () -> false,
+                    () -> 64
+            );
+
+            PerformanceRequestExecutionResult result = executor.execute(
+                    PerformanceTestPlanCompiler.compileRequestSampler(requestNode),
+                    new ExecutionVariableContext()
+            );
+
+            assertFalse(result.executionFailed, result.errorMsg);
+            assertEquals(result.response.body, "latest-message");
+            assertEquals(result.response.bodySize, "latest-message".getBytes(java.nio.charset.StandardCharsets.UTF_8).length);
         }
     }
 
@@ -937,7 +1004,10 @@ public class WebSocketScenarioExecutorTest {
                     () -> true,
                     throwable -> false,
                     ConcurrentHashMap.newKeySet(),
-                    ConcurrentHashMap.newKeySet()
+                    ConcurrentHashMap.newKeySet(),
+                    new PerformanceRealtimeMetrics(),
+                    () -> true,
+                    () -> 64
             );
 
             PerformanceRequestExecutionResult result = executor.execute(

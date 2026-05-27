@@ -34,7 +34,8 @@ record PerformanceResponseCapturePlan(PreparedRequest.ResponseBodyMode httpRespo
                 && WebSocketScenarioStepSupport.hasAwaitStepWithResponseBodyNode(requestSampler);
         boolean retainWebSocketAwaitPayloads = webSocketRequest
                 && WebSocketScenarioStepSupport.hasAwaitStepRequiringPayload(requestSampler);
-        boolean retainStreamResponseBody = assertionNeedsResponseBody
+        boolean retainStreamResponseBody = !efficientMode
+                || assertionNeedsResponseBody
                 || extractorNeedsResponseBody
                 || postScriptNeedsResponseBody
                 || awaitStepNeedsResponseBody;

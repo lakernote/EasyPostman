@@ -34,6 +34,20 @@ public class PerformanceResponseCapturePlanTest {
     }
 
     @Test
+    public void shouldRetainStreamBodyOutsideEfficientMode() {
+        PerformanceResponseCapturePlan plan = PerformanceResponseCapturePlan.resolve(
+                false,
+                sampler(List.of()),
+                false,
+                true,
+                ""
+        );
+
+        assertTrue(plan.retainStreamResponseBody());
+        assertTrue(plan.trackStreamResponseBodySize());
+    }
+
+    @Test
     public void shouldKeepHttpMetadataOnlyForHeaderOnlyPostScriptInEfficientMode() {
         PerformanceResponseCapturePlan plan = PerformanceResponseCapturePlan.resolve(
                 true,

@@ -88,4 +88,56 @@ public class JsContextPoolTest {
             pool.shutdown();
         }
     }
+
+    @Test(description = "creating a pooled context should not eagerly load large built-in libraries")
+    public void shouldLoadBuiltinLibrariesLazily() throws Exception {
+        JsLibraryLoader.clearCache();
+        JsContextPool pool = new JsContextPool(1);
+        JsContextPool.PooledContext borrowed = null;
+        try {
+            borrowed = pool.borrowContext(1000);
+            var context = borrowed.getContext();
+
+            assertEquals(JsLibraryLoader.isBuiltinLibraryCachedForTests("lodash"), false);
+            assertTrue(context.eval("js", "typeof pm === 'undefined' && typeof btoa === 'function'").asBoolean());
+            assertEquals(JsLibraryLoader.isBuiltinLibraryCachedForTests("lodash"), false);
+
+            String result = context.eval("js", "JSON.stringify(_.uniq([1, 1, 2]))").asString();
+
+            assertEquals(result, "[1,2]");
+            assertTrue(JsLibraryLoader.isBuiltinLibraryCachedForTests("lodash"));
+        } finally {
+            if (borrowed != null) {
+                pool.returnContext(borrowed);
+            }
+            pool.shutdown();
+        }
+    }
+
+    @Test(description = "context cleanup should retain built-in require cache but clear request-local modules")
+    public void shouldRetainBuiltinRequireCacheAcrossContextReuse() throws Exception {
+        JsContextPool pool = new JsContextPool(1);
+        JsContextPool.PooledContext borrowed = null;
+        try {
+            borrowed = pool.borrowContext(1000);
+            borrowed.getContext().eval("js", """
+                    require('lodash');
+                    globalThis.__epRequireCache['/tmp/request-local.js'] = {};
+                    """);
+            pool.returnContext(borrowed);
+            borrowed = null;
+
+            borrowed = pool.borrowContext(1000);
+            String retainedModules = borrowed.getContext().eval("js", """
+                    Object.keys(globalThis.__epRequireCache || {}).sort().join(',')
+                    """).asString();
+
+            assertEquals(retainedModules, "builtin:lodash");
+        } finally {
+            if (borrowed != null) {
+                pool.returnContext(borrowed);
+            }
+            pool.shutdown();
+        }
+    }
 }

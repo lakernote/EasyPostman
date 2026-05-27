@@ -119,6 +119,9 @@ public class WebSocketScenarioExecutor {
                 : capturePlan;
         boolean retainAwaitPayloads = effectiveCapturePlan.retainWebSocketAwaitPayloads();
         boolean retainResponseBody = effectiveCapturePlan.retainStreamResponseBody();
+        int retainedAwaitMessageLimit = retainAwaitPayloads
+                ? WebSocketReceivedMessageBuffer.DEFAULT_MAX_RETAINED_AWAIT_MESSAGES
+                : WebSocketScenarioStepSupport.maxBufferedMessagesNeededForAwait(requestSampler);
         boolean trackResponseBodySize = retainResponseBody || effectiveCapturePlan.trackStreamResponseBodySize();
         BoundedTextAccumulator responseBodySizeCounter = trackResponseBodySize
                 ? new BoundedTextAccumulator(0)
@@ -133,7 +136,8 @@ public class WebSocketScenarioExecutor {
         List<TestResult> stepTestResults = new ArrayList<>();
         WebSocketReceivedMessageBuffer receivedMessages = new WebSocketReceivedMessageBuffer(
                 responseBodyPreviewLimitBytes,
-                retainAwaitPayloads
+                retainAwaitPayloads,
+                retainedAwaitMessageLimit
         );
         boolean keepReceivedMessages = WebSocketScenarioStepSupport.hasEnabledAwaitStep(requestSampler);
         Object messageLock = new Object();

@@ -5,9 +5,10 @@ import java.util.Deque;
 import java.util.concurrent.atomic.AtomicLong;
 
 final class WebSocketReceivedMessageBuffer {
-    private static final int MAX_RETAINED_AWAIT_MESSAGES = 1024;
+    static final int DEFAULT_MAX_RETAINED_AWAIT_MESSAGES = 1024;
 
     private final int maxRetainedBytes;
+    private final int maxRetainedMessages;
     private final boolean retainPayload;
     private final Deque<Message> messages = new ArrayDeque<>();
     private final AtomicLong retainedBytes = new AtomicLong(0);
@@ -17,7 +18,12 @@ final class WebSocketReceivedMessageBuffer {
     }
 
     WebSocketReceivedMessageBuffer(int maxRetainedBytes, boolean retainPayload) {
+        this(maxRetainedBytes, retainPayload, DEFAULT_MAX_RETAINED_AWAIT_MESSAGES);
+    }
+
+    WebSocketReceivedMessageBuffer(int maxRetainedBytes, boolean retainPayload, int maxRetainedMessages) {
         this.maxRetainedBytes = Math.max(1, maxRetainedBytes);
+        this.maxRetainedMessages = Math.max(1, maxRetainedMessages);
         this.retainPayload = retainPayload;
     }
 
@@ -25,7 +31,7 @@ final class WebSocketReceivedMessageBuffer {
         String retainedPayload = retainPayload ? retainUtf8Prefix(payload, maxRetainedBytes) : "";
         int messageBytes = retainPayload ? utf8Length(retainedPayload) : 0;
         while (!messages.isEmpty()
-                && (messages.size() >= MAX_RETAINED_AWAIT_MESSAGES
+                && (messages.size() >= maxRetainedMessages
                 || retainedBytes.get() + messageBytes > maxRetainedBytes)) {
             Message removed = messages.removeFirst();
             retainedBytes.addAndGet(-removed.retainedUtf8Bytes());

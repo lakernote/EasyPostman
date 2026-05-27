@@ -114,45 +114,55 @@ public class JsLibraryLoader {
     }
 
     /**
-     * 注入所有内置库到 JS 上下文
+     * 注入内置库访问入口到 JS 上下文。
      * <p>
-     * 此方法会加载所有内置库并注入到全局作用域，使得用户脚本可以直接使用。
-     * 例如：CryptoJS、lodash、moment 等可以直接访问，无需 require()。
+     * 大型内置库通过全局懒加载属性暴露，用户直接访问 CryptoJS、_、moment 或 require()
+     * 时才会真正加载并执行对应库代码。压测脚本如果只使用 pm.variables、Math.random 等基础能力，
+     * 就不会为每个 Context 额外加载 lodash / crypto-js / moment。
      * </p>
      *
      * @param context GraalVM JS 上下文
      */
     public static void injectBuiltinLibraries(Context context) {
-        log.debug("Loading built-in JavaScript libraries...");
+        log.debug("Registering lazy built-in JavaScript libraries...");
 
         // 注入 crypto polyfill（为 CryptoJS 提供随机数生成）
         injectCryptoPolyfill(context);
 
-        // 加载核心库并注入到全局作用域
-        loadAndInjectLibrary(context, "crypto-js", "CryptoJS");
-        loadAndInjectLibrary(context, "lodash", "_");
-        loadAndInjectLibrary(context, "moment", "moment");
+        injectRequireFunction(context);
+        installLazyBuiltinGlobal(context, "crypto-js", "CryptoJS");
+        installLazyBuiltinGlobal(context, "lodash", "_");
+        installLazyBuiltinGlobal(context, "moment", "moment");
 
-        log.debug("All built-in libraries loaded successfully");
+        log.debug("Lazy built-in JavaScript libraries registered successfully");
     }
 
-    /**
-     * 加载库并注入到全局作用域
-     *
-     * @param context GraalVM JS 上下文
-     * @param libraryName 库名
-     * @param globalName 全局变量名（如果为 null，则不创建全局变量）
-     */
-    private static void loadAndInjectLibrary(Context context, String libraryName, String globalName) {
+    private static void installLazyBuiltinGlobal(Context context, String libraryName, String globalName) {
         try {
-            String code = loadBuiltinLibrary(libraryName);
-            if (code != null) {
-                context.eval("js", code);
-                log.debug("Loaded built-in library: {} {}", libraryName,
-                         globalName != null ? "(as " + globalName + ")" : "");
-            }
+            String script = """
+                    (function() {
+                        var moduleName = '%s';
+                        var globalName = '%s';
+                        if (Object.prototype.hasOwnProperty.call(globalThis, globalName)) {
+                            return;
+                        }
+                        Object.defineProperty(globalThis, globalName, {
+                            configurable: true,
+                            get: function() {
+                                var value = globalThis.require(moduleName);
+                                Object.defineProperty(globalThis, globalName, {
+                                    value: value,
+                                    writable: true,
+                                    configurable: true
+                                });
+                                return value;
+                            }
+                        });
+                    })();
+                    """.formatted(escapeForJs(libraryName), escapeForJs(globalName));
+            context.eval("js", script);
         } catch (Exception e) {
-            log.warn("Failed to load library {}: {}", libraryName, e.getMessage());
+            log.warn("Failed to register lazy library {}: {}", libraryName, e.getMessage());
         }
     }
 
@@ -192,7 +202,9 @@ public class JsLibraryLoader {
     public static void injectRequireFunction(Context context) {
         // 创建 require() 函数的实现
         String requireFunction = """
-                globalThis.__epRequireCache = Object.create(null);
+                if (!globalThis.__epRequireCache) {
+                    globalThis.__epRequireCache = Object.create(null);
+                }
 
                 globalThis.__easyPostmanRequire = function(moduleName, parentModuleId) {
                     var loadedModule;
@@ -347,6 +359,10 @@ public class JsLibraryLoader {
         log.debug("Library cache cleared");
     }
 
+    static boolean isBuiltinLibraryCachedForTests(String libraryName) {
+        return BUILTIN_LIBRARY_CACHE.containsKey(libraryName);
+    }
+
     /**
      * 获取已注册的内置库列表
      *
@@ -484,6 +500,15 @@ public class JsLibraryLoader {
             outputStream.write(buffer, 0, bytesRead);
         }
         return outputStream.toString(StandardCharsets.UTF_8);
+    }
+
+    private static String escapeForJs(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value
+                .replace("\\", "\\\\")
+                .replace("'", "\\'");
     }
 
     private record LoadedLibrary(String id, String code) {

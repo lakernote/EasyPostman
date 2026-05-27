@@ -265,7 +265,9 @@ public class JsContextPool {
 
                         if (globalThis.__epRequireCache) {
                             Object.keys(globalThis.__epRequireCache).forEach(moduleId => {
-                                delete globalThis.__epRequireCache[moduleId];
+                                if (String(moduleId).indexOf('builtin:') !== 0) {
+                                    delete globalThis.__epRequireCache[moduleId];
+                                }
                             });
                         }
                     })();

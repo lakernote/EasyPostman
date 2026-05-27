@@ -39,6 +39,19 @@ class WebSocketScenarioStepSupport {
         return hasAwaitStepWithResponseBodyNode(requestSampler.getChildren());
     }
 
+    int maxBufferedMessagesNeededForAwait(PerformanceRequestSampler requestSampler) {
+        if (requestSampler == null) {
+            return 1;
+        }
+        int required = maxBufferedMessagesNeededForAwait(
+                requestSampler.getChildren(),
+                requestSampler.getWebSocketPerformanceData()
+        );
+        return required <= 0
+                ? WebSocketReceivedMessageBuffer.DEFAULT_MAX_RETAINED_AWAIT_MESSAGES
+                : Math.min(required, WebSocketReceivedMessageBuffer.DEFAULT_MAX_RETAINED_AWAIT_MESSAGES);
+    }
+
     WebSocketPerformanceData webSocketData(PerformancePlanElement stepElement,
                                            WebSocketPerformanceData requestConfig) {
         if (stepElement instanceof PerformanceProtocolStageElement stage
@@ -140,6 +153,29 @@ class WebSocketScenarioStepSupport {
             }
         }
         return false;
+    }
+
+    private int maxBufferedMessagesNeededForAwait(List<PerformancePlanElement> elements,
+                                                  WebSocketPerformanceData requestConfig) {
+        int max = 0;
+        for (PerformancePlanElement element : elements) {
+            if (element instanceof PerformanceProtocolStageElement stage && stage.getType() == NodeType.WS_AWAIT) {
+                WebSocketPerformanceData cfg = webSocketData(stage, requestConfig);
+                max = Math.max(max, bufferedMessagesNeededForAwait(cfg));
+            }
+            if (element instanceof PerformanceController controller) {
+                max = Math.max(max, maxBufferedMessagesNeededForAwait(controller.getElements(), requestConfig));
+            }
+        }
+        return max;
+    }
+
+    private int bufferedMessagesNeededForAwait(WebSocketPerformanceData cfg) {
+        return switch (cfg.completionMode) {
+            case FIRST_MESSAGE, MATCHED_MESSAGE -> 1;
+            case MESSAGE_COUNT -> Math.max(1, cfg.targetMessageCount);
+            case FIXED_DURATION -> WebSocketReceivedMessageBuffer.DEFAULT_MAX_RETAINED_AWAIT_MESSAGES;
+        };
     }
 
     private boolean hasMessageFilter(WebSocketPerformanceData cfg) {

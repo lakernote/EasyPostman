@@ -109,8 +109,11 @@ public class SseSampleExecutor {
         AtomicReference<String> errorRef = new AtomicReference<>("");
         AtomicReference<String> lastEventIdRef = new AtomicReference<>("");
         AtomicReference<String> lastEventTypeRef = new AtomicReference<>("");
-        BoundedTextAccumulator matchedEventBody = (retainResponseBody || trackResponseBodySize)
-                ? new BoundedTextAccumulator(retainResponseBody ? responseBodyPreviewLimitBytes : 0)
+        boolean streamClosedMode = cfg.completionMode == SsePerformanceData.CompletionMode.STREAM_CLOSED;
+        boolean effectiveRetainResponseBody = retainResponseBody || streamClosedMode;
+        boolean effectiveTrackResponseBodySize = trackResponseBodySize || effectiveRetainResponseBody;
+        BoundedTextAccumulator matchedEventBody = effectiveTrackResponseBodySize
+                ? new BoundedTextAccumulator(effectiveRetainResponseBody ? responseBodyPreviewLimitBytes : 0)
                 : null;
         AtomicLong sampleEndTimeMs = new AtomicLong(0);
         AtomicLong firstEventLatencyMs = new AtomicLong(-1);
@@ -183,6 +186,15 @@ public class SseSampleExecutor {
                     long latencyMs = Math.max(0, eventReceivedAtMs - requestStartTime);
                     firstEventLatencyMs.compareAndSet(-1, latencyMs);
                     realtimeMetrics.recordSseFirstMessageLatency(eventSource, latencyMs);
+                }
+
+                if (cfg.completionMode == SsePerformanceData.CompletionMode.STREAM_CLOSED) {
+                    lastEventIdRef.set(id == null ? "" : id);
+                    lastEventTypeRef.set(eventType);
+                    if (matchedEventBody != null) {
+                        SseEventFormatter.appendEvent(matchedEventBody, id, eventType, data);
+                    }
+                    return;
                 }
 
                 if (cfg.completionMode == SsePerformanceData.CompletionMode.FIRST_MESSAGE) {
@@ -317,6 +329,25 @@ public class SseSampleExecutor {
                         }
                     }
                 }
+                case STREAM_CLOSED -> {
+                    boolean opened = openLatch.await(Math.max(100, cfg.connectTimeoutMs), TimeUnit.MILLISECONDS);
+                    if (!opened && !failed.get() && !interrupted.get()) {
+                        failed.set(true);
+                        errorRef.set("SSE connection timeout");
+                        closingSource.set(true);
+                        markSampleEnd(sampleEndTimeMs);
+                        eventSource.cancel();
+                    } else if (!failed.get() && !interrupted.get()) {
+                        completionLatch.await(Math.max(100, cfg.holdConnectionMs), TimeUnit.MILLISECONDS);
+                        if (!connectionClosed.get() && !failed.get() && !interrupted.get()) {
+                            failed.set(true);
+                            errorRef.set("SSE stream close timeout");
+                            closingSource.set(true);
+                            markSampleEnd(sampleEndTimeMs);
+                            eventSource.cancel();
+                        }
+                    }
+                }
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -332,7 +363,7 @@ public class SseSampleExecutor {
         long endTime = sampleEndTimeMs.get();
         resp.endTime = endTime;
         resp.costMs = endTime - requestStartTime;
-        resp.body = retainResponseBody && matchedEventBody != null ? matchedEventBody.value() : "";
+        resp.body = effectiveRetainResponseBody && matchedEventBody != null ? matchedEventBody.value() : "";
         resp.bodySize = matchedEventBody == null ? 0 : matchedEventBody.totalUtf8Bytes();
         SseSampleResponseBuilder.addSummaryHeaders(
                 resp,

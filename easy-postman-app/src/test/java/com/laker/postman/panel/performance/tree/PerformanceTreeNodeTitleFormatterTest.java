@@ -37,6 +37,18 @@ public class PerformanceTreeNodeTitleFormatterTest {
         assertTrue(title.contains("event=open"), title);
     }
 
+    @Test(description = "SSE 等待流关闭标题应展示模式和关闭超时")
+    public void shouldFormatSseStreamClosedTitle() {
+        SsePerformanceData data = new SsePerformanceData();
+        data.completionMode = SsePerformanceData.CompletionMode.STREAM_CLOSED;
+        data.holdConnectionMs = 15000;
+
+        String title = PerformanceTreeNodeTitleFormatter.sseAwaitTitle(data);
+
+        assertTrue(title.contains("15s"), title);
+        assertTrue(title.contains("流关闭") || title.contains("Stream Closed"), title);
+    }
+
     @Test(description = "Loop 标题应归一化循环次数")
     public void shouldFormatLoopTitleWithNormalizedIterations() {
         LoopData data = new LoopData();

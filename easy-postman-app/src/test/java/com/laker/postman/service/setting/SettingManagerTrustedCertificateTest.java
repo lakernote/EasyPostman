@@ -106,6 +106,8 @@ public class SettingManagerTrustedCertificateTest {
 
         try {
             props.clear();
+            assertEquals(SettingManager.getJmeterSlowRequestThreshold(), 0);
+
             props.setProperty("jmeter_slow_request_threshold", "-20");
             assertEquals(SettingManager.getJmeterSlowRequestThreshold(), 0);
 
@@ -133,21 +135,25 @@ public class SettingManagerTrustedCertificateTest {
             props.setProperty("jmeter_keep_alive_seconds", "0");
             props.setProperty("jmeter_max_requests", "0");
             props.setProperty("jmeter_max_requests_per_host", "0");
+            props.setProperty("jmeter_js_context_acquire_timeout_ms", "0");
 
-            assertEquals(SettingManager.getJmeterMaxIdleConnections(), 200);
+            assertEquals(SettingManager.getJmeterMaxIdleConnections(), 100);
             assertEquals(SettingManager.getJmeterKeepAliveSeconds(), 60L);
             assertEquals(SettingManager.getJmeterMaxRequests(), 1000);
             assertEquals(SettingManager.getJmeterMaxRequestsPerHost(), 1000);
+            assertEquals(SettingManager.getJmeterJsContextAcquireTimeoutMs(), 1_000);
 
             SettingManager.setJmeterMaxIdleConnections(0);
             SettingManager.setJmeterKeepAliveSeconds(0);
             SettingManager.setJmeterMaxRequests(0);
             SettingManager.setJmeterMaxRequestsPerHost(0);
+            SettingManager.setJmeterJsContextAcquireTimeoutMs(0);
 
-            assertEquals(props.getProperty("jmeter_max_idle_connections"), "200");
+            assertEquals(props.getProperty("jmeter_max_idle_connections"), "100");
             assertEquals(props.getProperty("jmeter_keep_alive_seconds"), "60");
             assertEquals(props.getProperty("jmeter_max_requests"), "1000");
             assertEquals(props.getProperty("jmeter_max_requests_per_host"), "1000");
+            assertEquals(props.getProperty("jmeter_js_context_acquire_timeout_ms"), "1000");
         } finally {
             props.clear();
             props.putAll(backup);
@@ -214,19 +220,19 @@ public class SettingManagerTrustedCertificateTest {
 
         try {
             props.clear();
-            assertEquals(SettingManager.getPerformanceResultRowLimit(), 10_000);
+            assertEquals(SettingManager.getPerformanceResultRowLimit(), 3_000);
 
             props.setProperty("performance_result_row_limit", "5000");
             assertEquals(SettingManager.getPerformanceResultRowLimit(), 5000);
 
             props.setProperty("performance_result_row_limit", "99");
-            assertEquals(SettingManager.getPerformanceResultRowLimit(), 10_000);
+            assertEquals(SettingManager.getPerformanceResultRowLimit(), 3_000);
 
             props.setProperty("performance_result_row_limit", "100001");
-            assertEquals(SettingManager.getPerformanceResultRowLimit(), 10_000);
+            assertEquals(SettingManager.getPerformanceResultRowLimit(), 3_000);
 
             props.setProperty("performance_result_row_limit", "abc");
-            assertEquals(SettingManager.getPerformanceResultRowLimit(), 10_000);
+            assertEquals(SettingManager.getPerformanceResultRowLimit(), 3_000);
         } finally {
             props.clear();
             props.putAll(backup);
@@ -249,7 +255,7 @@ public class SettingManagerTrustedCertificateTest {
             assertEquals(props.getProperty("performance_result_row_limit"), "5000");
 
             SettingManager.setPerformanceResultRowLimit(99);
-            assertEquals(props.getProperty("performance_result_row_limit"), "10000");
+            assertEquals(props.getProperty("performance_result_row_limit"), "3000");
         } finally {
             props.clear();
             props.putAll(backup);

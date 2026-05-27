@@ -9,7 +9,8 @@ public class SsePerformanceData {
         FIRST_MESSAGE,
         MATCHED_MESSAGE,
         FIXED_DURATION,
-        MESSAGE_COUNT
+        MESSAGE_COUNT,
+        STREAM_CLOSED
     }
 
     public int connectTimeoutMs = 10000;

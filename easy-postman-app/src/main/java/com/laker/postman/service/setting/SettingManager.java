@@ -29,9 +29,9 @@ public class SettingManager {
     private static final int DEFAULT_SCRIPT_REMOTE_CONNECT_TIMEOUT_MS = 3000;
     private static final int DEFAULT_SCRIPT_REMOTE_READ_TIMEOUT_MS = 5000;
     private static final int DEFAULT_SCRIPT_REMOTE_MAX_BYTES = 512 * 1024;
-    private static final int DEFAULT_JMETER_SLOW_REQUEST_THRESHOLD_MS = 10000;
-    private static final int DEFAULT_JMETER_JS_CONTEXT_ACQUIRE_TIMEOUT_MS = 3_000;
-    private static final int DEFAULT_JMETER_MAX_IDLE_CONNECTIONS = 200;
+    private static final int DEFAULT_JMETER_SLOW_REQUEST_THRESHOLD_MS = 0;
+    private static final int DEFAULT_JMETER_JS_CONTEXT_ACQUIRE_TIMEOUT_MS = 1_000;
+    private static final int DEFAULT_JMETER_MAX_IDLE_CONNECTIONS = 100;
     private static final long DEFAULT_JMETER_KEEP_ALIVE_SECONDS = 60L;
     private static final int DEFAULT_JMETER_MAX_REQUESTS = 1000;
     private static final int DEFAULT_JMETER_MAX_REQUESTS_PER_HOST = 1000;
@@ -48,7 +48,7 @@ public class SettingManager {
     public static final int DEFAULT_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB = 64;
     public static final int MIN_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB = 1;
     public static final int MAX_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB = 1024;
-    public static final int DEFAULT_PERFORMANCE_RESULT_ROW_LIMIT = 10_000;
+    public static final int DEFAULT_PERFORMANCE_RESULT_ROW_LIMIT = 3_000;
     public static final int MIN_PERFORMANCE_RESULT_ROW_LIMIT = 100;
     public static final int MAX_PERFORMANCE_RESULT_ROW_LIMIT = 100_000;
     public static final String PROXY_MODE_MANUAL = "MANUAL";

@@ -18,6 +18,7 @@ public class SsePerformanceDataTest {
         assertTrue(SsePerformanceData.usesEventNameFilter(SsePerformanceData.CompletionMode.MATCHED_MESSAGE));
         assertTrue(SsePerformanceData.usesEventNameFilter(SsePerformanceData.CompletionMode.MESSAGE_COUNT));
         assertFalse(SsePerformanceData.usesEventNameFilter(SsePerformanceData.CompletionMode.FIXED_DURATION));
+        assertFalse(SsePerformanceData.usesEventNameFilter(SsePerformanceData.CompletionMode.STREAM_CLOSED));
     }
 
     @Test
@@ -31,5 +32,7 @@ public class SsePerformanceDataTest {
         assertEquals(en.getString(MessageKeys.PERFORMANCE_SSE_AWAIT_MODE), "Receive Completion");
         assertEquals(en.getString(MessageKeys.PERFORMANCE_SSE_HINT_FIRST_MESSAGE),
                 "After the connection opens, wait for the first real SSE event. Event and message filters are ignored in this mode. The sample finishes and closes the SSE stream when it arrives, or fails on timeout.");
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_SSE_HINT_STREAM_CLOSED),
+                "Wait for the server to close the SSE stream normally. onClosed completes the sample, onFailure fails it, and the sample fails if the stream is still open at the timeout.");
     }
 }

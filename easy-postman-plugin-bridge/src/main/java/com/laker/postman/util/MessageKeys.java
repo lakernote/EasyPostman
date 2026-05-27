@@ -743,6 +743,7 @@ public final class MessageKeys {
     public static final String PERFORMANCE_SSE_COMPLETION_MATCHED_MESSAGE = "performance.sse.completion.matched_message";
     public static final String PERFORMANCE_SSE_COMPLETION_FIXED_DURATION = "performance.sse.completion.fixed_duration";
     public static final String PERFORMANCE_SSE_COMPLETION_MESSAGE_COUNT = "performance.sse.completion.message_count";
+    public static final String PERFORMANCE_SSE_COMPLETION_STREAM_CLOSED = "performance.sse.completion.stream_closed";
     public static final String PERFORMANCE_SSE_NODE_CONNECT = "performance.sse.node.connect";
     public static final String PERFORMANCE_SSE_NODE_AWAIT = "performance.sse.node.await";
     public static final String PERFORMANCE_SSE_CONNECT_TIMEOUT = "performance.sse.connect_timeout";
@@ -755,11 +756,13 @@ public final class MessageKeys {
     public static final String PERFORMANCE_SSE_HOLD_CONNECTION = "performance.sse.hold_connection";
     public static final String PERFORMANCE_SSE_OBSERVE_DURATION = "performance.sse.observe_duration";
     public static final String PERFORMANCE_SSE_MAX_WAIT_DURATION = "performance.sse.max_wait_duration";
+    public static final String PERFORMANCE_SSE_STREAM_CLOSE_TIMEOUT = "performance.sse.stream_close_timeout";
     public static final String PERFORMANCE_SSE_TARGET_MESSAGE_COUNT = "performance.sse.target_message_count";
     public static final String PERFORMANCE_SSE_HINT_FIRST_MESSAGE = "performance.sse.hint.first_message";
     public static final String PERFORMANCE_SSE_HINT_MATCHED_MESSAGE = "performance.sse.hint.matched_message";
     public static final String PERFORMANCE_SSE_HINT_FIXED_DURATION = "performance.sse.hint.fixed_duration";
     public static final String PERFORMANCE_SSE_HINT_MESSAGE_COUNT = "performance.sse.hint.message_count";
+    public static final String PERFORMANCE_SSE_HINT_STREAM_CLOSED = "performance.sse.hint.stream_closed";
     public static final String PERFORMANCE_WS_NODE_CONNECT = "performance.ws.node.connect";
     public static final String PERFORMANCE_WS_NODE_SEND = "performance.ws.node.send";
     public static final String PERFORMANCE_WS_NODE_AWAIT = "performance.ws.node.await";

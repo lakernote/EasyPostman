@@ -78,6 +78,7 @@ public class SseStagePropertyPanel extends JPanel {
                         case MATCHED_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_MATCHED_MESSAGE);
                         case FIXED_DURATION -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_FIXED_DURATION);
                         case MESSAGE_COUNT -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_MESSAGE_COUNT);
+                        case STREAM_CLOSED -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_STREAM_CLOSED);
                     };
                 }
                 return super.getListCellRendererComponent(list, displayValue, index, isSelected, cellHasFocus);
@@ -198,19 +199,21 @@ public class SseStagePropertyPanel extends JPanel {
                 || mode == SsePerformanceData.CompletionMode.MESSAGE_COUNT;
         boolean showMessageFilter = mode == SsePerformanceData.CompletionMode.MATCHED_MESSAGE;
         boolean showHoldConnection = mode == SsePerformanceData.CompletionMode.FIXED_DURATION
-                || mode == SsePerformanceData.CompletionMode.MESSAGE_COUNT;
+                || mode == SsePerformanceData.CompletionMode.MESSAGE_COUNT
+                || mode == SsePerformanceData.CompletionMode.STREAM_CLOSED;
         boolean showTargetCount = mode == SsePerformanceData.CompletionMode.MESSAGE_COUNT;
 
-        holdConnectionLabel.setText(I18nUtil.getMessage(
-                mode == SsePerformanceData.CompletionMode.MESSAGE_COUNT
-                        ? MessageKeys.PERFORMANCE_SSE_MAX_WAIT_DURATION
-                        : MessageKeys.PERFORMANCE_SSE_OBSERVE_DURATION
-        ));
+        String holdConnectionKey = switch (mode) {
+            case MESSAGE_COUNT -> MessageKeys.PERFORMANCE_SSE_MAX_WAIT_DURATION;
+            case STREAM_CLOSED -> MessageKeys.PERFORMANCE_SSE_STREAM_CLOSE_TIMEOUT;
+            default -> MessageKeys.PERFORMANCE_SSE_OBSERVE_DURATION;
+        };
+        holdConnectionLabel.setText(I18nUtil.getMessage(holdConnectionKey));
         String awaitTimeoutKey = switch (mode) {
             case FIRST_MESSAGE -> MessageKeys.PERFORMANCE_SSE_FIRST_EVENT_TIMEOUT;
             case MATCHED_MESSAGE -> MessageKeys.PERFORMANCE_SSE_MATCHED_MESSAGE_TIMEOUT;
             case MESSAGE_COUNT -> MessageKeys.PERFORMANCE_SSE_FIRST_MESSAGE_TIMEOUT;
-            case FIXED_DURATION -> MessageKeys.PERFORMANCE_SSE_AWAIT_TIMEOUT;
+            case FIXED_DURATION, STREAM_CLOSED -> MessageKeys.PERFORMANCE_SSE_AWAIT_TIMEOUT;
         };
         awaitTimeoutLabel.setText(I18nUtil.getMessage(awaitTimeoutKey));
 
@@ -238,6 +241,7 @@ public class SseStagePropertyPanel extends JPanel {
             case MATCHED_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_HINT_MATCHED_MESSAGE);
             case FIXED_DURATION -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_HINT_FIXED_DURATION);
             case MESSAGE_COUNT -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_HINT_MESSAGE_COUNT);
+            case STREAM_CLOSED -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_HINT_STREAM_CLOSED);
         };
     }
 

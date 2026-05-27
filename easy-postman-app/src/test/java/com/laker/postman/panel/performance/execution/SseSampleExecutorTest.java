@@ -7,10 +7,12 @@ import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.SsePerformanceData;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.SocketPolicy;
 import org.testng.annotations.Test;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -172,6 +174,137 @@ public class SseSampleExecutorTest {
             assertTrue(result.executionFailed);
             assertEquals(result.response.headers.get("X-Easy-SSE-Message-Count").get(0), "1");
             assertTrue(result.errorMsg.contains("closed"), result.errorMsg);
+            assertEquals(result.response.headers.get("X-Easy-SSE-Error").get(0), result.errorMsg);
+        }
+    }
+
+    @Test
+    public void shouldNotTreatClosedLifecycleAsMatchedMessageEvent() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse()
+                    .setHeader("Content-Type", "text/event-stream")
+                    .setBody("data: {\"index\":1}\n\n"));
+            server.start();
+
+            PreparedRequest request = new PreparedRequest();
+            request.method = "GET";
+            request.url = server.url("/stream").toString();
+            request.headersList = List.of(new HttpHeader(true, "Accept", "text/event-stream"));
+
+            SsePerformanceData cfg = new SsePerformanceData();
+            cfg.completionMode = SsePerformanceData.CompletionMode.MATCHED_MESSAGE;
+            cfg.connectTimeoutMs = 2000;
+            cfg.firstMessageTimeoutMs = 2000;
+            cfg.eventNameFilter = "closed";
+
+            SseSampleExecutor.Result result = new SseSampleExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet()
+            ).execute(request, cfg);
+
+            assertTrue(result.executionFailed);
+            assertEquals(result.errorMsg, "SSE matched message timeout");
+            assertEquals(result.response.headers.get("X-Easy-SSE-Message-Count").get(0), "0");
+        }
+    }
+
+    @Test
+    public void shouldFinishStreamClosedModeWhenServerClosesNormally() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse()
+                    .setHeader("Content-Type", "text/event-stream")
+                    .setBody("data: {\"index\":1}\n\n"));
+            server.start();
+
+            PreparedRequest request = new PreparedRequest();
+            request.method = "GET";
+            request.url = server.url("/stream").toString();
+            request.headersList = List.of(new HttpHeader(true, "Accept", "text/event-stream"));
+
+            SsePerformanceData cfg = new SsePerformanceData();
+            cfg.completionMode = SsePerformanceData.CompletionMode.STREAM_CLOSED;
+            cfg.connectTimeoutMs = 2000;
+            cfg.holdConnectionMs = 2000;
+
+            SseSampleExecutor.Result result = new SseSampleExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet()
+            ).execute(request, cfg);
+
+            assertFalse(result.executionFailed, result.errorMsg);
+            assertEquals(result.response.headers.get("X-Easy-SSE-Mode").get(0), "STREAM_CLOSED");
+            assertEquals(result.response.headers.get("X-Easy-SSE-Event-Count").get(0), "1");
+            assertEquals(result.response.headers.get("X-Easy-SSE-Message-Count").get(0), "0");
+            assertTrue(result.response.body.contains("data: {\"index\":1}"), result.response.body);
+            assertTrue(result.response.bodySize > 0);
+        }
+    }
+
+    @Test
+    public void shouldRetainStreamClosedResponseBodyEvenWhenRetentionDisabled() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse()
+                    .setHeader("Content-Type", "text/event-stream")
+                    .setBody("data: {\"index\":1,\"time\":1779852035022}\n\n"));
+            server.start();
+
+            PreparedRequest request = new PreparedRequest();
+            request.method = "GET";
+            request.url = server.url("/stream").toString();
+            request.headersList = List.of(new HttpHeader(true, "Accept", "text/event-stream"));
+
+            SsePerformanceData cfg = new SsePerformanceData();
+            cfg.completionMode = SsePerformanceData.CompletionMode.STREAM_CLOSED;
+            cfg.connectTimeoutMs = 2000;
+            cfg.holdConnectionMs = 2000;
+
+            SseSampleExecutor.Result result = new SseSampleExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet(),
+                    new PerformanceRealtimeMetrics(),
+                    1024,
+                    false,
+                    false
+            ).execute(request, cfg);
+
+            assertFalse(result.executionFailed, result.errorMsg);
+            assertTrue(result.response.body.contains("\"time\":1779852035022"), result.response.body);
+            assertTrue(result.response.bodySize > 0);
+            assertEquals(result.response.headers.get("X-Easy-SSE-Message-Count").get(0), "0");
+        }
+    }
+
+    @Test
+    public void shouldFailStreamClosedModeWhenStreamDoesNotCloseBeforeTimeout() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse()
+                    .setHeader("Content-Type", "text/event-stream")
+                    .setBody("data: {\"index\":1}\n\n")
+                    .setBodyDelay(1, TimeUnit.SECONDS)
+                    .setSocketPolicy(SocketPolicy.KEEP_OPEN));
+            server.start();
+
+            PreparedRequest request = new PreparedRequest();
+            request.method = "GET";
+            request.url = server.url("/stream").toString();
+            request.headersList = List.of(new HttpHeader(true, "Accept", "text/event-stream"));
+
+            SsePerformanceData cfg = new SsePerformanceData();
+            cfg.completionMode = SsePerformanceData.CompletionMode.STREAM_CLOSED;
+            cfg.connectTimeoutMs = 2000;
+            cfg.holdConnectionMs = 150;
+
+            SseSampleExecutor.Result result = new SseSampleExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet()
+            ).execute(request, cfg);
+
+            assertTrue(result.executionFailed);
+            assertEquals(result.errorMsg, "SSE stream close timeout");
             assertEquals(result.response.headers.get("X-Easy-SSE-Error").get(0), result.errorMsg);
         }
     }

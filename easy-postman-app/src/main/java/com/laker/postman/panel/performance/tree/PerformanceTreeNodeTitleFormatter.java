@@ -34,7 +34,7 @@ public class PerformanceTreeNodeTitleFormatter {
                 joiner.add(String.valueOf(Math.max(1, data.targetMessageCount)));
                 joiner.add(formatDuration(data.holdConnectionMs));
             }
-            case FIXED_DURATION -> joiner.add(formatDuration(data.holdConnectionMs));
+            case FIXED_DURATION, STREAM_CLOSED -> joiner.add(formatDuration(data.holdConnectionMs));
         }
         if (mode == SsePerformanceData.CompletionMode.MATCHED_MESSAGE
                 && CharSequenceUtil.isNotBlank(data.messageFilter)) {
@@ -153,6 +153,7 @@ public class PerformanceTreeNodeTitleFormatter {
             case MATCHED_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_MATCHED_MESSAGE);
             case FIXED_DURATION -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_FIXED_DURATION);
             case MESSAGE_COUNT -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_MESSAGE_COUNT);
+            case STREAM_CLOSED -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_COMPLETION_STREAM_CLOSED);
         };
     }
 

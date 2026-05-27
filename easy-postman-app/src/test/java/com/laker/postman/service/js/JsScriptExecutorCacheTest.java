@@ -1,13 +1,20 @@
 package com.laker.postman.service.js;
 
+import com.laker.postman.model.Environment;
+import com.laker.postman.model.script.PostmanApiContext;
+import com.laker.postman.service.variable.ExecutionContextScope;
+import com.laker.postman.service.variable.ExecutionVariableContext;
+import com.laker.postman.service.variable.VariablesService;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
@@ -55,10 +62,78 @@ public class JsScriptExecutorCacheTest {
         assertEquals(secondSink.toString(), "second");
     }
 
+    @Test(description = "plain pm variable scripts should not load lazy built-in libraries")
+    public void plainPostmanVariableScriptShouldNotLoadLazyBuiltinLibraries() throws Exception {
+        JsContextPool replacementPool = new JsContextPool(1);
+        JsContextPool previousPool = getStaticField("contextPool", JsContextPool.class);
+        int previousPoolSize = getStaticIntField("contextPoolSize");
+        int previousTimeoutMs = getStaticIntField("contextAcquireTimeoutMs");
+        JsLibraryLoader.clearCache();
+
+        try {
+            setStaticField("contextPool", replacementPool);
+            setStaticField("contextPoolSize", 1);
+            setStaticField("contextAcquireTimeoutMs", 1000);
+
+            ExecutionVariableContext executionContext = new ExecutionVariableContext();
+            try (ExecutionContextScope ignored = ExecutionContextScope.open(executionContext)) {
+                PostmanApiContext pm = new PostmanApiContext(new Environment("test"));
+                pm.info.setWebSocketSendInfo(17, 700, "WS Send");
+                Map<String, Object> bindings = new HashMap<>();
+                bindings.put("pm", pm);
+                bindings.put("postman", pm);
+
+                JsScriptExecutor.executeScript("""
+                        pm.variables.set('i', pm.info.wsSendIndex);
+                        pm.variables.set('a', Math.random() < 0.5 ? 'T' : 'F');
+                        """, bindings, null);
+
+                assertEquals(VariablesService.getInstance().get("i"), "17");
+                assertTrue(Set.of("T", "F").contains(VariablesService.getInstance().get("a")));
+            }
+
+            assertFalse(JsLibraryLoader.isBuiltinLibraryCachedForTests("lodash"));
+            assertFalse(JsLibraryLoader.isBuiltinLibraryCachedForTests("crypto-js"));
+            assertFalse(JsLibraryLoader.isBuiltinLibraryCachedForTests("moment"));
+
+            StringBuilder sink = new StringBuilder();
+            Map<String, Object> lodashBindings = new HashMap<>();
+            lodashBindings.put("sink", sink);
+            JsScriptExecutor.executeScript("sink.append(_.uniq([1, 1, 2]).join(','));", lodashBindings, null);
+
+            assertEquals(sink.toString(), "1,2");
+            assertTrue(JsLibraryLoader.isBuiltinLibraryCachedForTests("lodash"));
+        } finally {
+            setStaticField("contextPool", previousPool);
+            setStaticField("contextPoolSize", previousPoolSize);
+            setStaticField("contextAcquireTimeoutMs", previousTimeoutMs);
+            replacementPool.shutdown();
+            JsLibraryLoader.clearCache();
+        }
+    }
+
     @SuppressWarnings("unchecked")
     private static Map<Object, Object> sourceCache() throws Exception {
         Field cacheField = JsScriptExecutor.class.getDeclaredField("SCRIPT_SOURCE_CACHE");
         cacheField.setAccessible(true);
         return (Map<Object, Object>) cacheField.get(null);
+    }
+
+    private static int getStaticIntField(String fieldName) throws Exception {
+        return (Integer) staticField(fieldName).get(null);
+    }
+
+    private static <T> T getStaticField(String fieldName, Class<T> type) throws Exception {
+        return type.cast(staticField(fieldName).get(null));
+    }
+
+    private static void setStaticField(String fieldName, Object value) throws Exception {
+        staticField(fieldName).set(null, value);
+    }
+
+    private static Field staticField(String fieldName) throws Exception {
+        Field field = JsScriptExecutor.class.getDeclaredField(fieldName);
+        field.setAccessible(true);
+        return field;
     }
 }

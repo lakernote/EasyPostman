@@ -271,12 +271,12 @@ public class PerformancePersistenceService {
                     jsonNode.set("timerData", serializeTimerData(jmNode.timerData));
                 }
             }
-            case WS_SEND, WS_AWAIT, WS_CLOSE -> {
+            case WS_CONNECT, WS_SEND, WS_AWAIT, WS_CLOSE -> {
                 if (jmNode.webSocketPerformanceData != null) {
                     jsonNode.set("webSocketPerformanceData", serializeWebSocketPerformanceData(jmNode.webSocketPerformanceData));
                 }
             }
-            case SSE_CONNECT, SSE_AWAIT, WS_CONNECT, ROOT -> {
+            case SSE_CONNECT, SSE_AWAIT, ROOT -> {
             }
         }
 
@@ -692,13 +692,13 @@ public class PerformancePersistenceService {
                         jmNode.timerData = deserializeTimerData(timerData);
                     }
                 }
-                case WS_SEND, WS_AWAIT, WS_CLOSE -> {
+                case WS_CONNECT, WS_SEND, WS_AWAIT, WS_CLOSE -> {
                     JSONObject wsData = jsonNode.getJSONObject("webSocketPerformanceData");
                     if (wsData != null) {
                         jmNode.webSocketPerformanceData = deserializeWebSocketPerformanceData(wsData);
                     }
                 }
-                case SSE_CONNECT, SSE_AWAIT, WS_CONNECT, ROOT -> {
+                case SSE_CONNECT, SSE_AWAIT, ROOT -> {
                 }
             }
 

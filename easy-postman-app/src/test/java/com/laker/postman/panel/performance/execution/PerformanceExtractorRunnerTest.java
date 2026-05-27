@@ -3,7 +3,11 @@ package com.laker.postman.panel.performance.execution;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.panel.performance.extractor.ExtractorData;
 import com.laker.postman.panel.performance.extractor.ExtractorType;
+import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.plan.PerformanceExtractorElement;
+import com.laker.postman.panel.performance.plan.PerformancePlanElement;
+import com.laker.postman.panel.performance.plan.PerformanceProtocolStageElement;
+import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.service.variable.ExecutionContextScope;
 import com.laker.postman.service.variable.ExecutionVariableContext;
 import org.testng.annotations.Test;
@@ -71,10 +75,35 @@ public class PerformanceExtractorRunnerTest {
         )));
     }
 
+    @Test
+    public void shouldCollectExtractorsFromAllSseAwaitStages() {
+        PerformanceRequestSampler sampler = new PerformanceRequestSampler(
+                "sse",
+                null,
+                null,
+                null,
+                List.of(
+                        stage(NodeType.SSE_AWAIT, List.of(extractor("Header", "X-A", "first"))),
+                        stage(NodeType.SSE_AWAIT, List.of(extractor("Header", "X-B", "second")))
+                )
+        );
+
+        List<PerformanceExtractorElement> extractors =
+                PerformanceExtractorRunner.collectExtractorElements(sampler, true, false);
+
+        assertEquals(extractors.size(), 2);
+        assertEquals(extractors.get(0).getExtractorData().variableName, "first");
+        assertEquals(extractors.get(1).getExtractorData().variableName, "second");
+    }
+
     private static HttpResponse response() {
         HttpResponse response = new HttpResponse();
         response.code = 200;
         return response;
+    }
+
+    private static PerformanceProtocolStageElement stage(NodeType type, List<PerformancePlanElement> elements) {
+        return new PerformanceProtocolStageElement(type.name(), type, null, null, elements);
     }
 
     private static PerformanceExtractorElement extractor(String type, String expression, String variableName) {

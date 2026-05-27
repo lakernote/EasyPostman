@@ -6,6 +6,8 @@ import com.laker.postman.panel.performance.assertion.AssertionData;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.plan.PerformanceAssertionElement;
+import com.laker.postman.panel.performance.plan.PerformancePlanElement;
+import com.laker.postman.panel.performance.plan.PerformanceProtocolStageElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
 import com.laker.postman.service.variable.ExecutionContextScope;
@@ -122,6 +124,27 @@ public class PerformanceAssertionRunnerTest {
     }
 
     @Test
+    public void shouldCollectAssertionsFromAllSseAwaitStages() {
+        PerformanceRequestSampler sampler = new PerformanceRequestSampler(
+                "sse",
+                null,
+                null,
+                null,
+                List.of(
+                        stage(NodeType.SSE_AWAIT, List.of(assertionElement("Contains", "first", ""))),
+                        stage(NodeType.SSE_AWAIT, List.of(assertionElement("Contains", "second", "")))
+                )
+        );
+
+        List<PerformanceAssertionElement> assertions =
+                PerformanceAssertionRunner.collectAssertionElements(sampler, true, false);
+
+        assertEquals(assertions.size(), 2);
+        assertEquals(assertions.get(0).getAssertionData().content, "first");
+        assertEquals(assertions.get(1).getAssertionData().content, "second");
+    }
+
+    @Test
     public void shouldTreatStatusAssertionOnNullResponseAsFailedAssertion() {
         List<TestResult> results = new ArrayList<>();
         AtomicReference<String> error = new AtomicReference<>("");
@@ -185,6 +208,25 @@ public class PerformanceAssertionRunnerTest {
     }
 
     @Test
+    public void shouldTreatInvalidRegexAsFailedAssertion() {
+        HttpResponse response = new HttpResponse();
+        response.body = "{\"token\":\"abc\"}";
+        List<TestResult> results = new ArrayList<>();
+        AtomicReference<String> error = new AtomicReference<>("");
+
+        PerformanceAssertionRunner.runAssertionElements(
+                List.of(assertionElement("Regex", "[", "")),
+                response,
+                results,
+                error
+        );
+
+        assertEquals(results.size(), 1);
+        assertFalse(results.get(0).passed);
+        assertFalse(error.get().isBlank());
+    }
+
+    @Test
     public void shouldResolveAssertionFieldsFromExecutionVariables() {
         HttpResponse response = new HttpResponse();
         response.body = "{\"token\":\"abc\"}";
@@ -208,6 +250,10 @@ public class PerformanceAssertionRunnerTest {
 
     private static PerformanceAssertionElement assertionElement(String type) {
         return assertionElement(type, "", "");
+    }
+
+    private static PerformanceProtocolStageElement stage(NodeType type, List<PerformancePlanElement> elements) {
+        return new PerformanceProtocolStageElement(type.name(), type, null, null, elements);
     }
 
     private static PerformanceAssertionElement assertionElement(String type, String content, String value) {

@@ -315,6 +315,32 @@ public class PerformancePersistenceServiceTest {
         assertEquals(loadedAwaitNode.webSocketPerformanceData.messageFilter, "a");
     }
 
+    @Test(description = "应保存并恢复 WebSocket Connect 步骤的独立配置")
+    public void shouldPersistWebSocketConnectStepConfig() throws IOException {
+        Path tempDir = Files.createTempDirectory("performance-persistence-ws-connect-step");
+        Path configPath = tempDir.resolve("performance_config.json");
+        TestablePerformancePersistenceService service = new TestablePerformancePersistenceService(configPath);
+        service.init();
+
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new JMeterTreeNode("Plan", NodeType.ROOT));
+        DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(new JMeterTreeNode("WebSocket Example", NodeType.REQUEST));
+
+        JMeterTreeNode connectNode = new JMeterTreeNode("WS Connect", NodeType.WS_CONNECT);
+        connectNode.webSocketPerformanceData = new WebSocketPerformanceData();
+        connectNode.webSocketPerformanceData.connectTimeoutMs = 12345;
+        requestNode.add(new DefaultMutableTreeNode(connectNode));
+        root.add(requestNode);
+
+        service.save(root, false, null);
+
+        DefaultMutableTreeNode loadedRoot = service.load("Loaded Plan");
+        DefaultMutableTreeNode loadedRequestNode = (DefaultMutableTreeNode) loadedRoot.getChildAt(0);
+        JMeterTreeNode loadedConnectNode = (JMeterTreeNode) ((DefaultMutableTreeNode) loadedRequestNode.getChildAt(0)).getUserObject();
+
+        assertNotNull(loadedConnectNode.webSocketPerformanceData);
+        assertEquals(loadedConnectNode.webSocketPerformanceData.connectTimeoutMs, 12345);
+    }
+
     @Test(description = "应保存并恢复通用 Loop 控制器配置")
     public void shouldPersistLoopControllerConfig() throws IOException {
         Path tempDir = Files.createTempDirectory("performance-persistence-loop");

@@ -1,8 +1,10 @@
 package com.laker.postman.panel.performance;
 
 import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
+import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import com.laker.postman.test.AbstractSwingUiTest;
 import org.testng.annotations.Test;
 
@@ -19,6 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
@@ -76,9 +79,73 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
         });
     }
 
+    @Test
+    public void webSocketConnectSelectionShouldEditConnectStageNode() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            TreeFixture fixture = new TreeFixture();
+            fixture.requestItem.setProtocol(RequestItemProtocolEnum.WEBSOCKET);
+            JMeterTreeNode connectData = new JMeterTreeNode("connect", NodeType.WS_CONNECT);
+            connectData.webSocketPerformanceData = new WebSocketPerformanceData();
+            DefaultMutableTreeNode connectNode = new DefaultMutableTreeNode(connectData);
+            fixture.requestNode.add(connectNode);
+            RecordingWebSocketStagePropertyPanel wsConnectPanel = new RecordingWebSocketStagePropertyPanel();
+            PerformanceTreeSelectionSupport support = fixture.createSelectionSupport(
+                    ignored -> {
+                    },
+                    ignored -> {
+                    },
+                    (node, treeNode) -> {
+                    },
+                    ignored -> {
+                    },
+                    wsConnectPanel
+            );
+            support.install();
+
+            fixture.tree.setSelectionPath(new TreePath(connectNode.getPath()));
+
+            assertSame(wsConnectPanel.lastNode, connectData);
+            assertTrue(fixture.wsConnectCard.isVisible());
+        });
+    }
+
+    @Test
+    public void webSocketConnectSelectionShouldInitializeStageConfigFromRequestDefaults() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            TreeFixture fixture = new TreeFixture();
+            fixture.requestItem.setProtocol(RequestItemProtocolEnum.WEBSOCKET);
+            JMeterTreeNode requestData = (JMeterTreeNode) fixture.requestNode.getUserObject();
+            requestData.webSocketPerformanceData = new WebSocketPerformanceData();
+            requestData.webSocketPerformanceData.connectTimeoutMs = 4321;
+            JMeterTreeNode connectData = new JMeterTreeNode("connect", NodeType.WS_CONNECT);
+            DefaultMutableTreeNode connectNode = new DefaultMutableTreeNode(connectData);
+            fixture.requestNode.add(connectNode);
+            RecordingWebSocketStagePropertyPanel wsConnectPanel = new RecordingWebSocketStagePropertyPanel();
+            PerformanceTreeSelectionSupport support = fixture.createSelectionSupport(
+                    ignored -> {
+                    },
+                    ignored -> {
+                    },
+                    (node, treeNode) -> {
+                    },
+                    ignored -> {
+                    },
+                    wsConnectPanel
+            );
+            support.install();
+
+            fixture.tree.setSelectionPath(new TreePath(connectNode.getPath()));
+
+            assertSame(wsConnectPanel.lastNode, connectData);
+            assertEquals(connectData.webSocketPerformanceData.connectTimeoutMs, 4321);
+            assertNotSame(connectData.webSocketPerformanceData, requestData.webSocketPerformanceData);
+        });
+    }
+
     private static final class TreeFixture {
         private static final String EMPTY_CARD = "empty";
         private static final String REQUEST_CARD = "request";
+        private static final String WS_CONNECT_CARD = "wsConnect";
 
         private final HttpRequestItem requestItem = new HttpRequestItem();
         private final DefaultMutableTreeNode requestNode;
@@ -89,6 +156,7 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
         private final JPanel propertyPanel = new JPanel(cardLayout);
         private final JPanel emptyCard = new JPanel();
         private final JPanel requestCard = new JPanel();
+        private final JPanel wsConnectCard = new JPanel();
 
         private TreeFixture() {
             requestItem.setName("request");
@@ -102,8 +170,10 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
             tree = new JTree(treeModel);
             emptyCard.add(new JLabel("empty"));
             requestCard.add(new JLabel("request"));
+            wsConnectCard.add(new JLabel("wsConnect"));
             propertyPanel.add(emptyCard, EMPTY_CARD);
             propertyPanel.add(requestCard, REQUEST_CARD);
+            propertyPanel.add(wsConnectCard, WS_CONNECT_CARD);
             cardLayout.show(propertyPanel, EMPTY_CARD);
         }
 
@@ -112,6 +182,21 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
                 java.util.function.Consumer<HttpRequestItem> switchRequestEditorAction,
                 java.util.function.BiConsumer<DefaultMutableTreeNode, JMeterTreeNode> syncRequestStructureAction,
                 java.util.function.Consumer<DefaultMutableTreeNode> currentRequestSetter) {
+            return createSelectionSupport(
+                    saveRequestAction,
+                    switchRequestEditorAction,
+                    syncRequestStructureAction,
+                    currentRequestSetter,
+                    null
+            );
+        }
+
+        private PerformanceTreeSelectionSupport createSelectionSupport(
+                java.util.function.Consumer<DefaultMutableTreeNode> saveRequestAction,
+                java.util.function.Consumer<HttpRequestItem> switchRequestEditorAction,
+                java.util.function.BiConsumer<DefaultMutableTreeNode, JMeterTreeNode> syncRequestStructureAction,
+                java.util.function.Consumer<DefaultMutableTreeNode> currentRequestSetter,
+                WebSocketStagePropertyPanel wsConnectPanel) {
             return new PerformanceTreeSelectionSupport(
                     tree,
                     treeModel,
@@ -124,7 +209,7 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
                     null,
                     null,
                     null,
-                    null,
+                    wsConnectPanel,
                     null,
                     null,
                     null,
@@ -146,11 +231,24 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
                     "timer",
                     "sseConnect",
                     "sseAwait",
-                    "wsConnect",
+                    WS_CONNECT_CARD,
                     "wsSend",
                     "wsAwait",
                     "wsClose"
             );
+        }
+    }
+
+    private static final class RecordingWebSocketStagePropertyPanel extends WebSocketStagePropertyPanel {
+        private JMeterTreeNode lastNode;
+
+        private RecordingWebSocketStagePropertyPanel() {
+            super(Stage.CONNECT);
+        }
+
+        @Override
+        public void setNode(JMeterTreeNode node) {
+            lastNode = node;
         }
     }
 }

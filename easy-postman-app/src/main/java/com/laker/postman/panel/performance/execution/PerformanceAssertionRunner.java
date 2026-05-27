@@ -36,10 +36,25 @@ public final class PerformanceAssertionRunner {
         }
         List<PerformancePlanElement> parentElements = requestSampler.getChildren();
         if (sseRequest) {
-            PerformanceProtocolStageElement awaitStage = findDirectStage(requestSampler, NodeType.SSE_AWAIT);
-            parentElements = awaitStage == null ? parentElements : awaitStage.getElements();
+            List<PerformanceAssertionElement> assertions = collectDirectAssertionsFromStages(requestSampler, NodeType.SSE_AWAIT);
+            if (assertions != null) {
+                return assertions;
+            }
         }
         return collectDirectAssertionElements(parentElements);
+    }
+
+    private static List<PerformanceAssertionElement> collectDirectAssertionsFromStages(PerformanceRequestSampler requestSampler,
+                                                                                      NodeType type) {
+        List<PerformanceAssertionElement> assertions = new ArrayList<>();
+        boolean foundStage = false;
+        for (PerformancePlanElement element : requestSampler.getChildren()) {
+            if (element instanceof PerformanceProtocolStageElement stage && stage.getType() == type) {
+                foundStage = true;
+                assertions.addAll(collectDirectAssertionElements(stage.getElements()));
+            }
+        }
+        return foundStage ? assertions : null;
     }
 
     public static List<PerformanceAssertionElement> collectDirectAssertionElements(List<PerformancePlanElement> elements) {
@@ -117,9 +132,13 @@ public final class PerformanceAssertionRunner {
             }
             case REGEX -> {
                 String pattern = CharSequenceUtil.isNotBlank(content) ? content : value;
-                pass = CharSequenceUtil.isNotBlank(responseBody)
-                        && CharSequenceUtil.isNotBlank(pattern)
-                        && PerformanceRegexPatternCache.compileDotAll(pattern).matcher(responseBody).find();
+                try {
+                    pass = CharSequenceUtil.isNotBlank(responseBody)
+                            && CharSequenceUtil.isNotBlank(pattern)
+                            && PerformanceRegexPatternCache.compileDotAll(pattern).matcher(responseBody).find();
+                } catch (Exception e) {
+                    log.debug("断言正则格式错误: {}", pattern);
+                }
             }
             case HEADER_EXISTS -> pass = findHeader(resp == null ? null : resp.headers, content) != null;
             case HEADER_EQUALS -> pass = Objects.equals(findHeader(resp == null ? null : resp.headers, content), value);
@@ -145,15 +164,6 @@ public final class PerformanceAssertionRunner {
             return PerformanceResponseBodyViews.extractLastSseDataPayload(responseBody);
         }
         return responseBody;
-    }
-
-    private static PerformanceProtocolStageElement findDirectStage(PerformanceRequestSampler requestSampler, NodeType type) {
-        for (PerformancePlanElement element : requestSampler.getChildren()) {
-            if (element instanceof PerformanceProtocolStageElement stage && stage.getType() == type) {
-                return stage;
-            }
-        }
-        return null;
     }
 
     private static boolean compareNumber(int actual, int expected, String operator) {

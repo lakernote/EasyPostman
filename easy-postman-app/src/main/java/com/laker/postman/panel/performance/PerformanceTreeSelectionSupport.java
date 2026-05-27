@@ -5,17 +5,17 @@ import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
 import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
-import com.laker.postman.panel.performance.model.NodeType;
+import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
 import com.laker.postman.panel.performance.timer.TimerPropertyPanel;
+import com.laker.postman.util.JsonUtil;
 import lombok.RequiredArgsConstructor;
 
-import javax.swing.JTree;
-import javax.swing.JPanel;
+import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
-import java.awt.CardLayout;
+import java.awt.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -186,9 +186,17 @@ final class PerformanceTreeSelectionSupport {
 
     private void showWebSocketConnectPanel(DefaultMutableTreeNode node) {
         DefaultMutableTreeNode requestNode = treeSupport.getParentRequestNode(node);
-        if (requestNode != null && requestNode.getUserObject() instanceof JMeterTreeNode requestJtNode) {
+        if (requestNode != null
+                && requestNode.getUserObject() instanceof JMeterTreeNode requestJtNode
+                && node.getUserObject() instanceof JMeterTreeNode connectJtNode) {
+            if (connectJtNode.webSocketPerformanceData == null && requestJtNode.webSocketPerformanceData != null) {
+                connectJtNode.webSocketPerformanceData = JsonUtil.deepCopy(
+                        requestJtNode.webSocketPerformanceData,
+                        WebSocketPerformanceData.class
+                );
+            }
             propertyCardLayout.show(propertyPanel, wsConnectCard);
-            wsConnectPanel.setNode(requestJtNode);
+            wsConnectPanel.setNode(connectJtNode);
         } else {
             propertyCardLayout.show(propertyPanel, emptyCard);
         }

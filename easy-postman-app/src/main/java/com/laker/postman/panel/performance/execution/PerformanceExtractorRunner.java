@@ -33,10 +33,25 @@ public final class PerformanceExtractorRunner {
         }
         List<PerformancePlanElement> parentElements = requestSampler.getChildren();
         if (sseRequest) {
-            PerformanceProtocolStageElement awaitStage = findDirectStage(requestSampler, NodeType.SSE_AWAIT);
-            parentElements = awaitStage == null ? parentElements : awaitStage.getElements();
+            List<PerformanceExtractorElement> extractors = collectDirectExtractorsFromStages(requestSampler, NodeType.SSE_AWAIT);
+            if (extractors != null) {
+                return extractors;
+            }
         }
         return collectDirectExtractorElements(parentElements);
+    }
+
+    private static List<PerformanceExtractorElement> collectDirectExtractorsFromStages(PerformanceRequestSampler requestSampler,
+                                                                                      NodeType type) {
+        List<PerformanceExtractorElement> extractors = new ArrayList<>();
+        boolean foundStage = false;
+        for (PerformancePlanElement element : requestSampler.getChildren()) {
+            if (element instanceof PerformanceProtocolStageElement stage && stage.getType() == type) {
+                foundStage = true;
+                extractors.addAll(collectDirectExtractorElements(stage.getElements()));
+            }
+        }
+        return foundStage ? extractors : null;
     }
 
     public static List<PerformanceExtractorElement> collectDirectExtractorElements(List<PerformancePlanElement> elements) {
@@ -183,12 +198,4 @@ public final class PerformanceExtractorRunner {
         return pair.substring(equals + 1).trim();
     }
 
-    private static PerformanceProtocolStageElement findDirectStage(PerformanceRequestSampler requestSampler, NodeType type) {
-        for (PerformancePlanElement element : requestSampler.getChildren()) {
-            if (element instanceof PerformanceProtocolStageElement stage && stage.getType() == type) {
-                return stage;
-            }
-        }
-        return null;
-    }
 }

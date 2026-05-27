@@ -179,8 +179,8 @@ public class WebSocketStagePropertyPanel extends JPanel {
                 Object displayValue = value;
                 if (value instanceof WebSocketPerformanceData.CompletionMode mode) {
                     displayValue = switch (mode) {
-                        case FIRST_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_COMPLETION_FIRST_MESSAGE);
-                        case MATCHED_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_COMPLETION_MATCHED_MESSAGE);
+                        case SINGLE_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_COMPLETION_FIRST_MESSAGE);
+                        case UNTIL_MATCH -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_COMPLETION_MATCHED_MESSAGE);
                         case FIXED_DURATION -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_COMPLETION_FIXED_DURATION);
                         case MESSAGE_COUNT -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_COMPLETION_MESSAGE_COUNT);
                     };
@@ -188,7 +188,6 @@ public class WebSocketStagePropertyPanel extends JPanel {
                 return super.getListCellRendererComponent(list, displayValue, index, isSelected, cellHasFocus);
             }
         });
-
         switch (stage) {
             case CONNECT -> buildConnectPanel(gbc);
             case SEND -> buildSendPanel(gbc);
@@ -525,7 +524,9 @@ public class WebSocketStagePropertyPanel extends JPanel {
         sendContentSourceBox.setSelectedItem(data.sendContentSource);
         sendCountSpinner.setValue(data.sendCount);
         sendIntervalSpinner.setValue(data.sendIntervalMs);
-        completionModeBox.setSelectedItem(data.completionMode);
+        completionModeBox.setSelectedItem(data.completionMode == null
+                ? WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE
+                : data.completionMode);
         awaitTimeoutSpinner.setValue(data.firstMessageTimeoutMs);
         holdConnectionSpinner.setValue(data.holdConnectionMs);
         targetMessageCountSpinner.setValue(data.targetMessageCount);
@@ -559,7 +560,9 @@ public class WebSocketStagePropertyPanel extends JPanel {
                 data.sendIntervalMs = sendIntervalSpinner.getCommittedIntValue();
             }
             case AWAIT -> {
-                data.completionMode = (WebSocketPerformanceData.CompletionMode) completionModeBox.getSelectedItem();
+                data.completionMode = completionModeBox.getSelectedItem() == null
+                        ? WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE
+                        : (WebSocketPerformanceData.CompletionMode) completionModeBox.getSelectedItem();
                 data.firstMessageTimeoutMs = awaitTimeoutSpinner.getCommittedIntValue();
                 data.holdConnectionMs = holdConnectionSpinner.getCommittedIntValue();
                 data.targetMessageCount = targetMessageCountSpinner.getCommittedIntValue();
@@ -614,18 +617,13 @@ public class WebSocketStagePropertyPanel extends JPanel {
         WebSocketPerformanceData.CompletionMode mode =
                 (WebSocketPerformanceData.CompletionMode) completionModeBox.getSelectedItem();
         boolean showMessageFilter = WebSocketPerformanceData.usesMessageFilter(mode);
-        boolean showAwaitTimeout = mode == WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE
-                || mode == WebSocketPerformanceData.CompletionMode.MATCHED_MESSAGE
+        boolean showAwaitTimeout = mode == WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE
+                || mode == WebSocketPerformanceData.CompletionMode.UNTIL_MATCH
                 || mode == WebSocketPerformanceData.CompletionMode.MESSAGE_COUNT;
-        boolean showHoldConnection = mode == WebSocketPerformanceData.CompletionMode.FIXED_DURATION
-                || mode == WebSocketPerformanceData.CompletionMode.MESSAGE_COUNT;
+        boolean showHoldConnection = mode == WebSocketPerformanceData.CompletionMode.FIXED_DURATION;
         boolean showTargetCount = mode == WebSocketPerformanceData.CompletionMode.MESSAGE_COUNT;
 
-        holdConnectionLabel.setText(I18nUtil.getMessage(
-                mode == WebSocketPerformanceData.CompletionMode.MESSAGE_COUNT
-                        ? MessageKeys.PERFORMANCE_WS_MAX_WAIT_DURATION
-                        : MessageKeys.PERFORMANCE_WS_OBSERVE_DURATION
-        ));
+        holdConnectionLabel.setText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_OBSERVE_DURATION));
 
         messageFilterLabel.setVisible(showMessageFilter);
         messageFilterField.setVisible(showMessageFilter);
@@ -642,14 +640,15 @@ public class WebSocketStagePropertyPanel extends JPanel {
 
     static String resolveAwaitModeHint(WebSocketPerformanceData.CompletionMode mode) {
         if (mode == null) {
-            mode = WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE;
+            mode = WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE;
         }
-        return switch (mode) {
-            case FIRST_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_HINT_FIRST_MESSAGE);
-            case MATCHED_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_HINT_MATCHED_MESSAGE);
+        String modeHint = switch (mode) {
+            case SINGLE_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_HINT_FIRST_MESSAGE);
+            case UNTIL_MATCH -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_HINT_MATCHED_MESSAGE);
             case FIXED_DURATION -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_HINT_FIXED_DURATION);
             case MESSAGE_COUNT -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_HINT_MESSAGE_COUNT);
         };
+        return modeHint + "\n" + I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_HINT_MEMORY);
     }
 
     private void addCompactFormRow(JPanel panel, GridBagConstraints gbc, JComponent label, JComponent field) {

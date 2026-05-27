@@ -120,13 +120,13 @@ public class PerformanceTreeNodeTitleFormatter {
         );
         WebSocketPerformanceData.CompletionMode mode = data.completionMode != null
                 ? data.completionMode
-                : WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE;
+                : WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE;
         joiner.add(webSocketCompletionModeLabel(mode));
         switch (mode) {
-            case FIRST_MESSAGE, MATCHED_MESSAGE -> joiner.add(formatDuration(data.firstMessageTimeoutMs));
+            case SINGLE_MESSAGE, UNTIL_MATCH -> joiner.add(formatDuration(data.firstMessageTimeoutMs));
             case MESSAGE_COUNT -> {
                 joiner.add(String.valueOf(Math.max(1, data.targetMessageCount)));
-                joiner.add(formatDuration(data.holdConnectionMs));
+                joiner.add(formatDuration(data.firstMessageTimeoutMs));
             }
             case FIXED_DURATION -> joiner.add(formatDuration(data.holdConnectionMs));
         }
@@ -160,10 +160,10 @@ public class PerformanceTreeNodeTitleFormatter {
     private String webSocketCompletionModeLabel(WebSocketPerformanceData.CompletionMode mode) {
         WebSocketPerformanceData.CompletionMode normalizedMode = mode != null
                 ? mode
-                : WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE;
+                : WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE;
         return switch (normalizedMode) {
-            case FIRST_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_COMPLETION_FIRST_MESSAGE);
-            case MATCHED_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_COMPLETION_MATCHED_MESSAGE);
+            case SINGLE_MESSAGE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_COMPLETION_FIRST_MESSAGE);
+            case UNTIL_MATCH -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_COMPLETION_MATCHED_MESSAGE);
             case FIXED_DURATION -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_COMPLETION_FIXED_DURATION);
             case MESSAGE_COUNT -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_COMPLETION_MESSAGE_COUNT);
         };

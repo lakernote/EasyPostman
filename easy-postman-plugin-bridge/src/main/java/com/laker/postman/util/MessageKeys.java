@@ -793,13 +793,13 @@ public final class MessageKeys {
     public static final String PERFORMANCE_WS_MESSAGE_FILTER = "performance.ws.message_filter";
     public static final String PERFORMANCE_WS_FIRST_MESSAGE_TIMEOUT = "performance.ws.first_message_timeout";
     public static final String PERFORMANCE_WS_OBSERVE_DURATION = "performance.ws.observe_duration";
-    public static final String PERFORMANCE_WS_MAX_WAIT_DURATION = "performance.ws.max_wait_duration";
     public static final String PERFORMANCE_WS_FIXED_DURATION_HINT = "performance.ws.fixed_duration_hint";
     public static final String PERFORMANCE_WS_TARGET_MESSAGE_COUNT = "performance.ws.target_message_count";
     public static final String PERFORMANCE_WS_HINT_FIRST_MESSAGE = "performance.ws.hint.first_message";
     public static final String PERFORMANCE_WS_HINT_MATCHED_MESSAGE = "performance.ws.hint.matched_message";
     public static final String PERFORMANCE_WS_HINT_FIXED_DURATION = "performance.ws.hint.fixed_duration";
     public static final String PERFORMANCE_WS_HINT_MESSAGE_COUNT = "performance.ws.hint.message_count";
+    public static final String PERFORMANCE_WS_HINT_MEMORY = "performance.ws.hint.memory";
     public static final String PERFORMANCE_WS_CLOSE_HINT = "performance.ws.close_hint";
     public static final String MSG_ONLY_HTTP_SUPPORTED = "msg.only_http_supported";
     public static final String MSG_ONLY_HTTP_SSE_WS_SUPPORTED = "msg.only_http_sse_ws_supported";

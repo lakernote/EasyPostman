@@ -17,8 +17,8 @@ public class WebSocketPerformanceData {
     }
 
     public enum CompletionMode {
-        FIRST_MESSAGE,
-        MATCHED_MESSAGE,
+        SINGLE_MESSAGE,
+        UNTIL_MATCH,
         FIXED_DURATION,
         MESSAGE_COUNT
     }
@@ -30,13 +30,31 @@ public class WebSocketPerformanceData {
     public String sendPreScript = "";
     public int sendCount = 1;
     public int sendIntervalMs = 1000;
-    public CompletionMode completionMode = CompletionMode.FIRST_MESSAGE;
+    public CompletionMode completionMode = CompletionMode.SINGLE_MESSAGE;
     public int firstMessageTimeoutMs = 10000;
     public int holdConnectionMs = 30000;
     public int targetMessageCount = 1;
     public String messageFilter = "";
 
     public static boolean usesMessageFilter(CompletionMode mode) {
-        return mode == CompletionMode.MATCHED_MESSAGE || mode == CompletionMode.MESSAGE_COUNT;
+        return mode == CompletionMode.UNTIL_MATCH || mode == CompletionMode.MESSAGE_COUNT;
     }
+
+    public static CompletionMode completionModeFromStorageValue(String value) {
+        if (value == null || value.isBlank()) {
+            return CompletionMode.SINGLE_MESSAGE;
+        }
+        return switch (value) {
+            case "FIRST_MESSAGE" -> CompletionMode.SINGLE_MESSAGE;
+            case "MATCHED_MESSAGE" -> CompletionMode.UNTIL_MATCH;
+            default -> {
+                try {
+                    yield CompletionMode.valueOf(value);
+                } catch (IllegalArgumentException e) {
+                    yield CompletionMode.SINGLE_MESSAGE;
+                }
+            }
+        };
+    }
+
 }

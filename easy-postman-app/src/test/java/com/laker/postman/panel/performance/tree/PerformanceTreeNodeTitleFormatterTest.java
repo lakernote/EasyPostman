@@ -22,6 +22,36 @@ public class PerformanceTreeNodeTitleFormatterTest {
         assertTrue(title.contains("1s"), title);
     }
 
+    @Test(description = "WebSocket 读取节点标题应使用 Read 术语")
+    public void shouldFormatWebSocketReadTitle() {
+        WebSocketPerformanceData data = new WebSocketPerformanceData();
+        data.completionMode = WebSocketPerformanceData.CompletionMode.UNTIL_MATCH;
+        data.firstMessageTimeoutMs = 10000;
+        data.messageFilter = "ack";
+
+        String title = PerformanceTreeNodeTitleFormatter.webSocketAwaitTitle(data);
+
+        assertTrue(title.startsWith("WS Read"), title);
+        assertTrue(title.contains("Until contains") || title.contains("读到包含文本"), title);
+        assertTrue(title.contains("10s"), title);
+        assertTrue(title.contains("contains=ack"), title);
+    }
+
+    @Test(description = "WebSocket 按消息数读取标题应展示统一读取超时")
+    public void shouldFormatWebSocketMessageCountTitleWithReadTimeout() {
+        WebSocketPerformanceData data = new WebSocketPerformanceData();
+        data.completionMode = WebSocketPerformanceData.CompletionMode.MESSAGE_COUNT;
+        data.targetMessageCount = 3;
+        data.firstMessageTimeoutMs = 2000;
+        data.holdConnectionMs = 15000;
+
+        String title = PerformanceTreeNodeTitleFormatter.webSocketAwaitTitle(data);
+
+        assertTrue(title.contains("3"), title);
+        assertTrue(title.contains("2s"), title);
+        assertTrue(!title.contains("15s"), title);
+    }
+
     @Test(description = "SSE 匹配消息标题应展示消息和事件过滤条件")
     public void shouldFormatSseMatchedMessageTitle() {
         SsePerformanceData data = new SsePerformanceData();

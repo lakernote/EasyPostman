@@ -20,6 +20,7 @@ public class WebSocketStagePropertyPanelTest {
             String hint = WebSocketStagePropertyPanel.resolveAwaitModeHint(mode);
 
             assertFalse(hint == null || hint.isBlank(), mode.name());
+            assertFalse(!hint.contains("消息正文") && !hint.contains("message bodies"), mode.name());
         }
     }
 
@@ -48,22 +49,49 @@ public class WebSocketStagePropertyPanelTest {
     }
 
     @Test
-    public void shouldDescribeAwaitAsNonClosingStep() {
+    public void shouldDescribeReadAsNonClosingStep() {
         ResourceBundle zh = ResourceBundle.getBundle("messages", Locale.CHINESE);
-        assertEquals(zh.getString(MessageKeys.PERFORMANCE_WS_AWAIT_MODE), "等待完成条件");
-        assertEquals(zh.getString(MessageKeys.PERFORMANCE_WS_COMPLETION_FIRST_MESSAGE), "收到任意消息");
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_MENU_ADD_WS_AWAIT), "添加 WS Read");
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_WS_NODE_AWAIT), "WS Read");
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_WS_AWAIT_MODE), "读取方式");
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_WS_COMPLETION_FIRST_MESSAGE), "读 1 条");
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_WS_COMPLETION_MATCHED_MESSAGE), "读到包含文本");
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_WS_COMPLETION_MESSAGE_COUNT), "读 N 条");
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_WS_COMPLETION_FIXED_DURATION), "观察一段时间");
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_WS_MESSAGE_FILTER), "包含文本");
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_WS_HINT_MEMORY),
+                "消息正文仅在过滤、断言或提取器需要时保留。");
         String firstMessageHint = zh.getString(MessageKeys.PERFORMANCE_WS_HINT_FIRST_MESSAGE);
-        assertEquals(firstMessageHint,
-                "等待收到任意 WebSocket 消息后进入下一步；不会主动关闭连接，超过超时时间仍未收到则失败。");
+        assertEquals(firstMessageHint, "读到 1 条即继续；超时失败。");
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_WS_HINT_MATCHED_MESSAGE),
+                "读到包含文本即继续；这是过滤，不是断言。");
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_WS_HINT_FIXED_DURATION),
+                "观察到设定时长即继续；提前断开失败。");
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_WS_HINT_MESSAGE_COUNT),
+                "达到目标数量即继续；超时未达标失败。");
         assertEquals(zh.getString(MessageKeys.PERFORMANCE_WS_CLOSE_HINT),
-                "执行到该步骤时主动关闭当前 WebSocket 连接；Await 步骤只负责等待条件，不负责关闭连接。");
+                "执行到该步骤时主动关闭当前 WebSocket 连接；Read 步骤只负责读取消息，不负责关闭连接。");
 
         ResourceBundle en = ResourceBundle.getBundle("messages", Locale.ENGLISH);
-        assertEquals(en.getString(MessageKeys.PERFORMANCE_WS_AWAIT_MODE), "Await Completion");
-        assertEquals(en.getString(MessageKeys.PERFORMANCE_WS_COMPLETION_FIRST_MESSAGE), "Any Message");
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_MENU_ADD_WS_AWAIT), "Add WS Read");
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_WS_NODE_AWAIT), "WS Read");
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_WS_AWAIT_MODE), "Read");
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_WS_COMPLETION_FIRST_MESSAGE), "1 message");
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_WS_COMPLETION_MATCHED_MESSAGE), "Until contains");
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_WS_COMPLETION_MESSAGE_COUNT), "N messages");
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_WS_COMPLETION_FIXED_DURATION), "Observe duration");
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_WS_MESSAGE_FILTER), "Contains");
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_WS_HINT_MEMORY),
+                "Message bodies are retained only for filters, assertions, or extractors.");
         assertEquals(en.getString(MessageKeys.PERFORMANCE_WS_HINT_FIRST_MESSAGE),
-                "Wait for any WebSocket message, then continue to the next step. This does not close the connection. If no message arrives before the timeout, the step fails.");
+                "Continue after 1 message; timeout fails.");
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_WS_HINT_MATCHED_MESSAGE),
+                "Continue when a message contains text; this filters, not asserts.");
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_WS_HINT_FIXED_DURATION),
+                "Continue after the duration; early close fails.");
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_WS_HINT_MESSAGE_COUNT),
+                "Continue at target count; timeout before target fails.");
         assertEquals(en.getString(MessageKeys.PERFORMANCE_WS_CLOSE_HINT),
-                "When this step is reached, the current WebSocket connection is actively closed. Await steps only wait for completion conditions; they do not close the connection.");
+                "When this step is reached, the current WebSocket connection is actively closed. Read steps only receive messages; they do not close the connection.");
     }
 }

@@ -288,9 +288,9 @@ public class PerformancePersistenceServiceTest {
         sendNode.webSocketPerformanceData.sendPreScript = "pm.variables.set('a', 'dynamic');";
         requestNode.add(new DefaultMutableTreeNode(sendNode));
 
-        JMeterTreeNode awaitNode = new JMeterTreeNode("WS Await", NodeType.WS_AWAIT);
+        JMeterTreeNode awaitNode = new JMeterTreeNode("WS Read", NodeType.WS_AWAIT);
         awaitNode.webSocketPerformanceData = new WebSocketPerformanceData();
-        awaitNode.webSocketPerformanceData.completionMode = WebSocketPerformanceData.CompletionMode.MATCHED_MESSAGE;
+        awaitNode.webSocketPerformanceData.completionMode = WebSocketPerformanceData.CompletionMode.UNTIL_MATCH;
         awaitNode.webSocketPerformanceData.firstMessageTimeoutMs = 10000;
         awaitNode.webSocketPerformanceData.messageFilter = "a";
         requestNode.add(new DefaultMutableTreeNode(awaitNode));
@@ -311,7 +311,7 @@ public class PerformancePersistenceServiceTest {
         assertEquals(loadedSendNode.webSocketPerformanceData.sendPreScript, "pm.variables.set('a', 'dynamic');");
         assertNotNull(loadedAwaitNode.webSocketPerformanceData);
         assertEquals(loadedAwaitNode.webSocketPerformanceData.completionMode,
-                WebSocketPerformanceData.CompletionMode.MATCHED_MESSAGE);
+                WebSocketPerformanceData.CompletionMode.UNTIL_MATCH);
         assertEquals(loadedAwaitNode.webSocketPerformanceData.messageFilter, "a");
     }
 

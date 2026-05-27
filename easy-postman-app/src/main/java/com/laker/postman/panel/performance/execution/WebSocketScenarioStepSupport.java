@@ -171,8 +171,11 @@ class WebSocketScenarioStepSupport {
     }
 
     private int bufferedMessagesNeededForAwait(WebSocketPerformanceData cfg) {
-        return switch (cfg.completionMode) {
-            case FIRST_MESSAGE, MATCHED_MESSAGE -> 1;
+        WebSocketPerformanceData.CompletionMode completionMode = cfg.completionMode == null
+                ? WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE
+                : cfg.completionMode;
+        return switch (completionMode) {
+            case SINGLE_MESSAGE, UNTIL_MATCH -> 1;
             case MESSAGE_COUNT -> Math.max(1, cfg.targetMessageCount);
             case FIXED_DURATION -> WebSocketReceivedMessageBuffer.DEFAULT_MAX_RETAINED_AWAIT_MESSAGES;
         };

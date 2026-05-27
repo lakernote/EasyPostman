@@ -84,7 +84,7 @@ public class PerformanceTreeNodeFactory {
             case WS_AWAIT -> {
                 nodeData = new JMeterTreeNode(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_AWAIT), NodeType.WS_AWAIT);
                 WebSocketPerformanceData stepData = copyWebSocketData(requestDefaults);
-                stepData.completionMode = WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE;
+                stepData.completionMode = WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE;
                 stepData.firstMessageTimeoutMs = Math.max(100, stepData.firstMessageTimeoutMs);
                 stepData.targetMessageCount = 1;
                 nodeData.webSocketPerformanceData = stepData;

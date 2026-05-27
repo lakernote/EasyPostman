@@ -121,7 +121,7 @@ public class WebSocketScenarioExecutorTest {
         cfg.sendContentSource = WebSocketPerformanceData.SendContentSource.CUSTOM_TEXT;
         cfg.sendCount = 3;
         cfg.sendIntervalMs = 20;
-        cfg.completionMode = WebSocketPerformanceData.CompletionMode.MATCHED_MESSAGE;
+        cfg.completionMode = WebSocketPerformanceData.CompletionMode.UNTIL_MATCH;
         cfg.messageFilter = "ack";
 
         WebSocketScenarioResponseBuilder.addSummaryHeaders(
@@ -138,12 +138,54 @@ public class WebSocketScenarioExecutorTest {
         assertEquals(response.headers.get("X-Easy-WS-Send-Mode").get(0), "REQUEST_BODY_REPEAT");
         assertEquals(response.headers.get("X-Easy-WS-Send-Content-Source").get(0), "CUSTOM_TEXT");
         assertEquals(response.headers.get("X-Easy-WS-Send-Count-Configured").get(0), "3");
+        assertFalse(response.headers.containsKey("X-Easy-WS-Read-Type"));
         assertEquals(response.headers.get("X-Easy-WS-Received-Count").get(0), "5");
         assertEquals(response.headers.get("X-Easy-WS-Sent-Count").get(0), "3");
         assertEquals(response.headers.get("X-Easy-WS-Message-Count").get(0), "2");
         assertEquals(response.headers.get("X-Easy-WS-First-Message-Latency-Ms").get(0), "42");
         assertEquals(response.headers.get("X-Easy-WS-Last-Message").get(0), "last");
         assertEquals(response.headers.get("X-Easy-WS-Error").get(0), "boom");
+    }
+
+    @Test
+    public void shouldFailSingleReadWhenNoMessageArrivesBeforeTimeout() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse().withWebSocketUpgrade(new WebSocketListener() {
+            }));
+            server.start();
+
+            HttpRequestItem item = new HttpRequestItem();
+            item.setId("ws-read-timeout-test");
+            item.setName("WS Read Timeout Test");
+            item.setProtocol(RequestItemProtocolEnum.WEBSOCKET);
+            item.setMethod("GET");
+            item.setUrl(server.url("/socket").toString().replaceFirst("^http", "ws"));
+
+            DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(
+                    new JMeterTreeNode("request", NodeType.REQUEST, item)
+            );
+            addConnectStep(requestNode, new WebSocketPerformanceData());
+            JMeterTreeNode readStep = new JMeterTreeNode("read", NodeType.WS_AWAIT);
+            readStep.webSocketPerformanceData = new WebSocketPerformanceData();
+            readStep.webSocketPerformanceData.completionMode = WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE;
+            readStep.webSocketPerformanceData.firstMessageTimeoutMs = 100;
+            requestNode.add(new DefaultMutableTreeNode(readStep));
+
+            PerformanceRequestExecutor executor = new PerformanceRequestExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet(),
+                    ConcurrentHashMap.newKeySet()
+            );
+
+            PerformanceRequestExecutionResult result = executor.execute(
+                    PerformanceTestPlanCompiler.compileRequestSampler(requestNode),
+                    new ExecutionVariableContext()
+            );
+
+            assertTrue(result.executionFailed);
+            assertEquals(result.errorMsg, "WebSocket read timeout");
+        }
     }
 
     @Test
@@ -350,7 +392,7 @@ public class WebSocketScenarioExecutorTest {
 
             JMeterTreeNode awaitStep = new JMeterTreeNode("await", NodeType.WS_AWAIT);
             awaitStep.webSocketPerformanceData = new WebSocketPerformanceData();
-            awaitStep.webSocketPerformanceData.completionMode = WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE;
+            awaitStep.webSocketPerformanceData.completionMode = WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE;
             awaitStep.webSocketPerformanceData.firstMessageTimeoutMs = 2000;
             requestNode.add(new DefaultMutableTreeNode(awaitStep));
 
@@ -598,7 +640,7 @@ public class WebSocketScenarioExecutorTest {
 
             JMeterTreeNode awaitStep = new JMeterTreeNode("await", NodeType.WS_AWAIT);
             awaitStep.webSocketPerformanceData = new WebSocketPerformanceData();
-            awaitStep.webSocketPerformanceData.completionMode = WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE;
+            awaitStep.webSocketPerformanceData.completionMode = WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE;
             awaitStep.webSocketPerformanceData.firstMessageTimeoutMs = 2000;
             loopNode.add(new DefaultMutableTreeNode(awaitStep));
 
@@ -678,7 +720,7 @@ public class WebSocketScenarioExecutorTest {
 
             JMeterTreeNode awaitStep = new JMeterTreeNode("await", NodeType.WS_AWAIT);
             awaitStep.webSocketPerformanceData = new WebSocketPerformanceData();
-            awaitStep.webSocketPerformanceData.completionMode = WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE;
+            awaitStep.webSocketPerformanceData.completionMode = WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE;
             awaitStep.webSocketPerformanceData.firstMessageTimeoutMs = 2000;
             requestNode.add(new DefaultMutableTreeNode(awaitStep));
 
@@ -805,6 +847,56 @@ public class WebSocketScenarioExecutorTest {
             assertEquals(result.testResults.size(), 1);
             assertTrue(result.testResults.get(0).passed);
             assertEquals(result.response.headers.get("X-Easy-WS-Message-Count").get(0), "2");
+        }
+    }
+
+    @Test
+    public void shouldFailMessageCountFromReadStartWhenTargetNotReachedBeforeReadTimeout() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse().withWebSocketUpgrade(new WebSocketListener() {
+                @Override
+                public void onOpen(WebSocket webSocket, Response response) {
+                    webSocket.send("first-only");
+                }
+            }));
+            server.start();
+
+            HttpRequestItem item = new HttpRequestItem();
+            item.setId("ws-message-count-single-timeout-test");
+            item.setName("WS Message Count Single Timeout Test");
+            item.setProtocol(RequestItemProtocolEnum.WEBSOCKET);
+            item.setMethod("GET");
+            item.setUrl(server.url("/socket").toString().replaceFirst("^http", "ws"));
+
+            DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(
+                    new JMeterTreeNode("request", NodeType.REQUEST, item)
+            );
+            addConnectStep(requestNode, new WebSocketPerformanceData());
+            JMeterTreeNode awaitStep = new JMeterTreeNode("await", NodeType.WS_AWAIT);
+            awaitStep.webSocketPerformanceData = new WebSocketPerformanceData();
+            awaitStep.webSocketPerformanceData.completionMode = WebSocketPerformanceData.CompletionMode.MESSAGE_COUNT;
+            awaitStep.webSocketPerformanceData.targetMessageCount = 2;
+            awaitStep.webSocketPerformanceData.firstMessageTimeoutMs = 100;
+            awaitStep.webSocketPerformanceData.holdConnectionMs = 1200;
+            requestNode.add(new DefaultMutableTreeNode(awaitStep));
+
+            PerformanceRequestExecutor executor = new PerformanceRequestExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet(),
+                    ConcurrentHashMap.newKeySet()
+            );
+
+            long start = System.currentTimeMillis();
+            PerformanceRequestExecutionResult result = executor.execute(
+                    PerformanceTestPlanCompiler.compileRequestSampler(requestNode),
+                    new ExecutionVariableContext()
+            );
+            long elapsedMs = System.currentTimeMillis() - start;
+
+            assertTrue(result.executionFailed);
+            assertEquals(result.errorMsg, "WebSocket target message count timeout");
+            assertTrue(elapsedMs < 900, "elapsedMs=" + elapsedMs);
         }
     }
 
@@ -1048,7 +1140,7 @@ public class WebSocketScenarioExecutorTest {
             DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(new JMeterTreeNode("request", NodeType.REQUEST));
             JMeterTreeNode awaitStep = new JMeterTreeNode("await", NodeType.WS_AWAIT);
             awaitStep.webSocketPerformanceData = new WebSocketPerformanceData();
-            awaitStep.webSocketPerformanceData.completionMode = WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE;
+            awaitStep.webSocketPerformanceData.completionMode = WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE;
             awaitStep.webSocketPerformanceData.firstMessageTimeoutMs = 2000;
             requestNode.add(new DefaultMutableTreeNode(awaitStep));
 
@@ -1101,7 +1193,7 @@ public class WebSocketScenarioExecutorTest {
     private static void addFirstMessageAwaitStep(DefaultMutableTreeNode requestNode) {
         JMeterTreeNode awaitStep = new JMeterTreeNode("await", NodeType.WS_AWAIT);
         awaitStep.webSocketPerformanceData = new WebSocketPerformanceData();
-        awaitStep.webSocketPerformanceData.completionMode = WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE;
+        awaitStep.webSocketPerformanceData.completionMode = WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE;
         awaitStep.webSocketPerformanceData.firstMessageTimeoutMs = 2000;
         requestNode.add(new DefaultMutableTreeNode(awaitStep));
     }

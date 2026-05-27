@@ -31,7 +31,10 @@ class WebSocketScenarioResponseBuilder {
         response.addHeader("X-Easy-WS-Send-Content-Source", Collections.singletonList(contentSource.name()));
         response.addHeader("X-Easy-WS-Send-Count-Configured", Collections.singletonList(String.valueOf(Math.max(1, headerConfig.sendCount))));
         response.addHeader("X-Easy-WS-Send-Interval-Ms", Collections.singletonList(String.valueOf(Math.max(0, headerConfig.sendIntervalMs))));
-        response.addHeader("X-Easy-WS-Mode", Collections.singletonList(headerConfig.completionMode.name()));
+        WebSocketPerformanceData.CompletionMode completionMode = headerConfig.completionMode != null
+                ? headerConfig.completionMode
+                : WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE;
+        response.addHeader("X-Easy-WS-Mode", Collections.singletonList(completionMode.name()));
         response.addHeader("X-Easy-WS-Message-Filter", Collections.singletonList(CharSequenceUtil.blankToDefault(headerConfig.messageFilter, "")));
         response.addHeader("X-Easy-WS-Received-Count", Collections.singletonList(String.valueOf(receivedMessages)));
         response.addHeader("X-Easy-WS-Sent-Count", Collections.singletonList(String.valueOf(sentMessages)));

@@ -123,7 +123,7 @@ public class PerformanceResponseCapturePlanTest {
     @Test
     public void shouldRetainWebSocketAwaitPayloadForFilteringWithoutRetainingResponseBody() {
         WebSocketPerformanceData awaitCfg = new WebSocketPerformanceData();
-        awaitCfg.completionMode = WebSocketPerformanceData.CompletionMode.MATCHED_MESSAGE;
+        awaitCfg.completionMode = WebSocketPerformanceData.CompletionMode.UNTIL_MATCH;
         awaitCfg.messageFilter = "ack";
         PerformanceProtocolStageElement awaitStep = new PerformanceProtocolStageElement(
                 "await",

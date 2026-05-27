@@ -53,7 +53,7 @@ public class PerformanceRequestExecutor {
                                       Set<EventSource> activeSseSources,
                                       Set<WebSocket> activeWebSockets,
                                       PerformanceRealtimeMetrics realtimeMetrics) {
-        this(runningSupplier, cancelledChecker, activeSseSources, activeWebSockets, realtimeMetrics, () -> false,
+        this(runningSupplier, cancelledChecker, activeSseSources, activeWebSockets, realtimeMetrics, () -> true,
                 () -> SettingManager.DEFAULT_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB);
     }
 
@@ -69,7 +69,7 @@ public class PerformanceRequestExecutor {
         this.activeSseSources = activeSseSources;
         this.activeWebSockets = activeWebSockets;
         this.realtimeMetrics = realtimeMetrics == null ? new PerformanceRealtimeMetrics() : realtimeMetrics;
-        this.efficientModeSupplier = efficientModeSupplier == null ? () -> false : efficientModeSupplier;
+        this.efficientModeSupplier = efficientModeSupplier == null ? () -> true : efficientModeSupplier;
         this.responseBodyPreviewLimitKbSupplier = responseBodyPreviewLimitKbSupplier == null
                 ? () -> SettingManager.DEFAULT_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB
                 : responseBodyPreviewLimitKbSupplier;

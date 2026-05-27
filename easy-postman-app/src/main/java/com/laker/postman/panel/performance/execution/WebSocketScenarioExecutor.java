@@ -413,6 +413,9 @@ public class WebSocketScenarioExecutor {
                                 break;
                             }
                             WebSocket webSocket = session.webSocket;
+                            WebSocketPerformanceData.CompletionMode readMode = stepCfg.completionMode == null
+                                    ? WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE
+                                    : stepCfg.completionMode;
                             long awaitStartTime = System.currentTimeMillis();
                             long firstMatchTime = -1;
                             int stepMatchedCount = 0;
@@ -434,8 +437,8 @@ public class WebSocketScenarioExecutor {
                                     while (!receivedMessages.isEmpty()) {
                                         WebSocketReceivedMessageBuffer.Message message = receivedMessages.removeFirst();
                                         String payload = message.payload();
-                                        boolean match = switch (stepCfg.completionMode) {
-                                            case FIRST_MESSAGE -> true;
+                                        boolean match = switch (readMode) {
+                                            case SINGLE_MESSAGE -> true;
                                             default -> matchesMessage(stepCfg, payload);
                                         };
                                         if (!match) {
@@ -454,12 +457,12 @@ public class WebSocketScenarioExecutor {
                                         if (stepRequiresResponseBody) {
                                             stepAssertionPayload = payload;
                                         }
-                                        if (stepCfg.completionMode == WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE
-                                                || stepCfg.completionMode == WebSocketPerformanceData.CompletionMode.MATCHED_MESSAGE) {
+                                        if (readMode == WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE
+                                                || readMode == WebSocketPerformanceData.CompletionMode.UNTIL_MATCH) {
                                             completed = true;
                                             break;
                                         }
-                                        if (stepCfg.completionMode == WebSocketPerformanceData.CompletionMode.MESSAGE_COUNT
+                                        if (readMode == WebSocketPerformanceData.CompletionMode.MESSAGE_COUNT
                                                 && stepMatchedCount >= Math.max(1, stepCfg.targetMessageCount)) {
                                             completed = true;
                                             break;
@@ -474,24 +477,22 @@ public class WebSocketScenarioExecutor {
                                         break;
                                     }
                                     long now = System.currentTimeMillis();
-                                    long deadline = switch (stepCfg.completionMode) {
-                                        case FIRST_MESSAGE, MATCHED_MESSAGE ->
+                                    long deadline = switch (readMode) {
+                                        case SINGLE_MESSAGE, UNTIL_MATCH ->
                                                 awaitStartTime + Math.max(100, stepCfg.firstMessageTimeoutMs);
                                         case FIXED_DURATION -> awaitStartTime + Math.max(100, stepCfg.holdConnectionMs);
-                                        case MESSAGE_COUNT -> (firstMatchTime < 0
-                                                ? awaitStartTime + Math.max(100, stepCfg.firstMessageTimeoutMs)
-                                                : firstMatchTime + Math.max(100, stepCfg.holdConnectionMs));
+                                        case MESSAGE_COUNT -> awaitStartTime + Math.max(100, stepCfg.firstMessageTimeoutMs);
                                     };
-                                    if (stepCfg.completionMode == WebSocketPerformanceData.CompletionMode.FIXED_DURATION) {
+                                    if (readMode == WebSocketPerformanceData.CompletionMode.FIXED_DURATION) {
                                         if (now >= deadline) {
                                             completed = true;
                                             break;
                                         }
                                     } else if (now >= deadline) {
                                         failed.set(true);
-                                        errorRef.set(stepCfg.completionMode == WebSocketPerformanceData.CompletionMode.MESSAGE_COUNT
+                                        errorRef.set(readMode == WebSocketPerformanceData.CompletionMode.MESSAGE_COUNT
                                                 ? "WebSocket target message count timeout"
-                                                : "WebSocket await timeout");
+                                                : "WebSocket read timeout");
                                         break;
                                     }
                                     long waitMs = Math.min(100, Math.max(1, deadline - now));

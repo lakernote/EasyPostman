@@ -252,7 +252,7 @@ public class PerformanceRequestExecutorTest {
             requestNode.add(new DefaultMutableTreeNode(new JMeterTreeNode("connect", NodeType.WS_CONNECT)));
             JMeterTreeNode awaitData = new JMeterTreeNode("await", NodeType.WS_AWAIT);
             awaitData.webSocketPerformanceData = new WebSocketPerformanceData();
-            awaitData.webSocketPerformanceData.completionMode = WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE;
+            awaitData.webSocketPerformanceData.completionMode = WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE;
             awaitData.webSocketPerformanceData.firstMessageTimeoutMs = 2000;
             requestNode.add(new DefaultMutableTreeNode(awaitData));
 

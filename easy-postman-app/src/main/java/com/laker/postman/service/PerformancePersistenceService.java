@@ -385,7 +385,7 @@ public class PerformancePersistenceService {
         json.set("sendPreScript", data.sendPreScript);
         json.set("sendCount", data.sendCount);
         json.set("sendIntervalMs", data.sendIntervalMs);
-        json.set("completionMode", data.completionMode != null ? data.completionMode.name() : WebSocketPerformanceData.CompletionMode.FIRST_MESSAGE.name());
+        json.set("completionMode", data.completionMode != null ? data.completionMode.name() : WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE.name());
         json.set("firstMessageTimeoutMs", data.firstMessageTimeoutMs);
         json.set("holdConnectionMs", data.holdConnectionMs);
         json.set("targetMessageCount", data.targetMessageCount);
@@ -830,9 +830,7 @@ public class PerformancePersistenceService {
             data.sendCount = json.getInt("sendCount", data.sendCount);
             data.sendIntervalMs = json.getInt("sendIntervalMs", data.sendIntervalMs);
             String completionMode = json.getStr("completionMode");
-            if (completionMode != null) {
-                data.completionMode = WebSocketPerformanceData.CompletionMode.valueOf(completionMode);
-            }
+            data.completionMode = WebSocketPerformanceData.completionModeFromStorageValue(completionMode);
             data.firstMessageTimeoutMs = json.getInt("firstMessageTimeoutMs", data.firstMessageTimeoutMs);
             data.holdConnectionMs = json.getInt("holdConnectionMs", data.holdConnectionMs);
             data.targetMessageCount = json.getInt("targetMessageCount", data.targetMessageCount);

@@ -6,6 +6,7 @@ import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public final class PerformanceThreadGroupPlan {
     private final String name;
@@ -42,6 +43,10 @@ public final class PerformanceThreadGroupPlan {
 
     public CsvDataSetData getCsvDataSetData() {
         return PerformancePlanNodeCopies.copyCsvDataSetData(csvDataSetData);
+    }
+
+    public Map<String, String> csvRowForVirtualUser(int virtualUserIndex) {
+        return csvDataSetData == null ? null : csvDataSetData.rowForVirtualUser(virtualUserIndex);
     }
 
     public List<PerformancePlanElement> getElements() {

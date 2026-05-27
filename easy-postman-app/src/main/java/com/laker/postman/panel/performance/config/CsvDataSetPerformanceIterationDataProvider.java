@@ -10,10 +10,6 @@ public final class CsvDataSetPerformanceIterationDataProvider implements Perform
         if (groupPlan == null) {
             return null;
         }
-        CsvDataSetData data = groupPlan.getCsvDataSetData();
-        if (data == null || !data.hasRows()) {
-            return null;
-        }
-        return data.rowForVirtualUser(virtualUserIndex);
+        return groupPlan.csvRowForVirtualUser(virtualUserIndex);
     }
 }

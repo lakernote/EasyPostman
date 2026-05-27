@@ -2,7 +2,6 @@ package com.laker.postman.panel.performance;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.UiSingletonFactory;
-import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.common.component.MemoryLabel;
 import com.laker.postman.common.component.button.RefreshButton;
 import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
@@ -15,6 +14,7 @@ import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
 import com.laker.postman.panel.performance.component.JMeterTreeCellRenderer;
 import com.laker.postman.panel.performance.component.TreeNodeTransferHandler;
+import com.laker.postman.panel.performance.config.CsvDataSetPropertyPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
 import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
@@ -22,7 +22,6 @@ import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import com.laker.postman.panel.performance.result.PerformanceTrendPanel;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
 import com.laker.postman.panel.performance.timer.TimerPropertyPanel;
-import com.laker.postman.service.PerformancePersistenceService;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -59,6 +58,7 @@ final class PerformancePanelViewFactory {
 
     PropertySection createPropertySection(String emptyCard,
                                           String threadGroupCard,
+                                          String csvDataSetCard,
                                           String loopCard,
                                           String requestCard,
                                           String assertionCard,
@@ -76,6 +76,9 @@ final class PerformancePanelViewFactory {
 
         ThreadGroupPropertyPanel threadGroupPanel = new ThreadGroupPropertyPanel();
         propertyPanel.add(threadGroupPanel, threadGroupCard);
+
+        CsvDataSetPropertyPanel csvDataSetPanel = new CsvDataSetPropertyPanel();
+        propertyPanel.add(csvDataSetPanel, csvDataSetCard);
 
         LoopPropertyPanel loopPanel = new LoopPropertyPanel();
         propertyPanel.add(loopPanel, loopCard);
@@ -110,6 +113,7 @@ final class PerformancePanelViewFactory {
                 propertyPanel,
                 propertyCardLayout,
                 threadGroupPanel,
+                csvDataSetPanel,
                 loopPanel,
                 assertionPanel,
                 extractorPanel,
@@ -178,10 +182,7 @@ final class PerformancePanelViewFactory {
         );
     }
 
-    ToolbarSection createToolbarSection(
-                                        PerformancePersistenceService persistenceService,
-                                        Runnable refreshRequestsAction,
-                                        Runnable saveConfigAction) {
+    ToolbarSection createToolbarSection(Runnable refreshRequestsAction) {
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()));
 
@@ -196,11 +197,6 @@ final class PerformancePanelViewFactory {
         refreshBtn.addActionListener(e -> refreshRequestsAction.run());
         btnPanel.add(refreshBtn);
 
-        CsvDataPanel csvDataPanel = new CsvDataPanel();
-        csvDataPanel.setContextHelpText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_CSV_USAGE_NOTE));
-        csvDataPanel.setChangeListener(saveConfigAction);
-        csvDataPanel.restoreState(persistenceService.loadCsvState());
-        btnPanel.add(csvDataPanel);
         topPanel.add(btnPanel, BorderLayout.WEST);
 
         JPanel progressPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 5));
@@ -214,7 +210,7 @@ final class PerformancePanelViewFactory {
         progressPanel.add(new MemoryLabel());
         topPanel.add(progressPanel, BorderLayout.EAST);
 
-        return new ToolbarSection(topPanel, runBtn, stopBtn, refreshBtn, csvDataPanel, progressLabel);
+        return new ToolbarSection(topPanel, runBtn, stopBtn, refreshBtn, progressLabel);
     }
 
     private ResultToolbar createResultToolbar(JTabbedPane resultTabbedPane,
@@ -427,6 +423,7 @@ final class PerformancePanelViewFactory {
     record PropertySection(JPanel propertyPanel,
                            CardLayout propertyCardLayout,
                            ThreadGroupPropertyPanel threadGroupPanel,
+                           CsvDataSetPropertyPanel csvDataSetPanel,
                            LoopPropertyPanel loopPanel,
                            AssertionPropertyPanel assertionPanel,
                            ExtractorPropertyPanel extractorPanel,
@@ -458,7 +455,6 @@ final class PerformancePanelViewFactory {
                           StartButton runBtn,
                           StopButton stopBtn,
                           RefreshButton refreshBtn,
-                          CsvDataPanel csvDataPanel,
                           JLabel progressLabel) {
     }
 

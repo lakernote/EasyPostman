@@ -9,6 +9,7 @@ import com.laker.postman.ioc.PostConstruct;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.performance.assertion.AssertionData;
+import com.laker.postman.panel.performance.config.CsvDataSetData;
 import com.laker.postman.panel.performance.extractor.ExtractorData;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.controller.LoopData;
@@ -103,6 +104,13 @@ public class PerformancePersistenceService {
         save(rootNode, efficientMode, trendEnabled, false, csvState);
     }
 
+    public void save(DefaultMutableTreeNode rootNode,
+                     boolean efficientMode,
+                     boolean trendEnabled,
+                     boolean reportRealtimeEnabled) {
+        save(rootNode, efficientMode, trendEnabled, reportRealtimeEnabled, null);
+    }
+
     /**
      * 保存性能测试配置树结构
      *
@@ -192,6 +200,13 @@ public class PerformancePersistenceService {
         saveAsync(rootNode, efficientMode, trendEnabled, false, csvState);
     }
 
+    public void saveAsync(DefaultMutableTreeNode rootNode,
+                          boolean efficientMode,
+                          boolean trendEnabled,
+                          boolean reportRealtimeEnabled) {
+        saveAsync(rootNode, efficientMode, trendEnabled, reportRealtimeEnabled, null);
+    }
+
     /**
      * 异步保存配置
      *
@@ -237,6 +252,11 @@ public class PerformancePersistenceService {
             case THREAD_GROUP -> {
                 if (jmNode.threadGroupData != null) {
                     jsonNode.set("threadGroupData", serializeThreadGroupData(jmNode.threadGroupData));
+                }
+            }
+            case CSV_DATA_SET -> {
+                if (jmNode.csvDataSetData != null) {
+                    jsonNode.set("csvDataSetData", serializeCsvDataSetData(jmNode.csvDataSetData));
                 }
             }
             case LOOP -> {
@@ -326,6 +346,30 @@ public class PerformancePersistenceService {
         data.normalize();
         JSONObject json = new JSONObject();
         json.set("iterations", data.iterations);
+        return json;
+    }
+
+    private JSONObject serializeCsvDataSetData(CsvDataSetData data) {
+        JSONObject json = new JSONObject();
+        json.set("sourceName", data.getSourceName());
+
+        JSONArray headers = new JSONArray();
+        for (String header : data.getHeaders()) {
+            headers.add(header);
+        }
+        json.set("headers", headers);
+
+        JSONArray rows = new JSONArray();
+        for (java.util.Map<String, String> row : data.getRows()) {
+            JSONObject rowJson = new JSONObject();
+            if (row != null) {
+                for (java.util.Map.Entry<String, String> entry : row.entrySet()) {
+                    rowJson.set(entry.getKey(), entry.getValue());
+                }
+            }
+            rows.add(rowJson);
+        }
+        json.set("rows", rows);
         return json;
     }
 
@@ -646,6 +690,12 @@ public class PerformancePersistenceService {
                         jmNode.threadGroupData = deserializeThreadGroupData(tgData);
                     }
                 }
+                case CSV_DATA_SET -> {
+                    JSONObject csvData = jsonNode.getJSONObject("csvDataSetData");
+                    if (csvData != null) {
+                        jmNode.csvDataSetData = deserializeCsvDataSetData(csvData);
+                    }
+                }
                 case LOOP -> {
                     JSONObject loopData = jsonNode.getJSONObject("loopData");
                     if (loopData != null) {
@@ -848,6 +898,37 @@ public class PerformancePersistenceService {
         TimerData data = new TimerData();
         data.delayMs = json.getInt("delayMs", 1000);
         return data;
+    }
+
+    private CsvDataSetData deserializeCsvDataSetData(JSONObject json) {
+        if (json == null) {
+            return null;
+        }
+
+        JSONArray headersJson = json.getJSONArray("headers");
+        JSONArray rowsJson = json.getJSONArray("rows");
+        if (headersJson == null || rowsJson == null || rowsJson.isEmpty()) {
+            return null;
+        }
+
+        java.util.List<String> headers = new java.util.ArrayList<>();
+        for (int i = 0; i < headersJson.size(); i++) {
+            headers.add(headersJson.getStr(i));
+        }
+
+        java.util.List<java.util.Map<String, String>> rows = new java.util.ArrayList<>();
+        for (int i = 0; i < rowsJson.size(); i++) {
+            JSONObject rowJson = rowsJson.getJSONObject(i);
+            java.util.Map<String, String> row = new java.util.LinkedHashMap<>();
+            if (rowJson != null) {
+                for (String header : headers) {
+                    row.put(header, rowJson.getStr(header, ""));
+                }
+            }
+            rows.add(row);
+        }
+
+        return new CsvDataSetData(json.getStr("sourceName"), headers, rows);
     }
 
     private CsvDataPanel.CsvState deserializeCsvState(JSONObject json) {

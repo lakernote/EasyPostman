@@ -4,6 +4,7 @@ import javax.swing.JMenuItem;
 
 record PerformanceTreeMenuItems(
         JMenuItem addThreadGroup,
+        JMenuItem addCsvDataSet,
         JMenuItem addRequest,
         JMenuItem addLoop,
         JMenuItem addSseConnect,
@@ -24,7 +25,7 @@ record PerformanceTreeMenuItems(
 ) {
 
     boolean hasVisibleAddItem() {
-        return addThreadGroup.isVisible() || addRequest.isVisible()
+        return addThreadGroup.isVisible() || addCsvDataSet.isVisible() || addRequest.isVisible()
                 || addLoop.isVisible()
                 || addSseConnect.isVisible() || addSseAwait.isVisible()
                 || addWsConnect.isVisible()

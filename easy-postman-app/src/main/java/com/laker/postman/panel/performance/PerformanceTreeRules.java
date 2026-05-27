@@ -33,6 +33,7 @@ public final class PerformanceTreeRules {
         }
         return switch (childData.type) {
             case THREAD_GROUP -> isNodeType(parentNode, NodeType.ROOT);
+            case CSV_DATA_SET -> isNodeType(parentNode, NodeType.THREAD_GROUP);
             case REQUEST -> isRequestContainerTarget(parentNode);
             case ASSERTION -> isHttpRequestPostProcessorTarget(parentNode)
                     || isNodeType(parentNode, NodeType.SSE_AWAIT)

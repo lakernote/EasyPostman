@@ -3,6 +3,7 @@ package com.laker.postman.panel.performance.runtime;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
+import java.util.function.IntSupplier;
 
 public final class PerformanceVirtualUserCoordinator {
 
@@ -33,23 +34,39 @@ public final class PerformanceVirtualUserCoordinator {
                 BiConsumer<Integer, Integer> progressUpdater,
                 int totalThreads,
                 Runnable task) {
-        executor.submit(() -> run(progressUpdater, totalThreads, task));
+        submit(executor, progressUpdater, totalThreads, virtualUserCounter::getAndIncrement, task);
+    }
+
+    void submit(ExecutorService executor,
+                BiConsumer<Integer, Integer> progressUpdater,
+                int totalThreads,
+                IntSupplier virtualUserIndexSupplier,
+                Runnable task) {
+        executor.submit(() -> run(progressUpdater, totalThreads, nextVirtualUserIndex(virtualUserIndexSupplier), task));
     }
 
     public Thread newThread(String namePrefix,
                             BiConsumer<Integer, Integer> progressUpdater,
                             int totalThreads,
                             Runnable task) {
+        return newThread(namePrefix, progressUpdater, totalThreads, virtualUserCounter::getAndIncrement, task);
+    }
+
+    public Thread newThread(String namePrefix,
+                            BiConsumer<Integer, Integer> progressUpdater,
+                            int totalThreads,
+                            IntSupplier virtualUserIndexSupplier,
+                            Runnable task) {
         return PerformanceThreadFactory.newDaemonThread(
                 namePrefix,
-                () -> run(progressUpdater, totalThreads, task)
+                () -> run(progressUpdater, totalThreads, nextVirtualUserIndex(virtualUserIndexSupplier), task)
         );
     }
 
     private void run(BiConsumer<Integer, Integer> progressUpdater,
                      int totalThreads,
+                     int vuIndex,
                      Runnable task) {
-        int vuIndex = virtualUserCounter.getAndIncrement();
         threadVirtualUserIndex.set(vuIndex);
         threadIterationIndex.set(0);
         activeThreads.incrementAndGet();
@@ -66,5 +83,9 @@ public final class PerformanceVirtualUserCoordinator {
 
     private void updateProgress(BiConsumer<Integer, Integer> progressUpdater, int totalThreads) {
         progressUpdater.accept(activeThreads.get(), totalThreads);
+    }
+
+    private int nextVirtualUserIndex(IntSupplier virtualUserIndexSupplier) {
+        return virtualUserIndexSupplier == null ? virtualUserCounter.getAndIncrement() : virtualUserIndexSupplier.getAsInt();
     }
 }

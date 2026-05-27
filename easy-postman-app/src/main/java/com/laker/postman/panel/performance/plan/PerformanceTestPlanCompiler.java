@@ -1,5 +1,6 @@
 package com.laker.postman.panel.performance.plan;
 
+import com.laker.postman.panel.performance.config.CsvDataSetData;
 import com.laker.postman.panel.performance.controller.LoopData;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
@@ -47,7 +48,21 @@ public final class PerformanceTestPlanCompiler {
             threadGroupData = new ThreadGroupData();
         }
         threadGroupData.normalize();
-        return new PerformanceThreadGroupPlan(data.name, threadGroupData, compileElements(node));
+        return new PerformanceThreadGroupPlan(data.name, threadGroupData, compileCsvDataSet(node), compileElements(node));
+    }
+
+    private static CsvDataSetData compileCsvDataSet(DefaultMutableTreeNode threadGroupNode) {
+        if (threadGroupNode == null) {
+            return null;
+        }
+        for (int i = 0; i < threadGroupNode.getChildCount(); i++) {
+            DefaultMutableTreeNode child = (DefaultMutableTreeNode) threadGroupNode.getChildAt(i);
+            JMeterTreeNode data = nodeData(child);
+            if (data != null && data.enabled && data.type == NodeType.CSV_DATA_SET && data.csvDataSetData != null) {
+                return PerformancePlanNodeCopies.copyCsvDataSetData(data.csvDataSetData);
+            }
+        }
+        return null;
     }
 
     private static List<PerformancePlanElement> compileElements(DefaultMutableTreeNode parent) {
@@ -71,6 +86,7 @@ public final class PerformanceTestPlanCompiler {
 
     private static PerformancePlanElement compileElement(DefaultMutableTreeNode node, JMeterTreeNode data) {
         return switch (data.type) {
+            case CSV_DATA_SET -> null;
             case LOOP -> compileLoop(node, data);
             case TIMER -> new PerformanceTimerElement(data.name, data.timerData);
             case REQUEST -> compileRequest(node, data);

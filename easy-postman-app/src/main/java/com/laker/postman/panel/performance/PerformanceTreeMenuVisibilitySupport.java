@@ -27,6 +27,7 @@ final class PerformanceTreeMenuVisibilitySupport {
 
     private void applyActionVisibility(PerformanceTreeMenuItems items, EnumSet<PerformanceTreeAction> actions) {
         items.addThreadGroup().setVisible(actions.contains(PerformanceTreeAction.ADD_THREAD_GROUP));
+        items.addCsvDataSet().setVisible(actions.contains(PerformanceTreeAction.ADD_CSV_DATA_SET));
         items.addRequest().setVisible(actions.contains(PerformanceTreeAction.ADD_REQUEST));
         items.addLoop().setVisible(actions.contains(PerformanceTreeAction.ADD_LOOP));
         items.addSseConnect().setVisible(actions.contains(PerformanceTreeAction.ADD_SSE_CONNECT));

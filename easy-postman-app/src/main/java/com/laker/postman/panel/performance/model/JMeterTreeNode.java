@@ -2,6 +2,7 @@ package com.laker.postman.panel.performance.model;
 
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.performance.assertion.AssertionData;
+import com.laker.postman.panel.performance.config.CsvDataSetData;
 import com.laker.postman.panel.performance.controller.LoopData;
 import com.laker.postman.panel.performance.extractor.ExtractorData;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
@@ -12,6 +13,7 @@ public class JMeterTreeNode {
     public NodeType type;
     public HttpRequestItem httpRequestItem; // 仅REQUEST节点用
     public ThreadGroupData threadGroupData; // 线程组数据
+    public CsvDataSetData csvDataSetData;   // CSV Data Set 配置
     public LoopData loopData;             // Loop 控制器数据
     public AssertionData assertionData;   // 断言数据
     public ExtractorData extractorData;   // 提取器数据
@@ -30,6 +32,7 @@ public class JMeterTreeNode {
         this.type = type;
         switch (type) {
             case THREAD_GROUP -> this.threadGroupData = (ThreadGroupData) data;
+            case CSV_DATA_SET -> this.csvDataSetData = (CsvDataSetData) data;
             case LOOP -> this.loopData = (LoopData) data;
             case REQUEST -> this.httpRequestItem = (HttpRequestItem) data;
             case ASSERTION -> this.assertionData = (AssertionData) data;
@@ -43,6 +46,7 @@ public class JMeterTreeNode {
     public Object getNodeData() {
         return switch (type) {
             case THREAD_GROUP -> threadGroupData;
+            case CSV_DATA_SET -> csvDataSetData;
             case LOOP -> loopData;
             case REQUEST -> httpRequestItem;
             case ASSERTION -> assertionData;
@@ -56,6 +60,7 @@ public class JMeterTreeNode {
     public void setNodeData(Object data) {
         switch (type) {
             case THREAD_GROUP -> this.threadGroupData = (ThreadGroupData) data;
+            case CSV_DATA_SET -> this.csvDataSetData = (CsvDataSetData) data;
             case LOOP -> this.loopData = (LoopData) data;
             case REQUEST -> this.httpRequestItem = (com.laker.postman.model.HttpRequestItem) data;
             case ASSERTION -> this.assertionData = (AssertionData) data;

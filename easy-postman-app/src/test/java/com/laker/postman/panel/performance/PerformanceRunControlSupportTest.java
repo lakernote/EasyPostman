@@ -6,6 +6,7 @@ import com.laker.postman.common.component.button.StopButton;
 import com.laker.postman.panel.performance.control.PerformanceRunUiController;
 import com.laker.postman.panel.performance.control.PerformanceStatisticsCoordinator;
 import com.laker.postman.panel.performance.control.PerformanceTimerManager;
+import com.laker.postman.panel.performance.config.CsvDataSetPropertyPanel;
 import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
@@ -69,7 +70,6 @@ public class PerformanceRunControlSupportTest extends AbstractSwingUiTest {
                             running::get,
                             () -> false,
                             () -> 64,
-                            null,
                             new PerformanceResultCollector(List.of(
                                     new PerformanceStatsCollectorListener(statsCollector),
                                     trendWindowCollector,
@@ -125,6 +125,7 @@ public class PerformanceRunControlSupportTest extends AbstractSwingUiTest {
         return new PerformancePropertyPanelSupport(
                 new JTree(),
                 null,
+                new CsvDataSetPropertyPanel(),
                 null,
                 null,
                 new ExtractorPropertyPanel(),

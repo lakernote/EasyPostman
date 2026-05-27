@@ -23,6 +23,7 @@ public class PerformanceRequestSnapshotUiTest extends AbstractSwingUiTest {
         PerformancePanelViewFactory.PropertySection propertySection = viewFactory.createPropertySection(
                 "empty",
                 "threadGroup",
+                "csvDataSet",
                 "loop",
                 "request",
                 "assertion",

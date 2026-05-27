@@ -2,6 +2,7 @@ package com.laker.postman.panel.performance.plan;
 
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.performance.assertion.AssertionData;
+import com.laker.postman.panel.performance.config.CsvDataSetData;
 import com.laker.postman.panel.performance.controller.LoopData;
 import com.laker.postman.panel.performance.extractor.ExtractorData;
 import com.laker.postman.panel.performance.model.NodeType;
@@ -23,6 +24,10 @@ final class PerformancePlanNodeCopies {
 
     static ThreadGroupData copyThreadGroupData(ThreadGroupData source) {
         return JsonUtil.deepCopy(source, ThreadGroupData.class);
+    }
+
+    static CsvDataSetData copyCsvDataSetData(CsvDataSetData source) {
+        return JsonUtil.deepCopy(source, CsvDataSetData.class);
     }
 
     static LoopData copyLoopData(LoopData source) {

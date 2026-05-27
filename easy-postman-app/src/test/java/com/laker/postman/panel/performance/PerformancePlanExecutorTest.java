@@ -1,9 +1,9 @@
 package com.laker.postman.panel.performance;
 
-import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.RequestItemProtocolEnum;
+import com.laker.postman.panel.performance.config.CsvDataSetData;
 import com.laker.postman.panel.performance.controller.LoopData;
 import com.laker.postman.panel.performance.execution.PerformanceRequestExecutionResult;
 import com.laker.postman.panel.performance.execution.PerformanceRequestExecutor;
@@ -11,6 +11,7 @@ import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
+import com.laker.postman.panel.performance.plan.PerformanceThreadGroupPlan;
 import com.laker.postman.panel.performance.result.PerformanceResultCollector;
 import com.laker.postman.panel.performance.runtime.PerformanceIterationContextFactory;
 import com.laker.postman.panel.performance.runtime.PerformancePlanExecutor;
@@ -149,18 +150,22 @@ public class PerformancePlanExecutorTest {
 
     @Test
     public void shouldCreateIterationContextWithCsvRowForCurrentVirtualUser() {
-        CsvDataPanel csvDataPanel = new CsvDataPanel();
-        csvDataPanel.restoreState(new CsvDataPanel.CsvState(
-                "users.csv",
-                List.of("name"),
-                List.of(Map.of("name", "alice"), Map.of("name", "bob"))
-        ));
+        PerformanceThreadGroupPlan groupPlan = new PerformanceThreadGroupPlan(
+                "group",
+                new ThreadGroupData(),
+                new CsvDataSetData(
+                        "users.csv",
+                        List.of("name"),
+                        List.of(Map.of("name", "alice"), Map.of("name", "bob"))
+                ),
+                List.of()
+        );
         PerformanceVirtualUserCoordinator virtualUsers = new PerformanceVirtualUserCoordinator();
-        PerformanceIterationContextFactory factory = new PerformanceIterationContextFactory(csvDataPanel, virtualUsers);
+        PerformanceIterationContextFactory factory = new PerformanceIterationContextFactory(virtualUsers);
         List<ExecutionVariableContext> contexts = new ArrayList<>();
 
         virtualUsers.newThread("test-vu", (active, total) -> {
-        }, 1, () -> contexts.add(factory.create(3))).run();
+        }, 1, () -> contexts.add(factory.create(groupPlan, 3))).run();
 
         assertEquals(contexts.size(), 1);
         assertEquals(contexts.get(0).getIterationIndex(), 0);

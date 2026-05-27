@@ -2,6 +2,7 @@ package com.laker.postman.panel.performance;
 
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.performance.assertion.AssertionData;
+import com.laker.postman.panel.performance.config.CsvDataSetData;
 import com.laker.postman.panel.performance.controller.LoopData;
 import com.laker.postman.panel.performance.extractor.ExtractorData;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
@@ -48,6 +49,7 @@ public class PerformanceTreeSnapshot {
         JMeterTreeNode copy = new JMeterTreeNode(source.name, source.type);
         copy.enabled = source.enabled;
         copy.threadGroupData = JsonUtil.deepCopy(source.threadGroupData, ThreadGroupData.class);
+        copy.csvDataSetData = JsonUtil.deepCopy(source.csvDataSetData, CsvDataSetData.class);
         copy.loopData = JsonUtil.deepCopy(source.loopData, LoopData.class);
         copy.httpRequestItem = JsonUtil.deepCopy(source.httpRequestItem, HttpRequestItem.class);
         if (regenerateRequestIds && copy.httpRequestItem != null) {

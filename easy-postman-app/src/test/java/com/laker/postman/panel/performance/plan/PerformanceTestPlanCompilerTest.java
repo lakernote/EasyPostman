@@ -4,6 +4,7 @@ import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.performance.assertion.AssertionData;
 import com.laker.postman.panel.performance.controller.LoopData;
+import com.laker.postman.panel.performance.config.CsvDataSetData;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.SsePerformanceData;
@@ -13,6 +14,8 @@ import com.laker.postman.panel.performance.timer.TimerData;
 import org.testng.annotations.Test;
 
 import javax.swing.tree.DefaultMutableTreeNode;
+import java.util.List;
+import java.util.Map;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotSame;
@@ -51,6 +54,27 @@ public class PerformanceTestPlanCompilerTest {
         assertEquals(plan.getThreadGroups().size(), 1);
         assertEquals(plan.getThreadGroups().get(0).getName(), "single group");
         assertEquals(plan.getThreadGroups().get(0).getElements().size(), 1);
+    }
+
+    @Test(description = "thread group 下的 CSV Data Set 应编译为线程组数据源，不作为执行元素")
+    public void shouldCompileCsvDataSetIntoThreadGroupScope() {
+        DefaultMutableTreeNode groupNode = threadGroupNode("group", true);
+        groupNode.add(csvDataSetNode(
+                "CSV Data Set",
+                true,
+                "users.csv",
+                List.of("userId", "roomId"),
+                List.of(Map.of("userId", "u1", "roomId", "r1"))
+        ));
+        groupNode.add(requestNode("request", true, RequestItemProtocolEnum.HTTP));
+
+        PerformanceThreadGroupPlan groupPlan = PerformanceTestPlanCompiler.compile(groupNode).getThreadGroups().get(0);
+
+        assertEquals(groupPlan.getCsvDataSetData().getSourceName(), "users.csv");
+        assertEquals(groupPlan.getCsvDataSetData().getHeaders(), List.of("userId", "roomId"));
+        assertEquals(groupPlan.getCsvDataSetData().getRows().get(0).get("userId"), "u1");
+        assertEquals(groupPlan.getElements().size(), 1);
+        assertTrue(groupPlan.getElements().get(0) instanceof PerformanceRequestSampler);
     }
 
     @Test(description = "nested loop、timer、request 应编译成 immutable plan elements")
@@ -114,6 +138,14 @@ public class PerformanceTestPlanCompilerTest {
         DefaultMutableTreeNode groupNode = threadGroupNode("group", true);
         JMeterTreeNode groupData = (JMeterTreeNode) groupNode.getUserObject();
         groupData.threadGroupData.numThreads = 3;
+        DefaultMutableTreeNode csvNode = csvDataSetNode(
+                "CSV Data Set",
+                true,
+                "users.csv",
+                List.of("userId"),
+                List.of(Map.of("userId", "u1"))
+        );
+        JMeterTreeNode csvData = (JMeterTreeNode) csvNode.getUserObject();
 
         DefaultMutableTreeNode loopNode = loopNode("loop", true, 5);
         JMeterTreeNode loopData = (JMeterTreeNode) loopNode.getUserObject();
@@ -123,6 +155,7 @@ public class PerformanceTestPlanCompilerTest {
         JMeterTreeNode requestData = (JMeterTreeNode) requestNode.getUserObject();
         requestData.ssePerformanceData.connectTimeoutMs = 111;
         requestData.webSocketPerformanceData.connectTimeoutMs = 222;
+        groupNode.add(csvNode);
         loopNode.add(timerNode);
         loopNode.add(requestNode);
         groupNode.add(loopNode);
@@ -138,14 +171,17 @@ public class PerformanceTestPlanCompilerTest {
         requestData.httpRequestItem.setName("mutated");
         requestData.ssePerformanceData.connectTimeoutMs = 99;
         requestData.webSocketPerformanceData.connectTimeoutMs = 99;
+        csvData.csvDataSetData.getRows().get(0).put("userId", "mutated");
 
         assertNotSame(groupPlan.getThreadGroupData(), groupData.threadGroupData);
+        assertNotSame(groupPlan.getCsvDataSetData(), csvData.csvDataSetData);
         assertNotSame(loop.getLoopData(), loopData.loopData);
         assertNotSame(timer.getTimerData(), timerData.timerData);
         assertNotSame(sampler.getHttpRequestItem(), requestData.httpRequestItem);
         assertNotSame(sampler.getSsePerformanceData(), requestData.ssePerformanceData);
         assertNotSame(sampler.getWebSocketPerformanceData(), requestData.webSocketPerformanceData);
         assertEquals(groupPlan.getThreadGroupData().numThreads, 3);
+        assertEquals(groupPlan.getCsvDataSetData().getRows().get(0).get("userId"), "u1");
         assertEquals(loop.getLoopData().iterations, 5);
         assertEquals(timer.getTimerData().delayMs, 150);
         assertEquals(sampler.getHttpRequestItem().getName(), "sse request");
@@ -156,6 +192,13 @@ public class PerformanceTestPlanCompilerTest {
     @Test(description = "plan 列表和 data getter 不应允许调用方反向修改 plan")
     public void shouldExposeImmutablePlanState() {
         DefaultMutableTreeNode groupNode = threadGroupNode("group", true);
+        groupNode.add(csvDataSetNode(
+                "CSV Data Set",
+                true,
+                "users.csv",
+                List.of("userId"),
+                List.of(Map.of("userId", "u1"))
+        ));
         groupNode.add(timerNode("timer", true, 150));
 
         PerformanceTestPlan plan = PerformanceTestPlanCompiler.compile(groupNode);
@@ -166,9 +209,11 @@ public class PerformanceTestPlanCompilerTest {
         expectThrows(UnsupportedOperationException.class, () -> groupPlan.getElements().clear());
 
         groupPlan.getThreadGroupData().numThreads = 99;
+        groupPlan.getCsvDataSetData().getRows().clear();
         timer.getTimerData().delayMs = 99;
 
         assertEquals(groupPlan.getThreadGroupData().numThreads, 20);
+        assertEquals(groupPlan.getCsvDataSetData().getRows().size(), 1);
         assertEquals(timer.getTimerData().delayMs, 150);
     }
 
@@ -203,6 +248,17 @@ public class PerformanceTestPlanCompilerTest {
         node.enabled = enabled;
         node.ssePerformanceData = new SsePerformanceData();
         node.webSocketPerformanceData = new WebSocketPerformanceData();
+        return new DefaultMutableTreeNode(node);
+    }
+
+    private static DefaultMutableTreeNode csvDataSetNode(String name,
+                                                         boolean enabled,
+                                                         String sourceName,
+                                                         List<String> headers,
+                                                         List<Map<String, String>> rows) {
+        JMeterTreeNode node = new JMeterTreeNode(name, NodeType.CSV_DATA_SET);
+        node.enabled = enabled;
+        node.csvDataSetData = new CsvDataSetData(sourceName, headers, rows);
         return new DefaultMutableTreeNode(node);
     }
 

@@ -1,6 +1,7 @@
 package com.laker.postman.panel.performance.tree;
 
 import cn.hutool.core.text.CharSequenceUtil;
+import com.laker.postman.panel.performance.config.CsvDataSetData;
 import com.laker.postman.panel.performance.controller.LoopData;
 import com.laker.postman.panel.performance.extractor.ExtractorData;
 import com.laker.postman.panel.performance.extractor.ExtractorType;
@@ -14,6 +15,15 @@ import java.util.StringJoiner;
 
 @UtilityClass
 public class PerformanceTreeNodeTitleFormatter {
+
+    public String csvDataSetTitle(CsvDataSetData data) {
+        String base = I18nUtil.getMessage(MessageKeys.PERFORMANCE_CSV_DATA_SET_NODE);
+        if (data == null || !data.hasRows()) {
+            return base;
+        }
+        String sourceName = CharSequenceUtil.blankToDefault(data.getSourceName(), base);
+        return base + " [" + sourceName + " | " + data.getRows().size() + "]";
+    }
 
     public String sseAwaitTitle(SsePerformanceData data) {
         if (data == null) {

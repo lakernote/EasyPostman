@@ -2,6 +2,7 @@ package com.laker.postman.panel.performance;
 
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
+import com.laker.postman.panel.performance.config.CsvDataSetPropertyPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
 import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
@@ -33,6 +34,7 @@ final class PerformanceTreeInteractionSupport {
     private final CardLayout propertyCardLayout;
     private final JPanel propertyPanel;
     private final ThreadGroupPropertyPanel threadGroupPanel;
+    private final CsvDataSetPropertyPanel csvDataSetPanel;
     private final LoopPropertyPanel loopPanel;
     private final AssertionPropertyPanel assertionPanel;
     private final ExtractorPropertyPanel extractorPanel;
@@ -54,6 +56,7 @@ final class PerformanceTreeInteractionSupport {
     private final Consumer<DefaultMutableTreeNode> currentRequestNodeSetter;
     private final String emptyCard;
     private final String threadGroupCard;
+    private final String csvDataSetCard;
     private final String loopCard;
     private final String requestCard;
     private final String assertionCard;
@@ -87,6 +90,7 @@ final class PerformanceTreeInteractionSupport {
                 propertyCardLayout,
                 propertyPanel,
                 threadGroupPanel,
+                csvDataSetPanel,
                 loopPanel,
                 assertionPanel,
                 extractorPanel,
@@ -106,6 +110,7 @@ final class PerformanceTreeInteractionSupport {
                 currentRequestNodeSetter,
                 emptyCard,
                 threadGroupCard,
+                csvDataSetCard,
                 loopCard,
                 requestCard,
                 assertionCard,
@@ -140,6 +145,7 @@ final class PerformanceTreeInteractionSupport {
     private void installPopupMenu() {
         JPopupMenu treeMenu = new JPopupMenu();
         JMenuItem addThreadGroup = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_THREAD_GROUP));
+        JMenuItem addCsvDataSet = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_CSV_DATA_SET));
         JMenuItem addRequest = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_REQUEST));
         JMenuItem addSseConnect = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_SSE_CONNECT));
         JMenuItem addSseAwait = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_SSE_AWAIT));
@@ -159,6 +165,7 @@ final class PerformanceTreeInteractionSupport {
         JMenuItem pasteNode = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_PASTE));
         PerformanceTreeMenuItems menuItems = new PerformanceTreeMenuItems(
                 addThreadGroup,
+                addCsvDataSet,
                 addRequest,
                 addLoop,
                 addSseConnect,
@@ -192,6 +199,7 @@ final class PerformanceTreeInteractionSupport {
         JSeparator separator3 = new JSeparator();
 
         treeMenu.add(addThreadGroup);
+        treeMenu.add(addCsvDataSet);
         treeMenu.add(addRequest);
         treeMenu.add(addLoop);
         treeMenu.add(addSseConnect);
@@ -224,6 +232,7 @@ final class PerformanceTreeInteractionSupport {
         };
 
         addThreadGroup.addActionListener(e -> nodeActionSupport.addThreadGroupNode());
+        addCsvDataSet.addActionListener(e -> treeSupport.addCsvDataSetNode(jmeterTree, saveConfigAction));
         addRequest.addActionListener(e -> nodeActionSupport.addRequestNodes());
         addLoop.addActionListener(e -> treeSupport.addLoopNode(jmeterTree, saveConfigAction));
         addSseConnect.addActionListener(e -> treeSupport.addSseStageNode(jmeterTree, NodeType.SSE_CONNECT, saveConfigAction));

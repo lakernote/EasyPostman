@@ -29,10 +29,14 @@ final class PerformanceTreeActionPolicy {
         }
 
         boolean requestContainerLoop = treeSupport.isRequestContainerLoop(node);
+        boolean canAddCsvDataSet = treeSupport.resolveCsvDataSetParent(node) != null;
         boolean canManageSseStages = treeSupport.resolveSseStageParent(node) != null;
         boolean canManageWsConnect = treeSupport.resolveWebSocketConnectParent(node) != null;
         boolean canManageWsSteps = treeSupport.resolveWebSocketStepParent(node) != null;
 
+        if (canAddCsvDataSet) {
+            actions.add(PerformanceTreeAction.ADD_CSV_DATA_SET);
+        }
         if (jtNode.type == NodeType.THREAD_GROUP || requestContainerLoop) {
             actions.add(PerformanceTreeAction.ADD_REQUEST);
         }

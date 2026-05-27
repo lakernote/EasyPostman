@@ -646,6 +646,7 @@ public final class MessageKeys {
     public static final String PERFORMANCE_MSG_REFRESH_WARNING = "performance.msg.refresh_warning";
     public static final String PERFORMANCE_MSG_NO_REQUEST_TO_REFRESH = "performance.msg.no_request_to_refresh";
     public static final String PERFORMANCE_MENU_ADD_THREAD_GROUP = "performance.menu.add_thread_group";
+    public static final String PERFORMANCE_MENU_ADD_CSV_DATA_SET = "performance.menu.add_csv_data_set";
     public static final String PERFORMANCE_MENU_ADD_REQUEST = "performance.menu.add_request";
     public static final String PERFORMANCE_MENU_ADD_SSE_CONNECT = "performance.menu.add_sse_connect";
     public static final String PERFORMANCE_MENU_ADD_SSE_AWAIT = "performance.menu.add_sse_await";
@@ -657,6 +658,9 @@ public final class MessageKeys {
     public static final String PERFORMANCE_MENU_ADD_ASSERTION = "performance.menu.add_assertion";
     public static final String PERFORMANCE_MENU_ADD_EXTRACTOR = "performance.menu.add_extractor";
     public static final String PERFORMANCE_MENU_ADD_TIMER = "performance.menu.add_timer";
+    public static final String PERFORMANCE_CSV_DATA_SET_NODE = "performance.csv_data_set.node";
+    public static final String PERFORMANCE_CSV_DATA_SET_TITLE = "performance.csv_data_set.title";
+    public static final String PERFORMANCE_CSV_DATA_SET_SCOPE_NOTE = "performance.csv_data_set.scope_note";
     public static final String PERFORMANCE_LOOP_NODE = "performance.loop.node";
     public static final String PERFORMANCE_LOOP_ITERATIONS = "performance.loop.iterations";
     public static final String PERFORMANCE_TIMER_DELAY = "performance.timer.delay";

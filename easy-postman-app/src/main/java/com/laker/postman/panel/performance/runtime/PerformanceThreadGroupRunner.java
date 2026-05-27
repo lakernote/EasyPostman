@@ -73,18 +73,20 @@ public final class PerformanceThreadGroupRunner {
                                 BiConsumer<Integer, Integer> progressUpdater,
                                 int totalThreads) {
         ThreadGroupData threadGroupData = groupPlan.getThreadGroupData();
+        AtomicInteger groupVirtualUserCounter = new AtomicInteger(0);
         switch (threadGroupData.threadMode) {
-            case FIXED -> runFixedThreads(groupPlan, threadGroupData, progressUpdater, totalThreads);
-            case RAMP_UP -> runRampUpThreads(groupPlan, threadGroupData, progressUpdater, totalThreads);
-            case SPIKE -> runSpikeThreads(groupPlan, threadGroupData, progressUpdater, totalThreads);
-            case STAIRS -> runStairsThreads(groupPlan, threadGroupData, progressUpdater, totalThreads);
+            case FIXED -> runFixedThreads(groupPlan, threadGroupData, progressUpdater, totalThreads, groupVirtualUserCounter);
+            case RAMP_UP -> runRampUpThreads(groupPlan, threadGroupData, progressUpdater, totalThreads, groupVirtualUserCounter);
+            case SPIKE -> runSpikeThreads(groupPlan, threadGroupData, progressUpdater, totalThreads, groupVirtualUserCounter);
+            case STAIRS -> runStairsThreads(groupPlan, threadGroupData, progressUpdater, totalThreads, groupVirtualUserCounter);
         }
     }
 
     private void runFixedThreads(PerformanceThreadGroupPlan groupPlan,
                                  ThreadGroupData tg,
                                  BiConsumer<Integer, Integer> progressUpdater,
-                                 int totalThreads) {
+                                 int totalThreads,
+                                 AtomicInteger groupVirtualUserCounter) {
         int numThreads = tg.numThreads;
         int loops = tg.loops;
         boolean useTime = tg.useTime;
@@ -102,7 +104,7 @@ public final class PerformanceThreadGroupRunner {
                 executor.shutdownNow();
                 return;
             }
-            virtualUsers.submit(executor, progressUpdater, totalThreads, () -> {
+            virtualUsers.submit(executor, progressUpdater, totalThreads, groupVirtualUserCounter::getAndIncrement, () -> {
                 if (useTime) {
                     while (System.currentTimeMillis() < endTime && runningSupplier.getAsBoolean()) {
                         runTaskIteration(groupPlan, 0);
@@ -157,7 +159,8 @@ public final class PerformanceThreadGroupRunner {
     private void runRampUpThreads(PerformanceThreadGroupPlan groupPlan,
                                   ThreadGroupData tg,
                                   BiConsumer<Integer, Integer> progressUpdater,
-                                  int totalThreads) {
+                                  int totalThreads,
+                                  AtomicInteger groupVirtualUserCounter) {
         int startThreads = tg.rampUpStartThreads;
         int endThreads = tg.rampUpEndThreads;
         int rampUpTime = tg.rampUpTime;
@@ -198,7 +201,7 @@ public final class PerformanceThreadGroupRunner {
                     if (!activeWorkerThreads.compareAndSet(current, current + 1)) {
                         continue;
                     }
-                    virtualUsers.submit(executor, progressUpdater, totalThreads, () -> {
+                    virtualUsers.submit(executor, progressUpdater, totalThreads, groupVirtualUserCounter::getAndIncrement, () -> {
                         try {
                             while (runningSupplier.getAsBoolean()
                                     && System.currentTimeMillis() - startTimeSupplier.getAsLong() < totalDuration * 1000L) {
@@ -239,7 +242,8 @@ public final class PerformanceThreadGroupRunner {
     private void runSpikeThreads(PerformanceThreadGroupPlan groupPlan,
                                  ThreadGroupData tg,
                                  BiConsumer<Integer, Integer> progressUpdater,
-                                 int totalThreads) {
+                                 int totalThreads,
+                                 AtomicInteger groupVirtualUserCounter) {
         int minThreads = tg.spikeMinThreads;
         int maxThreads = tg.spikeMaxThreads;
         int rampUpTime = tg.spikeRampUpTime;
@@ -271,6 +275,7 @@ public final class PerformanceThreadGroupRunner {
                     totalTime,
                     progressUpdater,
                     totalThreads,
+                    groupVirtualUserCounter,
                     threadEndTimes
             );
         }
@@ -293,10 +298,12 @@ public final class PerformanceThreadGroupRunner {
             if (elapsedSeconds < adjustedRampUpTime) {
                 double progress = (double) elapsedSeconds / adjustedRampUpTime;
                 targetThreads = minThreads + (int) (progress * (maxThreads - minThreads));
-                adjustSpikeThreadCount(groupPlan, tg, activeWorkerThreads, targetThreads, totalTime, progressUpdater, totalThreads, threadEndTimes);
+                adjustSpikeThreadCount(groupPlan, tg, activeWorkerThreads, targetThreads, totalTime, progressUpdater, totalThreads,
+                        groupVirtualUserCounter, threadEndTimes);
             } else if (elapsedSeconds < adjustedRampUpTime + adjustedHoldTime) {
                 targetThreads = maxThreads;
-                adjustSpikeThreadCount(groupPlan, tg, activeWorkerThreads, targetThreads, totalTime, progressUpdater, totalThreads, threadEndTimes);
+                adjustSpikeThreadCount(groupPlan, tg, activeWorkerThreads, targetThreads, totalTime, progressUpdater, totalThreads,
+                        groupVirtualUserCounter, threadEndTimes);
             } else {
                 double progress = (double) (elapsedSeconds - adjustedRampUpTime - adjustedHoldTime) / adjustedRampDownTime;
                 targetThreads = maxThreads - (int) (progress * (maxThreads - minThreads));
@@ -309,7 +316,8 @@ public final class PerformanceThreadGroupRunner {
                             .limit(threadsToRemove)
                             .forEach(t -> threadEndTimes.put(t, now + 500));
                 }
-                adjustSpikeThreadCount(groupPlan, tg, activeWorkerThreads, targetThreads, totalTime, progressUpdater, totalThreads, threadEndTimes);
+                adjustSpikeThreadCount(groupPlan, tg, activeWorkerThreads, targetThreads, totalTime, progressUpdater, totalThreads,
+                        groupVirtualUserCounter, threadEndTimes);
             }
 
             updateProgress(progressUpdater, totalThreads);
@@ -350,7 +358,8 @@ public final class PerformanceThreadGroupRunner {
     private void runStairsThreads(PerformanceThreadGroupPlan groupPlan,
                                   ThreadGroupData tg,
                                   BiConsumer<Integer, Integer> progressUpdater,
-                                  int totalThreads) {
+                                  int totalThreads,
+                                  AtomicInteger groupVirtualUserCounter) {
         int startThreads = tg.stairsStartThreads;
         int endThreads = tg.stairsEndThreads;
         int step = tg.stairsStep;
@@ -379,6 +388,7 @@ public final class PerformanceThreadGroupRunner {
                     totalTime,
                     progressUpdater,
                     totalThreads,
+                    groupVirtualUserCounter,
                     threadEndTimes
             );
         }
@@ -410,7 +420,8 @@ public final class PerformanceThreadGroupRunner {
                 targetThreads = Math.min(targetThreads, endThreads);
             }
 
-            adjustStairsThreadCount(groupPlan, activeWorkerThreads, targetThreads, totalTime, progressUpdater, totalThreads, threadEndTimes);
+            adjustStairsThreadCount(groupPlan, activeWorkerThreads, targetThreads, totalTime, progressUpdater, totalThreads,
+                    groupVirtualUserCounter, threadEndTimes);
             updateProgress(progressUpdater, totalThreads);
         }, 1, 1, TimeUnit.SECONDS);
 
@@ -454,6 +465,19 @@ public final class PerformanceThreadGroupRunner {
                                        BiConsumer<Integer, Integer> progressUpdater,
                                        int totalThreads,
                                        ConcurrentHashMap<Thread, Long> threadEndTimes) {
+        adjustSpikeThreadCount(groupPlan, tg, activeWorkerThreads, targetThreads, totalTime, progressUpdater, totalThreads,
+                new AtomicInteger(0), threadEndTimes);
+    }
+
+    public void adjustSpikeThreadCount(PerformanceThreadGroupPlan groupPlan,
+                                       ThreadGroupData tg,
+                                       AtomicInteger activeWorkerThreads,
+                                       int targetThreads,
+                                       int totalTime,
+                                       BiConsumer<Integer, Integer> progressUpdater,
+                                       int totalThreads,
+                                       AtomicInteger groupVirtualUserCounter,
+                                       ConcurrentHashMap<Thread, Long> threadEndTimes) {
         int current = activeWorkerThreads.get();
 
         if (current < targetThreads) {
@@ -471,6 +495,7 @@ public final class PerformanceThreadGroupRunner {
                         totalTime,
                         progressUpdater,
                         totalThreads,
+                        groupVirtualUserCounter,
                         threadEndTimes
                 );
             }
@@ -510,6 +535,7 @@ public final class PerformanceThreadGroupRunner {
                                          int totalTime,
                                          BiConsumer<Integer, Integer> progressUpdater,
                                          int totalThreads,
+                                         AtomicInteger groupVirtualUserCounter,
                                          ConcurrentHashMap<Thread, Long> threadEndTimes) {
         int current = activeWorkerThreads.get();
         if (current >= targetThreads) {
@@ -530,6 +556,7 @@ public final class PerformanceThreadGroupRunner {
                     totalTime,
                     progressUpdater,
                     totalThreads,
+                    groupVirtualUserCounter,
                     threadEndTimes
             );
         }
@@ -541,8 +568,10 @@ public final class PerformanceThreadGroupRunner {
                                           int totalTime,
                                           BiConsumer<Integer, Integer> progressUpdater,
                                           int totalThreads,
+                                          AtomicInteger groupVirtualUserCounter,
                                           ConcurrentHashMap<Thread, Long> threadEndTimes) {
-        Thread thread = virtualUsers.newThread(threadNamePrefix, progressUpdater, totalThreads, () -> {
+        Thread thread = virtualUsers.newThread(threadNamePrefix, progressUpdater, totalThreads,
+                groupVirtualUserCounter::getAndIncrement, () -> {
             try {
                 Thread currentThread = Thread.currentThread();
                 while (runningSupplier.getAsBoolean()
@@ -570,7 +599,7 @@ public final class PerformanceThreadGroupRunner {
     }
 
     private void runTaskIteration(PerformanceThreadGroupPlan groupPlan, int iterationCount) {
-        ExecutionVariableContext iterationContext = iterationContextFactory.create(iterationCount);
+        ExecutionVariableContext iterationContext = iterationContextFactory.create(groupPlan, iterationCount);
         planExecutor.executeIteration(groupPlan, iterationContext);
     }
 

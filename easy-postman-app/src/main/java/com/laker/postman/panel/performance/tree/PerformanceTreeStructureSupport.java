@@ -169,6 +169,20 @@ public class PerformanceTreeStructureSupport {
         saveConfigAction.run();
     }
 
+    public void addCsvDataSetNode(JTree jmeterTree, Runnable saveConfigAction) {
+        DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
+        DefaultMutableTreeNode parentNode = resolveCsvDataSetParent(selectedNode);
+        if (parentNode == null) {
+            return;
+        }
+        DefaultMutableTreeNode csvDataSetNode = PerformanceTreeNodeFactory.csvDataSetNode();
+        int insertIndex = firstNonCsvChildIndex(parentNode);
+        treeModel.insertNodeInto(csvDataSetNode, parentNode, Math.min(insertIndex, parentNode.getChildCount()));
+        jmeterTree.expandPath(new TreePath(parentNode.getPath()));
+        jmeterTree.setSelectionPath(new TreePath(csvDataSetNode.getPath()));
+        saveConfigAction.run();
+    }
+
     public void addTimerNode(JTree jmeterTree, Runnable saveConfigAction) {
         DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
         if (selectedNode == null) {
@@ -202,6 +216,20 @@ public class PerformanceTreeStructureSupport {
 
     public boolean isRequestContainerLoop(DefaultMutableTreeNode node) {
         return PerformanceTreeRules.isRequestContainerLoop(node);
+    }
+
+    public DefaultMutableTreeNode resolveCsvDataSetParent(DefaultMutableTreeNode selectedNode) {
+        if (selectedNode == null || !(selectedNode.getUserObject() instanceof JMeterTreeNode jtNode)) {
+            return null;
+        }
+        if (jtNode.type == NodeType.THREAD_GROUP) {
+            return selectedNode;
+        }
+        DefaultMutableTreeNode parent = (DefaultMutableTreeNode) selectedNode.getParent();
+        if (parent != null && PerformanceTreeRules.isNodeType(parent, NodeType.THREAD_GROUP)) {
+            return parent;
+        }
+        return null;
     }
 
     public DefaultMutableTreeNode resolveWebSocketConnectParent(DefaultMutableTreeNode selectedNode) {
@@ -276,6 +304,15 @@ public class PerformanceTreeStructureSupport {
             return selectedNode;
         }
         return resolveWebSocketStepParent(selectedNode);
+    }
+
+    private int firstNonCsvChildIndex(DefaultMutableTreeNode parentNode) {
+        int insertIndex = 0;
+        while (insertIndex < parentNode.getChildCount()
+                && PerformanceTreeRules.isNodeType((DefaultMutableTreeNode) parentNode.getChildAt(insertIndex), NodeType.CSV_DATA_SET)) {
+            insertIndex++;
+        }
+        return insertIndex;
     }
 
     private boolean isWebSocketScenarioLoop(DefaultMutableTreeNode node) {

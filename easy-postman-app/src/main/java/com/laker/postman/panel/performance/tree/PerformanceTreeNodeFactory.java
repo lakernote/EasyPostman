@@ -38,6 +38,13 @@ public class PerformanceTreeNodeFactory {
         );
     }
 
+    public DefaultMutableTreeNode csvDataSetNode() {
+        return new DefaultMutableTreeNode(new JMeterTreeNode(
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_CSV_DATA_SET_NODE),
+                NodeType.CSV_DATA_SET
+        ));
+    }
+
     DefaultMutableTreeNode timerNode() {
         return new DefaultMutableTreeNode(new JMeterTreeNode("Timer", NodeType.TIMER));
     }

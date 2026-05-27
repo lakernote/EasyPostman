@@ -1,8 +1,8 @@
 package com.laker.postman.panel.performance.runtime;
 
-import com.laker.postman.common.component.CsvDataPanel;
-import com.laker.postman.panel.performance.config.CsvPerformanceIterationDataProvider;
+import com.laker.postman.panel.performance.config.CsvDataSetPerformanceIterationDataProvider;
 import com.laker.postman.panel.performance.config.PerformanceIterationDataProvider;
+import com.laker.postman.panel.performance.plan.PerformanceThreadGroupPlan;
 import com.laker.postman.service.variable.ExecutionVariableContext;
 import com.laker.postman.service.variable.IterationDataRuntimeSupport;
 
@@ -13,9 +13,8 @@ public final class PerformanceIterationContextFactory {
     private final PerformanceIterationDataProvider iterationDataProvider;
     private final PerformanceVirtualUserCoordinator virtualUsers;
 
-    public PerformanceIterationContextFactory(CsvDataPanel csvDataPanel,
-                                              PerformanceVirtualUserCoordinator virtualUsers) {
-        this(new CsvPerformanceIterationDataProvider(csvDataPanel), virtualUsers);
+    public PerformanceIterationContextFactory(PerformanceVirtualUserCoordinator virtualUsers) {
+        this(new CsvDataSetPerformanceIterationDataProvider(), virtualUsers);
     }
 
     public PerformanceIterationContextFactory(PerformanceIterationDataProvider iterationDataProvider,
@@ -27,17 +26,21 @@ public final class PerformanceIterationContextFactory {
     }
 
     public ExecutionVariableContext create(int iterationCount) {
+        return create(null, iterationCount);
+    }
+
+    public ExecutionVariableContext create(PerformanceThreadGroupPlan groupPlan, int iterationCount) {
         int iterationIndex = virtualUsers.nextIterationIndex();
         ExecutionVariableContext iterationContext = new ExecutionVariableContext();
         iterationContext.setIterationInfo(iterationIndex, iterationCount);
         iterationContext.replaceIterationData(
-                IterationDataRuntimeSupport.prepare(resolveIterationDataForCurrentThread())
+                IterationDataRuntimeSupport.prepare(resolveIterationDataForCurrentThread(groupPlan))
         );
         return iterationContext;
     }
 
-    private Map<String, String> resolveIterationDataForCurrentThread() {
+    private Map<String, String> resolveIterationDataForCurrentThread(PerformanceThreadGroupPlan groupPlan) {
         Integer virtualUserIndex = virtualUsers.currentVirtualUserIndex();
-        return iterationDataProvider.dataForVirtualUser(virtualUserIndex == null ? 0 : virtualUserIndex);
+        return iterationDataProvider.dataForVirtualUser(groupPlan, virtualUserIndex == null ? 0 : virtualUserIndex);
     }
 }

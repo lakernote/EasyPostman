@@ -4,6 +4,7 @@ import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.common.component.EasyJSpinner;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
+import com.laker.postman.panel.performance.config.CsvDataSetPropertyPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
 import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
@@ -160,6 +161,7 @@ public class PerformancePanelSaveTest extends AbstractSwingUiTest {
         return new PerformancePropertyPanelSupport(
                 jmeterTree,
                 threadGroupPanel,
+                new CsvDataSetPropertyPanel(),
                 headlessLoopPanel(),
                 new AssertionPropertyPanel(),
                 new ExtractorPropertyPanel(),

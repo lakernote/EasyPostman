@@ -1,12 +1,14 @@
 package com.laker.postman.panel.performance.config;
 
+import com.laker.postman.panel.performance.plan.PerformanceThreadGroupPlan;
+
 import java.util.Map;
 
 @FunctionalInterface
 public interface PerformanceIterationDataProvider {
-    Map<String, String> dataForVirtualUser(int virtualUserIndex);
+    Map<String, String> dataForVirtualUser(PerformanceThreadGroupPlan groupPlan, int virtualUserIndex);
 
     static PerformanceIterationDataProvider empty() {
-        return virtualUserIndex -> null;
+        return (groupPlan, virtualUserIndex) -> null;
     }
 }

@@ -4,6 +4,7 @@ import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.performance.assertion.AssertionData;
+import com.laker.postman.panel.performance.config.CsvDataSetData;
 import com.laker.postman.panel.performance.extractor.ExtractorData;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.controller.LoopData;
@@ -174,6 +175,42 @@ public class PerformancePersistenceServiceTest {
         assertEquals(loadedCsvState.getRows().get(0).get("username"), "alice");
         assertEquals(loadedCsvState.getRows().get(0).get("password"), "secret");
         assertFalse(service.loadEfficientMode());
+    }
+
+    @Test(description = "应保存并恢复 Thread Group 下的 CSV Data Set 节点")
+    public void shouldPersistCsvDataSetNodeUnderThreadGroup() throws IOException {
+        Path tempDir = Files.createTempDirectory("performance-csv-data-set-node");
+        Path configPath = tempDir.resolve("performance_config.json");
+        TestablePerformancePersistenceService service = new TestablePerformancePersistenceService(configPath);
+        service.init();
+
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new JMeterTreeNode("Plan", NodeType.ROOT));
+        DefaultMutableTreeNode group = new DefaultMutableTreeNode(new JMeterTreeNode("Thread Group", NodeType.THREAD_GROUP, new ThreadGroupData()));
+        JMeterTreeNode csvNodeData = new JMeterTreeNode("CSV Data Set", NodeType.CSV_DATA_SET);
+        csvNodeData.csvDataSetData = new CsvDataSetData(
+                "users-1-300.csv",
+                List.of("userId", "roomId"),
+                List.of(row("userId", "u1", "roomId", "1728"))
+        );
+        group.add(new DefaultMutableTreeNode(csvNodeData));
+        root.add(group);
+
+        service.save(root, true, true, false);
+
+        String json = Files.readString(configPath, StandardCharsets.UTF_8);
+        assertTrue(json.contains("\"type\": \"CSV_DATA_SET\""));
+        assertTrue(json.contains("\"csvDataSetData\""));
+        assertFalse(json.contains("\"csvState\""));
+
+        DefaultMutableTreeNode loadedRoot = service.load("Loaded Plan");
+        DefaultMutableTreeNode loadedGroup = (DefaultMutableTreeNode) loadedRoot.getChildAt(0);
+        DefaultMutableTreeNode loadedCsvNode = (DefaultMutableTreeNode) loadedGroup.getChildAt(0);
+        JMeterTreeNode loadedCsvData = (JMeterTreeNode) loadedCsvNode.getUserObject();
+
+        assertEquals(loadedCsvData.type, NodeType.CSV_DATA_SET);
+        assertEquals(loadedCsvData.csvDataSetData.getSourceName(), "users-1-300.csv");
+        assertEquals(loadedCsvData.csvDataSetData.getHeaders(), List.of("userId", "roomId"));
+        assertEquals(loadedCsvData.csvDataSetData.getRows().get(0).get("roomId"), "1728");
     }
 
     @Test(description = "应保存并恢复趋势采样开关")

@@ -1,6 +1,5 @@
 package com.laker.postman.panel.performance.runtime;
 
-import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.panel.performance.execution.PerformanceRequestExecutor;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.plan.PerformanceTestPlan;
@@ -38,7 +37,6 @@ public final class PerformanceExecutionEngine {
                                       BooleanSupplier runningSupplier,
                                       BooleanSupplier efficientModeSupplier,
                                       IntSupplier responseBodyPreviewLimitKbSupplier,
-                                      CsvDataPanel csvDataPanel,
                                       PerformanceResultCollector resultCollector) {
         this.runningSupplier = runningSupplier;
         PerformanceRequestExecutor requestExecutor = new PerformanceRequestExecutor(
@@ -56,10 +54,7 @@ public final class PerformanceExecutionEngine {
                 requestExecutor,
                 resultCollector
         );
-        PerformanceIterationContextFactory iterationContextFactory = new PerformanceIterationContextFactory(
-                csvDataPanel,
-                virtualUsers
-        );
+        PerformanceIterationContextFactory iterationContextFactory = new PerformanceIterationContextFactory(virtualUsers);
         PerformancePlanExecutor planExecutor = new PerformancePlanExecutor(runningSupplier, samplerExecutor);
         this.threadGroupRunner = new PerformanceThreadGroupRunner(
                 dialogParent,

@@ -4,6 +4,7 @@ package com.laker.postman.panel.performance.model;
 public enum NodeType {
     ROOT,
     THREAD_GROUP,
+    CSV_DATA_SET,
     LOOP,
     REQUEST,
     ASSERTION,

@@ -1,6 +1,5 @@
 package com.laker.postman.panel.performance;
 
-import com.laker.postman.service.PerformancePersistenceService;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import org.testng.annotations.Test;
@@ -10,9 +9,6 @@ import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import java.awt.Component;
 import java.awt.Container;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -91,22 +87,18 @@ public class PerformancePanelViewFactoryTest {
     }
 
     @Test
-    public void topToolbarShouldOnlyContainExecutionControls() throws IOException {
+    public void topToolbarShouldOnlyContainExecutionControls() {
         PerformancePanelViewFactory viewFactory = new PerformancePanelViewFactory();
-        PerformancePersistenceService persistenceService = new TestablePerformancePersistenceService(
-                Files.createTempDirectory("performance-toolbar-test").resolve("performance_config.json")
-        );
 
         PerformancePanelViewFactory.ToolbarSection toolbarSection = viewFactory.createToolbarSection(
-                persistenceService,
-                () -> {
-                },
                 () -> {
                 }
         );
 
         assertEquals(countCheckBoxes(toolbarSection.topPanel()), 0);
-        assertNotNull(toolbarSection.csvDataPanel());
+        assertNotNull(toolbarSection.runBtn());
+        assertNotNull(toolbarSection.stopBtn());
+        assertNotNull(toolbarSection.refreshBtn());
     }
 
     private static int countCheckBoxes(Component component) {
@@ -134,18 +126,5 @@ public class PerformancePanelViewFactoryTest {
             }
         }
         return false;
-    }
-
-    private static final class TestablePerformancePersistenceService extends PerformancePersistenceService {
-        private final Path configPath;
-
-        private TestablePerformancePersistenceService(Path configPath) {
-            this.configPath = configPath;
-        }
-
-        @Override
-        protected Path getConfigFilePath() {
-            return configPath;
-        }
     }
 }

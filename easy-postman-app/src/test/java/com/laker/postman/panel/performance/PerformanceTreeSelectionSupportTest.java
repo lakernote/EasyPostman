@@ -2,6 +2,7 @@ package com.laker.postman.panel.performance;
 
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
+import com.laker.postman.panel.performance.config.CsvDataSetPropertyPanel;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
@@ -203,6 +204,7 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
                     cardLayout,
                     propertyPanel,
                     null,
+                    new CsvDataSetPropertyPanel(),
                     null,
                     null,
                     null,
@@ -224,6 +226,7 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
                     currentRequestSetter,
                     EMPTY_CARD,
                     "threadGroup",
+                    "csvDataSet",
                     "loop",
                     REQUEST_CARD,
                     "assertion",

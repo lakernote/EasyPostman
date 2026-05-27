@@ -26,6 +26,7 @@ public class JMeterTreeCellRenderer extends DefaultTreeCellRenderer {
             // 设置图标
             switch (jtNode.type) {
                 case THREAD_GROUP -> label.setIcon(IconUtil.createThemed("icons/user-group.svg", SIZE, SIZE));
+                case CSV_DATA_SET -> label.setIcon(IconUtil.createThemed("icons/csv.svg", SIZE, SIZE));
                 case LOOP -> label.setIcon(new FlatSVGIcon("icons/refresh.svg", SIZE, SIZE));
                 case REQUEST -> label.setIcon(resolveRequestIcon(jtNode.httpRequestItem));
                 case ASSERTION -> label.setIcon(IconUtil.createThemed("icons/warning.svg", SIZE, SIZE));

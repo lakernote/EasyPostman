@@ -2,6 +2,7 @@ package com.laker.postman.panel.performance;
 
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
+import com.laker.postman.panel.performance.config.CsvDataSetPropertyPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
 import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
@@ -21,6 +22,7 @@ final class PerformancePropertyPanelSupport {
 
     private final JTree jmeterTree;
     private final ThreadGroupPropertyPanel threadGroupPanel;
+    private final CsvDataSetPropertyPanel csvDataSetPanel;
     private final LoopPropertyPanel loopPanel;
     private final AssertionPropertyPanel assertionPanel;
     private final ExtractorPropertyPanel extractorPanel;
@@ -56,6 +58,12 @@ final class PerformancePropertyPanelSupport {
         }
         switch (jtNode.type) {
             case THREAD_GROUP -> threadGroupPanel.saveThreadGroupData();
+            case CSV_DATA_SET -> {
+                csvDataSetPanel.saveCsvDataSetData();
+                if (jmeterTree.getModel() instanceof javax.swing.tree.DefaultTreeModel treeModel) {
+                    treeModel.nodeChanged(selectedNode);
+                }
+            }
             case LOOP -> loopPanel.saveLoopData();
             case REQUEST -> {
                 if (requestEditSubPanelSupplier.get() != null && currentRequestNodeSupplier.get() != null) {

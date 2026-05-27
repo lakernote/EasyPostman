@@ -149,6 +149,7 @@ public class PerformanceTreeMenuVisibilitySupportTest {
     private static PerformanceTreeMenuItems newMenuItems() {
         return new PerformanceTreeMenuItems(
                 new JMenuItem("addThreadGroup"),
+                new JMenuItem("addCsvDataSet"),
                 new JMenuItem("addRequest"),
                 new JMenuItem("addLoop"),
                 new JMenuItem("addSseConnect"),

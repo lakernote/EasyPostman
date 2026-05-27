@@ -38,6 +38,19 @@ public class PerformanceTreeRulesTest {
         assertFalse(PerformanceTreeRules.canAcceptChild(wsRequest, newNode(NodeType.EXTRACTOR)));
     }
 
+    @Test(description = "CSV Data Set 只能挂在线程组下，作为线程组作用域配置")
+    public void shouldOnlyAcceptCsvDataSetUnderThreadGroup() {
+        DefaultMutableTreeNode root = newNode(NodeType.ROOT);
+        DefaultMutableTreeNode threadGroup = newNode(NodeType.THREAD_GROUP);
+        DefaultMutableTreeNode request = newRequestNode(RequestItemProtocolEnum.HTTP);
+        DefaultMutableTreeNode loop = newLoopNode();
+
+        assertTrue(PerformanceTreeRules.canAcceptChild(threadGroup, newNode(NodeType.CSV_DATA_SET)));
+        assertFalse(PerformanceTreeRules.canAcceptChild(root, newNode(NodeType.CSV_DATA_SET)));
+        assertFalse(PerformanceTreeRules.canAcceptChild(request, newNode(NodeType.CSV_DATA_SET)));
+        assertFalse(PerformanceTreeRules.canAcceptChild(loop, newNode(NodeType.CSV_DATA_SET)));
+    }
+
     private static DefaultMutableTreeNode newRequestNode(RequestItemProtocolEnum protocol) {
         HttpRequestItem item = new HttpRequestItem();
         item.setProtocol(protocol);

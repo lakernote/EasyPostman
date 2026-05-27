@@ -237,6 +237,17 @@ public class CsvDataPanel extends JPanel {
     }
 
     /**
+     * 打开文件选择器导入 CSV 数据。
+     */
+    public boolean importCsvFile() {
+        boolean imported = selectCsvFile();
+        if (imported) {
+            updateCsvStatus();
+        }
+        return imported;
+    }
+
+    /**
      * 更新 CSV 状态显示
      */
     private void updateCsvStatus() {
@@ -272,7 +283,7 @@ public class CsvDataPanel extends JPanel {
     /**
      * 手动创建 CSV 数据对话框
      */
-    private void showManualCreateDialog() {
+    public void showManualCreateDialog() {
         JDialog dialog = new JDialog(UiSingletonFactory.getInstance(MainFrame.class),
                 I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_DIALOG_TITLE), true);
         dialog.setLayout(new BorderLayout());
@@ -568,7 +579,7 @@ public class CsvDataPanel extends JPanel {
     /**
      * CSV 数据管理对话框 - 集成预览和编辑功能
      */
-    private void showCsvDataManageDialog() {
+    public void showCsvDataManageDialog() {
         if (csvData == null || csvData.isEmpty()) {
             JOptionPane.showMessageDialog(null, I18nUtil.getMessage(MessageKeys.CSV_NO_MANAGEABLE_DATA),
                     I18nUtil.getMessage(MessageKeys.GENERAL_TIP), JOptionPane.WARNING_MESSAGE);

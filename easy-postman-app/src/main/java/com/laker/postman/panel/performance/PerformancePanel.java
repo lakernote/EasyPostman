@@ -3,7 +3,6 @@ package com.laker.postman.panel.performance;
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.DebouncedSaveSupport;
 import com.laker.postman.common.UiSingletonFactory;
-import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.common.component.button.RefreshButton;
 import com.laker.postman.common.component.button.StartButton;
 import com.laker.postman.common.component.button.StopButton;
@@ -17,6 +16,7 @@ import com.laker.postman.panel.performance.control.PerformanceSaveShortcutSuppor
 import com.laker.postman.panel.performance.control.PerformanceRunUiController;
 import com.laker.postman.panel.performance.control.PerformanceStatisticsCoordinator;
 import com.laker.postman.panel.performance.control.PerformanceTimerManager;
+import com.laker.postman.panel.performance.config.CsvDataSetPropertyPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
 import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
 import com.laker.postman.panel.performance.model.ApiMetadata;
@@ -57,6 +57,7 @@ import java.util.List;
 public class PerformancePanel extends UiSingletonPanel {
     public static final String EMPTY = "empty";
     public static final String THREAD_GROUP = "threadGroup";
+    public static final String CSV_DATA_SET = "csvDataSet";
     public static final String LOOP = "loop";
     public static final String REQUEST = "request";
     public static final String ASSERTION = "assertion";
@@ -74,6 +75,7 @@ public class PerformancePanel extends UiSingletonPanel {
     private CardLayout propertyCardLayout;
     private JTabbedPane resultTabbedPane; // 结果Tab
     private ThreadGroupPropertyPanel threadGroupPanel;
+    private CsvDataSetPropertyPanel csvDataSetPanel;
     private LoopPropertyPanel loopPanel;
     private AssertionPropertyPanel assertionPanel;
     private ExtractorPropertyPanel extractorPanel;
@@ -110,10 +112,6 @@ public class PerformancePanel extends UiSingletonPanel {
     private PerformanceReportPanel performanceReportPanel;
     private PerformanceResultTablePanel performanceResultTablePanel;
     private PerformanceTrendPanel performanceTrendPanel;
-
-
-    // CSV 数据管理面板
-    private CsvDataPanel csvDataPanel;
 
     // 持久化服务
     private transient PerformancePersistenceService persistenceService;
@@ -156,6 +154,7 @@ public class PerformancePanel extends UiSingletonPanel {
         PerformancePanelViewFactory.PropertySection propertySection = viewFactory.createPropertySection(
                 EMPTY,
                 THREAD_GROUP,
+                CSV_DATA_SET,
                 LOOP,
                 REQUEST,
                 ASSERTION,
@@ -171,6 +170,7 @@ public class PerformancePanel extends UiSingletonPanel {
         propertyPanel = propertySection.propertyPanel();
         propertyCardLayout = propertySection.propertyCardLayout();
         threadGroupPanel = propertySection.threadGroupPanel();
+        csvDataSetPanel = propertySection.csvDataSetPanel();
         loopPanel = propertySection.loopPanel();
         assertionPanel = propertySection.assertionPanel();
         extractorPanel = propertySection.extractorPanel();
@@ -192,6 +192,7 @@ public class PerformancePanel extends UiSingletonPanel {
         propertyPanelSupport = new PerformancePropertyPanelSupport(
                 jmeterTree,
                 threadGroupPanel,
+                csvDataSetPanel,
                 loopPanel,
                 assertionPanel,
                 extractorPanel,
@@ -208,6 +209,7 @@ public class PerformancePanel extends UiSingletonPanel {
                 treeSupport,
                 this::syncRequestStructure
         );
+        csvDataSetPanel.setChangeListener(this::handleCsvDataSetChanged);
 
         PerformancePanelViewFactory.ResultSection resultSection = viewFactory.createResultSection(
                 trendEnabled,
@@ -263,15 +265,12 @@ public class PerformancePanel extends UiSingletonPanel {
         add(verticalSplit, BorderLayout.CENTER);
 
         PerformancePanelViewFactory.ToolbarSection toolbarSection = viewFactory.createToolbarSection(
-                persistenceService,
-                this::refreshRequestsFromCollections,
-                this::saveConfig
+                this::refreshRequestsFromCollections
         );
         topPanel = toolbarSection.topPanel();
         runBtn = toolbarSection.runBtn();
         stopBtn = toolbarSection.stopBtn();
         refreshBtn = toolbarSection.refreshBtn();
-        csvDataPanel = toolbarSection.csvDataPanel();
         progressLabel = toolbarSection.progressLabel();
         add(topPanel, BorderLayout.NORTH);
 
@@ -288,7 +287,6 @@ public class PerformancePanel extends UiSingletonPanel {
                 () -> running,
                 () -> efficientMode,
                 SettingManager::getPerformanceResponseBodyPreviewLimitKb,
-                csvDataPanel,
                 new PerformanceResultCollector(resultListeners)
         );
         runControlSupport = new PerformanceRunControlSupport(
@@ -350,9 +348,6 @@ public class PerformancePanel extends UiSingletonPanel {
         if (reportRefreshModeBox != null) {
             reportRefreshModeBox.setSelectedIndex(reportRealtimeEnabled ? 1 : 0);
         }
-        if (csvDataPanel != null) {
-            csvDataPanel.restoreState(persistenceService.loadCsvState());
-        }
         clearCachedPerformanceResults();
         propertyCardLayout.show(propertyPanel, EMPTY);
         for (int i = 0; i < jmeterTree.getRowCount(); i++) {
@@ -369,6 +364,7 @@ public class PerformancePanel extends UiSingletonPanel {
                 && propertyPanel != null
                 && propertyCardLayout != null
                 && threadGroupPanel != null
+                && csvDataSetPanel != null
                 && extractorPanel != null
                 && performanceResultTablePanel != null
                 && performanceReportPanel != null
@@ -480,13 +476,21 @@ public class PerformancePanel extends UiSingletonPanel {
         saveAllPropertyPanelData();
 
         DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();
-        persistenceService.save(root, efficientMode, trendEnabled, reportRealtimeEnabled,
-                csvDataPanel != null ? csvDataPanel.exportState() : null);
+        persistenceService.save(root, efficientMode, trendEnabled, reportRealtimeEnabled);
         NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_SAVE_SUCCESS));
     }
 
     private void saveAllPropertyPanelData() {
         propertyPanelSupport.saveAllPropertyPanelData();
+    }
+
+    private void handleCsvDataSetChanged() {
+        DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
+        if (selectedNode != null && selectedNode.getUserObject() instanceof JMeterTreeNode jtNode
+                && jtNode.type == NodeType.CSV_DATA_SET) {
+            treeModel.nodeChanged(selectedNode);
+        }
+        saveConfig();
     }
 
     // ========== 定时器管理 ==========
@@ -518,6 +522,7 @@ public class PerformancePanel extends UiSingletonPanel {
                 propertyCardLayout,
                 propertyPanel,
                 threadGroupPanel,
+                csvDataSetPanel,
                 loopPanel,
                 assertionPanel,
                 extractorPanel,
@@ -539,6 +544,7 @@ public class PerformancePanel extends UiSingletonPanel {
                 node -> currentRequestNode = node,
                 EMPTY,
                 THREAD_GROUP,
+                CSV_DATA_SET,
                 LOOP,
                 REQUEST,
                 ASSERTION,
@@ -561,7 +567,7 @@ public class PerformancePanel extends UiSingletonPanel {
      * 保存当前配置
      */
     private void saveConfig() {
-        // 树节点编辑、属性面板和 CSV 变化都会触发保存，统一防抖减少频繁写盘。
+        // 树节点编辑和属性面板变化都会触发保存，统一防抖减少频繁写盘。
         autoSaveSupport.requestSave();
     }
 
@@ -572,8 +578,7 @@ public class PerformancePanel extends UiSingletonPanel {
             // 获取根节点
             DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();
             // 异步保存配置
-            persistenceService.saveAsync(root, efficientMode, trendEnabled, reportRealtimeEnabled,
-                    csvDataPanel != null ? csvDataPanel.exportState() : null);
+            persistenceService.saveAsync(root, efficientMode, trendEnabled, reportRealtimeEnabled);
         } catch (Exception e) {
             log.error("Failed to save performance config", e);
         }
@@ -591,8 +596,7 @@ public class PerformancePanel extends UiSingletonPanel {
             propertyPanelSupport.forceCommitAllSpinners();
             saveAllPropertyPanelData();
             DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();
-            persistenceService.save(root, efficientMode, trendEnabled, reportRealtimeEnabled,
-                    csvDataPanel != null ? csvDataPanel.exportState() : null);
+            persistenceService.save(root, efficientMode, trendEnabled, reportRealtimeEnabled);
         } catch (Exception e) {
             log.error("Failed to save performance config", e);
         }

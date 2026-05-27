@@ -82,6 +82,10 @@ final class PerformanceTreeSupport {
         structureSupport.addLoopNode(jmeterTree, saveConfigAction);
     }
 
+    void addCsvDataSetNode(JTree jmeterTree, Runnable saveConfigAction) {
+        structureSupport.addCsvDataSetNode(jmeterTree, saveConfigAction);
+    }
+
     void addTimerNode(JTree jmeterTree, Runnable saveConfigAction) {
         structureSupport.addTimerNode(jmeterTree, saveConfigAction);
     }
@@ -122,6 +126,10 @@ final class PerformanceTreeSupport {
 
     DefaultMutableTreeNode resolveWebSocketConnectParent(DefaultMutableTreeNode selectedNode) {
         return structureSupport.resolveWebSocketConnectParent(selectedNode);
+    }
+
+    DefaultMutableTreeNode resolveCsvDataSetParent(DefaultMutableTreeNode selectedNode) {
+        return structureSupport.resolveCsvDataSetParent(selectedNode);
     }
 
     DefaultMutableTreeNode resolveWebSocketStepParent(DefaultMutableTreeNode selectedNode) {

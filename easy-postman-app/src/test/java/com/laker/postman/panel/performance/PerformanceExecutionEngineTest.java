@@ -101,7 +101,6 @@ public class PerformanceExecutionEngineTest {
                 () -> true,
                 () -> true,
                 () -> 4,
-                null,
                 emptyResultCollector()
         );
 
@@ -131,7 +130,6 @@ public class PerformanceExecutionEngineTest {
                 () -> true,
                 () -> true,
                 () -> 4,
-                null,
                 emptyResultCollector()
         );
 
@@ -168,7 +166,6 @@ public class PerformanceExecutionEngineTest {
                 () -> true,
                 () -> true,
                 () -> 4,
-                null,
                 emptyResultCollector()
         );
 
@@ -211,7 +208,6 @@ public class PerformanceExecutionEngineTest {
                     () -> true,
                     () -> false,
                     () -> 4,
-                    null,
                     statsResultCollector(statsCollector)
             );
 
@@ -249,7 +245,6 @@ public class PerformanceExecutionEngineTest {
                     () -> true,
                     () -> false,
                     () -> 4,
-                    null,
                     statsResultCollector(statsCollector)
             ).runTestPlanWithProgress(PerformanceTestPlanCompiler.compile(group), 1, (active, total) -> {
             });
@@ -284,7 +279,6 @@ public class PerformanceExecutionEngineTest {
                     () -> true,
                     () -> false,
                     () -> 4,
-                    null,
                     statsResultCollector(statsCollector)
             ).runTestPlanWithProgress(PerformanceTestPlanCompiler.compile(group), 1, (active, total) -> {
             });
@@ -322,7 +316,6 @@ public class PerformanceExecutionEngineTest {
                     () -> true,
                     () -> false,
                     () -> 4,
-                    null,
                     statsResultCollector(statsCollector)
             ).runTestPlanWithProgress(PerformanceTestPlanCompiler.compile(group), 1, (active, total) -> {
             });

@@ -2,6 +2,7 @@ package com.laker.postman.panel.performance;
 
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
+import com.laker.postman.panel.performance.config.CsvDataSetPropertyPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
 import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
@@ -27,6 +28,7 @@ final class PerformanceTreeSelectionSupport {
     private final CardLayout propertyCardLayout;
     private final JPanel propertyPanel;
     private final ThreadGroupPropertyPanel threadGroupPanel;
+    private final CsvDataSetPropertyPanel csvDataSetPanel;
     private final LoopPropertyPanel loopPanel;
     private final AssertionPropertyPanel assertionPanel;
     private final ExtractorPropertyPanel extractorPanel;
@@ -46,6 +48,7 @@ final class PerformanceTreeSelectionSupport {
     private final Consumer<DefaultMutableTreeNode> currentRequestNodeSetter;
     private final String emptyCard;
     private final String threadGroupCard;
+    private final String csvDataSetCard;
     private final String loopCard;
     private final String requestCard;
     private final String assertionCard;
@@ -70,6 +73,10 @@ final class PerformanceTreeSelectionSupport {
         }
         switch (jtNode.type) {
             case THREAD_GROUP -> threadGroupPanel.saveThreadGroupData();
+            case CSV_DATA_SET -> {
+                csvDataSetPanel.saveCsvDataSetData();
+                treeModel.nodeChanged(lastNode);
+            }
             case LOOP -> {
                 loopPanel.saveLoopData();
                 treeModel.nodeChanged(lastNode);
@@ -111,6 +118,11 @@ final class PerformanceTreeSelectionSupport {
             case THREAD_GROUP -> {
                 propertyCardLayout.show(propertyPanel, threadGroupCard);
                 threadGroupPanel.setThreadGroupData(jtNode);
+                currentRequestNodeSetter.accept(null);
+            }
+            case CSV_DATA_SET -> {
+                propertyCardLayout.show(propertyPanel, csvDataSetCard);
+                csvDataSetPanel.setNode(jtNode);
                 currentRequestNodeSetter.accept(null);
             }
             case LOOP -> {

@@ -119,7 +119,7 @@ public class PerformanceRequestExecutor {
             return null;
         }
         if (preOk) {
-            pipeline.finalizeRequest(PerformanceVariableResolver::resolve);
+            pipeline.finalizeRequest();
         }
 
         long requestStartTime = System.currentTimeMillis();

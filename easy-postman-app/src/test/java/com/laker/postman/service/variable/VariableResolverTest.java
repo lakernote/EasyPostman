@@ -123,14 +123,6 @@ public class VariableResolverTest {
                 "$randomTF should resolve to T or F, but was: " + result);
     }
 
-    @Test
-    public void shouldLeavePerformanceFunctionsUnresolvedOutsidePerformanceResolver() {
-        VariablesService.getInstance().set("raw", "a b");
-
-        assertEquals(VariableResolver.resolve("{{__uuid()}}"), "{{__uuid()}}");
-        assertEquals(VariableResolver.resolve("{{__urlEncode(raw)}}"), "{{__urlEncode(raw)}}");
-    }
-
     /**
      * 测试多个嵌套变量在同一字符串中
      */

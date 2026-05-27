@@ -20,7 +20,6 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.Map;
 import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 
 /**
  * 脚本执行流水线
@@ -294,11 +293,7 @@ public class ScriptExecutionPipeline {
      * 而是全部委托给 RequestFinalizer，保证各发送入口行为一致。
      */
     public void finalizeRequest() {
-        finalizeRequest(null);
-    }
-
-    public void finalizeRequest(UnaryOperator<String> variableResolver) {
-        withExecutionContext(() -> RequestFinalizer.finalizeForSend(request, deferredAuthorization, variableResolver));
+        withExecutionContext(() -> RequestFinalizer.finalizeForSend(request, deferredAuthorization));
         deferredAuthorization = null;
     }
 

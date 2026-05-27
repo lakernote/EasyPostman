@@ -10,6 +10,7 @@ import com.laker.postman.panel.performance.plan.PerformanceAssertionElement;
 import com.laker.postman.panel.performance.plan.PerformancePlanElement;
 import com.laker.postman.panel.performance.plan.PerformanceProtocolStageElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
+import com.laker.postman.service.variable.VariableResolver;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.JsonPathUtil;
 import com.laker.postman.util.MessageKeys;
@@ -90,9 +91,9 @@ public final class PerformanceAssertionRunner {
                                      List<TestResult> testResults,
                                      AtomicReference<String> errorMsgRef) {
         AssertionType type = AssertionType.fromStorageValue(assertion.type);
-        String operator = PerformanceVariableResolver.resolve(CharSequenceUtil.nullToEmpty(assertion.operator));
-        String content = PerformanceVariableResolver.resolve(CharSequenceUtil.nullToEmpty(assertion.content));
-        String value = PerformanceVariableResolver.resolve(CharSequenceUtil.nullToEmpty(assertion.value));
+        String operator = VariableResolver.resolve(CharSequenceUtil.nullToEmpty(assertion.operator));
+        String content = VariableResolver.resolve(CharSequenceUtil.nullToEmpty(assertion.content));
+        String value = VariableResolver.resolve(CharSequenceUtil.nullToEmpty(assertion.value));
         boolean pass = false;
         switch (type) {
             case RESPONSE_CODE -> {

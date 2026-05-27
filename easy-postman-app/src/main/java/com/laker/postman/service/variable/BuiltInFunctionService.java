@@ -303,6 +303,4 @@ public class BuiltInFunctionService implements VariableProvider {
         return DigestUtils.md5Hex(input);
     }
 
-    private record SimpleFunctionCall(String name, List<String> arguments) {
-    }
 }

@@ -225,4 +225,41 @@ public class PerformanceResultDisplayMapperTest {
         assertTrue(resultNodeInfo.resp.body.contains("data: event-body-"));
         assertFalse(resultNodeInfo.resp.body.contains("event-body-".repeat(512)));
     }
+
+    @Test
+    public void shouldDisplayInterruptedStreamSampleAsFailure() {
+        PreparedRequest request = new PreparedRequest();
+        request.collectEventInfo = false;
+
+        HttpResponse response = new HttpResponse();
+        response.code = 101;
+        response.costMs = 60_000L;
+        response.body = "partial";
+        response.headers = new LinkedHashMap<>();
+        response.addHeader("X-Easy-WS-Sent-Count", List.of("120"));
+
+        PerformanceRequestExecutionResult executionResult = new PerformanceRequestExecutionResult(
+                "api-1",
+                "WebSocket API",
+                request,
+                response,
+                "Execution interrupted",
+                List.of(),
+                false,
+                true,
+                PerformanceProtocol.WEBSOCKET,
+                1000L,
+                0L
+        );
+
+        ResultNodeInfo resultNodeInfo = PerformanceResultDisplayMapper.toDisplayNodeInfo(
+                PerformanceSampleResult.fromExecutionResult(executionResult),
+                true
+        );
+
+        assertFalse(resultNodeInfo.isActuallySuccessful());
+        assertEquals(resultNodeInfo.errorMsg, "Execution interrupted");
+        assertTrue(resultNodeInfo.resp.body.contains("Error: Execution interrupted"));
+        assertTrue(resultNodeInfo.resp.body.contains("Sent: 120"));
+    }
 }

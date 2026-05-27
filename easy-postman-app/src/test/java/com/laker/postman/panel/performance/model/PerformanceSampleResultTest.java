@@ -85,4 +85,31 @@ public class PerformanceSampleResultTest {
         assertEquals(sampleResult.getAssertionResults().size(), 1);
         assertFalse(sampleResult.getAssertionResults().get(0).isPassed());
     }
+
+    @Test
+    public void shouldTreatInterruptedResponseAsFailedSample() {
+        HttpResponse response = new HttpResponse();
+        response.code = 101;
+        response.costMs = 60_000;
+        response.endTime = 61_000;
+
+        PerformanceRequestExecutionResult executionResult = new PerformanceRequestExecutionResult(
+                "api-ws",
+                "WS API",
+                new PreparedRequest(),
+                response,
+                "",
+                List.of(),
+                false,
+                true,
+                PerformanceProtocol.WEBSOCKET,
+                1000L,
+                0L
+        );
+
+        PerformanceSampleResult sampleResult = PerformanceSampleResult.fromExecutionResult(executionResult);
+
+        assertTrue(sampleResult.isInterrupted());
+        assertFalse(sampleResult.isSuccessful());
+    }
 }

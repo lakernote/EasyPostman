@@ -34,7 +34,7 @@ public class PerformanceResultDisplayMapper {
                 sampleResult.getRequest(),
                 sampleResult.getResponse(),
                 sampleResult.getTestResults(),
-                sampleResult.isExecutionFailed(),
+                sampleResult.isExecutionFailed() || sampleResult.isInterrupted(),
                 sampleResult.getProtocol()
         );
     }

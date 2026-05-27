@@ -16,6 +16,8 @@ import com.laker.postman.panel.performance.plan.PerformanceTimerElement;
 import com.laker.postman.panel.performance.timer.TimerData;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import okhttp3.Response;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
@@ -113,6 +115,7 @@ public class WebSocketScenarioExecutor {
         AtomicReference<String> errorRef = new AtomicReference<>("");
         AtomicReference<String> lastMessageRef = new AtomicReference<>("");
         AtomicReference<WebSocketPerformanceData> lastStepCfgRef = new AtomicReference<>(baseRequestCfg);
+        AtomicBoolean scenarioCompleted = new AtomicBoolean(false);
         PerformanceResponseCapturePlan effectiveCapturePlan = capturePlan == null
                 ? PerformanceResponseCapturePlan.resolve(true, requestSampler, false, true,
                         req == null ? "" : req.postscript)
@@ -147,6 +150,8 @@ public class WebSocketScenarioExecutor {
             private final AtomicBoolean closingSocket = new AtomicBoolean(false);
             private final AtomicBoolean remoteClosed = new AtomicBoolean(false);
             private final AtomicBoolean registered = new AtomicBoolean(false);
+            private final AtomicInteger closeCode = new AtomicInteger(-1);
+            private final AtomicReference<String> closeReason = new AtomicReference<>("");
             private WebSocket webSocket;
             private boolean ended;
         }
@@ -217,8 +222,22 @@ public class WebSocketScenarioExecutor {
 
                     @Override
                     public void onClosed(WebSocket webSocket, int code, String reason) {
+                        session.closeCode.compareAndSet(-1, code);
+                        session.closeReason.compareAndSet("", CharSequenceUtil.blankToDefault(reason, ""));
                         session.remoteClosed.set(true);
                         session.openLatch.countDown();
+                        synchronized (messageLock) {
+                            messageLock.notifyAll();
+                        }
+                    }
+
+                    @Override
+                    public void onClosing(WebSocket webSocket, int code, String reason) {
+                        session.closeCode.compareAndSet(-1, code);
+                        session.closeReason.compareAndSet("", CharSequenceUtil.blankToDefault(reason, ""));
+                        if (!session.closingSocket.get()) {
+                            session.remoteClosed.set(true);
+                        }
                         synchronized (messageLock) {
                             messageLock.notifyAll();
                         }
@@ -237,12 +256,15 @@ public class WebSocketScenarioExecutor {
                             resp.protocol = response.protocol().toString();
                         }
                         String message = throwable != null ? throwable.getMessage() : "";
+                        String failureMessage = describeWebSocketFailureMessage(message);
+                        session.closeReason.compareAndSet("", failureMessage);
                         if (!session.closingSocket.get()) {
                             if (!runningSupplier.getAsBoolean() || cancelledChecker.test(throwable)) {
                                 interrupted.set(true);
+                                setInterruptedErrorIfBlank(errorRef);
                             } else {
                                 failed.set(true);
-                                errorRef.set(CharSequenceUtil.blankToDefault(message, "WebSocket request failed"));
+                                errorRef.set(failureMessage);
                             }
                         }
                         session.remoteClosed.set(true);
@@ -329,6 +351,7 @@ public class WebSocketScenarioExecutor {
                 while (runningSupplier.getAsBoolean() && !failed.get() && !interrupted.get()) {
                     PerformancePlanElement stepElement = scenarioSteps.next();
                     if (stepElement == null) {
+                        scenarioCompleted.set(true);
                         break;
                     }
                     switch (stepElement.getType()) {
@@ -368,6 +391,16 @@ public class WebSocketScenarioExecutor {
                                     : 1;
                             int intervalMs = Math.max(0, stepCfg.sendIntervalMs);
                             for (int sendIndex = 0; sendIndex < sendTimes && runningSupplier.getAsBoolean() && !failed.get() && !interrupted.get(); sendIndex++) {
+                                if (session.remoteClosed.get()) {
+                                    failed.set(true);
+                                    errorRef.set(webSocketClosedBeforeSendCompletedMessage(
+                                            sentMessageCount.get(),
+                                            sendTimes,
+                                            session.closeCode.get(),
+                                            session.closeReason.get()
+                                    ));
+                                    break;
+                                }
                                 var sendScriptResult = WebSocketScenarioStepSupport.executeSendPreScript(
                                         pipeline,
                                         stepCfg,
@@ -387,7 +420,14 @@ public class WebSocketScenarioExecutor {
                                     realtimeMetrics.recordWebSocketSent(webSocket);
                                 } else {
                                     failed.set(true);
-                                    errorRef.set("WebSocket send failed");
+                                    errorRef.set(session.remoteClosed.get()
+                                            ? webSocketClosedBeforeSendCompletedMessage(
+                                            sentMessageCount.get(),
+                                            sendTimes,
+                                            session.closeCode.get(),
+                                            session.closeReason.get()
+                                    )
+                                            : "WebSocket send failed");
                                     break;
                                 }
                                 if (sendIndex < sendTimes - 1 && intervalMs > 0) {
@@ -522,6 +562,7 @@ public class WebSocketScenarioExecutor {
                         }
                         case WS_CLOSE -> {
                             if (scenarioSteps.peek() == null) {
+                                scenarioCompleted.set(true);
                                 markSampleEnd(sampleEndTimeMs);
                             }
                             sessionManager.closeCurrent("WebSocket close step");
@@ -543,7 +584,11 @@ public class WebSocketScenarioExecutor {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             interrupted.set(true);
+            setInterruptedErrorIfBlank(errorRef);
         } finally {
+            if (!scenarioCompleted.get() && !runningSupplier.getAsBoolean() && !failed.get() && interrupted.compareAndSet(false, true)) {
+                setInterruptedErrorIfBlank(errorRef);
+            }
             markSampleEnd(sampleEndTimeMs);
             sessionManager.closeAll("Performance sample complete");
         }
@@ -574,6 +619,43 @@ public class WebSocketScenarioExecutor {
         );
 
         return new Result(resp, errorRef.get(), failed.get(), interrupted.get(), stepTestResults);
+    }
+
+    private static String webSocketClosedBeforeSendCompletedMessage(int sentMessages,
+                                                                    int configuredSendCount,
+                                                                    int closeCode,
+                                                                    String closeReason) {
+        StringBuilder message = new StringBuilder("Remote peer closed WebSocket before send completed")
+                .append(" (sent ")
+                .append(Math.max(0, sentMessages))
+                .append('/')
+                .append(Math.max(1, configuredSendCount));
+        if (closeCode >= 0) {
+            message.append(", closeCode=").append(closeCode);
+        }
+        if (CharSequenceUtil.isNotBlank(closeReason)) {
+            message.append(", reason=").append(closeReason);
+        }
+        return message.append(')').toString();
+    }
+
+    private static String describeWebSocketFailureMessage(String message) {
+        String normalized = CharSequenceUtil.blankToDefault(message, "");
+        if (CharSequenceUtil.containsIgnoreCase(normalized, "sent ping but didn't receive pong")) {
+            return "OkHttp client closed the WebSocket because the peer did not respond to ping"
+                    + " (" + normalized + ")";
+        }
+        return CharSequenceUtil.blankToDefault(normalized, "WebSocket request failed");
+    }
+
+    private static void setInterruptedErrorIfBlank(AtomicReference<String> errorRef) {
+        if (errorRef == null || CharSequenceUtil.isNotBlank(errorRef.get())) {
+            return;
+        }
+        errorRef.compareAndSet(
+                "",
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_EXECUTION_INTERRUPTED, "Client stopped WebSocket scenario before completion")
+        );
     }
 
     private static void markSampleEnd(AtomicLong sampleEndTimeMs) {

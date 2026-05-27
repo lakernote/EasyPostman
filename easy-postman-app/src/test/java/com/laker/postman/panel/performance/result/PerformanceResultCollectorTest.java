@@ -176,7 +176,7 @@ public class PerformanceResultCollectorTest {
             assertEquals(snapshot.summaries().size(), 1);
 
             PerformanceStatsSnapshot.ApiSummary summary = snapshot.summaries().get(0);
-            assertEquals(snapshot.successRequests(), 1L);
+            assertEquals(snapshot.successRequests(), 0L);
             assertEquals(summary.sentMessages(), 12L);
             assertEquals(summary.receivedMessages(), 7L);
             assertEquals(summary.matchedMessages(), 3L);
@@ -187,7 +187,7 @@ public class PerformanceResultCollectorTest {
     }
 
     @Test
-    public void shouldAggregateInterruptedStreamWithoutRecordingCleanDetailsInEfficientMode() {
+    public void shouldRetainInterruptedStreamDetailsInEfficientMode() {
         PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
         RecordingResultTablePanel tablePanel = new RecordingResultTablePanel();
         try {
@@ -215,7 +215,7 @@ public class PerformanceResultCollectorTest {
             ), true);
 
             assertEquals(statsCollector.snapshot().totalRequests(), 1L);
-            assertEquals(tablePanel.recordedRows, 0);
+            assertEquals(tablePanel.recordedRows, 1);
         } finally {
             tablePanel.dispose();
         }

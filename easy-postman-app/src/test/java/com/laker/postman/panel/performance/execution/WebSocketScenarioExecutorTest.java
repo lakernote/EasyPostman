@@ -38,6 +38,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -1166,6 +1167,134 @@ public class WebSocketScenarioExecutorTest {
                     "reported cost should exclude close cleanup delay, wallElapsed="
                             + wallElapsed + ", costMs=" + result.response.costMs);
         }
+    }
+
+    @Test
+    public void shouldMarkRepeatedSendAsInterruptedWhenRunStopsBeforeCompletion() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            CountDownLatch firstMessageReceived = new CountDownLatch(1);
+            AtomicBoolean running = new AtomicBoolean(true);
+            server.enqueue(new MockResponse().withWebSocketUpgrade(new WebSocketListener() {
+                @Override
+                public void onMessage(WebSocket webSocket, String text) {
+                    firstMessageReceived.countDown();
+                }
+            }));
+            server.start();
+
+            Thread stopper = new Thread(() -> {
+                try {
+                    firstMessageReceived.await(2, TimeUnit.SECONDS);
+                    running.set(false);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            });
+            stopper.start();
+
+            PreparedRequest request = new PreparedRequest();
+            request.method = "GET";
+            request.url = server.url("/socket").toString().replaceFirst("^http", "ws");
+
+            WebSocketPerformanceData requestCfg = new WebSocketPerformanceData();
+            requestCfg.connectTimeoutMs = 2000;
+
+            DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(new JMeterTreeNode("request", NodeType.REQUEST));
+            addConnectStep(requestNode, new WebSocketPerformanceData());
+            JMeterTreeNode sendStep = new JMeterTreeNode("send", NodeType.WS_SEND);
+            sendStep.webSocketPerformanceData = new WebSocketPerformanceData();
+            sendStep.webSocketPerformanceData.sendMode = WebSocketPerformanceData.SendMode.REQUEST_BODY_REPEAT;
+            sendStep.webSocketPerformanceData.sendContentSource = WebSocketPerformanceData.SendContentSource.CUSTOM_TEXT;
+            sendStep.webSocketPerformanceData.customSendBody = "payload";
+            sendStep.webSocketPerformanceData.sendCount = 5;
+            sendStep.webSocketPerformanceData.sendIntervalMs = 50;
+            requestNode.add(new DefaultMutableTreeNode(sendStep));
+
+            WebSocketScenarioExecutor.Result result = new WebSocketScenarioExecutor(
+                    running::get,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet(),
+                    new PerformanceRealtimeMetrics()
+            ).execute(
+                    request,
+                    PerformanceTestPlanCompiler.compileRequestSampler(requestNode),
+                    requestCfg,
+                    "",
+                    null,
+                    "",
+                    ""
+            );
+
+            stopper.join(2000);
+            assertTrue(result.interrupted, result.errorMsg);
+            assertFalse(result.executionFailed, result.errorMsg);
+            assertTrue(result.response.costMs < 1000, "run should stop before all repeated sends complete");
+        }
+    }
+
+    @Test
+    public void shouldExplainRemoteCloseDuringRepeatedSend() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse().withWebSocketUpgrade(new WebSocketListener() {
+                @Override
+                public void onMessage(WebSocket webSocket, String text) {
+                    webSocket.close(1000, "server idle timeout");
+                }
+            }));
+            server.start();
+
+            PreparedRequest request = new PreparedRequest();
+            request.method = "GET";
+            request.url = server.url("/socket").toString().replaceFirst("^http", "ws");
+
+            WebSocketPerformanceData requestCfg = new WebSocketPerformanceData();
+            requestCfg.connectTimeoutMs = 2000;
+
+            DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(new JMeterTreeNode("request", NodeType.REQUEST));
+            addConnectStep(requestNode, new WebSocketPerformanceData());
+            JMeterTreeNode sendStep = new JMeterTreeNode("send", NodeType.WS_SEND);
+            sendStep.webSocketPerformanceData = new WebSocketPerformanceData();
+            sendStep.webSocketPerformanceData.sendMode = WebSocketPerformanceData.SendMode.REQUEST_BODY_REPEAT;
+            sendStep.webSocketPerformanceData.sendContentSource = WebSocketPerformanceData.SendContentSource.CUSTOM_TEXT;
+            sendStep.webSocketPerformanceData.customSendBody = "payload";
+            sendStep.webSocketPerformanceData.sendCount = 5;
+            sendStep.webSocketPerformanceData.sendIntervalMs = 1000;
+            requestNode.add(new DefaultMutableTreeNode(sendStep));
+
+            WebSocketScenarioExecutor.Result result = new WebSocketScenarioExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet(),
+                    new PerformanceRealtimeMetrics()
+            ).execute(
+                    request,
+                    PerformanceTestPlanCompiler.compileRequestSampler(requestNode),
+                    requestCfg,
+                    "",
+                    null,
+                    "",
+                    ""
+            );
+
+            assertTrue(result.executionFailed, result.errorMsg);
+            assertTrue(result.errorMsg.contains("Remote peer closed WebSocket before send completed"), result.errorMsg);
+            assertTrue(result.errorMsg.contains("server idle timeout"), result.errorMsg);
+            assertEquals(result.response.headers.get("X-Easy-WS-Error").get(0), result.errorMsg);
+        }
+    }
+
+    @Test
+    public void shouldExplainClientHeartbeatCloseWhenPeerDoesNotPong() throws Exception {
+        Method method = WebSocketScenarioExecutor.class.getDeclaredMethod("describeWebSocketFailureMessage", String.class);
+        method.setAccessible(true);
+
+        String message = (String) method.invoke(
+                null,
+                "sent ping but didn't receive pong within 30000ms (after 0 successful ping/pongs)"
+        );
+
+        assertTrue(message.contains("OkHttp client closed the WebSocket"), message);
+        assertTrue(message.contains("peer did not respond to ping"), message);
     }
 
     private static final class SlowWebSocketSessionEndMetrics extends PerformanceRealtimeMetrics {

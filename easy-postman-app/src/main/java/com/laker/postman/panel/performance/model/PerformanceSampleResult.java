@@ -73,7 +73,7 @@ public class PerformanceSampleResult {
                 .receivedMessages(receivedMessages(response, protocol))
                 .matchedMessages(matchedMessages(response, protocol))
                 .firstMessageLatencyMs(firstMessageLatency(response, protocol))
-                .successful(ResultNodeInfo.isActuallySuccessful(
+                .successful(!executionResult.interrupted && ResultNodeInfo.isActuallySuccessful(
                         executionResult.executionFailed,
                         response,
                         testResults

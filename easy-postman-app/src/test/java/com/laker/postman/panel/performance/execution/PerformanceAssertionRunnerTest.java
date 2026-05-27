@@ -129,7 +129,6 @@ public class PerformanceAssertionRunnerTest {
                 "sse",
                 null,
                 null,
-                null,
                 List.of(
                         stage(NodeType.SSE_READ, List.of(assertionElement("Contains", "first", ""))),
                         stage(NodeType.SSE_READ, List.of(assertionElement("Contains", "second", "")))

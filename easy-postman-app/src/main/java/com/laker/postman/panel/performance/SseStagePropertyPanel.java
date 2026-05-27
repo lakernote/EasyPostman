@@ -36,7 +36,7 @@ public class SseStagePropertyPanel extends JPanel {
     private JLabel targetMessageCountLabel;
     private JLabel messageFilterLabel;
     private JTextArea modeHintArea;
-    private JMeterTreeNode requestNode;
+    private JMeterTreeNode currentNode;
 
     public SseStagePropertyPanel(Stage stage) {
         this.stage = stage;
@@ -147,10 +147,10 @@ public class SseStagePropertyPanel extends JPanel {
         gbc.gridy++;
     }
 
-    public void setRequestNode(JMeterTreeNode requestNode) {
-        this.requestNode = requestNode;
-        SsePerformanceData data = requestNode != null && requestNode.ssePerformanceData != null
-                ? requestNode.ssePerformanceData
+    public void setNode(JMeterTreeNode node) {
+        this.currentNode = node;
+        SsePerformanceData data = node != null && node.ssePerformanceData != null
+                ? node.ssePerformanceData
                 : new SsePerformanceData();
         connectTimeoutSpinner.setValue(data.connectTimeoutMs);
         completionModeBox.setSelectedItem(data.completionMode);
@@ -163,11 +163,11 @@ public class SseStagePropertyPanel extends JPanel {
     }
 
     public void saveData() {
-        if (requestNode == null) {
+        if (currentNode == null) {
             return;
         }
         forceCommitAllSpinners();
-        SsePerformanceData data = requestNode.ssePerformanceData != null ? requestNode.ssePerformanceData : new SsePerformanceData();
+        SsePerformanceData data = currentNode.ssePerformanceData != null ? currentNode.ssePerformanceData : new SsePerformanceData();
         switch (stage) {
             case CONNECT -> data.connectTimeoutMs = connectTimeoutSpinner.getCommittedIntValue();
             case READ -> {
@@ -179,7 +179,7 @@ public class SseStagePropertyPanel extends JPanel {
                 data.messageFilter = messageFilterField.getText().trim();
             }
         }
-        requestNode.ssePerformanceData = data;
+        currentNode.ssePerformanceData = data;
     }
 
     public void forceCommitAllSpinners() {

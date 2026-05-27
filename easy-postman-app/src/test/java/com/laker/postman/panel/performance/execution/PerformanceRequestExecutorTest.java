@@ -156,8 +156,6 @@ public class PerformanceRequestExecutorTest {
             item.setUrl(server.url("/events").toString());
             item.setHeadersList(List.of(new HttpHeader(true, "Accept", "text/event-stream")));
             JMeterTreeNode requestData = new JMeterTreeNode(item.getName(), NodeType.REQUEST, item);
-            requestData.ssePerformanceData = new SsePerformanceData();
-            requestData.ssePerformanceData.firstMessageTimeoutMs = 100;
             DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(requestData);
 
             PerformanceRequestExecutionResult result = new PerformanceRequestExecutor(
@@ -196,13 +194,15 @@ public class PerformanceRequestExecutorTest {
                     });
                     """);
 
-            JMeterTreeNode requestData = new JMeterTreeNode(item.getName(), NodeType.REQUEST, item);
-            requestData.ssePerformanceData = new SsePerformanceData();
-            requestData.ssePerformanceData.connectTimeoutMs = 2000;
-            requestData.ssePerformanceData.firstMessageTimeoutMs = 2000;
-            DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(requestData);
-            requestNode.add(new DefaultMutableTreeNode(new JMeterTreeNode("connect", NodeType.SSE_CONNECT)));
-            requestNode.add(new DefaultMutableTreeNode(new JMeterTreeNode("read", NodeType.SSE_READ)));
+            DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(new JMeterTreeNode(item.getName(), NodeType.REQUEST, item));
+            JMeterTreeNode connectData = new JMeterTreeNode("connect", NodeType.SSE_CONNECT);
+            connectData.ssePerformanceData = new SsePerformanceData();
+            connectData.ssePerformanceData.connectTimeoutMs = 2000;
+            requestNode.add(new DefaultMutableTreeNode(connectData));
+            JMeterTreeNode readData = new JMeterTreeNode("read", NodeType.SSE_READ);
+            readData.ssePerformanceData = new SsePerformanceData();
+            readData.ssePerformanceData.firstMessageTimeoutMs = 2000;
+            requestNode.add(new DefaultMutableTreeNode(readData));
 
             PerformanceRequestExecutionResult result = new PerformanceRequestExecutor(
                     () -> true,

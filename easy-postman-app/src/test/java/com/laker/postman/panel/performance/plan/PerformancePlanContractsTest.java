@@ -45,7 +45,6 @@ public class PerformancePlanContractsTest {
                 "http request",
                 requestItem("http request", RequestItemProtocolEnum.HTTP),
                 null,
-                null,
                 List.of(timer)
         );
 
@@ -59,7 +58,6 @@ public class PerformancePlanContractsTest {
         PerformanceSampler sampler = new PerformanceRequestSampler(
                 "ws request",
                 requestItem("ws request", RequestItemProtocolEnum.WEBSOCKET),
-                null,
                 null,
                 List.of(timerElement("ws timer", 25))
         );

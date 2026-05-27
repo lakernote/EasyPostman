@@ -42,22 +42,62 @@ public class PerformanceTreeSupportTest {
         assertNotNull(readNode);
         assertEquals(childTypesOf(readNode), List.of(NodeType.ASSERTION));
         assertSame(readNode.getChildAt(0), assertionNode);
-        assertNotNull(context.requestData.ssePerformanceData);
+        assertNotNull(((JMeterTreeNode) findChild(context.requestNode, NodeType.SSE_CONNECT).getUserObject()).ssePerformanceData);
+        assertNotNull(((JMeterTreeNode) readNode.getUserObject()).ssePerformanceData);
+    }
+
+    @Test(description = "SSE 阶段节点应使用独立默认配置，不从父请求读取旧配置")
+    public void shouldInitializeSseStageNodesWithIndependentDefaultData() {
+        TestContext context = newTestContext(RequestItemProtocolEnum.SSE);
+        context.requestData.ssePerformanceData = new SsePerformanceData();
+        context.requestData.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.STREAM_CLOSED;
+        context.requestData.ssePerformanceData.holdConnectionMs = 30000;
+
+        context.treeSupport.ensureRequestStructure(context.requestNode, context.requestData);
+
+        DefaultMutableTreeNode connectNode = findChild(context.requestNode, NodeType.SSE_CONNECT);
+        DefaultMutableTreeNode readNode = findChild(context.requestNode, NodeType.SSE_READ);
+        JMeterTreeNode connectData = (JMeterTreeNode) connectNode.getUserObject();
+        JMeterTreeNode readData = (JMeterTreeNode) readNode.getUserObject();
+        assertNotNull(connectData.ssePerformanceData);
+        assertNotNull(readData.ssePerformanceData);
+        assertNotSame(connectData.ssePerformanceData, context.requestData.ssePerformanceData);
+        assertNotSame(readData.ssePerformanceData, context.requestData.ssePerformanceData);
+        assertEquals(readData.ssePerformanceData.completionMode, SsePerformanceData.CompletionMode.SINGLE_MESSAGE);
+        assertTrue(readData.name.contains("10s"), readData.name);
+        assertFalse(readData.name.contains("30s"), readData.name);
+    }
+
+    @Test(description = "SSE Read 标题应跟随 Read 节点配置，而不是父请求上的旧配置")
+    public void shouldRefreshSseReadTitleFromReadStageData() {
+        TestContext context = newTestContext(RequestItemProtocolEnum.SSE);
+        context.treeSupport.ensureRequestStructure(context.requestNode, context.requestData);
+
+        DefaultMutableTreeNode readNode = findChild(context.requestNode, NodeType.SSE_READ);
+        JMeterTreeNode readData = (JMeterTreeNode) readNode.getUserObject();
+        readData.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.STREAM_CLOSED;
+        readData.ssePerformanceData.holdConnectionMs = 30000;
+
+        context.treeSupport.syncRequestStructure(context.requestNode, context.requestData);
+
+        assertTrue(readData.name.contains("30s"), readData.name);
+        assertFalse(readData.name.contains("10s"), readData.name);
     }
 
     @Test(description = "SSE 匹配消息模式应在 Receive 节点标题展示消息过滤条件")
     public void shouldShowSseMatchedMessageFilterInReadNodeTitle() {
         TestContext context = newTestContext(RequestItemProtocolEnum.SSE);
-        context.requestData.ssePerformanceData = new SsePerformanceData();
-        context.requestData.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.UNTIL_MATCH;
-        context.requestData.ssePerformanceData.firstMessageTimeoutMs = 10000;
-        context.requestData.ssePerformanceData.messageFilter = "done";
-
         context.treeSupport.ensureRequestStructure(context.requestNode, context.requestData);
 
         DefaultMutableTreeNode readNode = findChild(context.requestNode, NodeType.SSE_READ);
         assertNotNull(readNode);
         JMeterTreeNode readData = (JMeterTreeNode) readNode.getUserObject();
+        readData.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.UNTIL_MATCH;
+        readData.ssePerformanceData.firstMessageTimeoutMs = 10000;
+        readData.ssePerformanceData.messageFilter = "done";
+
+        context.treeSupport.syncRequestStructure(context.requestNode, context.requestData);
+
         assertTrue(readData.name.contains("10s"), readData.name);
         assertTrue(readData.name.contains("contains=done"), readData.name);
     }
@@ -65,16 +105,17 @@ public class PerformanceTreeSupportTest {
     @Test(description = "SSE 固定时长模式不应在 Receive 节点标题展示事件过滤条件")
     public void shouldHideSseEventFilterInFixedDurationReadNodeTitle() {
         TestContext context = newTestContext(RequestItemProtocolEnum.SSE);
-        context.requestData.ssePerformanceData = new SsePerformanceData();
-        context.requestData.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.FIXED_DURATION;
-        context.requestData.ssePerformanceData.holdConnectionMs = 30000;
-        context.requestData.ssePerformanceData.eventNameFilter = "done";
-
         context.treeSupport.ensureRequestStructure(context.requestNode, context.requestData);
 
         DefaultMutableTreeNode readNode = findChild(context.requestNode, NodeType.SSE_READ);
         assertNotNull(readNode);
         JMeterTreeNode readData = (JMeterTreeNode) readNode.getUserObject();
+        readData.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.FIXED_DURATION;
+        readData.ssePerformanceData.holdConnectionMs = 30000;
+        readData.ssePerformanceData.eventNameFilter = "done";
+
+        context.treeSupport.syncRequestStructure(context.requestNode, context.requestData);
+
         assertTrue(readData.name.contains("30s"), readData.name);
         assertFalse(readData.name.contains("event=done"), readData.name);
     }

@@ -352,6 +352,44 @@ public class PerformancePersistenceServiceTest {
         assertEquals(loadedReadNode.webSocketPerformanceData.messageFilter, "a");
     }
 
+    @Test(description = "应保存并恢复 SSE 阶段节点的独立配置")
+    public void shouldPersistSseStageConfigs() throws IOException {
+        Path tempDir = Files.createTempDirectory("performance-persistence-sse-stage");
+        Path configPath = tempDir.resolve("performance_config.json");
+        TestablePerformancePersistenceService service = new TestablePerformancePersistenceService(configPath);
+        service.init();
+
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new JMeterTreeNode("Plan", NodeType.ROOT));
+        DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(new JMeterTreeNode("SSE Example", NodeType.REQUEST));
+
+        JMeterTreeNode connectNode = new JMeterTreeNode("SSE Connect", NodeType.SSE_CONNECT);
+        connectNode.ssePerformanceData = new SsePerformanceData();
+        connectNode.ssePerformanceData.connectTimeoutMs = 3456;
+        requestNode.add(new DefaultMutableTreeNode(connectNode));
+
+        JMeterTreeNode readNode = new JMeterTreeNode("SSE Read", NodeType.SSE_READ);
+        readNode.ssePerformanceData = new SsePerformanceData();
+        readNode.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.STREAM_CLOSED;
+        readNode.ssePerformanceData.holdConnectionMs = 30000;
+        requestNode.add(new DefaultMutableTreeNode(readNode));
+
+        root.add(requestNode);
+
+        service.save(root, false, null);
+
+        DefaultMutableTreeNode loadedRoot = service.load("Loaded Plan");
+        DefaultMutableTreeNode loadedRequestNode = (DefaultMutableTreeNode) loadedRoot.getChildAt(0);
+        JMeterTreeNode loadedConnectNode = (JMeterTreeNode) ((DefaultMutableTreeNode) loadedRequestNode.getChildAt(0)).getUserObject();
+        JMeterTreeNode loadedReadNode = (JMeterTreeNode) ((DefaultMutableTreeNode) loadedRequestNode.getChildAt(1)).getUserObject();
+
+        assertNotNull(loadedConnectNode.ssePerformanceData);
+        assertEquals(loadedConnectNode.ssePerformanceData.connectTimeoutMs, 3456);
+        assertNotNull(loadedReadNode.ssePerformanceData);
+        assertEquals(loadedReadNode.ssePerformanceData.completionMode,
+                SsePerformanceData.CompletionMode.STREAM_CLOSED);
+        assertEquals(loadedReadNode.ssePerformanceData.holdConnectionMs, 30000);
+    }
+
     @Test(description = "WebSocket 读取配置遇到未知枚举值时应使用默认值，并继续读取其它字段")
     public void shouldDefaultUnknownWebSocketReadEnumsWhenLoading() throws IOException {
         Path tempDir = Files.createTempDirectory("performance-persistence-ws-defaults");
@@ -398,7 +436,7 @@ public class PerformancePersistenceServiceTest {
         assertEquals(loadedRequest.webSocketPerformanceData.messageFilter, "ack");
     }
 
-    @Test(description = "SSE 读取配置遇到旧枚举值时应使用默认值，并继续读取其它字段")
+    @Test(description = "SSE Read 阶段配置遇到旧枚举值时应使用默认值，并继续读取其它字段")
     public void shouldDefaultLegacySseReadEnumsWhenLoading() throws IOException {
         Path tempDir = Files.createTempDirectory("performance-persistence-sse-defaults");
         Path configPath = tempDir.resolve("performance_config.json");
@@ -414,13 +452,20 @@ public class PerformancePersistenceServiceTest {
                         "name": "SSE Example",
                         "type": "REQUEST",
                         "enabled": true,
-                        "ssePerformanceData": {
-                          "completionMode": "FIRST_MESSAGE",
-                          "firstMessageTimeoutMs": 2222,
-                          "targetMessageCount": 3,
-                          "eventNameFilter": "orders",
-                          "messageFilter": "ready"
-                        }
+                        "children": [
+                          {
+                            "name": "SSE Read",
+                            "type": "SSE_READ",
+                            "enabled": true,
+                            "ssePerformanceData": {
+                              "completionMode": "FIRST_MESSAGE",
+                              "firstMessageTimeoutMs": 2222,
+                              "targetMessageCount": 3,
+                              "eventNameFilter": "orders",
+                              "messageFilter": "ready"
+                            }
+                          }
+                        ]
                       }
                     ]
                   }
@@ -430,14 +475,14 @@ public class PerformancePersistenceServiceTest {
 
         DefaultMutableTreeNode loadedRoot = service.load("Loaded Plan");
         DefaultMutableTreeNode loadedRequestNode = (DefaultMutableTreeNode) loadedRoot.getChildAt(0);
-        JMeterTreeNode loadedRequest = (JMeterTreeNode) loadedRequestNode.getUserObject();
+        JMeterTreeNode loadedRead = (JMeterTreeNode) ((DefaultMutableTreeNode) loadedRequestNode.getChildAt(0)).getUserObject();
 
-        assertEquals(loadedRequest.ssePerformanceData.completionMode,
+        assertEquals(loadedRead.ssePerformanceData.completionMode,
                 SsePerformanceData.CompletionMode.SINGLE_MESSAGE);
-        assertEquals(loadedRequest.ssePerformanceData.firstMessageTimeoutMs, 2222);
-        assertEquals(loadedRequest.ssePerformanceData.targetMessageCount, 3);
-        assertEquals(loadedRequest.ssePerformanceData.eventNameFilter, "orders");
-        assertEquals(loadedRequest.ssePerformanceData.messageFilter, "ready");
+        assertEquals(loadedRead.ssePerformanceData.firstMessageTimeoutMs, 2222);
+        assertEquals(loadedRead.ssePerformanceData.targetMessageCount, 3);
+        assertEquals(loadedRead.ssePerformanceData.eventNameFilter, "orders");
+        assertEquals(loadedRead.ssePerformanceData.messageFilter, "ready");
     }
 
     @Test(description = "应保存并恢复 WebSocket Connect 步骤的独立配置")
@@ -508,17 +553,20 @@ public class PerformancePersistenceServiceTest {
         DefaultMutableTreeNode threadGroupNode = new DefaultMutableTreeNode(threadGroup);
         root.add(threadGroupNode);
 
-        JMeterTreeNode sseRequest = new JMeterTreeNode("SSE Request", NodeType.REQUEST);
-        sseRequest.ssePerformanceData = new SsePerformanceData();
-        sseRequest.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.MESSAGE_COUNT;
-        sseRequest.ssePerformanceData.firstMessageTimeoutMs = 1234;
-        sseRequest.ssePerformanceData.holdConnectionMs = 5678;
-        sseRequest.ssePerformanceData.targetMessageCount = 9;
-        sseRequest.ssePerformanceData.eventNameFilter = "orders";
-        sseRequest.ssePerformanceData.messageFilter = "done";
-        DefaultMutableTreeNode sseRequestNode = new DefaultMutableTreeNode(sseRequest);
-        sseRequestNode.add(new DefaultMutableTreeNode(new JMeterTreeNode("SSE Connect", NodeType.SSE_CONNECT)));
-        sseRequestNode.add(new DefaultMutableTreeNode(new JMeterTreeNode("SSE Read", NodeType.SSE_READ)));
+        DefaultMutableTreeNode sseRequestNode = new DefaultMutableTreeNode(new JMeterTreeNode("SSE Request", NodeType.REQUEST));
+        JMeterTreeNode sseConnect = new JMeterTreeNode("SSE Connect", NodeType.SSE_CONNECT);
+        sseConnect.ssePerformanceData = new SsePerformanceData();
+        sseConnect.ssePerformanceData.connectTimeoutMs = 4321;
+        sseRequestNode.add(new DefaultMutableTreeNode(sseConnect));
+        JMeterTreeNode sseRead = new JMeterTreeNode("SSE Read", NodeType.SSE_READ);
+        sseRead.ssePerformanceData = new SsePerformanceData();
+        sseRead.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.MESSAGE_COUNT;
+        sseRead.ssePerformanceData.firstMessageTimeoutMs = 1234;
+        sseRead.ssePerformanceData.holdConnectionMs = 5678;
+        sseRead.ssePerformanceData.targetMessageCount = 9;
+        sseRead.ssePerformanceData.eventNameFilter = "orders";
+        sseRead.ssePerformanceData.messageFilter = "done";
+        sseRequestNode.add(new DefaultMutableTreeNode(sseRead));
         threadGroupNode.add(sseRequestNode);
 
         JMeterTreeNode wsRequest = new JMeterTreeNode("WS Request", NodeType.REQUEST);
@@ -554,7 +602,8 @@ public class PerformancePersistenceServiceTest {
         DefaultMutableTreeNode loadedThreadGroupNode = (DefaultMutableTreeNode) loadedRoot.getChildAt(0);
         JMeterTreeNode loadedThreadGroup = (JMeterTreeNode) loadedThreadGroupNode.getUserObject();
         DefaultMutableTreeNode loadedSseRequestNode = (DefaultMutableTreeNode) loadedThreadGroupNode.getChildAt(0);
-        JMeterTreeNode loadedSseRequest = (JMeterTreeNode) loadedSseRequestNode.getUserObject();
+        JMeterTreeNode loadedSseConnect = (JMeterTreeNode) ((DefaultMutableTreeNode) loadedSseRequestNode.getChildAt(0)).getUserObject();
+        JMeterTreeNode loadedSseRead = (JMeterTreeNode) ((DefaultMutableTreeNode) loadedSseRequestNode.getChildAt(1)).getUserObject();
         DefaultMutableTreeNode loadedWsRequestNode = (DefaultMutableTreeNode) loadedThreadGroupNode.getChildAt(1);
         JMeterTreeNode loadedWsRequest = (JMeterTreeNode) loadedWsRequestNode.getUserObject();
         JMeterTreeNode loadedAssertion = (JMeterTreeNode) ((DefaultMutableTreeNode) loadedWsRequestNode.getChildAt(1)).getUserObject();
@@ -563,12 +612,13 @@ public class PerformancePersistenceServiceTest {
 
         assertEquals(loadedThreadGroup.threadGroupData.numThreads, 7);
         assertEquals(loadedThreadGroup.threadGroupData.loops, 3);
-        assertEquals(loadedSseRequest.ssePerformanceData.completionMode, SsePerformanceData.CompletionMode.MESSAGE_COUNT);
-        assertEquals(loadedSseRequest.ssePerformanceData.firstMessageTimeoutMs, 1234);
-        assertEquals(loadedSseRequest.ssePerformanceData.holdConnectionMs, 5678);
-        assertEquals(loadedSseRequest.ssePerformanceData.targetMessageCount, 9);
-        assertEquals(loadedSseRequest.ssePerformanceData.eventNameFilter, "orders");
-        assertEquals(loadedSseRequest.ssePerformanceData.messageFilter, "done");
+        assertEquals(loadedSseConnect.ssePerformanceData.connectTimeoutMs, 4321);
+        assertEquals(loadedSseRead.ssePerformanceData.completionMode, SsePerformanceData.CompletionMode.MESSAGE_COUNT);
+        assertEquals(loadedSseRead.ssePerformanceData.firstMessageTimeoutMs, 1234);
+        assertEquals(loadedSseRead.ssePerformanceData.holdConnectionMs, 5678);
+        assertEquals(loadedSseRead.ssePerformanceData.targetMessageCount, 9);
+        assertEquals(loadedSseRead.ssePerformanceData.eventNameFilter, "orders");
+        assertEquals(loadedSseRead.ssePerformanceData.messageFilter, "done");
         assertEquals(loadedWsRequest.webSocketPerformanceData.connectTimeoutMs, 4321);
         assertEquals(loadedAssertion.assertionData.value, "200");
         assertEquals(loadedExtractor.extractorData.variableName, "token");

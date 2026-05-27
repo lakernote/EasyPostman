@@ -269,9 +269,6 @@ public class PerformancePersistenceService {
                 if (jmNode.httpRequestItem != null) {
                     jsonNode.set("requestItemId", jmNode.httpRequestItem.getId());
                 }
-                if (jmNode.ssePerformanceData != null) {
-                    jsonNode.set("ssePerformanceData", serializeSsePerformanceData(jmNode.ssePerformanceData));
-                }
                 if (jmNode.webSocketPerformanceData != null) {
                     jsonNode.set("webSocketPerformanceData", serializeWebSocketPerformanceData(jmNode.webSocketPerformanceData));
                 }
@@ -296,7 +293,12 @@ public class PerformancePersistenceService {
                     jsonNode.set("webSocketPerformanceData", serializeWebSocketPerformanceData(jmNode.webSocketPerformanceData));
                 }
             }
-            case SSE_CONNECT, SSE_READ, ROOT -> {
+            case SSE_CONNECT, SSE_READ -> {
+                if (jmNode.ssePerformanceData != null) {
+                    jsonNode.set("ssePerformanceData", serializeSsePerformanceData(jmNode.ssePerformanceData));
+                }
+            }
+            case ROOT -> {
             }
         }
 
@@ -715,10 +717,6 @@ public class PerformancePersistenceService {
                         }
                         jmNode.httpRequestItem = requestItem;
                     }
-                    JSONObject sseData = jsonNode.getJSONObject("ssePerformanceData");
-                    if (sseData != null) {
-                        jmNode.ssePerformanceData = deserializeSsePerformanceData(sseData);
-                    }
                     JSONObject wsData = jsonNode.getJSONObject("webSocketPerformanceData");
                     if (wsData != null) {
                         jmNode.webSocketPerformanceData = deserializeWebSocketPerformanceData(wsData);
@@ -748,7 +746,13 @@ public class PerformancePersistenceService {
                         jmNode.webSocketPerformanceData = deserializeWebSocketPerformanceData(wsData);
                     }
                 }
-                case SSE_CONNECT, SSE_READ, ROOT -> {
+                case SSE_CONNECT, SSE_READ -> {
+                    JSONObject sseData = jsonNode.getJSONObject("ssePerformanceData");
+                    if (sseData != null) {
+                        jmNode.ssePerformanceData = deserializeSsePerformanceData(sseData);
+                    }
+                }
+                case ROOT -> {
                 }
             }
 

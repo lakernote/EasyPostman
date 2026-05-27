@@ -133,7 +133,7 @@ public class PerformanceTestPlanCompilerTest {
         assertEquals(connect.getSsePerformanceData().connectTimeoutMs, 5678);
     }
 
-    @Test(description = "编译应深拷贝 thread group、loop、timer、request、SSE/WS data")
+    @Test(description = "编译应深拷贝 thread group、loop、timer、request、协议阶段、WS data")
     public void shouldDeepCopyAllRuntimeData() {
         DefaultMutableTreeNode groupNode = threadGroupNode("group", true);
         JMeterTreeNode groupData = (JMeterTreeNode) groupNode.getUserObject();
@@ -153,8 +153,11 @@ public class PerformanceTestPlanCompilerTest {
         JMeterTreeNode timerData = (JMeterTreeNode) timerNode.getUserObject();
         DefaultMutableTreeNode requestNode = requestNode("sse request", true, RequestItemProtocolEnum.SSE);
         JMeterTreeNode requestData = (JMeterTreeNode) requestNode.getUserObject();
-        requestData.ssePerformanceData.connectTimeoutMs = 111;
         requestData.webSocketPerformanceData.connectTimeoutMs = 222;
+        DefaultMutableTreeNode sseReadNode = protocolStageNode("sse read", NodeType.SSE_READ, true);
+        JMeterTreeNode sseReadData = (JMeterTreeNode) sseReadNode.getUserObject();
+        sseReadData.ssePerformanceData.connectTimeoutMs = 111;
+        requestNode.add(sseReadNode);
         groupNode.add(csvNode);
         loopNode.add(timerNode);
         loopNode.add(requestNode);
@@ -169,23 +172,24 @@ public class PerformanceTestPlanCompilerTest {
         loopData.loopData.iterations = 99;
         timerData.timerData.delayMs = 99;
         requestData.httpRequestItem.setName("mutated");
-        requestData.ssePerformanceData.connectTimeoutMs = 99;
+        sseReadData.ssePerformanceData.connectTimeoutMs = 99;
         requestData.webSocketPerformanceData.connectTimeoutMs = 99;
         csvData.csvDataSetData.getRows().get(0).put("userId", "mutated");
+        PerformanceProtocolStageElement sseRead = (PerformanceProtocolStageElement) sampler.getChildren().get(0);
 
         assertNotSame(groupPlan.getThreadGroupData(), groupData.threadGroupData);
         assertNotSame(groupPlan.getCsvDataSetData(), csvData.csvDataSetData);
         assertNotSame(loop.getLoopData(), loopData.loopData);
         assertNotSame(timer.getTimerData(), timerData.timerData);
         assertNotSame(sampler.getHttpRequestItem(), requestData.httpRequestItem);
-        assertNotSame(sampler.getSsePerformanceData(), requestData.ssePerformanceData);
+        assertNotSame(sseRead.getSsePerformanceData(), sseReadData.ssePerformanceData);
         assertNotSame(sampler.getWebSocketPerformanceData(), requestData.webSocketPerformanceData);
         assertEquals(groupPlan.getThreadGroupData().numThreads, 3);
         assertEquals(groupPlan.getCsvDataSetData().getRows().get(0).get("userId"), "u1");
         assertEquals(loop.getLoopData().iterations, 5);
         assertEquals(timer.getTimerData().delayMs, 150);
         assertEquals(sampler.getHttpRequestItem().getName(), "sse request");
-        assertEquals(sampler.getSsePerformanceData().connectTimeoutMs, 111);
+        assertEquals(sseRead.getSsePerformanceData().connectTimeoutMs, 111);
         assertEquals(sampler.getWebSocketPerformanceData().connectTimeoutMs, 222);
     }
 
@@ -246,7 +250,6 @@ public class PerformanceTestPlanCompilerTest {
         item.setProtocol(protocol);
         JMeterTreeNode node = new JMeterTreeNode(name, NodeType.REQUEST, item);
         node.enabled = enabled;
-        node.ssePerformanceData = new SsePerformanceData();
         node.webSocketPerformanceData = new WebSocketPerformanceData();
         return new DefaultMutableTreeNode(node);
     }

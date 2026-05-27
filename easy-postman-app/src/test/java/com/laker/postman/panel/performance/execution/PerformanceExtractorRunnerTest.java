@@ -81,7 +81,6 @@ public class PerformanceExtractorRunnerTest {
                 "sse",
                 null,
                 null,
-                null,
                 List.of(
                         stage(NodeType.SSE_READ, List.of(extractor("Header", "X-A", "first"))),
                         stage(NodeType.SSE_READ, List.of(extractor("Header", "X-B", "second")))

@@ -63,6 +63,6 @@ public class PerformanceTimerScopeTest {
         item.setId(name + "-id");
         item.setName(name);
         item.setProtocol(protocol);
-        return new PerformanceRequestSampler(name, item, null, null, children);
+        return new PerformanceRequestSampler(name, item, null, children);
     }
 }

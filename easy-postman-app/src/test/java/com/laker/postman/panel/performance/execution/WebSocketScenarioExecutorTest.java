@@ -203,7 +203,6 @@ public class WebSocketScenarioExecutorTest {
                 "request",
                 null,
                 null,
-                null,
                 List.of(loop)
         );
 
@@ -222,7 +221,6 @@ public class WebSocketScenarioExecutorTest {
         PerformanceController controller = new TestController("controller", 1, List.of(readStep));
         PerformanceRequestSampler sampler = new PerformanceRequestSampler(
                 "request",
-                null,
                 null,
                 null,
                 List.of(controller)
@@ -312,7 +310,6 @@ public class WebSocketScenarioExecutorTest {
         PerformanceController controller = new TestController("controller", 2, List.of(sendStep));
         PerformanceRequestSampler requestSampler = new PerformanceRequestSampler(
                 "request",
-                null,
                 null,
                 null,
                 List.of(controller)

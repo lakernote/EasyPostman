@@ -1,8 +1,12 @@
 package com.laker.postman.panel.performance.execution;
 
+import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.PerformanceProtocol;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.SsePerformanceData;
+import com.laker.postman.panel.performance.model.SsePerformanceDataSupport;
+import com.laker.postman.panel.performance.plan.PerformancePlanElement;
+import com.laker.postman.panel.performance.plan.PerformanceProtocolStageElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 import lombok.RequiredArgsConstructor;
 import okhttp3.sse.EventSource;
@@ -30,10 +34,7 @@ final class SseSamplerExecutor implements PerformanceProtocolSamplerExecutor {
         if (invalidStageResult != null) {
             return invalidStageResult;
         }
-        SsePerformanceData ssePerformanceData = context.getRequestSampler().getSsePerformanceData();
-        if (ssePerformanceData == null) {
-            ssePerformanceData = new SsePerformanceData();
-        }
+        SsePerformanceData ssePerformanceData = resolveSsePerformanceData(context.getRequestSampler());
         SseSampleExecutor.Result result = new SseSampleExecutor(
                 runningSupplier,
                 cancelledChecker,
@@ -55,6 +56,27 @@ final class SseSamplerExecutor implements PerformanceProtocolSamplerExecutor {
                 result.interrupted,
                 List.of()
         );
+    }
+
+    private SsePerformanceData resolveSsePerformanceData(PerformanceRequestSampler requestSampler) {
+        SsePerformanceData effective = new SsePerformanceData();
+        SsePerformanceData connectData = firstStageData(requestSampler, NodeType.SSE_CONNECT);
+        SsePerformanceDataSupport.applyConnectConfig(effective, connectData);
+        SsePerformanceData readData = firstStageData(requestSampler, NodeType.SSE_READ);
+        SsePerformanceDataSupport.applyReadConfig(effective, readData);
+        return effective;
+    }
+
+    private SsePerformanceData firstStageData(PerformanceRequestSampler requestSampler, NodeType type) {
+        if (requestSampler == null || type == null) {
+            return null;
+        }
+        for (PerformancePlanElement element : requestSampler.getChildren()) {
+            if (element instanceof PerformanceProtocolStageElement stage && stage.getType() == type) {
+                return stage.getSsePerformanceData();
+            }
+        }
+        return null;
     }
 
     private ProtocolExecutionResult validateProtocolStages(PerformanceRequestSampler requestSampler,

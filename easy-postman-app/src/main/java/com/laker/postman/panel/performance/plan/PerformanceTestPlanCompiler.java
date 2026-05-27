@@ -118,7 +118,6 @@ public final class PerformanceTestPlanCompiler {
         return new PerformanceRequestSampler(
                 data.name,
                 data.httpRequestItem,
-                data.ssePerformanceData,
                 data.webSocketPerformanceData,
                 compileElements(node)
         );

@@ -6,6 +6,7 @@ import com.laker.postman.panel.performance.config.CsvDataSetPropertyPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
 import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.SsePerformanceData;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
 import com.laker.postman.panel.performance.timer.TimerPropertyPanel;
@@ -183,12 +184,16 @@ final class PerformanceTreeSelectionSupport {
 
     private void showSsePanel(DefaultMutableTreeNode node, String cardName, boolean connectStage) {
         DefaultMutableTreeNode requestNode = treeSupport.getParentRequestNode(node);
-        if (requestNode != null && requestNode.getUserObject() instanceof JMeterTreeNode requestJtNode) {
+        if (requestNode != null
+                && node.getUserObject() instanceof JMeterTreeNode stageJtNode) {
+            if (stageJtNode.ssePerformanceData == null) {
+                stageJtNode.ssePerformanceData = new SsePerformanceData();
+            }
             propertyCardLayout.show(propertyPanel, cardName);
             if (connectStage) {
-                sseConnectPanel.setRequestNode(requestJtNode);
+                sseConnectPanel.setNode(stageJtNode);
             } else {
-                sseReadPanel.setRequestNode(requestJtNode);
+                sseReadPanel.setNode(stageJtNode);
             }
         } else {
             propertyCardLayout.show(propertyPanel, emptyCard);

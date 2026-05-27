@@ -18,7 +18,7 @@ public class JMeterTreeNode {
     public AssertionData assertionData;   // 断言数据
     public ExtractorData extractorData;   // 提取器数据
     public TimerData timerData;           // 定时器数据
-    public SsePerformanceData ssePerformanceData; // SSE 压测配置，仅 SSE REQUEST 节点使用
+    public SsePerformanceData ssePerformanceData; // SSE 压测配置，仅 SSE 阶段节点使用
     public WebSocketPerformanceData webSocketPerformanceData; // WebSocket 压测配置，REQUEST/WS 节点共用
     public boolean enabled = true;        // 是否启用，默认启用
 

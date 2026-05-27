@@ -92,7 +92,6 @@ public class PerformanceRequestPostProcessorTest {
                 "request",
                 null,
                 null,
-                null,
                 List.of(
                         new PerformanceExtractorElement("token", extractorData),
                         new PerformanceAssertionElement("token assertion", assertionData)

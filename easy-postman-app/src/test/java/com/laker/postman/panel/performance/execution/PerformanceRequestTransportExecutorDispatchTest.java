@@ -70,7 +70,7 @@ public class PerformanceRequestTransportExecutorDispatchTest {
     }
 
     private static PerformanceRequestSampler sampler(HttpRequestItem requestItem) {
-        return new PerformanceRequestSampler("request", requestItem, null, null, List.of());
+        return new PerformanceRequestSampler("request", requestItem, null, List.of());
     }
 
     private static HttpRequestItem requestItem(RequestItemProtocolEnum protocol) {

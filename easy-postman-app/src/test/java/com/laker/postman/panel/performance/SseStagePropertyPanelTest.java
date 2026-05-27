@@ -23,7 +23,7 @@ public class SseStagePropertyPanelTest extends AbstractSwingUiTest {
         node.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.FIXED_DURATION;
         node.ssePerformanceData.eventNameFilter = "done";
 
-        panel.setRequestNode(node);
+        panel.setNode(node);
 
         assertFalse(eventNameFilterField(panel).isVisible());
     }
@@ -36,7 +36,7 @@ public class SseStagePropertyPanelTest extends AbstractSwingUiTest {
         node.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.SINGLE_MESSAGE;
         node.ssePerformanceData.eventNameFilter = "done";
 
-        panel.setRequestNode(node);
+        panel.setNode(node);
 
         assertFalse(eventNameFilterField(panel).isVisible());
     }
@@ -48,7 +48,7 @@ public class SseStagePropertyPanelTest extends AbstractSwingUiTest {
         node.ssePerformanceData = new SsePerformanceData();
         node.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.STREAM_CLOSED;
 
-        panel.setRequestNode(node);
+        panel.setNode(node);
 
         assertFalse(eventNameFilterField(panel).isVisible());
         assertFalse(messageFilterField(panel).isVisible());
@@ -63,7 +63,7 @@ public class SseStagePropertyPanelTest extends AbstractSwingUiTest {
         node.ssePerformanceData = new SsePerformanceData();
         node.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.MESSAGE_COUNT;
 
-        panel.setRequestNode(node);
+        panel.setNode(node);
 
         assertTrue(readTimeoutSpinner(panel).isVisible());
         assertFalse(holdConnectionSpinner(panel).isVisible());

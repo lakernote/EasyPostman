@@ -9,7 +9,6 @@ import com.laker.postman.panel.performance.controller.LoopData;
 import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollectorListener;
-import com.laker.postman.panel.performance.model.SsePerformanceData;
 import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
 import com.laker.postman.panel.performance.result.PerformanceResultCollector;
@@ -306,7 +305,6 @@ public class PerformanceExecutionEngineTest {
             item.setHeadersList(List.of(new HttpHeader(true, "Accept", "text/event-stream")));
 
             JMeterTreeNode requestData = new JMeterTreeNode(item.getName(), NodeType.REQUEST, item);
-            requestData.ssePerformanceData = new SsePerformanceData();
             DefaultMutableTreeNode group = fixedThreadGroup(1);
             group.add(new DefaultMutableTreeNode(requestData));
 

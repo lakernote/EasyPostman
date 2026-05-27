@@ -28,7 +28,7 @@ public class PerformanceThreadGroupPlannerTest {
         threadGroupData.numThreads = 1;
         threadGroupData.useTime = false;
         threadGroupData.loops = 1;
-        PerformanceRequestSampler sampler = new PerformanceRequestSampler("request", null, null, null, List.of());
+        PerformanceRequestSampler sampler = new PerformanceRequestSampler("request", null, null, List.of());
         PerformanceController controller = new TestController("controller", 3, List.of(sampler));
         PerformanceTestPlan plan = new PerformanceTestPlan(List.of(
                 new PerformanceThreadGroupPlan("group", threadGroupData, List.of(controller))

@@ -1,10 +1,14 @@
 package com.laker.postman.panel.performance.execution;
 
 import com.laker.postman.model.HttpHeader;
+import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.SsePerformanceData;
+import com.laker.postman.panel.performance.plan.PerformanceProtocolStageElement;
+import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.SocketPolicy;
@@ -20,6 +24,62 @@ import static org.testng.Assert.assertTrue;
 
 public class SseSampleExecutorTest {
     private static final long SESSION_END_DELAY_MS = 220;
+
+    @Test
+    public void sseSamplerShouldUseReadStageConfigOverRequestDefaults() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse()
+                    .setHeader("Content-Type", "text/event-stream")
+                    .setBody("data: {\"index\":1}\n\n"));
+            server.start();
+
+            PreparedRequest request = new PreparedRequest();
+            request.method = "GET";
+            request.url = server.url("/stream").toString();
+            request.headersList = List.of(new HttpHeader(true, "Accept", "text/event-stream"));
+
+            HttpRequestItem requestItem = new HttpRequestItem();
+            requestItem.setId("sse-id");
+            requestItem.setName("SSE");
+
+            SsePerformanceData requestDefaults = new SsePerformanceData();
+            requestDefaults.completionMode = SsePerformanceData.CompletionMode.SINGLE_MESSAGE;
+            requestDefaults.connectTimeoutMs = 2000;
+            requestDefaults.firstMessageTimeoutMs = 2000;
+
+            SsePerformanceData readData = new SsePerformanceData();
+            readData.completionMode = SsePerformanceData.CompletionMode.STREAM_CLOSED;
+            readData.holdConnectionMs = 2000;
+
+            PerformanceRequestSampler sampler = new PerformanceRequestSampler(
+                    "SSE",
+                    requestItem,
+                    null,
+                    List.of(
+                            new PerformanceProtocolStageElement("SSE Connect", NodeType.SSE_CONNECT, requestDefaults, null, List.of()),
+                            new PerformanceProtocolStageElement("SSE Read", NodeType.SSE_READ, readData, null, List.of())
+                    )
+            );
+
+            ProtocolExecutionResult result = new SseSamplerExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet(),
+                    new PerformanceRealtimeMetrics(),
+                    () -> 64
+            ).execute(new PerformanceProtocolSamplerContext(
+                    request,
+                    sampler,
+                    requestItem,
+                    "",
+                    null,
+                    PerformanceResponseCapturePlan.resolve(false, sampler, true, false, "")
+            ));
+
+            assertFalse(result.executionFailed(), result.errorMsg());
+            assertEquals(result.response().headers.get("X-Easy-SSE-Mode").get(0), "STREAM_CLOSED");
+        }
+    }
 
     @Test
     public void shouldFinishOnFirstSseMessageMatchingEventAndPayloadFilter() throws Exception {

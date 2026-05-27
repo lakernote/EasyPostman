@@ -56,17 +56,24 @@ public class PerformanceTreeNodeFactory {
         );
     }
 
-    DefaultMutableTreeNode sseStageNode(NodeType type, SsePerformanceData requestData) {
+    DefaultMutableTreeNode sseStageNode(NodeType type) {
         JMeterTreeNode nodeData;
         switch (type) {
-            case SSE_CONNECT -> nodeData = new JMeterTreeNode(
-                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_NODE_CONNECT),
-                    NodeType.SSE_CONNECT
-            );
-            case SSE_READ -> nodeData = new JMeterTreeNode(
-                    PerformanceTreeNodeTitleFormatter.sseReadTitle(requestData),
-                    NodeType.SSE_READ
-            );
+            case SSE_CONNECT -> {
+                nodeData = new JMeterTreeNode(
+                        I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_NODE_CONNECT),
+                        NodeType.SSE_CONNECT
+                );
+                nodeData.ssePerformanceData = new SsePerformanceData();
+            }
+            case SSE_READ -> {
+                nodeData = new JMeterTreeNode(
+                        I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_NODE_READ),
+                        NodeType.SSE_READ
+                );
+                nodeData.ssePerformanceData = new SsePerformanceData();
+                nodeData.name = PerformanceTreeNodeTitleFormatter.sseReadTitle(nodeData.ssePerformanceData);
+            }
             default -> throw new IllegalArgumentException("Unsupported SSE stage type: " + type);
         }
         return new DefaultMutableTreeNode(nodeData);

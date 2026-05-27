@@ -1,7 +1,7 @@
 package com.laker.postman.panel.performance.model;
 
 /**
- * SSE 压测配置，挂载在 REQUEST 节点上。
+ * SSE 压测配置，挂载在 SSE 阶段节点上。
  */
 public class SsePerformanceData {
 

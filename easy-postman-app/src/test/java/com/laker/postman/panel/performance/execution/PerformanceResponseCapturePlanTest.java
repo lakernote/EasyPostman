@@ -234,6 +234,6 @@ public class PerformanceResponseCapturePlanTest {
     }
 
     private static PerformanceRequestSampler sampler(List<PerformancePlanElement> children) {
-        return new PerformanceRequestSampler("request", null, null, null, children);
+        return new PerformanceRequestSampler("request", null, null, children);
     }
 }

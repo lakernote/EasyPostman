@@ -751,11 +751,9 @@ public final class MessageKeys {
     public static final String PERFORMANCE_SSE_AWAIT_TIMEOUT = "performance.sse.await_timeout";
     public static final String PERFORMANCE_SSE_MESSAGE_FILTER = "performance.sse.message_filter";
     public static final String PERFORMANCE_SSE_FIRST_EVENT_TIMEOUT = "performance.sse.first_event_timeout";
-    public static final String PERFORMANCE_SSE_FIRST_MESSAGE_TIMEOUT = "performance.sse.first_message_timeout";
     public static final String PERFORMANCE_SSE_MATCHED_MESSAGE_TIMEOUT = "performance.sse.matched_message_timeout";
     public static final String PERFORMANCE_SSE_HOLD_CONNECTION = "performance.sse.hold_connection";
     public static final String PERFORMANCE_SSE_OBSERVE_DURATION = "performance.sse.observe_duration";
-    public static final String PERFORMANCE_SSE_MAX_WAIT_DURATION = "performance.sse.max_wait_duration";
     public static final String PERFORMANCE_SSE_STREAM_CLOSE_TIMEOUT = "performance.sse.stream_close_timeout";
     public static final String PERFORMANCE_SSE_TARGET_MESSAGE_COUNT = "performance.sse.target_message_count";
     public static final String PERFORMANCE_SSE_HINT_FIRST_MESSAGE = "performance.sse.hint.first_message";

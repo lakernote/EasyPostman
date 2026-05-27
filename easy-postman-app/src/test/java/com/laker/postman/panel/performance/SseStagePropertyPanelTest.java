@@ -56,6 +56,19 @@ public class SseStagePropertyPanelTest extends AbstractSwingUiTest {
         assertTrue(holdConnectionSpinner(panel).isVisible());
     }
 
+    @Test
+    public void shouldUseOnlyReceiveTimeoutForMessageCountMode() throws Exception {
+        SseStagePropertyPanel panel = new SseStagePropertyPanel(SseStagePropertyPanel.Stage.AWAIT);
+        JMeterTreeNode node = new JMeterTreeNode("SSE Await", NodeType.SSE_AWAIT);
+        node.ssePerformanceData = new SsePerformanceData();
+        node.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.MESSAGE_COUNT;
+
+        panel.setRequestNode(node);
+
+        assertTrue(awaitTimeoutSpinner(panel).isVisible());
+        assertFalse(holdConnectionSpinner(panel).isVisible());
+    }
+
     private EasyTextField eventNameFilterField(SseStagePropertyPanel panel) throws Exception {
         Field field = SseStagePropertyPanel.class.getDeclaredField("eventNameFilterField");
         field.setAccessible(true);

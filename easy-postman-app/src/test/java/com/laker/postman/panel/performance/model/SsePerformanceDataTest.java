@@ -24,15 +24,15 @@ public class SsePerformanceDataTest {
     @Test
     public void shouldDescribeSseReceiveCompletionAsClosingStream() {
         ResourceBundle zh = ResourceBundle.getBundle("messages", Locale.CHINESE);
-        assertEquals(zh.getString(MessageKeys.PERFORMANCE_SSE_AWAIT_MODE), "接收结束条件");
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_SSE_AWAIT_MODE), "接收方式");
         assertEquals(zh.getString(MessageKeys.PERFORMANCE_SSE_HINT_FIRST_MESSAGE),
-                "连接成功后等待第一条真实 SSE 事件，收到即结束本次采样并关闭 SSE 连接；不受事件名或内容过滤影响；超时未收到则失败。");
+                "收到首事件即结束；超时失败。");
 
         ResourceBundle en = ResourceBundle.getBundle("messages", Locale.ENGLISH);
-        assertEquals(en.getString(MessageKeys.PERFORMANCE_SSE_AWAIT_MODE), "Receive Completion");
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_SSE_AWAIT_MODE), "Receive");
         assertEquals(en.getString(MessageKeys.PERFORMANCE_SSE_HINT_FIRST_MESSAGE),
-                "After the connection opens, wait for the first real SSE event. Event and message filters are ignored in this mode. The sample finishes and closes the SSE stream when it arrives, or fails on timeout.");
+                "Finish on the first event; timeout fails.");
         assertEquals(en.getString(MessageKeys.PERFORMANCE_SSE_HINT_STREAM_CLOSED),
-                "Wait for the server to close the SSE stream normally. onClosed completes the sample, onFailure fails it, and the sample fails if the stream is still open at the timeout.");
+                "Finish when the server closes; timeout fails.");
     }
 }

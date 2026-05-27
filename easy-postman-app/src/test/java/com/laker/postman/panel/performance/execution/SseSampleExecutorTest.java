@@ -179,6 +179,41 @@ public class SseSampleExecutorTest {
     }
 
     @Test
+    public void shouldFailMessageCountFromReceiveStartWhenTargetNotReachedBeforeReceiveTimeout() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse()
+                    .setHeader("Content-Type", "text/event-stream")
+                    .setBody("data:x\n\n" + ": keepalive\n".repeat(300))
+                    .throttleBody(2, 10, TimeUnit.MILLISECONDS));
+            server.start();
+
+            PreparedRequest request = new PreparedRequest();
+            request.method = "GET";
+            request.url = server.url("/stream").toString();
+            request.headersList = List.of(new HttpHeader(true, "Accept", "text/event-stream"));
+
+            SsePerformanceData cfg = new SsePerformanceData();
+            cfg.completionMode = SsePerformanceData.CompletionMode.MESSAGE_COUNT;
+            cfg.connectTimeoutMs = 2000;
+            cfg.firstMessageTimeoutMs = 100;
+            cfg.holdConnectionMs = 1200;
+            cfg.targetMessageCount = 2;
+
+            long start = System.currentTimeMillis();
+            SseSampleExecutor.Result result = new SseSampleExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet()
+            ).execute(request, cfg);
+            long elapsedMs = System.currentTimeMillis() - start;
+
+            assertTrue(result.executionFailed);
+            assertEquals(result.errorMsg, "SSE target message count timeout");
+            assertTrue(elapsedMs < 900, "elapsedMs=" + elapsedMs);
+        }
+    }
+
+    @Test
     public void shouldNotTreatClosedLifecycleAsMatchedMessageEvent() throws Exception {
         try (MockWebServer server = new MockWebServer()) {
             server.enqueue(new MockResponse()

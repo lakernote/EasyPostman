@@ -307,17 +307,8 @@ public class SseSampleExecutor {
                         markSampleEnd(sampleEndTimeMs);
                         eventSource.cancel();
                     }
-                    boolean gotFirstMessage = !failed.get() && !interrupted.get()
-                            && firstMessageLatch.await(Math.max(100, cfg.firstMessageTimeoutMs), TimeUnit.MILLISECONDS);
-                    if ((!gotFirstMessage || matchedMessageCount.get() == 0) && !failed.get() && !interrupted.get()) {
-                        failed.set(true);
-                        errorRef.set("SSE first message timeout");
-                        closingSource.set(true);
-                        markSampleEnd(sampleEndTimeMs);
-                        eventSource.cancel();
-                    } else if (!failed.get() && !interrupted.get()
-                            && matchedMessageCount.get() < targetMessageCount) {
-                        boolean reachedTarget = completionLatch.await(Math.max(100, cfg.holdConnectionMs), TimeUnit.MILLISECONDS);
+                    if (!failed.get() && !interrupted.get()) {
+                        boolean reachedTarget = completionLatch.await(Math.max(100, cfg.firstMessageTimeoutMs), TimeUnit.MILLISECONDS);
                         if (matchedMessageCount.get() < targetMessageCount && !failed.get() && !interrupted.get()) {
                             failed.set(true);
                             errorRef.set(reachedTarget && connectionClosed.get()

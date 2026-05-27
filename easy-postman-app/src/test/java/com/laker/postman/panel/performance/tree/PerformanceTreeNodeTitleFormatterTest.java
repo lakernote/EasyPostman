@@ -67,6 +67,21 @@ public class PerformanceTreeNodeTitleFormatterTest {
         assertTrue(title.contains("event=open"), title);
     }
 
+    @Test(description = "SSE 按消息数标题应展示统一接收超时")
+    public void shouldFormatSseMessageCountTitleWithReceiveTimeout() {
+        SsePerformanceData data = new SsePerformanceData();
+        data.completionMode = SsePerformanceData.CompletionMode.MESSAGE_COUNT;
+        data.targetMessageCount = 3;
+        data.firstMessageTimeoutMs = 2000;
+        data.holdConnectionMs = 15000;
+
+        String title = PerformanceTreeNodeTitleFormatter.sseAwaitTitle(data);
+
+        assertTrue(title.contains("3"), title);
+        assertTrue(title.contains("2s"), title);
+        assertTrue(!title.contains("15s"), title);
+    }
+
     @Test(description = "SSE 等待流关闭标题应展示模式和关闭超时")
     public void shouldFormatSseStreamClosedTitle() {
         SsePerformanceData data = new SsePerformanceData();

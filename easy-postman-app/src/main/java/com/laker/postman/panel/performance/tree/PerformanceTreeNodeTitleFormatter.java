@@ -32,7 +32,7 @@ public class PerformanceTreeNodeTitleFormatter {
             case FIRST_MESSAGE, MATCHED_MESSAGE -> joiner.add(formatDuration(data.firstMessageTimeoutMs));
             case MESSAGE_COUNT -> {
                 joiner.add(String.valueOf(Math.max(1, data.targetMessageCount)));
-                joiner.add(formatDuration(data.holdConnectionMs));
+                joiner.add(formatDuration(data.firstMessageTimeoutMs));
             }
             case FIXED_DURATION, STREAM_CLOSED -> joiner.add(formatDuration(data.holdConnectionMs));
         }

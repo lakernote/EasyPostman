@@ -137,7 +137,7 @@ public class PostmanApiContext {
     public PostmanApiContext(Environment environment) {
         this.environment = new ScriptScopedVariablesApi(
                 environment,
-                environment == null ? null : () -> EnvironmentService.saveEnvironment(environment)
+                createEnvironmentPersistAction(environment)
         );
         this.env = this.environment; // Postman 中 env 和 environment 指向同一对象
         this.globals = new ScriptScopedVariablesApi(
@@ -154,6 +154,13 @@ public class PostmanApiContext {
         // 核心 pm 能力先由宿主内建，再把插件注册表里的扩展 API 动态挂进来。
         // 这样脚本层看到的是一个统一的 pm 对象，而不是“宿主 API + 插件 API”两套入口。
         PluginAccess.createScriptApis().forEach(this::registerPluginApi);
+    }
+
+    private static Runnable createEnvironmentPersistAction(Environment environment) {
+        if (!EnvironmentService.isManagedEnvironment(environment)) {
+            return null;
+        }
+        return () -> EnvironmentService.saveEnvironment(environment);
     }
 
     private void registerPluginApi(String alias, Object api) {

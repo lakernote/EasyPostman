@@ -172,6 +172,13 @@ public class EnvironmentService {
         saveEnvironments();
     }
 
+    public static boolean isManagedEnvironment(Environment environment) {
+        if (environment == null || environment.getId() == null) {
+            return false;
+        }
+        return environments.get(environment.getId()) == environment;
+    }
+
     /**
      * 删除环境
      */

@@ -39,7 +39,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 
-public class PerformanceTrendPanel extends UiSingletonPanel {
+public class PerformanceTrendPanel extends UiSingletonPanel implements PerformanceTrendView {
 
     private static final String SEPARATE_VIEW = "separate";
     private static final String COMBINED_VIEW = "combined";
@@ -369,6 +369,7 @@ public class PerformanceTrendPanel extends UiSingletonPanel {
         return renderer;
     }
 
+    @Override
     public void clearTrendDataset() {
         long resetTimeMs = System.currentTimeMillis();
         for (TimeSeries series : allSeries()) {
@@ -407,6 +408,7 @@ public class PerformanceTrendPanel extends UiSingletonPanel {
         };
     }
 
+    @Override
     public void addOrUpdate(RegularTimePeriod period, PerformanceTrendSnapshot snapshot) {
         if (period == null || snapshot == null) {
             return;

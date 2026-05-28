@@ -1,5 +1,8 @@
 package com.laker.postman.panel.performance;
 
+import com.laker.postman.common.component.placeholder.PerformanceTrendPlaceholderPanel;
+import com.laker.postman.panel.performance.result.LazyPerformanceTrendPanel;
+import com.laker.postman.test.AbstractSwingUiTest;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import org.testng.annotations.Test;
@@ -18,7 +21,7 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
-public class PerformancePanelViewFactoryTest {
+public class PerformancePanelViewFactoryTest extends AbstractSwingUiTest {
 
     @Test
     public void resultControlsShouldSwitchLinkedResultTabs() {
@@ -87,6 +90,37 @@ public class PerformancePanelViewFactoryTest {
     }
 
     @Test
+    public void resultSectionShouldKeepTrendChartsLazyUntilSamplesArrive() {
+        PerformancePanelViewFactory viewFactory = new PerformancePanelViewFactory();
+
+        PerformancePanelViewFactory.ResultSection resultSection = viewFactory.createResultSection(
+                true,
+                false,
+                true,
+                null,
+                ignored -> {
+                },
+                ignored -> {
+                },
+                ignored -> {
+                },
+                () -> {
+                },
+                () -> {
+                },
+                () -> {
+                }
+        );
+
+        Component trendComponent = resultSection.resultTabbedPane().getComponentAt(PerformancePanelViewFactory.RESULT_TAB_TREND);
+
+        assertTrue(trendComponent instanceof LazyPerformanceTrendPanel);
+        LazyPerformanceTrendPanel lazyTrendPanel = (LazyPerformanceTrendPanel) trendComponent;
+        assertFalse(lazyTrendPanel.isTrendPanelCreated());
+        assertTrue(hasComponent(lazyTrendPanel, PerformanceTrendPlaceholderPanel.class));
+    }
+
+    @Test
     public void topToolbarShouldOnlyContainExecutionControls() {
         PerformancePanelViewFactory viewFactory = new PerformancePanelViewFactory();
 
@@ -109,6 +143,20 @@ public class PerformancePanelViewFactoryTest {
             }
         }
         return count;
+    }
+
+    private static boolean hasComponent(Component component, Class<?> type) {
+        if (type.isInstance(component)) {
+            return true;
+        }
+        if (component instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                if (hasComponent(child, type)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static boolean hasText(Component component, String text) {

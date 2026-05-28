@@ -39,7 +39,7 @@ import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceResultCollector;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import com.laker.postman.panel.performance.result.PerformanceResultTableVisualizer;
-import com.laker.postman.panel.performance.result.PerformanceTrendPanel;
+import com.laker.postman.panel.performance.result.PerformanceTrendView;
 import com.laker.postman.panel.performance.runtime.PerformanceExecutionEngine;
 import com.laker.postman.panel.performance.runtime.PerformanceRunSession;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
@@ -120,7 +120,7 @@ public class PerformancePanel extends UiSingletonPanel {
 
     private PerformanceReportPanel performanceReportPanel;
     private PerformanceResultTablePanel performanceResultTablePanel;
-    private PerformanceTrendPanel performanceTrendPanel;
+    private PerformanceTrendView performanceTrendPanel;
 
     // 持久化服务
     private transient PerformancePersistenceService persistenceService;

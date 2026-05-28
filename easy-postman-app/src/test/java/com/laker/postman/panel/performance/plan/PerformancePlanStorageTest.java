@@ -161,6 +161,17 @@ public class PerformancePlanStorageTest {
         assertEquals(requests.get(0).getHttpRequestItem().getUrl(), "https://example.test/by-id");
         assertEquals(requests.get(1).getHttpRequestItem().getId(), "legacy-name-id");
         assertEquals(requests.get(1).getHttpRequestItem().getUrl(), "https://example.test/by-name");
+
+        String migratedJson = Files.readString(configPath, StandardCharsets.UTF_8);
+        assertTrue(migratedJson.contains("\"requestSnapshot\""));
+        assertFalse(migratedJson.contains("\"requestItemId\""));
+
+        Files.delete(workspaceDir.resolve("collections.json"));
+        PerformancePlanConfiguration reloaded = new PerformancePlanStorage().loadConfiguration(configPath);
+
+        List<PerformancePlanNode> reloadedRequests = reloaded.getPlanDocument().getRoot().getChildren().get(0).getChildren();
+        assertEquals(reloadedRequests.get(0).getHttpRequestItem().getUrl(), "https://example.test/by-id");
+        assertEquals(reloadedRequests.get(1).getHttpRequestItem().getUrl(), "https://example.test/by-name");
     }
 
     private static boolean exposesType(Class<?> owner, Class<?> forbiddenType) {

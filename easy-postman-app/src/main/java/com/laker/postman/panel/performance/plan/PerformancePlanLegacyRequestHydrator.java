@@ -22,16 +22,21 @@ import java.util.Set;
 @UtilityClass
 class PerformancePlanLegacyRequestHydrator {
 
-    void hydrate(Map<String, Object> treeMap, Path configPath) {
-        hydrateLegacyRequestSnapshots(treeMap, loadCollectionRequestIndex(configPath));
+    boolean hydrate(Map<String, Object> treeMap, Path configPath) {
+        // TODO: Remove this legacy requestSnapshot backfill after old performance configs are no longer supported.
+        if (!hasLegacyRequestWithoutSnapshot(treeMap)) {
+            return false;
+        }
+        return hydrateLegacyRequestSnapshots(treeMap, loadCollectionRequestIndex(configPath));
     }
 
     @SuppressWarnings("unchecked")
-    private void hydrateLegacyRequestSnapshots(Map<String, Object> node, CollectionRequestIndex requestIndex) {
+    private boolean hydrateLegacyRequestSnapshots(Map<String, Object> node, CollectionRequestIndex requestIndex) {
         if (node == null || node.isEmpty()) {
-            return;
+            return false;
         }
 
+        boolean hydrated = false;
         if ("REQUEST".equals(stringValue(node.get("type"))) && !node.containsKey("requestSnapshot")) {
             HttpRequestItem requestItem = requestIndex.find(
                     stringValue(node.get("requestItemId")),
@@ -40,6 +45,7 @@ class PerformancePlanLegacyRequestHydrator {
             PerformanceRequestSnapshot snapshot = PerformanceRequestSnapshotMapper.fromHttpRequestItem(requestItem, null);
             if (snapshot != null) {
                 node.put("requestSnapshot", toRequestSnapshotMap(snapshot));
+                hydrated = true;
             }
         }
 
@@ -47,10 +53,32 @@ class PerformancePlanLegacyRequestHydrator {
         if (children instanceof List<?> childList) {
             for (Object child : childList) {
                 if (child instanceof Map<?, ?> childMap) {
-                    hydrateLegacyRequestSnapshots((Map<String, Object>) childMap, requestIndex);
+                    hydrated |= hydrateLegacyRequestSnapshots((Map<String, Object>) childMap, requestIndex);
                 }
             }
         }
+        return hydrated;
+    }
+
+    @SuppressWarnings("unchecked")
+    private boolean hasLegacyRequestWithoutSnapshot(Map<String, Object> node) {
+        if (node == null || node.isEmpty()) {
+            return false;
+        }
+        if ("REQUEST".equals(stringValue(node.get("type"))) && !node.containsKey("requestSnapshot")) {
+            return true;
+        }
+
+        Object children = node.get("children");
+        if (children instanceof List<?> childList) {
+            for (Object child : childList) {
+                if (child instanceof Map<?, ?> childMap
+                        && hasLegacyRequestWithoutSnapshot((Map<String, Object>) childMap)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private CollectionRequestIndex loadCollectionRequestIndex(Path configPath) {

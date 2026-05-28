@@ -8,7 +8,7 @@ import com.laker.postman.performance.core.runtime.PerformanceThreadFactory;
 
 
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
-import com.laker.postman.panel.performance.result.PerformanceTrendPanel;
+import com.laker.postman.panel.performance.result.PerformanceTrendView;
 import lombok.extern.slf4j.Slf4j;
 import org.jfree.data.time.Millisecond;
 import org.jfree.data.time.RegularTimePeriod;
@@ -28,7 +28,7 @@ import java.util.function.LongSupplier;
 public final class PerformanceStatisticsCoordinator {
 
     private final PerformanceReportPanel performanceReportPanel;
-    private final PerformanceTrendPanel performanceTrendPanel;
+    private final PerformanceTrendView performanceTrendPanel;
     private final JTabbedPane resultTabbedPane;
     private final BooleanSupplier trendEnabledSupplier;
     private final PerformanceMetricsSnapshotService snapshotService;
@@ -41,7 +41,7 @@ public final class PerformanceStatisticsCoordinator {
     public PerformanceStatisticsCoordinator(PerformanceStatsCollector statsCollector,
                                             PerformanceTrendWindowCollector trendWindowCollector,
                                             PerformanceReportPanel performanceReportPanel,
-                                            PerformanceTrendPanel performanceTrendPanel,
+                                            PerformanceTrendView performanceTrendPanel,
                                             JTabbedPane resultTabbedPane,
                                             IntSupplier activeThreadsSupplier,
                                             IntSupplier activeWebSocketsSupplier,
@@ -105,6 +105,10 @@ public final class PerformanceStatisticsCoordinator {
             log.debug("趋势图未启用，跳过采样");
             return;
         }
+        if (performanceTrendPanel == null) {
+            log.debug("趋势图面板未初始化，跳过采样");
+            return;
+        }
         long now = System.currentTimeMillis();
         RegularTimePeriod period = createTrendPeriod(now);
         long generation = currentGeneration();
@@ -121,6 +125,9 @@ public final class PerformanceStatisticsCoordinator {
 
     public void sampleTrendDataSync() {
         if (!isTrendEnabled()) {
+            return;
+        }
+        if (performanceTrendPanel == null) {
             return;
         }
         if (!SwingUtilities.isEventDispatchThread()) {

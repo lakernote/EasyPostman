@@ -32,7 +32,7 @@ import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -45,12 +45,7 @@ public class WebSocketStagePropertyPanel extends JPanel {
     private static final String REQUEST_BODY_CARD = "requestBody";
     private static final int SEND_EDITOR_MIN_HEIGHT = 190;
     private static final int SEND_EDITOR_PREFERRED_HEIGHT = 230;
-
-    static {
-        AbstractTokenMakerFactory atmf = (AbstractTokenMakerFactory) TokenMakerFactory.getDefaultInstance();
-        atmf.putMapping(POSTMAN_JS_SYNTAX, PostmanJavaScriptTokenMaker.class.getName());
-        FoldParserManager.get().addFoldParserMapping(POSTMAN_JS_SYNTAX, new CurlyFoldParser());
-    }
+    private static volatile boolean scriptEditorSyntaxRegistered;
 
     public enum Stage {
         CONNECT,
@@ -60,26 +55,26 @@ public class WebSocketStagePropertyPanel extends JPanel {
     }
 
     private final Stage stage;
-    private final EasyJSpinner connectTimeoutSpinner;
-    private final EasyComboBox<WebSocketPerformanceData.SendMode> sendModeBox;
-    private final EasyComboBox<WebSocketPerformanceData.SendContentSource> sendContentSourceBox;
-    private final EasyJSpinner sendCountSpinner;
-    private final EasyJSpinner sendIntervalSpinner;
-    private final EasyComboBox<WebSocketPerformanceData.CompletionMode> completionModeBox;
-    private final EasyJSpinner readTimeoutSpinner;
-    private final EasyJSpinner holdConnectionSpinner;
-    private final EasyJSpinner targetMessageCountSpinner;
-    private final EasyTextField messageFilterField;
-    private final RSyntaxTextArea customSendBodyArea;
-    private final RSyntaxTextArea sendPreScriptArea;
-    private final transient AutoCompletion sendPreScriptAc;
-    private final JTabbedPane sendEditorTabs;
-    private final JPanel messageTemplatePanel;
-    private final CardLayout messageTemplateLayout;
-    private final JPanel sendEditorActionsPanel;
-    private final SnippetButton sendScriptSnippetButton;
-    private final IndicatorTabComponent messageTemplateTab;
-    private final IndicatorTabComponent sendPreScriptTab;
+    private EasyJSpinner connectTimeoutSpinner;
+    private EasyComboBox<WebSocketPerformanceData.SendMode> sendModeBox;
+    private EasyComboBox<WebSocketPerformanceData.SendContentSource> sendContentSourceBox;
+    private EasyJSpinner sendCountSpinner;
+    private EasyJSpinner sendIntervalSpinner;
+    private EasyComboBox<WebSocketPerformanceData.CompletionMode> completionModeBox;
+    private EasyJSpinner readTimeoutSpinner;
+    private EasyJSpinner holdConnectionSpinner;
+    private EasyJSpinner targetMessageCountSpinner;
+    private EasyTextField messageFilterField;
+    private RSyntaxTextArea customSendBodyArea;
+    private RSyntaxTextArea sendPreScriptArea;
+    private transient AutoCompletion sendPreScriptAc;
+    private JTabbedPane sendEditorTabs;
+    private JPanel messageTemplatePanel;
+    private CardLayout messageTemplateLayout;
+    private JPanel sendEditorActionsPanel;
+    private SnippetButton sendScriptSnippetButton;
+    private IndicatorTabComponent messageTemplateTab;
+    private IndicatorTabComponent sendPreScriptTab;
     private JPanel sendContentSourceField;
     private JPanel sendCountField;
     private JPanel sendIntervalField;
@@ -94,14 +89,62 @@ public class WebSocketStagePropertyPanel extends JPanel {
     private JTextArea readHintArea;
     private JLabel closeHintLabel;
     private PerformanceTreeNode currentNode;
+    private boolean initialized;
 
     public WebSocketStagePropertyPanel(Stage stage) {
         this.stage = stage;
         setLayout(new GridBagLayout());
         PerformanceStagePropertyLayout.applyCompactBorder(this);
+    }
+
+    private void ensureInitialized() {
+        if (initialized) {
+            return;
+        }
         GridBagConstraints gbc = PerformanceStagePropertyLayout.createBaseConstraints();
 
-        connectTimeoutSpinner = EasyJSpinner.intSpinner(10000, 100, 600000, 100);
+        if (stage == Stage.CONNECT) {
+            connectTimeoutSpinner = EasyJSpinner.intSpinner(10000, 100, 600000, 100);
+        } else if (stage == Stage.SEND) {
+            initSendControls();
+        } else if (stage == Stage.READ) {
+            initReadControls();
+        }
+
+        for (EasyJSpinner spinner : getAllSpinners()) {
+            PerformanceStagePropertyLayout.configureFieldWidth(spinner,
+                    PerformanceStagePropertyLayout.SPINNER_FIELD_WIDTH,
+                    PerformanceStagePropertyLayout.SPINNER_FIELD_WIDTH);
+        }
+        if (messageFilterField != null) {
+            PerformanceStagePropertyLayout.configureFieldWidth(messageFilterField,
+                    PerformanceStagePropertyLayout.TEXT_FIELD_WIDTH,
+                    PerformanceStagePropertyLayout.TEXT_FIELD_WIDTH);
+        }
+
+        switch (stage) {
+            case CONNECT -> buildConnectPanel(gbc);
+            case SEND -> buildSendPanel(gbc);
+            case READ -> buildReadPanel(gbc);
+            case CLOSE -> buildClosePanel(gbc);
+        }
+        if (stage == Stage.CONNECT || stage == Stage.READ) {
+            PerformanceStagePropertyLayout.addVerticalFiller(this, gbc, 2);
+        }
+
+        if (stage == Stage.SEND) {
+            sendModeBox.addActionListener(e -> updateSendModeState());
+            sendContentSourceBox.addActionListener(e -> updateSendModeState());
+            sendEditorTabs.addChangeListener(e -> sendScriptSnippetButton.setVisible(sendEditorTabs.getSelectedIndex() == 1));
+        } else if (stage == Stage.READ) {
+            completionModeBox.addActionListener(e -> updateReadModeState());
+        }
+        updateSendModeState();
+        updateReadModeState();
+        initialized = true;
+    }
+
+    private void initSendControls() {
         sendModeBox = new EasyComboBox<>(
                 WebSocketPerformanceData.SendMode.values(),
                 EasyComboBox.WidthMode.FIXED_MAX
@@ -112,14 +155,6 @@ public class WebSocketStagePropertyPanel extends JPanel {
         );
         sendCountSpinner = EasyJSpinner.intSpinner(3, 1, 100000, 1);
         sendIntervalSpinner = EasyJSpinner.intSpinner(1000, 0, 3600000, 100);
-        completionModeBox = new EasyComboBox<>(
-                WebSocketPerformanceData.CompletionMode.values(),
-                EasyComboBox.WidthMode.FIXED_MAX
-        );
-        readTimeoutSpinner = EasyJSpinner.intSpinner(10000, 100, 600000, 100);
-        holdConnectionSpinner = EasyJSpinner.intSpinner(30000, 100, 3600000, 1000);
-        targetMessageCountSpinner = EasyJSpinner.intSpinner(1, 1, 100000, 1);
-        messageFilterField = new EasyTextField(20);
         customSendBodyArea = new RSyntaxTextArea(8, 40);
         configureTemplateEditor(customSendBodyArea);
         sendPreScriptArea = new RSyntaxTextArea(8, 40);
@@ -133,16 +168,22 @@ public class WebSocketStagePropertyPanel extends JPanel {
         sendEditorActionsPanel = createSendEditorActionsPanel();
         buildSendEditorTabs();
         addEditorIndicatorListeners();
+        installSendRenderers();
+    }
 
-        for (EasyJSpinner spinner : getAllSpinners()) {
-            PerformanceStagePropertyLayout.configureFieldWidth(spinner,
-                    PerformanceStagePropertyLayout.SPINNER_FIELD_WIDTH,
-                    PerformanceStagePropertyLayout.SPINNER_FIELD_WIDTH);
-        }
-        PerformanceStagePropertyLayout.configureFieldWidth(messageFilterField,
-                PerformanceStagePropertyLayout.TEXT_FIELD_WIDTH,
-                PerformanceStagePropertyLayout.TEXT_FIELD_WIDTH);
+    private void initReadControls() {
+        completionModeBox = new EasyComboBox<>(
+                WebSocketPerformanceData.CompletionMode.values(),
+                EasyComboBox.WidthMode.FIXED_MAX
+        );
+        readTimeoutSpinner = EasyJSpinner.intSpinner(10000, 100, 600000, 100);
+        holdConnectionSpinner = EasyJSpinner.intSpinner(30000, 100, 3600000, 1000);
+        targetMessageCountSpinner = EasyJSpinner.intSpinner(1, 1, 100000, 1);
+        messageFilterField = new EasyTextField(20);
+        installReadRenderer();
+    }
 
+    private void installSendRenderers() {
         sendModeBox.setRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index,
@@ -174,6 +215,9 @@ public class WebSocketStagePropertyPanel extends JPanel {
                 return super.getListCellRendererComponent(list, displayValue, index, isSelected, cellHasFocus);
             }
         });
+    }
+
+    private void installReadRenderer() {
         completionModeBox.setRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index,
@@ -190,22 +234,6 @@ public class WebSocketStagePropertyPanel extends JPanel {
                 return super.getListCellRendererComponent(list, displayValue, index, isSelected, cellHasFocus);
             }
         });
-        switch (stage) {
-            case CONNECT -> buildConnectPanel(gbc);
-            case SEND -> buildSendPanel(gbc);
-            case READ -> buildReadPanel(gbc);
-            case CLOSE -> buildClosePanel(gbc);
-        }
-        if (stage == Stage.CONNECT || stage == Stage.READ) {
-            PerformanceStagePropertyLayout.addVerticalFiller(this, gbc, 2);
-        }
-
-        sendModeBox.addActionListener(e -> updateSendModeState());
-        sendContentSourceBox.addActionListener(e -> updateSendModeState());
-        completionModeBox.addActionListener(e -> updateReadModeState());
-        sendEditorTabs.addChangeListener(e -> sendScriptSnippetButton.setVisible(sendEditorTabs.getSelectedIndex() == 1));
-        updateSendModeState();
-        updateReadModeState();
     }
 
     private void buildConnectPanel(GridBagConstraints gbc) {
@@ -390,6 +418,7 @@ public class WebSocketStagePropertyPanel extends JPanel {
     }
 
     private AutoCompletion configureScriptEditor(RSyntaxTextArea area) {
+        ensureScriptEditorSyntaxRegistered();
         area.setSyntaxEditingStyle(POSTMAN_JS_SYNTAX);
         area.setCodeFoldingEnabled(true);
         area.setAutoIndentEnabled(true);
@@ -397,6 +426,21 @@ public class WebSocketStagePropertyPanel extends JPanel {
         area.setMarkOccurrences(true);
         configureBaseEditor(area);
         return addAutoCompletion(area);
+    }
+
+    private static void ensureScriptEditorSyntaxRegistered() {
+        if (scriptEditorSyntaxRegistered) {
+            return;
+        }
+        synchronized (WebSocketStagePropertyPanel.class) {
+            if (scriptEditorSyntaxRegistered) {
+                return;
+            }
+            AbstractTokenMakerFactory atmf = (AbstractTokenMakerFactory) TokenMakerFactory.getDefaultInstance();
+            atmf.putMapping(POSTMAN_JS_SYNTAX, PostmanJavaScriptTokenMaker.class.getName());
+            FoldParserManager.get().addFoldParserMapping(POSTMAN_JS_SYNTAX, new CurlyFoldParser());
+            scriptEditorSyntaxRegistered = true;
+        }
     }
 
     private void configureBaseEditor(RSyntaxTextArea area) {
@@ -517,34 +561,44 @@ public class WebSocketStagePropertyPanel extends JPanel {
     }
 
     public void setNode(PerformanceTreeNode node) {
+        ensureInitialized();
         this.currentNode = node;
         WebSocketPerformanceData data = node != null && node.webSocketPerformanceData != null
                 ? node.webSocketPerformanceData
                 : new WebSocketPerformanceData();
-        connectTimeoutSpinner.setValue(data.connectTimeoutMs);
-        sendModeBox.setSelectedItem(data.sendMode);
-        sendContentSourceBox.setSelectedItem(data.sendContentSource);
-        sendCountSpinner.setValue(data.sendCount);
-        sendIntervalSpinner.setValue(data.sendIntervalMs);
-        completionModeBox.setSelectedItem(data.completionMode == null
-                ? WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE
-                : data.completionMode);
-        readTimeoutSpinner.setValue(data.firstMessageTimeoutMs);
-        holdConnectionSpinner.setValue(data.holdConnectionMs);
-        targetMessageCountSpinner.setValue(data.targetMessageCount);
-        messageFilterField.setText(data.messageFilter == null ? "" : data.messageFilter);
-        setEditorText(customSendBodyArea, null, data.customSendBody == null ? "" : data.customSendBody);
-        setEditorText(sendPreScriptArea, sendPreScriptAc, data.sendPreScript == null ? "" : data.sendPreScript);
-        boolean hasActiveCustomBody = data.sendContentSource == WebSocketPerformanceData.SendContentSource.CUSTOM_TEXT
-                && hasText(customSendBodyArea);
-        sendEditorTabs.setSelectedIndex(!hasActiveCustomBody && hasText(sendPreScriptArea) ? 1 : 0);
-        updateSendModeState();
-        updateReadModeState();
-        updateEditorIndicators();
+        switch (stage) {
+            case CONNECT -> connectTimeoutSpinner.setValue(data.connectTimeoutMs);
+            case SEND -> {
+                sendModeBox.setSelectedItem(data.sendMode);
+                sendContentSourceBox.setSelectedItem(data.sendContentSource);
+                sendCountSpinner.setValue(data.sendCount);
+                sendIntervalSpinner.setValue(data.sendIntervalMs);
+                setEditorText(customSendBodyArea, null, data.customSendBody == null ? "" : data.customSendBody);
+                setEditorText(sendPreScriptArea, sendPreScriptAc, data.sendPreScript == null ? "" : data.sendPreScript);
+                boolean hasActiveCustomBody = data.sendContentSource == WebSocketPerformanceData.SendContentSource.CUSTOM_TEXT
+                        && hasText(customSendBodyArea);
+                sendEditorTabs.setSelectedIndex(!hasActiveCustomBody && hasText(sendPreScriptArea) ? 1 : 0);
+                updateSendModeState();
+                updateEditorIndicators();
+            }
+            case READ -> {
+                completionModeBox.setSelectedItem(data.completionMode == null
+                        ? WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE
+                        : data.completionMode);
+                readTimeoutSpinner.setValue(data.firstMessageTimeoutMs);
+                holdConnectionSpinner.setValue(data.holdConnectionMs);
+                targetMessageCountSpinner.setValue(data.targetMessageCount);
+                messageFilterField.setText(data.messageFilter == null ? "" : data.messageFilter);
+                updateReadModeState();
+            }
+            case CLOSE -> {
+                // Close step has no persisted editable fields.
+            }
+        }
     }
 
     public void saveData() {
-        if (currentNode == null) {
+        if (currentNode == null || !initialized) {
             return;
         }
         forceCommitAllSpinners();
@@ -578,6 +632,9 @@ public class WebSocketStagePropertyPanel extends JPanel {
     }
 
     public void forceCommitAllSpinners() {
+        if (!initialized) {
+            return;
+        }
         getAllSpinners().forEach(EasyJSpinner::forceCommit);
     }
 
@@ -694,7 +751,19 @@ public class WebSocketStagePropertyPanel extends JPanel {
     }
 
     private List<EasyJSpinner> getAllSpinners() {
-        return Arrays.asList(connectTimeoutSpinner, sendCountSpinner, sendIntervalSpinner,
-                readTimeoutSpinner, holdConnectionSpinner, targetMessageCountSpinner);
+        List<EasyJSpinner> spinners = new ArrayList<>();
+        addSpinner(spinners, connectTimeoutSpinner);
+        addSpinner(spinners, sendCountSpinner);
+        addSpinner(spinners, sendIntervalSpinner);
+        addSpinner(spinners, readTimeoutSpinner);
+        addSpinner(spinners, holdConnectionSpinner);
+        addSpinner(spinners, targetMessageCountSpinner);
+        return spinners;
+    }
+
+    private void addSpinner(List<EasyJSpinner> spinners, EasyJSpinner spinner) {
+        if (spinner != null) {
+            spinners.add(spinner);
+        }
     }
 }

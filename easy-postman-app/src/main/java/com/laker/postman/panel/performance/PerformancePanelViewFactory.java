@@ -2,7 +2,6 @@ package com.laker.postman.panel.performance;
 
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.MemoryLabel;
 import com.laker.postman.common.component.button.RefreshButton;
 import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
@@ -20,7 +19,8 @@ import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
 import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
-import com.laker.postman.panel.performance.result.PerformanceTrendPanel;
+import com.laker.postman.panel.performance.result.LazyPerformanceTrendPanel;
+import com.laker.postman.panel.performance.result.PerformanceTrendView;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
 import com.laker.postman.panel.performance.timer.TimerPropertyPanel;
 import com.laker.postman.util.FontsUtil;
@@ -142,7 +142,7 @@ final class PerformancePanelViewFactory {
                                       Runnable saveConfigAction) {
         JTabbedPane resultTabbedPane = new HiddenResultTabsTabbedPane();
         PerformanceResultTablePanel performanceResultTablePanel = new PerformanceResultTablePanel();
-        PerformanceTrendPanel performanceTrendPanel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
+        LazyPerformanceTrendPanel performanceTrendPanel = new LazyPerformanceTrendPanel();
         PerformanceReportPanel performanceReportPanel = new PerformanceReportPanel();
 
         resultTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_TREND), performanceTrendPanel);
@@ -448,7 +448,7 @@ final class PerformancePanelViewFactory {
                          JCheckBox trendCheckBox,
                          JComboBox<String> reportRefreshModeBox,
                          PerformanceResultTablePanel performanceResultTablePanel,
-                         PerformanceTrendPanel performanceTrendPanel,
+                         PerformanceTrendView performanceTrendPanel,
                          PerformanceReportPanel performanceReportPanel) {
     }
 

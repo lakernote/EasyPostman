@@ -71,7 +71,12 @@ public class PerformancePlanStorage {
             }
 
             JSONObject jsonRoot = JSONUtil.parseObj(jsonString);
-            return deserializeConfiguration(jsonRoot, configPath);
+            DeserializedConfiguration result = deserializeConfiguration(jsonRoot, configPath);
+            if (result.legacyRequestSnapshotsMigrated()) {
+                saveConfiguration(configPath, result.configuration());
+                log.info("Migrated legacy performance request snapshots: {}", configPath);
+            }
+            return result.configuration();
         } catch (Exception e) {
             log.error("Failed to load performance test config: {}", e.getMessage(), e);
             deleteFile(file);
@@ -113,22 +118,24 @@ public class PerformancePlanStorage {
         }
     }
 
-    private PerformancePlanConfiguration deserializeConfiguration(JSONObject jsonRoot, Path configPath) {
+    private DeserializedConfiguration deserializeConfiguration(JSONObject jsonRoot, Path configPath) {
         PerformancePlanDocument document = null;
+        boolean legacyRequestSnapshotsMigrated = false;
         JSONObject treeJson = jsonRoot.getJSONObject("tree");
         if (treeJson != null) {
             Map<String, Object> treeMap = jsonObjectToMap(treeJson);
-            PerformancePlanLegacyRequestHydrator.hydrate(treeMap, configPath);
+            legacyRequestSnapshotsMigrated = PerformancePlanLegacyRequestHydrator.hydrate(treeMap, configPath);
             PerformanceCorePlanNode coreRootNode = corePlanJsonStorage.fromTreeMap(treeMap);
             document = PerformanceCorePlanAdapter.toAppDocument(new PerformanceCorePlanDocument(coreRootNode));
         }
 
-        return PerformancePlanConfiguration.builder()
+        PerformancePlanConfiguration configuration = PerformancePlanConfiguration.builder()
                 .planDocument(document)
                 .efficientMode(jsonRoot.getBool("efficientMode", true))
                 .trendEnabled(jsonRoot.getBool("trendEnabled", true))
                 .reportRealtimeEnabled(jsonRoot.getBool("reportRealtimeEnabled", false))
                 .build();
+        return new DeserializedConfiguration(configuration, legacyRequestSnapshotsMigrated);
     }
 
     @SuppressWarnings("unchecked")
@@ -144,5 +151,9 @@ public class PerformancePlanStorage {
         } catch (Exception e) {
             log.error("Error deleting config file: {}", e.getMessage());
         }
+    }
+
+    private record DeserializedConfiguration(PerformancePlanConfiguration configuration,
+                                             boolean legacyRequestSnapshotsMigrated) {
     }
 }

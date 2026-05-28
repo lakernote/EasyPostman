@@ -2,7 +2,9 @@ package com.laker.postman.panel.performance;
 
 import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.performance.core.model.WebSocketPerformanceData;
+import com.laker.postman.test.AbstractSwingUiTest;
 import com.laker.postman.util.MessageKeys;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Field;
@@ -11,8 +13,9 @@ import java.util.ResourceBundle;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNull;
 
-public class WebSocketStagePropertyPanelTest {
+public class WebSocketStagePropertyPanelTest extends AbstractSwingUiTest {
 
     @Test
     public void shouldResolveReadModeHintForEveryCompletionMode() {
@@ -29,6 +32,17 @@ public class WebSocketStagePropertyPanelTest {
         Field field = WebSocketStagePropertyPanel.class.getDeclaredField("completionModeBox");
 
         assertEquals(field.getType(), EasyComboBox.class);
+    }
+
+    @Test
+    public void nonSendStagesShouldNotCreateSendEditorsBeforeSelection() throws Exception {
+        WebSocketStagePropertyPanel connectPanel = new WebSocketStagePropertyPanel(WebSocketStagePropertyPanel.Stage.CONNECT);
+        WebSocketStagePropertyPanel readPanel = new WebSocketStagePropertyPanel(WebSocketStagePropertyPanel.Stage.READ);
+        WebSocketStagePropertyPanel closePanel = new WebSocketStagePropertyPanel(WebSocketStagePropertyPanel.Stage.CLOSE);
+
+        assertNull(fieldValue(connectPanel, "customSendBodyArea", RSyntaxTextArea.class));
+        assertNull(fieldValue(readPanel, "customSendBodyArea", RSyntaxTextArea.class));
+        assertNull(fieldValue(closePanel, "customSendBodyArea", RSyntaxTextArea.class));
     }
 
     @Test
@@ -93,5 +107,11 @@ public class WebSocketStagePropertyPanelTest {
                 "Continue at target count; timeout before target fails.");
         assertEquals(en.getString(MessageKeys.PERFORMANCE_WS_CLOSE_HINT),
                 "When this step is reached, the current WebSocket connection is actively closed. Read steps only receive messages; they do not close the connection.");
+    }
+
+    private static <T> T fieldValue(Object owner, String fieldName, Class<T> type) throws Exception {
+        Field field = WebSocketStagePropertyPanel.class.getDeclaredField(fieldName);
+        field.setAccessible(true);
+        return type.cast(field.get(owner));
     }
 }

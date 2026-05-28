@@ -8,6 +8,7 @@ import com.laker.postman.model.SidebarTab;
 import com.laker.postman.model.TabInfo;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
+import com.laker.postman.panel.performance.PerformanceUiWarmup;
 import com.laker.postman.panel.sidebar.cookie.CookieManagerDialog;
 import com.laker.postman.panel.sidebar.global.GlobalVariablesDialog;
 import com.laker.postman.service.setting.SettingManager;
@@ -429,6 +430,7 @@ public class SidebarTabPanel extends UiSingletonPanel {
             updateTabTextColors(); // 更新所有 tab 的文字颜色
         });
         SwingUtilities.invokeLater(this::initializeAllTabColors);
+        PerformanceUiWarmup.schedule();
 
         // 注册快捷键
         registerTabShortcuts();

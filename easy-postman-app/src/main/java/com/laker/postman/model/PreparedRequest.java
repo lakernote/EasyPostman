@@ -1,6 +1,7 @@
 package com.laker.postman.model;
 
 
+import com.laker.postman.service.http.NetworkLogSink;
 import okhttp3.Headers;
 
 import java.util.List;
@@ -34,6 +35,7 @@ public class PreparedRequest {
     public boolean collectBasicInfo = true; // 收集基本信息（headers、body），默认开启
     public boolean collectEventInfo = true; // 收集完整事件信息（DNS、连接、SSL等），默认开启
     public boolean enableNetworkLog = false; // 启用网络日志面板输出，默认关闭
+    public transient NetworkLogSink networkLogSink = NetworkLogSink.noop(); // 网络日志输出端口，由 UI 层按需注入
     public boolean notifyCookieChanges = true; // 请求完成后是否通知 Cookie UI 刷新
     public ResponseBodyMode responseBodyMode = ResponseBodyMode.FULL;
     public int responseBodyPreviewLimitBytes = 64 * 1024;
@@ -69,6 +71,7 @@ public class PreparedRequest {
         copy.collectBasicInfo = this.collectBasicInfo;
         copy.collectEventInfo = this.collectEventInfo;
         copy.enableNetworkLog = this.enableNetworkLog;
+        copy.networkLogSink = this.networkLogSink;
         copy.notifyCookieChanges = this.notifyCookieChanges;
         copy.responseBodyMode = this.responseBodyMode;
         copy.responseBodyPreviewLimitBytes = this.responseBodyPreviewLimitBytes;

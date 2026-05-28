@@ -616,6 +616,37 @@ public class HttpServiceIntegrationTest {
     }
 
     @Test
+    public void shouldPublishNetworkLogEventsThroughInjectedSink() throws Exception {
+        server = createServer();
+        server.enqueue(new MockResponse()
+                .setResponseCode(302)
+                .addHeader("Location", serverUrl("/target"))
+                .setBody("redirect"));
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody("target"));
+
+        List<NetworkLogEvent> events = new ArrayList<>();
+        PreparedRequest request = createRequest("GET", serverUrl("/start"));
+        request.followRedirects = true;
+        request.networkLogSink = events::add;
+
+        HttpResponse response = RedirectHandler.executeWithRedirects(request, 10, null);
+        RecordedRequest startRequest = server.takeRequest();
+        RecordedRequest targetRequest = server.takeRequest();
+
+        assertEquals(response.code, 200);
+        assertEquals(startRequest.getPath(), "/start");
+        assertEquals(targetRequest.getPath(), "/target");
+        assertEquals(server.getRequestCount(), 2,
+                "RedirectHandler should own the redirect loop instead of letting OkHttp follow internally");
+        assertTrue(events.stream().anyMatch(event -> event.stage() == NetworkLogEventStage.REDIRECT),
+                "RedirectHandler should publish redirect events through the injected sink");
+        assertTrue(events.stream().anyMatch(event -> event.stage() == NetworkLogEventStage.CALL_START),
+                "OkHttp event listener should publish call events through the injected sink");
+    }
+
+    @Test
     public void shouldTransformPostToGetOn302Redirect() throws Exception {
         PreparedRequest request = createRequest("POST", "http://127.0.0.1/start");
         request.body = "{\"hello\":\"world\"}";

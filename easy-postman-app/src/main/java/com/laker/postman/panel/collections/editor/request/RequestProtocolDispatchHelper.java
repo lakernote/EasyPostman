@@ -37,6 +37,7 @@ final class RequestProtocolDispatchHelper {
     void dispatch(RequestPreparationResult result) {
         RequestItemProtocolEnum protocol = result.getItem().getProtocol();
         PreparedRequest request = result.getRequest();
+        attachNetworkLogSink(request);
         ScriptExecutionPipeline pipeline = result.getPipeline();
         boolean expectedHttpSse = protocol.isHttpProtocol() && HttpUtil.isSSERequest(request);
 
@@ -57,5 +58,13 @@ final class RequestProtocolDispatchHelper {
 
         currentWorkerSetter.accept(worker);
         worker.execute();
+    }
+
+    private void attachNetworkLogSink(PreparedRequest request) {
+        if (request == null) {
+            return;
+        }
+        // HTTP 执行层只发布 NetworkLogEvent；请求编辑器在这里把事件接回当前响应面板。
+        request.networkLogSink = event -> responsePanel.getNetworkLogPanel().appendLog(event);
     }
 }

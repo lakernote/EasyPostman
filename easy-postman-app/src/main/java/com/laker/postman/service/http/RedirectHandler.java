@@ -1,12 +1,9 @@
 package com.laker.postman.service.http;
 
-import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RedirectInfo;
-import com.laker.postman.panel.collections.editor.RequestEditorPanel;
-import com.laker.postman.panel.collections.editor.request.sub.NetworkLogStage;
 import com.laker.postman.service.http.sse.SseResEventListener;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +34,10 @@ public class RedirectHandler {
             return executeAndSyncRequestMetadata(req, workingReq, callback);
         }
 
+        // 重定向链由 RedirectHandler 统一处理，底层单次 OkHttp call 不能再自动跟随。
+        // 否则 3xx 响应会被 OkHttp 吞掉，后续的重定向日志、跨域敏感头清理和最大跳转次数都会失效。
+        workingReq.followRedirects = false;
+
         URL prevUrl = new URL(workingReq.url);
         int redirectCount = 0;
 
@@ -54,7 +55,7 @@ public class RedirectHandler {
                 boolean isCrossDomain = isCrossOrigin(prevUrl, nextUrl);
 
                 redirectCount++;
-                logRedirect(req.id, info);
+                logRedirect(workingReq, info);
 
                 // 基于当前请求创建下一次重定向请求
                 workingReq = prepareRedirectRequest(workingReq, nextUrl.toString(), info.statusCode, isCrossDomain);
@@ -162,19 +163,15 @@ public class RedirectHandler {
     /**
      * 记录重定向日志
      */
-    private static void logRedirect(String requestId, RedirectInfo info) {
+    private static void logRedirect(PreparedRequest request, RedirectInfo info) {
+        if (request == null || !request.enableNetworkLog) {
+            return;
+        }
         try {
             String logMessage = String.format("Status: %d, URL: %s, Location: %s",
                     info.statusCode, info.url, info.location);
-
-            var editSubPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class)
-                    .getRequestEditSubPanel(requestId);
-
-            if (editSubPanel != null) {
-                editSubPanel.getResponsePanel()
-                        .getNetworkLogPanel()
-                        .appendLog(NetworkLogStage.REDIRECT, logMessage);
-            }
+            NetworkLogSink sink = request.networkLogSink == null ? NetworkLogSink.noop() : request.networkLogSink;
+            sink.append(NetworkLogEventStage.REDIRECT, logMessage, null);
         } catch (Exception e) {
             // Prevent logging errors from affecting the main redirect flow
         }

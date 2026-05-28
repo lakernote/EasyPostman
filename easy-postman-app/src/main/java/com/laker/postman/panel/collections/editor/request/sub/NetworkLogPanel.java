@@ -2,6 +2,7 @@ package com.laker.postman.panel.collections.editor.request.sub;
 
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.service.http.NetworkLogEvent;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -81,6 +82,18 @@ public class NetworkLogPanel extends JPanel {
      */
     public void appendLog(NetworkLogStage stage, String msg) {
         appendLog(stage, msg, null);
+    }
+
+    /**
+     * 渲染 HTTP 执行层发布的日志事件。
+     * <p>
+     * 执行层只提供阶段和内容，颜色/图标等展示细节仍由 Swing 面板本地的 NetworkLogStage 决定。
+     */
+    public void appendLog(NetworkLogEvent event) {
+        if (event == null) {
+            return;
+        }
+        appendLog(NetworkLogStage.fromEventStage(event.stage()), event.message(), event.elapsedMs());
     }
 
     /**
@@ -220,4 +233,3 @@ public class NetworkLogPanel extends JPanel {
         }
     }
 }
-

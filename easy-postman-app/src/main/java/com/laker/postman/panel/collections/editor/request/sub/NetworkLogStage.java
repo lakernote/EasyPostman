@@ -1,6 +1,7 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
 import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.service.http.NetworkLogEventStage;
 import lombok.Getter;
 
 import java.awt.*;
@@ -108,5 +109,20 @@ public enum NetworkLogStage {
     public boolean isSuccess() {
         return this == CALL_END || this == CACHE_HIT;
     }
-}
 
+    /**
+     * 将 HTTP 执行层的日志阶段映射成 UI 渲染阶段。
+     * <p>
+     * 这里是 service 层事件和 Swing 展示样式之间的唯一转换点，避免执行层反向依赖 UI 枚举。
+     */
+    public static NetworkLogStage fromEventStage(NetworkLogEventStage stage) {
+        if (stage == null) {
+            return DEFAULT;
+        }
+        try {
+            return NetworkLogStage.valueOf(stage.name());
+        } catch (IllegalArgumentException ex) {
+            return DEFAULT;
+        }
+    }
+}

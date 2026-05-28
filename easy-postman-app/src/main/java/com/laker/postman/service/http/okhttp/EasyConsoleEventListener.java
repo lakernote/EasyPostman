@@ -1,12 +1,9 @@
 package com.laker.postman.service.http.okhttp;
 
-import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.panel.collections.editor.RequestEditorPanel;
-import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
-import com.laker.postman.panel.collections.editor.request.sub.NetworkLogPanel;
-import com.laker.postman.panel.collections.editor.request.sub.NetworkLogStage;
+import com.laker.postman.service.http.NetworkLogEventStage;
+import com.laker.postman.service.http.NetworkLogSink;
 import com.laker.postman.service.http.NetworkErrorMessageResolver;
 import com.laker.postman.service.http.ssl.CertificateCapturingSSLSocketFactory;
 import com.laker.postman.service.http.ssl.SSLCertificateValidator;
@@ -33,9 +30,8 @@ public class EasyConsoleEventListener extends EventListener {
     private static final ThreadLocal<HttpEventInfo> eventInfoThreadLocal = new ThreadLocal<>();
     private final long callStartNanos;
     private final HttpEventInfo info;
-    private final String reqItemId;
-    private RequestEditSubPanel editSubPanel;
     private final PreparedRequest preparedRequest;
+    private final NetworkLogSink networkLogSink;
 
     // 精细化控制开关
     private final boolean collectEventInfo; // 是否收集完整事件信息（DNS、连接等）
@@ -48,16 +44,18 @@ public class EasyConsoleEventListener extends EventListener {
         info.setThreadName(threadName);
         eventInfoThreadLocal.set(info);
         this.preparedRequest = preparedRequest;
-        this.reqItemId = preparedRequest.id;
+        this.networkLogSink = preparedRequest.networkLogSink == null
+                ? NetworkLogSink.noop()
+                : preparedRequest.networkLogSink;
         this.collectEventInfo = preparedRequest.collectEventInfo;
         this.enableNetworkLog = preparedRequest.enableNetworkLog;
     }
 
     /**
-     * 记录网络日志到 NetworkLogPanel（仅在 enableNetworkLog=true 时使用）
+     * 发布网络日志事件（仅在 enableNetworkLog=true 时使用）。
      */
-    private void log(NetworkLogStage stage, String msg) {
-        // 只有启用了网络日志才输出到 NetworkLogPanel
+    private void log(NetworkLogEventStage stage, String msg) {
+        // 只有启用了网络日志才向外发布事件，具体展示由调用方注入的 sink 负责。
         if (!enableNetworkLog) {
             return;
         }
@@ -65,16 +63,7 @@ public class EasyConsoleEventListener extends EventListener {
         long now = System.nanoTime();
         long elapsedMs = (now - callStartNanos) / 1_000_000;
         try {
-            // 输出到 NetworkLogPanel
-            try {
-                if (editSubPanel == null) {
-                    editSubPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class).getRequestEditSubPanel(reqItemId);
-                }
-                NetworkLogPanel netPanel = editSubPanel.getResponsePanel().getNetworkLogPanel();
-                netPanel.appendLog(stage, msg, elapsedMs);
-            } catch (Throwable ignore) {
-                // ignore
-            }
+            networkLogSink.append(stage, msg, elapsedMs);
         } catch (Throwable e) {
             // 防止日志异常影响主流程
         }
@@ -89,7 +78,7 @@ public class EasyConsoleEventListener extends EventListener {
         CertificateCapturingSSLSocketFactory.clearLastCapturedCertificates();
         info.setCallStart(System.currentTimeMillis());
         Request request = call.request();
-        log(NetworkLogStage.CALL_START, request.method() + " " + request.url());
+        log(NetworkLogEventStage.CALL_START, request.method() + " " + request.url());
     }
 
     @Override
@@ -98,7 +87,7 @@ public class EasyConsoleEventListener extends EventListener {
             return;
         }
         info.setProxySelectStart(System.currentTimeMillis());
-        log(NetworkLogStage.PROXY_SELECT_START, "Selecting proxy for " + url);
+        log(NetworkLogEventStage.PROXY_SELECT_START, "Selecting proxy for " + url);
     }
 
     @Override
@@ -115,7 +104,7 @@ public class EasyConsoleEventListener extends EventListener {
                 sb.append(address.getHostName()).append(":").append(address.getPort()).append(" ");
             }
         }
-        log(NetworkLogStage.PROXY_SELECT_END, sb.toString());
+        log(NetworkLogEventStage.PROXY_SELECT_END, sb.toString());
     }
 
     @Override
@@ -124,7 +113,7 @@ public class EasyConsoleEventListener extends EventListener {
             return;
         }
         info.setDnsStart(System.currentTimeMillis());
-        log(NetworkLogStage.DNS_START, domainName);
+        log(NetworkLogEventStage.DNS_START, domainName);
     }
 
     @Override
@@ -133,7 +122,7 @@ public class EasyConsoleEventListener extends EventListener {
             return;
         }
         info.setDnsEnd(System.currentTimeMillis());
-        log(NetworkLogStage.DNS_END, domainName + " -> " + inetAddressList);
+        log(NetworkLogEventStage.DNS_END, domainName + " -> " + inetAddressList);
     }
 
     @Override
@@ -143,7 +132,7 @@ public class EasyConsoleEventListener extends EventListener {
         }
         info.setConnectStart(System.currentTimeMillis());
         info.setRemoteAddress(inetSocketAddress.toString());
-        log(NetworkLogStage.CONNECT_START, inetSocketAddress + " via " + proxy.type());
+        log(NetworkLogEventStage.CONNECT_START, inetSocketAddress + " via " + proxy.type());
     }
 
     @Override
@@ -152,7 +141,7 @@ public class EasyConsoleEventListener extends EventListener {
             return;
         }
         info.setSecureConnectStart(System.currentTimeMillis());
-        log(NetworkLogStage.SECURE_CONNECT_START, "TLS handshake start");
+        log(NetworkLogEventStage.SECURE_CONNECT_START, "TLS handshake start");
     }
 
     @Override
@@ -285,9 +274,9 @@ public class EasyConsoleEventListener extends EventListener {
                     handshakeInfo.append("SSL certificate verify ok.\n");
                 }
 
-                log(NetworkLogStage.SECURE_CONNECT_END, handshakeInfo.toString());
+                log(NetworkLogEventStage.SECURE_CONNECT_END, handshakeInfo.toString());
             } else {
-                log(NetworkLogStage.SECURE_CONNECT_END, "no handshake");
+                log(NetworkLogEventStage.SECURE_CONNECT_END, "no handshake");
             }
         } finally {
             CertificateCapturingSSLSocketFactory.clearLastCapturedCertificates();
@@ -301,7 +290,7 @@ public class EasyConsoleEventListener extends EventListener {
         }
         info.setConnectEnd(System.currentTimeMillis());
         info.setProtocol(protocol);
-        log(NetworkLogStage.CONNECT_END, inetSocketAddress + " via " + proxy.type() + ", protocol=" + protocol);
+        log(NetworkLogEventStage.CONNECT_END, inetSocketAddress + " via " + proxy.type() + ", protocol=" + protocol);
     }
 
     @Override
@@ -311,7 +300,7 @@ public class EasyConsoleEventListener extends EventListener {
         }
         info.setConnectEnd(System.currentTimeMillis());
         info.setError(ioe);
-        log(NetworkLogStage.CONNECT_FAILED, inetSocketAddress + " via " + proxy.type() + ", protocol=" + protocol + ", error: " + ioe.getMessage());
+        log(NetworkLogEventStage.CONNECT_FAILED, inetSocketAddress + " via " + proxy.type() + ", protocol=" + protocol + ", error: " + ioe.getMessage());
     }
 
     @Override
@@ -330,7 +319,7 @@ public class EasyConsoleEventListener extends EventListener {
             info.setLocalAddress("无法获取");
             info.setRemoteAddress("无法获取");
         }
-        log(NetworkLogStage.CONNECTION_ACQUIRED, "Connection acquired: " + connection.toString() + ", local=" + info.getLocalAddress() + ", remote=" + info.getRemoteAddress());
+        log(NetworkLogEventStage.CONNECTION_ACQUIRED, "Connection acquired: " + connection.toString() + ", local=" + info.getLocalAddress() + ", remote=" + info.getRemoteAddress());
     }
 
     @Override
@@ -339,7 +328,7 @@ public class EasyConsoleEventListener extends EventListener {
             return;
         }
         info.setConnectionReleased(System.currentTimeMillis());
-        log(NetworkLogStage.CONNECTION_RELEASED, "Connection released: " + connection.toString() + ", local=" + info.getLocalAddress() + ", remote=" + info.getRemoteAddress());
+        log(NetworkLogEventStage.CONNECTION_RELEASED, "Connection released: " + connection.toString() + ", local=" + info.getLocalAddress() + ", remote=" + info.getRemoteAddress());
     }
 
     @Override
@@ -348,7 +337,7 @@ public class EasyConsoleEventListener extends EventListener {
             return;
         }
         info.setRequestHeadersStart(System.currentTimeMillis());
-        log(NetworkLogStage.REQUEST_HEADERS_START, "");
+        log(NetworkLogEventStage.REQUEST_HEADERS_START, "");
     }
 
     @Override
@@ -371,7 +360,7 @@ public class EasyConsoleEventListener extends EventListener {
             }
             sb.append(name).append(": ").append(value).append("\n");
         }
-        log(NetworkLogStage.REQUEST_HEADERS_END, sb.toString());
+        log(NetworkLogEventStage.REQUEST_HEADERS_END, sb.toString());
     }
 
     @Override
@@ -408,7 +397,7 @@ public class EasyConsoleEventListener extends EventListener {
                     }
                 }
                 preparedRequest.okHttpRequestBody = desc;
-                log(NetworkLogStage.REQUEST_BODY_START, desc);
+                log(NetworkLogEventStage.REQUEST_BODY_START, desc);
             } else {
                 try {
                     okio.Buffer buffer = new okio.Buffer();
@@ -416,18 +405,18 @@ public class EasyConsoleEventListener extends EventListener {
                     String bodyString = buffer.readUtf8();
                     preparedRequest.okHttpRequestBody = bodyString;
                     if (!bodyString.isEmpty()) {
-                        log(NetworkLogStage.REQUEST_BODY_START, "\n" + bodyString);
+                        log(NetworkLogEventStage.REQUEST_BODY_START, "\n" + bodyString);
                     } else {
-                        log(NetworkLogStage.REQUEST_BODY_START, "Request body is empty");
+                        log(NetworkLogEventStage.REQUEST_BODY_START, "Request body is empty");
                     }
                 } catch (Exception e) {
                     preparedRequest.okHttpRequestBody = "[读取请求体失败: " + e.getMessage() + "]";
-                    log(NetworkLogStage.REQUEST_BODY_START, "Failed to read request body: " + e.getMessage() + "\n" + getStackTrace(e));
+                    log(NetworkLogEventStage.REQUEST_BODY_START, "Failed to read request body: " + e.getMessage() + "\n" + getStackTrace(e));
                 }
             }
         } else {
             preparedRequest.okHttpRequestBody = null;
-            log(NetworkLogStage.REQUEST_BODY_START, "No request body");
+            log(NetworkLogEventStage.REQUEST_BODY_START, "No request body");
         }
 
     }
@@ -439,7 +428,7 @@ public class EasyConsoleEventListener extends EventListener {
         }
         info.setBodyBytesSent(byteCount);
         info.setRequestBodyEnd(System.currentTimeMillis());
-        log(NetworkLogStage.REQUEST_BODY_END, "bytes=" + byteCount);
+        log(NetworkLogEventStage.REQUEST_BODY_END, "bytes=" + byteCount);
     }
 
     @Override
@@ -449,7 +438,7 @@ public class EasyConsoleEventListener extends EventListener {
         }
         info.setErrorMessage(NetworkErrorMessageResolver.toUserFriendlyMessage(ioe));
         info.setError(ioe);
-        log(NetworkLogStage.REQUEST_FAILED, ioe.getMessage() + "\n" + getStackTrace(ioe));
+        log(NetworkLogEventStage.REQUEST_FAILED, ioe.getMessage() + "\n" + getStackTrace(ioe));
     }
 
     @Override
@@ -458,7 +447,7 @@ public class EasyConsoleEventListener extends EventListener {
             return;
         }
         info.setResponseHeadersStart(System.currentTimeMillis());
-        log(NetworkLogStage.RESPONSE_HEADERS_START, "");
+        log(NetworkLogEventStage.RESPONSE_HEADERS_START, "");
     }
 
     @Override
@@ -506,9 +495,9 @@ public class EasyConsoleEventListener extends EventListener {
         }
         // 如果是重定向，使用橙色高亮
         if (isRedirect) {
-            log(NetworkLogStage.RESPONSE_HEADERS_END_REDIRECT, sb.toString());
+            log(NetworkLogEventStage.RESPONSE_HEADERS_END_REDIRECT, sb.toString());
         } else {
-            log(NetworkLogStage.RESPONSE_HEADERS_END, sb.toString());
+            log(NetworkLogEventStage.RESPONSE_HEADERS_END, sb.toString());
         }
     }
 
@@ -518,7 +507,7 @@ public class EasyConsoleEventListener extends EventListener {
             return;
         }
         info.setResponseBodyStart(System.currentTimeMillis());
-        log(NetworkLogStage.RESPONSE_BODY_START, "");
+        log(NetworkLogEventStage.RESPONSE_BODY_START, "");
     }
 
     @Override
@@ -528,7 +517,7 @@ public class EasyConsoleEventListener extends EventListener {
         }
         info.setBodyBytesReceived(byteCount);
         info.setResponseBodyEnd(System.currentTimeMillis());
-        log(NetworkLogStage.RESPONSE_BODY_END, "bytes=" + byteCount);
+        log(NetworkLogEventStage.RESPONSE_BODY_END, "bytes=" + byteCount);
     }
 
     @Override
@@ -539,7 +528,7 @@ public class EasyConsoleEventListener extends EventListener {
         info.setErrorMessage(NetworkErrorMessageResolver.toUserFriendlyMessage(ioe));
         info.setError(ioe);
         String errorMsg = ioe.getMessage() != null ? ioe.getMessage() : ioe.getClass().getSimpleName();
-        log(NetworkLogStage.RESPONSE_FAILED, errorMsg + "\n" + getStackTrace(ioe));
+        log(NetworkLogEventStage.RESPONSE_FAILED, errorMsg + "\n" + getStackTrace(ioe));
     }
 
     @Override
@@ -548,7 +537,7 @@ public class EasyConsoleEventListener extends EventListener {
             return;
         }
         info.setCallEnd(System.currentTimeMillis());
-        log(NetworkLogStage.CALL_END, "done");
+        log(NetworkLogEventStage.CALL_END, "done");
     }
 
     @Override
@@ -560,7 +549,7 @@ public class EasyConsoleEventListener extends EventListener {
         info.setErrorMessage(NetworkErrorMessageResolver.toUserFriendlyMessage(ioe));
         info.setError(ioe);
         String errorMsg = ioe.getMessage() != null ? ioe.getMessage() : ioe.getClass().getSimpleName();
-        log(NetworkLogStage.CALL_FAILED, errorMsg);
+        log(NetworkLogEventStage.CALL_FAILED, errorMsg);
     }
 
     @Override
@@ -569,7 +558,7 @@ public class EasyConsoleEventListener extends EventListener {
             return;
         }
         info.setCanceled(System.currentTimeMillis());
-        log(NetworkLogStage.CANCELED, "Call was canceled");
+        log(NetworkLogEventStage.CANCELED, "Call was canceled");
     }
 
 
@@ -579,7 +568,7 @@ public class EasyConsoleEventListener extends EventListener {
             return;
         }
         info.setErrorMessage("Response does not satisfy request: " + response.code() + " " + response.message());
-        log(NetworkLogStage.SATISFACTION_FAILURE, "Response does not satisfy request: " + response.code() + " " + response.message());
+        log(NetworkLogEventStage.SATISFACTION_FAILURE, "Response does not satisfy request: " + response.code() + " " + response.message());
     }
 
 
@@ -588,7 +577,7 @@ public class EasyConsoleEventListener extends EventListener {
         if (!enableNetworkLog) {
             return;
         }
-        log(NetworkLogStage.CACHE_HIT, "Response served from cache: " + response.code() + " " + response.message());
+        log(NetworkLogEventStage.CACHE_HIT, "Response served from cache: " + response.code() + " " + response.message());
     }
 
     @Override
@@ -596,7 +585,7 @@ public class EasyConsoleEventListener extends EventListener {
         if (!enableNetworkLog) {
             return;
         }
-        log(NetworkLogStage.CACHE_MISS, "No cache hit for this call");
+        log(NetworkLogEventStage.CACHE_MISS, "No cache hit for this call");
     }
 
     @Override
@@ -604,7 +593,7 @@ public class EasyConsoleEventListener extends EventListener {
         if (!enableNetworkLog) {
             return;
         }
-        log(NetworkLogStage.CACHE_CONDITIONAL_HIT, "Response served from conditional cache: " + cachedResponse.code() + " " + cachedResponse.message());
+        log(NetworkLogEventStage.CACHE_CONDITIONAL_HIT, "Response served from conditional cache: " + cachedResponse.code() + " " + cachedResponse.message());
     }
 
 

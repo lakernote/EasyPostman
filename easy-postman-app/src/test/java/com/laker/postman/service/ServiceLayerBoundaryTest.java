@@ -39,6 +39,25 @@ public class ServiceLayerBoundaryTest {
                 "workspace transfer UI coordination should live in panel/workspace layer");
     }
 
+    @Test
+    public void httpExecutionLayerShouldNotWriteNetworkLogsThroughRequestEditorUi() throws IOException {
+        for (String relativePath : new String[]{
+                "src/main/java/com/laker/postman/service/http/RedirectHandler.java",
+                "src/main/java/com/laker/postman/service/http/okhttp/EasyConsoleEventListener.java"
+        }) {
+            Path sourceFile = moduleDir().resolve(relativePath);
+            String source = Files.readString(sourceFile);
+            assertFalse(source.contains("com.laker.postman.common.UiSingletonFactory"),
+                    sourceFile + " must publish network log events instead of looking up UI singletons");
+            assertFalse(source.contains("com.laker.postman.panel.collections.editor.RequestEditorPanel"),
+                    sourceFile + " must not depend on the request editor UI");
+            assertFalse(source.contains("com.laker.postman.panel.collections.editor.request.sub.NetworkLogPanel"),
+                    sourceFile + " must not depend on the Swing network log panel");
+            assertFalse(source.contains("com.laker.postman.panel.collections.editor.request.sub.NetworkLogStage"),
+                    sourceFile + " must not use UI log stage styling from the service layer");
+        }
+    }
+
     private Path moduleDir() {
         Path moduleDir = Path.of(System.getProperty("user.dir"));
         if (!Files.exists(moduleDir.resolve("src/main/java"))) {

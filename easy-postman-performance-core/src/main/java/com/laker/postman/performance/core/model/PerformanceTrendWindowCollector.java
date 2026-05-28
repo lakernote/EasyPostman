@@ -2,56 +2,86 @@ package com.laker.postman.performance.core.model;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.EnumMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public final class PerformanceTrendWindowCollector {
 
-    private final EnumMap<PerformanceProtocol, PerformanceSampleAccumulator> protocolStats =
-            new EnumMap<>(PerformanceProtocol.class);
+    private final Map<PerformanceProtocol, PerformanceSampleAccumulator> protocolStats =
+            new ConcurrentHashMap<>();
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private PerformanceSampleAccumulator overallStats = new PerformanceSampleAccumulator("", PerformanceProtocol.HTTP);
-    private boolean enabled = true;
+    private volatile boolean enabled = true;
 
-    public synchronized void record(RequestResult result) {
+    public void record(RequestResult result) {
         if (!enabled || result == null) {
             return;
         }
-        PerformanceProtocol protocol = result.protocol == null ? PerformanceProtocol.HTTP : result.protocol;
-        protocolStats.computeIfAbsent(protocol, ignored -> new PerformanceSampleAccumulator("", protocol)).record(result);
-        overallStats.record(result);
-    }
-
-    public synchronized void setEnabled(boolean enabled) {
-        if (this.enabled == enabled) {
-            return;
-        }
-        this.enabled = enabled;
-        if (!enabled) {
-            clear();
+        lock.readLock().lock();
+        try {
+            if (!enabled) {
+                return;
+            }
+            PerformanceProtocol protocol = result.protocol == null ? PerformanceProtocol.HTTP : result.protocol;
+            protocolStats.computeIfAbsent(protocol, ignored -> new PerformanceSampleAccumulator("", protocol)).record(result);
+            overallStats.record(result);
+        } finally {
+            lock.readLock().unlock();
         }
     }
 
-    public synchronized PerformanceTrendSnapshot sampleSnapshot(int activeUsers,
-                                                               int activeWebSocketConnections,
-                                                               int activeSseStreams,
-                                                               long samplingIntervalMs,
-                                                               PerformanceRealtimeMetrics.Sample realtimeMetrics) {
-        PerformanceTrendSnapshot snapshot = new PerformanceTrendSnapshot(
-                activeUsers,
-                activeWebSocketConnections,
-                activeSseStreams,
-                toWindowMetrics(overallStats, null, samplingIntervalMs, realtimeMetrics),
-                toWindowMetrics(protocolStats.get(PerformanceProtocol.HTTP),
-                        PerformanceProtocol.HTTP, samplingIntervalMs, realtimeMetrics),
-                toWindowMetrics(protocolStats.get(PerformanceProtocol.WEBSOCKET),
-                        PerformanceProtocol.WEBSOCKET, samplingIntervalMs, realtimeMetrics),
-                toWindowMetrics(protocolStats.get(PerformanceProtocol.SSE),
-                        PerformanceProtocol.SSE, samplingIntervalMs, realtimeMetrics)
-        );
-        clear();
-        return snapshot;
+    public void setEnabled(boolean enabled) {
+        lock.writeLock().lock();
+        try {
+            if (this.enabled == enabled) {
+                return;
+            }
+            this.enabled = enabled;
+            if (!enabled) {
+                clearUnlocked();
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
-    public synchronized void clear() {
+    public PerformanceTrendSnapshot sampleSnapshot(int activeUsers,
+                                                   int activeWebSocketConnections,
+                                                   int activeSseStreams,
+                                                   long samplingIntervalMs,
+                                                   PerformanceRealtimeMetrics.Sample realtimeMetrics) {
+        lock.writeLock().lock();
+        try {
+            PerformanceTrendSnapshot snapshot = new PerformanceTrendSnapshot(
+                    activeUsers,
+                    activeWebSocketConnections,
+                    activeSseStreams,
+                    toWindowMetrics(overallStats, null, samplingIntervalMs, realtimeMetrics),
+                    toWindowMetrics(protocolStats.get(PerformanceProtocol.HTTP),
+                            PerformanceProtocol.HTTP, samplingIntervalMs, realtimeMetrics),
+                    toWindowMetrics(protocolStats.get(PerformanceProtocol.WEBSOCKET),
+                            PerformanceProtocol.WEBSOCKET, samplingIntervalMs, realtimeMetrics),
+                    toWindowMetrics(protocolStats.get(PerformanceProtocol.SSE),
+                            PerformanceProtocol.SSE, samplingIntervalMs, realtimeMetrics)
+            );
+            clearUnlocked();
+            return snapshot;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public void clear() {
+        lock.writeLock().lock();
+        try {
+            clearUnlocked();
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    private void clearUnlocked() {
         protocolStats.clear();
         overallStats = new PerformanceSampleAccumulator("", PerformanceProtocol.HTTP);
     }

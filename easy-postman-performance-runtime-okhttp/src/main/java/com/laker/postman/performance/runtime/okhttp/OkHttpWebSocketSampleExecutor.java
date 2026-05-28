@@ -3,6 +3,8 @@ package com.laker.postman.performance.runtime.okhttp;
 import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.performance.core.model.PerformanceSampleRecord;
 import com.laker.postman.performance.core.request.PerformanceOutboundRequest;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import okhttp3.Response;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
@@ -87,7 +89,7 @@ final class OkHttpWebSocketSampleExecutor {
         if (!completed) {
             webSocket.cancel();
             failed.set(true);
-            errorMessage.compareAndSet("", "WebSocket request timed out");
+            errorMessage.compareAndSet("", I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_WS_REQUEST_TIMEOUT));
         }
         activeRequests.removeWebSocket(webSocket);
         return OkHttpSampleRecords.streamRecord(

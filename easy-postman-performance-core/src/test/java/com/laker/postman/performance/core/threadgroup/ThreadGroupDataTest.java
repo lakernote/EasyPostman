@@ -7,7 +7,7 @@ import static org.testng.Assert.assertEquals;
 public class ThreadGroupDataTest {
 
     @Test
-    public void normalizeShouldNotClampPositiveThreadGroupSettingsToUpperBounds() {
+    public void normalizeShouldClampThreadCountsToSupportedUpperBound() {
         ThreadGroupData data = new ThreadGroupData();
         data.numThreads = 123_456;
         data.duration = 987_654;
@@ -30,21 +30,21 @@ public class ThreadGroupDataTest {
 
         data.normalize();
 
-        assertEquals(data.numThreads, 123_456);
+        assertEquals(data.numThreads, ThreadGroupData.MAX_THREADS);
         assertEquals(data.duration, 987_654);
         assertEquals(data.loops, 1_234_567);
-        assertEquals(data.rampUpStartThreads, 11_111);
-        assertEquals(data.rampUpEndThreads, 22_222);
+        assertEquals(data.rampUpStartThreads, ThreadGroupData.MAX_THREADS);
+        assertEquals(data.rampUpEndThreads, ThreadGroupData.MAX_THREADS);
         assertEquals(data.rampUpTime, 33_333);
         assertEquals(data.rampUpDuration, 44_444);
-        assertEquals(data.spikeMinThreads, 55_555);
-        assertEquals(data.spikeMaxThreads, 66_666);
+        assertEquals(data.spikeMinThreads, ThreadGroupData.MAX_THREADS);
+        assertEquals(data.spikeMaxThreads, ThreadGroupData.MAX_THREADS);
         assertEquals(data.spikeRampUpTime, 77_777);
         assertEquals(data.spikeHoldTime, 88_888);
         assertEquals(data.spikeRampDownTime, 99_999);
         assertEquals(data.spikeDuration, 111_111);
-        assertEquals(data.stairsStartThreads, 222_222);
-        assertEquals(data.stairsEndThreads, 333_333);
+        assertEquals(data.stairsStartThreads, ThreadGroupData.MAX_THREADS);
+        assertEquals(data.stairsEndThreads, ThreadGroupData.MAX_THREADS);
         assertEquals(data.stairsStep, 444);
         assertEquals(data.stairsHoldTime, 555_555);
         assertEquals(data.stairsDuration, 666_666);

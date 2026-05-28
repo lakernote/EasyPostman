@@ -5,6 +5,8 @@ import com.laker.postman.performance.core.plan.PerformanceThreadGroupPlan;
 import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
 import org.testng.annotations.Test;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -13,6 +15,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class PerformanceCoreThreadGroupRunnerTest {
@@ -97,6 +100,16 @@ public class PerformanceCoreThreadGroupRunnerTest {
             worker.interrupt();
             worker.join(1_000);
         }
+    }
+
+    @Test
+    public void fixedLoopModeShouldNotUseHardCodedOneHourTerminationCutoff() throws Exception {
+        String source = Files.readString(Path.of(
+                "src/main/java/com/laker/postman/performance/core/runtime/PerformanceCoreThreadGroupRunner.java"
+        ));
+
+        assertFalse(source.contains("TimeUnit.HOURS"));
+        assertFalse(source.contains("awaitTermination(1,"));
     }
 
     private static Supplier<PerformanceCoreResultSink> noopSink() {

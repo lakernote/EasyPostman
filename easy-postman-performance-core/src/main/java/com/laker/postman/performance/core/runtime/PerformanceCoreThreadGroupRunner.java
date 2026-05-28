@@ -132,7 +132,7 @@ public final class PerformanceCoreThreadGroupRunner<C> {
             if (useTime) {
                 terminated = executor.awaitTermination(durationSeconds + 5L, TimeUnit.SECONDS);
             } else {
-                terminated = executor.awaitTermination(1, TimeUnit.HOURS);
+                terminated = awaitFixedLoopWorkers(executor);
             }
 
             if (!terminated || !runningSupplier.getAsBoolean()) {
@@ -159,6 +159,15 @@ public final class PerformanceCoreThreadGroupRunner<C> {
                 log.debug("固定线程模式已停止");
             }
         }
+    }
+
+    private boolean awaitFixedLoopWorkers(ExecutorService executor) throws InterruptedException {
+        while (runningSupplier.getAsBoolean()) {
+            if (executor.awaitTermination(250, TimeUnit.MILLISECONDS)) {
+                return true;
+            }
+        }
+        return executor.isTerminated();
     }
 
     private void runRampUpThreads(PerformanceThreadGroupPlan groupPlan,

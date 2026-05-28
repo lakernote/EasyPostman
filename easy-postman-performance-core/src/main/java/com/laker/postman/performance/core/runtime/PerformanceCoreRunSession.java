@@ -2,6 +2,7 @@ package com.laker.postman.performance.core.runtime;
 
 import com.laker.postman.performance.core.plan.PerformanceTestPlan;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -30,6 +31,7 @@ public final class PerformanceCoreRunSession {
     private final Consumer<Boolean> runningSetter;
     private final ExecutionEngine executionEngine;
     private final AtomicReference<Thread> runThread = new AtomicReference<>();
+    private final AtomicBoolean runInProgress = new AtomicBoolean(false);
 
     public PerformanceCoreRunSession(BooleanSupplier runningSupplier,
                                      Consumer<Boolean> runningSetter,
@@ -41,26 +43,34 @@ public final class PerformanceCoreRunSession {
     }
 
     public PerformanceRunHandle start(PerformanceTestPlan plan, PerformanceCoreResultSink resultSink) {
-        if (executionEngine == null || runningSupplier.getAsBoolean()) {
+        if (executionEngine == null || runningSupplier.getAsBoolean() || !runInProgress.compareAndSet(false, true)) {
             return new PerformanceRunHandle(null, this::stop);
         }
 
         PerformanceCoreResultSink resolvedResultSink = resultSink == null ? PerformanceCoreResultSink.NOOP : resultSink;
-        long startTime = System.currentTimeMillis();
-        runningSetter.accept(true);
-        executionEngine.beginRun(startTime, resolvedResultSink);
-        int totalThreads = executionEngine.getTotalThreads(plan);
+        try {
+            long startTime = System.currentTimeMillis();
+            runningSetter.accept(true);
+            executionEngine.beginRun(startTime, resolvedResultSink);
+            int totalThreads = executionEngine.getTotalThreads(plan);
 
-        Thread thread = PerformanceThreadFactory.newDaemonThread("PerformanceRun", () ->
-                runToCompletion(plan, totalThreads, startTime, resolvedResultSink));
-        runThread.set(thread);
-        thread.start();
-        return new PerformanceRunHandle(thread, this::stop);
+            Thread thread = PerformanceThreadFactory.newDaemonThread("PerformanceRun", () ->
+                    runToCompletion(plan, totalThreads, startTime, resolvedResultSink));
+            runThread.set(thread);
+            thread.start();
+            return new PerformanceRunHandle(thread, this::stop);
+        } catch (RuntimeException | Error throwable) {
+            runningSetter.accept(false);
+            runInProgress.set(false);
+            executionEngine.cancelAllNetworkCalls();
+            executionEngine.endRun();
+            throw throwable;
+        }
     }
 
     public void stop() {
         runningSetter.accept(false);
-        Thread thread = runThread.getAndSet(null);
+        Thread thread = runThread.get();
         if (thread != null && thread.isAlive()) {
             thread.interrupt();
         }
@@ -100,8 +110,12 @@ public final class PerformanceCoreRunSession {
                         .error(error)
                         .build());
             } finally {
-                executionEngine.endRun();
-                runThread.compareAndSet(Thread.currentThread(), null);
+                try {
+                    executionEngine.endRun();
+                } finally {
+                    runThread.compareAndSet(Thread.currentThread(), null);
+                    runInProgress.set(false);
+                }
             }
         }
     }

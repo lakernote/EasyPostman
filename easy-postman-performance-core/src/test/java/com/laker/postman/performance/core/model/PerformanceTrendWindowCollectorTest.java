@@ -2,7 +2,10 @@ package com.laker.postman.performance.core.model;
 
 import org.testng.annotations.Test;
 
+import java.lang.reflect.Modifier;
+
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class PerformanceTrendWindowCollectorTest {
@@ -63,5 +66,12 @@ public class PerformanceTrendWindowCollectorTest {
         );
 
         assertEquals(enabledSnapshot.http().samples(), 1);
+    }
+
+    @Test
+    public void recordShouldNotUseCollectorWideSynchronizedMethodLock() throws Exception {
+        assertFalse(Modifier.isSynchronized(PerformanceTrendWindowCollector.class
+                .getDeclaredMethod("record", RequestResult.class)
+                .getModifiers()));
     }
 }

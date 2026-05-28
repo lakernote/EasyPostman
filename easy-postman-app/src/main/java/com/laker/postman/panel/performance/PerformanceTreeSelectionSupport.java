@@ -1,5 +1,6 @@
 package com.laker.postman.panel.performance;
 
+import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.SsePerformanceData;
 import com.laker.postman.performance.core.model.WebSocketPerformanceData;
 
@@ -12,7 +13,10 @@ import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
 import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
 import com.laker.postman.panel.performance.timer.TimerPropertyPanel;
+import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.JsonUtil;
+import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.NotificationUtil;
 import lombok.RequiredArgsConstructor;
 
 import javax.swing.*;
@@ -65,9 +69,19 @@ final class PerformanceTreeSelectionSupport {
     private final String wsCloseCard;
 
     private DefaultMutableTreeNode lastNode;
+    private Consumer<String> requestDataMissingAction = NotificationUtil::showError;
 
     void install() {
         performanceTree.addTreeSelectionListener(e -> handleSelectionChange());
+        if (performanceTree.getSelectionPath() != null) {
+            handleSelectionChange();
+        }
+    }
+
+    void setRequestDataMissingAction(Consumer<String> requestDataMissingAction) {
+        this.requestDataMissingAction = requestDataMissingAction == null
+                ? NotificationUtil::showError
+                : requestDataMissingAction;
     }
 
     void persistLastSelection() {
@@ -113,7 +127,7 @@ final class PerformanceTreeSelectionSupport {
         }
 
         showNode(node, nodeData);
-        lastNode = node;
+        lastNode = isPersistableSelection(nodeData) ? node : null;
     }
 
     private void showNode(DefaultMutableTreeNode node, PerformanceTreeNode nodeData) {
@@ -134,9 +148,11 @@ final class PerformanceTreeSelectionSupport {
                 currentRequestNodeSetter.accept(null);
             }
             case REQUEST -> {
-                propertyCardLayout.show(propertyPanel, requestCard);
-                currentRequestNodeSetter.accept(node);
-                if (nodeData.httpRequestItem != null) {
+                if (nodeData.httpRequestItem == null) {
+                    showMissingRequestData(nodeData);
+                } else {
+                    propertyCardLayout.show(propertyPanel, requestCard);
+                    currentRequestNodeSetter.accept(node);
                     syncRequestStructureAction.accept(node, nodeData);
                     switchRequestEditorAction.accept(nodeData.httpRequestItem);
                 }
@@ -176,6 +192,20 @@ final class PerformanceTreeSelectionSupport {
             }
             default -> showEmpty(node);
         }
+    }
+
+    private boolean isPersistableSelection(PerformanceTreeNode nodeData) {
+        return nodeData.type != NodeType.REQUEST
+                || nodeData.httpRequestItem != null;
+    }
+
+    private void showMissingRequestData(PerformanceTreeNode nodeData) {
+        propertyCardLayout.show(propertyPanel, emptyCard);
+        currentRequestNodeSetter.accept(null);
+        requestDataMissingAction.accept(I18nUtil.getMessage(
+                MessageKeys.PERFORMANCE_MSG_REQUEST_DATA_MISSING,
+                nodeData.name
+        ));
     }
 
     private void showEmpty(DefaultMutableTreeNode node) {

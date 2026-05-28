@@ -11,9 +11,11 @@ import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotSame;
+import static org.testng.Assert.assertTrue;
 
 public class ScopedHttpBaseClientProviderTest {
 
@@ -92,6 +94,19 @@ public class ScopedHttpBaseClientProviderTest {
             props.putAll(backup);
             OkHttpClientManager.clearClientCache();
         }
+    }
+
+    @Test
+    public void clearShouldShutdownScopedDispatcherExecutor() {
+        ScopedHttpBaseClientProvider provider = new ScopedHttpBaseClientProvider(
+                () -> new HttpClientRuntimeConfig(7, 11, 13, 17)
+        );
+        OkHttpClient client = provider.getBaseClient(preparedRequest("http://example.test/api"));
+        ExecutorService dispatcherExecutor = client.dispatcher().executorService();
+
+        provider.clear();
+
+        assertTrue(dispatcherExecutor.isShutdown());
     }
 
     private static PreparedRequest preparedRequest(String url) {

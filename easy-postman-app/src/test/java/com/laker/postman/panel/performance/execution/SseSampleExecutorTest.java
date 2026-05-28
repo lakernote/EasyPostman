@@ -9,11 +9,15 @@ import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
 import com.laker.postman.performance.core.model.SsePerformanceData;
 import com.laker.postman.performance.core.plan.PerformanceProtocolStageElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.SocketPolicy;
 import org.testng.annotations.Test;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -24,6 +28,19 @@ import static org.testng.Assert.assertTrue;
 
 public class SseSampleExecutorTest {
     private static final long SESSION_END_DELAY_MS = 220;
+
+    @Test
+    public void sseRuntimeErrorMessagesShouldUseMessageKeys() throws Exception {
+        String source = Files.readString(Path.of(
+                "src/main/java/com/laker/postman/panel/performance/execution/SseSampleExecutor.java"
+        ));
+
+        assertFalse(source.contains("\"SSE connection timeout\""));
+        assertFalse(source.contains("\"SSE first event timeout\""));
+        assertFalse(source.contains("\"SSE matched message timeout\""));
+        assertFalse(source.contains("\"SSE target message count timeout\""));
+        assertFalse(source.contains("\"SSE stream close timeout\""));
+    }
 
     @Test
     public void sseSamplerShouldUseReadStageConfigOverRequestDefaults() throws Exception {
@@ -233,7 +250,8 @@ public class SseSampleExecutorTest {
 
             assertTrue(result.executionFailed);
             assertEquals(result.response.headers.get("X-Easy-SSE-Message-Count").get(0), "1");
-            assertTrue(result.errorMsg.contains("closed"), result.errorMsg);
+            assertEquals(result.errorMsg,
+                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_SSE_TARGET_COUNT_CLOSED));
             assertEquals(result.response.headers.get("X-Easy-SSE-Error").get(0), result.errorMsg);
         }
     }
@@ -268,7 +286,8 @@ public class SseSampleExecutorTest {
             long elapsedMs = System.currentTimeMillis() - start;
 
             assertTrue(result.executionFailed);
-            assertEquals(result.errorMsg, "SSE target message count timeout");
+            assertEquals(result.errorMsg,
+                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_SSE_TARGET_MESSAGE_COUNT_TIMEOUT));
             assertTrue(elapsedMs < 900, "elapsedMs=" + elapsedMs);
         }
     }
@@ -299,7 +318,8 @@ public class SseSampleExecutorTest {
             ).execute(request, cfg);
 
             assertTrue(result.executionFailed);
-            assertEquals(result.errorMsg, "SSE matched message timeout");
+            assertEquals(result.errorMsg,
+                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_SSE_MATCHED_MESSAGE_TIMEOUT));
             assertEquals(result.response.headers.get("X-Easy-SSE-Message-Count").get(0), "0");
         }
     }
@@ -399,7 +419,8 @@ public class SseSampleExecutorTest {
             ).execute(request, cfg);
 
             assertTrue(result.executionFailed);
-            assertEquals(result.errorMsg, "SSE stream close timeout");
+            assertEquals(result.errorMsg,
+                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_SSE_STREAM_CLOSE_TIMEOUT));
             assertEquals(result.response.headers.get("X-Easy-SSE-Error").get(0), result.errorMsg);
         }
     }

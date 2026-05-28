@@ -7,6 +7,7 @@ import com.laker.postman.performance.core.extractor.ExtractorData;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.SsePerformanceData;
 import com.laker.postman.performance.core.model.WebSocketPerformanceData;
+import com.laker.postman.performance.core.request.PerformanceRequestSnapshot;
 import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
 import com.laker.postman.performance.core.timer.TimerData;
 
@@ -55,8 +56,17 @@ public class PerformanceTreeSnapshot {
         copy.csvDataSetData = JsonUtil.deepCopy(source.csvDataSetData, CsvDataSetData.class);
         copy.loopData = JsonUtil.deepCopy(source.loopData, LoopData.class);
         copy.httpRequestItem = JsonUtil.deepCopy(source.httpRequestItem, HttpRequestItem.class);
-        if (regenerateRequestIds && copy.httpRequestItem != null) {
-            copy.httpRequestItem.setId(UUID.randomUUID().toString());
+        copy.requestSnapshot = copyRequestSnapshot(source.requestSnapshot);
+        String pastedRequestId = regenerateRequestIds && (copy.httpRequestItem != null || copy.requestSnapshot != null)
+                ? UUID.randomUUID().toString()
+                : null;
+        if (pastedRequestId != null && copy.httpRequestItem != null) {
+            copy.httpRequestItem.setId(pastedRequestId);
+        }
+        if (pastedRequestId != null && copy.requestSnapshot != null) {
+            copy.requestSnapshot = copy.requestSnapshot.toBuilder()
+                    .id(pastedRequestId)
+                    .build();
         }
         copy.assertionData = JsonUtil.deepCopy(source.assertionData, AssertionData.class);
         copy.extractorData = JsonUtil.deepCopy(source.extractorData, ExtractorData.class);
@@ -70,5 +80,9 @@ public class PerformanceTreeSnapshot {
 
     private static RequestExecutionScope copyRequestExecutionScope(RequestExecutionScope source) {
         return source == null ? null : RequestExecutionScope.fromGroupVariables(source.getGroupVariables());
+    }
+
+    private static PerformanceRequestSnapshot copyRequestSnapshot(PerformanceRequestSnapshot source) {
+        return source == null ? null : source.toBuilder().build();
     }
 }

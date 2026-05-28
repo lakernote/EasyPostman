@@ -85,6 +85,84 @@ public class PerformancePlanStorageTest {
         assertTrue(loadedRequest.isRequestInheritanceSnapshot());
     }
 
+    @Test
+    public void shouldHydrateLegacyRequestsFromWorkspaceCollectionsWhenLoading() throws Exception {
+        Path workspaceDir = Files.createTempDirectory("performance-plan-storage-legacy");
+        Path configPath = workspaceDir.resolve("performance_config.json");
+        Files.writeString(workspaceDir.resolve("collections.json"), """
+                [
+                  {
+                    "type": "group",
+                    "name": "Default Group",
+                    "children": [
+                      {
+                        "type": "request",
+                        "data": {
+                          "id": "legacy-id",
+                          "name": "Legacy By Id",
+                          "url": "https://example.test/by-id",
+                          "method": "POST",
+                          "protocol": "HTTP"
+                        }
+                      },
+                      {
+                        "type": "request",
+                        "data": {
+                          "id": "legacy-name-id",
+                          "name": "Legacy Unique Name",
+                          "url": "https://example.test/by-name",
+                          "method": "GET",
+                          "protocol": "HTTP"
+                        }
+                      }
+                    ]
+                  }
+                ]
+                """, StandardCharsets.UTF_8);
+        Files.writeString(configPath, """
+                {
+                  "version": "1.0",
+                  "efficientMode": true,
+                  "trendEnabled": true,
+                  "tree": {
+                    "name": "Plan",
+                    "type": "ROOT",
+                    "enabled": true,
+                    "children": [
+                      {
+                        "name": "Users",
+                        "type": "THREAD_GROUP",
+                        "enabled": true,
+                        "children": [
+                          {
+                            "name": "Legacy By Id",
+                            "type": "REQUEST",
+                            "enabled": true,
+                            "requestItemId": "legacy-id",
+                            "requestInheritanceSnapshot": false
+                          },
+                          {
+                            "name": "Legacy Unique Name",
+                            "type": "REQUEST",
+                            "enabled": true,
+                            "requestInheritanceSnapshot": false
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+                """, StandardCharsets.UTF_8);
+
+        PerformancePlanConfiguration loaded = new PerformancePlanStorage().loadConfiguration(configPath);
+
+        List<PerformancePlanNode> requests = loaded.getPlanDocument().getRoot().getChildren().get(0).getChildren();
+        assertEquals(requests.get(0).getHttpRequestItem().getId(), "legacy-id");
+        assertEquals(requests.get(0).getHttpRequestItem().getUrl(), "https://example.test/by-id");
+        assertEquals(requests.get(1).getHttpRequestItem().getId(), "legacy-name-id");
+        assertEquals(requests.get(1).getHttpRequestItem().getUrl(), "https://example.test/by-name");
+    }
+
     private static boolean exposesType(Class<?> owner, Class<?> forbiddenType) {
         for (Executable constructor : owner.getConstructors()) {
             if (java.util.Arrays.asList(constructor.getParameterTypes()).contains(forbiddenType)) {

@@ -21,6 +21,8 @@ import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.service.variable.ExecutionVariableContext;
 import com.laker.postman.service.variable.IterationDataVariableService;
 import com.laker.postman.service.variable.VariablesService;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import okhttp3.Response;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
@@ -59,6 +61,18 @@ public class WebSocketScenarioExecutorTest {
 
         assertTrue(source.contains("executeWebSocket(req, listener, baseClientProvider, false)"));
     }
+
+    @Test
+    public void webSocketRuntimeErrorMessagesShouldUseMessageKeys() throws Exception {
+        String source = Files.readString(Path.of(
+                "src/main/java/com/laker/postman/panel/performance/execution/WebSocketScenarioExecutor.java"
+        ));
+
+        assertFalse(source.contains("\"WebSocket connection timeout\""));
+        assertFalse(source.contains("\"WebSocket read timeout\""));
+        assertFalse(source.contains("\"WebSocket target message count timeout\""));
+    }
+
     private static final long SESSION_END_DELAY_MS = 220;
 
     @Test
@@ -196,7 +210,8 @@ public class WebSocketScenarioExecutorTest {
             );
 
             assertTrue(result.executionFailed);
-            assertEquals(result.errorMsg, "WebSocket read timeout");
+            assertEquals(result.errorMsg,
+                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_WS_READ_TIMEOUT));
         }
     }
 
@@ -904,7 +919,8 @@ public class WebSocketScenarioExecutorTest {
             long elapsedMs = System.currentTimeMillis() - start;
 
             assertTrue(result.executionFailed);
-            assertEquals(result.errorMsg, "WebSocket target message count timeout");
+            assertEquals(result.errorMsg,
+                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_WS_TARGET_MESSAGE_COUNT_TIMEOUT));
             assertTrue(elapsedMs < 900, "elapsedMs=" + elapsedMs);
         }
     }

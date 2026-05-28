@@ -2,6 +2,8 @@ package com.laker.postman.performance.core.model;
 
 import org.testng.annotations.Test;
 
+import java.lang.reflect.Modifier;
+
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 
@@ -29,6 +31,13 @@ public class PerformanceStatsCollectorTest {
     public void statsCollectorShouldOnlyExposeReportAggregationApi() {
         assertFalse(hasMethodNamed(PerformanceStatsCollector.class, "setTrendEnabled"));
         assertFalse(hasMethodNamed(PerformanceStatsCollector.class, "sampleTrendSnapshot"));
+    }
+
+    @Test
+    public void recordShouldNotUseCollectorWideSynchronizedMethodLock() throws Exception {
+        assertFalse(Modifier.isSynchronized(PerformanceStatsCollector.class
+                .getDeclaredMethod("record", RequestResult.class)
+                .getModifiers()));
     }
 
     @Test

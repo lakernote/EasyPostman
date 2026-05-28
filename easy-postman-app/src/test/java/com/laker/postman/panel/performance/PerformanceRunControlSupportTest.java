@@ -123,6 +123,16 @@ public class PerformanceRunControlSupportTest extends AbstractSwingUiTest {
         assertFalse(source.contains("OkHttpClientManager.set"));
     }
 
+    @Test
+    public void stopRunShouldKeepUiInStoppingStateUntilRunCompletionCallback() throws Exception {
+        String source = Files.readString(Path.of(
+                "src/main/java/com/laker/postman/panel/performance/PerformanceRunControlSupport.java"
+        ));
+        String stopRunBody = source.substring(source.indexOf("void stopRun()"), source.indexOf("private void showRunError"));
+
+        assertFalse(stopRunBody.contains("markIdle()"));
+    }
+
     private static JTabbedPane createResultTabbedPane(PerformanceResultTablePanel resultTablePanel,
                                                      PerformanceReportPanel reportPanel) {
         JTabbedPane resultTabbedPane = new JTabbedPane();

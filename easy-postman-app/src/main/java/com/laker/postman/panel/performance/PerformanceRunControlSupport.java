@@ -16,7 +16,6 @@ import com.laker.postman.performance.core.plan.PerformanceTestPlan;
 import com.laker.postman.performance.core.runtime.PerformanceRunError;
 import com.laker.postman.performance.core.runtime.PerformanceRunHandle;
 import com.laker.postman.performance.core.runtime.PerformanceRunSummary;
-import com.laker.postman.performance.core.runtime.PerformanceThreadFactory;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -25,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
@@ -49,6 +49,7 @@ final class PerformanceRunControlSupport {
     private final PerformanceResultTablePanel performanceResultTablePanel;
     private final PerformanceStatsCollector statsCollector;
     private final Runnable clearCachedPerformanceResultsAction;
+    private final AtomicBoolean stopping = new AtomicBoolean(false);
 
     Thread startRun(DefaultMutableTreeNode rootNode,
                     JLabel progressLabel,
@@ -83,7 +84,7 @@ final class PerformanceRunControlSupport {
             }
         }
 
-        if (runningSupplier.getAsBoolean()) {
+        if (runningSupplier.getAsBoolean() || stopping.get()) {
             return null;
         }
 
@@ -110,6 +111,8 @@ final class PerformanceRunControlSupport {
                         waitForFinalStats();
                         if (summary == null || !summary.isStopped()) {
                             SwingUtilities.invokeLater(PerformanceRunControlSupport.this::finishRunUi);
+                        } else {
+                            SwingUtilities.invokeLater(PerformanceRunControlSupport.this::finishStoppedRunUi);
                         }
                     }
                 })
@@ -118,14 +121,12 @@ final class PerformanceRunControlSupport {
     }
 
     void stopRun() {
+        if (!runningSupplier.getAsBoolean()) {
+            return;
+        }
+        stopping.set(true);
         runSession.stop();
-        runUiController.markIdle();
         timerManager.stopAll();
-
-        PerformanceThreadFactory.newDaemonThread("PerformanceStopFlush", () -> {
-            waitForFinalStats();
-            SwingUtilities.invokeLater(this::flushUiAfterStop);
-        }).start();
     }
 
     private void showRunError(PerformanceRunError error) {
@@ -148,6 +149,7 @@ final class PerformanceRunControlSupport {
     }
 
     private void finishRunUi() {
+        stopping.set(false);
         runningSetter.accept(false);
         runUiController.markIdle();
         timerManager.stopAll();
@@ -172,6 +174,14 @@ final class PerformanceRunControlSupport {
     private void flushUiAfterStop() {
         flushPendingAndCharts("停止时");
         statisticsCoordinator.updateReportWithLatestDataSync();
+    }
+
+    private void finishStoppedRunUi() {
+        stopping.set(false);
+        runningSetter.accept(false);
+        runUiController.markIdle();
+        timerManager.stopAll();
+        flushUiAfterStop();
     }
 
     private void flushPendingAndCharts(String phase) {

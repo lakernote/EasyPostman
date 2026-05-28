@@ -65,6 +65,8 @@ public final class ScopedHttpBaseClientProvider implements HttpBaseClientProvide
 
     public void clear() {
         for (OkHttpClient client : clients.values()) {
+            client.dispatcher().cancelAll();
+            client.dispatcher().executorService().shutdown();
             client.connectionPool().evictAll();
         }
         clients.clear();

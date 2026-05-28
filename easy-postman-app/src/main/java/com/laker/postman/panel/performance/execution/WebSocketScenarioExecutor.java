@@ -297,9 +297,10 @@ public class WebSocketScenarioExecutor {
 
                 boolean opened = session.openLatch.await(Math.max(100, connectCfg.connectTimeoutMs), TimeUnit.MILLISECONDS);
                 if (!opened && !failed.get() && !interrupted.get()) {
+                    String timeoutMessage = I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_WS_CONNECTION_TIMEOUT);
                     failed.set(true);
-                    errorRef.set("WebSocket connection timeout");
-                    close(session, "WebSocket connection timeout");
+                    errorRef.set(timeoutMessage);
+                    close(session, timeoutMessage);
                 }
                 return session;
             }
@@ -526,7 +527,8 @@ public class WebSocketScenarioExecutor {
                                     }
                                     if (session.remoteClosed.get()) {
                                         failed.set(true);
-                                        errorRef.set("WebSocket connection closed before read completed");
+                                        errorRef.set(I18nUtil.getMessage(
+                                                MessageKeys.PERFORMANCE_MSG_WS_CONNECTION_CLOSED_BEFORE_READ_COMPLETED));
                                         break;
                                     }
                                     long now = System.currentTimeMillis();
@@ -544,8 +546,8 @@ public class WebSocketScenarioExecutor {
                                     } else if (now >= deadline) {
                                         failed.set(true);
                                         errorRef.set(readMode == WebSocketPerformanceData.CompletionMode.MESSAGE_COUNT
-                                                ? "WebSocket target message count timeout"
-                                                : "WebSocket read timeout");
+                                                ? I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_WS_TARGET_MESSAGE_COUNT_TIMEOUT)
+                                                : I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_WS_READ_TIMEOUT));
                                         break;
                                     }
                                     long waitMs = Math.min(100, Math.max(1, deadline - now));

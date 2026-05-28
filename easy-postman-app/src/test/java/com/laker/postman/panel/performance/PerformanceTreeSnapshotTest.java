@@ -3,13 +3,16 @@ package com.laker.postman.panel.performance;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.performance.model.PerformanceTreeNode;
+import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.WebSocketPerformanceData;
+import com.laker.postman.performance.core.request.PerformanceRequestSnapshot;
 import org.testng.annotations.Test;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotSame;
 
 public class PerformanceTreeSnapshotTest {
@@ -60,5 +63,48 @@ public class PerformanceTreeSnapshotTest {
                 (PerformanceTreeNode) ((DefaultMutableTreeNode) snapshotRoot.getChildAt(0)).getUserObject();
 
         assertEquals(snapshotRequestData.requestInheritanceSnapshot, true);
+    }
+
+    @Test(description = "执行快照应保留仅存在于请求快照中的旧请求数据")
+    public void shouldCopyRequestSnapshotWhenRequestItemIsAbsent() {
+        PerformanceRequestSnapshot requestSnapshot = PerformanceRequestSnapshot.builder()
+                .id("snapshot-id")
+                .name("Snapshot Request")
+                .url("https://example.com/api")
+                .method("POST")
+                .protocol(PerformanceProtocol.HTTP)
+                .body("payload")
+                .build();
+        PerformanceTreeNode requestData = new PerformanceTreeNode("Snapshot Request", NodeType.REQUEST);
+        requestData.requestSnapshot = requestSnapshot;
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new PerformanceTreeNode("Plan", NodeType.ROOT));
+        root.add(new DefaultMutableTreeNode(requestData));
+
+        DefaultMutableTreeNode snapshotRoot = PerformanceTreeSnapshot.copy(root);
+        PerformanceTreeNode snapshotRequestData =
+                (PerformanceTreeNode) ((DefaultMutableTreeNode) snapshotRoot.getChildAt(0)).getUserObject();
+
+        assertNotSame(snapshotRequestData.requestSnapshot, requestSnapshot);
+        assertEquals(snapshotRequestData.requestSnapshot.getId(), "snapshot-id");
+        assertEquals(snapshotRequestData.requestSnapshot.getUrl(), "https://example.com/api");
+        assertEquals(snapshotRequestData.requestSnapshot.getBody(), "payload");
+    }
+
+    @Test(description = "粘贴请求快照节点时也应刷新请求 id，避免重复请求标识")
+    public void copyForPasteShouldRegenerateRequestSnapshotId() {
+        PerformanceRequestSnapshot requestSnapshot = PerformanceRequestSnapshot.builder()
+                .id("original-id")
+                .name("Snapshot Request")
+                .url("https://example.com/api")
+                .build();
+        PerformanceTreeNode requestData = new PerformanceTreeNode("Snapshot Request", NodeType.REQUEST);
+        requestData.requestSnapshot = requestSnapshot;
+        DefaultMutableTreeNode source = new DefaultMutableTreeNode(requestData);
+
+        DefaultMutableTreeNode pastedNode = PerformanceTreeSnapshot.copyForPaste(source);
+        PerformanceTreeNode pastedData = (PerformanceTreeNode) pastedNode.getUserObject();
+
+        assertNotSame(pastedData.requestSnapshot, requestSnapshot);
+        assertNotEquals(pastedData.requestSnapshot.getId(), "original-id");
     }
 }

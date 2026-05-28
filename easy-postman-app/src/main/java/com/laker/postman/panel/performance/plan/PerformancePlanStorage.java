@@ -71,7 +71,7 @@ public class PerformancePlanStorage {
             }
 
             JSONObject jsonRoot = JSONUtil.parseObj(jsonString);
-            return deserializeConfiguration(jsonRoot);
+            return deserializeConfiguration(jsonRoot, configPath);
         } catch (Exception e) {
             log.error("Failed to load performance test config: {}", e.getMessage(), e);
             deleteFile(file);
@@ -113,11 +113,13 @@ public class PerformancePlanStorage {
         }
     }
 
-    private PerformancePlanConfiguration deserializeConfiguration(JSONObject jsonRoot) {
+    private PerformancePlanConfiguration deserializeConfiguration(JSONObject jsonRoot, Path configPath) {
         PerformancePlanDocument document = null;
         JSONObject treeJson = jsonRoot.getJSONObject("tree");
         if (treeJson != null) {
-            PerformanceCorePlanNode coreRootNode = corePlanJsonStorage.fromTreeMap(jsonObjectToMap(treeJson));
+            Map<String, Object> treeMap = jsonObjectToMap(treeJson);
+            PerformancePlanLegacyRequestHydrator.hydrate(treeMap, configPath);
+            PerformanceCorePlanNode coreRootNode = corePlanJsonStorage.fromTreeMap(treeMap);
             document = PerformanceCorePlanAdapter.toAppDocument(new PerformanceCorePlanDocument(coreRootNode));
         }
 

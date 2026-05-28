@@ -18,6 +18,8 @@ import okhttp3.mockwebserver.SocketPolicy;
 import org.testng.annotations.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -32,6 +34,19 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 public class OkHttpPerformanceTransportRuntimeTest {
+
+    @Test
+    public void streamRuntimeTimeoutMessagesShouldUseMessageKeys() throws Exception {
+        String sseSource = Files.readString(Path.of(
+                "src/main/java/com/laker/postman/performance/runtime/okhttp/OkHttpSseSampleExecutor.java"
+        ));
+        String webSocketSource = Files.readString(Path.of(
+                "src/main/java/com/laker/postman/performance/runtime/okhttp/OkHttpWebSocketSampleExecutor.java"
+        ));
+
+        assertFalse(sseSource.contains("\"SSE request timed out\""));
+        assertFalse(webSocketSource.contains("\"WebSocket request timed out\""));
+    }
 
     @Test
     public void shouldExecuteHttpGetRequestFromCoreOutboundRequest() throws Exception {

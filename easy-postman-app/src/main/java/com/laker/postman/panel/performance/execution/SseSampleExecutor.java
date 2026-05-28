@@ -1,12 +1,14 @@
 package com.laker.postman.panel.performance.execution;
 
-import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
-import com.laker.postman.performance.core.model.SsePerformanceData;
-
-
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
+import com.laker.postman.performance.core.model.SsePerformanceData;
+import com.laker.postman.service.http.HttpBaseClientProvider;
+import com.laker.postman.service.http.HttpSingleRequestExecutor;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import okhttp3.Response;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
@@ -21,9 +23,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
-
-import com.laker.postman.service.http.HttpBaseClientProvider;
-import com.laker.postman.service.http.HttpSingleRequestExecutor;
 
 public class SseSampleExecutor {
 
@@ -264,7 +263,7 @@ public class SseSampleExecutor {
                     boolean opened = openLatch.await(Math.max(100, cfg.connectTimeoutMs), TimeUnit.MILLISECONDS);
                     if (!opened && !failed.get() && !interrupted.get()) {
                         failed.set(true);
-                        errorRef.set("SSE connection timeout");
+                        errorRef.set(message(MessageKeys.PERFORMANCE_MSG_SSE_CONNECTION_TIMEOUT));
                         closingSource.set(true);
                         markSampleEnd(sampleEndTimeMs);
                         eventSource.cancel();
@@ -273,7 +272,7 @@ public class SseSampleExecutor {
                             && firstMessageLatch.await(Math.max(100, cfg.firstMessageTimeoutMs), TimeUnit.MILLISECONDS);
                     if ((!gotFirstMessage || matchedMessageCount.get() == 0) && !failed.get() && !interrupted.get()) {
                         failed.set(true);
-                        errorRef.set("SSE first event timeout");
+                        errorRef.set(message(MessageKeys.PERFORMANCE_MSG_SSE_FIRST_EVENT_TIMEOUT));
                         closingSource.set(true);
                         markSampleEnd(sampleEndTimeMs);
                         eventSource.cancel();
@@ -283,7 +282,7 @@ public class SseSampleExecutor {
                     boolean opened = openLatch.await(Math.max(100, cfg.connectTimeoutMs), TimeUnit.MILLISECONDS);
                     if (!opened && !failed.get() && !interrupted.get()) {
                         failed.set(true);
-                        errorRef.set("SSE connection timeout");
+                        errorRef.set(message(MessageKeys.PERFORMANCE_MSG_SSE_CONNECTION_TIMEOUT));
                         closingSource.set(true);
                         markSampleEnd(sampleEndTimeMs);
                         eventSource.cancel();
@@ -292,7 +291,7 @@ public class SseSampleExecutor {
                             && firstMessageLatch.await(Math.max(100, cfg.firstMessageTimeoutMs), TimeUnit.MILLISECONDS);
                     if ((!gotMatchedMessage || matchedMessageCount.get() == 0) && !failed.get() && !interrupted.get()) {
                         failed.set(true);
-                        errorRef.set("SSE matched message timeout");
+                        errorRef.set(message(MessageKeys.PERFORMANCE_MSG_SSE_MATCHED_MESSAGE_TIMEOUT));
                         closingSource.set(true);
                         markSampleEnd(sampleEndTimeMs);
                         eventSource.cancel();
@@ -302,7 +301,7 @@ public class SseSampleExecutor {
                     boolean opened = openLatch.await(Math.max(100, cfg.connectTimeoutMs), TimeUnit.MILLISECONDS);
                     if (!opened && !failed.get() && !interrupted.get()) {
                         failed.set(true);
-                        errorRef.set("SSE connection timeout");
+                        errorRef.set(message(MessageKeys.PERFORMANCE_MSG_SSE_CONNECTION_TIMEOUT));
                         closingSource.set(true);
                         markSampleEnd(sampleEndTimeMs);
                         eventSource.cancel();
@@ -310,7 +309,7 @@ public class SseSampleExecutor {
                         boolean terminated = completionLatch.await(Math.max(100, cfg.holdConnectionMs), TimeUnit.MILLISECONDS);
                         if (terminated && !failed.get() && !interrupted.get()) {
                             failed.set(true);
-                            errorRef.set("SSE connection closed before hold duration finished");
+                            errorRef.set(message(MessageKeys.PERFORMANCE_MSG_SSE_HOLD_DURATION_CLOSED));
                         }
                     }
                 }
@@ -319,7 +318,7 @@ public class SseSampleExecutor {
                     boolean opened = openLatch.await(Math.max(100, cfg.connectTimeoutMs), TimeUnit.MILLISECONDS);
                     if (!opened && !failed.get() && !interrupted.get()) {
                         failed.set(true);
-                        errorRef.set("SSE connection timeout");
+                        errorRef.set(message(MessageKeys.PERFORMANCE_MSG_SSE_CONNECTION_TIMEOUT));
                         closingSource.set(true);
                         markSampleEnd(sampleEndTimeMs);
                         eventSource.cancel();
@@ -329,8 +328,8 @@ public class SseSampleExecutor {
                         if (matchedMessageCount.get() < targetMessageCount && !failed.get() && !interrupted.get()) {
                             failed.set(true);
                             errorRef.set(reachedTarget && connectionClosed.get()
-                                    ? "SSE connection closed before target message count reached"
-                                    : "SSE target message count timeout");
+                                    ? message(MessageKeys.PERFORMANCE_MSG_SSE_TARGET_COUNT_CLOSED)
+                                    : message(MessageKeys.PERFORMANCE_MSG_SSE_TARGET_MESSAGE_COUNT_TIMEOUT));
                             closingSource.set(true);
                             markSampleEnd(sampleEndTimeMs);
                             eventSource.cancel();
@@ -341,7 +340,7 @@ public class SseSampleExecutor {
                     boolean opened = openLatch.await(Math.max(100, cfg.connectTimeoutMs), TimeUnit.MILLISECONDS);
                     if (!opened && !failed.get() && !interrupted.get()) {
                         failed.set(true);
-                        errorRef.set("SSE connection timeout");
+                        errorRef.set(message(MessageKeys.PERFORMANCE_MSG_SSE_CONNECTION_TIMEOUT));
                         closingSource.set(true);
                         markSampleEnd(sampleEndTimeMs);
                         eventSource.cancel();
@@ -349,7 +348,7 @@ public class SseSampleExecutor {
                         completionLatch.await(Math.max(100, cfg.holdConnectionMs), TimeUnit.MILLISECONDS);
                         if (!connectionClosed.get() && !failed.get() && !interrupted.get()) {
                             failed.set(true);
-                            errorRef.set("SSE stream close timeout");
+                            errorRef.set(message(MessageKeys.PERFORMANCE_MSG_SSE_STREAM_CLOSE_TIMEOUT));
                             closingSource.set(true);
                             markSampleEnd(sampleEndTimeMs);
                             eventSource.cancel();
@@ -389,6 +388,10 @@ public class SseSampleExecutor {
 
     private static void markSampleEnd(AtomicLong sampleEndTimeMs) {
         sampleEndTimeMs.compareAndSet(0, System.currentTimeMillis());
+    }
+
+    private static String message(String key) {
+        return I18nUtil.getMessage(key);
     }
 
 }

@@ -4,9 +4,13 @@ import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.performance.config.CsvDataSetPropertyPanel;
 import com.laker.postman.panel.performance.model.PerformanceTreeNode;
+import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.WebSocketPerformanceData;
+import com.laker.postman.performance.core.request.PerformanceRequestSnapshot;
 import com.laker.postman.test.AbstractSwingUiTest;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import org.testng.annotations.Test;
 
 import javax.swing.JLabel;
@@ -23,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotSame;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
@@ -51,6 +56,72 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
             assertSame(currentRequest.get(), fixture.requestNode);
             assertTrue(fixture.requestCard.isVisible());
             assertFalse(fixture.emptyCard.isVisible());
+        });
+    }
+
+    @Test
+    public void installShouldHydrateExistingRequestSelection() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            TreeFixture fixture = new TreeFixture();
+            AtomicReference<HttpRequestItem> switchedItem = new AtomicReference<>();
+            AtomicReference<DefaultMutableTreeNode> currentRequest = new AtomicReference<>();
+            fixture.tree.setSelectionPath(new TreePath(fixture.requestNode.getPath()));
+
+            PerformanceTreeSelectionSupport support = fixture.createSelectionSupport(
+                    ignored -> {
+                    },
+                    switchedItem::set,
+                    (node, treeNode) -> {
+                    },
+                    currentRequest::set
+            );
+            support.install();
+
+            assertSame(switchedItem.get(), fixture.requestItem);
+            assertSame(currentRequest.get(), fixture.requestNode);
+            assertTrue(fixture.requestCard.isVisible());
+        });
+    }
+
+    @Test
+    public void requestSelectionShouldReportMissingRequestData() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            TreeFixture fixture = new TreeFixture();
+            PerformanceTreeNode requestData = (PerformanceTreeNode) fixture.requestNode.getUserObject();
+            requestData.httpRequestItem = null;
+            requestData.requestSnapshot = PerformanceRequestSnapshot.builder()
+                    .id("snapshot-id")
+                    .name("snapshot request")
+                    .url("ws://localhost:18080/ws")
+                    .method("GET")
+                    .protocol(PerformanceProtocol.WEBSOCKET)
+                    .build();
+            AtomicInteger syncCount = new AtomicInteger();
+            AtomicReference<HttpRequestItem> switchedItem = new AtomicReference<>();
+            AtomicReference<DefaultMutableTreeNode> currentRequest = new AtomicReference<>(fixture.requestNode);
+            AtomicReference<String> notification = new AtomicReference<>();
+            PerformanceTreeSelectionSupport support = fixture.createSelectionSupport(
+                    ignored -> {
+                    },
+                    switchedItem::set,
+                    (node, treeNode) -> syncCount.incrementAndGet(),
+                    currentRequest::set,
+                    notification::set
+            );
+            support.install();
+
+            fixture.tree.setSelectionPath(new TreePath(fixture.requestNode.getPath()));
+
+            assertEquals(syncCount.get(), 0);
+            assertNull(requestData.httpRequestItem);
+            assertNull(switchedItem.get());
+            assertNull(currentRequest.get());
+            assertTrue(fixture.emptyCard.isVisible());
+            assertFalse(fixture.requestCard.isVisible());
+            assertEquals(
+                    notification.get(),
+                    I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_REQUEST_DATA_MISSING, "request")
+            );
         });
     }
 
@@ -188,7 +259,25 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
                     switchRequestEditorAction,
                     syncRequestStructureAction,
                     currentRequestSetter,
-                    null
+                    null,
+                    ignored -> {
+                    }
+            );
+        }
+
+        private PerformanceTreeSelectionSupport createSelectionSupport(
+                java.util.function.Consumer<DefaultMutableTreeNode> saveRequestAction,
+                java.util.function.Consumer<HttpRequestItem> switchRequestEditorAction,
+                java.util.function.BiConsumer<DefaultMutableTreeNode, PerformanceTreeNode> syncRequestStructureAction,
+                java.util.function.Consumer<DefaultMutableTreeNode> currentRequestSetter,
+                java.util.function.Consumer<String> requestDataMissingAction) {
+            return createSelectionSupport(
+                    saveRequestAction,
+                    switchRequestEditorAction,
+                    syncRequestStructureAction,
+                    currentRequestSetter,
+                    null,
+                    requestDataMissingAction
             );
         }
 
@@ -198,7 +287,25 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
                 java.util.function.BiConsumer<DefaultMutableTreeNode, PerformanceTreeNode> syncRequestStructureAction,
                 java.util.function.Consumer<DefaultMutableTreeNode> currentRequestSetter,
                 WebSocketStagePropertyPanel wsConnectPanel) {
-            return new PerformanceTreeSelectionSupport(
+            return createSelectionSupport(
+                    saveRequestAction,
+                    switchRequestEditorAction,
+                    syncRequestStructureAction,
+                    currentRequestSetter,
+                    wsConnectPanel,
+                    ignored -> {
+                    }
+            );
+        }
+
+        private PerformanceTreeSelectionSupport createSelectionSupport(
+                java.util.function.Consumer<DefaultMutableTreeNode> saveRequestAction,
+                java.util.function.Consumer<HttpRequestItem> switchRequestEditorAction,
+                java.util.function.BiConsumer<DefaultMutableTreeNode, PerformanceTreeNode> syncRequestStructureAction,
+                java.util.function.Consumer<DefaultMutableTreeNode> currentRequestSetter,
+                WebSocketStagePropertyPanel wsConnectPanel,
+                java.util.function.Consumer<String> requestDataMissingAction) {
+            PerformanceTreeSelectionSupport support = new PerformanceTreeSelectionSupport(
                     tree,
                     treeModel,
                     cardLayout,
@@ -239,6 +346,8 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
                     "wsRead",
                     "wsClose"
             );
+            support.setRequestDataMissingAction(requestDataMissingAction);
+            return support;
         }
     }
 

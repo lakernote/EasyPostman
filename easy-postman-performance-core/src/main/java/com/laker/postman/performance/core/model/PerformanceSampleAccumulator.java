@@ -24,7 +24,7 @@ final class PerformanceSampleAccumulator {
         this.protocol = protocol == null ? PerformanceProtocol.HTTP : protocol;
     }
 
-    void record(RequestResult result) {
+    synchronized void record(RequestResult result) {
         total++;
         if (result.success) {
             success++;
@@ -45,7 +45,7 @@ final class PerformanceSampleAccumulator {
         }
     }
 
-    void clear() {
+    synchronized void clear() {
         total = 0;
         success = 0;
         firstStart = Long.MAX_VALUE;
@@ -60,52 +60,52 @@ final class PerformanceSampleAccumulator {
         durations.clear();
     }
 
-    String apiId() {
+    synchronized String apiId() {
         return apiId;
     }
 
-    String apiName() {
+    synchronized String apiName() {
         if (apiName != null && !apiName.isBlank()) {
             return apiName;
         }
         return apiId;
     }
 
-    long total() {
+    synchronized long total() {
         return total;
     }
 
-    long success() {
+    synchronized long success() {
         return success;
     }
 
-    long fail() {
+    synchronized long fail() {
         return total - success;
     }
 
-    long sentMessages() {
+    synchronized long sentMessages() {
         return sentMessages;
     }
 
-    long receivedMessages() {
+    synchronized long receivedMessages() {
         return receivedMessages;
     }
 
-    long matchedMessages() {
+    synchronized long matchedMessages() {
         return matchedMessages;
     }
 
-    long avgDurationMs() {
+    synchronized long avgDurationMs() {
         return durations.avg();
     }
 
-    double avgFirstMessageLatencyMs() {
+    synchronized double avgFirstMessageLatencyMs() {
         return firstMessageLatencyCount == 0
                 ? Double.NaN
                 : round((double) firstMessageLatencyTotal / firstMessageLatencyCount);
     }
 
-    PerformanceStatsSnapshot.ApiSummary toSummary(String name) {
+    synchronized PerformanceStatsSnapshot.ApiSummary toSummary(String name) {
         String summaryName = name;
         if ((summaryName == null || summaryName.isBlank()) && apiName != null && !apiName.isBlank()) {
             summaryName = apiName;

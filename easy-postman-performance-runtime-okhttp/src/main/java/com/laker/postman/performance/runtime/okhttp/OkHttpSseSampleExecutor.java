@@ -3,6 +3,8 @@ package com.laker.postman.performance.runtime.okhttp;
 import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.performance.core.model.PerformanceSampleRecord;
 import com.laker.postman.performance.core.request.PerformanceOutboundRequest;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import okhttp3.Response;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
@@ -77,7 +79,7 @@ final class OkHttpSseSampleExecutor {
         if (!completed) {
             eventSource.cancel();
             failed.set(true);
-            errorMessage.compareAndSet("", "SSE request timed out");
+            errorMessage.compareAndSet("", I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_SSE_REQUEST_TIMEOUT));
         }
         activeRequests.removeSseSource(eventSource);
         boolean successful = !failed.get() && responseCode.get() >= 200 && responseCode.get() < 400;

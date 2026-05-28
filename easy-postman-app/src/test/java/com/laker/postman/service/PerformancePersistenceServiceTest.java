@@ -2,18 +2,24 @@ package com.laker.postman.service;
 
 import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.Workspace;
-import com.laker.postman.panel.performance.assertion.AssertionData;
-import com.laker.postman.panel.performance.config.CsvDataSetData;
-import com.laker.postman.panel.performance.extractor.ExtractorData;
+import com.laker.postman.performance.core.assertion.AssertionData;
+import com.laker.postman.performance.core.config.CsvDataSetData;
+import com.laker.postman.performance.core.extractor.ExtractorData;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
-import com.laker.postman.panel.performance.controller.LoopData;
-import com.laker.postman.panel.performance.model.NodeType;
-import com.laker.postman.panel.performance.model.SsePerformanceData;
-import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
-import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
-import com.laker.postman.panel.performance.timer.TimerData;
+import com.laker.postman.performance.core.controller.LoopData;
+import com.laker.postman.performance.core.model.NodeType;
+import com.laker.postman.performance.core.model.SsePerformanceData;
+import com.laker.postman.performance.core.model.WebSocketPerformanceData;
+import com.laker.postman.panel.performance.plan.PerformanceCsvState;
+import com.laker.postman.panel.performance.plan.PerformancePlanDocument;
+import com.laker.postman.panel.performance.plan.PerformancePlanConfiguration;
+import com.laker.postman.panel.performance.plan.PerformancePlanNode;
+import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
+import com.laker.postman.performance.core.timer.TimerData;
 import com.laker.postman.service.collections.CollectionTreeRootRegistry;
+import com.laker.postman.service.variable.RequestExecutionScope;
 import org.testng.annotations.Test;
 
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -261,6 +267,190 @@ public class PerformancePersistenceServiceTest {
         } finally {
             CollectionTreeRootRegistry.clear();
         }
+    }
+
+    @Test(description = "应支持通过纯计划文档保存请求快照，便于无集合树的压测运行器恢复配置")
+    public void shouldSaveAndLoadPlanDocumentWithRequestSnapshotWithoutCollectionTree() throws IOException {
+        Path tempDir = Files.createTempDirectory("performance-persistence-document");
+        Path configPath = tempDir.resolve("performance_config.json");
+        TestablePerformancePersistenceService service = new TestablePerformancePersistenceService(configPath);
+        service.init();
+
+        HttpRequestItem requestItem = new HttpRequestItem();
+        requestItem.setId("snapshot-request");
+        requestItem.setName("Snapshot WebSocket");
+        requestItem.setProtocol(RequestItemProtocolEnum.WEBSOCKET);
+        requestItem.setUrl("wss://example.test/ws");
+
+        WebSocketPerformanceData webSocketData = new WebSocketPerformanceData();
+        webSocketData.connectTimeoutMs = 4321;
+
+        PerformancePlanDocument document = new PerformancePlanDocument(
+                PerformancePlanNode.builder()
+                        .name("Plan")
+                        .type(NodeType.ROOT)
+                        .children(List.of(
+                                PerformancePlanNode.builder()
+                                        .name("Users")
+                                        .type(NodeType.THREAD_GROUP)
+                                        .threadGroupData(new ThreadGroupData())
+                                        .children(List.of(
+                                                PerformancePlanNode.builder()
+                                                        .name("Snapshot WebSocket")
+                                                        .type(NodeType.REQUEST)
+                                                        .httpRequestItem(requestItem)
+                                                        .webSocketPerformanceData(webSocketData)
+                                                        .build()
+                                        ))
+                                        .build()
+                        ))
+                        .build()
+        );
+
+        service.saveDocument(document, true, true, false, null);
+        CollectionTreeRootRegistry.clear();
+
+        PerformancePlanDocument loadedDocument = service.loadDocument();
+
+        assertNotNull(loadedDocument);
+        PerformancePlanNode loadedRequest = loadedDocument.getRoot().getChildren().get(0).getChildren().get(0);
+        assertEquals(loadedRequest.getHttpRequestItem().getId(), "snapshot-request");
+        assertEquals(loadedRequest.getHttpRequestItem().getUrl(), "wss://example.test/ws");
+        assertEquals(loadedRequest.getHttpRequestItem().getProtocol(), RequestItemProtocolEnum.WEBSOCKET);
+        assertEquals(loadedRequest.getWebSocketPerformanceData().connectTimeoutMs, 4321);
+
+        String json = Files.readString(configPath, StandardCharsets.UTF_8);
+        assertTrue(json.contains("\"requestSnapshot\""));
+        assertFalse(json.contains("\"requestItem\""));
+        assertFalse(json.contains("\"requestItemId\""));
+        assertTrue(json.contains("wss://example.test/ws"));
+    }
+
+    @Test(description = "应支持一次性保存并加载无界面压测运行所需的完整配置包")
+    public void shouldSaveAndLoadPerformanceConfigurationBundle() throws IOException {
+        Path tempDir = Files.createTempDirectory("performance-persistence-bundle");
+        Path configPath = tempDir.resolve("performance_config.json");
+        TestablePerformancePersistenceService service = new TestablePerformancePersistenceService(configPath);
+        service.init();
+
+        ThreadGroupData threadGroupData = new ThreadGroupData();
+        threadGroupData.numThreads = 3;
+        threadGroupData.loops = 2;
+
+        HttpRequestItem requestItem = new HttpRequestItem();
+        requestItem.setId("bundle-request");
+        requestItem.setName("Bundle HTTP");
+        requestItem.setProtocol(RequestItemProtocolEnum.HTTP);
+        requestItem.setUrl("https://example.test/bundle");
+
+        PerformancePlanDocument document = new PerformancePlanDocument(
+                PerformancePlanNode.builder()
+                        .name("Bundle Plan")
+                        .type(NodeType.ROOT)
+                        .children(List.of(
+                                PerformancePlanNode.builder()
+                                        .name("Bundle Users")
+                                        .type(NodeType.THREAD_GROUP)
+                                        .threadGroupData(threadGroupData)
+                                        .children(List.of(
+                                                PerformancePlanNode.builder()
+                                                        .name("Bundle HTTP")
+                                                        .type(NodeType.REQUEST)
+                                                        .httpRequestItem(requestItem)
+                                                        .build()
+                                        ))
+                                        .build()
+                        ))
+                        .build()
+        );
+        PerformanceCsvState csvState = new PerformanceCsvState(
+                "bundle-users.csv",
+                List.of("userId", "roomId"),
+                List.of(row("userId", "user-1", "roomId", "room-9"))
+        );
+
+        service.saveConfiguration(PerformancePlanConfiguration.builder()
+                .planDocument(document)
+                .efficientMode(false)
+                .trendEnabled(false)
+                .reportRealtimeEnabled(true)
+                .csvState(csvState)
+                .build());
+
+        PerformancePlanConfiguration loadedConfiguration = service.loadConfiguration();
+
+        assertNotNull(loadedConfiguration);
+        assertFalse(loadedConfiguration.isEfficientMode());
+        assertFalse(loadedConfiguration.isTrendEnabled());
+        assertTrue(loadedConfiguration.isReportRealtimeEnabled());
+        assertNotNull(loadedConfiguration.getCsvState());
+        assertEquals(loadedConfiguration.getCsvState().getSourceName(), "bundle-users.csv");
+        assertEquals(loadedConfiguration.getCsvState().getRows().get(0).get("roomId"), "room-9");
+
+        PerformancePlanNode loadedThreadGroup = loadedConfiguration.getPlanDocument().getRoot().getChildren().get(0);
+        PerformancePlanNode loadedRequest = loadedThreadGroup.getChildren().get(0);
+        assertEquals(loadedConfiguration.getPlanDocument().getRoot().getName(), "Bundle Plan");
+        assertEquals(loadedThreadGroup.getThreadGroupData().numThreads, 3);
+        assertEquals(loadedThreadGroup.getThreadGroupData().loops, 2);
+        assertEquals(loadedRequest.getHttpRequestItem().getId(), "bundle-request");
+        assertEquals(loadedRequest.getHttpRequestItem().getUrl(), "https://example.test/bundle");
+
+        assertFalse(service.loadEfficientMode());
+        assertFalse(service.loadTrendEnabled());
+        assertTrue(service.loadReportRealtimeEnabled());
+        CsvDataPanel.CsvState loadedLegacyCsvState = service.loadCsvState();
+        assertNotNull(loadedLegacyCsvState);
+        assertEquals(loadedLegacyCsvState.getSourceName(), "bundle-users.csv");
+        assertEquals(loadedLegacyCsvState.getRows().get(0).get("userId"), "user-1");
+
+        DefaultMutableTreeNode loadedTree = service.load("Loaded Bundle");
+        assertNotNull(loadedTree);
+        assertEquals(((JMeterTreeNode) loadedTree.getUserObject()).name, "Loaded Bundle");
+    }
+
+    @Test(description = "应保存并恢复请求执行作用域，确保无界面运行器不依赖集合树也能解析分组变量")
+    public void shouldSaveAndLoadRequestExecutionScopeInPlanDocument() throws IOException {
+        Path tempDir = Files.createTempDirectory("performance-persistence-scope");
+        Path configPath = tempDir.resolve("performance_config.json");
+        TestablePerformancePersistenceService service = new TestablePerformancePersistenceService(configPath);
+        service.init();
+
+        HttpRequestItem requestItem = new HttpRequestItem();
+        requestItem.setId("scoped-request");
+        requestItem.setName("Scoped HTTP");
+        requestItem.setProtocol(RequestItemProtocolEnum.HTTP);
+        requestItem.setUrl("https://example.test/scope");
+
+        PerformancePlanDocument document = new PerformancePlanDocument(
+                PerformancePlanNode.builder()
+                        .name("Scoped Plan")
+                        .type(NodeType.ROOT)
+                        .children(List.of(
+                                PerformancePlanNode.builder()
+                                        .name("Scoped Users")
+                                        .type(NodeType.THREAD_GROUP)
+                                        .threadGroupData(new ThreadGroupData())
+                                        .children(List.of(
+                                                PerformancePlanNode.builder()
+                                                        .name("Scoped HTTP")
+                                                        .type(NodeType.REQUEST)
+                                                        .httpRequestItem(requestItem)
+                                                        .requestExecutionScope(RequestExecutionScope.fromGroupVariables(
+                                                                Map.of("tenantId", "persisted-tenant")
+                                                        ))
+                                                        .build()
+                                        ))
+                                        .build()
+                        ))
+                        .build()
+        );
+
+        service.saveDocument(document, true, true, false, null);
+
+        PerformancePlanDocument loadedDocument = service.loadDocument();
+
+        PerformancePlanNode loadedRequest = loadedDocument.getRoot().getChildren().get(0).getChildren().get(0);
+        assertEquals(loadedRequest.getRequestExecutionScope().getGroupVariable("tenantId"), "persisted-tenant");
     }
 
     @Test(description = "旧版不含 csvState 的配置仍应兼容加载")

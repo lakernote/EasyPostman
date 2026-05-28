@@ -1,7 +1,9 @@
 package com.laker.postman.panel.performance.execution;
 
+import com.laker.postman.performance.core.model.SsePerformanceData;
+
+
 import cn.hutool.core.text.CharSequenceUtil;
-import com.laker.postman.panel.performance.model.SsePerformanceData;
 import lombok.experimental.UtilityClass;
 
 @UtilityClass

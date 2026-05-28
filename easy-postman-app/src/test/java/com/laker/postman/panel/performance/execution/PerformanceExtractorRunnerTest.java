@@ -1,12 +1,12 @@
 package com.laker.postman.panel.performance.execution;
 
 import com.laker.postman.model.HttpResponse;
-import com.laker.postman.panel.performance.extractor.ExtractorData;
-import com.laker.postman.panel.performance.extractor.ExtractorType;
-import com.laker.postman.panel.performance.model.NodeType;
-import com.laker.postman.panel.performance.plan.PerformanceExtractorElement;
-import com.laker.postman.panel.performance.plan.PerformancePlanElement;
-import com.laker.postman.panel.performance.plan.PerformanceProtocolStageElement;
+import com.laker.postman.performance.core.extractor.ExtractorData;
+import com.laker.postman.performance.core.extractor.ExtractorType;
+import com.laker.postman.performance.core.model.NodeType;
+import com.laker.postman.performance.core.plan.PerformanceExtractorElement;
+import com.laker.postman.performance.core.plan.PerformancePlanElement;
+import com.laker.postman.performance.core.plan.PerformanceProtocolStageElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.service.variable.ExecutionContextScope;
 import com.laker.postman.service.variable.ExecutionVariableContext;

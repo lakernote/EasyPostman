@@ -1,11 +1,12 @@
 package com.laker.postman.panel.performance.execution;
 
+import com.laker.postman.performance.core.plan.PerformanceAssertionElement;
+import com.laker.postman.performance.core.plan.PerformanceExtractorElement;
+
+
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.script.TestResult;
-import com.laker.postman.panel.performance.plan.PerformanceAssertionElement;
-import com.laker.postman.panel.performance.plan.PerformanceExtractorElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
-import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.service.js.ScriptExecutionResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +25,7 @@ final class PerformanceRequestPostProcessor {
                                                 HttpResponse response,
                                                 boolean sseRequest,
                                                 boolean webSocketRequest,
-                                                ScriptExecutionPipeline pipeline,
+                                                PerformanceScriptRuntime scriptRuntime,
                                                 String errorMsg,
                                                 boolean executionFailed,
                                                 List<TestResult> testResults,
@@ -33,22 +34,22 @@ final class PerformanceRequestPostProcessor {
             return new PerformanceRequestPostProcessResult(errorMsg, executionFailed);
         }
 
-        runExtractors(requestSampler, response, sseRequest, webSocketRequest, pipeline);
+        runExtractors(requestSampler, response, sseRequest, webSocketRequest, scriptRuntime);
 
         String currentErrorMsg = runAssertions(
                 requestSampler,
                 response,
                 sseRequest,
                 webSocketRequest,
-                pipeline,
+                scriptRuntime,
                 errorMsg,
                 testResults
         );
-        if (capturePlan == null || !capturePlan.runPostScript() || pipeline == null) {
+        if (capturePlan == null || !capturePlan.runPostScript() || scriptRuntime == null) {
             return new PerformanceRequestPostProcessResult(currentErrorMsg, executionFailed);
         }
         return applyPostScriptResult(
-                pipeline.executePostScript(response),
+                scriptRuntime.executePostScript(response),
                 currentErrorMsg,
                 executionFailed,
                 testResults
@@ -83,14 +84,14 @@ final class PerformanceRequestPostProcessor {
                                HttpResponse response,
                                boolean sseRequest,
                                boolean webSocketRequest,
-                               ScriptExecutionPipeline pipeline) {
+                               PerformanceScriptRuntime scriptRuntime) {
         List<PerformanceExtractorElement> extractorNodes =
                 PerformanceExtractorRunner.collectExtractorElements(requestSampler, sseRequest, webSocketRequest);
         if (extractorNodes.isEmpty()) {
             return;
         }
-        if (pipeline != null) {
-            pipeline.withExecutionContext(() -> PerformanceExtractorRunner.runExtractorElements(extractorNodes, response));
+        if (scriptRuntime != null) {
+            scriptRuntime.withExecutionContext(() -> PerformanceExtractorRunner.runExtractorElements(extractorNodes, response));
         } else {
             PerformanceExtractorRunner.runExtractorElements(extractorNodes, response);
         }
@@ -100,7 +101,7 @@ final class PerformanceRequestPostProcessor {
                                  HttpResponse response,
                                  boolean sseRequest,
                                  boolean webSocketRequest,
-                                 ScriptExecutionPipeline pipeline,
+                                 PerformanceScriptRuntime scriptRuntime,
                                  String errorMsg,
                                  List<TestResult> testResults) {
         List<PerformanceAssertionElement> assertionNodes =
@@ -109,8 +110,8 @@ final class PerformanceRequestPostProcessor {
             return errorMsg;
         }
         AtomicReference<String> assertionErrorRef = new AtomicReference<>(errorMsg);
-        if (pipeline != null) {
-            pipeline.withExecutionContext(() ->
+        if (scriptRuntime != null) {
+            scriptRuntime.withExecutionContext(() ->
                     PerformanceAssertionRunner.runAssertionElements(assertionNodes, response, testResults, assertionErrorRef)
             );
         } else {

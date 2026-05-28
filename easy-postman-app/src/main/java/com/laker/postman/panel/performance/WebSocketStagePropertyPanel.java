@@ -1,5 +1,8 @@
 package com.laker.postman.panel.performance;
 
+import com.laker.postman.performance.core.model.WebSocketPerformanceData;
+
+
 import com.laker.postman.common.component.EasyJSpinner;
 import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.common.component.EasyTextField;
@@ -12,7 +15,6 @@ import com.laker.postman.common.component.tab.IndicatorTabComponent;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.Snippet;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
-import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import com.laker.postman.util.EditorThemeUtil;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;

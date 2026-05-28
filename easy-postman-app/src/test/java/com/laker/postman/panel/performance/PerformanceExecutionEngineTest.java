@@ -3,28 +3,36 @@ package com.laker.postman.panel.performance;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.panel.performance.assertion.AssertionData;
+import com.laker.postman.performance.core.assertion.AssertionData;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
-import com.laker.postman.panel.performance.controller.LoopData;
-import com.laker.postman.panel.performance.model.NodeType;
-import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
+import com.laker.postman.performance.core.controller.LoopData;
+import com.laker.postman.performance.core.model.NodeType;
+import com.laker.postman.performance.core.model.PerformanceStatsCollector;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollectorListener;
-import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
+import com.laker.postman.performance.core.model.WebSocketPerformanceData;
 import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
+import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
+import com.laker.postman.performance.core.plan.PerformanceTestPlan;
+import com.laker.postman.performance.core.plan.PerformanceThreadGroupPlan;
 import com.laker.postman.panel.performance.result.PerformanceResultCollector;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
+import com.laker.postman.panel.performance.execution.PerformanceExecutionConfig;
 import com.laker.postman.panel.performance.runtime.PerformanceExecutionEngine;
 import com.laker.postman.panel.performance.runtime.PerformanceIterationContextFactory;
 import com.laker.postman.panel.performance.runtime.PerformancePlanExecutor;
 import com.laker.postman.panel.performance.runtime.PerformanceThreadGroupRunner;
-import com.laker.postman.panel.performance.runtime.PerformanceVirtualUserCoordinator;
-import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
+import com.laker.postman.performance.core.runtime.PerformanceRunListener;
+import com.laker.postman.performance.core.runtime.PerformanceRunProgress;
+import com.laker.postman.performance.core.runtime.PerformanceVirtualUserCoordinator;
+import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.testng.annotations.Test;
 
 import javax.swing.tree.DefaultMutableTreeNode;
+import java.awt.Component;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -46,6 +54,12 @@ public class PerformanceExecutionEngineTest {
     @Test
     public void executionEngineShouldNotExposeSwingResultTablePanelParameters() {
         assertFalse(hasParameterType(PerformanceExecutionEngine.class, PerformanceResultTablePanel.class));
+    }
+
+    @Test
+    public void runtimeExecutionApisShouldNotExposeSwingComponentParameters() {
+        assertFalse(hasParameterType(PerformanceExecutionEngine.class, Component.class));
+        assertFalse(hasParameterType(PerformanceThreadGroupRunner.class, Component.class));
     }
 
     @Test
@@ -96,7 +110,6 @@ public class PerformanceExecutionEngineTest {
         root.add(new DefaultMutableTreeNode(new JMeterTreeNode("thread group", NodeType.THREAD_GROUP, threadGroupData)));
 
         PerformanceExecutionEngine engine = new PerformanceExecutionEngine(
-                null,
                 () -> true,
                 () -> true,
                 () -> 4,
@@ -125,7 +138,6 @@ public class PerformanceExecutionEngineTest {
         root.add(group);
 
         PerformanceExecutionEngine engine = new PerformanceExecutionEngine(
-                null,
                 () -> true,
                 () -> true,
                 () -> 4,
@@ -161,7 +173,6 @@ public class PerformanceExecutionEngineTest {
         root.add(group);
 
         PerformanceExecutionEngine engine = new PerformanceExecutionEngine(
-                null,
                 () -> true,
                 () -> true,
                 () -> 4,
@@ -203,18 +214,56 @@ public class PerformanceExecutionEngineTest {
 
             PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
             PerformanceExecutionEngine engine = new PerformanceExecutionEngine(
-                    null,
                     () -> true,
                     () -> false,
                     () -> 4,
                     statsResultCollector(statsCollector)
             );
 
-            engine.runTestPlanWithProgress(PerformanceTestPlanCompiler.compile(group), 1, (active, total) -> {
-            });
+            engine.runTestPlan(PerformanceTestPlanCompiler.compile(group), 1);
 
             assertEquals(server.getRequestCount(), 2);
             assertEquals(statsCollector.snapshot().totalRequests(), 2);
+        }
+    }
+
+    @Test
+    public void executionEngineShouldRunPurePlanWithFixedExecutionConfig() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse().setBody("ok"));
+            server.start();
+
+            HttpRequestItem item = new HttpRequestItem();
+            item.setId("pure-plan-http");
+            item.setName("Pure Plan HTTP");
+            item.setProtocol(RequestItemProtocolEnum.HTTP);
+            item.setMethod("GET");
+            item.setUrl(server.url("/pure").toString());
+
+            ThreadGroupData threadGroupData = new ThreadGroupData();
+            threadGroupData.threadMode = ThreadGroupData.ThreadMode.FIXED;
+            threadGroupData.numThreads = 1;
+            threadGroupData.useTime = false;
+            threadGroupData.loops = 1;
+
+            PerformanceTestPlan plan = new PerformanceTestPlan(List.of(
+                    new PerformanceThreadGroupPlan(
+                            "thread group",
+                            threadGroupData,
+                            List.of(new PerformanceRequestSampler(item.getName(), item, null, List.of()))
+                    )
+            ));
+            PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
+            PerformanceExecutionEngine engine = new PerformanceExecutionEngine(
+                    () -> true,
+                    PerformanceExecutionConfig.fixed(false, 1, false),
+                    statsResultCollector(statsCollector)
+            );
+
+            engine.runTestPlan(plan, 1);
+
+            assertEquals(server.getRequestCount(), 1);
+            assertEquals(statsCollector.snapshot().totalRequests(), 1);
         }
     }
 
@@ -240,13 +289,11 @@ public class PerformanceExecutionEngineTest {
 
             PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
             new PerformanceExecutionEngine(
-                    null,
                     () -> true,
                     () -> false,
                     () -> 4,
                     statsResultCollector(statsCollector)
-            ).runTestPlanWithProgress(PerformanceTestPlanCompiler.compile(group), 1, (active, total) -> {
-            });
+            ).runTestPlan(PerformanceTestPlanCompiler.compile(group), 1);
 
             assertEquals(server.getRequestCount(), 1);
             assertEquals(statsCollector.snapshot().totalRequests(), 1);
@@ -274,13 +321,11 @@ public class PerformanceExecutionEngineTest {
 
             PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
             new PerformanceExecutionEngine(
-                    null,
                     () -> true,
                     () -> false,
                     () -> 4,
                     statsResultCollector(statsCollector)
-            ).runTestPlanWithProgress(PerformanceTestPlanCompiler.compile(group), 1, (active, total) -> {
-            });
+            ).runTestPlan(PerformanceTestPlanCompiler.compile(group), 1);
 
             assertEquals(server.getRequestCount(), 0);
             assertEquals(statsCollector.snapshot().totalRequests(), 1);
@@ -310,13 +355,11 @@ public class PerformanceExecutionEngineTest {
 
             PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
             new PerformanceExecutionEngine(
-                    null,
                     () -> true,
                     () -> false,
                     () -> 4,
                     statsResultCollector(statsCollector)
-            ).runTestPlanWithProgress(PerformanceTestPlanCompiler.compile(group), 1, (active, total) -> {
-            });
+            ).runTestPlan(PerformanceTestPlanCompiler.compile(group), 1);
 
             assertEquals(server.getRequestCount(), 0);
             assertEquals(statsCollector.snapshot().totalRequests(), 1);
@@ -329,15 +372,58 @@ public class PerformanceExecutionEngineTest {
         assertEquals(PerformanceExecutionEngine.calculateStairsTotalSteps(1, 10, 4), 3);
     }
 
+    @Test
+    public void executionEngineShouldPublishProgressThroughRunListener() {
+        List<PerformanceRunProgress> progressEvents = new CopyOnWriteArrayList<>();
+        PerformanceExecutionEngine engine = new PerformanceExecutionEngine(
+                () -> true,
+                () -> true,
+                () -> 4,
+                emptyResultCollector(),
+                new PerformanceRunListener() {
+                    @Override
+                    public void onProgress(PerformanceRunProgress progress) {
+                        progressEvents.add(progress);
+                    }
+                }
+        );
+
+        engine.runTestPlan(PerformanceTestPlanCompiler.compile(fixedThreadGroup(1)), 1);
+
+        assertTrue(progressEvents.stream().anyMatch(progress ->
+                progress.getActiveThreads() == 1 && progress.getTotalThreads() == 1));
+        assertEquals(progressEvents.get(progressEvents.size() - 1).getActiveThreads(), 0);
+    }
+
+    @Test
+    public void runListenerFailureShouldNotLeaveVirtualUsersActive() {
+        PerformanceExecutionEngine engine = new PerformanceExecutionEngine(
+                () -> true,
+                () -> true,
+                () -> 4,
+                emptyResultCollector(),
+                new PerformanceRunListener() {
+                    @Override
+                    public void onProgress(PerformanceRunProgress progress) {
+                        throw new IllegalStateException("listener failed");
+                    }
+                }
+        );
+
+        engine.runTestPlan(PerformanceTestPlanCompiler.compile(fixedThreadGroup(1)), 1);
+
+        assertEquals(engine.getActiveThreads(), 0);
+    }
+
     @Test(timeOut = 3000)
     public void adjustSpikeThreadCountShouldIgnoreStaleThreadEndEntries() throws Exception {
         PerformanceThreadGroupRunner runner = new PerformanceThreadGroupRunner(
-                null,
                 () -> true,
                 () -> 0L,
                 () -> {
                 },
                 new PerformanceVirtualUserCoordinator(),
+                null,
                 null,
                 null
         );

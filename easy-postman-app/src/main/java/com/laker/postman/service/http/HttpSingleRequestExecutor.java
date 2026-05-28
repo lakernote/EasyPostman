@@ -22,11 +22,43 @@ public class HttpSingleRequestExecutor {
         return HttpService.sendRequest(req, callback);
     }
 
+    public static HttpResponse executeHttp(PreparedRequest req,
+                                           SseResEventListener callback,
+                                           HttpCallTracker callTracker) throws Exception {
+        return HttpService.sendRequest(req, callback, callTracker);
+    }
+
+    public static HttpResponse executeHttp(PreparedRequest req,
+                                           SseResEventListener callback,
+                                           HttpCallTracker callTracker,
+                                           HttpBaseClientProvider baseClientProvider) throws Exception {
+        return HttpService.sendRequest(req, callback, callTracker, baseClientProvider);
+    }
+
     public static EventSource executeSSE(PreparedRequest req, EventSourceListener listener) {
         return HttpService.sendSseRequest(req, listener);
     }
 
+    public static EventSource executeSSE(PreparedRequest req,
+                                         EventSourceListener listener,
+                                         HttpBaseClientProvider baseClientProvider) {
+        return HttpService.sendSseRequest(req, listener, baseClientProvider);
+    }
+
     public static WebSocket executeWebSocket(PreparedRequest req, WebSocketListener listener) {
         return HttpService.sendWebSocket(req, listener);
+    }
+
+    public static WebSocket executeWebSocket(PreparedRequest req,
+                                             WebSocketListener listener,
+                                             HttpBaseClientProvider baseClientProvider) {
+        return HttpService.sendWebSocket(req, listener, baseClientProvider);
+    }
+
+    public static WebSocket executeWebSocket(PreparedRequest req,
+                                             WebSocketListener listener,
+                                             HttpBaseClientProvider baseClientProvider,
+                                             boolean lifecycleLoggingEnabled) {
+        return HttpService.sendWebSocket(req, listener, baseClientProvider, lifecycleLoggingEnabled);
     }
 }

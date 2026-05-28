@@ -1,5 +1,8 @@
 package com.laker.postman.panel.performance.model;
 
+import com.laker.postman.performance.core.model.PerformanceSampleRecord;
+
+
 import com.laker.postman.panel.performance.execution.PerformanceRequestExecutionResult;
 import lombok.Value;
 
@@ -15,6 +18,10 @@ public class PerformanceSampleEvent {
 
     public PerformanceRequestExecutionResult executionResult() {
         return executionResult;
+    }
+
+    public PerformanceSampleRecord sampleRecord() {
+        return sampleResult == null ? null : sampleResult.toSampleRecord();
     }
 
     public boolean efficientMode() {

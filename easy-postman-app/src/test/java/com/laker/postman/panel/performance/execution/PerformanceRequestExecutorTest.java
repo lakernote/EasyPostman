@@ -4,16 +4,25 @@ import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.panel.performance.assertion.AssertionData;
+import com.laker.postman.model.Environment;
+import com.laker.postman.model.RequestGroup;
+import com.laker.postman.performance.core.model.ApiMetadata;
+import com.laker.postman.performance.core.assertion.AssertionData;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
-import com.laker.postman.panel.performance.model.NodeType;
-import com.laker.postman.panel.performance.model.PerformanceProtocol;
-import com.laker.postman.panel.performance.model.SsePerformanceData;
-import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
-import com.laker.postman.panel.performance.plan.PerformanceAssertionElement;
+import com.laker.postman.performance.core.model.NodeType;
+import com.laker.postman.performance.core.model.PerformanceProtocol;
+import com.laker.postman.panel.performance.model.PerformanceSampleResult;
+import com.laker.postman.performance.core.model.RequestResult;
+import com.laker.postman.performance.core.model.SsePerformanceData;
+import com.laker.postman.performance.core.model.WebSocketPerformanceData;
+import com.laker.postman.performance.core.plan.PerformanceAssertionElement;
+import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
+import com.laker.postman.service.collections.CollectionTreeNodes;
+import com.laker.postman.service.collections.CollectionTreeRootRegistry;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.service.variable.ExecutionVariableContext;
+import com.laker.postman.service.variable.RequestExecutionScope;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 import okhttp3.mockwebserver.MockResponse;
@@ -21,7 +30,12 @@ import okhttp3.mockwebserver.MockWebServer;
 import org.testng.annotations.Test;
 
 import javax.swing.tree.DefaultMutableTreeNode;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.testng.Assert.assertEquals;
@@ -95,12 +109,324 @@ public class PerformanceRequestExecutorTest {
     }
 
     @Test
+    public void requestExecutorShouldDelegateLegacyRequestBuildToRuntimeAdapter() throws IOException {
+        String source = Files.readString(moduleDir().resolve(
+                "src/main/java/com/laker/postman/panel/performance/execution/PerformanceRequestExecutor.java"
+        ));
+
+        assertFalse(source.contains("HttpRequestItem"));
+        assertFalse(source.contains("PreparedRequestBuilder"));
+        assertTrue(source.contains("PerformanceRequestRuntime"));
+    }
+
+    @Test
+    public void performanceTransportContextShouldNotExposeScriptExecutionPipeline() throws IOException {
+        String contextSource = Files.readString(moduleDir().resolve(
+                "src/main/java/com/laker/postman/panel/performance/execution/PerformanceProtocolSamplerContext.java"
+        ));
+        String preparedSource = Files.readString(moduleDir().resolve(
+                "src/main/java/com/laker/postman/panel/performance/execution/PerformancePreparedRequest.java"
+        ));
+
+        assertFalse(contextSource.contains("ScriptExecutionPipeline"));
+        assertFalse(preparedSource.contains("ScriptExecutionPipeline"));
+        assertTrue(contextSource.contains("PerformanceScriptRuntime"));
+        assertTrue(preparedSource.contains("PerformanceScriptRuntime"));
+    }
+
+    @Test
     public void shouldDisableCookieNotificationsForPerformanceRequests() {
         PreparedRequest request = new PreparedRequest();
 
-        PerformanceRequestPreparationSupport.configurePreparedRequest(request);
+        PerformanceRequestPreparationSupport.configurePreparedRequest(request, true);
 
         assertFalse(request.notifyCookieChanges);
+    }
+
+    @Test
+    public void shouldApplyInjectedEventLoggingFlagToPreparedRequest() {
+        PreparedRequest eventLoggingDisabled = new PreparedRequest();
+        PreparedRequest eventLoggingEnabled = new PreparedRequest();
+
+        PerformanceRequestPreparationSupport.configurePreparedRequest(eventLoggingDisabled, false);
+        PerformanceRequestPreparationSupport.configurePreparedRequest(eventLoggingEnabled, true);
+
+        assertFalse(eventLoggingDisabled.collectEventInfo);
+        assertTrue(eventLoggingEnabled.collectEventInfo);
+    }
+
+    @Test
+    public void shouldApplyPureExecutionConfigToPreparedRequest() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse().setBody("ok"));
+            server.start();
+
+            HttpRequestItem item = new HttpRequestItem();
+            item.setId("pure-execution-config");
+            item.setName("Pure Execution Config");
+            item.setProtocol(RequestItemProtocolEnum.HTTP);
+            item.setMethod("GET");
+            item.setUrl(server.url("/config").toString());
+
+            PerformanceRequestExecutionResult result = new PerformanceRequestExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet(),
+                    ConcurrentHashMap.newKeySet(),
+                    PerformanceExecutionConfig.fixed(false, 1, true)
+            ).execute(
+                    new PerformanceRequestSampler(item.getName(), item, null, List.of()),
+                    new ExecutionVariableContext()
+            );
+
+            assertFalse(result.executionFailed, result.errorMsg);
+            assertTrue(result.request.collectEventInfo);
+            assertEquals(result.request.responseBodyPreviewLimitBytes, 1024);
+        }
+    }
+
+    @Test
+    public void shouldRouteScriptConsoleOutputThroughInjectedPerformanceConfig() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse().setBody("ok"));
+            server.start();
+
+            List<String> consoleOutput = new ArrayList<>();
+            HttpRequestItem item = new HttpRequestItem();
+            item.setId("script-output-callback");
+            item.setName("Script Output Callback");
+            item.setProtocol(RequestItemProtocolEnum.HTTP);
+            item.setMethod("GET");
+            item.setUrl(server.url("/script-output").toString());
+            item.setPrescript("console.log('headless-ok');");
+
+            PerformanceRequestExecutionResult result = new PerformanceRequestExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet(),
+                    ConcurrentHashMap.newKeySet(),
+                    PerformanceExecutionConfig.fixed(true, 64, false, consoleOutput::add)
+            ).execute(
+                    new PerformanceRequestSampler(item.getName(), item, null, List.of()),
+                    new ExecutionVariableContext()
+            );
+
+            assertFalse(result.executionFailed, result.errorMsg);
+            assertTrue(consoleOutput.stream().anyMatch(output -> output.contains("headless-ok")));
+        }
+    }
+
+    @Test
+    public void defaultPerformanceExecutionConfigShouldUseHeadlessScriptOutputCallback() {
+        assertTrue(PerformanceExecutionConfig.DEFAULT.scriptOutputCallback() != null);
+    }
+
+    @Test
+    public void defaultPerformanceExecutionConfigShouldUseHeadlessEnvironmentSupplier() {
+        assertTrue(PerformanceExecutionConfig.DEFAULT.environmentSupplier() != null);
+        assertEquals(PerformanceExecutionConfig.DEFAULT.environmentSupplier().get(), null);
+    }
+
+    @Test
+    public void dynamicPerformanceExecutionConfigShouldUseHeadlessScriptDefaults() {
+        PerformanceExecutionConfig config = PerformanceExecutionConfig.supplying(
+                () -> true,
+                () -> 64,
+                () -> false
+        );
+
+        assertTrue(config.scriptOutputCallback() != null);
+        assertTrue(config.environmentSupplier() != null);
+        assertEquals(config.environmentSupplier().get(), null);
+    }
+
+    @Test
+    public void fixedPerformanceExecutionConfigShouldUseHeadlessScriptDefaultWhenCallbackIsNull() {
+        PerformanceExecutionConfig config = PerformanceExecutionConfig.fixed(true, 64, false, null);
+
+        assertTrue(config.scriptOutputCallback() != null);
+    }
+
+    @Test
+    public void shouldRouteScriptErrorsThroughInjectedPerformanceConfig() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.start();
+
+            List<String> consoleOutput = new ArrayList<>();
+            HttpRequestItem item = new HttpRequestItem();
+            item.setId("script-error-callback");
+            item.setName("Script Error Callback");
+            item.setProtocol(RequestItemProtocolEnum.HTTP);
+            item.setMethod("GET");
+            item.setUrl(server.url("/script-error").toString());
+            item.setPrescript("throw new Error('headless-fail');");
+
+            PerformanceRequestExecutionResult result = new PerformanceRequestExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet(),
+                    ConcurrentHashMap.newKeySet(),
+                    PerformanceExecutionConfig.fixed(true, 64, false, consoleOutput::add)
+            ).execute(
+                    new PerformanceRequestSampler(item.getName(), item, null, List.of()),
+                    new ExecutionVariableContext()
+            );
+
+            assertTrue(result.executionFailed);
+            assertTrue(consoleOutput.stream().anyMatch(output ->
+                    output.contains("[PreScript Error]") && output.contains("headless-fail")));
+            assertEquals(server.getRequestCount(), 0);
+        }
+    }
+
+    @Test
+    public void shouldUseInjectedEnvironmentForPerformanceScripts() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse().setBody("ok"));
+            server.start();
+
+            Environment environment = new Environment("headless-env");
+            environment.addVariable("tenant", "run-tenant");
+            HttpRequestItem item = new HttpRequestItem();
+            item.setId("injected-env");
+            item.setName("Injected Environment");
+            item.setProtocol(RequestItemProtocolEnum.HTTP);
+            item.setMethod("GET");
+            item.setUrl(server.url("/env").toString());
+            item.setPostscript("""
+                    pm.test('uses injected env', function () {
+                        pm.expect(pm.environment.get('tenant')).to.eql('run-tenant');
+                    });
+                    """);
+
+            PerformanceRequestExecutionResult result = new PerformanceRequestExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet(),
+                    ConcurrentHashMap.newKeySet(),
+                    PerformanceExecutionConfig.fixed(true, 64, false, null, () -> environment)
+            ).execute(
+                    new PerformanceRequestSampler(item.getName(), item, null, List.of()),
+                    new ExecutionVariableContext()
+            );
+
+            assertFalse(result.executionFailed, result.errorMsg);
+            assertEquals(result.testResults.size(), 1);
+            assertTrue(result.testResults.get(0).passed);
+        }
+    }
+
+    @Test
+    public void shouldResolveGroupVariablesFromHeadlessRequestScope() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse().setBody("ok"));
+            server.start();
+
+            HttpRequestItem item = new HttpRequestItem();
+            item.setId("headless-group-scope");
+            item.setName("Headless Group Scope");
+            item.setProtocol(RequestItemProtocolEnum.HTTP);
+            item.setMethod("GET");
+            item.setUrl(server.url("/scope").toString());
+            item.setHeadersList(List.of(new HttpHeader(true, "X-Tenant", "{{tenantId}}")));
+
+            PerformanceRequestExecutionResult result = new PerformanceRequestExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet(),
+                    ConcurrentHashMap.newKeySet()
+            ).execute(
+                    new PerformanceRequestSampler(
+                            item.getName(),
+                            item,
+                            null,
+                            List.of(),
+                            RequestExecutionScope.fromGroupVariables(Map.of("tenantId", "headless-tenant"))
+                    ),
+                    new ExecutionVariableContext()
+            );
+
+            assertFalse(result.executionFailed, result.errorMsg);
+            assertEquals(server.takeRequest().getHeader("X-Tenant"), "headless-tenant");
+        }
+    }
+
+    @Test
+    public void shouldNotResolveCollectionTreeInheritanceDuringExecution() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse().setBody("ok"));
+            server.start();
+
+            HttpRequestItem collectionRequest = new HttpRequestItem();
+            collectionRequest.setId("execution-tree-isolation");
+            collectionRequest.setName("Collection Request");
+            collectionRequest.setProtocol(RequestItemProtocolEnum.HTTP);
+            collectionRequest.setMethod("GET");
+            collectionRequest.setUrl(server.url("/collection").toString());
+
+            RequestGroup group = new RequestGroup("collection group");
+            group.setHeaders(List.of(new HttpHeader(true, "X-Tree-Inherited", "tree-value")));
+            DefaultMutableTreeNode collectionRoot = new DefaultMutableTreeNode("root");
+            DefaultMutableTreeNode groupNode = CollectionTreeNodes.groupNode(group);
+            groupNode.add(CollectionTreeNodes.requestNode(collectionRequest));
+            collectionRoot.add(groupNode);
+            CollectionTreeRootRegistry.registerRootSupplier(() -> collectionRoot);
+
+            HttpRequestItem headlessSnapshot = new HttpRequestItem();
+            headlessSnapshot.setId(collectionRequest.getId());
+            headlessSnapshot.setName("Headless Snapshot");
+            headlessSnapshot.setProtocol(RequestItemProtocolEnum.HTTP);
+            headlessSnapshot.setMethod("GET");
+            headlessSnapshot.setUrl(server.url("/headless").toString());
+
+            PerformanceRequestExecutionResult result = new PerformanceRequestExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet(),
+                    ConcurrentHashMap.newKeySet()
+            ).execute(
+                    new PerformanceRequestSampler(headlessSnapshot.getName(), headlessSnapshot, null, List.of()),
+                    new ExecutionVariableContext()
+            );
+
+            assertFalse(result.executionFailed, result.errorMsg);
+            assertEquals(server.takeRequest().getHeader("X-Tree-Inherited"), null);
+        } finally {
+            CollectionTreeRootRegistry.clear();
+        }
+    }
+
+    @Test
+    public void shouldKeepApiNameInSampleResultWithoutWritingGlobalMetadata() throws Exception {
+        ApiMetadata.clear();
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse().setBody("ok"));
+            server.start();
+
+            HttpRequestItem item = new HttpRequestItem();
+            item.setId("local-api-name");
+            item.setName("Run Scoped API");
+            item.setProtocol(RequestItemProtocolEnum.HTTP);
+            item.setMethod("GET");
+            item.setUrl(server.url("/local-name").toString());
+
+            PerformanceRequestExecutionResult executionResult = new PerformanceRequestExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet(),
+                    ConcurrentHashMap.newKeySet()
+            ).execute(
+                    new PerformanceRequestSampler(item.getName(), item, null, List.of()),
+                    new ExecutionVariableContext()
+            );
+
+            RequestResult requestResult = PerformanceSampleResult.fromExecutionResult(executionResult).toRequestResult();
+
+            assertEquals(ApiMetadata.size(), 0);
+            assertEquals(requestResult.getApiName(), "Run Scoped API");
+        } finally {
+            ApiMetadata.clear();
+        }
     }
 
     @Test(description = "WebSocket 请求缺少启用的 Connect 阶段时不应真实发起连接")
@@ -278,5 +604,13 @@ public class PerformanceRequestExecutorTest {
         AssertionData data = new AssertionData();
         data.type = type;
         return new PerformanceAssertionElement(type, data);
+    }
+
+    private static Path moduleDir() {
+        Path moduleDir = Path.of(System.getProperty("user.dir"));
+        if (!Files.exists(moduleDir.resolve("src/main/java"))) {
+            moduleDir = moduleDir.resolve("easy-postman-app");
+        }
+        return moduleDir;
     }
 }

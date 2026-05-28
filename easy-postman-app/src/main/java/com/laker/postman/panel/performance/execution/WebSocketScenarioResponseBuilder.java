@@ -1,8 +1,10 @@
 package com.laker.postman.panel.performance.execution;
 
+import com.laker.postman.performance.core.model.WebSocketPerformanceData;
+
+
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.model.HttpResponse;
-import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import lombok.experimental.UtilityClass;
 
 import java.util.Collections;

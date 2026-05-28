@@ -3,8 +3,8 @@ package com.laker.postman.panel.performance;
 import com.laker.postman.common.component.EasyTextField;
 import com.laker.postman.common.component.EasyJSpinner;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
-import com.laker.postman.panel.performance.model.NodeType;
-import com.laker.postman.panel.performance.model.SsePerformanceData;
+import com.laker.postman.performance.core.model.NodeType;
+import com.laker.postman.performance.core.model.SsePerformanceData;
 import com.laker.postman.test.AbstractSwingUiTest;
 import org.testng.annotations.Test;
 

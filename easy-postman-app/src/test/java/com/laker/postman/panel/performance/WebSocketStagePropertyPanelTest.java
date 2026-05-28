@@ -1,7 +1,7 @@
 package com.laker.postman.panel.performance;
 
 import com.laker.postman.common.component.EasyComboBox;
-import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
+import com.laker.postman.performance.core.model.WebSocketPerformanceData;
 import com.laker.postman.util.MessageKeys;
 import org.testng.annotations.Test;
 

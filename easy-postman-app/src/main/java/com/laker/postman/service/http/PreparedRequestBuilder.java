@@ -92,7 +92,14 @@ public class PreparedRequestBuilder {
     public static PreparedRequest build(HttpRequestItem item, boolean useCache) {
         // 1. 先应用 group 继承（如果适用）
         HttpRequestItem effectiveItem = resolveEffectiveItem(item, useCache);
+        return buildEffectiveItem(effectiveItem);
+    }
 
+    public static PreparedRequest buildWithoutInheritance(HttpRequestItem item) {
+        return buildEffectiveItem(item);
+    }
+
+    private static PreparedRequest buildEffectiveItem(HttpRequestItem effectiveItem) {
         // 2. 构建 PreparedRequest
         PreparedRequest req = new PreparedRequest();
         req.id = effectiveItem.getId();
@@ -136,6 +143,14 @@ public class PreparedRequestBuilder {
 
     public static DeferredAuthorization resolveDeferredAuthorization(HttpRequestItem item, boolean useCache) {
         HttpRequestItem effectiveItem = resolveEffectiveItem(item, useCache);
+        return resolveDeferredAuthorizationForEffectiveItem(effectiveItem);
+    }
+
+    public static DeferredAuthorization resolveDeferredAuthorizationWithoutInheritance(HttpRequestItem item) {
+        return resolveDeferredAuthorizationForEffectiveItem(item);
+    }
+
+    private static DeferredAuthorization resolveDeferredAuthorizationForEffectiveItem(HttpRequestItem effectiveItem) {
         return new DeferredAuthorization(
                 effectiveItem.getAuthType(),
                 effectiveItem.getAuthUsername(),

@@ -46,6 +46,11 @@ public class GroupVariableService implements VariableProvider {
             return null;
         }
 
+        RequestExecutionScope executionScope = RequestContext.getCurrentExecutionScope();
+        if (executionScope != null) {
+            return executionScope.getGroupVariable(key);
+        }
+
         DefaultMutableTreeNode requestNode = RequestContext.getCurrentRequestNode();
         if (requestNode == null) {
             return null;
@@ -68,6 +73,12 @@ public class GroupVariableService implements VariableProvider {
     @Override
     public Map<String, String> getAll() {
         Map<String, String> result = new HashMap<>();
+
+        RequestExecutionScope executionScope = RequestContext.getCurrentExecutionScope();
+        if (executionScope != null) {
+            result.putAll(executionScope.getGroupVariables());
+            return result;
+        }
 
         DefaultMutableTreeNode requestNode = RequestContext.getCurrentRequestNode();
         if (requestNode == null) {

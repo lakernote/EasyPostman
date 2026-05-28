@@ -1,11 +1,13 @@
 package com.laker.postman.panel.performance.report;
 
-import com.laker.postman.panel.performance.model.ApiMetadata;
-import com.laker.postman.panel.performance.model.PerformanceProtocol;
-import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
-import com.laker.postman.panel.performance.model.PerformanceReportSnapshot;
-import com.laker.postman.panel.performance.model.PerformanceStatsSnapshot;
-import com.laker.postman.panel.performance.model.RequestResult;
+import com.laker.postman.performance.core.model.ApiMetadata;
+import com.laker.postman.performance.core.model.PerformanceProtocol;
+import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
+import com.laker.postman.performance.core.model.PerformanceReportSnapshot;
+import com.laker.postman.performance.core.model.PerformanceStatsSnapshot;
+import com.laker.postman.performance.core.model.RequestResult;
+
+
 
 import java.util.ArrayList;
 import java.util.Collections;

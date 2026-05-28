@@ -1,14 +1,16 @@
 package com.laker.postman.panel.performance.execution;
 
+import com.laker.postman.performance.core.assertion.AssertionData;
+import com.laker.postman.performance.core.assertion.AssertionType;
+import com.laker.postman.performance.core.model.NodeType;
+import com.laker.postman.performance.core.plan.PerformanceAssertionElement;
+import com.laker.postman.performance.core.plan.PerformancePlanElement;
+import com.laker.postman.performance.core.plan.PerformanceProtocolStageElement;
+
+
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.script.TestResult;
-import com.laker.postman.panel.performance.assertion.AssertionData;
-import com.laker.postman.panel.performance.assertion.AssertionType;
-import com.laker.postman.panel.performance.model.NodeType;
-import com.laker.postman.panel.performance.plan.PerformanceAssertionElement;
-import com.laker.postman.panel.performance.plan.PerformancePlanElement;
-import com.laker.postman.panel.performance.plan.PerformanceProtocolStageElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.service.variable.VariableResolver;
 import com.laker.postman.util.I18nUtil;
@@ -147,7 +149,7 @@ public final class PerformanceAssertionRunner {
         if (!pass && CharSequenceUtil.isBlank(errorMsgRef.get())) {
             errorMsgRef.set(I18nUtil.getMessage(
                     MessageKeys.PERFORMANCE_MSG_ASSERTION_FAILED,
-                    type.displayName(),
+                    I18nUtil.getMessage(type.getMessageKey()),
                     CharSequenceUtil.blankToDefault(content, value)
             ));
         }

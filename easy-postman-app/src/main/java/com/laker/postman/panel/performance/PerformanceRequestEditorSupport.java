@@ -1,10 +1,12 @@
 package com.laker.postman.panel.performance;
 
+import com.laker.postman.performance.core.model.NodeType;
+
+
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
-import com.laker.postman.panel.performance.model.NodeType;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;

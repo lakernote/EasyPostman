@@ -1,8 +1,8 @@
 package com.laker.postman.panel.performance.execution;
 
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
-import com.laker.postman.panel.performance.model.NodeType;
-import com.laker.postman.panel.performance.model.PerformanceProtocol;
+import com.laker.postman.performance.core.model.NodeType;
+import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
 import org.testng.annotations.Test;
 

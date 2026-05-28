@@ -1,10 +1,12 @@
 package com.laker.postman.panel.performance.execution;
 
+import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
+import com.laker.postman.performance.core.model.SsePerformanceData;
+
+
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
-import com.laker.postman.panel.performance.model.SsePerformanceData;
 import okhttp3.Response;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
@@ -20,6 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 
+import com.laker.postman.service.http.HttpBaseClientProvider;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 
 public class SseSampleExecutor {
@@ -45,6 +48,7 @@ public class SseSampleExecutor {
     private final int responseBodyPreviewLimitBytes;
     private final boolean retainResponseBody;
     private final boolean trackResponseBodySize;
+    private final HttpBaseClientProvider baseClientProvider;
 
     public SseSampleExecutor(BooleanSupplier runningSupplier,
                              Predicate<Throwable> cancelledChecker,
@@ -84,6 +88,18 @@ public class SseSampleExecutor {
                              int responseBodyPreviewLimitBytes,
                              boolean retainResponseBody,
                              boolean trackResponseBodySize) {
+        this(runningSupplier, cancelledChecker, activeSources, realtimeMetrics, responseBodyPreviewLimitBytes,
+                retainResponseBody, trackResponseBodySize, null);
+    }
+
+    public SseSampleExecutor(BooleanSupplier runningSupplier,
+                             Predicate<Throwable> cancelledChecker,
+                             Set<EventSource> activeSources,
+                             PerformanceRealtimeMetrics realtimeMetrics,
+                             int responseBodyPreviewLimitBytes,
+                             boolean retainResponseBody,
+                             boolean trackResponseBodySize,
+                             HttpBaseClientProvider baseClientProvider) {
         this.runningSupplier = runningSupplier;
         this.cancelledChecker = cancelledChecker;
         this.activeSources = activeSources;
@@ -91,6 +107,7 @@ public class SseSampleExecutor {
         this.responseBodyPreviewLimitBytes = Math.max(1, responseBodyPreviewLimitBytes);
         this.retainResponseBody = retainResponseBody;
         this.trackResponseBodySize = trackResponseBodySize;
+        this.baseClientProvider = baseClientProvider;
     }
 
     public Result execute(PreparedRequest req, SsePerformanceData cfg) {
@@ -235,7 +252,7 @@ public class SseSampleExecutor {
             }
         };
 
-        EventSource eventSource = HttpSingleRequestExecutor.executeSSE(req, listener);
+        EventSource eventSource = HttpSingleRequestExecutor.executeSSE(req, listener, baseClientProvider);
         activeSources.add(eventSource);
         if (sessionRegistered.compareAndSet(false, true)) {
             realtimeMetrics.recordSseSessionStart(eventSource, requestStartTime, apiId, apiName);

@@ -1,9 +1,10 @@
 package com.laker.postman.panel.performance.execution;
 
+import com.laker.postman.performance.core.plan.PerformanceAssertionElement;
+import com.laker.postman.performance.core.plan.PerformanceExtractorElement;
+
+
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.panel.performance.plan.PerformanceAssertionElement;
-import com.laker.postman.panel.performance.plan.PerformanceExtractorElement;
-import com.laker.postman.service.setting.SettingManager;
 import lombok.experimental.UtilityClass;
 
 import java.util.List;
@@ -11,9 +12,9 @@ import java.util.List;
 @UtilityClass
 class PerformanceRequestPreparationSupport {
 
-    void configurePreparedRequest(PreparedRequest request) {
+    void configurePreparedRequest(PreparedRequest request, boolean eventLoggingEnabled) {
         request.collectBasicInfo = true;
-        request.collectEventInfo = SettingManager.isPerformanceEventLoggingEnabled();
+        request.collectEventInfo = eventLoggingEnabled;
         request.enableNetworkLog = false;
         request.notifyCookieChanges = false;
     }
@@ -39,6 +40,6 @@ class PerformanceRequestPreparationSupport {
     }
 
     int resolveResponseBodyPreviewLimitBytes(int previewLimitKb) {
-        return SettingManager.performanceResponseBodyPreviewLimitBytes(previewLimitKb);
+        return PerformanceExecutionConfig.responseBodyPreviewLimitBytes(previewLimitKb);
     }
 }

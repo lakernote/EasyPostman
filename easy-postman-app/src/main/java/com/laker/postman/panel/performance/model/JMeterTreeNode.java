@@ -1,17 +1,25 @@
 package com.laker.postman.panel.performance.model;
 
+import com.laker.postman.performance.core.assertion.AssertionData;
+import com.laker.postman.performance.core.config.CsvDataSetData;
+import com.laker.postman.performance.core.controller.LoopData;
+import com.laker.postman.performance.core.extractor.ExtractorData;
+import com.laker.postman.performance.core.model.NodeType;
+import com.laker.postman.performance.core.model.SsePerformanceData;
+import com.laker.postman.performance.core.model.WebSocketPerformanceData;
+import com.laker.postman.performance.core.request.PerformanceRequestSnapshot;
+import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
+import com.laker.postman.performance.core.timer.TimerData;
+
+
 import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.panel.performance.assertion.AssertionData;
-import com.laker.postman.panel.performance.config.CsvDataSetData;
-import com.laker.postman.panel.performance.controller.LoopData;
-import com.laker.postman.panel.performance.extractor.ExtractorData;
-import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
-import com.laker.postman.panel.performance.timer.TimerData;
+import com.laker.postman.service.variable.RequestExecutionScope;
 
 public class JMeterTreeNode {
     public String name;
     public NodeType type;
     public HttpRequestItem httpRequestItem; // 仅REQUEST节点用
+    public PerformanceRequestSnapshot requestSnapshot; // REQUEST节点的无GUI请求快照
     public ThreadGroupData threadGroupData; // 线程组数据
     public CsvDataSetData csvDataSetData;   // CSV Data Set 配置
     public LoopData loopData;             // Loop 控制器数据
@@ -21,6 +29,8 @@ public class JMeterTreeNode {
     public SsePerformanceData ssePerformanceData; // SSE 压测配置，仅 SSE 阶段节点使用
     public WebSocketPerformanceData webSocketPerformanceData; // WebSocket 压测配置，REQUEST/WS 节点共用
     public boolean enabled = true;        // 是否启用，默认启用
+    public RequestExecutionScope requestExecutionScope; // REQUEST 节点执行所需分组变量快照
+    public boolean requestInheritanceSnapshot = false; // REQUEST 节点是否已快照集合分组继承
 
     public JMeterTreeNode(String name, NodeType type) {
         this.name = name;

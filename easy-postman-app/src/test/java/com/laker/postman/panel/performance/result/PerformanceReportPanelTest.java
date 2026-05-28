@@ -2,9 +2,10 @@ package com.laker.postman.panel.performance.result;
 
 import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
 import com.laker.postman.common.component.button.SegmentedToggleButton;
-import com.laker.postman.panel.performance.model.ApiMetadata;
-import com.laker.postman.panel.performance.model.PerformanceProtocol;
-import com.laker.postman.panel.performance.model.RequestResult;
+import com.laker.postman.performance.core.model.ApiMetadata;
+import com.laker.postman.performance.core.model.PerformanceProtocol;
+import com.laker.postman.panel.performance.model.PerformanceProtocolLabels;
+import com.laker.postman.performance.core.model.RequestResult;
 import com.laker.postman.test.AbstractSwingUiTest;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -105,11 +106,11 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
         assertEquals(findAll(panel, SegmentedButtonGroupPanel.class).size(), 1);
         assertEquals(protocolButtons.size(), PerformanceProtocol.values().length);
         assertTrue(protocolButtons.stream().anyMatch(button ->
-                PerformanceProtocol.HTTP.getDisplayName().equals(button.getText()) && button.isSelected()));
+                PerformanceProtocolLabels.displayName(PerformanceProtocol.HTTP).equals(button.getText()) && button.isSelected()));
         assertTrue(protocolButtons.stream().anyMatch(button ->
-                PerformanceProtocol.WEBSOCKET.getDisplayName().equals(button.getText())));
+                PerformanceProtocolLabels.displayName(PerformanceProtocol.WEBSOCKET).equals(button.getText())));
         assertTrue(protocolButtons.stream().anyMatch(button ->
-                PerformanceProtocol.SSE.getDisplayName().equals(button.getText())));
+                PerformanceProtocolLabels.displayName(PerformanceProtocol.SSE).equals(button.getText())));
     }
 
     @Test

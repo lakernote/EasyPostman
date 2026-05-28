@@ -1,9 +1,11 @@
 package com.laker.postman.service.http;
 
 import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.service.http.okhttp.LogWebSocketListener;
 import com.laker.postman.service.http.okhttp.OkHttpClientManager;
 import com.laker.postman.service.setting.SettingManager;
 import okhttp3.OkHttpClient;
+import okhttp3.WebSocketListener;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Field;
@@ -186,6 +188,17 @@ public class HttpServiceTest {
             props.putAll(backup);
             OkHttpClientManager.clearClientCache();
         }
+    }
+
+    @Test
+    public void shouldNotWrapWebSocketListenerWhenLifecycleLoggingIsDisabled() {
+        WebSocketListener listener = new WebSocketListener() {
+        };
+
+        WebSocketListener resolvedListener = HttpService.resolveWebSocketListener(listener, false);
+
+        assertSame(resolvedListener, listener);
+        assertFalse(resolvedListener instanceof LogWebSocketListener);
     }
 
     private static Properties getSettingsProperties() throws Exception {

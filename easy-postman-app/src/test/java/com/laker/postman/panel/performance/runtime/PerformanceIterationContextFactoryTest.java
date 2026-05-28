@@ -1,8 +1,9 @@
 package com.laker.postman.panel.performance.runtime;
 
-import com.laker.postman.panel.performance.config.CsvDataSetData;
-import com.laker.postman.panel.performance.plan.PerformanceThreadGroupPlan;
-import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
+import com.laker.postman.performance.core.runtime.PerformanceVirtualUserCoordinator;
+import com.laker.postman.performance.core.config.CsvDataSetData;
+import com.laker.postman.performance.core.plan.PerformanceThreadGroupPlan;
+import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
 import com.laker.postman.service.variable.ExecutionVariableContext;
 import org.testng.annotations.Test;
 

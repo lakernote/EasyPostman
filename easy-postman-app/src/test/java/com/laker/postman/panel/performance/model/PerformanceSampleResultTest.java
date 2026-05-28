@@ -1,5 +1,6 @@
 package com.laker.postman.panel.performance.model;
 
+import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.script.TestResult;

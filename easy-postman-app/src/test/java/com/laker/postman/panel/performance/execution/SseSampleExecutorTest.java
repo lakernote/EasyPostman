@@ -4,10 +4,10 @@ import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.panel.performance.model.NodeType;
-import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
-import com.laker.postman.panel.performance.model.SsePerformanceData;
-import com.laker.postman.panel.performance.plan.PerformanceProtocolStageElement;
+import com.laker.postman.performance.core.model.NodeType;
+import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
+import com.laker.postman.performance.core.model.SsePerformanceData;
+import com.laker.postman.performance.core.plan.PerformanceProtocolStageElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -70,7 +70,7 @@ public class SseSampleExecutorTest {
             ).execute(new PerformanceProtocolSamplerContext(
                     request,
                     sampler,
-                    requestItem,
+                    sampler.getRequestSnapshot(),
                     "",
                     null,
                     PerformanceResponseCapturePlan.resolve(false, sampler, true, false, "")

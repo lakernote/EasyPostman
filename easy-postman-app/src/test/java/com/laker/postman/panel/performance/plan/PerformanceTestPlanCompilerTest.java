@@ -1,16 +1,22 @@
 package com.laker.postman.panel.performance.plan;
 
+import com.laker.postman.performance.core.plan.PerformanceAssertionElement;
+import com.laker.postman.performance.core.plan.PerformanceLoopController;
+import com.laker.postman.performance.core.plan.PerformanceProtocolStageElement;
+import com.laker.postman.performance.core.plan.PerformanceTestPlan;
+import com.laker.postman.performance.core.plan.PerformanceThreadGroupPlan;
+import com.laker.postman.performance.core.plan.PerformanceTimerElement;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.panel.performance.assertion.AssertionData;
-import com.laker.postman.panel.performance.controller.LoopData;
-import com.laker.postman.panel.performance.config.CsvDataSetData;
+import com.laker.postman.performance.core.assertion.AssertionData;
+import com.laker.postman.performance.core.controller.LoopData;
+import com.laker.postman.performance.core.config.CsvDataSetData;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
-import com.laker.postman.panel.performance.model.NodeType;
-import com.laker.postman.panel.performance.model.SsePerformanceData;
-import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
-import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
-import com.laker.postman.panel.performance.timer.TimerData;
+import com.laker.postman.performance.core.model.NodeType;
+import com.laker.postman.performance.core.model.SsePerformanceData;
+import com.laker.postman.performance.core.model.WebSocketPerformanceData;
+import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
+import com.laker.postman.performance.core.timer.TimerData;
 import org.testng.annotations.Test;
 
 import javax.swing.tree.DefaultMutableTreeNode;

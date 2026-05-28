@@ -1,8 +1,10 @@
 package com.laker.postman.panel.performance.execution;
 
-import com.laker.postman.panel.performance.model.NodeType;
-import com.laker.postman.panel.performance.model.PerformanceProtocol;
-import com.laker.postman.panel.performance.plan.PerformancePlanElement;
+import com.laker.postman.performance.core.model.NodeType;
+import com.laker.postman.performance.core.model.PerformanceProtocol;
+import com.laker.postman.performance.core.plan.PerformancePlanElement;
+
+
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;

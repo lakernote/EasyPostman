@@ -1,8 +1,10 @@
 package com.laker.postman.panel.performance.result;
 
+import com.laker.postman.performance.core.model.PerformanceProtocol;
+
+
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.model.HttpResponse;
-import com.laker.postman.panel.performance.model.PerformanceProtocol;
 import com.laker.postman.panel.performance.model.PerformanceInternalHeaders;
 import com.laker.postman.panel.performance.model.PerformanceSampleResult;
 import com.laker.postman.panel.performance.model.ResultNodeInfo;

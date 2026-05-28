@@ -1,5 +1,6 @@
 package com.laker.postman.panel.performance.model;
 
+import com.laker.postman.performance.core.model.WebSocketPerformanceData;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;

@@ -1,5 +1,6 @@
 package com.laker.postman.service.http.ssl;
 
+import com.laker.postman.model.ClientCertificate;
 import com.laker.postman.model.TrustedCertificateEntry;
 import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.plugin.bridge.ClientCertificatePluginService;
@@ -11,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 
 import javax.net.ssl.*;
+import java.io.File;
+import java.awt.GraphicsEnvironment;
 import java.security.KeyStore;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
@@ -94,9 +97,17 @@ public class SSLConfigurationUtil {
      */
     public static void configureSSL(OkHttpClient.Builder builder, SSLVerificationMode mode,
                                     String host, int port) {
+        configureSSL(builder, mode, host, port, true);
+    }
+
+    public static void configureSSL(OkHttpClient.Builder builder,
+                                    SSLVerificationMode mode,
+                                    String host,
+                                    int port,
+                                    boolean consoleLoggingEnabled) {
         try {
             // 查找并加载匹配的客户端证书
-            KeyManager[] keyManagers = loadClientCertificate(host, port);
+            KeyManager[] keyManagers = loadClientCertificate(host, port, consoleLoggingEnabled);
 
             // 配置 TrustManager
             X509TrustManager trustManager = configureTrustManager(mode, keyManagers);
@@ -134,7 +145,7 @@ public class SSLConfigurationUtil {
     /**
      * 加载客户端证书
      */
-    private static KeyManager[] loadClientCertificate(String host, int port) {
+    private static KeyManager[] loadClientCertificate(String host, int port, boolean consoleLoggingEnabled) {
         if (host == null || host.isEmpty()) {
             return new KeyManager[0];
         }
@@ -151,10 +162,73 @@ public class SSLConfigurationUtil {
                     I18nUtil.getMessage(MessageKeys.CERT_CONSOLE_LOAD_FAILED),
                     host, e.getMessage()
             );
-            ConsolePanel.appendLog(message, ConsolePanel.LogType.ERROR);
+            appendClientCertificateLoadFailureToConsole(message, consoleLoggingEnabled);
 
             return new KeyManager[0];
         }
+    }
+
+    private static void appendClientCertificateLoadFailureToConsole(String message, boolean consoleLoggingEnabled) {
+        if (!consoleLoggingEnabled || GraphicsEnvironment.isHeadless()) {
+            return;
+        }
+        try {
+            ConsolePanel.appendLog(message, ConsolePanel.LogType.ERROR);
+        } catch (RuntimeException ignored) {
+            // SSL setup must not fail because GUI logging is unavailable.
+        }
+    }
+
+    public static String clientCertificateCacheKey(String host, int port) {
+        if (host == null || host.isBlank()) {
+            return "clientCert:none";
+        }
+        ClientCertificatePluginService service = ClientCertificatePluginServices.getClientCertificateService();
+        if (service == null) {
+            return "clientCert:none";
+        }
+        try {
+            for (ClientCertificate certificate : service.getAllCertificates()) {
+                if (certificate != null && certificate.matches(host, port)) {
+                    return clientCertificateCacheKey(certificate);
+                }
+            }
+        } catch (RuntimeException e) {
+            log.debug("Failed to inspect client certificate cache key for {}:{}", host, port, e);
+        }
+        return "clientCert:none";
+    }
+
+    private static String clientCertificateCacheKey(ClientCertificate certificate) {
+        return "clientCert:"
+                + safe(certificate.getId()) + ':'
+                + certificate.isEnabled() + ':'
+                + safe(certificate.getHost()) + ':'
+                + certificate.getPort() + ':'
+                + safe(certificate.getCertType()) + ':'
+                + fileCacheKey(certificate.getCertPath()) + ':'
+                + safeHash(certificate.getCertPassword()) + ':'
+                + fileCacheKey(certificate.getKeyPath()) + ':'
+                + safeHash(certificate.getKeyPassword()) + ':'
+                + certificate.getUpdatedAt();
+    }
+
+    private static String fileCacheKey(String path) {
+        if (path == null || path.isBlank()) {
+            return "";
+        }
+        File file = new File(path);
+        long lastModified = file.exists() ? file.lastModified() : -1L;
+        long length = file.exists() ? file.length() : -1L;
+        return path + ':' + lastModified + ':' + length;
+    }
+
+    private static String safe(String value) {
+        return value == null ? "" : value;
+    }
+
+    private static int safeHash(String value) {
+        return value == null ? 0 : value.hashCode();
     }
 
     /**

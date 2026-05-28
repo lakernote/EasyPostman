@@ -1,5 +1,6 @@
 package com.laker.postman.panel.performance.model;
 
+import com.laker.postman.performance.core.model.SsePerformanceData;
 import com.laker.postman.util.MessageKeys;
 import org.testng.annotations.Test;
 

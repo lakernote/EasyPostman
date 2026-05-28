@@ -1,5 +1,9 @@
 package com.laker.postman.panel.performance.assertion;
 
+import com.laker.postman.performance.core.assertion.AssertionData;
+import com.laker.postman.performance.core.assertion.AssertionType;
+
+
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.util.FontsUtil;
@@ -340,7 +344,7 @@ public class AssertionPropertyPanel extends JPanel {
                                                       boolean cellHasFocus) {
             Component component = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
             if (value instanceof AssertionType assertionType) {
-                setText(assertionType.displayName());
+                setText(I18nUtil.getMessage(assertionType.getMessageKey()));
             }
             return component;
         }

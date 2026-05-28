@@ -2,9 +2,9 @@ package com.laker.postman.panel.performance;
 
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.panel.performance.control.PerformanceStatisticsCoordinator;
-import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
-import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
-import com.laker.postman.panel.performance.model.PerformanceTrendWindowCollector;
+import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
+import com.laker.postman.performance.core.model.PerformanceStatsCollector;
+import com.laker.postman.performance.core.model.PerformanceTrendWindowCollector;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceTrendPanel;
 import com.laker.postman.test.AbstractSwingUiTest;

@@ -93,8 +93,21 @@ public class HttpService {
      * @throws Exception 发送请求异常
      */
     public static HttpResponse sendRequest(PreparedRequest req, SseResEventListener callback) throws Exception {
+        return sendRequest(req, callback, HttpCallTracker.NOOP);
+    }
+
+    public static HttpResponse sendRequest(PreparedRequest req,
+                                           SseResEventListener callback,
+                                           HttpCallTracker callTracker) throws Exception {
+        return sendRequest(req, callback, callTracker, null);
+    }
+
+    public static HttpResponse sendRequest(PreparedRequest req,
+                                           SseResEventListener callback,
+                                           HttpCallTracker callTracker,
+                                           HttpBaseClientProvider baseClientProvider) throws Exception {
         Request request = buildRequestByType(req);
-        return executeRequest(req, request, callback);
+        return executeRequest(req, request, callback, callTracker, baseClientProvider);
     }
 
     /**
@@ -114,9 +127,20 @@ public class HttpService {
      * 构建自定义 OkHttpClient
      */
     private static OkHttpClient buildCustomClient(PreparedRequest req) {
+        return buildCustomClient(req, null);
+    }
+
+    private static OkHttpClient buildCustomClient(PreparedRequest req, HttpBaseClientProvider baseClientProvider) {
+        OkHttpClient baseClient = baseClientProvider == null
+                ? resolveDefaultBaseClient(req)
+                : baseClientProvider.getBaseClient(req);
+        return buildDynamicClient(baseClient, req, req.requestTimeoutMs);
+    }
+
+    static OkHttpClient resolveDefaultBaseClient(PreparedRequest req) {
         String baseUri = extractBaseUri(req.url);
         boolean isolateSslConfiguration = shouldIsolateConnectionPool(req);
-        OkHttpClient baseClient = isolateSslConfiguration
+        return isolateSslConfiguration
                 // Rebuild from the target SSL mode so strict requests do not inherit lenient TLS components.
                 ? OkHttpClientManager.createClientForSslMode(
                         baseUri,
@@ -124,7 +148,6 @@ public class HttpService {
                         resolveSslVerificationMode(req)
                 )
                 : OkHttpClientManager.getClient(baseUri, req.followRedirects);
-        return buildDynamicClient(baseClient, req, req.requestTimeoutMs);
     }
 
     private static void applyRequestSettings(OkHttpClient.Builder builder,
@@ -225,17 +248,33 @@ public class HttpService {
     /**
      * 执行 HTTP 请求的通用方法
      */
-    private static HttpResponse executeRequest(PreparedRequest req, Request request, SseResEventListener callback) throws Exception {
-        OkHttpClient client = buildCustomClient(req);
+    private static HttpResponse executeRequest(PreparedRequest req,
+                                               Request request,
+                                               SseResEventListener callback,
+                                               HttpCallTracker callTracker,
+                                               HttpBaseClientProvider baseClientProvider) throws Exception {
+        OkHttpClient client = buildCustomClient(req, baseClientProvider);
         Call call = client.newCall(request);
-        return callWithRequest(req, call, client, callback);
+        HttpCallTracker resolvedTracker = callTracker == null ? HttpCallTracker.NOOP : callTracker;
+        resolvedTracker.onCallStarted(call);
+        try {
+            return callWithRequest(req, call, client, callback);
+        } finally {
+            resolvedTracker.onCallFinished(call);
+        }
     }
 
     /**
      * 发送 SSE 请求，支持动态 eventListenerFactory 和超时配置
      */
     public static EventSource sendSseRequest(PreparedRequest req, EventSourceListener listener) {
-        OkHttpClient customClient = buildCustomClient(req);
+        return sendSseRequest(req, listener, null);
+    }
+
+    public static EventSource sendSseRequest(PreparedRequest req,
+                                             EventSourceListener listener,
+                                             HttpBaseClientProvider baseClientProvider) {
+        OkHttpClient customClient = buildCustomClient(req, baseClientProvider);
         Request request = buildRequestByType(req);
         return EventSources.createFactory(customClient).newEventSource(request, listener);
     }
@@ -244,9 +283,28 @@ public class HttpService {
      * 发送 WebSocket 请求，支持动态 eventListenerFactory 和超时配置
      */
     public static WebSocket sendWebSocket(PreparedRequest req, WebSocketListener listener) {
-        OkHttpClient customClient = buildCustomClient(req);
+        return sendWebSocket(req, listener, null);
+    }
+
+    public static WebSocket sendWebSocket(PreparedRequest req,
+                                          WebSocketListener listener,
+                                          HttpBaseClientProvider baseClientProvider) {
+        return sendWebSocket(req, listener, baseClientProvider, true);
+    }
+
+    public static WebSocket sendWebSocket(PreparedRequest req,
+                                          WebSocketListener listener,
+                                          HttpBaseClientProvider baseClientProvider,
+                                          boolean lifecycleLoggingEnabled) {
+        OkHttpClient customClient = buildCustomClient(req, baseClientProvider);
         Request request = buildRequestByType(req);
-        return customClient.newWebSocket(request, new LogWebSocketListener(listener));
+        return customClient.newWebSocket(request, resolveWebSocketListener(listener, lifecycleLoggingEnabled));
+    }
+
+    static WebSocketListener resolveWebSocketListener(WebSocketListener listener, boolean lifecycleLoggingEnabled) {
+        WebSocketListener resolvedListener = listener == null ? new WebSocketListener() {
+        } : listener;
+        return lifecycleLoggingEnabled ? new LogWebSocketListener(resolvedListener) : resolvedListener;
     }
 
 

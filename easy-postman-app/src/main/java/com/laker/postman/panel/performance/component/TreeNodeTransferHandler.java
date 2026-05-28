@@ -1,8 +1,10 @@
 package com.laker.postman.panel.performance.component;
 
+import com.laker.postman.performance.core.model.NodeType;
+
+
 import com.laker.postman.panel.performance.PerformanceTreeRules;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
-import com.laker.postman.panel.performance.model.NodeType;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;

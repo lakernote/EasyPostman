@@ -2,12 +2,12 @@ package com.laker.postman.panel.performance.execution;
 
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.script.TestResult;
-import com.laker.postman.panel.performance.assertion.AssertionData;
+import com.laker.postman.performance.core.assertion.AssertionData;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
-import com.laker.postman.panel.performance.model.NodeType;
-import com.laker.postman.panel.performance.plan.PerformanceAssertionElement;
-import com.laker.postman.panel.performance.plan.PerformancePlanElement;
-import com.laker.postman.panel.performance.plan.PerformanceProtocolStageElement;
+import com.laker.postman.performance.core.model.NodeType;
+import com.laker.postman.performance.core.plan.PerformanceAssertionElement;
+import com.laker.postman.performance.core.plan.PerformancePlanElement;
+import com.laker.postman.performance.core.plan.PerformanceProtocolStageElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
 import com.laker.postman.service.variable.ExecutionContextScope;

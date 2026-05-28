@@ -256,33 +256,133 @@ public class OkHttpClientManager {
         Dispatcher dispatcher = new Dispatcher();
         dispatcher.setMaxRequests(maxRequests);
         dispatcher.setMaxRequestsPerHost(maxRequestsPerHost);
-        return createClient(baseUri, followRedirects, sslMode, dispatcher);
+        return createClient(
+                baseUri,
+                followRedirects,
+                sslMode,
+                dispatcher,
+                maxIdleConnections,
+                keepAliveDuration
+        );
+    }
+
+    public static OkHttpClient createClientForRuntimeConfig(String baseUri,
+                                                            boolean followRedirects,
+                                                            SSLConfigurationUtil.SSLVerificationMode sslMode,
+                                                            HttpClientRuntimeConfig config) {
+        return createClientForRuntimeConfig(baseUri, followRedirects, sslMode, config, GLOBAL_COOKIE_JAR);
+    }
+
+    public static OkHttpClient createClientForRuntimeConfig(String baseUri,
+                                                            boolean followRedirects,
+                                                            SSLConfigurationUtil.SSLVerificationMode sslMode,
+                                                            HttpClientRuntimeConfig config,
+                                                            CookieJar cookieJar) {
+        HttpClientRuntimeConfig resolvedConfig = config == null ? HttpClientRuntimeConfig.defaults() : config;
+        Dispatcher dispatcher = new Dispatcher();
+        dispatcher.setMaxRequests(resolvedConfig.maxRequests());
+        dispatcher.setMaxRequestsPerHost(resolvedConfig.maxRequestsPerHost());
+        return createClient(
+                baseUri,
+                followRedirects,
+                sslMode,
+                dispatcher,
+                resolvedConfig.maxIdleConnections(),
+                resolvedConfig.keepAliveDurationSeconds(),
+                false,
+                cookieJar
+        );
     }
 
     private static OkHttpClient createClient(String baseUri,
                                              boolean followRedirects,
                                              SSLConfigurationUtil.SSLVerificationMode sslMode,
                                              Dispatcher dispatcher) {
+        return createClient(
+                baseUri,
+                followRedirects,
+                sslMode,
+                dispatcher,
+                maxIdleConnections,
+                keepAliveDuration
+        );
+    }
+
+    private static OkHttpClient createClient(String baseUri,
+                                             boolean followRedirects,
+                                             SSLConfigurationUtil.SSLVerificationMode sslMode,
+                                             Dispatcher dispatcher,
+                                             int poolMaxIdleConnections,
+                                             long poolKeepAliveDurationSeconds) {
+        return createClient(
+                baseUri,
+                followRedirects,
+                sslMode,
+                dispatcher,
+                poolMaxIdleConnections,
+                poolKeepAliveDurationSeconds,
+                true
+        );
+    }
+
+    private static OkHttpClient createClient(String baseUri,
+                                             boolean followRedirects,
+                                             SSLConfigurationUtil.SSLVerificationMode sslMode,
+                                             Dispatcher dispatcher,
+                                             int poolMaxIdleConnections,
+                                             long poolKeepAliveDurationSeconds,
+                                             boolean sslConsoleLoggingEnabled) {
+        return createClient(
+                baseUri,
+                followRedirects,
+                sslMode,
+                dispatcher,
+                poolMaxIdleConnections,
+                poolKeepAliveDurationSeconds,
+                sslConsoleLoggingEnabled,
+                GLOBAL_COOKIE_JAR
+        );
+    }
+
+    private static OkHttpClient createClient(String baseUri,
+                                             boolean followRedirects,
+                                             SSLConfigurationUtil.SSLVerificationMode sslMode,
+                                             Dispatcher dispatcher,
+                                             int poolMaxIdleConnections,
+                                             long poolKeepAliveDurationSeconds,
+                                             boolean sslConsoleLoggingEnabled,
+                                             CookieJar cookieJar) {
         OkHttpClient.Builder builder = new OkHttpClient.Builder()
                 .connectTimeout(0, TimeUnit.MILLISECONDS)
                 .readTimeout(0, TimeUnit.MILLISECONDS)
                 .writeTimeout(0, TimeUnit.MILLISECONDS)
                 .dispatcher(dispatcher)
-                .connectionPool(new ConnectionPool(maxIdleConnections, keepAliveDuration, TimeUnit.SECONDS))
+                .connectionPool(new ConnectionPool(
+                        poolMaxIdleConnections,
+                        poolKeepAliveDurationSeconds,
+                        TimeUnit.SECONDS
+                ))
                 .retryOnConnectionFailure(true)
                 .followRedirects(followRedirects)
                 .cache(null)
                 .pingInterval(30, TimeUnit.SECONDS);
 
-        builder.cookieJar(GLOBAL_COOKIE_JAR);
+        builder.cookieJar(cookieJar == null ? GLOBAL_COOKIE_JAR : cookieJar);
         configureProxy(builder, baseUri);
-        configureSSLSettings(builder, baseUri, sslMode);
+        configureSSLSettings(builder, baseUri, sslMode, sslConsoleLoggingEnabled);
         return builder.build();
     }
 
     private static void configureSSLSettings(OkHttpClient.Builder builder,
                                              String baseUri,
                                              SSLConfigurationUtil.SSLVerificationMode mode) {
+        configureSSLSettings(builder, baseUri, mode, true);
+    }
+
+    private static void configureSSLSettings(OkHttpClient.Builder builder,
+                                             String baseUri,
+                                             SSLConfigurationUtil.SSLVerificationMode mode,
+                                             boolean sslConsoleLoggingEnabled) {
         URI uri = tryParseUri(baseUri, "SSL configuration");
         if (uri == null || !isSecureScheme(uri.getScheme())) {
             return;
@@ -292,7 +392,11 @@ public class OkHttpClientManager {
             log.warn("SSL verification disabled by user settings");
         }
 
-        SSLConfigurationUtil.configureSSL(builder, mode, uri.getHost(), resolveSecurePort(uri));
+        SSLConfigurationUtil.configureSSL(builder, mode, uri.getHost(), resolveSecurePort(uri), sslConsoleLoggingEnabled);
+    }
+
+    public static String runtimeSettingsCacheKey(String baseUri) {
+        return getProxyConfigKey(baseUri);
     }
 
     private static String getProxyConfigKey(String baseUri) {
@@ -319,24 +423,34 @@ public class OkHttpClientManager {
         }
         boolean effectiveProxySslDisabled = SettingManager.isProxyEnabled()
                 && SettingManager.isProxySslVerificationDisabled();
-        return String.format("%s|ssl:%b:%b|customTrust:%b:%s",
+        return String.format("%s|ssl:%b:%b|customTrust:%b:%s|%s",
                 proxyPart,
                 effectiveProxySslDisabled,
                 SettingManager.isRequestSslVerificationDisabled(),
                 SettingManager.isCustomTrustMaterialEnabled(),
-                trustPart);
+                trustPart,
+                buildClientCertificateCachePart(baseUri));
     }
 
     private static String buildProxyConfigPart(String baseUri) {
         if (SettingManager.isSystemProxyMode()) {
-            return "proxy:system:" + describeProxy(selectSystemProxy(baseUri)) + ":" + SettingManager.getProxyUsername();
+            return "proxy:system:" + describeProxy(selectSystemProxy(baseUri)) + ":"
+                    + SettingManager.getProxyUsername() + ":" + SettingManager.getProxyPassword().hashCode();
         }
 
         return String.format("proxy:manual:%s:%s:%d:%s",
                 SettingManager.getProxyType(),
                 SettingManager.getProxyHost(),
                 SettingManager.getProxyPort(),
-                SettingManager.getProxyUsername());
+                SettingManager.getProxyUsername() + ":" + SettingManager.getProxyPassword().hashCode());
+    }
+
+    private static String buildClientCertificateCachePart(String baseUri) {
+        URI uri = tryParseUri(baseUri, "client certificate cache key");
+        if (uri == null || !isSecureScheme(uri.getScheme())) {
+            return "clientCert:none";
+        }
+        return SSLConfigurationUtil.clientCertificateCacheKey(uri.getHost(), resolveSecurePort(uri));
     }
 
     private static ProxySelector getSystemProxySelector() {

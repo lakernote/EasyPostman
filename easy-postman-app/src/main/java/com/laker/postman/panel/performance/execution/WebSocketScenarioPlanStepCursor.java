@@ -1,7 +1,9 @@
 package com.laker.postman.panel.performance.execution;
 
-import com.laker.postman.panel.performance.plan.PerformanceController;
-import com.laker.postman.panel.performance.plan.PerformancePlanElement;
+import com.laker.postman.performance.core.plan.PerformanceController;
+import com.laker.postman.performance.core.plan.PerformancePlanElement;
+
+
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 
 import java.util.ArrayDeque;

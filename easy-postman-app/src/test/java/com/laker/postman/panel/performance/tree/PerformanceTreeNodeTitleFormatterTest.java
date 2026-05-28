@@ -1,8 +1,8 @@
 package com.laker.postman.panel.performance.tree;
 
-import com.laker.postman.panel.performance.controller.LoopData;
-import com.laker.postman.panel.performance.model.SsePerformanceData;
-import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
+import com.laker.postman.performance.core.controller.LoopData;
+import com.laker.postman.performance.core.model.SsePerformanceData;
+import com.laker.postman.performance.core.model.WebSocketPerformanceData;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertTrue;

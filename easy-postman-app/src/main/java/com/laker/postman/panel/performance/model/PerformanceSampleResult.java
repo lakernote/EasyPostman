@@ -1,5 +1,10 @@
 package com.laker.postman.panel.performance.model;
 
+import com.laker.postman.performance.core.model.PerformanceProtocol;
+import com.laker.postman.performance.core.model.PerformanceSampleRecord;
+import com.laker.postman.performance.core.model.RequestResult;
+
+
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.script.TestResult;
@@ -82,13 +87,29 @@ public class PerformanceSampleResult {
     }
 
     public RequestResult toRequestResult() {
-        RequestResult result = new RequestResult(startTimeMs, endTimeMs, successful, apiId, protocol);
-        result.endTime = endTimeMs;
-        result.sentMessages = sentMessages;
-        result.receivedMessages = receivedMessages;
-        result.matchedMessages = matchedMessages;
-        result.firstMessageLatencyMs = firstMessageLatencyMs;
-        return result;
+        return toSampleRecord().toRequestResult();
+    }
+
+    public PerformanceSampleRecord toSampleRecord() {
+        return PerformanceSampleRecord.builder()
+                .apiId(apiId)
+                .apiName(apiName)
+                .errorMsg(errorMsg)
+                .executionFailed(executionFailed)
+                .interrupted(interrupted)
+                .protocol(protocol)
+                .startTimeMs(startTimeMs)
+                .endTimeMs(endTimeMs)
+                .elapsedTimeMs(elapsedTimeMs)
+                .responseCode(responseCode)
+                .bodySize(bodySize)
+                .headersSize(headersSize)
+                .sentMessages(sentMessages)
+                .receivedMessages(receivedMessages)
+                .matchedMessages(matchedMessages)
+                .firstMessageLatencyMs(firstMessageLatencyMs)
+                .successful(successful)
+                .build();
     }
 
     private static int receivedMessages(HttpResponse response, PerformanceProtocol protocol) {

@@ -13,11 +13,11 @@ import com.laker.postman.service.http.RequestFinalizer;
 import com.laker.postman.service.variable.ExecutionContextScope;
 import com.laker.postman.service.variable.ExecutionVariableContext;
 import com.laker.postman.service.variable.RequestContext;
+import com.laker.postman.service.variable.RequestExecutionScope;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -44,13 +44,52 @@ public class ScriptExecutionPipeline {
                                                               PreparedRequest request,
                                                               ExecutionVariableContext sharedExecutionContext,
                                                               boolean useCache) {
+        return forRequestExecution(item, request, sharedExecutionContext, useCache, null);
+    }
+
+    public static ScriptExecutionPipeline forRequestExecution(HttpRequestItem item,
+                                                              PreparedRequest request,
+                                                              ExecutionVariableContext sharedExecutionContext,
+                                                              boolean useCache,
+                                                              JsScriptExecutor.OutputCallback outputCallback) {
+        return forRequestExecution(item, request, sharedExecutionContext, useCache, outputCallback, null);
+    }
+
+    public static ScriptExecutionPipeline forRequestExecution(HttpRequestItem item,
+                                                              PreparedRequest request,
+                                                              ExecutionVariableContext sharedExecutionContext,
+                                                              boolean useCache,
+                                                              JsScriptExecutor.OutputCallback outputCallback,
+                                                              Supplier<Environment> environmentSupplier) {
+        return forRequestExecution(
+                item,
+                request,
+                sharedExecutionContext,
+                useCache,
+                outputCallback,
+                environmentSupplier,
+                RequestContext.captureCurrentExecutionScope()
+        );
+    }
+
+    public static ScriptExecutionPipeline forRequestExecution(HttpRequestItem item,
+                                                              PreparedRequest request,
+                                                              ExecutionVariableContext sharedExecutionContext,
+                                                              boolean useCache,
+                                                              JsScriptExecutor.OutputCallback outputCallback,
+                                                              Supplier<Environment> environmentSupplier,
+                                                              RequestExecutionScope requestExecutionScope) {
         return ScriptExecutionPipeline.builder()
                 .request(request)
                 .preScript(request.prescript)
                 .postScript(request.postscript)
                 .sharedExecutionContext(sharedExecutionContext)
-                .requestNode(RequestContext.getCurrentRequestNode())
+                .requestExecutionScope(requestExecutionScope != null
+                        ? requestExecutionScope
+                        : RequestContext.captureCurrentExecutionScope())
                 .deferredAuthorization(PreparedRequestBuilder.resolveDeferredAuthorization(item, useCache))
+                .outputCallback(outputCallback)
+                .environmentSupplier(environmentSupplier)
                 .build();
     }
 
@@ -86,9 +125,15 @@ public class ScriptExecutionPipeline {
     private final JsScriptExecutor.OutputCallback outputCallback;
 
     /**
-     * 当前脚本所属的请求节点，用于分组变量解析。
+     * 可选的环境变量供应器。Headless / 集群 worker 可按 run 注入环境；
+     * GUI 默认不传时仍使用 EnvironmentService 的 active environment。
      */
-    private final DefaultMutableTreeNode requestNode;
+    private final Supplier<Environment> environmentSupplier;
+
+    /**
+     * 当前脚本所属请求的变量作用域，用于 headless / GUI 共用的分组变量解析。
+     */
+    private final RequestExecutionScope requestExecutionScope;
 
     /**
      * 可选的共享上下文。Functional / Performance 这类“同一轮多请求”
@@ -137,7 +182,7 @@ public class ScriptExecutionPipeline {
 
             } catch (ScriptExecutionException ex) {
                 log.error("Pre-script execution failed: {}", ex.getMessage(), ex);
-                ConsolePanel.appendLog("[PreScript Error]\n" + ex.getMessage(), ConsolePanel.LogType.ERROR);
+                appendScriptOutput("[PreScript Error]\n" + ex.getMessage(), JsScriptExecutor.ConsoleType.ERROR);
                 return ScriptExecutionResult.failure(ex.getMessage(), ex);
             }
         });
@@ -179,7 +224,7 @@ public class ScriptExecutionPipeline {
 
             } catch (ScriptExecutionException ex) {
                 log.error("Post-script execution failed: {}", ex.getMessage(), ex);
-                ConsolePanel.appendLog("[PostScript Error]\n" + ex.getMessage(), ConsolePanel.LogType.ERROR);
+                appendScriptOutput("[PostScript Error]\n" + ex.getMessage(), JsScriptExecutor.ConsoleType.ERROR);
 
                 if (pm != null && pm.testResults != null) {
                     return ScriptExecutionResult.failure(ex.getMessage(), ex, pm.testResults);
@@ -217,7 +262,7 @@ public class ScriptExecutionPipeline {
                 return ScriptExecutionResult.success();
             } catch (ScriptExecutionException ex) {
                 log.error("WebSocket send script execution failed: {}", ex.getMessage(), ex);
-                ConsolePanel.appendLog("[WebSocket Send Script Error]\n" + ex.getMessage(), ConsolePanel.LogType.ERROR);
+                appendScriptOutput("[WebSocket Send Script Error]\n" + ex.getMessage(), JsScriptExecutor.ConsoleType.ERROR);
                 return ScriptExecutionResult.failure(ex.getMessage(), ex);
             }
         });
@@ -274,6 +319,14 @@ public class ScriptExecutionPipeline {
         };
     }
 
+    private void appendScriptOutput(String output, JsScriptExecutor.ConsoleType consoleType) {
+        if (outputCallback != null) {
+            outputCallback.onOutput(output, consoleType);
+            return;
+        }
+        ConsolePanel.appendLog(output, mapConsoleType(consoleType));
+    }
+
     /**
      * 将 ConsoleType 映射到 ConsolePanel.LogType
      */
@@ -305,13 +358,13 @@ public class ScriptExecutionPipeline {
     }
 
     public <T> T withExecutionContext(Supplier<T> action) {
-        try (ExecutionContextScope ignored = ExecutionContextScope.open(getOrCreateExecutionContext(), requestNode)) {
+        try (ExecutionContextScope ignored = ExecutionContextScope.open(getOrCreateExecutionContext(), requestExecutionScope)) {
             return action.get();
         }
     }
 
     public <T> T withExecutionContextThrowing(ThrowingSupplier<T> action) throws Exception {
-        try (ExecutionContextScope ignored = ExecutionContextScope.open(getOrCreateExecutionContext(), requestNode)) {
+        try (ExecutionContextScope ignored = ExecutionContextScope.open(getOrCreateExecutionContext(), requestExecutionScope)) {
             return action.get();
         }
     }
@@ -352,8 +405,8 @@ public class ScriptExecutionPipeline {
      * @param req 准备好的请求对象
      * @return 变量绑定 Map
      */
-    private static Map<String, Object> preparePreRequestBindings(PreparedRequest req) {
-        Environment activeEnv = EnvironmentService.getActiveEnvironment();
+    private Map<String, Object> preparePreRequestBindings(PreparedRequest req) {
+        Environment activeEnv = resolveActiveEnvironment();
         PostmanApiContext postman = new PostmanApiContext(activeEnv);
         postman.setRequest(req);
 
@@ -382,6 +435,13 @@ public class ScriptExecutionPipeline {
         }
 
         return bindings;
+    }
+
+    private Environment resolveActiveEnvironment() {
+        if (environmentSupplier != null) {
+            return environmentSupplier.get();
+        }
+        return EnvironmentService.getActiveEnvironment();
     }
 
     /**

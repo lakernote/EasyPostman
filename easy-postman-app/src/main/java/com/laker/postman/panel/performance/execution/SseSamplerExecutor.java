@@ -1,13 +1,16 @@
 package com.laker.postman.panel.performance.execution;
 
-import com.laker.postman.panel.performance.model.NodeType;
-import com.laker.postman.panel.performance.model.PerformanceProtocol;
-import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
-import com.laker.postman.panel.performance.model.SsePerformanceData;
-import com.laker.postman.panel.performance.model.SsePerformanceDataSupport;
-import com.laker.postman.panel.performance.plan.PerformancePlanElement;
-import com.laker.postman.panel.performance.plan.PerformanceProtocolStageElement;
+import com.laker.postman.performance.core.model.NodeType;
+import com.laker.postman.performance.core.model.PerformanceProtocol;
+import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
+import com.laker.postman.performance.core.model.SsePerformanceData;
+import com.laker.postman.performance.core.model.SsePerformanceDataSupport;
+import com.laker.postman.performance.core.plan.PerformancePlanElement;
+import com.laker.postman.performance.core.plan.PerformanceProtocolStageElement;
+
+
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
+import com.laker.postman.service.http.HttpBaseClientProvider;
 import lombok.RequiredArgsConstructor;
 import okhttp3.sse.EventSource;
 
@@ -24,6 +27,16 @@ final class SseSamplerExecutor implements PerformanceProtocolSamplerExecutor {
     private final Set<EventSource> activeSseSources;
     private final PerformanceRealtimeMetrics realtimeMetrics;
     private final IntSupplier responseBodyPreviewLimitKbSupplier;
+    private final HttpBaseClientProvider baseClientProvider;
+
+    SseSamplerExecutor(BooleanSupplier runningSupplier,
+                       Predicate<Throwable> cancelledChecker,
+                       Set<EventSource> activeSseSources,
+                       PerformanceRealtimeMetrics realtimeMetrics,
+                       IntSupplier responseBodyPreviewLimitKbSupplier) {
+        this(runningSupplier, cancelledChecker, activeSseSources, realtimeMetrics, responseBodyPreviewLimitKbSupplier,
+                null);
+    }
 
     @Override
     public ProtocolExecutionResult execute(PerformanceProtocolSamplerContext context) {
@@ -42,12 +55,13 @@ final class SseSamplerExecutor implements PerformanceProtocolSamplerExecutor {
                 realtimeMetrics,
                 responseBodyPreviewLimitBytes(),
                 retainResponseBody(context),
-                trackResponseBodySize(context)
+                trackResponseBodySize(context),
+                baseClientProvider
         ).execute(
                 context.getRequest(),
                 ssePerformanceData,
-                context.getRequestItem().getId(),
-                context.getRequestItem().getName()
+                context.getRequestId(),
+                context.getRequestName()
         );
         return new ProtocolExecutionResult(
                 result.response,

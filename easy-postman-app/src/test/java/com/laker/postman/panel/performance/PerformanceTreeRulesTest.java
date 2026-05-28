@@ -3,9 +3,9 @@ package com.laker.postman.panel.performance;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.panel.performance.controller.LoopData;
+import com.laker.postman.performance.core.controller.LoopData;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
-import com.laker.postman.panel.performance.model.NodeType;
+import com.laker.postman.performance.core.model.NodeType;
 import org.testng.annotations.Test;
 
 import javax.swing.tree.DefaultMutableTreeNode;

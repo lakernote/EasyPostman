@@ -1,5 +1,6 @@
 package com.laker.postman.panel.performance.model;
 
+
 import com.laker.postman.model.script.TestResult;
 import lombok.Value;
 

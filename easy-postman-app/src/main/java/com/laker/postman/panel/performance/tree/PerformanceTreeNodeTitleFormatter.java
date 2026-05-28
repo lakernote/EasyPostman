@@ -1,12 +1,14 @@
 package com.laker.postman.panel.performance.tree;
 
+import com.laker.postman.performance.core.config.CsvDataSetData;
+import com.laker.postman.performance.core.controller.LoopData;
+import com.laker.postman.performance.core.extractor.ExtractorData;
+import com.laker.postman.performance.core.extractor.ExtractorType;
+import com.laker.postman.performance.core.model.SsePerformanceData;
+import com.laker.postman.performance.core.model.WebSocketPerformanceData;
+
+
 import cn.hutool.core.text.CharSequenceUtil;
-import com.laker.postman.panel.performance.config.CsvDataSetData;
-import com.laker.postman.panel.performance.controller.LoopData;
-import com.laker.postman.panel.performance.extractor.ExtractorData;
-import com.laker.postman.panel.performance.extractor.ExtractorType;
-import com.laker.postman.panel.performance.model.SsePerformanceData;
-import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.experimental.UtilityClass;
@@ -76,7 +78,7 @@ public class PerformanceTreeNodeTitleFormatter {
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_EXTRACTOR_NODE) + " [",
                 "]"
         );
-        joiner.add(type.displayName());
+        joiner.add(I18nUtil.getMessage(type.getMessageKey()));
         joiner.add(variableName.trim());
         if (CharSequenceUtil.isNotBlank(expression)) {
             joiner.add(expression.trim());

@@ -1,12 +1,9 @@
 package com.laker.postman.panel.performance.execution;
 
-import com.laker.postman.service.setting.SettingManager;
 
 final class BoundedTextAccumulator {
 
-    static final int DEFAULT_PREVIEW_BYTES = SettingManager.performanceResponseBodyPreviewLimitBytes(
-            SettingManager.DEFAULT_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB
-    );
+    static final int DEFAULT_PREVIEW_BYTES = PerformanceExecutionConfig.DEFAULT_RESPONSE_BODY_PREVIEW_LIMIT_BYTES;
 
     private final int maxUtf8Bytes;
     private final StringBuilder retained;

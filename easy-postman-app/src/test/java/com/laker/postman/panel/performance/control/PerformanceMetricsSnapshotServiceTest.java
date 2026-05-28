@@ -1,10 +1,10 @@
 package com.laker.postman.panel.performance.control;
 
-import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
-import com.laker.postman.panel.performance.model.PerformanceReportSnapshot;
-import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
-import com.laker.postman.panel.performance.model.PerformanceTrendSnapshot;
-import com.laker.postman.panel.performance.model.PerformanceTrendWindowCollector;
+import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
+import com.laker.postman.performance.core.model.PerformanceReportSnapshot;
+import com.laker.postman.performance.core.model.PerformanceStatsCollector;
+import com.laker.postman.performance.core.model.PerformanceTrendSnapshot;
+import com.laker.postman.performance.core.model.PerformanceTrendWindowCollector;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;

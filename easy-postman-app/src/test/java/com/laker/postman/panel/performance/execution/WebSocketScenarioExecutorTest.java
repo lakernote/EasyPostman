@@ -4,19 +4,19 @@ import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.panel.performance.assertion.AssertionData;
+import com.laker.postman.performance.core.assertion.AssertionData;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
-import com.laker.postman.panel.performance.controller.LoopData;
-import com.laker.postman.panel.performance.model.NodeType;
-import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
-import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
-import com.laker.postman.panel.performance.plan.PerformanceController;
-import com.laker.postman.panel.performance.plan.PerformanceLoopController;
-import com.laker.postman.panel.performance.plan.PerformancePlanElement;
-import com.laker.postman.panel.performance.plan.PerformanceProtocolStageElement;
+import com.laker.postman.performance.core.controller.LoopData;
+import com.laker.postman.performance.core.model.NodeType;
+import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
+import com.laker.postman.performance.core.model.WebSocketPerformanceData;
+import com.laker.postman.performance.core.plan.PerformanceController;
+import com.laker.postman.performance.core.plan.PerformanceLoopController;
+import com.laker.postman.performance.core.plan.PerformancePlanElement;
+import com.laker.postman.performance.core.plan.PerformanceProtocolStageElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
-import com.laker.postman.panel.performance.timer.TimerData;
+import com.laker.postman.performance.core.timer.TimerData;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.service.variable.ExecutionVariableContext;
 import com.laker.postman.service.variable.IterationDataVariableService;
@@ -30,6 +30,8 @@ import org.testng.annotations.Test;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -48,6 +50,15 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 public class WebSocketScenarioExecutorTest {
+
+    @Test
+    public void performanceWebSocketExecutionShouldDisableGuiLifecycleLogging() throws Exception {
+        String source = Files.readString(Path.of(
+                "src/main/java/com/laker/postman/panel/performance/execution/WebSocketScenarioExecutor.java"
+        ));
+
+        assertTrue(source.contains("executeWebSocket(req, listener, baseClientProvider, false)"));
+    }
     private static final long SESSION_END_DELAY_MS = 220;
 
     @Test
@@ -269,7 +280,7 @@ public class WebSocketScenarioExecutorTest {
                 .build();
 
         assertTrue(WebSocketScenarioStepSupport.executeSendPreScript(
-                pipeline,
+                new DefaultPerformanceScriptRuntime(pipeline),
                 new WebSocketPerformanceData(),
                 0,
                 1,

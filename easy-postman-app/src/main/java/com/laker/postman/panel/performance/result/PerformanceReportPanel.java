@@ -1,12 +1,15 @@
 package com.laker.postman.panel.performance.result;
 
+import com.laker.postman.performance.core.model.PerformanceProtocol;
+import com.laker.postman.performance.core.model.PerformanceReportSnapshot;
+import com.laker.postman.performance.core.model.PerformanceStatsSnapshot;
+import com.laker.postman.performance.core.model.RequestResult;
+
+
 import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
 import com.laker.postman.common.component.button.SegmentedToggleButton;
-import com.laker.postman.panel.performance.model.PerformanceProtocol;
-import com.laker.postman.panel.performance.model.PerformanceReportSnapshot;
-import com.laker.postman.panel.performance.model.PerformanceStatsSnapshot;
-import com.laker.postman.panel.performance.model.RequestResult;
+import com.laker.postman.panel.performance.model.PerformanceProtocolLabels;
 import com.laker.postman.panel.performance.report.PerformanceProtocolReportData;
 import com.laker.postman.panel.performance.report.PerformanceReportMarkdownBuilder;
 import com.laker.postman.panel.performance.report.PerformanceReportRowMapper;
@@ -97,7 +100,7 @@ public class PerformanceReportPanel extends JPanel {
         JPanel switcher = new SegmentedButtonGroupPanel(FlowLayout.LEFT);
         for (PerformanceProtocol protocol : PerformanceProtocol.values()) {
             JToggleButton button = new SegmentedToggleButton(
-                    protocol.getDisplayName(),
+                    PerformanceProtocolLabels.displayName(protocol),
                     protocol == PerformanceProtocol.HTTP
             );
             button.addActionListener(e -> {
@@ -555,9 +558,9 @@ public class PerformanceReportPanel extends JPanel {
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_MARKDOWN_TITLE),
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_MARKDOWN_EMPTY),
                 List.of(
-                        reportTable(PerformanceProtocol.HTTP.getDisplayName(), reportTableModel),
-                        reportTable(PerformanceProtocol.WEBSOCKET.getDisplayName(), webSocketReportTableModel),
-                        reportTable(PerformanceProtocol.SSE.getDisplayName(), sseReportTableModel)
+                        reportTable(PerformanceProtocolLabels.displayName(PerformanceProtocol.HTTP), reportTableModel),
+                        reportTable(PerformanceProtocolLabels.displayName(PerformanceProtocol.WEBSOCKET), webSocketReportTableModel),
+                        reportTable(PerformanceProtocolLabels.displayName(PerformanceProtocol.SSE), sseReportTableModel)
                 )
         );
     }

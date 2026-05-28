@@ -1,12 +1,14 @@
 package com.laker.postman.panel.performance.control;
 
-import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
-import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
-import com.laker.postman.panel.performance.model.PerformanceTrendSnapshot;
-import com.laker.postman.panel.performance.model.PerformanceTrendWindowCollector;
+import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
+import com.laker.postman.performance.core.model.PerformanceStatsCollector;
+import com.laker.postman.performance.core.model.PerformanceTrendSnapshot;
+import com.laker.postman.performance.core.model.PerformanceTrendWindowCollector;
+import com.laker.postman.performance.core.runtime.PerformanceThreadFactory;
+
+
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceTrendPanel;
-import com.laker.postman.panel.performance.runtime.PerformanceThreadFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.jfree.data.time.Millisecond;
 import org.jfree.data.time.RegularTimePeriod;

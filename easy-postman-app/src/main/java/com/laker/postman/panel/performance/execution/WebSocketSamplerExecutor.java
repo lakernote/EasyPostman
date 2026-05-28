@@ -1,9 +1,12 @@
 package com.laker.postman.panel.performance.execution;
 
-import com.laker.postman.panel.performance.model.PerformanceProtocol;
-import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
-import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
+import com.laker.postman.performance.core.model.PerformanceProtocol;
+import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
+import com.laker.postman.performance.core.model.WebSocketPerformanceData;
+
+
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
+import com.laker.postman.service.http.HttpBaseClientProvider;
 import lombok.RequiredArgsConstructor;
 import okhttp3.WebSocket;
 
@@ -20,6 +23,16 @@ final class WebSocketSamplerExecutor implements PerformanceProtocolSamplerExecut
     private final Set<WebSocket> activeWebSockets;
     private final PerformanceRealtimeMetrics realtimeMetrics;
     private final IntSupplier responseBodyPreviewLimitKbSupplier;
+    private final HttpBaseClientProvider baseClientProvider;
+
+    WebSocketSamplerExecutor(BooleanSupplier runningSupplier,
+                             Predicate<Throwable> cancelledChecker,
+                             Set<WebSocket> activeWebSockets,
+                             PerformanceRealtimeMetrics realtimeMetrics,
+                             IntSupplier responseBodyPreviewLimitKbSupplier) {
+        this(runningSupplier, cancelledChecker, activeWebSockets, realtimeMetrics, responseBodyPreviewLimitKbSupplier,
+                null);
+    }
 
     @Override
     public ProtocolExecutionResult execute(PerformanceProtocolSamplerContext context) throws Exception {
@@ -39,16 +52,17 @@ final class WebSocketSamplerExecutor implements PerformanceProtocolSamplerExecut
                 cancelledChecker,
                 activeWebSockets,
                 realtimeMetrics,
-                responseBodyPreviewLimitBytes()
+                responseBodyPreviewLimitBytes(),
+                baseClientProvider
         ).execute(
                 context.getRequest(),
                 context.getRequestSampler(),
                 webSocketPerformanceData,
                 context.getRequestBodyTemplate(),
-                context.getPipeline(),
+                context.getScriptRuntime(),
                 context.getCapturePlan(),
-                context.getRequestItem().getId(),
-                context.getRequestItem().getName()
+                context.getRequestId(),
+                context.getRequestName()
         );
         return new ProtocolExecutionResult(
                 result.response,

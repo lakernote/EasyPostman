@@ -1,10 +1,12 @@
 package com.laker.postman.panel.performance;
 
+import com.laker.postman.performance.core.model.NodeType;
+
+
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
-import com.laker.postman.panel.performance.model.NodeType;
-import com.laker.postman.service.http.HttpUtil;
+import com.laker.postman.panel.performance.model.PerformanceProtocolRules;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 
@@ -14,16 +16,15 @@ public final class PerformanceTreeRules {
     }
 
     public static RequestItemProtocolEnum resolveRequestProtocol(HttpRequestItem item) {
-        return item != null && item.getProtocol() != null ? item.getProtocol() : RequestItemProtocolEnum.HTTP;
+        return PerformanceProtocolRules.resolveRequestProtocol(item);
     }
 
     public static boolean isSsePerfRequest(HttpRequestItem item) {
-        RequestItemProtocolEnum protocol = resolveRequestProtocol(item);
-        return protocol.isSseProtocol() || (protocol.isHttpProtocol() && HttpUtil.isSSERequest(item));
+        return PerformanceProtocolRules.isSsePerfRequest(item);
     }
 
     public static boolean isWebSocketPerfRequest(HttpRequestItem item) {
-        return resolveRequestProtocol(item).isWebSocketProtocol();
+        return PerformanceProtocolRules.isWebSocketPerfRequest(item);
     }
 
     public static boolean canAcceptChild(DefaultMutableTreeNode parentNode, DefaultMutableTreeNode childNode) {

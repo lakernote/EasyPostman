@@ -4,11 +4,11 @@ import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
-import com.laker.postman.panel.performance.controller.LoopData;
-import com.laker.postman.panel.performance.model.NodeType;
-import com.laker.postman.panel.performance.model.PerformanceProtocol;
-import com.laker.postman.panel.performance.model.SsePerformanceData;
-import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
+import com.laker.postman.performance.core.controller.LoopData;
+import com.laker.postman.performance.core.model.NodeType;
+import com.laker.postman.performance.core.model.PerformanceProtocol;
+import com.laker.postman.performance.core.model.SsePerformanceData;
+import com.laker.postman.performance.core.model.WebSocketPerformanceData;
 import org.testng.annotations.Test;
 
 import javax.swing.JTree;
@@ -126,8 +126,8 @@ public class PerformanceTreeSupportTest {
         context.treeSupport.ensureRequestStructure(context.requestNode, context.requestData);
         DefaultMutableTreeNode readNode = newNode("Read", NodeType.WS_READ);
         JMeterTreeNode readData = (JMeterTreeNode) readNode.getUserObject();
-        readData.webSocketPerformanceData = new com.laker.postman.panel.performance.model.WebSocketPerformanceData();
-        readData.webSocketPerformanceData.completionMode = com.laker.postman.panel.performance.model.WebSocketPerformanceData.CompletionMode.FIXED_DURATION;
+        readData.webSocketPerformanceData = new com.laker.postman.performance.core.model.WebSocketPerformanceData();
+        readData.webSocketPerformanceData.completionMode = com.laker.postman.performance.core.model.WebSocketPerformanceData.CompletionMode.FIXED_DURATION;
         readData.webSocketPerformanceData.holdConnectionMs = 30000;
         readData.webSocketPerformanceData.messageFilter = "done";
         context.treeModel.insertNodeInto(readNode, context.requestNode, context.requestNode.getChildCount());

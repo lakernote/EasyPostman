@@ -1,11 +1,12 @@
 package com.laker.postman.panel.performance.threadgroup;
 
-import com.laker.postman.panel.performance.model.NodeType;
-import com.laker.postman.panel.performance.plan.PerformanceController;
-import com.laker.postman.panel.performance.plan.PerformancePlanElement;
+import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
+import com.laker.postman.performance.core.model.NodeType;
+import com.laker.postman.performance.core.plan.PerformanceController;
+import com.laker.postman.performance.core.plan.PerformancePlanElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
-import com.laker.postman.panel.performance.plan.PerformanceTestPlan;
-import com.laker.postman.panel.performance.plan.PerformanceThreadGroupPlan;
+import com.laker.postman.performance.core.plan.PerformanceTestPlan;
+import com.laker.postman.performance.core.plan.PerformanceThreadGroupPlan;
 import org.testng.annotations.Test;
 
 import javax.swing.tree.DefaultMutableTreeNode;

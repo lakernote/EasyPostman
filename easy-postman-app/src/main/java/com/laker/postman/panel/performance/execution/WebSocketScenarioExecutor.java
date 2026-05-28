@@ -1,21 +1,22 @@
 package com.laker.postman.panel.performance.execution;
 
+import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
+import com.laker.postman.performance.core.model.WebSocketPerformanceData;
+import com.laker.postman.performance.core.plan.PerformanceAssertionElement;
+import com.laker.postman.performance.core.plan.PerformanceExtractorElement;
+import com.laker.postman.performance.core.plan.PerformancePlanElement;
+import com.laker.postman.performance.core.plan.PerformanceProtocolStageElement;
+import com.laker.postman.performance.core.plan.PerformanceTimerElement;
+import com.laker.postman.performance.core.timer.TimerData;
+
+
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.script.TestResult;
-import com.laker.postman.panel.performance.model.NodeType;
-import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
-import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
-import com.laker.postman.panel.performance.plan.PerformanceAssertionElement;
-import com.laker.postman.panel.performance.plan.PerformanceExtractorElement;
-import com.laker.postman.panel.performance.plan.PerformancePlanElement;
-import com.laker.postman.panel.performance.plan.PerformanceProtocolStageElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
-import com.laker.postman.panel.performance.plan.PerformanceTimerElement;
-import com.laker.postman.panel.performance.timer.TimerData;
+import com.laker.postman.service.http.HttpBaseClientProvider;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
-import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import okhttp3.Response;
@@ -59,6 +60,7 @@ public class WebSocketScenarioExecutor {
     private final Set<WebSocket> activeWebSockets;
     private final PerformanceRealtimeMetrics realtimeMetrics;
     private final int responseBodyPreviewLimitBytes;
+    private final HttpBaseClientProvider baseClientProvider;
 
     public WebSocketScenarioExecutor(BooleanSupplier runningSupplier,
                                      Predicate<Throwable> cancelledChecker,
@@ -79,21 +81,32 @@ public class WebSocketScenarioExecutor {
                                      Set<WebSocket> activeWebSockets,
                                      PerformanceRealtimeMetrics realtimeMetrics,
                                      int responseBodyPreviewLimitBytes) {
+        this(runningSupplier, cancelledChecker, activeWebSockets, realtimeMetrics, responseBodyPreviewLimitBytes,
+                null);
+    }
+
+    public WebSocketScenarioExecutor(BooleanSupplier runningSupplier,
+                                     Predicate<Throwable> cancelledChecker,
+                                     Set<WebSocket> activeWebSockets,
+                                     PerformanceRealtimeMetrics realtimeMetrics,
+                                     int responseBodyPreviewLimitBytes,
+                                     HttpBaseClientProvider baseClientProvider) {
         this.runningSupplier = runningSupplier;
         this.cancelledChecker = cancelledChecker;
         this.activeWebSockets = activeWebSockets;
         this.realtimeMetrics = realtimeMetrics == null ? new PerformanceRealtimeMetrics() : realtimeMetrics;
         this.responseBodyPreviewLimitBytes = Math.max(1, responseBodyPreviewLimitBytes);
+        this.baseClientProvider = baseClientProvider;
     }
 
     public Result execute(PreparedRequest req,
                           PerformanceRequestSampler requestSampler,
                           WebSocketPerformanceData requestCfg,
                           String requestBodyTemplate,
-                          ScriptExecutionPipeline pipeline,
+                          PerformanceScriptRuntime scriptRuntime,
                           String apiId,
                           String apiName) {
-        return execute(req, requestSampler, requestCfg, requestBodyTemplate, pipeline,
+        return execute(req, requestSampler, requestCfg, requestBodyTemplate, scriptRuntime,
                 PerformanceResponseCapturePlan.resolve(true, requestSampler, false, true,
                         req == null ? "" : req.postscript),
                 apiId, apiName);
@@ -103,7 +116,7 @@ public class WebSocketScenarioExecutor {
                           PerformanceRequestSampler requestSampler,
                           WebSocketPerformanceData requestCfg,
                           String requestBodyTemplate,
-                          ScriptExecutionPipeline pipeline,
+                          PerformanceScriptRuntime scriptRuntime,
                           PerformanceResponseCapturePlan capturePlan,
                           String apiId,
                           String apiName) {
@@ -275,7 +288,7 @@ public class WebSocketScenarioExecutor {
                     }
                 };
 
-                WebSocket webSocket = HttpSingleRequestExecutor.executeWebSocket(req, listener);
+                WebSocket webSocket = HttpSingleRequestExecutor.executeWebSocket(req, listener, baseClientProvider, false);
                 session.webSocket = webSocket;
                 sessions.add(session);
                 currentSession = session;
@@ -402,7 +415,7 @@ public class WebSocketScenarioExecutor {
                                     break;
                                 }
                                 var sendScriptResult = WebSocketScenarioStepSupport.executeSendPreScript(
-                                        pipeline,
+                                        scriptRuntime,
                                         stepCfg,
                                         sendIndex,
                                         sendTimes,

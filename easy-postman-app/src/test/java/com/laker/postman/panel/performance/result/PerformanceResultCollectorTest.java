@@ -3,15 +3,18 @@ package com.laker.postman.panel.performance.result;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.panel.performance.execution.PerformanceRequestExecutionResult;
-import com.laker.postman.panel.performance.model.PerformanceProtocol;
+import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.panel.performance.model.PerformanceResultRetentionPolicy;
+import com.laker.postman.performance.core.model.PerformanceSampleRecord;
 import com.laker.postman.panel.performance.model.PerformanceSampleEvent;
 import com.laker.postman.panel.performance.model.PerformanceSampleResult;
-import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
+import com.laker.postman.performance.core.model.PerformanceStatsCollector;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollectorListener;
-import com.laker.postman.panel.performance.model.PerformanceStatsSnapshot;
-import com.laker.postman.panel.performance.model.RequestResult;
+import com.laker.postman.performance.core.model.PerformanceStatsSnapshot;
+import com.laker.postman.performance.core.model.RequestResult;
+import com.laker.postman.performance.core.runtime.PerformanceCoreResultSink;
 import com.laker.postman.panel.performance.model.ResultNodeInfo;
+import com.laker.postman.panel.performance.runtime.PerformanceResultSink;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -64,6 +67,79 @@ public class PerformanceResultCollectorTest {
         assertEquals(event.sampleResult().getApiId(), "api");
         assertEquals(event.sampleResult().getElapsedTimeMs(), 42L);
         assertTrue(event.sampleResult().isSuccessful());
+    }
+
+    @Test
+    public void collectorShouldAcceptNonUiResultSink() {
+        List<PerformanceSampleEvent> events = new ArrayList<>();
+        PerformanceResultCollector collector = new PerformanceResultCollector(new PerformanceResultSink() {
+            @Override
+            public void onSample(PerformanceSampleEvent event) {
+                events.add(event);
+            }
+        });
+
+        collector.collect(successfulHttpResult(), true);
+
+        assertEquals(events.size(), 1);
+        assertEquals(events.get(0).getSampleResult().getApiId(), "api");
+    }
+
+    @Test
+    public void collectorShouldPublishCoreSampleRecordToResultSink() {
+        List<PerformanceSampleRecord> records = new ArrayList<>();
+        PerformanceResultCollector collector = new PerformanceResultCollector(new PerformanceResultSink() {
+            @Override
+            public boolean acceptsSamples() {
+                return true;
+            }
+
+            @Override
+            public void onSample(PerformanceSampleRecord record) {
+                records.add(record);
+            }
+        });
+
+        collector.collect(successfulHttpResult(), true);
+
+        assertEquals(records.size(), 1);
+        assertEquals(records.get(0).getApiId(), "api");
+        assertEquals(records.get(0).getProtocol(), PerformanceProtocol.HTTP);
+        assertTrue(records.get(0).isSuccessful());
+    }
+
+    @Test
+    public void collectorShouldPublishCoreSampleRecordToPerRunSink() {
+        List<PerformanceSampleRecord> records = new ArrayList<>();
+        PerformanceResultCollector collector = new PerformanceResultCollector(PerformanceResultSink.NOOP);
+
+        collector.collect(successfulHttpResult(), true, new PerformanceCoreResultSink() {
+            @Override
+            public boolean acceptsSamples() {
+                return true;
+            }
+
+            @Override
+            public void onSample(PerformanceSampleRecord record) {
+                records.add(record);
+            }
+        });
+
+        assertEquals(records.size(), 1);
+        assertEquals(records.get(0).getApiId(), "api");
+        assertEquals(records.get(0).getProtocol(), PerformanceProtocol.HTTP);
+    }
+
+    @Test
+    public void collectorShouldNotBuildCoreSampleRecordWhenPerRunSinkDoesNotAcceptSamples() {
+        PerformanceResultCollector collector = new PerformanceResultCollector(PerformanceResultSink.NOOP);
+
+        collector.collect(successfulHttpResult(), true, new PerformanceCoreResultSink() {
+            @Override
+            public void onSample(PerformanceSampleRecord record) {
+                throw new AssertionError("sample record should not be published");
+            }
+        });
     }
 
     @Test
@@ -315,6 +391,26 @@ public class PerformanceResultCollectorTest {
                 new PerformanceStatsCollectorListener(statsCollector),
                 new PerformanceResultTableVisualizer(tablePanel, () -> 3_000)
         ));
+    }
+
+    private static PerformanceRequestExecutionResult successfulHttpResult() {
+        HttpResponse response = new HttpResponse();
+        response.code = 200;
+        response.costMs = 10;
+        response.endTime = 110;
+        return new PerformanceRequestExecutionResult(
+                "api",
+                "API",
+                new PreparedRequest(),
+                response,
+                "",
+                List.of(),
+                false,
+                false,
+                PerformanceProtocol.HTTP,
+                100,
+                10
+        );
     }
 
     private static boolean hasConstructorParameter(Class<?> type, Class<?> parameterType) {

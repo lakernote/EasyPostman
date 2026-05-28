@@ -1,9 +1,11 @@
 package com.laker.postman.panel.performance.execution;
 
+import com.laker.postman.performance.core.plan.PerformanceAssertionElement;
+import com.laker.postman.performance.core.plan.PerformanceExtractorElement;
+
+
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.panel.performance.plan.PerformanceAssertionElement;
-import com.laker.postman.panel.performance.plan.PerformanceExtractorElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 
 import java.util.List;

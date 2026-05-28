@@ -3,10 +3,10 @@ package com.laker.postman.panel.performance.execution;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.script.TestResult;
-import com.laker.postman.panel.performance.assertion.AssertionData;
-import com.laker.postman.panel.performance.extractor.ExtractorData;
-import com.laker.postman.panel.performance.plan.PerformanceAssertionElement;
-import com.laker.postman.panel.performance.plan.PerformanceExtractorElement;
+import com.laker.postman.performance.core.assertion.AssertionData;
+import com.laker.postman.performance.core.extractor.ExtractorData;
+import com.laker.postman.performance.core.plan.PerformanceAssertionElement;
+import com.laker.postman.performance.core.plan.PerformanceExtractorElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.service.js.ScriptExecutionResult;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
@@ -114,7 +114,7 @@ public class PerformanceRequestPostProcessorTest {
                 response,
                 false,
                 false,
-                pipeline,
+                new DefaultPerformanceScriptRuntime(pipeline),
                 "",
                 false,
                 testResults,

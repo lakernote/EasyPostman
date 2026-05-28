@@ -1,148 +1,219 @@
 package com.laker.postman.panel.performance.runtime;
 
-import com.laker.postman.panel.performance.execution.PerformanceRequestExecutor;
-import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
-import com.laker.postman.panel.performance.plan.PerformanceTestPlan;
-import com.laker.postman.panel.performance.result.PerformanceResultCollector;
-import com.laker.postman.panel.performance.threadgroup.PerformanceThreadGroupPlanner;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
-import okhttp3.WebSocket;
-import okhttp3.sse.EventSource;
+import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
+import com.laker.postman.performance.core.plan.PerformanceTestPlan;
+import com.laker.postman.performance.core.runtime.PerformanceCoreExecutionEngine;
+import com.laker.postman.performance.core.runtime.PerformanceCoreResultSink;
+import com.laker.postman.performance.core.runtime.PerformanceNetworkControl;
+import com.laker.postman.performance.core.runtime.PerformanceRunListener;
+import com.laker.postman.performance.core.runtime.PerformanceVirtualUserCoordinator;
 
-import java.awt.*;
-import java.util.ArrayList;
+
+import com.laker.postman.panel.performance.execution.DefaultPerformanceNetworkRuntime;
+import com.laker.postman.panel.performance.execution.PerformanceExecutionConfig;
+import com.laker.postman.panel.performance.execution.PerformanceNetworkRuntime;
+import com.laker.postman.panel.performance.execution.PerformanceRequestExecutor;
+import com.laker.postman.panel.performance.result.PerformanceResultCollector;
+import com.laker.postman.service.variable.ExecutionVariableContext;
+
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 
-@Slf4j
 public final class PerformanceExecutionEngine {
 
-    private final BooleanSupplier runningSupplier;
-    private final PerformanceThreadGroupPlanner threadGroupPlanner = new PerformanceThreadGroupPlanner();
-    private final PerformanceVirtualUserCoordinator virtualUsers = new PerformanceVirtualUserCoordinator();
-    private final Set<EventSource> activeSseSources = ConcurrentHashMap.newKeySet();
-    private final Set<WebSocket> activeWebSockets = ConcurrentHashMap.newKeySet();
-    private final PerformanceRealtimeMetrics realtimeMetrics = new PerformanceRealtimeMetrics();
-    private final PerformanceThreadGroupRunner threadGroupRunner;
+    private final PerformanceNetworkRuntime networkRuntime;
+    private final PerformanceCoreExecutionEngine<ExecutionVariableContext> delegate;
+    private volatile PerformanceCoreResultSink resultSink = PerformanceCoreResultSink.NOOP;
 
-    @Getter
-    private volatile long startTime;
-
-    public PerformanceExecutionEngine(Component dialogParent,
-                                      BooleanSupplier runningSupplier,
+    public PerformanceExecutionEngine(BooleanSupplier runningSupplier,
                                       BooleanSupplier efficientModeSupplier,
                                       IntSupplier responseBodyPreviewLimitKbSupplier,
                                       PerformanceResultCollector resultCollector) {
-        this.runningSupplier = runningSupplier;
+        this(runningSupplier,
+                PerformanceExecutionConfig.supplying(efficientModeSupplier, responseBodyPreviewLimitKbSupplier, () -> false),
+                resultCollector,
+                PerformanceRunListener.NOOP);
+    }
+
+    public PerformanceExecutionEngine(BooleanSupplier runningSupplier,
+                                      BooleanSupplier efficientModeSupplier,
+                                      IntSupplier responseBodyPreviewLimitKbSupplier,
+                                      PerformanceResultCollector resultCollector,
+                                      PerformanceRunListener runListener) {
+        this(runningSupplier,
+                PerformanceExecutionConfig.supplying(efficientModeSupplier, responseBodyPreviewLimitKbSupplier, () -> false),
+                resultCollector,
+                runListener);
+    }
+
+    public PerformanceExecutionEngine(BooleanSupplier runningSupplier,
+                                      BooleanSupplier efficientModeSupplier,
+                                      IntSupplier responseBodyPreviewLimitKbSupplier,
+                                      PerformanceResultCollector resultCollector,
+                                      PerformanceRunListener runListener,
+                                      BooleanSupplier eventLoggingEnabledSupplier) {
+        this(
+                runningSupplier,
+                efficientModeSupplier,
+                responseBodyPreviewLimitKbSupplier,
+                resultCollector,
+                runListener,
+                eventLoggingEnabledSupplier,
+                new DefaultPerformanceNetworkRuntime()
+        );
+    }
+
+    public PerformanceExecutionEngine(BooleanSupplier runningSupplier,
+                                      BooleanSupplier efficientModeSupplier,
+                                      IntSupplier responseBodyPreviewLimitKbSupplier,
+                                      PerformanceResultCollector resultCollector,
+                                      PerformanceRunListener runListener,
+                                      BooleanSupplier eventLoggingEnabledSupplier,
+                                      PerformanceNetworkRuntime networkRuntime) {
+        this(runningSupplier,
+                PerformanceExecutionConfig.supplying(
+                        efficientModeSupplier,
+                        responseBodyPreviewLimitKbSupplier,
+                        eventLoggingEnabledSupplier
+                ),
+                resultCollector,
+                runListener,
+                networkRuntime);
+    }
+
+    public PerformanceExecutionEngine(BooleanSupplier runningSupplier,
+                                      PerformanceExecutionConfig executionConfig,
+                                      PerformanceResultCollector resultCollector) {
+        this(runningSupplier, executionConfig, resultCollector, PerformanceRunListener.NOOP);
+    }
+
+    public PerformanceExecutionEngine(BooleanSupplier runningSupplier,
+                                      PerformanceExecutionConfig executionConfig,
+                                      PerformanceResultCollector resultCollector,
+                                      PerformanceRunListener runListener) {
+        this(runningSupplier, executionConfig, resultCollector, runListener, new DefaultPerformanceNetworkRuntime());
+    }
+
+    public PerformanceExecutionEngine(BooleanSupplier runningSupplier,
+                                      PerformanceExecutionConfig executionConfig,
+                                      PerformanceResultCollector resultCollector,
+                                      PerformanceRunListener runListener,
+                                      PerformanceNetworkRuntime networkRuntime) {
+        this.networkRuntime = networkRuntime == null ? new DefaultPerformanceNetworkRuntime() : networkRuntime;
+        PerformanceExecutionConfig resolvedConfig = executionConfig == null
+                ? PerformanceExecutionConfig.DEFAULT
+                : executionConfig;
+        PerformanceVirtualUserCoordinator virtualUsers = new PerformanceVirtualUserCoordinator();
+        PerformanceRealtimeMetrics realtimeMetrics = new PerformanceRealtimeMetrics();
         PerformanceRequestExecutor requestExecutor = new PerformanceRequestExecutor(
                 runningSupplier,
                 this::isCancelledOrInterrupted,
-                activeSseSources,
-                activeWebSockets,
+                this.networkRuntime.activeSseSources(),
+                this.networkRuntime.activeWebSockets(),
                 realtimeMetrics,
-                efficientModeSupplier,
-                responseBodyPreviewLimitKbSupplier
+                resolvedConfig,
+                this.networkRuntime
         );
         PerformanceSamplerExecutor samplerExecutor = new PerformanceSamplerExecutor(
                 runningSupplier,
-                efficientModeSupplier,
+                resolvedConfig::isEfficientMode,
                 requestExecutor,
-                resultCollector
+                resultCollector,
+                this::currentResultSink
         );
         PerformanceIterationContextFactory iterationContextFactory = new PerformanceIterationContextFactory(virtualUsers);
         PerformancePlanExecutor planExecutor = new PerformancePlanExecutor(runningSupplier, samplerExecutor);
-        this.threadGroupRunner = new PerformanceThreadGroupRunner(
-                dialogParent,
+        this.delegate = new PerformanceCoreExecutionEngine<>(
                 runningSupplier,
-                () -> this.startTime,
-                this::cancelAllNetworkCalls,
+                new PerformanceNetworkControl() {
+                    @Override
+                    public int activeWebSocketCount() {
+                        return PerformanceExecutionEngine.this.networkRuntime.activeWebSocketCount();
+                    }
+
+                    @Override
+                    public int activeSseCount() {
+                        return PerformanceExecutionEngine.this.networkRuntime.activeSseCount();
+                    }
+
+                    @Override
+                    public void cancelAll() {
+                        PerformanceExecutionEngine.this.networkRuntime.cancelAll();
+                    }
+                },
                 virtualUsers,
-                iterationContextFactory,
-                planExecutor
+                realtimeMetrics,
+                iterationContextFactory::create,
+                planExecutor::executeIteration,
+                runListener
         );
     }
 
     public int getActiveThreads() {
-        return virtualUsers.getActiveThreads();
+        return delegate.getActiveThreads();
     }
 
     public int getActiveWebSockets() {
-        return activeWebSockets.size();
+        return delegate.getActiveWebSockets();
     }
 
     public int getActiveSseStreams() {
-        return activeSseSources.size();
+        return delegate.getActiveSseStreams();
     }
 
     public void beginRun(long startTime) {
-        this.startTime = startTime;
-        realtimeMetrics.reset(startTime);
+        beginRun(startTime, PerformanceCoreResultSink.NOOP);
+    }
+
+    public void beginRun(long startTime, PerformanceCoreResultSink resultSink) {
+        this.resultSink = resultSink == null ? PerformanceCoreResultSink.NOOP : resultSink;
+        delegate.beginRun(startTime, this.resultSink);
+    }
+
+    public long getStartTime() {
+        return delegate.getStartTime();
     }
 
     public void resetVirtualUsers() {
-        virtualUsers.resetVirtualUsers();
+        delegate.resetVirtualUsers();
     }
 
     public PerformanceRealtimeMetrics.Sample sampleRealtimeMetrics(long nowMs) {
-        return realtimeMetrics.sample(nowMs);
+        return delegate.sampleRealtimeMetrics(nowMs);
     }
 
     public PerformanceRealtimeMetrics.LiveSnapshot liveRealtimeMetrics(long nowMs) {
-        return realtimeMetrics.liveSnapshot(nowMs);
+        return delegate.liveRealtimeMetrics(nowMs);
     }
 
     public int getTotalThreads(PerformanceTestPlan plan) {
-        return threadGroupPlanner.getTotalThreads(plan);
+        return delegate.getTotalThreads(plan);
     }
 
     public long estimateTotalRequests(PerformanceTestPlan plan) {
-        return threadGroupPlanner.estimateTotalRequests(plan);
+        return delegate.estimateTotalRequests(plan);
     }
 
-    public void runTestPlanWithProgress(PerformanceTestPlan plan,
-                                        int totalThreads,
-                                        BiConsumer<Integer, Integer> progressUpdater) {
-        if (!runningSupplier.getAsBoolean()) {
-            return;
-        }
-        threadGroupRunner.run(plan, totalThreads, progressUpdater);
+    public void runTestPlan(PerformanceTestPlan plan, int totalThreads) {
+        delegate.runTestPlan(plan, totalThreads);
     }
 
     public void cancelAllNetworkCalls() {
-        com.laker.postman.service.http.okhttp.OkHttpClientManager.cancelAllCalls();
-        for (EventSource eventSource : new ArrayList<>(activeSseSources)) {
-            try {
-                eventSource.cancel();
-            } catch (Exception e) {
-                log.debug("取消 SSE EventSource 失败", e);
-            }
-        }
-        activeSseSources.clear();
-        for (WebSocket webSocket : new ArrayList<>(activeWebSockets)) {
-            try {
-                webSocket.close(1000, "Performance stopped");
-            } catch (Exception ignored) {
-            }
-            try {
-                webSocket.cancel();
-            } catch (Exception e) {
-                log.debug("取消 WebSocket 失败", e);
-            }
-        }
-        activeWebSockets.clear();
+        delegate.cancelAllNetworkCalls();
+    }
+
+    public void endRun() {
+        resultSink = PerformanceCoreResultSink.NOOP;
+        delegate.endRun();
     }
 
     public static void joinThreadGroupThreads(List<Thread> threadGroupThreads, Runnable cancellationAction) {
-        PerformanceThreadGroupRunner.joinThreadGroupThreads(threadGroupThreads, cancellationAction);
+        PerformanceCoreExecutionEngine.joinThreadGroupThreads(threadGroupThreads, cancellationAction);
     }
 
     public static int calculateStairsTotalSteps(int startThreads, int endThreads, int step) {
-        return PerformanceThreadGroupRunner.calculateStairsTotalSteps(startThreads, endThreads, step);
+        return PerformanceCoreExecutionEngine.calculateStairsTotalSteps(startThreads, endThreads, step);
     }
 
     private boolean isCancelledOrInterrupted(Throwable ex) {
@@ -162,5 +233,10 @@ public final class PerformanceExecutionEngine {
             return true;
         }
         return isCancelledOrInterrupted(ex.getCause());
+    }
+
+    private PerformanceCoreResultSink currentResultSink() {
+        PerformanceCoreResultSink current = resultSink;
+        return current == null ? PerformanceCoreResultSink.NOOP : current;
     }
 }

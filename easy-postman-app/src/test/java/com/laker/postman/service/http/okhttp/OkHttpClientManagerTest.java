@@ -1,11 +1,16 @@
 package com.laker.postman.service.http.okhttp;
 
 import cn.hutool.json.JSONUtil;
+import com.laker.postman.model.ClientCertificate;
 import com.laker.postman.model.TrustedCertificateEntry;
+import com.laker.postman.plugin.bridge.ClientCertificatePluginService;
+import com.laker.postman.plugin.runtime.PluginRegistry;
+import com.laker.postman.plugin.runtime.PluginRuntime;
 import com.laker.postman.service.setting.SettingManager;
 import okhttp3.OkHttpClient;
 import org.testng.annotations.Test;
 
+import javax.net.ssl.KeyManager;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
@@ -16,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import static org.testng.Assert.assertEquals;
@@ -269,6 +275,66 @@ public class OkHttpClientManagerTest {
         }
     }
 
+    @Test
+    public void runtimeSettingsCacheKeyShouldChangeWhenProxyPasswordChanges() throws Exception {
+        Properties props = getSettingsProperties();
+        Properties backup = new Properties();
+        backup.putAll(props);
+
+        try {
+            props.clear();
+            props.setProperty("proxy_enabled", "true");
+            props.setProperty("proxy_mode", SettingManager.PROXY_MODE_MANUAL);
+            props.setProperty("proxy_type", SettingManager.PROXY_TYPE_HTTP);
+            props.setProperty("proxy_host", "127.0.0.1");
+            props.setProperty("proxy_port", "8080");
+            props.setProperty("proxy_username", "worker");
+            props.setProperty("proxy_password", "first");
+            props.setProperty("ssl_verification_enabled", "true");
+            props.setProperty("proxy_ssl_verification_disabled", "false");
+
+            String firstKey = OkHttpClientManager.runtimeSettingsCacheKey("https://example.com");
+
+            props.setProperty("proxy_password", "second");
+            String secondKey = OkHttpClientManager.runtimeSettingsCacheKey("https://example.com");
+
+            assertNotEquals(secondKey, firstKey);
+        } finally {
+            props.clear();
+            props.putAll(backup);
+            OkHttpClientManager.clearClientCache();
+        }
+    }
+
+    @Test
+    public void runtimeSettingsCacheKeyShouldChangeWhenClientCertificateChanges() throws Exception {
+        PluginRegistry registry = PluginRuntime.getRegistry();
+        Map<Class<?>, Object> services = getPluginServices(registry);
+        Object previousRegistration = services.get(ClientCertificatePluginService.class);
+
+        try {
+            registry.registerService(
+                    ClientCertificatePluginService.class,
+                    clientCertificateService("first-cert", "/tmp/first-client.p12")
+            );
+            String firstKey = OkHttpClientManager.runtimeSettingsCacheKey("https://mtls.example.com:443");
+
+            registry.registerService(
+                    ClientCertificatePluginService.class,
+                    clientCertificateService("second-cert", "/tmp/second-client.p12")
+            );
+            String secondKey = OkHttpClientManager.runtimeSettingsCacheKey("https://mtls.example.com:443");
+
+            assertNotEquals(secondKey, firstKey);
+        } finally {
+            if (previousRegistration == null) {
+                services.remove(ClientCertificatePluginService.class);
+            } else {
+                services.put(ClientCertificatePluginService.class, previousRegistration);
+            }
+        }
+    }
+
     private static Properties getSettingsProperties() throws Exception {
         Field propsField = SettingManager.class.getDeclaredField("props");
         propsField.setAccessible(true);
@@ -279,5 +345,54 @@ public class OkHttpClientManagerTest {
         Method method = OkHttpClientManager.class.getDeclaredMethod("getProxyConfigKey", String.class);
         method.setAccessible(true);
         return (String) method.invoke(null, baseUri);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<Class<?>, Object> getPluginServices(PluginRegistry registry) throws Exception {
+        Field servicesField = PluginRegistry.class.getDeclaredField("services");
+        servicesField.setAccessible(true);
+        return (Map<Class<?>, Object>) servicesField.get(registry);
+    }
+
+    private static ClientCertificatePluginService clientCertificateService(String id, String certPath) {
+        ClientCertificate certificate = new ClientCertificate();
+        certificate.setId(id);
+        certificate.setName(id);
+        certificate.setHost("mtls.example.com");
+        certificate.setPort(443);
+        certificate.setCertPath(certPath);
+        certificate.setCertType(ClientCertificate.CERT_TYPE_PFX);
+        certificate.setCertPassword("secret");
+        certificate.setEnabled(true);
+        certificate.setUpdatedAt(System.currentTimeMillis());
+
+        return new ClientCertificatePluginService() {
+            @Override
+            public List<ClientCertificate> getAllCertificates() {
+                return List.of(certificate);
+            }
+
+            @Override
+            public void addCertificate(ClientCertificate certificate) {
+            }
+
+            @Override
+            public void updateCertificate(ClientCertificate certificate) {
+            }
+
+            @Override
+            public void deleteCertificate(String id) {
+            }
+
+            @Override
+            public boolean validateCertificatePaths(ClientCertificate certificate) {
+                return true;
+            }
+
+            @Override
+            public KeyManager[] loadClientCertificateKeyManagers(String host, int port) {
+                return new KeyManager[0];
+            }
+        };
     }
 }

@@ -1,5 +1,6 @@
 package com.laker.postman.panel.performance.model;
 
+
 import lombok.experimental.UtilityClass;
 
 @UtilityClass

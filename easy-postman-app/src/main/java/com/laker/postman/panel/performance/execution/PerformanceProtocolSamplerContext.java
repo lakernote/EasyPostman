@@ -1,17 +1,26 @@
 package com.laker.postman.panel.performance.execution;
 
-import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.performance.core.request.PerformanceRequestSnapshot;
+
+
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
-import com.laker.postman.service.js.ScriptExecutionPipeline;
 import lombok.Value;
 
 @Value
 class PerformanceProtocolSamplerContext {
     PreparedRequest request;
     PerformanceRequestSampler requestSampler;
-    HttpRequestItem requestItem;
+    PerformanceRequestSnapshot requestSnapshot;
     String requestBodyTemplate;
-    ScriptExecutionPipeline pipeline;
+    PerformanceScriptRuntime scriptRuntime;
     PerformanceResponseCapturePlan capturePlan;
+
+    String getRequestId() {
+        return requestSnapshot == null ? "" : requestSnapshot.getId();
+    }
+
+    String getRequestName() {
+        return requestSnapshot == null ? "" : requestSnapshot.getName();
+    }
 }

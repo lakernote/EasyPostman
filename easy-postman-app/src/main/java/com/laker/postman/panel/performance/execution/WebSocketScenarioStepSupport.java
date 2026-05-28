@@ -1,14 +1,15 @@
 package com.laker.postman.panel.performance.execution;
 
+import com.laker.postman.performance.core.model.NodeType;
+import com.laker.postman.performance.core.model.WebSocketPerformanceData;
+import com.laker.postman.performance.core.plan.PerformanceController;
+import com.laker.postman.performance.core.plan.PerformancePlanElement;
+import com.laker.postman.performance.core.plan.PerformanceProtocolStageElement;
+
+
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.panel.performance.model.NodeType;
-import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
-import com.laker.postman.panel.performance.plan.PerformanceController;
-import com.laker.postman.panel.performance.plan.PerformancePlanElement;
-import com.laker.postman.panel.performance.plan.PerformanceProtocolStageElement;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
-import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.service.js.ScriptExecutionResult;
 import com.laker.postman.service.variable.VariableResolver;
 import lombok.experimental.UtilityClass;
@@ -69,19 +70,19 @@ class WebSocketScenarioStepSupport {
                 || CharSequenceUtil.isNotBlank(resolveSendPayloadTemplate(request, requestBodyTemplate, config));
     }
 
-    ScriptExecutionResult executeSendPreScript(ScriptExecutionPipeline pipeline,
+    ScriptExecutionResult executeSendPreScript(PerformanceScriptRuntime scriptRuntime,
                                                WebSocketPerformanceData config,
                                                int sendIndex,
                                                int sendCount,
                                                String stepName) {
-        if (pipeline == null) {
+        if (scriptRuntime == null) {
             return ScriptExecutionResult.success();
         }
         String script = config != null ? config.sendPreScript : null;
         if (CharSequenceUtil.isBlank(script)) {
             return ScriptExecutionResult.success();
         }
-        return pipeline.executeWebSocketSendScript(script, sendIndex, sendCount, stepName);
+        return scriptRuntime.executeWebSocketSendScript(script, sendIndex, sendCount, stepName);
     }
 
     String resolveSendPayload(PreparedRequest request,

@@ -1,19 +1,26 @@
 package com.laker.postman.panel.performance;
 
+import com.laker.postman.performance.core.model.PerformanceStatsCollector;
+import com.laker.postman.performance.core.model.PerformanceStatsSnapshot;
+import com.laker.postman.performance.core.plan.PerformanceTestPlan;
+import com.laker.postman.performance.core.runtime.PerformanceRunError;
+import com.laker.postman.performance.core.runtime.PerformanceRunHandle;
+import com.laker.postman.performance.core.runtime.PerformanceRunSummary;
+import com.laker.postman.performance.core.runtime.PerformanceThreadFactory;
+
+
 import com.laker.postman.panel.performance.control.PerformanceRunUiController;
 import com.laker.postman.panel.performance.control.PerformanceStatisticsCoordinator;
 import com.laker.postman.panel.performance.control.PerformanceTimerManager;
-import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
-import com.laker.postman.panel.performance.model.PerformanceStatsSnapshot;
-import com.laker.postman.panel.performance.plan.PerformanceTestPlan;
-import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
+import com.laker.postman.panel.performance.plan.PerformancePlanDocumentCompiler;
+import com.laker.postman.panel.performance.plan.PerformanceSwingTreePlanAdapter;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import com.laker.postman.panel.performance.result.PerformanceTrendPanel;
 import com.laker.postman.panel.performance.runtime.PerformanceExecutionEngine;
-import com.laker.postman.panel.performance.runtime.PerformanceThreadFactory;
-import com.laker.postman.service.http.okhttp.OkHttpClientManager;
-import com.laker.postman.service.setting.SettingManager;
+import com.laker.postman.panel.performance.runtime.PerformanceResultSink;
+import com.laker.postman.panel.performance.runtime.PerformanceRunRequest;
+import com.laker.postman.panel.performance.runtime.PerformanceRunSession;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -38,6 +45,7 @@ final class PerformanceRunControlSupport {
     private final LongConsumer startTimeSetter;
     private final PerformancePropertyPanelSupport propertyPanelSupport;
     private final PerformanceExecutionEngine executionEngine;
+    private final PerformanceRunSession runSession;
     private final PerformanceStatisticsCoordinator statisticsCoordinator;
     private final PerformanceTimerManager timerManager;
     private final PerformanceRunUiController runUiController;
@@ -55,7 +63,9 @@ final class PerformanceRunControlSupport {
                     Consumer<Boolean> efficientModeSetter) {
         propertyPanelSupport.saveAllPropertyPanelData();
         DefaultMutableTreeNode executionRootNode = PerformanceTreeSnapshot.copy(rootNode);
-        PerformanceTestPlan executionPlan = PerformanceTestPlanCompiler.compile(executionRootNode);
+        PerformanceTestPlan executionPlan = PerformancePlanDocumentCompiler.compile(
+                PerformanceSwingTreePlanAdapter.toDocument(executionRootNode)
+        );
 
         long estimatedRequests = executionEngine.estimateTotalRequests(executionPlan);
         final int highConcurrencyThreshold = 5000;
@@ -80,57 +90,42 @@ final class PerformanceRunControlSupport {
             }
         }
 
-        OkHttpClientManager.setConnectionPoolConfig(
-                SettingManager.getJmeterMaxIdleConnections(),
-                SettingManager.getJmeterKeepAliveSeconds()
-        );
-        OkHttpClientManager.setDispatcherConfig(
-                SettingManager.getJmeterMaxRequests(),
-                SettingManager.getJmeterMaxRequestsPerHost()
-        );
-
         if (runningSupplier.getAsBoolean()) {
             return null;
         }
 
-        runningSetter.accept(true);
         runUiController.markRunning();
         clearCachedPerformanceResultsAction.run();
 
         long startTime = System.currentTimeMillis();
         startTimeSetter.accept(startTime);
-        executionEngine.beginRun(startTime);
         timerManager.startAll();
 
         int totalThreads = executionEngine.getTotalThreads(executionPlan);
         runUiController.initializeProgress(progressLabel, totalThreads);
 
-        Thread runThread = PerformanceThreadFactory.newDaemonThread("PerformanceRun", () -> {
-            try {
-                executionEngine.runTestPlanWithProgress(
-                        executionPlan,
-                        totalThreads,
-                        (active, total) -> runUiController.updateProgressAsync(progressLabel, active, total)
-                );
-            } finally {
-                boolean stopped = !runningSupplier.getAsBoolean() || Thread.currentThread().isInterrupted();
-                waitForFinalStats();
-                if (!stopped) {
-                    SwingUtilities.invokeLater(this::finishRunUi);
-                }
-            }
-        });
-        runThread.start();
-        return runThread;
+        PerformanceRunHandle runHandle = runSession.start(PerformanceRunRequest.builder()
+                .plan(executionPlan)
+                .resultSink(new PerformanceResultSink() {
+                    @Override
+                    public void onError(PerformanceRunError error) {
+                        showRunError(error);
+                    }
+
+                    @Override
+                    public void onComplete(PerformanceRunSummary summary) {
+                        waitForFinalStats();
+                        if (summary == null || !summary.isStopped()) {
+                            SwingUtilities.invokeLater(PerformanceRunControlSupport.this::finishRunUi);
+                        }
+                    }
+                })
+                .build());
+        return runHandle.threadOrNull();
     }
 
     void stopRun(Thread runThread) {
-        runningSetter.accept(false);
-        if (runThread != null && runThread.isAlive()) {
-            runThread.interrupt();
-        }
-
-        executionEngine.cancelAllNetworkCalls();
+        runSession.stop();
         runUiController.markIdle();
         timerManager.stopAll();
 
@@ -138,8 +133,17 @@ final class PerformanceRunControlSupport {
             waitForFinalStats();
             SwingUtilities.invokeLater(this::flushUiAfterStop);
         }).start();
+    }
 
-        OkHttpClientManager.setDefaultConnectionPoolConfig();
+    private void showRunError(PerformanceRunError error) {
+        String detail = "";
+        if (error != null && error.getMessage() != null) {
+            detail = error.getMessage();
+        } else if (error != null && error.getCause() != null && error.getCause().getMessage() != null) {
+            detail = error.getCause().getMessage();
+        }
+        String message = I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_EXECUTION_INTERRUPTED, detail);
+        SwingUtilities.invokeLater(() -> NotificationUtil.showError(message));
     }
 
     private void waitForFinalStats() {
@@ -156,7 +160,6 @@ final class PerformanceRunControlSupport {
         timerManager.stopAll();
 
         flushPendingAndCharts("完成时");
-        OkHttpClientManager.setDefaultConnectionPoolConfig();
         statisticsCoordinator.updateReportWithLatestDataSync();
 
         long totalTime = System.currentTimeMillis() - startTimeSupplier.getAsLong();

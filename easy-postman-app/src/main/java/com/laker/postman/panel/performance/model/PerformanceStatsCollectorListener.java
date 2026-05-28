@@ -1,5 +1,8 @@
 package com.laker.postman.panel.performance.model;
 
+import com.laker.postman.performance.core.model.PerformanceStatsCollector;
+
+
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor

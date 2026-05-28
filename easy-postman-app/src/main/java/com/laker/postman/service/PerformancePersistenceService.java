@@ -1,31 +1,22 @@
 package com.laker.postman.service;
 
-import cn.hutool.json.JSONArray;
-import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.component.CsvDataPanel;
+import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.ioc.Component;
 import com.laker.postman.ioc.PostConstruct;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.Workspace;
-import com.laker.postman.panel.performance.assertion.AssertionData;
-import com.laker.postman.panel.performance.config.CsvDataSetData;
-import com.laker.postman.panel.performance.extractor.ExtractorData;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
-import com.laker.postman.panel.performance.controller.LoopData;
-import com.laker.postman.panel.performance.model.NodeType;
-import com.laker.postman.panel.performance.model.SsePerformanceData;
-import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
-import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
-import com.laker.postman.panel.performance.timer.TimerData;
+import com.laker.postman.panel.performance.plan.PerformanceCsvState;
+import com.laker.postman.panel.performance.plan.PerformancePlanConfiguration;
+import com.laker.postman.panel.performance.plan.PerformancePlanDocument;
+import com.laker.postman.panel.performance.plan.PerformancePlanStorage;
+import com.laker.postman.panel.performance.plan.PerformanceSwingTreePlanAdapter;
 import com.laker.postman.service.collections.ActiveCollectionTreeNodeRepository;
-import com.laker.postman.common.constants.ConfigPathConstants;
+import com.laker.postman.util.JsonUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.tree.DefaultMutableTreeNode;
-import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -38,7 +29,7 @@ import java.nio.file.Paths;
 @Component
 public class PerformancePersistenceService {
     private static final String FILE_PATH = ConfigPathConstants.PERFORMANCE_CONFIG;
-    private static final long MAX_FILE_SIZE = 5L * 1024 * 1024; // 5MB
+    private final PerformancePlanStorage planStorage = new PerformancePlanStorage();
 
     @PostConstruct
     public void init() {
@@ -62,7 +53,7 @@ public class PerformancePersistenceService {
 
     /**
      * 保存性能测试配置树结构
-     * 只保存请求ID引用，不保存完整请求配置，确保与集合中的请求保持同步
+     * UI 树会先转换为纯计划文档，持久化层不直接依赖 Swing 节点。
      */
     public void save(DefaultMutableTreeNode rootNode) {
         save(rootNode, true, true, false, null);
@@ -125,36 +116,48 @@ public class PerformancePersistenceService {
                      boolean trendEnabled,
                      boolean reportRealtimeEnabled,
                      CsvDataPanel.CsvState csvState) {
-        save(getConfigFilePath(), rootNode, efficientMode, trendEnabled, reportRealtimeEnabled, csvState);
+        saveDocument(PerformanceSwingTreePlanAdapter.toDocument(rootNode), efficientMode, trendEnabled, reportRealtimeEnabled, csvState);
     }
 
-    private void save(Path configPath,
-                      DefaultMutableTreeNode rootNode,
-                      boolean efficientMode,
-                      boolean trendEnabled,
-                      boolean reportRealtimeEnabled,
-                      CsvDataPanel.CsvState csvState) {
-        try {
-            ensureDirExists(configPath);
-            JSONObject jsonRoot = new JSONObject();
-            jsonRoot.set("version", "1.0");
-            jsonRoot.set("efficientMode", efficientMode);
-            jsonRoot.set("trendEnabled", trendEnabled);
-            jsonRoot.set("reportRealtimeEnabled", reportRealtimeEnabled);
-            jsonRoot.set("tree", serializeTreeNode(rootNode));
-            if (csvState != null) {
-                jsonRoot.set("csvState", serializeCsvState(csvState));
-            }
+    public void saveDocument(PerformancePlanDocument document) {
+        saveDocument(document, true, true, false, null);
+    }
 
-            // 写入文件
-            String jsonString = JSONUtil.toJsonPrettyStr(jsonRoot);
-            Files.writeString(configPath, jsonString, StandardCharsets.UTF_8);
+    public void saveDocument(PerformancePlanDocument document,
+                             boolean efficientMode,
+                             boolean trendEnabled,
+                             boolean reportRealtimeEnabled,
+                             CsvDataPanel.CsvState csvState) {
+        saveConfiguration(PerformancePlanConfiguration.builder()
+                .planDocument(document)
+                .efficientMode(efficientMode)
+                .trendEnabled(trendEnabled)
+                .reportRealtimeEnabled(reportRealtimeEnabled)
+                .csvState(toPerformanceCsvState(csvState))
+                .build());
+    }
 
-            log.info("Successfully saved performance test configuration (efficientMode: {}, trendEnabled: {}, reportRealtimeEnabled: {})",
-                    efficientMode, trendEnabled, reportRealtimeEnabled);
-        } catch (IOException e) {
-            log.error("Failed to save performance test config: {}", e.getMessage(), e);
-        }
+    private void saveDocument(Path configPath,
+                              PerformancePlanDocument document,
+                              boolean efficientMode,
+                              boolean trendEnabled,
+                              boolean reportRealtimeEnabled,
+                              CsvDataPanel.CsvState csvState) {
+        saveConfiguration(configPath, PerformancePlanConfiguration.builder()
+                .planDocument(document)
+                .efficientMode(efficientMode)
+                .trendEnabled(trendEnabled)
+                .reportRealtimeEnabled(reportRealtimeEnabled)
+                .csvState(toPerformanceCsvState(csvState))
+                .build());
+    }
+
+    public void saveConfiguration(PerformancePlanConfiguration configuration) {
+        saveConfiguration(getConfigFilePath(), configuration);
+    }
+
+    private void saveConfiguration(Path configPath, PerformancePlanConfiguration configuration) {
+        planStorage.saveConfiguration(configPath, configuration);
     }
 
     /**
@@ -223,303 +226,45 @@ public class PerformancePersistenceService {
                           CsvDataPanel.CsvState csvState) {
         // 异步线程启动前先固定路径，防止用户切换 workspace 后把旧性能方案写到新 workspace。
         Path configPath = getConfigFilePath();
+        PerformancePlanDocument document = PerformanceSwingTreePlanAdapter.toDocument(rootNode);
         Thread saveThread = new Thread(
-                () -> save(configPath, rootNode, efficientMode, trendEnabled, reportRealtimeEnabled, csvState),
+                () -> saveDocument(configPath, document, efficientMode, trendEnabled, reportRealtimeEnabled, csvState),
                 "performance-config-save"
         );
         saveThread.setDaemon(true);
         saveThread.start();
     }
 
-    /**
-     * 序列化树节点（递归）
-     */
-    private JSONObject serializeTreeNode(DefaultMutableTreeNode treeNode) {
-        JSONObject jsonNode = new JSONObject();
-
-        Object userObj = treeNode.getUserObject();
-        if (!(userObj instanceof JMeterTreeNode jmNode)) {
-            return jsonNode;
+    private PerformanceCsvState toPerformanceCsvState(CsvDataPanel.CsvState csvState) {
+        if (csvState == null) {
+            return null;
         }
+        return new PerformanceCsvState(csvState.getSourceName(), csvState.getHeaders(), csvState.getRows());
+    }
 
-        // 保存节点基本信息
-        jsonNode.set("name", jmNode.name);
-        jsonNode.set("type", jmNode.type.name());
-        jsonNode.set("enabled", jmNode.enabled);
-
-        // 根据节点类型保存数据
-        switch (jmNode.type) {
-            case THREAD_GROUP -> {
-                if (jmNode.threadGroupData != null) {
-                    jsonNode.set("threadGroupData", serializeThreadGroupData(jmNode.threadGroupData));
-                }
-            }
-            case CSV_DATA_SET -> {
-                if (jmNode.csvDataSetData != null) {
-                    jsonNode.set("csvDataSetData", serializeCsvDataSetData(jmNode.csvDataSetData));
-                }
-            }
-            case LOOP -> {
-                if (jmNode.loopData != null) {
-                    jsonNode.set("loopData", serializeLoopData(jmNode.loopData));
-                }
-            }
-            case REQUEST -> {
-                // 只保存请求ID，不保存完整配置
-                if (jmNode.httpRequestItem != null) {
-                    jsonNode.set("requestItemId", jmNode.httpRequestItem.getId());
-                }
-                if (jmNode.webSocketPerformanceData != null) {
-                    jsonNode.set("webSocketPerformanceData", serializeWebSocketPerformanceData(jmNode.webSocketPerformanceData));
-                }
-            }
-            case ASSERTION -> {
-                if (jmNode.assertionData != null) {
-                    jsonNode.set("assertionData", serializeAssertionData(jmNode.assertionData));
-                }
-            }
-            case EXTRACTOR -> {
-                if (jmNode.extractorData != null) {
-                    jsonNode.set("extractorData", serializeExtractorData(jmNode.extractorData));
-                }
-            }
-            case TIMER -> {
-                if (jmNode.timerData != null) {
-                    jsonNode.set("timerData", serializeTimerData(jmNode.timerData));
-                }
-            }
-            case WS_CONNECT, WS_SEND, WS_READ, WS_CLOSE -> {
-                if (jmNode.webSocketPerformanceData != null) {
-                    jsonNode.set("webSocketPerformanceData", serializeWebSocketPerformanceData(jmNode.webSocketPerformanceData));
-                }
-            }
-            case SSE_CONNECT, SSE_READ -> {
-                if (jmNode.ssePerformanceData != null) {
-                    jsonNode.set("ssePerformanceData", serializeSsePerformanceData(jmNode.ssePerformanceData));
-                }
-            }
-            case ROOT -> {
-            }
+    private CsvDataPanel.CsvState toCsvState(PerformanceCsvState csvState) {
+        if (csvState == null) {
+            return null;
         }
-
-        // 递归序列化子节点
-        JSONArray children = new JSONArray();
-        for (int i = 0; i < treeNode.getChildCount(); i++) {
-            DefaultMutableTreeNode childNode = (DefaultMutableTreeNode) treeNode.getChildAt(i);
-            children.add(serializeTreeNode(childNode));
-        }
-        if (!children.isEmpty()) {
-            jsonNode.set("children", children);
-        }
-
-        return jsonNode;
-    }
-
-    /**
-     * 序列化线程组数据
-     */
-    private JSONObject serializeThreadGroupData(ThreadGroupData data) {
-        data.normalize();
-        JSONObject json = new JSONObject();
-        json.set("threadMode", data.threadMode.name());
-        json.set("numThreads", data.numThreads);
-        json.set("duration", data.duration);
-        json.set("loops", data.loops);
-        json.set("useTime", data.useTime);
-        json.set("rampUpStartThreads", data.rampUpStartThreads);
-        json.set("rampUpEndThreads", data.rampUpEndThreads);
-        json.set("rampUpTime", data.rampUpTime);
-        json.set("rampUpDuration", data.rampUpDuration);
-        json.set("spikeMinThreads", data.spikeMinThreads);
-        json.set("spikeMaxThreads", data.spikeMaxThreads);
-        json.set("spikeRampUpTime", data.spikeRampUpTime);
-        json.set("spikeHoldTime", data.spikeHoldTime);
-        json.set("spikeRampDownTime", data.spikeRampDownTime);
-        json.set("spikeDuration", data.spikeDuration);
-        json.set("stairsStartThreads", data.stairsStartThreads);
-        json.set("stairsEndThreads", data.stairsEndThreads);
-        json.set("stairsStep", data.stairsStep);
-        json.set("stairsHoldTime", data.stairsHoldTime);
-        json.set("stairsDuration", data.stairsDuration);
-        return json;
-    }
-
-    private JSONObject serializeLoopData(LoopData data) {
-        data.normalize();
-        JSONObject json = new JSONObject();
-        json.set("iterations", data.iterations);
-        return json;
-    }
-
-    private JSONObject serializeCsvDataSetData(CsvDataSetData data) {
-        JSONObject json = new JSONObject();
-        json.set("sourceName", data.getSourceName());
-
-        JSONArray headers = new JSONArray();
-        for (String header : data.getHeaders()) {
-            headers.add(header);
-        }
-        json.set("headers", headers);
-
-        JSONArray rows = new JSONArray();
-        for (java.util.Map<String, String> row : data.getRows()) {
-            JSONObject rowJson = new JSONObject();
-            if (row != null) {
-                for (java.util.Map.Entry<String, String> entry : row.entrySet()) {
-                    rowJson.set(entry.getKey(), entry.getValue());
-                }
-            }
-            rows.add(rowJson);
-        }
-        json.set("rows", rows);
-        return json;
-    }
-
-    /**
-     * 序列化断言数据
-     */
-    private JSONObject serializeAssertionData(AssertionData data) {
-        JSONObject json = new JSONObject();
-        json.set("type", data.type);
-        json.set("content", data.content);
-        json.set("operator", data.operator);
-        json.set("value", data.value);
-        return json;
-    }
-
-    private JSONObject serializeExtractorData(ExtractorData data) {
-        JSONObject json = new JSONObject();
-        json.set("type", data.type);
-        json.set("expression", data.expression);
-        json.set("variableName", data.variableName);
-        json.set("defaultValue", data.defaultValue);
-        json.set("matchIndex", data.matchIndex);
-        json.set("groupIndex", data.groupIndex);
-        return json;
-    }
-
-    /**
-     * 序列化定时器数据
-     */
-    private JSONObject serializeTimerData(TimerData data) {
-        JSONObject json = new JSONObject();
-        json.set("delayMs", data.delayMs);
-        return json;
-    }
-
-    /**
-     * 序列化 SSE 压测配置
-     */
-    private JSONObject serializeSsePerformanceData(SsePerformanceData data) {
-        JSONObject json = new JSONObject();
-        json.set("connectTimeoutMs", data.connectTimeoutMs);
-        json.set("completionMode", data.completionMode != null ? data.completionMode.name() : SsePerformanceData.CompletionMode.SINGLE_MESSAGE.name());
-        json.set("firstMessageTimeoutMs", data.firstMessageTimeoutMs);
-        json.set("holdConnectionMs", data.holdConnectionMs);
-        json.set("targetMessageCount", data.targetMessageCount);
-        json.set("eventNameFilter", data.eventNameFilter);
-        json.set("messageFilter", data.messageFilter);
-        return json;
-    }
-
-    private JSONObject serializeWebSocketPerformanceData(WebSocketPerformanceData data) {
-        JSONObject json = new JSONObject();
-        json.set("connectTimeoutMs", data.connectTimeoutMs);
-        json.set("sendMode", data.sendMode != null ? data.sendMode.name() : WebSocketPerformanceData.SendMode.REQUEST_BODY_ON_CONNECT.name());
-        json.set("sendContentSource", data.sendContentSource != null ? data.sendContentSource.name() : WebSocketPerformanceData.SendContentSource.REQUEST_BODY.name());
-        json.set("customSendBody", data.customSendBody);
-        json.set("sendPreScript", data.sendPreScript);
-        json.set("sendCount", data.sendCount);
-        json.set("sendIntervalMs", data.sendIntervalMs);
-        json.set("completionMode", data.completionMode != null ? data.completionMode.name() : WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE.name());
-        json.set("firstMessageTimeoutMs", data.firstMessageTimeoutMs);
-        json.set("holdConnectionMs", data.holdConnectionMs);
-        json.set("targetMessageCount", data.targetMessageCount);
-        json.set("messageFilter", data.messageFilter);
-        return json;
-    }
-
-    private JSONObject serializeCsvState(CsvDataPanel.CsvState csvState) {
-        JSONObject json = new JSONObject();
-        json.set("sourceName", csvState.getSourceName());
-
-        JSONArray headers = new JSONArray();
-        for (String header : csvState.getHeaders()) {
-            headers.add(header);
-        }
-        json.set("headers", headers);
-
-        JSONArray rows = new JSONArray();
-        for (java.util.Map<String, String> row : csvState.getRows()) {
-            JSONObject rowJson = new JSONObject();
-            if (row != null) {
-                for (java.util.Map.Entry<String, String> entry : row.entrySet()) {
-                    rowJson.set(entry.getKey(), entry.getValue());
-                }
-            }
-            rows.add(rowJson);
-        }
-        json.set("rows", rows);
-        return json;
+        return new CsvDataPanel.CsvState(csvState.getSourceName(), csvState.getHeaders(), csvState.getRows());
     }
 
     /**
      * 加载性能测试配置
-     * 通过ID从集合中获取最新的请求配置，确保与集合保持同步
+     * UI 层需要树节点时由纯计划文档适配生成。
      */
     public DefaultMutableTreeNode load(String rootName) {
-        Path configPath = getConfigFilePath();
-        File file = configPath.toFile();
+        PerformancePlanDocument document = loadDocument();
+        return PerformanceSwingTreePlanAdapter.toTree(document, rootName);
+    }
 
-        if (!file.exists()) {
-            log.info("No performance test config file found, starting fresh");
-            return null;
-        }
+    public PerformancePlanDocument loadDocument() {
+        PerformancePlanConfiguration configuration = loadConfiguration();
+        return configuration == null ? null : configuration.getPlanDocument();
+    }
 
-        try {
-            // 检查文件大小
-            long fileSizeInBytes = file.length();
-            if (fileSizeInBytes > MAX_FILE_SIZE) {
-                log.warn("Config file is too large ({} bytes), deleting and starting fresh", fileSizeInBytes);
-                deleteFile(file);
-                return null;
-            }
-
-            if (fileSizeInBytes == 0) {
-                return null;
-            }
-
-            // 读取文件
-            String jsonString = Files.readString(configPath, StandardCharsets.UTF_8);
-            if (jsonString.trim().isEmpty()) {
-                return null;
-            }
-
-            JSONObject jsonRoot = JSONUtil.parseObj(jsonString);
-            JSONObject treeJson = jsonRoot.getJSONObject("tree");
-
-            if (treeJson == null) {
-                return null;
-            }
-
-            DefaultMutableTreeNode rootNode = deserializeTreeNode(treeJson);
-            if (rootNode != null) {
-                // 更新根节点名称为当前的rootName
-                Object userObj = rootNode.getUserObject();
-                if (userObj instanceof JMeterTreeNode jmNode) {
-                    jmNode.name = rootName;
-                }
-            }
-
-            log.info("Successfully loaded performance test configuration");
-            return rootNode;
-
-        } catch (Exception e) {
-            log.error("Failed to load performance test config: {}", e.getMessage(), e);
-            deleteFile(file);
-        }
-
-        return null;
+    public PerformancePlanConfiguration loadConfiguration() {
+        return planStorage.loadConfiguration(getConfigFilePath(), this::findRequestItemById);
     }
 
     /**
@@ -528,35 +273,8 @@ public class PerformancePersistenceService {
      * @return 精简明细设置，如果配置文件不存在或读取失败则返回 true（默认值）
      */
     public boolean loadEfficientMode() {
-        Path configPath = getConfigFilePath();
-        File file = configPath.toFile();
-
-        if (!file.exists()) {
-            log.debug("No performance test config file found, using default efficientMode: true");
-            return true;
-        }
-
-        try {
-            long fileSizeInBytes = file.length();
-            if (fileSizeInBytes == 0 || fileSizeInBytes > MAX_FILE_SIZE) {
-                return true;
-            }
-
-            String jsonString = Files.readString(configPath, StandardCharsets.UTF_8);
-            if (jsonString.trim().isEmpty()) {
-                return true;
-            }
-
-            JSONObject jsonRoot = JSONUtil.parseObj(jsonString);
-            Boolean efficientMode = jsonRoot.getBool("efficientMode", true);
-
-            log.debug("Loaded efficientMode: {}", efficientMode);
-            return efficientMode;
-
-        } catch (Exception e) {
-            log.error("Failed to load efficientMode: {}", e.getMessage());
-            return true;
-        }
+        PerformancePlanConfiguration configuration = loadConfiguration();
+        return configuration == null || configuration.isEfficientMode();
     }
 
     /**
@@ -565,35 +283,8 @@ public class PerformancePersistenceService {
      * @return 趋势采样设置，如果配置文件不存在或读取失败则返回 true（默认开启）
      */
     public boolean loadTrendEnabled() {
-        Path configPath = getConfigFilePath();
-        File file = configPath.toFile();
-
-        if (!file.exists()) {
-            log.debug("No performance test config file found, using default trendEnabled: true");
-            return true;
-        }
-
-        try {
-            long fileSizeInBytes = file.length();
-            if (fileSizeInBytes == 0 || fileSizeInBytes > MAX_FILE_SIZE) {
-                return true;
-            }
-
-            String jsonString = Files.readString(configPath, StandardCharsets.UTF_8);
-            if (jsonString.trim().isEmpty()) {
-                return true;
-            }
-
-            JSONObject jsonRoot = JSONUtil.parseObj(jsonString);
-            Boolean trendEnabled = jsonRoot.getBool("trendEnabled", true);
-
-            log.debug("Loaded trendEnabled: {}", trendEnabled);
-            return trendEnabled;
-
-        } catch (Exception e) {
-            log.error("Failed to load trendEnabled: {}", e.getMessage());
-            return true;
-        }
+        PerformancePlanConfiguration configuration = loadConfiguration();
+        return configuration == null || configuration.isTrendEnabled();
     }
 
     /**
@@ -602,395 +293,20 @@ public class PerformancePersistenceService {
      * @return 报表实时刷新设置，如果配置文件不存在或读取失败则返回 false（默认结束后生成）
      */
     public boolean loadReportRealtimeEnabled() {
-        Path configPath = getConfigFilePath();
-        File file = configPath.toFile();
-
-        if (!file.exists()) {
-            log.debug("No performance test config file found, using default reportRealtimeEnabled: false");
-            return false;
-        }
-
-        try {
-            long fileSizeInBytes = file.length();
-            if (fileSizeInBytes == 0 || fileSizeInBytes > MAX_FILE_SIZE) {
-                return false;
-            }
-
-            String jsonString = Files.readString(configPath, StandardCharsets.UTF_8);
-            if (jsonString.trim().isEmpty()) {
-                return false;
-            }
-
-            JSONObject jsonRoot = JSONUtil.parseObj(jsonString);
-            Boolean reportRealtimeEnabled = jsonRoot.getBool("reportRealtimeEnabled", false);
-
-            log.debug("Loaded reportRealtimeEnabled: {}", reportRealtimeEnabled);
-            return reportRealtimeEnabled;
-
-        } catch (Exception e) {
-            log.error("Failed to load reportRealtimeEnabled: {}", e.getMessage());
-            return false;
-        }
+        PerformancePlanConfiguration configuration = loadConfiguration();
+        return configuration != null && configuration.isReportRealtimeEnabled();
     }
 
     public CsvDataPanel.CsvState loadCsvState() {
-        Path configPath = getConfigFilePath();
-        File file = configPath.toFile();
-
-        if (!file.exists()) {
-            return null;
-        }
-
-        try {
-            long fileSizeInBytes = file.length();
-            if (fileSizeInBytes == 0 || fileSizeInBytes > MAX_FILE_SIZE) {
-                return null;
-            }
-
-            String jsonString = Files.readString(configPath, StandardCharsets.UTF_8);
-            if (jsonString.trim().isEmpty()) {
-                return null;
-            }
-
-            JSONObject jsonRoot = JSONUtil.parseObj(jsonString);
-            JSONObject csvStateJson = jsonRoot.getJSONObject("csvState");
-            if (csvStateJson == null) {
-                return null;
-            }
-            return deserializeCsvState(csvStateJson);
-        } catch (Exception e) {
-            log.error("Failed to load csvState: {}", e.getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * 反序列化树节点（递归）
-     */
-    private DefaultMutableTreeNode deserializeTreeNode(JSONObject jsonNode) {
-        try {
-            String name = jsonNode.getStr("name");
-            String typeStr = jsonNode.getStr("type");
-            Boolean enabled = jsonNode.getBool("enabled", true);
-
-            if (name == null || typeStr == null) {
-                return null;
-            }
-
-            if ("SSE_CLOSE".equals(typeStr)) {
-                return null;
-            }
-            NodeType nodeType = NodeType.valueOf(typeStr);
-            JMeterTreeNode jmNode = new JMeterTreeNode(name, nodeType);
-            jmNode.enabled = enabled;
-
-            // 根据节点类型恢复数据
-            switch (nodeType) {
-                case THREAD_GROUP -> {
-                    JSONObject tgData = jsonNode.getJSONObject("threadGroupData");
-                    if (tgData != null) {
-                        jmNode.threadGroupData = deserializeThreadGroupData(tgData);
-                    }
-                }
-                case CSV_DATA_SET -> {
-                    JSONObject csvData = jsonNode.getJSONObject("csvDataSetData");
-                    if (csvData != null) {
-                        jmNode.csvDataSetData = deserializeCsvDataSetData(csvData);
-                    }
-                }
-                case LOOP -> {
-                    JSONObject loopData = jsonNode.getJSONObject("loopData");
-                    if (loopData != null) {
-                        jmNode.loopData = deserializeLoopData(loopData);
-                    } else {
-                        jmNode.loopData = new LoopData();
-                    }
-                }
-                case REQUEST -> {
-                    String requestItemId = jsonNode.getStr("requestItemId");
-                    if (requestItemId != null) {
-                        // 通过ID从集合中查找最新的请求配置
-                        HttpRequestItem requestItem = findRequestItemById(requestItemId);
-                        if (requestItem == null) {
-                            log.warn("Request with ID {} not found in collections, skipping", requestItemId);
-                            return null; // 跳过不存在的请求
-                        }
-                        jmNode.httpRequestItem = requestItem;
-                    }
-                    JSONObject wsData = jsonNode.getJSONObject("webSocketPerformanceData");
-                    if (wsData != null) {
-                        jmNode.webSocketPerformanceData = deserializeWebSocketPerformanceData(wsData);
-                    }
-                }
-                case ASSERTION -> {
-                    JSONObject assertionData = jsonNode.getJSONObject("assertionData");
-                    if (assertionData != null) {
-                        jmNode.assertionData = deserializeAssertionData(assertionData);
-                    }
-                }
-                case EXTRACTOR -> {
-                    JSONObject extractorData = jsonNode.getJSONObject("extractorData");
-                    if (extractorData != null) {
-                        jmNode.extractorData = deserializeExtractorData(extractorData);
-                    }
-                }
-                case TIMER -> {
-                    JSONObject timerData = jsonNode.getJSONObject("timerData");
-                    if (timerData != null) {
-                        jmNode.timerData = deserializeTimerData(timerData);
-                    }
-                }
-                case WS_CONNECT, WS_SEND, WS_READ, WS_CLOSE -> {
-                    JSONObject wsData = jsonNode.getJSONObject("webSocketPerformanceData");
-                    if (wsData != null) {
-                        jmNode.webSocketPerformanceData = deserializeWebSocketPerformanceData(wsData);
-                    }
-                }
-                case SSE_CONNECT, SSE_READ -> {
-                    JSONObject sseData = jsonNode.getJSONObject("ssePerformanceData");
-                    if (sseData != null) {
-                        jmNode.ssePerformanceData = deserializeSsePerformanceData(sseData);
-                    }
-                }
-                case ROOT -> {
-                }
-            }
-
-            DefaultMutableTreeNode treeNode = new DefaultMutableTreeNode(jmNode);
-
-            // 递归反序列化子节点
-            JSONArray children = jsonNode.getJSONArray("children");
-            if (children != null) {
-                for (int i = 0; i < children.size(); i++) {
-                    JSONObject childJson = children.getJSONObject(i);
-                    DefaultMutableTreeNode childNode = deserializeTreeNode(childJson);
-                    if (childNode != null) {
-                        treeNode.add(childNode);
-                    }
-                }
-            }
-
-            return treeNode;
-        } catch (Exception e) {
-            log.warn("Failed to deserialize tree node: {}", e.getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * 反序列化线程组数据
-     */
-    private ThreadGroupData deserializeThreadGroupData(JSONObject json) {
-        ThreadGroupData data = new ThreadGroupData();
-        try {
-            String threadMode = json.getStr("threadMode");
-            if (threadMode != null) {
-                data.threadMode = ThreadGroupData.ThreadMode.valueOf(threadMode);
-            }
-            data.numThreads = json.getInt("numThreads", 20);
-            data.duration = json.getInt("duration", 60);
-            data.loops = json.getInt("loops", 1);
-            data.useTime = json.getBool("useTime", true);
-            data.rampUpStartThreads = json.getInt("rampUpStartThreads", 1);
-            data.rampUpEndThreads = json.getInt("rampUpEndThreads", 20);
-            data.rampUpTime = json.getInt("rampUpTime", 30);
-            data.rampUpDuration = json.getInt("rampUpDuration", 60);
-            data.spikeMinThreads = json.getInt("spikeMinThreads", 1);
-            data.spikeMaxThreads = json.getInt("spikeMaxThreads", 20);
-            data.spikeRampUpTime = json.getInt("spikeRampUpTime", 20);
-            data.spikeHoldTime = json.getInt("spikeHoldTime", 15);
-            data.spikeRampDownTime = json.getInt("spikeRampDownTime", 20);
-            data.spikeDuration = json.getInt("spikeDuration", 60);
-            data.stairsStartThreads = json.getInt("stairsStartThreads", 5);
-            data.stairsEndThreads = json.getInt("stairsEndThreads", 20);
-            data.stairsStep = json.getInt("stairsStep", 5);
-            data.stairsHoldTime = json.getInt("stairsHoldTime", 15);
-            data.stairsDuration = json.getInt("stairsDuration", 60);
-        } catch (Exception e) {
-            log.warn("Failed to deserialize thread group data: {}", e.getMessage());
-        }
-        data.normalize();
-        return data;
-    }
-
-    private LoopData deserializeLoopData(JSONObject json) {
-        LoopData data = new LoopData();
-        if (json != null) {
-            data.iterations = json.getInt("iterations", data.iterations);
-        }
-        data.normalize();
-        return data;
-    }
-
-    /**
-     * 反序列化断言数据
-     */
-    private AssertionData deserializeAssertionData(JSONObject json) {
-        AssertionData data = new AssertionData();
-        data.type = json.getStr("type", "Response Code");
-        data.content = json.getStr("content", "");
-        data.operator = json.getStr("operator", "=");
-        data.value = json.getStr("value", "200");
-        return data;
-    }
-
-    private ExtractorData deserializeExtractorData(JSONObject json) {
-        ExtractorData data = new ExtractorData();
-        data.type = json.getStr("type", data.type);
-        data.expression = json.getStr("expression", "");
-        data.variableName = json.getStr("variableName", "");
-        data.defaultValue = json.getStr("defaultValue", "");
-        data.matchIndex = json.getInt("matchIndex", 1);
-        data.groupIndex = json.getInt("groupIndex", 1);
-        return data;
-    }
-
-    /**
-     * 反序列化 SSE 压测配置
-     */
-    private SsePerformanceData deserializeSsePerformanceData(JSONObject json) {
-        SsePerformanceData data = new SsePerformanceData();
-        try {
-            data.completionMode = enumValue(
-                    SsePerformanceData.CompletionMode.class,
-                    json.getStr("completionMode"),
-                    data.completionMode
-            );
-            data.connectTimeoutMs = json.getInt("connectTimeoutMs", data.connectTimeoutMs);
-            data.firstMessageTimeoutMs = json.getInt("firstMessageTimeoutMs", data.firstMessageTimeoutMs);
-            data.holdConnectionMs = json.getInt("holdConnectionMs", data.holdConnectionMs);
-            data.targetMessageCount = json.getInt("targetMessageCount", data.targetMessageCount);
-            data.eventNameFilter = json.getStr("eventNameFilter", data.eventNameFilter);
-            data.messageFilter = json.getStr("messageFilter", data.messageFilter);
-        } catch (Exception e) {
-            log.warn("Failed to deserialize SSE performance data: {}", e.getMessage());
-        }
-        return data;
-    }
-
-    private WebSocketPerformanceData deserializeWebSocketPerformanceData(JSONObject json) {
-        WebSocketPerformanceData data = new WebSocketPerformanceData();
-        try {
-            data.connectTimeoutMs = json.getInt("connectTimeoutMs", data.connectTimeoutMs);
-            data.sendMode = enumValue(
-                    WebSocketPerformanceData.SendMode.class,
-                    json.getStr("sendMode"),
-                    data.sendMode
-            );
-            data.sendContentSource = enumValue(
-                    WebSocketPerformanceData.SendContentSource.class,
-                    json.getStr("sendContentSource"),
-                    data.sendContentSource
-            );
-            data.customSendBody = json.getStr("customSendBody", data.customSendBody);
-            data.sendPreScript = json.getStr("sendPreScript", data.sendPreScript);
-            data.sendCount = json.getInt("sendCount", data.sendCount);
-            data.sendIntervalMs = json.getInt("sendIntervalMs", data.sendIntervalMs);
-            data.completionMode = enumValue(
-                    WebSocketPerformanceData.CompletionMode.class,
-                    json.getStr("completionMode"),
-                    data.completionMode
-            );
-            data.firstMessageTimeoutMs = json.getInt("firstMessageTimeoutMs", data.firstMessageTimeoutMs);
-            data.holdConnectionMs = json.getInt("holdConnectionMs", data.holdConnectionMs);
-            data.targetMessageCount = json.getInt("targetMessageCount", data.targetMessageCount);
-            data.messageFilter = json.getStr("messageFilter", data.messageFilter);
-        } catch (Exception e) {
-            log.warn("Failed to deserialize WebSocket performance data: {}", e.getMessage());
-        }
-        return data;
-    }
-
-    private static <E extends Enum<E>> E enumValue(Class<E> enumType, String value, E defaultValue) {
-        if (value == null || value.isBlank()) {
-            return defaultValue;
-        }
-        try {
-            return Enum.valueOf(enumType, value);
-        } catch (IllegalArgumentException e) {
-            return defaultValue;
-        }
-    }
-
-    /**
-     * 反序列化定时器数据
-     */
-    private TimerData deserializeTimerData(JSONObject json) {
-        TimerData data = new TimerData();
-        data.delayMs = json.getInt("delayMs", 1000);
-        return data;
-    }
-
-    private CsvDataSetData deserializeCsvDataSetData(JSONObject json) {
-        if (json == null) {
-            return null;
-        }
-
-        JSONArray headersJson = json.getJSONArray("headers");
-        JSONArray rowsJson = json.getJSONArray("rows");
-        if (headersJson == null || rowsJson == null || rowsJson.isEmpty()) {
-            return null;
-        }
-
-        java.util.List<String> headers = new java.util.ArrayList<>();
-        for (int i = 0; i < headersJson.size(); i++) {
-            headers.add(headersJson.getStr(i));
-        }
-
-        java.util.List<java.util.Map<String, String>> rows = new java.util.ArrayList<>();
-        for (int i = 0; i < rowsJson.size(); i++) {
-            JSONObject rowJson = rowsJson.getJSONObject(i);
-            java.util.Map<String, String> row = new java.util.LinkedHashMap<>();
-            if (rowJson != null) {
-                for (String header : headers) {
-                    row.put(header, rowJson.getStr(header, ""));
-                }
-            }
-            rows.add(row);
-        }
-
-        return new CsvDataSetData(json.getStr("sourceName"), headers, rows);
-    }
-
-    private CsvDataPanel.CsvState deserializeCsvState(JSONObject json) {
-        if (json == null) {
-            return null;
-        }
-
-        JSONArray headersJson = json.getJSONArray("headers");
-        JSONArray rowsJson = json.getJSONArray("rows");
-        if (headersJson == null || rowsJson == null || rowsJson.isEmpty()) {
-            return null;
-        }
-
-        java.util.List<String> headers = new java.util.ArrayList<>();
-        for (int i = 0; i < headersJson.size(); i++) {
-            headers.add(headersJson.getStr(i));
-        }
-
-        java.util.List<java.util.Map<String, String>> rows = new java.util.ArrayList<>();
-        for (int i = 0; i < rowsJson.size(); i++) {
-            JSONObject rowJson = rowsJson.getJSONObject(i);
-            java.util.Map<String, String> row = new java.util.LinkedHashMap<>();
-            if (rowJson != null) {
-                for (String header : headers) {
-                    row.put(header, rowJson.getStr(header, ""));
-                }
-            }
-            rows.add(row);
-        }
-
-        return new CsvDataPanel.CsvState(json.getStr("sourceName"), headers, rows);
+        PerformancePlanConfiguration configuration = loadConfiguration();
+        return configuration == null ? null : toCsvState(configuration.getCsvState());
     }
 
     /**
      * 清空配置
      */
     public void clear() {
-        File file = getConfigFilePath().toFile();
-        if (file.exists()) {
-            deleteFile(file);
-        }
+        planStorage.clear(getConfigFilePath());
     }
 
     /**
@@ -1030,27 +346,10 @@ public class PerformancePersistenceService {
      */
     private HttpRequestItem deepCopyRequestItem(HttpRequestItem original) {
         try {
-            // 将对象转换为 JSON
-            String json = JSONUtil.toJsonStr(original);
-            // 从 JSON 反序列化为新对象
-            return JSONUtil.toBean(json, HttpRequestItem.class);
+            return JsonUtil.deepCopy(original, HttpRequestItem.class);
         } catch (Exception e) {
             log.error("Failed to deep copy request item: {}", e.getMessage());
-            // 如果深拷贝失败，返回原始对象（降级处理）
             return original;
-        }
-    }
-
-    /**
-     * 删除配置文件
-     */
-    private void deleteFile(File file) {
-        try {
-            if (file.exists() && !file.delete()) {
-                log.warn("Failed to delete config file: {}", file.getAbsolutePath());
-            }
-        } catch (Exception e) {
-            log.error("Error deleting config file: {}", e.getMessage());
         }
     }
 

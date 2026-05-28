@@ -1,16 +1,19 @@
 package com.laker.postman.panel.performance;
 
+import com.laker.postman.performance.core.assertion.AssertionData;
+import com.laker.postman.performance.core.config.CsvDataSetData;
+import com.laker.postman.performance.core.controller.LoopData;
+import com.laker.postman.performance.core.extractor.ExtractorData;
+import com.laker.postman.performance.core.model.NodeType;
+import com.laker.postman.performance.core.model.SsePerformanceData;
+import com.laker.postman.performance.core.model.WebSocketPerformanceData;
+import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
+import com.laker.postman.performance.core.timer.TimerData;
+
+
 import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.panel.performance.assertion.AssertionData;
-import com.laker.postman.panel.performance.config.CsvDataSetData;
-import com.laker.postman.panel.performance.controller.LoopData;
-import com.laker.postman.panel.performance.extractor.ExtractorData;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
-import com.laker.postman.panel.performance.model.NodeType;
-import com.laker.postman.panel.performance.model.SsePerformanceData;
-import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
-import com.laker.postman.panel.performance.threadgroup.ThreadGroupData;
-import com.laker.postman.panel.performance.timer.TimerData;
+import com.laker.postman.service.variable.RequestExecutionScope;
 import com.laker.postman.util.JsonUtil;
 import lombok.experimental.UtilityClass;
 
@@ -60,6 +63,12 @@ public class PerformanceTreeSnapshot {
         copy.timerData = JsonUtil.deepCopy(source.timerData, TimerData.class);
         copy.ssePerformanceData = JsonUtil.deepCopy(source.ssePerformanceData, SsePerformanceData.class);
         copy.webSocketPerformanceData = JsonUtil.deepCopy(source.webSocketPerformanceData, WebSocketPerformanceData.class);
+        copy.requestExecutionScope = copyRequestExecutionScope(source.requestExecutionScope);
+        copy.requestInheritanceSnapshot = source.requestInheritanceSnapshot;
         return copy;
+    }
+
+    private static RequestExecutionScope copyRequestExecutionScope(RequestExecutionScope source) {
+        return source == null ? null : RequestExecutionScope.fromGroupVariables(source.getGroupVariables());
     }
 }

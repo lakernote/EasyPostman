@@ -8,8 +8,6 @@ import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpParam;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.model.RequestGroup;
-import com.laker.postman.model.Variable;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.GlobalVariablesService;
 import com.laker.postman.service.http.PreparedRequestBuilder;
@@ -17,6 +15,7 @@ import com.laker.postman.service.http.RequestFinalizer;
 import com.laker.postman.service.variable.ExecutionVariableContext;
 import com.laker.postman.service.variable.IterationDataVariableService;
 import com.laker.postman.service.variable.RequestContext;
+import com.laker.postman.service.variable.RequestExecutionScope;
 import com.laker.postman.service.variable.VariablesService;
 import com.laker.postman.service.variable.VariableType;
 import com.laker.postman.service.variable.VariableResolver;
@@ -31,7 +30,6 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.swing.tree.DefaultMutableTreeNode;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -331,6 +329,33 @@ public class ScriptExecutionPipelineTest {
                 .orElseThrow();
         assertEquals(persistedActiveEnv.get("shared"), "env-value");
         assertEquals(persistedActiveEnv.get("envOnly"), "env-only");
+    }
+
+    @Test
+    public void shouldNotFallBackToActiveEnvironmentWhenSupplierReturnsNull() {
+        testEnv.addVariable("activeOnly", "active-value");
+        EnvironmentService.saveEnvironment(testEnv);
+        EnvironmentService.setActiveEnvironment(testEnv.getId());
+
+        PreparedRequest request = new PreparedRequest();
+        request.id = "script-pipeline-null-env-supplier-request";
+        request.method = "GET";
+        request.url = "https://example.com";
+
+        ScriptExecutionPipeline pipeline = ScriptExecutionPipeline.builder()
+                .request(request)
+                .preScript("""
+                        pm.variables.set('hasActiveOnly', String(pm.environment.has('activeOnly')));
+                        """)
+                .postScript("")
+                .environmentSupplier(() -> null)
+                .build();
+
+        ScriptExecutionResult preResult = pipeline.executePreScript();
+
+        assertTrue(preResult.isSuccess(), "Pre-request script should execute successfully");
+        pipeline.withExecutionContext(() ->
+                assertEquals(VariableResolver.resolve("{{hasActiveOnly}}"), "false"));
     }
 
     @Test
@@ -929,14 +954,6 @@ public class ScriptExecutionPipelineTest {
 
     @Test
     public void shouldResolveGroupVariablesWhenScriptRunsOnAnotherThread() throws Exception {
-        DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode("root");
-        RequestGroup group = new RequestGroup("script-pipeline-group");
-        group.setVariables(new ArrayList<>(List.of(new Variable(true, "tenantId", "group-tenant"))));
-        DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(new Object[]{"group", group});
-        DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(new Object[]{"request", new HttpRequestItem()});
-        rootNode.add(groupNode);
-        groupNode.add(requestNode);
-
         PreparedRequest request = new PreparedRequest();
         request.id = "script-pipeline-group-context-request";
         request.method = "GET";
@@ -952,7 +969,7 @@ public class ScriptExecutionPipelineTest {
                         pm.variables.set('capturedTenantId', pm.variables.get('tenantId'));
                         """)
                 .postScript("")
-                .requestNode(requestNode)
+                .requestExecutionScope(RequestExecutionScope.fromGroupVariables(Map.of("tenantId", "group-tenant")))
                 .build();
 
         AtomicReference<ScriptExecutionResult> resultRef = new AtomicReference<>();

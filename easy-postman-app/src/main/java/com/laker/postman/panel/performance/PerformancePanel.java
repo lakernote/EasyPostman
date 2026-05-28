@@ -1,5 +1,12 @@
 package com.laker.postman.panel.performance;
 
+import com.laker.postman.performance.core.model.NodeType;
+import com.laker.postman.performance.core.model.PerformanceProtocol;
+import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
+import com.laker.postman.performance.core.model.PerformanceStatsCollector;
+import com.laker.postman.performance.core.model.PerformanceTrendWindowCollector;
+
+
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.DebouncedSaveSupport;
 import com.laker.postman.common.UiSingletonFactory;
@@ -14,29 +21,29 @@ import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
 import com.laker.postman.panel.performance.control.PerformanceSaveShortcutSupport;
 import com.laker.postman.panel.performance.control.PerformanceRunUiController;
+import com.laker.postman.panel.performance.control.PerformanceRunUiEventBridge;
 import com.laker.postman.panel.performance.control.PerformanceStatisticsCoordinator;
 import com.laker.postman.panel.performance.control.PerformanceTimerManager;
 import com.laker.postman.panel.performance.config.CsvDataSetPropertyPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
 import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
-import com.laker.postman.panel.performance.model.ApiMetadata;
+import com.laker.postman.panel.performance.execution.DefaultPerformanceNetworkRuntime;
+import com.laker.postman.panel.performance.execution.PerformanceExecutionConfig;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
-import com.laker.postman.panel.performance.model.NodeType;
-import com.laker.postman.panel.performance.model.PerformanceProtocol;
-import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.model.PerformanceResultListener;
-import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollectorListener;
-import com.laker.postman.panel.performance.model.PerformanceTrendWindowCollector;
+import com.laker.postman.panel.performance.model.PerformanceTrendWindowCollectorListener;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceResultCollector;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import com.laker.postman.panel.performance.result.PerformanceResultTableVisualizer;
 import com.laker.postman.panel.performance.result.PerformanceTrendPanel;
 import com.laker.postman.panel.performance.runtime.PerformanceExecutionEngine;
+import com.laker.postman.panel.performance.runtime.PerformanceRunSession;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
 import com.laker.postman.panel.performance.timer.TimerPropertyPanel;
 import com.laker.postman.service.PerformancePersistenceService;
+import com.laker.postman.service.http.okhttp.HttpClientRuntimeConfig;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -276,18 +283,36 @@ public class PerformancePanel extends UiSingletonPanel {
 
         List<PerformanceResultListener> resultListeners = List.of(
                 new PerformanceStatsCollectorListener(statsCollector),
-                trendWindowCollector,
+                new PerformanceTrendWindowCollectorListener(trendWindowCollector),
                 new PerformanceResultTableVisualizer(
                         performanceResultTablePanel,
                         SettingManager::getJmeterSlowRequestThreshold
                 )
         );
+        PerformanceRunUiController runUiController = new PerformanceRunUiController(runBtn, stopBtn, refreshBtn);
+        DefaultPerformanceNetworkRuntime networkRuntime = new DefaultPerformanceNetworkRuntime(
+                () -> new HttpClientRuntimeConfig(
+                        SettingManager.getJmeterMaxIdleConnections(),
+                        SettingManager.getJmeterKeepAliveSeconds(),
+                        SettingManager.getJmeterMaxRequests(),
+                        SettingManager.getJmeterMaxRequestsPerHost()
+                )
+        );
         executionEngine = new PerformanceExecutionEngine(
-                this,
                 () -> running,
-                () -> efficientMode,
-                SettingManager::getPerformanceResponseBodyPreviewLimitKb,
-                new PerformanceResultCollector(resultListeners)
+                PerformanceExecutionConfig.guiSupplying(
+                        () -> efficientMode,
+                        SettingManager::getPerformanceResponseBodyPreviewLimitKb,
+                        SettingManager::isPerformanceEventLoggingEnabled
+                ),
+                new PerformanceResultCollector(resultListeners),
+                new PerformanceRunUiEventBridge(this, runUiController, progressLabel),
+                networkRuntime
+        );
+        PerformanceRunSession runSession = new PerformanceRunSession(
+                () -> running,
+                value -> running = value,
+                executionEngine
         );
         runControlSupport = new PerformanceRunControlSupport(
                 this,
@@ -297,9 +322,10 @@ public class PerformancePanel extends UiSingletonPanel {
                 value -> startTime = value,
                 propertyPanelSupport,
                 executionEngine,
+                runSession,
                 statisticsCoordinator,
                 timerManager,
-                new PerformanceRunUiController(runBtn, stopBtn, refreshBtn),
+                runUiController,
                 efficientCheckBox,
                 resultTabbedPane,
                 performanceResultTablePanel,
@@ -654,7 +680,6 @@ public class PerformancePanel extends UiSingletonPanel {
         statsCollector.clear();
         trendWindowCollector.clear();
         trendWindowCollector.setEnabled(trendEnabled);
-        ApiMetadata.clear();
         executionEngine.resetVirtualUsers();
     }
 

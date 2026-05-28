@@ -1,5 +1,9 @@
 package com.laker.postman.panel.performance.extractor;
 
+import com.laker.postman.performance.core.extractor.ExtractorData;
+import com.laker.postman.performance.core.extractor.ExtractorType;
+
+
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.panel.performance.tree.PerformanceTreeNodeTitleFormatter;
@@ -177,7 +181,7 @@ public class ExtractorPropertyPanel extends JPanel {
                                                       boolean cellHasFocus) {
             Component component = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
             if (value instanceof ExtractorType extractorType) {
-                setText(extractorType.displayName());
+                setText(I18nUtil.getMessage(extractorType.getMessageKey()));
             }
             return component;
         }

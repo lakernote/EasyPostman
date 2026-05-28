@@ -27,6 +27,11 @@
         </dependency>
         <dependency>
             <groupId>com.laker.tools</groupId>
+            <artifactId>easy-postman-performance-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.laker.tools</groupId>
             <artifactId>easy-postman-plugin-ui</artifactId>
             <version>${project.version}</version>
         </dependency>

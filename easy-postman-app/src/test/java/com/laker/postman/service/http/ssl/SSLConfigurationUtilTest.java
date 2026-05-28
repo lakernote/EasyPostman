@@ -62,6 +62,15 @@ public class SSLConfigurationUtilTest {
         assertEquals(client.hostnameVerifier().getClass().getName(), expectedVerifierClass);
     }
 
+    @Test
+    public void shouldAllowSslConfigurationWithoutConsolePanelLogging() {
+        OkHttpClient.Builder builder = new OkHttpClient.Builder();
+
+        SSLConfigurationUtil.configureSSL(builder, SSLConfigurationUtil.SSLVerificationMode.STRICT, null, 0, false);
+
+        assertNotNull(builder.build());
+    }
+
     private static X509TrustManager getDefaultTrustManager() throws Exception {
         TrustManagerFactory factory = TrustManagerFactory.getInstance(
                 TrustManagerFactory.getDefaultAlgorithm());

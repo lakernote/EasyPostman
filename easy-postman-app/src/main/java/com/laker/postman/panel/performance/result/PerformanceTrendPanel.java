@@ -1,11 +1,14 @@
 package com.laker.postman.panel.performance.result;
 
+import com.laker.postman.performance.core.model.PerformanceProtocol;
+import com.laker.postman.performance.core.model.PerformanceTrendSnapshot;
+
+
 import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
 import com.laker.postman.common.component.button.SegmentedToggleButton;
-import com.laker.postman.panel.performance.model.PerformanceProtocol;
-import com.laker.postman.panel.performance.model.PerformanceTrendSnapshot;
+import com.laker.postman.panel.performance.model.PerformanceProtocolLabels;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -159,7 +162,7 @@ public class PerformanceTrendPanel extends UiSingletonPanel {
         JPanel switcher = new SegmentedButtonGroupPanel(FlowLayout.LEFT);
         for (PerformanceProtocol protocol : PerformanceProtocol.values()) {
             JToggleButton button = new SegmentedToggleButton(
-                    protocol.getDisplayName(),
+                    PerformanceProtocolLabels.displayName(protocol),
                     protocol == PerformanceProtocol.HTTP
             );
             button.addActionListener(e -> {

@@ -1,5 +1,8 @@
 package com.laker.postman.panel.performance.threadgroup;
 
+import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
+
+
 import com.laker.postman.common.component.EasyJSpinner;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
 import com.laker.postman.util.I18nUtil;
@@ -62,6 +65,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
         topPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_MODE_LABEL)));
         modeComboBox = new JComboBox<>(ThreadGroupData.ThreadMode.values());
+        modeComboBox.setRenderer(new ThreadModeRenderer());
         modeComboBox.setPreferredSize(new Dimension(150, 28));
         topPanel.add(modeComboBox);
 
@@ -553,6 +557,21 @@ public class ThreadGroupPropertyPanel extends JPanel {
         data.normalize();
     }
 
+    private static final class ThreadModeRenderer extends DefaultListCellRenderer {
+        @Override
+        public Component getListCellRendererComponent(JList<?> list,
+                                                      Object value,
+                                                      int index,
+                                                      boolean isSelected,
+                                                      boolean cellHasFocus) {
+            Component component = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+            if (value instanceof ThreadGroupData.ThreadMode threadMode) {
+                setText(I18nUtil.getMessage(threadMode.getMessageKey()));
+            }
+            return component;
+        }
+    }
+
     // 预览数据模型
     private static class ThreadLoadPreviewData {
         ThreadGroupData.ThreadMode mode;
@@ -702,7 +721,9 @@ public class ThreadGroupPropertyPanel extends JPanel {
             g2d.drawString(I18nUtil.getMessage(MessageKeys.THREADGROUP_PREVIEW_TIME_SECONDS), PADDING + width / 2 - 20, PADDING + height + 30);
 
             // 在左上角添加模式信息
-            g2d.drawString(I18nUtil.getMessage(MessageKeys.THREADGROUP_PREVIEW_MODE_PREFIX) + " " + previewData.mode.getDisplayName(), PADDING, PADDING - 10);
+            g2d.drawString(I18nUtil.getMessage(MessageKeys.THREADGROUP_PREVIEW_MODE_PREFIX)
+                    + " "
+                    + I18nUtil.getMessage(previewData.mode.getMessageKey()), PADDING, PADDING - 10);
         }
 
         private int getMaxThreads() {

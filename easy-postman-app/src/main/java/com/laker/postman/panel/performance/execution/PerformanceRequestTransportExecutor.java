@@ -1,10 +1,11 @@
 package com.laker.postman.panel.performance.execution;
 
-import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
+import com.laker.postman.performance.core.request.PerformanceRequestSnapshot;
+
+
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
-import com.laker.postman.service.js.ScriptExecutionPipeline;
 import okhttp3.WebSocket;
 import okhttp3.sse.EventSource;
 
@@ -28,25 +29,34 @@ final class PerformanceRequestTransportExecutor {
         this(
                 runningSupplier,
                 cancelledChecker,
-                activeSseSources,
-                activeWebSockets,
+                new DefaultPerformanceNetworkRuntime(activeSseSources, activeWebSockets),
+                realtimeMetrics,
+                responseBodyPreviewLimitKbSupplier
+        );
+    }
+
+    PerformanceRequestTransportExecutor(BooleanSupplier runningSupplier,
+                                        Predicate<Throwable> cancelledChecker,
+                                        PerformanceNetworkRuntime networkRuntime,
+                                        PerformanceRealtimeMetrics realtimeMetrics,
+                                        IntSupplier responseBodyPreviewLimitKbSupplier) {
+        PerformanceNetworkRuntime resolvedRuntime = resolveNetworkRuntime(networkRuntime);
+        this.httpSamplerExecutor = new HttpSamplerExecutor(resolvedRuntime);
+        this.sseSamplerExecutor = new SseSamplerExecutor(
+                runningSupplier,
+                cancelledChecker,
+                resolvedRuntime.activeSseSources(),
                 realtimeMetrics,
                 responseBodyPreviewLimitKbSupplier,
-                new HttpSamplerExecutor(),
-                new SseSamplerExecutor(
-                        runningSupplier,
-                        cancelledChecker,
-                        activeSseSources,
-                        realtimeMetrics,
-                        responseBodyPreviewLimitKbSupplier
-                ),
-                new WebSocketSamplerExecutor(
-                        runningSupplier,
-                        cancelledChecker,
-                        activeWebSockets,
-                        realtimeMetrics,
-                        responseBodyPreviewLimitKbSupplier
-                )
+                resolvedRuntime
+        );
+        this.webSocketSamplerExecutor = new WebSocketSamplerExecutor(
+                runningSupplier,
+                cancelledChecker,
+                resolvedRuntime.activeWebSockets(),
+                realtimeMetrics,
+                responseBodyPreviewLimitKbSupplier,
+                resolvedRuntime
         );
     }
 
@@ -64,21 +74,25 @@ final class PerformanceRequestTransportExecutor {
         this.webSocketSamplerExecutor = webSocketSamplerExecutor;
     }
 
+    private static PerformanceNetworkRuntime resolveNetworkRuntime(PerformanceNetworkRuntime networkRuntime) {
+        return networkRuntime == null ? new DefaultPerformanceNetworkRuntime() : networkRuntime;
+    }
+
     ProtocolExecutionResult execute(PreparedRequest request,
                                     PerformanceRequestSampler requestSampler,
-                                    HttpRequestItem requestItem,
+                                    PerformanceRequestSnapshot requestSnapshot,
                                     boolean sseRequest,
                                     boolean webSocketRequest,
                                     String requestBodyTemplate,
-                                    ScriptExecutionPipeline pipeline) throws Exception {
+                                    PerformanceScriptRuntime scriptRuntime) throws Exception {
         return execute(
                 request,
                 requestSampler,
-                requestItem,
+                requestSnapshot,
                 sseRequest,
                 webSocketRequest,
                 requestBodyTemplate,
-                pipeline,
+                scriptRuntime,
                 PerformanceResponseCapturePlan.resolve(
                         true,
                         requestSampler,
@@ -91,18 +105,18 @@ final class PerformanceRequestTransportExecutor {
 
     ProtocolExecutionResult execute(PreparedRequest request,
                                     PerformanceRequestSampler requestSampler,
-                                    HttpRequestItem requestItem,
+                                    PerformanceRequestSnapshot requestSnapshot,
                                     boolean sseRequest,
                                     boolean webSocketRequest,
                                     String requestBodyTemplate,
-                                    ScriptExecutionPipeline pipeline,
+                                    PerformanceScriptRuntime scriptRuntime,
                                     PerformanceResponseCapturePlan capturePlan) throws Exception {
         PerformanceProtocolSamplerContext context = new PerformanceProtocolSamplerContext(
                 request,
                 requestSampler,
-                requestItem,
+                requestSnapshot,
                 requestBodyTemplate,
-                pipeline,
+                scriptRuntime,
                 capturePlan
         );
         if (webSocketRequest) {

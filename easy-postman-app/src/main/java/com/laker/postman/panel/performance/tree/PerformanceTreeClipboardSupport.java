@@ -1,9 +1,11 @@
 package com.laker.postman.panel.performance.tree;
 
+import com.laker.postman.performance.core.model.NodeType;
+
+
 import com.laker.postman.panel.performance.PerformanceTreeRules;
 import com.laker.postman.panel.performance.PerformanceTreeSnapshot;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
-import com.laker.postman.panel.performance.model.NodeType;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 

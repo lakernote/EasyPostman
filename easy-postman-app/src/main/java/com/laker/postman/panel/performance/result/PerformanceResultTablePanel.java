@@ -1,9 +1,11 @@
 package com.laker.postman.panel.performance.result;
 
+
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.panel.performance.model.PerformanceInternalHeaders;
+import com.laker.postman.panel.performance.model.PerformanceProtocolLabels;
 import com.laker.postman.panel.performance.model.ResultNodeInfo;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.service.setting.SettingManager;
@@ -510,7 +512,7 @@ public class PerformanceResultTablePanel extends JPanel {
         public Object getValueAt(int row, int col) {
             ResultNodeInfo r = dataList.get(row);
             return switch (col) {
-                case COL_PROTOCOL -> r.protocol.getDisplayName();
+                case COL_PROTOCOL -> PerformanceProtocolLabels.displayName(r.protocol);
                 case COL_NAME -> r.name;
                 case COL_STATUS -> r.responseCode > 0 ? String.valueOf(r.responseCode) : "-";
                 case COL_COST -> r.costMs;

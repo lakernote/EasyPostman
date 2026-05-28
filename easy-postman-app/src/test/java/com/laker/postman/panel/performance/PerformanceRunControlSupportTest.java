@@ -9,26 +9,31 @@ import com.laker.postman.panel.performance.control.PerformanceTimerManager;
 import com.laker.postman.panel.performance.config.CsvDataSetPropertyPanel;
 import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
-import com.laker.postman.panel.performance.model.NodeType;
-import com.laker.postman.panel.performance.model.PerformanceRealtimeMetrics;
-import com.laker.postman.panel.performance.model.PerformanceStatsCollector;
+import com.laker.postman.performance.core.model.NodeType;
+import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
+import com.laker.postman.performance.core.model.PerformanceStatsCollector;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollectorListener;
-import com.laker.postman.panel.performance.model.PerformanceTrendWindowCollector;
+import com.laker.postman.performance.core.model.PerformanceTrendWindowCollector;
+import com.laker.postman.panel.performance.model.PerformanceTrendWindowCollectorListener;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceResultCollector;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import com.laker.postman.panel.performance.result.PerformanceResultTableVisualizer;
 import com.laker.postman.panel.performance.runtime.PerformanceExecutionEngine;
+import com.laker.postman.panel.performance.runtime.PerformanceRunSession;
 import com.laker.postman.test.AbstractSwingUiTest;
 import org.testng.annotations.Test;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 
 public class PerformanceRunControlSupportTest extends AbstractSwingUiTest {
 
@@ -58,6 +63,16 @@ public class PerformanceRunControlSupportTest extends AbstractSwingUiTest {
         );
 
         try {
+            PerformanceExecutionEngine executionEngine = new PerformanceExecutionEngine(
+                    running::get,
+                    () -> false,
+                    () -> 64,
+                    new PerformanceResultCollector(List.of(
+                            new PerformanceStatsCollectorListener(statsCollector),
+                            new PerformanceTrendWindowCollectorListener(trendWindowCollector),
+                            new PerformanceResultTableVisualizer(resultTablePanel, () -> 500)
+                    ))
+            );
             PerformanceRunControlSupport runControlSupport = new PerformanceRunControlSupport(
                     new JPanel(),
                     running::get,
@@ -65,17 +80,8 @@ public class PerformanceRunControlSupportTest extends AbstractSwingUiTest {
                     startTime::get,
                     startTime::set,
                     newNoSelectionPropertyPanelSupport(),
-                    new PerformanceExecutionEngine(
-                            new JPanel(),
-                            running::get,
-                            () -> false,
-                            () -> 64,
-                            new PerformanceResultCollector(List.of(
-                                    new PerformanceStatsCollectorListener(statsCollector),
-                                    trendWindowCollector,
-                                    new PerformanceResultTableVisualizer(resultTablePanel, () -> 500)
-                            ))
-                    ),
+                    executionEngine,
+                    new PerformanceRunSession(running::get, running::set, executionEngine),
                     statisticsCoordinator,
                     timerManager,
                     new PerformanceRunUiController(new StartButton(), new StopButton(), new RefreshButton()),
@@ -109,6 +115,15 @@ public class PerformanceRunControlSupportTest extends AbstractSwingUiTest {
                 resultTablePanel.dispose();
             });
         }
+    }
+
+    @Test
+    public void runControlSupportShouldNotMutateGlobalOkHttpClientManager() throws Exception {
+        String source = Files.readString(Path.of(
+                "src/main/java/com/laker/postman/panel/performance/PerformanceRunControlSupport.java"
+        ));
+
+        assertFalse(source.contains("OkHttpClientManager.set"));
     }
 
     private static JTabbedPane createResultTabbedPane(PerformanceResultTablePanel resultTablePanel,

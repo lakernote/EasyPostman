@@ -2,8 +2,9 @@ package com.laker.postman.panel.performance.result;
 
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
-import com.laker.postman.panel.performance.model.PerformanceProtocol;
-import com.laker.postman.panel.performance.model.PerformanceTrendSnapshot;
+import com.laker.postman.performance.core.model.PerformanceProtocol;
+import com.laker.postman.panel.performance.model.PerformanceProtocolLabels;
+import com.laker.postman.performance.core.model.PerformanceTrendSnapshot;
 import com.laker.postman.test.AbstractSwingUiTest;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -36,9 +37,9 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
     @Test
     public void shouldUseTopToolbarProtocolSwitcherAndGlobalViewMode() {
         PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
-        JToggleButton httpButton = findToggleButton(panel, PerformanceProtocol.HTTP.getDisplayName());
-        JToggleButton webSocketButton = findToggleButton(panel, PerformanceProtocol.WEBSOCKET.getDisplayName());
-        JToggleButton sseButton = findToggleButton(panel, PerformanceProtocol.SSE.getDisplayName());
+        JToggleButton httpButton = findToggleButton(panel, PerformanceProtocolLabels.displayName(PerformanceProtocol.HTTP));
+        JToggleButton webSocketButton = findToggleButton(panel, PerformanceProtocolLabels.displayName(PerformanceProtocol.WEBSOCKET));
+        JToggleButton sseButton = findToggleButton(panel, PerformanceProtocolLabels.displayName(PerformanceProtocol.SSE));
 
         JToggleButton separateButton = findToggleButton(
                 panel,
@@ -258,14 +259,14 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
             separateButton.doClick();
         }
 
-        findToggleButton(panel, PerformanceProtocol.WEBSOCKET.getDisplayName()).doClick();
+        findToggleButton(panel, PerformanceProtocolLabels.displayName(PerformanceProtocol.WEBSOCKET)).doClick();
 
         assertEquals(countVisibleCharts(panel), 4);
         assertFalse(hasCheckBox(panel, I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_FIRST_MESSAGE_LATENCY_MS)));
         assertFalse(hasCheckBox(panel, I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_SESSION_DURATION_MS)));
         assertTrue(hasCheckBox(panel, I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_ACTIVE_WS)));
 
-        findToggleButton(panel, PerformanceProtocol.SSE.getDisplayName()).doClick();
+        findToggleButton(panel, PerformanceProtocolLabels.displayName(PerformanceProtocol.SSE)).doClick();
 
         assertEquals(countVisibleCharts(panel), 3);
         assertFalse(hasCheckBox(panel, I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_MATCHED_RATE)));

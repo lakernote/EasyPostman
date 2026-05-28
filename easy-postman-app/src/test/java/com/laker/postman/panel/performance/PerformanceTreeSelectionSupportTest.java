@@ -4,8 +4,8 @@ import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.performance.config.CsvDataSetPropertyPanel;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
-import com.laker.postman.panel.performance.model.NodeType;
-import com.laker.postman.panel.performance.model.WebSocketPerformanceData;
+import com.laker.postman.performance.core.model.NodeType;
+import com.laker.postman.performance.core.model.WebSocketPerformanceData;
 import com.laker.postman.test.AbstractSwingUiTest;
 import org.testng.annotations.Test;
 

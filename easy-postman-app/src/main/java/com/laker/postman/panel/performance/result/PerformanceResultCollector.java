@@ -1,23 +1,38 @@
 package com.laker.postman.panel.performance.result;
 
+import com.laker.postman.performance.core.model.PerformanceProtocol;
+import com.laker.postman.performance.core.runtime.PerformanceCoreResultSink;
+
+
 import com.laker.postman.panel.performance.execution.PerformanceRequestExecutionResult;
-import com.laker.postman.panel.performance.model.PerformanceProtocol;
 import com.laker.postman.panel.performance.model.PerformanceResultListener;
 import com.laker.postman.panel.performance.model.PerformanceSampleEvent;
 import com.laker.postman.panel.performance.model.PerformanceSampleResult;
+import com.laker.postman.panel.performance.runtime.PerformanceResultSink;
+import com.laker.postman.panel.performance.runtime.PerformanceResultSinkListenerAdapter;
 
 import java.util.List;
 import java.util.Map;
 
 public final class PerformanceResultCollector {
 
-    private final List<PerformanceResultListener> listeners;
+    private final PerformanceResultSink resultSink;
 
     public PerformanceResultCollector(List<PerformanceResultListener> listeners) {
-        this.listeners = List.copyOf(listeners == null ? List.of() : listeners);
+        this(new PerformanceResultSinkListenerAdapter(listeners));
+    }
+
+    public PerformanceResultCollector(PerformanceResultSink resultSink) {
+        this.resultSink = resultSink == null ? PerformanceResultSink.NOOP : resultSink;
     }
 
     public void collect(PerformanceRequestExecutionResult executionResult, boolean efficientMode) {
+        collect(executionResult, efficientMode, PerformanceCoreResultSink.NOOP);
+    }
+
+    public void collect(PerformanceRequestExecutionResult executionResult,
+                        boolean efficientMode,
+                        PerformanceCoreResultSink runResultSink) {
         if (executionResult == null) {
             return;
         }
@@ -31,8 +46,12 @@ public final class PerformanceResultCollector {
             return;
         }
         PerformanceSampleEvent event = new PerformanceSampleEvent(sampleResult, executionResult, efficientMode);
-        for (PerformanceResultListener listener : listeners) {
-            listener.onSample(event);
+        resultSink.onSample(event);
+        PerformanceCoreResultSink resolvedRunSink = runResultSink == null
+                ? PerformanceCoreResultSink.NOOP
+                : runResultSink;
+        if (resolvedRunSink.acceptsSamples()) {
+            resolvedRunSink.onSample(event.sampleRecord());
         }
     }
 

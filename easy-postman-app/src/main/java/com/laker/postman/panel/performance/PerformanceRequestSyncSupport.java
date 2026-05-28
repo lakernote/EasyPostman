@@ -1,10 +1,11 @@
 package com.laker.postman.panel.performance;
 
+import com.laker.postman.performance.core.model.NodeType;
+
+
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
-import com.laker.postman.panel.performance.model.ApiMetadata;
 import com.laker.postman.panel.performance.model.JMeterTreeNode;
-import com.laker.postman.panel.performance.model.NodeType;
 import com.laker.postman.service.PerformancePersistenceService;
 import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.util.I18nUtil;
@@ -53,7 +54,6 @@ final class PerformanceRequestSyncSupport {
 
         clearCachedResultAction.run();
         // 这里只释放压测结果引用；不要主动 System.gc()，避免刷新集合时触发全局停顿。
-        ApiMetadata.clear();
 
         List<DefaultMutableTreeNode> nodesToRemove = new ArrayList<>();
         DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();

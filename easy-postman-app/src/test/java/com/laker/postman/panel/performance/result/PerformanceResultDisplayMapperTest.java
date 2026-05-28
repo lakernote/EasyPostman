@@ -5,7 +5,7 @@ import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.panel.performance.execution.PerformanceRequestExecutionResult;
-import com.laker.postman.panel.performance.model.PerformanceProtocol;
+import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.panel.performance.model.PerformanceSampleResult;
 import com.laker.postman.panel.performance.model.ResultNodeInfo;
 import org.testng.annotations.Test;

@@ -5,7 +5,7 @@ import com.laker.postman.performance.core.model.NodeType;
 
 import com.laker.postman.panel.performance.PerformanceTreeRules;
 import com.laker.postman.panel.performance.PerformanceTreeSnapshot;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 
@@ -54,7 +54,7 @@ public class PerformanceTreeClipboardSupport {
         return resolvePasteLocation(targetNode, copiedNodes) != null;
     }
 
-    public List<DefaultMutableTreeNode> pasteNodes(JTree jmeterTree,
+    public List<DefaultMutableTreeNode> pasteNodes(JTree performanceTree,
                                                    DefaultMutableTreeNode targetNode,
                                                    List<DefaultMutableTreeNode> copiedNodes) {
         PasteLocation pasteLocation = resolvePasteLocation(targetNode, copiedNodes);
@@ -76,12 +76,12 @@ public class PerformanceTreeClipboardSupport {
         if (root instanceof DefaultMutableTreeNode rootNode) {
             structureSupport.syncAllRequestStructures(rootNode);
         }
-        if (jmeterTree != null) {
-            jmeterTree.expandPath(new TreePath(pasteLocation.getParent().getPath()));
+        if (performanceTree != null) {
+            performanceTree.expandPath(new TreePath(pasteLocation.getParent().getPath()));
             TreePath[] pastedPaths = pastedNodes.stream()
                     .map(node -> new TreePath(node.getPath()))
                     .toArray(TreePath[]::new);
-            jmeterTree.setSelectionPaths(pastedPaths);
+            performanceTree.setSelectionPaths(pastedPaths);
         }
         return pastedNodes;
     }
@@ -120,17 +120,17 @@ public class PerformanceTreeClipboardSupport {
     }
 
     private boolean isDeletableNode(DefaultMutableTreeNode node) {
-        if (node == null || !(node.getUserObject() instanceof JMeterTreeNode jtNode)) {
+        if (node == null || !(node.getUserObject() instanceof PerformanceTreeNode nodeData)) {
             return false;
         }
-        return jtNode.type != NodeType.ROOT;
+        return nodeData.type != NodeType.ROOT;
     }
 
     private boolean isCopyableNode(DefaultMutableTreeNode node) {
-        if (node == null || !(node.getUserObject() instanceof JMeterTreeNode jtNode)) {
+        if (node == null || !(node.getUserObject() instanceof PerformanceTreeNode nodeData)) {
             return false;
         }
-        return jtNode.type != NodeType.ROOT;
+        return nodeData.type != NodeType.ROOT;
     }
 
     private boolean hasSelectedAncestor(DefaultMutableTreeNode node, List<DefaultMutableTreeNode> selectedNodes) {

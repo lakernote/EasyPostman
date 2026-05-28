@@ -3,7 +3,7 @@ package com.laker.postman.panel.performance;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.controller.LoopData;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.PerformanceProtocol;
@@ -42,8 +42,8 @@ public class PerformanceTreeSupportTest {
         assertNotNull(readNode);
         assertEquals(childTypesOf(readNode), List.of(NodeType.ASSERTION));
         assertSame(readNode.getChildAt(0), assertionNode);
-        assertNotNull(((JMeterTreeNode) findChild(context.requestNode, NodeType.SSE_CONNECT).getUserObject()).ssePerformanceData);
-        assertNotNull(((JMeterTreeNode) readNode.getUserObject()).ssePerformanceData);
+        assertNotNull(((PerformanceTreeNode) findChild(context.requestNode, NodeType.SSE_CONNECT).getUserObject()).ssePerformanceData);
+        assertNotNull(((PerformanceTreeNode) readNode.getUserObject()).ssePerformanceData);
     }
 
     @Test(description = "SSE 阶段节点应使用独立默认配置，不从父请求读取旧配置")
@@ -57,8 +57,8 @@ public class PerformanceTreeSupportTest {
 
         DefaultMutableTreeNode connectNode = findChild(context.requestNode, NodeType.SSE_CONNECT);
         DefaultMutableTreeNode readNode = findChild(context.requestNode, NodeType.SSE_READ);
-        JMeterTreeNode connectData = (JMeterTreeNode) connectNode.getUserObject();
-        JMeterTreeNode readData = (JMeterTreeNode) readNode.getUserObject();
+        PerformanceTreeNode connectData = (PerformanceTreeNode) connectNode.getUserObject();
+        PerformanceTreeNode readData = (PerformanceTreeNode) readNode.getUserObject();
         assertNotNull(connectData.ssePerformanceData);
         assertNotNull(readData.ssePerformanceData);
         assertNotSame(connectData.ssePerformanceData, context.requestData.ssePerformanceData);
@@ -74,7 +74,7 @@ public class PerformanceTreeSupportTest {
         context.treeSupport.ensureRequestStructure(context.requestNode, context.requestData);
 
         DefaultMutableTreeNode readNode = findChild(context.requestNode, NodeType.SSE_READ);
-        JMeterTreeNode readData = (JMeterTreeNode) readNode.getUserObject();
+        PerformanceTreeNode readData = (PerformanceTreeNode) readNode.getUserObject();
         readData.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.STREAM_CLOSED;
         readData.ssePerformanceData.holdConnectionMs = 30000;
 
@@ -91,7 +91,7 @@ public class PerformanceTreeSupportTest {
 
         DefaultMutableTreeNode readNode = findChild(context.requestNode, NodeType.SSE_READ);
         assertNotNull(readNode);
-        JMeterTreeNode readData = (JMeterTreeNode) readNode.getUserObject();
+        PerformanceTreeNode readData = (PerformanceTreeNode) readNode.getUserObject();
         readData.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.UNTIL_MATCH;
         readData.ssePerformanceData.firstMessageTimeoutMs = 10000;
         readData.ssePerformanceData.messageFilter = "done";
@@ -109,7 +109,7 @@ public class PerformanceTreeSupportTest {
 
         DefaultMutableTreeNode readNode = findChild(context.requestNode, NodeType.SSE_READ);
         assertNotNull(readNode);
-        JMeterTreeNode readData = (JMeterTreeNode) readNode.getUserObject();
+        PerformanceTreeNode readData = (PerformanceTreeNode) readNode.getUserObject();
         readData.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.FIXED_DURATION;
         readData.ssePerformanceData.holdConnectionMs = 30000;
         readData.ssePerformanceData.eventNameFilter = "done";
@@ -125,7 +125,7 @@ public class PerformanceTreeSupportTest {
         TestContext context = newTestContext(RequestItemProtocolEnum.WEBSOCKET);
         context.treeSupport.ensureRequestStructure(context.requestNode, context.requestData);
         DefaultMutableTreeNode readNode = newNode("Read", NodeType.WS_READ);
-        JMeterTreeNode readData = (JMeterTreeNode) readNode.getUserObject();
+        PerformanceTreeNode readData = (PerformanceTreeNode) readNode.getUserObject();
         readData.webSocketPerformanceData = new com.laker.postman.performance.core.model.WebSocketPerformanceData();
         readData.webSocketPerformanceData.completionMode = com.laker.postman.performance.core.model.WebSocketPerformanceData.CompletionMode.FIXED_DURATION;
         readData.webSocketPerformanceData.holdConnectionMs = 30000;
@@ -244,7 +244,7 @@ public class PerformanceTreeSupportTest {
         context.treeSupport.ensureRequestStructure(context.requestNode, context.requestData);
 
         DefaultMutableTreeNode sendNode = newNode("Send", NodeType.WS_SEND);
-        JMeterTreeNode sendData = (JMeterTreeNode) sendNode.getUserObject();
+        PerformanceTreeNode sendData = (PerformanceTreeNode) sendNode.getUserObject();
         sendData.webSocketPerformanceData = new WebSocketPerformanceData();
         sendData.webSocketPerformanceData.sendMode = WebSocketPerformanceData.SendMode.REQUEST_BODY_REPEAT;
         sendData.webSocketPerformanceData.sendCount = 3;
@@ -275,7 +275,7 @@ public class PerformanceTreeSupportTest {
         context.requestData.httpRequestItem.setUrl("ws://localhost:8080/ws");
         context.treeSupport.ensureRequestStructure(context.requestNode, context.requestData);
         DefaultMutableTreeNode sendNode = newNode("Send", NodeType.WS_SEND);
-        JMeterTreeNode sendData = (JMeterTreeNode) sendNode.getUserObject();
+        PerformanceTreeNode sendData = (PerformanceTreeNode) sendNode.getUserObject();
         sendData.webSocketPerformanceData = new WebSocketPerformanceData();
         sendData.webSocketPerformanceData.customSendBody = "hello";
         context.treeModel.insertNodeInto(sendNode, context.requestNode, context.requestNode.getChildCount());
@@ -283,12 +283,12 @@ public class PerformanceTreeSupportTest {
         List<DefaultMutableTreeNode> copied = context.treeSupport.copyNodes(paths(context.requestNode));
 
         assertEquals(copied.size(), 1);
-        JMeterTreeNode copiedRequestData = (JMeterTreeNode) copied.get(0).getUserObject();
+        PerformanceTreeNode copiedRequestData = (PerformanceTreeNode) copied.get(0).getUserObject();
         assertNotSame(copiedRequestData.httpRequestItem, context.requestData.httpRequestItem);
         assertNotEquals(copiedRequestData.httpRequestItem.getId(), context.requestData.httpRequestItem.getId());
         assertEquals(copiedRequestData.httpRequestItem.getUrl(), "ws://localhost:8080/ws");
         assertEquals(childTypesOf(copied.get(0)), List.of(NodeType.WS_CONNECT, NodeType.WS_SEND));
-        JMeterTreeNode copiedSendData = (JMeterTreeNode) ((DefaultMutableTreeNode) copied.get(0).getChildAt(1)).getUserObject();
+        PerformanceTreeNode copiedSendData = (PerformanceTreeNode) ((DefaultMutableTreeNode) copied.get(0).getChildAt(1)).getUserObject();
         assertNotSame(copiedSendData.webSocketPerformanceData, sendData.webSocketPerformanceData);
         assertEquals(copiedSendData.webSocketPerformanceData.customSendBody, "hello");
     }
@@ -331,9 +331,9 @@ public class PerformanceTreeSupportTest {
 
         assertEquals(pasted.size(), 1);
         assertSame(groupNode.getChildAt(2), pasted.get(0));
-        JMeterTreeNode pastedData = (JMeterTreeNode) pasted.get(0).getUserObject();
+        PerformanceTreeNode pastedData = (PerformanceTreeNode) pasted.get(0).getUserObject();
         assertNotEquals(pastedData.httpRequestItem.getId(), "first");
-        assertNotEquals(pastedData.httpRequestItem.getId(), ((JMeterTreeNode) copied.get(0).getUserObject()).httpRequestItem.getId());
+        assertNotEquals(pastedData.httpRequestItem.getId(), ((PerformanceTreeNode) copied.get(0).getUserObject()).httpRequestItem.getId());
     }
 
     @Test(description = "粘贴 WebSocket 步骤到 WebSocket 请求上时应插入步骤并保留步骤配置")
@@ -341,7 +341,7 @@ public class PerformanceTreeSupportTest {
         TestContext context = newTestContext(RequestItemProtocolEnum.WEBSOCKET);
         context.treeSupport.ensureRequestStructure(context.requestNode, context.requestData);
         DefaultMutableTreeNode sendNode = newNode("Send", NodeType.WS_SEND);
-        JMeterTreeNode sendData = (JMeterTreeNode) sendNode.getUserObject();
+        PerformanceTreeNode sendData = (PerformanceTreeNode) sendNode.getUserObject();
         sendData.webSocketPerformanceData = new WebSocketPerformanceData();
         sendData.webSocketPerformanceData.customSendBody = "payload";
         context.treeModel.insertNodeInto(sendNode, context.requestNode, context.requestNode.getChildCount());
@@ -351,7 +351,7 @@ public class PerformanceTreeSupportTest {
 
         assertEquals(pasted.size(), 1);
         assertEquals(childTypesOf(context.requestNode), List.of(NodeType.WS_CONNECT, NodeType.WS_SEND, NodeType.WS_SEND));
-        JMeterTreeNode pastedData = (JMeterTreeNode) pasted.get(0).getUserObject();
+        PerformanceTreeNode pastedData = (PerformanceTreeNode) pasted.get(0).getUserObject();
         assertNotSame(pastedData.webSocketPerformanceData, sendData.webSocketPerformanceData);
         assertEquals(pastedData.webSocketPerformanceData.customSendBody, "payload");
     }
@@ -373,7 +373,7 @@ public class PerformanceTreeSupportTest {
         TestContext context = newTestContext(RequestItemProtocolEnum.SSE);
         context.treeSupport.ensureRequestStructure(context.requestNode, context.requestData);
         DefaultMutableTreeNode readNode = findChild(context.requestNode, NodeType.SSE_READ);
-        JMeterTreeNode readData = (JMeterTreeNode) readNode.getUserObject();
+        PerformanceTreeNode readData = (PerformanceTreeNode) readNode.getUserObject();
         readData.ssePerformanceData = new SsePerformanceData();
         readData.ssePerformanceData.messageFilter = "ready";
         List<DefaultMutableTreeNode> copied = context.treeSupport.copyNodes(paths(readNode));
@@ -382,7 +382,7 @@ public class PerformanceTreeSupportTest {
 
         assertEquals(pasted.size(), 1);
         assertEquals(childTypesOf(context.requestNode), List.of(NodeType.SSE_CONNECT, NodeType.SSE_READ, NodeType.SSE_READ));
-        JMeterTreeNode pastedData = (JMeterTreeNode) pasted.get(0).getUserObject();
+        PerformanceTreeNode pastedData = (PerformanceTreeNode) pasted.get(0).getUserObject();
         assertNotSame(pastedData.ssePerformanceData, readData.ssePerformanceData);
         assertEquals(pastedData.ssePerformanceData.messageFilter, "ready");
     }
@@ -402,7 +402,7 @@ public class PerformanceTreeSupportTest {
         TestContext context = newTestContext(RequestItemProtocolEnum.WEBSOCKET);
         context.treeSupport.ensureRequestStructure(context.requestNode, context.requestData);
         DefaultMutableTreeNode connectNode = findChild(context.requestNode, NodeType.WS_CONNECT);
-        JMeterTreeNode connectData = (JMeterTreeNode) connectNode.getUserObject();
+        PerformanceTreeNode connectData = (PerformanceTreeNode) connectNode.getUserObject();
         connectData.webSocketPerformanceData = new WebSocketPerformanceData();
         connectData.webSocketPerformanceData.connectTimeoutMs = 15000;
         List<DefaultMutableTreeNode> copied = context.treeSupport.copyNodes(paths(connectNode));
@@ -411,7 +411,7 @@ public class PerformanceTreeSupportTest {
 
         assertEquals(pasted.size(), 1);
         assertEquals(childTypesOf(context.requestNode), List.of(NodeType.WS_CONNECT, NodeType.WS_CONNECT));
-        JMeterTreeNode pastedData = (JMeterTreeNode) pasted.get(0).getUserObject();
+        PerformanceTreeNode pastedData = (PerformanceTreeNode) pasted.get(0).getUserObject();
         assertNotSame(pastedData.webSocketPerformanceData, connectData.webSocketPerformanceData);
         assertEquals(pastedData.webSocketPerformanceData.connectTimeoutMs, 15000);
     }
@@ -553,7 +553,7 @@ public class PerformanceTreeSupportTest {
         HttpRequestItem item = new HttpRequestItem();
         item.setName("Request");
         item.setProtocol(protocol);
-        JMeterTreeNode requestData = new JMeterTreeNode("Request", NodeType.REQUEST, item);
+        PerformanceTreeNode requestData = new PerformanceTreeNode("Request", NodeType.REQUEST, item);
         DefaultMutableTreeNode root = newNode("Plan", NodeType.ROOT);
         DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(requestData);
         root.add(requestNode);
@@ -562,18 +562,18 @@ public class PerformanceTreeSupportTest {
     }
 
     private static DefaultMutableTreeNode newNode(String name, NodeType type) {
-        return new DefaultMutableTreeNode(new JMeterTreeNode(name, type));
+        return new DefaultMutableTreeNode(new PerformanceTreeNode(name, type));
     }
 
     private static DefaultMutableTreeNode newRequestNode(String id, String name) {
         HttpRequestItem item = new HttpRequestItem();
         item.setId(id);
         item.setName(name);
-        return new DefaultMutableTreeNode(new JMeterTreeNode(name, NodeType.REQUEST, item));
+        return new DefaultMutableTreeNode(new PerformanceTreeNode(name, NodeType.REQUEST, item));
     }
 
     private static DefaultMutableTreeNode newLoopNode(int iterations) {
-        JMeterTreeNode loopData = new JMeterTreeNode("Loop", NodeType.LOOP);
+        PerformanceTreeNode loopData = new PerformanceTreeNode("Loop", NodeType.LOOP);
         loopData.loopData = new LoopData();
         loopData.loopData.iterations = iterations;
         return new DefaultMutableTreeNode(loopData);
@@ -583,7 +583,7 @@ public class PerformanceTreeSupportTest {
         for (int i = 0; i < parent.getChildCount(); i++) {
             DefaultMutableTreeNode child = (DefaultMutableTreeNode) parent.getChildAt(i);
             Object userObject = child.getUserObject();
-            if (userObject instanceof JMeterTreeNode node && node.type == type) {
+            if (userObject instanceof PerformanceTreeNode node && node.type == type) {
                 return child;
             }
         }
@@ -594,7 +594,7 @@ public class PerformanceTreeSupportTest {
         List<NodeType> types = new ArrayList<>();
         for (int i = 0; i < parent.getChildCount(); i++) {
             Object userObject = ((DefaultMutableTreeNode) parent.getChildAt(i)).getUserObject();
-            if (userObject instanceof JMeterTreeNode node) {
+            if (userObject instanceof PerformanceTreeNode node) {
                 types.add(node.type);
             }
         }
@@ -610,14 +610,14 @@ public class PerformanceTreeSupportTest {
     }
 
     private static NodeType nodeType(DefaultMutableTreeNode node) {
-        return ((JMeterTreeNode) node.getUserObject()).type;
+        return ((PerformanceTreeNode) node.getUserObject()).type;
     }
 
     private record TestContext(
             PerformanceTreeSupport treeSupport,
             DefaultTreeModel treeModel,
             DefaultMutableTreeNode requestNode,
-            JMeterTreeNode requestData
+            PerformanceTreeNode requestData
     ) {
     }
 }

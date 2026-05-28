@@ -37,12 +37,12 @@ public class PerformanceAuthConfig {
                 .build();
     }
 
-    public static PerformanceAuthConfig fromSnapshotFields(String authType,
+    public static PerformanceAuthConfig fromSnapshotFields(PerformanceAuthType authType,
                                                            String username,
                                                            String password,
                                                            String token) {
         return builder()
-                .type(PerformanceAuthType.fromLegacyValue(authType))
+                .type(authType)
                 .username(username)
                 .password(password)
                 .token(token)

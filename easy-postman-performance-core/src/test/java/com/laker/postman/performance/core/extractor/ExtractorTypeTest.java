@@ -9,7 +9,7 @@ import static org.testng.Assert.assertTrue;
 public class ExtractorTypeTest {
 
     @Test
-    public void shouldResolveLegacyStorageValuesToEnums() {
+    public void shouldResolveStorageValuesToEnums() {
         assertEquals(ExtractorType.fromStorageValue("JSONPath"), ExtractorType.JSON_PATH);
         assertEquals(ExtractorType.fromStorageValue("Regex"), ExtractorType.REGEX);
         assertEquals(ExtractorType.fromStorageValue("unknown"), ExtractorType.JSON_PATH);

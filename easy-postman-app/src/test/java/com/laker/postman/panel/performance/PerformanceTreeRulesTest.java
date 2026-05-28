@@ -4,7 +4,7 @@ import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.performance.core.controller.LoopData;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.model.NodeType;
 import org.testng.annotations.Test;
 
@@ -27,7 +27,7 @@ public class PerformanceTreeRulesTest {
         assertTrue(PerformanceTreeRules.canAcceptChild(wsLoop, newNode(NodeType.WS_SEND)));
 
         DefaultMutableTreeNode sseRequest = newRequestNode(RequestItemProtocolEnum.HTTP);
-        ((JMeterTreeNode) sseRequest.getUserObject()).httpRequestItem.setHeadersList(List.of(
+        ((PerformanceTreeNode) sseRequest.getUserObject()).httpRequestItem.setHeadersList(List.of(
                 new HttpHeader(true, "Accept", "text/event-stream")
         ));
 
@@ -54,20 +54,20 @@ public class PerformanceTreeRulesTest {
     private static DefaultMutableTreeNode newRequestNode(RequestItemProtocolEnum protocol) {
         HttpRequestItem item = new HttpRequestItem();
         item.setProtocol(protocol);
-        return new DefaultMutableTreeNode(new JMeterTreeNode(protocol.name(), NodeType.REQUEST, item));
+        return new DefaultMutableTreeNode(new PerformanceTreeNode(protocol.name(), NodeType.REQUEST, item));
     }
 
     private static DefaultMutableTreeNode newLoopNode() {
-        JMeterTreeNode loopData = new JMeterTreeNode("Loop", NodeType.LOOP);
+        PerformanceTreeNode loopData = new PerformanceTreeNode("Loop", NodeType.LOOP);
         loopData.loopData = new LoopData();
         return new DefaultMutableTreeNode(loopData);
     }
 
     private static DefaultMutableTreeNode newNode(NodeType type) {
-        return new DefaultMutableTreeNode(new JMeterTreeNode(type.name(), type));
+        return new DefaultMutableTreeNode(new PerformanceTreeNode(type.name(), type));
     }
 
     private static DefaultMutableTreeNode sseReadNode() {
-        return new DefaultMutableTreeNode(new JMeterTreeNode("SSE Read", NodeType.SSE_READ));
+        return new DefaultMutableTreeNode(new PerformanceTreeNode("SSE Read", NodeType.SSE_READ));
     }
 }

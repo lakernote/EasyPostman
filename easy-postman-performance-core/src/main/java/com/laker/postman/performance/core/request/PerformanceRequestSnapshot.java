@@ -13,7 +13,6 @@ public class PerformanceRequestSnapshot {
     public static final String HTTP_VERSION_AUTO = "AUTO";
     public static final String HTTP_VERSION_HTTP_1_1 = "HTTP_1_1";
     public static final String HTTP_VERSION_HTTP_2 = "HTTP_2";
-    public static final String AUTH_INHERIT = PerformanceAuthType.INHERIT.getLegacyValue();
 
     String id;
     String name;
@@ -27,7 +26,7 @@ public class PerformanceRequestSnapshot {
     List<PerformanceRequestKeyValue> params;
     List<PerformanceRequestFormDataPart> formData;
     List<PerformanceRequestKeyValue> urlencoded;
-    String authType;
+    PerformanceAuthType authType;
     String authUsername;
     String authPassword;
     String authToken;
@@ -52,7 +51,7 @@ public class PerformanceRequestSnapshot {
                                       List<PerformanceRequestKeyValue> params,
                                       List<PerformanceRequestFormDataPart> formData,
                                       List<PerformanceRequestKeyValue> urlencoded,
-                                      String authType,
+                                      PerformanceAuthType authType,
                                       String authUsername,
                                       String authPassword,
                                       String authToken,
@@ -75,7 +74,7 @@ public class PerformanceRequestSnapshot {
         this.params = copyKeyValues(params);
         this.formData = copyFormData(formData);
         this.urlencoded = copyKeyValues(urlencoded);
-        this.authType = blankToDefault(authType, AUTH_INHERIT);
+        this.authType = authType == null ? PerformanceAuthType.INHERIT : authType;
         this.authUsername = blankToEmpty(authUsername);
         this.authPassword = blankToEmpty(authPassword);
         this.authToken = blankToEmpty(authToken);

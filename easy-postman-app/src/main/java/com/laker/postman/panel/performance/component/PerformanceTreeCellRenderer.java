@@ -4,7 +4,7 @@ package com.laker.postman.panel.performance.component;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.service.http.HttpUtil;
@@ -14,7 +14,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import java.awt.*;
 
-public class JMeterTreeCellRenderer extends DefaultTreeCellRenderer {
+public class PerformanceTreeCellRenderer extends DefaultTreeCellRenderer {
 
     public static final int SIZE = 18;
 
@@ -23,13 +23,13 @@ public class JMeterTreeCellRenderer extends DefaultTreeCellRenderer {
         JLabel label = (JLabel) super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
         DefaultMutableTreeNode node = (DefaultMutableTreeNode) value;
         Object userObj = node.getUserObject();
-        if (userObj instanceof JMeterTreeNode jtNode) {
+        if (userObj instanceof PerformanceTreeNode nodeData) {
             // 设置图标
-            switch (jtNode.type) {
+            switch (nodeData.type) {
                 case THREAD_GROUP -> label.setIcon(IconUtil.createThemed("icons/user-group.svg", SIZE, SIZE));
                 case CSV_DATA_SET -> label.setIcon(IconUtil.createThemed("icons/csv.svg", SIZE, SIZE));
                 case LOOP -> label.setIcon(new FlatSVGIcon("icons/refresh.svg", SIZE, SIZE));
-                case REQUEST -> label.setIcon(resolveRequestIcon(jtNode.httpRequestItem));
+                case REQUEST -> label.setIcon(resolveRequestIcon(nodeData.httpRequestItem));
                 case ASSERTION -> label.setIcon(IconUtil.createThemed("icons/warning.svg", SIZE, SIZE));
                 case EXTRACTOR -> label.setIcon(IconUtil.createThemed("icons/global-variables.svg", SIZE, SIZE));
                 case TIMER -> label.setIcon(IconUtil.createThemed("icons/time.svg", SIZE, SIZE));
@@ -42,8 +42,8 @@ public class JMeterTreeCellRenderer extends DefaultTreeCellRenderer {
                 case ROOT -> label.setIcon(new FlatSVGIcon("icons/computer.svg", SIZE, SIZE));
             }
 
-            String text = jtNode.name;
-            if (!jtNode.enabled) {
+            String text = nodeData.name;
+            if (!nodeData.enabled) {
                 Color disabledColor = new Color(150, 150, 150);
                 if (!sel) {
                     label.setForeground(disabledColor);

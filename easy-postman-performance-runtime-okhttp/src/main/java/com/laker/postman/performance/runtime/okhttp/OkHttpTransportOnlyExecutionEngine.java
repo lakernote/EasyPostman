@@ -19,21 +19,22 @@ import java.util.function.BooleanSupplier;
 /**
  * Runs core thread groups/controllers/timers and delegates request samples to OkHttp.
  * Script, assertion, extractor and protocol-stage semantics are intentionally supplied by higher-level ports/adapters.
+ * This is a transport-only execution engine, not a complete headless load-test runner.
  */
-public final class OkHttpPerformanceTransportPlanRunner implements PerformanceCoreRunSession.ExecutionEngine {
+final class OkHttpTransportOnlyExecutionEngine implements PerformanceCoreRunSession.ExecutionEngine {
     private final PerformanceTransportRuntime transportRuntime;
     private final PerformanceCorePlanExecutor<Void> planExecutor;
     private final PerformanceCoreExecutionEngine<Void> delegate;
     private volatile PerformanceCoreResultSink resultSink = PerformanceCoreResultSink.NOOP;
 
-    public OkHttpPerformanceTransportPlanRunner(BooleanSupplier runningSupplier,
-                                                PerformanceTransportRuntime transportRuntime) {
+    public OkHttpTransportOnlyExecutionEngine(BooleanSupplier runningSupplier,
+                                              PerformanceTransportRuntime transportRuntime) {
         this(runningSupplier, transportRuntime, PerformanceRunListener.NOOP);
     }
 
-    public OkHttpPerformanceTransportPlanRunner(BooleanSupplier runningSupplier,
-                                                PerformanceTransportRuntime transportRuntime,
-                                                PerformanceRunListener runListener) {
+    public OkHttpTransportOnlyExecutionEngine(BooleanSupplier runningSupplier,
+                                              PerformanceTransportRuntime transportRuntime,
+                                              PerformanceRunListener runListener) {
         BooleanSupplier resolvedRunningSupplier = runningSupplier == null ? () -> false : runningSupplier;
         this.transportRuntime = transportRuntime == null ? new OkHttpPerformanceTransportRuntime() : transportRuntime;
         this.planExecutor = new PerformanceCorePlanExecutor<>(

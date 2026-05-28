@@ -36,6 +36,7 @@ final class DefaultPerformanceRequestRuntime implements PerformanceRequestRuntim
                 .deferredAuthorization(PreparedRequestBuilder.resolveDeferredAuthorizationWithoutInheritance(requestItem))
                 .outputCallback(resolvedConfig.scriptOutputCallback())
                 .environmentSupplier(resolvedConfig.environmentSupplier())
+                .scriptExecutor(resolvedConfig.scriptExecutor())
                 .build();
 
         return new PerformancePreparedRequest(

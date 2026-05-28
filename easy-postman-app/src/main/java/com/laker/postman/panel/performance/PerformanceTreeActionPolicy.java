@@ -3,7 +3,7 @@ package com.laker.postman.panel.performance;
 import com.laker.postman.performance.core.model.NodeType;
 
 
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import lombok.RequiredArgsConstructor;
 
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -19,12 +19,12 @@ final class PerformanceTreeActionPolicy {
     EnumSet<PerformanceTreeAction> actionsForSingleSelection(DefaultMutableTreeNode node,
                                                              List<DefaultMutableTreeNode> copiedNodes) {
         EnumSet<PerformanceTreeAction> actions = EnumSet.noneOf(PerformanceTreeAction.class);
-        JMeterTreeNode jtNode = treeNodeData(node);
-        if (jtNode == null) {
+        PerformanceTreeNode nodeData = treeNodeData(node);
+        if (nodeData == null) {
             return actions;
         }
 
-        if (jtNode.type == NodeType.ROOT) {
+        if (nodeData.type == NodeType.ROOT) {
             actions.add(PerformanceTreeAction.ADD_THREAD_GROUP);
             addPasteAction(actions, node, copiedNodes);
             return actions;
@@ -39,10 +39,10 @@ final class PerformanceTreeActionPolicy {
         if (canAddCsvDataSet) {
             actions.add(PerformanceTreeAction.ADD_CSV_DATA_SET);
         }
-        if (jtNode.type == NodeType.THREAD_GROUP || requestContainerLoop) {
+        if (nodeData.type == NodeType.THREAD_GROUP || requestContainerLoop) {
             actions.add(PerformanceTreeAction.ADD_REQUEST);
         }
-        if (jtNode.type == NodeType.THREAD_GROUP || requestContainerLoop || canManageWsSteps) {
+        if (nodeData.type == NodeType.THREAD_GROUP || requestContainerLoop || canManageWsSteps) {
             actions.add(PerformanceTreeAction.ADD_LOOP);
         }
         if (canManageSseStages) {
@@ -57,13 +57,13 @@ final class PerformanceTreeActionPolicy {
             actions.add(PerformanceTreeAction.ADD_WS_READ);
             actions.add(PerformanceTreeAction.ADD_WS_CLOSE);
         }
-        if (canAddAssertion(jtNode)) {
+        if (canAddAssertion(nodeData)) {
             actions.add(PerformanceTreeAction.ADD_ASSERTION);
         }
-        if (canAddExtractor(jtNode)) {
+        if (canAddExtractor(nodeData)) {
             actions.add(PerformanceTreeAction.ADD_EXTRACTOR);
         }
-        if (jtNode.type == NodeType.REQUEST || requestContainerLoop || canManageWsSteps) {
+        if (nodeData.type == NodeType.REQUEST || requestContainerLoop || canManageWsSteps) {
             actions.add(PerformanceTreeAction.ADD_TIMER);
         }
         if (treeSupport.hasCopyableNodes(singlePath(node))) {
@@ -101,11 +101,11 @@ final class PerformanceTreeActionPolicy {
                 if (path == null || !(path.getLastPathComponent() instanceof DefaultMutableTreeNode node)) {
                     continue;
                 }
-                JMeterTreeNode jtNode = treeNodeData(node);
-                if (jtNode == null || jtNode.type == NodeType.ROOT) {
+                PerformanceTreeNode nodeData = treeNodeData(node);
+                if (nodeData == null || nodeData.type == NodeType.ROOT) {
                     continue;
                 }
-                if (jtNode.enabled) {
+                if (nodeData.enabled) {
                     hasEnabled = true;
                 } else {
                     hasDisabled = true;
@@ -122,20 +122,20 @@ final class PerformanceTreeActionPolicy {
     }
 
     boolean canRename(DefaultMutableTreeNode node) {
-        JMeterTreeNode jtNode = treeNodeData(node);
-        return jtNode != null
-                && jtNode.type != NodeType.ROOT
-                && !isFixedNameNode(jtNode.type)
-                && jtNode.type != NodeType.LOOP
-                && jtNode.type != NodeType.EXTRACTOR
-                && !treeSupport.isWebSocketStepNode(jtNode.type);
+        PerformanceTreeNode nodeData = treeNodeData(node);
+        return nodeData != null
+                && nodeData.type != NodeType.ROOT
+                && !isFixedNameNode(nodeData.type)
+                && nodeData.type != NodeType.LOOP
+                && nodeData.type != NodeType.EXTRACTOR
+                && !treeSupport.isWebSocketStepNode(nodeData.type);
     }
 
     boolean canSetEnabled(DefaultMutableTreeNode node, boolean enabled) {
-        JMeterTreeNode jtNode = treeNodeData(node);
-        return jtNode != null
-                && jtNode.type != NodeType.ROOT
-                && jtNode.enabled != enabled;
+        PerformanceTreeNode nodeData = treeNodeData(node);
+        return nodeData != null
+                && nodeData.type != NodeType.ROOT
+                && nodeData.enabled != enabled;
     }
 
     private void addPasteAction(EnumSet<PerformanceTreeAction> actions,
@@ -146,20 +146,20 @@ final class PerformanceTreeActionPolicy {
         }
     }
 
-    private boolean canAddAssertion(JMeterTreeNode jtNode) {
-        return canAddRequestPostProcessor(jtNode);
+    private boolean canAddAssertion(PerformanceTreeNode nodeData) {
+        return canAddRequestPostProcessor(nodeData);
     }
 
-    private boolean canAddExtractor(JMeterTreeNode jtNode) {
-        return canAddRequestPostProcessor(jtNode);
+    private boolean canAddExtractor(PerformanceTreeNode nodeData) {
+        return canAddRequestPostProcessor(nodeData);
     }
 
-    private boolean canAddRequestPostProcessor(JMeterTreeNode jtNode) {
-        boolean sseRequestNode = jtNode.type == NodeType.REQUEST && treeSupport.isSsePerfRequest(jtNode.httpRequestItem);
-        boolean webSocketRequestNode = jtNode.type == NodeType.REQUEST && treeSupport.isWebSocketPerfRequest(jtNode.httpRequestItem);
-        return (jtNode.type == NodeType.REQUEST && !sseRequestNode && !webSocketRequestNode)
-                || jtNode.type == NodeType.SSE_READ
-                || jtNode.type == NodeType.WS_READ;
+    private boolean canAddRequestPostProcessor(PerformanceTreeNode nodeData) {
+        boolean sseRequestNode = nodeData.type == NodeType.REQUEST && treeSupport.isSsePerfRequest(nodeData.httpRequestItem);
+        boolean webSocketRequestNode = nodeData.type == NodeType.REQUEST && treeSupport.isWebSocketPerfRequest(nodeData.httpRequestItem);
+        return (nodeData.type == NodeType.REQUEST && !sseRequestNode && !webSocketRequestNode)
+                || nodeData.type == NodeType.SSE_READ
+                || nodeData.type == NodeType.WS_READ;
     }
 
     private boolean isFixedNameNode(NodeType type) {
@@ -172,10 +172,10 @@ final class PerformanceTreeActionPolicy {
         return new TreePath[]{new TreePath(node.getPath())};
     }
 
-    private JMeterTreeNode treeNodeData(DefaultMutableTreeNode node) {
-        if (node == null || !(node.getUserObject() instanceof JMeterTreeNode jtNode)) {
+    private PerformanceTreeNode treeNodeData(DefaultMutableTreeNode node) {
+        if (node == null || !(node.getUserObject() instanceof PerformanceTreeNode nodeData)) {
             return null;
         }
-        return jtNode;
+        return nodeData;
     }
 }

@@ -11,7 +11,8 @@ import com.laker.postman.model.RequestGroup;
 import com.laker.postman.model.Variable;
 import com.laker.postman.panel.performance.PerformanceTreeSnapshot;
 import com.laker.postman.performance.core.controller.LoopData;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.performance.core.request.PerformanceAuthType;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
 import com.laker.postman.service.collections.CollectionTreeNodes;
@@ -106,7 +107,7 @@ public class PerformancePlanDocumentCompilerTest {
         CollectionTreeRootRegistry.registerRootSupplier(() -> collectionRoot);
         try {
             DefaultMutableTreeNode performanceRequestNode = new DefaultMutableTreeNode(
-                    new JMeterTreeNode(
+                    new PerformanceTreeNode(
                             collectionRequest.getName(),
                             NodeType.REQUEST,
                             collectionRequest
@@ -120,7 +121,7 @@ public class PerformancePlanDocumentCompilerTest {
 
             assertEquals(sampler.getRequestExecutionScope().getGroupVariable("tenantId"), "collection-tenant");
             assertEquals(sampler.getRequestSnapshot().getExecutionScope().getGroupVariable("tenantId"), "collection-tenant");
-            assertEquals(sampler.getRequestSnapshot().getAuthType(), AuthType.BEARER.getConstant());
+            assertEquals(sampler.getRequestSnapshot().getAuthType(), PerformanceAuthType.BEARER);
             assertTrue(sampler.getRequestSnapshot().getHeaders().stream()
                     .anyMatch(header -> "X-Group".equals(header.getKey()) && "group-value".equals(header.getValue())));
             assertEquals(samplerRequest.getAuthType(), AuthType.BEARER.getConstant());
@@ -150,7 +151,7 @@ public class PerformancePlanDocumentCompilerTest {
         CollectionTreeRootRegistry.registerRootSupplier(() -> collectionRoot);
         try {
             DefaultMutableTreeNode performanceRequestNode = new DefaultMutableTreeNode(
-                    new JMeterTreeNode(
+                    new PerformanceTreeNode(
                             collectionRequest.getName(),
                             NodeType.REQUEST,
                             collectionRequest
@@ -181,7 +182,7 @@ public class PerformancePlanDocumentCompilerTest {
         CollectionTreeRootRegistry.registerRootSupplier(() -> collectionRoot);
         try {
             DefaultMutableTreeNode performanceRequestNode = new DefaultMutableTreeNode(
-                    new JMeterTreeNode(
+                    new PerformanceTreeNode(
                             collectionRequest.getName(),
                             NodeType.REQUEST,
                             collectionRequest

@@ -6,7 +6,7 @@ import com.laker.postman.performance.core.model.SsePerformanceData;
 import com.laker.postman.common.component.EasyJSpinner;
 import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.common.component.EasyTextField;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 
@@ -38,7 +38,7 @@ public class SseStagePropertyPanel extends JPanel {
     private JLabel targetMessageCountLabel;
     private JLabel messageFilterLabel;
     private JTextArea modeHintArea;
-    private JMeterTreeNode currentNode;
+    private PerformanceTreeNode currentNode;
 
     public SseStagePropertyPanel(Stage stage) {
         this.stage = stage;
@@ -149,7 +149,7 @@ public class SseStagePropertyPanel extends JPanel {
         gbc.gridy++;
     }
 
-    public void setNode(JMeterTreeNode node) {
+    public void setNode(PerformanceTreeNode node) {
         this.currentNode = node;
         SsePerformanceData data = node != null && node.ssePerformanceData != null
                 ? node.ssePerformanceData

@@ -4,7 +4,7 @@ import com.laker.postman.performance.core.timer.TimerData;
 
 
 import com.laker.postman.common.component.EasyJSpinner;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -14,7 +14,7 @@ import java.awt.*;
 
 public class TimerPropertyPanel extends JPanel {
     private final EasyJSpinner delaySpinner;
-    private JMeterTreeNode currentNode;
+    private PerformanceTreeNode currentNode;
 
     public TimerPropertyPanel() {
         setLayout(new GridBagLayout());
@@ -56,7 +56,7 @@ public class TimerPropertyPanel extends JPanel {
         add(Box.createVerticalGlue(), gbc);
     }
 
-    public void setTimerData(JMeterTreeNode node) {
+    public void setTimerData(PerformanceTreeNode node) {
         this.currentNode = node;
         TimerData data = node.timerData;
         if (data == null) {

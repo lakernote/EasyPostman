@@ -4,7 +4,7 @@ import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.performance.core.assertion.AssertionData;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.controller.LoopData;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.PerformanceStatsCollector;
@@ -106,8 +106,8 @@ public class PerformanceExecutionEngineTest {
         threadGroupData.threadMode = ThreadGroupData.ThreadMode.FIXED;
         threadGroupData.numThreads = 0;
 
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new JMeterTreeNode("root", NodeType.ROOT));
-        root.add(new DefaultMutableTreeNode(new JMeterTreeNode("thread group", NodeType.THREAD_GROUP, threadGroupData)));
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new PerformanceTreeNode("root", NodeType.ROOT));
+        root.add(new DefaultMutableTreeNode(new PerformanceTreeNode("thread group", NodeType.THREAD_GROUP, threadGroupData)));
 
         PerformanceExecutionEngine engine = new PerformanceExecutionEngine(
                 () -> true,
@@ -130,11 +130,11 @@ public class PerformanceExecutionEngineTest {
         threadGroupData.spikeRampDownTime = 10;
         threadGroupData.spikeDuration = 120;
 
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new JMeterTreeNode("root", NodeType.ROOT));
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new PerformanceTreeNode("root", NodeType.ROOT));
         DefaultMutableTreeNode group = new DefaultMutableTreeNode(
-                new JMeterTreeNode("thread group", NodeType.THREAD_GROUP, threadGroupData)
+                new PerformanceTreeNode("thread group", NodeType.THREAD_GROUP, threadGroupData)
         );
-        group.add(new DefaultMutableTreeNode(new JMeterTreeNode("request", NodeType.REQUEST)));
+        group.add(new DefaultMutableTreeNode(new PerformanceTreeNode("request", NodeType.REQUEST)));
         root.add(group);
 
         PerformanceExecutionEngine engine = new PerformanceExecutionEngine(
@@ -155,19 +155,19 @@ public class PerformanceExecutionEngineTest {
         threadGroupData.useTime = false;
         threadGroupData.loops = 1;
 
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new JMeterTreeNode("root", NodeType.ROOT));
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new PerformanceTreeNode("root", NodeType.ROOT));
         DefaultMutableTreeNode group = new DefaultMutableTreeNode(
-                new JMeterTreeNode("thread group", NodeType.THREAD_GROUP, threadGroupData)
+                new PerformanceTreeNode("thread group", NodeType.THREAD_GROUP, threadGroupData)
         );
-        JMeterTreeNode outerLoopData = new JMeterTreeNode("outer loop", NodeType.LOOP);
+        PerformanceTreeNode outerLoopData = new PerformanceTreeNode("outer loop", NodeType.LOOP);
         outerLoopData.loopData = new LoopData();
         outerLoopData.loopData.iterations = LoopData.MAX_ITERATIONS;
         DefaultMutableTreeNode outerLoop = new DefaultMutableTreeNode(outerLoopData);
-        JMeterTreeNode innerLoopData = new JMeterTreeNode("inner loop", NodeType.LOOP);
+        PerformanceTreeNode innerLoopData = new PerformanceTreeNode("inner loop", NodeType.LOOP);
         innerLoopData.loopData = new LoopData();
         innerLoopData.loopData.iterations = LoopData.MAX_ITERATIONS;
         DefaultMutableTreeNode innerLoop = new DefaultMutableTreeNode(innerLoopData);
-        innerLoop.add(new DefaultMutableTreeNode(new JMeterTreeNode("request", NodeType.REQUEST)));
+        innerLoop.add(new DefaultMutableTreeNode(new PerformanceTreeNode("request", NodeType.REQUEST)));
         outerLoop.add(innerLoop);
         group.add(outerLoop);
         root.add(group);
@@ -203,13 +203,13 @@ public class PerformanceExecutionEngineTest {
             threadGroupData.loops = 1;
 
             DefaultMutableTreeNode group = new DefaultMutableTreeNode(
-                    new JMeterTreeNode("thread group", NodeType.THREAD_GROUP, threadGroupData)
+                    new PerformanceTreeNode("thread group", NodeType.THREAD_GROUP, threadGroupData)
             );
-            JMeterTreeNode loopData = new JMeterTreeNode("Loop", NodeType.LOOP);
+            PerformanceTreeNode loopData = new PerformanceTreeNode("Loop", NodeType.LOOP);
             loopData.loopData = new LoopData();
             loopData.loopData.iterations = 2;
             DefaultMutableTreeNode loopNode = new DefaultMutableTreeNode(loopData);
-            loopNode.add(new DefaultMutableTreeNode(new JMeterTreeNode(item.getName(), NodeType.REQUEST, item)));
+            loopNode.add(new DefaultMutableTreeNode(new PerformanceTreeNode(item.getName(), NodeType.REQUEST, item)));
             group.add(loopNode);
 
             PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
@@ -281,7 +281,7 @@ public class PerformanceExecutionEngineTest {
             item.setUrl(server.url("/assertion").toString());
 
             DefaultMutableTreeNode request = new DefaultMutableTreeNode(
-                    new JMeterTreeNode(item.getName(), NodeType.REQUEST, item)
+                    new PerformanceTreeNode(item.getName(), NodeType.REQUEST, item)
             );
             request.add(responseCodeAssertion("201"));
             DefaultMutableTreeNode group = fixedThreadGroup(1);
@@ -314,7 +314,7 @@ public class PerformanceExecutionEngineTest {
             item.setMethod("GET");
             item.setUrl(server.url("/socket").toString().replaceFirst("^http", "ws"));
 
-            JMeterTreeNode requestData = new JMeterTreeNode(item.getName(), NodeType.REQUEST, item);
+            PerformanceTreeNode requestData = new PerformanceTreeNode(item.getName(), NodeType.REQUEST, item);
             requestData.webSocketPerformanceData = new WebSocketPerformanceData();
             DefaultMutableTreeNode group = fixedThreadGroup(1);
             group.add(new DefaultMutableTreeNode(requestData));
@@ -349,7 +349,7 @@ public class PerformanceExecutionEngineTest {
             item.setUrl(server.url("/events").toString());
             item.setHeadersList(List.of(new HttpHeader(true, "Accept", "text/event-stream")));
 
-            JMeterTreeNode requestData = new JMeterTreeNode(item.getName(), NodeType.REQUEST, item);
+            PerformanceTreeNode requestData = new PerformanceTreeNode(item.getName(), NodeType.REQUEST, item);
             DefaultMutableTreeNode group = fixedThreadGroup(1);
             group.add(new DefaultMutableTreeNode(requestData));
 
@@ -472,7 +472,7 @@ public class PerformanceExecutionEngineTest {
         threadGroupData.numThreads = 1;
         threadGroupData.useTime = false;
         threadGroupData.loops = loops;
-        return new DefaultMutableTreeNode(new JMeterTreeNode("thread group", NodeType.THREAD_GROUP, threadGroupData));
+        return new DefaultMutableTreeNode(new PerformanceTreeNode("thread group", NodeType.THREAD_GROUP, threadGroupData));
     }
 
     private static DefaultMutableTreeNode responseCodeAssertion(String expectedStatus) {
@@ -480,7 +480,7 @@ public class PerformanceExecutionEngineTest {
         assertionData.type = "Response Code";
         assertionData.operator = "=";
         assertionData.value = expectedStatus;
-        return new DefaultMutableTreeNode(new JMeterTreeNode("status assertion", NodeType.ASSERTION, assertionData));
+        return new DefaultMutableTreeNode(new PerformanceTreeNode("status assertion", NodeType.ASSERTION, assertionData));
     }
 
     private static boolean hasDefaultMutableTreeNodeParameter(Class<?> type) {

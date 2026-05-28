@@ -13,7 +13,7 @@ import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
-import com.laker.postman.panel.performance.component.JMeterTreeCellRenderer;
+import com.laker.postman.panel.performance.component.PerformanceTreeCellRenderer;
 import com.laker.postman.panel.performance.component.TreeNodeTransferHandler;
 import com.laker.postman.panel.performance.config.CsvDataSetPropertyPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
@@ -43,18 +43,18 @@ final class PerformancePanelViewFactory {
     private static final String RESULT_CONTEXT_TREND = "trend";
 
     TreeSection createTreeSection(DefaultTreeModel treeModel) {
-        JTree jmeterTree = new JTree(treeModel);
-        jmeterTree.setRootVisible(true);
-        jmeterTree.setShowsRootHandles(true);
-        jmeterTree.setCellRenderer(new JMeterTreeCellRenderer());
-        jmeterTree.getSelectionModel().setSelectionMode(TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION);
-        jmeterTree.setDragEnabled(true);
-        jmeterTree.setDropMode(DropMode.ON_OR_INSERT);
-        jmeterTree.setTransferHandler(new TreeNodeTransferHandler(jmeterTree, treeModel));
+        JTree performanceTree = new JTree(treeModel);
+        performanceTree.setRootVisible(true);
+        performanceTree.setShowsRootHandles(true);
+        performanceTree.setCellRenderer(new PerformanceTreeCellRenderer());
+        performanceTree.getSelectionModel().setSelectionMode(TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION);
+        performanceTree.setDragEnabled(true);
+        performanceTree.setDropMode(DropMode.ON_OR_INSERT);
+        performanceTree.setTransferHandler(new TreeNodeTransferHandler(performanceTree, treeModel));
 
-        JScrollPane treeScroll = new JScrollPane(jmeterTree);
+        JScrollPane treeScroll = new JScrollPane(performanceTree);
         treeScroll.setPreferredSize(new Dimension(260, 300));
-        return new TreeSection(jmeterTree, treeScroll);
+        return new TreeSection(performanceTree, treeScroll);
     }
 
     PropertySection createPropertySection(String emptyCard,

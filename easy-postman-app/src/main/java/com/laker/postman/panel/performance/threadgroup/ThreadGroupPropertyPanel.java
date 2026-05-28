@@ -1,10 +1,8 @@
 package com.laker.postman.panel.performance.threadgroup;
 
-import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
-
-
 import com.laker.postman.common.component.EasyJSpinner;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
+import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 
@@ -20,7 +18,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
     private final JComboBox<ThreadGroupData.ThreadMode> modeComboBox;
     private final CardLayout cardLayout;
     private final JPanel cardPanel;
-    private JMeterTreeNode currentNode;
+    private PerformanceTreeNode currentNode;
     private boolean updatingPreview;
 
     // 固定模式面板组件
@@ -450,7 +448,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
     }
 
     // 回填数据
-    public void setThreadGroupData(JMeterTreeNode node) {
+    public void setThreadGroupData(PerformanceTreeNode node) {
         this.currentNode = node;
         ThreadGroupData data = node.threadGroupData;
         if (data == null) {
@@ -853,7 +851,6 @@ public class ThreadGroupPropertyPanel extends JPanel {
             points.add(new Point(x, yMin));
 
             // 计算时间比例
-            int totalPhaseTime = previewData.spikeRampUpTime + previewData.spikeHoldTime + previewData.spikeRampDownTime;
             int availWidth = width;
 
             // 上升

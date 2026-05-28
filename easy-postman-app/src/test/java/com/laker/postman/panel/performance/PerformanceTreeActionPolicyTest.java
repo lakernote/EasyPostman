@@ -2,7 +2,7 @@ package com.laker.postman.panel.performance;
 
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.model.NodeType;
 import org.testng.annotations.Test;
 
@@ -96,7 +96,7 @@ public class PerformanceTreeActionPolicyTest {
     }
 
     private static DefaultMutableTreeNode node(NodeType type, boolean enabled) {
-        JMeterTreeNode data = new JMeterTreeNode(type.name(), type);
+        PerformanceTreeNode data = new PerformanceTreeNode(type.name(), type);
         data.enabled = enabled;
         return new DefaultMutableTreeNode(data);
     }
@@ -110,7 +110,7 @@ public class PerformanceTreeActionPolicyTest {
     private static final class TreeFixture {
         private final DefaultMutableTreeNode root = node(NodeType.ROOT, true);
         private final DefaultMutableTreeNode threadGroup = node(NodeType.THREAD_GROUP, true);
-        private final JMeterTreeNode requestData = new JMeterTreeNode("request", NodeType.REQUEST, requestItem(RequestItemProtocolEnum.HTTP));
+        private final PerformanceTreeNode requestData = new PerformanceTreeNode("request", NodeType.REQUEST, requestItem(RequestItemProtocolEnum.HTTP));
         private final DefaultMutableTreeNode request = new DefaultMutableTreeNode(requestData);
         private final PerformanceTreeSupport treeSupport;
 

@@ -7,7 +7,7 @@ import com.laker.postman.performance.core.config.CsvDataSetData;
 import com.laker.postman.performance.core.controller.LoopData;
 import com.laker.postman.panel.performance.execution.PerformanceRequestExecutionResult;
 import com.laker.postman.panel.performance.execution.PerformanceRequestExecutor;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
@@ -229,19 +229,19 @@ public class PerformancePlanExecutorTest {
         data.numThreads = 1;
         data.useTime = false;
         data.loops = 1;
-        return new DefaultMutableTreeNode(new JMeterTreeNode("group", NodeType.THREAD_GROUP, data));
+        return new DefaultMutableTreeNode(new PerformanceTreeNode("group", NodeType.THREAD_GROUP, data));
     }
 
     private static DefaultMutableTreeNode loopNode(int iterations) {
         LoopData data = new LoopData();
         data.iterations = iterations;
-        return new DefaultMutableTreeNode(new JMeterTreeNode("loop", NodeType.LOOP, data));
+        return new DefaultMutableTreeNode(new PerformanceTreeNode("loop", NodeType.LOOP, data));
     }
 
     private static DefaultMutableTreeNode timerNode(String name, int delayMs) {
         TimerData data = new TimerData();
         data.delayMs = delayMs;
-        return new DefaultMutableTreeNode(new JMeterTreeNode(name, NodeType.TIMER, data));
+        return new DefaultMutableTreeNode(new PerformanceTreeNode(name, NodeType.TIMER, data));
     }
 
     private static DefaultMutableTreeNode requestNode(String name, RequestItemProtocolEnum protocol) {
@@ -249,6 +249,6 @@ public class PerformancePlanExecutorTest {
         item.setId(name + "-id");
         item.setName(name);
         item.setProtocol(protocol);
-        return new DefaultMutableTreeNode(new JMeterTreeNode(name, NodeType.REQUEST, item));
+        return new DefaultMutableTreeNode(new PerformanceTreeNode(name, NodeType.REQUEST, item));
     }
 }

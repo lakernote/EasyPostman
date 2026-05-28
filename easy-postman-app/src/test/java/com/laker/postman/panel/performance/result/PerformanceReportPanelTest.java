@@ -2,14 +2,12 @@ package com.laker.postman.panel.performance.result;
 
 import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
 import com.laker.postman.common.component.button.SegmentedToggleButton;
-import com.laker.postman.performance.core.model.ApiMetadata;
 import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.panel.performance.model.PerformanceProtocolLabels;
 import com.laker.postman.performance.core.model.RequestResult;
 import com.laker.postman.test.AbstractSwingUiTest;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import javax.swing.JTable;
@@ -34,18 +32,12 @@ import static org.testng.Assert.assertTrue;
 
 public class PerformanceReportPanelTest extends AbstractSwingUiTest {
 
-    @AfterMethod
-    public void tearDown() {
-        ApiMetadata.clear();
-    }
-
     @Test
     public void shouldKeepQpsPrecisionToTwoDecimals() throws Exception {
-        ApiMetadata.register("search", "Search API");
         List<RequestResult> results = List.of(
-                new RequestResult(1_000, 1_100, true, "search"),
-                new RequestResult(2_000, 2_100, true, "search"),
-                new RequestResult(2_900, 3_000, true, "search")
+                new RequestResult(1_000, 1_100, true, "search", "Search API", PerformanceProtocol.HTTP),
+                new RequestResult(2_000, 2_100, true, "search", "Search API", PerformanceProtocol.HTTP),
+                new RequestResult(2_900, 3_000, true, "search", "Search API", PerformanceProtocol.HTTP)
         );
 
         PerformanceReportPanel panel = new PerformanceReportPanel();
@@ -63,10 +55,9 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
 
     @Test
     public void shouldBuildMarkdownReportFromCurrentTable() {
-        ApiMetadata.register("search", "Search API");
         List<RequestResult> results = List.of(
-                new RequestResult(1_000, 1_100, true, "search"),
-                new RequestResult(2_900, 3_000, true, "search")
+                new RequestResult(1_000, 1_100, true, "search", "Search API", PerformanceProtocol.HTTP),
+                new RequestResult(2_900, 3_000, true, "search", "Search API", PerformanceProtocol.HTTP)
         );
 
         PerformanceReportPanel panel = new PerformanceReportPanel();
@@ -143,11 +134,10 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
 
     @Test
     public void shouldRenderSseFirstEventPercentileColumns() throws Exception {
-        ApiMetadata.register("stream", "Stream API");
         List<RequestResult> results = new ArrayList<>();
         for (int i = 1; i <= 10; i++) {
             RequestResult result = new RequestResult(i * 1_000L, i * 1_000L + 2_000L,
-                    true, "stream", PerformanceProtocol.SSE);
+                    true, "stream", "Stream API", PerformanceProtocol.SSE);
             result.firstMessageLatencyMs = i * 100L;
             result.receivedMessages = 1;
             result.matchedMessages = 1;
@@ -175,10 +165,8 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
 
     @Test
     public void shouldNotExposeStreamCompletionReasonColumns() throws Exception {
-        ApiMetadata.register("ws", "WebSocket API");
-        ApiMetadata.register("sse", "SSE API");
-        RequestResult ws = new RequestResult(1_000, 2_000, true, "ws", PerformanceProtocol.WEBSOCKET);
-        RequestResult sse = new RequestResult(1_000, 2_000, true, "sse", PerformanceProtocol.SSE);
+        RequestResult ws = new RequestResult(1_000, 2_000, true, "ws", "WebSocket API", PerformanceProtocol.WEBSOCKET);
+        RequestResult sse = new RequestResult(1_000, 2_000, true, "sse", "SSE API", PerformanceProtocol.SSE);
 
         PerformanceReportPanel panel = new PerformanceReportPanel();
         panel.updateReport(Map.of(), Map.of(), Map.of(), List.of(ws, sse));
@@ -198,9 +186,8 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
 
     @Test
     public void shouldColorStreamSuccessRateWhenFailuresExist() {
-        ApiMetadata.register("ws", "WebSocket API");
-        RequestResult success = new RequestResult(1_000, 2_000, true, "ws", PerformanceProtocol.WEBSOCKET);
-        RequestResult failure = new RequestResult(2_000, 3_000, false, "ws", PerformanceProtocol.WEBSOCKET);
+        RequestResult success = new RequestResult(1_000, 2_000, true, "ws", "WebSocket API", PerformanceProtocol.WEBSOCKET);
+        RequestResult failure = new RequestResult(2_000, 3_000, false, "ws", "WebSocket API", PerformanceProtocol.WEBSOCKET);
 
         PerformanceReportPanel panel = new PerformanceReportPanel();
         panel.updateReport(Map.of(), Map.of(), Map.of(), List.of(success, failure));

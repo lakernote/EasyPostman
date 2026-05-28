@@ -37,12 +37,6 @@ public class PerformancePlanStorageTest {
         HttpRequestItem requestItem = request("snapshot-request", "https://example.test/snapshot");
         WebSocketPerformanceData webSocketData = new WebSocketPerformanceData();
         webSocketData.connectTimeoutMs = 2468;
-        PerformanceCsvState csvState = new PerformanceCsvState(
-                "storage-users.csv",
-                List.of("userId"),
-                List.of(java.util.Map.of("userId", "u-1"))
-        );
-
         PerformancePlanDocument document = new PerformancePlanDocument(
                 PerformancePlanNode.builder()
                         .name("Storage Plan")
@@ -71,17 +65,15 @@ public class PerformancePlanStorageTest {
                 .efficientMode(false)
                 .trendEnabled(false)
                 .reportRealtimeEnabled(true)
-                .csvState(csvState)
                 .build());
         String savedJson = Files.readString(configPath, StandardCharsets.UTF_8);
 
-        PerformancePlanConfiguration loaded = storage.loadConfiguration(configPath, id -> null);
+        PerformancePlanConfiguration loaded = storage.loadConfiguration(configPath);
 
         assertNotNull(loaded);
         assertFalse(loaded.isEfficientMode());
         assertFalse(loaded.isTrendEnabled());
         assertTrue(loaded.isReportRealtimeEnabled());
-        assertEquals(loaded.getCsvState().getSourceName(), "storage-users.csv");
         assertTrue(savedJson.contains("\"requestSnapshot\""));
         assertFalse(savedJson.contains("\"requestItem\""));
         assertFalse(savedJson.contains("\"requestItemId\""));
@@ -91,38 +83,6 @@ public class PerformancePlanStorageTest {
         assertEquals(loadedRequest.getRequestSnapshot().getId(), "snapshot-request");
         assertEquals(loadedRequest.getWebSocketPerformanceData().connectTimeoutMs, 2468);
         assertTrue(loadedRequest.isRequestInheritanceSnapshot());
-    }
-
-    @Test
-    public void shouldResolveLegacyRequestIdThroughInjectedResolver() throws Exception {
-        Path configPath = Files.createTempDirectory("performance-plan-storage-legacy").resolve("performance_config.json");
-        Files.writeString(configPath, """
-                {
-                  "version": "1.0",
-                  "tree": {
-                    "name": "Plan",
-                    "type": "ROOT",
-                    "enabled": true,
-                    "children": [
-                      {
-                        "name": "Legacy Request",
-                        "type": "REQUEST",
-                        "enabled": true,
-                        "requestItemId": "legacy-id"
-                      }
-                    ]
-                  }
-                }
-                """, StandardCharsets.UTF_8);
-
-        PerformancePlanConfiguration loaded = new PerformancePlanStorage().loadConfiguration(
-                configPath,
-                id -> "legacy-id".equals(id) ? request(id, "https://example.test/legacy") : null
-        );
-
-        PerformancePlanNode loadedRequest = loaded.getPlanDocument().getRoot().getChildren().get(0);
-        assertEquals(loadedRequest.getHttpRequestItem().getId(), "legacy-id");
-        assertEquals(loadedRequest.getHttpRequestItem().getUrl(), "https://example.test/legacy");
     }
 
     private static boolean exposesType(Class<?> owner, Class<?> forbiddenType) {

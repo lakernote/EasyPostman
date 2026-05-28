@@ -38,7 +38,7 @@
 
 ## 💡 About
 
-EasyPostman provides developers with a **local, privacy-first** API debugging experience comparable to Postman, plus simplified JMeter-style performance testing. Built with Java Swing for cross-platform support, it works completely offline and includes built-in Git workspace support for team collaboration and version control.
+EasyPostman provides developers with a **local, privacy-first** API debugging experience comparable to Postman, plus performance testing. Built with Java Swing for cross-platform support, it works completely offline and includes built-in Git workspace support for team collaboration and version control.
 
 | 🎯 Focus on Core | 🔒 Privacy First | 🚀 Performance |
 |:---:|:---:|:---:|
@@ -65,7 +65,7 @@ EasyPostman provides developers with a **local, privacy-first** API debugging ex
 - **Thread Group Modes** - Fixed, Ramp-up, Stair-step, Spike
 - **Real-time Monitoring** - TPS, response time, error rate
 - **Visual Reports** - Performance trend charts and result trees
-- **Batch Requests** - Simplified JMeter-style testing
+- **Batch Requests** - Performance testing
 
 ### 📝 Advanced Features
 - **Pre-request Scripts** - JavaScript execution before requests with Redis/Kafka/Elasticsearch/InfluxDB access

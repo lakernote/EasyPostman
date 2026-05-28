@@ -11,8 +11,10 @@ import okhttp3.WebSocket;
 import okhttp3.sse.EventSource;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 @Slf4j
@@ -20,7 +22,10 @@ public final class DefaultPerformanceNetworkRuntime implements PerformanceNetwor
     private final Set<Call> activeHttpCalls;
     private final Set<EventSource> activeSseSources;
     private final Set<WebSocket> activeWebSockets;
+    private final Supplier<HttpClientRuntimeConfig> httpClientConfigSupplier;
     private final ScopedHttpBaseClientProvider httpClientProvider;
+    private volatile boolean cancelling;
+    private volatile HttpClientRuntimeConfig activeRunConfig;
 
     public DefaultPerformanceNetworkRuntime() {
         this(HttpClientRuntimeConfig::defaults);
@@ -52,13 +57,25 @@ public final class DefaultPerformanceNetworkRuntime implements PerformanceNetwor
         this.activeHttpCalls = activeHttpCalls == null ? ConcurrentHashMap.newKeySet() : activeHttpCalls;
         this.activeSseSources = activeSseSources == null ? ConcurrentHashMap.newKeySet() : activeSseSources;
         this.activeWebSockets = activeWebSockets == null ? ConcurrentHashMap.newKeySet() : activeWebSockets;
-        this.httpClientProvider = new ScopedHttpBaseClientProvider(httpClientConfigSupplier);
+        this.httpClientConfigSupplier = httpClientConfigSupplier == null
+                ? HttpClientRuntimeConfig::defaults
+                : httpClientConfigSupplier;
+        this.httpClientProvider = new ScopedHttpBaseClientProvider(this::currentHttpClientConfig);
+    }
+
+    @Override
+    public void beginRun() {
+        activeRunConfig = resolveConfiguredHttpClientConfig();
+        httpClientProvider.clear();
     }
 
     @Override
     public void onCallStarted(Call call) {
         if (call != null) {
             activeHttpCalls.add(call);
+            if (cancelling) {
+                call.cancel();
+            }
         }
     }
 
@@ -101,41 +118,48 @@ public final class DefaultPerformanceNetworkRuntime implements PerformanceNetwor
 
     @Override
     public void cancelAll() {
-        cancelHttpCalls();
-        cancelSseSources();
-        cancelWebSockets();
+        cancelling = true;
+        try {
+            cancelHttpCalls();
+            cancelSseSources();
+            cancelWebSockets();
+            httpClientProvider.clear();
+        } finally {
+            cancelling = false;
+        }
+    }
+
+    @Override
+    public void endRun() {
         httpClientProvider.clear();
+        activeRunConfig = null;
     }
 
     private void cancelHttpCalls() {
-        int cancelled = 0;
-        for (Call call : new ArrayList<>(activeHttpCalls)) {
+        int cancelled = cancelActive(activeHttpCalls, call -> {
             try {
                 call.cancel();
-                cancelled++;
             } catch (Exception e) {
                 log.debug("取消压测 HTTP Call 失败", e);
             }
-        }
-        activeHttpCalls.clear();
+        });
         if (cancelled > 0) {
             log.info("取消了 {} 个压测 HTTP Call", cancelled);
         }
     }
 
     private void cancelSseSources() {
-        for (EventSource eventSource : new ArrayList<>(activeSseSources)) {
+        cancelActive(activeSseSources, eventSource -> {
             try {
                 eventSource.cancel();
             } catch (Exception e) {
                 log.debug("取消 SSE EventSource 失败", e);
             }
-        }
-        activeSseSources.clear();
+        });
     }
 
     private void cancelWebSockets() {
-        for (WebSocket webSocket : new ArrayList<>(activeWebSockets)) {
+        cancelActive(activeWebSockets, webSocket -> {
             try {
                 webSocket.close(1000, "Performance stopped");
             } catch (Exception ignored) {
@@ -145,7 +169,32 @@ public final class DefaultPerformanceNetworkRuntime implements PerformanceNetwor
             } catch (Exception e) {
                 log.debug("取消 WebSocket 失败", e);
             }
+        });
+    }
+
+    private static <T> int cancelActive(Set<T> activeItems, Consumer<T> cancellationAction) {
+        int cancelled = 0;
+        for (int pass = 0; pass < 4; pass++) {
+            List<T> snapshot = new ArrayList<>(activeItems);
+            if (snapshot.isEmpty()) {
+                break;
+            }
+            for (T item : snapshot) {
+                cancellationAction.accept(item);
+                activeItems.remove(item);
+                cancelled++;
+            }
         }
-        activeWebSockets.clear();
+        return cancelled;
+    }
+
+    private HttpClientRuntimeConfig currentHttpClientConfig() {
+        HttpClientRuntimeConfig runConfig = activeRunConfig;
+        return runConfig == null ? resolveConfiguredHttpClientConfig() : runConfig;
+    }
+
+    private HttpClientRuntimeConfig resolveConfiguredHttpClientConfig() {
+        HttpClientRuntimeConfig config = httpClientConfigSupplier.get();
+        return config == null ? HttpClientRuntimeConfig.defaults() : config;
     }
 }

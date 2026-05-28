@@ -12,7 +12,7 @@ import com.laker.postman.performance.core.timer.TimerData;
 
 
 import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.service.variable.RequestExecutionScope;
 import com.laker.postman.util.JsonUtil;
 import lombok.experimental.UtilityClass;
@@ -32,8 +32,8 @@ public class PerformanceTreeSnapshot {
     }
 
     private static DefaultMutableTreeNode copy(DefaultMutableTreeNode source, boolean regenerateRequestIds) {
-        JMeterTreeNode sourceData = source != null && source.getUserObject() instanceof JMeterTreeNode jtNode
-                ? jtNode
+        PerformanceTreeNode sourceData = source != null && source.getUserObject() instanceof PerformanceTreeNode nodeData
+                ? nodeData
                 : null;
         DefaultMutableTreeNode copy = new DefaultMutableTreeNode(copyNodeData(sourceData, regenerateRequestIds));
         if (source == null) {
@@ -45,11 +45,11 @@ public class PerformanceTreeSnapshot {
         return copy;
     }
 
-    private static JMeterTreeNode copyNodeData(JMeterTreeNode source, boolean regenerateRequestIds) {
+    private static PerformanceTreeNode copyNodeData(PerformanceTreeNode source, boolean regenerateRequestIds) {
         if (source == null) {
-            return new JMeterTreeNode("", NodeType.ROOT);
+            return new PerformanceTreeNode("", NodeType.ROOT);
         }
-        JMeterTreeNode copy = new JMeterTreeNode(source.name, source.type);
+        PerformanceTreeNode copy = new PerformanceTreeNode(source.name, source.type);
         copy.enabled = source.enabled;
         copy.threadGroupData = JsonUtil.deepCopy(source.threadGroupData, ThreadGroupData.class);
         copy.csvDataSetData = JsonUtil.deepCopy(source.csvDataSetData, CsvDataSetData.class);

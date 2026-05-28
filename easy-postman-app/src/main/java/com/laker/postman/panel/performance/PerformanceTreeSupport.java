@@ -7,7 +7,7 @@ import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.panel.performance.tree.PerformanceTreeClipboardSupport;
 import com.laker.postman.panel.performance.tree.PerformanceTreeNodeFactory;
 import com.laker.postman.panel.performance.tree.PerformanceTreeStructureSupport;
@@ -60,11 +60,11 @@ final class PerformanceTreeSupport {
         return PerformanceTreeRules.getParentRequestNode(node);
     }
 
-    void syncRequestStructure(DefaultMutableTreeNode requestNode, JMeterTreeNode requestData) {
+    void syncRequestStructure(DefaultMutableTreeNode requestNode, PerformanceTreeNode requestData) {
         structureSupport.syncRequestStructure(requestNode, requestData);
     }
 
-    void ensureRequestStructure(DefaultMutableTreeNode requestNode, JMeterTreeNode requestData) {
+    void ensureRequestStructure(DefaultMutableTreeNode requestNode, PerformanceTreeNode requestData) {
         structureSupport.ensureRequestStructure(requestNode, requestData);
     }
 
@@ -72,24 +72,24 @@ final class PerformanceTreeSupport {
         structureSupport.syncAllRequestStructures(node);
     }
 
-    void addWebSocketStepNode(JTree jmeterTree, NodeType type, Runnable saveConfigAction) {
-        structureSupport.addWebSocketStepNode(jmeterTree, type, saveConfigAction);
+    void addWebSocketStepNode(JTree performanceTree, NodeType type, Runnable saveConfigAction) {
+        structureSupport.addWebSocketStepNode(performanceTree, type, saveConfigAction);
     }
 
-    void addSseStageNode(JTree jmeterTree, NodeType type, Runnable saveConfigAction) {
-        structureSupport.addSseStageNode(jmeterTree, type, saveConfigAction);
+    void addSseStageNode(JTree performanceTree, NodeType type, Runnable saveConfigAction) {
+        structureSupport.addSseStageNode(performanceTree, type, saveConfigAction);
     }
 
-    void addLoopNode(JTree jmeterTree, Runnable saveConfigAction) {
-        structureSupport.addLoopNode(jmeterTree, saveConfigAction);
+    void addLoopNode(JTree performanceTree, Runnable saveConfigAction) {
+        structureSupport.addLoopNode(performanceTree, saveConfigAction);
     }
 
-    void addCsvDataSetNode(JTree jmeterTree, Runnable saveConfigAction) {
-        structureSupport.addCsvDataSetNode(jmeterTree, saveConfigAction);
+    void addCsvDataSetNode(JTree performanceTree, Runnable saveConfigAction) {
+        structureSupport.addCsvDataSetNode(performanceTree, saveConfigAction);
     }
 
-    void addTimerNode(JTree jmeterTree, Runnable saveConfigAction) {
-        structureSupport.addTimerNode(jmeterTree, saveConfigAction);
+    void addTimerNode(JTree performanceTree, Runnable saveConfigAction) {
+        structureSupport.addTimerNode(performanceTree, saveConfigAction);
     }
 
     boolean isWebSocketStepNode(NodeType type) {
@@ -120,10 +120,10 @@ final class PerformanceTreeSupport {
         return clipboardSupport.canPasteNodes(targetNode, copiedNodes);
     }
 
-    List<DefaultMutableTreeNode> pasteNodes(JTree jmeterTree,
+    List<DefaultMutableTreeNode> pasteNodes(JTree performanceTree,
                                             DefaultMutableTreeNode targetNode,
                                             List<DefaultMutableTreeNode> copiedNodes) {
-        return clipboardSupport.pasteNodes(jmeterTree, targetNode, copiedNodes);
+        return clipboardSupport.pasteNodes(performanceTree, targetNode, copiedNodes);
     }
 
     DefaultMutableTreeNode resolveWebSocketConnectParent(DefaultMutableTreeNode selectedNode) {

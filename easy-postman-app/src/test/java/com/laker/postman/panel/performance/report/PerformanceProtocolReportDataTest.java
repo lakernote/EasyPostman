@@ -1,12 +1,10 @@
 package com.laker.postman.panel.performance.report;
 
-import com.laker.postman.performance.core.model.ApiMetadata;
 import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
 import com.laker.postman.performance.core.model.PerformanceReportSnapshot;
 import com.laker.postman.performance.core.model.PerformanceStatsCollector;
 import com.laker.postman.performance.core.model.RequestResult;
-import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -16,24 +14,15 @@ import static org.testng.Assert.assertEquals;
 
 public class PerformanceProtocolReportDataTest {
 
-    @AfterMethod
-    public void tearDown() {
-        ApiMetadata.clear();
-    }
-
     @Test
     public void shouldBuildSeparateProtocolRows() {
-        ApiMetadata.register("http-api", "HTTP API");
-        ApiMetadata.register("ws-api", "WS API");
-        ApiMetadata.register("sse-api", "SSE API");
-
-        RequestResult http = new RequestResult(1_000, 1_100, true, "http-api", PerformanceProtocol.HTTP);
-        RequestResult ws = new RequestResult(2_000, 2_500, true, "ws-api", PerformanceProtocol.WEBSOCKET);
+        RequestResult http = new RequestResult(1_000, 1_100, true, "http-api", "HTTP API", PerformanceProtocol.HTTP);
+        RequestResult ws = new RequestResult(2_000, 2_500, true, "ws-api", "WS API", PerformanceProtocol.WEBSOCKET);
         ws.sentMessages = 2;
         ws.receivedMessages = 5;
         ws.matchedMessages = 3;
         ws.firstMessageLatencyMs = 90;
-        RequestResult sse = new RequestResult(3_000, 4_000, false, "sse-api", PerformanceProtocol.SSE);
+        RequestResult sse = new RequestResult(3_000, 4_000, false, "sse-api", "SSE API", PerformanceProtocol.SSE);
         sse.receivedMessages = 7;
         sse.matchedMessages = 4;
         sse.firstMessageLatencyMs = 140;
@@ -55,10 +44,9 @@ public class PerformanceProtocolReportDataTest {
 
     @Test
     public void shouldBuildRowsFromAggregatedStatsSnapshot() {
-        ApiMetadata.register("http-api", "HTTP API");
         PerformanceStatsCollector collector = new PerformanceStatsCollector();
-        collector.record(new RequestResult(1_000, 1_100, true, "http-api", PerformanceProtocol.HTTP));
-        collector.record(new RequestResult(1_100, 1_300, false, "http-api", PerformanceProtocol.HTTP));
+        collector.record(new RequestResult(1_000, 1_100, true, "http-api", "HTTP API", PerformanceProtocol.HTTP));
+        collector.record(new RequestResult(1_100, 1_300, false, "http-api", "HTTP API", PerformanceProtocol.HTTP));
 
         PerformanceProtocolReportData reportData = PerformanceProtocolReportData.fromStatsSnapshot(
                 collector.snapshot(),
@@ -75,9 +63,8 @@ public class PerformanceProtocolReportDataTest {
 
     @Test
     public void shouldMergeLiveStreamRowsIntoRealtimeReports() {
-        ApiMetadata.register("ws-api", "WS API");
         PerformanceStatsCollector collector = new PerformanceStatsCollector();
-        RequestResult completed = new RequestResult(1_000, 1_500, true, "ws-api", PerformanceProtocol.WEBSOCKET);
+        RequestResult completed = new RequestResult(1_000, 1_500, true, "ws-api", "WS API", PerformanceProtocol.WEBSOCKET);
         completed.sentMessages = 1;
         completed.receivedMessages = 2;
         completed.matchedMessages = 1;
@@ -121,11 +108,10 @@ public class PerformanceProtocolReportDataTest {
 
     @Test
     public void shouldCalculateSseFirstEventLatencyPercentilesFromResults() {
-        ApiMetadata.register("stream", "Stream API");
         List<RequestResult> results = new ArrayList<>();
         for (int i = 1; i <= 10; i++) {
             RequestResult result = new RequestResult(i * 1_000L, i * 1_000L + 2_000L,
-                    true, "stream", PerformanceProtocol.SSE);
+                    true, "stream", "Stream API", PerformanceProtocol.SSE);
             result.firstMessageLatencyMs = i * 100L;
             result.receivedMessages = 1;
             result.matchedMessages = 1;

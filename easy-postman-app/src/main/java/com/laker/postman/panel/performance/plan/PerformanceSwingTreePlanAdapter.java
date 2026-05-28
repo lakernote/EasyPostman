@@ -6,7 +6,7 @@ import com.laker.postman.performance.core.request.PerformanceRequestSnapshot;
 
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestGroup;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.service.collections.ActiveCollectionTreeNodeRepository;
 import com.laker.postman.service.collections.GroupInheritanceHelper;
 import com.laker.postman.service.variable.RequestExecutionScope;
@@ -25,14 +25,14 @@ public class PerformanceSwingTreePlanAdapter {
 
     public DefaultMutableTreeNode toTree(PerformancePlanDocument document, String rootName) {
         DefaultMutableTreeNode treeNode = toTreeNode(document == null ? null : document.getRoot());
-        if (treeNode != null && rootName != null && treeNode.getUserObject() instanceof JMeterTreeNode data) {
+        if (treeNode != null && rootName != null && treeNode.getUserObject() instanceof PerformanceTreeNode data) {
             data.name = rootName;
         }
         return treeNode;
     }
 
     public PerformancePlanNode toDocumentNode(DefaultMutableTreeNode treeNode) {
-        JMeterTreeNode data = nodeData(treeNode);
+        PerformanceTreeNode data = nodeData(treeNode);
         if (data == null) {
             return null;
         }
@@ -61,7 +61,7 @@ public class PerformanceSwingTreePlanAdapter {
             return null;
         }
 
-        DefaultMutableTreeNode treeNode = new DefaultMutableTreeNode(toJMeterTreeNode(node));
+        DefaultMutableTreeNode treeNode = new DefaultMutableTreeNode(toPerformanceTreeNode(node));
         for (PerformancePlanNode child : node.getChildren()) {
             DefaultMutableTreeNode childTreeNode = toTreeNode(child);
             if (childTreeNode != null) {
@@ -85,8 +85,8 @@ public class PerformanceSwingTreePlanAdapter {
         return children;
     }
 
-    private JMeterTreeNode toJMeterTreeNode(PerformancePlanNode node) {
-        JMeterTreeNode data = new JMeterTreeNode(node.getName(), node.getType());
+    private PerformanceTreeNode toPerformanceTreeNode(PerformancePlanNode node) {
+        PerformanceTreeNode data = new PerformanceTreeNode(node.getName(), node.getType());
         data.enabled = node.isEnabled();
         data.threadGroupData = PerformancePlanDataCopies.copyThreadGroupData(node.getThreadGroupData());
         data.csvDataSetData = PerformancePlanDataCopies.copyCsvDataSetData(node.getCsvDataSetData());
@@ -103,7 +103,7 @@ public class PerformanceSwingTreePlanAdapter {
         return data;
     }
 
-    private com.laker.postman.performance.core.request.PerformanceRequestSnapshot resolveRequestSnapshot(JMeterTreeNode data) {
+    private com.laker.postman.performance.core.request.PerformanceRequestSnapshot resolveRequestSnapshot(PerformanceTreeNode data) {
         if (data == null || data.type != NodeType.REQUEST) {
             return null;
         }
@@ -116,7 +116,7 @@ public class PerformanceSwingTreePlanAdapter {
         );
     }
 
-    private RequestExecutionScope resolveRequestExecutionScope(JMeterTreeNode data) {
+    private RequestExecutionScope resolveRequestExecutionScope(PerformanceTreeNode data) {
         if (data == null || data.type != NodeType.REQUEST || data.httpRequestItem == null) {
             return null;
         }
@@ -134,7 +134,7 @@ public class PerformanceSwingTreePlanAdapter {
                 .orElse(null);
     }
 
-    private HttpRequestItem resolveEffectiveRequestItem(JMeterTreeNode data) {
+    private HttpRequestItem resolveEffectiveRequestItem(PerformanceTreeNode data) {
         if (data == null || data.type != NodeType.REQUEST || data.httpRequestItem == null) {
             return data == null ? null : data.httpRequestItem;
         }
@@ -159,7 +159,7 @@ public class PerformanceSwingTreePlanAdapter {
         return GroupInheritanceHelper.mergeGroupSettingsWithChain(item, groupChain);
     }
 
-    private boolean resolveRequestInheritanceSnapshot(JMeterTreeNode data) {
+    private boolean resolveRequestInheritanceSnapshot(PerformanceTreeNode data) {
         if (data == null || data.type != NodeType.REQUEST || data.httpRequestItem == null) {
             return false;
         }
@@ -177,8 +177,8 @@ public class PerformanceSwingTreePlanAdapter {
                 .orElse(false);
     }
 
-    private JMeterTreeNode nodeData(DefaultMutableTreeNode node) {
-        if (node == null || !(node.getUserObject() instanceof JMeterTreeNode data)) {
+    private PerformanceTreeNode nodeData(DefaultMutableTreeNode node) {
+        if (node == null || !(node.getUserObject() instanceof PerformanceTreeNode data)) {
             return null;
         }
         return data;

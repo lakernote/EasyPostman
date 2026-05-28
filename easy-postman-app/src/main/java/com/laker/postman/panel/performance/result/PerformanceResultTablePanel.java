@@ -600,12 +600,9 @@ public class PerformanceResultTablePanel extends JPanel {
 
         private void trimRowsForRetention(int rowLimit) {
             int effectiveLimit = Math.max(1, rowLimit);
-            boolean removed = false;
-            while (dataList.size() > effectiveLimit) {
-                dataList.remove(0);
-                removed = true;
-            }
-            if (removed) {
+            int overflow = dataList.size() - effectiveLimit;
+            if (overflow > 0) {
+                dataList.subList(0, overflow).clear();
                 fullRefreshRequired = true;
                 firstNewRow = -1;
             }

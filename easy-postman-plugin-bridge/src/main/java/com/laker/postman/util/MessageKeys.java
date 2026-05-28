@@ -1220,30 +1220,30 @@ public final class MessageKeys {
     public static final String SETTINGS_REQUEST_TRUSTED_MATERIAL_DIALOG_BROWSE_TITLE = "settings.request.trusted_material.dialog.browse.title";
     public static final String SETTINGS_REQUEST_TRUSTED_MATERIAL_DIALOG_EMPTY = "settings.request.trusted_material.dialog.empty";
 
-    // JMeter settings section
-    public static final String SETTINGS_JMETER_TITLE = "settings.jmeter.title";
-    public static final String SETTINGS_JMETER_MAX_IDLE = "settings.jmeter.max_idle";
-    public static final String SETTINGS_JMETER_MAX_IDLE_TOOLTIP = "settings.jmeter.max_idle.tooltip";
-    public static final String SETTINGS_JMETER_KEEP_ALIVE = "settings.jmeter.keep_alive";
-    public static final String SETTINGS_JMETER_KEEP_ALIVE_TOOLTIP = "settings.jmeter.keep_alive.tooltip";
-    public static final String SETTINGS_JMETER_MAX_REQUESTS = "settings.jmeter.max_requests";
-    public static final String SETTINGS_JMETER_MAX_REQUESTS_TOOLTIP = "settings.jmeter.max_requests.tooltip";
-    public static final String SETTINGS_JMETER_MAX_REQUESTS_PER_HOST = "settings.jmeter.max_requests_per_host";
-    public static final String SETTINGS_JMETER_MAX_REQUESTS_PER_HOST_TOOLTIP = "settings.jmeter.max_requests_per_host.tooltip";
-    public static final String SETTINGS_JMETER_JS_CONTEXT_POOL_SIZE = "settings.jmeter.js_context_pool_size";
-    public static final String SETTINGS_JMETER_JS_CONTEXT_POOL_SIZE_TOOLTIP = "settings.jmeter.js_context_pool_size.tooltip";
-    public static final String SETTINGS_JMETER_JS_CONTEXT_ACQUIRE_TIMEOUT = "settings.jmeter.js_context_acquire_timeout";
-    public static final String SETTINGS_JMETER_JS_CONTEXT_ACQUIRE_TIMEOUT_TOOLTIP = "settings.jmeter.js_context_acquire_timeout.tooltip";
-    public static final String SETTINGS_JMETER_SLOW_REQUEST_THRESHOLD = "settings.jmeter.slow_request_threshold";
-    public static final String SETTINGS_JMETER_SLOW_REQUEST_THRESHOLD_TOOLTIP = "settings.jmeter.slow_request_threshold.tooltip";
-    public static final String SETTINGS_JMETER_RESPONSE_BODY_PREVIEW_LIMIT = "settings.jmeter.response_body_preview_limit";
-    public static final String SETTINGS_JMETER_RESPONSE_BODY_PREVIEW_LIMIT_TOOLTIP = "settings.jmeter.response_body_preview_limit.tooltip";
-    public static final String SETTINGS_JMETER_RESULT_ROW_LIMIT = "settings.jmeter.result_row_limit";
-    public static final String SETTINGS_JMETER_RESULT_ROW_LIMIT_TOOLTIP = "settings.jmeter.result_row_limit.tooltip";
-    public static final String SETTINGS_JMETER_TREND_SAMPLING = "settings.jmeter.trend_sampling";
-    public static final String SETTINGS_JMETER_TREND_SAMPLING_TOOLTIP = "settings.jmeter.trend_sampling.tooltip";
-    public static final String SETTINGS_JMETER_EVENT_LOGGING = "settings.jmeter.event_logging";
-    public static final String SETTINGS_JMETER_EVENT_LOGGING_TOOLTIP = "settings.jmeter.event_logging.tooltip";
+    // Performance settings section
+    public static final String SETTINGS_PERFORMANCE_TITLE = "settings.performance.title";
+    public static final String SETTINGS_PERFORMANCE_MAX_IDLE = "settings.performance.max_idle";
+    public static final String SETTINGS_PERFORMANCE_MAX_IDLE_TOOLTIP = "settings.performance.max_idle.tooltip";
+    public static final String SETTINGS_PERFORMANCE_KEEP_ALIVE = "settings.performance.keep_alive";
+    public static final String SETTINGS_PERFORMANCE_KEEP_ALIVE_TOOLTIP = "settings.performance.keep_alive.tooltip";
+    public static final String SETTINGS_PERFORMANCE_MAX_REQUESTS = "settings.performance.max_requests";
+    public static final String SETTINGS_PERFORMANCE_MAX_REQUESTS_TOOLTIP = "settings.performance.max_requests.tooltip";
+    public static final String SETTINGS_PERFORMANCE_MAX_REQUESTS_PER_HOST = "settings.performance.max_requests_per_host";
+    public static final String SETTINGS_PERFORMANCE_MAX_REQUESTS_PER_HOST_TOOLTIP = "settings.performance.max_requests_per_host.tooltip";
+    public static final String SETTINGS_PERFORMANCE_JS_CONTEXT_POOL_SIZE = "settings.performance.js_context_pool_size";
+    public static final String SETTINGS_PERFORMANCE_JS_CONTEXT_POOL_SIZE_TOOLTIP = "settings.performance.js_context_pool_size.tooltip";
+    public static final String SETTINGS_PERFORMANCE_JS_CONTEXT_ACQUIRE_TIMEOUT = "settings.performance.js_context_acquire_timeout";
+    public static final String SETTINGS_PERFORMANCE_JS_CONTEXT_ACQUIRE_TIMEOUT_TOOLTIP = "settings.performance.js_context_acquire_timeout.tooltip";
+    public static final String SETTINGS_PERFORMANCE_SLOW_REQUEST_THRESHOLD = "settings.performance.slow_request_threshold";
+    public static final String SETTINGS_PERFORMANCE_SLOW_REQUEST_THRESHOLD_TOOLTIP = "settings.performance.slow_request_threshold.tooltip";
+    public static final String SETTINGS_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT = "settings.performance.response_body_preview_limit";
+    public static final String SETTINGS_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_TOOLTIP = "settings.performance.response_body_preview_limit.tooltip";
+    public static final String SETTINGS_PERFORMANCE_RESULT_ROW_LIMIT = "settings.performance.result_row_limit";
+    public static final String SETTINGS_PERFORMANCE_RESULT_ROW_LIMIT_TOOLTIP = "settings.performance.result_row_limit.tooltip";
+    public static final String SETTINGS_PERFORMANCE_TREND_SAMPLING = "settings.performance.trend_sampling";
+    public static final String SETTINGS_PERFORMANCE_TREND_SAMPLING_TOOLTIP = "settings.performance.trend_sampling.tooltip";
+    public static final String SETTINGS_PERFORMANCE_EVENT_LOGGING = "settings.performance.event_logging";
+    public static final String SETTINGS_PERFORMANCE_EVENT_LOGGING_TOOLTIP = "settings.performance.event_logging.tooltip";
 
     // Download settings section
     public static final String SETTINGS_DOWNLOAD_TITLE = "settings.download.title";

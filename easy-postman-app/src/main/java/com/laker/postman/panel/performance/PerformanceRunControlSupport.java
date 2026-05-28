@@ -1,5 +1,15 @@
 package com.laker.postman.panel.performance;
 
+import com.laker.postman.panel.performance.control.PerformanceRunUiController;
+import com.laker.postman.panel.performance.control.PerformanceStatisticsCoordinator;
+import com.laker.postman.panel.performance.control.PerformanceTimerManager;
+import com.laker.postman.panel.performance.plan.PerformancePlanDocumentCompiler;
+import com.laker.postman.panel.performance.plan.PerformanceSwingTreePlanAdapter;
+import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
+import com.laker.postman.panel.performance.runtime.PerformanceExecutionEngine;
+import com.laker.postman.panel.performance.runtime.PerformanceResultSink;
+import com.laker.postman.panel.performance.runtime.PerformanceRunRequest;
+import com.laker.postman.panel.performance.runtime.PerformanceRunSession;
 import com.laker.postman.performance.core.model.PerformanceStatsCollector;
 import com.laker.postman.performance.core.model.PerformanceStatsSnapshot;
 import com.laker.postman.performance.core.plan.PerformanceTestPlan;
@@ -7,20 +17,6 @@ import com.laker.postman.performance.core.runtime.PerformanceRunError;
 import com.laker.postman.performance.core.runtime.PerformanceRunHandle;
 import com.laker.postman.performance.core.runtime.PerformanceRunSummary;
 import com.laker.postman.performance.core.runtime.PerformanceThreadFactory;
-
-
-import com.laker.postman.panel.performance.control.PerformanceRunUiController;
-import com.laker.postman.panel.performance.control.PerformanceStatisticsCoordinator;
-import com.laker.postman.panel.performance.control.PerformanceTimerManager;
-import com.laker.postman.panel.performance.plan.PerformancePlanDocumentCompiler;
-import com.laker.postman.panel.performance.plan.PerformanceSwingTreePlanAdapter;
-import com.laker.postman.panel.performance.result.PerformanceReportPanel;
-import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
-import com.laker.postman.panel.performance.result.PerformanceTrendPanel;
-import com.laker.postman.panel.performance.runtime.PerformanceExecutionEngine;
-import com.laker.postman.panel.performance.runtime.PerformanceResultSink;
-import com.laker.postman.panel.performance.runtime.PerformanceRunRequest;
-import com.laker.postman.panel.performance.runtime.PerformanceRunSession;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -50,10 +46,7 @@ final class PerformanceRunControlSupport {
     private final PerformanceTimerManager timerManager;
     private final PerformanceRunUiController runUiController;
     private final JCheckBox efficientCheckBox;
-    private final JTabbedPane resultTabbedPane;
     private final PerformanceResultTablePanel performanceResultTablePanel;
-    private final PerformanceReportPanel performanceReportPanel;
-    private final PerformanceTrendPanel performanceTrendPanel;
     private final PerformanceStatsCollector statsCollector;
     private final Runnable clearCachedPerformanceResultsAction;
 
@@ -124,7 +117,7 @@ final class PerformanceRunControlSupport {
         return runHandle.threadOrNull();
     }
 
-    void stopRun(Thread runThread) {
+    void stopRun() {
         runSession.stop();
         runUiController.markIdle();
         timerManager.stopAll();

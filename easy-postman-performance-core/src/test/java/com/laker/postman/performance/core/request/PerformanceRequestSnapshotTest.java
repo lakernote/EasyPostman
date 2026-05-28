@@ -22,7 +22,7 @@ public class PerformanceRequestSnapshotTest {
         assertEquals(snapshot.getMethod(), "GET");
         assertEquals(snapshot.getProtocol(), PerformanceProtocol.HTTP);
         assertEquals(snapshot.getHttpVersion(), PerformanceRequestSnapshot.HTTP_VERSION_AUTO);
-        assertEquals(snapshot.getAuthType(), PerformanceRequestSnapshot.AUTH_INHERIT);
+        assertEquals(snapshot.getAuthType(), PerformanceAuthType.INHERIT);
         assertTrue(snapshot.getHeaders().isEmpty());
         assertTrue(snapshot.getExecutionScope().getGroupVariables().isEmpty());
         assertFalse(snapshot.executesChildrenInSamplerOrder());

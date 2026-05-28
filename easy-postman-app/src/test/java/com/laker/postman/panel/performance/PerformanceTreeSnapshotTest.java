@@ -2,7 +2,7 @@ package com.laker.postman.panel.performance;
 
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.WebSocketPerformanceData;
 import org.testng.annotations.Test;
@@ -21,16 +21,16 @@ public class PerformanceTreeSnapshotTest {
         item.setName("Original");
         item.setProtocol(RequestItemProtocolEnum.WEBSOCKET);
 
-        JMeterTreeNode requestData = new JMeterTreeNode("Original", NodeType.REQUEST, item);
+        PerformanceTreeNode requestData = new PerformanceTreeNode("Original", NodeType.REQUEST, item);
         requestData.webSocketPerformanceData = new WebSocketPerformanceData();
         requestData.webSocketPerformanceData.connectTimeoutMs = 15000;
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new JMeterTreeNode("Plan", NodeType.ROOT));
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new PerformanceTreeNode("Plan", NodeType.ROOT));
         DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(requestData);
         root.add(requestNode);
 
         DefaultMutableTreeNode snapshotRoot = PerformanceTreeSnapshot.copy(root);
-        JMeterTreeNode snapshotRequestData =
-                (JMeterTreeNode) ((DefaultMutableTreeNode) snapshotRoot.getChildAt(0)).getUserObject();
+        PerformanceTreeNode snapshotRequestData =
+                (PerformanceTreeNode) ((DefaultMutableTreeNode) snapshotRoot.getChildAt(0)).getUserObject();
 
         item.setName("Mutated");
         requestData.webSocketPerformanceData.connectTimeoutMs = 1;
@@ -50,14 +50,14 @@ public class PerformanceTreeSnapshotTest {
         item.setId("snapshot-request-id");
         item.setName("Snapshot Request");
 
-        JMeterTreeNode requestData = new JMeterTreeNode("Snapshot Request", NodeType.REQUEST, item);
+        PerformanceTreeNode requestData = new PerformanceTreeNode("Snapshot Request", NodeType.REQUEST, item);
         requestData.requestInheritanceSnapshot = true;
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new JMeterTreeNode("Plan", NodeType.ROOT));
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new PerformanceTreeNode("Plan", NodeType.ROOT));
         root.add(new DefaultMutableTreeNode(requestData));
 
         DefaultMutableTreeNode snapshotRoot = PerformanceTreeSnapshot.copy(root);
-        JMeterTreeNode snapshotRequestData =
-                (JMeterTreeNode) ((DefaultMutableTreeNode) snapshotRoot.getChildAt(0)).getUserObject();
+        PerformanceTreeNode snapshotRequestData =
+                (PerformanceTreeNode) ((DefaultMutableTreeNode) snapshotRoot.getChildAt(0)).getUserObject();
 
         assertEquals(snapshotRequestData.requestInheritanceSnapshot, true);
     }

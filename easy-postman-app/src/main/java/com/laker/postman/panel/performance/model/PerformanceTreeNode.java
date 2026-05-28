@@ -15,7 +15,7 @@ import com.laker.postman.performance.core.timer.TimerData;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.service.variable.RequestExecutionScope;
 
-public class JMeterTreeNode {
+public class PerformanceTreeNode {
     public String name;
     public NodeType type;
     public HttpRequestItem httpRequestItem; // 仅REQUEST节点用
@@ -32,12 +32,12 @@ public class JMeterTreeNode {
     public RequestExecutionScope requestExecutionScope; // REQUEST 节点执行所需分组变量快照
     public boolean requestInheritanceSnapshot = false; // REQUEST 节点是否已快照集合分组继承
 
-    public JMeterTreeNode(String name, NodeType type) {
+    public PerformanceTreeNode(String name, NodeType type) {
         this.name = name;
         this.type = type;
     }
 
-    public JMeterTreeNode(String name, NodeType type, Object data) {
+    public PerformanceTreeNode(String name, NodeType type, Object data) {
         this.name = name;
         this.type = type;
         switch (type) {

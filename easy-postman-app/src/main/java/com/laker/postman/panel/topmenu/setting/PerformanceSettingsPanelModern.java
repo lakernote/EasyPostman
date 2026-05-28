@@ -10,19 +10,19 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
- * 现代化性能设置面板 - JMeter相关配置
+ * 现代化性能设置面板 - 性能相关配置
  */
 public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
     private static final int FIELD_SPACING = 8;
     private static final int SECTION_SPACING = 12;
 
-    private JTextField jmeterMaxIdleField;
-    private JTextField jmeterKeepAliveField;
-    private JTextField jmeterMaxRequestsField;
-    private JTextField jmeterMaxRequestsPerHostField;
+    private JTextField performanceMaxIdleField;
+    private JTextField performanceKeepAliveField;
+    private JTextField performanceMaxRequestsField;
+    private JTextField performanceMaxRequestsPerHostField;
     private JTextField jsContextPoolSizeField;
     private JTextField jsContextAcquireTimeoutField;
-    private JTextField jmeterSlowRequestThresholdField;
+    private JTextField performanceSlowRequestThresholdField;
     private JTextField responseBodyPreviewLimitField;
     private JTextField resultRowLimitField;
     private JTextField trendSamplingField;
@@ -30,144 +30,144 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
 
     @Override
     protected void buildContent(JPanel contentPanel) {
-        // JMeter设置区域
-        JPanel jmeterSection = createModernSection(
-                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_TITLE),
+        // 性能设置区域
+        JPanel performanceSection = createModernSection(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_PERFORMANCE_TITLE),
                 ""
         );
 
         // 最大空闲连接数
-        jmeterMaxIdleField = new JTextField(10);
-        jmeterMaxIdleField.setText(String.valueOf(SettingManager.getJmeterMaxIdleConnections()));
+        performanceMaxIdleField = new JTextField(10);
+        performanceMaxIdleField.setText(String.valueOf(SettingManager.getPerformanceMaxIdleConnections()));
         JPanel maxIdleRow = createFieldRow(
-                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_MAX_IDLE),
-                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_MAX_IDLE_TOOLTIP),
-                jmeterMaxIdleField
+                I18nUtil.getMessage(MessageKeys.SETTINGS_PERFORMANCE_MAX_IDLE),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_PERFORMANCE_MAX_IDLE_TOOLTIP),
+                performanceMaxIdleField
         );
-        jmeterSection.add(maxIdleRow);
-        jmeterSection.add(createVerticalSpace(FIELD_SPACING));
+        performanceSection.add(maxIdleRow);
+        performanceSection.add(createVerticalSpace(FIELD_SPACING));
 
         // 连接保活时间
-        jmeterKeepAliveField = new JTextField(10);
-        jmeterKeepAliveField.setText(String.valueOf(SettingManager.getJmeterKeepAliveSeconds()));
+        performanceKeepAliveField = new JTextField(10);
+        performanceKeepAliveField.setText(String.valueOf(SettingManager.getPerformanceKeepAliveSeconds()));
         JPanel keepAliveRow = createFieldRow(
-                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_KEEP_ALIVE),
-                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_KEEP_ALIVE_TOOLTIP),
-                jmeterKeepAliveField
+                I18nUtil.getMessage(MessageKeys.SETTINGS_PERFORMANCE_KEEP_ALIVE),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_PERFORMANCE_KEEP_ALIVE_TOOLTIP),
+                performanceKeepAliveField
         );
-        jmeterSection.add(keepAliveRow);
-        jmeterSection.add(createVerticalSpace(FIELD_SPACING));
+        performanceSection.add(keepAliveRow);
+        performanceSection.add(createVerticalSpace(FIELD_SPACING));
 
         // 最大并发请求数
-        jmeterMaxRequestsField = new JTextField(10);
-        jmeterMaxRequestsField.setText(String.valueOf(SettingManager.getJmeterMaxRequests()));
+        performanceMaxRequestsField = new JTextField(10);
+        performanceMaxRequestsField.setText(String.valueOf(SettingManager.getPerformanceMaxRequests()));
         JPanel maxRequestsRow = createFieldRow(
-                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_MAX_REQUESTS),
-                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_MAX_REQUESTS_TOOLTIP),
-                jmeterMaxRequestsField
+                I18nUtil.getMessage(MessageKeys.SETTINGS_PERFORMANCE_MAX_REQUESTS),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_PERFORMANCE_MAX_REQUESTS_TOOLTIP),
+                performanceMaxRequestsField
         );
-        jmeterSection.add(maxRequestsRow);
-        jmeterSection.add(createVerticalSpace(FIELD_SPACING));
+        performanceSection.add(maxRequestsRow);
+        performanceSection.add(createVerticalSpace(FIELD_SPACING));
 
         // 单主机最大并发数
-        jmeterMaxRequestsPerHostField = new JTextField(10);
-        jmeterMaxRequestsPerHostField.setText(String.valueOf(SettingManager.getJmeterMaxRequestsPerHost()));
+        performanceMaxRequestsPerHostField = new JTextField(10);
+        performanceMaxRequestsPerHostField.setText(String.valueOf(SettingManager.getPerformanceMaxRequestsPerHost()));
         JPanel maxRequestsPerHostRow = createFieldRow(
-                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_MAX_REQUESTS_PER_HOST),
-                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_MAX_REQUESTS_PER_HOST_TOOLTIP),
-                jmeterMaxRequestsPerHostField
+                I18nUtil.getMessage(MessageKeys.SETTINGS_PERFORMANCE_MAX_REQUESTS_PER_HOST),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_PERFORMANCE_MAX_REQUESTS_PER_HOST_TOOLTIP),
+                performanceMaxRequestsPerHostField
         );
-        jmeterSection.add(maxRequestsPerHostRow);
-        jmeterSection.add(createVerticalSpace(FIELD_SPACING));
+        performanceSection.add(maxRequestsPerHostRow);
+        performanceSection.add(createVerticalSpace(FIELD_SPACING));
 
         // JS Context 池大小
         jsContextPoolSizeField = new JTextField(10);
-        jsContextPoolSizeField.setText(String.valueOf(SettingManager.getJmeterJsContextPoolSize()));
+        jsContextPoolSizeField.setText(String.valueOf(SettingManager.getPerformanceJsContextPoolSize()));
         JPanel jsContextPoolSizeRow = createFieldRow(
-                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_JS_CONTEXT_POOL_SIZE),
-                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_JS_CONTEXT_POOL_SIZE_TOOLTIP),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_PERFORMANCE_JS_CONTEXT_POOL_SIZE),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_PERFORMANCE_JS_CONTEXT_POOL_SIZE_TOOLTIP),
                 jsContextPoolSizeField
         );
-        jmeterSection.add(jsContextPoolSizeRow);
-        jmeterSection.add(createVerticalSpace(FIELD_SPACING));
+        performanceSection.add(jsContextPoolSizeRow);
+        performanceSection.add(createVerticalSpace(FIELD_SPACING));
 
         // JS Context 获取超时
         jsContextAcquireTimeoutField = new JTextField(10);
-        jsContextAcquireTimeoutField.setText(String.valueOf(SettingManager.getJmeterJsContextAcquireTimeoutMs()));
+        jsContextAcquireTimeoutField.setText(String.valueOf(SettingManager.getPerformanceJsContextAcquireTimeoutMs()));
         JPanel jsContextAcquireTimeoutRow = createFieldRow(
-                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_JS_CONTEXT_ACQUIRE_TIMEOUT),
-                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_JS_CONTEXT_ACQUIRE_TIMEOUT_TOOLTIP),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_PERFORMANCE_JS_CONTEXT_ACQUIRE_TIMEOUT),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_PERFORMANCE_JS_CONTEXT_ACQUIRE_TIMEOUT_TOOLTIP),
                 jsContextAcquireTimeoutField
         );
-        jmeterSection.add(jsContextAcquireTimeoutRow);
-        jmeterSection.add(createVerticalSpace(FIELD_SPACING));
+        performanceSection.add(jsContextAcquireTimeoutRow);
+        performanceSection.add(createVerticalSpace(FIELD_SPACING));
 
         // 慢请求阈值
-        jmeterSlowRequestThresholdField = new JTextField(10);
-        jmeterSlowRequestThresholdField.setText(String.valueOf(SettingManager.getJmeterSlowRequestThreshold()));
+        performanceSlowRequestThresholdField = new JTextField(10);
+        performanceSlowRequestThresholdField.setText(String.valueOf(SettingManager.getPerformanceSlowRequestThreshold()));
         JPanel slowRequestThresholdRow = createFieldRow(
-                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_SLOW_REQUEST_THRESHOLD),
-                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_SLOW_REQUEST_THRESHOLD_TOOLTIP),
-                jmeterSlowRequestThresholdField
+                I18nUtil.getMessage(MessageKeys.SETTINGS_PERFORMANCE_SLOW_REQUEST_THRESHOLD),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_PERFORMANCE_SLOW_REQUEST_THRESHOLD_TOOLTIP),
+                performanceSlowRequestThresholdField
         );
-        jmeterSection.add(slowRequestThresholdRow);
-        jmeterSection.add(createVerticalSpace(FIELD_SPACING));
+        performanceSection.add(slowRequestThresholdRow);
+        performanceSection.add(createVerticalSpace(FIELD_SPACING));
 
         // 精简明细响应体预览上限
         responseBodyPreviewLimitField = new JTextField(10);
         responseBodyPreviewLimitField.setText(String.valueOf(SettingManager.getPerformanceResponseBodyPreviewLimitKb()));
         JPanel responseBodyPreviewLimitRow = createFieldRow(
-                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_RESPONSE_BODY_PREVIEW_LIMIT),
-                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_RESPONSE_BODY_PREVIEW_LIMIT_TOOLTIP),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_TOOLTIP),
                 responseBodyPreviewLimitField
         );
-        jmeterSection.add(responseBodyPreviewLimitRow);
-        jmeterSection.add(createVerticalSpace(FIELD_SPACING));
+        performanceSection.add(responseBodyPreviewLimitRow);
+        performanceSection.add(createVerticalSpace(FIELD_SPACING));
 
         // 结果表保留行数上限
         resultRowLimitField = new JTextField(10);
         resultRowLimitField.setText(String.valueOf(SettingManager.getPerformanceResultRowLimit()));
         JPanel resultRowLimitRow = createFieldRow(
-                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_RESULT_ROW_LIMIT),
-                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_RESULT_ROW_LIMIT_TOOLTIP),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_PERFORMANCE_RESULT_ROW_LIMIT),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_PERFORMANCE_RESULT_ROW_LIMIT_TOOLTIP),
                 resultRowLimitField
         );
-        jmeterSection.add(resultRowLimitRow);
-        jmeterSection.add(createVerticalSpace(FIELD_SPACING));
+        performanceSection.add(resultRowLimitRow);
+        performanceSection.add(createVerticalSpace(FIELD_SPACING));
 
         // 趋势图采样间隔
         trendSamplingField = new JTextField(10);
         trendSamplingField.setText(String.valueOf(SettingManager.getTrendSamplingIntervalSeconds()));
         JPanel trendSamplingRow = createFieldRow(
-                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_TREND_SAMPLING),
-                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_TREND_SAMPLING_TOOLTIP),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_PERFORMANCE_TREND_SAMPLING),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_PERFORMANCE_TREND_SAMPLING_TOOLTIP),
                 trendSamplingField
         );
-        jmeterSection.add(trendSamplingRow);
-        jmeterSection.add(createVerticalSpace(FIELD_SPACING));
+        performanceSection.add(trendSamplingRow);
+        performanceSection.add(createVerticalSpace(FIELD_SPACING));
 
         // 事件日志开关
-        eventLoggingCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_EVENT_LOGGING));
+        eventLoggingCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.SETTINGS_PERFORMANCE_EVENT_LOGGING));
         eventLoggingCheckBox.setSelected(SettingManager.isPerformanceEventLoggingEnabled());
         JPanel eventLoggingRow = createCheckBoxRow(
                 eventLoggingCheckBox,
-                I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_EVENT_LOGGING_TOOLTIP)
+                I18nUtil.getMessage(MessageKeys.SETTINGS_PERFORMANCE_EVENT_LOGGING_TOOLTIP)
         );
-        jmeterSection.add(eventLoggingRow);
+        performanceSection.add(eventLoggingRow);
 
-        contentPanel.add(jmeterSection);
+        contentPanel.add(performanceSection);
         contentPanel.add(createVerticalSpace(SECTION_SPACING));
 
         setupValidators();
 
         // 跟踪所有组件的初始值
-        trackComponentValue(jmeterMaxIdleField);
-        trackComponentValue(jmeterKeepAliveField);
-        trackComponentValue(jmeterMaxRequestsField);
-        trackComponentValue(jmeterMaxRequestsPerHostField);
+        trackComponentValue(performanceMaxIdleField);
+        trackComponentValue(performanceKeepAliveField);
+        trackComponentValue(performanceMaxRequestsField);
+        trackComponentValue(performanceMaxRequestsPerHostField);
         trackComponentValue(jsContextPoolSizeField);
         trackComponentValue(jsContextAcquireTimeoutField);
-        trackComponentValue(jmeterSlowRequestThresholdField);
+        trackComponentValue(performanceSlowRequestThresholdField);
         trackComponentValue(responseBodyPreviewLimitField);
         trackComponentValue(resultRowLimitField);
         trackComponentValue(trendSamplingField);
@@ -176,22 +176,22 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
 
     private void setupValidators() {
         setupValidator(
-                jmeterMaxIdleField,
+                performanceMaxIdleField,
                 this::isGreaterThanZeroInteger,
                 I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_MAX_IDLE_ERROR)
         );
         setupValidator(
-                jmeterKeepAliveField,
+                performanceKeepAliveField,
                 this::isGreaterThanZeroInteger,
                 I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_KEEP_ALIVE_ERROR)
         );
         setupValidator(
-                jmeterMaxRequestsField,
+                performanceMaxRequestsField,
                 this::isGreaterThanZeroInteger,
                 I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_MAX_IDLE_ERROR)
         );
         setupValidator(
-                jmeterMaxRequestsPerHostField,
+                performanceMaxRequestsPerHostField,
                 this::isGreaterThanZeroInteger,
                 I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_MAX_IDLE_ERROR)
         );
@@ -206,7 +206,7 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
                 I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_JS_CONTEXT_ACQUIRE_TIMEOUT_ERROR)
         );
         setupValidator(
-                jmeterSlowRequestThresholdField,
+                performanceSlowRequestThresholdField,
                 this::isPositiveInteger,
                 I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_SLOW_REQUEST_THRESHOLD_ERROR)
         );
@@ -301,14 +301,14 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
         }
 
         try {
-            // 保存JMeter设置
-            SettingManager.setJmeterMaxIdleConnections(Integer.parseInt(jmeterMaxIdleField.getText().trim()));
-            SettingManager.setJmeterKeepAliveSeconds(Integer.parseInt(jmeterKeepAliveField.getText().trim()));
-            SettingManager.setJmeterMaxRequests(Integer.parseInt(jmeterMaxRequestsField.getText().trim()));
-            SettingManager.setJmeterMaxRequestsPerHost(Integer.parseInt(jmeterMaxRequestsPerHostField.getText().trim()));
-            SettingManager.setJmeterJsContextPoolSize(Integer.parseInt(jsContextPoolSizeField.getText().trim()));
-            SettingManager.setJmeterJsContextAcquireTimeoutMs(Integer.parseInt(jsContextAcquireTimeoutField.getText().trim()));
-            SettingManager.setJmeterSlowRequestThreshold(Integer.parseInt(jmeterSlowRequestThresholdField.getText().trim()));
+            // 保存性能设置
+            SettingManager.setPerformanceMaxIdleConnections(Integer.parseInt(performanceMaxIdleField.getText().trim()));
+            SettingManager.setPerformanceKeepAliveSeconds(Integer.parseInt(performanceKeepAliveField.getText().trim()));
+            SettingManager.setPerformanceMaxRequests(Integer.parseInt(performanceMaxRequestsField.getText().trim()));
+            SettingManager.setPerformanceMaxRequestsPerHost(Integer.parseInt(performanceMaxRequestsPerHostField.getText().trim()));
+            SettingManager.setPerformanceJsContextPoolSize(Integer.parseInt(jsContextPoolSizeField.getText().trim()));
+            SettingManager.setPerformanceJsContextAcquireTimeoutMs(Integer.parseInt(jsContextAcquireTimeoutField.getText().trim()));
+            SettingManager.setPerformanceSlowRequestThreshold(Integer.parseInt(performanceSlowRequestThresholdField.getText().trim()));
             SettingManager.setPerformanceResponseBodyPreviewLimitKb(Integer.parseInt(responseBodyPreviewLimitField.getText().trim()));
             SettingManager.setPerformanceResultRowLimit(Integer.parseInt(resultRowLimitField.getText().trim()));
             SettingManager.setTrendSamplingIntervalSeconds(Integer.parseInt(trendSamplingField.getText().trim()));
@@ -317,13 +317,13 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
 
             // 重新跟踪当前值
             originalValues.clear();
-            trackComponentValue(jmeterMaxIdleField);
-            trackComponentValue(jmeterKeepAliveField);
-            trackComponentValue(jmeterMaxRequestsField);
-            trackComponentValue(jmeterMaxRequestsPerHostField);
+            trackComponentValue(performanceMaxIdleField);
+            trackComponentValue(performanceKeepAliveField);
+            trackComponentValue(performanceMaxRequestsField);
+            trackComponentValue(performanceMaxRequestsPerHostField);
             trackComponentValue(jsContextPoolSizeField);
             trackComponentValue(jsContextAcquireTimeoutField);
-            trackComponentValue(jmeterSlowRequestThresholdField);
+            trackComponentValue(performanceSlowRequestThresholdField);
             trackComponentValue(responseBodyPreviewLimitField);
             trackComponentValue(resultRowLimitField);
             trackComponentValue(trendSamplingField);

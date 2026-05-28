@@ -348,7 +348,7 @@ public class TopMenuBar extends UiSingletonMenuBar implements IRefreshable {
         systemSettingMenuItem.addActionListener(e -> showModernSettingsDialog(4));
         settingMenu.add(systemSettingMenuItem);
 
-        JMenuItem performanceSettingMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.SETTINGS_JMETER_TITLE));
+        JMenuItem performanceSettingMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.SETTINGS_PERFORMANCE_TITLE));
         performanceSettingMenuItem.addActionListener(e -> showModernSettingsDialog(5));
         settingMenu.add(performanceSettingMenuItem);
 

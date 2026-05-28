@@ -1,6 +1,6 @@
 package com.laker.postman.panel.performance;
 
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.model.NodeType;
 import org.testng.annotations.Test;
 
@@ -28,7 +28,7 @@ public class PerformanceTreeNodeActionSupportTest {
         fixture.tree.setSelectionPath(new TreePath(fixture.request.getPath()));
         fixture.actionSupport.setSelectedNodesEnabled(false);
 
-        assertFalse(((JMeterTreeNode) fixture.request.getUserObject()).enabled);
+        assertFalse(((PerformanceTreeNode) fixture.request.getUserObject()).enabled);
         assertEquals(fixture.saveCount.get(), 1);
     }
 
@@ -57,14 +57,14 @@ public class PerformanceTreeNodeActionSupportTest {
         assertEquals(fixture.persistCount.get(), 2);
         assertEquals(fixture.threadGroup.getChildCount(), 2);
         DefaultMutableTreeNode pasted = (DefaultMutableTreeNode) fixture.threadGroup.getChildAt(1);
-        assertSame(((JMeterTreeNode) pasted.getUserObject()).type, NodeType.REQUEST);
+        assertSame(((PerformanceTreeNode) pasted.getUserObject()).type, NodeType.REQUEST);
         assertTrue(fixture.saveCount.get() >= 1);
     }
 
     private static final class TreeFixture {
-        private final DefaultMutableTreeNode root = new DefaultMutableTreeNode(new JMeterTreeNode("root", NodeType.ROOT));
-        private final DefaultMutableTreeNode threadGroup = new DefaultMutableTreeNode(new JMeterTreeNode("group", NodeType.THREAD_GROUP));
-        private final DefaultMutableTreeNode request = new DefaultMutableTreeNode(new JMeterTreeNode("request", NodeType.REQUEST));
+        private final DefaultMutableTreeNode root = new DefaultMutableTreeNode(new PerformanceTreeNode("root", NodeType.ROOT));
+        private final DefaultMutableTreeNode threadGroup = new DefaultMutableTreeNode(new PerformanceTreeNode("group", NodeType.THREAD_GROUP));
+        private final DefaultMutableTreeNode request = new DefaultMutableTreeNode(new PerformanceTreeNode("request", NodeType.REQUEST));
         private final DefaultTreeModel treeModel;
         private final JTree tree;
         private final AtomicInteger saveCount = new AtomicInteger();

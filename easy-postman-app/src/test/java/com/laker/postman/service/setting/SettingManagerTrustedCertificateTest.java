@@ -106,13 +106,13 @@ public class SettingManagerTrustedCertificateTest {
 
         try {
             props.clear();
-            assertEquals(SettingManager.getJmeterSlowRequestThreshold(), 0);
+            assertEquals(SettingManager.getPerformanceSlowRequestThreshold(), 0);
 
-            props.setProperty("jmeter_slow_request_threshold", "-20");
-            assertEquals(SettingManager.getJmeterSlowRequestThreshold(), 0);
+            props.setProperty("performance_slow_request_threshold", "-20");
+            assertEquals(SettingManager.getPerformanceSlowRequestThreshold(), 0);
 
-            SettingManager.setJmeterSlowRequestThreshold(-50);
-            assertEquals(props.getProperty("jmeter_slow_request_threshold"), "0");
+            SettingManager.setPerformanceSlowRequestThreshold(-50);
+            assertEquals(props.getProperty("performance_slow_request_threshold"), "0");
         } finally {
             props.clear();
             props.putAll(backup);
@@ -121,7 +121,7 @@ public class SettingManagerTrustedCertificateTest {
     }
 
     @Test
-    public void shouldNormalizeJmeterConnectionAndDispatcherSettingsToPositiveDefaults() throws Exception {
+    public void shouldNormalizePerformanceConnectionAndDispatcherSettingsToPositiveDefaults() throws Exception {
         Properties props = getSettingsProperties();
         Properties backup = new Properties();
         backup.putAll(props);
@@ -131,29 +131,29 @@ public class SettingManagerTrustedCertificateTest {
 
         try {
             props.clear();
-            props.setProperty("jmeter_max_idle_connections", "0");
-            props.setProperty("jmeter_keep_alive_seconds", "0");
-            props.setProperty("jmeter_max_requests", "0");
-            props.setProperty("jmeter_max_requests_per_host", "0");
-            props.setProperty("jmeter_js_context_acquire_timeout_ms", "0");
+            props.setProperty("performance_max_idle_connections", "0");
+            props.setProperty("performance_keep_alive_seconds", "0");
+            props.setProperty("performance_max_requests", "0");
+            props.setProperty("performance_max_requests_per_host", "0");
+            props.setProperty("performance_js_context_acquire_timeout_ms", "0");
 
-            assertEquals(SettingManager.getJmeterMaxIdleConnections(), 100);
-            assertEquals(SettingManager.getJmeterKeepAliveSeconds(), 60L);
-            assertEquals(SettingManager.getJmeterMaxRequests(), 1000);
-            assertEquals(SettingManager.getJmeterMaxRequestsPerHost(), 1000);
-            assertEquals(SettingManager.getJmeterJsContextAcquireTimeoutMs(), 1_000);
+            assertEquals(SettingManager.getPerformanceMaxIdleConnections(), 100);
+            assertEquals(SettingManager.getPerformanceKeepAliveSeconds(), 60L);
+            assertEquals(SettingManager.getPerformanceMaxRequests(), 1000);
+            assertEquals(SettingManager.getPerformanceMaxRequestsPerHost(), 1000);
+            assertEquals(SettingManager.getPerformanceJsContextAcquireTimeoutMs(), 1_000);
 
-            SettingManager.setJmeterMaxIdleConnections(0);
-            SettingManager.setJmeterKeepAliveSeconds(0);
-            SettingManager.setJmeterMaxRequests(0);
-            SettingManager.setJmeterMaxRequestsPerHost(0);
-            SettingManager.setJmeterJsContextAcquireTimeoutMs(0);
+            SettingManager.setPerformanceMaxIdleConnections(0);
+            SettingManager.setPerformanceKeepAliveSeconds(0);
+            SettingManager.setPerformanceMaxRequests(0);
+            SettingManager.setPerformanceMaxRequestsPerHost(0);
+            SettingManager.setPerformanceJsContextAcquireTimeoutMs(0);
 
-            assertEquals(props.getProperty("jmeter_max_idle_connections"), "100");
-            assertEquals(props.getProperty("jmeter_keep_alive_seconds"), "60");
-            assertEquals(props.getProperty("jmeter_max_requests"), "1000");
-            assertEquals(props.getProperty("jmeter_max_requests_per_host"), "1000");
-            assertEquals(props.getProperty("jmeter_js_context_acquire_timeout_ms"), "1000");
+            assertEquals(props.getProperty("performance_max_idle_connections"), "100");
+            assertEquals(props.getProperty("performance_keep_alive_seconds"), "60");
+            assertEquals(props.getProperty("performance_max_requests"), "1000");
+            assertEquals(props.getProperty("performance_max_requests_per_host"), "1000");
+            assertEquals(props.getProperty("performance_js_context_acquire_timeout_ms"), "1000");
         } finally {
             props.clear();
             props.putAll(backup);
@@ -295,7 +295,7 @@ public class SettingManagerTrustedCertificateTest {
         try {
             Files.createDirectories(configPath.getParent());
             Properties diskSettings = new Properties();
-            diskSettings.setProperty("jmeter_slow_request_threshold", "0");
+            diskSettings.setProperty("performance_slow_request_threshold", "0");
             try (var output = Files.newOutputStream(configPath)) {
                 diskSettings.store(output, "test");
             }

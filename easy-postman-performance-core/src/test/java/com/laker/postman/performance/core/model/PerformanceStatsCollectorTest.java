@@ -1,6 +1,5 @@
 package com.laker.postman.performance.core.model;
 
-import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
@@ -8,18 +7,12 @@ import static org.testng.Assert.assertFalse;
 
 public class PerformanceStatsCollectorTest {
 
-    @AfterMethod
-    public void tearDown() {
-        ApiMetadata.clear();
-    }
-
     @Test
     public void shouldAggregateLargeRunsWithoutKeepingPerRequestResults() {
-        ApiMetadata.register("search", "Search API");
         PerformanceStatsCollector collector = new PerformanceStatsCollector();
 
         for (int i = 0; i < 100_000; i++) {
-            collector.record(new RequestResult(i, i + 100, true, "search", PerformanceProtocol.HTTP));
+            collector.record(new RequestResult(i, i + 100, true, "search", "Search API", PerformanceProtocol.HTTP));
         }
 
         PerformanceStatsSnapshot snapshot = collector.snapshot();
@@ -40,12 +33,11 @@ public class PerformanceStatsCollectorTest {
 
     @Test
     public void shouldAggregateSseFirstEventLatencyPercentiles() {
-        ApiMetadata.register("stream", "Stream API");
         PerformanceStatsCollector collector = new PerformanceStatsCollector();
 
         for (int i = 1; i <= 10; i++) {
             RequestResult result = new RequestResult(i * 1_000L, i * 1_000L + 2_000L,
-                    true, "stream", PerformanceProtocol.SSE);
+                    true, "stream", "Stream API", PerformanceProtocol.SSE);
             result.firstMessageLatencyMs = i * 100L;
             collector.record(result);
         }

@@ -6,7 +6,7 @@ import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.RequestSelectionDialogSupport;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.panel.performance.tree.PerformanceTreeNodeFactory;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -32,7 +32,7 @@ import java.util.function.Supplier;
 final class PerformanceTreeNodeActionSupport {
 
     private final Component parentComponent;
-    private final JTree jmeterTree;
+    private final JTree performanceTree;
     private final DefaultTreeModel treeModel;
     private final CardLayout propertyCardLayout;
     private final JPanel propertyPanel;
@@ -52,20 +52,20 @@ final class PerformanceTreeNodeActionSupport {
 
     void addThreadGroupNode() {
         DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();
-        DefaultMutableTreeNode group = new DefaultMutableTreeNode(new JMeterTreeNode("Thread Group", NodeType.THREAD_GROUP));
+        DefaultMutableTreeNode group = new DefaultMutableTreeNode(new PerformanceTreeNode("Thread Group", NodeType.THREAD_GROUP));
         treeModel.insertNodeInto(group, root, root.getChildCount());
-        jmeterTree.expandPath(new TreePath(root.getPath()));
+        performanceTree.expandPath(new TreePath(root.getPath()));
         saveConfigAction.run();
     }
 
     void addRequestNodes() {
-        DefaultMutableTreeNode node = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
+        DefaultMutableTreeNode node = (DefaultMutableTreeNode) performanceTree.getLastSelectedPathComponent();
         if (node == null) {
             return;
         }
         Object userObj = node.getUserObject();
-        if (!(userObj instanceof JMeterTreeNode jtNode)
-                || (jtNode.type != NodeType.THREAD_GROUP && !treeSupport.isRequestContainerLoop(node))) {
+        if (!(userObj instanceof PerformanceTreeNode nodeData)
+                || (nodeData.type != NodeType.THREAD_GROUP && !treeSupport.isRequestContainerLoop(node))) {
             JOptionPane.showMessageDialog(
                     parentComponent,
                     I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_SELECT_THREAD_GROUP),
@@ -78,31 +78,31 @@ final class PerformanceTreeNodeActionSupport {
     }
 
     void addAssertionNode() {
-        DefaultMutableTreeNode node = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
+        DefaultMutableTreeNode node = (DefaultMutableTreeNode) performanceTree.getLastSelectedPathComponent();
         if (node == null) {
             return;
         }
         DefaultMutableTreeNode parentNode = node;
         Object userObj = node.getUserObject();
-        if (userObj instanceof JMeterTreeNode jtNode
-                && (jtNode.type == NodeType.SSE_READ || jtNode.type == NodeType.WS_READ)) {
+        if (userObj instanceof PerformanceTreeNode nodeData
+                && (nodeData.type == NodeType.SSE_READ || nodeData.type == NodeType.WS_READ)) {
             parentNode = node;
         }
-        DefaultMutableTreeNode assertion = new DefaultMutableTreeNode(new JMeterTreeNode("Assertion", NodeType.ASSERTION));
+        DefaultMutableTreeNode assertion = new DefaultMutableTreeNode(new PerformanceTreeNode("Assertion", NodeType.ASSERTION));
         treeModel.insertNodeInto(assertion, parentNode, parentNode.getChildCount());
-        jmeterTree.expandPath(new TreePath(parentNode.getPath()));
+        performanceTree.expandPath(new TreePath(parentNode.getPath()));
         saveConfigAction.run();
     }
 
     void addExtractorNode() {
-        DefaultMutableTreeNode node = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
+        DefaultMutableTreeNode node = (DefaultMutableTreeNode) performanceTree.getLastSelectedPathComponent();
         if (node == null) {
             return;
         }
         DefaultMutableTreeNode extractor = PerformanceTreeNodeFactory.extractorNode();
         treeModel.insertNodeInto(extractor, node, node.getChildCount());
-        jmeterTree.expandPath(new TreePath(node.getPath()));
-        jmeterTree.setSelectionPath(new TreePath(extractor.getPath()));
+        performanceTree.expandPath(new TreePath(node.getPath()));
+        performanceTree.setSelectionPath(new TreePath(extractor.getPath()));
         saveConfigAction.run();
     }
 
@@ -110,25 +110,25 @@ final class PerformanceTreeNodeActionSupport {
         return new AbstractAction() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
-                DefaultMutableTreeNode node = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
+                DefaultMutableTreeNode node = (DefaultMutableTreeNode) performanceTree.getLastSelectedPathComponent();
                 if (node == null) {
                     return;
                 }
                 Object userObj = node.getUserObject();
-                if (!(userObj instanceof JMeterTreeNode jtNode) || !actionPolicy().canRename(node)) {
+                if (!(userObj instanceof PerformanceTreeNode nodeData) || !actionPolicy().canRename(node)) {
                     return;
                 }
-                String oldName = jtNode.name;
+                String oldName = nodeData.name;
                 String newName = JOptionPane.showInputDialog(
                         parentComponent,
                         I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_RENAME_NODE),
                         oldName
                 );
                 if (newName != null && !newName.trim().isEmpty()) {
-                    jtNode.name = newName.trim();
-                    if (jtNode.type == NodeType.REQUEST && jtNode.httpRequestItem != null) {
-                        jtNode.httpRequestItem.setName(newName.trim());
-                        switchRequestEditorAction.accept(jtNode.httpRequestItem);
+                    nodeData.name = newName.trim();
+                    if (nodeData.type == NodeType.REQUEST && nodeData.httpRequestItem != null) {
+                        nodeData.httpRequestItem.setName(newName.trim());
+                        switchRequestEditorAction.accept(nodeData.httpRequestItem);
                     }
                     treeModel.nodeChanged(node);
                     saveConfigAction.run();
@@ -141,7 +141,7 @@ final class PerformanceTreeNodeActionSupport {
         return new AbstractAction() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
-                TreePath[] selectedPaths = jmeterTree.getSelectionPaths();
+                TreePath[] selectedPaths = performanceTree.getSelectionPaths();
                 if (selectedPaths == null || selectedPaths.length == 0) {
                     return;
                 }
@@ -165,7 +165,7 @@ final class PerformanceTreeNodeActionSupport {
         return new AbstractAction() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
-                TreePath[] selectedPaths = jmeterTree.getSelectionPaths();
+                TreePath[] selectedPaths = performanceTree.getSelectionPaths();
                 if (selectedPaths == null || selectedPaths.length == 0) {
                     return;
                 }
@@ -182,12 +182,12 @@ final class PerformanceTreeNodeActionSupport {
         return new AbstractAction() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
-                DefaultMutableTreeNode targetNode = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
+                DefaultMutableTreeNode targetNode = (DefaultMutableTreeNode) performanceTree.getLastSelectedPathComponent();
                 if (targetNode == null || !treeSupport.canPasteNodes(targetNode, copiedNodes)) {
                     return;
                 }
                 persistLastSelectionAction.run();
-                List<DefaultMutableTreeNode> pastedNodes = treeSupport.pasteNodes(jmeterTree, targetNode, copiedNodes);
+                List<DefaultMutableTreeNode> pastedNodes = treeSupport.pasteNodes(performanceTree, targetNode, copiedNodes);
                 if (!pastedNodes.isEmpty()) {
                     saveConfigAction.run();
                 }
@@ -196,7 +196,7 @@ final class PerformanceTreeNodeActionSupport {
     }
 
     void setSelectedNodesEnabled(boolean enabled) {
-        TreePath[] selectedPaths = jmeterTree.getSelectionPaths();
+        TreePath[] selectedPaths = performanceTree.getSelectionPaths();
         if (selectedPaths == null || selectedPaths.length == 0) {
             return;
         }
@@ -205,8 +205,8 @@ final class PerformanceTreeNodeActionSupport {
         for (TreePath path : selectedPaths) {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
             Object userObj = node.getUserObject();
-            if (userObj instanceof JMeterTreeNode jtNode && policy.canSetEnabled(node, enabled)) {
-                jtNode.enabled = enabled;
+            if (userObj instanceof PerformanceTreeNode nodeData && policy.canSetEnabled(node, enabled)) {
+                nodeData.enabled = enabled;
                 treeModel.nodeChanged(node);
                 changed = true;
             }
@@ -235,16 +235,16 @@ final class PerformanceTreeNodeActionSupport {
 
         List<DefaultMutableTreeNode> newNodes = new ArrayList<>();
         for (HttpRequestItem reqItem : supportedList) {
-            DefaultMutableTreeNode req = new DefaultMutableTreeNode(new JMeterTreeNode(reqItem.getName(), NodeType.REQUEST, reqItem));
+            DefaultMutableTreeNode req = new DefaultMutableTreeNode(new PerformanceTreeNode(reqItem.getName(), NodeType.REQUEST, reqItem));
             treeModel.insertNodeInto(req, parentNode, parentNode.getChildCount());
-            treeSupport.ensureRequestStructure(req, (JMeterTreeNode) req.getUserObject());
+            treeSupport.ensureRequestStructure(req, (PerformanceTreeNode) req.getUserObject());
             newNodes.add(req);
         }
-        jmeterTree.expandPath(new TreePath(parentNode.getPath()));
+        performanceTree.expandPath(new TreePath(parentNode.getPath()));
         TreePath newPath = new TreePath(newNodes.get(0).getPath());
-        jmeterTree.setSelectionPath(newPath);
+        performanceTree.setSelectionPath(newPath);
         propertyCardLayout.show(propertyPanel, requestCard);
-        JMeterTreeNode newRequestNode = (JMeterTreeNode) newNodes.get(0).getUserObject();
+        PerformanceTreeNode newRequestNode = (PerformanceTreeNode) newNodes.get(0).getUserObject();
         switchRequestEditorAction.accept(newRequestNode.httpRequestItem);
         saveConfigAction.run();
     }

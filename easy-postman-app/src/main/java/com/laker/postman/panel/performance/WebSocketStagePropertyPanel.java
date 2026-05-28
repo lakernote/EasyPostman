@@ -14,7 +14,7 @@ import com.laker.postman.common.component.editor.ScriptSnippetManager;
 import com.laker.postman.common.component.tab.IndicatorTabComponent;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.Snippet;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.util.EditorThemeUtil;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -93,7 +93,7 @@ public class WebSocketStagePropertyPanel extends JPanel {
     private JLabel sendHintLabel;
     private JTextArea readHintArea;
     private JLabel closeHintLabel;
-    private JMeterTreeNode currentNode;
+    private PerformanceTreeNode currentNode;
 
     public WebSocketStagePropertyPanel(Stage stage) {
         this.stage = stage;
@@ -516,7 +516,7 @@ public class WebSocketStagePropertyPanel extends JPanel {
         }
     }
 
-    public void setNode(JMeterTreeNode node) {
+    public void setNode(PerformanceTreeNode node) {
         this.currentNode = node;
         WebSocketPerformanceData data = node != null && node.webSocketPerformanceData != null
                 ? node.webSocketPerformanceData

@@ -5,7 +5,7 @@ import com.laker.postman.performance.core.assertion.AssertionType;
 
 
 import com.formdev.flatlaf.FlatClientProperties;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -47,7 +47,7 @@ public class AssertionPropertyPanel extends JPanel {
     private final CardLayout inputCardLayout;
     private final JPanel inputPanel;
     private final JLabel hintLabel;
-    private JMeterTreeNode currentNode;
+    private PerformanceTreeNode currentNode;
 
     public AssertionPropertyPanel() {
         setLayout(new GridBagLayout());
@@ -98,7 +98,7 @@ public class AssertionPropertyPanel extends JPanel {
         updateTypeState();
     }
 
-    public void setAssertionData(JMeterTreeNode node) {
+    public void setAssertionData(PerformanceTreeNode node) {
         this.currentNode = node;
         AssertionData data = node.assertionData;
         if (data == null) {

@@ -68,7 +68,7 @@ final class PerformanceSampleAccumulator {
         if (apiName != null && !apiName.isBlank()) {
             return apiName;
         }
-        return ApiMetadata.getName(apiId);
+        return apiId;
     }
 
     long total() {

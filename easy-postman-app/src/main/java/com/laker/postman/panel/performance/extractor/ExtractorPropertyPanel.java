@@ -5,7 +5,7 @@ import com.laker.postman.performance.core.extractor.ExtractorType;
 
 
 import com.formdev.flatlaf.FlatClientProperties;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.panel.performance.tree.PerformanceTreeNodeTitleFormatter;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -36,7 +36,7 @@ public class ExtractorPropertyPanel extends JPanel {
     private final JSpinner groupIndexSpinner;
     private final JLabel expressionLabel;
     private final JLabel groupIndexLabel;
-    private JMeterTreeNode currentNode;
+    private PerformanceTreeNode currentNode;
 
     public ExtractorPropertyPanel() {
         setLayout(new GridBagLayout());
@@ -73,7 +73,7 @@ public class ExtractorPropertyPanel extends JPanel {
         updateTypeState();
     }
 
-    public void setExtractorData(JMeterTreeNode node) {
+    public void setExtractorData(PerformanceTreeNode node) {
         this.currentNode = node;
         ExtractorData data = node.extractorData;
         if (data == null) {

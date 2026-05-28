@@ -107,15 +107,15 @@ public class PerformancePlanContractsTest {
     }
 
     @Test
-    public void requestSamplerShouldNotStoreLegacyHttpRequestItem() {
-        boolean hasLegacyRequestField = java.util.Arrays.stream(PerformanceRequestSampler.class.getDeclaredFields())
+    public void requestSamplerShouldNotStoreGuiHttpRequestItem() {
+        boolean hasGuiRequestField = java.util.Arrays.stream(PerformanceRequestSampler.class.getDeclaredFields())
                 .anyMatch(field -> field.getType().equals(HttpRequestItem.class));
 
-        assertFalse(hasLegacyRequestField);
+        assertFalse(hasGuiRequestField);
     }
 
     @Test
-    public void snapshotOnlyRequestSamplerShouldAdaptToLegacyHttpRequestItem() {
+    public void snapshotOnlyRequestSamplerShouldAdaptToGuiHttpRequestItemView() {
         PerformanceRequestSnapshot snapshot = PerformanceRequestSnapshot.builder()
                 .id("snapshot-only-id")
                 .name("snapshot only")
@@ -144,7 +144,7 @@ public class PerformancePlanContractsTest {
     }
 
     @Test
-    public void requestSamplerWithoutRequestDataShouldNotInventLegacyHttpRequestItem() {
+    public void requestSamplerWithoutRequestDataShouldNotInventGuiHttpRequestItem() {
         PerformanceRequestSampler sampler = new PerformanceRequestSampler(
                 "empty request",
                 null,
@@ -180,15 +180,15 @@ public class PerformancePlanContractsTest {
     }
 
     @Test
-    public void planNodeShouldNotStoreLegacyHttpRequestItem() {
-        boolean hasLegacyRequestField = java.util.Arrays.stream(PerformancePlanNode.class.getDeclaredFields())
+    public void planNodeShouldNotStoreGuiHttpRequestItem() {
+        boolean hasGuiRequestField = java.util.Arrays.stream(PerformancePlanNode.class.getDeclaredFields())
                 .anyMatch(field -> field.getType().equals(HttpRequestItem.class));
 
-        assertFalse(hasLegacyRequestField);
+        assertFalse(hasGuiRequestField);
     }
 
     @Test
-    public void snapshotOnlyPlanNodeShouldExposeLegacyRequestViewAndScope() {
+    public void snapshotOnlyPlanNodeShouldExposeGuiRequestViewAndScope() {
         PerformanceRequestSnapshot snapshot = PerformanceRequestSnapshot.builder()
                 .id("snapshot-node-id")
                 .name("snapshot node")

@@ -1,13 +1,12 @@
 package com.laker.postman.panel.performance;
 
 import com.laker.postman.common.UiSingletonPanel;
-import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.common.component.EasyJSpinner;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
 import com.laker.postman.panel.performance.config.CsvDataSetPropertyPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
 import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
@@ -43,13 +42,13 @@ public class PerformancePanelSaveTest extends AbstractSwingUiTest {
             PerformancePanel panel = newPanelWithoutInit();
             ThreadGroupData threadGroupData = new ThreadGroupData();
             threadGroupData.numThreads = 1;
-            JMeterTreeNode threadGroupTreeNode = new JMeterTreeNode("Thread Group", NodeType.THREAD_GROUP, threadGroupData);
-            DefaultMutableTreeNode root = new DefaultMutableTreeNode(new JMeterTreeNode("Plan", NodeType.ROOT));
+            PerformanceTreeNode threadGroupTreeNode = new PerformanceTreeNode("Thread Group", NodeType.THREAD_GROUP, threadGroupData);
+            DefaultMutableTreeNode root = new DefaultMutableTreeNode(new PerformanceTreeNode("Plan", NodeType.ROOT));
             DefaultMutableTreeNode threadGroupNode = new DefaultMutableTreeNode(threadGroupTreeNode);
             root.add(threadGroupNode);
             DefaultTreeModel treeModel = new DefaultTreeModel(root);
-            JTree jmeterTree = new JTree(treeModel);
-            jmeterTree.setSelectionPath(new TreePath(threadGroupNode.getPath()));
+            JTree performanceTree = new JTree(treeModel);
+            performanceTree.setSelectionPath(new TreePath(threadGroupNode.getPath()));
 
             ThreadGroupPropertyPanel threadGroupPanel = new ThreadGroupPropertyPanel();
             threadGroupPanel.setThreadGroupData(threadGroupTreeNode);
@@ -60,7 +59,7 @@ public class PerformancePanelSaveTest extends AbstractSwingUiTest {
             RecordingPerformancePersistenceService persistenceService = new RecordingPerformancePersistenceService();
             setField(panel, "treeModel", treeModel);
             setField(panel, "persistenceService", persistenceService);
-            setField(panel, "propertyPanelSupport", createPropertyPanelSupport(jmeterTree, treeModel, threadGroupPanel));
+            setField(panel, "propertyPanelSupport", createPropertyPanelSupport(performanceTree, treeModel, threadGroupPanel));
 
             panel.save();
 
@@ -75,7 +74,7 @@ public class PerformancePanelSaveTest extends AbstractSwingUiTest {
         runOnEdtAndWait(() -> {
             ThreadGroupData threadGroupData = new ThreadGroupData();
             threadGroupData.numThreads = 1;
-            JMeterTreeNode threadGroupTreeNode = new JMeterTreeNode("Thread Group", NodeType.THREAD_GROUP, threadGroupData);
+            PerformanceTreeNode threadGroupTreeNode = new PerformanceTreeNode("Thread Group", NodeType.THREAD_GROUP, threadGroupData);
 
             ThreadGroupPropertyPanel threadGroupPanel = new ThreadGroupPropertyPanel();
             threadGroupPanel.setThreadGroupData(threadGroupTreeNode);
@@ -94,7 +93,7 @@ public class PerformancePanelSaveTest extends AbstractSwingUiTest {
         runOnEdtAndWait(() -> {
             ThreadGroupData threadGroupData = new ThreadGroupData();
             threadGroupData.numThreads = 1;
-            JMeterTreeNode threadGroupTreeNode = new JMeterTreeNode("Thread Group", NodeType.THREAD_GROUP, threadGroupData);
+            PerformanceTreeNode threadGroupTreeNode = new PerformanceTreeNode("Thread Group", NodeType.THREAD_GROUP, threadGroupData);
 
             ThreadGroupPropertyPanel threadGroupPanel = new ThreadGroupPropertyPanel();
             threadGroupPanel.setThreadGroupData(threadGroupTreeNode);
@@ -118,7 +117,7 @@ public class PerformancePanelSaveTest extends AbstractSwingUiTest {
             threadGroupData.stairsStep = 5;
             threadGroupData.stairsHoldTime = 5;
             threadGroupData.stairsDuration = 60;
-            JMeterTreeNode threadGroupTreeNode = new JMeterTreeNode("Thread Group", NodeType.THREAD_GROUP, threadGroupData);
+            PerformanceTreeNode threadGroupTreeNode = new PerformanceTreeNode("Thread Group", NodeType.THREAD_GROUP, threadGroupData);
 
             ThreadGroupPropertyPanel threadGroupPanel = new ThreadGroupPropertyPanel();
             threadGroupPanel.setThreadGroupData(threadGroupTreeNode);
@@ -155,11 +154,11 @@ public class PerformancePanelSaveTest extends AbstractSwingUiTest {
         }
     }
 
-    private static PerformancePropertyPanelSupport createPropertyPanelSupport(JTree jmeterTree,
+    private static PerformancePropertyPanelSupport createPropertyPanelSupport(JTree performanceTree,
                                                                               DefaultTreeModel treeModel,
                                                                               ThreadGroupPropertyPanel threadGroupPanel) throws Exception {
         return new PerformancePropertyPanelSupport(
-                jmeterTree,
+                performanceTree,
                 threadGroupPanel,
                 new CsvDataSetPropertyPanel(),
                 headlessLoopPanel(),
@@ -295,8 +294,7 @@ public class PerformancePanelSaveTest extends AbstractSwingUiTest {
         public void save(DefaultMutableTreeNode rootNode,
                          boolean efficientMode,
                          boolean trendEnabled,
-                         boolean reportRealtimeEnabled,
-                         CsvDataPanel.CsvState csvState) {
+                         boolean reportRealtimeEnabled) {
             saveCount.incrementAndGet();
             savedRoot = rootNode;
         }

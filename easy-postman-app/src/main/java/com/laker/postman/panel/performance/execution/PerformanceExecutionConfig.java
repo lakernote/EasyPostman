@@ -33,6 +33,7 @@ public final class PerformanceExecutionConfig {
     private final BooleanSupplier eventLoggingEnabledSupplier;
     private final Supplier<JsScriptExecutor.OutputCallback> scriptOutputCallbackSupplier;
     private final Supplier<Environment> environmentSupplier;
+    private final Supplier<JsScriptExecutor.ScriptExecutor> scriptExecutorSupplier;
 
     public static PerformanceExecutionConfig fixed(boolean efficientMode,
                                                    int responseBodyPreviewLimitKb,
@@ -92,7 +93,8 @@ public final class PerformanceExecutionConfig {
                 responseBodyPreviewLimitKbSupplier,
                 eventLoggingEnabledSupplier,
                 scriptOutputCallbackSupplier == null ? () -> NOOP_SCRIPT_OUTPUT_CALLBACK : scriptOutputCallbackSupplier,
-                environmentSupplier == null ? NO_ENVIRONMENT_SUPPLIER : environmentSupplier
+                environmentSupplier == null ? NO_ENVIRONMENT_SUPPLIER : environmentSupplier,
+                () -> null
         );
     }
 
@@ -104,7 +106,8 @@ public final class PerformanceExecutionConfig {
                 responseBodyPreviewLimitKbSupplier,
                 eventLoggingEnabledSupplier,
                 () -> null,
-                null
+                null,
+                () -> null
         );
     }
 
@@ -113,13 +116,42 @@ public final class PerformanceExecutionConfig {
                                                      BooleanSupplier eventLoggingEnabledSupplier,
                                                      Supplier<JsScriptExecutor.OutputCallback> scriptOutputCallbackSupplier,
                                                      Supplier<Environment> environmentSupplier) {
+        return create(
+                efficientModeSupplier,
+                responseBodyPreviewLimitKbSupplier,
+                eventLoggingEnabledSupplier,
+                scriptOutputCallbackSupplier,
+                environmentSupplier,
+                () -> null
+        );
+    }
+
+    private static PerformanceExecutionConfig create(BooleanSupplier efficientModeSupplier,
+                                                     IntSupplier responseBodyPreviewLimitKbSupplier,
+                                                     BooleanSupplier eventLoggingEnabledSupplier,
+                                                     Supplier<JsScriptExecutor.OutputCallback> scriptOutputCallbackSupplier,
+                                                     Supplier<Environment> environmentSupplier,
+                                                     Supplier<JsScriptExecutor.ScriptExecutor> scriptExecutorSupplier) {
         return new PerformanceExecutionConfig(
                 efficientModeSupplier == null ? () -> true : efficientModeSupplier,
                 responseBodyPreviewLimitKbSupplier == null ? () -> DEFAULT_RESPONSE_BODY_PREVIEW_LIMIT_KB
                         : responseBodyPreviewLimitKbSupplier,
                 eventLoggingEnabledSupplier == null ? () -> false : eventLoggingEnabledSupplier,
                 scriptOutputCallbackSupplier,
-                environmentSupplier
+                environmentSupplier,
+                scriptExecutorSupplier == null ? () -> null : scriptExecutorSupplier
+        );
+    }
+
+    public PerformanceExecutionConfig withScriptExecutorSupplier(
+            Supplier<JsScriptExecutor.ScriptExecutor> scriptExecutorSupplier) {
+        return create(
+                efficientModeSupplier,
+                responseBodyPreviewLimitKbSupplier,
+                eventLoggingEnabledSupplier,
+                scriptOutputCallbackSupplier,
+                environmentSupplier,
+                scriptExecutorSupplier
         );
     }
 
@@ -145,6 +177,10 @@ public final class PerformanceExecutionConfig {
 
     public Supplier<Environment> environmentSupplier() {
         return environmentSupplier;
+    }
+
+    public JsScriptExecutor.ScriptExecutor scriptExecutor() {
+        return scriptExecutorSupplier.get();
     }
 
     public static int sanitizeResponseBodyPreviewLimitKb(Integer limitKb) {

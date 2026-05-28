@@ -182,7 +182,7 @@ public class JsContextPool {
         }
 
         try {
-            // 清理全局变量（只清理注入的变量，保留内置对象）
+            // 清理脚本执行期间新增的全局状态，避免复用 Context 时污染下一次执行。
             cleanupGlobalVariables(pooled.context);
 
             // 归还到池中供复用。退役池只服务已经在旧池等待的借用者，之后逐步关闭。
@@ -239,17 +239,32 @@ public class JsContextPool {
     }
 
     /**
-     * 清理全局变量（只清理注入的变量，保留内置对象）
+     * 清理脚本执行期间新增的全局变量。
      * <p>
      * 注意：由于用户脚本使用 IIFE 包装，let/const 变量都是局部变量，
-     * 这里只需要清理我们注入的全局变量（pm、request 等）
+     * 这里主要处理显式写到 globalThis 的变量和我们注入的变量（pm、request 等）。
      * </p>
      */
     private void cleanupGlobalVariables(Context context) {
         try {
             context.eval("js", """
-                    // 只删除我们注入的全局变量，保留所有内置对象
                     (function() {
+                        const baseline = globalThis.__epBaselineGlobals;
+                        if (baseline) {
+                            Object.getOwnPropertyNames(globalThis).forEach(name => {
+                                if (name === '__epBaselineGlobals') {
+                                    return;
+                                }
+                                if (!baseline[name]) {
+                                    try {
+                                        delete globalThis[name];
+                                    } catch (e) {
+                                        // 忽略删除失败
+                                    }
+                                }
+                            });
+                        }
+
                         const injectedVars = [
                             'pm', 'postman', 'request', 'env', 'environment', 'globals',
                             'response', 'responseBody', 'responseHeaders', 'statusCode',
@@ -293,12 +308,30 @@ public class JsContextPool {
 
             // 预加载 polyfill 和内置库
             JsPolyfillInjector.injectAll(context);
+            recordBaselineGlobals(context);
 
             return new PooledContext(context);
         } catch (Exception e) {
             log.error("Failed to create new context", e);
             throw new RuntimeException("Failed to create JS context", e);
         }
+    }
+
+    private void recordBaselineGlobals(Context context) {
+        context.eval("js", """
+                (function() {
+                    const baseline = Object.create(null);
+                    Object.getOwnPropertyNames(globalThis).forEach(name => {
+                        baseline[name] = true;
+                    });
+                    Object.defineProperty(globalThis, '__epBaselineGlobals', {
+                        value: baseline,
+                        writable: false,
+                        configurable: false,
+                        enumerable: false
+                    });
+                })();
+                """);
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.laker.postman.panel.performance.plan;
 
 import com.laker.postman.performance.core.model.PerformanceProtocol;
+import com.laker.postman.performance.core.request.PerformanceAuthType;
 import com.laker.postman.performance.core.request.PerformanceRequestExecutionScopeSnapshot;
 import com.laker.postman.performance.core.request.PerformanceRequestFormDataPart;
 import com.laker.postman.performance.core.request.PerformanceRequestKeyValue;
@@ -13,6 +14,7 @@ import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpParam;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
+import com.laker.postman.model.AuthType;
 import com.laker.postman.service.variable.RequestExecutionScope;
 import lombok.experimental.UtilityClass;
 
@@ -38,7 +40,7 @@ public class PerformanceRequestSnapshotMapper {
                 .params(toKeyValues(item.getParamsList()))
                 .formData(toFormData(item.getFormDataList()))
                 .urlencoded(toKeyValues(item.getUrlencodedList()))
-                .authType(item.getAuthType())
+                .authType(toPerformanceAuthType(item.getAuthType()))
                 .authUsername(item.getAuthUsername())
                 .authPassword(item.getAuthPassword())
                 .authToken(item.getAuthToken())
@@ -81,7 +83,7 @@ public class PerformanceRequestSnapshotMapper {
         item.setUrlencodedList(snapshot.getUrlencoded().stream()
                 .map(value -> new HttpFormUrlencoded(value.isEnabled(), value.getKey(), value.getValue()))
                 .collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new)));
-        item.setAuthType(snapshot.getAuthType());
+        item.setAuthType(toRequestAuthType(snapshot.getAuthType()));
         item.setAuthUsername(snapshot.getAuthUsername());
         item.setAuthPassword(snapshot.getAuthPassword());
         item.setAuthToken(snapshot.getAuthToken());
@@ -126,6 +128,38 @@ public class PerformanceRequestSnapshotMapper {
             return RequestItemProtocolEnum.SSE;
         }
         return RequestItemProtocolEnum.HTTP;
+    }
+
+    private PerformanceAuthType toPerformanceAuthType(String authType) {
+        if (AuthType.NONE.getConstant().equals(authType)) {
+            return PerformanceAuthType.NONE;
+        }
+        if (AuthType.BASIC.getConstant().equals(authType)) {
+            return PerformanceAuthType.BASIC;
+        }
+        if (AuthType.BEARER.getConstant().equals(authType)) {
+            return PerformanceAuthType.BEARER;
+        }
+        if (AuthType.DIGEST.getConstant().equals(authType)) {
+            return PerformanceAuthType.DIGEST;
+        }
+        return PerformanceAuthType.INHERIT;
+    }
+
+    private String toRequestAuthType(PerformanceAuthType authType) {
+        if (authType == PerformanceAuthType.NONE) {
+            return AuthType.NONE.getConstant();
+        }
+        if (authType == PerformanceAuthType.BASIC) {
+            return AuthType.BASIC.getConstant();
+        }
+        if (authType == PerformanceAuthType.BEARER) {
+            return AuthType.BEARER.getConstant();
+        }
+        if (authType == PerformanceAuthType.DIGEST) {
+            return AuthType.DIGEST.getConstant();
+        }
+        return AuthType.INHERIT.getConstant();
     }
 
     private List<PerformanceRequestKeyValue> toKeyValues(List<? extends Object> values) {

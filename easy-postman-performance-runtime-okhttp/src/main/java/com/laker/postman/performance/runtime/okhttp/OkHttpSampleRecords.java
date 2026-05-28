@@ -7,6 +7,7 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 final class OkHttpSampleRecords {
@@ -16,8 +17,7 @@ final class OkHttpSampleRecords {
     static PerformanceSampleRecord httpRecord(PerformanceOutboundRequest request,
                                               Response response,
                                               long startTimeMs) throws IOException {
-        ResponseBody responseBody = response.body();
-        byte[] bodyBytes = responseBody == null ? new byte[0] : responseBody.bytes();
+        long bodySize = drainBody(response.body());
         long endTimeMs = System.currentTimeMillis();
         int statusCode = response.code();
         return PerformanceSampleRecord.builder()
@@ -28,7 +28,7 @@ final class OkHttpSampleRecords {
                 .endTimeMs(endTimeMs)
                 .elapsedTimeMs(endTimeMs - startTimeMs)
                 .responseCode(statusCode)
-                .bodySize(bodyBytes.length)
+                .bodySize(bodySize)
                 .headersSize(headersSize(response.headers().toMultimap()))
                 .executionFailed(false)
                 .interrupted(false)
@@ -114,6 +114,20 @@ final class OkHttpSampleRecords {
             for (String value : entry.getValue()) {
                 total += value == null ? 0 : value.length();
             }
+        }
+        return total;
+    }
+
+    private static long drainBody(ResponseBody responseBody) throws IOException {
+        if (responseBody == null) {
+            return 0;
+        }
+        byte[] buffer = new byte[8192];
+        long total = 0;
+        InputStream input = responseBody.byteStream();
+        int read;
+        while ((read = input.read(buffer)) != -1) {
+            total += read;
         }
         return total;
     }

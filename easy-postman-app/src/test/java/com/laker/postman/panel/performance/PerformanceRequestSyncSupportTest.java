@@ -1,9 +1,8 @@
 package com.laker.postman.panel.performance;
 
 import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.model.NodeType;
-import com.laker.postman.service.PerformancePersistenceService;
 import org.testng.annotations.Test;
 
 import javax.swing.*;
@@ -28,14 +27,14 @@ public class PerformanceRequestSyncSupportTest {
         PerformanceRequestSyncSupport support = new PerformanceRequestSyncSupport(
                 context.treeModel,
                 new JTree(context.treeModel),
-                new PerformancePersistenceService(),
+                new PerformanceCollectionRequestResolver(),
                 (node, data) -> syncEvents.add(data.httpRequestItem.getId())
         );
         HttpRequestItem latestItem = requestItem("req-1", "New Request", "https://new.example.com");
 
         support.syncRequestItem(context.rootNode, latestItem, context.requestNode, switchedItem::set);
 
-        JMeterTreeNode requestData = (JMeterTreeNode) context.requestNode.getUserObject();
+        PerformanceTreeNode requestData = (PerformanceTreeNode) context.requestNode.getUserObject();
         assertSame(requestData.httpRequestItem, latestItem);
         assertEquals(requestData.name, "New Request");
         assertEquals(syncEvents, List.of("req-1"));
@@ -51,7 +50,7 @@ public class PerformanceRequestSyncSupportTest {
         PerformanceRequestSyncSupport support = new PerformanceRequestSyncSupport(
                 context.treeModel,
                 new JTree(context.treeModel),
-                new PerformancePersistenceService(),
+                new PerformanceCollectionRequestResolver(),
                 (node, data) -> syncEvents.add(data.httpRequestItem.getId())
         );
         HttpRequestItem invalidItem = new HttpRequestItem();
@@ -59,7 +58,7 @@ public class PerformanceRequestSyncSupportTest {
 
         support.syncRequestItem(context.rootNode, invalidItem, context.requestNode, switchedItem::set);
 
-        JMeterTreeNode requestData = (JMeterTreeNode) context.requestNode.getUserObject();
+        PerformanceTreeNode requestData = (PerformanceTreeNode) context.requestNode.getUserObject();
         assertSame(requestData.httpRequestItem, oldItem);
         assertEquals(requestData.name, "Old Request");
         assertEquals(syncEvents.size(), 0);
@@ -67,9 +66,9 @@ public class PerformanceRequestSyncSupportTest {
     }
 
     private static TestContext newTestContext(HttpRequestItem item) {
-        DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode(new JMeterTreeNode("Plan", NodeType.ROOT));
-        DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(new JMeterTreeNode("Group", NodeType.THREAD_GROUP));
-        DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(new JMeterTreeNode(item.getName(), NodeType.REQUEST, item));
+        DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode(new PerformanceTreeNode("Plan", NodeType.ROOT));
+        DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(new PerformanceTreeNode("Group", NodeType.THREAD_GROUP));
+        DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(new PerformanceTreeNode(item.getName(), NodeType.REQUEST, item));
         rootNode.add(groupNode);
         groupNode.add(requestNode);
         DefaultTreeModel treeModel = new DefaultTreeModel(rootNode);

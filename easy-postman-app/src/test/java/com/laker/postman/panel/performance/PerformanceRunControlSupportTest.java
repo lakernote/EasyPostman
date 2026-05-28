@@ -8,7 +8,7 @@ import com.laker.postman.panel.performance.control.PerformanceStatisticsCoordina
 import com.laker.postman.panel.performance.control.PerformanceTimerManager;
 import com.laker.postman.panel.performance.config.CsvDataSetPropertyPanel;
 import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
 import com.laker.postman.performance.core.model.PerformanceStatsCollector;
@@ -86,17 +86,14 @@ public class PerformanceRunControlSupportTest extends AbstractSwingUiTest {
                     timerManager,
                     new PerformanceRunUiController(new StartButton(), new StopButton(), new RefreshButton()),
                     new JCheckBox(),
-                    resultTabbedPane,
                     resultTablePanel,
-                    reportPanel,
-                    null,
                     statsCollector,
                     () -> {
                     }
             );
 
             Thread runThread = runControlSupport.startRun(
-                    new DefaultMutableTreeNode(new JMeterTreeNode("测试计划", NodeType.ROOT)),
+                    new DefaultMutableTreeNode(new PerformanceTreeNode("测试计划", NodeType.ROOT)),
                     new JLabel(),
                     false,
                     ignored -> {

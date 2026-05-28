@@ -8,6 +8,7 @@ import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.performance.core.model.SsePerformanceData;
 import com.laker.postman.performance.core.model.WebSocketPerformanceData;
+import com.laker.postman.performance.core.request.PerformanceAuthType;
 import com.laker.postman.performance.core.request.PerformanceRequestExecutionScopeSnapshot;
 import com.laker.postman.performance.core.request.PerformanceRequestFormDataPart;
 import com.laker.postman.performance.core.request.PerformanceRequestKeyValue;
@@ -149,7 +150,7 @@ public class PerformanceCorePlanJsonStorage {
         json.put("params", serializeKeyValues(snapshot.getParams()));
         json.put("formData", serializeFormData(snapshot.getFormData()));
         json.put("urlencoded", serializeKeyValues(snapshot.getUrlencoded()));
-        json.put("authType", snapshot.getAuthType());
+        json.put("authType", snapshot.getAuthType().name());
         json.put("authUsername", snapshot.getAuthUsername());
         json.put("authPassword", snapshot.getAuthPassword());
         json.put("authToken", snapshot.getAuthToken());
@@ -405,7 +406,11 @@ public class PerformanceCorePlanJsonStorage {
                 .params(deserializeRequestKeyValues(listValue(requestJson.get("params"))))
                 .formData(deserializeRequestFormData(listValue(requestJson.get("formData"))))
                 .urlencoded(deserializeRequestKeyValues(listValue(requestJson.get("urlencoded"))))
-                .authType(stringValue(requestJson, "authType", null))
+                .authType(enumValue(
+                        PerformanceAuthType.class,
+                        stringValue(requestJson, "authType", null),
+                        PerformanceAuthType.INHERIT
+                ))
                 .authUsername(stringValue(requestJson, "authUsername", null))
                 .authPassword(stringValue(requestJson, "authPassword", null))
                 .authToken(stringValue(requestJson, "authToken", null))

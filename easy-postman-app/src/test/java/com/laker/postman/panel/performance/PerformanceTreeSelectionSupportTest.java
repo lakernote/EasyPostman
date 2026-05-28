@@ -3,7 +3,7 @@ package com.laker.postman.panel.performance;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.performance.config.CsvDataSetPropertyPanel;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.WebSocketPerformanceData;
 import com.laker.postman.test.AbstractSwingUiTest;
@@ -85,7 +85,7 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
         SwingUtilities.invokeAndWait(() -> {
             TreeFixture fixture = new TreeFixture();
             fixture.requestItem.setProtocol(RequestItemProtocolEnum.WEBSOCKET);
-            JMeterTreeNode connectData = new JMeterTreeNode("connect", NodeType.WS_CONNECT);
+            PerformanceTreeNode connectData = new PerformanceTreeNode("connect", NodeType.WS_CONNECT);
             connectData.webSocketPerformanceData = new WebSocketPerformanceData();
             DefaultMutableTreeNode connectNode = new DefaultMutableTreeNode(connectData);
             fixture.requestNode.add(connectNode);
@@ -115,10 +115,10 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
         SwingUtilities.invokeAndWait(() -> {
             TreeFixture fixture = new TreeFixture();
             fixture.requestItem.setProtocol(RequestItemProtocolEnum.WEBSOCKET);
-            JMeterTreeNode requestData = (JMeterTreeNode) fixture.requestNode.getUserObject();
+            PerformanceTreeNode requestData = (PerformanceTreeNode) fixture.requestNode.getUserObject();
             requestData.webSocketPerformanceData = new WebSocketPerformanceData();
             requestData.webSocketPerformanceData.connectTimeoutMs = 4321;
-            JMeterTreeNode connectData = new JMeterTreeNode("connect", NodeType.WS_CONNECT);
+            PerformanceTreeNode connectData = new PerformanceTreeNode("connect", NodeType.WS_CONNECT);
             DefaultMutableTreeNode connectNode = new DefaultMutableTreeNode(connectData);
             fixture.requestNode.add(connectNode);
             RecordingWebSocketStagePropertyPanel wsConnectPanel = new RecordingWebSocketStagePropertyPanel();
@@ -161,10 +161,10 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
 
         private TreeFixture() {
             requestItem.setName("request");
-            JMeterTreeNode requestData = new JMeterTreeNode("request", NodeType.REQUEST, requestItem);
+            PerformanceTreeNode requestData = new PerformanceTreeNode("request", NodeType.REQUEST, requestItem);
             requestNode = new DefaultMutableTreeNode(requestData);
             unknownNode = new DefaultMutableTreeNode("unknown");
-            DefaultMutableTreeNode root = new DefaultMutableTreeNode(new JMeterTreeNode("root", NodeType.ROOT));
+            DefaultMutableTreeNode root = new DefaultMutableTreeNode(new PerformanceTreeNode("root", NodeType.ROOT));
             root.add(requestNode);
             root.add(unknownNode);
             treeModel = new DefaultTreeModel(root);
@@ -181,7 +181,7 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
         private PerformanceTreeSelectionSupport createSelectionSupport(
                 java.util.function.Consumer<DefaultMutableTreeNode> saveRequestAction,
                 java.util.function.Consumer<HttpRequestItem> switchRequestEditorAction,
-                java.util.function.BiConsumer<DefaultMutableTreeNode, JMeterTreeNode> syncRequestStructureAction,
+                java.util.function.BiConsumer<DefaultMutableTreeNode, PerformanceTreeNode> syncRequestStructureAction,
                 java.util.function.Consumer<DefaultMutableTreeNode> currentRequestSetter) {
             return createSelectionSupport(
                     saveRequestAction,
@@ -195,7 +195,7 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
         private PerformanceTreeSelectionSupport createSelectionSupport(
                 java.util.function.Consumer<DefaultMutableTreeNode> saveRequestAction,
                 java.util.function.Consumer<HttpRequestItem> switchRequestEditorAction,
-                java.util.function.BiConsumer<DefaultMutableTreeNode, JMeterTreeNode> syncRequestStructureAction,
+                java.util.function.BiConsumer<DefaultMutableTreeNode, PerformanceTreeNode> syncRequestStructureAction,
                 java.util.function.Consumer<DefaultMutableTreeNode> currentRequestSetter,
                 WebSocketStagePropertyPanel wsConnectPanel) {
             return new PerformanceTreeSelectionSupport(
@@ -243,14 +243,14 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
     }
 
     private static final class RecordingWebSocketStagePropertyPanel extends WebSocketStagePropertyPanel {
-        private JMeterTreeNode lastNode;
+        private PerformanceTreeNode lastNode;
 
         private RecordingWebSocketStagePropertyPanel() {
             super(Stage.CONNECT);
         }
 
         @Override
-        public void setNode(JMeterTreeNode node) {
+        public void setNode(PerformanceTreeNode node) {
             lastNode = node;
         }
     }

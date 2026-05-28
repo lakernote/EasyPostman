@@ -4,7 +4,7 @@ import com.laker.postman.performance.core.model.NodeType;
 
 
 import com.laker.postman.panel.performance.PerformanceTreeRules;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -22,11 +22,11 @@ public class TreeNodeTransferHandler extends TransferHandler {
     private final DataFlavor[] flavors;
     private DefaultMutableTreeNode nodeToRemove;
 
-    private final JTree jmeterTree;
+    private final JTree performanceTree;
     private final DefaultTreeModel treeModel;
 
-    public TreeNodeTransferHandler(JTree jmeterTree, DefaultTreeModel treeModel) {
-        this.jmeterTree = jmeterTree;
+    public TreeNodeTransferHandler(JTree performanceTree, DefaultTreeModel treeModel) {
+        this.performanceTree = performanceTree;
         this.treeModel = treeModel;
         try {
             nodeFlavor = new DataFlavor(DataFlavor.javaJVMLocalObjectMimeType + ";class=javax.swing.tree.DefaultMutableTreeNode");
@@ -42,8 +42,8 @@ public class TreeNodeTransferHandler extends TransferHandler {
         if (path != null) {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
             Object userObj = node.getUserObject();
-            if (userObj instanceof JMeterTreeNode jtNode) {
-                if (jtNode.type == NodeType.ROOT) {
+            if (userObj instanceof PerformanceTreeNode nodeData) {
+                if (nodeData.type == NodeType.ROOT) {
                     return NONE;
                 }
             }
@@ -79,7 +79,7 @@ public class TreeNodeTransferHandler extends TransferHandler {
         if (nodeToRemove == null) {
             return false;
         }
-        if (!(nodeToRemove.getUserObject() instanceof JMeterTreeNode)) {
+        if (!(nodeToRemove.getUserObject() instanceof PerformanceTreeNode)) {
             return false;
         }
         // 不允许拖到自己或子孙节点
@@ -116,8 +116,8 @@ public class TreeNodeTransferHandler extends TransferHandler {
                 insertIndex--;
             }
             treeModel.insertNodeInto(node, parent, insertIndex);
-            jmeterTree.expandPath(new TreePath(parent.getPath()));
-            jmeterTree.updateUI(); // 强制刷新
+            performanceTree.expandPath(new TreePath(parent.getPath()));
+            performanceTree.updateUI(); // 强制刷新
             return true;
         } catch (UnsupportedFlavorException | IOException ex) {
             log.error(ex.getMessage(), ex);

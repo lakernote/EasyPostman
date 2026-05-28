@@ -9,7 +9,6 @@ import com.laker.postman.performance.core.model.PerformanceTrendWindowCollector;
 
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.DebouncedSaveSupport;
-import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.button.RefreshButton;
 import com.laker.postman.common.component.button.StartButton;
 import com.laker.postman.common.component.button.StopButton;
@@ -29,10 +28,13 @@ import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
 import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
 import com.laker.postman.panel.performance.execution.DefaultPerformanceNetworkRuntime;
 import com.laker.postman.panel.performance.execution.PerformanceExecutionConfig;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.panel.performance.model.PerformanceResultListener;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollectorListener;
 import com.laker.postman.panel.performance.model.PerformanceTrendWindowCollectorListener;
+import com.laker.postman.panel.performance.plan.PerformancePlanConfiguration;
+import com.laker.postman.panel.performance.plan.PerformancePlanDocument;
+import com.laker.postman.panel.performance.plan.PerformanceSwingTreePlanAdapter;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceResultCollector;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
@@ -76,7 +78,7 @@ public class PerformancePanel extends UiSingletonPanel {
     public static final String WS_SEND = "wsSend";
     public static final String WS_READ = "wsRead";
     public static final String WS_CLOSE = "wsClose";
-    private JTree jmeterTree;
+    private JTree performanceTree;
     private DefaultTreeModel treeModel;
     private JPanel propertyPanel; // 右侧属性区（CardLayout）
     private CardLayout propertyCardLayout;
@@ -140,22 +142,19 @@ public class PerformancePanel extends UiSingletonPanel {
         setLayout(new BorderLayout());
         this.persistenceService = BeanFactory.getBean(PerformancePersistenceService.class);
         initTimerManager();
-        efficientMode = persistenceService.loadEfficientMode();
-        trendEnabled = persistenceService.loadTrendEnabled();
-        reportRealtimeEnabled = persistenceService.loadReportRealtimeEnabled();
-        applyTrendEnabled(trendEnabled);
-        applyReportRealtimeEnabled(reportRealtimeEnabled);
-        DefaultMutableTreeNode root = loadPersistedOrDefaultRoot();
+        PerformancePlanConfiguration persistedConfiguration = persistenceService.loadConfiguration();
+        applyPersistedSettings(persistedConfiguration);
+        DefaultMutableTreeNode root = loadPersistedOrDefaultRoot(persistedConfiguration);
 
         treeModel = new DefaultTreeModel(root);
         treeSupport = new PerformanceTreeSupport(treeModel);
         PerformancePanelViewFactory viewFactory = new PerformancePanelViewFactory();
         PerformancePanelViewFactory.TreeSection treeSection = viewFactory.createTreeSection(treeModel);
-        jmeterTree = treeSection.tree();
+        performanceTree = treeSection.tree();
         requestSyncSupport = new PerformanceRequestSyncSupport(
                 treeModel,
-                jmeterTree,
-                persistenceService,
+                performanceTree,
+                new PerformanceCollectionRequestResolver(),
                 this::syncRequestStructure
         );
         PerformancePanelViewFactory.PropertySection propertySection = viewFactory.createPropertySection(
@@ -197,7 +196,7 @@ public class PerformancePanel extends UiSingletonPanel {
         );
 
         propertyPanelSupport = new PerformancePropertyPanelSupport(
-                jmeterTree,
+                performanceTree,
                 threadGroupPanel,
                 csvDataSetPanel,
                 loopPanel,
@@ -286,16 +285,16 @@ public class PerformancePanel extends UiSingletonPanel {
                 new PerformanceTrendWindowCollectorListener(trendWindowCollector),
                 new PerformanceResultTableVisualizer(
                         performanceResultTablePanel,
-                        SettingManager::getJmeterSlowRequestThreshold
+                        SettingManager::getPerformanceSlowRequestThreshold
                 )
         );
         PerformanceRunUiController runUiController = new PerformanceRunUiController(runBtn, stopBtn, refreshBtn);
         DefaultPerformanceNetworkRuntime networkRuntime = new DefaultPerformanceNetworkRuntime(
                 () -> new HttpClientRuntimeConfig(
-                        SettingManager.getJmeterMaxIdleConnections(),
-                        SettingManager.getJmeterKeepAliveSeconds(),
-                        SettingManager.getJmeterMaxRequests(),
-                        SettingManager.getJmeterMaxRequestsPerHost()
+                        SettingManager.getPerformanceMaxIdleConnections(),
+                        SettingManager.getPerformanceKeepAliveSeconds(),
+                        SettingManager.getPerformanceMaxRequests(),
+                        SettingManager.getPerformanceMaxRequestsPerHost()
                 )
         );
         executionEngine = new PerformanceExecutionEngine(
@@ -327,10 +326,7 @@ public class PerformancePanel extends UiSingletonPanel {
                 timerManager,
                 runUiController,
                 efficientCheckBox,
-                resultTabbedPane,
                 performanceResultTablePanel,
-                performanceReportPanel,
-                performanceTrendPanel,
                 statsCollector,
                 this::clearCachedPerformanceResults
         );
@@ -338,8 +334,8 @@ public class PerformancePanel extends UiSingletonPanel {
         treeSupport.syncAllRequestStructures((DefaultMutableTreeNode) treeModel.getRoot());
         runBtn.addActionListener(e -> startRun(progressLabel));
         stopBtn.addActionListener(e -> stopRun());
-        for (int i = 0; i < jmeterTree.getRowCount(); i++) {
-            jmeterTree.expandRow(i);
+        for (int i = 0; i < performanceTree.getRowCount(); i++) {
+            performanceTree.expandRow(i);
         }
         selectFirstThreadGroup();
         setupSaveShortcut();
@@ -356,12 +352,9 @@ public class PerformancePanel extends UiSingletonPanel {
             stopRun();
         }
 
-        efficientMode = persistenceService.loadEfficientMode();
-        trendEnabled = persistenceService.loadTrendEnabled();
-        reportRealtimeEnabled = persistenceService.loadReportRealtimeEnabled();
-        applyTrendEnabled(trendEnabled);
-        applyReportRealtimeEnabled(reportRealtimeEnabled);
-        DefaultMutableTreeNode root = loadPersistedOrDefaultRoot();
+        PerformancePlanConfiguration persistedConfiguration = persistenceService.loadConfiguration();
+        applyPersistedSettings(persistedConfiguration);
+        DefaultMutableTreeNode root = loadPersistedOrDefaultRoot(persistedConfiguration);
         treeModel.setRoot(root);
         treeSupport.syncAllRequestStructures(root);
         currentRequestNode = null;
@@ -376,8 +369,8 @@ public class PerformancePanel extends UiSingletonPanel {
         }
         clearCachedPerformanceResults();
         propertyCardLayout.show(propertyPanel, EMPTY);
-        for (int i = 0; i < jmeterTree.getRowCount(); i++) {
-            jmeterTree.expandRow(i);
+        for (int i = 0; i < performanceTree.getRowCount(); i++) {
+            performanceTree.expandRow(i);
         }
         selectFirstThreadGroup();
     }
@@ -386,7 +379,7 @@ public class PerformancePanel extends UiSingletonPanel {
         return treeModel != null
                 && persistenceService != null
                 && treeSupport != null
-                && jmeterTree != null
+                && performanceTree != null
                 && propertyPanel != null
                 && propertyCardLayout != null
                 && threadGroupPanel != null
@@ -398,13 +391,25 @@ public class PerformancePanel extends UiSingletonPanel {
                 && executionEngine != null;
     }
 
-    private DefaultMutableTreeNode loadPersistedOrDefaultRoot() {
-        DefaultMutableTreeNode savedRoot = persistenceService.load(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TEST_PLAN));
+    private void applyPersistedSettings(PerformancePlanConfiguration configuration) {
+        efficientMode = configuration == null || configuration.isEfficientMode();
+        trendEnabled = configuration == null || configuration.isTrendEnabled();
+        reportRealtimeEnabled = configuration != null && configuration.isReportRealtimeEnabled();
+        applyTrendEnabled(trendEnabled);
+        applyReportRealtimeEnabled(reportRealtimeEnabled);
+    }
+
+    private DefaultMutableTreeNode loadPersistedOrDefaultRoot(PerformancePlanConfiguration configuration) {
+        PerformancePlanDocument document = configuration == null ? null : configuration.getPlanDocument();
+        DefaultMutableTreeNode savedRoot = PerformanceSwingTreePlanAdapter.toTree(
+                document,
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_TEST_PLAN)
+        );
         if (savedRoot != null) {
             return savedRoot;
         }
 
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new JMeterTreeNode(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TEST_PLAN), NodeType.ROOT));
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new PerformanceTreeNode(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TEST_PLAN), NodeType.ROOT));
         PerformanceTreeSupport.createDefaultRequest(root);
         return root;
     }
@@ -426,15 +431,15 @@ public class PerformancePanel extends UiSingletonPanel {
         if (root.getChildCount() > 0) {
             DefaultMutableTreeNode firstGroup = (DefaultMutableTreeNode) root.getChildAt(0);
             TreePath path = new TreePath(firstGroup.getPath());
-            jmeterTree.setSelectionPath(path);
-            jmeterTree.scrollPathToVisible(path);
+            performanceTree.setSelectionPath(path);
+            performanceTree.scrollPathToVisible(path);
 
             // 触发节点点击事件，确保属性面板显示正确
             Object userObj = firstGroup.getUserObject();
-            if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.THREAD_GROUP) {
+            if (userObj instanceof PerformanceTreeNode nodeData && nodeData.type == NodeType.THREAD_GROUP) {
                 // 显示线程组属性面板
                 propertyCardLayout.show(propertyPanel, THREAD_GROUP);
-                threadGroupPanel.setThreadGroupData(jtNode);
+                threadGroupPanel.setThreadGroupData(nodeData);
             }
         }
     }
@@ -443,11 +448,11 @@ public class PerformancePanel extends UiSingletonPanel {
         return treeSupport.resolveRequestProtocol(item);
     }
 
-    private void syncRequestStructure(DefaultMutableTreeNode requestNode, JMeterTreeNode requestData) {
+    private void syncRequestStructure(DefaultMutableTreeNode requestNode, PerformanceTreeNode requestData) {
         treeSupport.syncRequestStructure(requestNode, requestData);
     }
 
-    private void ensureRequestStructure(DefaultMutableTreeNode requestNode, JMeterTreeNode requestData) {
+    private void ensureRequestStructure(DefaultMutableTreeNode requestNode, PerformanceTreeNode requestData) {
         treeSupport.ensureRequestStructure(requestNode, requestData);
     }
 
@@ -457,8 +462,8 @@ public class PerformancePanel extends UiSingletonPanel {
 
     private void saveWebSocketStageNode(DefaultMutableTreeNode stageNode) {
         propertyPanelSupport.saveWebSocketStageNode(stageNode);
-        if (stageNode != null && stageNode.getUserObject() instanceof JMeterTreeNode stageJtNode
-                && stageJtNode.type == NodeType.WS_CONNECT) {
+        if (stageNode != null && stageNode.getUserObject() instanceof PerformanceTreeNode stageNodeData
+                && stageNodeData.type == NodeType.WS_CONNECT) {
             treeModel.nodeChanged(stageNode);
         }
     }
@@ -469,14 +474,14 @@ public class PerformancePanel extends UiSingletonPanel {
 
     private void saveRequestNodeData(DefaultMutableTreeNode node) {
         PerformanceProtocol oldProtocol = PerformanceProtocol.HTTP;
-        if (node != null && node.getUserObject() instanceof JMeterTreeNode jtNode) {
-            oldProtocol = treeSupport.resolvePerformanceProtocol(jtNode.httpRequestItem);
+        if (node != null && node.getUserObject() instanceof PerformanceTreeNode nodeData) {
+            oldProtocol = treeSupport.resolvePerformanceProtocol(nodeData.httpRequestItem);
         }
         requestEditorSupport.saveRequestNodeData(node, this::syncRequestStructure);
-        if (node != null && node.getUserObject() instanceof JMeterTreeNode jtNode) {
-            PerformanceProtocol newProtocol = treeSupport.resolvePerformanceProtocol(jtNode.httpRequestItem);
+        if (node != null && node.getUserObject() instanceof PerformanceTreeNode nodeData) {
+            PerformanceProtocol newProtocol = treeSupport.resolvePerformanceProtocol(nodeData.httpRequestItem);
             if (oldProtocol != newProtocol) {
-                ensureRequestStructure(node, jtNode);
+                ensureRequestStructure(node, nodeData);
             }
         }
     }
@@ -511,9 +516,9 @@ public class PerformancePanel extends UiSingletonPanel {
     }
 
     private void handleCsvDataSetChanged() {
-        DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
-        if (selectedNode != null && selectedNode.getUserObject() instanceof JMeterTreeNode jtNode
-                && jtNode.type == NodeType.CSV_DATA_SET) {
+        DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) performanceTree.getLastSelectedPathComponent();
+        if (selectedNode != null && selectedNode.getUserObject() instanceof PerformanceTreeNode nodeData
+                && nodeData.type == NodeType.CSV_DATA_SET) {
             treeModel.nodeChanged(selectedNode);
         }
         saveConfig();
@@ -526,7 +531,6 @@ public class PerformancePanel extends UiSingletonPanel {
      */
     private void initTimerManager() {
         timerManager = new PerformanceTimerManager(() -> running);
-        log.debug("定时器管理器初始化完成");
     }
 
     // ========== 执行与停止核心逻辑 ==========
@@ -543,7 +547,7 @@ public class PerformancePanel extends UiSingletonPanel {
     protected void registerListeners() {
         new PerformanceTreeInteractionSupport(
                 this,
-                jmeterTree,
+                performanceTree,
                 treeModel,
                 propertyCardLayout,
                 propertyPanel,
@@ -586,7 +590,7 @@ public class PerformancePanel extends UiSingletonPanel {
     }
 
     private void stopRun() {
-        runControlSupport.stopRun(runThread);
+        runControlSupport.stopRun();
     }
 
     /**
@@ -648,8 +652,6 @@ public class PerformancePanel extends UiSingletonPanel {
      * 确保定时器被正确停止，避免资源泄漏
      */
     public void cleanup() {
-        log.info("清理 PerformancePanel 资源");
-
         // 1. 停止运行中的测试
         if (running) {
             stopRun();
@@ -666,8 +668,6 @@ public class PerformancePanel extends UiSingletonPanel {
         if (performanceResultTablePanel != null) {
             performanceResultTablePanel.dispose();
         }
-
-        log.debug("PerformancePanel 资源清理完成");
     }
 
     private void clearCachedPerformanceResults() {
@@ -718,7 +718,6 @@ public class PerformancePanel extends UiSingletonPanel {
     private void refreshRequestsFromCollections() {
         currentRequestNode = requestSyncSupport.refreshRequestsFromCollections(
                 currentRequestNode,
-                requestEditorSupport.getRequestEditSubPanel(),
                 this::switchRequestEditor,
                 this::saveAllPropertyPanelData,
                 this::clearCachedPerformanceResults,

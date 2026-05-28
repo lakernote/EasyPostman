@@ -6,7 +6,7 @@ import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
 import com.laker.postman.panel.performance.config.CsvDataSetPropertyPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
 import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
 import com.laker.postman.panel.performance.timer.TimerPropertyPanel;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +20,7 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 final class PerformancePropertyPanelSupport {
 
-    private final JTree jmeterTree;
+    private final JTree performanceTree;
     private final ThreadGroupPropertyPanel threadGroupPanel;
     private final CsvDataSetPropertyPanel csvDataSetPanel;
     private final LoopPropertyPanel loopPanel;
@@ -37,7 +37,7 @@ final class PerformancePropertyPanelSupport {
     private final Supplier<DefaultMutableTreeNode> currentRequestNodeSupplier;
     private final Consumer<DefaultMutableTreeNode> saveRequestNodeAction;
     private final PerformanceTreeSupport treeSupport;
-    private final BiConsumer<DefaultMutableTreeNode, JMeterTreeNode> syncRequestStructureAction;
+    private final BiConsumer<DefaultMutableTreeNode, PerformanceTreeNode> syncRequestStructureAction;
 
     void forceCommitAllSpinners() {
         threadGroupPanel.forceCommitAllSpinners();
@@ -52,15 +52,15 @@ final class PerformancePropertyPanelSupport {
     }
 
     void saveAllPropertyPanelData() {
-        DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
-        if (selectedNode == null || !(selectedNode.getUserObject() instanceof JMeterTreeNode jtNode)) {
+        DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) performanceTree.getLastSelectedPathComponent();
+        if (selectedNode == null || !(selectedNode.getUserObject() instanceof PerformanceTreeNode nodeData)) {
             return;
         }
-        switch (jtNode.type) {
+        switch (nodeData.type) {
             case THREAD_GROUP -> threadGroupPanel.saveThreadGroupData();
             case CSV_DATA_SET -> {
                 csvDataSetPanel.saveCsvDataSetData();
-                if (jmeterTree.getModel() instanceof javax.swing.tree.DefaultTreeModel treeModel) {
+                if (performanceTree.getModel() instanceof javax.swing.tree.DefaultTreeModel treeModel) {
                     treeModel.nodeChanged(selectedNode);
                 }
             }
@@ -73,7 +73,7 @@ final class PerformancePropertyPanelSupport {
             case ASSERTION -> assertionPanel.saveAssertionData();
             case EXTRACTOR -> {
                 extractorPanel.saveExtractorData();
-                if (jmeterTree.getModel() instanceof javax.swing.tree.DefaultTreeModel treeModel) {
+                if (performanceTree.getModel() instanceof javax.swing.tree.DefaultTreeModel treeModel) {
                     treeModel.nodeChanged(selectedNode);
                 }
             }
@@ -86,32 +86,32 @@ final class PerformancePropertyPanelSupport {
     }
 
     void saveSseStageNode(DefaultMutableTreeNode stageNode) {
-        if (stageNode == null || !(stageNode.getUserObject() instanceof JMeterTreeNode stageJtNode)) {
+        if (stageNode == null || !(stageNode.getUserObject() instanceof PerformanceTreeNode stageNodeData)) {
             return;
         }
         DefaultMutableTreeNode requestNode = treeSupport.getParentRequestNode(stageNode);
-        if (requestNode == null || !(requestNode.getUserObject() instanceof JMeterTreeNode requestJtNode)) {
+        if (requestNode == null || !(requestNode.getUserObject() instanceof PerformanceTreeNode requestNodeData)) {
             return;
         }
-        switch (stageJtNode.type) {
+        switch (stageNodeData.type) {
             case SSE_CONNECT -> sseConnectPanel.saveData();
             case SSE_READ -> sseReadPanel.saveData();
             default -> {
                 return;
             }
         }
-        syncRequestStructureAction.accept(requestNode, requestJtNode);
+        syncRequestStructureAction.accept(requestNode, requestNodeData);
     }
 
     void saveWebSocketStageNode(DefaultMutableTreeNode stageNode) {
-        if (stageNode == null || !(stageNode.getUserObject() instanceof JMeterTreeNode stageJtNode)) {
+        if (stageNode == null || !(stageNode.getUserObject() instanceof PerformanceTreeNode stageNodeData)) {
             return;
         }
         DefaultMutableTreeNode requestNode = treeSupport.getParentRequestNode(stageNode);
-        if (requestNode == null || !(requestNode.getUserObject() instanceof JMeterTreeNode requestJtNode)) {
+        if (requestNode == null || !(requestNode.getUserObject() instanceof PerformanceTreeNode requestNodeData)) {
             return;
         }
-        switch (stageJtNode.type) {
+        switch (stageNodeData.type) {
             case WS_CONNECT -> wsConnectPanel.saveData();
             case WS_SEND -> wsSendPanel.saveData();
             case WS_READ -> wsReadPanel.saveData();
@@ -120,6 +120,6 @@ final class PerformancePropertyPanelSupport {
                 return;
             }
         }
-        syncRequestStructureAction.accept(requestNode, requestJtNode);
+        syncRequestStructureAction.accept(requestNode, requestNodeData);
     }
 }

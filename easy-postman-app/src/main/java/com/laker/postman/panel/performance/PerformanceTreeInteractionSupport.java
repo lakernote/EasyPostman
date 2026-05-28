@@ -8,7 +8,7 @@ import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
 import com.laker.postman.panel.performance.config.CsvDataSetPropertyPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
 import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
 import com.laker.postman.panel.performance.timer.TimerPropertyPanel;
 import com.laker.postman.util.I18nUtil;
@@ -31,7 +31,7 @@ import java.util.function.Supplier;
 final class PerformanceTreeInteractionSupport {
 
     private final Component parentComponent;
-    private final JTree jmeterTree;
+    private final JTree performanceTree;
     private final DefaultTreeModel treeModel;
     private final CardLayout propertyCardLayout;
     private final JPanel propertyPanel;
@@ -52,7 +52,7 @@ final class PerformanceTreeInteractionSupport {
     private final Consumer<DefaultMutableTreeNode> saveSseStageAction;
     private final Consumer<DefaultMutableTreeNode> saveWebSocketStageAction;
     private final Consumer<HttpRequestItem> switchRequestEditorAction;
-    private final BiConsumer<DefaultMutableTreeNode, JMeterTreeNode> syncRequestStructureAction;
+    private final BiConsumer<DefaultMutableTreeNode, PerformanceTreeNode> syncRequestStructureAction;
     private final Runnable saveConfigAction;
     private final Supplier<DefaultMutableTreeNode> currentRequestNodeSupplier;
     private final Consumer<DefaultMutableTreeNode> currentRequestNodeSetter;
@@ -87,7 +87,7 @@ final class PerformanceTreeInteractionSupport {
 
     private PerformanceTreeSelectionSupport createSelectionSupport() {
         return new PerformanceTreeSelectionSupport(
-                jmeterTree,
+                performanceTree,
                 treeModel,
                 propertyCardLayout,
                 propertyPanel,
@@ -130,7 +130,7 @@ final class PerformanceTreeInteractionSupport {
     private PerformanceTreeNodeActionSupport createNodeActionSupport() {
         return new PerformanceTreeNodeActionSupport(
                 parentComponent,
-                jmeterTree,
+                performanceTree,
                 treeModel,
                 propertyCardLayout,
                 propertyPanel,
@@ -234,18 +234,18 @@ final class PerformanceTreeInteractionSupport {
         };
 
         addThreadGroup.addActionListener(e -> nodeActionSupport.addThreadGroupNode());
-        addCsvDataSet.addActionListener(e -> treeSupport.addCsvDataSetNode(jmeterTree, saveConfigAction));
+        addCsvDataSet.addActionListener(e -> treeSupport.addCsvDataSetNode(performanceTree, saveConfigAction));
         addRequest.addActionListener(e -> nodeActionSupport.addRequestNodes());
-        addLoop.addActionListener(e -> treeSupport.addLoopNode(jmeterTree, saveConfigAction));
-        addSseConnect.addActionListener(e -> treeSupport.addSseStageNode(jmeterTree, NodeType.SSE_CONNECT, saveConfigAction));
-        addSseRead.addActionListener(e -> treeSupport.addSseStageNode(jmeterTree, NodeType.SSE_READ, saveConfigAction));
-        addWsConnect.addActionListener(e -> treeSupport.addWebSocketStepNode(jmeterTree, NodeType.WS_CONNECT, saveConfigAction));
-        addWsSend.addActionListener(e -> treeSupport.addWebSocketStepNode(jmeterTree, NodeType.WS_SEND, saveConfigAction));
-        addWsRead.addActionListener(e -> treeSupport.addWebSocketStepNode(jmeterTree, NodeType.WS_READ, saveConfigAction));
-        addWsClose.addActionListener(e -> treeSupport.addWebSocketStepNode(jmeterTree, NodeType.WS_CLOSE, saveConfigAction));
+        addLoop.addActionListener(e -> treeSupport.addLoopNode(performanceTree, saveConfigAction));
+        addSseConnect.addActionListener(e -> treeSupport.addSseStageNode(performanceTree, NodeType.SSE_CONNECT, saveConfigAction));
+        addSseRead.addActionListener(e -> treeSupport.addSseStageNode(performanceTree, NodeType.SSE_READ, saveConfigAction));
+        addWsConnect.addActionListener(e -> treeSupport.addWebSocketStepNode(performanceTree, NodeType.WS_CONNECT, saveConfigAction));
+        addWsSend.addActionListener(e -> treeSupport.addWebSocketStepNode(performanceTree, NodeType.WS_SEND, saveConfigAction));
+        addWsRead.addActionListener(e -> treeSupport.addWebSocketStepNode(performanceTree, NodeType.WS_READ, saveConfigAction));
+        addWsClose.addActionListener(e -> treeSupport.addWebSocketStepNode(performanceTree, NodeType.WS_CLOSE, saveConfigAction));
         addAssertion.addActionListener(e -> nodeActionSupport.addAssertionNode());
         addExtractor.addActionListener(e -> nodeActionSupport.addExtractorNode());
-        addTimer.addActionListener(e -> treeSupport.addTimerNode(jmeterTree, saveConfigAction));
+        addTimer.addActionListener(e -> treeSupport.addTimerNode(performanceTree, saveConfigAction));
 
         Action renameAction = nodeActionSupport.createRenameAction();
         Action deleteAction = nodeActionSupport.createDeleteAction();
@@ -256,8 +256,8 @@ final class PerformanceTreeInteractionSupport {
         copyNode.addActionListener(copyAction);
         pasteNode.addActionListener(pasteAction);
 
-        InputMap treeInputMap = jmeterTree.getInputMap(JComponent.WHEN_FOCUSED);
-        ActionMap treeActionMap = jmeterTree.getActionMap();
+        InputMap treeInputMap = performanceTree.getInputMap(JComponent.WHEN_FOCUSED);
+        ActionMap treeActionMap = performanceTree.getActionMap();
         treeInputMap.put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F2, 0), "renamePerformanceNode");
         treeActionMap.put("renamePerformanceNode", renameAction);
         treeInputMap.put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_DELETE, 0), "deletePerformanceNode");
@@ -270,18 +270,18 @@ final class PerformanceTreeInteractionSupport {
         enableNode.addActionListener(e -> nodeActionSupport.setSelectedNodesEnabled(true));
         disableNode.addActionListener(e -> nodeActionSupport.setSelectedNodesEnabled(false));
 
-        jmeterTree.addMouseListener(new MouseAdapter() {
+        performanceTree.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
                 if (!e.isPopupTrigger() && !SwingUtilities.isRightMouseButton(e)) {
                     return;
                 }
-                int row = jmeterTree.getClosestRowForLocation(e.getX(), e.getY());
+                int row = performanceTree.getClosestRowForLocation(e.getX(), e.getY());
                 if (row < 0) {
                     return;
                 }
 
-                TreePath clickedPath = jmeterTree.getPathForLocation(e.getX(), e.getY());
+                TreePath clickedPath = performanceTree.getPathForLocation(e.getX(), e.getY());
                 alignSelectionForPopup(clickedPath);
 
                 DefaultMutableTreeNode currentRequestNode = currentRequestNodeSupplier.get();
@@ -289,7 +289,7 @@ final class PerformanceTreeInteractionSupport {
                     saveRequestNodeAction.accept(currentRequestNode);
                 }
 
-                TreePath[] selectedPaths = jmeterTree.getSelectionPaths();
+                TreePath[] selectedPaths = performanceTree.getSelectionPaths();
                 if (selectedPaths == null || selectedPaths.length == 0) {
                     return;
                 }
@@ -303,7 +303,7 @@ final class PerformanceTreeInteractionSupport {
                     );
                 }
                 updateMenuSeparators.run();
-                treeMenu.show(jmeterTree, e.getX(), e.getY());
+                treeMenu.show(performanceTree, e.getX(), e.getY());
             }
         });
     }
@@ -312,7 +312,7 @@ final class PerformanceTreeInteractionSupport {
         if (clickedPath == null) {
             return;
         }
-        TreePath[] selectedPaths = jmeterTree.getSelectionPaths();
+        TreePath[] selectedPaths = performanceTree.getSelectionPaths();
         boolean isInSelection = false;
         if (selectedPaths != null) {
             for (TreePath path : selectedPaths) {
@@ -323,7 +323,7 @@ final class PerformanceTreeInteractionSupport {
             }
         }
         if (!isInSelection) {
-            jmeterTree.setSelectionPath(clickedPath);
+            performanceTree.setSelectionPath(clickedPath);
         }
     }
 

@@ -20,14 +20,26 @@ public final class ScopedHttpBaseClientProvider implements HttpBaseClientProvide
     private final Supplier<HttpClientRuntimeConfig> configSupplier;
     private final Map<String, OkHttpClient> clients = new ConcurrentHashMap<>();
     private final CookieJar cookieJar;
+    private final CookieManager cookieManager;
 
     public ScopedHttpBaseClientProvider(Supplier<HttpClientRuntimeConfig> configSupplier) {
-        this(configSupplier, new JavaNetCookieJar(new CookieManager(null, CookiePolicy.ACCEPT_ALL)));
+        this(configSupplier, new CookieManager(null, CookiePolicy.ACCEPT_ALL));
+    }
+
+    private ScopedHttpBaseClientProvider(Supplier<HttpClientRuntimeConfig> configSupplier, CookieManager cookieManager) {
+        this(configSupplier, new JavaNetCookieJar(cookieManager), cookieManager);
     }
 
     public ScopedHttpBaseClientProvider(Supplier<HttpClientRuntimeConfig> configSupplier, CookieJar cookieJar) {
+        this(configSupplier, cookieJar, null);
+    }
+
+    private ScopedHttpBaseClientProvider(Supplier<HttpClientRuntimeConfig> configSupplier,
+                                         CookieJar cookieJar,
+                                         CookieManager cookieManager) {
         this.configSupplier = configSupplier == null ? HttpClientRuntimeConfig::defaults : configSupplier;
         this.cookieJar = cookieJar;
+        this.cookieManager = cookieManager;
     }
 
     @Override
@@ -56,6 +68,13 @@ public final class ScopedHttpBaseClientProvider implements HttpBaseClientProvide
             client.connectionPool().evictAll();
         }
         clients.clear();
+        clearCookies();
+    }
+
+    public void clearCookies() {
+        if (cookieManager != null) {
+            cookieManager.getCookieStore().removeAll();
+        }
     }
 
     private HttpClientRuntimeConfig resolveConfig() {

@@ -9,6 +9,9 @@ import okhttp3.sse.EventSource;
 import java.util.Set;
 
 public interface PerformanceNetworkRuntime extends HttpCallTracker, HttpBaseClientProvider {
+    default void beginRun() {
+    }
+
     Set<EventSource> activeSseSources();
 
     Set<WebSocket> activeWebSockets();
@@ -20,4 +23,7 @@ public interface PerformanceNetworkRuntime extends HttpCallTracker, HttpBaseClie
     int activeWebSocketCount();
 
     void cancelAll();
+
+    default void endRun() {
+    }
 }

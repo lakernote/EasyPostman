@@ -1,6 +1,6 @@
 package com.laker.postman.panel.performance.execution;
 
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.panel.performance.plan.PerformanceTestPlanCompiler;
@@ -16,7 +16,7 @@ public class PerformanceProtocolStageValidatorTest {
     @Test(description = "WebSocket 请求必须有启用的请求级 WS Connect 阶段")
     public void shouldRequireEnabledDirectWebSocketConnectStage() {
         DefaultMutableTreeNode requestNode = requestNode();
-        DefaultMutableTreeNode loopNode = new DefaultMutableTreeNode(new JMeterTreeNode("Loop", NodeType.LOOP));
+        DefaultMutableTreeNode loopNode = new DefaultMutableTreeNode(new PerformanceTreeNode("Loop", NodeType.LOOP));
         loopNode.add(node(NodeType.WS_CONNECT, true));
         requestNode.add(loopNode);
 
@@ -55,11 +55,11 @@ public class PerformanceProtocolStageValidatorTest {
     }
 
     private static DefaultMutableTreeNode requestNode() {
-        return new DefaultMutableTreeNode(new JMeterTreeNode("Request", NodeType.REQUEST));
+        return new DefaultMutableTreeNode(new PerformanceTreeNode("Request", NodeType.REQUEST));
     }
 
     private static DefaultMutableTreeNode node(NodeType type, boolean enabled) {
-        JMeterTreeNode data = new JMeterTreeNode(type.name(), type);
+        PerformanceTreeNode data = new PerformanceTreeNode(type.name(), type);
         data.enabled = enabled;
         return new DefaultMutableTreeNode(data);
     }

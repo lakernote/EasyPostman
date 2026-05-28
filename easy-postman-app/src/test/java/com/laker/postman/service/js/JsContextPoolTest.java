@@ -89,6 +89,30 @@ public class JsContextPoolTest {
         }
     }
 
+    @Test(description = "returned contexts should not retain user-created global variables")
+    public void shouldCleanupUserGlobalVariablesBeforeContextReuse() throws Exception {
+        JsContextPool pool = new JsContextPool(1);
+        JsContextPool.PooledContext borrowed = null;
+        try {
+            borrowed = pool.borrowContext(1000);
+            borrowed.getContext().eval("js", "globalThis.__performanceRunLeak = 'leaked';");
+            pool.returnContext(borrowed);
+            borrowed = null;
+
+            borrowed = pool.borrowContext(1000);
+            boolean retained = borrowed.getContext()
+                    .eval("js", "typeof globalThis.__performanceRunLeak !== 'undefined'")
+                    .asBoolean();
+
+            assertEquals(retained, false);
+        } finally {
+            if (borrowed != null) {
+                pool.returnContext(borrowed);
+            }
+            pool.shutdown();
+        }
+    }
+
     @Test(description = "creating a pooled context should not eagerly load large built-in libraries")
     public void shouldLoadBuiltinLibrariesLazily() throws Exception {
         JsLibraryLoader.clearCache();

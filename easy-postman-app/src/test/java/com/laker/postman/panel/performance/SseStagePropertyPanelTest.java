@@ -2,7 +2,7 @@ package com.laker.postman.panel.performance;
 
 import com.laker.postman.common.component.EasyTextField;
 import com.laker.postman.common.component.EasyJSpinner;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.SsePerformanceData;
 import com.laker.postman.test.AbstractSwingUiTest;
@@ -18,7 +18,7 @@ public class SseStagePropertyPanelTest extends AbstractSwingUiTest {
     @Test
     public void shouldHideEventFilterForFixedDurationMode() throws Exception {
         SseStagePropertyPanel panel = new SseStagePropertyPanel(SseStagePropertyPanel.Stage.READ);
-        JMeterTreeNode node = new JMeterTreeNode("SSE Read", NodeType.SSE_READ);
+        PerformanceTreeNode node = new PerformanceTreeNode("SSE Read", NodeType.SSE_READ);
         node.ssePerformanceData = new SsePerformanceData();
         node.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.FIXED_DURATION;
         node.ssePerformanceData.eventNameFilter = "done";
@@ -31,7 +31,7 @@ public class SseStagePropertyPanelTest extends AbstractSwingUiTest {
     @Test
     public void shouldHideEventFilterForFirstEventMode() throws Exception {
         SseStagePropertyPanel panel = new SseStagePropertyPanel(SseStagePropertyPanel.Stage.READ);
-        JMeterTreeNode node = new JMeterTreeNode("SSE Read", NodeType.SSE_READ);
+        PerformanceTreeNode node = new PerformanceTreeNode("SSE Read", NodeType.SSE_READ);
         node.ssePerformanceData = new SsePerformanceData();
         node.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.SINGLE_MESSAGE;
         node.ssePerformanceData.eventNameFilter = "done";
@@ -44,7 +44,7 @@ public class SseStagePropertyPanelTest extends AbstractSwingUiTest {
     @Test
     public void shouldShowOnlyCloseTimeoutForStreamClosedMode() throws Exception {
         SseStagePropertyPanel panel = new SseStagePropertyPanel(SseStagePropertyPanel.Stage.READ);
-        JMeterTreeNode node = new JMeterTreeNode("SSE Read", NodeType.SSE_READ);
+        PerformanceTreeNode node = new PerformanceTreeNode("SSE Read", NodeType.SSE_READ);
         node.ssePerformanceData = new SsePerformanceData();
         node.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.STREAM_CLOSED;
 
@@ -59,7 +59,7 @@ public class SseStagePropertyPanelTest extends AbstractSwingUiTest {
     @Test
     public void shouldUseOnlyReceiveTimeoutForMessageCountMode() throws Exception {
         SseStagePropertyPanel panel = new SseStagePropertyPanel(SseStagePropertyPanel.Stage.READ);
-        JMeterTreeNode node = new JMeterTreeNode("SSE Read", NodeType.SSE_READ);
+        PerformanceTreeNode node = new PerformanceTreeNode("SSE Read", NodeType.SSE_READ);
         node.ssePerformanceData = new SsePerformanceData();
         node.ssePerformanceData.completionMode = SsePerformanceData.CompletionMode.MESSAGE_COUNT;
 

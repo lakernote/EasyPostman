@@ -1,6 +1,5 @@
 package com.laker.postman.panel.performance.report;
 
-import com.laker.postman.performance.core.model.ApiMetadata;
 import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
 import com.laker.postman.performance.core.model.PerformanceReportSnapshot;
@@ -216,7 +215,7 @@ public final class PerformanceProtocolReportData {
         }
         String apiId = apiSnapshot.apiId();
         if (apiId != null && !apiId.isBlank()) {
-            return ApiMetadata.getName(apiId);
+            return apiId;
         }
         return totalRowName;
     }

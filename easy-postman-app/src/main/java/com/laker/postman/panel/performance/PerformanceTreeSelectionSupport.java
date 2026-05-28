@@ -9,7 +9,7 @@ import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
 import com.laker.postman.panel.performance.config.CsvDataSetPropertyPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
 import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
 import com.laker.postman.panel.performance.timer.TimerPropertyPanel;
 import com.laker.postman.util.JsonUtil;
@@ -26,7 +26,7 @@ import java.util.function.Consumer;
 @RequiredArgsConstructor
 final class PerformanceTreeSelectionSupport {
 
-    private final JTree jmeterTree;
+    private final JTree performanceTree;
     private final DefaultTreeModel treeModel;
     private final CardLayout propertyCardLayout;
     private final JPanel propertyPanel;
@@ -47,7 +47,7 @@ final class PerformanceTreeSelectionSupport {
     private final Consumer<DefaultMutableTreeNode> saveSseStageAction;
     private final Consumer<DefaultMutableTreeNode> saveWebSocketStageAction;
     private final Consumer<HttpRequestItem> switchRequestEditorAction;
-    private final BiConsumer<DefaultMutableTreeNode, JMeterTreeNode> syncRequestStructureAction;
+    private final BiConsumer<DefaultMutableTreeNode, PerformanceTreeNode> syncRequestStructureAction;
     private final Consumer<DefaultMutableTreeNode> currentRequestNodeSetter;
     private final String emptyCard;
     private final String threadGroupCard;
@@ -67,14 +67,14 @@ final class PerformanceTreeSelectionSupport {
     private DefaultMutableTreeNode lastNode;
 
     void install() {
-        jmeterTree.addTreeSelectionListener(e -> handleSelectionChange());
+        performanceTree.addTreeSelectionListener(e -> handleSelectionChange());
     }
 
     void persistLastSelection() {
-        if (lastNode == null || !(lastNode.getUserObject() instanceof JMeterTreeNode jtNode)) {
+        if (lastNode == null || !(lastNode.getUserObject() instanceof PerformanceTreeNode nodeData)) {
             return;
         }
-        switch (jtNode.type) {
+        switch (nodeData.type) {
             case THREAD_GROUP -> threadGroupPanel.saveThreadGroupData();
             case CSV_DATA_SET -> {
                 csvDataSetPanel.saveCsvDataSetData();
@@ -99,61 +99,61 @@ final class PerformanceTreeSelectionSupport {
     }
 
     private void handleSelectionChange() {
-        TreePath[] selectedPaths = jmeterTree.getSelectionPaths();
+        TreePath[] selectedPaths = performanceTree.getSelectionPaths();
         if (selectedPaths != null && selectedPaths.length > 1) {
             return;
         }
 
         persistLastSelection();
 
-        DefaultMutableTreeNode node = (DefaultMutableTreeNode) jmeterTree.getLastSelectedPathComponent();
-        if (node == null || !(node.getUserObject() instanceof JMeterTreeNode jtNode)) {
+        DefaultMutableTreeNode node = (DefaultMutableTreeNode) performanceTree.getLastSelectedPathComponent();
+        if (node == null || !(node.getUserObject() instanceof PerformanceTreeNode nodeData)) {
             showEmpty(node);
             return;
         }
 
-        showNode(node, jtNode);
+        showNode(node, nodeData);
         lastNode = node;
     }
 
-    private void showNode(DefaultMutableTreeNode node, JMeterTreeNode jtNode) {
-        switch (jtNode.type) {
+    private void showNode(DefaultMutableTreeNode node, PerformanceTreeNode nodeData) {
+        switch (nodeData.type) {
             case THREAD_GROUP -> {
                 propertyCardLayout.show(propertyPanel, threadGroupCard);
-                threadGroupPanel.setThreadGroupData(jtNode);
+                threadGroupPanel.setThreadGroupData(nodeData);
                 currentRequestNodeSetter.accept(null);
             }
             case CSV_DATA_SET -> {
                 propertyCardLayout.show(propertyPanel, csvDataSetCard);
-                csvDataSetPanel.setNode(jtNode);
+                csvDataSetPanel.setNode(nodeData);
                 currentRequestNodeSetter.accept(null);
             }
             case LOOP -> {
                 propertyCardLayout.show(propertyPanel, loopCard);
-                loopPanel.setLoopData(jtNode);
+                loopPanel.setLoopData(nodeData);
                 currentRequestNodeSetter.accept(null);
             }
             case REQUEST -> {
                 propertyCardLayout.show(propertyPanel, requestCard);
                 currentRequestNodeSetter.accept(node);
-                if (jtNode.httpRequestItem != null) {
-                    syncRequestStructureAction.accept(node, jtNode);
-                    switchRequestEditorAction.accept(jtNode.httpRequestItem);
+                if (nodeData.httpRequestItem != null) {
+                    syncRequestStructureAction.accept(node, nodeData);
+                    switchRequestEditorAction.accept(nodeData.httpRequestItem);
                 }
             }
             case ASSERTION -> {
                 propertyCardLayout.show(propertyPanel, assertionCard);
-                assertionPanel.setAssertionData(jtNode);
+                assertionPanel.setAssertionData(nodeData);
                 currentRequestNodeSetter.accept(null);
             }
             case EXTRACTOR -> {
                 propertyCardLayout.show(propertyPanel, extractorCard);
-                extractorPanel.setExtractorData(jtNode);
+                extractorPanel.setExtractorData(nodeData);
                 currentRequestNodeSetter.accept(null);
             }
             case TIMER -> {
                 propertyCardLayout.show(propertyPanel, timerCard);
-                timerPanel.setTimerData(jtNode);
+                timerPanel.setTimerData(nodeData);
                 currentRequestNodeSetter.accept(null);
             }
             case SSE_CONNECT -> showSsePanel(node, sseConnectCard, true);
@@ -161,17 +161,17 @@ final class PerformanceTreeSelectionSupport {
             case WS_CONNECT -> showWebSocketConnectPanel(node);
             case WS_SEND -> {
                 propertyCardLayout.show(propertyPanel, wsSendCard);
-                wsSendPanel.setNode(jtNode);
+                wsSendPanel.setNode(nodeData);
                 currentRequestNodeSetter.accept(null);
             }
             case WS_READ -> {
                 propertyCardLayout.show(propertyPanel, wsReadCard);
-                wsReadPanel.setNode(jtNode);
+                wsReadPanel.setNode(nodeData);
                 currentRequestNodeSetter.accept(null);
             }
             case WS_CLOSE -> {
                 propertyCardLayout.show(propertyPanel, wsCloseCard);
-                wsClosePanel.setNode(jtNode);
+                wsClosePanel.setNode(nodeData);
                 currentRequestNodeSetter.accept(null);
             }
             default -> showEmpty(node);
@@ -187,15 +187,15 @@ final class PerformanceTreeSelectionSupport {
     private void showSsePanel(DefaultMutableTreeNode node, String cardName, boolean connectStage) {
         DefaultMutableTreeNode requestNode = treeSupport.getParentRequestNode(node);
         if (requestNode != null
-                && node.getUserObject() instanceof JMeterTreeNode stageJtNode) {
-            if (stageJtNode.ssePerformanceData == null) {
-                stageJtNode.ssePerformanceData = new SsePerformanceData();
+                && node.getUserObject() instanceof PerformanceTreeNode stageNodeData) {
+            if (stageNodeData.ssePerformanceData == null) {
+                stageNodeData.ssePerformanceData = new SsePerformanceData();
             }
             propertyCardLayout.show(propertyPanel, cardName);
             if (connectStage) {
-                sseConnectPanel.setNode(stageJtNode);
+                sseConnectPanel.setNode(stageNodeData);
             } else {
-                sseReadPanel.setNode(stageJtNode);
+                sseReadPanel.setNode(stageNodeData);
             }
         } else {
             propertyCardLayout.show(propertyPanel, emptyCard);
@@ -206,16 +206,16 @@ final class PerformanceTreeSelectionSupport {
     private void showWebSocketConnectPanel(DefaultMutableTreeNode node) {
         DefaultMutableTreeNode requestNode = treeSupport.getParentRequestNode(node);
         if (requestNode != null
-                && requestNode.getUserObject() instanceof JMeterTreeNode requestJtNode
-                && node.getUserObject() instanceof JMeterTreeNode connectJtNode) {
-            if (connectJtNode.webSocketPerformanceData == null && requestJtNode.webSocketPerformanceData != null) {
-                connectJtNode.webSocketPerformanceData = JsonUtil.deepCopy(
-                        requestJtNode.webSocketPerformanceData,
+                && requestNode.getUserObject() instanceof PerformanceTreeNode requestNodeData
+                && node.getUserObject() instanceof PerformanceTreeNode connectNodeData) {
+            if (connectNodeData.webSocketPerformanceData == null && requestNodeData.webSocketPerformanceData != null) {
+                connectNodeData.webSocketPerformanceData = JsonUtil.deepCopy(
+                        requestNodeData.webSocketPerformanceData,
                         WebSocketPerformanceData.class
                 );
             }
             propertyCardLayout.show(propertyPanel, wsConnectCard);
-            wsConnectPanel.setNode(connectJtNode);
+            wsConnectPanel.setNode(connectNodeData);
         } else {
             propertyCardLayout.show(propertyPanel, emptyCard);
         }

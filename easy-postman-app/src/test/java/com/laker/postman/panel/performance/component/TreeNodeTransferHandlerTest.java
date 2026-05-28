@@ -1,6 +1,6 @@
 package com.laker.postman.panel.performance.component;
 
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.model.NodeType;
 import org.testng.annotations.Test;
 
@@ -22,8 +22,8 @@ public class TreeNodeTransferHandlerTest {
     }
 
     private static int sourceActionFor(NodeType type) {
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new JMeterTreeNode("Plan", NodeType.ROOT));
-        DefaultMutableTreeNode child = new DefaultMutableTreeNode(new JMeterTreeNode(type.name(), type));
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new PerformanceTreeNode("Plan", NodeType.ROOT));
+        DefaultMutableTreeNode child = new DefaultMutableTreeNode(new PerformanceTreeNode(type.name(), type));
         root.add(child);
         DefaultTreeModel treeModel = new DefaultTreeModel(root);
         JTree tree = new JTree(treeModel);

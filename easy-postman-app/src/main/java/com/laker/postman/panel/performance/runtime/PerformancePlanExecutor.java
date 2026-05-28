@@ -20,7 +20,7 @@ public final class PerformancePlanExecutor {
 
     public PerformancePlanExecutor(BooleanSupplier runningSupplier,
                                    PerformanceSamplerExecutor samplerExecutor) {
-        this(runningSupplier, samplerExecutor, delayMs -> TimeUnit.MILLISECONDS.sleep(delayMs));
+        this(runningSupplier, samplerExecutor, TimeUnit.MILLISECONDS::sleep);
     }
 
     public PerformancePlanExecutor(BooleanSupplier runningSupplier,

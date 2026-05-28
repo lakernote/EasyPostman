@@ -6,7 +6,7 @@ import com.laker.postman.performance.core.config.CsvDataSetData;
 import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.panel.performance.tree.PerformanceTreeNodeTitleFormatter;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.IconUtil;
@@ -49,7 +49,7 @@ public class CsvDataSetPropertyPanel extends JPanel {
     private final JTable previewTable;
     private final JScrollPane previewScrollPane;
     private final DefaultTableModel previewModel;
-    private JMeterTreeNode currentNode;
+    private PerformanceTreeNode currentNode;
     private Runnable changeListener;
     private boolean restoring;
 
@@ -143,7 +143,7 @@ public class CsvDataSetPropertyPanel extends JPanel {
         refreshStateView();
     }
 
-    public void setNode(JMeterTreeNode node) {
+    public void setNode(PerformanceTreeNode node) {
         currentNode = node;
         restoring = true;
         try {

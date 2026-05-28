@@ -1,19 +1,15 @@
 package com.laker.postman.panel.performance.runtime;
 
-import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
-import com.laker.postman.performance.core.plan.PerformanceTestPlan;
-import com.laker.postman.performance.core.runtime.PerformanceCoreExecutionEngine;
-import com.laker.postman.performance.core.runtime.PerformanceCoreResultSink;
-import com.laker.postman.performance.core.runtime.PerformanceNetworkControl;
-import com.laker.postman.performance.core.runtime.PerformanceRunListener;
-import com.laker.postman.performance.core.runtime.PerformanceVirtualUserCoordinator;
-
-
 import com.laker.postman.panel.performance.execution.DefaultPerformanceNetworkRuntime;
 import com.laker.postman.panel.performance.execution.PerformanceExecutionConfig;
 import com.laker.postman.panel.performance.execution.PerformanceNetworkRuntime;
 import com.laker.postman.panel.performance.execution.PerformanceRequestExecutor;
 import com.laker.postman.panel.performance.result.PerformanceResultCollector;
+import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
+import com.laker.postman.performance.core.plan.PerformanceTestPlan;
+import com.laker.postman.performance.core.runtime.*;
+import com.laker.postman.service.js.JsScriptExecutor;
+import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.service.variable.ExecutionVariableContext;
 
 import java.util.List;
@@ -25,6 +21,7 @@ public final class PerformanceExecutionEngine {
     private final PerformanceNetworkRuntime networkRuntime;
     private final PerformanceCoreExecutionEngine<ExecutionVariableContext> delegate;
     private volatile PerformanceCoreResultSink resultSink = PerformanceCoreResultSink.NOOP;
+    private volatile JsScriptExecutor.PooledScriptExecutor runScriptExecutor;
 
     public PerformanceExecutionEngine(BooleanSupplier runningSupplier,
                                       BooleanSupplier efficientModeSupplier,
@@ -45,23 +42,6 @@ public final class PerformanceExecutionEngine {
                 PerformanceExecutionConfig.supplying(efficientModeSupplier, responseBodyPreviewLimitKbSupplier, () -> false),
                 resultCollector,
                 runListener);
-    }
-
-    public PerformanceExecutionEngine(BooleanSupplier runningSupplier,
-                                      BooleanSupplier efficientModeSupplier,
-                                      IntSupplier responseBodyPreviewLimitKbSupplier,
-                                      PerformanceResultCollector resultCollector,
-                                      PerformanceRunListener runListener,
-                                      BooleanSupplier eventLoggingEnabledSupplier) {
-        this(
-                runningSupplier,
-                efficientModeSupplier,
-                responseBodyPreviewLimitKbSupplier,
-                resultCollector,
-                runListener,
-                eventLoggingEnabledSupplier,
-                new DefaultPerformanceNetworkRuntime()
-        );
     }
 
     public PerformanceExecutionEngine(BooleanSupplier runningSupplier,
@@ -104,6 +84,7 @@ public final class PerformanceExecutionEngine {
         PerformanceExecutionConfig resolvedConfig = executionConfig == null
                 ? PerformanceExecutionConfig.DEFAULT
                 : executionConfig;
+        resolvedConfig = resolvedConfig.withScriptExecutorSupplier(this::currentScriptExecutor);
         PerformanceVirtualUserCoordinator virtualUsers = new PerformanceVirtualUserCoordinator();
         PerformanceRealtimeMetrics realtimeMetrics = new PerformanceRealtimeMetrics();
         PerformanceRequestExecutor requestExecutor = new PerformanceRequestExecutor(
@@ -167,6 +148,8 @@ public final class PerformanceExecutionEngine {
     }
 
     public void beginRun(long startTime, PerformanceCoreResultSink resultSink) {
+        networkRuntime.beginRun();
+        startRunScriptExecutor();
         this.resultSink = resultSink == null ? PerformanceCoreResultSink.NOOP : resultSink;
         delegate.beginRun(startTime, this.resultSink);
     }
@@ -204,8 +187,13 @@ public final class PerformanceExecutionEngine {
     }
 
     public void endRun() {
-        resultSink = PerformanceCoreResultSink.NOOP;
-        delegate.endRun();
+        try {
+            resultSink = PerformanceCoreResultSink.NOOP;
+            delegate.endRun();
+        } finally {
+            closeRunScriptExecutor();
+            networkRuntime.endRun();
+        }
     }
 
     public static void joinThreadGroupThreads(List<Thread> threadGroupThreads, Runnable cancellationAction) {
@@ -238,5 +226,25 @@ public final class PerformanceExecutionEngine {
     private PerformanceCoreResultSink currentResultSink() {
         PerformanceCoreResultSink current = resultSink;
         return current == null ? PerformanceCoreResultSink.NOOP : current;
+    }
+
+    private void startRunScriptExecutor() {
+        closeRunScriptExecutor();
+        runScriptExecutor = new JsScriptExecutor.PooledScriptExecutor(
+                SettingManager.getPerformanceJsContextPoolSize(),
+                SettingManager.getPerformanceJsContextAcquireTimeoutMs()
+        );
+    }
+
+    private JsScriptExecutor.ScriptExecutor currentScriptExecutor() {
+        return runScriptExecutor;
+    }
+
+    private void closeRunScriptExecutor() {
+        JsScriptExecutor.PooledScriptExecutor executor = runScriptExecutor;
+        runScriptExecutor = null;
+        if (executor != null) {
+            executor.close();
+        }
     }
 }

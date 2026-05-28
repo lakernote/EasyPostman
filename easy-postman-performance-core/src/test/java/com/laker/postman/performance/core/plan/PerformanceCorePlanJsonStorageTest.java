@@ -4,6 +4,7 @@ import com.laker.postman.performance.core.controller.LoopData;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.performance.core.model.WebSocketPerformanceData;
+import com.laker.postman.performance.core.request.PerformanceAuthType;
 import com.laker.postman.performance.core.request.PerformanceRequestExecutionScopeSnapshot;
 import com.laker.postman.performance.core.request.PerformanceRequestFormDataPart;
 import com.laker.postman.performance.core.request.PerformanceRequestKeyValue;
@@ -94,7 +95,7 @@ public class PerformanceCorePlanJsonStorageTest {
                 .urlencoded(List.of(new PerformanceRequestKeyValue(false, "ignored", "true")))
                 .bodyType("json")
                 .body("{\"hello\":\"world\"}")
-                .authType("Bearer Token")
+                .authType(PerformanceAuthType.BEARER)
                 .authToken("token")
                 .followRedirects(false)
                 .cookieJarEnabled(true)

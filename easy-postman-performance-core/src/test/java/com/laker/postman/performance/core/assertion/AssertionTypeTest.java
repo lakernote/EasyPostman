@@ -9,7 +9,7 @@ import static org.testng.Assert.assertTrue;
 public class AssertionTypeTest {
 
     @Test
-    public void shouldResolveLegacyStorageValuesToEnums() {
+    public void shouldResolveStorageValuesToEnums() {
         assertEquals(AssertionType.fromStorageValue("Response Code"), AssertionType.RESPONSE_CODE);
         assertEquals(AssertionType.fromStorageValue("Contains"), AssertionType.CONTAINS);
         assertEquals(AssertionType.fromStorageValue("JSONPath"), AssertionType.JSON_PATH);

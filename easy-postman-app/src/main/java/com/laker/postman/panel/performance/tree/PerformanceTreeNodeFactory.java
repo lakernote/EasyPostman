@@ -8,7 +8,7 @@ import com.laker.postman.performance.core.model.WebSocketPerformanceData;
 
 
 import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.experimental.UtilityClass;
@@ -20,14 +20,14 @@ public class PerformanceTreeNodeFactory {
 
     public void addDefaultRequest(DefaultMutableTreeNode root) {
         DefaultMutableTreeNode group = new DefaultMutableTreeNode(
-                new JMeterTreeNode(I18nUtil.getMessage(MessageKeys.PERFORMANCE_THREAD_GROUP), NodeType.THREAD_GROUP)
+                new PerformanceTreeNode(I18nUtil.getMessage(MessageKeys.PERFORMANCE_THREAD_GROUP), NodeType.THREAD_GROUP)
         );
         HttpRequestItem defaultReq = new HttpRequestItem();
         defaultReq.setName(I18nUtil.getMessage(MessageKeys.PERFORMANCE_DEFAULT_REQUEST));
         defaultReq.setMethod("GET");
         defaultReq.setUrl("https://www.baidu.com");
         DefaultMutableTreeNode req = new DefaultMutableTreeNode(
-                new JMeterTreeNode(defaultReq.getName(), NodeType.REQUEST, defaultReq)
+                new PerformanceTreeNode(defaultReq.getName(), NodeType.REQUEST, defaultReq)
         );
         group.add(req);
         root.add(group);
@@ -36,40 +36,40 @@ public class PerformanceTreeNodeFactory {
     DefaultMutableTreeNode loopNode() {
         LoopData data = new LoopData();
         return new DefaultMutableTreeNode(
-                new JMeterTreeNode(PerformanceTreeNodeTitleFormatter.loopTitle(data), NodeType.LOOP, data)
+                new PerformanceTreeNode(PerformanceTreeNodeTitleFormatter.loopTitle(data), NodeType.LOOP, data)
         );
     }
 
     public DefaultMutableTreeNode csvDataSetNode() {
-        return new DefaultMutableTreeNode(new JMeterTreeNode(
+        return new DefaultMutableTreeNode(new PerformanceTreeNode(
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_CSV_DATA_SET_NODE),
                 NodeType.CSV_DATA_SET
         ));
     }
 
     DefaultMutableTreeNode timerNode() {
-        return new DefaultMutableTreeNode(new JMeterTreeNode("Timer", NodeType.TIMER));
+        return new DefaultMutableTreeNode(new PerformanceTreeNode("Timer", NodeType.TIMER));
     }
 
     public DefaultMutableTreeNode extractorNode() {
         ExtractorData data = new ExtractorData();
         return new DefaultMutableTreeNode(
-                new JMeterTreeNode(PerformanceTreeNodeTitleFormatter.extractorTitle(data), NodeType.EXTRACTOR, data)
+                new PerformanceTreeNode(PerformanceTreeNodeTitleFormatter.extractorTitle(data), NodeType.EXTRACTOR, data)
         );
     }
 
     DefaultMutableTreeNode sseStageNode(NodeType type) {
-        JMeterTreeNode nodeData;
+        PerformanceTreeNode nodeData;
         switch (type) {
             case SSE_CONNECT -> {
-                nodeData = new JMeterTreeNode(
+                nodeData = new PerformanceTreeNode(
                         I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_NODE_CONNECT),
                         NodeType.SSE_CONNECT
                 );
                 nodeData.ssePerformanceData = new SsePerformanceData();
             }
             case SSE_READ -> {
-                nodeData = new JMeterTreeNode(
+                nodeData = new PerformanceTreeNode(
                         I18nUtil.getMessage(MessageKeys.PERFORMANCE_SSE_NODE_READ),
                         NodeType.SSE_READ
                 );
@@ -82,14 +82,14 @@ public class PerformanceTreeNodeFactory {
     }
 
     DefaultMutableTreeNode webSocketStepNode(NodeType type, WebSocketPerformanceData requestDefaults) {
-        JMeterTreeNode nodeData;
+        PerformanceTreeNode nodeData;
         switch (type) {
             case WS_CONNECT -> {
-                nodeData = new JMeterTreeNode(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_CONNECT), NodeType.WS_CONNECT);
+                nodeData = new PerformanceTreeNode(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_CONNECT), NodeType.WS_CONNECT);
                 nodeData.webSocketPerformanceData = copyWebSocketData(requestDefaults);
             }
             case WS_SEND -> {
-                nodeData = new JMeterTreeNode(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_SEND), NodeType.WS_SEND);
+                nodeData = new PerformanceTreeNode(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_SEND), NodeType.WS_SEND);
                 WebSocketPerformanceData stepData = copyWebSocketData(requestDefaults);
                 stepData.sendMode = WebSocketPerformanceData.SendMode.REQUEST_BODY_ON_CONNECT;
                 stepData.sendCount = 1;
@@ -98,7 +98,7 @@ public class PerformanceTreeNodeFactory {
                 nodeData.name = PerformanceTreeNodeTitleFormatter.webSocketSendTitle(stepData);
             }
             case WS_READ -> {
-                nodeData = new JMeterTreeNode(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_READ), NodeType.WS_READ);
+                nodeData = new PerformanceTreeNode(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_READ), NodeType.WS_READ);
                 WebSocketPerformanceData stepData = copyWebSocketData(requestDefaults);
                 stepData.completionMode = WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE;
                 stepData.firstMessageTimeoutMs = Math.max(100, stepData.firstMessageTimeoutMs);
@@ -107,7 +107,7 @@ public class PerformanceTreeNodeFactory {
                 nodeData.name = PerformanceTreeNodeTitleFormatter.webSocketReadTitle(stepData);
             }
             case WS_CLOSE -> {
-                nodeData = new JMeterTreeNode(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_CLOSE), NodeType.WS_CLOSE);
+                nodeData = new PerformanceTreeNode(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_CLOSE), NodeType.WS_CLOSE);
                 nodeData.webSocketPerformanceData = copyWebSocketData(requestDefaults);
             }
             default -> throw new IllegalArgumentException("Unsupported WebSocket step type: " + type);

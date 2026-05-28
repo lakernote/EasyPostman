@@ -5,7 +5,7 @@ import com.laker.postman.performance.core.model.NodeType;
 
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.panel.performance.model.PerformanceProtocolRules;
 
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -29,7 +29,7 @@ public final class PerformanceTreeRules {
 
     public static boolean canAcceptChild(DefaultMutableTreeNode parentNode, DefaultMutableTreeNode childNode) {
         if (parentNode == null || childNode == null
-                || !(childNode.getUserObject() instanceof JMeterTreeNode childData)) {
+                || !(childNode.getUserObject() instanceof PerformanceTreeNode childData)) {
             return false;
         }
         return switch (childData.type) {
@@ -81,48 +81,48 @@ public final class PerformanceTreeRules {
     }
 
     public static boolean isRequestContainerLoop(DefaultMutableTreeNode node) {
-        if (node == null || !(node.getUserObject() instanceof JMeterTreeNode jtNode) || jtNode.type != NodeType.LOOP) {
+        if (node == null || !(node.getUserObject() instanceof PerformanceTreeNode nodeData) || nodeData.type != NodeType.LOOP) {
             return false;
         }
         return getParentRequestNode(node) == null;
     }
 
     public static boolean isSseStageContainerTarget(DefaultMutableTreeNode node) {
-        if (node == null || !(node.getUserObject() instanceof JMeterTreeNode jtNode)) {
+        if (node == null || !(node.getUserObject() instanceof PerformanceTreeNode nodeData)) {
             return false;
         }
-        return jtNode.type == NodeType.REQUEST && isSsePerfRequest(jtNode.httpRequestItem);
+        return nodeData.type == NodeType.REQUEST && isSsePerfRequest(nodeData.httpRequestItem);
     }
 
     public static boolean isWebSocketRequestTarget(DefaultMutableTreeNode node) {
-        if (node == null || !(node.getUserObject() instanceof JMeterTreeNode jtNode)) {
+        if (node == null || !(node.getUserObject() instanceof PerformanceTreeNode nodeData)) {
             return false;
         }
-        return jtNode.type == NodeType.REQUEST && isWebSocketPerfRequest(jtNode.httpRequestItem);
+        return nodeData.type == NodeType.REQUEST && isWebSocketPerfRequest(nodeData.httpRequestItem);
     }
 
     public static boolean isWebSocketStepContainerTarget(DefaultMutableTreeNode node) {
-        if (node == null || !(node.getUserObject() instanceof JMeterTreeNode jtNode)) {
+        if (node == null || !(node.getUserObject() instanceof PerformanceTreeNode nodeData)) {
             return false;
         }
-        if (jtNode.type == NodeType.REQUEST) {
+        if (nodeData.type == NodeType.REQUEST) {
             return isWebSocketRequestTarget(node);
         }
-        return jtNode.type == NodeType.LOOP && getParentWebSocketRequestNode(node) != null;
+        return nodeData.type == NodeType.LOOP && getParentWebSocketRequestNode(node) != null;
     }
 
     private static boolean isHttpRequestPostProcessorTarget(DefaultMutableTreeNode node) {
-        if (node == null || !(node.getUserObject() instanceof JMeterTreeNode jtNode) || jtNode.type != NodeType.REQUEST) {
+        if (node == null || !(node.getUserObject() instanceof PerformanceTreeNode nodeData) || nodeData.type != NodeType.REQUEST) {
             return false;
         }
-        return !isSsePerfRequest(jtNode.httpRequestItem) && !isWebSocketPerfRequest(jtNode.httpRequestItem);
+        return !isSsePerfRequest(nodeData.httpRequestItem) && !isWebSocketPerfRequest(nodeData.httpRequestItem);
     }
 
     public static DefaultMutableTreeNode getParentRequestNode(DefaultMutableTreeNode node) {
         DefaultMutableTreeNode current = node;
         while (current != null) {
             Object userObj = current.getUserObject();
-            if (userObj instanceof JMeterTreeNode jtNode && jtNode.type == NodeType.REQUEST) {
+            if (userObj instanceof PerformanceTreeNode nodeData && nodeData.type == NodeType.REQUEST) {
                 return current;
             }
             current = (DefaultMutableTreeNode) current.getParent();
@@ -132,16 +132,16 @@ public final class PerformanceTreeRules {
 
     public static DefaultMutableTreeNode getParentWebSocketRequestNode(DefaultMutableTreeNode node) {
         DefaultMutableTreeNode requestNode = getParentRequestNode(node);
-        if (requestNode == null || !(requestNode.getUserObject() instanceof JMeterTreeNode requestJtNode)) {
+        if (requestNode == null || !(requestNode.getUserObject() instanceof PerformanceTreeNode requestNodeData)) {
             return null;
         }
-        return isWebSocketPerfRequest(requestJtNode.httpRequestItem) ? requestNode : null;
+        return isWebSocketPerfRequest(requestNodeData.httpRequestItem) ? requestNode : null;
     }
 
     public static boolean isNodeType(DefaultMutableTreeNode node, NodeType type) {
         return node != null
-                && node.getUserObject() instanceof JMeterTreeNode jtNode
-                && jtNode.type == type;
+                && node.getUserObject() instanceof PerformanceTreeNode nodeData
+                && nodeData.type == type;
     }
 
     public static boolean containsAnyNodeType(DefaultMutableTreeNode node, NodeType... types) {
@@ -157,7 +157,7 @@ public final class PerformanceTreeRules {
         if (node == null) {
             return false;
         }
-        if (node.getUserObject() instanceof JMeterTreeNode jtNode && jtNode.type == type) {
+        if (node.getUserObject() instanceof PerformanceTreeNode nodeData && nodeData.type == type) {
             return true;
         }
         for (int i = 0; i < node.getChildCount(); i++) {

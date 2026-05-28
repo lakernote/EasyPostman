@@ -29,19 +29,23 @@ public class SettingManager {
     private static final int DEFAULT_SCRIPT_REMOTE_CONNECT_TIMEOUT_MS = 3000;
     private static final int DEFAULT_SCRIPT_REMOTE_READ_TIMEOUT_MS = 5000;
     private static final int DEFAULT_SCRIPT_REMOTE_MAX_BYTES = 512 * 1024;
-    private static final int DEFAULT_JMETER_SLOW_REQUEST_THRESHOLD_MS = 0;
-    private static final int DEFAULT_JMETER_JS_CONTEXT_ACQUIRE_TIMEOUT_MS = 1_000;
-    private static final int DEFAULT_JMETER_MAX_IDLE_CONNECTIONS = 100;
-    private static final long DEFAULT_JMETER_KEEP_ALIVE_SECONDS = 60L;
-    private static final int DEFAULT_JMETER_MAX_REQUESTS = 1000;
-    private static final int DEFAULT_JMETER_MAX_REQUESTS_PER_HOST = 1000;
+    private static final int DEFAULT_PERFORMANCE_SLOW_REQUEST_THRESHOLD_MS = 0;
+    private static final int DEFAULT_PERFORMANCE_JS_CONTEXT_ACQUIRE_TIMEOUT_MS = 1_000;
+    private static final int DEFAULT_PERFORMANCE_MAX_IDLE_CONNECTIONS = 100;
+    private static final long DEFAULT_PERFORMANCE_KEEP_ALIVE_SECONDS = 60L;
+    private static final int DEFAULT_PERFORMANCE_MAX_REQUESTS = 1000;
+    private static final int DEFAULT_PERFORMANCE_MAX_REQUESTS_PER_HOST = 1000;
     private static final String AUTO_UPDATE_CHECK_ENABLED_KEY = "auto_update_check_enabled";
     private static final String AUTO_UPDATE_CHECK_FREQUENCY_KEY = "auto_update_check_frequency";
     private static final String LAST_UPDATE_CHECK_TIME_KEY = "last_update_check_time";
     private static final String UPDATE_SOURCE_PREFERENCE_KEY = "update_source_preference";
-    private static final String JMETER_SLOW_REQUEST_THRESHOLD_KEY = "jmeter_slow_request_threshold";
-    private static final String JMETER_JS_CONTEXT_POOL_SIZE_KEY = "jmeter_js_context_pool_size";
-    private static final String JMETER_JS_CONTEXT_ACQUIRE_TIMEOUT_MS_KEY = "jmeter_js_context_acquire_timeout_ms";
+    private static final String PERFORMANCE_MAX_IDLE_CONNECTIONS_KEY = "performance_max_idle_connections";
+    private static final String PERFORMANCE_KEEP_ALIVE_SECONDS_KEY = "performance_keep_alive_seconds";
+    private static final String PERFORMANCE_MAX_REQUESTS_KEY = "performance_max_requests";
+    private static final String PERFORMANCE_MAX_REQUESTS_PER_HOST_KEY = "performance_max_requests_per_host";
+    private static final String PERFORMANCE_SLOW_REQUEST_THRESHOLD_KEY = "performance_slow_request_threshold";
+    private static final String PERFORMANCE_JS_CONTEXT_POOL_SIZE_KEY = "performance_js_context_pool_size";
+    private static final String PERFORMANCE_JS_CONTEXT_ACQUIRE_TIMEOUT_MS_KEY = "performance_js_context_acquire_timeout_ms";
     private static final String PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB_KEY = "performance_response_body_preview_limit_kb";
     private static final String PERFORMANCE_RESULT_ROW_LIMIT_KEY = "performance_result_row_limit";
     private static final Object SETTINGS_IO_LOCK = new Object();
@@ -219,81 +223,81 @@ public class SettingManager {
         setAndSaveProperty("max_download_size", String.valueOf(size));
     }
 
-    public static int getJmeterMaxIdleConnections() {
-        return getPositiveIntSetting("jmeter_max_idle_connections", DEFAULT_JMETER_MAX_IDLE_CONNECTIONS);
+    public static int getPerformanceMaxIdleConnections() {
+        return getPositiveIntSetting(PERFORMANCE_MAX_IDLE_CONNECTIONS_KEY, DEFAULT_PERFORMANCE_MAX_IDLE_CONNECTIONS);
     }
 
-    public static void setJmeterMaxIdleConnections(int maxIdle) {
-        setAndSaveProperty("jmeter_max_idle_connections",
-                String.valueOf(maxIdle > 0 ? maxIdle : DEFAULT_JMETER_MAX_IDLE_CONNECTIONS));
+    public static void setPerformanceMaxIdleConnections(int maxIdle) {
+        setAndSaveProperty(PERFORMANCE_MAX_IDLE_CONNECTIONS_KEY,
+                String.valueOf(maxIdle > 0 ? maxIdle : DEFAULT_PERFORMANCE_MAX_IDLE_CONNECTIONS));
     }
 
-    public static long getJmeterKeepAliveSeconds() {
-        return getPositiveLongSetting("jmeter_keep_alive_seconds", DEFAULT_JMETER_KEEP_ALIVE_SECONDS);
+    public static long getPerformanceKeepAliveSeconds() {
+        return getPositiveLongSetting(PERFORMANCE_KEEP_ALIVE_SECONDS_KEY, DEFAULT_PERFORMANCE_KEEP_ALIVE_SECONDS);
     }
 
-    public static void setJmeterKeepAliveSeconds(long seconds) {
-        setAndSaveProperty("jmeter_keep_alive_seconds",
-                String.valueOf(seconds > 0 ? seconds : DEFAULT_JMETER_KEEP_ALIVE_SECONDS));
+    public static void setPerformanceKeepAliveSeconds(long seconds) {
+        setAndSaveProperty(PERFORMANCE_KEEP_ALIVE_SECONDS_KEY,
+                String.valueOf(seconds > 0 ? seconds : DEFAULT_PERFORMANCE_KEEP_ALIVE_SECONDS));
     }
 
-    public static int getJmeterMaxRequests() {
-        return getPositiveIntSetting("jmeter_max_requests", DEFAULT_JMETER_MAX_REQUESTS);
+    public static int getPerformanceMaxRequests() {
+        return getPositiveIntSetting(PERFORMANCE_MAX_REQUESTS_KEY, DEFAULT_PERFORMANCE_MAX_REQUESTS);
     }
 
-    public static void setJmeterMaxRequests(int maxRequests) {
-        setAndSaveProperty("jmeter_max_requests",
-                String.valueOf(maxRequests > 0 ? maxRequests : DEFAULT_JMETER_MAX_REQUESTS));
+    public static void setPerformanceMaxRequests(int maxRequests) {
+        setAndSaveProperty(PERFORMANCE_MAX_REQUESTS_KEY,
+                String.valueOf(maxRequests > 0 ? maxRequests : DEFAULT_PERFORMANCE_MAX_REQUESTS));
     }
 
-    public static int getJmeterMaxRequestsPerHost() {
-        return getPositiveIntSetting("jmeter_max_requests_per_host", DEFAULT_JMETER_MAX_REQUESTS_PER_HOST);
+    public static int getPerformanceMaxRequestsPerHost() {
+        return getPositiveIntSetting(PERFORMANCE_MAX_REQUESTS_PER_HOST_KEY, DEFAULT_PERFORMANCE_MAX_REQUESTS_PER_HOST);
     }
 
-    public static void setJmeterMaxRequestsPerHost(int maxRequestsPerHost) {
-        setAndSaveProperty("jmeter_max_requests_per_host",
-                String.valueOf(maxRequestsPerHost > 0 ? maxRequestsPerHost : DEFAULT_JMETER_MAX_REQUESTS_PER_HOST));
+    public static void setPerformanceMaxRequestsPerHost(int maxRequestsPerHost) {
+        setAndSaveProperty(PERFORMANCE_MAX_REQUESTS_PER_HOST_KEY,
+                String.valueOf(maxRequestsPerHost > 0 ? maxRequestsPerHost : DEFAULT_PERFORMANCE_MAX_REQUESTS_PER_HOST));
     }
 
-    public static int getDefaultJmeterJsContextPoolSize() {
+    public static int getDefaultPerformanceJsContextPoolSize() {
         return Math.max(16, Runtime.getRuntime().availableProcessors() * 4);
     }
 
-    public static int getJmeterJsContextPoolSize() {
-        return getPositiveIntSetting(JMETER_JS_CONTEXT_POOL_SIZE_KEY, getDefaultJmeterJsContextPoolSize());
+    public static int getPerformanceJsContextPoolSize() {
+        return getPositiveIntSetting(PERFORMANCE_JS_CONTEXT_POOL_SIZE_KEY, getDefaultPerformanceJsContextPoolSize());
     }
 
-    public static void setJmeterJsContextPoolSize(int poolSize) {
-        int normalized = poolSize > 0 ? poolSize : getDefaultJmeterJsContextPoolSize();
-        setAndSaveProperty(JMETER_JS_CONTEXT_POOL_SIZE_KEY, String.valueOf(normalized));
+    public static void setPerformanceJsContextPoolSize(int poolSize) {
+        int normalized = poolSize > 0 ? poolSize : getDefaultPerformanceJsContextPoolSize();
+        setAndSaveProperty(PERFORMANCE_JS_CONTEXT_POOL_SIZE_KEY, String.valueOf(normalized));
     }
 
-    public static int getJmeterJsContextAcquireTimeoutMs() {
+    public static int getPerformanceJsContextAcquireTimeoutMs() {
         return getPositiveIntSetting(
-                JMETER_JS_CONTEXT_ACQUIRE_TIMEOUT_MS_KEY,
-                DEFAULT_JMETER_JS_CONTEXT_ACQUIRE_TIMEOUT_MS
+                PERFORMANCE_JS_CONTEXT_ACQUIRE_TIMEOUT_MS_KEY,
+                DEFAULT_PERFORMANCE_JS_CONTEXT_ACQUIRE_TIMEOUT_MS
         );
     }
 
-    public static void setJmeterJsContextAcquireTimeoutMs(int timeoutMs) {
-        int normalized = timeoutMs > 0 ? timeoutMs : DEFAULT_JMETER_JS_CONTEXT_ACQUIRE_TIMEOUT_MS;
-        setAndSaveProperty(JMETER_JS_CONTEXT_ACQUIRE_TIMEOUT_MS_KEY, String.valueOf(normalized));
+    public static void setPerformanceJsContextAcquireTimeoutMs(int timeoutMs) {
+        int normalized = timeoutMs > 0 ? timeoutMs : DEFAULT_PERFORMANCE_JS_CONTEXT_ACQUIRE_TIMEOUT_MS;
+        setAndSaveProperty(PERFORMANCE_JS_CONTEXT_ACQUIRE_TIMEOUT_MS_KEY, String.valueOf(normalized));
     }
 
-    public static int getJmeterSlowRequestThreshold() {
-        String val = props.getProperty(JMETER_SLOW_REQUEST_THRESHOLD_KEY);
+    public static int getPerformanceSlowRequestThreshold() {
+        String val = props.getProperty(PERFORMANCE_SLOW_REQUEST_THRESHOLD_KEY);
         if (val != null) {
             try {
                 return Math.max(0, Integer.parseInt(val));
             } catch (NumberFormatException e) {
-                return DEFAULT_JMETER_SLOW_REQUEST_THRESHOLD_MS;
+                return DEFAULT_PERFORMANCE_SLOW_REQUEST_THRESHOLD_MS;
             }
         }
-        return DEFAULT_JMETER_SLOW_REQUEST_THRESHOLD_MS;
+        return DEFAULT_PERFORMANCE_SLOW_REQUEST_THRESHOLD_MS;
     }
 
-    public static void setJmeterSlowRequestThreshold(int thresholdMs) {
-        setAndSaveProperty(JMETER_SLOW_REQUEST_THRESHOLD_KEY, String.valueOf(Math.max(0, thresholdMs)));
+    public static void setPerformanceSlowRequestThreshold(int thresholdMs) {
+        setAndSaveProperty(PERFORMANCE_SLOW_REQUEST_THRESHOLD_KEY, String.valueOf(Math.max(0, thresholdMs)));
     }
 
     public static int getTrendSamplingIntervalSeconds() {

@@ -11,7 +11,7 @@ import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.performance.core.assertion.AssertionData;
 import com.laker.postman.performance.core.controller.LoopData;
 import com.laker.postman.performance.core.config.CsvDataSetData;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.SsePerformanceData;
 import com.laker.postman.performance.core.model.WebSocketPerformanceData;
@@ -32,7 +32,7 @@ public class PerformanceTestPlanCompilerTest {
 
     @Test(description = "root 编译时只保留 enabled thread group，并跳过 disabled 子节点")
     public void shouldCompileOnlyEnabledThreadGroupsAndElements() {
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new JMeterTreeNode("Plan", NodeType.ROOT));
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new PerformanceTreeNode("Plan", NodeType.ROOT));
         root.add(threadGroupNode("disabled group", false));
 
         DefaultMutableTreeNode enabledGroup = threadGroupNode("enabled group", true);
@@ -125,7 +125,7 @@ public class PerformanceTestPlanCompilerTest {
         assertEquals(connect.getWebSocketPerformanceData().connectTimeoutMs, 1234);
         assertEquals(connect.getSsePerformanceData().connectTimeoutMs, 5678);
 
-        JMeterTreeNode connectData = (JMeterTreeNode) connectNode.getUserObject();
+        PerformanceTreeNode connectData = (PerformanceTreeNode) connectNode.getUserObject();
         connectData.webSocketPerformanceData.connectTimeoutMs = 99;
         connectData.ssePerformanceData.connectTimeoutMs = 99;
         assertEquals(connect.getWebSocketPerformanceData().connectTimeoutMs, 1234);
@@ -142,7 +142,7 @@ public class PerformanceTestPlanCompilerTest {
     @Test(description = "编译应深拷贝 thread group、loop、timer、request、协议阶段、WS data")
     public void shouldDeepCopyAllRuntimeData() {
         DefaultMutableTreeNode groupNode = threadGroupNode("group", true);
-        JMeterTreeNode groupData = (JMeterTreeNode) groupNode.getUserObject();
+        PerformanceTreeNode groupData = (PerformanceTreeNode) groupNode.getUserObject();
         groupData.threadGroupData.numThreads = 3;
         DefaultMutableTreeNode csvNode = csvDataSetNode(
                 "CSV Data Set",
@@ -151,17 +151,17 @@ public class PerformanceTestPlanCompilerTest {
                 List.of("userId"),
                 List.of(Map.of("userId", "u1"))
         );
-        JMeterTreeNode csvData = (JMeterTreeNode) csvNode.getUserObject();
+        PerformanceTreeNode csvData = (PerformanceTreeNode) csvNode.getUserObject();
 
         DefaultMutableTreeNode loopNode = loopNode("loop", true, 5);
-        JMeterTreeNode loopData = (JMeterTreeNode) loopNode.getUserObject();
+        PerformanceTreeNode loopData = (PerformanceTreeNode) loopNode.getUserObject();
         DefaultMutableTreeNode timerNode = timerNode("timer", true, 150);
-        JMeterTreeNode timerData = (JMeterTreeNode) timerNode.getUserObject();
+        PerformanceTreeNode timerData = (PerformanceTreeNode) timerNode.getUserObject();
         DefaultMutableTreeNode requestNode = requestNode("sse request", true, RequestItemProtocolEnum.SSE);
-        JMeterTreeNode requestData = (JMeterTreeNode) requestNode.getUserObject();
+        PerformanceTreeNode requestData = (PerformanceTreeNode) requestNode.getUserObject();
         requestData.webSocketPerformanceData.connectTimeoutMs = 222;
         DefaultMutableTreeNode sseReadNode = protocolStageNode("sse read", NodeType.SSE_READ, true);
-        JMeterTreeNode sseReadData = (JMeterTreeNode) sseReadNode.getUserObject();
+        PerformanceTreeNode sseReadData = (PerformanceTreeNode) sseReadNode.getUserObject();
         sseReadData.ssePerformanceData.connectTimeoutMs = 111;
         requestNode.add(sseReadNode);
         groupNode.add(csvNode);
@@ -228,7 +228,7 @@ public class PerformanceTestPlanCompilerTest {
     }
 
     private static DefaultMutableTreeNode threadGroupNode(String name, boolean enabled) {
-        JMeterTreeNode node = new JMeterTreeNode(name, NodeType.THREAD_GROUP, new ThreadGroupData());
+        PerformanceTreeNode node = new PerformanceTreeNode(name, NodeType.THREAD_GROUP, new ThreadGroupData());
         node.enabled = enabled;
         return new DefaultMutableTreeNode(node);
     }
@@ -236,7 +236,7 @@ public class PerformanceTestPlanCompilerTest {
     private static DefaultMutableTreeNode loopNode(String name, boolean enabled, int iterations) {
         LoopData data = new LoopData();
         data.iterations = iterations;
-        JMeterTreeNode node = new JMeterTreeNode(name, NodeType.LOOP, data);
+        PerformanceTreeNode node = new PerformanceTreeNode(name, NodeType.LOOP, data);
         node.enabled = enabled;
         return new DefaultMutableTreeNode(node);
     }
@@ -244,7 +244,7 @@ public class PerformanceTestPlanCompilerTest {
     private static DefaultMutableTreeNode timerNode(String name, boolean enabled, int delayMs) {
         TimerData data = new TimerData();
         data.delayMs = delayMs;
-        JMeterTreeNode node = new JMeterTreeNode(name, NodeType.TIMER, data);
+        PerformanceTreeNode node = new PerformanceTreeNode(name, NodeType.TIMER, data);
         node.enabled = enabled;
         return new DefaultMutableTreeNode(node);
     }
@@ -254,7 +254,7 @@ public class PerformanceTestPlanCompilerTest {
         item.setId(name + "-id");
         item.setName(name);
         item.setProtocol(protocol);
-        JMeterTreeNode node = new JMeterTreeNode(name, NodeType.REQUEST, item);
+        PerformanceTreeNode node = new PerformanceTreeNode(name, NodeType.REQUEST, item);
         node.enabled = enabled;
         node.webSocketPerformanceData = new WebSocketPerformanceData();
         return new DefaultMutableTreeNode(node);
@@ -265,14 +265,14 @@ public class PerformanceTestPlanCompilerTest {
                                                          String sourceName,
                                                          List<String> headers,
                                                          List<Map<String, String>> rows) {
-        JMeterTreeNode node = new JMeterTreeNode(name, NodeType.CSV_DATA_SET);
+        PerformanceTreeNode node = new PerformanceTreeNode(name, NodeType.CSV_DATA_SET);
         node.enabled = enabled;
         node.csvDataSetData = new CsvDataSetData(sourceName, headers, rows);
         return new DefaultMutableTreeNode(node);
     }
 
     private static DefaultMutableTreeNode protocolStageNode(String name, NodeType type, boolean enabled) {
-        JMeterTreeNode node = new JMeterTreeNode(name, type);
+        PerformanceTreeNode node = new PerformanceTreeNode(name, type);
         node.enabled = enabled;
         node.webSocketPerformanceData = new WebSocketPerformanceData();
         node.webSocketPerformanceData.connectTimeoutMs = 1234;
@@ -284,7 +284,7 @@ public class PerformanceTestPlanCompilerTest {
     private static DefaultMutableTreeNode assertionNode(String name, boolean enabled, String value) {
         AssertionData data = new AssertionData();
         data.value = value;
-        JMeterTreeNode node = new JMeterTreeNode(name, NodeType.ASSERTION, data);
+        PerformanceTreeNode node = new PerformanceTreeNode(name, NodeType.ASSERTION, data);
         node.enabled = enabled;
         return new DefaultMutableTreeNode(node);
     }

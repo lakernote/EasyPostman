@@ -131,6 +131,11 @@ public class ScriptExecutionPipeline {
     private final Supplier<Environment> environmentSupplier;
 
     /**
+     * 脚本执行器。性能压测会注入 run-scoped executor，普通 GUI 请求默认使用全局 executor。
+     */
+    private final JsScriptExecutor.ScriptExecutor scriptExecutor;
+
+    /**
      * 当前脚本所属请求的变量作用域，用于 headless / GUI 共用的分组变量解析。
      */
     private final RequestExecutionScope requestExecutionScope;
@@ -390,11 +395,14 @@ public class ScriptExecutionPipeline {
      * @param context 脚本执行上下文
      * @throws ScriptExecutionException 脚本执行异常
      */
-    private static void executeScript(ScriptExecutionContext context) throws ScriptExecutionException {
+    private void executeScript(ScriptExecutionContext context) throws ScriptExecutionException {
         if (context == null || CharSequenceUtil.isBlank(context.getScript())) {
             return;
         }
-        JsScriptExecutor.executeScript(context);
+        JsScriptExecutor.ScriptExecutor executor = scriptExecutor == null
+                ? JsScriptExecutor::executeScript
+                : scriptExecutor;
+        executor.execute(context);
     }
 
 

@@ -24,7 +24,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
-public class OkHttpPerformanceTransportPlanRunnerTest {
+public class OkHttpTransportOnlyExecutionEngineTest {
 
     @Test(timeOut = 3000)
     public void shouldRunCorePlanThroughOkHttpTransport() throws Exception {
@@ -33,7 +33,7 @@ public class OkHttpPerformanceTransportPlanRunnerTest {
             server.start();
             AtomicBoolean running = new AtomicBoolean(true);
             List<PerformanceSampleRecord> records = new CopyOnWriteArrayList<>();
-            OkHttpPerformanceTransportPlanRunner engine = new OkHttpPerformanceTransportPlanRunner(
+            OkHttpTransportOnlyExecutionEngine engine = new OkHttpTransportOnlyExecutionEngine(
                     running::get,
                     new OkHttpPerformanceTransportRuntime()
             );
@@ -77,7 +77,7 @@ public class OkHttpPerformanceTransportPlanRunnerTest {
             AtomicBoolean running = new AtomicBoolean(false);
             List<PerformanceSampleRecord> records = new CopyOnWriteArrayList<>();
             List<PerformanceRunSummary> summaries = new CopyOnWriteArrayList<>();
-            OkHttpPerformanceTransportPlanRunner engine = new OkHttpPerformanceTransportPlanRunner(
+            OkHttpTransportOnlyExecutionEngine engine = new OkHttpTransportOnlyExecutionEngine(
                     running::get,
                     new OkHttpPerformanceTransportRuntime()
             );
@@ -121,7 +121,7 @@ public class OkHttpPerformanceTransportPlanRunnerTest {
     @Test
     public void shouldDelegateCancellationToTransportNetworkControl() {
         CancellableTransportRuntime runtime = new CancellableTransportRuntime();
-        OkHttpPerformanceTransportPlanRunner engine = new OkHttpPerformanceTransportPlanRunner(
+        OkHttpTransportOnlyExecutionEngine engine = new OkHttpTransportOnlyExecutionEngine(
                 () -> true,
                 runtime
         );

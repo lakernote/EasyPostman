@@ -3,7 +3,7 @@ package com.laker.postman.panel.performance.execution;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.script.TestResult;
 import com.laker.postman.performance.core.assertion.AssertionData;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.plan.PerformanceAssertionElement;
 import com.laker.postman.performance.core.plan.PerformancePlanElement;
@@ -42,7 +42,7 @@ public class PerformanceAssertionRunnerTest {
 
     @Test
     public void shouldIgnoreDisabledBodyAssertionsWhenCheckingBodyNeed() {
-        DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(new JMeterTreeNode("Request", NodeType.REQUEST));
+        DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(new PerformanceTreeNode("Request", NodeType.REQUEST));
         requestNode.add(assertionTreeNode("Contains", false));
         PerformanceRequestSampler requestSampler = PerformanceTestPlanCompiler.compileRequestSampler(requestNode);
 
@@ -268,7 +268,7 @@ public class PerformanceAssertionRunnerTest {
     private static DefaultMutableTreeNode assertionTreeNode(String type, boolean enabled) {
         AssertionData data = new AssertionData();
         data.type = type;
-        JMeterTreeNode node = new JMeterTreeNode(type, NodeType.ASSERTION, data);
+        PerformanceTreeNode node = new PerformanceTreeNode(type, NodeType.ASSERTION, data);
         node.enabled = enabled;
         return new DefaultMutableTreeNode(node);
     }

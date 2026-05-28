@@ -49,13 +49,10 @@ public class RequestResult {
         return endTime - startTime;
     }
 
-    /**
-     * 获取API名称（通过ApiMetadata查询）
-     */
     public String getApiName() {
         if (apiName != null && !apiName.isBlank()) {
             return apiName;
         }
-        return ApiMetadata.getName(apiId);
+        return apiId;
     }
 }

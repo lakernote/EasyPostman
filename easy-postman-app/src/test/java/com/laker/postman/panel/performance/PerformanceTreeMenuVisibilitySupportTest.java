@@ -2,7 +2,7 @@ package com.laker.postman.panel.performance;
 
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.model.NodeType;
 import org.testng.annotations.Test;
 
@@ -177,21 +177,21 @@ public class PerformanceTreeMenuVisibilitySupportTest {
     }
 
     private static DefaultMutableTreeNode node(NodeType type, boolean enabled) {
-        JMeterTreeNode data = new JMeterTreeNode(type.name(), type);
+        PerformanceTreeNode data = new PerformanceTreeNode(type.name(), type);
         data.enabled = enabled;
         return new DefaultMutableTreeNode(data);
     }
 
     private static final class TreeFixture {
-        private final DefaultMutableTreeNode root = new DefaultMutableTreeNode(new JMeterTreeNode("root", NodeType.ROOT));
-        private final DefaultMutableTreeNode threadGroup = new DefaultMutableTreeNode(new JMeterTreeNode("group", NodeType.THREAD_GROUP));
-        private final JMeterTreeNode requestData = new JMeterTreeNode("request", NodeType.REQUEST);
+        private final DefaultMutableTreeNode root = new DefaultMutableTreeNode(new PerformanceTreeNode("root", NodeType.ROOT));
+        private final DefaultMutableTreeNode threadGroup = new DefaultMutableTreeNode(new PerformanceTreeNode("group", NodeType.THREAD_GROUP));
+        private final PerformanceTreeNode requestData = new PerformanceTreeNode("request", NodeType.REQUEST);
         private final DefaultMutableTreeNode request = new DefaultMutableTreeNode(requestData);
         private final DefaultMutableTreeNode disabledRequest;
         private final PerformanceTreeSupport treeSupport;
 
         private TreeFixture() {
-            JMeterTreeNode disabledRequestData = new JMeterTreeNode("disabled", NodeType.REQUEST);
+            PerformanceTreeNode disabledRequestData = new PerformanceTreeNode("disabled", NodeType.REQUEST);
             disabledRequestData.enabled = false;
             disabledRequest = new DefaultMutableTreeNode(disabledRequestData);
             root.add(threadGroup);

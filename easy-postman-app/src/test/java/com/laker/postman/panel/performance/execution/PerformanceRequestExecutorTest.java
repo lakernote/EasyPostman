@@ -6,9 +6,8 @@ import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.Environment;
 import com.laker.postman.model.RequestGroup;
-import com.laker.postman.performance.core.model.ApiMetadata;
 import com.laker.postman.performance.core.assertion.AssertionData;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.panel.performance.model.PerformanceSampleResult;
@@ -109,7 +108,7 @@ public class PerformanceRequestExecutorTest {
     }
 
     @Test
-    public void requestExecutorShouldDelegateLegacyRequestBuildToRuntimeAdapter() throws IOException {
+    public void requestExecutorShouldDelegateRequestBuildToRuntimeAdapter() throws IOException {
         String source = Files.readString(moduleDir().resolve(
                 "src/main/java/com/laker/postman/panel/performance/execution/PerformanceRequestExecutor.java"
         ));
@@ -398,7 +397,6 @@ public class PerformanceRequestExecutorTest {
 
     @Test
     public void shouldKeepApiNameInSampleResultWithoutWritingGlobalMetadata() throws Exception {
-        ApiMetadata.clear();
         try (MockWebServer server = new MockWebServer()) {
             server.enqueue(new MockResponse().setBody("ok"));
             server.start();
@@ -422,10 +420,7 @@ public class PerformanceRequestExecutorTest {
 
             RequestResult requestResult = PerformanceSampleResult.fromExecutionResult(executionResult).toRequestResult();
 
-            assertEquals(ApiMetadata.size(), 0);
             assertEquals(requestResult.getApiName(), "Run Scoped API");
-        } finally {
-            ApiMetadata.clear();
         }
     }
 
@@ -446,7 +441,7 @@ public class PerformanceRequestExecutorTest {
             item.setProtocol(RequestItemProtocolEnum.WEBSOCKET);
             item.setMethod("GET");
             item.setUrl(server.url("/socket").toString().replaceFirst("^http", "ws"));
-            JMeterTreeNode requestData = new JMeterTreeNode(item.getName(), NodeType.REQUEST, item);
+            PerformanceTreeNode requestData = new PerformanceTreeNode(item.getName(), NodeType.REQUEST, item);
             requestData.webSocketPerformanceData = new WebSocketPerformanceData();
             requestData.webSocketPerformanceData.connectTimeoutMs = 500;
             DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(requestData);
@@ -481,7 +476,7 @@ public class PerformanceRequestExecutorTest {
             item.setMethod("GET");
             item.setUrl(server.url("/events").toString());
             item.setHeadersList(List.of(new HttpHeader(true, "Accept", "text/event-stream")));
-            JMeterTreeNode requestData = new JMeterTreeNode(item.getName(), NodeType.REQUEST, item);
+            PerformanceTreeNode requestData = new PerformanceTreeNode(item.getName(), NodeType.REQUEST, item);
             DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(requestData);
 
             PerformanceRequestExecutionResult result = new PerformanceRequestExecutor(
@@ -520,12 +515,12 @@ public class PerformanceRequestExecutorTest {
                     });
                     """);
 
-            DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(new JMeterTreeNode(item.getName(), NodeType.REQUEST, item));
-            JMeterTreeNode connectData = new JMeterTreeNode("connect", NodeType.SSE_CONNECT);
+            DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(new PerformanceTreeNode(item.getName(), NodeType.REQUEST, item));
+            PerformanceTreeNode connectData = new PerformanceTreeNode("connect", NodeType.SSE_CONNECT);
             connectData.ssePerformanceData = new SsePerformanceData();
             connectData.ssePerformanceData.connectTimeoutMs = 2000;
             requestNode.add(new DefaultMutableTreeNode(connectData));
-            JMeterTreeNode readData = new JMeterTreeNode("read", NodeType.SSE_READ);
+            PerformanceTreeNode readData = new PerformanceTreeNode("read", NodeType.SSE_READ);
             readData.ssePerformanceData = new SsePerformanceData();
             readData.ssePerformanceData.firstMessageTimeoutMs = 2000;
             requestNode.add(new DefaultMutableTreeNode(readData));
@@ -571,12 +566,12 @@ public class PerformanceRequestExecutorTest {
                     });
                     """);
 
-            JMeterTreeNode requestData = new JMeterTreeNode(item.getName(), NodeType.REQUEST, item);
+            PerformanceTreeNode requestData = new PerformanceTreeNode(item.getName(), NodeType.REQUEST, item);
             requestData.webSocketPerformanceData = new WebSocketPerformanceData();
             requestData.webSocketPerformanceData.connectTimeoutMs = 2000;
             DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(requestData);
-            requestNode.add(new DefaultMutableTreeNode(new JMeterTreeNode("connect", NodeType.WS_CONNECT)));
-            JMeterTreeNode readData = new JMeterTreeNode("read", NodeType.WS_READ);
+            requestNode.add(new DefaultMutableTreeNode(new PerformanceTreeNode("connect", NodeType.WS_CONNECT)));
+            PerformanceTreeNode readData = new PerformanceTreeNode("read", NodeType.WS_READ);
             readData.webSocketPerformanceData = new WebSocketPerformanceData();
             readData.webSocketPerformanceData.completionMode = WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE;
             readData.webSocketPerformanceData.firstMessageTimeoutMs = 2000;

@@ -5,7 +5,7 @@ import com.laker.postman.performance.core.controller.LoopData;
 
 import com.laker.postman.common.component.EasyJSpinner;
 import com.laker.postman.panel.performance.PerformanceStagePropertyLayout;
-import com.laker.postman.panel.performance.model.JMeterTreeNode;
+import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 
@@ -14,7 +14,7 @@ import java.awt.*;
 
 public class LoopPropertyPanel extends JPanel {
     private final EasyJSpinner iterationsSpinner;
-    private JMeterTreeNode currentNode;
+    private PerformanceTreeNode currentNode;
 
     public LoopPropertyPanel() {
         setLayout(new GridBagLayout());
@@ -38,7 +38,7 @@ public class LoopPropertyPanel extends JPanel {
         PerformanceStagePropertyLayout.addVerticalFiller(this, gbc, 2);
     }
 
-    public void setLoopData(JMeterTreeNode node) {
+    public void setLoopData(PerformanceTreeNode node) {
         currentNode = node;
         LoopData data = resolveLoopData(node);
         iterationsSpinner.setValue(data.iterations);
@@ -58,7 +58,7 @@ public class LoopPropertyPanel extends JPanel {
         iterationsSpinner.forceCommit();
     }
 
-    private LoopData resolveLoopData(JMeterTreeNode node) {
+    private LoopData resolveLoopData(PerformanceTreeNode node) {
         LoopData data = node.loopData;
         if (data == null) {
             data = new LoopData();

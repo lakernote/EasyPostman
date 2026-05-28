@@ -33,7 +33,7 @@ public class PerformanceOutboundRequestTest {
                 .urlencoded(List.of(
                         new PerformanceRequestKeyValue(true, "token", "abc")
                 ))
-                .authType("Basic Auth")
+                .authType(PerformanceAuthType.BASIC)
                 .authUsername("alice")
                 .authPassword("secret")
                 .authToken("bearer-token")

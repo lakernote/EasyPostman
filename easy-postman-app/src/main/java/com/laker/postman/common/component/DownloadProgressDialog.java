@@ -134,7 +134,7 @@ public class DownloadProgressDialog extends JDialog {
         plot.setOutlineStroke(new BasicStroke(1.0f)); // 设置轮廓线宽度
 
         // 设置线条颜色和粗细
-        plot.getRenderer().setSeriesPaint(0, ModernColors.PRIMARY); // 使用主题主色
+        plot.getRenderer().setSeriesPaint(0, ModernColors.getPrimary()); // 使用主题主色
         plot.getRenderer().setSeriesStroke(0, new BasicStroke(2.5f)); // 加粗数据线条，使其更醒目
 
         ChartPanel chartPanel = new ChartPanel(chart);

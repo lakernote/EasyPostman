@@ -537,10 +537,10 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
                     fontSupportHintLabel.setForeground(getTextSecondaryColor());
                 } else if (support == UiFontCatalog.FontSupport.NO_EMOJI) {
                     fontSupportHintLabel.setText(I18nUtil.getMessage(MessageKeys.SETTINGS_UI_FONT_STATUS_NO_EMOJI));
-                    fontSupportHintLabel.setForeground(ModernColors.WARNING);
+                    fontSupportHintLabel.setForeground(ModernColors.getWarning());
                 } else {
                     fontSupportHintLabel.setText(I18nUtil.getMessage(MessageKeys.SETTINGS_UI_FONT_STATUS_NO_CJK));
-                    fontSupportHintLabel.setForeground(ModernColors.ERROR);
+                    fontSupportHintLabel.setForeground(ModernColors.getError());
                 }
             }
         } catch (Exception e) {

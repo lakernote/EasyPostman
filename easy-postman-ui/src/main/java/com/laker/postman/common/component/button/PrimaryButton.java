@@ -1,6 +1,5 @@
 package com.laker.postman.common.component.button;
 
-import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.IconUtil;
@@ -21,9 +20,9 @@ public class PrimaryButton extends JButton {
     private static final int ICON_SIZE = 14;
 
     // 缓存颜色，避免每次 paintComponent 都查询 ClientProperty
-    private Color cachedBaseColor = ModernColors.PRIMARY;
-    private Color cachedHoverColor = ModernColors.PRIMARY_DARK;
-    private Color cachedPressColor = ModernColors.PRIMARY_DARKER;
+    private Color cachedBaseColor = ModernColors.getPrimary();
+    private Color cachedHoverColor = ModernColors.getPrimaryDark();
+    private Color cachedPressColor = ModernColors.getPrimaryDarker();
     private boolean colorsInitialized = false;
 
     // 按下动画状态
@@ -108,24 +107,10 @@ public class PrimaryButton extends JButton {
         pressAnimationTimer.start();
     }
 
-    /**
-     * 检查当前是否为暗色主题
-     */
-    private boolean isDarkTheme() {
-        return FlatLaf.isLafDark();
-    }
-
-    /**
-     * 获取禁用状态的背景色 - 主题适配
-     */
-    private Color getDisabledBackground() {
-        if (isDarkTheme()) {
-            // 暗色主题：使用深灰色
-            return new Color(60, 60, 65);
-        } else {
-            // 亮色主题：使用 TEXT_DISABLED
-            return ModernColors.getTextDisabled();
-        }
+    @Override
+    public void updateUI() {
+        super.updateUI();
+        colorsInitialized = false;
     }
 
     @Override
@@ -145,9 +130,9 @@ public class PrimaryButton extends JButton {
             Color hoverColor = (Color) getClientProperty("hoverColor");
             Color pressColor = (Color) getClientProperty("pressColor");
 
-            if (baseColor != null) cachedBaseColor = baseColor;
-            if (hoverColor != null) cachedHoverColor = hoverColor;
-            if (pressColor != null) cachedPressColor = pressColor;
+            cachedBaseColor = baseColor != null ? baseColor : ModernColors.getPrimary();
+            cachedHoverColor = hoverColor != null ? hoverColor : ModernColors.getPrimaryDark();
+            cachedPressColor = pressColor != null ? pressColor : ModernColors.getPrimaryDarker();
             colorsInitialized = true;
         }
 
@@ -163,7 +148,7 @@ public class PrimaryButton extends JButton {
 
         // 背景颜色（主题适配禁用状态）
         if (!isEnabled()) {
-            g2.setColor(getDisabledBackground());
+            g2.setColor(PrimaryButtonTheme.disabledBackground());
         } else if (getModel().isPressed()) {
             g2.setColor(cachedPressColor);
         } else if (getModel().isRollover()) {

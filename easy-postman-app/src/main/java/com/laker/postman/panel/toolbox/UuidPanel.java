@@ -243,7 +243,7 @@ public class UuidPanel extends JPanel {
 
         statusLabel = new JLabel("");
         statusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        statusLabel.setForeground(ModernColors.SUCCESS);
+        statusLabel.setForeground(ModernColors.getSuccess());
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
         statusPanel.add(statusLabel);
 

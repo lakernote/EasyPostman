@@ -655,7 +655,7 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
         // 设置背景色，使其看起来像可编辑区域
         textArea.setBackground(ModernColors.getInputBackgroundColor());
         textArea.setForeground(ModernColors.getTextPrimary());
-        textArea.setCaretColor(ModernColors.PRIMARY);
+        textArea.setCaretColor(ModernColors.getPrimary());
 
         // 将光标定位到文本末尾
         textArea.setCaretPosition(textArea.getDocument().getLength());

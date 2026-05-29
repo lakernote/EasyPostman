@@ -1,5 +1,6 @@
 package com.laker.postman.common.themes;
 
+import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.extras.FlatAnimatedLafChange;
 import com.formdev.flatlaf.util.SystemInfo;
 import com.laker.postman.util.*;
@@ -20,8 +21,10 @@ public class SimpleThemeManager {
     private static final String THEME_SETTING_KEY = "ui.theme";
     private static final String THEME_LIGHT = "light";
     private static final String THEME_DARK = "dark";
+    private static final String CUSTOM_DEFAULTS_SOURCE = "com.laker.postman.common.themes";
 
     private static String currentTheme = THEME_LIGHT;
+    private static boolean customDefaultsSourceRegistered;
 
     /**
      * 初始化主题（应用启动时调用）
@@ -68,6 +71,10 @@ public class SimpleThemeManager {
      * 获取当前主题
      */
     public static boolean isLightTheme() {
+        LookAndFeel laf = UIManager.getLookAndFeel();
+        if (laf instanceof FlatLaf) {
+            return !FlatLaf.isLafDark();
+        }
         return THEME_LIGHT.equals(currentTheme);
     }
 
@@ -75,6 +82,10 @@ public class SimpleThemeManager {
      * 获取当前主题
      */
     public static boolean isDarkTheme() {
+        LookAndFeel laf = UIManager.getLookAndFeel();
+        if (laf instanceof FlatLaf) {
+            return FlatLaf.isLafDark();
+        }
         return THEME_DARK.equals(currentTheme);
     }
 
@@ -86,6 +97,8 @@ public class SimpleThemeManager {
      */
     private static void applyTheme(String theme, boolean showNotification) {
         try {
+            ensureCustomDefaultsSourceRegistered();
+
             boolean success;
             if (THEME_DARK.equals(theme)) {
                 success = EasyDarkLaf.setup();
@@ -95,6 +108,9 @@ public class SimpleThemeManager {
 
             if (success) {
                 currentTheme = theme;
+
+                // Look and Feel 切换会重建 UIDefaults，先恢复用户字体再刷新窗口。
+                FontManager.installSavedFontDefaults();
 
                 // 保存主题设置到 UserSettings
                 UserSettingsUtil.set(THEME_SETTING_KEY, theme);
@@ -119,6 +135,14 @@ public class SimpleThemeManager {
         }
     }
 
+    private static void ensureCustomDefaultsSourceRegistered() {
+        if (customDefaultsSourceRegistered) {
+            return;
+        }
+        FlatLaf.registerCustomDefaultsSource(CUSTOM_DEFAULTS_SOURCE);
+        customDefaultsSourceRegistered = true;
+    }
+
     /**
      * 更新所有已打开的窗口
      */
@@ -132,7 +156,7 @@ public class SimpleThemeManager {
                     // 设置 macOS 窗口外观模式：dark 或 light
                     // NSAppearanceNameVibrantDark: 暗色外观，标题栏文字为白色
                     // NSAppearanceNameVibrantLight: 亮色外观，标题栏文字为黑色
-                    if (THEME_DARK.equals(currentTheme)) {
+                    if (isDarkTheme()) {
                         rootPane.putClientProperty("apple.awt.windowAppearance", "NSAppearanceNameVibrantDark");
                     } else {
                         rootPane.putClientProperty("apple.awt.windowAppearance", "NSAppearanceNameVibrantLight");

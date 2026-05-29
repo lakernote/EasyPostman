@@ -100,28 +100,28 @@ public class GitOperationDialog extends JDialog {
      * 获取 HTML 中使用的成功色（绿色）
      */
     private String getHtmlSuccessColor() {
-        return toHtmlColor(ModernColors.SUCCESS);
+        return toHtmlColor(ModernColors.getSuccess());
     }
 
     /**
      * 获取 HTML 中使用的警告色（橙色）
      */
     private String getHtmlWarningColor() {
-        return toHtmlColor(ModernColors.WARNING);
+        return toHtmlColor(ModernColors.getWarning());
     }
 
     /**
      * 获取 HTML 中使用的错误色（红色）
      */
     private String getHtmlErrorColor() {
-        return toHtmlColor(ModernColors.ERROR);
+        return toHtmlColor(ModernColors.getError());
     }
 
     /**
      * 获取 HTML 中使用的信息色（蓝色）
      */
     private String getHtmlInfoColor() {
-        return toHtmlColor(ModernColors.PRIMARY);
+        return toHtmlColor(ModernColors.getPrimary());
     }
 
     /**
@@ -452,7 +452,7 @@ public class GitOperationDialog extends JDialog {
      */
     private void performPreOperationCheck() {
         stepIndicator.setCurrentStep(0);
-        updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CHECKING_STATUS_AND_CONFLICT), "icons/refresh.svg", ModernColors.PRIMARY);
+        updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CHECKING_STATUS_AND_CONFLICT), "icons/refresh.svg", ModernColors.getPrimary());
 
         // 禁用执行按钮，防止在检查期间执行操作
         executeButton.setEnabled(false);
@@ -477,13 +477,13 @@ public class GitOperationDialog extends JDialog {
                         displayStatusCheck(statusCheck);
                         displayFileChangesStatus();
                         stepIndicator.setCurrentStep(1);
-                        updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_STATUS_CHECK_DONE), "icons/check.svg", ModernColors.SUCCESS);
+                        updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_STATUS_CHECK_DONE), "icons/check.svg", ModernColors.getSuccess());
                     } else {
-                        updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_STATUS_CHECK_FAILED, "Unknown error"), "icons/warning.svg", ModernColors.ERROR);
+                        updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_STATUS_CHECK_FAILED, "Unknown error"), "icons/warning.svg", ModernColors.getError());
                     }
                 } catch (Exception e) {
                     log.error("Failed to perform pre-operation check", e);
-                    updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_STATUS_CHECK_FAILED, e.getMessage()), "icons/warning.svg", ModernColors.ERROR);
+                    updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_STATUS_CHECK_FAILED, e.getMessage()), "icons/warning.svg", ModernColors.getError());
                 }
             }
         };
@@ -594,19 +594,19 @@ public class GitOperationDialog extends JDialog {
                         I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_CANCEL_DESC), true);
                 addOption(OPTION_FORCE,
                         I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL),
-                        I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL_DESC), false, ModernColors.ERROR);
+                        I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL_DESC), false, ModernColors.getError());
             } else if (check.hasUncommittedChanges) {
                 showOptions = true;
                 // 如果可以自动合并，优先推荐提交后拉取
                 if (check.canAutoMerge) {
                     addOptionTitle(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_PULL_UNCOMMITTED_AUTO_MERGE_TITLE));
                     addOption(OPTION_COMMIT_FIRST, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_COMMIT_FIRST_PULL), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_COMMIT_FIRST_PULL_AUTO_MERGE_DESC), true);
-                    addOption(OPTION_FORCE, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL_DISCARD), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL_DISCARD_WARNING_DESC), false, ModernColors.ERROR);
+                    addOption(OPTION_FORCE, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL_DISCARD), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL_DISCARD_WARNING_DESC), false, ModernColors.getError());
                 } else {
                     addOptionTitle(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_PULL_UNCOMMITTED_CHOOSE_TITLE));
                     addOption(OPTION_COMMIT_FIRST, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_COMMIT_FIRST_PULL), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_COMMIT_FIRST_PULL_KEEP_DESC), true);
                     addOption(OPTION_STASH, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_STASH_PULL), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_STASH_PULL_DESC), false);
-                    addOption(OPTION_FORCE, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL_DISCARD), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL_LOSE_DESC), false, ModernColors.ERROR);
+                    addOption(OPTION_FORCE, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL_DISCARD), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PULL_LOSE_DESC), false, ModernColors.getError());
                 }
             }
         } else if (operation == GitOperation.PUSH) {
@@ -615,17 +615,17 @@ public class GitOperationDialog extends JDialog {
                 showOptions = true;
                 addOptionTitle(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_PUSH_CONFLICT_TITLE));
                 addOption(OPTION_CANCEL, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_CANCEL_EXTERNAL_TOOL), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_CANCEL_EXTERNAL_TOOL_DESC), true);
-                addOption(OPTION_FORCE, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE_COMMITS_DESC, check.remoteCommitsBehind), false, ModernColors.ERROR);
+                addOption(OPTION_FORCE, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE_COMMITS_DESC, check.remoteCommitsBehind), false, ModernColors.getError());
             } else if (check.hasRemoteCommits) {
                 // 远程有新提交
                 showOptions = true;
                 if (check.canAutoMerge && check.localCommitsAhead > 0) {
                     addOptionTitle(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_PUSH_REMOTE_AUTO_MERGE_TITLE));
                     addOption(OPTION_PULL_FIRST, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_PULL_FIRST_PUSH), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_PULL_FIRST_PUSH_DESC), true);
-                    addOption(OPTION_FORCE, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE_REMOTE_DESC), false, ModernColors.ERROR);
+                    addOption(OPTION_FORCE, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE_REMOTE_DESC), false, ModernColors.getError());
                 } else {
                     addOptionTitle(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_PUSH_REMOTE_CHOOSE_TITLE));
-                    addOption(OPTION_FORCE, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE_REMOTE_DESC), true, ModernColors.ERROR);
+                    addOption(OPTION_FORCE, I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE), I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPTION_FORCE_PUSH_OVERWRITE_REMOTE_DESC), true, ModernColors.getError());
                 }
             }
         }
@@ -973,7 +973,7 @@ public class GitOperationDialog extends JDialog {
                     hideProgress();
                     try {
                         get();
-                        updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPERATION_COMPLETED), "icons/check.svg", ModernColors.SUCCESS);
+                        updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPERATION_COMPLETED), "icons/check.svg", ModernColors.getSuccess());
 
                         NotificationUtil.showSuccess(
                                 I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPERATION_SUCCESS_MESSAGE, operation.getDisplayName())
@@ -983,7 +983,7 @@ public class GitOperationDialog extends JDialog {
 
                     } catch (Exception ex) {
                         log.error("Git operation failed", ex);
-                        updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPERATION_FAILED, ex.getMessage()), "icons/warning.svg", ModernColors.ERROR);
+                        updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPERATION_FAILED, ex.getMessage()), "icons/warning.svg", ModernColors.getError());
 
                         String errorMessage = ex.getMessage();
                         if (ex.getCause() != null && ex.getCause().getMessage() != null) {

@@ -1,6 +1,6 @@
 package com.laker.postman.util;
 
-import com.formdev.flatlaf.FlatLaf;
+import com.laker.postman.common.constants.ModernColors;
 import lombok.extern.slf4j.Slf4j;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.Theme;
@@ -25,22 +25,12 @@ public class EditorThemeUtil {
      * @param area RSyntaxTextArea 编辑器实例
      */
     public static void loadTheme(RSyntaxTextArea area) {
-        String themeFile;
+        String themeFile = themeResourcePath();
         InputStream in = null;
-        if (FlatLaf.isLafDark()) {
-            themeFile = "/themes/easypostman-dark.xml";
+        in = loadResource(themeFile);
+        if (in == null) {
+            themeFile = fallbackThemeResourcePath();
             in = loadResource(themeFile);
-            if (in == null) {
-                themeFile = "/org/fife/ui/rsyntaxtextarea/themes/dark.xml";
-                in = loadResource(themeFile);
-            }
-        } else {
-            themeFile = "/themes/easypostman-light.xml";
-            in = loadResource(themeFile);
-            if (in == null) {
-                themeFile = "/org/fife/ui/rsyntaxtextarea/themes/vs.xml";
-                in = loadResource(themeFile);
-            }
         }
         try {
             if (in != null) {
@@ -53,6 +43,18 @@ public class EditorThemeUtil {
         } catch (IOException e) {
             log.error("Failed to load editor theme: {}", themeFile, e);
         }
+    }
+
+    static String themeResourcePath() {
+        return ModernColors.isDarkTheme()
+                ? "/themes/easypostman-dark.xml"
+                : "/themes/easypostman-light.xml";
+    }
+
+    private static String fallbackThemeResourcePath() {
+        return ModernColors.isDarkTheme()
+                ? "/org/fife/ui/rsyntaxtextarea/themes/dark.xml"
+                : "/org/fife/ui/rsyntaxtextarea/themes/vs.xml";
     }
 
     private static InputStream loadResource(String resourcePath) {

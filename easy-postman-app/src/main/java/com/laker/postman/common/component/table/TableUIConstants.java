@@ -1,6 +1,5 @@
 package com.laker.postman.common.component.table;
 
-import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.common.constants.ModernColors;
 
 import javax.swing.*;
@@ -27,24 +26,17 @@ public class TableUIConstants {
     public static final int PADDING_BOTTOM = 2;
 
     /**
-     * 检查当前是否为暗色主题
-     */
-    private static boolean isDarkTheme() {
-        return FlatLaf.isLafDark();
-    }
-
-    /**
      * 获取边框颜色 - 主题适配
      */
     public static Color getBorderColor() {
-        return isDarkTheme() ? new Color(80, 80, 85) : new Color(220, 225, 230);
+        return ModernColors.getBorderLightColor();
     }
 
     /**
      * 获取悬停颜色 - 主题适配
      */
     public static Color getHoverColor() {
-        return isDarkTheme() ? new Color(60, 63, 65) : new Color(230, 240, 255);
+        return ModernColors.getHoverBackgroundColor();
     }
 
     /**
@@ -52,21 +44,21 @@ public class TableUIConstants {
      */
     public static Color getFileButtonTextColor() {
         // 主题色在两种模式下都保持一致
-        return ModernColors.PRIMARY;
+        return ModernColors.getPrimary();
     }
 
     /**
      * 获取文件选中文字颜色 - 主题适配
      */
     public static Color getFileSelectedTextColor() {
-        return isDarkTheme() ? new Color(100, 150, 230) : new Color(76, 130, 206);
+        return ModernColors.getPrimaryLight();
     }
 
     /**
      * 获取文件空状态文字颜色 - 主题适配
      */
     public static Color getFileEmptyTextColor() {
-        return isDarkTheme() ? new Color(140, 140, 145) : new Color(95, 99, 104);
+        return ModernColors.getTextHint();
     }
 
     /**

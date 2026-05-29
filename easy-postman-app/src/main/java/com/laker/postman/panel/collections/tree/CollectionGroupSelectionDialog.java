@@ -170,7 +170,7 @@ public class CollectionGroupSelectionDialog {
 
     private static JButton createPrimaryButton() {
         JButton okButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK));
-        okButton.setBackground(ModernColors.PRIMARY);
+        okButton.setBackground(ModernColors.getPrimary());
         okButton.setForeground(Color.WHITE);
         okButton.setFocusPainted(false);
         okButton.setBorderPainted(false);

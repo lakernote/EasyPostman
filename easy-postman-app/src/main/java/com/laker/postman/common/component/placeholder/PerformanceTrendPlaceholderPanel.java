@@ -1,5 +1,6 @@
 package com.laker.postman.common.component.placeholder;
 
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -26,12 +27,12 @@ public class PerformanceTrendPlaceholderPanel extends AbstractPlaceholderPanel {
                 return;
             }
 
-            Color cardBg = isDarkTheme() ? new Color(52, 52, 52) : new Color(252, 253, 255);
-            Color borderColor = isDarkTheme() ? new Color(82, 82, 82) : new Color(230, 235, 242);
-            Color blockColor = isDarkTheme() ? new Color(78, 78, 78) : new Color(237, 241, 246);
-            Color accentColor = isDarkTheme() ? new Color(100, 181, 246, 90) : new Color(33, 150, 243, 55);
-            Color titleColor = isDarkTheme() ? new Color(205, 205, 205) : new Color(88, 96, 108);
-            Color hintColor = isDarkTheme() ? new Color(160, 160, 160) : new Color(130, 138, 148);
+            Color cardBg = ModernColors.getCardBackgroundColor();
+            Color borderColor = ModernColors.getBorderLightColor();
+            Color blockColor = getSkeletonBlockColor();
+            Color accentColor = getSkeletonAccentColor();
+            Color titleColor = ModernColors.getTextSecondary();
+            Color hintColor = ModernColors.getTextHint();
 
             int cardW = Math.min(520, width - 48);
             int cardH = 190;
@@ -78,6 +79,6 @@ public class PerformanceTrendPlaceholderPanel extends AbstractPlaceholderPanel {
     }
 
     private Color getChartPanelBackgroundColor() {
-        return isDarkTheme() ? new Color(43, 43, 43) : Color.WHITE;
+        return ModernColors.getCardBackgroundColor();
     }
 }

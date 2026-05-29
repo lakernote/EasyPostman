@@ -189,7 +189,7 @@ public class PluginUpdateNotification {
                         g2.fillRect(0, 0, getWidth(), getHeight());
                     }
                 }
-                g2.setColor(ModernColors.INFO);
+                g2.setColor(ModernColors.getInfo());
                 g2.fillRect(0, 0, INDICATOR_WIDTH, getHeight());
                 g2.setColor(ModernColors.getBorderLightColor());
                 g2.drawRect(0, 0, getWidth() - 1, getHeight() - 1);
@@ -286,7 +286,7 @@ public class PluginUpdateNotification {
                                        Consumer<List<PluginUpdateCandidate>> onAction) {
         JButton button = new JButton(
                 "<html><u>" + I18nUtil.getMessage(MessageKeys.PLUGIN_UPDATE_NOTIFICATION_ACTION) + "</u></html>");
-        button.setForeground(ModernColors.INFO);
+        button.setForeground(ModernColors.getInfo());
         button.setFocusPainted(false);
         button.setBorderPainted(false);
         button.setContentAreaFilled(false);

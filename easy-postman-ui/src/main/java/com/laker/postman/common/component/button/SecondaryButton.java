@@ -55,12 +55,7 @@ public class SecondaryButton extends JButton {
      * 亮色主题：使用白色卡片背景
      */
     private Color getDefaultBackground() {
-        if (ModernColors.isDarkTheme()) {
-            // 暗色：比面板背景 (60,63,65) 亮 8 个色阶
-            return new Color(68, 71, 73);
-        }
-        // 亮色：白色
-        return new Color(255, 255, 255);
+        return ModernColors.getCardBackgroundColor();
     }
 
     /**
@@ -69,12 +64,7 @@ public class SecondaryButton extends JButton {
      * 亮色主题：使用浅灰悬停色
      */
     private Color getHoverBackground() {
-        if (ModernColors.isDarkTheme()) {
-            // 暗色：比默认亮 10 个色阶
-            return new Color(78, 81, 83);
-        }
-        // 亮色：浅灰
-        return new Color(241, 245, 249);
+        return ModernColors.getHoverBackgroundColor();
     }
 
     /**
@@ -83,12 +73,7 @@ public class SecondaryButton extends JButton {
      * 亮色主题：使用深灰按下色
      */
     private Color getPressedBackground() {
-        if (ModernColors.isDarkTheme()) {
-            // 暗色：最亮的按下状态
-            return new Color(88, 91, 93);
-        }
-        // 亮色：深灰
-        return new Color(226, 232, 240);
+        return ModernColors.getButtonPressedColor();
     }
 
     /**

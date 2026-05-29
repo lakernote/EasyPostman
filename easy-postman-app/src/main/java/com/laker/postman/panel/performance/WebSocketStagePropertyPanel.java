@@ -449,7 +449,7 @@ public class WebSocketStagePropertyPanel extends JPanel {
         area.setTabSize(4);
         area.setLineWrap(true);
         area.setWrapStyleWord(true);
-        area.setCaretColor(ModernColors.PRIMARY);
+        area.setCaretColor(ModernColors.getPrimary());
         EditorThemeUtil.loadTheme(area);
         area.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, 0));
     }

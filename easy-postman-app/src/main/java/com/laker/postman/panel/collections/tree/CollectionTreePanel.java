@@ -108,22 +108,7 @@ public class CollectionTreePanel extends UiSingletonPanel {
             public void paint(Graphics g) {
                 super.paint(g);
                 // 在树正常绘制之后，对 hover 行叠加整行背景高亮
-                if (getCellRenderer() instanceof RequestTreeCellRenderer r) {
-                    int row = r.getHoveredRow();
-                    if (row >= 0 && row < getRowCount()) {
-                        Rectangle bounds = getRowBounds(row);
-                        if (bounds != null) {
-                            TreePath path = getPathForRow(row);
-                            if (path != null && !isPathSelected(path)) {
-                                Graphics2D g2 = (Graphics2D) g.create();
-                                boolean dark = com.formdev.flatlaf.FlatLaf.isLafDark();
-                                g2.setColor(dark ? new Color(255, 255, 255, 20) : new Color(0, 0, 0, 18));
-                                g2.fillRect(0, bounds.y, getWidth(), bounds.height);
-                                g2.dispose();
-                            }
-                        }
-                    }
-                }
+                CollectionTreeHoverOverlay.paint(g, this);
             }
         };
         // 不显示根节点

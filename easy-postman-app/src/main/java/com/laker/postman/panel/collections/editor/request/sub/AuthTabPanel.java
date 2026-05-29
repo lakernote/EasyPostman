@@ -1,6 +1,5 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
-import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.common.component.EasyTextField;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.AuthType;
@@ -37,34 +36,6 @@ public class AuthTabPanel extends JPanel {
     private final JTextField tokenField;
     private AuthType currentType = AuthType.INHERIT;
     private final List<Runnable> dirtyListeners = new ArrayList<>();
-
-    /**
-     * 检查当前是否为暗色主题
-     */
-    private boolean isDarkTheme() {
-        return FlatLaf.isLafDark();
-    }
-
-    /**
-     * 获取主题适配的标题颜色（HTML 样式用）
-     */
-    private String getTitleColorHex() {
-        return isDarkTheme() ? "#14b8a6" : "#0891b2"; // 暗色主题用稍亮的青色
-    }
-
-    /**
-     * 获取主题适配的描述文字颜色（HTML 样式用）
-     */
-    private String getDescColorHex() {
-        return isDarkTheme() ? "#94a3b8" : "#475569"; // 暗色主题用浅灰色
-    }
-
-    /**
-     * 获取主题适配的普通文字颜色（HTML 样式用）
-     */
-    private String getTextColorHex() {
-        return isDarkTheme() ? "#cbd5e1" : "#334155"; // 暗色主题用浅色
-    }
 
     public AuthTabPanel() {
         setLayout(new BorderLayout(5, 5));
@@ -162,7 +133,7 @@ public class AuthTabPanel extends JPanel {
 
         JPanel infoPanel = new JPanel(new BorderLayout(10, 0));
         infoPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(ModernColors.ACCENT_LIGHT, 1),
+                BorderFactory.createLineBorder(ModernColors.getAccentLight(), 1),
                 new EmptyBorder(8, 12, 8, 12)
         ));
 
@@ -172,8 +143,8 @@ public class AuthTabPanel extends JPanel {
 
         JLabel textLabel = new JLabel(
                 "<html><div style='line-height: 1.5;'>" +
-                        "<b style='color: " + getTitleColorHex() + "; font-size: 10px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_INHERIT) + "</b><br>" +
-                        "<span style='color: " + getDescColorHex() + "; font-size: 9px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_INHERIT_DESC) + "</span>" +
+                        "<b style='color: " + AuthTabTheme.titleColorHex() + "; font-size: 10px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_INHERIT) + "</b><br>" +
+                        "<span style='color: " + AuthTabTheme.descriptionColorHex() + "; font-size: 9px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_INHERIT_DESC) + "</span>" +
                         "</div></html>"
         );
         infoPanel.add(textLabel, BorderLayout.CENTER);
@@ -201,8 +172,8 @@ public class AuthTabPanel extends JPanel {
 
         JLabel textLabel = new JLabel(
                 "<html><div style='line-height: 1.5;'>" +
-                        "<b style='color: " + getTextColorHex() + "; font-size: 10px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_NONE) + "</b><br>" +
-                        "<span style='color: " + getDescColorHex() + "; font-size: 9px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_NONE_DESC) + "</span>" +
+                        "<b style='color: " + AuthTabTheme.textColorHex() + "; font-size: 10px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_NONE) + "</b><br>" +
+                        "<span style='color: " + AuthTabTheme.descriptionColorHex() + "; font-size: 9px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_NONE_DESC) + "</span>" +
                         "</div></html>"
         );
         infoPanel.add(textLabel, BorderLayout.CENTER);
@@ -221,7 +192,7 @@ public class AuthTabPanel extends JPanel {
         // 顶部：描述信息
         JPanel infoPanel = new JPanel(new BorderLayout(10, 0));
         infoPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(ModernColors.ACCENT_LIGHT, 1),
+                BorderFactory.createLineBorder(ModernColors.getAccentLight(), 1),
                 new EmptyBorder(8, 12, 8, 12)
         ));
 
@@ -231,8 +202,8 @@ public class AuthTabPanel extends JPanel {
 
         JLabel textLabel = new JLabel(
                 "<html><div style='line-height: 1.5;'>" +
-                        "<b style='color: " + getTitleColorHex() + "; font-size: 10px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BASIC) + "</b><br>" +
-                        "<span style='color: " + getDescColorHex() + "; font-size: 9px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BASIC_DESC) + "</span>" +
+                        "<b style='color: " + AuthTabTheme.titleColorHex() + "; font-size: 10px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BASIC) + "</b><br>" +
+                        "<span style='color: " + AuthTabTheme.descriptionColorHex() + "; font-size: 9px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BASIC_DESC) + "</span>" +
                         "</div></html>"
         );
         infoPanel.add(textLabel, BorderLayout.CENTER);
@@ -311,7 +282,7 @@ public class AuthTabPanel extends JPanel {
         // 顶部：描述信息
         JPanel infoPanel = new JPanel(new BorderLayout(10, 0));
         infoPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(ModernColors.ACCENT_LIGHT, 1),
+                BorderFactory.createLineBorder(ModernColors.getAccentLight(), 1),
                 new EmptyBorder(8, 12, 8, 12)
         ));
 
@@ -321,8 +292,8 @@ public class AuthTabPanel extends JPanel {
 
         JLabel textLabel = new JLabel(
                 "<html><div style='line-height: 1.5;'>" +
-                        "<b style='color: " + getTitleColorHex() + "; font-size: 10px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BEARER) + "</b><br>" +
-                        "<span style='color: " + getDescColorHex() + "; font-size: 9px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BEARER_DESC) + "</span>" +
+                        "<b style='color: " + AuthTabTheme.titleColorHex() + "; font-size: 10px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BEARER) + "</b><br>" +
+                        "<span style='color: " + AuthTabTheme.descriptionColorHex() + "; font-size: 9px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BEARER_DESC) + "</span>" +
                         "</div></html>"
         );
         infoPanel.add(textLabel, BorderLayout.CENTER);
@@ -379,7 +350,7 @@ public class AuthTabPanel extends JPanel {
 
         JPanel infoPanel = new JPanel(new BorderLayout(10, 0));
         infoPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(ModernColors.ACCENT_LIGHT, 1),
+                BorderFactory.createLineBorder(ModernColors.getAccentLight(), 1),
                 new EmptyBorder(8, 12, 8, 12)
         ));
 
@@ -389,8 +360,8 @@ public class AuthTabPanel extends JPanel {
 
         JLabel textLabel = new JLabel(
                 "<html><div style='line-height: 1.5;'>" +
-                        "<b style='color: " + getTitleColorHex() + "; font-size: 10px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_DIGEST) + "</b><br>" +
-                        "<span style='color: " + getDescColorHex() + "; font-size: 9px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_DIGEST_DESC) + "</span>" +
+                        "<b style='color: " + AuthTabTheme.titleColorHex() + "; font-size: 10px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_DIGEST) + "</b><br>" +
+                        "<span style='color: " + AuthTabTheme.descriptionColorHex() + "; font-size: 9px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_DIGEST_DESC) + "</span>" +
                         "</div></html>"
         );
         infoPanel.add(textLabel, BorderLayout.CENTER);

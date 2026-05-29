@@ -427,7 +427,7 @@ public class GlobalVariablesPanel extends JPanel {
         textArea.setTabSize(4);
         textArea.setBackground(ModernColors.getInputBackgroundColor());
         textArea.setForeground(ModernColors.getTextPrimary());
-        textArea.setCaretColor(ModernColors.PRIMARY);
+        textArea.setCaretColor(ModernColors.getPrimary());
         textArea.setCaretPosition(textArea.getDocument().getLength());
 
         JScrollPane scrollPane = new JScrollPane(textArea);

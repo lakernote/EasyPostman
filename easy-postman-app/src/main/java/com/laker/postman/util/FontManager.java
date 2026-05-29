@@ -7,7 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.*;
 import javax.swing.plaf.FontUIResource;
 import java.awt.*;
-import java.util.Enumeration;
 
 /**
  * 字体管理工具类
@@ -35,10 +34,13 @@ public class FontManager {
      * 应用保存的字体设置到整个应用
      */
     public static void applyFontSettings() {
-        String fontName = SettingManager.getUiFontName();
-        int fontSize = SettingManager.getUiFontSize();
-
-        applyFont(fontName, fontSize);
+        try {
+            installSavedFontDefaults();
+            updateExistingWindows();
+            log.info("Font applied successfully");
+        } catch (Exception e) {
+            log.error("Failed to apply font settings", e);
+        }
     }
 
     /**
@@ -49,22 +51,7 @@ public class FontManager {
      */
     public static void applyFont(String fontName, int fontSize) {
         try {
-            log.info("Applying font: {} with size: {}", fontName, fontSize);
-
-            // 更新 UIManager 中的所有字体
-            UIDefaults defaults = UIManager.getDefaults();
-            Enumeration<Object> keys = defaults.keys();
-
-            while (keys.hasMoreElements()) {
-                Object key = keys.nextElement();
-                Object value = defaults.get(key);
-
-                if (value instanceof FontUIResource originalFont) {
-                    // 使用 deriveFont 保留字体降级链，支持 emoji 等特殊字符
-                    Font newFont = createFontWithFallback(fontName, originalFont.getStyle(), fontSize);
-                    defaults.put(key, new FontUIResource(newFont));
-                }
-            }
+            installFontDefaults(fontName, fontSize);
 
             // 更新所有已存在的窗口
             updateExistingWindows();
@@ -73,6 +60,28 @@ public class FontManager {
         } catch (Exception e) {
             log.error("Failed to apply font settings", e);
         }
+    }
+
+    /**
+     * 将已保存的字体设置安装到 FlatLaf defaultFont，不立即刷新窗口。
+     * 主题切换会重建 UI defaults，因此切换 Look and Feel 后需要先重装字体，再统一刷新。
+     */
+    public static Font installSavedFontDefaults() {
+        return installFontDefaults(SettingManager.getUiFontName(), SettingManager.getUiFontSize());
+    }
+
+    /**
+     * 安装 FlatLaf 推荐的全局 defaultFont，不立即刷新窗口。
+     *
+     * @param fontName 字体名称，空字符串表示使用系统默认
+     * @param fontSize 字体大小
+     * @return 已安装的字体
+     */
+    public static Font installFontDefaults(String fontName, int fontSize) {
+        log.info("Installing font defaults: {} with size: {}", fontName, fontSize);
+        Font newFont = createFontWithFallback(fontName, Font.PLAIN, fontSize);
+        UIManager.put("defaultFont", new FontUIResource(newFont));
+        return newFont;
     }
 
     /**
@@ -149,4 +158,3 @@ public class FontManager {
         }
     }
 }
-

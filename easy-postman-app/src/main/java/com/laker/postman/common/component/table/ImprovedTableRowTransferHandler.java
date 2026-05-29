@@ -1,5 +1,6 @@
 package com.laker.postman.common.component.table;
 
+import com.laker.postman.common.constants.ModernColors;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -96,7 +97,7 @@ public class ImprovedTableRowTransferHandler extends TransferHandler {
                     rowGraphics.fillRect(0, 0, width, rect.height);
 
                     // 绘制边框
-                    rowGraphics.setColor(new Color(100, 100, 100, 150));
+                    rowGraphics.setColor(ModernColors.withAlpha(ModernColors.getBorderMediumColor(), 150));
                     rowGraphics.drawRect(0, 0, width - 1, rect.height - 1);
 
                     rowGraphics.dispose();

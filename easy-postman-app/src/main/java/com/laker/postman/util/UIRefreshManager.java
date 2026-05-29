@@ -1,9 +1,11 @@
 package com.laker.postman.util;
 
+import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.common.IRefreshable;
 import com.laker.postman.frame.MainFrame;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 
 import javax.swing.*;
 import java.awt.*;
@@ -39,10 +41,10 @@ public class UIRefreshManager {
     public static void refreshAllWindows() {
         try {
             Window[] windows = Window.getWindows();
+            FlatLaf.updateUI();
             for (Window window : windows) {
                 if (window.isDisplayable()) {
-                    // 更新组件树 UI，应用新的 Look and Feel
-                    SwingUtilities.updateComponentTreeUI(window);
+                    refreshEditorThemes(window);
 
                     if (window instanceof MainFrame mainFrame) {
                         mainFrame.refreshWindowChrome();
@@ -58,6 +60,34 @@ public class UIRefreshManager {
             }
         } catch (Exception e) {
             log.error("Failed to refresh windows", e);
+        }
+    }
+
+    static void refreshEditorThemes(Component component) {
+        if (component == null) {
+            return;
+        }
+
+        if (component instanceof RSyntaxTextArea textArea) {
+            try {
+                EditorThemeUtil.loadTheme(textArea);
+                log.debug("Refreshed editor theme: {}", component.getClass().getSimpleName());
+            } catch (Exception e) {
+                log.error("Failed to refresh editor theme: {}", component.getClass().getSimpleName(), e);
+            }
+        }
+
+        if (component instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                refreshEditorThemes(child);
+            }
+        }
+
+        if (component instanceof JFrame frame) {
+            JMenuBar menuBar = frame.getJMenuBar();
+            if (menuBar != null) {
+                refreshEditorThemes(menuBar);
+            }
         }
     }
 

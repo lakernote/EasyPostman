@@ -4,7 +4,6 @@ import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.performance.core.model.PerformanceTrendSnapshot;
 
 
-import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
 import com.laker.postman.common.component.button.SegmentedToggleButton;
@@ -117,29 +116,29 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
     private JPanel createHttpPanel() {
         return createTrendView(
                 MessageKeys.PERFORMANCE_TREND_METRICS,
-                new SeriesSpec(httpVirtualUsersSeries, getThreadsLineColor(), true, AxisFormat.INTEGER),
-                new SeriesSpec(httpRpsSeries, getQpsLineColor(), true, AxisFormat.DECIMAL),
-                new SeriesSpec(httpAvgResponseSeries, getResponseTimeLineColor(), true, AxisFormat.DECIMAL),
-                new SeriesSpec(httpErrorRateSeries, getErrorRateLineColor(), true, AxisFormat.DECIMAL)
+                new SeriesSpec(httpVirtualUsersSeries, PerformanceTrendTheme.threadsLine(), true, AxisFormat.INTEGER),
+                new SeriesSpec(httpRpsSeries, PerformanceTrendTheme.qpsLine(), true, AxisFormat.DECIMAL),
+                new SeriesSpec(httpAvgResponseSeries, PerformanceTrendTheme.responseTimeLine(), true, AxisFormat.DECIMAL),
+                new SeriesSpec(httpErrorRateSeries, PerformanceTrendTheme.errorRateLine(), true, AxisFormat.DECIMAL)
         );
     }
 
     private JPanel createWebSocketPanel() {
         return createTrendView(
                 MessageKeys.PERFORMANCE_TREND_METRICS,
-                new SeriesSpec(wsActiveSeries, getThreadsLineColor(), true, AxisFormat.INTEGER),
-                new SeriesSpec(wsSentRateSeries, getMatchedLineColor(), true, AxisFormat.DECIMAL),
-                new SeriesSpec(wsReceivedRateSeries, getQpsLineColor(), true, AxisFormat.DECIMAL),
-                new SeriesSpec(wsErrorRateSeries, getErrorRateLineColor(), true, AxisFormat.DECIMAL)
+                new SeriesSpec(wsActiveSeries, PerformanceTrendTheme.threadsLine(), true, AxisFormat.INTEGER),
+                new SeriesSpec(wsSentRateSeries, PerformanceTrendTheme.matchedLine(), true, AxisFormat.DECIMAL),
+                new SeriesSpec(wsReceivedRateSeries, PerformanceTrendTheme.qpsLine(), true, AxisFormat.DECIMAL),
+                new SeriesSpec(wsErrorRateSeries, PerformanceTrendTheme.errorRateLine(), true, AxisFormat.DECIMAL)
         );
     }
 
     private JPanel createSsePanel() {
         return createTrendView(
                 MessageKeys.PERFORMANCE_TREND_METRICS,
-                new SeriesSpec(sseActiveSeries, getThreadsLineColor(), true, AxisFormat.INTEGER),
-                new SeriesSpec(sseEventRateSeries, getQpsLineColor(), true, AxisFormat.DECIMAL),
-                new SeriesSpec(sseErrorRateSeries, getErrorRateLineColor(), true, AxisFormat.DECIMAL)
+                new SeriesSpec(sseActiveSeries, PerformanceTrendTheme.threadsLine(), true, AxisFormat.INTEGER),
+                new SeriesSpec(sseEventRateSeries, PerformanceTrendTheme.qpsLine(), true, AxisFormat.DECIMAL),
+                new SeriesSpec(sseErrorRateSeries, PerformanceTrendTheme.errorRateLine(), true, AxisFormat.DECIMAL)
         );
     }
 
@@ -214,34 +213,34 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
                 true,
                 false
         );
-        chart.setBackgroundPaint(getChartBackgroundColor());
+        chart.setBackgroundPaint(PerformanceTrendTheme.chartBackground());
         chart.getTitle().setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 0));
-        chart.getTitle().setPaint(getTextColor());
+        chart.getTitle().setPaint(PerformanceTrendTheme.text());
         if (chart.getLegend() != null) {
             chart.getLegend().setItemFont(FontsUtil.getDefaultFont(Font.PLAIN));
-            chart.getLegend().setItemPaint(getTextColor());
-            chart.getLegend().setBackgroundPaint(getChartBackgroundColor());
+            chart.getLegend().setItemPaint(PerformanceTrendTheme.text());
+            chart.getLegend().setBackgroundPaint(PerformanceTrendTheme.chartBackground());
         }
 
         XYPlot plot = chart.getXYPlot();
-        plot.setBackgroundPaint(getChartBackgroundColor());
-        plot.setDomainGridlinePaint(getGridLineColor());
-        plot.setRangeGridlinePaint(getGridLineColor());
-        plot.setOutlinePaint(getChartBorderColor());
+        plot.setBackgroundPaint(PerformanceTrendTheme.chartBackground());
+        plot.setDomainGridlinePaint(PerformanceTrendTheme.gridLine());
+        plot.setRangeGridlinePaint(PerformanceTrendTheme.gridLine());
+        plot.setOutlinePaint(PerformanceTrendTheme.chartBorder());
 
         DateAxis dateAxis = new DateAxis(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_TIME));
         dateAxis.setDateFormatOverride(timeFormat);
         dateAxis.setTickLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
         dateAxis.setLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        dateAxis.setTickLabelPaint(getTextColor());
-        dateAxis.setLabelPaint(getTextColor());
+        dateAxis.setTickLabelPaint(PerformanceTrendTheme.text());
+        dateAxis.setLabelPaint(PerformanceTrendTheme.text());
         plot.setDomainAxis(dateAxis);
 
         NumberAxis rangeAxis = (NumberAxis) plot.getRangeAxis();
         rangeAxis.setTickLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
         rangeAxis.setLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        rangeAxis.setTickLabelPaint(getTextColor());
-        rangeAxis.setLabelPaint(getTextColor());
+        rangeAxis.setTickLabelPaint(PerformanceTrendTheme.text());
+        rangeAxis.setLabelPaint(PerformanceTrendTheme.text());
         rangeAxis.setAutoRangeMinimumSize(1.0);
         rangeAxis.setUpperMargin(0.2);
         rangeAxis.setAutoRangeIncludesZero(true);
@@ -251,7 +250,7 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
 
         ChartPanel panel = new ChartPanel(chart);
         panel.setMouseWheelEnabled(true);
-        panel.setBackground(getChartPanelBackgroundColor());
+        panel.setBackground(PerformanceTrendTheme.chartPanelBackground());
         panel.setDisplayToolTips(true);
         panel.setMinimumDrawWidth(0);
         panel.setMinimumDrawHeight(0);
@@ -447,54 +446,6 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
         httpRpsSeries.addOrUpdate(period, qps);
         httpAvgResponseSeries.addOrUpdate(period, responseTime);
         httpErrorRateSeries.addOrUpdate(period, errorPercent);
-    }
-
-    private boolean isDarkTheme() {
-        return FlatLaf.isLafDark();
-    }
-
-    private Color getChartBackgroundColor() {
-        return isDarkTheme() ? new Color(43, 43, 43) : Color.WHITE;
-    }
-
-    private Color getChartPanelBackgroundColor() {
-        return isDarkTheme() ? new Color(43, 43, 43) : Color.WHITE;
-    }
-
-    private Color getGridLineColor() {
-        return isDarkTheme() ? new Color(90, 90, 90) : new Color(194, 211, 236);
-    }
-
-    private Color getTextColor() {
-        return isDarkTheme() ? new Color(200, 200, 200) : Color.BLACK;
-    }
-
-    private Color getChartBorderColor() {
-        return isDarkTheme() ? new Color(90, 90, 90) : new Color(194, 211, 236);
-    }
-
-    private Color getThreadsLineColor() {
-        return isDarkTheme() ? new Color(100, 181, 246) : new Color(33, 150, 243);
-    }
-
-    private Color getResponseTimeLineColor() {
-        return isDarkTheme() ? new Color(255, 183, 77) : new Color(255, 152, 0);
-    }
-
-    private Color getQpsLineColor() {
-        return isDarkTheme() ? new Color(129, 199, 132) : new Color(56, 142, 60);
-    }
-
-    private Color getMatchedLineColor() {
-        return isDarkTheme() ? new Color(186, 104, 200) : new Color(142, 36, 170);
-    }
-
-    private Color getDurationLineColor() {
-        return isDarkTheme() ? new Color(77, 208, 225) : new Color(0, 137, 123);
-    }
-
-    private Color getErrorRateLineColor() {
-        return isDarkTheme() ? new Color(239, 83, 80) : new Color(211, 47, 47);
     }
 
     private void showChartMode(String mode) {

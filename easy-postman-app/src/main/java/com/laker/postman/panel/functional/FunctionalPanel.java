@@ -652,24 +652,24 @@ public class FunctionalPanel extends UiSingletonPanel {
 
         if (ERROR.equalsIgnoreCase(status)) {
             // 错误状态：使用错误色
-            foreground = ModernColors.ERROR_DARK;
+            foreground = ModernColors.getErrorDark();
         } else {
             // 尝试解析状态码
             try {
                 int code = Integer.parseInt(status);
                 if (code >= 200 && code < 300) {
                     // 成功：使用绿色
-                    foreground = ModernColors.SUCCESS_DARK;
+                    foreground = ModernColors.getSuccessDark();
                 } else if (code >= 400 && code < 500) {
                     // 客户端错误：使用警告色
-                    foreground = ModernColors.WARNING_DARKER;
+                    foreground = ModernColors.getWarningDarker();
                 } else if (code >= 500) {
                     // 服务器错误：使用错误色
-                    foreground = ModernColors.ERROR_DARKER;
+                    foreground = ModernColors.getErrorDarker();
                 }
             } catch (NumberFormatException e) {
                 // 非数字状态（如错误消息）
-                foreground = ModernColors.ERROR_DARK;
+                foreground = ModernColors.getErrorDark();
             }
 
         }
@@ -686,9 +686,9 @@ public class FunctionalPanel extends UiSingletonPanel {
                 if (value instanceof AssertionResult ar) {
                     setText(ar.getDisplayValue());
                     if (AssertionResult.PASS.equals(ar)) {
-                        c.setForeground(isSelected ? c.getForeground() : ModernColors.SUCCESS_DARK);
+                        c.setForeground(isSelected ? c.getForeground() : ModernColors.getSuccessDark());
                     } else if (AssertionResult.FAIL.equals(ar)) {
-                        c.setForeground(isSelected ? c.getForeground() : ModernColors.ERROR_DARK);
+                        c.setForeground(isSelected ? c.getForeground() : ModernColors.getErrorDark());
                     } else {
                         c.setForeground(isSelected ? c.getForeground() : ModernColors.getTextSecondary());
                     }

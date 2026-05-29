@@ -221,8 +221,8 @@ public class RequestLinePanel extends JPanel {
         sendButton.setEnabled(true);
 
         // 重置为默认蓝色
-        updateButtonStyle(sendButton, ModernColors.PRIMARY, ModernColors.PRIMARY_DARK,
-                ModernColors.PRIMARY_DARKER);
+        updateButtonStyle(sendButton, ModernColors.getPrimary(), ModernColors.getPrimaryDark(),
+                ModernColors.getPrimaryDarker());
 
         // 添加新监听器
         sendButton.addActionListener(sendAction);
@@ -243,8 +243,8 @@ public class RequestLinePanel extends JPanel {
         sendButton.setEnabled(true);
 
         // 改变按钮为警告色（橙色）
-        updateButtonStyle(sendButton, ModernColors.WARNING, ModernColors.WARNING_DARK,
-                ModernColors.WARNING_DARKER);
+        updateButtonStyle(sendButton, ModernColors.getWarning(), ModernColors.getWarningDark(),
+                ModernColors.getWarningDarker());
 
         // 添加新监听器
         sendButton.addActionListener(cancelAction);
@@ -265,8 +265,8 @@ public class RequestLinePanel extends JPanel {
         sendButton.setEnabled(true);
 
         // 改变按钮为中性灰色
-        updateButtonStyle(sendButton, ModernColors.NEUTRAL, ModernColors.NEUTRAL_DARK,
-                ModernColors.NEUTRAL_DARKER);
+        updateButtonStyle(sendButton, ModernColors.getNeutral(), ModernColors.getNeutralDark(),
+                ModernColors.getNeutralDarker());
 
         // 添加新监听器
         sendButton.addActionListener(closeAction);

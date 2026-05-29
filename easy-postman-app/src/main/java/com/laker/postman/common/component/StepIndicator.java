@@ -1,6 +1,5 @@
 package com.laker.postman.common.component;
 
-import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -27,31 +26,24 @@ public class StepIndicator extends JPanel {
     }
 
     /**
-     * 检查当前是否为暗色主题
-     */
-    private boolean isDarkTheme() {
-        return FlatLaf.isLafDark();
-    }
-
-    /**
      * 获取激活状态的圆圈背景色（主题适配）
      */
     private Color getActiveCircleBackground() {
-        return ModernColors.PRIMARY;
+        return ModernColors.getPrimary();
     }
 
     /**
      * 获取非激活状态的圆圈背景色（主题适配）
      */
     private Color getInactiveCircleBackground() {
-        return isDarkTheme() ? new Color(85, 87, 90) : new Color(226, 232, 240);
+        return ModernColors.getBorderLightColor();
     }
 
     /**
      * 获取圆圈边框颜色（主题适配）
      */
     private Color getCircleBorderColor() {
-        return isDarkTheme() ? new Color(70, 73, 75) : Color.WHITE;
+        return ModernColors.getCardBackgroundColor();
     }
 
     /**

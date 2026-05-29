@@ -1,7 +1,5 @@
 package com.laker.postman.common.component.placeholder;
 
-import com.formdev.flatlaf.FlatLaf;
-
 import javax.swing.*;
 import java.awt.*;
 
@@ -53,8 +51,20 @@ abstract class AbstractPlaceholderPanel extends JPanel {
         return column;
     }
 
-    protected boolean isDarkTheme() {
-        return FlatLaf.isLafDark();
+    protected Color getSkeletonBlockColor() {
+        return PlaceholderTheme.skeletonBlock();
+    }
+
+    protected Color getSkeletonSoftBlockColor() {
+        return PlaceholderTheme.skeletonSoftBlock();
+    }
+
+    protected Color getSkeletonAccentColor() {
+        return PlaceholderTheme.skeletonAccent();
+    }
+
+    protected Color getSkeletonAccentLineColor() {
+        return PlaceholderTheme.skeletonAccentLine();
     }
 
     protected void enableAntialias(Graphics2D g2) {

@@ -1,6 +1,5 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
-import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
 
 import javax.swing.*;
@@ -46,7 +45,7 @@ public class ModernTabButton extends JButton {
         setContentAreaFilled(false);
         setOpaque(false);
         setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        setForeground(ModernColors.getTextPrimary());
+        setForeground(ModernTabButtonTheme.foreground(true));
 
         // 设置内边距
         setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
@@ -125,14 +124,14 @@ public class ModernTabButton extends JButton {
 
         // 绘制悬停背景
         if (hoverAlpha > 0 && !isSelected()) {
-            Color hoverBg = getHoverBackgroundColor();
+            Color hoverBg = ModernTabButtonTheme.hoverBackground(hoverAlpha);
             g2d.setColor(hoverBg);
             g2d.fillRoundRect(0, 0, getWidth(), getHeight() - INDICATOR_HEIGHT, 4, 4);
         }
 
         // 绘制选中背景
         if (isSelected()) {
-            Color selectedBg = getSelectedBackgroundColor();
+            Color selectedBg = ModernTabButtonTheme.selectedBackground();
             g2d.setColor(selectedBg);
             g2d.fillRoundRect(0, 0, getWidth(), getHeight() - INDICATOR_HEIGHT, 4, 4);
         }
@@ -147,88 +146,12 @@ public class ModernTabButton extends JButton {
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-            Color indicatorColor = getIndicatorColor();
+            Color indicatorColor = ModernTabButtonTheme.indicator(isEnabled());
             g2.setColor(indicatorColor);
             g2.fillRoundRect(4, getHeight() - INDICATOR_HEIGHT,
                     getWidth() - 8, INDICATOR_HEIGHT, 2, 2);
             g2.dispose();
         }
-    }
-
-    /**
-     * 获取底部指示器颜色（从TabbedPane主题获取）
-     * 根据按钮的enabled状态使用不同的颜色
-     */
-    private Color getIndicatorColor() {
-        Color color;
-
-        // 根据enabled状态选择不同的颜色
-        if (!isEnabled()) {
-            // 禁用状态：使用 disabledUnderlineColor
-            color = UIManager.getColor("TabbedPane.disabledUnderlineColor");
-            if (color != null) {
-                return color;
-            }
-
-            // 备选：使用 disabledForeground
-            color = UIManager.getColor("TabbedPane.disabledForeground");
-            if (color != null) {
-                return color;
-            }
-        } else {
-            // 启用状态：使用 underlineColor
-            color = UIManager.getColor("TabbedPane.underlineColor");
-            if (color != null) {
-                return color;
-            }
-        }
-
-        // 通用备选：使��� accentColor（FlatLaf主题色）
-        color = UIManager.getColor("Component.accentColor");
-        if (color != null) {
-            return color;
-        }
-
-        // 最后备选：使用ModernColors.PRIMARY
-        return ModernColors.PRIMARY;
-    }
-
-    /**
-     * 获取悬停背景颜色
-     */
-    private Color getHoverBackgroundColor() {
-        // 使用TabbedPane的悬停颜色
-        Color hoverColor = UIManager.getColor("TabbedPane.hoverColor");
-        if (hoverColor != null) {
-            // 应用透明度
-            return new Color(
-                    hoverColor.getRed(),
-                    hoverColor.getGreen(),
-                    hoverColor.getBlue(),
-                    (int) (hoverColor.getAlpha() * hoverAlpha)
-            );
-        }
-
-        // 备选方案：根据主题使用半透明白色或黑色
-        return ModernColors.isDarkTheme()
-                ? new Color(255, 255, 255, (int) (20 * hoverAlpha))
-                : new Color(0, 0, 0, (int) (10 * hoverAlpha));
-    }
-
-    /**
-     * 获取选中背景颜色
-     */
-    private Color getSelectedBackgroundColor() {
-        // 使用TabbedPane的选中背景色
-        Color selectedBg = UIManager.getColor("TabbedPane.selectedBackground");
-        if (selectedBg != null) {
-            return selectedBg;
-        }
-
-        // 备选方案：使用半透明颜色
-        return ModernColors.isDarkTheme()
-                ? new Color(255, 255, 255, 15)
-                : new Color(0, 0, 0, 8);
     }
 
     @Override
@@ -240,7 +163,7 @@ public class ModernTabButton extends JButton {
                 hoverAnimationTimer.stop();
             }
         }
-        setForeground(enabled ? ModernColors.getTextPrimary() : ModernColors.getTextHint());
+        setForeground(ModernTabButtonTheme.foreground(enabled));
     }
 
     /**

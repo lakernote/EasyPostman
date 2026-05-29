@@ -5,6 +5,7 @@ import com.laker.postman.service.http.NetworkLogEventStage;
 import lombok.Getter;
 
 import java.awt.*;
+import java.util.function.Supplier;
 
 /**
  * 网络日志阶段枚举
@@ -13,78 +14,68 @@ import java.awt.*;
 @Getter
 public enum NetworkLogStage {
     // ==================== 错误和失败（红色系，粗体）====================
-    // 亮色主题使用深红色(239,68,68)，暗色主题使用亮红色(255,130,130)
-    FAILED("Failed", "❌", new Color(239, 68, 68), new Color(255, 130, 130), true),
-    CALL_FAILED("CallFailed", "💥", new Color(239, 68, 68), new Color(255, 130, 130), true),
-    REQUEST_FAILED("RequestFailed", "❌", new Color(239, 68, 68), new Color(255, 130, 130), true),
-    RESPONSE_FAILED("ResponseFailed", "❌", new Color(239, 68, 68), new Color(255, 130, 130), true),
-    CONNECT_FAILED("ConnectFailed", "⚠️", new Color(239, 68, 68), new Color(255, 130, 130), true),
-    CANCELED("Canceled", "🚫", new Color(239, 68, 68), new Color(255, 130, 130), true),
+    FAILED("Failed", "❌", ModernColors::getError, true),
+    CALL_FAILED("CallFailed", "💥", ModernColors::getError, true),
+    REQUEST_FAILED("RequestFailed", "❌", ModernColors::getError, true),
+    RESPONSE_FAILED("ResponseFailed", "❌", ModernColors::getError, true),
+    CONNECT_FAILED("ConnectFailed", "⚠️", ModernColors::getError, true),
+    CANCELED("Canceled", "🚫", ModernColors::getError, true),
 
     // ==================== 成功和完成（绿色系）====================
-    // 亮色主题使用深绿色(34,197,94)，暗色主题使用亮绿色(140,220,140)
-    CALL_START("CallStart", "🚀", new Color(34, 197, 94), new Color(140, 220, 140), true),
-    CALL_END("CallEnd", "✅", new Color(34, 197, 94), new Color(140, 220, 140), true),
-    CACHE_HIT("CacheHit", "💾", new Color(34, 197, 94), new Color(140, 220, 140), false),
-    CACHE_MISS("CacheMiss", "❌", new Color(6, 182, 212), new Color(140, 210, 230), false),
-    CACHE_CONDITIONAL_HIT("CacheConditionalHit", "💾", new Color(6, 182, 212), new Color(140, 210, 230), false),
-    SATISFACTION_FAILURE("SatisfactionFailure", "⚠️", new Color(245, 158, 11), new Color(255, 200, 100), false),
+    CALL_START("CallStart", "🚀", ModernColors::getSuccess, true),
+    CALL_END("CallEnd", "✅", ModernColors::getSuccess, true),
+    CACHE_HIT("CacheHit", "💾", ModernColors::getSuccess, false),
+    CACHE_MISS("CacheMiss", "❌", ModernColors::getInfo, false),
+    CACHE_CONDITIONAL_HIT("CacheConditionalHit", "💾", ModernColors::getInfo, false),
+    SATISFACTION_FAILURE("SatisfactionFailure", "⚠️", ModernColors::getWarning, false),
 
-    // ==================== 安全连接（紫色系）====================
-    // 亮色主题使用深紫色，暗色主题使用亮紫色
-    SECURE_CONNECT_START("SecureConnectStart", "🔐", new Color(111, 66, 193), new Color(210, 160, 230), false),
-    SECURE_CONNECT_END("SecureConnectEnd", "🔒", new Color(111, 66, 193), new Color(210, 160, 230), false),
+    // ==================== 安全连接（由主色和错误色派生的紫色系）====================
+    SECURE_CONNECT_START("SecureConnectStart", "🔐", NetworkLogStage::getSecureConnectColor, false),
+    SECURE_CONNECT_END("SecureConnectEnd", "🔒", NetworkLogStage::getSecureConnectColor, false),
 
     // ==================== 连接相关（蓝色系）====================
-    // 亮色主题使用深蓝色(0,122,255)，暗色主题使用亮蓝色(140,180,255)
-    CONNECT_START("ConnectStart", "🔌", new Color(0, 122, 255), new Color(140, 180, 255), false),
-    CONNECT_END("ConnectEnd", "✅", new Color(0, 122, 255), new Color(140, 180, 255), false),
-    CONNECTION_ACQUIRED("ConnectionAcquired", "🔗", new Color(0, 122, 255), new Color(140, 180, 255), false),
-    CONNECTION_RELEASED("ConnectionReleased", "🔓", new Color(0, 122, 255), new Color(140, 180, 255), false),
+    CONNECT_START("ConnectStart", "🔌", ModernColors::getPrimary, false),
+    CONNECT_END("ConnectEnd", "✅", ModernColors::getPrimary, false),
+    CONNECTION_ACQUIRED("ConnectionAcquired", "🔗", ModernColors::getPrimary, false),
+    CONNECTION_RELEASED("ConnectionReleased", "🔓", ModernColors::getPrimary, false),
 
     // ==================== DNS（蓝色系）====================
-    DNS_START("DnsStart", "🔍", new Color(0, 122, 255), new Color(140, 180, 255), false),
-    DNS_END("DnsEnd", "📍", new Color(0, 122, 255), new Color(140, 180, 255), false),
+    DNS_START("DnsStart", "🔍", ModernColors::getPrimary, false),
+    DNS_END("DnsEnd", "📍", ModernColors::getPrimary, false),
 
     // ==================== 代理（蓝色系）====================
-    PROXY_SELECT("ProxySelect", "🌐", new Color(0, 122, 255), new Color(140, 180, 255), false),
-    PROXY_SELECT_START("ProxySelectStart", "🌐", new Color(0, 122, 255), new Color(140, 180, 255), false),
-    PROXY_SELECT_END("ProxySelectEnd", "🌐", new Color(0, 122, 255), new Color(140, 180, 255), false),
+    PROXY_SELECT("ProxySelect", "🌐", ModernColors::getPrimary, false),
+    PROXY_SELECT_START("ProxySelectStart", "🌐", ModernColors::getPrimary, false),
+    PROXY_SELECT_END("ProxySelectEnd", "🌐", ModernColors::getPrimary, false),
 
     // ==================== 请求（橙色系）====================
-    // 保持原有的橙色方案
-    REQUEST_HEADERS_START("RequestHeadersStart", "📤", new Color(220, 160, 100), new Color(255, 190, 130), false),
-    REQUEST_HEADERS_END("RequestHeadersEnd", "📨", new Color(220, 160, 100), new Color(255, 190, 130), false),
-    REQUEST_BODY_START("RequestBodyStart", "📦", new Color(220, 160, 100), new Color(255, 190, 130), false),
-    REQUEST_BODY_END("RequestBodyEnd", "✅", new Color(220, 160, 100), new Color(255, 190, 130), false),
+    REQUEST_HEADERS_START("RequestHeadersStart", "📤", ModernColors::getWarning, false),
+    REQUEST_HEADERS_END("RequestHeadersEnd", "📨", ModernColors::getWarning, false),
+    REQUEST_BODY_START("RequestBodyStart", "📦", ModernColors::getWarning, false),
+    REQUEST_BODY_END("RequestBodyEnd", "✅", ModernColors::getWarning, false),
 
     // ==================== 响应（青色系）====================
-    // 亮色主题使用深青色(6,182,212)，暗色主题使用亮青色(140,210,230)
-    RESPONSE_HEADERS_START("ResponseHeadersStart", "📥", new Color(6, 182, 212), new Color(140, 210, 230), false),
-    RESPONSE_HEADERS_END("ResponseHeadersEnd", "📬", new Color(6, 182, 212), new Color(140, 210, 230), false),
-    RESPONSE_HEADERS_END_REDIRECT("ResponseHeadersEnd:Redirect", "🔀", new Color(245, 158, 11), new Color(255, 200, 100), true),
-    RESPONSE_BODY_START("ResponseBodyStart", "📄", new Color(6, 182, 212), new Color(140, 210, 230), false),
-    RESPONSE_BODY_END("ResponseBodyEnd", "✅", new Color(6, 182, 212), new Color(140, 210, 230), false),
+    RESPONSE_HEADERS_START("ResponseHeadersStart", "📥", ModernColors::getInfo, false),
+    RESPONSE_HEADERS_END("ResponseHeadersEnd", "📬", ModernColors::getInfo, false),
+    RESPONSE_HEADERS_END_REDIRECT("ResponseHeadersEnd:Redirect", "🔀", ModernColors::getWarning, true),
+    RESPONSE_BODY_START("ResponseBodyStart", "📄", ModernColors::getInfo, false),
+    RESPONSE_BODY_END("ResponseBodyEnd", "✅", ModernColors::getInfo, false),
 
     // ==================== 重定向（橙色，粗体）====================
-    // 亮色主题使用深橙色(245,158,11)，暗色主题使用亮橙色(255,200,100)
-    REDIRECT("Redirect", "↪️", new Color(245, 158, 11), new Color(255, 200, 100), true),
+    REDIRECT("Redirect", "↪️", ModernColors::getWarning, true),
 
     // ==================== 默认 ====================
-    // 使用主题适配的文本颜色：亮色主题深色文字，暗色主题浅色文字
-    DEFAULT("Default", "📋", new Color(15, 23, 42), new Color(241, 245, 249), false);
+    DEFAULT("Default", "📋", ModernColors::getTextPrimary, false);
 
     private final String stageName;
     private final String emoji;
-    private final Color lightThemeColor;
-    private final Color darkThemeColor;
+    private final Supplier<Color> colorProvider;
     private final boolean bold;
 
-    NetworkLogStage(String stageName, String emoji, Color lightThemeColor, Color darkThemeColor, boolean bold) {
+    NetworkLogStage(String stageName, String emoji, Supplier<Color> colorProvider, boolean bold) {
         this.stageName = stageName;
         this.emoji = emoji;
-        this.lightThemeColor = lightThemeColor;
-        this.darkThemeColor = darkThemeColor;
+        this.colorProvider = colorProvider;
         this.bold = bold;
     }
 
@@ -92,7 +83,19 @@ public enum NetworkLogStage {
      * 获取当前主题适配的颜色
      */
     public Color getColor() {
-        return ModernColors.isDarkTheme() ? darkThemeColor : lightThemeColor;
+        return colorProvider.get();
+    }
+
+    private static Color getSecureConnectColor() {
+        return blend(ModernColors.getPrimary(), ModernColors.getError());
+    }
+
+    private static Color blend(Color first, Color second) {
+        return new Color(
+                (first.getRed() + second.getRed()) / 2,
+                (first.getGreen() + second.getGreen()) / 2,
+                (first.getBlue() + second.getBlue()) / 2
+        );
     }
 
     /**

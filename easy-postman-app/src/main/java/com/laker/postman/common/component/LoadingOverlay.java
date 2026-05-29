@@ -1,6 +1,5 @@
 package com.laker.postman.common.component;
 
-import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -130,7 +129,7 @@ public class LoadingOverlay extends JComponent {
             g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
             // 绘制半透明背景遮罩 - 主题适配
-            Color overlayColor = getOverlayColor();
+            Color overlayColor = LoadingOverlayTheme.overlay();
             g2d.setColor(overlayColor);
             g2d.fillRect(0, 0, getWidth(), getHeight());
 
@@ -155,42 +154,6 @@ public class LoadingOverlay extends JComponent {
         // loading overlay 只负责视觉提示，不应该抢占底层组件的鼠标命中。
         // 这样即使正在执行请求，用户仍然可以切换 response tab 或查看旧内容。
         return false;
-    }
-
-    /**
-     * 获取遮罩层颜色 - 主题适配
-     * 亮色主题：#f5f7fa
-     * 暗色主题：半透明深灰色
-     */
-    private Color getOverlayColor() {
-        if (ModernColors.isDarkTheme()) {
-            // 暗色主题：使用半透明的背景色
-            Color bg = ModernColors.getBackgroundColor();
-            return new Color(bg.getRed(), bg.getGreen(), bg.getBlue(), 230);
-        } else {
-            // 亮色主题：#f5f7fa (245, 247, 250) 带透明度
-            return new Color(245, 247, 250, 230);
-        }
-    }
-
-    /**
-     * 获取转圈主色 - 主题适配
-     */
-    private Color getSpinnerColor() {
-        return ModernColors.PRIMARY;
-    }
-
-    /**
-     * 获取转圈背景色 - 主题适配
-     */
-    private Color getSpinnerBackgroundColor() {
-        if (ModernColors.isDarkTheme()) {
-            // 暗色主题：稍亮的灰色
-            return new Color(100, 100, 100);
-        } else {
-            // 亮色主题：浅灰色
-            return new Color(220, 220, 220);
-        }
     }
 
     /**
@@ -224,14 +187,14 @@ public class LoadingOverlay extends JComponent {
         int radius = size / 2;
 
         // 绘制背景圆环（淡色）
-        Color bgColor = getSpinnerBackgroundColor();
+        Color bgColor = LoadingOverlayTheme.spinnerBackground();
         g2d.setColor(new Color(bgColor.getRed(), bgColor.getGreen(),
                 bgColor.getBlue(), (int) (50 * alpha)));
         g2d.setStroke(new BasicStroke(thickness, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         g2d.drawOval(centerX - radius, centerY - radius, size, size);
 
         // 绘制主色弧形（带渐变效果）
-        Color primaryColor = getSpinnerColor();
+        Color primaryColor = LoadingOverlayTheme.spinner();
 
         // 起始颜色（主色）
         Color startColor = new Color(
@@ -275,7 +238,7 @@ public class LoadingOverlay extends JComponent {
      * 绘制粒子效果
      */
     private void drawParticles(Graphics2D g2d, int centerX, int centerY, int orbitRadius) {
-        Color primaryColor = getSpinnerColor();
+        Color primaryColor = LoadingOverlayTheme.spinner();
 
         for (int i = 0; i < PARTICLE_COUNT; i++) {
             // 计算粒子位置（均匀分布在圆周上）
@@ -304,7 +267,7 @@ public class LoadingOverlay extends JComponent {
      * 绘制中心脉冲效果
      */
     private void drawPulse(Graphics2D g2d, int centerX, int centerY) {
-        Color primaryColor = getSpinnerColor();
+        Color primaryColor = LoadingOverlayTheme.spinner();
 
         // 脉冲大小随相位变化
         float scale = 0.7f + 0.3f * (float) Math.sin(pulsePhase);
@@ -351,7 +314,7 @@ public class LoadingOverlay extends JComponent {
      */
     private void drawMessage(Graphics2D g2d, int centerX, int centerY) {
         // 使用主题适配的文本颜色
-        g2d.setColor(ModernColors.getTextSecondary());
+        g2d.setColor(LoadingOverlayTheme.messageForeground());
 
         // 使用 FontsUtil 获取字体
         g2d.setFont(FontsUtil.getDefaultFont(Font.PLAIN));

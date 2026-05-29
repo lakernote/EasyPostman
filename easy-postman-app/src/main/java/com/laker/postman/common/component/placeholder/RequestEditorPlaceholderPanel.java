@@ -71,19 +71,19 @@ public class RequestEditorPlaceholderPanel extends AbstractPlaceholderPanel {
     }
 
     private Color blockColor() {
-        return isDarkTheme() ? new Color(77, 81, 86) : new Color(234, 239, 245);
+        return getSkeletonBlockColor();
     }
 
     private Color softBlockColor() {
-        return isDarkTheme() ? new Color(69, 73, 78) : new Color(241, 245, 249);
+        return getSkeletonSoftBlockColor();
     }
 
     private Color accentColor() {
-        return isDarkTheme() ? new Color(100, 181, 246, 80) : new Color(59, 130, 246, 42);
+        return getSkeletonAccentColor();
     }
 
     private Color accentLineColor() {
-        return isDarkTheme() ? new Color(100, 181, 246, 110) : new Color(59, 130, 246, 86);
+        return getSkeletonAccentLineColor();
     }
 
     private class MetaTabsShell extends JPanel {

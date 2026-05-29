@@ -1,6 +1,6 @@
 package com.laker.postman.service.render;
 
-import com.formdev.flatlaf.FlatLaf;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.performance.model.PerformanceInternalHeaders;
 import com.laker.postman.model.script.TestResult;
@@ -21,13 +21,6 @@ public class HttpHtmlRenderer {
 
     private static final int MAX_DISPLAY_SIZE = 2 * 1024;
 
-    // 颜色常量
-    private static final String COLOR_PRIMARY = "#1976d2";
-    private static final String COLOR_SUCCESS = "#388e3c";
-    private static final String COLOR_ERROR   = "#d32f2f";
-    private static final String COLOR_WARNING = "#ffa000";
-    private static final String COLOR_GRAY    = "#888";
-
     // ==================== 字号 ====================
 
     /**
@@ -43,19 +36,22 @@ public class HttpHtmlRenderer {
 
     // ==================== 主题 ====================
 
-    private static boolean isDarkTheme() { return FlatLaf.isLafDark(); }
-
-    private static String bgColor()       { return isDarkTheme() ? "#3c3f41" : "#f5f5f5"; }
-    private static String bgColorAlt()    { return isDarkTheme() ? "#45494a" : "#ececec"; } // 斑马纹
-    private static String textColor()     { return isDarkTheme() ? "#e0e0e0" : "#222";    }
-    private static String borderColor()   { return isDarkTheme() ? "#4a4a4a" : "#e0e0e0"; }
-    private static String codeBgColor()   { return isDarkTheme() ? "#2b2b2b" : "#f8f8f8"; }
+    private static String colorPrimary() { return toHex(ModernColors.getPrimary()); }
+    private static String colorSuccess() { return toHex(ModernColors.getSuccess()); }
+    private static String colorError() { return toHex(ModernColors.getError()); }
+    private static String colorWarning() { return toHex(ModernColors.getWarning()); }
+    private static String colorGray() { return toHex(ModernColors.getTextHint()); }
+    private static String bgColor() { return toHex(ModernColors.getBackgroundColor()); }
+    private static String bgColorAlt() { return toHex(ModernColors.getHoverBackgroundColor()); }
+    private static String textColor() { return toHex(ModernColors.getTextPrimary()); }
+    private static String borderColor() { return toHex(ModernColors.getBorderLightColor()); }
+    private static String codeBgColor() { return toHex(ModernColors.getHoverBackgroundColor()); }
 
     private static String statusColor(int code) {
-        if (code <= 0) return COLOR_ERROR;
-        if (code >= 500) return COLOR_ERROR;
-        if (code >= 400) return COLOR_WARNING;
-        return "#43a047";
+        if (code <= 0) return colorError();
+        if (code >= 500) return colorError();
+        if (code >= 400) return colorWarning();
+        return colorSuccess();
     }
 
     // ==================== HTML 文档 ====================
@@ -79,7 +75,7 @@ public class HttpHtmlRenderer {
         return "<div style='padding:3px 8px;background:" + (alt ? bgColorAlt() : bgColor())
                 + ";border-radius:3px;margin-bottom:2px;word-break:break-all;'>"
                 + "<span style='color:" + keyColor + ";font-weight:bold;'>" + key + "</span>"
-                + "<span style='color:" + COLOR_GRAY + ";'> : </span>"
+                + "<span style='color:" + colorGray() + ";'> : </span>"
                 + "<span>" + value + "</span>"
                 + "</div>";
     }
@@ -93,7 +89,7 @@ public class HttpHtmlRenderer {
 
     /** 无数据提示 */
     private static String noData(String message) {
-        return "<div style='color:" + COLOR_GRAY + ";padding:12px;font-style:italic;'>" + message + "</div>";
+        return "<div style='color:" + colorGray() + ";padding:12px;font-style:italic;'>" + message + "</div>";
     }
 
     /** 警告/错误提示框 */
@@ -122,13 +118,13 @@ public class HttpHtmlRenderer {
         if (req == null) return htmlDoc(noData("无请求信息"));
         StringBuilder sb = new StringBuilder();
 
-        sb.append(kvRow(COLOR_PRIMARY, "URL",    escapeHtml(safeStr(req.url)),    false));
-        sb.append(kvRow(COLOR_PRIMARY, "Method", escapeHtml(safeStr(req.method)), true));
+        sb.append(kvRow(colorPrimary(), "URL",    escapeHtml(safeStr(req.url)),    false));
+        sb.append(kvRow(colorPrimary(), "Method", escapeHtml(safeStr(req.method)), true));
 
         if (req.okHttpHeaders != null && req.okHttpHeaders.size() > 0) {
-            sb.append(sectionTitle(COLOR_PRIMARY, "Headers"));
+            sb.append(sectionTitle(colorPrimary(), "Headers"));
             for (int i = 0; i < req.okHttpHeaders.size(); i++) {
-                sb.append(kvRow(COLOR_PRIMARY,
+                sb.append(kvRow(colorPrimary(),
                         escapeHtml(req.okHttpHeaders.name(i)),
                         escapeHtml(req.okHttpHeaders.value(i)), i % 2 != 0));
             }
@@ -138,28 +134,28 @@ public class HttpHtmlRenderer {
             boolean hasText = req.formDataList.stream().anyMatch(d -> d.isEnabled() && d.isText());
             boolean hasFile = req.formDataList.stream().anyMatch(d -> d.isEnabled() && d.isFile());
             if (hasText) {
-                sb.append(sectionTitle(COLOR_PRIMARY, "Form Data"));
+                sb.append(sectionTitle(colorPrimary(), "Form Data"));
                 int[] idx = {0};
                 req.formDataList.stream().filter(d -> d.isEnabled() && d.isText()).forEach(d ->
-                        sb.append(kvRow(COLOR_PRIMARY, escapeHtml(d.getKey()), escapeHtml(d.getValue()), idx[0]++ % 2 != 0)));
+                        sb.append(kvRow(colorPrimary(), escapeHtml(d.getKey()), escapeHtml(d.getValue()), idx[0]++ % 2 != 0)));
             }
             if (hasFile) {
-                sb.append(sectionTitle(COLOR_PRIMARY, "Form Files"));
+                sb.append(sectionTitle(colorPrimary(), "Form Files"));
                 int[] idx = {0};
                 req.formDataList.stream().filter(d -> d.isEnabled() && d.isFile()).forEach(d ->
-                        sb.append(kvRow(COLOR_PRIMARY, escapeHtml(d.getKey()), escapeHtml(d.getValue()), idx[0]++ % 2 != 0)));
+                        sb.append(kvRow(colorPrimary(), escapeHtml(d.getKey()), escapeHtml(d.getValue()), idx[0]++ % 2 != 0)));
             }
         }
 
         if (req.urlencodedList != null && !req.urlencodedList.isEmpty()) {
-            sb.append(sectionTitle(COLOR_PRIMARY, "x-www-form-urlencoded"));
+            sb.append(sectionTitle(colorPrimary(), "x-www-form-urlencoded"));
             int[] idx = {0};
             req.urlencodedList.stream().filter(HttpFormUrlencoded::isEnabled).forEach(e ->
-                    sb.append(kvRow(COLOR_PRIMARY, escapeHtml(e.getKey()), escapeHtml(e.getValue()), idx[0]++ % 2 != 0)));
+                    sb.append(kvRow(colorPrimary(), escapeHtml(e.getKey()), escapeHtml(e.getValue()), idx[0]++ % 2 != 0)));
         }
 
         if (isNotEmpty(req.okHttpRequestBody)) {
-            sb.append(sectionTitle(COLOR_PRIMARY, "Body"));
+            sb.append(sectionTitle(colorPrimary(), "Body"));
             sb.append(codeBlock(truncate(req.okHttpRequestBody)));
         }
 
@@ -174,19 +170,19 @@ public class HttpHtmlRenderer {
         int code = resp.code;
         String statusBadge = "<span style='color:" + statusColor(code) + ";font-weight:bold;padding:1px 6px;"
                 + "border:1px solid " + statusColor(code) + ";border-radius:3px;'>" + code + "</span>";
-        sb.append(kvRow(COLOR_SUCCESS, "Status",   statusBadge, false));
-        sb.append(kvRow(COLOR_PRIMARY, "Protocol", escapeHtml(safeStr(resp.protocol)),   true));
-        sb.append(kvRow(COLOR_PRIMARY, "Thread",   escapeHtml(safeStr(resp.threadName)), false));
+        sb.append(kvRow(colorSuccess(), "Status",   statusBadge, false));
+        sb.append(kvRow(colorPrimary(), "Protocol", escapeHtml(safeStr(resp.protocol)),   true));
+        sb.append(kvRow(colorPrimary(), "Thread",   escapeHtml(safeStr(resp.threadName)), false));
         if (resp.httpEventInfo != null) {
-            sb.append(kvRow(COLOR_PRIMARY, "Connection",
+            sb.append(kvRow(colorPrimary(), "Connection",
                     escapeHtml(safeStr(resp.httpEventInfo.getLocalAddress()))
-                            + " <span style='color:" + COLOR_GRAY + ";'>→</span> "
+                            + " <span style='color:" + colorGray() + ";'>→</span> "
                             + escapeHtml(safeStr(resp.httpEventInfo.getRemoteAddress())), true));
         }
 
         appendResponseHeaders(sb, resp.headers);
 
-        sb.append(sectionTitle(COLOR_SUCCESS, "Body"));
+        sb.append(sectionTitle(colorSuccess(), "Body"));
         sb.append(codeBlock(truncate(resp.body)));
 
         return htmlDoc(sb.toString());
@@ -242,10 +238,10 @@ public class HttpHtmlRenderer {
     private static String buildResponseWithError(String errorMsg, HttpEventInfo eventInfo, HttpResponse response) {
         StringBuilder sb = new StringBuilder();
         if (isNotEmpty(errorMsg)) {
-            sb.append(alertBox(COLOR_ERROR, "⚠ Error", errorMsg));
+            sb.append(alertBox(colorError(), "⚠ Error", errorMsg));
         }
         if (eventInfo != null && isNotEmpty(eventInfo.getErrorMessage())) {
-            sb.append(alertBox(COLOR_WARNING, "⚠ Network Error", eventInfo.getErrorMessage()));
+            sb.append(alertBox(colorWarning(), "⚠ Network Error", eventInfo.getErrorMessage()));
         }
         // 直接拼响应内容片段，不包装外层 htmlDoc（由最后统一包装）
         sb.append(renderResponseBody(response));
@@ -262,17 +258,17 @@ public class HttpHtmlRenderer {
         int code = resp.code;
         String statusBadge = "<span style='color:" + statusColor(code) + ";font-weight:bold;padding:1px 6px;"
                 + "border:1px solid " + statusColor(code) + ";border-radius:3px;'>" + code + "</span>";
-        sb.append(kvRow(COLOR_SUCCESS, "Status",   statusBadge, false));
-        sb.append(kvRow(COLOR_PRIMARY, "Protocol", escapeHtml(safeStr(resp.protocol)),   true));
-        sb.append(kvRow(COLOR_PRIMARY, "Thread",   escapeHtml(safeStr(resp.threadName)), false));
+        sb.append(kvRow(colorSuccess(), "Status",   statusBadge, false));
+        sb.append(kvRow(colorPrimary(), "Protocol", escapeHtml(safeStr(resp.protocol)),   true));
+        sb.append(kvRow(colorPrimary(), "Thread",   escapeHtml(safeStr(resp.threadName)), false));
         if (resp.httpEventInfo != null) {
-            sb.append(kvRow(COLOR_PRIMARY, "Connection",
+            sb.append(kvRow(colorPrimary(), "Connection",
                     escapeHtml(safeStr(resp.httpEventInfo.getLocalAddress()))
-                            + " <span style='color:" + COLOR_GRAY + ";'>→</span> "
+                            + " <span style='color:" + colorGray() + ";'>→</span> "
                             + escapeHtml(safeStr(resp.httpEventInfo.getRemoteAddress())), true));
         }
         appendResponseHeaders(sb, resp.headers);
-        sb.append(sectionTitle(COLOR_SUCCESS, "Body"));
+        sb.append(sectionTitle(colorSuccess(), "Body"));
         sb.append(codeBlock(truncate(resp.body)));
         return sb.toString();
     }
@@ -286,13 +282,13 @@ public class HttpHtmlRenderer {
         if (!hasVisibleHeader) {
             return;
         }
-        sb.append(sectionTitle(COLOR_SUCCESS, "Headers"));
+        sb.append(sectionTitle(colorSuccess(), "Headers"));
         int[] idx = {0};
         headers.forEach((key, values) -> {
             if (PerformanceInternalHeaders.isInternalHeader(key)) {
                 return;
             }
-            sb.append(kvRow(COLOR_PRIMARY, escapeHtml(key),
+            sb.append(kvRow(colorPrimary(), escapeHtml(key),
                     escapeHtml(values != null ? String.join(", ", values) : ""),
                     idx[0]++ % 2 != 0));
         });
@@ -300,10 +296,10 @@ public class HttpHtmlRenderer {
 
     private static String testResultRow(TestResult r, boolean alt) {
         String icon = r.passed
-                ? "<span style='color:#4CAF50;font-size:" + (htmlFontSize() + 1) + "px;'>&#10003;</span>"
-                : "<span style='color:#F44336;font-size:" + (htmlFontSize() + 1) + "px;'>&#10007;</span>";
+                ? "<span style='color:" + colorSuccess() + ";font-size:" + (htmlFontSize() + 1) + "px;'>&#10003;</span>"
+                : "<span style='color:" + colorError() + ";font-size:" + (htmlFontSize() + 1) + "px;'>&#10007;</span>";
         String msg = isNotEmpty(r.message)
-                ? "<span style='color:#F44336;white-space:pre-wrap;word-break:break-all;'>" + escapeHtml(r.message) + "</span>"
+                ? "<span style='color:" + colorError() + ";white-space:pre-wrap;word-break:break-all;'>" + escapeHtml(r.message) + "</span>"
                 : "";
         String bg = alt ? bgColorAlt() : bgColor();
         return "<tr style='background:" + bg + ";border-bottom:1px solid " + borderColor() + ";'>"
@@ -328,16 +324,16 @@ public class HttpHtmlRenderer {
         long total = calc.getTotal();
 
         StringBuilder sb = new StringBuilder();
-        sb.append(sectionTitle(COLOR_PRIMARY, "Timeline"));
+        sb.append(sectionTitle(colorPrimary(), "Timeline"));
         sb.append("<table style='border-collapse:collapse;width:100%;table-layout:fixed;'>");
-        sb.append("<tr style='font-weight:bold;border-bottom:2px solid ").append(borderColor()).append(";color:").append(COLOR_GRAY).append(";'>")
+        sb.append("<tr style='font-weight:bold;border-bottom:2px solid ").append(borderColor()).append(";color:").append(colorGray()).append(";'>")
                 .append("<th style='padding:4px 6px;text-align:left;width:30%;'>Phase</th>")
                 .append("<th style='padding:4px 6px;text-align:right;width:16%;'>Time</th>")
                 .append("<th style='padding:4px 6px;width:54%;'>Bar</th>")
                 .append("</tr>");
 
         // Total 行不显示 bar（它是基准，显示 100% bar 没意义）
-        timingRow(sb, "Total",               calc.getTotal(),        COLOR_ERROR,    true,  total, true);
+        timingRow(sb, "Total",               calc.getTotal(),        colorError(),   true,  total, true);
         timingRow(sb, "Queueing",            calc.getQueueing(),     COLOR_T_QUEUE,  false, total, false);
         timingRow(sb, "Stalled",             calc.getStalled(),      COLOR_T_QUEUE,  false, total, false);
         timingRow(sb, "  ↳ DNS Lookup",      calc.getDns(),          COLOR_T_DNS,    false, total, false);
@@ -378,14 +374,14 @@ public class HttpHtmlRenderer {
         if (barVal > 0 && total > 0) {
             int pct = (int) Math.min(100, Math.round(barVal * 100.0 / total));
             int emptyPct = 100 - pct;
-            String barColor = color != null ? color : COLOR_PRIMARY;
+            String barColor = color != null ? color : colorPrimary();
             // 用 table 宽度百分比：JTextPane 对 table width=% 支持良好
             bar = "<table style='border-collapse:collapse;width:100%;' cellpadding='0' cellspacing='0'><tr>"
                     + "<td width='" + pct + "%' style='background:" + barColor
                     + ";height:8px;border-radius:2px 0 0 2px;'></td>"
                     + (emptyPct > 0 ? "<td width='" + emptyPct + "%' style='background:" + borderColor() + ";height:8px;'></td>" : "")
                     + "</tr></table>"
-                    + "<span style='color:" + COLOR_GRAY + ";font-size:" + fsSmall() + ";'>" + pct + "%</span>";
+                    + "<span style='color:" + colorGray() + ";font-size:" + fsSmall() + ";'>" + pct + "%</span>";
         }
 
         sb.append("<tr style='border-bottom:1px solid ").append(borderColor()).append(";'>")
@@ -397,7 +393,7 @@ public class HttpHtmlRenderer {
 
     private static String buildEventInfoHtml(HttpEventInfo info) {
         StringBuilder sb = new StringBuilder();
-        sb.append(sectionTitle(COLOR_PRIMARY, "Summary"));
+        sb.append(sectionTitle(colorPrimary(), "Summary"));
         sb.append("<table style='border-collapse:collapse;width:100%;margin-bottom:8px;'>");
         eventRow(sb, "Local Address",  escapeHtml(info.getLocalAddress()),  false);
         eventRow(sb, "Remote Address", escapeHtml(info.getRemoteAddress()),  true);
@@ -405,39 +401,39 @@ public class HttpHtmlRenderer {
         eventRow(sb, "TLS Version",    safeStr(info.getTlsVersion()),        true);
         eventRow(sb, "Thread",         safeStr(info.getThreadName()),        false);
         if (isNotEmpty(info.getErrorMessage())) {
-            eventRow(sb, "Error", "<span style='color:" + COLOR_ERROR + ";'>" + escapeHtml(info.getErrorMessage()) + "</span>", true);
+            eventRow(sb, "Error", "<span style='color:" + colorError() + ";'>" + escapeHtml(info.getErrorMessage()) + "</span>", true);
         }
         sb.append("</table>");
 
-        sb.append(sectionTitle(COLOR_PRIMARY, "Event Timestamps"));
+        sb.append(sectionTitle(colorPrimary(), "Event Timestamps"));
         sb.append("<table style='border-collapse:collapse;width:100%;'>");
-        sb.append("<tr style='font-weight:bold;border-bottom:2px solid ").append(borderColor()).append(";color:").append(COLOR_GRAY).append(";'>")
+        sb.append("<tr style='font-weight:bold;border-bottom:2px solid ").append(borderColor()).append(";color:").append(colorGray()).append(";'>")
                 .append("<th style='padding:3px 8px;text-align:left;width:40%;'>Event</th>")
                 .append("<th style='padding:3px 8px;text-align:left;'>Time</th>")
                 .append("</tr>");
 
         // 只显示非空（>0）的时间戳，减少噪音
-        appendEventTimingRowIfSet(sb, "QueueStart",          info.getQueueStart(),          COLOR_GRAY,    false);
-        appendEventTimingRowIfSet(sb, "CallStart",            info.getCallStart(),            COLOR_PRIMARY, true);
+        appendEventTimingRowIfSet(sb, "QueueStart",          info.getQueueStart(),          colorGray(),    false);
+        appendEventTimingRowIfSet(sb, "CallStart",            info.getCallStart(),            colorPrimary(), true);
         appendEventTimingRowIfSet(sb, "DnsStart",             info.getDnsStart(),             null,          false);
         appendEventTimingRowIfSet(sb, "DnsEnd",               info.getDnsEnd(),               null,          true);
         appendEventTimingRowIfSet(sb, "ConnectStart",         info.getConnectStart(),         null,          false);
         appendEventTimingRowIfSet(sb, "SecureConnectStart",   info.getSecureConnectStart(),   null,          true);
         appendEventTimingRowIfSet(sb, "SecureConnectEnd",     info.getSecureConnectEnd(),     null,          false);
         appendEventTimingRowIfSet(sb, "ConnectEnd",           info.getConnectEnd(),           null,          true);
-        appendEventTimingRowIfSet(sb, "ConnectionAcquired",   info.getConnectionAcquired(),   COLOR_PRIMARY, false);
+        appendEventTimingRowIfSet(sb, "ConnectionAcquired",   info.getConnectionAcquired(),   colorPrimary(), false);
         appendEventTimingRowIfSet(sb, "RequestHeadersStart",  info.getRequestHeadersStart(),  null,          true);
         appendEventTimingRowIfSet(sb, "RequestHeadersEnd",    info.getRequestHeadersEnd(),    null,          false);
         appendEventTimingRowIfSet(sb, "RequestBodyStart",     info.getRequestBodyStart(),     null,          true);
         appendEventTimingRowIfSet(sb, "RequestBodyEnd",       info.getRequestBodyEnd(),       null,          false);
-        appendEventTimingRowIfSet(sb, "ResponseHeadersStart", info.getResponseHeadersStart(), COLOR_SUCCESS, true);
+        appendEventTimingRowIfSet(sb, "ResponseHeadersStart", info.getResponseHeadersStart(), colorSuccess(), true);
         appendEventTimingRowIfSet(sb, "ResponseHeadersEnd",   info.getResponseHeadersEnd(),   null,          false);
         appendEventTimingRowIfSet(sb, "ResponseBodyStart",    info.getResponseBodyStart(),    null,          true);
         appendEventTimingRowIfSet(sb, "ResponseBodyEnd",      info.getResponseBodyEnd(),      null,          false);
         appendEventTimingRowIfSet(sb, "ConnectionReleased",   info.getConnectionReleased(),   null,          true);
-        appendEventTimingRowIfSet(sb, "CallEnd",              info.getCallEnd(),              COLOR_PRIMARY, false);
-        appendEventTimingRowIfSet(sb, "CallFailed",           info.getCallFailed(),           COLOR_ERROR,   true);
-        appendEventTimingRowIfSet(sb, "Canceled",             info.getCanceled(),             COLOR_ERROR,   false);
+        appendEventTimingRowIfSet(sb, "CallEnd",              info.getCallEnd(),              colorPrimary(), false);
+        appendEventTimingRowIfSet(sb, "CallFailed",           info.getCallFailed(),           colorError(),   true);
+        appendEventTimingRowIfSet(sb, "Canceled",             info.getCanceled(),             colorError(),   false);
 
         sb.append("</table>");
         return sb.toString();
@@ -445,7 +441,7 @@ public class HttpHtmlRenderer {
 
     private static void eventRow(StringBuilder sb, String label, String value, boolean alt) {
         sb.append("<tr style='background:").append(alt ? bgColorAlt() : bgColor()).append(";'>")
-                .append("<td style='width:35%;color:").append(COLOR_GRAY).append(";padding:3px 8px;'>").append(label).append("</td>")
+                .append("<td style='width:35%;color:").append(colorGray()).append(";padding:3px 8px;'>").append(label).append("</td>")
                 .append("<td style='width:65%;padding:3px 8px;word-break:break-all;'>").append(value).append("</td>")
                 .append("</tr>");
     }
@@ -480,5 +476,9 @@ public class HttpHtmlRenderer {
         if (s == null) return "";
         return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
                 .replace("\"", "&quot;").replace("'", "&#39;");
+    }
+
+    private static String toHex(java.awt.Color color) {
+        return String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
     }
 }

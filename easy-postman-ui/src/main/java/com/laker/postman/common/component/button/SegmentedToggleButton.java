@@ -1,5 +1,6 @@
 package com.laker.postman.common.component.button;
 
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
 
 import javax.swing.BorderFactory;
@@ -41,14 +42,14 @@ public class SegmentedToggleButton extends JToggleButton {
     }
 
     private Color getSegmentHoverColor() {
-        return SegmentedButtonGroupPanel.isDarkTheme() ? new Color(70, 70, 70) : new Color(228, 236, 246);
+        return ModernColors.getButtonPressedColor();
     }
 
     private Color getSelectedSegmentColor() {
-        return SegmentedButtonGroupPanel.isDarkTheme() ? new Color(79, 156, 249) : new Color(24, 144, 255);
+        return ModernColors.getPrimary();
     }
 
     private Color getTextColor() {
-        return SegmentedButtonGroupPanel.isDarkTheme() ? new Color(200, 200, 200) : Color.BLACK;
+        return ModernColors.getTextPrimary();
     }
 }

@@ -1,8 +1,8 @@
 package com.laker.postman.common.component.tab;
 
-import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.UiSingletonFactory;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
@@ -236,22 +236,28 @@ public class ClosableTabComponent extends JPanel {
 
     // ── 主题适配色 ───────────────────────────────────────────────────────────
 
-    private boolean isDark() { return FlatLaf.isLafDark(); }
-
     private Color closeButtonBg() {
         Color hoverColor = UIManager.getColor("TabbedPane.hoverColor");
         if (hoverColor != null) {
-            return new Color(hoverColor.getRed(), hoverColor.getGreen(), hoverColor.getBlue(),
-                    isDark() ? 180 : 140);
+            return ModernColors.withAlpha(hoverColor, 160);
         }
-        Color base = tabbedPane.getBackground();
-        return new Color(base.getRed(), base.getGreen(), base.getBlue(), isDark() ? 180 : 120);
+        return ModernColors.withAlpha(ModernColors.getHoverBackgroundColor(), 160);
     }
 
-    private Color closeButtonFg() { return isDark() ? Color.WHITE : Color.BLACK; }
+    private Color closeButtonFg() {
+        return closeButtonForegroundColor();
+    }
 
     private Color dirtyColor() {
-        return isDark() ? new Color(239, 83, 80, 180) : new Color(209, 47, 47, 131);
+        return dirtyDotColor();
+    }
+
+    static Color closeButtonForegroundColor() {
+        return ModernColors.getTextPrimary();
+    }
+
+    static Color dirtyDotColor() {
+        return ModernColors.withAlpha(ModernColors.getError(), 180);
     }
 
     // ── 右键菜单 ─────────────────────────────────────────────────────────────

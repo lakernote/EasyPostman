@@ -4,9 +4,6 @@ import lombok.experimental.UtilityClass;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.File;
-import java.io.FileInputStream;
-import java.util.Properties;
 
 /**
  * 字体工具类，提供系统默认字体，保留完整的字体降级链以支持 emoji 等特殊字符
@@ -17,39 +14,22 @@ public class FontsUtil {
     private static final int MIN_FONT_SIZE = 8;
     private static final int MAX_FONT_SIZE = 32;
     private static final int DEFAULT_FONT_SIZE = 13;
-    private static final int MIN_CONFIGURED_FONT_SIZE = 10;
-    private static final int MAX_CONFIGURED_FONT_SIZE = 24;
-    private static final String UI_FONT_SIZE_KEY = "ui_font_size";
+    private static final String DEFAULT_FONT_KEY = "defaultFont";
+    private static final String LABEL_FONT_KEY = "Label.font";
 
     private static int getBaseFontSize() {
-        Integer configured = readConfiguredFontSize();
-        if (configured != null) {
-            return configured;
+        return getBaseUiFont().getSize();
+    }
+
+    private static Font getBaseUiFont() {
+        Font baseFont = UIManager.getFont(DEFAULT_FONT_KEY);
+        if (baseFont == null) {
+            baseFont = UIManager.getFont(LABEL_FONT_KEY);
         }
-        Font baseFont = UIManager.getFont("Label.font");
         if (baseFont == null) {
             baseFont = new JLabel().getFont();
         }
-        return baseFont == null ? DEFAULT_FONT_SIZE : baseFont.getSize();
-    }
-
-    private static Integer readConfiguredFontSize() {
-        File settingsFile = new File(com.laker.postman.common.constants.ConfigPathConstants.EASY_POSTMAN_SETTINGS);
-        if (!settingsFile.exists()) {
-            return null;
-        }
-        Properties properties = new Properties();
-        try (FileInputStream inputStream = new FileInputStream(settingsFile)) {
-            properties.load(inputStream);
-            String configured = properties.getProperty(UI_FONT_SIZE_KEY);
-            if (configured == null || configured.isBlank()) {
-                return null;
-            }
-            int parsed = Integer.parseInt(configured.trim());
-            return Math.max(MIN_CONFIGURED_FONT_SIZE, Math.min(MAX_CONFIGURED_FONT_SIZE, parsed));
-        } catch (Exception ignored) {
-            return null;
-        }
+        return baseFont == null ? new Font(Font.DIALOG, Font.PLAIN, DEFAULT_FONT_SIZE) : baseFont;
     }
 
     /**
@@ -60,11 +40,7 @@ public class FontsUtil {
      * @return Font 对象，从系统默认字体派生
      */
     private static Font getDefaultFont(int style, int size) {
-        Font baseFont = UIManager.getFont("Label.font");
-        if (baseFont == null) {
-            baseFont = new JLabel().getFont();
-        }
-        return baseFont.deriveFont(style, size);
+        return getBaseUiFont().deriveFont(style, (float) size);
     }
 
     /**

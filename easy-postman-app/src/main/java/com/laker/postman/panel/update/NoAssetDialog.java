@@ -25,11 +25,6 @@ public class NoAssetDialog extends JDialog {
 
     private boolean goToGitHub = false;
 
-    // 缓存渐变，避免 resize 时频繁创建
-    private transient GradientPaint cachedGradient;
-    private int cachedW = -1;
-    private int cachedH = -1;
-
     public NoAssetDialog(Frame parent, UpdateInfo updateInfo) {
         super(parent, I18nUtil.getMessage(MessageKeys.UPDATE_AVAILABLE_NO_ASSET_TITLE,
                 updateInfo.getLatestVersion()), true);
@@ -60,19 +55,10 @@ public class NoAssetDialog extends JDialog {
                 super.paintComponent(g);
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                // 使用暖黄色渐变（WARNING 色系）区别于普通更新对话框的蓝色
-                Color from = ModernColors.isDarkTheme()
-                        ? new Color(92, 72, 20)
-                        : new Color(255, 249, 219);
-                Color to = ModernColors.isDarkTheme()
-                        ? new Color(70, 60, 30)
-                        : new Color(255, 237, 170);
-                if (cachedGradient == null || cachedW != getWidth() || cachedH != getHeight()) {
-                    cachedGradient = new GradientPaint(0, 0, from, getWidth(), getHeight(), to);
-                    cachedW = getWidth();
-                    cachedH = getHeight();
-                }
-                g2.setPaint(cachedGradient);
+                // 使用 WARNING 语义色渐变，区别于普通更新对话框的蓝色
+                Color from = ModernColors.getWarningBackgroundColor();
+                Color to = ModernColors.blendColors(from, ModernColors.getWarning(), 0.28f);
+                g2.setPaint(new GradientPaint(0, 0, from, getWidth(), getHeight(), to));
                 g2.fillRect(0, 0, getWidth(), getHeight());
                 // 装饰圆形（同 ModernUpdateDialog）
                 g2.setColor(ModernColors.warningWithAlpha(25));
@@ -95,15 +81,14 @@ public class NoAssetDialog extends JDialog {
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(
                 MessageKeys.UPDATE_AVAILABLE_NO_ASSET_TITLE, updateInfo.getLatestVersion()));
         titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 7));
-        titleLabel.setForeground(ModernColors.isDarkTheme()
-                ? new Color(255, 220, 100) : new Color(120, 70, 0));
+        titleLabel.setForeground(ModernColors.getWarning());
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         String verPrefix = I18nUtil.isChinese() ? "版本" : "Version";
         String currentV = updateInfo.getCurrentVersion() != null ? updateInfo.getCurrentVersion() : "-";
         JLabel versionLabel = new JLabel(verPrefix + "  " + currentV + "  →  " + updateInfo.getLatestVersion());
         versionLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 2));
-        versionLabel.setForeground(ModernColors.WARNING);
+        versionLabel.setForeground(ModernColors.getWarning());
         versionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // 发布时间
@@ -173,13 +158,10 @@ public class NoAssetDialog extends JDialog {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
-                // 背景
-                Color bg = ModernColors.isDarkTheme()
-                        ? new Color(70, 65, 50) : new Color(255, 249, 219);
-                g2.setColor(bg);
+                g2.setColor(ModernColors.getWarningBackgroundColor());
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
                 // 左侧 3px 竖线
-                g2.setColor(ModernColors.WARNING);
+                g2.setColor(ModernColors.getWarning());
                 g2.fillRoundRect(0, 0, 3, getHeight(), 3, 3);
                 g2.dispose();
             }
@@ -216,8 +198,9 @@ public class NoAssetDialog extends JDialog {
         JButton goButton = new JButton(I18nUtil.getMessage(MessageKeys.UPDATE_AVAILABLE_NO_ASSET_GO_GITHUB));
         goButton.setBorder(new EmptyBorder(8, 20, 8, 20));
         // 用警告色做主按钮（区别于普通更新对话框的蓝色）
-        goButton.putClientProperty(FlatClientProperties.STYLE,
-                "background: #F59E0B; foreground: #FFFFFF; arc: 8");
+        goButton.setBackground(ModernColors.getWarning());
+        goButton.setForeground(ModernColors.getTextInverse());
+        goButton.putClientProperty(FlatClientProperties.STYLE, "arc: 8");
         goButton.addActionListener(e -> { goToGitHub = true; dispose(); });
 
         buttonsPanel.add(laterButton);
@@ -242,4 +225,3 @@ public class NoAssetDialog extends JDialog {
         return new NoAssetDialog(parent, updateInfo).showDialogAndWait();
     }
 }
-

@@ -1,7 +1,6 @@
 package com.laker.postman.common.component;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.button.CSVButton;
 import com.laker.postman.common.component.button.CloseButton;
@@ -35,7 +34,6 @@ public class CsvDataPanel extends JPanel {
     private static final int CSV_MANUAL_DIALOG_MIN_WIDTH = 620;
     private static final int CSV_MANAGE_DIALOG_MIN_WIDTH = 820;
     private static final int CSV_MANAGE_DIALOG_MIN_HEIGHT = 580;
-    private static final float CSV_STRIPE_ALPHA = 0.035f;
     private static final int CSV_TOOLBAR_BUTTON_HEIGHT = 32;
     private static final int CSV_FOOTER_BUTTON_HEIGHT = 34;
 
@@ -128,7 +126,7 @@ public class CsvDataPanel extends JPanel {
                 if (csvData != null && !csvData.isEmpty()) {
                     // 鼠标悬停时改变颜色（使用更明亮的颜色）
                     originalColor = csvStatusLabel.getForeground();
-                    csvStatusLabel.setForeground(ModernColors.PRIMARY);
+                    csvStatusLabel.setForeground(ModernColors.getPrimary());
                 }
             }
 
@@ -935,7 +933,7 @@ public class CsvDataPanel extends JPanel {
         textArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         textArea.setBackground(ModernColors.getInputBackgroundColor());
         textArea.setForeground(ModernColors.getTextPrimary());
-        textArea.setCaretColor(ModernColors.PRIMARY);
+        textArea.setCaretColor(ModernColors.getPrimary());
 
         // 将光标定位到文本末尾
         textArea.setCaretPosition(textArea.getDocument().getLength());
@@ -1153,13 +1151,16 @@ public class CsvDataPanel extends JPanel {
         if (tableBackground == null) {
             tableBackground = Color.WHITE;
         }
-        Color softSelection = blendColor(tableBackground, ModernColors.PRIMARY, ModernColors.isDarkTheme() ? 0.28f : 0.14f);
+        Color selectionBackground = UIManager.getColor("Table.selectionBackground");
+        if (selectionBackground == null) {
+            selectionBackground = ModernColors.getConsoleSelectionBg();
+        }
 
         table.setRowHeight(30);
         table.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         table.setForeground(ModernColors.getTextPrimary());
         table.setBackground(tableBackground);
-        table.setSelectionBackground(softSelection);
+        table.setSelectionBackground(selectionBackground);
         table.setSelectionForeground(ModernColors.getTextPrimary());
         table.setGridColor(ModernColors.getBorderLightColor());
         table.setShowHorizontalLines(true);
@@ -1318,8 +1319,8 @@ public class CsvDataPanel extends JPanel {
         editorField.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         editorField.setBackground(ModernColors.getInputBackgroundColor());
         editorField.setForeground(ModernColors.getTextPrimary());
-        editorField.setCaretColor(ModernColors.PRIMARY);
-        editorField.setSelectionColor(blendColor(ModernColors.getInputBackgroundColor(), ModernColors.PRIMARY, 0.12f));
+        editorField.setCaretColor(ModernColors.getPrimary());
+        editorField.setSelectionColor(blendColor(ModernColors.getInputBackgroundColor(), ModernColors.getPrimary(), 0.12f));
         editorField.setSelectedTextColor(ModernColors.getTextPrimary());
 
         return new DefaultCellEditor(editorField) {
@@ -1330,10 +1331,10 @@ public class CsvDataPanel extends JPanel {
                     textField.setText(value == null ? "" : String.valueOf(value));
                     textField.setBackground(ModernColors.getInputBackgroundColor());
                     textField.setForeground(ModernColors.getTextPrimary());
-                    textField.setSelectionColor(blendColor(ModernColors.getInputBackgroundColor(), ModernColors.PRIMARY, 0.12f));
+                    textField.setSelectionColor(blendColor(ModernColors.getInputBackgroundColor(), ModernColors.getPrimary(), 0.12f));
                     textField.setSelectedTextColor(ModernColors.getTextPrimary());
                     textField.setBorder(BorderFactory.createCompoundBorder(
-                            BorderFactory.createLineBorder(blendColor(ModernColors.getInputBackgroundColor(), ModernColors.PRIMARY, 0.35f)),
+                            BorderFactory.createLineBorder(blendColor(ModernColors.getInputBackgroundColor(), ModernColors.getPrimary(), 0.35f)),
                             BorderFactory.createEmptyBorder(0, 8, 0, 8)));
                     SwingUtilities.invokeLater(textField::selectAll);
                 }
@@ -1354,7 +1355,7 @@ public class CsvDataPanel extends JPanel {
         if (alternate != null) {
             return alternate;
         }
-        return blendColor(base, FlatLaf.isLafDark() ? Color.WHITE : Color.BLACK, CSV_STRIPE_ALPHA);
+        return ModernColors.getHoverBackgroundColor();
     }
 
     private static Color blendColor(Color base, Color blend, float alpha) {

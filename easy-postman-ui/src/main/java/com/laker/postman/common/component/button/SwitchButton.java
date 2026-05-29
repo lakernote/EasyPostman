@@ -13,7 +13,6 @@ public class SwitchButton extends JToggleButton {
     private static final int DEFAULT_WIDTH = 35;
     private static final int DEFAULT_HEIGHT = 18;
     private static final Color TRACK_OFF = new Color(196, 201, 208);
-    private static final Color TRACK_ON = ModernColors.PRIMARY;
     private static final Color THUMB = Color.WHITE;
 
     private final int trackWidth;
@@ -47,7 +46,7 @@ public class SwitchButton extends JToggleButton {
 
         int y = (getHeight() - trackHeight) / 2;
         int arc = trackHeight;
-        Color trackColor = isSelected() ? TRACK_ON : TRACK_OFF;
+        Color trackColor = isSelected() ? ModernColors.getPrimary() : TRACK_OFF;
         if (!isEnabled()) {
             trackColor = ModernColors.getBorderMediumColor();
         }

@@ -1,6 +1,5 @@
 package com.laker.postman.common.window;
 
-import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.common.constants.Icons;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.frame.MainFrame;
@@ -116,7 +115,7 @@ public class SplashWindow extends JFrame {
                 g2.fillOval(x + 2, y + 2, size - 4, size - 4);
 
                 // 绘制边框高光
-                g2.setColor(isDarkTheme() ? new Color(255, 255, 255, 120) : Color.WHITE);
+                g2.setColor(ModernColors.withAlpha(ModernColors.getTextInverse(), 120));
                 g2.setStroke(new BasicStroke(2f));
                 g2.drawOval(x + 1, y + 1, size - 2, size - 2);
 
@@ -211,11 +210,8 @@ public class SplashWindow extends JFrame {
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 
-                boolean isDark = FlatLaf.isLafDark();
-
-                // 主题适配的渐变背景，与主题背景色 (60, 63, 65) 协调
-                Color gradientStart = isDark ? new Color(65, 67, 69) : ModernColors.PRIMARY;
-                Color gradientEnd = isDark ? new Color(55, 57, 59) : ModernColors.PRIMARY_LIGHTER;
+                Color gradientStart = ModernColors.getSplashGradientStartColor();
+                Color gradientEnd = ModernColors.getSplashGradientEndColor();
                 GradientPaint gp = new GradientPaint(
                         0, 0, gradientStart,
                         getWidth(), getHeight(), gradientEnd
@@ -225,8 +221,8 @@ public class SplashWindow extends JFrame {
                 g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 32, 32);
 
                 // 添加微妙的光泽效果
-                Color highlightStart = isDark ? new Color(255, 255, 255, 8) : ModernColors.whiteWithAlpha(40);
-                Color highlightEnd = isDark ? new Color(255, 255, 255, 0) : ModernColors.whiteWithAlpha(0);
+                Color highlightStart = ModernColors.withAlpha(ModernColors.getTextInverse(), 40);
+                Color highlightEnd = ModernColors.withAlpha(ModernColors.getTextInverse(), 0);
                 GradientPaint glossPaint = new GradientPaint(
                         0, 0, highlightStart,
                         0, getHeight() / 2.0f, highlightEnd
@@ -234,8 +230,7 @@ public class SplashWindow extends JFrame {
                 g2d.setPaint(glossPaint);
                 g2d.fillRoundRect(0, 0, getWidth(), getHeight() / 2, 32, 32);
 
-                // 添加边框高光，与主题背景 (60, 63, 65) 协调
-                Color borderColor = isDark ? new Color(75, 77, 80, 100) : ModernColors.whiteWithAlpha(80);
+                Color borderColor = ModernColors.withAlpha(ModernColors.getBorderMediumColor(), 100);
                 g2d.setColor(borderColor);
                 g2d.setStroke(new BasicStroke(2f));
                 g2d.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 32, 32);
@@ -401,30 +396,16 @@ public class SplashWindow extends JFrame {
     }
 
     /**
-     * 检查当前是否为暗色主题
-     */
-    private boolean isDarkTheme() {
-        return FlatLaf.isLafDark();
-    }
-
-    /**
      * 获取主题适配的文字颜色
      */
     private Color getTextColor() {
-        // 暗色主题使用更亮的文字颜色，提升可读性
-        return isDarkTheme() ? new Color(230, 230, 230) : ModernColors.whiteWithAlpha(220);
+        return ModernColors.withAlpha(ModernColors.getTextInverse(), 220);
     }
 
     /**
      * 获取主题适配的装饰点颜色
      */
     private Color getDecorativeDotColor(int alpha) {
-        // 暗色主题使用更柔和的透明度，并稍微提亮
-        if (isDarkTheme()) {
-            // 使用更高的基础亮度，但降低透明度，使其更柔和
-            int adjustedAlpha = (int) (alpha * 0.6); // 降低到 60% 透明度
-            return new Color(255, 255, 255, adjustedAlpha);
-        }
-        return ModernColors.whiteWithAlpha(alpha);
+        return ModernColors.withAlpha(ModernColors.getTextInverse(), alpha);
     }
 }

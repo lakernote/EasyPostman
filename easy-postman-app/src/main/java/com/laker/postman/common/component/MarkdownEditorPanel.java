@@ -103,8 +103,7 @@ public class MarkdownEditorPanel extends JPanel {
     }
 
     private String getTableHeaderStyle() {
-        boolean isDark = ModernColors.isDarkTheme();
-        String bgColor = isDark ? toHex(new Color(55, 58, 60)) : toHex(ModernColors.getHoverBackgroundColor());
+        String bgColor = toHex(ModernColors.getHoverBackgroundColor());
         return getTableCellStyle() + "font-weight:600;background-color:" + bgColor + ";";
     }
 
@@ -117,9 +116,8 @@ public class MarkdownEditorPanel extends JPanel {
     }
 
     private String getInlineCodeStyle() {
-        boolean isDark = ModernColors.isDarkTheme();
-        String bgColor = isDark ? toHex(new Color(65, 68, 70)) : toHex(ModernColors.getHoverBackgroundColor());
-        String textColor = isDark ? "#8dd6f9" : toHex(ModernColors.ERROR_DARK);
+        String bgColor = toHex(ModernColors.getHoverBackgroundColor());
+        String textColor = toHex(ModernColors.getErrorDark());
         return "background-color:" + bgColor + ";color:" + textColor +
                 ";padding:1px 4px;margin:0 1px;font-size:10px;border-radius:3px;font-family:monospace;";
     }
@@ -141,9 +139,10 @@ public class MarkdownEditorPanel extends JPanel {
     }
 
     private String getBlockquoteStyle() {
-        boolean isDark = ModernColors.isDarkTheme();
-        String borderColor = isDark ? "#4a9eff" : toHex(ModernColors.ACCENT_LIGHT);
-        String bgColor = isDark ? "rgba(74,158,255,0.08)" : "rgba(6,182,212,0.03)";
+        Color accentColor = ModernColors.getAccent();
+        String borderColor = toHex(accentColor);
+        String bgColor = String.format(java.util.Locale.ROOT, "rgba(%d,%d,%d,0.08)",
+                accentColor.getRed(), accentColor.getGreen(), accentColor.getBlue());
         return "padding:6px 10px;color:" + toHex(ModernColors.getTextSecondary()) +
                 ";border-left:3px solid " + borderColor + ";background-color:" + bgColor +
                 ";margin:0 0 8px 0;border-radius:0 3px 3px 0;";
@@ -400,7 +399,7 @@ public class MarkdownEditorPanel extends JPanel {
     private Component createVerticalDivider() {
         JSeparator separator = new JSeparator(SwingConstants.VERTICAL);
         separator.setPreferredSize(new Dimension(1, 20));
-        separator.setForeground(new Color(220, 220, 220));
+        separator.setForeground(ModernColors.getDividerBorderColor());
         return separator;
     }
 

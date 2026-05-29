@@ -182,7 +182,7 @@ public class AutoUpdateNotification {
     private JPanel createNotificationPanel(UpdateInfo updateInfo,
                                             Consumer<UpdateInfo> onAction, Variant variant) {
         boolean isNoAsset = variant == Variant.NO_ASSET;
-        Color indicatorColor = isNoAsset ? ModernColors.WARNING : ModernColors.INFO;
+        Color indicatorColor = isNoAsset ? ModernColors.getWarning() : ModernColors.getInfo();
 
         JPanel root = new JPanel(new BorderLayout()) {
             @Override protected void paintComponent(Graphics g) {
@@ -239,7 +239,7 @@ public class AutoUpdateNotification {
                 : I18nUtil.getMessage(MessageKeys.UPDATE_NEW_VERSION_AVAILABLE);
         JLabel titleLabel = new JLabel(titleText);
         titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 1));
-        if (isNoAsset) titleLabel.setForeground(ModernColors.WARNING);
+        if (isNoAsset) titleLabel.setForeground(ModernColors.getWarning());
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // 版本行
@@ -290,7 +290,7 @@ public class AutoUpdateNotification {
     private JButton createNoAssetActionButton(UpdateInfo updateInfo, Consumer<UpdateInfo> onAction) {
         JButton button = new JButton(
                 "<html><u>" + I18nUtil.getMessage(MessageKeys.UPDATE_AVAILABLE_NO_ASSET_GO_GITHUB) + "</u></html>");
-        button.setForeground(ModernColors.WARNING);
+        button.setForeground(ModernColors.getWarning());
         button.setFocusPainted(false);
         button.setBorderPainted(false);
         button.setContentAreaFilled(false);
@@ -324,7 +324,7 @@ public class AutoUpdateNotification {
         // 链接风格：无边框、蓝色文字、下划线 HTML，同 IDEA 通知底部 "View" 链接
         JButton button = new JButton(
                 "<html><u>" + I18nUtil.getMessage(MessageKeys.UPDATE_VIEW_DETAILS) + "</u></html>");
-        button.setForeground(ModernColors.INFO);
+        button.setForeground(ModernColors.getInfo());
         button.setFocusPainted(false);
         button.setBorderPainted(false);
         button.setContentAreaFilled(false);

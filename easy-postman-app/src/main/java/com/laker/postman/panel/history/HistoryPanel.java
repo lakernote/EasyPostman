@@ -394,7 +394,6 @@ public class HistoryPanel extends UiSingletonPanel {
     private class OptimizedHistoryListCellRenderer implements ListCellRenderer<Object> {
         private final Font boldFont;
         private final Font plainFont;
-        private final Color groupColor = ModernColors.getTextSecondary();
         private final JPanel itemRootPanel;
         private final JPanel itemCardPanel;
         private final JLabel titleLabel;
@@ -442,7 +441,7 @@ public class HistoryPanel extends UiSingletonPanel {
             if (value instanceof HistoryGroupHeader groupHeader) {
                 String arrow = groupHeader.collapsed() ? "▸" : "▾";
                 this.groupLabel.setText(arrow + " " + groupHeader.label() + "  (" + groupHeader.count() + ")");
-                this.groupLabel.setForeground(groupColor);
+                this.groupLabel.setForeground(HistoryTheme.groupHeaderForeground());
                 this.groupLabel.setBackground(list.getBackground());
                 return this.groupLabel;
             }
@@ -460,16 +459,16 @@ public class HistoryPanel extends UiSingletonPanel {
                         : hovered ? getHoverBackground() : ModernColors.getCardBackgroundColor());
                 itemCardPanel.setBorder(BorderFactory.createCompoundBorder(
                         BorderFactory.createMatteBorder(0, isSelected ? 3 : hovered ? 2 : 0, 0, 0,
-                                isSelected ? ModernColors.PRIMARY : hovered ? ModernColors.PRIMARY_LIGHT : list.getBackground()),
+                                isSelected ? ModernColors.getPrimary() : hovered ? ModernColors.getPrimaryLight() : list.getBackground()),
                         BorderFactory.createCompoundBorder(
                                 BorderFactory.createLineBorder(isSelected
-                                        ? ModernColors.PRIMARY
-                                        : hovered ? ModernColors.PRIMARY_LIGHT : ModernColors.getBorderLightColor()),
+                                        ? ModernColors.getPrimary()
+                                        : hovered ? ModernColors.getPrimaryLight() : ModernColors.getBorderLightColor()),
                                 BorderFactory.createEmptyBorder(8, 10, 8, 10)
                         )
                 ));
 
-                titleLabel.setForeground(isSelected ? ModernColors.PRIMARY : ModernColors.getTextPrimary());
+                titleLabel.setForeground(isSelected ? HistoryTheme.selectedTitleForeground() : ModernColors.getTextPrimary());
                 titleLabel.setText("<html>" + arrow + " " + highlightMatches(abbreviateMiddle(endpointGroupHeader.title(), 52))
                         + " <span style='color:" + toHex(statusColor) + ";font-weight:bold;'>(" + countText + ")</span></html>");
 
@@ -505,16 +504,16 @@ public class HistoryPanel extends UiSingletonPanel {
                         : hovered ? getHoverBackground() : ModernColors.getCardBackgroundColor());
                 itemCardPanel.setBorder(BorderFactory.createCompoundBorder(
                         BorderFactory.createMatteBorder(0, isSelected ? 3 : hovered ? 2 : 0, 0, 0,
-                                isSelected ? ModernColors.PRIMARY : hovered ? ModernColors.PRIMARY_LIGHT : list.getBackground()),
+                                isSelected ? ModernColors.getPrimary() : hovered ? ModernColors.getPrimaryLight() : list.getBackground()),
                         BorderFactory.createCompoundBorder(
                                 BorderFactory.createLineBorder(isSelected
-                                        ? ModernColors.PRIMARY
-                                        : hovered ? ModernColors.PRIMARY_LIGHT : ModernColors.getBorderLightColor()),
+                                        ? ModernColors.getPrimary()
+                                        : hovered ? ModernColors.getPrimaryLight() : ModernColors.getBorderLightColor()),
                         BorderFactory.createEmptyBorder(8, 10, 8, 10)
                         )
                 ));
 
-                titleLabel.setForeground(isSelected ? ModernColors.PRIMARY : ModernColors.getTextPrimary());
+                titleLabel.setForeground(isSelected ? HistoryTheme.selectedTitleForeground() : ModernColors.getTextPrimary());
                 titleLabel.setText("<html>" + highlightMatches(abbreviateMiddle(visualInfo.title(), 56)) + "</html>");
 
                 urlLabel.setForeground(metaColor);
@@ -565,15 +564,11 @@ public class HistoryPanel extends UiSingletonPanel {
         }
 
         private static Color getSelectionBackground() {
-            return ModernColors.isDarkTheme()
-                    ? new Color(0, 122, 255, 52)
-                    : new Color(219, 234, 254);
+            return HistoryTheme.selectionBackground();
         }
 
         private static Color getHoverBackground() {
-            return ModernColors.isDarkTheme()
-                    ? new Color(255, 255, 255, 18)
-                    : new Color(245, 249, 255);
+            return HistoryTheme.hoverBackground();
         }
 
         private String buildStatusTrendHtml(List<Integer> recentStatusCodes) {
@@ -1440,7 +1435,7 @@ public class HistoryPanel extends UiSingletonPanel {
         boolean wholeWord = searchField.isWholeWord();
         String source = caseSensitive ? value : value.toLowerCase(Locale.ROOT);
         String expected = caseSensitive ? keyword : keyword.toLowerCase(Locale.ROOT);
-        String highlightColor = ModernColors.isDarkTheme() ? "#5b4b00" : "#fff1a8";
+        String highlightColor = HistoryTheme.searchHighlightBackgroundHex();
 
         StringBuilder builder = new StringBuilder();
         int cursor = 0;

@@ -72,7 +72,6 @@ public class PlusPanel extends JPanel {
         return Color.WHITE;
     }
 
-
     public PlusPanel() {
         setLayout(new BorderLayout());
         setOpaque(false);
@@ -102,8 +101,8 @@ public class PlusPanel extends JPanel {
 
                 // 使用现代渐变色
                 GradientPaint topStrip = new GradientPaint(
-                        0, 0, ModernColors.PRIMARY,
-                        width, 0, ModernColors.ACCENT
+                        0, 0, ModernColors.getPrimary(),
+                        width, 0, ModernColors.getAccent()
                 );
                 g2.setPaint(topStrip);
                 g2.fillRoundRect(0, 0, width, CORNER_RADIUS, CORNER_RADIUS, CORNER_RADIUS);
@@ -206,9 +205,6 @@ public class PlusPanel extends JPanel {
             @java.io.Serial
             private static final long serialVersionUID = 1L;
             private boolean isHovered = false;
-            private transient GradientPaint cachedGradient;
-            private transient GradientPaint cachedHighlight;
-            private int lastWidth = -1;
 
             public HoverableLabel(String text) {
                 super(text);
@@ -223,25 +219,12 @@ public class PlusPanel extends JPanel {
                 int height = getHeight();
 
                 if (isHovered) {
-                    // 缓存渐变对象，仅在宽度变化时重新创建
-                    if (cachedGradient == null || lastWidth != width) {
-                        cachedGradient = new GradientPaint(
-                                0, 0, ModernColors.PRIMARY,
-                                width, 0, ModernColors.ACCENT
-                        );
-                        cachedHighlight = new GradientPaint(
-                                0, 0, ModernColors.whiteWithAlpha(30),
-                                0, height / 2.5f, ModernColors.whiteWithAlpha(0)
-                        );
-                        lastWidth = width;
-                    }
-
                     // 绘制现代渐变背景
-                    g2.setPaint(cachedGradient);
+                    g2.setPaint(PlusPanelTheme.hoverGradient(width));
                     g2.fillRoundRect(0, 0, width, height, 24, 24);
 
                     // 添加微妙高光
-                    g2.setPaint(cachedHighlight);
+                    g2.setPaint(PlusPanelTheme.hoverHighlight(height));
                     g2.fillRoundRect(0, 0, width, height / 2, 24, 24);
                 } else {
                     // 非悬停状态：浅色背景（主题适配）
@@ -269,7 +252,7 @@ public class PlusPanel extends JPanel {
         HoverableLabel hintLabel = new HoverableLabel(I18nUtil.getMessage(MessageKeys.PLUS_PANEL_HINT));
         hintLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         hintLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        hintLabel.setForeground(ModernColors.PRIMARY);
+        hintLabel.setForeground(PlusPanelTheme.hintForeground());
         hintLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 2));
         hintLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         hintLabel.setBorder(BorderFactory.createEmptyBorder(12, 32, 12, 32));
@@ -293,7 +276,7 @@ public class PlusPanel extends JPanel {
 
             @Override
             public void mouseExited(MouseEvent e) {
-                hintLabel.setForeground(ModernColors.PRIMARY);
+                hintLabel.setForeground(PlusPanelTheme.hintForeground());
                 hintLabel.setHovered(false);
                 contentPanel.setCursor(Cursor.getDefaultCursor());
             }

@@ -4,7 +4,6 @@ import com.formdev.flatlaf.FlatClientProperties;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.component.SearchTextField;
-import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.plugin.api.ToolboxContribution;
 import com.laker.postman.plugin.host.PluginAccess;
 import com.laker.postman.util.I18nUtil;
@@ -29,7 +28,7 @@ import java.util.function.Supplier;
  * 交互设计：
  * - 左侧导航支持分组展示、搜索过滤（复用 SearchTextField 组件）
  * - 左右宽度可拖动调整
- * - 选中项高亮使用项目主色 ModernColors.PRIMARY
+ * - 选中项高亮使用项目主色 ModernColors.getPrimary()
  * - 图标统一使用 IconUtil 管理
  */
 @Slf4j
@@ -313,12 +312,9 @@ public class ToolboxPanel extends UiSingletonPanel {
             @Override
             protected void paintComponent(Graphics g) {
                 if (t.id().equals(selectedId)) {
-                    // 主色调半透明圆角背景（亮暗自适应透明度）
                     Graphics2D g2 = (Graphics2D) g.create();
                     g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    int alpha = ModernColors.isDarkTheme() ? 40 : 25;
-                    g2.setColor(new Color(ModernColors.PRIMARY.getRed(),
-                            ModernColors.PRIMARY.getGreen(), ModernColors.PRIMARY.getBlue(), alpha));
+                    g2.setColor(ToolboxTheme.selectedNavItemBackground());
                     g2.fillRoundRect(4, 1, getWidth() - 8, getHeight() - 2, 8, 8);
                     g2.dispose();
                 }
@@ -339,7 +335,7 @@ public class ToolboxPanel extends UiSingletonPanel {
         JLabel lblIcon = new JLabel(icon);
         JLabel lblName = new JLabel(t.displayName());
         lblName.setFont(lblName.getFont().deriveFont(sel ? Font.BOLD : Font.PLAIN, 12f));
-        if (sel) lblName.setForeground(ModernColors.PRIMARY);
+        if (sel) lblName.setForeground(ToolboxTheme.selectedNavItemForeground());
 
         item.add(lblIcon, BorderLayout.WEST);
         item.add(lblName, BorderLayout.CENTER);

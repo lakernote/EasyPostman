@@ -132,12 +132,12 @@ public final class ModernButtonFactory {
                 return ModernColors.getTextDisabled();
             }
             if (model.isPressed()) {
-                return ModernColors.PRIMARY_DARKER;
+                return ModernColors.getPrimaryDarker();
             }
             if (model.isRollover()) {
-                return ModernColors.PRIMARY_DARK;
+                return ModernColors.getPrimaryDark();
             }
-            return ModernColors.PRIMARY;
+            return ModernColors.getPrimary();
         }
 
         if (!button.isEnabled()) {
@@ -160,12 +160,12 @@ public final class ModernButtonFactory {
         }
         if (button.isSelected()) {
             if (model.isPressed()) {
-                return ModernColors.PRIMARY_DARKER;
+                return ModernColors.getPrimaryDarker();
             }
             if (model.isRollover()) {
-                return ModernColors.PRIMARY_DARK;
+                return ModernColors.getPrimaryDark();
             }
-            return ModernColors.PRIMARY;
+            return ModernColors.getPrimary();
         }
         if (model.isPressed()) {
             return ModernColors.getButtonPressedColor();

@@ -1,6 +1,5 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
-import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -15,26 +14,6 @@ import java.util.List;
 public class TimelinePanel extends JPanel {
     private List<Stage> stages = new ArrayList<>();
     private long total;
-
-    // 优化后的瀑布条颜色 - 更现代、柔和的色系
-    private static final Color[] COLORS = {
-            new Color(0x4A90E2), // 蓝色 - DNS
-            new Color(0x50E3C2), // 青绿色 - Socket
-            new Color(0x9B59B6), // 紫色 - SSL
-            new Color(0xF39C12), // 橙色 - Request
-            new Color(0xE74C3C), // 红色 - Waiting (TTFB)
-            new Color(0x2ECC71)  // 绿色 - Download
-    };
-
-    // 暗色主题下的瀑布条颜色
-    private static final Color[] DARK_COLORS = {
-            new Color(0x5DA5E8), // 更亮的蓝色
-            new Color(0x5FE9CE), // 更亮的青绿色
-            new Color(0xA569BD), // 更亮的紫色
-            new Color(0xF5A623), // 更亮的橙色
-            new Color(0xEC644B), // 更亮的红色
-            new Color(0x52D681)  // 更亮的绿色
-    };
 
     private HttpEventInfo httpEventInfo;
 
@@ -63,76 +42,6 @@ public class TimelinePanel extends JPanel {
 
     // 区域间距
     private static final int AREA_GAP = 10; // 信息区和瀑布条区域之间的间距
-
-    /**
-     * 检查当前是否为暗色主题
-     */
-    private boolean isDarkTheme() {
-        return FlatLaf.isLafDark();
-    }
-
-    /**
-     * 获取面板背景色 - 主题适配
-     */
-    private Color getPanelBackgroundColor() {
-        return isDarkTheme() ? new Color(30, 31, 34) : new Color(255, 255, 255);
-    }
-
-    /**
-     * 获取信息区背景色 - 主题适配
-     */
-    private Color getInfoBgColor() {
-        return isDarkTheme() ? new Color(45, 47, 49) : new Color(250, 251, 252);
-    }
-
-    /**
-     * 获取信息区边框色 - 主题适配
-     */
-    private Color getInfoBorderColor() {
-        return isDarkTheme() ? new Color(70, 73, 75) : new Color(220, 225, 230);
-    }
-
-    /**
-     * 获取瀑布条区域背景色 - 主题适配
-     */
-    private Color getBarAreaBgColor() {
-        return isDarkTheme() ? new Color(35, 37, 39) : new Color(248, 249, 250);
-    }
-
-    /**
-     * 获取标签文字颜色 - 主题适配
-     */
-    private Color getLabelTextColor() {
-        return isDarkTheme() ? new Color(210, 210, 210) : new Color(50, 50, 50);
-    }
-
-    /**
-     * 获取信息文字颜色 - 主题适配
-     */
-    private Color getInfoTextColor() {
-        return isDarkTheme() ? new Color(190, 190, 190) : new Color(80, 80, 80);
-    }
-
-    /**
-     * 获取描述文字颜色 - 主题适配
-     */
-    private Color getDescTextColor() {
-        return isDarkTheme() ? new Color(130, 130, 130) : new Color(120, 120, 120);
-    }
-
-    /**
-     * 获取分隔线颜色 - 主题适配
-     */
-    private Color getSeparatorColor() {
-        return isDarkTheme() ? new Color(65, 65, 65) : new Color(220, 220, 220);
-    }
-
-    /**
-     * 获取瀑布条颜色数组 - 根据主题返回
-     */
-    private Color[] getBarColors() {
-        return isDarkTheme() ? DARK_COLORS : COLORS;
-    }
 
     public TimelinePanel(List<Stage> stages, HttpEventInfo httpEventInfo) {
         setLayout(new BorderLayout()); // 明确使用 BorderLayout
@@ -252,19 +161,19 @@ public class TimelinePanel extends JPanel {
         g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
         // 0. 绘制面板背景
-        g2.setColor(getPanelBackgroundColor());
+        g2.setColor(TimelineTheme.panelBackground());
         g2.fillRect(0, 0, getWidth(), getHeight());
 
         // 1. 绘制信息区
         int infoTextBlockHeight = getInfoBlockHeight();
-        g2.setColor(getInfoBgColor());
+        g2.setColor(TimelineTheme.infoBackground());
         g2.fillRoundRect(INFO_BLOCK_H_GAP, INFO_BLOCK_V_GAP, getWidth() - 2 * INFO_BLOCK_H_GAP, infoTextBlockHeight - 2, 10, 10);
-        g2.setColor(getInfoBorderColor());
+        g2.setColor(TimelineTheme.infoBorder());
         g2.setStroke(new BasicStroke(1.0f));
         g2.drawRoundRect(INFO_BLOCK_H_GAP, INFO_BLOCK_V_GAP, getWidth() - 2 * INFO_BLOCK_H_GAP, infoTextBlockHeight - 2, 10, 10);
         int infoY = INFO_BLOCK_V_GAP + INFO_TEXT_LINE_HEIGHT - 3;
         g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        g2.setColor(getInfoTextColor());
+        g2.setColor(TimelineTheme.infoText());
         // 动态渲染字段并在remote address/cipher name下方画线
         String protocol = null, localAddr = null, remoteAddr = null, tls = null, cipher = null, certCN = null, issuerCN = null, validUntil = null;
         if (httpEventInfo != null) {
@@ -289,7 +198,7 @@ public class TimelinePanel extends JPanel {
         int remoteLineY = -1, cipherLineY = -1;
         // HTTP Version
         g2.setFont(FontsUtil.getDefaultFont(Font.BOLD));
-        g2.setColor(getInfoTextColor());
+        g2.setColor(TimelineTheme.infoText());
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_HTTP_VERSION), labelX, infoY);
         g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         g2.drawString(protocol != null ? protocol : "-", labelX + valueXOffset, infoY);
@@ -308,9 +217,9 @@ public class TimelinePanel extends JPanel {
         if (remoteAddr != null && !remoteAddr.isEmpty()) remoteLineY = infoY + 5;
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         if (remoteLineY > 0) {
-            g2.setColor(getSeparatorColor());
+            g2.setColor(TimelineTheme.separator());
             g2.drawLine(lineStartX, remoteLineY, lineEndX, remoteLineY);
-            g2.setColor(getInfoTextColor());
+            g2.setColor(TimelineTheme.infoText());
         }
         // TLS Protocol
         g2.setFont(FontsUtil.getDefaultFont(Font.BOLD));
@@ -326,9 +235,9 @@ public class TimelinePanel extends JPanel {
         if (cipher != null && !cipher.isEmpty()) cipherLineY = infoY + 5;
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         if (cipherLineY > 0) {
-            g2.setColor(getSeparatorColor());
+            g2.setColor(TimelineTheme.separator());
             g2.drawLine(lineStartX, cipherLineY, lineEndX, cipherLineY);
-            g2.setColor(getInfoTextColor());
+            g2.setColor(TimelineTheme.infoText());
         }
         // Certificate CN
         g2.setFont(FontsUtil.getDefaultFont(Font.BOLD));
@@ -371,7 +280,7 @@ public class TimelinePanel extends JPanel {
             } else {
                 g2.drawString(warning, labelX + valueXOffset, infoY);
             }
-            g2.setColor(getInfoTextColor()); // 恢复默认颜色
+            g2.setColor(TimelineTheme.infoText()); // 恢复默认颜色
         }
 
         // 2. 绘制瀑布条区域背景和边框
@@ -379,11 +288,11 @@ public class TimelinePanel extends JPanel {
         int barAreaHeight = getHeight() - barAreaTop - INFO_BLOCK_V_GAP;
 
         // 绘制瀑布条区域背景
-        g2.setColor(getBarAreaBgColor());
+        g2.setColor(TimelineTheme.barAreaBackground());
         g2.fillRoundRect(INFO_BLOCK_H_GAP, barAreaTop, getWidth() - 2 * INFO_BLOCK_H_GAP, barAreaHeight, 10, 10);
 
         // 绘制瀑布条区域边框（与信息区边框一致）
-        g2.setColor(getInfoBorderColor());
+        g2.setColor(TimelineTheme.infoBorder());
         g2.setStroke(new BasicStroke(1.0f));
         g2.drawRoundRect(INFO_BLOCK_H_GAP, barAreaTop, getWidth() - 2 * INFO_BLOCK_H_GAP, barAreaHeight, 10, 10);
 
@@ -445,19 +354,19 @@ public class TimelinePanel extends JPanel {
         for (int i = 0; i < n; i++, barY += BAR_HEIGHT + BAR_GAP) {
             Stage s = stages.get(i);
             int barW = barWidths[i];
-            Color[] barColors = getBarColors();
+            Color[] barColors = TimelineTheme.barColors();
             Color color = barColors[i % barColors.length];
 
             // 绘制悬停背景高亮
             boolean isHovered = (i == hoveredBarIndex);
             if (isHovered) {
-                g2.setColor(isDarkTheme() ? new Color(55, 57, 59) : new Color(240, 242, 245));
+                g2.setColor(TimelineTheme.hoveredBarBackground());
                 g2.fillRoundRect(INFO_BLOCK_H_GAP + 8, barY - 3, getWidth() - 2 * INFO_BLOCK_H_GAP - 16, BAR_HEIGHT + 6, 6, 6);
             }
 
             // label 区域
             g2.setFont(FontsUtil.getDefaultFont(Font.BOLD));
-            g2.setColor(isHovered ? (isDarkTheme() ? new Color(230, 230, 230) : new Color(30, 30, 30)) : getLabelTextColor());
+            g2.setColor(isHovered ? TimelineTheme.hoveredLabelText() : TimelineTheme.labelText());
             String label = s.label;
             int labelStrW = g2.getFontMetrics().stringWidth(label);
             boolean labelTruncated = false;
@@ -488,15 +397,12 @@ public class TimelinePanel extends JPanel {
                 g2.setColor(color);
                 g2.fillRect(currentX, barY, barW, BAR_HEIGHT);
             } else {
-                // 添加微妙的阴影效果（仅在亮色主题下）
-                if (!isDarkTheme()) {
-                    g2.setColor(new Color(0, 0, 0, 10));
-                    g2.fillRoundRect(currentX + 1, barY + 2, barW, BAR_HEIGHT, BAR_RADIUS, BAR_RADIUS);
-                }
+                g2.setColor(TimelineTheme.barShadow());
+                g2.fillRoundRect(currentX + 1, barY + 2, barW, BAR_HEIGHT, BAR_RADIUS, BAR_RADIUS);
 
                 // 使用垂直渐变，从稍亮到稍暗
-                float brightnessMultiplier = isDarkTheme() ? 1.15f : 1.1f;
-                float darknessMultiplier = isDarkTheme() ? 0.9f : 0.85f;
+                float brightnessMultiplier = 1.1f;
+                float darknessMultiplier = 0.85f;
 
                 // 悬停时增强颜色亮度
                 if (isHovered) {
@@ -515,16 +421,16 @@ public class TimelinePanel extends JPanel {
                 g2.fillRoundRect(currentX, barY, barW, BAR_HEIGHT, BAR_RADIUS, BAR_RADIUS);
 
                 // 添加高光效果（顶部细线）
-                int highlightAlpha = isDarkTheme() ? 20 : 40;
+                int highlightAlpha = 40;
                 if (isHovered) {
-                    highlightAlpha = isDarkTheme() ? 35 : 60;
+                    highlightAlpha = 60;
                 }
                 g2.setColor(new Color(255, 255, 255, highlightAlpha));
                 g2.fillRoundRect(currentX, barY, barW, 2, BAR_RADIUS, BAR_RADIUS);
 
                 // 悬停时添加外边框高亮
                 if (isHovered) {
-                    g2.setColor(new Color(255, 255, 255, isDarkTheme() ? 40 : 80));
+                    g2.setColor(TimelineTheme.hoveredBarOutline());
                     g2.setStroke(new BasicStroke(1.5f));
                     g2.drawRoundRect(currentX, barY, barW, BAR_HEIGHT, BAR_RADIUS, BAR_RADIUS);
                 }
@@ -542,7 +448,7 @@ public class TimelinePanel extends JPanel {
             // desc 区域
             if (s.desc != null && !s.desc.isEmpty()) {
                 g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-                g2.setColor(getDescTextColor());
+                g2.setColor(TimelineTheme.descriptionText());
                 int descX = currentX + barW + DESC_LEFT_PAD;
                 int maxDescW = panelW - descX - RIGHT_PAD;
                 String desc = s.desc;

@@ -39,7 +39,7 @@ public class ResponseTooltipBuilder {
             String enc = sizeInfo.getEncoding() != null ? sizeInfo.getEncoding() : "compressed";
             root.add(row("Body (" + enc + ")",
                     ResponseSizeCalculator.formatBytes(info.getBodyBytesReceived()),
-                    ModernColors.SUCCESS));
+                    ModernColors.getSuccess()));
             root.add(subRow("Uncompressed",
                     ResponseSizeCalculator.formatBytes(uncompressedBytes)));
             root.add(Box.createVerticalStrut(6));
@@ -77,7 +77,7 @@ public class ResponseTooltipBuilder {
         JPanel p = row();
         JLabel lbl = new JLabel(title);
         lbl.setFont(FontsUtil.getDefaultFont(Font.BOLD));
-        lbl.setForeground(ModernColors.PRIMARY);
+        lbl.setForeground(ModernColors.getPrimary());
         p.add(lbl);
         p.add(Box.createHorizontalGlue());
         p.setMaximumSize(new Dimension(Integer.MAX_VALUE, p.getPreferredSize().height + 2));
@@ -137,11 +137,8 @@ public class ResponseTooltipBuilder {
     private static JPanel compressionBadge(ResponseSizeCalculator.SizeInfo sizeInfo) {
         JPanel badge = new JPanel(new GridBagLayout());
         badge.setOpaque(true);
-        boolean dark = ModernColors.isDarkTheme();
-        Color successColor = ModernColors.SUCCESS;
-        badge.setBackground(new Color(
-                successColor.getRed(), successColor.getGreen(), successColor.getBlue(),
-                dark ? 30 : 20));
+        Color successColor = ModernColors.getSuccess();
+        badge.setBackground(ModernColors.withAlpha(successColor, 24));
         badge.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(
                         successColor.getRed(), successColor.getGreen(), successColor.getBlue(), 70), 1, true),
@@ -154,17 +151,17 @@ public class ResponseTooltipBuilder {
         String enc = sizeInfo.getEncoding() != null ? sizeInfo.getEncoding() : "compressed";
         JLabel ratioKey = new JLabel(enc + " ratio");
         ratioKey.setFont(f);
-        ratioKey.setForeground(ModernColors.SUCCESS_DARK);
+        ratioKey.setForeground(ModernColors.getSuccessDark());
         JLabel ratioVal = new JLabel(String.format("%.1f%%", sizeInfo.getCompressionRatio()));
         ratioVal.setFont(fb);
-        ratioVal.setForeground(ModernColors.SUCCESS);
+        ratioVal.setForeground(ModernColors.getSuccess());
 
         JLabel savedKey = new JLabel("saved");
         savedKey.setFont(f);
-        savedKey.setForeground(ModernColors.SUCCESS_DARK);
+        savedKey.setForeground(ModernColors.getSuccessDark());
         JLabel savedVal = new JLabel(ResponseSizeCalculator.formatBytes(sizeInfo.getSavedBytes()));
         savedVal.setFont(fb);
-        savedVal.setForeground(ModernColors.SUCCESS);
+        savedVal.setForeground(ModernColors.getSuccess());
 
         GridBagConstraints c = new GridBagConstraints();
 

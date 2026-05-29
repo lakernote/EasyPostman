@@ -1,6 +1,5 @@
 package com.laker.postman.util;
 
-import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.NotificationPosition;
 import lombok.Getter;
@@ -16,6 +15,7 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.RoundRectangle2D;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * IntelliJ IDEA 风格的 Balloon 通知工具类
@@ -64,14 +64,18 @@ public class NotificationUtil {
     @Getter
     @RequiredArgsConstructor
     public enum NotificationType {
-        SUCCESS(ModernColors.SUCCESS, "✓", CommonMessageKeys.GENERAL_SUCCESS),
-        INFO(ModernColors.INFO, "i", CommonMessageKeys.GENERAL_INFO),
-        WARNING(ModernColors.WARNING, "!", CommonMessageKeys.GENERAL_WARNING),
-        ERROR(ModernColors.ERROR, "✕", CommonMessageKeys.GENERAL_ERROR);
+        SUCCESS(ModernColors::getSuccess, "✓", CommonMessageKeys.GENERAL_SUCCESS),
+        INFO(ModernColors::getInfo, "i", CommonMessageKeys.GENERAL_INFO),
+        WARNING(ModernColors::getWarning, "!", CommonMessageKeys.GENERAL_WARNING),
+        ERROR(ModernColors::getError, "✕", CommonMessageKeys.GENERAL_ERROR);
 
-        private final Color color;
+        private final Supplier<Color> colorSupplier;
         private final String icon;
         private final String titleKey;
+
+        public Color getColor() {
+            return colorSupplier.get();
+        }
 
         public String getDefaultTitle() {
             return CommonI18n.get(titleKey);
@@ -164,6 +168,14 @@ public class NotificationUtil {
             activeToasts.remove(toast);
             updateToastPositions();
         }
+    }
+
+    static Color toastTitleColor(NotificationType type) {
+        return type.getColor();
+    }
+
+    static Color toastHeaderBackgroundColor(NotificationType type) {
+        return ModernColors.blendColors(ModernColors.getNotificationBackground(), type.getColor(), 0.12f);
     }
 
     // ==================== ToastWindow ====================
@@ -280,15 +292,13 @@ public class NotificationUtil {
                 protected void paintComponent(Graphics g) {
                     Graphics2D g2 = setupG2(g);
                     int w = getWidth(), h = getHeight();
-                    boolean dark = FlatLaf.isLafDark();
-
                     // 扁平圆角背景
-                    Color bg = dark ? new Color(47, 49, 52) : new Color(252, 252, 253);
+                    Color bg = ModernColors.getNotificationBackground();
                     g2.setColor(bg);
                     g2.fill(new RoundRectangle2D.Float(0, 0, w, h, CORNER_RADIUS, CORNER_RADIUS));
 
                     // 1px 扁平边框
-                    Color border = dark ? new Color(72, 74, 78) : new Color(205, 208, 214);
+                    Color border = ModernColors.getNotificationBorder();
                     g2.setColor(border);
                     g2.setStroke(new BasicStroke(1f));
                     g2.draw(new RoundRectangle2D.Float(0.5f, 0.5f, w - 1, h - 1, CORNER_RADIUS, CORNER_RADIUS));
@@ -327,19 +337,15 @@ public class NotificationUtil {
                 protected void paintComponent(Graphics g) {
                     Graphics2D g2 = setupG2(g);
                     int w = getWidth(), h = getHeight();
-                    boolean dark = FlatLaf.isLafDark();
 
-                    Color baseColor = type.getColor();
-                    Color headerBg = dark ? blendWithDark(baseColor, 0.16f) : blendWithLight(baseColor, 0.10f);
-                    g2.setColor(headerBg);
+                    g2.setColor(toastHeaderBackgroundColor(type));
                     // 只裁剪上方两角
                     g2.setClip(new RoundRectangle2D.Float(0, 0, w, h + CORNER_RADIUS, CORNER_RADIUS, CORNER_RADIUS));
                     g2.fillRect(0, 0, w, h);
                     g2.setClip(null);
 
                     // 分隔线
-                    Color divider = dark ? new Color(65, 67, 71) : new Color(208, 211, 216);
-                    g2.setColor(divider);
+                    g2.setColor(ModernColors.getNotificationDivider());
                     g2.drawLine(0, h - 1, w, h - 1);
                     g2.dispose();
                 }
@@ -370,8 +376,7 @@ public class NotificationUtil {
 
             // 标题
             JLabel titleLabel = new JLabel(title);
-            boolean dark = FlatLaf.isLafDark();
-            titleLabel.setForeground(dark ? brighten(type.getColor(), 0.3f) : darken(type.getColor(), 0.2f));
+            titleLabel.setForeground(toastTitleColor(type));
             titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
 
             // 关闭按钮 ×（默认透明隐藏，hover 时淡入）
@@ -398,8 +403,7 @@ public class NotificationUtil {
             bodyLabel.setFocusable(false);
             bodyLabel.setOpaque(false);
             bodyLabel.setBorder(null);
-            boolean dark = FlatLaf.isLafDark();
-            bodyLabel.setForeground(dark ? new Color(210, 213, 216) : new Color(44, 46, 50));
+            bodyLabel.setForeground(ModernColors.getNotificationBodyForeground());
             Font lf = UIManager.getFont("Label.font");
             if (lf != null) bodyLabel.setFont(lf.deriveFont(Font.PLAIN, lf.getSize2D()));
 
@@ -629,23 +633,6 @@ public class NotificationUtil {
             g2.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
             return g2;
         }
-
-        private Color blendWithDark(Color c, float ratio) {
-            return ModernColors.blendColors(new Color(47, 49, 52), c, ratio);
-        }
-
-        private Color blendWithLight(Color c, float ratio) {
-            return ModernColors.blendColors(new Color(252, 252, 253), c, ratio);
-        }
-
-        private Color darken(Color c, float f) {
-            return new Color(Math.max(0, (int) (c.getRed() * (1 - f))), Math.max(0, (int) (c.getGreen() * (1 - f))), Math.max(0, (int) (c.getBlue() * (1 - f))));
-        }
-
-        private Color brighten(Color c, float f) {
-            return new Color(Math.min(255, (int) (c.getRed() + (255 - c.getRed()) * f)), Math.min(255, (int) (c.getGreen() + (255 - c.getGreen()) * f)), Math.min(255, (int) (c.getBlue() + (255 - c.getBlue()) * f)));
-        }
-
 
         /**
          * 根据展开状态返回显示文本（纯文本，供 JTextArea 使用）。

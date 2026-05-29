@@ -234,18 +234,18 @@ public class HttpUtil {
     // 状态颜色 - 主题自适应
     public static Color getStatusColor(int statusCode) {
         if (statusCode == 101) {
-            return ModernColors.SUCCESS;  // WebSocket 升级成功
+            return ModernColors.getSuccess();  // WebSocket 升级成功
         }
         if (statusCode >= 200 && statusCode < 300) {
-            return ModernColors.SUCCESS;  // 2xx 成功
+            return ModernColors.getSuccess();  // 2xx 成功
         } else if (statusCode >= 400 && statusCode < 500) {
-            return ModernColors.WARNING;  // 4xx 客户端错误
+            return ModernColors.getWarning();  // 4xx 客户端错误
         } else if (statusCode >= 500) {
-            return ModernColors.ERROR;    // 5xx 服务器错误
+            return ModernColors.getError();    // 5xx 服务器错误
         } else if (statusCode >= 300) {
-            return ModernColors.PRIMARY;  // 3xx 重定向
+            return ModernColors.getPrimary();  // 3xx 重定向
         } else {
-            return ModernColors.ERROR;    // 其他错误
+            return ModernColors.getError();    // 其他错误
         }
     }
 

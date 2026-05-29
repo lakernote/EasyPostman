@@ -108,7 +108,7 @@ public enum SidebarTab {
 
     /**
      * 获取选中状态的图标（懒加载，带主题色）
-     * 使用 ModernColors.PRIMARY 确保颜色一致性
+     * 使用 ModernColors.getPrimary() 确保颜色一致性
      */
     public Icon getSelectedIcon() {
         if (selectedIcon == null) {

@@ -20,10 +20,6 @@ import java.awt.*;
 public class ModernUpdateDialog extends JDialog {
 
     private int userChoice = -1;
-    // 缓存渐变，避免 resize 时频繁创建对象（transient：不参与序列化）
-    private transient GradientPaint cachedGradient;
-    private int cachedGradientWidth = -1;
-    private int cachedGradientHeight = -1;
 
     public ModernUpdateDialog(Frame parent, UpdateInfo updateInfo) {
         super(parent, I18nUtil.getMessage(MessageKeys.UPDATE_NEW_VERSION_AVAILABLE), true);
@@ -52,17 +48,9 @@ public class ModernUpdateDialog extends JDialog {
                 super.paintComponent(g);
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                // 缓存渐变，只在尺寸变化时重建
-                if (cachedGradient == null
-                        || cachedGradientWidth != getWidth()
-                        || cachedGradientHeight != getHeight()) {
-                    cachedGradient = new GradientPaint(
-                            0, 0, ModernColors.PRIMARY_LIGHTER,
-                            getWidth(), getHeight(), ModernColors.SECONDARY_LIGHTER);
-                    cachedGradientWidth = getWidth();
-                    cachedGradientHeight = getHeight();
-                }
-                g2.setPaint(cachedGradient);
+                g2.setPaint(new GradientPaint(
+                        0, 0, ModernColors.getPrimaryLighter(),
+                        getWidth(), getHeight(), ModernColors.getSecondaryLighter()));
                 g2.fillRect(0, 0, getWidth(), getHeight());
                 g2.setColor(ModernColors.primaryWithAlpha(20));
                 g2.fillOval(-50, -50, 200, 200);
@@ -87,7 +75,7 @@ public class ModernUpdateDialog extends JDialog {
         String verPrefix = I18nUtil.isChinese() ? "版本" : "Version";
         JLabel versionLabel = new JLabel(verPrefix + "  " + updateInfo.getCurrentVersion() + "  →  " + updateInfo.getLatestVersion());
         versionLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 3));
-        versionLabel.setForeground(ModernColors.PRIMARY);
+        versionLabel.setForeground(ModernColors.getPrimary());
         versionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         infoPanel.add(titleLabel);
@@ -213,4 +201,3 @@ public class ModernUpdateDialog extends JDialog {
         return new ModernUpdateDialog(parent, updateInfo).showDialogAndGetChoice();
     }
 }
-

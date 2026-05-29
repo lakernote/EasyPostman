@@ -8,7 +8,6 @@ import com.laker.postman.common.component.button.ClearButton;
 import com.laker.postman.common.component.button.CloseButton;
 import com.laker.postman.common.component.button.NextButton;
 import com.laker.postman.common.component.button.PreviousButton;
-import com.laker.postman.common.constants.ModernColors;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -255,10 +254,7 @@ public class ConsolePanel extends UiSingletonPanel {
      */
     private void highlightAllMatches(int length) {
         try {
-            // 使用柔和的黄色高亮所有匹配项 - 主题自适应
-            Color highlightColor = ModernColors.isDarkTheme()
-                    ? new Color(100, 100, 50, 100)  // 暗色主题：深黄色
-                    : new Color(254, 249, 195);      // 亮色主题：浅黄色
+            Color highlightColor = ConsoleTheme.searchHighlightBackground();
             DefaultHighlighter.DefaultHighlightPainter painter =
                     new DefaultHighlighter.DefaultHighlightPainter(highlightColor);
 
@@ -283,10 +279,7 @@ public class ConsolePanel extends UiSingletonPanel {
             consoleLogArea.getHighlighter().removeAllHighlights();
             highlightAllMatches(length);
 
-            // 当前匹配项使用明亮橙色高亮 - 主题自适应
-            Color currentHighlightColor = ModernColors.isDarkTheme()
-                    ? new Color(150, 100, 50, 120)  // 暗色主题：深橙色
-                    : new Color(254, 215, 170);      // 亮色主题：浅橙色
+            Color currentHighlightColor = ConsoleTheme.searchCurrentHighlightBackground();
             DefaultHighlighter.DefaultHighlightPainter currentPainter =
                     new DefaultHighlighter.DefaultHighlightPainter(currentHighlightColor);
             consoleLogArea.getHighlighter().addHighlight(pos, pos + length, currentPainter);
@@ -345,7 +338,7 @@ public class ConsolePanel extends UiSingletonPanel {
         nextBtn.setPreferredSize(new Dimension(28, 28));
 
         matchCountLabel = new JLabel("");
-        matchCountLabel.setForeground(ModernColors.getTextSecondary());
+        matchCountLabel.setForeground(ConsoleTheme.matchCountForeground());
         matchCountLabel.setPreferredSize(new Dimension(50, 28));
         matchCountLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
@@ -514,47 +507,34 @@ public class ConsolePanel extends UiSingletonPanel {
     }
 
     /**
-     * 应用日志样式 - 使用 ModernColors 统一配色
+     * 应用日志样式 - 使用统一主题配色
      */
     private void applyLogStyle(Style style, LogType type) {
         // 为所有日志类型设置更大的行间距，提升可读性
         StyleConstants.setLineSpacing(style, 0.2f);
+        StyleConstants.setForeground(style, ConsoleTheme.logForeground(type));
 
         switch (type) {
             case ERROR:
-                // 使用 ModernColors 定义的错误色（主题适配）
-                StyleConstants.setForeground(style, ModernColors.getConsoleError());
                 StyleConstants.setBold(style, true);
                 break;
             case SUCCESS:
-                // 使用 ModernColors 定义的调试色（绿色，主题适配）
-                StyleConstants.setForeground(style, ModernColors.getConsoleDebug());
                 StyleConstants.setBold(style, true);
                 break;
             case WARN:
-                // 使用 ModernColors 定义的警告色（主题适配）
-                StyleConstants.setForeground(style, ModernColors.getConsoleWarn());
                 StyleConstants.setBold(style, true);
                 break;
             case DEBUG:
-                // 使用 ModernColors 定义的 INFO 色（蓝色，主题适配）
-                StyleConstants.setForeground(style, ModernColors.getConsoleInfo());
                 StyleConstants.setBold(style, false);
                 break;
             case TRACE:
-                // 使用 ModernColors 定义的类名色（紫色，主题适配）
-                StyleConstants.setForeground(style, ModernColors.getConsoleClassName());
                 StyleConstants.setBold(style, false);
                 break;
             case CUSTOM:
-                // 使用 ModernColors 定义的方法名色（青色，主题适配）
-                StyleConstants.setForeground(style, ModernColors.getConsoleMethodName());
                 StyleConstants.setBold(style, false);
                 break;
             case INFO:
             default:
-                // 使用 ModernColors 定义的普通文本色（主题适配）
-                StyleConstants.setForeground(style, ModernColors.getConsoleText());
                 StyleConstants.setBold(style, false);
         }
     }

@@ -75,11 +75,6 @@ public class SidebarTabPanel extends UiSingletonPanel {
     private int calculatedExpandedTabHeight = -1; // 计算后的展开状态tab高度
     private int calculatedCollapsedTabHeight = -1; // 计算后的收起状态tab高度
 
-    // 性能优化：缓存绘制时使用的颜色对象，避免重复创建
-    private transient Color cachedBgColor;
-    private transient GradientPaint cachedGradient;
-    private transient int lastIndicatorHeight = -1; // 用于判断是否需要重新创建渐变
-
     @Override
     protected void initUI() {
         // 初始化字体缓存
@@ -357,7 +352,6 @@ public class SidebarTabPanel extends UiSingletonPanel {
         normalFont = getLanguageAwareFont(Font.PLAIN);
         boldFont = getLanguageAwareFont(Font.BOLD);
 
-        resetPaintCache();
         resetTabLayoutCache();
 
         // 同步侧边栏展开状态（支持菜单栏收起展开的动态刷新）
@@ -535,7 +529,7 @@ public class SidebarTabPanel extends UiSingletonPanel {
         for (Component comp : panel.getComponents()) {
             if (comp instanceof JLabel label && TITLE_LABEL_NAME.equals(label.getName())) {
                 if (isSelected) {
-                    label.setForeground(ModernColors.PRIMARY);
+                    label.setForeground(SidebarTheme.selectedTabTitleForeground());
                     label.setFont(boldFont);
                 } else {
                     label.setForeground(ModernColors.getTextSecondary());
@@ -643,16 +637,7 @@ public class SidebarTabPanel extends UiSingletonPanel {
          * 绘制选中 tab 的淡雅背景
          */
         private void paintSelectedTabBackground(Graphics2D g2, int x, int y, int w, int h) {
-            // 使用缓存的颜色对象，避免重复创建
-            if (cachedBgColor == null) {
-                cachedBgColor = new Color(
-                        ModernColors.PRIMARY.getRed(),
-                        ModernColors.PRIMARY.getGreen(),
-                        ModernColors.PRIMARY.getBlue(),
-                        25  // 稍微增加透明度，让背景更明显
-                );
-            }
-            g2.setColor(cachedBgColor);
+            g2.setColor(SidebarTheme.selectedTabBackground());
             g2.fillRect(x, y, w, h);
         }
 
@@ -669,16 +654,7 @@ public class SidebarTabPanel extends UiSingletonPanel {
             int indicatorY = y + verticalMargin;
             int indicatorHeight = h - verticalMargin * 2;
 
-            // 只有在高度变化时才重新创建渐变对象，使用更饱和的颜色
-            if (cachedGradient == null || lastIndicatorHeight != indicatorHeight) {
-                cachedGradient = new GradientPaint(
-                        0, 0, ModernColors.PRIMARY,  // 顶部：标准蓝（更清晰）
-                        0, indicatorHeight, ModernColors.PRIMARY_LIGHT  // 底部：亮蓝
-                );
-                lastIndicatorHeight = indicatorHeight;
-            }
-
-            g2.setPaint(cachedGradient);
+            g2.setPaint(SidebarTheme.selectedTabIndicatorPaint(indicatorHeight));
             g2.translate(indicatorX, indicatorY);
             // 使用fillRoundRect绘制实心指示条，清晰锐利
             g2.fillRoundRect(0, 0, indicatorWidth, indicatorHeight, indicatorRadius, indicatorRadius);
@@ -775,7 +751,7 @@ public class SidebarTabPanel extends UiSingletonPanel {
                 if (!enabled) {
                     arrowColor = ModernColors.getTextDisabled();
                 } else if (pressed || hovered) {
-                    arrowColor = ModernColors.PRIMARY;
+                    arrowColor = ModernColors.getPrimary();
                 } else {
                     arrowColor = ModernColors.getTextSecondary();
                 }
@@ -824,7 +800,7 @@ public class SidebarTabPanel extends UiSingletonPanel {
 
             if (isCurrentlySelected) {
                 titleLabel.setFont(boldFont);
-                titleLabel.setForeground(ModernColors.PRIMARY);
+                titleLabel.setForeground(SidebarTheme.selectedTabTitleForeground());
             } else {
                 titleLabel.setFont(normalFont);
                 titleLabel.setForeground(ModernColors.getTextSecondary());
@@ -1016,12 +992,6 @@ public class SidebarTabPanel extends UiSingletonPanel {
             resetTabLayoutCache();
             recreateTabbedPane();
         }
-    }
-
-    private void resetPaintCache() {
-        cachedBgColor = null;
-        cachedGradient = null;
-        lastIndicatorHeight = -1;
     }
 
     private void resetTabLayoutCache() {

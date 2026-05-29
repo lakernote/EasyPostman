@@ -82,7 +82,7 @@ public class ModernProgressDialog {
 
         // 百分比
         percentLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 20));
-        percentLabel.setForeground(ModernColors.PRIMARY);
+        percentLabel.setForeground(ModernColors.getPrimary());
         percentLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         contentPanel.add(percentLabel);
         contentPanel.add(Box.createVerticalStrut(12));

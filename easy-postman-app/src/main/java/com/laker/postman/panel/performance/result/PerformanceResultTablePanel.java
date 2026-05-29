@@ -639,7 +639,7 @@ public class PerformanceResultTablePanel extends JPanel {
                 case 1: // 接口名称 - 左对齐
                     setHorizontalAlignment(SwingConstants.LEFT);
                     if (!isSelected && info != null && !info.isActuallySuccessful()) {
-                        setForeground(ModernColors.ERROR_DARK);
+                        setForeground(ModernColors.getErrorDark());
                         setFont(table.getFont().deriveFont(Font.BOLD));
                     }
                     break;
@@ -678,7 +678,7 @@ public class PerformanceResultTablePanel extends JPanel {
             int leftInset = modelColumn == 1 ? 8 : 6;
 
             if (modelColumn == 1 && info != null && !isSelected) {
-                Color stripeColor = info.isActuallySuccessful() ? ModernColors.SUCCESS_DARK : ModernColors.ERROR_DARK;
+                Color stripeColor = info.isActuallySuccessful() ? ModernColors.getSuccessDark() : ModernColors.getErrorDark();
                 return BorderFactory.createCompoundBorder(
                         BorderFactory.createMatteBorder(0, 4, 0, 0, stripeColor),
                         BorderFactory.createEmptyBorder(0, leftInset, 0, 6)
@@ -698,17 +698,17 @@ public class PerformanceResultTablePanel extends JPanel {
                 int code = Integer.parseInt(status);
                 if (code >= 200 && code < 300) {
                     // 成功：使用绿色
-                    foreground = ModernColors.SUCCESS_DARK;
+                    foreground = ModernColors.getSuccessDark();
                 } else if (code >= 400 && code < 500) {
                     // 客户端错误：使用警告色
-                    foreground = ModernColors.WARNING_DARKER;
+                    foreground = ModernColors.getWarningDarker();
                 } else if (code >= 500) {
                     // 服务器错误：使用错误色
-                    foreground = ModernColors.ERROR_DARKER;
+                    foreground = ModernColors.getErrorDarker();
                 }
             } catch (NumberFormatException e) {
                 // 非数字状态（如错误消息）
-                foreground = ModernColors.ERROR_DARK;
+                foreground = ModernColors.getErrorDark();
             }
 
             // 只设置文字颜色

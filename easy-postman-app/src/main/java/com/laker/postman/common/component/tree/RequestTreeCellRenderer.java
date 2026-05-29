@@ -1,7 +1,7 @@
 package com.laker.postman.common.component.tree;
 
-import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestGroup;
 import com.laker.postman.model.RequestItemProtocolEnum;
@@ -124,8 +124,8 @@ public class RequestTreeCellRenderer extends DefaultTreeCellRenderer {
             // hover 时用纯文本，JLabel 能自动省略超长文字
             setText(groupName);
         } else {
-            String nameColor = FlatLaf.isLafDark() ? "#e2e8f0" : "#1e293b";
-            setText("<html><nobr><span color:" + nameColor + "'>"
+            String nameColor = toHex(ModernColors.getTextPrimary());
+            setText("<html><nobr><span style='color:" + nameColor + "'>"
                     + escapeHtml(groupName) + "</span></nobr></html>");
         }
 
@@ -212,6 +212,10 @@ public class RequestTreeCellRenderer extends DefaultTreeCellRenderer {
         else if (code >= 400 && code < 500) return "#ffc107";
         else if (code >= 500) return "#dc3545";
         return "#6c757d";
+    }
+
+    private static String toHex(Color color) {
+        return String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
     }
 
     private static String buildSavedResponseText(String name, int code, String timeStr, String statusColor) {

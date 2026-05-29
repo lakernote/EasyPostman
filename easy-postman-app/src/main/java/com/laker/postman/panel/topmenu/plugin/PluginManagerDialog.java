@@ -1380,16 +1380,9 @@ public class PluginManagerDialog extends JDialog {
     private void configureListAppearance(JList<?> list) {
         list.setBackground(ModernColors.getCardBackgroundColor());
         list.setForeground(ModernColors.getTextPrimary());
-        list.setSelectionBackground(adaptSelectionBackground(ModernColors.PRIMARY));
+        list.setSelectionBackground(PluginManagerTheme.listSelectionBackground());
         list.setSelectionForeground(ModernColors.getTextPrimary());
         list.setBorder(BorderFactory.createEmptyBorder());
-    }
-
-    private Color adaptSelectionBackground(Color color) {
-        if (ModernColors.isDarkTheme()) {
-            return new Color(color.getRed(), color.getGreen(), color.getBlue(), 110);
-        }
-        return new Color(color.getRed(), color.getGreen(), color.getBlue(), 28);
     }
 
     private static String shorten(String value, int maxLength) {
@@ -1424,19 +1417,19 @@ public class PluginManagerDialog extends JDialog {
                 || text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_DISABLE_PENDING))
                 || text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_RESTART_REQUIRED))
                 || matchesStatusPrefix(text, MessageKeys.PLUGIN_MANAGER_MARKET_UPDATE_AVAILABLE)) {
-            return new StatusPalette(adaptStatusBackground(ModernColors.WARNING), adaptStatusForeground(ModernColors.WARNING));
+            return new StatusPalette(PluginManagerTheme.statusBackground(ModernColors.getWarning()), PluginManagerTheme.statusForeground());
         }
         if (text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_DISABLED))
                 || text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_INCOMPATIBLE))
                 || text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_INCOMPATIBLE_UPGRADE))
                 || text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_REQUIRES_HOST_UPGRADE))
                 || text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_UPDATE_REQUIRES_HOST_UPGRADE))) {
-            return new StatusPalette(adaptStatusBackground(ModernColors.ERROR), adaptStatusForeground(ModernColors.ERROR));
+            return new StatusPalette(PluginManagerTheme.statusBackground(ModernColors.getError()), PluginManagerTheme.statusForeground());
         }
         if (text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_AVAILABLE))) {
-            return new StatusPalette(adaptStatusBackground(ModernColors.PRIMARY), adaptStatusForeground(ModernColors.PRIMARY));
+            return new StatusPalette(PluginManagerTheme.statusBackground(ModernColors.getPrimary()), PluginManagerTheme.statusForeground());
         }
-        return new StatusPalette(adaptStatusBackground(ModernColors.SUCCESS), adaptStatusForeground(ModernColors.SUCCESS));
+        return new StatusPalette(PluginManagerTheme.statusBackground(ModernColors.getSuccess()), PluginManagerTheme.statusForeground());
     }
 
     private boolean matchesStatusPrefix(String text, String messageKey) {
@@ -1446,20 +1439,6 @@ public class PluginManagerDialog extends JDialog {
             return text.contains(pattern.substring(0, placeholderIndex));
         }
         return text.contains(pattern);
-    }
-
-    private Color adaptStatusBackground(Color color) {
-        if (ModernColors.isDarkTheme()) {
-            return new Color(color.getRed(), color.getGreen(), color.getBlue(), 90);
-        }
-        return new Color(color.getRed(), color.getGreen(), color.getBlue(), 32);
-    }
-
-    private Color adaptStatusForeground(Color color) {
-        if (ModernColors.isDarkTheme()) {
-            return Color.WHITE;
-        }
-        return color.darker();
     }
 
     private static final class StatusPalette {

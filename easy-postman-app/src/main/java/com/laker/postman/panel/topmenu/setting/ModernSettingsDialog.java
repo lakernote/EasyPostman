@@ -165,7 +165,7 @@ public class ModernSettingsDialog extends JDialog {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
                 if (isSelected) {
-                    g2.setColor(ModernColors.PRIMARY);
+                    g2.setColor(ModernColors.getPrimary());
                     g2.fillRoundRect(x + TAB_MARGIN, y + TAB_MARGIN,
                             w - TAB_PADDING, h - TAB_PADDING, CORNER_RADIUS, CORNER_RADIUS);
                 } else if (getRolloverTab() == tabIndex) {

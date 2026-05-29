@@ -614,13 +614,13 @@ public class ExecutionResultsPanel extends JPanel {
                 // 有失败：红色图标和文字
                 setIcon(new FlatSVGIcon("icons/fail.svg", 16, 16));
                 if (!selected) {
-                    setForeground(ModernColors.ERROR_DARK);
+                    setForeground(ModernColors.getErrorDark());
                 }
             } else if (hasTests) {
                 // 全部通过：绿色图标和文字
                 setIcon(new FlatSVGIcon("icons/pass.svg", 16, 16));
                 if (!selected) {
-                    setForeground(ModernColors.SUCCESS_DARK);
+                    setForeground(ModernColors.getSuccessDark());
                 }
             } else {
                 // 无测试：默认图标
@@ -642,7 +642,7 @@ public class ExecutionResultsPanel extends JPanel {
             } else if (AssertionResult.FAIL.equals(assertion) || FunctionalPanel.ERROR.equals(status)) {
                 // 失败：红色图标和文字
                 setIcon(new FlatSVGIcon("icons/fail.svg", 16, 16));
-                setForegroundIfNotSelected(ModernColors.ERROR_DARK, selected);
+                setForegroundIfNotSelected(ModernColors.getErrorDark(), selected);
             } else if (AssertionResult.NO_TESTS.equals(assertion)) {
                 // 无测试：蓝色图标和文字
                 setIcon(IconUtil.createThemed("icons/nocheck.svg", 16, 16));
@@ -650,7 +650,7 @@ public class ExecutionResultsPanel extends JPanel {
             } else if (AssertionResult.PASS.equals(assertion)) {
                 // 通过：绿色图标和文字
                 setIcon(new FlatSVGIcon("icons/pass.svg", 16, 16));
-                setForegroundIfNotSelected(ModernColors.SUCCESS_DARK, selected);
+                setForegroundIfNotSelected(ModernColors.getSuccessDark(), selected);
 
             } else {
                 // 其他状态：默认图标
@@ -733,13 +733,13 @@ public class ExecutionResultsPanel extends JPanel {
                 {String.valueOf(totalIterations), I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_TOTAL_ITERATIONS), null},
                 {String.valueOf(totalRequests), I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_TOTAL_REQUESTS), null},
                 {String.format("%.1f%%", successRate), I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_SUCCESS_RATE),
-                        successRate >= 100 ? ModernColors.SUCCESS_DARK : (successRate >= 80 ? ModernColors.WARNING_DARKER : ModernColors.ERROR_DARK)},
+                        successRate >= 100 ? ModernColors.getSuccessDark() : (successRate >= 80 ? ModernColors.getWarningDarker() : ModernColors.getErrorDark())},
                 {TimeDisplayUtil.formatElapsedTime(totalTime), I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_TOTAL_TIME), null},
                 {formatTimestamp(executionHistory.getStartTime()), I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_START_TIME), null},
                 {formatTimestamp(executionHistory.getEndTime()), I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_END_TIME), null},
                 {avgTime + " ms", I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_AVERAGE_TIME), null},
                 {I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_STATUS_COMPLETED), I18nUtil.getMessage(MessageKeys.FUNCTIONAL_STATS_STATUS),
-                        ModernColors.SUCCESS_DARK},
+                        ModernColors.getSuccessDark()},
         };
 
         GridBagConstraints gbc = new GridBagConstraints();
@@ -914,14 +914,14 @@ public class ExecutionResultsPanel extends JPanel {
             try {
                 int code = Integer.parseInt(status);
                 if (code >= 200 && code < 300) {
-                    foreground = ModernColors.SUCCESS_DARK;
+                    foreground = ModernColors.getSuccessDark();
                 } else if (code >= 400 && code < 500) {
-                    foreground = ModernColors.WARNING_DARKER;
+                    foreground = ModernColors.getWarningDarker();
                 } else if (code >= 500) {
-                    foreground = ModernColors.ERROR_DARKER;
+                    foreground = ModernColors.getErrorDarker();
                 }
             } catch (NumberFormatException e) {
-                foreground = ModernColors.ERROR_DARK;
+                foreground = ModernColors.getErrorDark();
             }
         }
         c.setForeground(foreground);
@@ -964,9 +964,9 @@ public class ExecutionResultsPanel extends JPanel {
                 } else if (value instanceof AssertionResult ar) {
                     setText(ar.getDisplayValue());
                     if (AssertionResult.PASS.equals(ar)) {
-                        c.setForeground(isSelected ? c.getForeground() : ModernColors.SUCCESS_DARK);
+                        c.setForeground(isSelected ? c.getForeground() : ModernColors.getSuccessDark());
                     } else if (AssertionResult.FAIL.equals(ar)) {
-                        c.setForeground(isSelected ? c.getForeground() : ModernColors.ERROR_DARK);
+                        c.setForeground(isSelected ? c.getForeground() : ModernColors.getErrorDark());
                     } else {
                         c.setForeground(isSelected ? c.getForeground() : ModernColors.getTextSecondary());
                     }

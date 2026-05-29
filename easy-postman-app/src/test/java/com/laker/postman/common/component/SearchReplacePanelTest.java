@@ -1,6 +1,8 @@
 package com.laker.postman.common.component;
 
 import com.laker.postman.test.AbstractSwingUiTest;
+import com.laker.postman.util.UiI18n;
+import com.laker.postman.util.UiMessageKeys;
 import org.fife.ui.rsyntaxtextarea.DocumentRange;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.testng.annotations.Test;
@@ -54,7 +56,7 @@ public class SearchReplacePanelTest extends AbstractSwingUiTest {
             statusText[0] = getStatusText(panel);
         });
 
-        assertEquals(statusText[0], "1 of 1000");
+        assertEquals(statusText[0], UiI18n.get(UiMessageKeys.SEARCH_STATUS_COUNT, 1, 1_000));
         assertEquals(textAreaHolder[0].markAllCalls, 0);
     }
 

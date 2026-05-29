@@ -1,6 +1,5 @@
 package com.laker.postman.panel.topmenu.setting;
 
-import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
@@ -47,7 +46,7 @@ public abstract class ModernSettingsPanel extends JPanel {
      * 检查当前是否为暗色主题
      */
     protected boolean isDarkTheme() {
-        return FlatLaf.isLafDark();
+        return ModernColors.isDarkTheme();
     }
 
     /**
@@ -160,7 +159,7 @@ public abstract class ModernSettingsPanel extends JPanel {
      * 使用警告色表示有未保存的修改
      */
     protected Color getStateModifiedColor() {
-        return ModernColors.WARNING;
+        return ModernColors.getWarning();
     }
 
     protected ModernSettingsPanel() {
@@ -385,7 +384,7 @@ public abstract class ModernSettingsPanel extends JPanel {
                     // 检查是否有验证错误
                     if (!hasValidationError(field)) {
                         field.setBorder(new CompoundBorder(
-                                new RoundedLineBorder(ModernColors.PRIMARY, 2, 8),
+                                new RoundedLineBorder(ModernColors.getPrimary(), 2, 8),
                                 new EmptyBorder(7, 13, 7, 13)
                         ));
                     }
@@ -488,7 +487,7 @@ public abstract class ModernSettingsPanel extends JPanel {
                     // 根据焦点状态设置不同的边框
                     if (field.hasFocus()) {
                         field.setBorder(new CompoundBorder(
-                                new RoundedLineBorder(ModernColors.PRIMARY, 2, 8),
+                                new RoundedLineBorder(ModernColors.getPrimary(), 2, 8),
                                 new EmptyBorder(7, 13, 7, 13)
                         ));
                     } else {
@@ -500,7 +499,7 @@ public abstract class ModernSettingsPanel extends JPanel {
                     field.setToolTipText(null);
                 } else {
                     field.setBorder(new CompoundBorder(
-                            new RoundedLineBorder(ModernColors.ERROR, 2, 8),
+                            new RoundedLineBorder(ModernColors.getError(), 2, 8),
                             new EmptyBorder(7, 13, 7, 13)
                     ));
                     field.setToolTipText(errorMessage);

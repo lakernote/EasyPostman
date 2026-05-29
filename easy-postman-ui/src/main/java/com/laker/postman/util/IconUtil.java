@@ -105,7 +105,7 @@ public class IconUtil {
 
     public static FlatSVGIcon createPrimary(String iconPath, int width, int height, ClassLoader classLoader) {
         return create(iconPath, width, height, classLoader)
-                .setColorFilter(new FlatSVGIcon.ColorFilter(color -> ModernColors.PRIMARY));
+                .setColorFilter(new FlatSVGIcon.ColorFilter(color -> ModernColors.getPrimary()));
     }
 
     /**

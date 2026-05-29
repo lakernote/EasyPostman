@@ -1,14 +1,37 @@
 package com.laker.postman.common.component;
 
+import com.laker.postman.common.constants.ThemeColors;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import javax.swing.*;
+import java.awt.*;
+import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.laker.postman.test.ThemeTokenTestSupport.remember;
+import static com.laker.postman.test.ThemeTokenTestSupport.restore;
 import static org.testng.Assert.*;
 
 public class CsvDataPanelTest {
+    private Map<String, Object> previousThemeTokens;
+
+    @BeforeMethod
+    public void rememberThemeTokens() {
+        previousThemeTokens = remember(
+                "Table.alternateRowColor",
+                "Table.selectionBackground",
+                ThemeColors.HOVER_BACKGROUND
+        );
+    }
+
+    @AfterMethod
+    public void tearDown() {
+        restore(previousThemeTokens);
+    }
 
     @Test(description = "CsvDataPanel 应支持状态导出和恢复")
     public void shouldRoundTripCsvState() {
@@ -49,11 +72,44 @@ public class CsvDataPanelTest {
         assertEquals(exported.getHeaders(), List.of("cookie", "username", "token"));
     }
 
+    @Test(description = "CSV 斑马纹默认背景应使用主题 hover token")
+    public void stripeBackgroundShouldUseSemanticHoverColorWhenLafAlternateColorMissing() throws Exception {
+        Color hover = new Color(31, 32, 33);
+        UIManager.put("Table.alternateRowColor", null);
+        UIManager.put(ThemeColors.HOVER_BACKGROUND, hover);
+
+        assertEquals(invokeStripeBackground(Color.WHITE), hover);
+    }
+
+    @Test(description = "CSV 表格选中背景应优先使用 FlatLaf Table.selectionBackground")
+    public void csvTableSelectionShouldUseFlatLafTableSelectionBackground() throws Exception {
+        Color selectionBackground = new Color(41, 42, 43);
+        UIManager.put("Table.selectionBackground", selectionBackground);
+
+        JTable table = new JTable();
+        CsvDataPanel panel = new CsvDataPanel();
+        invokeConfigureCsvTable(panel, table);
+
+        assertEquals(table.getSelectionBackground(), selectionBackground);
+    }
+
     private static Map<String, String> row(String... keyValues) {
         Map<String, String> row = new LinkedHashMap<>();
         for (int i = 0; i < keyValues.length; i += 2) {
             row.put(keyValues[i], keyValues[i + 1]);
         }
         return row;
+    }
+
+    private static Color invokeStripeBackground(Color base) throws Exception {
+        Method method = CsvDataPanel.class.getDeclaredMethod("getStripeBackground", Color.class);
+        method.setAccessible(true);
+        return (Color) method.invoke(null, base);
+    }
+
+    private static void invokeConfigureCsvTable(CsvDataPanel panel, JTable table) throws Exception {
+        Method method = CsvDataPanel.class.getDeclaredMethod("configureCsvTable", JTable.class);
+        method.setAccessible(true);
+        method.invoke(panel, table);
     }
 }

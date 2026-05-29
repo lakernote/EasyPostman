@@ -164,6 +164,10 @@ public final class MessageKeys {
     public static final String PLUGIN_MANAGER_STATUS_RESTART_REQUIRED = "plugin.manager.status.restart_required";
     public static final String PLUGIN_MANAGER_STATUS_DISABLE_PENDING = "plugin.manager.status.disable_pending";
     public static final String PLUGIN_MANAGER_STATUS_UNINSTALL_PENDING = "plugin.manager.status.uninstall_pending";
+    public static final String PLUGIN_MANAGER_STATUS_LIST_UPGRADE_REQUIRED = "plugin.manager.status.list.upgrade_required";
+    public static final String PLUGIN_MANAGER_STATUS_LIST_RESTART_REQUIRED = "plugin.manager.status.list.restart_required";
+    public static final String PLUGIN_MANAGER_STATUS_LIST_DISABLE_PENDING = "plugin.manager.status.list.disable_pending";
+    public static final String PLUGIN_MANAGER_STATUS_LIST_UNINSTALL_PENDING = "plugin.manager.status.list.uninstall_pending";
     public static final String PLUGIN_MANAGER_RESTART_HINT = "plugin.manager.restart_hint";
     public static final String PLUGIN_MANAGER_FILE_CHOOSER = "plugin.manager.file_chooser";
     public static final String PLUGIN_MANAGER_INSTALL_SUCCESS = "plugin.manager.install_success";
@@ -174,7 +178,6 @@ public final class MessageKeys {
     public static final String PLUGIN_MANAGER_UNINSTALL_TITLE = "plugin.manager.uninstall_title";
     public static final String PLUGIN_MANAGER_TAB_INSTALLED = "plugin.manager.tab.installed";
     public static final String PLUGIN_MANAGER_TAB_MARKET = "plugin.manager.tab.market";
-    public static final String PLUGIN_MANAGER_MARKET_LOAD = "plugin.manager.market.load";
     public static final String PLUGIN_MANAGER_MARKET_OFFICIAL_GITHUB = "plugin.manager.market.official_github";
     public static final String PLUGIN_MANAGER_MARKET_OFFICIAL_GITEE = "plugin.manager.market.official_gitee";
     public static final String PLUGIN_MANAGER_MARKET_HINT = "plugin.manager.market.hint";
@@ -198,6 +201,11 @@ public final class MessageKeys {
     public static final String PLUGIN_MANAGER_MARKET_REQUIRES_HOST_UPGRADE = "plugin.manager.market.requires_host_upgrade";
     public static final String PLUGIN_MANAGER_MARKET_UPDATE_REQUIRES_HOST_UPGRADE = "plugin.manager.market.update_requires_host_upgrade";
     public static final String PLUGIN_MANAGER_MARKET_LOCAL_NEWER = "plugin.manager.market.local_newer";
+    public static final String PLUGIN_MANAGER_MARKET_LIST_INSTALLED = "plugin.manager.market.list.installed";
+    public static final String PLUGIN_MANAGER_MARKET_LIST_UPDATE_AVAILABLE = "plugin.manager.market.list.update_available";
+    public static final String PLUGIN_MANAGER_MARKET_LIST_REQUIRES_HOST_UPGRADE = "plugin.manager.market.list.requires_host_upgrade";
+    public static final String PLUGIN_MANAGER_MARKET_LIST_UPDATE_REQUIRES_HOST_UPGRADE = "plugin.manager.market.list.update_requires_host_upgrade";
+    public static final String PLUGIN_MANAGER_MARKET_LIST_LOCAL_NEWER = "plugin.manager.market.list.local_newer";
     public static final String PLUGIN_MANAGER_MARKET_ACTION_INSTALL = "plugin.manager.market.action_install";
     public static final String PLUGIN_MANAGER_MARKET_ACTION_UPDATE = "plugin.manager.market.action_update";
     public static final String PLUGIN_MANAGER_SUMMARY_INSTALLED = "plugin.manager.summary.installed";

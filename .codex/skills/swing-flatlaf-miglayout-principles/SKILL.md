@@ -1,6 +1,6 @@
 ---
 name: swing-flatlaf-miglayout-principles
-description: Use when modifying EasyPostman Swing forms that use FlatLaf and MigLayout, especially when layout refactors introduce clipped focus rings, dense spacing, border conflicts, or inconsistent form structure.
+description: Use when modifying EasyPostman Swing forms that use FlatLaf and MigLayout, especially when layout refactors introduce clipped focus rings, truncated text, clipped status badges, dense spacing, border conflicts, or inconsistent form structure.
 ---
 
 # Swing FlatLaf MigLayout Principles
@@ -11,6 +11,7 @@ Use this skill when editing Swing form layouts in this repo. The goal is not jus
 
 - A `JTextField`, `JPasswordField`, or `JComboBox` looks fine until focused
 - Focus/highlight borders are clipped or hidden
+- A list item, sidebar row, badge, tab, or localized label is truncated or spills out of its container
 - A refactor added borders, cards, sections, or sub-panels and spacing became unstable
 - A dense toolbar/form row in MigLayout starts to look cramped or visually inconsistent
 - A Swing form in EasyPostman needs to be reorganized without regressing FlatLaf behavior
@@ -32,6 +33,9 @@ Use this skill when editing Swing form layouts in this repo. The goal is not jus
 5. Follow existing repo form patterns.
    Reuse the simpler top-bar/form-row patterns already used in other toolbox panels where possible.
 
+6. Treat localized text as variable-width UI.
+   English status strings and Chinese labels can have very different widths. Do not rely on one locale fitting a fixed row.
+
 ## Preferred fix order
 
 1. Check whether the affected container uses `MigLayout`.
@@ -51,6 +55,21 @@ Use this skill when editing Swing form layouts in this repo. The goal is not jus
 
 5. If a refactor introduced titles inside borders, remove the titles first.
    If grouping is still needed, use borderless sections plus separators, or a plain line border without title text.
+
+6. For truncated text or badges in list renderers, inspect row/column constraints before changing fonts.
+   Long labels in `[pref!]`, `shrink 0`, or same-row title/status layouts can force clipping inside fixed-width sidebars.
+
+## Narrow list and badge layouts
+
+- In fixed-width sidebars, avoid putting a variable-length title and a variable-length status badge in the same row.
+  Prefer:
+  - row 1: title spans all columns with `span 2, growx, wmin 0, wrap`
+  - row 2: version/meta in a growing column, compact status badge in a right-aligned `pref` column
+- Keep `wmin 0` on labels that may need to shrink or ellipsize. Without it, MigLayout can preserve the label's preferred width and push siblings out.
+- Use `shrink 0` only for controls or badges whose displayed text is intentionally short. Never apply it to long localized status strings.
+- If a status must be semantically long, add a short list-specific i18n key for the badge and keep the full text in the details panel or tooltip.
+- Do not fix repeated clipping by reducing font sizes. Use `FontsUtil` only to preserve hierarchy after the layout constraints are correct.
+- Recheck both installed and marketplace renderers when they share the same list pattern; otherwise the bug usually comes back in the sibling view.
 
 ## Repo-specific guidance
 
@@ -103,6 +122,7 @@ Preferred order when adjusting theme:
   - compact but not crowded form rows
 - Section grouping should be visual, not heavy-handed.
 - If a grouped layout costs too much vertical space or breaks focus rendering, simplify it.
+- Sidebars with action/status rows should favor scanability over cramming: let the main label breathe, then place status/meta on the next row.
 
 ## Anti-patterns
 
@@ -110,6 +130,8 @@ Preferred order when adjusting theme:
 - Keeping `TitledBorder` on dense editable forms after focus clipping appears
 - Solving a layout bug by moving controls farther apart without understanding the container behavior
 - Adding more nested panels than the visual structure actually needs
+- Combining long title text and long status text in a fixed-width list row with both components preserving preferred width
+- Adding absolute point-size font tweaks to make one English string fit
 
 ## Verification
 
@@ -119,4 +141,5 @@ After the fix, verify all of the following:
 2. Focus a combo box in the same area.
 3. Confirm the highlight ring is visible on top, bottom, left, and right.
 4. Confirm spacing still looks intentional when the control is unfocused.
-5. Rebuild with `mvn -q -DskipTests compile`.
+5. For truncation fixes, verify the longest English and Chinese labels/statuses in the affected fixed-width container.
+6. Rebuild with `mvn -q -DskipTests compile`.

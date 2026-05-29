@@ -63,8 +63,6 @@ public class PluginManagerDialog extends JDialog {
     private final JButton uninstallInstalledButton = ModernButtonFactory.createButton(
             I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_UNINSTALL), false);
 
-    private final JButton loadCatalogButton = ModernButtonFactory.createButton(
-            I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_LOAD), false);
     private final JButton installMarketButton = ModernButtonFactory.createButton(
             I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_ACTION_INSTALL), true);
     private final JToggleButton useOfficialGithubCatalogButton = ModernButtonFactory.createToggleButton(
@@ -154,7 +152,6 @@ public class PluginManagerDialog extends JDialog {
         disableInstalledButton.addActionListener(e -> toggleSelectedInstalledPlugin(false));
         uninstallInstalledButton.addActionListener(e -> uninstallSelectedInstalledPlugin());
 
-        loadCatalogButton.addActionListener(e -> loadCatalog());
         installMarketButton.addActionListener(e -> installSelectedCatalogPlugin());
         useOfficialGithubCatalogButton.addActionListener(e -> applyCatalogUrl(
                 PluginManagementService.getOfficialCatalogUrl("github"), true));
@@ -370,13 +367,12 @@ public class PluginManagerDialog extends JDialog {
 
     private JPanel createMarketSourceToolbar() {
         JPanel panel = new JPanel(new MigLayout(
-                "fillx, insets 0, gapy 8, novisualpadding",
+                "fillx, insets 0, novisualpadding",
                 "[grow,fill]",
-                "[][]"
+                "[]"
         ));
         panel.setOpaque(false);
-        panel.add(createCatalogSourceSegment(), "w pref!, alignx left, shrink 0, wrap");
-        panel.add(loadCatalogButton, "growx, wmin 0");
+        panel.add(createCatalogSourceSegment(), "w pref!, alignx left, shrink 0");
         return panel;
     }
 
@@ -495,7 +491,7 @@ public class PluginManagerDialog extends JDialog {
         PluginManagementService.saveCatalogUrl(catalogUrl == null ? "" : catalogUrl.trim());
         refreshCatalogSourceButtons();
         if (autoLoad) {
-            loadCatalog();
+            loadCatalog(true);
         }
     }
 
@@ -615,10 +611,6 @@ public class PluginManagerDialog extends JDialog {
             log.error("Failed to install plugin jar: {}", source, e);
             showError(e);
         }
-    }
-
-    private void loadCatalog() {
-        loadCatalog(true);
     }
 
     private void loadCatalog(boolean switchToMarketView) {
@@ -811,7 +803,6 @@ public class PluginManagerDialog extends JDialog {
             }
         }
         installMarketButton.setText(actionLabel);
-        loadCatalogButton.setEnabled(!marketBusy);
         installMarketButton.setEnabled(installEnabled);
         marketActionPanel.setVisible(showInstallAction);
         useOfficialGithubCatalogButton.setEnabled(!marketBusy);
@@ -1401,13 +1392,25 @@ public class PluginManagerDialog extends JDialog {
     }
 
     private void applyStatusBadge(JLabel label, String text) {
-        label.setText(text == null ? "" : text);
-        if (text == null || text.isBlank()) {
+        applyStatusBadge(label, text, text);
+    }
+
+    private void applyListStatusBadge(JLabel label, String text) {
+        String fullText = text == null ? "" : text;
+        String displayText = compactListStatusText(fullText);
+        applyStatusBadge(label, displayText, fullText);
+        label.setToolTipText(displayText.equals(fullText) ? null : fullText);
+    }
+
+    private void applyStatusBadge(JLabel label, String displayText, String paletteText) {
+        label.setText(displayText == null ? "" : displayText);
+        if (displayText == null || displayText.isBlank()) {
             label.setVisible(false);
+            label.setToolTipText(null);
             return;
         }
         label.setVisible(true);
-        StatusPalette palette = resolveStatusPalette(text);
+        StatusPalette palette = resolveStatusPalette(paletteText == null ? displayText : paletteText);
         label.setBackground(palette.background());
         label.setForeground(palette.foreground());
     }
@@ -1416,12 +1419,13 @@ public class PluginManagerDialog extends JDialog {
         if (text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_UNINSTALL_PENDING))
                 || text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_DISABLE_PENDING))
                 || text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_RESTART_REQUIRED))
-                || matchesStatusPrefix(text, MessageKeys.PLUGIN_MANAGER_MARKET_UPDATE_AVAILABLE)) {
+                || matchesStatusPattern(text, MessageKeys.PLUGIN_MANAGER_MARKET_UPDATE_AVAILABLE)) {
             return new StatusPalette(PluginManagerTheme.statusBackground(ModernColors.getWarning()), PluginManagerTheme.statusForeground());
         }
         if (text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_DISABLED))
                 || text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_INCOMPATIBLE))
                 || text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_INCOMPATIBLE_UPGRADE))
+                || text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_COMPATIBILITY_REQUIRES_PLUGIN_UPGRADE))
                 || text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_REQUIRES_HOST_UPGRADE))
                 || text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_UPDATE_REQUIRES_HOST_UPGRADE))) {
             return new StatusPalette(PluginManagerTheme.statusBackground(ModernColors.getError()), PluginManagerTheme.statusForeground());
@@ -1432,13 +1436,51 @@ public class PluginManagerDialog extends JDialog {
         return new StatusPalette(PluginManagerTheme.statusBackground(ModernColors.getSuccess()), PluginManagerTheme.statusForeground());
     }
 
-    private boolean matchesStatusPrefix(String text, String messageKey) {
+    private static boolean matchesStatusPattern(String text, String messageKey) {
         String pattern = I18nUtil.getMessage(messageKey);
         int placeholderIndex = pattern.indexOf('{');
         if (placeholderIndex >= 0) {
-            return text.contains(pattern.substring(0, placeholderIndex));
+            int placeholderEnd = pattern.indexOf('}', placeholderIndex);
+            String prefix = pattern.substring(0, placeholderIndex);
+            String suffix = placeholderEnd >= 0 ? pattern.substring(placeholderEnd + 1) : "";
+            return text.startsWith(prefix) && (suffix.isBlank() || text.contains(suffix));
         }
         return text.contains(pattern);
+    }
+
+    static String compactListStatusText(String text) {
+        if (text == null || text.isBlank()) {
+            return "";
+        }
+        if (text.equals(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_INCOMPATIBLE_UPGRADE))
+                || text.equals(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_COMPATIBILITY_REQUIRES_PLUGIN_UPGRADE))) {
+            return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_LIST_UPGRADE_REQUIRED);
+        }
+        if (text.equals(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_RESTART_REQUIRED))) {
+            return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_LIST_RESTART_REQUIRED);
+        }
+        if (text.equals(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_DISABLE_PENDING))) {
+            return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_LIST_DISABLE_PENDING);
+        }
+        if (text.equals(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_UNINSTALL_PENDING))) {
+            return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_LIST_UNINSTALL_PENDING);
+        }
+        if (text.equals(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_REQUIRES_HOST_UPGRADE))) {
+            return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_LIST_REQUIRES_HOST_UPGRADE);
+        }
+        if (text.equals(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_UPDATE_REQUIRES_HOST_UPGRADE))) {
+            return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_LIST_UPDATE_REQUIRES_HOST_UPGRADE);
+        }
+        if (matchesStatusPattern(text, MessageKeys.PLUGIN_MANAGER_MARKET_LOCAL_NEWER)) {
+            return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_LIST_LOCAL_NEWER);
+        }
+        if (matchesStatusPattern(text, MessageKeys.PLUGIN_MANAGER_MARKET_UPDATE_AVAILABLE)) {
+            return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_LIST_UPDATE_AVAILABLE);
+        }
+        if (matchesStatusPattern(text, MessageKeys.PLUGIN_MANAGER_MARKET_INSTALLED)) {
+            return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_LIST_INSTALLED);
+        }
+        return text;
     }
 
     private static final class StatusPalette {
@@ -1511,9 +1553,9 @@ public class PluginManagerDialog extends JDialog {
             titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 1));
             metaLabel.setForeground(ModernColors.getTextHint());
 
-            add(titleLabel, "growx, wmin 0");
-            add(statusLabel, "alignx right, aligny center, shrink 0, wrap");
-            add(metaLabel, "span 2, growx, wmin 0");
+            add(titleLabel, "span 2, growx, wmin 0, wrap");
+            add(metaLabel, "growx, wmin 0");
+            add(statusLabel, "alignx right, aligny center, shrink 0");
         }
 
         @Override
@@ -1525,11 +1567,11 @@ public class PluginManagerDialog extends JDialog {
 
             if (isPlaceholder) {
                 metaLabel.setText("");
-                applyStatusBadge(statusLabel, "");
+                applyListStatusBadge(statusLabel, "");
             } else {
                 PluginDescriptor descriptor = value.descriptor();
                 metaLabel.setText(descriptor.version());
-                applyStatusBadge(statusLabel, resolveInstalledStatus(value));
+                applyListStatusBadge(statusLabel, resolveInstalledStatus(value));
             }
 
             applySelectionColors(list, isSelected, this, titleLabel, metaLabel);
@@ -1557,9 +1599,9 @@ public class PluginManagerDialog extends JDialog {
             titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 1));
             metaLabel.setForeground(ModernColors.getTextHint());
 
-            add(titleLabel, "growx, wmin 0");
-            add(statusLabel, "alignx right, aligny center, shrink 0, wrap");
-            add(metaLabel, "span 2, growx, wmin 0");
+            add(titleLabel, "span 2, growx, wmin 0, wrap");
+            add(metaLabel, "growx, wmin 0");
+            add(statusLabel, "alignx right, aligny center, shrink 0");
         }
 
         @Override
@@ -1569,10 +1611,10 @@ public class PluginManagerDialog extends JDialog {
             titleLabel.setToolTipText(value.isPlaceholder() ? null : value.name());
             if (value.isPlaceholder()) {
                 metaLabel.setText("");
-                applyStatusBadge(statusLabel, "");
+                applyListStatusBadge(statusLabel, "");
             } else {
                 metaLabel.setText(value.version());
-                applyStatusBadge(statusLabel, getMarketEntryStatus(value));
+                applyListStatusBadge(statusLabel, getMarketEntryStatus(value));
             }
 
             applySelectionColors(list, isSelected, this, titleLabel, metaLabel);

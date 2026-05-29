@@ -117,7 +117,7 @@ jpackage \
     --linux-shortcut \
     --linux-menu-group "Development" \
     --linux-app-category "Development" \
-    --java-options "-Xms512m" \
+    --java-options "-Xms256m" \
     --java-options "-Xmx1g" \
     --java-options "-XX:MaxMetaspaceSize=256m" \
     --java-options "-XX:MetaspaceSize=128m" \

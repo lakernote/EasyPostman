@@ -68,7 +68,7 @@ mvn clean package -DskipTests
 java -jar easy-postman-app/target/easy-postman-*.jar
 
 # 或使用自定义 JVM 选项
-java -Xms512m -Xmx2g -jar easy-postman-app/target/easy-postman-*.jar
+java -Xms256m -Xmx2g -jar easy-postman-app/target/easy-postman-*.jar
 ```
 
 ### 插件本地构建
@@ -261,7 +261,7 @@ chmod +x build/linux-rpm.sh
 
 ```bash
 jpackage \
-  --java-options "-Xms512m" \
+  --java-options "-Xms256m" \
   --java-options "-Xmx2g" \
   --java-options "-Dfile.encoding=UTF-8" \
   # ... 其他选项

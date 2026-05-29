@@ -58,7 +58,7 @@ This will generate:
 java -jar target/easy-postman-*.jar
 
 # Or with custom JVM options
-java -Xms512m -Xmx2g -jar target/easy-postman-*.jar
+java -Xms256m -Xmx2g -jar target/easy-postman-*.jar
 ```
 
 ---
@@ -235,7 +235,7 @@ Edit the launcher scripts or use jpackage `--java-options`:
 
 ```bash
 jpackage \
-  --java-options "-Xms512m" \
+  --java-options "-Xms256m" \
   --java-options "-Xmx2g" \
   --java-options "-Dfile.encoding=UTF-8" \
   # ... other options

@@ -103,7 +103,7 @@ jpackage \
     --icon "${ICON_DIR}" \
     --vendor "Laker" \
     --copyright "© 2025 Laker" \
-    --java-options "-Xms512m" \
+    --java-options "-Xms256m" \
     --java-options "-Xmx1g" \
     --java-options "-XX:MaxMetaspaceSize=256m" \
     --java-options "-XX:MetaspaceSize=128m" \

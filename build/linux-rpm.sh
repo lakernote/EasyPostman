@@ -113,7 +113,7 @@ jpackage \
     --linux-menu-group "Development" \
     --linux-app-category "Development" \
     --linux-rpm-license-type "MIT" \
-    --java-options "-Xms512m" \
+    --java-options "-Xms256m" \
     --java-options "-Xmx1g" \
     --java-options "-XX:MaxMetaspaceSize=256m" \
     --java-options "-XX:MetaspaceSize=128m" \

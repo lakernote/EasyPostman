@@ -1,5 +1,7 @@
 package com.laker.postman.common.component.button;
 
+import com.laker.postman.util.CommonI18n;
+import com.laker.postman.util.CommonMessageKeys;
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.util.IconUtil;
 
@@ -12,7 +14,7 @@ import java.awt.*;
 public class RefreshButton extends JButton {
     public RefreshButton() {
         setIcon(IconUtil.createThemed("icons/refresh.svg", 20, 20));
-        setToolTipText("Refresh");
+        setToolTipText(CommonI18n.get(CommonMessageKeys.BUTTON_REFRESH));
         setFocusable(false);
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);

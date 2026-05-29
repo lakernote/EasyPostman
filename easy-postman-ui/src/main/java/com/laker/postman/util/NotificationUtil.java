@@ -64,17 +64,17 @@ public class NotificationUtil {
     @Getter
     @RequiredArgsConstructor
     public enum NotificationType {
-        SUCCESS(ModernColors.SUCCESS, "✓", MessageKeys.NOTIFICATION_TYPE_SUCCESS),
-        INFO(ModernColors.INFO, "i", MessageKeys.NOTIFICATION_TYPE_INFO),
-        WARNING(ModernColors.WARNING, "!", MessageKeys.NOTIFICATION_TYPE_WARNING),
-        ERROR(ModernColors.ERROR, "✕", MessageKeys.NOTIFICATION_TYPE_ERROR);
+        SUCCESS(ModernColors.SUCCESS, "✓", CommonMessageKeys.GENERAL_SUCCESS),
+        INFO(ModernColors.INFO, "i", CommonMessageKeys.GENERAL_INFO),
+        WARNING(ModernColors.WARNING, "!", CommonMessageKeys.GENERAL_WARNING),
+        ERROR(ModernColors.ERROR, "✕", CommonMessageKeys.GENERAL_ERROR);
 
         private final Color color;
         private final String icon;
         private final String titleKey;
 
         public String getDefaultTitle() {
-            return I18nUtil.getMessage(titleKey);
+            return CommonI18n.get(titleKey);
         }
     }
 
@@ -662,10 +662,10 @@ public class NotificationUtil {
                     sb.append(lines[i]);
                     if (i < show - 1) sb.append("\n");
                 }
-                sb.append("… ").append(I18nUtil.getMessage(MessageKeys.NOTIFICATION_EXPAND));
+                sb.append("… ").append(UiI18n.get(UiMessageKeys.NOTIFICATION_EXPAND));
                 return sb.toString();
             }
-            return needFold ? message + " " + I18nUtil.getMessage(MessageKeys.NOTIFICATION_COLLAPSE) : message;
+            return needFold ? message + " " + UiI18n.get(UiMessageKeys.NOTIFICATION_COLLAPSE) : message;
         }
 
         private void copyToClipboard(String text) {

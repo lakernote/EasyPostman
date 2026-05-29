@@ -91,7 +91,7 @@ public class DecompilerPanel extends JPanel {
         panel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createTitledBorder(
                         BorderFactory.createLineBorder(ModernColors.getBorderLightColor(), 1, true),
-                        I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_SELECT_JAR)
+                        DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_SELECT_JAR)
                 ),
                 BorderFactory.createEmptyBorder(5, 5, 5, 5)
         ));
@@ -105,11 +105,11 @@ public class DecompilerPanel extends JPanel {
 
         // 按钮面板（浏览按钮和清空按钮）
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
-        JButton browseButton = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_BROWSE));
+        JButton browseButton = new JButton(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_BROWSE));
         browseButton.setIcon(IconUtil.createThemed("icons/file.svg", 16, 16));
         browseButton.addActionListener(e -> browseFile());
 
-        JButton clearButton = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_CLEAR));
+        JButton clearButton = new JButton(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_CLEAR));
         clearButton.setIcon(IconUtil.createThemed("icons/clear.svg", 16, 16));
         clearButton.addActionListener(e -> clearAll());
 
@@ -121,7 +121,7 @@ public class DecompilerPanel extends JPanel {
 
         // 拖放提示标签 - 提示拖到下方面板
         JLabel dragDropLabel = new JLabel(
-                "💡 " + I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_DRAG_DROP_HINT_TO_BELOW),
+                "💡 " + DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_DRAG_DROP_HINT_TO_BELOW),
                 SwingConstants.CENTER
         );
         dragDropLabel.setFont(dragDropLabel.getFont().deriveFont(Font.ITALIC));
@@ -140,7 +140,7 @@ public class DecompilerPanel extends JPanel {
         // 顶部面板：标题 + 压缩信息
         JPanel topPanel = new JPanel(new BorderLayout(5, 5));
 
-        JLabel label = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_TREE_TITLE));
+        JLabel label = new JLabel(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_TREE_TITLE));
         label.setFont(label.getFont().deriveFont(Font.BOLD));
         topPanel.add(label, BorderLayout.WEST);
 
@@ -153,7 +153,7 @@ public class DecompilerPanel extends JPanel {
 
         panel.add(topPanel, BorderLayout.NORTH);
 
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_NO_FILE));
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_NO_FILE));
         treeModel = new DefaultTreeModel(root);
         fileTree = new JTree(treeModel);
         fileTree.setRootVisible(true);
@@ -218,13 +218,13 @@ public class DecompilerPanel extends JPanel {
 
         // 展开按钮
         JButton expandAllBtn = new JButton(IconUtil.createThemed("icons/expand.svg", 16, 16));
-        expandAllBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_EXPAND_ALL));
+        expandAllBtn.setToolTipText(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_EXPAND_ALL));
         expandAllBtn.addActionListener(e -> expandTree(fileTree, 3));
         expandAllBtn.setFocusPainted(false);
 
         // 收起按钮
         JButton collapseAllBtn = new JButton(IconUtil.createThemed("icons/collapse.svg", 16, 16));
-        collapseAllBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_COLLAPSE_ALL));
+        collapseAllBtn.setToolTipText(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_COLLAPSE_ALL));
         collapseAllBtn.addActionListener(e -> collapseTree(fileTree));
         collapseAllBtn.setFocusPainted(false);
 
@@ -234,13 +234,13 @@ public class DecompilerPanel extends JPanel {
 
         // 按名称排序按钮
         JButton sortByNameBtn = new JButton(IconUtil.create("icons/text-file.svg", 16, 16));
-        sortByNameBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_SORT_BY_NAME));
+        sortByNameBtn.setToolTipText(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_SORT_BY_NAME));
         sortByNameBtn.addActionListener(e -> sortTreeByName());
         sortByNameBtn.setFocusPainted(false);
 
         // 按大小排序按钮
         JButton sortBySizeBtn = new JButton(IconUtil.createThemed("icons/detail.svg", 16, 16));
-        sortBySizeBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_SORT_BY_SIZE));
+        sortBySizeBtn.setToolTipText(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_SORT_BY_SIZE));
         sortBySizeBtn.addActionListener(e -> sortTreeBySize());
         sortBySizeBtn.setFocusPainted(false);
 
@@ -262,14 +262,14 @@ public class DecompilerPanel extends JPanel {
 
         // 顶部工具栏 - 标题和操作按钮整合
         JPanel headerPanel = new JPanel(new BorderLayout());
-        JLabel label = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_OUTPUT));
+        JLabel label = new JLabel(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_OUTPUT));
         label.setFont(label.getFont().deriveFont(Font.BOLD));
         headerPanel.add(label, BorderLayout.WEST);
 
         // 工具按钮
         JPanel toolPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
 
-        JButton copyBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_COPY_CODE));
+        JButton copyBtn = new JButton(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_COPY_CODE));
         copyBtn.setIcon(new FlatSVGIcon("icons/copy.svg", 14, 14));
         copyBtn.addActionListener(e -> copyCode());
 
@@ -314,7 +314,7 @@ public class DecompilerPanel extends JPanel {
                 BorderFactory.createEmptyBorder(5, 10, 5, 10)
         ));
 
-        statusLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_READY));
+        statusLabel = new JLabel(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_READY));
         statusLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         statusLabel.setForeground(ModernColors.getTextSecondary());
         panel.add(statusLabel, BorderLayout.WEST);
@@ -371,7 +371,7 @@ public class DecompilerPanel extends JPanel {
                     log.error("Failed to handle dropped file", e);
                     dtde.dropComplete(false);
                     NotificationUtil.showError(
-                            I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_LOAD_ERROR) + ": " + e.getMessage()
+                            DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_LOAD_ERROR) + ": " + e.getMessage()
                     );
                 }
             }
@@ -390,7 +390,7 @@ public class DecompilerPanel extends JPanel {
      */
     private void browseFile() {
         JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_SELECT_FILE_PROMPT));
+        fileChooser.setDialogTitle(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_SELECT_FILE_PROMPT));
 
         FileNameExtensionFilter filter = new FileNameExtensionFilter(
                 "JAR/WAR/Class/Zip Files (*.jar, *.war, *.class, *.zip)", "jar", "war", "class", "zip");
@@ -418,7 +418,7 @@ public class DecompilerPanel extends JPanel {
         String fileName = file.getName().toLowerCase();
         if (!fileName.endsWith(JAR_EXTENSION) && !fileName.endsWith(CLASS_EXTENSION) &&
                 !fileName.endsWith(ZIP_EXTENSION) && !fileName.endsWith(WAR_EXTENSION)) {
-            NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_UNSUPPORTED_FILE));
+            NotificationUtil.showError(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_UNSUPPORTED_FILE));
             return;
         }
 
@@ -432,7 +432,7 @@ public class DecompilerPanel extends JPanel {
         SwingWorker<Void, Void> worker = new SwingWorker<>() {
             @Override
             protected Void doInBackground() {
-                statusLabel.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_LOADING));
+                statusLabel.setText(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_LOADING));
                 try {
                     if (fileName.endsWith(JAR_EXTENSION) || fileName.endsWith(WAR_EXTENSION)) {
                         // JAR 和 WAR 都使用 JarFile 加载（WAR 本质是特殊的 JAR）
@@ -446,7 +446,7 @@ public class DecompilerPanel extends JPanel {
                     log.error("Failed to load file: {}", file.getAbsolutePath(), e);
                     SwingUtilities.invokeLater(() -> {
                         NotificationUtil.showError(
-                                I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_LOAD_ERROR) + ": " + e.getMessage()
+                                DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_LOAD_ERROR) + ": " + e.getMessage()
                         );
                     });
                 }
@@ -455,7 +455,7 @@ public class DecompilerPanel extends JPanel {
 
             @Override
             protected void done() {
-                statusLabel.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_FILE_INFO) + ": " +
+                statusLabel.setText(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_FILE_INFO) + ": " +
                         file.getName() + " (" + formatFileSize(file.length()) + ")");
             }
         };
@@ -510,17 +510,17 @@ public class DecompilerPanel extends JPanel {
                 double compressionRatio = (1 - (double) compressedSize / finalUncompressedTotal) * 100;
                 String compressionRatioStr = String.format("%.1f%%", compressionRatio);
 
-                compressionInfoLabel.setText(I18nUtil.getMessage(
+                compressionInfoLabel.setText(DecompilerI18n.t(
                         MessageKeys.TOOLBOX_DECOMPILER_COMPRESSION_INFO_FORMAT,
-                        I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_ACTUAL_SIZE),
+                        DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_ACTUAL_SIZE),
                         formatFileSize(compressedSize),
-                        I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_UNCOMPRESSED_SIZE),
+                        DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_UNCOMPRESSED_SIZE),
                         formatFileSize(finalUncompressedTotal),
-                        I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_COMPRESSION_RATIO),
+                        DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_COMPRESSION_RATIO),
                         compressionRatioStr
                 ));
 
-                compressionInfoLabel.setToolTipText(I18nUtil.getMessage(
+                compressionInfoLabel.setToolTipText(DecompilerI18n.t(
                         MessageKeys.TOOLBOX_DECOMPILER_COMPRESSION_TOOLTIP_JAR,
                         formatFileSize(compressedSize),
                         formatFileSize(finalUncompressedTotal),
@@ -578,17 +578,17 @@ public class DecompilerPanel extends JPanel {
                 double compressionRatio = (1 - (double) compressedSize / finalUncompressedTotal) * 100;
                 String compressionRatioStr = String.format("%.1f%%", compressionRatio);
 
-                compressionInfoLabel.setText(I18nUtil.getMessage(
+                compressionInfoLabel.setText(DecompilerI18n.t(
                         MessageKeys.TOOLBOX_DECOMPILER_COMPRESSION_INFO_FORMAT,
-                        I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_ACTUAL_SIZE),
+                        DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_ACTUAL_SIZE),
                         formatFileSize(compressedSize),
-                        I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_UNCOMPRESSED_SIZE),
+                        DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_UNCOMPRESSED_SIZE),
                         formatFileSize(finalUncompressedTotal),
-                        I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_COMPRESSION_RATIO),
+                        DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_COMPRESSION_RATIO),
                         compressionRatioStr
                 ));
 
-                compressionInfoLabel.setToolTipText(I18nUtil.getMessage(
+                compressionInfoLabel.setToolTipText(DecompilerI18n.t(
                         MessageKeys.TOOLBOX_DECOMPILER_COMPRESSION_TOOLTIP_ZIP,
                         formatFileSize(compressedSize),
                         formatFileSize(finalUncompressedTotal),
@@ -743,7 +743,7 @@ public class DecompilerPanel extends JPanel {
             @Override
             protected Void doInBackground() {
                 try {
-                    statusLabel.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_LOADING) + ": " + jarPath);
+                    statusLabel.setText(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_LOADING) + ": " + jarPath);
 
                     // 创建临时文件保存嵌套的JAR
                     File tempJar = Files.createTempFile("nested-jar-", ".jar").toFile();
@@ -794,7 +794,7 @@ public class DecompilerPanel extends JPanel {
                 // 展开节点
                 TreePath path = new TreePath(parentNode.getPath());
                 fileTree.expandPath(path);
-                statusLabel.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_READY));
+                statusLabel.setText(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_READY));
             }
         };
         worker.execute();
@@ -856,7 +856,7 @@ public class DecompilerPanel extends JPanel {
     private void decompileAndShow(String className) {
         byte[] classBytes = classFileCache.get(className);
         if (classBytes == null) {
-            codeArea.setText("// " + I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_ERROR) +
+            codeArea.setText("// " + DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_ERROR) +
                     ": Class file not found");
             return;
         }
@@ -884,12 +884,12 @@ public class DecompilerPanel extends JPanel {
         SwingWorker<String, Void> worker = new SwingWorker<>() {
             @Override
             protected String doInBackground() {
-                statusLabel.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_DECOMPILING) + ": " + className);
+                statusLabel.setText(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_DECOMPILING) + ": " + className);
                 try {
                     return decompileClass(classBytes, className);
                 } catch (Exception e) {
                     log.error("Failed to decompile class: {}", className, e);
-                    return "// " + I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_ERROR) +
+                    return "// " + DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_ERROR) +
                             ": " + e.getMessage();
                 }
             }
@@ -908,7 +908,7 @@ public class DecompilerPanel extends JPanel {
                     statusLabel.setText(classInfo);
                 } catch (Exception e) {
                     log.error("Error displaying decompiled code", e);
-                    codeArea.setText("// " + I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_ERROR));
+                    codeArea.setText("// " + DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_ERROR));
                 }
             }
         };
@@ -1120,8 +1120,8 @@ public class DecompilerPanel extends JPanel {
             int major = ((classBytes[6] & 0xFF) << 8) | (classBytes[7] & 0xFF);
             String javaVersion = getJavaVersion(major);
 
-            return I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_CLASS_VERSION) + ": " + major +
-                    " (" + I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_JAVA_VERSION) + ": " + javaVersion + ")";
+            return DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_CLASS_VERSION) + ": " + major +
+                    " (" + DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_JAVA_VERSION) + ": " + javaVersion + ")";
         } catch (Exception e) {
             return "";
         }
@@ -1199,8 +1199,8 @@ public class DecompilerPanel extends JPanel {
         if (code != null && !code.isEmpty()) {
             StringSelection selection = new StringSelection(code);
             Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
-            statusLabel.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_CODE_COPIED));
-            NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_CODE_COPIED));
+            statusLabel.setText(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_CODE_COPIED));
+            NotificationUtil.showSuccess(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_CODE_COPIED));
         }
     }
 
@@ -1226,13 +1226,13 @@ public class DecompilerPanel extends JPanel {
         }
 
         // 重置树
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_NO_FILE));
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_NO_FILE));
         treeModel.setRoot(root);
 
         // 更新状态
-        statusLabel.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_READY));
+        statusLabel.setText(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_READY));
 
-        NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_CLEARED));
+        NotificationUtil.showSuccess(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_CLEARED));
     }
 
     /**
@@ -1258,7 +1258,7 @@ public class DecompilerPanel extends JPanel {
      * 格式化文件大小
      */
     private String formatFileSize(long size) {
-        if (size < 1024) return size + " " + I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_BYTES);
+        if (size < 1024) return size + " " + DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_BYTES);
         if (size < 1024 * 1024) return String.format("%.2f KB", size / 1024.0);
         return String.format("%.2f MB", size / (1024.0 * 1024.0));
     }
@@ -1328,7 +1328,7 @@ public class DecompilerPanel extends JPanel {
         sortNodeByName(root);
         treeModel.reload();
         expandTree(fileTree, 2);
-        statusLabel.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_SORTED_BY_NAME));
+        statusLabel.setText(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_SORTED_BY_NAME));
     }
 
     /**
@@ -1378,7 +1378,7 @@ public class DecompilerPanel extends JPanel {
         sortNodeBySize(root);
         treeModel.reload();
         expandTree(fileTree, 2);
-        statusLabel.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_SORTED_BY_SIZE));
+        statusLabel.setText(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_SORTED_BY_SIZE));
     }
 
     /**
@@ -1498,11 +1498,11 @@ public class DecompilerPanel extends JPanel {
 
                         if (isRootNode && isArchiveFile) {
                             // 根节点特殊标记，显示为压缩后的实际大小
-                            String compressedLabel = I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_COMPRESSED);
+                            String compressedLabel = DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_COMPRESSED);
                             setText(fileData.name + " (" + sizeStr + " " + compressedLabel + ")");
 
-                            String tooltipLine1 = I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_ROOT_TOOLTIP_LINE1);
-                            String tooltipLine2 = I18nUtil.getMessage(MessageKeys.TOOLBOX_DECOMPILER_ROOT_TOOLTIP_LINE2);
+                            String tooltipLine1 = DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_ROOT_TOOLTIP_LINE1);
+                            String tooltipLine2 = DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_ROOT_TOOLTIP_LINE2);
                             setToolTipText("<html>" + tooltipLine1 + "<br>" + tooltipLine2 + "</html>");
                         } else {
                             setText(fileData.name + " (" + sizeStr + ")");

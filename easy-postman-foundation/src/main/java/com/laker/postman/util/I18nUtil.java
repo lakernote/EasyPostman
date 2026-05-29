@@ -20,6 +20,7 @@ import java.util.concurrent.ConcurrentMap;
 @UtilityClass
 public class I18nUtil {
     private static final String BUNDLE_NAME = "messages";
+    private static final String COMMON_BUNDLE_NAME = CommonI18n.BUNDLE_NAME;
     private static final ResourceBundle EMPTY_RESOURCE_BUNDLE = new ResourceBundle() {
         @Override
         protected Object handleGetObject(String key) {
@@ -107,12 +108,7 @@ public class I18nUtil {
      * @return 国际化消息
      */
     public static String getMessage(String key) {
-        try {
-            return resourceBundle.getString(key);
-        } catch (Exception e) {
-            log.warn("Missing resource key: {}", key);
-            return "!" + key + "!";
-        }
+        return getMessagePattern(key);
     }
 
     /**
@@ -123,11 +119,23 @@ public class I18nUtil {
      * @return 格式化后的国际化消息
      */
     public static String getMessage(String key, Object... args) {
+        String pattern = getMessagePattern(key);
+        return args == null || args.length == 0 ? pattern : MessageFormat.format(pattern, args);
+    }
+
+    private static String getMessagePattern(String key) {
         try {
-            String pattern = resourceBundle.getString(key);
-            return MessageFormat.format(pattern, args);
+            return resourceBundle.getString(key);
+        } catch (MissingResourceException e) {
+            try {
+                ResourceBundle commonBundle = getBundle(COMMON_BUNDLE_NAME, currentLocale, CommonI18n.class.getClassLoader());
+                return commonBundle.getString(key);
+            } catch (Exception commonError) {
+                log.warn("Missing resource key: {}", key);
+                return "!" + key + "!";
+            }
         } catch (Exception e) {
-            log.warn("Missing resource key: {}", key);
+            log.warn("Failed to load resource key: {}", key, e);
             return "!" + key + "!";
         }
     }

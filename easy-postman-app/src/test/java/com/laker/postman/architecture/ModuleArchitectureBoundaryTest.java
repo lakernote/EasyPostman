@@ -6,6 +6,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.testng.Assert.assertFalse;
@@ -230,6 +233,216 @@ public class ModuleArchitectureBoundaryTest {
         }
     }
 
+    @Test
+    public void appAndUiIconResourcesHaveSingleOwner() throws IOException {
+        Path root = repositoryRoot();
+        Set<String> appIcons = resourceFileNames(root.resolve("easy-postman-app/src/main/resources/icons"));
+        Set<String> uiIcons = resourceFileNames(root.resolve("easy-postman-ui/src/main/resources/icons"));
+        appIcons.retainAll(uiIcons);
+
+        assertTrue(appIcons.isEmpty(),
+                "Icon resources must have a single owner. Shared control icons belong in easy-postman-ui, "
+                        + "and app/domain icons belong in easy-postman-app: " + appIcons);
+    }
+
+    @Test
+    public void uiModuleOwnsReusableUiResources() {
+        Path root = repositoryRoot();
+        assertTrue(Files.isRegularFile(root.resolve("easy-postman-foundation/src/main/resources/common-messages.properties")));
+        assertTrue(Files.isRegularFile(root.resolve("easy-postman-foundation/src/main/resources/common-messages_zh.properties")));
+        assertTrue(Files.isRegularFile(root.resolve("easy-postman-ui/src/main/resources/ui-messages.properties")));
+        assertTrue(Files.isRegularFile(root.resolve("easy-postman-ui/src/main/resources/ui-messages_zh.properties")));
+        assertTrue(Files.isRegularFile(root.resolve("easy-postman-ui/src/main/resources/themes/easypostman-light.xml")));
+        assertTrue(Files.isRegularFile(root.resolve("easy-postman-ui/src/main/resources/themes/easypostman-dark.xml")));
+        assertFalse(Files.exists(root.resolve("easy-postman-app/src/main/resources/themes/easypostman-light.xml")));
+        assertFalse(Files.exists(root.resolve("easy-postman-app/src/main/resources/themes/easypostman-dark.xml")));
+    }
+
+    @Test
+    public void sharedControlIconsStayInUiResources() throws IOException {
+        Path root = repositoryRoot();
+        Set<String> uiIcons = resourceFileNames(root.resolve("easy-postman-ui/src/main/resources/icons"));
+        Set<String> appIcons = resourceFileNames(root.resolve("easy-postman-app/src/main/resources/icons"));
+        List<String> sharedIcons = List.of(
+                "arrow-down.svg",
+                "arrow-up.svg",
+                "cancel.svg",
+                "check.svg",
+                "chevron-down.svg",
+                "chevron-right.svg",
+                "clear.svg",
+                "close.svg",
+                "collapse.svg",
+                "connect.svg",
+                "copy.svg",
+                "delete.svg",
+                "detail.svg",
+                "download.svg",
+                "duplicate.svg",
+                "edit.svg",
+                "expand.svg",
+                "export.svg",
+                "eye-close.svg",
+                "eye-open.svg",
+                "file.svg",
+                "format.svg",
+                "import.svg",
+                "info.svg",
+                "load.svg",
+                "matchCase.svg",
+                "matchCaseHovered.svg",
+                "matchCaseSelected.svg",
+                "more.svg",
+                "paste.svg",
+                "plus.svg",
+                "refresh.svg",
+                "replace-all.svg",
+                "replace.svg",
+                "save.svg",
+                "search.svg",
+                "send.svg",
+                "start.svg",
+                "stop.svg",
+                "text-file.svg",
+                "warning.svg",
+                "words.svg",
+                "wordsHovered.svg",
+                "wordsSelected.svg",
+                "wrap.svg",
+                "ws-close.svg"
+        );
+
+        for (String icon : sharedIcons) {
+            assertTrue(uiIcons.contains(icon), icon + " is a reusable control/status icon and belongs in easy-postman-ui");
+            assertFalse(appIcons.contains(icon), icon + " must not be duplicated or owned by easy-postman-app");
+        }
+    }
+
+    @Test
+    public void genericCommonMessageKeysStayOutOfModuleOwnedBundles() throws IOException {
+        Path root = repositoryRoot();
+        Set<String> commonKeys = resourceKeys(root.resolve("easy-postman-foundation/src/main/resources/common-messages.properties"));
+        List<Path> moduleBundles;
+        try (Stream<Path> files = Files.walk(root)) {
+            moduleBundles = files
+                    .filter(path -> path.getFileName().toString().endsWith(".properties"))
+                    .filter(path -> path.getFileName().toString().contains("messages"))
+                    .filter(path -> !path.toString().contains("/target/"))
+                    .filter(path -> !path.toString().contains("/easy-postman-foundation/src/main/resources/common-messages"))
+                    .toList();
+        }
+
+        List<String> violations = moduleBundles.stream()
+                .flatMap(file -> resourceKeys(file).stream()
+                        .filter(commonKeys::contains)
+                        .map(key -> file + " duplicates common key " + key))
+                .toList();
+
+        assertTrue(violations.isEmpty(),
+                "Generic short labels belong only in foundation common-messages bundles: " + violations);
+    }
+
+    @Test
+    public void uiModuleDoesNotDependOnAppMessageBundleKeys() throws IOException {
+        Path root = repositoryRoot();
+        List<String> uiSourceViolations = javaSourceFiles(root.resolve("easy-postman-ui/src/main/java")).stream()
+                .flatMap(file -> uiMessageKeyViolations(file).stream())
+                .toList();
+        assertTrue(uiSourceViolations.isEmpty(),
+                "Shared UI code must use UiI18n/UiMessageKeys or CommonI18n/CommonMessageKeys instead of app MessageKeys: "
+                        + uiSourceViolations);
+
+        List<String> appBundleViolations = Stream.of(
+                        root.resolve("easy-postman-app/src/main/resources/messages_en.properties"),
+                        root.resolve("easy-postman-app/src/main/resources/messages_zh.properties")
+                )
+                .flatMap(file -> resourceBundleOwnerViolations(file, "table.", "notification.").stream())
+                .toList();
+        assertTrue(appBundleViolations.isEmpty(),
+                "Shared UI table/notification strings belong in easy-postman-ui ui-messages bundles: "
+                        + appBundleViolations);
+    }
+
+    @Test
+    public void officialPluginMessagesStayWithPluginModules() throws IOException {
+        Path root = repositoryRoot();
+        assertTrue(Files.isRegularFile(root.resolve("easy-postman-plugins/plugin-decompiler/src/main/resources/decompiler-messages.properties")));
+        assertTrue(Files.isRegularFile(root.resolve("easy-postman-plugins/plugin-decompiler/src/main/resources/decompiler-messages_zh.properties")));
+        assertTrue(Files.isRegularFile(root.resolve("easy-postman-plugins/plugin-client-cert/src/main/resources/client-cert-messages.properties")));
+        assertTrue(Files.isRegularFile(root.resolve("easy-postman-plugins/plugin-client-cert/src/main/resources/client-cert-messages_zh.properties")));
+
+        List<String> appBundleViolations = Stream.of(
+                        root.resolve("easy-postman-app/src/main/resources/messages_en.properties"),
+                        root.resolve("easy-postman-app/src/main/resources/messages_zh.properties")
+                )
+                .flatMap(file -> resourceBundleOwnerViolations(file, "toolbox.decompiler").stream())
+                .toList();
+        assertTrue(appBundleViolations.isEmpty(),
+                "Decompiler plugin strings belong in plugin-decompiler message bundles: " + appBundleViolations);
+
+        List<String> pluginSourceViolations = Stream.of(
+                        root.resolve("easy-postman-plugins/plugin-decompiler/src/main/java"),
+                        root.resolve("easy-postman-plugins/plugin-client-cert/src/main/java")
+                )
+                .flatMap(sourceRoot -> {
+                    try {
+                        return javaSourceFiles(sourceRoot).stream();
+                    } catch (IOException e) {
+                        throw new IllegalStateException("Failed to read " + sourceRoot, e);
+                    }
+                })
+                .flatMap(file -> pluginAppMessageKeyViolations(file).stream())
+                .toList();
+        assertTrue(pluginSourceViolations.isEmpty(),
+                "Plugins must use plugin-local message keys/bundles instead of app MessageKeys: "
+                        + pluginSourceViolations);
+    }
+
+    @Test
+    public void pluginEntryIconsStayWithPlugins() {
+        Path root = repositoryRoot();
+        assertTrue(Files.isRegularFile(root.resolve("easy-postman-plugins/plugin-kafka/src/main/resources/icons/kafka.svg")));
+        assertTrue(Files.isRegularFile(root.resolve("easy-postman-plugins/plugin-decompiler/src/main/resources/icons/decompile.svg")));
+        assertTrue(Files.isRegularFile(root.resolve("easy-postman-plugins/plugin-redis/src/main/resources/icons/redis.svg")));
+        assertTrue(Files.isRegularFile(root.resolve("easy-postman-plugins/plugin-capture/src/main/resources/icons/capture.svg")));
+        assertFalse(Files.exists(root.resolve("easy-postman-app/src/main/resources/icons/kafka.svg")));
+        assertFalse(Files.exists(root.resolve("easy-postman-app/src/main/resources/icons/decompile.svg")));
+    }
+
+    @Test
+    public void pluginIconReferencesUsePluginOrSharedUiResources() throws IOException {
+        Path root = repositoryRoot();
+        Set<String> uiIcons = resourceFileNames(root.resolve("easy-postman-ui/src/main/resources/icons"));
+        Set<String> pluginIcons = pluginIconFileNames(root.resolve("easy-postman-plugins"));
+        Set<String> appIcons = resourceFileNames(root.resolve("easy-postman-app/src/main/resources/icons"));
+
+        List<String> violations = javaSourceFiles(root.resolve("easy-postman-plugins")).stream()
+                .flatMap(file -> iconReferences(file).stream()
+                        .filter(icon -> !uiIcons.contains(icon) && !pluginIcons.contains(icon))
+                        .map(icon -> file + " references app-only or missing icon " + icon
+                                + (appIcons.contains(icon) ? " from easy-postman-app" : "")))
+                .toList();
+
+        assertTrue(violations.isEmpty(),
+                "Official plugins must package plugin-specific icons or use shared icons from easy-postman-ui: "
+                        + violations);
+    }
+
+    @Test
+    public void resourcesDoNotContainMacMetadataFiles() throws IOException {
+        Path root = repositoryRoot();
+        List<Path> metadataFiles;
+        try (Stream<Path> files = Files.walk(root)) {
+            metadataFiles = files
+                    .filter(path -> path.getFileName().toString().equals(".DS_Store"))
+                    .filter(path -> !path.toString().contains("/.git/"))
+                    .filter(path -> !path.toString().contains("/target/"))
+                    .toList();
+        }
+
+        assertTrue(metadataFiles.isEmpty(), "Resource tree must not contain macOS metadata files: " + metadataFiles);
+    }
+
     private static List<Path> javaSourceFiles(Path root) throws IOException {
         try (Stream<Path> files = Files.walk(root)) {
             return files
@@ -245,6 +458,109 @@ public class ModuleArchitectureBoundaryTest {
                     .filter(source::contains)
                     .map(pattern -> file + " contains " + pattern)
                     .toList();
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to read " + file, e);
+        }
+    }
+
+    private static List<String> uiMessageKeyViolations(Path file) {
+        try {
+            String source = Files.readString(file)
+                    .replace("UiMessageKeys.", "")
+                    .replace("CommonMessageKeys.", "");
+            return List.of(
+                            "import com.laker.postman.util.MessageKeys",
+                            "MessageKeys.",
+                            "I18nUtil.getMessage(MessageKeys"
+                    ).stream()
+                    .filter(source::contains)
+                    .map(pattern -> file + " contains " + pattern)
+                    .toList();
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to read " + file, e);
+        }
+    }
+
+    private static List<String> pluginAppMessageKeyViolations(Path file) {
+        try {
+            String source = Files.readString(file);
+            return List.of(
+                            "import com.laker.postman.util.MessageKeys",
+                            "I18nUtil.getMessage(MessageKeys"
+                    ).stream()
+                    .filter(source::contains)
+                    .map(pattern -> file + " contains " + pattern)
+                    .toList();
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to read " + file, e);
+        }
+    }
+
+    private static List<String> resourceBundleOwnerViolations(Path file, String... forbiddenPrefixes) {
+        try {
+            return Files.readString(file).lines()
+                    .map(String::trim)
+                    .filter(line -> !line.isEmpty() && !line.startsWith("#"))
+                    .filter(line -> Stream.of(forbiddenPrefixes).anyMatch(line::startsWith))
+                    .map(line -> file + " contains " + line)
+                    .toList();
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to read " + file, e);
+        }
+    }
+
+    private static Set<String> resourceFileNames(Path root) throws IOException {
+        if (!Files.isDirectory(root)) {
+            return Set.of();
+        }
+        try (Stream<Path> files = Files.list(root)) {
+            return files
+                    .filter(Files::isRegularFile)
+                    .map(path -> path.getFileName().toString())
+                    .collect(Collectors.toCollection(TreeSet::new));
+        }
+    }
+
+    private static Set<String> resourceKeys(Path file) {
+        try {
+            if (!Files.isRegularFile(file)) {
+                return Set.of();
+            }
+            return Files.readString(file).lines()
+                    .map(String::trim)
+                    .filter(line -> !line.isEmpty() && !line.startsWith("#"))
+                    .filter(line -> line.contains("="))
+                    .map(line -> line.substring(0, line.indexOf('=')).trim())
+                    .collect(Collectors.toCollection(TreeSet::new));
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to read " + file, e);
+        }
+    }
+
+    private static Set<String> pluginIconFileNames(Path pluginsRoot) throws IOException {
+        if (!Files.isDirectory(pluginsRoot)) {
+            return Set.of();
+        }
+        try (Stream<Path> files = Files.walk(pluginsRoot)) {
+            return files
+                    .filter(path -> path.toString().contains("/src/main/resources/icons/"))
+                    .filter(path -> path.getFileName().toString().endsWith(".svg"))
+                    .map(path -> path.getFileName().toString())
+                    .collect(Collectors.toCollection(TreeSet::new));
+        }
+    }
+
+    private static List<String> iconReferences(Path file) {
+        try {
+            String source = Files.readString(file);
+            java.util.regex.Matcher matcher = java.util.regex.Pattern
+                    .compile("icons/([A-Za-z0-9_.-]+\\.svg)")
+                    .matcher(source);
+            List<String> icons = new java.util.ArrayList<>();
+            while (matcher.find()) {
+                icons.add(matcher.group(1));
+            }
+            return icons;
         } catch (IOException e) {
             throw new IllegalStateException("Failed to read " + file, e);
         }

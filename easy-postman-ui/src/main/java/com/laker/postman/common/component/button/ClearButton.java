@@ -1,5 +1,7 @@
 package com.laker.postman.common.component.button;
 
+import com.laker.postman.util.CommonI18n;
+import com.laker.postman.util.CommonMessageKeys;
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.util.IconUtil;
 
@@ -26,7 +28,7 @@ public class ClearButton extends JButton {
     public ClearButton(int iconSize) {
         super();
         setIcon(IconUtil.createThemed("icons/clear.svg", iconSize, iconSize));
-        setToolTipText("Clear");
+        setToolTipText(CommonI18n.get(CommonMessageKeys.BUTTON_CLEAR));
         // 扁平化设计
         setFocusable(false);// 去掉按钮的焦点边框
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));

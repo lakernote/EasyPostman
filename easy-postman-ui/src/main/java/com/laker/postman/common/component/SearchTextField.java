@@ -1,11 +1,13 @@
 package com.laker.postman.common.component;
 
+import com.laker.postman.util.CommonI18n;
+import com.laker.postman.util.CommonMessageKeys;
 import com.formdev.flatlaf.FlatClientProperties;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.formdev.flatlaf.extras.components.FlatTextField;
-import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
-import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.UiI18n;
+import com.laker.postman.util.UiMessageKeys;
 import lombok.Getter;
 
 import javax.swing.*;
@@ -38,7 +40,7 @@ public class SearchTextField extends FlatTextField {
     public SearchTextField() {
         super();
         setLeadingIcon(IconUtil.createThemed("icons/search.svg", 16, 16));
-        setPlaceholderText(I18nUtil.getMessage(MessageKeys.BUTTON_SEARCH));
+        setPlaceholderText(CommonI18n.get(CommonMessageKeys.BUTTON_SEARCH));
         setShowClearButton(true);
         setPreferredSize(new Dimension(220, 28));
         setMaximumSize(new Dimension(300, 28));
@@ -93,7 +95,7 @@ public class SearchTextField extends FlatTextField {
         caseSensitiveButton = new JToggleButton(new FlatSVGIcon("icons/matchCase.svg"));
         caseSensitiveButton.setRolloverIcon(new FlatSVGIcon("icons/matchCaseHovered.svg"));
         caseSensitiveButton.setSelectedIcon(new FlatSVGIcon("icons/matchCaseSelected.svg"));
-        caseSensitiveButton.setToolTipText("Match Case (大小写敏感)");
+        caseSensitiveButton.setToolTipText(UiI18n.get(UiMessageKeys.SEARCH_MATCH_CASE));
         caseSensitiveButton.addActionListener(e -> {
             caseSensitive = caseSensitiveButton.isSelected();
             firePropertyChange("caseSensitive", !caseSensitive, caseSensitive);
@@ -103,7 +105,7 @@ public class SearchTextField extends FlatTextField {
         wholeWordButton = new JToggleButton(new FlatSVGIcon("icons/words.svg"));
         wholeWordButton.setRolloverIcon(new FlatSVGIcon("icons/wordsHovered.svg"));
         wholeWordButton.setSelectedIcon(new FlatSVGIcon("icons/wordsSelected.svg"));
-        wholeWordButton.setToolTipText("Match Whole Word (整词匹配)");
+        wholeWordButton.setToolTipText(UiI18n.get(UiMessageKeys.SEARCH_MATCH_WHOLE_WORD));
         wholeWordButton.addActionListener(e -> {
             wholeWord = wholeWordButton.isSelected();
             firePropertyChange("wholeWord", !wholeWord, wholeWord);

@@ -5,6 +5,8 @@ import com.formdev.flatlaf.extras.components.FlatTextField;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.IconUtil;
+import com.laker.postman.util.UiI18n;
+import com.laker.postman.util.UiMessageKeys;
 import lombok.extern.slf4j.Slf4j;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rtextarea.SearchContext;
@@ -24,10 +26,6 @@ public class SearchReplacePanel extends JPanel {
     // 图标路径常量 - chevron-right 表示替换面板已收起，chevron-down 表示替换面板已展开
     private static final String ICON_EXPAND = "icons/chevron-right.svg";
     private static final String ICON_COLLAPSE = "icons/chevron-down.svg";
-
-    // 状态消息常量
-    private static final String MSG_NO_RESULTS = "No results";
-    private static final String MSG_REPLACED_FORMAT = "%d replaced";
 
     // 现代化设计常量
     private static final int CORNER_RADIUS = 12;  // 圆角半径
@@ -78,7 +76,7 @@ public class SearchReplacePanel extends JPanel {
 
         // 展开/收起替换面板的按钮（放在最左边，类似 Postman）
         toggleReplaceBtn = new JToggleButton(IconUtil.createThemed(ICON_EXPAND, 16, 16));
-        toggleReplaceBtn.setToolTipText("Toggle Replace");
+        toggleReplaceBtn.setToolTipText(UiI18n.get(UiMessageKeys.SEARCH_TOGGLE_REPLACE));
         toggleReplaceBtn.setFocusable(false);
         toggleReplaceBtn.setPreferredSize(new Dimension(TOGGLE_BUTTON_SIZE, TOGGLE_BUTTON_SIZE));
         toggleReplaceBtn.setMaximumSize(new Dimension(TOGGLE_BUTTON_SIZE, TOGGLE_BUTTON_SIZE));
@@ -135,12 +133,12 @@ public class SearchReplacePanel extends JPanel {
         });
 
         // 查找按钮
-        JButton findPrevBtn = createIconButton("icons/arrow-up.svg", "Previous (Shift+Enter)", e -> findPrevious());
-        JButton findNextBtn = createIconButton("icons/arrow-down.svg", "Next (Enter)", e -> findNext());
+        JButton findPrevBtn = createIconButton("icons/arrow-up.svg", UiI18n.get(UiMessageKeys.SEARCH_PREVIOUS), e -> findPrevious());
+        JButton findNextBtn = createIconButton("icons/arrow-down.svg", UiI18n.get(UiMessageKeys.SEARCH_NEXT), e -> findNext());
 
 
         // 状态标签
-        statusLabel = new JLabel(MSG_NO_RESULTS);
+        statusLabel = new JLabel(UiI18n.get(UiMessageKeys.SEARCH_NO_RESULTS));
         statusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         statusLabel.setForeground(ModernColors.getTextDisabled());
         statusLabel.setPreferredSize(new Dimension(70, 24));
@@ -148,7 +146,7 @@ public class SearchReplacePanel extends JPanel {
         statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         // 关闭按钮
-        JButton closeBtn = createIconButton("icons/close.svg", "Close (Esc)", e -> hidePanel());
+        JButton closeBtn = createIconButton("icons/close.svg", UiI18n.get(UiMessageKeys.SEARCH_CLOSE), e -> hidePanel());
 
 
         // 组装搜索面板
@@ -182,7 +180,7 @@ public class SearchReplacePanel extends JPanel {
 
         // 替换输入框
         replaceField = new FlatTextField();
-        replaceField.setPlaceholderText("Enter Replace");
+        replaceField.setPlaceholderText(UiI18n.get(UiMessageKeys.SEARCH_REPLACE_PLACEHOLDER));
         replaceField.setPreferredSize(new Dimension(180, 28));
         replaceField.setMaximumSize(new Dimension(220, 28));
         replaceField.addKeyListener(new KeyAdapter() {
@@ -197,8 +195,8 @@ public class SearchReplacePanel extends JPanel {
         });
 
         // 替换按钮
-        JButton replaceBtn = createIconButton("icons/replace.svg", "Replace", e -> replace());
-        JButton replaceAllBtn = createIconButton("icons/replace-all.svg", "Replace All", e -> replaceAll());
+        JButton replaceBtn = createIconButton("icons/replace.svg", UiI18n.get(UiMessageKeys.SEARCH_REPLACE), e -> replace());
+        JButton replaceAllBtn = createIconButton("icons/replace-all.svg", UiI18n.get(UiMessageKeys.SEARCH_REPLACE_ALL), e -> replaceAll());
 
         // 组装替换面板
         replacePanel.add(spacer);  // 左侧占位符（已包含按钮宽度+间距）
@@ -431,7 +429,7 @@ public class SearchReplacePanel extends JPanel {
             // 替换成功后自动查找下一个
             findNext();
         } else {
-            statusLabel.setText(MSG_NO_RESULTS);
+            statusLabel.setText(noResultsText());
         }
     }
 
@@ -452,13 +450,13 @@ public class SearchReplacePanel extends JPanel {
 
         // 显示替换结果
         if (count > 0) {
-            statusLabel.setText(String.format(MSG_REPLACED_FORMAT, count));
+            statusLabel.setText(UiI18n.get(UiMessageKeys.SEARCH_REPLACED_COUNT, count));
             // 2秒后清除状态
             Timer timer = new Timer(2000, e -> updateSearchStatus());
             timer.setRepeats(false);
             timer.start();
         } else {
-            statusLabel.setText(MSG_NO_RESULTS);
+            statusLabel.setText(noResultsText());
         }
     }
 
@@ -486,14 +484,14 @@ public class SearchReplacePanel extends JPanel {
             if (totalCount > 0) {
                 // 计算当前是第几个匹配
                 int currentIndex = getCurrentMatchIndex(totalCount);
-                statusLabel.setText(currentIndex + " of " + totalCount);
+                statusLabel.setText(UiI18n.get(UiMessageKeys.SEARCH_STATUS_COUNT, currentIndex, totalCount));
             } else {
                 statusLabel.setText("");
             }
             // 有结果：清除红色边框
             searchField.putClientProperty(FlatClientProperties.OUTLINE, null);
         } else {
-            statusLabel.setText(MSG_NO_RESULTS);
+            statusLabel.setText(noResultsText());
             // 无结果且搜索框非空：显示红色边框（同 IDEA 行为）
             if (!searchField.getText().isEmpty()) {
                 searchField.putClientProperty(FlatClientProperties.OUTLINE, FlatClientProperties.OUTLINE_ERROR);
@@ -670,26 +668,30 @@ public class SearchReplacePanel extends JPanel {
                 SearchResult firstResult = SearchEngine.find(textArea, context);
 
                 if (firstResult.wasFound()) {
-                    // 显示 "1 of total"
-                    statusLabel.setText("1 of " + totalCount);
+                    // 显示当前匹配位置和总匹配数。
+                    statusLabel.setText(UiI18n.get(UiMessageKeys.SEARCH_STATUS_COUNT, 1, totalCount));
                     searchField.putClientProperty(FlatClientProperties.OUTLINE, null);
                 } else {
-                    statusLabel.setText(MSG_NO_RESULTS);
+                    statusLabel.setText(noResultsText());
                     searchField.putClientProperty(FlatClientProperties.OUTLINE, FlatClientProperties.OUTLINE_ERROR);
                 }
             } else {
-                statusLabel.setText(MSG_NO_RESULTS);
+                statusLabel.setText(noResultsText());
                 searchField.putClientProperty(FlatClientProperties.OUTLINE, FlatClientProperties.OUTLINE_ERROR);
             }
         } finally {
             // 不恢复光标，保持在第一个匹配位置
             // 但如果没有找到，恢复原来的位置
-            if (statusLabel.getText().equals(MSG_NO_RESULTS)) {
+            if (statusLabel.getText().equals(noResultsText())) {
                 textArea.setCaretPosition(savedCaret);
                 textArea.setSelectionStart(savedSelStart);
                 textArea.setSelectionEnd(savedSelEnd);
             }
         }
+    }
+
+    private static String noResultsText() {
+        return UiI18n.get(UiMessageKeys.SEARCH_NO_RESULTS);
     }
 
     /**

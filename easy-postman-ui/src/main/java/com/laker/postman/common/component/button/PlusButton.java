@@ -1,5 +1,7 @@
 package com.laker.postman.common.component.button;
 
+import com.laker.postman.util.CommonI18n;
+import com.laker.postman.util.CommonMessageKeys;
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.util.IconUtil;
 
@@ -25,7 +27,7 @@ public class PlusButton extends JButton {
      */
     public PlusButton(int iconSize) {
         setIcon(IconUtil.createThemed("icons/plus.svg", iconSize, iconSize));
-        setToolTipText("Add");
+        setToolTipText(CommonI18n.get(CommonMessageKeys.BUTTON_ADD));
         // 扁平化设计
         setFocusable(false);// 去掉按钮的焦点边框
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));

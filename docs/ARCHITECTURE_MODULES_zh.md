@@ -27,6 +27,10 @@ easy-postman-parent
 
 `easy-postman-ui` 是共享 Swing 设计系统。它放 `FontsUtil`、`IconUtil`、`NotificationUtil`、`EditorThemeUtil`、`ModernColors`、`UiSingletonFactory`/`UiSingletonPanel`/`UiSingletonMenuBar`、`DebouncedSaveSupport`、`IRefreshable`、公共按钮/搜索/表格/输入控件等组件，例如 `EasyComboBox`、`EasyJSpinner`、`EasyPasswordField`、`EditButton`、`SaveButton`、`WrapToggleButton`，以及这些组件直接引用的 icons/theme 资源。主色 button 上的 icon 应使用 on-primary 颜色策略，保持白色，不跟随明暗主题切换。
 
+资源归属按唯一 owner 管理：`easy-postman-ui/src/main/resources/icons` 放通用控件/动作/状态图标，例如 save、copy、paste、search、clear、cancel、close、delete、duplicate、eye、info、warning、arrow、chevron、wrap、start、stop、send、connect、collapse、expand、more、detail、import、export；`easy-postman-app/src/main/resources/icons` 只放宿主业务、品牌、协议、工作区、压测、集合树等 app 专属图标；插件入口图标放插件自己的 `src/main/resources/icons`。两个模块不要保留同路径同名资源，避免 classpath 资源遮蔽和图标版本漂移。官方插件若引用 `icons/*.svg`，该图标必须来自插件自身或 `easy-postman-ui`，不能依赖 app resources。
+
+其他资源也按 owner 管理：`easy-postman-app/src/main/resources/js-libs` 是宿主脚本运行时内置库，`logback.xml` 是宿主运行配置，`plugin-manager/src/main/resources/plugin-catalog` 是插件市场兜底目录，插件 descriptor 和插件专属 icon/message bundle 跟随插件模块。
+
 `easy-postman-plugin-runtime` 只负责插件扫描、descriptor 解析、classloader、registry、生命周期和状态持久化。它不放具体业务插件能力。
 
 `easy-postman-performance-core` 放无 UI、无传输实现绑定的压测领域核心：计划、节点数据、运行时契约、线程组规划、统计、趋势、报告快照。
@@ -39,13 +43,13 @@ easy-postman-parent
 
 ## 国际化、字体、主题放置
 
-国际化机制放 `easy-postman-foundation`。`I18nUtil`、基础 `MessageKeys`、locale/settings key 属于基础能力。
+国际化机制和跨模块基础词汇放 `easy-postman-foundation`。`I18nUtil`、`CommonI18n`、`CommonMessageKeys`、`common-messages.properties` / `common-messages_zh.properties`、locale/settings key 属于基础能力。通用词汇包括 OK、Cancel、Save、Copy、Close、Search、Success、Error、Warning、Tip 这类无具体业务 owner 的短标签。
 
-国际化资源跟随所属模块。公共 UI 组件文案放 `easy-postman-ui`，宿主页面文案放 `easy-postman-app`，插件文案放各插件模块。不要让公共 UI 组件依赖 app resources 才能显示文案。
+国际化资源跟随所属模块。公共 UI 组件专属文案放 `easy-postman-ui`，例如 `ui-messages.properties` / `ui-messages_zh.properties`；宿主页面和宿主业务文案放 `easy-postman-app` 的 `messages_en.properties` / `messages_zh.properties`；插件文案放各插件模块，例如 `redis-messages.properties`、`kafka-messages.properties`。不要让公共 UI 组件或插件依赖 app resources 才能显示文案；如果多个模块需要同一个短标签，先放 foundation common bundle，并用 `CommonI18n.get(CommonMessageKeys...)`，不要在 `ui-messages*`、app 或插件 bundle 里重复定义同名 common key。
 
 字体工具和字体 token 放 `easy-postman-ui`。全局启动时读取设置并应用字体的编排当前在 app，迁移时属于 `easy-postman-platform`。
 
-主题 token、语义色、图标主题适配和公共 UI 资源放 `easy-postman-ui`。FlatLaf 的安装、主题切换动画和启动应用编排当前在 app，迁移时属于 `easy-postman-platform`。
+主题 token、语义色、图标主题适配、RSyntaxTextArea 编辑器主题 XML 和公共 UI 资源放 `easy-postman-ui`。FlatLaf 的安装、主题切换动画和启动应用编排当前在 app，迁移时属于 `easy-postman-platform`。FlatLaf token 覆盖文件如果依赖 app 内的具体 `EasyLightLaf` / `EasyDarkLaf` 类路径，先跟随 app。
 
 ## 判断一个类该放哪里
 
@@ -68,6 +72,7 @@ easy-postman-parent
 - 不要把插件服务接口放进 `foundation`。
 - 不要让官方插件依赖 `easy-postman-app`。
 - 不要让公共 UI 组件依赖 app resources 才能加载自身 icons。
+- 不要在 app 和 ui 中重复放同名 `icons/*.svg`；通用图标归 `easy-postman-ui`，业务图标归使用方模块。
 - 不要在 app 面板里新增一套私有按钮/颜色/字体规则，优先沉淀到 `easy-postman-ui`。
 - 不要把“暂时不知道放哪”的代码放进一个泛化 common 包。
 

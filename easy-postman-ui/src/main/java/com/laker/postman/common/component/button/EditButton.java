@@ -1,5 +1,7 @@
 package com.laker.postman.common.component.button;
 
+import com.laker.postman.util.CommonI18n;
+import com.laker.postman.util.CommonMessageKeys;
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.util.IconUtil;
 
@@ -16,7 +18,7 @@ public class EditButton extends JButton {
 
     public EditButton(int iconSize) {
         setIcon(IconUtil.createThemed("icons/edit.svg", iconSize, iconSize));
-        setToolTipText("Edit");
+        setToolTipText(CommonI18n.get(CommonMessageKeys.BUTTON_EDIT));
         setFocusable(false);
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);

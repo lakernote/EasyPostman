@@ -2,6 +2,8 @@ package com.laker.postman.common.component.button;
 
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.util.IconUtil;
+import com.laker.postman.util.UiI18n;
+import com.laker.postman.util.UiMessageKeys;
 
 import javax.swing.*;
 import java.awt.*;
@@ -15,7 +17,7 @@ public class WrapToggleButton extends JToggleButton {
     private static final String ICON_PATH = "icons/wrap.svg";
 
     public WrapToggleButton() {
-        setToolTipText("Toggle Line Wrap");
+        setToolTipText(UiI18n.get(UiMessageKeys.BUTTON_TOGGLE_LINE_WRAP));
         setFocusable(false);
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);

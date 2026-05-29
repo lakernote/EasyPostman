@@ -31,6 +31,7 @@ When choosing a module, use this rule set:
 - Put plugin-facing extension contracts in `easy-postman-plugin-api`: plugin SPI, service interfaces, toolbox/script/snippet contracts.
 - Put host platform framework in `easy-postman-platform`: custom IOC, update discovery core, then startup, welcome/help, settings center, and theme/font application orchestration when dependencies are ready.
 - Put shared Swing design-system code in `easy-postman-ui`: reusable components, UI singleton base/factory, toolbar buttons (`EditButton`, `SaveButton`, `WrapToggleButton`), form controls (`EasyComboBox`, `EasyJSpinner`, `EasyPasswordField`), fonts, icons, notification UI, editor theme helpers, semantic colors, and UI resources directly used by those components.
+- Keep icon resource ownership unique: generic action/control/status icons (`save`, `copy`, `paste`, `search`, `clear`, `cancel`, `close`, `delete`, `duplicate`, `eye`, `info`, `warning`, arrows, chevrons, wrap, start/stop, send, connect, collapse/expand, more/detail, import/export) belong in `easy-postman-ui`; app/domain icons belong in their owning app or plugin module. Official plugins may use icons from their own resources or `easy-postman-ui`, not app-only resources. Do not duplicate the same `icons/*.svg` path across app and ui.
 - Keep plugin loading, classloaders, descriptor parsing, registry, and lifecycle in `easy-postman-plugin-runtime`.
 - Keep host-specific composition, app panels, menus, concrete startup wiring, and app-only services in `easy-postman-app` until each dependency is ready to migrate into `easy-postman-platform`.
 - Do not put SPI code, shared UI components, or shared foundation utilities directly into `easy-postman-app`.
@@ -166,7 +167,7 @@ Plugin scripts are injected via `registerScriptApi` (alias → object factory); 
 
 ## Internationalisation
 
-All user-visible strings must use `I18nUtil.getMessage(MessageKeys.SOME_KEY)`. The i18n mechanism and base `MessageKeys` live in `easy-postman-foundation`. Resource bundles should follow ownership: shared UI component text belongs with `easy-postman-ui`, app text belongs with `easy-postman-app`, and plugin text belongs with the plugin module. Never hard-code UI strings directly.
+User-visible app strings must use `I18nUtil.getMessage(MessageKeys.SOME_KEY)`. Cross-module generic labels such as OK, Cancel, Save, Copy, Close, Search, Success, Error, Warning, and Tip live in `easy-postman-foundation` as `CommonI18n.get(CommonMessageKeys.SOME_KEY)` backed by `common-messages*`; `I18nUtil` also falls back to that bundle for existing app keys. Shared UI component-specific strings use `UiI18n.get(UiMessageKeys.SOME_KEY)` from `easy-postman-ui`. Resource bundles should follow ownership: foundation common text belongs with foundation, shared UI component text belongs with `easy-postman-ui`, app text belongs with `easy-postman-app`, and plugin text belongs with the plugin module. Do not duplicate exact common keys in app/ui/plugin bundles. Never hard-code UI strings directly.
 
 ---
 
@@ -176,7 +177,7 @@ All user-visible strings must use `I18nUtil.getMessage(MessageKeys.SOME_KEY)`. T
 - User settings are persisted to `easy_postman_settings.properties` via `SettingManager` (static Properties file) and `UserSettingsUtil` (foundation module).
 - Font size setting key: `ui_font_size` in that properties file.
 - Custom FlatLaf token overrides: `easy-postman-app/src/main/resources/com/laker/postman/common/themes/EasyLightLaf.properties` and `EasyDarkLaf.properties`
-- RSyntaxTextArea editor theme XMLs: `easy-postman-app/src/main/resources/themes/easypostman-light.xml` and `easypostman-dark.xml`
+- RSyntaxTextArea editor theme XMLs: `easy-postman-ui/src/main/resources/themes/easypostman-light.xml` and `easypostman-dark.xml`
 - Shared semantic colors for both themes: `ModernColors` in `easy-postman-ui` (`com.laker.postman.common.constants.ModernColors`)
 - Font helpers, icon helpers, notification UI, editor theme helpers, and reusable Swing components belong in `easy-postman-ui`.
 

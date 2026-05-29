@@ -85,7 +85,7 @@ public class EnhancedTablePanel extends JPanel {
 
     // ── 分页大小选项 ───────────────────────────────────────────────────────
     private static final int[] PAGE_SIZES = {20, 50, 100, 0};
-    private static final String[] SIZE_LABELS = {"20", "50", "100", "All"};
+    private static final String[] SIZE_LABELS = {"20", "50", "100", UiI18n.get(UiMessageKeys.TABLE_PAGE_SIZE_ALL)};
 
     // ── Swing 组件 ────────────────────────────────────────────────────────
     @Getter
@@ -262,7 +262,7 @@ public class EnhancedTablePanel extends JPanel {
         searchField = new SearchTextField();
         // 保留 SearchTextField 内置的大小写/整词匹配按钮（不覆盖 trailing component）
         searchField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT,
-                I18nUtil.getMessage(MessageKeys.TABLE_SEARCH_PLACEHOLDER_ALL));
+                UiI18n.get(UiMessageKeys.TABLE_SEARCH_PLACEHOLDER_ALL));
         searchField.setPreferredSize(new Dimension(220, 28));
         searchField.getDocument().addDocumentListener(new DocumentListener() {
             public void insertUpdate(DocumentEvent e) {
@@ -304,10 +304,10 @@ public class EnhancedTablePanel extends JPanel {
             }
         });
 
-        colFilterBtn = new JButton(I18nUtil.getMessage(MessageKeys.TABLE_COL_FILTER_BTN));
+        colFilterBtn = new JButton(UiI18n.get(UiMessageKeys.TABLE_COL_FILTER_BTN));
         colFilterBtn.setFont(colFilterBtn.getFont().deriveFont(Font.PLAIN, 11f));
         colFilterBtn.setFocusPainted(false);
-        colFilterBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TABLE_COL_FILTER_TOOLTIP));
+        colFilterBtn.setToolTipText(UiI18n.get(UiMessageKeys.TABLE_COL_FILTER_TOOLTIP));
         colFilterBtn.addActionListener(e -> showColFilterPopup());
 
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
@@ -315,7 +315,7 @@ public class EnhancedTablePanel extends JPanel {
         left.add(searchField);
         left.add(colFilterBtn);
 
-        hintLabel = new JLabel("0" + I18nUtil.getMessage(MessageKeys.TABLE_ROWS_SUFFIX));
+        hintLabel = new JLabel("0" + UiI18n.get(UiMessageKeys.TABLE_ROWS_SUFFIX));
         hintLabel.setForeground(UIManager.getColor(LABEL_DISABLED));
         hintLabel.setFont(hintLabel.getFont().deriveFont(Font.PLAIN, 11f));
         hintLabel.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 0));
@@ -348,7 +348,7 @@ public class EnhancedTablePanel extends JPanel {
         popup.setLayout(new BorderLayout(0, 0));
 
         // ── 标题栏 ──────────────────────────────────────────────────────
-        JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TABLE_COL_FILTER_TITLE));
+        JLabel titleLabel = new JLabel(UiI18n.get(UiMessageKeys.TABLE_COL_FILTER_TITLE));
         titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 12f));
         titleLabel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)),
@@ -383,16 +383,16 @@ public class EnhancedTablePanel extends JPanel {
 
         JPanel linkRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         linkRow.setOpaque(false);
-        JButton btnAll = makeLinkBtn(I18nUtil.getMessage(MessageKeys.TABLE_COL_FILTER_SELECT_ALL));
+        JButton btnAll = makeLinkBtn(UiI18n.get(UiMessageKeys.TABLE_COL_FILTER_SELECT_ALL));
         JLabel sep = new JLabel(" | ");
         sep.setForeground(UIManager.getColor(LABEL_DISABLED));
         sep.setFont(sep.getFont().deriveFont(Font.PLAIN, 11f));
-        JButton btnNone = makeLinkBtn(I18nUtil.getMessage(MessageKeys.TABLE_COL_FILTER_DESELECT_ALL));
+        JButton btnNone = makeLinkBtn(UiI18n.get(UiMessageKeys.TABLE_COL_FILTER_DESELECT_ALL));
         linkRow.add(btnAll);
         linkRow.add(sep);
         linkRow.add(btnNone);
 
-        JButton btnOk = new JButton(I18nUtil.getMessage(MessageKeys.TABLE_COL_FILTER_OK));
+        JButton btnOk = new JButton(CommonI18n.get(CommonMessageKeys.GENERAL_OK));
         btnOk.setFont(btnOk.getFont().deriveFont(Font.PLAIN, 11f));
         btnOk.setFocusPainted(false);
 
@@ -454,23 +454,23 @@ public class EnhancedTablePanel extends JPanel {
     private void updateColFilterBtnLabel() {
         if (filterCols == null) {
             // 默认：搜索全部列
-            colFilterBtn.setText(I18nUtil.getMessage(MessageKeys.TABLE_COL_FILTER_BTN));
+            colFilterBtn.setText(UiI18n.get(UiMessageKeys.TABLE_COL_FILTER_BTN));
             colFilterBtn.setForeground(null);
             searchField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT,
-                    I18nUtil.getMessage(MessageKeys.TABLE_SEARCH_PLACEHOLDER_ALL));
+                    UiI18n.get(UiMessageKeys.TABLE_SEARCH_PLACEHOLDER_ALL));
         } else if (filterCols.isEmpty()) {
             // 全不选：置灰提示用户未指定范围
-            colFilterBtn.setText(I18nUtil.getMessage(MessageKeys.TABLE_COL_FILTER_BTN_N, "0"));
+            colFilterBtn.setText(UiI18n.get(UiMessageKeys.TABLE_COL_FILTER_BTN_N, "0"));
             colFilterBtn.setForeground(UIManager.getColor(LABEL_DISABLED));
             searchField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT,
-                    I18nUtil.getMessage(MessageKeys.TABLE_SEARCH_PLACEHOLDER_NONE));
+                    UiI18n.get(UiMessageKeys.TABLE_SEARCH_PLACEHOLDER_NONE));
         } else {
             // 已选部分列：高亮显示数量，placeholder 显示列名
-            colFilterBtn.setText(I18nUtil.getMessage(MessageKeys.TABLE_COL_FILTER_BTN_N,
+            colFilterBtn.setText(UiI18n.get(UiMessageKeys.TABLE_COL_FILTER_BTN_N,
                     String.valueOf(filterCols.size())));
             colFilterBtn.setForeground(UIManager.getColor("Component.accentColor"));
             searchField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT,
-                    I18nUtil.getMessage(MessageKeys.TABLE_SEARCH_PLACEHOLDER_COLS,
+                    UiI18n.get(UiMessageKeys.TABLE_SEARCH_PLACEHOLDER_COLS,
                             buildFilterColNames()));
         }
         searchField.repaint();
@@ -688,12 +688,12 @@ public class EnhancedTablePanel extends JPanel {
             pageJumpField.setText("");
         });
 
-        bar.add(tiny(I18nUtil.getMessage(MessageKeys.TABLE_PAGE_SIZE_LABEL)));
+        bar.add(tiny(UiI18n.get(UiMessageKeys.TABLE_PAGE_SIZE_LABEL)));
         bar.add(pageSizeCombo);
         bar.add(btnPrev);
         bar.add(pageInfoLabel);
         bar.add(btnNext);
-        bar.add(tiny(I18nUtil.getMessage(MessageKeys.TABLE_PAGE_JUMP_LABEL)));
+        bar.add(tiny(UiI18n.get(UiMessageKeys.TABLE_PAGE_JUMP_LABEL)));
         bar.add(pageJumpField);
         return bar;
     }
@@ -757,11 +757,11 @@ public class EnhancedTablePanel extends JPanel {
         int pages = totalPages();
         String info;
         if (total == 0) {
-            info = I18nUtil.getMessage(MessageKeys.TABLE_PAGE_INFO_EMPTY);
+            info = UiI18n.get(UiMessageKeys.TABLE_PAGE_INFO_EMPTY);
         } else {
             int from = getPageOffset() + 1;
             int to = (pageSize == 0) ? total : Math.min(getPageOffset() + pageSize, total);
-            info = I18nUtil.getMessage(MessageKeys.TABLE_PAGE_INFO,
+            info = UiI18n.get(UiMessageKeys.TABLE_PAGE_INFO,
                     String.valueOf(from),
                     String.valueOf(to),
                     String.valueOf(currentPage + 1),
@@ -778,9 +778,9 @@ public class EnhancedTablePanel extends JPanel {
     private void updateHintLabel() {
         int total = allRows.size();
         int filtered = filteredRows.size();
-        String suffix = I18nUtil.getMessage(MessageKeys.TABLE_ROWS_SUFFIX);
+        String suffix = UiI18n.get(UiMessageKeys.TABLE_ROWS_SUFFIX);
         if (!filterText.isEmpty() && filtered != total) {
-            hintLabel.setText(I18nUtil.getMessage(MessageKeys.TABLE_ROWS_FILTERED,
+            hintLabel.setText(UiI18n.get(UiMessageKeys.TABLE_ROWS_FILTERED,
                     String.valueOf(filtered), String.valueOf(total)));
         } else {
             hintLabel.setText(total + suffix);
@@ -796,10 +796,10 @@ public class EnhancedTablePanel extends JPanel {
         if (hasData) {
             emptyLabel.setVisible(false);
         } else if (hasFilter) {
-            emptyLabel.setText(I18nUtil.getMessage(MessageKeys.TABLE_EMPTY_NO_MATCH));
+            emptyLabel.setText(UiI18n.get(UiMessageKeys.TABLE_EMPTY_NO_MATCH));
             emptyLabel.setVisible(true);
         } else if (allRows.isEmpty()) {
-            emptyLabel.setText(I18nUtil.getMessage(MessageKeys.TABLE_EMPTY_NO_DATA));
+            emptyLabel.setText(UiI18n.get(UiMessageKeys.TABLE_EMPTY_NO_DATA));
             emptyLabel.setVisible(true);
         } else {
             emptyLabel.setVisible(false);
@@ -818,22 +818,22 @@ public class EnhancedTablePanel extends JPanel {
             Object val = table.getValueAt(r, c);
             String text = val == null ? "" : val.toString();
             if (text.length() > LARGE_CELL_THRESHOLD) {
-                JMenuItem viewCell = new JMenuItem(I18nUtil.getMessage(MessageKeys.TABLE_CONTEXT_VIEW_CELL));
+                JMenuItem viewCell = new JMenuItem(UiI18n.get(UiMessageKeys.TABLE_CONTEXT_VIEW_CELL));
                 viewCell.addActionListener(ev -> showCellDetailDialog(table.getColumnName(c), text));
                 menu.add(viewCell);
                 menu.addSeparator();
             }
         }
 
-        JMenuItem copyCell = new JMenuItem(I18nUtil.getMessage(MessageKeys.TABLE_CONTEXT_COPY_CELL));
+        JMenuItem copyCell = new JMenuItem(UiI18n.get(UiMessageKeys.TABLE_CONTEXT_COPY_CELL));
         copyCell.addActionListener(ev -> {
             copySelectedCell();
-            NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.TABLE_CONTEXT_COPIED));
+            NotificationUtil.showSuccess(UiI18n.get(UiMessageKeys.TABLE_CONTEXT_COPIED));
         });
-        JMenuItem copyRow = new JMenuItem(I18nUtil.getMessage(MessageKeys.TABLE_CONTEXT_COPY_ROW));
+        JMenuItem copyRow = new JMenuItem(UiI18n.get(UiMessageKeys.TABLE_CONTEXT_COPY_ROW));
         copyRow.addActionListener(ev -> {
             copySelectedRow();
-            NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.TABLE_CONTEXT_COPIED));
+            NotificationUtil.showSuccess(UiI18n.get(UiMessageKeys.TABLE_CONTEXT_COPIED));
         });
         menu.add(copyCell);
         menu.add(copyRow);
@@ -1026,8 +1026,8 @@ public class EnhancedTablePanel extends JPanel {
     private void showCellDetailDialog(String colName, String text) {
         Window owner = SwingUtilities.getWindowAncestor(this);
         JDialog dialog = (owner instanceof Frame f)
-                ? new JDialog(f, I18nUtil.getMessage(MessageKeys.TABLE_CELL_DETAIL_TITLE) + " — " + colName, true)
-                : new JDialog((Dialog) owner, I18nUtil.getMessage(MessageKeys.TABLE_CELL_DETAIL_TITLE) + " — " + colName, true);
+                ? new JDialog(f, UiI18n.get(UiMessageKeys.TABLE_CELL_DETAIL_TITLE) + " — " + colName, true)
+                : new JDialog((Dialog) owner, UiI18n.get(UiMessageKeys.TABLE_CELL_DETAIL_TITLE) + " — " + colName, true);
         dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         dialog.setLayout(new BorderLayout(0, 0));
 
@@ -1051,19 +1051,19 @@ public class EnhancedTablePanel extends JPanel {
         SearchableTextArea searchableTextArea = new SearchableTextArea(textArea, false);
 
         // ── 顶部信息栏 ──────────────────────────────────────────────────
-        JLabel lenLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TABLE_CELL_DETAIL_LENGTH,
+        JLabel lenLabel = new JLabel(UiI18n.get(UiMessageKeys.TABLE_CELL_DETAIL_LENGTH,
                 String.valueOf(text.length())));
         lenLabel.setForeground(UIManager.getColor(LABEL_DISABLED));
         lenLabel.setFont(lenLabel.getFont().deriveFont(Font.PLAIN, 11f));
         lenLabel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
 
         // ── 底部按钮栏 ──────────────────────────────────────────────────
-        JButton btnFormatJson = new JButton(I18nUtil.getMessage(MessageKeys.TABLE_CELL_DETAIL_FORMAT_JSON));
-        JButton btnCopy = new JButton(I18nUtil.getMessage(MessageKeys.TABLE_CELL_DETAIL_COPY));
-        JButton btnClose = new JButton(I18nUtil.getMessage(MessageKeys.TABLE_CELL_DETAIL_CLOSE));
+        JButton btnFormatJson = new JButton(UiI18n.get(UiMessageKeys.TABLE_CELL_DETAIL_FORMAT_JSON));
+        JButton btnCopy = new JButton(CommonI18n.get(CommonMessageKeys.BUTTON_COPY));
+        JButton btnClose = new JButton(CommonI18n.get(CommonMessageKeys.BUTTON_CLOSE));
 
         btnFormatJson.setEnabled(isJson);
-        if (!isJson) btnFormatJson.setToolTipText("Content is not valid JSON");
+        if (!isJson) btnFormatJson.setToolTipText(UiI18n.get(UiMessageKeys.TABLE_INVALID_JSON));
 
         // 格式化 / 还原 JSON 切换
         final boolean[] formatted = {false};
@@ -1074,7 +1074,7 @@ public class EnhancedTablePanel extends JPanel {
                     textArea.setText(pretty);
                     textArea.setCaretPosition(0);
                     formatted[0] = true;
-                    btnFormatJson.setText("⟲ " + I18nUtil.getMessage(MessageKeys.TABLE_CELL_DETAIL_FORMAT_JSON));
+                    btnFormatJson.setText("⟲ " + UiI18n.get(UiMessageKeys.TABLE_CELL_DETAIL_FORMAT_JSON));
                 } catch (Exception ex) {
                     log.warn("JSON format failed", ex);
                 }
@@ -1082,14 +1082,14 @@ public class EnhancedTablePanel extends JPanel {
                 textArea.setText(text);
                 textArea.setCaretPosition(0);
                 formatted[0] = false;
-                btnFormatJson.setText(I18nUtil.getMessage(MessageKeys.TABLE_CELL_DETAIL_FORMAT_JSON));
+                btnFormatJson.setText(UiI18n.get(UiMessageKeys.TABLE_CELL_DETAIL_FORMAT_JSON));
             }
         });
 
         btnCopy.addActionListener(ev -> {
             String selected = textArea.getSelectedText();
             clip(selected != null && !selected.isEmpty() ? selected : textArea.getText());
-            NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.TABLE_CONTEXT_COPIED));
+            NotificationUtil.showSuccess(UiI18n.get(UiMessageKeys.TABLE_CONTEXT_COPIED));
         });
         btnClose.addActionListener(ev -> dialog.dispose());
 
@@ -1100,7 +1100,7 @@ public class EnhancedTablePanel extends JPanel {
                 textArea.setText(pretty);
                 textArea.setCaretPosition(0);
                 formatted[0] = true;
-                btnFormatJson.setText("⟲ " + I18nUtil.getMessage(MessageKeys.TABLE_CELL_DETAIL_FORMAT_JSON));
+                btnFormatJson.setText("⟲ " + UiI18n.get(UiMessageKeys.TABLE_CELL_DETAIL_FORMAT_JSON));
             } catch (Exception ex) {
                 log.warn("auto JSON format failed", ex);
                 textArea.setText(text);
@@ -1148,8 +1148,8 @@ public class EnhancedTablePanel extends JPanel {
                         + escapeHtml(display.length() > TOOLTIP_MAX_LEN
                         ? display.substring(0, TOOLTIP_MAX_LEN) + "…" : display)
                         + "<br><br><i style='color:gray'>"
-                        + I18nUtil.getMessage(MessageKeys.TABLE_CELL_DETAIL_LENGTH, String.valueOf(display.length()))
-                        + " — double-click to view</i></body></html>";
+                        + UiI18n.get(UiMessageKeys.TABLE_CELL_DETAIL_LENGTH, String.valueOf(display.length()))
+                        + " — " + UiI18n.get(UiMessageKeys.TABLE_CELL_DETAIL_DOUBLE_CLICK) + "</i></body></html>";
                 display = display.substring(0, LARGE_CELL_THRESHOLD) + " …";
             }
             super.getTableCellRendererComponent(t, display, sel, focus, row, col);

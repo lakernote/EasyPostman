@@ -7,13 +7,10 @@ import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.model.ClientCertificate;
 import com.laker.postman.plugin.api.service.ClientCertificatePluginService;
 import com.laker.postman.plugin.clientcert.internal.ClientCertificateLoader;
-import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.net.ssl.KeyManager;
 import java.io.File;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -71,8 +68,8 @@ public class ClientCertificatePluginServiceImpl implements ClientCertificatePlug
     @Override
     public boolean validateCertificatePaths(ClientCertificate certificate) {
         if (certificate.getCertPath() == null || certificate.getCertPath().trim().isEmpty()) {
-            String message = MessageFormat.format(
-                    I18nUtil.getMessage(MessageKeys.CERT_CONSOLE_VALIDATION_FAILED),
+            String message = ClientCertI18n.t(
+                    MessageKeys.CERT_CONSOLE_VALIDATION_FAILED,
                     certificate.getName() != null ? certificate.getName() : "Unknown"
             );
             logWarn(message);
@@ -82,8 +79,8 @@ public class ClientCertificatePluginServiceImpl implements ClientCertificatePlug
         File certFile = new File(certificate.getCertPath());
         if (!certFile.exists() || !certFile.canRead()) {
             log.warn("Certificate file not found or not readable: {}", certificate.getCertPath());
-            String message = MessageFormat.format(
-                    I18nUtil.getMessage(MessageKeys.CERT_CONSOLE_FILE_NOT_FOUND),
+            String message = ClientCertI18n.t(
+                    MessageKeys.CERT_CONSOLE_FILE_NOT_FOUND,
                     certificate.getCertPath()
             );
             logError(message);
@@ -92,8 +89,8 @@ public class ClientCertificatePluginServiceImpl implements ClientCertificatePlug
 
         if (ClientCertificate.CERT_TYPE_PEM.equals(certificate.getCertType())) {
             if (certificate.getKeyPath() == null || certificate.getKeyPath().trim().isEmpty()) {
-                String message = MessageFormat.format(
-                        I18nUtil.getMessage(MessageKeys.CERT_CONSOLE_VALIDATION_FAILED),
+                String message = ClientCertI18n.t(
+                        MessageKeys.CERT_CONSOLE_VALIDATION_FAILED,
                         certificate.getName() != null ? certificate.getName() : "Unknown"
                 );
                 logWarn(message);
@@ -102,8 +99,8 @@ public class ClientCertificatePluginServiceImpl implements ClientCertificatePlug
             File keyFile = new File(certificate.getKeyPath());
             if (!keyFile.exists() || !keyFile.canRead()) {
                 log.warn("Private key file not found or not readable: {}", certificate.getKeyPath());
-                String message = MessageFormat.format(
-                        I18nUtil.getMessage(MessageKeys.CERT_CONSOLE_FILE_NOT_FOUND),
+                String message = ClientCertI18n.t(
+                        MessageKeys.CERT_CONSOLE_FILE_NOT_FOUND,
                         certificate.getKeyPath()
                 );
                 logError(message);
@@ -132,8 +129,8 @@ public class ClientCertificatePluginServiceImpl implements ClientCertificatePlug
             String certificateName = clientCertificate.getName() != null && !clientCertificate.getName().isEmpty()
                     ? clientCertificate.getName()
                     : clientCertificate.getCertPath();
-            String message = MessageFormat.format(
-                    I18nUtil.getMessage(MessageKeys.CERT_CONSOLE_LOADED),
+            String message = ClientCertI18n.t(
+                    MessageKeys.CERT_CONSOLE_LOADED,
                     certificateName
             );
             logInfo(message);
@@ -143,8 +140,8 @@ public class ClientCertificatePluginServiceImpl implements ClientCertificatePlug
             String certificateName = clientCertificate.getName() != null && !clientCertificate.getName().isEmpty()
                     ? clientCertificate.getName()
                     : clientCertificate.getCertPath();
-            String message = MessageFormat.format(
-                    I18nUtil.getMessage(MessageKeys.CERT_CONSOLE_LOAD_FAILED),
+            String message = ClientCertI18n.t(
+                    MessageKeys.CERT_CONSOLE_LOAD_FAILED,
                     certificateName, e.getMessage()
             );
             logError(message);
@@ -195,8 +192,8 @@ public class ClientCertificatePluginServiceImpl implements ClientCertificatePlug
                 String certificateName = certificate.getName() != null && !certificate.getName().isEmpty()
                         ? certificate.getName()
                         : certificate.getCertPath();
-                String message = MessageFormat.format(
-                        I18nUtil.getMessage(MessageKeys.CERT_CONSOLE_MATCHED),
+                String message = ClientCertI18n.t(
+                        MessageKeys.CERT_CONSOLE_MATCHED,
                         host, port, certificate.getCertType(), certificateName
                 );
                 logInfo(message);

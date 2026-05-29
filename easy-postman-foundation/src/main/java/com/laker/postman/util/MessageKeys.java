@@ -2256,45 +2256,6 @@ public final class MessageKeys {
     public static final String TOOLBOX_DIFF_COMPARE = "toolbox.diff.compare";
     public static final String TOOLBOX_DIFF_RESULT = "toolbox.diff.result";
 
-    // ============ 反编译器相关 ============
-    public static final String TOOLBOX_DECOMPILER = "toolbox.decompiler";
-    public static final String TOOLBOX_DECOMPILER_SELECT_JAR = "toolbox.decompiler.select_jar";
-    public static final String TOOLBOX_DECOMPILER_BROWSE = "toolbox.decompiler.browse";
-    public static final String TOOLBOX_DECOMPILER_TREE_TITLE = "toolbox.decompiler.tree_title";
-    public static final String TOOLBOX_DECOMPILER_OUTPUT = "toolbox.decompiler.output";
-    public static final String TOOLBOX_DECOMPILER_NO_FILE = "toolbox.decompiler.no_file";
-    public static final String TOOLBOX_DECOMPILER_LOADING = "toolbox.decompiler.loading";
-    public static final String TOOLBOX_DECOMPILER_DECOMPILING = "toolbox.decompiler.decompiling";
-    public static final String TOOLBOX_DECOMPILER_ERROR = "toolbox.decompiler.error";
-    public static final String TOOLBOX_DECOMPILER_FILE_INFO = "toolbox.decompiler.file_info";
-    public static final String TOOLBOX_DECOMPILER_CLASS_VERSION = "toolbox.decompiler.class_version";
-    public static final String TOOLBOX_DECOMPILER_JAVA_VERSION = "toolbox.decompiler.java_version";
-    public static final String TOOLBOX_DECOMPILER_SELECT_FILE_PROMPT = "toolbox.decompiler.select_file_prompt";
-    public static final String TOOLBOX_DECOMPILER_UNSUPPORTED_FILE = "toolbox.decompiler.unsupported_file";
-    public static final String TOOLBOX_DECOMPILER_LOAD_ERROR = "toolbox.decompiler.load_error";
-    public static final String TOOLBOX_DECOMPILER_EXPAND_ALL = "toolbox.decompiler.expand_all";
-    public static final String TOOLBOX_DECOMPILER_COLLAPSE_ALL = "toolbox.decompiler.collapse_all";
-    public static final String TOOLBOX_DECOMPILER_COPY_CODE = "toolbox.decompiler.copy_code";
-    public static final String TOOLBOX_DECOMPILER_BYTES = "toolbox.decompiler.bytes";
-    public static final String TOOLBOX_DECOMPILER_DRAG_DROP_HINT_TO_BELOW = "toolbox.decompiler.drag_drop_hint_to_below";
-    public static final String TOOLBOX_DECOMPILER_CODE_COPIED = "toolbox.decompiler.code_copied";
-    public static final String TOOLBOX_DECOMPILER_READY = "toolbox.decompiler.ready";
-    public static final String TOOLBOX_DECOMPILER_CLEAR = "toolbox.decompiler.clear";
-    public static final String TOOLBOX_DECOMPILER_CLEARED = "toolbox.decompiler.cleared";
-    public static final String TOOLBOX_DECOMPILER_SORT_BY_NAME = "toolbox.decompiler.sort_by_name";
-    public static final String TOOLBOX_DECOMPILER_SORT_BY_SIZE = "toolbox.decompiler.sort_by_size";
-    public static final String TOOLBOX_DECOMPILER_SORTED_BY_NAME = "toolbox.decompiler.sorted_by_name";
-    public static final String TOOLBOX_DECOMPILER_SORTED_BY_SIZE = "toolbox.decompiler.sorted_by_size";
-    public static final String TOOLBOX_DECOMPILER_COMPRESSED = "toolbox.decompiler.compressed";
-    public static final String TOOLBOX_DECOMPILER_ACTUAL_SIZE = "toolbox.decompiler.actual_size";
-    public static final String TOOLBOX_DECOMPILER_UNCOMPRESSED_SIZE = "toolbox.decompiler.uncompressed_size";
-    public static final String TOOLBOX_DECOMPILER_COMPRESSION_RATIO = "toolbox.decompiler.compression_ratio";
-    public static final String TOOLBOX_DECOMPILER_COMPRESSION_INFO_FORMAT = "toolbox.decompiler.compression_info_format";
-    public static final String TOOLBOX_DECOMPILER_COMPRESSION_TOOLTIP_JAR = "toolbox.decompiler.compression_tooltip_jar";
-    public static final String TOOLBOX_DECOMPILER_COMPRESSION_TOOLTIP_ZIP = "toolbox.decompiler.compression_tooltip_zip";
-    public static final String TOOLBOX_DECOMPILER_ROOT_TOOLTIP_LINE1 = "toolbox.decompiler.root_tooltip_line1";
-    public static final String TOOLBOX_DECOMPILER_ROOT_TOOLTIP_LINE2 = "toolbox.decompiler.root_tooltip_line2";
-
     // ============ Elasticsearch 工具相关 ============
     public static final String TOOLBOX_ELASTICSEARCH = "toolbox.elasticsearch";
 
@@ -2564,49 +2525,6 @@ public final class MessageKeys {
     public static final String CERT_PLUGIN_REQUIRED_TITLE = "cert.plugin.required.title";
     public static final String CERT_PLUGIN_REQUIRED_DESCRIPTION = "cert.plugin.required.description";
     public static final String CERT_PLUGIN_OPEN_MANAGER = "cert.plugin.open_manager";
-
-    // Client Certificate Console Logs
-    public static final String CERT_CONSOLE_MATCHED = "cert.console.matched";
-    public static final String CERT_CONSOLE_LOADED = "cert.console.loaded";
     public static final String CERT_CONSOLE_LOAD_FAILED = "cert.console.load_failed";
-    public static final String CERT_CONSOLE_VALIDATION_FAILED = "cert.console.validation_failed";
-    public static final String CERT_CONSOLE_FILE_NOT_FOUND = "cert.console.file_not_found";
-
-    // ============ EnhancedTablePanel 通用表格组件 ============
-    public static final String TABLE_SEARCH_PLACEHOLDER_ALL = "table.search.placeholder.all";
-    public static final String TABLE_SEARCH_PLACEHOLDER_NONE = "table.search.placeholder.none";
-    public static final String TABLE_SEARCH_PLACEHOLDER_COLS = "table.search.placeholder.cols";
-    public static final String TABLE_COL_FILTER_BTN = "table.col_filter.btn";
-    public static final String TABLE_COL_FILTER_BTN_N = "table.col_filter.btn.n";
-    public static final String TABLE_COL_FILTER_TOOLTIP = "table.col_filter.tooltip";
-    public static final String TABLE_COL_FILTER_TITLE = "table.col_filter.title";
-    public static final String TABLE_COL_FILTER_SELECT_ALL = "table.col_filter.select_all";
-    public static final String TABLE_COL_FILTER_DESELECT_ALL = "table.col_filter.deselect_all";
-    public static final String TABLE_COL_FILTER_OK = "table.col_filter.ok";
-    public static final String TABLE_ROWS_SUFFIX = "table.rows.suffix";
-    public static final String TABLE_ROWS_FILTERED = "table.rows.filtered";
-    public static final String TABLE_PAGE_SIZE_LABEL = "table.page.size_label";
-    public static final String TABLE_PAGE_JUMP_LABEL = "table.page.jump_label";
-    public static final String TABLE_PAGE_INFO = "table.page.info";
-    public static final String TABLE_PAGE_INFO_EMPTY = "table.page.info.empty";
-    public static final String TABLE_CONTEXT_COPY_CELL = "table.context.copy_cell";
-    public static final String TABLE_CONTEXT_COPY_ROW = "table.context.copy_row";
-    public static final String TABLE_CONTEXT_COPIED = "table.context.copied";
-    public static final String TABLE_CONTEXT_VIEW_CELL = "table.context.view_cell";
-    public static final String TABLE_EMPTY_NO_DATA = "table.empty.no_data";
-    public static final String TABLE_EMPTY_NO_MATCH = "table.empty.no_match";
-    public static final String TABLE_CELL_DETAIL_TITLE = "table.cell_detail.title";
-    public static final String TABLE_CELL_DETAIL_COPY = "table.cell_detail.copy";
-    public static final String TABLE_CELL_DETAIL_FORMAT_JSON = "table.cell_detail.format_json";
-    public static final String TABLE_CELL_DETAIL_CLOSE = "table.cell_detail.close";
-    public static final String TABLE_CELL_DETAIL_LENGTH = "table.cell_detail.length";
-
-    // ==================== Notification Toast ====================
-    public static final String NOTIFICATION_TYPE_SUCCESS = "notification.type.success";
-    public static final String NOTIFICATION_TYPE_INFO = "notification.type.info";
-    public static final String NOTIFICATION_TYPE_WARNING = "notification.type.warning";
-    public static final String NOTIFICATION_TYPE_ERROR = "notification.type.error";
-    public static final String NOTIFICATION_EXPAND = "notification.expand";
-    public static final String NOTIFICATION_COLLAPSE = "notification.collapse";
 
 }

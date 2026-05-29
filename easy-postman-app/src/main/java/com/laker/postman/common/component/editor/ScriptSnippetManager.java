@@ -1,6 +1,6 @@
 package com.laker.postman.common.component.editor;
 
-import com.laker.postman.plugin.bridge.PluginAccess;
+import com.laker.postman.plugin.host.PluginAccess;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.experimental.UtilityClass;

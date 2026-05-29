@@ -1,36 +1,22 @@
 package com.laker.postman.panel.performance.config;
 
-import com.laker.postman.performance.core.config.CsvDataSetData;
-
-
 import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.panel.performance.tree.PerformanceTreeNodeTitleFormatter;
+import com.laker.postman.performance.core.config.CsvDataSetData;
 import com.laker.postman.util.FontsUtil;
-import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
+import lombok.Setter;
 
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.ScrollPaneConstants;
-import javax.swing.SwingConstants;
+import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableColumn;
-import java.awt.BorderLayout;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Font;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +36,7 @@ public class CsvDataSetPropertyPanel extends JPanel {
     private final JScrollPane previewScrollPane;
     private final DefaultTableModel previewModel;
     private PerformanceTreeNode currentNode;
+    @Setter
     private Runnable changeListener;
     private boolean restoring;
 
@@ -162,10 +149,6 @@ public class CsvDataSetPropertyPanel extends JPanel {
         currentNode.name = PerformanceTreeNodeTitleFormatter.csvDataSetTitle(currentNode.csvDataSetData);
     }
 
-    public void setChangeListener(Runnable changeListener) {
-        this.changeListener = changeListener;
-    }
-
     private void handleCsvDataChanged() {
         if (restoring) {
             return;
@@ -179,8 +162,7 @@ public class CsvDataSetPropertyPanel extends JPanel {
 
     private JButton createActionButton(String messageKey, String iconPath, boolean primary) {
         String text = I18nUtil.getMessage(messageKey);
-        JButton button = ModernButtonFactory.createButton(text, primary);
-        button.setIcon(IconUtil.createThemed(iconPath, 16, 16));
+        JButton button = ModernButtonFactory.createButton(text, primary, iconPath, 16);
         button.setHorizontalAlignment(SwingConstants.CENTER);
 
         int width = button.getFontMetrics(button.getFont()).stringWidth(text) + 54;

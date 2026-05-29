@@ -22,7 +22,7 @@
     <properties>
         <!--
             编译期依赖的宿主平台包版本。
-            官方插件在 monorepo 内默认跟随 ${revision}，这样会直接对齐当前 api / bridge / ui 的编译输入。
+            官方插件在 monorepo 内默认跟随 ${revision}，这样会直接对齐当前 api / foundation / ui 的编译输入。
             它只决定“编译时依赖哪版平台包”，不表达“运行时兼容哪代插件平台”。
          -->
         <host.version>${revision}</host.version>
@@ -57,13 +57,13 @@
         </dependency>
         <dependency>
             <groupId>com.laker.tools</groupId>
-            <artifactId>easy-postman-plugin-bridge</artifactId>
+            <artifactId>easy-postman-foundation</artifactId>
             <version>${host.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.laker.tools</groupId>
-            <artifactId>easy-postman-plugin-ui</artifactId>
+            <artifactId>easy-postman-ui</artifactId>
             <version>${host.version}</version>
             <scope>provided</scope>
         </dependency>

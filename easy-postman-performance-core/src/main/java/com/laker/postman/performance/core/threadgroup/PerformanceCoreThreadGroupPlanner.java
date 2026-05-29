@@ -18,7 +18,7 @@ public final class PerformanceCoreThreadGroupPlanner {
             return total;
         }
         for (PerformanceThreadGroupPlan groupPlan : plan.getThreadGroups()) {
-            total += maxThreadCount(resolveThreadGroupData(groupPlan));
+            total = saturatingAddInt(total, maxThreadCount(resolveThreadGroupData(groupPlan)));
         }
         return total;
     }
@@ -66,18 +66,22 @@ public final class PerformanceCoreThreadGroupPlanner {
                 yield saturatingMultiply(saturatingMultiply(tg.numThreads, tg.loops), enabledRequests);
             }
             case RAMP_UP -> {
-                int avgThreads = (tg.rampUpStartThreads + tg.rampUpEndThreads) / 2;
+                int avgThreads = averageThreadCount(tg.rampUpStartThreads, tg.rampUpEndThreads);
                 yield estimateTimedRequests(avgThreads, tg.rampUpDuration, enabledRequests);
             }
             case SPIKE -> {
-                int avgThreads = (tg.spikeMinThreads + tg.spikeMaxThreads) / 2;
+                int avgThreads = averageThreadCount(tg.spikeMinThreads, tg.spikeMaxThreads);
                 yield estimateTimedRequests(avgThreads, tg.spikeDuration, enabledRequests);
             }
             case STAIRS -> {
-                int avgThreads = (tg.stairsStartThreads + tg.stairsEndThreads) / 2;
+                int avgThreads = averageThreadCount(tg.stairsStartThreads, tg.stairsEndThreads);
                 yield estimateTimedRequests(avgThreads, tg.stairsDuration, enabledRequests);
             }
         };
+    }
+
+    private static int averageThreadCount(int left, int right) {
+        return (int) (((long) left + right) / 2L);
     }
 
     private static long estimateTimedRequests(int threadCount, int durationSeconds, long enabledRequests) {
@@ -108,6 +112,13 @@ public final class PerformanceCoreThreadGroupPlanner {
     private static long saturatingAdd(long left, long right) {
         if (Long.MAX_VALUE - left < right) {
             return Long.MAX_VALUE;
+        }
+        return left + right;
+    }
+
+    private static int saturatingAddInt(int left, int right) {
+        if (Integer.MAX_VALUE - left < right) {
+            return Integer.MAX_VALUE;
         }
         return left + right;
     }

@@ -2,7 +2,7 @@ package com.laker.postman.panel.update;
 
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.model.UpdateInfo;
+import com.laker.postman.platform.update.model.UpdateInfo;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;

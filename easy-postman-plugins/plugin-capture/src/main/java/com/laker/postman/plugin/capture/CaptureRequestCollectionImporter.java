@@ -5,7 +5,7 @@ import com.laker.postman.model.RequestImportDraft;
 import com.laker.postman.model.RequestImportHeader;
 import com.laker.postman.model.RequestImportProtocol;
 import com.laker.postman.model.RequestImportResult;
-import com.laker.postman.plugin.bridge.RequestCollectionImportService;
+import com.laker.postman.plugin.api.service.RequestCollectionImportService;
 import com.laker.postman.util.NotificationUtil;
 
 import java.util.ArrayList;

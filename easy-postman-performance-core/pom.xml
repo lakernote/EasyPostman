@@ -17,7 +17,7 @@
     <dependencies>
         <dependency>
             <groupId>com.laker.tools</groupId>
-            <artifactId>easy-postman-plugin-bridge</artifactId>
+            <artifactId>easy-postman-foundation</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

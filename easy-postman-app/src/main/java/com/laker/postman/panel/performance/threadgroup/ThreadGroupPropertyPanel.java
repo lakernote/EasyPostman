@@ -81,7 +81,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
         // 1. 固定模式面板
         fixedPanel = new JPanel(new GridBagLayout());
         fixedPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        fixedNumThreadsSpinner = EasyJSpinner.intSpinner(1, ThreadGroupData.MIN_THREADS, ThreadGroupData.MAX_THREADS, 1);
+        fixedNumThreadsSpinner = threadCountSpinner(1);
         fixedNumThreadsSpinner.setPreferredSize(new Dimension(80, 28));
         fixedLoopsSpinner = EasyJSpinner.intSpinner(1, 1, null, 1);
         fixedLoopsSpinner.setPreferredSize(new Dimension(80, 28));
@@ -92,9 +92,9 @@ public class ThreadGroupPropertyPanel extends JPanel {
         // 2. 递增模式面板
         rampUpPanel = new JPanel(new GridBagLayout());
         rampUpPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        rampUpStartThreadsSpinner = EasyJSpinner.intSpinner(1, ThreadGroupData.MIN_THREADS, ThreadGroupData.MAX_THREADS, 1);
+        rampUpStartThreadsSpinner = threadCountSpinner(1);
         rampUpStartThreadsSpinner.setPreferredSize(new Dimension(80, 28));
-        rampUpEndThreadsSpinner = EasyJSpinner.intSpinner(10, ThreadGroupData.MIN_THREADS, ThreadGroupData.MAX_THREADS, 1);
+        rampUpEndThreadsSpinner = threadCountSpinner(10);
         rampUpEndThreadsSpinner.setPreferredSize(new Dimension(80, 28));
         rampUpTimeSpinner = EasyJSpinner.intSpinner(30, 1, null, 5);
         rampUpTimeSpinner.setPreferredSize(new Dimension(80, 28));
@@ -104,9 +104,9 @@ public class ThreadGroupPropertyPanel extends JPanel {
         // 3. 尖刺模式面板
         spikePanel = new JPanel(new GridBagLayout());
         spikePanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        spikeMinThreadsSpinner = EasyJSpinner.intSpinner(1, ThreadGroupData.MIN_THREADS, ThreadGroupData.MAX_THREADS, 1);
+        spikeMinThreadsSpinner = threadCountSpinner(1);
         spikeMinThreadsSpinner.setPreferredSize(new Dimension(80, 28));
-        spikeMaxThreadsSpinner = EasyJSpinner.intSpinner(20, ThreadGroupData.MIN_THREADS, ThreadGroupData.MAX_THREADS, 1);
+        spikeMaxThreadsSpinner = threadCountSpinner(20);
         spikeMaxThreadsSpinner.setPreferredSize(new Dimension(80, 28));
         spikeRampUpTimeSpinner = EasyJSpinner.intSpinner(10, 1, null, 1);
         spikeRampUpTimeSpinner.setPreferredSize(new Dimension(80, 28));
@@ -120,9 +120,9 @@ public class ThreadGroupPropertyPanel extends JPanel {
         // 4. 阶梯模式面板
         stairsPanel = new JPanel(new GridBagLayout());
         stairsPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        stairsStartThreadsSpinner = EasyJSpinner.intSpinner(1, ThreadGroupData.MIN_THREADS, ThreadGroupData.MAX_THREADS, 1);
+        stairsStartThreadsSpinner = threadCountSpinner(1);
         stairsStartThreadsSpinner.setPreferredSize(new Dimension(80, 28));
-        stairsEndThreadsSpinner = EasyJSpinner.intSpinner(20, ThreadGroupData.MIN_THREADS, ThreadGroupData.MAX_THREADS, 1);
+        stairsEndThreadsSpinner = threadCountSpinner(20);
         stairsEndThreadsSpinner.setPreferredSize(new Dimension(80, 28));
         stairsStepSpinner = EasyJSpinner.intSpinner(5, 1, null, 1);
         stairsStepSpinner.setPreferredSize(new Dimension(80, 28));
@@ -190,6 +190,10 @@ public class ThreadGroupPropertyPanel extends JPanel {
 
         // 为所有输入组件添加变化监听，刷新预览图
         addPreviewUpdateListeners();
+    }
+
+    private static EasyJSpinner threadCountSpinner(int value) {
+        return EasyJSpinner.intSpinner(value, ThreadGroupData.MIN_THREADS, null, 1);
     }
 
     // 设置固定模式面板

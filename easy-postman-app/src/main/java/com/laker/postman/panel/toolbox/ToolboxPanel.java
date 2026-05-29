@@ -6,7 +6,7 @@ import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.plugin.api.ToolboxContribution;
-import com.laker.postman.plugin.bridge.PluginAccess;
+import com.laker.postman.plugin.host.PluginAccess;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;

@@ -142,6 +142,25 @@ public class PluginRuntimeTest {
     }
 
     @Test
+    public void shouldContinueLoadingOtherPluginsWhenOnePluginHasBinaryIncompatibleLinkage() throws Exception {
+        Path pluginDir = PluginRuntime.getManagedPluginDir();
+        writePluginJar(pluginDir.resolve("plugin-old-client-cert-1.0.0.jar"),
+                "plugin-old-client-cert", "1.0.0", "com.example.LinkageErrorRuntimePlugin");
+        writePluginJar(pluginDir.resolve("plugin-ok-1.0.0.jar"),
+                "plugin-ok", "1.0.0", "com.example.TestRuntimePlugin");
+
+        PluginRuntime.initialize();
+
+        assertEquals(TestRuntimePlugin.getLoadCount(), 1);
+        assertEquals(TestRuntimePlugin.getStartCount(), 1);
+        assertNotNull(PluginRuntime.getRegistry().createScriptApis().get("testRuntime"));
+        assertTrue(PluginRuntime.getInstalledPlugins().stream()
+                .anyMatch(info -> "plugin-ok".equals(info.descriptor().id()) && info.loaded()));
+        assertTrue(PluginRuntime.getInstalledPlugins().stream()
+                .anyMatch(info -> "plugin-old-client-cert".equals(info.descriptor().id()) && !info.loaded()));
+    }
+
+    @Test
     public void shouldCallPluginStopDuringShutdown() throws Exception {
         Path pluginJar = PluginRuntime.getManagedPluginDir().resolve("plugin-ok-1.0.0.jar");
         writePluginJar(pluginJar, "plugin-ok", "1.0.0", "com.example.TestRuntimePlugin");

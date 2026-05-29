@@ -3,7 +3,7 @@ package com.laker.postman.service.update.plugin;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.ioc.Component;
-import com.laker.postman.model.UpdateCheckFrequency;
+import com.laker.postman.platform.update.model.UpdateCheckFrequency;
 import com.laker.postman.panel.topmenu.plugin.PluginManagerDialog;
 import com.laker.postman.panel.update.PluginUpdateNotification;
 import com.laker.postman.plugin.runtime.PluginSettingsStore;

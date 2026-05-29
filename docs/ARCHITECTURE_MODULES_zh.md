@@ -1,0 +1,87 @@
+# EasyPostman 模块边界规范
+
+这份文档定义模块职责和放置规则。目标是让后续重构和 vibecoding 时优先维护边界，而不是把新代码塞进最近的目录。
+
+## 当前模块图
+
+```text
+easy-postman-parent
+├── easy-postman-foundation
+├── easy-postman-plugin-api
+├── easy-postman-platform
+├── easy-postman-ui
+├── easy-postman-performance-core
+├── easy-postman-performance-runtime-okhttp
+├── easy-postman-plugin-runtime
+├── easy-postman-plugins/*
+└── easy-postman-app
+```
+
+## 模块职责
+
+`easy-postman-foundation` 是最底层非 UI 基础层。它可以放共享 DTO、enum、常量、路径、JSON、系统工具、用户设置工具、国际化机制、基础消息 key，以及可跨宿主/插件复用的通用解析和格式化工具，例如 Cron、JSON Path、XML、文件大小、文件扩展名、时间显示、HTTP header 常量。它不能依赖 Swing、插件运行时、宿主 app、压测运行实现或业务 UI。
+
+`easy-postman-plugin-api` 是插件契约层。它放插件 SPI、插件描述、插件上下文、扩展点数据结构和插件服务接口，例如 `GitPluginService`、`ClientCertificatePluginService`、`RequestCollectionImportService`。插件和宿主通过这里的类型建立契约。
+
+`easy-postman-platform` 是宿主平台框架层。当前已承接自定义 IOC 容器 `com.laker.postman.ioc`，以及可脱离具体界面的更新发现核心 `com.laker.postman.platform.update`：版本比较、发布源选择、安装包资产匹配、变更日志抓取/格式化、更新结果模型。后续启动、欢迎页、帮助、设置中心、主题/字体应用编排等平台能力，如果能脱离具体 app 面板和业务服务，也优先迁到这里。
+
+`easy-postman-ui` 是共享 Swing 设计系统。它放 `FontsUtil`、`IconUtil`、`NotificationUtil`、`EditorThemeUtil`、`ModernColors`、`UiSingletonFactory`/`UiSingletonPanel`/`UiSingletonMenuBar`、`DebouncedSaveSupport`、`IRefreshable`、公共按钮/搜索/表格/输入控件等组件，例如 `EasyComboBox`、`EasyJSpinner`、`EasyPasswordField`、`EditButton`、`SaveButton`、`WrapToggleButton`，以及这些组件直接引用的 icons/theme 资源。主色 button 上的 icon 应使用 on-primary 颜色策略，保持白色，不跟随明暗主题切换。
+
+`easy-postman-plugin-runtime` 只负责插件扫描、descriptor 解析、classloader、registry、生命周期和状态持久化。它不放具体业务插件能力。
+
+`easy-postman-performance-core` 放无 UI、无传输实现绑定的压测领域核心：计划、节点数据、运行时契约、线程组规划、统计、趋势、报告快照。
+
+`easy-postman-performance-runtime-okhttp` 放 OkHttp/SSE/WebSocket 传输适配和可复用运行时实现。
+
+`easy-postman-app` 是宿主组装层。它可以放主入口、MainFrame、菜单、具体 app 面板、具体启动 wiring、设置页、更新页、欢迎页、帮助页、app-only 服务，以及宿主侧插件访问适配 `com.laker.postman.plugin.host`。后续迁移平台能力时，从这里逐步迁到 `easy-postman-platform`。
+
+`easy-postman-plugins/*` 是官方插件。插件不得反向依赖宿主 app 内部实现；需要扩展宿主时通过 `easy-postman-plugin-api` 注册能力，需要共享基础 DTO/工具时依赖 `easy-postman-foundation`，需要统一 Swing 风格时依赖 `easy-postman-ui`。
+
+## 国际化、字体、主题放置
+
+国际化机制放 `easy-postman-foundation`。`I18nUtil`、基础 `MessageKeys`、locale/settings key 属于基础能力。
+
+国际化资源跟随所属模块。公共 UI 组件文案放 `easy-postman-ui`，宿主页面文案放 `easy-postman-app`，插件文案放各插件模块。不要让公共 UI 组件依赖 app resources 才能显示文案。
+
+字体工具和字体 token 放 `easy-postman-ui`。全局启动时读取设置并应用字体的编排当前在 app，迁移时属于 `easy-postman-platform`。
+
+主题 token、语义色、图标主题适配和公共 UI 资源放 `easy-postman-ui`。FlatLaf 的安装、主题切换动画和启动应用编排当前在 app，迁移时属于 `easy-postman-platform`。
+
+## 判断一个类该放哪里
+
+先问 5 个问题：
+
+1. 是否完全无 UI 且多个模块要用？是则优先 `foundation`。
+2. 是否是插件对宿主声明能力的契约？是则 `plugin-api`。
+3. 是否是可复用 Swing 组件、颜色、字体、图标或 UI 工具？是则 `ui`。
+4. 是否是插件加载、扫描、生命周期或 registry？是则 `plugin-runtime`。
+5. 是否是平台框架能力，例如 IOC、启动编排、升级、欢迎页、帮助、设置中心、主题/字体应用编排？能脱离具体 app UI 时放 `platform`，否则先留 `app`。
+6. 是否是具体宿主页面、菜单或业务组装？是则放 `app`。
+
+更新能力按这条边界拆：版本检查、更新源、资产解析、变更日志和 `UpdateInfo`/`UpdateCheckFrequency` 这类平台数据放 `easy-postman-platform`；`AutoUpdateManager`、`UpdateUIManager`、`UpdateDownloader`、更新弹窗、安装/退出流程、插件市场更新 UI 留在 `easy-postman-app`。platform 不能直接依赖 app 的 `SettingManager`，需要通过 `UpdateSettingsProvider` 这类最小接口由 app 适配。
+
+只有满足至少两个条件时才拆新模块：多个领域复用、依赖方向清晰、可独立测试、发布/风险节奏不同、当前包已经承担多种职责。否则先用 package 组织，不为名字好看而拆模块。
+
+## 禁止事项
+
+- 不要把 Swing 组件放进 `foundation`。
+- 不要把插件服务接口放进 `foundation`。
+- 不要让官方插件依赖 `easy-postman-app`。
+- 不要让公共 UI 组件依赖 app resources 才能加载自身 icons。
+- 不要在 app 面板里新增一套私有按钮/颜色/字体规则，优先沉淀到 `easy-postman-ui`。
+- 不要把“暂时不知道放哪”的代码放进一个泛化 common 包。
+
+## 后续简化拆分目标
+
+后续可以按收益逐步抽取，不需要一次性完成：
+
+```text
+easy-postman-platform
+  已有：IOC、更新发现核心
+  后续：启动、欢迎页、帮助、设置中心、主题/字体应用编排
+
+easy-postman-api-core
+  API 请求/响应模型、集合、环境、变量、导入导出、脚本流水线核心
+```
+
+抽取时保持 app 只做组装，核心模块不反向依赖 app UI。

@@ -3,7 +3,7 @@ package com.laker.postman.service.http.okhttp;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.model.ClientCertificate;
 import com.laker.postman.model.TrustedCertificateEntry;
-import com.laker.postman.plugin.bridge.ClientCertificatePluginService;
+import com.laker.postman.plugin.api.service.ClientCertificatePluginService;
 import com.laker.postman.plugin.runtime.PluginRegistry;
 import com.laker.postman.plugin.runtime.PluginRuntime;
 import com.laker.postman.service.setting.SettingManager;

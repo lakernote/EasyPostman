@@ -29,8 +29,9 @@ Use this skill when changing Swing font sizes in this repo. The goal is to keep 
 
 ## Repo-specific guidance
 
+- For module placement, `FontsUtil` and reusable typography helpers belong in `easy-postman-ui`; startup-time application of font settings is app/platform orchestration. See `docs/ARCHITECTURE_MODULES_zh.md`.
 - `FontsUtil` lives at:
-  `easy-postman-plugin-ui/src/main/java/com/laker/postman/util/FontsUtil.java`
+  `easy-postman-ui/src/main/java/com/laker/postman/util/FontsUtil.java`
 - `FontsUtil` reads the configured `ui_font_size`, clamps it, and derives from UI defaults.
 - For this repo, using `FontsUtil` is the correct way to respect user-configured font size and keep fallback chains intact.
 

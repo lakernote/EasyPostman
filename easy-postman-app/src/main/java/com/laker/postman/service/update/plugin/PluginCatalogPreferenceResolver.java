@@ -2,8 +2,8 @@ package com.laker.postman.service.update.plugin;
 
 import com.laker.postman.plugin.manager.PluginManagementService;
 import com.laker.postman.service.setting.SettingManager;
-import com.laker.postman.service.update.source.UpdateSource;
-import com.laker.postman.service.update.source.UpdateSourceSelector;
+import com.laker.postman.platform.update.source.UpdateSource;
+import com.laker.postman.platform.update.source.UpdateSourceSelector;
 
 import java.util.Locale;
 
@@ -12,7 +12,8 @@ import java.util.Locale;
  */
 public final class PluginCatalogPreferenceResolver {
 
-    private static final UpdateSourceSelector UPDATE_SOURCE_SELECTOR = new UpdateSourceSelector();
+    private static final UpdateSourceSelector UPDATE_SOURCE_SELECTOR =
+            new UpdateSourceSelector(SettingManager::getUpdateSourcePreference);
 
     private PluginCatalogPreferenceResolver() {
     }

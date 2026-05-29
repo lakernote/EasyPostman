@@ -3,14 +3,15 @@ package com.laker.postman.service.update;
 import cn.hutool.json.JSONArray;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.frame.MainFrame;
-import com.laker.postman.model.UpdateInfo;
+import com.laker.postman.platform.update.model.UpdateInfo;
 import com.laker.postman.panel.update.AutoUpdateNotification;
 import com.laker.postman.panel.update.ModernProgressDialog;
 import com.laker.postman.panel.update.ModernUpdateDialog;
 import com.laker.postman.panel.update.NoAssetDialog;
-import com.laker.postman.service.update.asset.PlatformDownloadUrlResolver;
-import com.laker.postman.service.update.source.UpdateSource;
-import com.laker.postman.service.update.source.UpdateSourceSelector;
+import com.laker.postman.platform.update.asset.PlatformDownloadUrlResolver;
+import com.laker.postman.platform.update.source.UpdateSource;
+import com.laker.postman.platform.update.source.UpdateSourceSelector;
+import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -33,7 +34,7 @@ public class UpdateUIManager {
 
     public UpdateUIManager() {
         this.downloader = new UpdateDownloader();
-        this.sourceSelector = new UpdateSourceSelector();
+        this.sourceSelector = new UpdateSourceSelector(SettingManager::getUpdateSourcePreference);
         this.downloadUrlResolver = new PlatformDownloadUrlResolver();
     }
 
@@ -237,4 +238,3 @@ public class UpdateUIManager {
         }
     }
 }
-

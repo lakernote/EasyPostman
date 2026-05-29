@@ -3,7 +3,7 @@ package com.laker.postman.plugin.capture;
 import com.laker.postman.plugin.api.EasyPostmanPlugin;
 import com.laker.postman.plugin.api.PluginContext;
 import com.laker.postman.plugin.api.PluginContributionSupport;
-import com.laker.postman.plugin.bridge.RequestCollectionImportService;
+import com.laker.postman.plugin.api.service.RequestCollectionImportService;
 
 import static com.laker.postman.plugin.capture.CaptureI18n.t;
 

@@ -21,7 +21,7 @@ public class CollectionTreeNodeAccessBoundaryTest {
             "src/main/java/com/laker/postman/panel/collections/tree/handler/RequestTreeKeyboardHandler.java",
             "src/main/java/com/laker/postman/panel/collections/tree/handler/RequestTreeMouseHandler.java",
             "src/main/java/com/laker/postman/panel/collections/tree/handler/RequestTreePopupMenu.java",
-            "src/main/java/com/laker/postman/plugin/bridge/AppRequestCollectionImportService.java",
+            "src/main/java/com/laker/postman/plugin/host/AppRequestCollectionImportService.java",
             "src/main/java/com/laker/postman/service/collections/GroupInheritanceHelper.java"
     );
 

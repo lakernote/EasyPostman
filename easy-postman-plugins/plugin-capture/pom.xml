@@ -38,13 +38,13 @@
         </dependency>
         <dependency>
             <groupId>com.laker.tools</groupId>
-            <artifactId>easy-postman-plugin-bridge</artifactId>
+            <artifactId>easy-postman-foundation</artifactId>
             <version>${host.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.laker.tools</groupId>
-            <artifactId>easy-postman-plugin-ui</artifactId>
+            <artifactId>easy-postman-ui</artifactId>
             <version>${host.version}</version>
             <scope>provided</scope>
         </dependency>

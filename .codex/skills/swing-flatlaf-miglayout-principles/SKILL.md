@@ -54,6 +54,7 @@ Use this skill when editing Swing form layouts in this repo. The goal is not jus
 
 ## Repo-specific guidance
 
+- For module placement before changing shared UI, read `docs/ARCHITECTURE_MODULES_zh.md` and keep reusable Swing components, colors, fonts, icons, notifications, and editor theme helpers in `easy-postman-ui`.
 - Kafka top connection form is the known reference case:
   `easy-postman-plugins/plugin-kafka/src/main/java/com/laker/postman/plugin/kafka/connection/ui/KafkaConnectionPanel.java`
 - The correct direction there was:
@@ -68,7 +69,7 @@ Use this skill when editing Swing form layouts in this repo. The goal is not jus
 When the task is about light/dark theme colors instead of layout, start from these files instead of scattering hard-coded colors in panel code:
 
 - Shared semantic colors for both themes:
-  `easy-postman-plugin-ui/src/main/java/com/laker/postman/common/constants/ModernColors.java`
+  `easy-postman-ui/src/main/java/com/laker/postman/common/constants/ModernColors.java`
 - FlatLaf light theme tokens and component defaults:
   `easy-postman-app/src/main/resources/com/laker/postman/common/themes/EasyLightLaf.properties`
 - FlatLaf dark theme tokens and component defaults:

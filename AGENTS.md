@@ -8,9 +8,12 @@ EasyPostman is a Java 17 + Swing desktop API testing app. Entry point: `com.lake
 
 ```
 easy-postman-parent (root pom.xml, revision = host version)
-├── easy-postman-plugin-api      # Stable plugin SPI: EasyPostmanPlugin, PluginContext, PluginDescriptor
-├── easy-postman-plugin-bridge   # Shared bridge contracts, models, utils (ConfigPathConstants, AppConstants, I18nUtil, MessageKeys, SystemUtil, UserSettingsUtil, JsonUtil, AppRuntimeLayout); bridge service interfaces (GitPluginService, ClientCertificatePluginService); shared models (Workspace, WorkspaceType, GitAuthType, GitCommitInfo, GitOperationResult, etc.)
-├── easy-postman-plugin-ui       # Shared Swing UI base components, FontsUtil, IconUtil, NotificationUtil, EditorThemeUtil, ModernColors, ModernButtonFactory
+├── easy-postman-foundation      # Lowest non-UI base layer: shared models, constants, paths, JSON, system/settings/i18n utilities
+├── easy-postman-plugin-api      # Stable plugin SPI and service contracts: EasyPostmanPlugin, PluginContext, PluginDescriptor, GitPluginService, ClientCertificatePluginService
+├── easy-postman-platform        # Host platform framework: custom IOC + update discovery core; startup/welcome/help/settings orchestration later
+├── easy-postman-ui              # Common Swing UI base components, FontsUtil, IconUtil, NotificationUtil, EditorThemeUtil, ModernColors, ModernButtonFactory
+├── easy-postman-performance-core           # Headless performance domain core: plan, runtime contracts, stats, report snapshots
+├── easy-postman-performance-runtime-okhttp # OkHttp-backed performance transport runtime
 ├── easy-postman-plugin-runtime  # Plugin scan/load/lifecycle: PluginRuntime, PluginScanner, PluginLoader, PluginRegistry
 ├── easy-postman-plugins/        # Official plugins (each builds an independent JAR)
 │   ├── plugin-manager           # Catalog parsing, online/offline install facade
@@ -22,7 +25,17 @@ easy-postman-parent (root pom.xml, revision = host version)
 └── easy-postman-app             # Host application; consumes plugin-registered capabilities
 ```
 
-When adding shared non-UI logic accessible by both host and plugins, put it in `easy-postman-plugin-bridge`. When adding shared UI utilities, put them in `easy-postman-plugin-ui`. Do not put bridge/SPI code directly into `easy-postman-app`.
+When choosing a module, use this rule set:
+
+- Put shared non-UI foundation logic in `easy-postman-foundation`: DTOs, enums, constants, paths, JSON, system utilities, user-setting helpers, i18n mechanism, and generic parsing/formatting helpers such as Cron, JSON Path, XML, file-size, file-extension, time-display, and HTTP header constants.
+- Put plugin-facing extension contracts in `easy-postman-plugin-api`: plugin SPI, service interfaces, toolbox/script/snippet contracts.
+- Put host platform framework in `easy-postman-platform`: custom IOC, update discovery core, then startup, welcome/help, settings center, and theme/font application orchestration when dependencies are ready.
+- Put shared Swing design-system code in `easy-postman-ui`: reusable components, UI singleton base/factory, toolbar buttons (`EditButton`, `SaveButton`, `WrapToggleButton`), form controls (`EasyComboBox`, `EasyJSpinner`, `EasyPasswordField`), fonts, icons, notification UI, editor theme helpers, semantic colors, and UI resources directly used by those components.
+- Keep plugin loading, classloaders, descriptor parsing, registry, and lifecycle in `easy-postman-plugin-runtime`.
+- Keep host-specific composition, app panels, menus, concrete startup wiring, and app-only services in `easy-postman-app` until each dependency is ready to migrate into `easy-postman-platform`.
+- Do not put SPI code, shared UI components, or shared foundation utilities directly into `easy-postman-app`.
+
+Reference module rules: `docs/ARCHITECTURE_MODULES_zh.md`.
 
 ---
 
@@ -72,7 +85,7 @@ App.main()
 
 ## Custom IOC Container
 
-The project uses its **own lightweight IOC container** (`com.laker.postman.ioc`), not Spring. Do not import Spring annotations.
+The project uses its **own lightweight IOC container** (`com.laker.postman.ioc`) from `easy-postman-platform`, not Spring. Do not import Spring annotations.
 
 | Annotation | Purpose |
 |---|---|
@@ -117,7 +130,7 @@ Collection services must not fetch panels directly. Use service-side models/stor
 
 ---
 
-## Key Constant Files (in `easy-postman-plugin-bridge`)
+## Key Constant Files (in `easy-postman-foundation`)
 
 - `AppConstants` — `APP_NAME`, `BASE_PACKAGE`
 - `ConfigPathConstants` — all data file paths (`EASY_POSTMAN_SETTINGS`, `COLLECTIONS`, `ENVIRONMENTS`, `DEFAULT_WORKSPACE_DIR`, etc.)
@@ -132,10 +145,10 @@ Data root: `SystemUtil.getEasyPostmanPath()` — returns `<user.home>/EasyPostma
 
 The app supports multiple named workspaces. Each workspace is an isolated directory (collections, environments, settings). A workspace can optionally be backed by a Git repository.
 
-- Models: `Workspace`, `WorkspaceType` in `easy-postman-plugin-bridge`
+- Models: `Workspace`, `WorkspaceType` in `easy-postman-foundation`
 - Workspace UI: `WorkspacePanel` and its components in `com.laker.postman.panel.workspace`
-- Git operations are declared in `GitPluginService` (bridge module) and implemented by `GitWorkspacePluginService` in `com.laker.postman.plugin.git`
-- Host-side accessor: `GitPluginServices` (in `com.laker.postman.plugin.bridge`, app module) — calls `PluginAccess.getService(GitPluginService.class)`
+- Git operations are declared in `com.laker.postman.plugin.api.service.GitPluginService` and implemented by `GitWorkspacePluginService` in `com.laker.postman.plugin.git`
+- Host-side accessor: `GitServiceAccess` (in `com.laker.postman.plugin.host`, app module) provides the built-in Git service behind the `GitPluginService` contract.
 - `WorkspaceStorageUtil` (app util) handles workspace list persistence
 
 ---
@@ -153,18 +166,29 @@ Plugin scripts are injected via `registerScriptApi` (alias → object factory); 
 
 ## Internationalisation
 
-All user-visible strings must use `I18nUtil.getMessage(MessageKeys.SOME_KEY)`. Keys are defined as constants in `MessageKeys` (bridge module). Translations live in `easy-postman-app/src/main/resources/messages_en.properties` and `messages_zh.properties`. Never hard-code UI strings directly.
+All user-visible strings must use `I18nUtil.getMessage(MessageKeys.SOME_KEY)`. The i18n mechanism and base `MessageKeys` live in `easy-postman-foundation`. Resource bundles should follow ownership: shared UI component text belongs with `easy-postman-ui`, app text belongs with `easy-postman-app`, and plugin text belongs with the plugin module. Never hard-code UI strings directly.
 
 ---
 
 ## Theme & Settings
 
-- Theme is managed by `SimpleThemeManager` (light/dark via FlatLaf, animated transitions).
-- User settings are persisted to `easy_postman_settings.properties` via `SettingManager` (static Properties file) and `UserSettingsUtil` (bridge module).
+- Theme is currently applied by `SimpleThemeManager` in the app (light/dark via FlatLaf, animated transitions). Startup/application of theme and font settings belongs in `easy-postman-platform` once those dependencies are extracted cleanly.
+- User settings are persisted to `easy_postman_settings.properties` via `SettingManager` (static Properties file) and `UserSettingsUtil` (foundation module).
 - Font size setting key: `ui_font_size` in that properties file.
 - Custom FlatLaf token overrides: `easy-postman-app/src/main/resources/com/laker/postman/common/themes/EasyLightLaf.properties` and `EasyDarkLaf.properties`
 - RSyntaxTextArea editor theme XMLs: `easy-postman-app/src/main/resources/themes/easypostman-light.xml` and `easypostman-dark.xml`
-- Shared semantic colors for both themes: `ModernColors` in `easy-postman-plugin-ui` (`com.laker.postman.common.constants.ModernColors`)
+- Shared semantic colors for both themes: `ModernColors` in `easy-postman-ui` (`com.laker.postman.common.constants.ModernColors`)
+- Font helpers, icon helpers, notification UI, editor theme helpers, and reusable Swing components belong in `easy-postman-ui`.
+
+---
+
+## Update Architecture
+
+Update discovery core lives in `easy-postman-platform` under `com.laker.postman.platform.update`: `UpdateInfo`, `UpdateCheckFrequency`, `VersionChecker`, release sources, version comparison, asset resolution, changelog fetching/formatting, and Windows package/registry helpers.
+
+Concrete update UX stays in `easy-postman-app`: `AutoUpdateManager`, `UpdateUIManager`, `UpdateDownloader`, update dialogs/notifications, browser-opening actions, installer launch, and app shutdown.
+
+Platform update code must not import app `SettingManager`; use `UpdateSettingsProvider` and adapt it from app with `SettingManager::getUpdateSourcePreference`.
 
 ---
 
@@ -174,7 +198,7 @@ All user-visible strings must use `I18nUtil.getMessage(MessageKeys.SOME_KEY)`. K
 - Plugin entry class implements `EasyPostmanPlugin`; `onLoad(PluginContext)` registers all capabilities.
 - Extension points: `registerScriptApi`, `registerService`, `registerToolboxContribution`, `registerScriptCompletionContributor`, `registerSnippet`.
 - Host consumes registered capabilities from `PluginRegistry`.
-- **Bridge service interfaces** (`GitPluginService`, `ClientCertificatePluginService`) live in `easy-postman-plugin-bridge`. Plugins register implementations via `context.registerService(GitPluginService.class, impl)`. Host code retrieves them through `PluginAccess.getService(Type.class)` or the typed accessors (`GitPluginServices`, `ClientCertificatePluginServices`) in `com.laker.postman.plugin.bridge` (app module).
+- **Plugin service interfaces** (`GitPluginService`, `ClientCertificatePluginService`, `RequestCollectionImportService`) live in `easy-postman-plugin-api` under `com.laker.postman.plugin.api.service`. Plugins register implementations via `context.registerService(GitPluginService.class, impl)`. Host code retrieves them through `PluginAccess.getService(Type.class)` or typed app-side accessors such as `GitServiceAccess` and `ClientCertificatePluginAccess` in `com.laker.postman.plugin.host`.
 - Version model: `revision` = host release version; `plugin.platform.version` = SPI compatibility boundary. Only bump `plugin.platform.version` when plugin SPI/runtime changes are breaking.
 - Catalog source of truth: `pom.xml → descriptor → release asset → catalog`. Do not hand-edit `plugin-catalog/` or the bundled fallback in `plugin-manager/src/main/resources/plugin-catalog/` independently — update both together.
 - Reference runtime architecture: `docs/PLUGIN_RUNTIME_ARCHITECTURE_zh.md`.
@@ -202,6 +226,7 @@ All user-visible strings must use `I18nUtil.getMessage(MessageKeys.SOME_KEY)`. K
 - swing-flatlaf-miglayout-principles: Use when modifying EasyPostman Swing forms that use FlatLaf and MigLayout, especially when layout refactors introduce clipped focus rings, dense spacing, border conflicts, or inconsistent form structure. (file: .codex/skills/swing-flatlaf-miglayout-principles/SKILL.md)
 - fontsutil-font-usage: Use when modifying EasyPostman Swing UI fonts, especially when dialogs, labels, tables, tabs, or renderers look too large or too small, or when a change must follow the user's configured UI font size. Prefer FontsUtil.getDefaultFontWithOffset(...). (file: .codex/skills/fontsutil-font-usage/SKILL.md)
 - swing-ui-test-headless-guard: Use when adding or updating EasyPostman Swing/TestNG UI tests that may run in headless CI. Reuse `AbstractSwingUiTest` instead of duplicating headless or no-display skip logic. (file: .codex/skills/swing-ui-test-headless-guard/SKILL.md)
+- module-architecture-boundaries: Use when adding/refactoring modules, shared code, plugin contracts, UI utilities, i18n, settings, theme/font handling, or deciding where a class belongs. (file: .codex/skills/module-architecture-boundaries/SKILL.md)
 
 ### How to use skills
 

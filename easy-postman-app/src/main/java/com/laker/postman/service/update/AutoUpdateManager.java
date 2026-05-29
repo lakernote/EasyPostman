@@ -1,8 +1,9 @@
 package com.laker.postman.service.update;
 
 import com.laker.postman.ioc.Component;
-import com.laker.postman.model.UpdateCheckFrequency;
-import com.laker.postman.model.UpdateInfo;
+import com.laker.postman.platform.update.VersionChecker;
+import com.laker.postman.platform.update.model.UpdateCheckFrequency;
+import com.laker.postman.platform.update.model.UpdateInfo;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -38,7 +39,7 @@ public class AutoUpdateManager {
     });
 
     public AutoUpdateManager() {
-        this.versionChecker = new VersionChecker();
+        this.versionChecker = new VersionChecker(SettingManager::getUpdateSourcePreference);
         this.uiManager = new UpdateUIManager();
     }
 

@@ -4,7 +4,7 @@ import com.laker.postman.plugin.manager.PluginManagementService;
 import com.laker.postman.plugin.manager.market.PluginCatalogEntry;
 import com.laker.postman.plugin.runtime.PluginCompatibility;
 import com.laker.postman.plugin.runtime.PluginFileInfo;
-import com.laker.postman.service.update.version.VersionComparator;
+import com.laker.postman.platform.update.version.VersionComparator;
 
 import java.util.ArrayList;
 import java.util.Comparator;

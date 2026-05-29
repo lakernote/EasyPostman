@@ -5,9 +5,9 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.performance.model.PerformanceTreeNode;
+import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.IconUtil;
-import com.laker.postman.service.http.HttpUtil;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -28,16 +28,16 @@ public class PerformanceTreeCellRenderer extends DefaultTreeCellRenderer {
             switch (nodeData.type) {
                 case THREAD_GROUP -> label.setIcon(IconUtil.createThemed("icons/user-group.svg", SIZE, SIZE));
                 case CSV_DATA_SET -> label.setIcon(IconUtil.createThemed("icons/csv.svg", SIZE, SIZE));
-                case LOOP -> label.setIcon(new FlatSVGIcon("icons/refresh.svg", SIZE, SIZE));
+                case LOOP -> label.setIcon(IconUtil.createThemed("icons/refresh.svg", SIZE, SIZE));
                 case REQUEST -> label.setIcon(resolveRequestIcon(nodeData.httpRequestItem));
                 case ASSERTION -> label.setIcon(IconUtil.createThemed("icons/warning.svg", SIZE, SIZE));
                 case EXTRACTOR -> label.setIcon(IconUtil.createThemed("icons/global-variables.svg", SIZE, SIZE));
                 case TIMER -> label.setIcon(IconUtil.createThemed("icons/time.svg", SIZE, SIZE));
                 case SSE_CONNECT -> label.setIcon(IconUtil.createThemed("icons/connect.svg", SIZE, SIZE));
-                case SSE_READ -> label.setIcon(new FlatSVGIcon("icons/time.svg", SIZE, SIZE));
+                case SSE_READ -> label.setIcon(IconUtil.createThemed("icons/time.svg", SIZE, SIZE));
                 case WS_CONNECT -> label.setIcon(IconUtil.createThemed("icons/connect.svg", SIZE, SIZE));
                 case WS_SEND -> label.setIcon(IconUtil.createThemed("icons/ws-send.svg", SIZE, SIZE));
-                case WS_READ -> label.setIcon(new FlatSVGIcon("icons/time.svg", SIZE, SIZE));
+                case WS_READ -> label.setIcon(IconUtil.createThemed("icons/time.svg", SIZE, SIZE));
                 case WS_CLOSE -> label.setIcon(IconUtil.createThemed("icons/ws-close.svg", SIZE, SIZE));
                 case ROOT -> label.setIcon(new FlatSVGIcon("icons/computer.svg", SIZE, SIZE));
             }

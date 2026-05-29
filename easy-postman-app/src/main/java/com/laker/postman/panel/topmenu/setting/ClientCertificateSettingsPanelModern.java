@@ -3,8 +3,8 @@ package com.laker.postman.panel.topmenu.setting;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.ClientCertificate;
 import com.laker.postman.panel.topmenu.plugin.PluginManagerDialog;
-import com.laker.postman.plugin.bridge.ClientCertificatePluginService;
-import com.laker.postman.plugin.bridge.ClientCertificatePluginServices;
+import com.laker.postman.plugin.api.service.ClientCertificatePluginService;
+import com.laker.postman.plugin.host.ClientCertificatePluginAccess;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
@@ -44,7 +44,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
 
     @Override
     protected void buildContent(JPanel contentPanel) {
-        pluginInstalled = ClientCertificatePluginServices.isClientCertificatePluginInstalled();
+        pluginInstalled = ClientCertificatePluginAccess.isServiceAvailable();
 
         // 说明区域
         JPanel descSection = createDescriptionSection();
@@ -279,7 +279,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
     }
 
     private ClientCertificatePluginService getCertificateService() {
-        return ClientCertificatePluginServices.requireClientCertificateService();
+        return ClientCertificatePluginAccess.requireService();
     }
 
     private void openPluginManager() {
@@ -378,7 +378,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         private List<ClientCertificate> certificates = new java.util.ArrayList<>();
 
         public void loadCertificates() {
-            certificates = ClientCertificatePluginServices.requireClientCertificateService().getAllCertificates();
+            certificates = ClientCertificatePluginAccess.requireService().getAllCertificates();
             fireTableDataChanged();
         }
 
@@ -432,7 +432,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
             if (columnIndex == 0) {
                 ClientCertificate cert = certificates.get(rowIndex);
                 cert.setEnabled((Boolean) aValue);
-                ClientCertificatePluginServices.requireClientCertificateService().updateCertificate(cert);
+                ClientCertificatePluginAccess.requireService().updateCertificate(cert);
                 fireTableCellUpdated(rowIndex, columnIndex);
                 NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.CERT_STATUS_UPDATED));
             }

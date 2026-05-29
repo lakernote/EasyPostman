@@ -38,7 +38,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.formdev.flatlaf.FlatClientProperties.*;
-import static com.laker.postman.util.SystemUtil.getClipboardCurlText;
+import static com.laker.postman.util.ClipboardUtil.getClipboardCurlText;
 
 /**
  * 请求编辑面板，支持多标签页，每个标签页为独立的请求编辑子面板

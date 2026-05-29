@@ -6,7 +6,7 @@ import com.laker.postman.common.component.button.CloseButton;
 import com.laker.postman.common.component.button.CopyButton;
 import com.laker.postman.common.component.table.EnhancedTablePanel;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.plugin.bridge.RequestCollectionImportService;
+import com.laker.postman.plugin.api.service.RequestCollectionImportService;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.NotificationUtil;

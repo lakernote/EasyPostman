@@ -5,7 +5,7 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.model.ClientCertificate;
-import com.laker.postman.plugin.bridge.ClientCertificatePluginService;
+import com.laker.postman.plugin.api.service.ClientCertificatePluginService;
 import com.laker.postman.plugin.clientcert.internal.ClientCertificateLoader;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;

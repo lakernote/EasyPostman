@@ -7,7 +7,6 @@ import com.laker.postman.util.MessageKeys;
  */
 public class ThreadGroupData {
     public static final int MIN_THREADS = 1;
-    public static final int MAX_THREADS = 5_000;
     private static final int MIN_SECONDS = 1;
     private static final int MIN_LOOPS = 1;
     private static final int MIN_STEP = 1;
@@ -69,12 +68,12 @@ public class ThreadGroupData {
             threadMode = ThreadMode.FIXED;
         }
 
-        numThreads = threadCount(numThreads);
+        numThreads = atLeast(numThreads, MIN_THREADS);
         duration = atLeast(duration, MIN_SECONDS);
         loops = atLeast(loops, MIN_LOOPS);
 
-        rampUpStartThreads = threadCount(rampUpStartThreads);
-        rampUpEndThreads = threadCount(rampUpEndThreads);
+        rampUpStartThreads = atLeast(rampUpStartThreads, MIN_THREADS);
+        rampUpEndThreads = atLeast(rampUpEndThreads, MIN_THREADS);
         if (rampUpStartThreads > rampUpEndThreads) {
             int previousStart = rampUpStartThreads;
             rampUpStartThreads = rampUpEndThreads;
@@ -83,8 +82,8 @@ public class ThreadGroupData {
         rampUpTime = atLeast(rampUpTime, MIN_SECONDS);
         rampUpDuration = atLeast(rampUpDuration, MIN_SECONDS);
 
-        spikeMinThreads = threadCount(spikeMinThreads);
-        spikeMaxThreads = threadCount(spikeMaxThreads);
+        spikeMinThreads = atLeast(spikeMinThreads, MIN_THREADS);
+        spikeMaxThreads = atLeast(spikeMaxThreads, MIN_THREADS);
         if (spikeMinThreads > spikeMaxThreads) {
             int previousMin = spikeMinThreads;
             spikeMinThreads = spikeMaxThreads;
@@ -95,8 +94,8 @@ public class ThreadGroupData {
         spikeRampDownTime = atLeast(spikeRampDownTime, MIN_SECONDS);
         spikeDuration = atLeast(spikeDuration, MIN_SECONDS);
 
-        stairsStartThreads = threadCount(stairsStartThreads);
-        stairsEndThreads = threadCount(stairsEndThreads);
+        stairsStartThreads = atLeast(stairsStartThreads, MIN_THREADS);
+        stairsEndThreads = atLeast(stairsEndThreads, MIN_THREADS);
         if (stairsStartThreads > stairsEndThreads) {
             int previousStart = stairsStartThreads;
             stairsStartThreads = stairsEndThreads;
@@ -109,9 +108,5 @@ public class ThreadGroupData {
 
     private static int atLeast(int value, int min) {
         return Math.max(min, value);
-    }
-
-    private static int threadCount(int value) {
-        return Math.min(MAX_THREADS, atLeast(value, MIN_THREADS));
     }
 }

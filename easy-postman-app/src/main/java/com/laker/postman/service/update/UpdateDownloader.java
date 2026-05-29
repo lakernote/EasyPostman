@@ -2,6 +2,7 @@ package com.laker.postman.service.update;
 
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.frame.MainFrame;
+import com.laker.postman.platform.update.WindowsRegistryChecker;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;

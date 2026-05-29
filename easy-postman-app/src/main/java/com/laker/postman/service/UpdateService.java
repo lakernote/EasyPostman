@@ -3,7 +3,7 @@ package com.laker.postman.service;
 import com.laker.postman.ioc.Autowired;
 import com.laker.postman.ioc.Component;
 import com.laker.postman.ioc.PreDestroy;
-import com.laker.postman.model.UpdateInfo;
+import com.laker.postman.platform.update.model.UpdateInfo;
 import com.laker.postman.service.update.AutoUpdateManager;
 import com.laker.postman.service.update.plugin.PluginUpdateCheckResult;
 import com.laker.postman.service.update.plugin.PluginUpdateManager;

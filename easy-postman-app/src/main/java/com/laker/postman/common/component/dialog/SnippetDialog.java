@@ -5,7 +5,7 @@ import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.Snippet;
 import com.laker.postman.model.SnippetType;
-import com.laker.postman.plugin.bridge.PluginAccess;
+import com.laker.postman.plugin.host.PluginAccess;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;

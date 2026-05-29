@@ -1,7 +1,8 @@
 package com.laker.postman.panel.topmenu.help;
 
-import com.laker.postman.service.update.changelog.ChangelogService;
-import com.laker.postman.service.update.source.UpdateSource;
+import com.laker.postman.platform.update.changelog.ChangelogService;
+import com.laker.postman.platform.update.source.UpdateSource;
+import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -29,7 +30,7 @@ public class ChangelogDialog extends JDialog {
     public ChangelogDialog(Frame parent) {
         super(parent, I18nUtil.getMessage(MessageKeys.CHANGELOG_TITLE), true);
 
-        this.changelogService = new ChangelogService();
+        this.changelogService = new ChangelogService(SettingManager::getUpdateSourcePreference);
 
         setLayout(new BorderLayout(10, 10));
         ((JPanel) getContentPane()).setBorder(new EmptyBorder(15, 15, 15, 15));
@@ -199,4 +200,3 @@ public class ChangelogDialog extends JDialog {
         });
     }
 }
-

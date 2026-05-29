@@ -2,7 +2,6 @@ package com.laker.postman.common.component;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import com.formdev.flatlaf.FlatLaf;
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.button.CSVButton;
 import com.laker.postman.common.component.button.CloseButton;
@@ -501,27 +500,27 @@ public class CsvDataPanel extends JPanel {
         actionPanel.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.CSV_OPERATIONS)));
         actionPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JButton selectFileBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_SELECT_FILE), false);
-        selectFileBtn.setIcon(IconUtil.createThemed("icons/file.svg", 16, 16));
+        JButton selectFileBtn = ModernButtonFactory.createButton(
+                I18nUtil.getMessage(MessageKeys.CSV_BUTTON_SELECT_FILE), false, "icons/file.svg", 16);
         selectFileBtn.setHorizontalAlignment(SwingConstants.LEFT);
         selectFileBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
         selectFileBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
 
-        JButton createManualBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.CSV_MENU_CREATE_MANUAL), false);
-        createManualBtn.setIcon(new FlatSVGIcon("icons/plus.svg", 16, 16));
+        JButton createManualBtn = ModernButtonFactory.createButton(
+                I18nUtil.getMessage(MessageKeys.CSV_MENU_CREATE_MANUAL), false, "icons/plus.svg", 16);
         createManualBtn.setHorizontalAlignment(SwingConstants.LEFT);
         createManualBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
         createManualBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
 
-        JButton manageDataBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_MANAGE_DATA), false);
-        manageDataBtn.setIcon(IconUtil.createThemed("icons/code.svg", 16, 16));
+        JButton manageDataBtn = ModernButtonFactory.createButton(
+                I18nUtil.getMessage(MessageKeys.CSV_BUTTON_MANAGE_DATA), false, "icons/code.svg", 16);
         manageDataBtn.setHorizontalAlignment(SwingConstants.LEFT);
         manageDataBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
         manageDataBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
         manageDataBtn.setEnabled(csvData != null && !csvData.isEmpty());
 
-        JButton clearBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_CLEAR_DATA), false);
-        clearBtn.setIcon(IconUtil.createThemed("icons/clear.svg", 16, 16));
+        JButton clearBtn = ModernButtonFactory.createButton(
+                I18nUtil.getMessage(MessageKeys.CSV_BUTTON_CLEAR_DATA), false, "icons/clear.svg", 16);
         clearBtn.setHorizontalAlignment(SwingConstants.LEFT);
         clearBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
         clearBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
@@ -671,19 +670,19 @@ public class CsvDataPanel extends JPanel {
         // 工具栏
         JPanel toolPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
 
-        JButton bulkEditBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.CSV_BULK_EDIT), false);
-        bulkEditBtn.setIcon(IconUtil.createThemed("icons/edit.svg", 16, 16));
+        JButton bulkEditBtn = ModernButtonFactory.createButton(
+                I18nUtil.getMessage(MessageKeys.CSV_BULK_EDIT), false, "icons/edit.svg", 16);
         styleToolbarButton(bulkEditBtn);
         List<String> finalHeaders = headers;
         bulkEditBtn.addActionListener(e -> showBulkEditDialog(manageDialog, editTableModel, csvTable, finalHeaders, () -> csvTable.repaint()));
 
-        JButton addRowBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_ADD_ROW), false);
-        addRowBtn.setIcon(IconUtil.createThemed("icons/plus.svg", 16, 16));
+        JButton addRowBtn = ModernButtonFactory.createButton(
+                I18nUtil.getMessage(MessageKeys.CSV_BUTTON_ADD_ROW), false, "icons/plus.svg", 16);
         styleToolbarButton(addRowBtn);
         addRowBtn.addActionListener(e -> editTableModel.addRow(new Object[finalHeaders.size()]));
 
-        JButton deleteRowBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_DELETE_ROW), false);
-        deleteRowBtn.setIcon(IconUtil.createThemed("icons/clear.svg", 16, 16));
+        JButton deleteRowBtn = ModernButtonFactory.createButton(
+                I18nUtil.getMessage(MessageKeys.CSV_BUTTON_DELETE_ROW), false, "icons/clear.svg", 16);
         styleToolbarButton(deleteRowBtn);
         deleteRowBtn.addActionListener(e -> {
             // 先停止单元格编辑，避免编辑状态下删除行导致问题
@@ -709,8 +708,8 @@ public class CsvDataPanel extends JPanel {
             }
         });
 
-        JButton addColumnBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_ADD_COLUMN), false);
-        addColumnBtn.setIcon(IconUtil.createThemed("icons/plus.svg", 16, 16));
+        JButton addColumnBtn = ModernButtonFactory.createButton(
+                I18nUtil.getMessage(MessageKeys.CSV_BUTTON_ADD_COLUMN), false, "icons/plus.svg", 16);
         styleToolbarButton(addColumnBtn);
         addColumnBtn.addActionListener(e -> {
             String columnName = JOptionPane.showInputDialog(manageDialog, I18nUtil.getMessage(MessageKeys.CSV_ENTER_COLUMN_NAME),
@@ -723,8 +722,8 @@ public class CsvDataPanel extends JPanel {
             }
         });
 
-        JButton deleteColumnBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_DELETE_COLUMN), false);
-        deleteColumnBtn.setIcon(IconUtil.createThemed("icons/clear.svg", 16, 16));
+        JButton deleteColumnBtn = ModernButtonFactory.createButton(
+                I18nUtil.getMessage(MessageKeys.CSV_BUTTON_DELETE_COLUMN), false, "icons/clear.svg", 16);
         styleToolbarButton(deleteColumnBtn);
         deleteColumnBtn.addActionListener(e -> {
             // 先停止单元格编辑，避免编辑状态下删除列导致问题
@@ -819,8 +818,8 @@ public class CsvDataPanel extends JPanel {
         // 按钮面板
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 
-        JButton saveBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.BUTTON_SAVE), true);
-        saveBtn.setIcon(IconUtil.createThemed("icons/save.svg", 16, 16));
+        JButton saveBtn = ModernButtonFactory.createButton(
+                I18nUtil.getMessage(MessageKeys.BUTTON_SAVE), true, "icons/save.svg", 16);
         styleFooterButton(saveBtn);
         saveBtn.addActionListener(e -> {
             try {

@@ -28,6 +28,7 @@ import com.laker.postman.panel.topmenu.plugin.PluginManagerDialog;
 import com.laker.postman.panel.topmenu.setting.ModernSettingsDialog;
 import com.laker.postman.plugin.manager.PluginManagementService;
 import com.laker.postman.panel.workspace.components.GitOperationDialog;
+import com.laker.postman.panel.workspace.components.GitOperationPresentation;
 import com.laker.postman.service.UpdateService;
 import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.service.setting.ShortcutManager;
@@ -648,7 +649,7 @@ public class TopMenuBar extends UiSingletonMenuBar implements IRefreshable {
             // Commit 按钮（本地提交，始终显示）
             JButton commitButton = createGitButton(
                     I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_COMMIT),
-                    GitOperation.COMMIT.getIconName(),
+                    GitOperationPresentation.getIconName(GitOperation.COMMIT),
                     e -> performGitOperation(workspace, GitOperation.COMMIT)
             );
             toolbar.add(commitButton);
@@ -658,7 +659,7 @@ public class TopMenuBar extends UiSingletonMenuBar implements IRefreshable {
                 // Pull 按钮（拉取远程更新）
                 JButton pullButton = createGitButton(
                         I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_PULL),
-                        GitOperation.PULL.getIconName(),
+                        GitOperationPresentation.getIconName(GitOperation.PULL),
                         e -> performGitOperation(workspace, GitOperation.PULL)
                 );
                 toolbar.add(pullButton);
@@ -667,7 +668,7 @@ public class TopMenuBar extends UiSingletonMenuBar implements IRefreshable {
                 if (remoteStatus.hasUpstream) {
                     JButton pushButton = createGitButton(
                             I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_PUSH),
-                            GitOperation.PUSH.getIconName(),
+                            GitOperationPresentation.getIconName(GitOperation.PUSH),
                             e -> performGitOperation(workspace, GitOperation.PUSH)
                     );
                     toolbar.add(pushButton);

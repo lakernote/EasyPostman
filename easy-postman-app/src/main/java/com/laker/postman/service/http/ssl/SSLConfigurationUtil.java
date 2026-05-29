@@ -3,8 +3,8 @@ package com.laker.postman.service.http.ssl;
 import com.laker.postman.model.ClientCertificate;
 import com.laker.postman.model.TrustedCertificateEntry;
 import com.laker.postman.panel.sidebar.ConsolePanel;
-import com.laker.postman.plugin.bridge.ClientCertificatePluginService;
-import com.laker.postman.plugin.bridge.ClientCertificatePluginServices;
+import com.laker.postman.plugin.api.service.ClientCertificatePluginService;
+import com.laker.postman.plugin.host.ClientCertificatePluginAccess;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -149,7 +149,7 @@ public class SSLConfigurationUtil {
         if (host == null || host.isEmpty()) {
             return new KeyManager[0];
         }
-        ClientCertificatePluginService service = ClientCertificatePluginServices.getClientCertificateService();
+        ClientCertificatePluginService service = ClientCertificatePluginAccess.getService();
         if (service == null) {
             return new KeyManager[0];
         }
@@ -183,7 +183,7 @@ public class SSLConfigurationUtil {
         if (host == null || host.isBlank()) {
             return "clientCert:none";
         }
-        ClientCertificatePluginService service = ClientCertificatePluginServices.getClientCertificateService();
+        ClientCertificatePluginService service = ClientCertificatePluginAccess.getService();
         if (service == null) {
             return "clientCert:none";
         }

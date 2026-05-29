@@ -368,7 +368,10 @@ public class WorkspacePanel extends UiSingletonPanel {
 
         // 1.提交操作 始终显示
         JMenuItem commitItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_COMMIT));
-        commitItem.setIcon(IconUtil.createThemed(GitOperation.COMMIT.getIconName(), IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+        commitItem.setIcon(IconUtil.createThemed(
+                GitOperationPresentation.getIconName(GitOperation.COMMIT),
+                IconUtil.SIZE_SMALL,
+                IconUtil.SIZE_SMALL));
         commitItem.addActionListener(e -> performGitCommit(workspace));
         menu.add(commitItem);
 
@@ -382,13 +385,19 @@ public class WorkspacePanel extends UiSingletonPanel {
             RemoteStatus remoteStatus = workspaceService.getRemoteStatus(workspace.getId());
             if (remoteStatus.hasRemote) { // 3.只有已配置远程仓库的工作区才显示拉取操作
                 JMenuItem pullItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_PULL));
-                pullItem.setIcon(IconUtil.createThemed(GitOperation.PULL.getIconName(), IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+                pullItem.setIcon(IconUtil.createThemed(
+                        GitOperationPresentation.getIconName(GitOperation.PULL),
+                        IconUtil.SIZE_SMALL,
+                        IconUtil.SIZE_SMALL));
                 pullItem.addActionListener(e -> performGitPull(workspace));
                 menu.add(pullItem);
 
                 if (remoteStatus.hasUpstream) { // 4.只有有上游分支的工作区才显示推送操作
                     JMenuItem pushItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_PUSH));
-                    pushItem.setIcon(IconUtil.createThemed(GitOperation.PUSH.getIconName(), IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+                    pushItem.setIcon(IconUtil.createThemed(
+                            GitOperationPresentation.getIconName(GitOperation.PUSH),
+                            IconUtil.SIZE_SMALL,
+                            IconUtil.SIZE_SMALL));
                     pushItem.addActionListener(e -> performGitPush(workspace));
                     menu.add(pushItem);
                 }

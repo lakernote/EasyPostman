@@ -46,7 +46,7 @@
         </dependency>
         <dependency>
             <groupId>com.laker.tools</groupId>
-            <artifactId>easy-postman-plugin-bridge</artifactId>
+            <artifactId>easy-postman-foundation</artifactId>
             <version>${project.version}</version>
         </dependency>
         <!-- 插件用户配置（禁用列表、待卸载列表等）走 JSON 存储 -->

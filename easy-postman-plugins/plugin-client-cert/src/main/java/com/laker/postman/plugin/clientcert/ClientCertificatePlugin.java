@@ -2,7 +2,7 @@ package com.laker.postman.plugin.clientcert;
 
 import com.laker.postman.plugin.api.EasyPostmanPlugin;
 import com.laker.postman.plugin.api.PluginContext;
-import com.laker.postman.plugin.bridge.ClientCertificatePluginService;
+import com.laker.postman.plugin.api.service.ClientCertificatePluginService;
 
 public class ClientCertificatePlugin implements EasyPostmanPlugin {
 

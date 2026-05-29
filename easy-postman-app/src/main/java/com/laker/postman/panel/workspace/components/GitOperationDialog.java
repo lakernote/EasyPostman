@@ -176,7 +176,7 @@ public class GitOperationDialog extends JDialog {
      */
     private JPanel createHeaderPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(operation.getColor());
+        panel.setBackground(GitOperationPresentation.getColor(operation));
         panel.setBorder(new EmptyBorder(5, 20, 5, 20));
 
         // 左侧：操作图标和名称
@@ -184,7 +184,7 @@ public class GitOperationDialog extends JDialog {
         leftPanel.setOpaque(false);
 
         // Header uses operation color (colorful), so white icons are appropriate
-        FlatSVGIcon icon = IconUtil.createColored(operation.getIconName(), 32, 32, Color.WHITE);
+        FlatSVGIcon icon = IconUtil.createColored(GitOperationPresentation.getIconName(operation), 32, 32, Color.WHITE);
         JLabel operationIcon = new JLabel(icon);
         operationIcon.setBorder(new EmptyBorder(0, 0, 0, 15));
 
@@ -431,7 +431,7 @@ public class GitOperationDialog extends JDialog {
         executeButton = new JButton(operation.getDisplayName());
         executeButton.setFont(FontsUtil.getDefaultFont(Font.BOLD));
         executeButton.setPreferredSize(new Dimension(100, 32));
-        executeButton.setBackground(operation.getColor());
+        executeButton.setBackground(GitOperationPresentation.getColor(operation));
         // White text on colored button background (operation color)
         executeButton.setForeground(Color.WHITE);
         executeButton.setFocusPainted(false);

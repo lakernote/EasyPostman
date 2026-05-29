@@ -1,7 +1,7 @@
 package com.laker.postman.model.script;
 
 import com.laker.postman.model.*;
-import com.laker.postman.plugin.bridge.PluginAccess;
+import com.laker.postman.plugin.host.PluginAccess;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.GlobalVariablesService;
 import com.laker.postman.service.js.ScriptSendRequestExecutor;

@@ -2,8 +2,8 @@ package com.laker.postman.service;
 
 import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.model.*;
-import com.laker.postman.plugin.bridge.GitPluginService;
-import com.laker.postman.plugin.bridge.GitPluginServices;
+import com.laker.postman.plugin.api.service.GitPluginService;
+import com.laker.postman.plugin.host.GitServiceAccess;
 import com.laker.postman.util.SystemUtil;
 import com.laker.postman.util.WorkspaceStorageUtil;
 import lombok.Getter;
@@ -644,11 +644,11 @@ public class WorkspaceService {
         requireGitService().clearSshCache(privateKeyPath);
     }
 
-    public boolean isGitPluginInstalled() {
-        return GitPluginServices.isGitPluginInstalled();
+    public boolean isGitServiceAvailable() {
+        return GitServiceAccess.isServiceAvailable();
     }
 
     private GitPluginService requireGitService() {
-        return GitPluginServices.requireGitService();
+        return GitServiceAccess.requireService();
     }
 }

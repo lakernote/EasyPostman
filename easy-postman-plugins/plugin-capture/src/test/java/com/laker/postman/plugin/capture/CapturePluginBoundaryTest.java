@@ -14,8 +14,7 @@ public class CapturePluginBoundaryTest {
 
     private static final List<String> FORBIDDEN_SOURCE_REFERENCES = List.of(
             "com.laker.postman.frame.",
-            "com.laker.postman.panel.",
-            "com.laker.postman.common.UiSingletonFactory"
+            "com.laker.postman.panel."
     );
 
     @Test
@@ -23,7 +22,7 @@ public class CapturePluginBoundaryTest {
         String pom = Files.readString(moduleDir().resolve("pom.xml"));
 
         assertFalse(pom.contains("<artifactId>easy-postman</artifactId>"),
-                "plugin-capture must use bridge/plugin-ui APIs instead of depending on the host app artifact");
+                "plugin-capture must use plugin-api/easy-postman-ui APIs instead of depending on the host app artifact");
     }
 
     @Test

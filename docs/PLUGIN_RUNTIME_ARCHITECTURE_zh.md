@@ -82,7 +82,7 @@ PluginManager / 本地放入 jar
   -> plugin.onLoad(context)
   -> PluginRegistry 收集贡献
   -> PluginLoader.startPlugins()
-  -> 宿主 UI / 脚本 / bridge 层消费贡献
+  -> 宿主 UI / 脚本 / plugin.host 访问层消费贡献
 ```
 
 这里有几个关键设计点：
@@ -101,7 +101,7 @@ PluginManager / 本地放入 jar
 
 宿主 app 层已经不再四处直连 `PluginRuntime.getRegistry()`，而是统一收口到：
 
-- [PluginAccess.java](../easy-postman-app/src/main/java/com/laker/postman/plugin/bridge/PluginAccess.java)
+- [PluginAccess.java](../easy-postman-app/src/main/java/com/laker/postman/plugin/host/PluginAccess.java)
 
 当前消费关系大致是：
 
@@ -112,7 +112,7 @@ PluginRegistry
     -> ToolboxPanel.getToolboxContributions()
     -> ScriptSnippetManager.getScriptCompletionContributors()
     -> SnippetDialog.getSnippetDefinitions()
-    -> ClientCertificatePluginServices.getService(...)
+    -> ClientCertificatePluginAccess.getService(...)
 ```
 
 这样做的价值是：
@@ -127,8 +127,9 @@ PluginRegistry
 官方插件已经开始统一走：
 
 - `PluginContributionSupport`
-- `PluginAccess`
 - `RedisI18n` / `KafkaI18n`
+
+宿主侧消费统一走 `com.laker.postman.plugin.host.PluginAccess`。
 
 例如 `KafkaPlugin` / `RedisPlugin` 的 `onLoad()` 现在更接近：
 

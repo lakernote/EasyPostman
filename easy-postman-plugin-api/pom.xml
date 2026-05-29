@@ -20,6 +20,11 @@
     <packaging>jar</packaging>
 
     <dependencies>
+        <dependency>
+            <groupId>com.laker.tools</groupId>
+            <artifactId>easy-postman-foundation</artifactId>
+            <version>${revision}</version>
+        </dependency>
         <!-- 自动补全 SPI 会被插件扩展点直接复用 -->
         <dependency>
             <groupId>com.fifesoft</groupId>

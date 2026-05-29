@@ -11,6 +11,7 @@ import org.testng.annotations.Test;
 import java.util.List;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 public class PerformanceCoreThreadGroupPlannerTest {
 
@@ -50,5 +51,42 @@ public class PerformanceCoreThreadGroupPlannerTest {
         ));
 
         assertEquals(new PerformanceCoreThreadGroupPlanner().getTotalThreads(plan), 9);
+    }
+
+    @Test
+    public void totalThreadsShouldSaturateWhenLargeThreadCountsOverflowIntRange() {
+        ThreadGroupData firstGroup = new ThreadGroupData();
+        firstGroup.threadMode = ThreadGroupData.ThreadMode.FIXED;
+        firstGroup.numThreads = Integer.MAX_VALUE;
+        ThreadGroupData secondGroup = new ThreadGroupData();
+        secondGroup.threadMode = ThreadGroupData.ThreadMode.FIXED;
+        secondGroup.numThreads = 1;
+        PerformanceTestPlan plan = new PerformanceTestPlan(List.of(
+                new PerformanceThreadGroupPlan("first", firstGroup, List.of()),
+                new PerformanceThreadGroupPlan("second", secondGroup, List.of())
+        ));
+
+        assertEquals(new PerformanceCoreThreadGroupPlanner().getTotalThreads(plan), Integer.MAX_VALUE);
+    }
+
+    @Test
+    public void estimateTotalRequestsShouldNotOverflowWhenAveragingLargeThreadCounts() {
+        ThreadGroupData threadGroupData = new ThreadGroupData();
+        threadGroupData.threadMode = ThreadGroupData.ThreadMode.RAMP_UP;
+        threadGroupData.rampUpStartThreads = Integer.MAX_VALUE;
+        threadGroupData.rampUpEndThreads = Integer.MAX_VALUE;
+        threadGroupData.rampUpDuration = 1;
+        PerformanceTestPlan plan = new PerformanceTestPlan(List.of(
+                new PerformanceThreadGroupPlan("group", threadGroupData, List.of(
+                        new PerformanceCoreRequestSampler(
+                                "request",
+                                PerformanceRequestSnapshot.empty(),
+                                null,
+                                List.of()
+                        )
+                ))
+        ));
+
+        assertTrue(new PerformanceCoreThreadGroupPlanner().estimateTotalRequests(plan) > 0L);
     }
 }

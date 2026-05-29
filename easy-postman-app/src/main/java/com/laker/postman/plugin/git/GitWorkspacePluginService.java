@@ -9,7 +9,7 @@ import com.laker.postman.model.GitRepoSource;
 import com.laker.postman.model.RemoteStatus;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.model.WorkspaceType;
-import com.laker.postman.plugin.bridge.GitPluginService;
+import com.laker.postman.plugin.api.service.GitPluginService;
 import com.laker.postman.plugin.git.internal.GitConflictDetector;
 import com.laker.postman.plugin.git.internal.SshCredentialsProvider;
 import lombok.extern.slf4j.Slf4j;

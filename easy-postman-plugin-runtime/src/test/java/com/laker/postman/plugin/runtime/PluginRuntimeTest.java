@@ -61,7 +61,7 @@ public class PluginRuntimeTest {
 
     @Test
     public void shouldExposeIndependentPluginPlatformVersion() {
-        assertEquals(PluginRuntime.getCurrentPluginPlatformVersion(), "1.0.0");
+        assertEquals(PluginRuntime.getCurrentPluginPlatformVersion(), "2.0.0");
     }
 
     @Test
@@ -84,6 +84,30 @@ public class PluginRuntimeTest {
         assertFalse(compatibility.compatible());
         assertTrue(compatibility.appVersionCompatible());
         assertFalse(compatibility.platformVersionCompatible());
+    }
+
+    @Test
+    public void shouldRejectOldPluginPlatformAfterBreakingSpiChange() {
+        PluginDescriptor descriptor = new PluginDescriptor(
+                "plugin-client-cert",
+                "Client Certificate Plugin",
+                "5.3.18",
+                "com.example.StubPlugin",
+                "",
+                "",
+                "",
+                "",
+                "1.0.0",
+                "1.0.0"
+        );
+
+        PluginCompatibility compatibility = PluginRuntime.evaluateCompatibility(descriptor);
+
+        assertFalse(compatibility.compatible());
+        assertTrue(compatibility.appVersionCompatible());
+        assertFalse(compatibility.platformVersionCompatible());
+        assertEquals(compatibility.currentPlatformVersion(), "2.0.0");
+        assertEquals(compatibility.maxPlatformVersion(), "1.0.0");
     }
 
     @Test
@@ -137,8 +161,14 @@ public class PluginRuntimeTest {
         assertNotNull(PluginRuntime.getRegistry().createScriptApis().get("testRuntime"));
         assertTrue(PluginRuntime.getInstalledPlugins().stream()
                 .anyMatch(info -> "plugin-ok".equals(info.descriptor().id()) && info.loaded()));
-        assertTrue(PluginRuntime.getInstalledPlugins().stream()
-                .anyMatch(info -> "plugin-broken".equals(info.descriptor().id()) && !info.loaded()));
+        PluginFileInfo brokenPlugin = PluginRuntime.getInstalledPlugins().stream()
+                .filter(info -> "plugin-broken".equals(info.descriptor().id()))
+                .findFirst()
+                .orElseThrow();
+        assertFalse(brokenPlugin.loaded());
+        assertFalse(brokenPlugin.compatible());
+        assertTrue(brokenPlugin.hasLoadFailure());
+        assertTrue(brokenPlugin.loadFailureMessage().contains("MissingPlugin"));
     }
 
     @Test
@@ -156,8 +186,14 @@ public class PluginRuntimeTest {
         assertNotNull(PluginRuntime.getRegistry().createScriptApis().get("testRuntime"));
         assertTrue(PluginRuntime.getInstalledPlugins().stream()
                 .anyMatch(info -> "plugin-ok".equals(info.descriptor().id()) && info.loaded()));
-        assertTrue(PluginRuntime.getInstalledPlugins().stream()
-                .anyMatch(info -> "plugin-old-client-cert".equals(info.descriptor().id()) && !info.loaded()));
+        PluginFileInfo brokenPlugin = PluginRuntime.getInstalledPlugins().stream()
+                .filter(info -> "plugin-old-client-cert".equals(info.descriptor().id()))
+                .findFirst()
+                .orElseThrow();
+        assertFalse(brokenPlugin.loaded());
+        assertFalse(brokenPlugin.compatible());
+        assertTrue(brokenPlugin.hasLoadFailure());
+        assertTrue(brokenPlugin.loadFailureMessage().contains("ClientCertificatePluginService"));
     }
 
     @Test

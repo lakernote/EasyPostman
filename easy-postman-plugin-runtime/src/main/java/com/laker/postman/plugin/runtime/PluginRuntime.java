@@ -31,6 +31,7 @@ public final class PluginRuntime {
     private static final List<EasyPostmanPlugin> LOADED_PLUGINS = new ArrayList<>();
     private static final List<URLClassLoader> PLUGIN_CLASSLOADERS = new ArrayList<>();
     private static final List<PluginFileInfo> LOADED_PLUGIN_FILES = new ArrayList<>();
+    private static final Map<Path, String> LOAD_FAILURES = new LinkedHashMap<>();
     @Getter
     private static volatile boolean initialized = false;
     private static volatile String cachedAppVersion;
@@ -55,6 +56,7 @@ public final class PluginRuntime {
 
             // 启动时先处理上一次退出后遗留的“待卸载”插件文件，
             // 这样后面的扫描结果才是干净的当前状态。
+            LOAD_FAILURES.clear();
             cleanupPendingUninstallPlugins();
 
             // 这里先做“选插件”而不是直接扫到什么就加载什么。
@@ -77,7 +79,8 @@ public final class PluginRuntime {
                         PLUGIN_CLASSLOADERS,
                         LOADED_PLUGIN_FILES,
                         PluginRuntime.class.getClassLoader()
-                );
+                ).ifPresent(failureMessage ->
+                        LOAD_FAILURES.put(normalizePath(pluginFile.jarPath()), failureMessage));
             }
             // onLoad 负责注册扩展点，onStart 则表示“所有插件都注册完了，可以开始运行”。
             PluginLoader.startPlugins(LOADED_PLUGINS);
@@ -106,7 +109,7 @@ public final class PluginRuntime {
                     PluginRuntime::isLoaded
             ));
         }
-        return installed;
+        return applyLoadFailures(installed);
     }
 
     public static String getCurrentAppVersion() {
@@ -216,6 +219,7 @@ public final class PluginRuntime {
                 LOADED_PLUGINS.clear();
                 PLUGIN_CLASSLOADERS.clear();
                 LOADED_PLUGIN_FILES.clear();
+                LOAD_FAILURES.clear();
                 REGISTRY.clear();
                 initialized = false;
                 cachedAppVersion = null;
@@ -245,21 +249,21 @@ public final class PluginRuntime {
     }
 
     public static List<PluginFileInfo> getManagedPluginFiles() {
-        return PluginScanner.listPluginsFromDirectory(
+        return applyLoadFailures(PluginScanner.listPluginsFromDirectory(
                 getManagedPluginDir(),
                 PluginStateStore.getDisabledPluginIds(),
                 PluginStateStore.getPendingUninstallPluginIds(),
                 PluginRuntime::isLoaded
-        );
+        ));
     }
 
     public static List<PluginFileInfo> getPluginPackageFiles() {
-        return PluginScanner.listPluginsFromDirectory(
+        return applyLoadFailures(PluginScanner.listPluginsFromDirectory(
                 getPluginPackageDir(),
                 PluginStateStore.getDisabledPluginIds(),
                 PluginStateStore.getPendingUninstallPluginIds(),
                 PluginRuntime::isLoaded
-        );
+        ));
     }
 
     private static List<PluginFileInfo> resolveLoadCandidates(Set<Path> pluginDirs) {
@@ -286,6 +290,33 @@ public final class PluginRuntime {
 
     private static boolean isLoaded(Path jarPath) {
         return LOADED_PLUGIN_FILES.stream().anyMatch(info -> info.jarPath().equals(jarPath));
+    }
+
+    private static List<PluginFileInfo> applyLoadFailures(List<PluginFileInfo> pluginFiles) {
+        if (pluginFiles == null || pluginFiles.isEmpty() || LOAD_FAILURES.isEmpty()) {
+            return pluginFiles;
+        }
+        List<PluginFileInfo> result = new ArrayList<>(pluginFiles.size());
+        for (PluginFileInfo info : pluginFiles) {
+            String failureMessage = LOAD_FAILURES.get(normalizePath(info.jarPath()));
+            if (failureMessage == null || failureMessage.isBlank()) {
+                result.add(info);
+                continue;
+            }
+            result.add(new PluginFileInfo(
+                    info.descriptor(),
+                    info.jarPath(),
+                    info.loaded(),
+                    info.enabled(),
+                    false,
+                    failureMessage
+            ));
+        }
+        return result;
+    }
+
+    private static Path normalizePath(Path path) {
+        return path == null ? null : path.toAbsolutePath().normalize();
     }
 
     static void cleanupPendingUninstallPlugins() {
@@ -324,6 +355,7 @@ public final class PluginRuntime {
             LOADED_PLUGINS.clear();
             PLUGIN_CLASSLOADERS.clear();
             LOADED_PLUGIN_FILES.clear();
+            LOAD_FAILURES.clear();
             REGISTRY.clear();
             initialized = false;
             cachedAppVersion = null;

@@ -160,6 +160,7 @@ public final class MessageKeys {
     public static final String PLUGIN_MANAGER_STATUS_LOADED = "plugin.manager.status.loaded";
     public static final String PLUGIN_MANAGER_STATUS_DISABLED = "plugin.manager.status.disabled";
     public static final String PLUGIN_MANAGER_STATUS_INCOMPATIBLE = "plugin.manager.status.incompatible";
+    public static final String PLUGIN_MANAGER_STATUS_INCOMPATIBLE_UPGRADE = "plugin.manager.status.incompatible_upgrade";
     public static final String PLUGIN_MANAGER_STATUS_RESTART_REQUIRED = "plugin.manager.status.restart_required";
     public static final String PLUGIN_MANAGER_STATUS_DISABLE_PENDING = "plugin.manager.status.disable_pending";
     public static final String PLUGIN_MANAGER_STATUS_UNINSTALL_PENDING = "plugin.manager.status.uninstall_pending";
@@ -214,6 +215,7 @@ public final class MessageKeys {
     public static final String PLUGIN_MANAGER_COMPATIBILITY_REQUIRES_APP_MAX = "plugin.manager.compatibility.requires_app_max";
     public static final String PLUGIN_MANAGER_COMPATIBILITY_REQUIRES_APP_RANGE = "plugin.manager.compatibility.requires_app_range";
     public static final String PLUGIN_MANAGER_COMPATIBILITY_REQUIRES_HOST_UPGRADE = "plugin.manager.compatibility.requires_host_upgrade";
+    public static final String PLUGIN_MANAGER_COMPATIBILITY_REQUIRES_PLUGIN_UPGRADE = "plugin.manager.compatibility.requires_plugin_upgrade";
     public static final String PLUGIN_MANAGER_MARKET_SOURCE_HINT = "plugin.manager.market.source_hint";
     public static final String PLUGIN_UPDATE_NOTIFICATION_TITLE = "plugin.update.notification.title";
     public static final String PLUGIN_UPDATE_NOTIFICATION_SINGLE = "plugin.update.notification.single";

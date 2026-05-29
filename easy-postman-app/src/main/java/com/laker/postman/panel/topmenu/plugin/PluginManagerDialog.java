@@ -835,7 +835,8 @@ public class PluginManagerDialog extends JDialog {
                 : I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_DETAIL_EMPTY));
         installedIdValueLabel.setText(descriptor.id());
         installedVersionValueLabel.setText(descriptor.version());
-        installedCompatibilityValueLabel.setText(buildCompatibilityValue(descriptor, selected.compatible()));
+        installedCompatibilityValueLabel.setText(buildCompatibilityValue(selected));
+        installedCompatibilityValueLabel.setToolTipText(selected.hasLoadFailure() ? selected.loadFailureMessage() : null);
         setCompactText(installedPathValueLabel, selected.jarPath().toString());
         applyStatusBadge(installedDetailStatusLabel, resolveInstalledStatus(selected));
     }
@@ -865,6 +866,7 @@ public class PluginManagerDialog extends JDialog {
         installedIdValueLabel.setText("-");
         installedVersionValueLabel.setText("-");
         installedCompatibilityValueLabel.setText("-");
+        installedCompatibilityValueLabel.setToolTipText(null);
         setCompactText(installedPathValueLabel, "-");
         applyStatusBadge(installedDetailStatusLabel, "");
     }
@@ -989,13 +991,18 @@ public class PluginManagerDialog extends JDialog {
         if (!installed.enabled()) {
             return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_DISABLED);
         }
-        if (!installed.compatible()) {
-            return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_INCOMPATIBLE);
-        }
         int compare = VersionComparator.compare(entry.version(), installed.descriptor().version());
         if (compare > 0) {
             return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_UPDATE_AVAILABLE,
                     installed.descriptor().version());
+        }
+        if (installed.hasLoadFailure()) {
+            return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_INCOMPATIBLE_UPGRADE);
+        }
+        if (!installed.compatible()) {
+            return requiresPluginUpgrade(PluginManagementService.evaluateCompatibility(installed.descriptor()))
+                    ? I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_INCOMPATIBLE_UPGRADE)
+                    : I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_INCOMPATIBLE);
         }
         if (compare < 0) {
             return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_LOCAL_NEWER,
@@ -1017,8 +1024,13 @@ public class PluginManagerDialog extends JDialog {
         if (!value.enabled()) {
             return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_DISABLED);
         }
+        if (value.hasLoadFailure()) {
+            return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_INCOMPATIBLE_UPGRADE);
+        }
         if (!value.compatible()) {
-            return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_INCOMPATIBLE);
+            return requiresPluginUpgrade(PluginManagementService.evaluateCompatibility(value.descriptor()))
+                    ? I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_INCOMPATIBLE_UPGRADE)
+                    : I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_INCOMPATIBLE);
         }
         return value.loaded()
                 ? I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_LOADED)
@@ -1027,6 +1039,13 @@ public class PluginManagerDialog extends JDialog {
 
     private String buildCompatibilityValue(PluginDescriptor descriptor, boolean compatible) {
         return buildCompatibilityValue(PluginManagementService.evaluateCompatibility(descriptor), compatible);
+    }
+
+    private String buildCompatibilityValue(PluginFileInfo pluginFile) {
+        if (pluginFile.hasLoadFailure()) {
+            return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_COMPATIBILITY_REQUIRES_PLUGIN_UPGRADE);
+        }
+        return buildCompatibilityValue(pluginFile.descriptor(), pluginFile.compatible());
     }
 
     private String buildCompatibilityValue(PluginCatalogEntry entry) {
@@ -1038,10 +1057,26 @@ public class PluginManagerDialog extends JDialog {
         if (compatible) {
             return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_COMPATIBILITY_CURRENT);
         }
+        if (requiresPluginUpgrade(compatibility)) {
+            return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_COMPATIBILITY_REQUIRES_PLUGIN_UPGRADE);
+        }
         if (!compatibility.appVersionCompatible()) {
             return buildRequiredAppText(compatibility.minAppVersion(), compatibility.maxAppVersion());
         }
         return I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_COMPATIBILITY_REQUIRES_HOST_UPGRADE);
+    }
+
+    private static boolean requiresPluginUpgrade(PluginCompatibility compatibility) {
+        return isCurrentVersionAboveMax(compatibility.currentAppVersion(), compatibility.maxAppVersion())
+                || isCurrentVersionAboveMax(compatibility.currentPlatformVersion(), compatibility.maxPlatformVersion());
+    }
+
+    private static boolean isCurrentVersionAboveMax(String currentVersion, String maxVersion) {
+        return currentVersion != null
+                && !currentVersion.isBlank()
+                && maxVersion != null
+                && !maxVersion.isBlank()
+                && VersionComparator.compare(currentVersion, maxVersion) > 0;
     }
 
     private String buildRequiredAppText(String minVersion, String maxVersion) {
@@ -1367,6 +1402,7 @@ public class PluginManagerDialog extends JDialog {
     private static JLabel createStatusBadgeLabel() {
         JLabel label = new JLabel();
         label.setOpaque(true);
+        label.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -1));
         label.setBorder(new EmptyBorder(4, 8, 4, 8));
         return label;
     }
@@ -1391,7 +1427,10 @@ public class PluginManagerDialog extends JDialog {
             return new StatusPalette(adaptStatusBackground(ModernColors.WARNING), adaptStatusForeground(ModernColors.WARNING));
         }
         if (text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_DISABLED))
-                || text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_INCOMPATIBLE))) {
+                || text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_INCOMPATIBLE))
+                || text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_STATUS_INCOMPATIBLE_UPGRADE))
+                || text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_REQUIRES_HOST_UPGRADE))
+                || text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_UPDATE_REQUIRES_HOST_UPGRADE))) {
             return new StatusPalette(adaptStatusBackground(ModernColors.ERROR), adaptStatusForeground(ModernColors.ERROR));
         }
         if (text.contains(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_MARKET_AVAILABLE))) {
@@ -1481,7 +1520,7 @@ public class PluginManagerDialog extends JDialog {
         private InstalledPluginCellRenderer() {
             setLayout(new MigLayout(
                     "fillx, insets 12 14 12 14, gap 4, novisualpadding",
-                    "[][pref!][grow,fill]",
+                    "[grow,fill][pref!]",
                     "[][]"
             ));
             setBorder(BorderFactory.createCompoundBorder(
@@ -1493,10 +1532,9 @@ public class PluginManagerDialog extends JDialog {
             titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 1));
             metaLabel.setForeground(ModernColors.getTextHint());
 
-            add(titleLabel);
-            add(statusLabel, "aligny center");
-            add(new JLabel(), "growx, wrap");
-            add(metaLabel, "span 3, growx");
+            add(titleLabel, "growx, wmin 0");
+            add(statusLabel, "alignx right, aligny center, shrink 0, wrap");
+            add(metaLabel, "span 2, growx, wmin 0");
         }
 
         @Override
@@ -1504,6 +1542,7 @@ public class PluginManagerDialog extends JDialog {
                                                       int index, boolean isSelected, boolean cellHasFocus) {
             boolean isPlaceholder = "empty".equals(value.descriptor().id());
             titleLabel.setText(value.descriptor().name());
+            titleLabel.setToolTipText(isPlaceholder ? null : value.descriptor().name());
 
             if (isPlaceholder) {
                 metaLabel.setText("");
@@ -1527,7 +1566,7 @@ public class PluginManagerDialog extends JDialog {
         private MarketPluginCellRenderer() {
             setLayout(new MigLayout(
                     "fillx, insets 12 14 12 14, gap 4, novisualpadding",
-                    "[][pref!][grow,fill]",
+                    "[grow,fill][pref!]",
                     "[][]"
             ));
             setBorder(BorderFactory.createCompoundBorder(
@@ -1539,16 +1578,16 @@ public class PluginManagerDialog extends JDialog {
             titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 1));
             metaLabel.setForeground(ModernColors.getTextHint());
 
-            add(titleLabel);
-            add(statusLabel, "aligny center");
-            add(new JLabel(), "growx, wrap");
-            add(metaLabel, "span 3, growx");
+            add(titleLabel, "growx, wmin 0");
+            add(statusLabel, "alignx right, aligny center, shrink 0, wrap");
+            add(metaLabel, "span 2, growx, wmin 0");
         }
 
         @Override
         public Component getListCellRendererComponent(JList<? extends PluginCatalogEntry> list, PluginCatalogEntry value,
                                                       int index, boolean isSelected, boolean cellHasFocus) {
             titleLabel.setText(value.name());
+            titleLabel.setToolTipText(value.isPlaceholder() ? null : value.name());
             if (value.isPlaceholder()) {
                 metaLabel.setText("");
                 applyStatusBadge(statusLabel, "");

@@ -10,6 +10,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 插件加载器。
@@ -23,13 +24,13 @@ final class PluginLoader {
     private PluginLoader() {
     }
 
-    static void loadPluginJar(Path jarPath,
-                              PluginDescriptor descriptor,
-                              PluginRegistry registry,
-                              List<EasyPostmanPlugin> loadedPlugins,
-                              List<URLClassLoader> pluginClassLoaders,
-                              List<PluginFileInfo> loadedPluginFiles,
-                              ClassLoader parentClassLoader) {
+    static Optional<String> loadPluginJar(Path jarPath,
+                                          PluginDescriptor descriptor,
+                                          PluginRegistry registry,
+                                          List<EasyPostmanPlugin> loadedPlugins,
+                                          List<URLClassLoader> pluginClassLoaders,
+                                          List<PluginFileInfo> loadedPluginFiles,
+                                          ClassLoader parentClassLoader) {
         URLClassLoader classLoader = null;
         try {
             log.info("Loading plugin: id={}, version={}, entryClass={}, jar={}",
@@ -46,10 +47,24 @@ final class PluginLoader {
             loadedPluginFiles.add(new PluginFileInfo(descriptor, jarPath, true, true, true));
             log.info("Loaded plugin successfully: id={}, version={}, jar={}",
                     descriptor.id(), descriptor.version(), jarPath);
+            return Optional.empty();
         } catch (Exception | LinkageError e) {
             log.error("Failed to load plugin jar: {}", jarPath, e);
             closeFailedClassLoader(classLoader);
+            return Optional.of(buildLoadFailureMessage(e));
         }
+    }
+
+    private static String buildLoadFailureMessage(Throwable throwable) {
+        Throwable current = throwable;
+        while (current.getCause() != null) {
+            current = current.getCause();
+        }
+        String message = current.getMessage();
+        if (message == null || message.isBlank()) {
+            return current.getClass().getSimpleName();
+        }
+        return current.getClass().getSimpleName() + ": " + message;
     }
 
     private static void closeFailedClassLoader(URLClassLoader classLoader) {

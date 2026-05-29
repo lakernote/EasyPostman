@@ -18,6 +18,8 @@ import static org.testng.Assert.assertTrue;
 
 public class PluginUpdateCheckerTest {
 
+    private static final String CURRENT_PLUGIN_PLATFORM_VERSION = "2.0.0";
+
     private Path dataDir;
     private Path appDir;
 
@@ -69,6 +71,16 @@ public class PluginUpdateCheckerTest {
     }
 
     @Test
+    public void shouldIgnoreCatalogUpdatesBuiltForOldPluginPlatform() {
+        List<PluginUpdateCandidate> candidates = PluginUpdateChecker.findUpdateCandidates(
+                List.of(installedPlugin("plugin-kafka", "Kafka Plugin", "5.3.18")),
+                List.of(catalogEntry("plugin-kafka", "Kafka Plugin", "5.5.28", "", "", "1.0.0", "1.0.0"))
+        );
+
+        assertTrue(candidates.isEmpty());
+    }
+
+    @Test
     public void shouldUseHighestInstalledVersionPerPluginId() {
         List<PluginUpdateCandidate> candidates = PluginUpdateChecker.findUpdateCandidates(
                 List.of(
@@ -98,6 +110,17 @@ public class PluginUpdateCheckerTest {
                                                    String version,
                                                    String minAppVersion,
                                                    String maxAppVersion) {
+        return catalogEntry(id, name, version, minAppVersion, maxAppVersion,
+                CURRENT_PLUGIN_PLATFORM_VERSION, CURRENT_PLUGIN_PLATFORM_VERSION);
+    }
+
+    private static PluginCatalogEntry catalogEntry(String id,
+                                                   String name,
+                                                   String version,
+                                                   String minAppVersion,
+                                                   String maxAppVersion,
+                                                   String minPlatformVersion,
+                                                   String maxPlatformVersion) {
         return new PluginCatalogEntry(
                 id,
                 name,
@@ -109,8 +132,8 @@ public class PluginUpdateCheckerTest {
                 "https://example.com/" + id + "-" + version + ".jar",
                 minAppVersion,
                 maxAppVersion,
-                "1.0.0",
-                "1.0.0"
+                minPlatformVersion,
+                maxPlatformVersion
         );
     }
 }

@@ -663,6 +663,17 @@ public final class MessageKeys {
     public static final String PERFORMANCE_REMOTE_MSG_FAILED = "performance.remote.msg.failed";
     public static final String PERFORMANCE_REMOTE_MSG_STARTED = "performance.remote.msg.started";
     public static final String PERFORMANCE_REMOTE_ASSETS_WARNING = "performance.remote.assets.warning";
+    public static final String PERFORMANCE_PLAN_LABEL = "performance.plan.label";
+    public static final String PERFORMANCE_PLAN_ADD_TOOLTIP = "performance.plan.add.tooltip";
+    public static final String PERFORMANCE_PLAN_DUPLICATE_TOOLTIP = "performance.plan.duplicate.tooltip";
+    public static final String PERFORMANCE_PLAN_RENAME_TOOLTIP = "performance.plan.rename.tooltip";
+    public static final String PERFORMANCE_PLAN_DELETE_TOOLTIP = "performance.plan.delete.tooltip";
+    public static final String PERFORMANCE_PLAN_RENAME_TITLE = "performance.plan.rename.title";
+    public static final String PERFORMANCE_PLAN_RENAME_PROMPT = "performance.plan.rename.prompt";
+    public static final String PERFORMANCE_PLAN_NAME_EMPTY = "performance.plan.name.empty";
+    public static final String PERFORMANCE_PLAN_COPY_SUFFIX = "performance.plan.copy_suffix";
+    public static final String PERFORMANCE_PLAN_DELETE_CONFIRM = "performance.plan.delete.confirm";
+    public static final String PERFORMANCE_PLAN_DELETE_LAST_FORBIDDEN = "performance.plan.delete.last.forbidden";
     public static final String PERFORMANCE_USAGE_HELP_TOOLTIP = "performance.usage.help.tooltip";
     public static final String PERFORMANCE_USAGE_HELP_TITLE = "performance.usage.help.title";
     public static final String PERFORMANCE_USAGE_HELP_CONTENT = "performance.usage.help.content";

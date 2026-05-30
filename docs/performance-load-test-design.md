@@ -13,17 +13,18 @@
 
 ## 多计划设计结论
 
-当前 GUI 编辑态保持“一个工作区一个活跃压测计划”。左侧根节点“测试计划”下面可以配置多个 Thread Group，但它们属于同一个 plan；勾选启用的 Thread Group 会在同一次 Start 中一起执行。
+当前 GUI 编辑态支持“一个工作区保存多个压测计划，但同一时刻只有一个 active plan”。顶部 plan 选择器负责新建、复制、重命名、删除和切换；编辑区、Start、导出 `plan.json`、CLI/master/worker 分发都只针对当前 active plan。
 
-暂不把 GUI 做成多个顶层 plan 同时启用，原因是多 plan 会引入新的运行编排语义：不同 plan 的线程组、CSV 分片、报表汇总、结果表明细、Stop All、worker assignment 都需要按 plan 维度隔离。如果直接允许多个 plan 同时跑，会让一次 report 同时混入多个测试目标，后续定位和对比都不清晰。
+左侧根节点“测试计划”下面仍可以配置多个 Thread Group，它们属于同一个 active plan；勾选启用的 Thread Group 会在同一次 Start 中一起执行。
 
-后续如要支持多 plan，推荐按以下设计推进：
+暂不把 GUI 做成多个顶层 plan 同时执行，原因是多 plan 编排会引入新的运行语义：不同 plan 的线程组、CSV 分片、报表汇总、结果表明细、Stop All、worker assignment 都需要按 plan 维度隔离。如果直接允许多个 plan 同时跑，会让一次 report 同时混入多个测试目标，后续定位和对比都不清晰。
 
-1. 编辑态存储从单 root 迁移为 `plans[] + activePlanId`。每个 plan 保存自己的 tree、efficientMode、trendEnabled、reportRealtimeEnabled、remote worker 配置；旧 `performance_config.json` 迁移时包成一个默认 plan。
-2. GUI 左侧增加 plan 选择器或 plan 列表，提供新建、复制、重命名、删除、导入、导出。编辑区始终只编辑一个 active plan。
-3. 单次点击 Start 只执行当前选中的 active plan。批量执行多个 plan 应作为独立的“批量编排/套件”能力，串行或并行策略需要显式配置。
-4. `plan.json` 仍表示一个可执行 plan，不改成一次包含多个 plan。CLI/master/worker 继续以一个 plan 为最小执行单位；批量编排层负责按多个 `plan.json` 发起多次 run。
-5. 报表、趋势、结果明细都以 runId + planId 隔离。只有批量编排层可以做跨 plan 的对比摘要，不在单次压测 report 中混合。
+当前边界：
+
+1. 编辑态存储为 `plans[] + activePlanId`，每个 plan 保存自己的 tree、efficientMode、trendEnabled、reportRealtimeEnabled、remote worker 配置；旧 `performance_config.json` 读取时自动包成一个默认 plan。
+2. 单次点击 Start 只执行当前选中的 active plan。批量执行多个 plan 应作为独立的“批量编排/套件”能力，串行或并行策略需要显式配置。
+3. `plan.json` 仍表示一个可执行 plan，不改成一次包含多个 plan。CLI/master/worker 继续以一个 plan 为最小执行单位；批量编排层负责按多个 `plan.json` 发起多次 run。
+4. 报表、趋势、结果明细都以 runId 隔离。后续如做批量编排，再在套件层加 planId 和跨 plan 对比摘要，不在单次压测 report 中混合。
 
 ## 主要组件
 
@@ -31,6 +32,7 @@
 
 - `PerformancePanel`：模块入口，创建树、属性面板、结果页、执行引擎、统计协调器和定时器。
 - `PerformancePanelViewFactory`：集中创建 Swing 组件，降低 `PerformancePanel` 的 UI 构建代码量。
+- 顶部 plan 选择器提供编辑态多计划管理。切换 plan 前会把当前 UI tree 和执行设置写回内存快照，再加载目标 plan，避免不同计划的线程组、CSV 和 worker 配置互相污染。
 - 顶部工具栏支持 `Remote` 模式和 worker 列表配置。开启后 GUI 的 Start/Stop 不再本机执行，而是按 JMeter Remote Start/Stop All 的语义控制所有配置的 worker；顶部虚拟用户数、趋势开关和报表刷新方式与本机执行保持同一套语义。
 - `PerformanceTreeSupport` / `PerformanceTreeInteractionSupport`：管理树节点结构、右键菜单、节点选择和请求结构同步。
 - `PerformancePropertyPanelSupport`：保存当前属性面板数据，屏蔽线程组、断言、定时器、SSE、WebSocket 配置面板的细节。
@@ -227,10 +229,10 @@ sequenceDiagram
         W1->>T: execute assigned virtual users and CSV range
         W2->>T: execute assigned virtual users and CSV range
     and progress polling
-        GUI->>W1: GET /api/performance/v1/runs/{runId}?report=false
-        W1-->>GUI: lightweight status
-        GUI->>W2: GET /api/performance/v1/runs/{runId}?report=false
-        W2-->>GUI: lightweight status
+        GUI->>W1: GET /api/performance/v1/runs/{runId} or ?report=false
+        W1-->>GUI: status, optional aggregate report
+        GUI->>W2: GET /api/performance/v1/runs/{runId} or ?report=false
+        W2-->>GUI: status, optional aggregate report
     end
 
     GUI->>W1: GET /api/performance/v1/runs/{runId}/result
@@ -250,8 +252,8 @@ sequenceDiagram
 |---|---|---|---|
 | `GET` | `/api/performance/v1/health` | 探活，返回 worker id、host、port。 | 不计入压测时间。 |
 | `POST` | `/api/performance/v1/runs` | 提交一次运行，body 包含完整 `plan` 和该 worker 的 `assignment`。 | plan 上传、JSON 解析和 assignment 校验不计入最终 report 的执行时间。 |
-| `GET` | `/api/performance/v1/runs/{runId}?report=false` | 轻量状态轮询，只返回 users、requests、QPS、状态，不构建完整 report。 | 不改变最终 report 时间；GUI 趋势按轮询间隔计算窗口 QPS。 |
-| `GET` | `/api/performance/v1/runs/{runId}` | 完整状态轮询，返回运行中 report。GUI 远程模式每 1 秒轮询一次，但只有开启“实时报表”时才调用完整 report。 | 只在需要实时报表时使用，开销高于轻量状态。 |
+| `GET` | `/api/performance/v1/runs/{runId}?report=false` | 轻量状态轮询，只返回 users、requests、QPS、状态，不构建完整 report。 | 不改变最终 report 时间；只有关闭实时报表且关闭趋势时使用。 |
+| `GET` | `/api/performance/v1/runs/{runId}` | 完整状态轮询，返回运行中聚合 report。GUI 远程模式每 1 秒轮询一次，开启“实时报表”或“启用趋势”时使用。 | 实时报表用它刷新表格；趋势用它读取 HTTP/WS/SSE 协议级累计计数。 |
 | `POST` | `/api/performance/v1/runs/{runId}/stop` | 请求 worker 停止当前运行。 | 停止控制面不计入成功请求数。 |
 | `GET` | `/api/performance/v1/runs/{runId}/result` | 拉取 worker 最终 JSON report。 | 最终 report 已固定，不再重新采样。 |
 | `GET` | `/api/performance/v1/runs/{runId}/details` | 拉取 worker 有界保留的失败/慢请求明细，用于 GUI 结果表。 | 明细拉取发生在收尾阶段，不计入成功请求数。 |
@@ -261,8 +263,8 @@ sequenceDiagram
 1. `plan.json` 通过 `POST /runs` 发送到 worker，这属于控制面分发，不计入最终 report 的 `elapsedTimeMs` 和报表 QPS。
 2. worker 控制台的 `completed run ... elapsedMs` 从 worker 异步开始执行算起，包含 worker 侧 plan 编译、分片应用、脚本池启动和实际请求执行，不包含 HTTP body 上传时间。
 3. 最终 JSON report 的 `metadata.startTimeMs/endTimeMs` 来自 worker 内部 `PerformanceRunSession`，从执行引擎 `beginRun` 开始，到运行结束为止；不包含 master 读 plan、生成 assignment、POST plan 和最终拉取 result 的时间。
-4. GUI 远程模式固定每 1 秒轮询 worker 状态；趋势图按 worker status 的增量请求数采样。采样窗口在所有 worker 接收 plan 后重置，避免第一秒趋势点把 plan 分发耗时算进 QPS。
-5. CLI master 默认每 500ms 使用 `report=false` 轻量轮询，可通过 `--poll-interval-ms <ms>` 调整；GUI remote 只有在“实时报表”开启时才请求运行中完整 report。关闭实时报表时，趋势和顶部虚拟用户数仍实时刷新。
+4. GUI 远程模式固定每 1 秒轮询 worker 状态；趋势图总览按 worker status 的增量请求数采样，HTTP/WS/SSE 协议指标按运行中聚合 report 的协议累计值做窗口差分。采样窗口在所有 worker 接收 plan 后重置，避免第一秒趋势点把 plan 分发耗时算进 QPS。
+5. CLI master 默认每 500ms 使用 `report=false` 轻量轮询，可通过 `--poll-interval-ms <ms>` 调整；GUI remote 在“实时报表”或“启用趋势”开启时请求运行中聚合 report。关闭实时报表但开启趋势时不会刷新报表页，但会用聚合 report 计算 HTTP/WS/SSE 趋势。
 6. GUI remote 在 worker 到达终态后拉取 `/details`，把失败/慢请求明细写入“结果表”；worker 不实时推送请求级明细，避免拖慢压测主路径。
 
 ### GUI 远程控制方式
@@ -270,7 +272,7 @@ sequenceDiagram
 1. 在每台压测机上启动 worker：`java -jar easy-postman.jar performance worker --host 0.0.0.0 --port 19090`。worker 默认每秒打印一次 `users/requests/QPS` 进度，可用 `--progress-interval <seconds>` 调整或 `--no-progress` 关闭。
 2. GUI 导入或手工创建的 CSV 行已包含在 `plan.json` 内；如果压测计划引用 file-source CSV 或 multipart 文件，按 `plan.assets` 中的路径把文件放到每台 worker 的相同路径。
 3. 在 GUI 顶部工具栏勾选 `Remote`，在 `Workers` 输入框中填写 `host:port` 列表，支持逗号或空白分隔，例如 `10.0.0.11:19090,10.0.0.12:19090`。
-4. 点击 `Start` 后 GUI 作为 master 分发当前计划；点击 `Stop` 后向所有 worker 发送 `/stop`。顶部状态仍显示“活跃虚拟用户/总虚拟用户”，`启用趋势` 和 `报表更新方式` 与本机执行使用相同开关。运行中如果关闭实时报表，GUI 只向 worker 拉取轻量状态，不构建完整 report；运行结束后 GUI 报表页展示 master 聚合后的 JSON report 数据。
+4. 点击 `Start` 后 GUI 作为 master 分发当前计划；点击 `Stop` 后向所有 worker 发送 `/stop`。顶部状态仍显示“活跃虚拟用户/总虚拟用户”，`启用趋势` 和 `报表更新方式` 与本机执行使用相同开关。运行中如果关闭实时报表且关闭趋势，GUI 只向 worker 拉取轻量状态；开启趋势时会拉聚合 report 用于协议指标，但不刷新报表页。运行结束后 GUI 报表页展示 master 聚合后的 JSON report 数据。
 5. 分布式并发采用总量分摊：GUI 配置 100 个虚拟用户、2 个 worker 时，每台 worker 默认约 50 个；101 个虚拟用户、2 个 worker 时按 51/50 分配。CSV 行跟随虚拟用户全局区间分配，避免不同 worker 同时从第 0 行开始读取。
 
 ## 线程模型

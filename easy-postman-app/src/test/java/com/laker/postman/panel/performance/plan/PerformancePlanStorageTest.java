@@ -174,6 +174,78 @@ public class PerformancePlanStorageTest {
         assertEquals(reloadedRequests.get(1).getHttpRequestItem().getUrl(), "https://example.test/by-name");
     }
 
+    @Test
+    public void shouldSaveAndLoadMultipleEditablePlansWithOneActivePlan() throws Exception {
+        Path configPath = Files.createTempDirectory("performance-plan-storage-multi").resolve("performance_config.json");
+        PerformancePlanStorage storage = new PerformancePlanStorage();
+
+        PerformancePlanWorkspace workspace = PerformancePlanWorkspace.builder()
+                .activePlanId("plan-b")
+                .plans(List.of(
+                        savedPlan("plan-a", "Plan A", "https://example.test/a", false),
+                        savedPlan("plan-b", "Plan B", "https://example.test/b", true)
+                ))
+                .build();
+
+        storage.saveWorkspace(configPath, workspace);
+
+        PerformancePlanWorkspace loadedWorkspace = storage.loadWorkspace(configPath);
+        PerformancePlanConfiguration loadedActiveConfiguration = storage.loadConfiguration(configPath);
+
+        assertNotNull(loadedWorkspace);
+        assertEquals(loadedWorkspace.getPlans().size(), 2);
+        assertEquals(loadedWorkspace.getActivePlan().getId(), "plan-b");
+        assertEquals(loadedWorkspace.getActivePlan().getName(), "Plan B");
+        assertEquals(loadedWorkspace.getActivePlan().getPlanDocument().getRoot().getName(), "Plan B");
+        assertTrue(loadedWorkspace.getActivePlan().isReportRealtimeEnabled());
+        assertEquals(
+                loadedActiveConfiguration.getPlanDocument().getRoot().getChildren().get(0).getChildren().get(0)
+                        .getHttpRequestItem().getUrl(),
+                "https://example.test/b"
+        );
+        assertTrue(Files.readString(configPath, StandardCharsets.UTF_8).contains("\"plans\""));
+    }
+
+    @Test
+    public void shouldPreserveOtherPlansWhenSavingActiveConfiguration() throws Exception {
+        Path configPath = Files.createTempDirectory("performance-plan-storage-preserve").resolve("performance_config.json");
+        PerformancePlanStorage storage = new PerformancePlanStorage();
+        storage.saveWorkspace(configPath, PerformancePlanWorkspace.builder()
+                .activePlanId("plan-a")
+                .plans(List.of(
+                        savedPlan("plan-a", "Plan A", "https://example.test/a", false),
+                        savedPlan("plan-b", "Plan B", "https://example.test/b", false)
+                ))
+                .build());
+
+        storage.saveConfiguration(configPath, PerformancePlanConfiguration.builder()
+                .planDocument(planDocument("Updated Plan A", "https://example.test/a2"))
+                .efficientMode(false)
+                .trendEnabled(false)
+                .reportRealtimeEnabled(true)
+                .build());
+
+        PerformancePlanWorkspace loadedWorkspace = storage.loadWorkspace(configPath);
+
+        assertEquals(loadedWorkspace.getPlans().size(), 2);
+        assertEquals(loadedWorkspace.getActivePlan().getName(), "Plan A");
+        assertTrue(loadedWorkspace.getActivePlan().isReportRealtimeEnabled());
+        assertEquals(
+                loadedWorkspace.getActivePlan().getPlanDocument().getRoot().getChildren().get(0).getChildren().get(0)
+                        .getHttpRequestItem().getUrl(),
+                "https://example.test/a2"
+        );
+        PerformanceSavedPlan untouchedPlan = loadedWorkspace.getPlans().stream()
+                .filter(plan -> "plan-b".equals(plan.getId()))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(
+                untouchedPlan.getPlanDocument().getRoot().getChildren().get(0).getChildren().get(0)
+                        .getHttpRequestItem().getUrl(),
+                "https://example.test/b"
+        );
+    }
+
     private static boolean exposesType(Class<?> owner, Class<?> forbiddenType) {
         for (Executable constructor : owner.getConstructors()) {
             if (java.util.Arrays.asList(constructor.getParameterTypes()).contains(forbiddenType)) {
@@ -197,5 +269,39 @@ public class PerformancePlanStorageTest {
         item.setMethod("GET");
         item.setUrl(url);
         return item;
+    }
+
+    private static PerformanceSavedPlan savedPlan(String id, String name, String url, boolean reportRealtimeEnabled) {
+        return PerformanceSavedPlan.builder()
+                .id(id)
+                .name(name)
+                .planDocument(planDocument(name, url))
+                .efficientMode(true)
+                .trendEnabled(true)
+                .reportRealtimeEnabled(reportRealtimeEnabled)
+                .build();
+    }
+
+    private static PerformancePlanDocument planDocument(String rootName, String url) {
+        return new PerformancePlanDocument(
+                PerformancePlanNode.builder()
+                        .name(rootName)
+                        .type(NodeType.ROOT)
+                        .children(List.of(
+                                PerformancePlanNode.builder()
+                                        .name(rootName + " Users")
+                                        .type(NodeType.THREAD_GROUP)
+                                        .threadGroupData(new ThreadGroupData())
+                                        .children(List.of(
+                                                PerformancePlanNode.builder()
+                                                        .name(rootName + " Request")
+                                                        .type(NodeType.REQUEST)
+                                                        .httpRequestItem(request(rootName + "-request", url))
+                                                        .build()
+                                        ))
+                                        .build()
+                        ))
+                        .build()
+        );
     }
 }

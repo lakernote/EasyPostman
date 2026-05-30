@@ -204,7 +204,7 @@ final class PerformanceRemoteRunControlSupport {
         long totalRequests = 0;
         long failedRequests = 0;
         List<PerformanceJsonReport> reports = new ArrayList<>();
-        boolean includeReport = reportRealtimeEnabledSupplier.getAsBoolean();
+        boolean includeReport = shouldIncludeStatusReport();
         for (PerformanceWorkerEndpoint worker : workers) {
             PerformanceWorkerRunStatusResponse status = workerClient.status(worker, runId, includeReport);
             if (isTerminal(status.getStatus())) {
@@ -474,6 +474,11 @@ final class PerformanceRemoteRunControlSupport {
 
     private boolean isReportRealtimeEnabled() {
         return reportRealtimeEnabledSupplier != null && reportRealtimeEnabledSupplier.getAsBoolean();
+    }
+
+    boolean shouldIncludeStatusReport() {
+        // WS/SSE 趋势依赖 worker 的协议聚合计数；只拉轻量 status 时只能得到 HTTP 总请求数。
+        return isReportRealtimeEnabled() || isTrendEnabled();
     }
 
     private long trendSamplingIntervalMs() {

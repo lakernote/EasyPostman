@@ -7,7 +7,9 @@ import com.laker.postman.panel.performance.config.CsvDataSetPropertyPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
 import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
 import com.laker.postman.panel.performance.model.PerformanceTreeNode;
+import com.laker.postman.panel.performance.plan.PerformancePlanWorkspace;
 import com.laker.postman.panel.performance.plan.PerformanceRemoteWorkerSettings;
+import com.laker.postman.panel.performance.plan.PerformanceSwingTreePlanAdapter;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
@@ -33,7 +35,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertSame;
 
 public class PerformancePanelSaveTest extends AbstractSwingUiTest {
 
@@ -66,7 +67,9 @@ public class PerformancePanelSaveTest extends AbstractSwingUiTest {
 
             assertEquals(threadGroupData.numThreads, 7);
             assertEquals(persistenceService.saveCount.get(), 1);
-            assertSame(persistenceService.savedRoot, root);
+            DefaultMutableTreeNode savedGroup = (DefaultMutableTreeNode) persistenceService.savedRoot.getChildAt(0);
+            ThreadGroupData savedGroupData = ((PerformanceTreeNode) savedGroup.getUserObject()).threadGroupData;
+            assertEquals(savedGroupData.numThreads, 7);
             assertFalse(persistenceService.savedRemoteWorkerSettings.isEnabled());
         });
     }
@@ -292,6 +295,13 @@ public class PerformancePanelSaveTest extends AbstractSwingUiTest {
         private final AtomicInteger saveCount = new AtomicInteger();
         private DefaultMutableTreeNode savedRoot;
         private PerformanceRemoteWorkerSettings savedRemoteWorkerSettings;
+
+        @Override
+        public void saveWorkspace(PerformancePlanWorkspace workspace) {
+            saveCount.incrementAndGet();
+            savedRoot = PerformanceSwingTreePlanAdapter.toTree(workspace.getActiveConfiguration().getPlanDocument(), "Plan");
+            savedRemoteWorkerSettings = workspace.getActiveConfiguration().getRemoteWorkerSettings();
+        }
 
         @Override
         public void save(DefaultMutableTreeNode rootNode,

@@ -3,8 +3,11 @@ package com.laker.postman.panel.performance;
 import com.formdev.flatlaf.FlatClientProperties;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.MemoryLabel;
+import com.laker.postman.common.component.button.CopyButton;
+import com.laker.postman.common.component.button.EditButton;
 import com.laker.postman.common.component.button.ExportButton;
 import com.laker.postman.common.component.button.HelpButton;
+import com.laker.postman.common.component.button.PlusButton;
 import com.laker.postman.common.component.button.RefreshButton;
 import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
 import com.laker.postman.common.component.button.SegmentedToggleButton;
@@ -26,6 +29,7 @@ import com.laker.postman.panel.performance.result.PerformanceTrendView;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
 import com.laker.postman.panel.performance.timer.TimerPropertyPanel;
 import com.laker.postman.util.FontsUtil;
+import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 
@@ -219,7 +223,29 @@ final class PerformancePanelViewFactory {
 
         topPanel.add(btnPanel, BorderLayout.WEST);
 
-        JPanel remotePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 3));
+        JPanel centerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 3));
+        JLabel planLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_PLAN_LABEL));
+        planLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        planLabel.setForeground(ModernColors.getTextSecondary());
+        JComboBox<String> planSelector = new JComboBox<>();
+        planSelector.setFocusable(false);
+        planSelector.setPreferredSize(new Dimension(160, 28));
+
+        PlusButton addPlanButton = new PlusButton(IconUtil.SIZE_SMALL);
+        addPlanButton.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_PLAN_ADD_TOOLTIP));
+        CopyButton duplicatePlanButton = new CopyButton();
+        duplicatePlanButton.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_PLAN_DUPLICATE_TOOLTIP));
+        EditButton renamePlanButton = new EditButton(IconUtil.SIZE_SMALL);
+        renamePlanButton.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_PLAN_RENAME_TOOLTIP));
+        JButton deletePlanButton = createDeletePlanButton();
+
+        centerPanel.add(planLabel);
+        centerPanel.add(planSelector);
+        centerPanel.add(addPlanButton);
+        centerPanel.add(duplicatePlanButton);
+        centerPanel.add(renamePlanButton);
+        centerPanel.add(deletePlanButton);
+
         JCheckBox remoteModeCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_MODE));
         remoteModeCheckBox.setSelected(remoteExecutionEnabled);
         remoteModeCheckBox.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_MODE_TOOLTIP));
@@ -238,10 +264,10 @@ final class PerformancePanelViewFactory {
             }
         });
         addWorkerEndpointsListener(workerEndpointsField, workerEndpointsAction);
-        remotePanel.add(remoteModeCheckBox);
-        remotePanel.add(workersLabel);
-        remotePanel.add(workerEndpointsField);
-        topPanel.add(remotePanel, BorderLayout.CENTER);
+        centerPanel.add(remoteModeCheckBox);
+        centerPanel.add(workersLabel);
+        centerPanel.add(workerEndpointsField);
+        topPanel.add(centerPanel, BorderLayout.CENTER);
 
         JPanel progressPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 5));
         JLabel progressLabel = new JLabel("0/0");
@@ -261,10 +287,24 @@ final class PerformancePanelViewFactory {
                 exportBtn,
                 refreshBtn,
                 usageHelpBtn,
+                planSelector,
+                addPlanButton,
+                duplicatePlanButton,
+                renamePlanButton,
+                deletePlanButton,
                 remoteModeCheckBox,
                 workerEndpointsField,
                 progressLabel
         );
+    }
+
+    private JButton createDeletePlanButton() {
+        JButton button = new JButton(IconUtil.createThemed("icons/delete.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+        button.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_PLAN_DELETE_TOOLTIP));
+        button.setFocusable(false);
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        button.putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
+        return button;
     }
 
     private void addWorkerEndpointsListener(JTextField workerEndpointsField,
@@ -538,6 +578,11 @@ final class PerformancePanelViewFactory {
                           ExportButton exportBtn,
                           RefreshButton refreshBtn,
                           HelpButton usageHelpBtn,
+                          JComboBox<String> planSelector,
+                          JButton addPlanButton,
+                          JButton duplicatePlanButton,
+                          JButton renamePlanButton,
+                          JButton deletePlanButton,
                           JCheckBox remoteModeCheckBox,
                           JTextField workerEndpointsField,
                           JLabel progressLabel) {

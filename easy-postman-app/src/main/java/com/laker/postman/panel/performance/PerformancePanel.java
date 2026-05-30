@@ -36,8 +36,10 @@ import com.laker.postman.panel.performance.model.PerformanceStatsCollectorListen
 import com.laker.postman.panel.performance.model.PerformanceTrendWindowCollectorListener;
 import com.laker.postman.panel.performance.plan.PerformancePlanConfiguration;
 import com.laker.postman.panel.performance.plan.PerformancePlanDocument;
+import com.laker.postman.panel.performance.plan.PerformancePlanWorkspace;
 import com.laker.postman.panel.performance.plan.PerformanceRemoteWorkerSettings;
 import com.laker.postman.panel.performance.plan.PerformanceRunPlanFactory;
+import com.laker.postman.panel.performance.plan.PerformanceSavedPlan;
 import com.laker.postman.panel.performance.plan.PerformanceSwingTreePlanAdapter;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceResultCollector;
@@ -69,7 +71,9 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import java.awt.*;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * 左侧多层级树（用户组-请求-断言-定时器），右侧属性区，底部Tab结果区
@@ -114,6 +118,11 @@ public class PerformancePanel extends UiSingletonPanel {
     private StopButton stopBtn;
     private ExportButton exportBtn;
     private RefreshButton refreshBtn;
+    private JComboBox<String> planSelector;
+    private JButton addPlanButton;
+    private JButton duplicatePlanButton;
+    private JButton renamePlanButton;
+    private JButton deletePlanButton;
     private JCheckBox remoteModeCheckBox;
     private JTextField workerEndpointsField;
     private JCheckBox efficientCheckBox; // 精简明细复选框
@@ -134,6 +143,9 @@ public class PerformancePanel extends UiSingletonPanel {
     private boolean reportRealtimeEnabled = false;
     private boolean remoteExecutionEnabled = false;
     private String remoteWorkerEndpoints = "";
+    private List<PerformanceSavedPlan> savedPlans = new ArrayList<>();
+    private String activePlanId;
+    private boolean updatingPlanSelector;
 
     private PerformanceReportPanel performanceReportPanel;
     private PerformanceResultTablePanel performanceResultTablePanel;
@@ -160,9 +172,11 @@ public class PerformancePanel extends UiSingletonPanel {
         setLayout(new BorderLayout());
         this.persistenceService = BeanFactory.getBean(PerformancePersistenceService.class);
         initTimerManager();
-        PerformancePlanConfiguration persistedConfiguration = persistenceService.loadConfiguration();
+        PerformancePlanWorkspace persistedWorkspace = persistenceService.loadWorkspace();
+        initializePlanState(persistedWorkspace);
+        PerformancePlanConfiguration persistedConfiguration = activePlanConfiguration();
         applyPersistedSettings(persistedConfiguration);
-        DefaultMutableTreeNode root = loadPersistedOrDefaultRoot(persistedConfiguration);
+        DefaultMutableTreeNode root = loadPersistedOrDefaultRoot(persistedConfiguration, activePlanName());
 
         treeModel = new DefaultTreeModel(root);
         treeSupport = new PerformanceTreeSupport(treeModel);
@@ -302,9 +316,16 @@ public class PerformancePanel extends UiSingletonPanel {
         stopBtn = toolbarSection.stopBtn();
         exportBtn = toolbarSection.exportBtn();
         refreshBtn = toolbarSection.refreshBtn();
+        planSelector = toolbarSection.planSelector();
+        addPlanButton = toolbarSection.addPlanButton();
+        duplicatePlanButton = toolbarSection.duplicatePlanButton();
+        renamePlanButton = toolbarSection.renamePlanButton();
+        deletePlanButton = toolbarSection.deletePlanButton();
         remoteModeCheckBox = toolbarSection.remoteModeCheckBox();
         workerEndpointsField = toolbarSection.workerEndpointsField();
         progressLabel = toolbarSection.progressLabel();
+        installPlanToolbarListeners();
+        syncPlanSelectorItems();
         add(topPanel, BorderLayout.NORTH);
 
         List<PerformanceResultListener> resultListeners = List.of(
@@ -319,7 +340,15 @@ public class PerformancePanel extends UiSingletonPanel {
                 runBtn,
                 stopBtn,
                 refreshBtn,
-                List.of(remoteModeCheckBox, workerEndpointsField)
+                List.of(
+                        remoteModeCheckBox,
+                        workerEndpointsField,
+                        planSelector,
+                        addPlanButton,
+                        duplicatePlanButton,
+                        renamePlanButton,
+                        deletePlanButton
+                )
         );
         DefaultPerformanceNetworkRuntime networkRuntime = new DefaultPerformanceNetworkRuntime(
                 () -> new HttpClientRuntimeConfig(
@@ -397,12 +426,15 @@ public class PerformancePanel extends UiSingletonPanel {
             stopRun();
         }
 
-        PerformancePlanConfiguration persistedConfiguration = persistenceService.loadConfiguration();
+        PerformancePlanWorkspace persistedWorkspace = persistenceService.loadWorkspace();
+        initializePlanState(persistedWorkspace);
+        PerformancePlanConfiguration persistedConfiguration = activePlanConfiguration();
         applyPersistedSettings(persistedConfiguration);
-        DefaultMutableTreeNode root = loadPersistedOrDefaultRoot(persistedConfiguration);
+        DefaultMutableTreeNode root = loadPersistedOrDefaultRoot(persistedConfiguration, activePlanName());
         treeModel.setRoot(root);
         treeSupport.syncAllRequestStructures(root);
         currentRequestNode = null;
+        syncPlanSelectorItems();
         if (efficientCheckBox != null) {
             efficientCheckBox.setSelected(efficientMode);
         }
@@ -439,8 +471,44 @@ public class PerformancePanel extends UiSingletonPanel {
                 && performanceResultTablePanel != null
                 && performanceReportPanel != null
                 && performanceTrendPanel != null
+                && planSelector != null
                 && executionEngine != null
                 && remoteRunControlSupport != null;
+    }
+
+    private void initializePlanState(PerformancePlanWorkspace workspace) {
+        PerformancePlanWorkspace safeWorkspace = workspace;
+        if (safeWorkspace == null || safeWorkspace.getPlans().isEmpty()) {
+            PerformanceSavedPlan defaultPlan = PerformanceSavedPlan.builder()
+                    .id(UUID.randomUUID().toString())
+                    .name(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TEST_PLAN))
+                    .build();
+            safeWorkspace = PerformancePlanWorkspace.builder()
+                    .activePlanId(defaultPlan.getId())
+                    .plans(List.of(defaultPlan))
+                    .build();
+        }
+        savedPlans = new ArrayList<>(safeWorkspace.getPlans());
+        activePlanId = safeWorkspace.getActivePlanId();
+    }
+
+    private PerformancePlanConfiguration activePlanConfiguration() {
+        PerformanceSavedPlan plan = activePlan();
+        return plan == null ? null : plan.toConfiguration();
+    }
+
+    private PerformanceSavedPlan activePlan() {
+        for (PerformanceSavedPlan plan : savedPlans) {
+            if (plan.getId().equals(activePlanId)) {
+                return plan;
+            }
+        }
+        return savedPlans.isEmpty() ? null : savedPlans.get(0);
+    }
+
+    private String activePlanName() {
+        PerformanceSavedPlan plan = activePlan();
+        return plan == null ? I18nUtil.getMessage(MessageKeys.PERFORMANCE_TEST_PLAN) : plan.getName();
     }
 
     private void applyPersistedSettings(PerformancePlanConfiguration configuration) {
@@ -473,21 +541,317 @@ public class PerformancePanel extends UiSingletonPanel {
                 .build();
     }
 
+    private void installPlanToolbarListeners() {
+        if (planSelector != null) {
+            planSelector.addActionListener(e -> {
+                if (updatingPlanSelector || running) {
+                    return;
+                }
+                int selectedIndex = planSelector.getSelectedIndex();
+                if (selectedIndex >= 0 && selectedIndex < savedPlans.size()) {
+                    switchActivePlan(savedPlans.get(selectedIndex).getId());
+                }
+            });
+        }
+        if (addPlanButton != null) {
+            addPlanButton.addActionListener(e -> addPlan());
+        }
+        if (duplicatePlanButton != null) {
+            duplicatePlanButton.addActionListener(e -> duplicatePlan());
+        }
+        if (renamePlanButton != null) {
+            renamePlanButton.addActionListener(e -> renamePlan());
+        }
+        if (deletePlanButton != null) {
+            deletePlanButton.addActionListener(e -> deletePlan());
+        }
+    }
+
+    private void syncPlanSelectorItems() {
+        if (planSelector == null) {
+            return;
+        }
+        updatingPlanSelector = true;
+        try {
+            planSelector.removeAllItems();
+            int selectedIndex = -1;
+            for (int i = 0; i < savedPlans.size(); i++) {
+                PerformanceSavedPlan plan = savedPlans.get(i);
+                planSelector.addItem(plan.getName());
+                if (plan.getId().equals(activePlanId)) {
+                    selectedIndex = i;
+                }
+            }
+            if (selectedIndex >= 0) {
+                planSelector.setSelectedIndex(selectedIndex);
+            }
+        } finally {
+            updatingPlanSelector = false;
+        }
+    }
+
+    private void addPlan() {
+        saveCurrentPlanIntoMemory();
+        String planName = nextPlanName(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TEST_PLAN));
+        PerformanceSavedPlan newPlan = PerformanceSavedPlan.builder()
+                .id(UUID.randomUUID().toString())
+                .name(planName)
+                .build();
+        savedPlans.add(newPlan);
+        activePlanId = newPlan.getId();
+        loadActivePlanIntoUi();
+        persistCurrentWorkspaceSync();
+    }
+
+    private void duplicatePlan() {
+        saveAllPropertyPanelData();
+        saveCurrentPlanIntoMemory();
+        PerformanceSavedPlan source = activePlan();
+        if (source == null) {
+            return;
+        }
+        DefaultMutableTreeNode copiedRoot = PerformanceTreeSnapshot.copy((DefaultMutableTreeNode) treeModel.getRoot());
+        PerformancePlanDocument copiedDocument = PerformanceSwingTreePlanAdapter.toDocument(copiedRoot);
+        String planName = nextPlanName(source.getName() + " " + I18nUtil.getMessage(MessageKeys.PERFORMANCE_PLAN_COPY_SUFFIX));
+        PerformanceSavedPlan copiedPlan = PerformanceSavedPlan.builder()
+                .id(UUID.randomUUID().toString())
+                .name(planName)
+                .planDocument(copiedDocument)
+                .efficientMode(efficientMode)
+                .trendEnabled(trendEnabled)
+                .reportRealtimeEnabled(reportRealtimeEnabled)
+                .remoteWorkerSettings(currentRemoteWorkerSettings())
+                .build();
+        savedPlans.add(copiedPlan);
+        activePlanId = copiedPlan.getId();
+        loadActivePlanIntoUi();
+        persistCurrentWorkspaceSync();
+    }
+
+    private void renamePlan() {
+        PerformanceSavedPlan currentPlan = activePlan();
+        if (currentPlan == null) {
+            return;
+        }
+        Object value = JOptionPane.showInputDialog(
+                this,
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_PLAN_RENAME_PROMPT),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_PLAN_RENAME_TITLE),
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                null,
+                currentPlan.getName()
+        );
+        if (value == null) {
+            return;
+        }
+        String newName = value.toString().trim();
+        if (newName.isEmpty()) {
+            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.PERFORMANCE_PLAN_NAME_EMPTY));
+            return;
+        }
+        saveCurrentPlanIntoMemory();
+        PerformanceSavedPlan latestPlan = activePlan();
+        replaceSavedPlan(currentPlan.getId(), (latestPlan == null ? currentPlan : latestPlan).withName(newName));
+        renameRootNode(newName);
+        syncPlanSelectorItems();
+        persistCurrentWorkspaceSync();
+    }
+
+    private void deletePlan() {
+        PerformanceSavedPlan currentPlan = activePlan();
+        if (currentPlan == null) {
+            return;
+        }
+        if (savedPlans.size() <= 1) {
+            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.PERFORMANCE_PLAN_DELETE_LAST_FORBIDDEN));
+            return;
+        }
+        int result = JOptionPane.showConfirmDialog(
+                this,
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_PLAN_DELETE_CONFIRM, currentPlan.getName()),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_PLAN_DELETE_TOOLTIP),
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+        );
+        if (result != JOptionPane.YES_OPTION) {
+            return;
+        }
+        int removedIndex = indexOfPlan(currentPlan.getId());
+        savedPlans.removeIf(plan -> plan.getId().equals(currentPlan.getId()));
+        int nextIndex = Math.min(Math.max(0, removedIndex), savedPlans.size() - 1);
+        activePlanId = savedPlans.get(nextIndex).getId();
+        loadActivePlanIntoUi();
+        persistCurrentWorkspaceSync();
+    }
+
+    private void switchActivePlan(String planId) {
+        if (planId == null || planId.equals(activePlanId)) {
+            return;
+        }
+        saveCurrentPlanIntoMemory();
+        activePlanId = planId;
+        loadActivePlanIntoUi();
+        persistCurrentWorkspaceSync();
+    }
+
+    private void loadActivePlanIntoUi() {
+        PerformancePlanConfiguration configuration = activePlanConfiguration();
+        applyPersistedSettings(configuration);
+        DefaultMutableTreeNode root = loadPersistedOrDefaultRoot(configuration, activePlanName());
+        treeModel.setRoot(root);
+        treeSupport.syncAllRequestStructures(root);
+        currentRequestNode = null;
+        updateOptionControlsFromState();
+        clearCachedPerformanceResults();
+        propertyCardLayout.show(propertyPanel, EMPTY);
+        for (int i = 0; i < performanceTree.getRowCount(); i++) {
+            performanceTree.expandRow(i);
+        }
+        selectFirstThreadGroup();
+        syncPlanSelectorItems();
+    }
+
+    private void updateOptionControlsFromState() {
+        if (efficientCheckBox != null) {
+            efficientCheckBox.setSelected(efficientMode);
+        }
+        if (trendCheckBox != null) {
+            trendCheckBox.setSelected(trendEnabled);
+        }
+        if (reportRefreshModeBox != null) {
+            reportRefreshModeBox.setSelectedIndex(reportRealtimeEnabled ? 1 : 0);
+        }
+        if (remoteModeCheckBox != null) {
+            remoteModeCheckBox.setSelected(remoteExecutionEnabled);
+        }
+        if (workerEndpointsField != null) {
+            workerEndpointsField.setText(remoteWorkerEndpoints);
+        }
+    }
+
+    private void saveCurrentPlanIntoMemory() {
+        if (treeModel == null) {
+            return;
+        }
+        if (activePlanId == null) {
+            activePlanId = UUID.randomUUID().toString();
+        }
+        replaceSavedPlan(activePlanId, captureCurrentPlan());
+    }
+
+    private PerformanceSavedPlan captureCurrentPlan() {
+        PerformanceSavedPlan currentPlan = activePlan();
+        String planId = activePlanId == null ? UUID.randomUUID().toString() : activePlanId;
+        String planName = currentPlan == null ? I18nUtil.getMessage(MessageKeys.PERFORMANCE_TEST_PLAN) : currentPlan.getName();
+        DefaultMutableTreeNode root = PerformanceTreeSnapshot.copy((DefaultMutableTreeNode) treeModel.getRoot());
+        PerformancePlanDocument document = PerformanceSwingTreePlanAdapter.toDocument(root);
+        return PerformanceSavedPlan.fromConfiguration(
+                planId,
+                planName,
+                PerformancePlanConfiguration.builder()
+                        .planDocument(document)
+                        .efficientMode(efficientMode)
+                        .trendEnabled(trendEnabled)
+                        .reportRealtimeEnabled(reportRealtimeEnabled)
+                        .remoteWorkerSettings(currentRemoteWorkerSettings())
+                        .build()
+        );
+    }
+
+    private PerformancePlanWorkspace currentWorkspaceSnapshot() {
+        saveCurrentPlanIntoMemory();
+        return PerformancePlanWorkspace.builder()
+                .activePlanId(activePlanId)
+                .plans(savedPlans)
+                .build();
+    }
+
+    private void persistCurrentWorkspaceSync() {
+        if (persistenceService != null) {
+            persistenceService.saveWorkspace(currentWorkspaceSnapshot());
+        }
+    }
+
+    private void replaceSavedPlan(String planId, PerformanceSavedPlan replacement) {
+        if (replacement == null) {
+            return;
+        }
+        for (int i = 0; i < savedPlans.size(); i++) {
+            if (savedPlans.get(i).getId().equals(planId)) {
+                savedPlans.set(i, replacement);
+                return;
+            }
+        }
+        savedPlans.add(replacement);
+    }
+
+    private int indexOfPlan(String planId) {
+        for (int i = 0; i < savedPlans.size(); i++) {
+            if (savedPlans.get(i).getId().equals(planId)) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    private String nextPlanName(String baseName) {
+        String safeBaseName = baseName == null || baseName.isBlank()
+                ? I18nUtil.getMessage(MessageKeys.PERFORMANCE_TEST_PLAN)
+                : baseName.trim();
+        String candidate = safeBaseName;
+        int index = 2;
+        while (planNameExists(candidate)) {
+            candidate = safeBaseName + " " + index;
+            index++;
+        }
+        return candidate;
+    }
+
+    private boolean planNameExists(String name) {
+        for (PerformanceSavedPlan plan : savedPlans) {
+            if (plan.getName().equals(name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void renameRootNode(String name) {
+        if (treeModel == null || name == null || name.isBlank()) {
+            return;
+        }
+        Object root = treeModel.getRoot();
+        if (root instanceof DefaultMutableTreeNode rootNode
+                && rootNode.getUserObject() instanceof PerformanceTreeNode nodeData) {
+            nodeData.name = name;
+            treeModel.nodeChanged(rootNode);
+        }
+    }
+
     private boolean isRemoteExecutionSelected() {
         return currentRemoteWorkerSettings().isEnabled();
     }
 
-    private DefaultMutableTreeNode loadPersistedOrDefaultRoot(PerformancePlanConfiguration configuration) {
+    private DefaultMutableTreeNode loadPersistedOrDefaultRoot(PerformancePlanConfiguration configuration,
+                                                              String rootName) {
         PerformancePlanDocument document = configuration == null ? null : configuration.getPlanDocument();
         DefaultMutableTreeNode savedRoot = PerformanceSwingTreePlanAdapter.toTree(
                 document,
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_TEST_PLAN)
+                rootName == null || rootName.isBlank()
+                        ? I18nUtil.getMessage(MessageKeys.PERFORMANCE_TEST_PLAN)
+                        : rootName
         );
         if (savedRoot != null) {
             return savedRoot;
         }
 
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new PerformanceTreeNode(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TEST_PLAN), NodeType.ROOT));
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new PerformanceTreeNode(
+                rootName == null || rootName.isBlank()
+                        ? I18nUtil.getMessage(MessageKeys.PERFORMANCE_TEST_PLAN)
+                        : rootName,
+                NodeType.ROOT
+        ));
         PerformanceTreeSupport.createDefaultRequest(root);
         return root;
     }
@@ -584,8 +948,7 @@ public class PerformancePanel extends UiSingletonPanel {
 
         saveAllPropertyPanelData();
 
-        DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();
-        persistenceService.save(root, efficientMode, trendEnabled, reportRealtimeEnabled, currentRemoteWorkerSettings());
+        persistenceService.saveWorkspace(currentWorkspaceSnapshot());
         NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_SAVE_SUCCESS));
     }
 
@@ -795,10 +1158,7 @@ public class PerformancePanel extends UiSingletonPanel {
         try {
             // 保存所有属性面板数据到树节点
             saveAllPropertyPanelData();
-            // 获取根节点
-            DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();
-            // 异步保存配置
-            persistenceService.saveAsync(root, efficientMode, trendEnabled, reportRealtimeEnabled, currentRemoteWorkerSettings());
+            persistenceService.saveWorkspaceAsync(currentWorkspaceSnapshot());
         } catch (Exception e) {
             log.error("Failed to save performance config", e);
         }
@@ -815,8 +1175,7 @@ public class PerformancePanel extends UiSingletonPanel {
             }
             propertyPanelSupport.forceCommitAllSpinners();
             saveAllPropertyPanelData();
-            DefaultMutableTreeNode root = (DefaultMutableTreeNode) treeModel.getRoot();
-            persistenceService.save(root, efficientMode, trendEnabled, reportRealtimeEnabled, currentRemoteWorkerSettings());
+            persistenceService.saveWorkspace(currentWorkspaceSnapshot());
         } catch (Exception e) {
             log.error("Failed to save performance config", e);
         }

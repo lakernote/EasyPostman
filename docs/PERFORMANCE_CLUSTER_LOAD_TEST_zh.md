@@ -100,12 +100,12 @@ java -jar easy-postman-5.5.28.jar \
 
 GUI 远程模式运行时，每 1 秒向每个 worker 查询一次状态：
 
-- 关闭“实时刷新”时：请求 `/api/performance/v1/runs/{runId}?report=false`，只拉轻量状态，包含活跃用户数、总用户数、请求数、失败数、QPS 和运行状态。
-- 开启“实时刷新”时：请求 `/api/performance/v1/runs/{runId}`，worker 会构建当前 report 快照返回，GUI 聚合后刷新“报表”页。
-- “启用趋势”使用同一轮状态数据做趋势采样，不额外增加 worker 请求次数；趋势采样间隔取用户设置，最低 1 秒。
+- 关闭“实时刷新”且关闭“启用趋势”时：请求 `/api/performance/v1/runs/{runId}?report=false`，只拉轻量状态，包含活跃用户数、总用户数、请求数、失败数、QPS 和运行状态。
+- 开启“实时刷新”或“启用趋势”时：请求 `/api/performance/v1/runs/{runId}`，worker 会构建当前聚合 report 快照返回。实时报表用它刷新“报表”页；趋势图用它读取 HTTP/WS/SSE 的协议级累计计数。
+- “启用趋势”使用同一轮状态数据做趋势采样，不额外增加 worker 请求次数；趋势采样间隔取用户设置，最低 1 秒。WS/SSE 的发送消息/秒、接收消息/秒必须依赖聚合 report，否则轻量 status 只能得到总请求数，无法区分协议消息计数。
 - 运行结束后：master 拉取 `/result` 获取最终报告，再拉取 `/details` 获取失败/慢请求明细。
 
-因此，worker 数越多，master 每秒控制面请求数约为 `worker 数量`。开启实时报表时，每个响应体更大、worker 需要构建 report 快照，适合观察长时间压测过程；短压测或极限吞吐压测建议关闭实时报表，只看趋势和最终报表。
+因此，worker 数越多，master 每秒控制面请求数约为 `worker 数量`。开启实时报表或趋势时，每个响应体更大、worker 需要构建聚合 report 快照，但不会返回失败明细或响应体列表；短压测或极限吞吐压测建议按需关闭实时报表，只看趋势和最终报表。
 
 ## worker 内存和性能边界
 
@@ -130,8 +130,8 @@ worker 不保存所有请求明细，避免高 QPS 时内存无限增长：
 |---|---|---|
 | `GET` | `/api/performance/v1/health` | worker 探活。 |
 | `POST` | `/api/performance/v1/runs` | 提交一次运行，body 包含完整 `plan` 和该 worker 的 `assignment`。 |
-| `GET` | `/api/performance/v1/runs/{runId}?report=false` | 轻量状态轮询。 |
-| `GET` | `/api/performance/v1/runs/{runId}` | 带运行中 report 的状态轮询。 |
+| `GET` | `/api/performance/v1/runs/{runId}?report=false` | 轻量状态轮询，关闭实时报表和趋势时使用。 |
+| `GET` | `/api/performance/v1/runs/{runId}` | 带运行中聚合 report 的状态轮询，开启实时报表或趋势时使用。 |
 | `POST` | `/api/performance/v1/runs/{runId}/stop` | 停止指定运行。 |
 | `GET` | `/api/performance/v1/runs/{runId}/result` | 拉取最终 JSON report。 |
 | `GET` | `/api/performance/v1/runs/{runId}/details` | 拉取失败/慢请求明细，用于 GUI 结果表。 |

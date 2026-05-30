@@ -5,6 +5,7 @@ import com.laker.postman.performance.core.report.PerformanceJsonReport;
 import com.laker.postman.performance.core.report.PerformanceJsonReportApi;
 import com.laker.postman.performance.core.report.PerformanceJsonReportDuration;
 import com.laker.postman.performance.core.report.PerformanceJsonReportProtocol;
+import com.laker.postman.performance.core.report.PerformanceJsonReportStream;
 import com.laker.postman.performance.core.report.PerformanceJsonReportSummary;
 import org.testng.annotations.Test;
 
@@ -43,6 +44,31 @@ public class PerformanceRemoteTrendWindowSamplerTest {
         assertEquals(second.http().avgDurationMs(), 5.0);
     }
 
+    @Test
+    public void shouldCalculateWebSocketAndSseMetricsFromRemoteReportDeltas() {
+        PerformanceRemoteTrendWindowSampler sampler = new PerformanceRemoteTrendWindowSampler();
+        sampler.reset(1_000L);
+
+        PerformanceTrendSnapshot snapshot = sampler.sample(
+                10,
+                15,
+                1,
+                streamReport(),
+                2_000L
+        );
+
+        assertEquals(snapshot.webSocket().samples(), 8);
+        assertEquals(snapshot.webSocket().sentMessages(), 100);
+        assertEquals(snapshot.webSocket().receivedMessages(), 80);
+        assertEquals(snapshot.webSocket().sentRate(), 100.0);
+        assertEquals(snapshot.webSocket().receivedRate(), 80.0);
+        assertEquals(snapshot.sse().samples(), 7);
+        assertEquals(snapshot.sse().receivedMessages(), 35);
+        assertEquals(snapshot.sse().receivedRate(), 35.0);
+        assertEquals(snapshot.overview().sentMessages(), 100);
+        assertEquals(snapshot.overview().receivedMessages(), 115);
+    }
+
     private static PerformanceJsonReport report(long total, long success, long failed, long avgDuration) {
         PerformanceJsonReportApi httpTotal = PerformanceJsonReportApi.builder()
                 .name("HTTP Total")
@@ -62,6 +88,48 @@ public class PerformanceRemoteTrendWindowSamplerTest {
                         .protocol("HTTP")
                         .total(httpTotal)
                         .build()))
+                .build();
+    }
+
+    private static PerformanceJsonReport streamReport() {
+        PerformanceJsonReportApi webSocketTotal = PerformanceJsonReportApi.builder()
+                .name("WebSocket Total")
+                .protocol("WEBSOCKET")
+                .total(8L)
+                .success(8L)
+                .failed(0L)
+                .stream(PerformanceJsonReportStream.builder()
+                        .sentMessages(100L)
+                        .receivedMessages(80L)
+                        .build())
+                .build();
+        PerformanceJsonReportApi sseTotal = PerformanceJsonReportApi.builder()
+                .name("SSE Total")
+                .protocol("SSE")
+                .total(7L)
+                .success(6L)
+                .failed(1L)
+                .stream(PerformanceJsonReportStream.builder()
+                        .receivedMessages(35L)
+                        .matchedMessages(12L)
+                        .build())
+                .build();
+        return PerformanceJsonReport.builder()
+                .summary(PerformanceJsonReportSummary.builder()
+                        .totalRequests(15L)
+                        .successRequests(14L)
+                        .failedRequests(1L)
+                        .build())
+                .protocols(Map.of(
+                        "WEBSOCKET", PerformanceJsonReportProtocol.builder()
+                                .protocol("WEBSOCKET")
+                                .total(webSocketTotal)
+                                .build(),
+                        "SSE", PerformanceJsonReportProtocol.builder()
+                                .protocol("SSE")
+                                .total(sseTotal)
+                                .build()
+                ))
                 .build();
     }
 }

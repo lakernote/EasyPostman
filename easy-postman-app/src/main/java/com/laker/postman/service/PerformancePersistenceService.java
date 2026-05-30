@@ -8,6 +8,7 @@ import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.performance.plan.PerformancePlanConfiguration;
 import com.laker.postman.panel.performance.plan.PerformancePlanDocument;
 import com.laker.postman.panel.performance.plan.PerformancePlanStorage;
+import com.laker.postman.panel.performance.plan.PerformancePlanWorkspace;
 import com.laker.postman.panel.performance.plan.PerformanceRemoteWorkerSettings;
 import com.laker.postman.panel.performance.plan.PerformanceSwingTreePlanAdapter;
 import lombok.extern.slf4j.Slf4j;
@@ -160,6 +161,15 @@ public class PerformancePersistenceService {
         planStorage.saveConfiguration(configPath, configuration);
     }
 
+    public void saveWorkspace(PerformancePlanWorkspace workspace) {
+        planStorage.saveWorkspace(getConfigFilePath(), workspace);
+    }
+
+    public void saveWorkspaceAsync(PerformancePlanWorkspace workspace) {
+        Path configPath = getConfigFilePath();
+        saveExecutor.execute(() -> planStorage.saveWorkspace(configPath, workspace));
+    }
+
     /**
      * 异步保存配置
      */
@@ -227,6 +237,10 @@ public class PerformancePersistenceService {
 
     public PerformancePlanConfiguration loadConfiguration() {
         return planStorage.loadConfiguration(getConfigFilePath());
+    }
+
+    public PerformancePlanWorkspace loadWorkspace() {
+        return planStorage.loadWorkspace(getConfigFilePath());
     }
 
     /**

@@ -206,6 +206,7 @@ java -jar target/easy-postman-*.jar
 | 📖 [功能详细说明](docs/FEATURES_zh.md) | 全面的功能文档 |
 | 🏗️ [系统架构](docs/ARCHITECTURE_zh.md) | 技术栈和架构设计 |
 | 🚀 [构建指南](docs/BUILD_zh.md) | 从源码构建和生成安装包 |
+| ⚡ [集群压测使用指南](docs/PERFORMANCE_CLUSTER_LOAD_TEST_zh.md) | GUI 远程模式、CLI master/worker、CSV 分片、实时刷新和结果明细 |
 | 🔌 [插件架构与安装](docs/PLUGINS_zh.md) | 插件模块、开发流程、在线/离线安装 |
 | 🖼️ [截图展示](docs/SCREENSHOTS_zh.md) | 所有应用截图 |
 | 📝 [脚本 API 参考](docs/SCRIPT_API_REFERENCE_zh.md) | 请求前和测试脚本 API，含 Redis/Kafka/ES/InfluxDB |

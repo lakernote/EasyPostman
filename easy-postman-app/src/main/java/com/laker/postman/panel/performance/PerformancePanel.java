@@ -367,6 +367,7 @@ public class PerformancePanel extends UiSingletonPanel {
                 value -> running = value,
                 runUiController,
                 performanceReportPanel,
+                performanceResultTablePanel,
                 performanceTrendPanel,
                 this::clearCachedPerformanceResults,
                 () -> resultTabbedPane.setSelectedIndex(PerformancePanelViewFactory.RESULT_TAB_REPORT),
@@ -714,6 +715,10 @@ public class PerformancePanel extends UiSingletonPanel {
                     GlobalVariablesService.getInstance().getGlobalVariables(),
                     AppConstants.APP_NAME + " " + SystemUtil.getCurrentVersion()
             );
+            if (timerManager != null) {
+                // 远程执行由 worker 轮询刷新趋势和报表，停掉本地 stats 定时器，避免空本地快照覆盖 master 报表。
+                timerManager.stopAll();
+            }
             runThread = remoteRunControlSupport.startRun(runPlan, workers, progressLabel);
         } catch (Exception ex) {
             log.error("Failed to start remote performance run", ex);
@@ -885,6 +890,9 @@ public class PerformancePanel extends UiSingletonPanel {
     }
 
     private void refreshReportSnapshot() {
+        if (isRemoteExecutionSelected()) {
+            return;
+        }
         if (statisticsCoordinator != null) {
             statisticsCoordinator.updateReportWithLatestDataSync();
         }

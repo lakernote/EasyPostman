@@ -2,6 +2,8 @@ package com.laker.postman.panel.performance;
 
 import com.laker.postman.panel.performance.control.PerformanceRunUiController;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
+import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
+import com.laker.postman.panel.performance.result.PerformanceWorkerResultDetailDisplayMapper;
 import com.laker.postman.panel.performance.result.PerformanceTrendView;
 import com.laker.postman.performance.core.model.PerformanceTrendSnapshot;
 import com.laker.postman.performance.core.report.PerformanceJsonReport;
@@ -14,10 +16,13 @@ import com.laker.postman.performance.core.runtime.PerformanceThreadFactory;
 import com.laker.postman.performance.core.worker.PerformanceWorkerAssignment;
 import com.laker.postman.performance.core.worker.PerformanceWorkerAssignmentPlanner;
 import com.laker.postman.performance.core.worker.PerformanceWorkerEndpoint;
+import com.laker.postman.performance.core.worker.PerformanceWorkerResultDetail;
+import com.laker.postman.performance.core.worker.PerformanceWorkerRunDetailsResponse;
 import com.laker.postman.performance.core.worker.PerformanceWorkerRunRequest;
-import com.laker.postman.performance.core.worker.PerformanceWorkerRunResultResponse;
 import com.laker.postman.performance.core.worker.PerformanceWorkerRunStatusResponse;
 import com.laker.postman.performance.master.PerformanceWorkerHttpClient;
+import com.laker.postman.performance.master.PerformanceWorkerReportCollector;
+import com.laker.postman.performance.master.PerformanceWorkerReportCollector.PerformanceWorkerReportResult;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -45,6 +50,7 @@ final class PerformanceRemoteRunControlSupport {
     private final Consumer<Boolean> runningSetter;
     private final PerformanceRunUiController runUiController;
     private final PerformanceReportPanel performanceReportPanel;
+    private final PerformanceResultTablePanel performanceResultTablePanel;
     private final PerformanceTrendView performanceTrendPanel;
     private final Runnable clearCachedPerformanceResultsAction;
     private final Runnable showReportTabAction;
@@ -53,12 +59,14 @@ final class PerformanceRemoteRunControlSupport {
     private final LongSupplier trendSamplingIntervalMsSupplier;
     private final PerformanceWorkerAssignmentPlanner assignmentPlanner = new PerformanceWorkerAssignmentPlanner();
     private final PerformanceWorkerHttpClient workerClient = new PerformanceWorkerHttpClient();
+    private final PerformanceWorkerReportCollector reportCollector = new PerformanceWorkerReportCollector(workerClient);
     private final PerformanceRemoteTrendWindowSampler trendWindowSampler = new PerformanceRemoteTrendWindowSampler();
     private final AtomicBoolean stopping = new AtomicBoolean(false);
     private volatile String currentRunId = "";
     private volatile List<PerformanceWorkerEndpoint> currentWorkers = List.of();
     private volatile int currentTotalUsers;
     private volatile long lastTrendSampleAtMs;
+    private volatile PerformanceJsonReport lastLiveReport;
 
     Thread startRun(PerformanceRunPlan runPlan,
                     List<PerformanceWorkerEndpoint> workers,
@@ -79,6 +87,7 @@ final class PerformanceRemoteRunControlSupport {
         clearCachedPerformanceResultsAction.run();
         currentTotalUsers = 0;
         lastTrendSampleAtMs = 0L;
+        lastLiveReport = null;
         trendWindowSampler.reset(0L);
         runUiController.initializeProgress(progressLabel, 0);
 
@@ -117,7 +126,8 @@ final class PerformanceRemoteRunControlSupport {
             }
             waitForWorkers(workers, runId, progressLabel, totalUsers);
             PerformanceJsonReport report = collectReport(workers, runId);
-            finishRun(report, workers.size(), totalUsers, progressLabel);
+            List<PerformanceWorkerResultDetail> details = collectDetails(workers, runId);
+            finishRun(report, details, workers.size(), totalUsers, progressLabel);
         } catch (Exception ex) {
             sendStopAsync(runId, workers);
             log.error("Remote performance run failed", ex);
@@ -218,6 +228,7 @@ final class PerformanceRemoteRunControlSupport {
                 "GUI",
                 reports
         );
+        rememberLastLiveReport(report);
         return new RemoteProgressSnapshot(
                 activeUsers,
                 resolvedTotalUsers,
@@ -233,37 +244,61 @@ final class PerformanceRemoteRunControlSupport {
         List<PerformanceJsonReport> reports = new ArrayList<>();
         String status = stopping.get() ? PerformanceRunStatus.STOPPED : PerformanceRunStatus.SUCCESS;
         for (PerformanceWorkerEndpoint worker : workers) {
-            PerformanceWorkerRunResultResponse response = workerClient.result(worker, runId);
-            if (PerformanceRunStatus.FAILED.equals(response.getStatus())) {
+            PerformanceWorkerReportResult response = reportCollector.collect(worker, runId);
+            if (PerformanceRunStatus.FAILED.equals(response.status())) {
                 status = PerformanceRunStatus.FAILED;
-            } else if (PerformanceRunStatus.STOPPED.equals(response.getStatus())
+            } else if (PerformanceRunStatus.STOPPED.equals(response.status())
                     && !PerformanceRunStatus.FAILED.equals(status)) {
                 status = PerformanceRunStatus.STOPPED;
             }
-            if (response.getReport() != null) {
-                reports.add(response.getReport());
-            } else if (response.getError() != null && !response.getError().isBlank()) {
+            if (response.report() != null) {
+                reports.add(response.report());
+            } else if (response.error() != null && !response.error().isBlank()) {
                 reports.add(workerErrorReport(worker, runId, response));
             }
+        }
+        if (!PerformanceWorkerReportCollector.hasAnyReportData(reports)
+                && PerformanceWorkerReportCollector.hasReportData(lastLiveReport)) {
+            // 远程实时刷新已经拿到过有效报表时，最终 result 偶发空报表不能覆盖用户看到的结果。
+            reports.add(lastLiveReport);
+            log.warn("使用运行中最后一次有效报表兜底 master 最终报表: runId={}", runId);
         }
         return PerformanceJsonReportSummaryMapper.merge(runId, "gui-master", status, "GUI", reports);
     }
 
+    private List<PerformanceWorkerResultDetail> collectDetails(List<PerformanceWorkerEndpoint> workers, String runId) {
+        List<PerformanceWorkerResultDetail> details = new ArrayList<>();
+        for (PerformanceWorkerEndpoint worker : workers) {
+            try {
+                PerformanceWorkerRunDetailsResponse response = workerClient.details(worker, runId);
+                details.addAll(response.getDetails());
+            } catch (Exception ex) {
+                log.warn("Failed to collect remote worker result details: worker={}, runId={}",
+                        endpointLabel(worker), runId, ex);
+            }
+        }
+        return details;
+    }
+
     private PerformanceJsonReport workerErrorReport(PerformanceWorkerEndpoint worker,
                                                     String runId,
-                                                    PerformanceWorkerRunResultResponse response) {
+                                                    PerformanceWorkerReportResult response) {
         return PerformanceJsonReport.builder()
                 .metadata(PerformanceJsonReportMetadata.builder()
                         .runId(runId)
                         .source(endpointLabel(worker))
-                        .status(response.getStatus())
-                        .error(response.getError())
+                        .status(response.status())
+                        .error(response.error())
                         .build())
                 .protocols(PerformanceJsonReportSummaryMapper.emptyProtocols())
                 .build();
     }
 
-    private void finishRun(PerformanceJsonReport report, int workerCount, int totalUsers, JLabel progressLabel) {
+    private void finishRun(PerformanceJsonReport report,
+                           List<PerformanceWorkerResultDetail> details,
+                           int workerCount,
+                           int totalUsers,
+                           JLabel progressLabel) {
         SwingUtilities.invokeLater(() -> {
             runningSetter.accept(false);
             runUiController.markIdle();
@@ -271,6 +306,7 @@ final class PerformanceRemoteRunControlSupport {
                 showReportTabAction.run();
             }
             performanceReportPanel.updateReport(report);
+            updateResultDetails(details);
             if (PerformanceRunStatus.STOPPED.equals(report.getMetadata().getStatus())) {
                 updateCompletionProgress(progressLabel, totalUsers);
                 updateFinalTrend(report, totalUsers, workerCount);
@@ -292,6 +328,19 @@ final class PerformanceRemoteRunControlSupport {
                 ));
             }
         });
+    }
+
+    private void updateResultDetails(List<PerformanceWorkerResultDetail> details) {
+        if (performanceResultTablePanel == null || details == null || details.isEmpty()) {
+            return;
+        }
+        for (PerformanceWorkerResultDetail detail : details) {
+            performanceResultTablePanel.addResult(
+                    PerformanceWorkerResultDetailDisplayMapper.toResultNodeInfo(detail),
+                    false
+            );
+        }
+        performanceResultTablePanel.flushPendingResults();
     }
 
     private void finishFailed(Exception ex, JLabel progressLabel) {
@@ -325,6 +374,12 @@ final class PerformanceRemoteRunControlSupport {
 
     private boolean isTerminal(String status) {
         return PerformanceRunStatus.isTerminal(status);
+    }
+
+    private void rememberLastLiveReport(PerformanceJsonReport report) {
+        if (PerformanceWorkerReportCollector.hasReportData(report)) {
+            lastLiveReport = report;
+        }
     }
 
     private void updateRemoteProgress(JLabel progressLabel, RemoteProgressSnapshot progress) {

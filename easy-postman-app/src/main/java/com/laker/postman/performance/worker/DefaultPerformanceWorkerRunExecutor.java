@@ -2,6 +2,7 @@ package com.laker.postman.performance.worker;
 
 import com.laker.postman.performance.core.report.PerformanceJsonReport;
 import com.laker.postman.performance.core.report.PerformanceJsonReportMetadata;
+import com.laker.postman.performance.core.report.PerformanceJsonReportStatusResolver;
 import com.laker.postman.performance.core.worker.PerformanceWorkerAssignment;
 import com.laker.postman.performance.core.worker.PerformanceWorkerEndpoint;
 import com.laker.postman.performance.core.worker.PerformanceWorkerRunRequest;
@@ -45,17 +46,27 @@ public class DefaultPerformanceWorkerRunExecutor implements PerformanceWorkerRun
             return null;
         }
         PerformanceJsonReportMetadata metadata = report.getMetadata();
+        String error = PerformanceJsonReportStatusResolver.withFailureSummary(
+                metadata.getError(),
+                report.getSummary()
+        );
+        String status = PerformanceJsonReportStatusResolver.resolve(
+                metadata.getStatus(),
+                metadata.isStopped(),
+                error,
+                report.getSummary()
+        );
         return PerformanceJsonReport.builder()
                 .metadata(PerformanceJsonReportMetadata.builder()
                         .runId(request.getRunId())
                         .source(workerSource(request.getAssignment()))
-                        .status(metadata.getStatus())
+                        .status(status)
                         .planPath("worker:" + request.getRunId())
                         .startTimeMs(metadata.getStartTimeMs())
                         .endTimeMs(metadata.getEndTimeMs())
                         .elapsedTimeMs(metadata.getElapsedTimeMs())
                         .stopped(metadata.isStopped())
-                        .error(metadata.getError())
+                        .error(error)
                         .build())
                 .summary(report.getSummary())
                 .protocols(report.getProtocols())

@@ -1,10 +1,14 @@
 package com.laker.postman.performance.master;
 
 import com.laker.postman.performance.core.model.NodeType;
+import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.performance.core.plan.PerformanceCorePlanDocument;
 import com.laker.postman.performance.core.plan.PerformanceCorePlanNode;
+import com.laker.postman.performance.core.report.PerformanceJsonReportApi;
+import com.laker.postman.performance.core.report.PerformanceJsonReportDuration;
 import com.laker.postman.performance.core.report.PerformanceJsonReport;
 import com.laker.postman.performance.core.report.PerformanceJsonReportMetadata;
+import com.laker.postman.performance.core.report.PerformanceJsonReportProtocol;
 import com.laker.postman.performance.core.report.PerformanceJsonReportSummary;
 import com.laker.postman.performance.core.report.PerformanceJsonReportSummaryMapper;
 import com.laker.postman.performance.core.run.PerformanceRunPlan;
@@ -21,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -146,6 +151,29 @@ public class PerformanceMasterRunCommandTest {
         assertTrue(report.getMetadata().getError().contains("boom"));
     }
 
+    @Test
+    public void shouldFallbackToStatusReportWhenResultReportIsMissing() throws Exception {
+        Path tempDir = Files.createTempDirectory("ep-master-run-status-report");
+        Path planPath = tempDir.resolve("plan.json");
+        new PerformanceRunPlanJsonStorage().save(planPath, emptyPlan());
+        RecordingWorkerHttpClient workerClient = new RecordingWorkerHttpClient();
+        workerClient.omitResultReport = true;
+
+        PerformanceJsonReport report = new PerformanceMasterRunExecutor(
+                new com.laker.postman.performance.core.worker.PerformanceWorkerAssignmentPlanner(),
+                workerClient
+        ).execute(PerformanceMasterOptions.builder()
+                .planPath(planPath)
+                .workers(List.of(new com.laker.postman.performance.core.worker.PerformanceWorkerEndpoint("127.0.0.1", 19090)))
+                .timeoutMs(1_000L)
+                .pollIntervalMs(50L)
+                .build());
+
+        assertEquals(report.getSummary().getTotalRequests(), 2L);
+        assertTrue(report.getProtocols().get(PerformanceProtocol.HTTP.name()).getTotal().getTotal() > 0);
+        assertTrue(workerClient.statusReportRequests.get() > 0);
+    }
+
 
     private static PerformanceWorkerServer workerServer(String workerId, AtomicInteger calls) {
         return new PerformanceWorkerServer(
@@ -158,6 +186,28 @@ public class PerformanceMasterRunCommandTest {
                                                       PerformanceWorkerRunRequest request,
                                                       AtomicInteger calls) {
         calls.incrementAndGet();
+        PerformanceJsonReportApi api = PerformanceJsonReportApi.builder()
+                .apiId("http")
+                .name("普通 HTTP")
+                .protocol(PerformanceProtocol.HTTP.name())
+                .total(2L)
+                .success(2L)
+                .samplesPerSecond(2.0)
+                .durationMs(PerformanceJsonReportDuration.builder()
+                        .avg(10L)
+                        .min(8L)
+                        .max(12L)
+                        .p90(11L)
+                        .p95(12L)
+                        .p99(12L)
+                        .build())
+                .build();
+        Map<String, PerformanceJsonReportProtocol> protocols = PerformanceJsonReportSummaryMapper.emptyProtocols();
+        protocols.put(PerformanceProtocol.HTTP.name(), PerformanceJsonReportProtocol.builder()
+                .protocol(PerformanceProtocol.HTTP.name())
+                .total(api)
+                .apis(List.of(api))
+                .build());
         return PerformanceJsonReport.builder()
                 .metadata(PerformanceJsonReportMetadata.builder()
                         .runId(request.getRunId())
@@ -168,7 +218,7 @@ public class PerformanceMasterRunCommandTest {
                         .totalRequests(2L)
                         .successRequests(2L)
                         .build())
-                .protocols(PerformanceJsonReportSummaryMapper.emptyProtocols())
+                .protocols(protocols)
                 .build();
     }
 
@@ -176,6 +226,8 @@ public class PerformanceMasterRunCommandTest {
         private final List<Duration> timeouts = new ArrayList<>();
         private PerformanceWorkerRunRequest request;
         private boolean failResult;
+        private boolean omitResultReport;
+        private final AtomicInteger statusReportRequests = new AtomicInteger();
 
         @Override
         public void submitRun(com.laker.postman.performance.core.worker.PerformanceWorkerEndpoint endpoint,
@@ -200,10 +252,16 @@ public class PerformanceMasterRunCommandTest {
                 boolean includeReport,
                 Duration timeout) {
             timeouts.add(timeout);
+            PerformanceJsonReport report = null;
+            if (includeReport && omitResultReport) {
+                statusReportRequests.incrementAndGet();
+                report = workerReport("worker-a", request, new AtomicInteger());
+            }
             return com.laker.postman.performance.core.worker.PerformanceWorkerRunStatusResponse.builder()
                     .runId(runId)
                     .workerId("worker-a")
                     .status("SUCCESS")
+                    .report(report)
                     .build();
         }
 
@@ -219,6 +277,13 @@ public class PerformanceMasterRunCommandTest {
                         .workerId("worker-a")
                         .status("FAILED")
                         .error("boom")
+                        .build();
+            }
+            if (omitResultReport) {
+                return com.laker.postman.performance.core.worker.PerformanceWorkerRunResultResponse.builder()
+                        .runId(runId)
+                        .workerId("worker-a")
+                        .status("SUCCESS")
                         .build();
             }
             return com.laker.postman.performance.core.worker.PerformanceWorkerRunResultResponse.builder()

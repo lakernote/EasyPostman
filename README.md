@@ -205,6 +205,7 @@ Every PR triggers automated checks: build, tests, code quality, and format valid
 | 📖 [Features](docs/FEATURES.md) | Comprehensive feature documentation |
 | 🏗️ [Architecture](docs/ARCHITECTURE.md) | Technical stack and design |
 | 🚀 [Build Guide](docs/BUILD.md) | Build from source & generate installers |
+| ⚡ [Distributed Performance Testing](docs/PERFORMANCE_CLUSTER_LOAD_TEST_zh.md) | GUI remote mode, CLI master/worker, CSV sharding, realtime refresh, and result details |
 | 🖼️ [Screenshots](docs/SCREENSHOTS.md) | All application screenshots |
 | 📝 [Script API Reference](docs/SCRIPT_API_REFERENCE_zh.md) | Pre-request & test script API, including Redis/Kafka/ES/InfluxDB |
 | 📝 [Script Snippets](docs/SCRIPT_SNIPPETS_QUICK_REFERENCE.md) | Built-in snippets, including data-store read/write/assert examples |

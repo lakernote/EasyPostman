@@ -48,7 +48,7 @@
 - CLI 输出的 `result.json` 包含顶层摘要和 `report` 节点。`report` 保存机器可读的原始数值：总请求数、成功/失败数、协议级 total、API 级 total、samplesPerSecond、耗时分位数，以及 WebSocket/SSE 的消息数、消息速率和首消息/首事件延迟。
 - worker 使用主 app jar 内的 JDK `HttpServer`，不引入 Jetty/Netty/Spring Boot。server 只在 `performance worker` 模式启动，GUI 默认不监听端口。
 - worker 控制台输出用户可读的生命周期和进度状态：listening、accepted、started、progress、completed。进度默认每秒打印一次，可通过 `--progress-interval <seconds>` 调整，或用 `--no-progress` 关闭；请求级和内部组件日志仍按日志配置输出。
-- worker 控制面协议为 HTTP/JSON：`GET /api/performance/v1/health`、`POST /api/performance/v1/runs`、`GET /api/performance/v1/runs/{runId}`、`GET /api/performance/v1/runs/{runId}/result`、`POST /api/performance/v1/runs/{runId}/stop`。
+- worker 控制面协议为 HTTP/JSON：`GET /api/performance/v1/health`、`POST /api/performance/v1/runs`、`GET /api/performance/v1/runs/{runId}`、`GET /api/performance/v1/runs/{runId}/result`、`GET /api/performance/v1/runs/{runId}/details`、`POST /api/performance/v1/runs/{runId}/stop`。
 - master 使用 JDK `HttpClient` 调度 worker：`performance master run --plan plan.json --workers host:port[,host:port] [--out result.json]`。master 读取同一份 `plan.json`，生成 `PerformanceWorkerAssignment`，将 plan + assignment 发送给各 worker，轮询状态后拉取 worker report 并聚合。
 - GUI 远程模式复用同一套 HTTP/JSON worker 协议和 assignment planner。GUI 配置的虚拟用户数是全局总并发，master 会按 worker 数切成连续虚拟用户区间；例如 100 用户、2 个 worker 时分别执行 0-49 和 50-99，而不是每台 worker 各跑 100。
 - GUI 不上传 `assets.zip`；GUI 导入或手工创建的 CSV 行会内嵌进 `plan`，file-source CSV 和 multipart 文件引用会进入 `plan.assets` 并保持原路径，用户需要按这些路径把文件提前放到每台 worker 服务器上。CSV Data Set 按同一全局虚拟用户区间取行，因此 100 行 CSV 搭配 100 用户、2 个 worker 时也是 0-49 和 50-99 两段；如果 CSV 行数少于虚拟用户数，仍按全局用户编号循环复用。
@@ -125,14 +125,12 @@ perl -e 'alarm shift; exec @ARGV' 90 \
 java -jar easy-postman-app/target/easy-postman-5.5.28.jar \
   performance worker \
   --host 127.0.0.1 \
-  --port 19090 \
-  --progress-interval 1
+  --port 19090
 
 java -jar easy-postman-app/target/easy-postman-5.5.28.jar \
   performance worker \
   --host 127.0.0.1 \
-  --port 19091 \
-  --progress-interval 1
+  --port 19091
 ```
 
 再由 master 分发同一份 `plan.json`：
@@ -208,6 +206,10 @@ sequenceDiagram
     W1-->>GUI: final JSON report
     GUI->>W2: GET /api/performance/v1/runs/{runId}/result
     W2-->>GUI: final JSON report
+    GUI->>W1: GET /api/performance/v1/runs/{runId}/details
+    W1-->>GUI: retained failed/slow result details
+    GUI->>W2: GET /api/performance/v1/runs/{runId}/details
+    W2-->>GUI: retained failed/slow result details
     GUI->>GUI: merge reports and refresh GUI report
 ```
 
@@ -221,6 +223,7 @@ sequenceDiagram
 | `GET` | `/api/performance/v1/runs/{runId}` | 兼容完整状态轮询，默认包含运行中 report。 | 只在需要实时报表时使用，开销高于轻量状态。 |
 | `POST` | `/api/performance/v1/runs/{runId}/stop` | 请求 worker 停止当前运行。 | 停止控制面不计入成功请求数。 |
 | `GET` | `/api/performance/v1/runs/{runId}/result` | 拉取 worker 最终 JSON report。 | 最终 report 已固定，不再重新采样。 |
+| `GET` | `/api/performance/v1/runs/{runId}/details` | 拉取 worker 有界保留的失败/慢请求明细，用于 GUI 结果表。 | 明细拉取发生在收尾阶段，不计入成功请求数。 |
 
 时间口径：
 
@@ -229,6 +232,7 @@ sequenceDiagram
 3. 最终 JSON report 的 `metadata.startTimeMs/endTimeMs` 来自 worker 内部 `PerformanceRunSession`，从执行引擎 `beginRun` 开始，到运行结束为止；不包含 master 读 plan、生成 assignment、POST plan 和最终拉取 result 的时间。
 4. GUI 远程趋势图按 worker status 的增量请求数采样。采样窗口在所有 worker 接收 plan 后重置，避免第一秒趋势点把 plan 分发耗时算进 QPS。
 5. CLI master 默认使用 `report=false` 轻量轮询；GUI remote 只有在“实时报表”开启时才请求运行中完整 report。关闭实时报表时，趋势和顶部虚拟用户数仍实时刷新。
+6. GUI remote 在 worker 到达终态后拉取 `/details`，把失败/慢请求明细写入“结果表”；worker 不实时推送请求级明细，避免拖慢压测主路径。
 
 ### GUI 远程控制方式
 

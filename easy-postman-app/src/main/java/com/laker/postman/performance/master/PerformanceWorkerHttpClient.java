@@ -3,6 +3,7 @@ package com.laker.postman.performance.master;
 import com.laker.postman.performance.core.worker.PerformanceWorkerEndpoint;
 import com.laker.postman.performance.core.worker.PerformanceWorkerApiPaths;
 import com.laker.postman.performance.core.worker.PerformanceWorkerProtocolJsonStorage;
+import com.laker.postman.performance.core.worker.PerformanceWorkerRunDetailsResponse;
 import com.laker.postman.performance.core.worker.PerformanceWorkerRunRequest;
 import com.laker.postman.performance.core.worker.PerformanceWorkerRunResultResponse;
 import com.laker.postman.performance.core.worker.PerformanceWorkerRunStatusResponse;
@@ -115,6 +116,26 @@ public class PerformanceWorkerHttpClient {
             throw new IOException("Worker " + endpointLabel(endpoint) + " result failed: " + response.body());
         }
         return jsonStorage.resultResponseFromJson(response.body());
+    }
+
+    public PerformanceWorkerRunDetailsResponse details(PerformanceWorkerEndpoint endpoint,
+                                                       String runId) throws IOException, InterruptedException {
+        return details(endpoint, runId, requestTimeout);
+    }
+
+    public PerformanceWorkerRunDetailsResponse details(PerformanceWorkerEndpoint endpoint,
+                                                       String runId,
+                                                       Duration timeout) throws IOException, InterruptedException {
+        HttpResponse<String> response = client.send(HttpRequest.newBuilder()
+                        .uri(uri(endpoint, PerformanceWorkerApiPaths.details(pathSegment(runId))))
+                        .timeout(effectiveTimeout(timeout))
+                        .GET()
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new IOException("Worker " + endpointLabel(endpoint) + " details failed: " + response.body());
+        }
+        return jsonStorage.detailsResponseFromJson(response.body());
     }
 
     public void stop(PerformanceWorkerEndpoint endpoint,

@@ -18,6 +18,8 @@ import com.laker.postman.performance.core.plan.PerformanceTestPlan;
 import com.laker.postman.performance.core.report.PerformanceJsonReport;
 import com.laker.postman.performance.core.report.PerformanceJsonReportMapper;
 import com.laker.postman.performance.core.report.PerformanceJsonReportMetadata;
+import com.laker.postman.performance.core.report.PerformanceJsonReportStatusResolver;
+import com.laker.postman.performance.core.report.PerformanceJsonReportSummary;
 import com.laker.postman.performance.core.run.PerformanceRunEnvironment;
 import com.laker.postman.performance.core.run.PerformanceRunPlan;
 import com.laker.postman.performance.core.run.PerformanceRunPlanJsonStorage;
@@ -32,6 +34,7 @@ import com.laker.postman.performance.core.runtime.PerformanceRunSummary;
 import com.laker.postman.performance.core.worker.PerformanceWorkerAssignment;
 import com.laker.postman.performance.core.worker.PerformanceWorkerExecutionPlanPartitioner;
 import com.laker.postman.service.http.okhttp.HttpClientRuntimeConfig;
+import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.service.variable.RunScopedVariableContext;
 
 import java.io.PrintStream;
@@ -106,9 +109,14 @@ public class PerformanceRunPlanExecutor {
 
         AtomicBoolean running = new AtomicBoolean(false);
         PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
+        PerformanceRunDetailCollector detailCollector = new PerformanceRunDetailCollector(
+                SettingManager::getPerformanceSlowRequestThreshold,
+                SettingManager::getPerformanceResultRowLimit
+        );
         control.bindStatsCollector(statsCollector);
+        control.bindResultDetailsSupplier(detailCollector::snapshot);
         PerformanceResultCollector resultCollector = new PerformanceResultCollector(
-                List.of(new PerformanceStatsCollectorListener(statsCollector))
+                List.of(new PerformanceStatsCollectorListener(statsCollector), detailCollector)
         );
         AtomicReference<PerformanceRunSummary> summaryRef = new AtomicReference<>();
         AtomicReference<PerformanceRunError> errorRef = new AtomicReference<>();
@@ -196,15 +204,25 @@ public class PerformanceRunPlanExecutor {
                                                    PerformanceRunError runError) {
         long totalRequests = stats == null ? 0L : stats.totalRequests();
         long successRequests = stats == null ? 0L : stats.successRequests();
+        long failedRequests = Math.max(0L, totalRequests - successRequests);
         Throwable summaryError = summary == null ? null : summary.getError();
         String errorMessage = runError == null ? null : runError.getMessage();
         if ((errorMessage == null || errorMessage.isBlank()) && summaryError != null) {
             errorMessage = summaryError.getMessage();
         }
+        PerformanceJsonReportSummary reportSummary = PerformanceJsonReportSummary.builder()
+                .totalRequests(totalRequests)
+                .successRequests(successRequests)
+                .failedRequests(failedRequests)
+                .build();
+        errorMessage = PerformanceJsonReportStatusResolver.withFailureSummary(errorMessage, reportSummary);
         boolean stopped = summary != null && summary.isStopped();
-        String status = errorMessage != null && !errorMessage.isBlank()
-                ? PerformanceRunExecutionResult.STATUS_FAILED
-                : stopped ? PerformanceRunExecutionResult.STATUS_STOPPED : PerformanceRunExecutionResult.STATUS_SUCCESS;
+        String status = PerformanceJsonReportStatusResolver.resolve(
+                PerformanceRunExecutionResult.STATUS_SUCCESS,
+                stopped,
+                errorMessage,
+                reportSummary
+        );
         PerformanceJsonReport report = PerformanceJsonReportMapper.fromStatsSnapshot(
                 PerformanceJsonReportMetadata.builder()
                         .source("local")
@@ -227,7 +245,7 @@ public class PerformanceRunPlanExecutor {
                 .stopped(stopped)
                 .totalRequests(totalRequests)
                 .successRequests(successRequests)
-                .failedRequests(Math.max(0L, totalRequests - successRequests))
+                .failedRequests(failedRequests)
                 .error(errorMessage)
                 .report(report)
                 .build();

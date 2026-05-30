@@ -71,12 +71,60 @@ public class DefaultPerformanceWorkerRunExecutorTest {
         assertEquals(report.getSummary().getTotalRequests(), 2L);
     }
 
+    @Test
+    public void shouldPromoteRequestFailuresToWorkerReportStatus() throws Exception {
+        DefaultPerformanceWorkerRunExecutor executor = new DefaultPerformanceWorkerRunExecutor(
+                new PerformanceRunPlanExecutor() {
+                    @Override
+                    public PerformanceRunExecutionResult execute(PerformanceRunPlan runPlan,
+                                                                 String planPath,
+                                                                 PerformanceWorkerAssignment assignment,
+                                                                 PrintStream scriptOutput,
+                                                                 PerformanceRunExecutionControl control) {
+                        return PerformanceRunExecutionResult.builder()
+                                .report(PerformanceJsonReport.builder()
+                                        .metadata(PerformanceJsonReportMetadata.builder()
+                                                .runId("local-run")
+                                                .source("local")
+                                                .status("SUCCESS")
+                                                .planPath(planPath)
+                                                .build())
+                                        .summary(PerformanceJsonReportSummary.builder()
+                                                .totalRequests(2L)
+                                                .successRequests(1L)
+                                                .failedRequests(1L)
+                                                .build())
+                                        .protocols(PerformanceJsonReportSummaryMapper.emptyProtocols())
+                                        .build())
+                                .build();
+                    }
+                }
+        );
+
+        PerformanceJsonReport report = executor.execute(workerRequest(), new PerformanceRunExecutionControl());
+
+        assertEquals(report.getMetadata().getStatus(), "FAILED");
+        assertEquals(report.getMetadata().getError(), "Request failures: 1");
+    }
+
     private static PerformanceRunPlan emptyPlan() {
         return PerformanceRunPlan.builder()
                 .testPlan(new PerformanceCorePlanDocument(PerformanceCorePlanNode.builder()
                         .name("run plan")
                         .type(NodeType.ROOT)
                         .build()))
+                .build();
+    }
+
+    private static PerformanceWorkerRunRequest workerRequest() {
+        return PerformanceWorkerRunRequest.builder()
+                .runId("run-failed-requests")
+                .plan(emptyPlan())
+                .assignment(PerformanceWorkerAssignment.builder()
+                        .runId("run-failed-requests")
+                        .workerId("worker-a")
+                        .endpoint(new PerformanceWorkerEndpoint("127.0.0.1", 19091))
+                        .build())
                 .build();
     }
 }

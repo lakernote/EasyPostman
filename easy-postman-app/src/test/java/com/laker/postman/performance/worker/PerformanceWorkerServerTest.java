@@ -13,6 +13,8 @@ import com.laker.postman.performance.core.report.PerformanceJsonReportSummaryMap
 import com.laker.postman.performance.core.run.PerformanceRunPlan;
 import com.laker.postman.performance.core.worker.PerformanceWorkerAssignment;
 import com.laker.postman.performance.core.worker.PerformanceWorkerProtocolJsonStorage;
+import com.laker.postman.performance.core.worker.PerformanceWorkerResultDetail;
+import com.laker.postman.performance.core.worker.PerformanceWorkerRunDetailsResponse;
 import com.laker.postman.performance.core.worker.PerformanceWorkerRunRequest;
 import com.laker.postman.performance.core.worker.PerformanceWorkerRunResultResponse;
 import com.laker.postman.performance.core.worker.PerformanceWorkerRunStatusResponse;
@@ -23,6 +25,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -95,6 +98,76 @@ public class PerformanceWorkerServerTest {
 
             assertEquals(result.statusCode(), 200, result.body());
             assertEquals(resultResponse.getReport().getSummary().getTotalRequests(), 2L);
+        }
+    }
+
+    @Test
+    public void shouldExposeRetainedResultDetailsOverHttp() throws Exception {
+        PerformanceWorkerProtocolJsonStorage storage = new PerformanceWorkerProtocolJsonStorage();
+        try (PerformanceWorkerServer server = new PerformanceWorkerServer(
+                PerformanceWorkerOptions.builder().host("127.0.0.1").port(0).build(),
+                (request, control) -> {
+                    control.bindResultDetailsSupplier(() -> List.of(PerformanceWorkerResultDetail.builder()
+                            .protocol("HTTP")
+                            .name("failing-api")
+                            .errorMsg("assert failed")
+                            .responseCode(500)
+                            .costMs(17)
+                            .executionFailed(false)
+                            .request(PerformanceWorkerResultDetail.DetailRequest.builder()
+                                    .method("GET")
+                                    .url("http://localhost/fail")
+                                    .headers(Map.of("X-Test", List.of("1")))
+                                    .build())
+                            .response(PerformanceWorkerResultDetail.DetailResponse.builder()
+                                    .code(500)
+                                    .protocol("HTTP/1.1")
+                                    .headers(Map.of("Content-Type", List.of("application/json")))
+                                    .body("{\"error\":true}")
+                                    .costMs(17)
+                                    .build())
+                            .testResults(List.of(PerformanceWorkerResultDetail.DetailTestResult.builder()
+                                    .name("status")
+                                    .passed(false)
+                                    .message("expected 200")
+                                    .build()))
+                            .build()));
+                    return PerformanceJsonReport.builder()
+                            .metadata(PerformanceJsonReportMetadata.builder()
+                                    .runId(request.getRunId())
+                                    .source("worker")
+                                    .status("SUCCESS")
+                                    .build())
+                            .summary(PerformanceJsonReportSummary.builder()
+                                    .totalRequests(1L)
+                                    .failedRequests(1L)
+                                    .build())
+                            .protocols(PerformanceJsonReportSummaryMapper.emptyProtocols())
+                            .build();
+                }
+        )) {
+            server.start();
+            HttpClient client = HttpClient.newHttpClient();
+            submitRun(client, storage, server.getPort(), "run-details");
+            awaitStatus(client, storage, server.getPort(), "run-details", "SUCCESS");
+
+            HttpResponse<String> details = client.send(HttpRequest.newBuilder()
+                            .uri(URI.create("http://127.0.0.1:" + server.getPort()
+                                    + "/api/performance/v1/runs/run-details/details"))
+                            .GET()
+                            .build(),
+                    HttpResponse.BodyHandlers.ofString());
+            PerformanceWorkerRunDetailsResponse detailsResponse = storage.detailsResponseFromJson(details.body());
+
+            assertEquals(details.statusCode(), 200, details.body());
+            assertEquals(detailsResponse.getStatus(), "SUCCESS");
+            assertEquals(detailsResponse.getDetails().size(), 1);
+            PerformanceWorkerResultDetail detail = detailsResponse.getDetails().get(0);
+            assertEquals(detail.getName(), "failing-api");
+            assertEquals(detail.getResponseCode(), 500);
+            assertEquals(detail.getCostMs(), 17);
+            assertEquals(detail.getRequest().getHeaders().get("X-Test"), List.of("1"));
+            assertEquals(detail.getTestResults().get(0).getMessage(), "expected 200");
         }
     }
 

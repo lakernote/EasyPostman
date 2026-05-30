@@ -1,6 +1,7 @@
 package com.laker.postman.performance.master;
 
 import com.laker.postman.performance.core.worker.PerformanceWorkerEndpoint;
+import com.laker.postman.performance.core.worker.PerformanceWorkerRunDetailsResponse;
 import com.sun.net.httpserver.HttpServer;
 import org.testng.annotations.Test;
 
@@ -83,6 +84,41 @@ public class PerformanceWorkerHttpClientTest {
 
             assertEquals(method.get(), "GET");
             assertEquals(path.get(), "/api/performance/v1/runs/run%20with%20space?report=false");
+        }
+    }
+
+    @Test
+    public void shouldRequestRunDetailsFromWorker() throws Exception {
+        AtomicReference<String> method = new AtomicReference<>();
+        AtomicReference<String> path = new AtomicReference<>();
+        String body = """
+                {
+                  "runId": "run with space",
+                  "workerId": "worker-a",
+                  "status": "SUCCESS",
+                  "details": [
+                    {
+                      "protocol": "HTTP",
+                      "name": "failing-api",
+                      "responseCode": 500,
+                      "costMs": 18,
+                      "testResults": [
+                        {"name": "status", "passed": false, "message": "expected 200"}
+                      ]
+                    }
+                  ]
+                }
+                """;
+        try (TestServer server = TestServer.start(200, body, method, path)) {
+            PerformanceWorkerHttpClient client = new PerformanceWorkerHttpClient();
+
+            PerformanceWorkerRunDetailsResponse response = client.details(server.endpoint(), "run with space");
+
+            assertEquals(method.get(), "GET");
+            assertEquals(path.get(), "/api/performance/v1/runs/run%20with%20space/details");
+            assertEquals(response.getDetails().size(), 1);
+            assertEquals(response.getDetails().get(0).getName(), "failing-api");
+            assertEquals(response.getDetails().get(0).getTestResults().get(0).getMessage(), "expected 200");
         }
     }
 

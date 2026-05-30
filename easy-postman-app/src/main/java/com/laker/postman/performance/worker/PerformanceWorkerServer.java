@@ -13,6 +13,7 @@ import com.laker.postman.performance.core.worker.PerformanceWorkerApiPaths;
 import com.laker.postman.performance.core.worker.PerformanceWorkerAssignment;
 import com.laker.postman.performance.core.worker.PerformanceWorkerProtocolJsonStorage;
 import com.laker.postman.performance.core.worker.PerformanceWorkerRunAcceptedResponse;
+import com.laker.postman.performance.core.worker.PerformanceWorkerRunDetailsResponse;
 import com.laker.postman.performance.core.worker.PerformanceWorkerRunRequest;
 import com.laker.postman.performance.core.worker.PerformanceWorkerRunResultResponse;
 import com.laker.postman.performance.core.worker.PerformanceWorkerRunStatusResponse;
@@ -157,6 +158,10 @@ public class PerformanceWorkerServer implements AutoCloseable {
                 handleRunResult(exchange, runId);
                 return;
             }
+            if (parts.length == 3 && "details".equals(parts[2]) && "GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+                handleRunDetails(exchange, runId);
+                return;
+            }
             if (parts.length == 3 && "stop".equals(parts[2]) && "POST".equalsIgnoreCase(exchange.getRequestMethod())) {
                 handleRunStop(exchange, runId);
                 return;
@@ -297,6 +302,23 @@ public class PerformanceWorkerServer implements AutoCloseable {
                 .workerId(state.workerId)
                 .status(state.status)
                 .report(state.report)
+                .error(state.error)
+                .build()));
+    }
+
+    private void handleRunDetails(HttpExchange exchange, String runId) throws IOException {
+        pruneCompletedRuns();
+        WorkerRunState state = runs.get(runId);
+        if (state == null) {
+            write(exchange, 404, error("Run not found: " + runId));
+            return;
+        }
+        // 失败/慢请求明细在 worker 本地有界保留；master 收尾时按需拉取，避免实时推送拖慢压测主路径。
+        write(exchange, 200, jsonStorage.toJson(PerformanceWorkerRunDetailsResponse.builder()
+                .runId(runId)
+                .workerId(state.workerId)
+                .status(state.status)
+                .details(state.control.resultDetailsSnapshot())
                 .error(state.error)
                 .build()));
     }

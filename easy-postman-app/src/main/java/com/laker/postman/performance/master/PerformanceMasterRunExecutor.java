@@ -10,8 +10,8 @@ import com.laker.postman.performance.core.worker.PerformanceWorkerAssignment;
 import com.laker.postman.performance.core.worker.PerformanceWorkerAssignmentPlanner;
 import com.laker.postman.performance.core.worker.PerformanceWorkerEndpoint;
 import com.laker.postman.performance.core.worker.PerformanceWorkerRunRequest;
-import com.laker.postman.performance.core.worker.PerformanceWorkerRunResultResponse;
 import com.laker.postman.performance.core.worker.PerformanceWorkerRunStatusResponse;
+import com.laker.postman.performance.master.PerformanceWorkerReportCollector.PerformanceWorkerReportResult;
 
 import java.nio.file.Files;
 import java.time.Duration;
@@ -21,6 +21,7 @@ import java.util.List;
 public class PerformanceMasterRunExecutor {
     private final PerformanceWorkerAssignmentPlanner assignmentPlanner;
     private final PerformanceWorkerHttpClient workerClient;
+    private final PerformanceWorkerReportCollector reportCollector;
 
     public PerformanceMasterRunExecutor() {
         this(new PerformanceWorkerAssignmentPlanner(), new PerformanceWorkerHttpClient());
@@ -30,6 +31,7 @@ public class PerformanceMasterRunExecutor {
                                  PerformanceWorkerHttpClient workerClient) {
         this.assignmentPlanner = assignmentPlanner == null ? new PerformanceWorkerAssignmentPlanner() : assignmentPlanner;
         this.workerClient = workerClient == null ? new PerformanceWorkerHttpClient() : workerClient;
+        this.reportCollector = new PerformanceWorkerReportCollector(this.workerClient);
     }
 
     public PerformanceJsonReport execute(PerformanceMasterOptions options) throws Exception {
@@ -69,13 +71,13 @@ public class PerformanceMasterRunExecutor {
         List<PerformanceJsonReport> reports = new ArrayList<>();
         String status = PerformanceRunStatus.SUCCESS;
         for (PerformanceWorkerEndpoint endpoint : options.getWorkers()) {
-            PerformanceWorkerRunResultResponse response = workerClient.result(endpoint, runId, timeoutUntil(deadline));
-            if (!PerformanceRunStatus.SUCCESS.equals(response.getStatus())) {
+            PerformanceWorkerReportResult response = reportCollector.collect(endpoint, runId, timeoutUntil(deadline));
+            if (!PerformanceRunStatus.SUCCESS.equals(response.status())) {
                 status = PerformanceRunStatus.FAILED;
             }
-            if (response.getReport() != null) {
-                reports.add(response.getReport());
-            } else if (response.getError() != null && !response.getError().isBlank()) {
+            if (response.report() != null) {
+                reports.add(response.report());
+            } else if (response.error() != null && !response.error().isBlank()) {
                 reports.add(workerErrorReport(endpoint, runId, response));
             }
         }
@@ -114,13 +116,13 @@ public class PerformanceMasterRunExecutor {
 
     private PerformanceJsonReport workerErrorReport(PerformanceWorkerEndpoint endpoint,
                                                     String runId,
-                                                    PerformanceWorkerRunResultResponse response) {
+                                                    PerformanceWorkerReportResult response) {
         return PerformanceJsonReport.builder()
                 .metadata(PerformanceJsonReportMetadata.builder()
                         .runId(runId)
                         .source(endpoint.getHost() + ":" + endpoint.getPort())
-                        .status(response.getStatus())
-                        .error(response.getError())
+                        .status(response.status())
+                        .error(response.error())
                         .build())
                 .protocols(PerformanceJsonReportSummaryMapper.emptyProtocols())
                 .build();

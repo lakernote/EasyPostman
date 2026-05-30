@@ -9,6 +9,7 @@ public class PerformanceWorkerApiPaths {
     public static final String HEALTH = API_PREFIX + "/health";
     public static final String RUNS = API_PREFIX + "/runs";
     public static final String RESULT_SUFFIX = "/result";
+    public static final String DETAILS_SUFFIX = "/details";
     public static final String STOP_SUFFIX = "/stop";
 
     public String run(String runId) {
@@ -17,6 +18,10 @@ public class PerformanceWorkerApiPaths {
 
     public String result(String runId) {
         return run(runId) + RESULT_SUFFIX;
+    }
+
+    public String details(String runId) {
+        return run(runId) + DETAILS_SUFFIX;
     }
 
     public String stop(String runId) {

@@ -31,6 +31,7 @@ public class PerformanceJsonReportSummaryMapper {
                                        List<PerformanceJsonReport> reports) {
         long total = 0;
         long success = 0;
+        long failed = 0;
         long start = 0;
         long end = 0;
         boolean stopped = false;
@@ -44,6 +45,7 @@ public class PerformanceJsonReportSummaryMapper {
                 if (summary != null) {
                     total += summary.getTotalRequests();
                     success += summary.getSuccessRequests();
+                    failed += summary.getFailedRequests();
                 }
                 PerformanceJsonReportMetadata metadata = report.getMetadata();
                 if (metadata != null) {
@@ -53,17 +55,25 @@ public class PerformanceJsonReportSummaryMapper {
                     end = Math.max(end, metadata.getEndTimeMs());
                     stopped = stopped || metadata.isStopped();
                     if (metadata.getError() != null && !metadata.getError().isBlank()) {
-                        if (!errors.isEmpty()) {
-                            errors.append("; ");
-                        }
-                        errors.append(metadata.getSource()).append(": ").append(metadata.getError());
+                        appendError(errors, metadata.getSource(), metadata.getError());
+                    }
+                    String failureSummary = PerformanceJsonReportStatusResolver.withFailureSummary(null, summary);
+                    if (failureSummary != null && !failureSummary.isBlank()) {
+                        appendError(errors, metadata.getSource(), failureSummary);
                     }
                 }
             }
         }
-        String resolvedStatus = status == null || status.isBlank()
-                ? errors.isEmpty() ? PerformanceRunStatus.SUCCESS : PerformanceRunStatus.FAILED
-                : status;
+        String resolvedStatus = PerformanceJsonReportStatusResolver.resolve(
+                status,
+                stopped,
+                errors.toString(),
+                PerformanceJsonReportSummary.builder()
+                        .totalRequests(total)
+                        .successRequests(success)
+                        .failedRequests(failed)
+                        .build()
+        );
         return PerformanceJsonReport.builder()
                 .metadata(PerformanceJsonReportMetadata.builder()
                         .runId(runId)
@@ -81,6 +91,19 @@ public class PerformanceJsonReportSummaryMapper {
                         .build())
                 .protocols(mergeProtocols(reports))
                 .build();
+    }
+
+    private void appendError(StringBuilder errors, String source, String error) {
+        if (error == null || error.isBlank()) {
+            return;
+        }
+        if (!errors.isEmpty()) {
+            errors.append("; ");
+        }
+        if (source != null && !source.isBlank()) {
+            errors.append(source).append(": ");
+        }
+        errors.append(error);
     }
 
     private Map<String, PerformanceJsonReportProtocol> mergeProtocols(List<PerformanceJsonReport> reports) {

@@ -8,6 +8,7 @@ import org.testng.annotations.Test;
 import javax.swing.*;
 import java.awt.*;
 import java.lang.reflect.Method;
+import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -91,6 +92,25 @@ public class CsvDataPanelTest {
         invokeConfigureCsvTable(panel, table);
 
         assertEquals(table.getSelectionBackground(), selectionBackground);
+    }
+
+    @Test(description = "CSV 文件选择器应优先使用当前 CSV 所在目录，其次使用上一次成功导入目录")
+    public void csvFileChooserShouldResolveInitialDirectoryFromCurrentFileOrRememberedDirectory() {
+        File rememberedDir = new File(System.getProperty("java.io.tmpdir"));
+        File currentFile = new File(rememberedDir, "users.csv");
+
+        assertEquals(CsvFileChooserDirectoryMemory.resolveInitialDirectory(currentFile, null), rememberedDir);
+        assertEquals(CsvFileChooserDirectoryMemory.resolveInitialDirectory(null, rememberedDir.getAbsolutePath()), rememberedDir);
+        assertNull(CsvFileChooserDirectoryMemory.resolveInitialDirectory(null, "/path/not-exist/easy-postman-csv"));
+    }
+
+    @Test(description = "成功选择 CSV 文件后应记住父目录")
+    public void csvFileChooserShouldRememberSelectedFileParentDirectory() {
+        File selectedFile = new File(System.getProperty("java.io.tmpdir"), "users.csv");
+
+        assertEquals(CsvFileChooserDirectoryMemory.resolveDirectoryToRemember(selectedFile),
+                new File(System.getProperty("java.io.tmpdir")));
+        assertNull(CsvFileChooserDirectoryMemory.resolveDirectoryToRemember(null));
     }
 
     private static Map<String, String> row(String... keyValues) {

@@ -48,6 +48,7 @@ public class SettingManager {
     private static final String PERFORMANCE_JS_CONTEXT_ACQUIRE_TIMEOUT_MS_KEY = "performance_js_context_acquire_timeout_ms";
     private static final String PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB_KEY = "performance_response_body_preview_limit_kb";
     private static final String PERFORMANCE_RESULT_ROW_LIMIT_KEY = "performance_result_row_limit";
+    private static final String CSV_LAST_IMPORT_DIRECTORY_KEY = "csv_last_import_directory";
     private static final Object SETTINGS_IO_LOCK = new Object();
     public static final int DEFAULT_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB = 64;
     public static final int MIN_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB = 1;
@@ -386,6 +387,15 @@ public class SettingManager {
             return DEFAULT_PERFORMANCE_RESULT_ROW_LIMIT;
         }
         return rowLimit;
+    }
+
+    public static String getCsvLastImportDirectory() {
+        return props.getProperty(CSV_LAST_IMPORT_DIRECTORY_KEY, "");
+    }
+
+    public static void setCsvLastImportDirectory(String directory) {
+        String normalized = directory == null ? "" : directory.trim();
+        setAndSaveProperty(CSV_LAST_IMPORT_DIRECTORY_KEY, normalized.isEmpty() ? null : normalized);
     }
 
     public static boolean isShowDownloadProgressDialog() {

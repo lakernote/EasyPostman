@@ -7,6 +7,7 @@ import com.laker.postman.common.component.button.CloseButton;
 import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.frame.MainFrame;
+import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -1402,9 +1403,12 @@ public class CsvDataPanel extends JPanel {
         fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.CSV_SELECT_FILE));
         fileChooser.setFileFilter(new FileNameExtensionFilter(I18nUtil.getMessage(MessageKeys.CSV_FILE_FILTER), "csv"));
 
-        // 设置默认目录
-        if (csvFile != null && csvFile.getParentFile() != null) {
-            fileChooser.setCurrentDirectory(csvFile.getParentFile());
+        File initialDirectory = CsvFileChooserDirectoryMemory.resolveInitialDirectory(
+                csvFile,
+                SettingManager.getCsvLastImportDirectory()
+        );
+        if (initialDirectory != null) {
+            fileChooser.setCurrentDirectory(initialDirectory);
         }
 
         int result = fileChooser.showOpenDialog(UiSingletonFactory.getInstance(MainFrame.class));
@@ -1431,6 +1435,10 @@ public class CsvDataPanel extends JPanel {
                 csvSourceName = selectedFile.getName();
                 csvData = newCsvData;
                 csvHeaders = CsvDataUtil.getCsvHeaders(selectedFile); // 获取列标题
+                File directoryToRemember = CsvFileChooserDirectoryMemory.resolveDirectoryToRemember(selectedFile);
+                if (directoryToRemember != null) {
+                    SettingManager.setCsvLastImportDirectory(directoryToRemember.getAbsolutePath());
+                }
                 notifyChangeListener();
                 return true;
 

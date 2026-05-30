@@ -11,6 +11,20 @@
 - 高并发结果显示保持有界：结果表通过队列和 Swing Timer 分批刷新，避免每个请求都直接触发 EDT 更新。
 - GUI、headless CLI 和 worker 使用同一份运行态 `plan.json`。`collections.json`、`environments.json`、`performance_config.json` 是编辑态工作区文件；`plan.json` 是可执行语义快照，包含环境、全局变量、执行设置、执行计划和外部 asset 引用。
 
+## 多计划设计结论
+
+当前 GUI 编辑态保持“一个工作区一个活跃压测计划”。左侧根节点“测试计划”下面可以配置多个 Thread Group，但它们属于同一个 plan；勾选启用的 Thread Group 会在同一次 Start 中一起执行。
+
+暂不把 GUI 做成多个顶层 plan 同时启用，原因是多 plan 会引入新的运行编排语义：不同 plan 的线程组、CSV 分片、报表汇总、结果表明细、Stop All、worker assignment 都需要按 plan 维度隔离。如果直接允许多个 plan 同时跑，会让一次 report 同时混入多个测试目标，后续定位和对比都不清晰。
+
+后续如要支持多 plan，推荐按以下设计推进：
+
+1. 编辑态存储从单 root 迁移为 `plans[] + activePlanId`。每个 plan 保存自己的 tree、efficientMode、trendEnabled、reportRealtimeEnabled、remote worker 配置；旧 `performance_config.json` 迁移时包成一个默认 plan。
+2. GUI 左侧增加 plan 选择器或 plan 列表，提供新建、复制、重命名、删除、导入、导出。编辑区始终只编辑一个 active plan。
+3. 单次点击 Start 只执行当前选中的 active plan。批量执行多个 plan 应作为独立的“批量编排/套件”能力，串行或并行策略需要显式配置。
+4. `plan.json` 仍表示一个可执行 plan，不改成一次包含多个 plan。CLI/master/worker 继续以一个 plan 为最小执行单位；批量编排层负责按多个 `plan.json` 发起多次 run。
+5. 报表、趋势、结果明细都以 runId + planId 隔离。只有批量编排层可以做跨 plan 的对比摘要，不在单次压测 report 中混合。
+
 ## 主要组件
 
 ### UI 编排

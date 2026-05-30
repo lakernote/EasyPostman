@@ -37,6 +37,10 @@ public class PerformanceSampleResult {
     int sentMessages;
     int receivedMessages;
     int matchedMessages;
+    // 发送字节数：请求头 + 请求体，统计 Sent KB/s 时使用
+    long sentBytes;
+    // 接收字节数：响应头 + 响应体，统计 Received KB/s 和 Avg. Bytes 时使用
+    long receivedBytes;
     long firstMessageLatencyMs;
     boolean successful;
 
@@ -77,6 +81,8 @@ public class PerformanceSampleResult {
                 .sentMessages(streamMetric(response, protocol, "X-Easy-WS-Sent-Count", 0))
                 .receivedMessages(receivedMessages(response, protocol))
                 .matchedMessages(matchedMessages(response, protocol))
+                .sentBytes(sentBytes(response))
+                .receivedBytes(receivedBytes(response))
                 .firstMessageLatencyMs(firstMessageLatency(response, protocol))
                 .successful(!executionResult.interrupted && ResultNodeInfo.isActuallySuccessful(
                         executionResult.executionFailed,
@@ -107,9 +113,33 @@ public class PerformanceSampleResult {
                 .sentMessages(sentMessages)
                 .receivedMessages(receivedMessages)
                 .matchedMessages(matchedMessages)
+                .sentBytes(sentBytes)
+                .receivedBytes(receivedBytes)
                 .firstMessageLatencyMs(firstMessageLatencyMs)
                 .successful(successful)
                 .build();
+    }
+
+    private static long sentBytes(HttpResponse response) {
+        if (response == null || response.httpEventInfo == null) {
+            return 0L;
+        }
+        return Math.max(0L, response.httpEventInfo.getHeaderBytesSent())
+                + Math.max(0L, response.httpEventInfo.getBodyBytesSent());
+    }
+
+    private static long receivedBytes(HttpResponse response) {
+        if (response == null) {
+            return 0L;
+        }
+        if (response.httpEventInfo != null) {
+            long eventBytes = Math.max(0L, response.httpEventInfo.getHeaderBytesReceived())
+                    + Math.max(0L, response.httpEventInfo.getBodyBytesReceived());
+            if (eventBytes > 0) {
+                return eventBytes;
+            }
+        }
+        return Math.max(0L, response.headersSize) + Math.max(0L, response.bodySize);
     }
 
     private static int receivedMessages(HttpResponse response, PerformanceProtocol protocol) {

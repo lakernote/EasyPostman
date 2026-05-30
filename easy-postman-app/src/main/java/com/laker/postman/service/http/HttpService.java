@@ -47,6 +47,7 @@ public class HttpService {
      * <p>
      * EasyConsoleEventListener 精细化控制说明：
      * - collectBasicInfo: 收集基本信息（headers、body），用于历史记录、HTML 渲染
+     * - collectMetricsInfo: 仅收集轻量统计指标（时间戳、发送/接收字节），用于压测报表
      * - collectEventInfo: 收集完整事件信息（DNS、连接、SSL等），用于性能分析
      * - enableNetworkLog: 输出到 NetworkLogPanel，用于调试
      * <p>
@@ -56,7 +57,7 @@ public class HttpService {
      * 各场景配置：
      * - Collection: collectBasicInfo=true, collectEventInfo=true, enableNetworkLog=true (全功能)
      * - Functional: collectBasicInfo=true, collectEventInfo=true, enableNetworkLog=false (不输出UI日志)
-     * - Performance: collectBasicInfo=true, collectEventInfo=可选, enableNetworkLog=false (根据设置)
+     * - Performance: collectBasicInfo=true, collectMetricsInfo=true, collectEventInfo=可选, enableNetworkLog=false (根据设置)
      */
     private static OkHttpClient buildDynamicClient(OkHttpClient baseClient,
                                                    PreparedRequest preparedRequest,
@@ -70,6 +71,7 @@ public class HttpService {
         // 只有至少需要一种信息收集时才创建 EventListener
         // 如果三个开关都是 false，则不创建（最小性能开销）
         boolean needEventListener = preparedRequest.collectBasicInfo
+                || preparedRequest.collectMetricsInfo
                 || preparedRequest.collectEventInfo
                 || preparedRequest.enableNetworkLog;
 
@@ -327,7 +329,7 @@ public class HttpService {
                 req.responseBodyMode,
                 req.responseBodyPreviewLimitBytes
         );
-        httpResponse.endTime = System.currentTimeMillis();
+        httpResponse.endTime = resolveResponseReceivedEndTime(httpResponse, System.currentTimeMillis());
         httpResponse.costMs = httpResponse.endTime - startTime;
         // 响应后主动通知Cookie变化，刷新CookieTablePanel。压测请求会关闭该通知，避免高并发下刷新 UI。
         if (req.notifyCookieChanges) {
@@ -351,5 +353,17 @@ public class HttpService {
             }
         }
         httpResponse.httpEventInfo = httpEventInfo;
+    }
+
+    private static long resolveResponseReceivedEndTime(HttpResponse httpResponse, long fallbackEndTime) {
+        if (httpResponse == null || httpResponse.httpEventInfo == null) {
+            return fallbackEndTime;
+        }
+        long responseEnd = Math.max(
+                httpResponse.httpEventInfo.getResponseBodyEnd(),
+                Math.max(httpResponse.httpEventInfo.getCallEnd(), httpResponse.httpEventInfo.getResponseHeadersEnd())
+        );
+        // 请求耗时按 JMeter sampler 口径：到响应接收完成为止，不把后续 UI 渲染/文本处理计入展示耗时。
+        return responseEnd > 0 ? Math.max(httpResponse.httpEventInfo.getQueueStart(), responseEnd) : fallbackEndTime;
     }
 }

@@ -33,6 +33,7 @@ public class PreparedRequest {
 
     // 事件监听控制（精细化控制）
     public boolean collectBasicInfo = true; // 收集基本信息（headers、body），默认开启
+    public boolean collectMetricsInfo = false; // 仅采集压测统计需要的轻量指标（时间戳、发送/接收字节）
     public boolean collectEventInfo = true; // 收集完整事件信息（DNS、连接、SSL等），默认开启
     public boolean enableNetworkLog = false; // 启用网络日志面板输出，默认关闭
     public transient NetworkLogSink networkLogSink = NetworkLogSink.noop(); // 网络日志输出端口，由 UI 层按需注入
@@ -69,6 +70,7 @@ public class PreparedRequest {
         copy.requestTimeoutMs = this.requestTimeoutMs;
         copy.transportAuth = this.transportAuth != null ? this.transportAuth.shallowCopy() : null;
         copy.collectBasicInfo = this.collectBasicInfo;
+        copy.collectMetricsInfo = this.collectMetricsInfo;
         copy.collectEventInfo = this.collectEventInfo;
         copy.enableNetworkLog = this.enableNetworkLog;
         copy.networkLogSink = this.networkLogSink;

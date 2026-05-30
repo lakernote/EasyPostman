@@ -13,6 +13,8 @@ public class RequestResult {
     public int sentMessages;
     public int receivedMessages;
     public int matchedMessages;
+    public long sentBytes;      // 发送字节数：请求头 + 请求体，用于计算 Sent KB/s
+    public long receivedBytes;  // 接收字节数：响应头 + 响应体，用于计算 Received KB/s
     public long firstMessageLatencyMs = -1;
 
     /**

@@ -858,6 +858,9 @@ public final class MessageKeys {
     public static final String PERFORMANCE_REPORT_COLUMN_FAIL = "performance.report.column.fail";
     public static final String PERFORMANCE_REPORT_COLUMN_SUCCESS_RATE = "performance.report.column.success_rate";
     public static final String PERFORMANCE_REPORT_COLUMN_QPS = "performance.report.column.qps";
+    public static final String PERFORMANCE_REPORT_COLUMN_SENT_KB_PER_SEC = "performance.report.column.sent_kb_per_sec";
+    public static final String PERFORMANCE_REPORT_COLUMN_RECEIVED_KB_PER_SEC = "performance.report.column.received_kb_per_sec";
+    public static final String PERFORMANCE_REPORT_COLUMN_AVG_BYTES = "performance.report.column.avg_bytes";
     public static final String PERFORMANCE_REPORT_COLUMN_AVG = "performance.report.column.avg";
     public static final String PERFORMANCE_REPORT_COLUMN_MIN = "performance.report.column.min";
     public static final String PERFORMANCE_REPORT_COLUMN_MAX = "performance.report.column.max";

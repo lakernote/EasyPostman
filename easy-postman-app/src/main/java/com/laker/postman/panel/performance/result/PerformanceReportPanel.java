@@ -261,29 +261,41 @@ public class PerformanceReportPanel extends JPanel {
             table.getColumnModel().getColumn(5).setMinWidth(60);
             table.getColumnModel().getColumn(5).setPreferredWidth(70);
 
+            // Sent KB/s 列 - 发送字节速率
+            table.getColumnModel().getColumn(6).setMinWidth(85);
+            table.getColumnModel().getColumn(6).setPreferredWidth(95);
+
+            // Received KB/s 列 - 接收字节速率
+            table.getColumnModel().getColumn(7).setMinWidth(90);
+            table.getColumnModel().getColumn(7).setPreferredWidth(105);
+
+            // Avg Bytes 列 - 平均接收字节数
+            table.getColumnModel().getColumn(8).setMinWidth(80);
+            table.getColumnModel().getColumn(8).setPreferredWidth(90);
+
             // Avg 列 - 显示 "Avg"（3个字符）+ 时间
-            table.getColumnModel().getColumn(6).setMinWidth(65);
-            table.getColumnModel().getColumn(6).setPreferredWidth(75);
-
-            // Min 列 - 显示 "Min"（3个字符）+ 时间
-            table.getColumnModel().getColumn(7).setMinWidth(65);
-            table.getColumnModel().getColumn(7).setPreferredWidth(75);
-
-            // Max 列 - 显示 "Max"（3个字符）+ 时间
-            table.getColumnModel().getColumn(8).setMinWidth(65);
-            table.getColumnModel().getColumn(8).setPreferredWidth(75);
-
-            // P90 列 - 显示 "P90"（3个字符）+ 时间
             table.getColumnModel().getColumn(9).setMinWidth(65);
             table.getColumnModel().getColumn(9).setPreferredWidth(75);
 
-            // P95 列 - 显示 "P95"（3个字符）+ 时间
+            // Min 列 - 显示 "Min"（3个字符）+ 时间
             table.getColumnModel().getColumn(10).setMinWidth(65);
             table.getColumnModel().getColumn(10).setPreferredWidth(75);
 
-            // P99 列 - 显示 "P99"（3个字符）+ 时间
+            // Max 列 - 显示 "Max"（3个字符）+ 时间
             table.getColumnModel().getColumn(11).setMinWidth(65);
             table.getColumnModel().getColumn(11).setPreferredWidth(75);
+
+            // P90 列 - 显示 "P90"（3个字符）+ 时间
+            table.getColumnModel().getColumn(12).setMinWidth(65);
+            table.getColumnModel().getColumn(12).setPreferredWidth(75);
+
+            // P95 列 - 显示 "P95"（3个字符）+ 时间
+            table.getColumnModel().getColumn(13).setMinWidth(65);
+            table.getColumnModel().getColumn(13).setPreferredWidth(75);
+
+            // P99 列 - 显示 "P99"（3个字符）+ 时间
+            table.getColumnModel().getColumn(14).setMinWidth(65);
+            table.getColumnModel().getColumn(14).setPreferredWidth(75);
         }
     }
 

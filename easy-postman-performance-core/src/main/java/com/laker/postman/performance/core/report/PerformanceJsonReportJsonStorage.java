@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 public class PerformanceJsonReportJsonStorage {
-    public static final String FORMAT_VERSION = "1.0";
+    public static final String FORMAT_VERSION = "1.1";
 
     public String toJson(PerformanceJsonReport report) {
         return JsonUtil.toJsonPrettyStr(toMap(report));
@@ -148,7 +148,10 @@ public class PerformanceJsonReportJsonStorage {
         json.put("failed", safeApi.getFailed());
         json.put("successRate", safeApi.getSuccessRate());
         json.put("samplesPerSecond", safeApi.getSamplesPerSecond());
+        json.put("firstSampleStartTimeMs", safeApi.getFirstSampleStartTimeMs());
+        json.put("lastSampleEndTimeMs", safeApi.getLastSampleEndTimeMs());
         json.put("durationMs", durationToMap(safeApi.getDurationMs()));
+        json.put("bytes", bytesToMap(safeApi.getBytes()));
         json.put("stream", streamToMap(safeApi.getStream()));
         json.put("firstMessageLatencyMs", durationToMap(safeApi.getFirstMessageLatencyMs()));
         return json;
@@ -164,7 +167,10 @@ public class PerformanceJsonReportJsonStorage {
                 .failed(longValue(json, "failed", 0))
                 .successRate(doubleValue(json, "successRate", 0))
                 .samplesPerSecond(doubleValue(json, "samplesPerSecond", 0))
+                .firstSampleStartTimeMs(longValue(json, "firstSampleStartTimeMs", 0))
+                .lastSampleEndTimeMs(longValue(json, "lastSampleEndTimeMs", 0))
                 .durationMs(readDuration(objectMap(json.get("durationMs"))))
+                .bytes(readBytes(objectMap(json.get("bytes"))))
                 .stream(readStream(objectMap(json.get("stream"))))
                 .firstMessageLatencyMs(readDuration(objectMap(json.get("firstMessageLatencyMs"))))
                 .build();
@@ -217,6 +223,29 @@ public class PerformanceJsonReportJsonStorage {
                 .sendRate(doubleValue(json, "sendRate", 0))
                 .receiveRate(doubleValue(json, "receiveRate", 0))
                 .matchedRate(doubleValue(json, "matchedRate", 0))
+                .build();
+    }
+
+    private Map<String, Object> bytesToMap(PerformanceJsonReportBytes bytes) {
+        PerformanceJsonReportBytes safeBytes = bytes == null
+                ? PerformanceJsonReportBytes.builder().build()
+                : bytes;
+        Map<String, Object> json = new LinkedHashMap<>();
+        json.put("sentBytes", safeBytes.getSentBytes());
+        json.put("receivedBytes", safeBytes.getReceivedBytes());
+        json.put("sentBytesPerSecond", safeBytes.getSentBytesPerSecond());
+        json.put("receivedBytesPerSecond", safeBytes.getReceivedBytesPerSecond());
+        json.put("avgReceivedBytes", safeBytes.getAvgReceivedBytes());
+        return json;
+    }
+
+    private PerformanceJsonReportBytes readBytes(Map<String, Object> json) {
+        return PerformanceJsonReportBytes.builder()
+                .sentBytes(longValue(json, "sentBytes", 0))
+                .receivedBytes(longValue(json, "receivedBytes", 0))
+                .sentBytesPerSecond(doubleValue(json, "sentBytesPerSecond", 0))
+                .receivedBytesPerSecond(doubleValue(json, "receivedBytesPerSecond", 0))
+                .avgReceivedBytes(longValue(json, "avgReceivedBytes", 0))
                 .build();
     }
 

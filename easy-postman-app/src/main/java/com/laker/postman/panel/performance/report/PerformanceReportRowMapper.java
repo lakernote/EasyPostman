@@ -17,6 +17,9 @@ public class PerformanceReportRowMapper {
                 row.fail(),
                 formatPercent(row.successRate()),
                 formatDecimal(row.qps()),
+                formatKilobytesPerSecond(row.sentBytesPerSecond()),
+                formatKilobytesPerSecond(row.receivedBytesPerSecond()),
+                formatBytes(row.avgReceivedBytes()),
                 TimeDisplayUtil.formatElapsedTime(row.avg()),
                 TimeDisplayUtil.formatElapsedTime(row.min()),
                 TimeDisplayUtil.formatElapsedTime(row.max()),
@@ -73,5 +76,13 @@ public class PerformanceReportRowMapper {
 
     public String formatDecimal(double value) {
         return String.format(Locale.ROOT, "%.2f", value);
+    }
+
+    public String formatKilobytesPerSecond(double bytesPerSecond) {
+        return String.format(Locale.ROOT, "%.2f", bytesPerSecond / 1024.0);
+    }
+
+    public String formatBytes(long bytes) {
+        return String.valueOf(Math.max(0L, bytes));
     }
 }

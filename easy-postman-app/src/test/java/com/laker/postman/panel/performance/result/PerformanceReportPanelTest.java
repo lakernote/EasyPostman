@@ -120,9 +120,10 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
             }
         }
 
-        JTable httpTable = findTableByColumnCount(tables, 12);
+        JTable httpTable = findTableByColumnName(tables, I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_QPS));
         JTable webSocketTable = findTableByColumnCount(tables, 13);
-        JTable sseTable = findTableByColumnCount(tables, 15);
+        JTable sseTable = findTableByColumnName(tables,
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG_FIRST_EVENT));
 
         assertEquals(httpTable.getAutoResizeMode(), JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
         assertEquals(webSocketTable.getAutoResizeMode(), JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
@@ -209,6 +210,9 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
         assertEquals(zh.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG_STREAM), "平均样本耗时");
         assertEquals(zh.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_P95_SESSION), "P95 样本耗时");
         assertEquals(zh.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_P95_STREAM), "P95 样本耗时");
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_SENT_KB_PER_SEC), "发送 KB/s");
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_RECEIVED_KB_PER_SEC), "接收 KB/s");
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG_BYTES), "平均字节");
         assertEquals(zh.getString(MessageKeys.PERFORMANCE_TREND_SESSION_DURATION_MS), "活跃会话时长 (ms)");
         assertEquals(zh.getString(MessageKeys.PERFORMANCE_TREND_STREAM_DURATION_MS), "活跃流时长 (ms)");
         assertEquals(zh.getString(MessageKeys.PERFORMANCE_TREND_ACTIVE_WS), "会话数");
@@ -218,6 +222,9 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
         assertEquals(en.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG_STREAM), "Avg Sample Duration");
         assertEquals(en.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_P95_SESSION), "P95 Sample Duration");
         assertEquals(en.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_P95_STREAM), "P95 Sample Duration");
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_SENT_KB_PER_SEC), "Sent KB/s");
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_RECEIVED_KB_PER_SEC), "Received KB/s");
+        assertEquals(en.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG_BYTES), "Avg Bytes");
         assertEquals(en.getString(MessageKeys.PERFORMANCE_TREND_SESSION_DURATION_MS), "Active Session Duration (ms)");
         assertEquals(en.getString(MessageKeys.PERFORMANCE_TREND_STREAM_DURATION_MS), "Active Stream Duration (ms)");
         assertEquals(en.getString(MessageKeys.PERFORMANCE_TREND_ACTIVE_WS), "Sessions");
@@ -248,6 +255,17 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
             }
         }
         throw new AssertionError("Table not found for column count: " + columnCount);
+    }
+
+    private static JTable findTableByColumnName(List<JTable> tables, String columnName) {
+        for (JTable table : tables) {
+            for (int i = 0; i < table.getColumnCount(); i++) {
+                if (columnName.equals(table.getColumnName(i))) {
+                    return table;
+                }
+            }
+        }
+        throw new AssertionError("Table not found for column name: " + columnName);
     }
 
     private static boolean hasColumn(DefaultTableModel model, String columnName) {

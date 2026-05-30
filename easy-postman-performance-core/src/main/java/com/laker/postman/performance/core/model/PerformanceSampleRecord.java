@@ -21,6 +21,10 @@ public class PerformanceSampleRecord {
     int sentMessages;
     int receivedMessages;
     int matchedMessages;
+    // 发送字节数：请求头 + 请求体，worker/master 合并时直接求和
+    long sentBytes;
+    // 接收字节数：响应头 + 响应体，worker/master 合并时直接求和
+    long receivedBytes;
     long firstMessageLatencyMs;
     boolean successful;
 
@@ -39,6 +43,8 @@ public class PerformanceSampleRecord {
                                    int sentMessages,
                                    int receivedMessages,
                                    int matchedMessages,
+                                   long sentBytes,
+                                   long receivedBytes,
                                    long firstMessageLatencyMs,
                                    boolean successful) {
         this.apiId = apiId == null ? "" : apiId;
@@ -57,6 +63,8 @@ public class PerformanceSampleRecord {
         this.sentMessages = Math.max(0, sentMessages);
         this.receivedMessages = Math.max(0, receivedMessages);
         this.matchedMessages = Math.max(0, matchedMessages);
+        this.sentBytes = Math.max(0, sentBytes);
+        this.receivedBytes = Math.max(0, receivedBytes);
         this.firstMessageLatencyMs = firstMessageLatencyMs;
         this.successful = successful;
     }
@@ -67,6 +75,8 @@ public class PerformanceSampleRecord {
         result.sentMessages = sentMessages;
         result.receivedMessages = receivedMessages;
         result.matchedMessages = matchedMessages;
+        result.sentBytes = sentBytes;
+        result.receivedBytes = receivedBytes;
         result.firstMessageLatencyMs = firstMessageLatencyMs;
         return result;
     }

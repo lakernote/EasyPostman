@@ -1,5 +1,7 @@
 package com.laker.postman.service.http;
 
+import com.laker.postman.model.HttpEventInfo;
+import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.service.http.okhttp.LogWebSocketListener;
 import com.laker.postman.service.http.okhttp.OkHttpClientManager;
@@ -73,6 +75,27 @@ public class HttpServiceTest {
     public void shouldUseSecureDefaultPortForWss() {
         assertTrue(HttpService.resolveSecurePort("wss", -1) == 443);
         assertTrue(HttpService.resolveSecurePort("https", -1) == 443);
+    }
+
+    @Test
+    public void shouldUseResponseReceivedTimestampForDisplayedRequestCost() throws Exception {
+        HttpEventInfo eventInfo = new HttpEventInfo();
+        eventInfo.setQueueStart(1_000L);
+        eventInfo.setResponseBodyEnd(1_120L);
+        eventInfo.setCallEnd(1_130L);
+        HttpResponse response = new HttpResponse();
+        response.httpEventInfo = eventInfo;
+
+        Method method = HttpService.class.getDeclaredMethod(
+                "resolveResponseReceivedEndTime",
+                HttpResponse.class,
+                long.class
+        );
+        method.setAccessible(true);
+
+        long resolvedEnd = (long) method.invoke(null, response, 1_500L);
+
+        assertEquals(resolvedEnd, 1_130L);
     }
 
     @Test

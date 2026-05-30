@@ -7,6 +7,7 @@ import com.laker.postman.performance.core.model.PerformanceStatsSnapshot;
 import com.laker.postman.performance.core.model.RequestResult;
 import com.laker.postman.performance.core.report.PerformanceJsonReport;
 import com.laker.postman.performance.core.report.PerformanceJsonReportApi;
+import com.laker.postman.performance.core.report.PerformanceJsonReportBytes;
 import com.laker.postman.performance.core.report.PerformanceJsonReportDuration;
 import com.laker.postman.performance.core.report.PerformanceJsonReportProtocol;
 
@@ -304,6 +305,8 @@ public final class PerformanceProtocolReportData {
         int fail = total - success;
         List<Long> costs = results.stream().map(RequestResult::getResponseTime).toList();
         DurationStats stats = calculateDurationStats(costs);
+        long sentBytes = results.stream().mapToLong(result -> Math.max(0L, result.sentBytes)).sum();
+        long receivedBytes = results.stream().mapToLong(result -> Math.max(0L, result.receivedBytes)).sum();
         return new HttpReportRow(
                 name,
                 total,
@@ -311,6 +314,9 @@ public final class PerformanceProtocolReportData {
                 fail,
                 successRate(total, success),
                 calculateSamplesPerSecond(total, results),
+                calculateCountPerSecond(sentBytes, results),
+                calculateCountPerSecond(receivedBytes, results),
+                total == 0 ? 0 : receivedBytes / total,
                 stats.avg(),
                 stats.min(),
                 stats.max(),
@@ -329,6 +335,9 @@ public final class PerformanceProtocolReportData {
                 summary.fail(),
                 summary.successRate(),
                 summary.samplesPerSecond(),
+                summary.sentBytesPerSecond(),
+                summary.receivedBytesPerSecond(),
+                summary.avgReceivedBytes(),
                 stats.avg(),
                 stats.min(),
                 stats.max(),
@@ -342,6 +351,9 @@ public final class PerformanceProtocolReportData {
         PerformanceJsonReportDuration duration = api.getDurationMs() == null
                 ? PerformanceJsonReportDuration.builder().build()
                 : api.getDurationMs();
+        PerformanceJsonReportBytes bytes = api.getBytes() == null
+                ? PerformanceJsonReportBytes.builder().build()
+                : api.getBytes();
         return new HttpReportRow(
                 resolveApiName(api, fallbackName),
                 api.getTotal(),
@@ -349,6 +361,9 @@ public final class PerformanceProtocolReportData {
                 api.getFailed(),
                 api.getSuccessRate(),
                 api.getSamplesPerSecond(),
+                bytes.getSentBytesPerSecond(),
+                bytes.getReceivedBytesPerSecond(),
+                bytes.getAvgReceivedBytes(),
                 duration.getAvg(),
                 duration.getMin(),
                 duration.getMax(),
@@ -530,6 +545,10 @@ public final class PerformanceProtocolReportData {
     }
 
     private static double calculateCountPerSecond(int count, List<RequestResult> results) {
+        return calculateCountPerSecond((long) count, results);
+    }
+
+    private static double calculateCountPerSecond(long count, List<RequestResult> results) {
         if (count == 0 || results.isEmpty()) {
             return 0;
         }
@@ -592,7 +611,15 @@ public final class PerformanceProtocolReportData {
                                 long success,
                                 long fail,
                                 double successRate,
+                                // QPS：请求数 / 样本窗口，GUI 只负责格式化展示，不重新计算。
                                 double qps,
+                                // 发送字节速率：请求头 + 请求体，单位 bytes/s，展示层换算为 KB/s。
+                                double sentBytesPerSecond,
+                                // 接收字节速率：响应头 + 响应体，单位 bytes/s，展示层换算为 KB/s。
+                                double receivedBytesPerSecond,
+                                // 平均接收字节数：receivedBytes / total，对齐 JMeter Avg. Bytes 口径。
+                                long avgReceivedBytes,
+                                // 请求耗时分布：只包含 sampler/request 耗时，不包含脚本、断言和 UI 刷新。
                                 long avg,
                                 long min,
                                 long max,

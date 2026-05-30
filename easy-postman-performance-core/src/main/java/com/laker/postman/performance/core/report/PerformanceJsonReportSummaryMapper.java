@@ -176,13 +176,19 @@ public class PerformanceJsonReportSummaryMapper {
         private String name;
         private long total;
         private long success;
-        private double samplesPerSecond;
+        private double legacySamplesPerSecond;
+        private long firstSampleStartTimeMs;
+        private long lastSampleEndTimeMs;
         private long sentMessages;
         private long receivedMessages;
         private long matchedMessages;
-        private double sendRate;
-        private double receiveRate;
-        private double matchedRate;
+        private double legacySendRate;
+        private double legacyReceiveRate;
+        private double legacyMatchedRate;
+        private long sentBytes;
+        private long receivedBytes;
+        private double legacySentBytesPerSecond;
+        private double legacyReceivedBytesPerSecond;
         private final MutableDuration duration = new MutableDuration();
         private final MutableDuration firstLatency = new MutableDuration();
 
@@ -204,20 +210,41 @@ public class PerformanceJsonReportSummaryMapper {
             }
             total += api.getTotal();
             success += api.getSuccess();
-            samplesPerSecond += api.getSamplesPerSecond();
+            legacySamplesPerSecond += api.getSamplesPerSecond();
+            mergeSampleWindow(api.getFirstSampleStartTimeMs(), api.getLastSampleEndTimeMs());
             if (api.getStream() != null) {
                 sentMessages += api.getStream().getSentMessages();
                 receivedMessages += api.getStream().getReceivedMessages();
                 matchedMessages += api.getStream().getMatchedMessages();
-                sendRate += api.getStream().getSendRate();
-                receiveRate += api.getStream().getReceiveRate();
-                matchedRate += api.getStream().getMatchedRate();
+                legacySendRate += api.getStream().getSendRate();
+                legacyReceiveRate += api.getStream().getReceiveRate();
+                legacyMatchedRate += api.getStream().getMatchedRate();
+            }
+            if (api.getBytes() != null) {
+                sentBytes += api.getBytes().getSentBytes();
+                receivedBytes += api.getBytes().getReceivedBytes();
+                legacySentBytesPerSecond += api.getBytes().getSentBytesPerSecond();
+                legacyReceivedBytesPerSecond += api.getBytes().getReceivedBytesPerSecond();
             }
             duration.add(api.getDurationMs(), api.getTotal());
             firstLatency.add(api.getFirstMessageLatencyMs(), positiveWeight(api.getFirstMessageLatencyMs(), api.getTotal()));
         }
 
+        private void mergeSampleWindow(long first, long last) {
+            if (first <= 0 || last <= 0) {
+                return;
+            }
+            firstSampleStartTimeMs = firstSampleStartTimeMs == 0 ? first : Math.min(firstSampleStartTimeMs, first);
+            lastSampleEndTimeMs = Math.max(lastSampleEndTimeMs, last);
+        }
+
         private PerformanceJsonReportApi toApi() {
+            double samplesPerSecond = rate(total, legacySamplesPerSecond);
+            double sendRate = rate(sentMessages, legacySendRate);
+            double receiveRate = rate(receivedMessages, legacyReceiveRate);
+            double matchedRate = rate(matchedMessages, legacyMatchedRate);
+            double sentBytesPerSecond = rate(sentBytes, legacySentBytesPerSecond);
+            double receivedBytesPerSecond = rate(receivedBytes, legacyReceivedBytesPerSecond);
             return PerformanceJsonReportApi.builder()
                     .apiId(apiId)
                     .name(name)
@@ -226,7 +253,16 @@ public class PerformanceJsonReportSummaryMapper {
                     .success(success)
                     .failed(Math.max(0L, total - success))
                     .samplesPerSecond(samplesPerSecond)
+                    .firstSampleStartTimeMs(firstSampleStartTimeMs)
+                    .lastSampleEndTimeMs(lastSampleEndTimeMs)
                     .durationMs(duration.toDuration())
+                    .bytes(PerformanceJsonReportBytes.builder()
+                            .sentBytes(sentBytes)
+                            .receivedBytes(receivedBytes)
+                            .sentBytesPerSecond(sentBytesPerSecond)
+                            .receivedBytesPerSecond(receivedBytesPerSecond)
+                            .avgReceivedBytes(total == 0 ? 0 : receivedBytes / total)
+                            .build())
                     .stream(PerformanceJsonReportStream.builder()
                             .sentMessages(sentMessages)
                             .receivedMessages(receivedMessages)
@@ -237,6 +273,17 @@ public class PerformanceJsonReportSummaryMapper {
                             .build())
                     .firstMessageLatencyMs(firstLatency.toDuration())
                     .build();
+        }
+
+        private double rate(long count, double legacyRate) {
+            if (count <= 0) {
+                return 0D;
+            }
+            if (firstSampleStartTimeMs <= 0 || lastSampleEndTimeMs <= 0) {
+                return legacyRate;
+            }
+            long spanMs = Math.max(1L, lastSampleEndTimeMs - firstSampleStartTimeMs);
+            return count * 1000.0 / spanMs;
         }
 
         private static long positiveWeight(PerformanceJsonReportDuration duration, long fallback) {
@@ -291,4 +338,5 @@ public class PerformanceJsonReportSummaryMapper {
             return (leftValue * leftWeight + rightValue * rightWeight) / totalWeight;
         }
     }
+
 }

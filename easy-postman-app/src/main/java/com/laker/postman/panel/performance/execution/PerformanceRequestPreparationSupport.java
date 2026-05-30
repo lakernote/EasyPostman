@@ -14,6 +14,7 @@ class PerformanceRequestPreparationSupport {
 
     void configurePreparedRequest(PreparedRequest request, boolean eventLoggingEnabled) {
         request.collectBasicInfo = true;
+        request.collectMetricsInfo = true;
         request.collectEventInfo = eventLoggingEnabled;
         request.enableNetworkLog = false;
         request.notifyCookieChanges = false;

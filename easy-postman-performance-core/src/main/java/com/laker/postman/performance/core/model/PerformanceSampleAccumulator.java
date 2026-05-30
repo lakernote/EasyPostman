@@ -11,11 +11,15 @@ final class PerformanceSampleAccumulator {
     private String apiName;
     private long total;
     private long success;
+    // 样本窗口开始/结束时间：QPS 和 byte/s 都用这个窗口计算，避免用运行总耗时稀释短请求吞吐。
     private long firstStart = Long.MAX_VALUE;
     private long lastEnd;
     private long sentMessages;
     private long receivedMessages;
     private long matchedMessages;
+    // HTTP 字节总量：请求头+请求体、响应头+响应体，用于派生 Sent/Received KB/s。
+    private long sentBytes;
+    private long receivedBytes;
     private long firstMessageLatencyTotal;
     private long firstMessageLatencyCount;
 
@@ -35,6 +39,8 @@ final class PerformanceSampleAccumulator {
         sentMessages += Math.max(0, result.sentMessages);
         receivedMessages += Math.max(0, result.receivedMessages);
         matchedMessages += Math.max(0, result.matchedMessages);
+        sentBytes += Math.max(0, result.sentBytes);
+        receivedBytes += Math.max(0, result.receivedBytes);
         if ((apiName == null || apiName.isBlank()) && result.apiName != null && !result.apiName.isBlank()) {
             apiName = result.apiName;
         }
@@ -53,6 +59,8 @@ final class PerformanceSampleAccumulator {
         sentMessages = 0;
         receivedMessages = 0;
         matchedMessages = 0;
+        sentBytes = 0;
+        receivedBytes = 0;
         firstMessageLatencyTotal = 0;
         firstMessageLatencyCount = 0;
         apiName = null;
@@ -95,6 +103,14 @@ final class PerformanceSampleAccumulator {
         return matchedMessages;
     }
 
+    synchronized long sentBytes() {
+        return sentBytes;
+    }
+
+    synchronized long receivedBytes() {
+        return receivedBytes;
+    }
+
     synchronized long avgDurationMs() {
         return durations.avg();
     }
@@ -114,6 +130,8 @@ final class PerformanceSampleAccumulator {
         double sendRate = spanSeconds > 0 ? round(sentMessages / spanSeconds) : 0;
         double receiveRate = spanSeconds > 0 ? round(receivedMessages / spanSeconds) : 0;
         double matchedRate = spanSeconds > 0 ? round(matchedMessages / spanSeconds) : 0;
+        double sentBytesPerSecond = spanSeconds > 0 ? round(sentBytes / spanSeconds) : 0;
+        double receivedBytesPerSecond = spanSeconds > 0 ? round(receivedBytes / spanSeconds) : 0;
         return new PerformanceStatsSnapshot.ApiSummary(
                 apiId,
                 summaryName,
@@ -123,6 +141,8 @@ final class PerformanceSampleAccumulator {
                 fail(),
                 total > 0 ? success * 100.0 / total : 0,
                 spanSeconds > 0 ? round(total / spanSeconds) : 0,
+                total == 0 ? 0 : firstStart,
+                total == 0 ? 0 : lastEnd,
                 durations.snapshot(),
                 sentMessages,
                 receivedMessages,
@@ -130,6 +150,11 @@ final class PerformanceSampleAccumulator {
                 sendRate,
                 receiveRate,
                 matchedRate,
+                sentBytes,
+                receivedBytes,
+                sentBytesPerSecond,
+                receivedBytesPerSecond,
+                total == 0 ? 0 : receivedBytes / total,
                 firstMessageLatencyCount == 0 ? 0 : firstMessageLatencyTotal / firstMessageLatencyCount,
                 firstMessageLatencies.snapshot()
         );

@@ -45,7 +45,7 @@
 - `performance run` 和 `performance worker` 初始化 IOC、宿主插件桥接服务和插件运行时，不创建 `MainFrame`、主题、字体或 Splash；`performance master run` 当前只读取 plan、生成 assignment 并通过 HTTP 调度 worker。
 - headless 命令默认保留控制台 INFO 日志，方便在服务器上直接排查插件扫描、脚本池、workspace 加载等问题；如需临时收敛输出，可手动加 `-DCONSOLE_LOG_LEVEL=ERROR`。
 - CLI 运行期间通过 `RunScopedVariableContext` 注入 `plan.json` 内的 environment/globals；请求最终发送前的 `{{var}}` 替换、脚本 `pm.environment` / `pm.globals` 和子线程变量解析都走同一份运行态变量，不写回用户持久化全局变量文件。
-- CLI 输出的 `result.json` 包含顶层摘要和 `report` 节点。`report` 保存机器可读的原始数值：总请求数、成功/失败数、协议级 total、API 级 total、samplesPerSecond、耗时分位数，以及 WebSocket/SSE 的消息数、消息速率和首消息/首事件延迟。
+- CLI 输出的 `result.json` 包含顶层摘要和 `report` 节点。`report` 保存机器可读的原始数值：总请求数、成功/失败数、协议级 total、API 级 total、samplesPerSecond、HTTP 字节吞吐、耗时分位数，以及 WebSocket/SSE 的消息数、消息速率和首消息/首事件延迟。
 - worker 使用主 app jar 内的 JDK `HttpServer`，不引入 Jetty/Netty/Spring Boot。server 只在 `performance worker` 模式启动，GUI 默认不监听端口。
 - worker 控制台输出用户可读的生命周期和进度状态：listening、accepted、started、progress、completed。进度默认每秒打印一次，可通过 `--progress-interval <seconds>` 调整，或用 `--no-progress` 关闭；请求级和内部组件日志仍按日志配置输出。
 - worker 控制面协议为 HTTP/JSON：`GET /api/performance/v1/health`、`POST /api/performance/v1/runs`、`GET /api/performance/v1/runs/{runId}`、`GET /api/performance/v1/runs/{runId}/result`、`GET /api/performance/v1/runs/{runId}/details`、`POST /api/performance/v1/runs/{runId}/stop`。
@@ -89,7 +89,7 @@ perl -e 'alarm shift; exec @ARGV' 90 \
   "stopped": false,
   "elapsedTimeMs": 60084,
   "report": {
-    "schemaVersion": "1.0",
+    "schemaVersion": "1.1",
     "source": "local",
     "status": "SUCCESS",
     "summary": {
@@ -101,6 +101,15 @@ perl -e 'alarm shift; exec @ARGV' 90 \
       "HTTP": {
         "total": {
           "samplesPerSecond": 14283.1,
+          "firstSampleStartTimeMs": 1764356811000,
+          "lastSampleEndTimeMs": 1764356871084,
+          "bytes": {
+            "sentBytes": 0,
+            "receivedBytes": 0,
+            "sentBytesPerSecond": 0.0,
+            "receivedBytesPerSecond": 0.0,
+            "avgReceivedBytes": 0
+          },
           "durationMs": {
             "avg": 0,
             "min": 0,
@@ -148,7 +157,7 @@ jq . /tmp/easy-postman-master-result.json
 
 ```json
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "1.1",
   "status": "SUCCESS",
   "source": "master",
   "summary": {
@@ -161,7 +170,15 @@ jq . /tmp/easy-postman-master-result.json
     "HTTP": {
       "total": {
         "total": 981956,
-        "successRate": 100.0
+        "successRate": 100.0,
+        "samplesPerSecond": 16345.2,
+        "bytes": {
+          "sentBytes": 0,
+          "receivedBytes": 0,
+          "sentBytesPerSecond": 0.0,
+          "receivedBytesPerSecond": 0.0,
+          "avgReceivedBytes": 0
+        }
       }
     }
   }
@@ -220,7 +237,7 @@ sequenceDiagram
 | `GET` | `/api/performance/v1/health` | 探活，返回 worker id、host、port。 | 不计入压测时间。 |
 | `POST` | `/api/performance/v1/runs` | 提交一次运行，body 包含完整 `plan` 和该 worker 的 `assignment`。 | plan 上传、JSON 解析和 assignment 校验不计入最终 report 的执行时间。 |
 | `GET` | `/api/performance/v1/runs/{runId}?report=false` | 轻量状态轮询，只返回 users、requests、QPS、状态，不构建完整 report。 | 不改变最终 report 时间；GUI 趋势按轮询间隔计算窗口 QPS。 |
-| `GET` | `/api/performance/v1/runs/{runId}` | 兼容完整状态轮询，默认包含运行中 report。 | 只在需要实时报表时使用，开销高于轻量状态。 |
+| `GET` | `/api/performance/v1/runs/{runId}` | 完整状态轮询，返回运行中 report。GUI 远程模式每 1 秒轮询一次，但只有开启“实时报表”时才调用完整 report。 | 只在需要实时报表时使用，开销高于轻量状态。 |
 | `POST` | `/api/performance/v1/runs/{runId}/stop` | 请求 worker 停止当前运行。 | 停止控制面不计入成功请求数。 |
 | `GET` | `/api/performance/v1/runs/{runId}/result` | 拉取 worker 最终 JSON report。 | 最终 report 已固定，不再重新采样。 |
 | `GET` | `/api/performance/v1/runs/{runId}/details` | 拉取 worker 有界保留的失败/慢请求明细，用于 GUI 结果表。 | 明细拉取发生在收尾阶段，不计入成功请求数。 |
@@ -230,8 +247,8 @@ sequenceDiagram
 1. `plan.json` 通过 `POST /runs` 发送到 worker，这属于控制面分发，不计入最终 report 的 `elapsedTimeMs` 和报表 QPS。
 2. worker 控制台的 `completed run ... elapsedMs` 从 worker 异步开始执行算起，包含 worker 侧 plan 编译、分片应用、脚本池启动和实际请求执行，不包含 HTTP body 上传时间。
 3. 最终 JSON report 的 `metadata.startTimeMs/endTimeMs` 来自 worker 内部 `PerformanceRunSession`，从执行引擎 `beginRun` 开始，到运行结束为止；不包含 master 读 plan、生成 assignment、POST plan 和最终拉取 result 的时间。
-4. GUI 远程趋势图按 worker status 的增量请求数采样。采样窗口在所有 worker 接收 plan 后重置，避免第一秒趋势点把 plan 分发耗时算进 QPS。
-5. CLI master 默认使用 `report=false` 轻量轮询；GUI remote 只有在“实时报表”开启时才请求运行中完整 report。关闭实时报表时，趋势和顶部虚拟用户数仍实时刷新。
+4. GUI 远程模式固定每 1 秒轮询 worker 状态；趋势图按 worker status 的增量请求数采样。采样窗口在所有 worker 接收 plan 后重置，避免第一秒趋势点把 plan 分发耗时算进 QPS。
+5. CLI master 默认每 500ms 使用 `report=false` 轻量轮询，可通过 `--poll-interval-ms <ms>` 调整；GUI remote 只有在“实时报表”开启时才请求运行中完整 report。关闭实时报表时，趋势和顶部虚拟用户数仍实时刷新。
 6. GUI remote 在 worker 到达终态后拉取 `/details`，把失败/慢请求明细写入“结果表”；worker 不实时推送请求级明细，避免拖慢压测主路径。
 
 ### GUI 远程控制方式
@@ -278,9 +295,18 @@ sequenceDiagram
 
 - 按协议和 API 聚合请求数、成功数、失败数。
 - 使用直方图计算耗时分位数，避免保存所有请求耗时。
+- HTTP 记录请求头 + 请求体发送字节、响应头 + 响应体接收字节，并派生 Sent KB/s、Received KB/s 和 Avg Bytes。
 - WebSocket/SSE 额外记录消息数、匹配数、首消息延迟和主要完成原因。
 
 `snapshot()` 生成报表快照，不保留单请求结果。
+
+### HTTP 指标口径
+
+- 请求耗时：只统计 sampler/request 的网络请求耗时，从请求开始到最后响应数据收到后结束；不包含前置脚本、后置脚本、断言、结果表渲染和 master/worker 控制面耗时。
+- QPS：`total / ((lastSampleEndTimeMs - firstSampleStartTimeMs) / 1000)`。单机和单 worker 使用本机样本窗口；master 合并多个 worker 时使用所有 worker 的全局最早样本开始时间和最晚样本结束时间重算，避免简单相加 worker QPS 带来的误差。
+- Sent KB/s：`sentBytes / sampleWindow / 1024`，sentBytes 为请求头 + 请求体字节数。
+- Received KB/s：`receivedBytes / sampleWindow / 1024`，receivedBytes 为响应头 + 响应体字节数。
+- Avg Bytes：`receivedBytes / total`，按每个 HTTP sample 的平均接收字节数展示，对齐 JMeter Aggregate Report 的 Avg. Bytes 使用习惯。
 
 ### 趋势窗口
 

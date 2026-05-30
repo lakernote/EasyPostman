@@ -7,6 +7,7 @@ import com.laker.postman.performance.core.model.PerformanceStatsCollector;
 import com.laker.postman.performance.core.model.RequestResult;
 import com.laker.postman.performance.core.report.PerformanceJsonReport;
 import com.laker.postman.performance.core.report.PerformanceJsonReportApi;
+import com.laker.postman.performance.core.report.PerformanceJsonReportBytes;
 import com.laker.postman.performance.core.report.PerformanceJsonReportDuration;
 import com.laker.postman.performance.core.report.PerformanceJsonReportProtocol;
 import com.laker.postman.performance.core.report.PerformanceJsonReportStream;
@@ -23,6 +24,8 @@ public class PerformanceProtocolReportDataTest {
     @Test
     public void shouldBuildSeparateProtocolRows() {
         RequestResult http = new RequestResult(1_000, 1_100, true, "http-api", "HTTP API", PerformanceProtocol.HTTP);
+        http.sentBytes = 128;
+        http.receivedBytes = 512;
         RequestResult ws = new RequestResult(2_000, 2_500, true, "ws-api", "WS API", PerformanceProtocol.WEBSOCKET);
         ws.sentMessages = 2;
         ws.receivedMessages = 5;
@@ -40,6 +43,9 @@ public class PerformanceProtocolReportDataTest {
 
         assertEquals(reportData.httpRows().get(0).name(), "HTTP API");
         assertEquals(reportData.httpRows().get(0).qps(), 10.0);
+        assertEquals(reportData.httpRows().get(0).sentBytesPerSecond(), 1280.0);
+        assertEquals(reportData.httpRows().get(0).receivedBytesPerSecond(), 5120.0);
+        assertEquals(reportData.httpRows().get(0).avgReceivedBytes(), 512L);
         assertEquals(reportData.webSocketRows().get(0).name(), "WS API");
         assertEquals(reportData.webSocketRows().get(0).sentMessages(), 2);
         assertEquals(reportData.webSocketRows().get(0).receivedMessages(), 5);
@@ -146,6 +152,11 @@ public class PerformanceProtocolReportDataTest {
                                         .total(5L)
                                         .success(4L)
                                         .samplesPerSecond(12.5)
+                                        .bytes(PerformanceJsonReportBytes.builder()
+                                                .sentBytesPerSecond(512.0)
+                                                .receivedBytesPerSecond(1024.0)
+                                                .avgReceivedBytes(256L)
+                                                .build())
                                         .durationMs(PerformanceJsonReportDuration.builder()
                                                 .avg(30L)
                                                 .min(10L)
@@ -162,6 +173,11 @@ public class PerformanceProtocolReportDataTest {
                                         .total(5L)
                                         .success(4L)
                                         .samplesPerSecond(12.5)
+                                        .bytes(PerformanceJsonReportBytes.builder()
+                                                .sentBytesPerSecond(512.0)
+                                                .receivedBytesPerSecond(1024.0)
+                                                .avgReceivedBytes(256L)
+                                                .build())
                                         .durationMs(PerformanceJsonReportDuration.builder()
                                                 .avg(30L)
                                                 .min(10L)
@@ -207,6 +223,9 @@ public class PerformanceProtocolReportDataTest {
 
         assertEquals(reportData.httpRows().get(0).name(), "Remote API");
         assertEquals(reportData.httpRows().get(0).total(), 5L);
+        assertEquals(reportData.httpRows().get(0).sentBytesPerSecond(), 512.0);
+        assertEquals(reportData.httpRows().get(0).receivedBytesPerSecond(), 1024.0);
+        assertEquals(reportData.httpRows().get(0).avgReceivedBytes(), 256L);
         assertEquals(reportData.httpRows().get(1).name(), "Total");
         assertEquals(reportData.httpRows().get(1).qps(), 12.5);
         assertEquals(reportData.webSocketRows().get(0).name(), "Total");

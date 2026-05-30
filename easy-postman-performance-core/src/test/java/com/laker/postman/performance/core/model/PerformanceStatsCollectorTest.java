@@ -43,6 +43,31 @@ public class PerformanceStatsCollectorTest {
     }
 
     @Test
+    public void shouldExposeSampleWindowAndByteThroughput() {
+        PerformanceStatsCollector collector = new PerformanceStatsCollector();
+
+        RequestResult first = new RequestResult(1_000L, 1_100L, true, "search", "Search API", PerformanceProtocol.HTTP);
+        first.sentBytes = 1_000L;
+        first.receivedBytes = 2_000L;
+        collector.record(first);
+        RequestResult second = new RequestResult(1_200L, 1_500L, true, "search", "Search API", PerformanceProtocol.HTTP);
+        second.sentBytes = 500L;
+        second.receivedBytes = 1_000L;
+        collector.record(second);
+
+        PerformanceStatsSnapshot.ApiSummary summary = collector.snapshot().summaries().get(0);
+
+        assertEquals(summary.firstSampleStartTimeMs(), 1_000L);
+        assertEquals(summary.lastSampleEndTimeMs(), 1_500L);
+        assertEquals(summary.samplesPerSecond(), 4.0);
+        assertEquals(summary.sentBytes(), 1_500L);
+        assertEquals(summary.receivedBytes(), 3_000L);
+        assertEquals(summary.sentBytesPerSecond(), 3_000.0);
+        assertEquals(summary.receivedBytesPerSecond(), 6_000.0);
+        assertEquals(summary.avgReceivedBytes(), 1_500L);
+    }
+
+    @Test
     public void statsCollectorShouldOnlyExposeReportAggregationApi() {
         assertFalse(hasMethodNamed(PerformanceStatsCollector.class, "setTrendEnabled"));
         assertFalse(hasMethodNamed(PerformanceStatsCollector.class, "sampleTrendSnapshot"));

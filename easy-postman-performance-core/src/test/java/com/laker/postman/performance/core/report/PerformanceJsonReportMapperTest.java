@@ -17,8 +17,14 @@ public class PerformanceJsonReportMapperTest {
     @Test
     public void shouldMapStatsSnapshotToMachineReadableJsonReport() {
         PerformanceStatsCollector collector = new PerformanceStatsCollector();
-        collector.record(new RequestResult(1_000, 1_100, true, "login", "Login", PerformanceProtocol.HTTP));
-        collector.record(new RequestResult(2_000, 2_250, false, "login", "Login", PerformanceProtocol.HTTP));
+        RequestResult loginOk = new RequestResult(1_000, 1_100, true, "login", "Login", PerformanceProtocol.HTTP);
+        loginOk.sentBytes = 100;
+        loginOk.receivedBytes = 400;
+        collector.record(loginOk);
+        RequestResult loginFail = new RequestResult(2_000, 2_250, false, "login", "Login", PerformanceProtocol.HTTP);
+        loginFail.sentBytes = 200;
+        loginFail.receivedBytes = 600;
+        collector.record(loginFail);
         RequestResult stream = new RequestResult(3_000, 6_000, true, "events", "Events", PerformanceProtocol.SSE);
         stream.receivedMessages = 8;
         stream.matchedMessages = 7;
@@ -55,7 +61,19 @@ public class PerformanceJsonReportMapperTest {
         Map<String, Object> login = objectMap(listValue(http.get("apis")).get(0));
         assertEquals(login.get("apiId"), "login");
         assertEquals(login.get("name"), "Login");
+        assertEquals(login.get("firstSampleStartTimeMs"), 1000);
+        assertEquals(login.get("lastSampleEndTimeMs"), 2250);
         assertEquals(objectMap(login.get("durationMs")).get("p95"), 250);
+        Map<String, Object> bytes = objectMap(login.get("bytes"));
+        assertEquals(bytes.get("sentBytes"), 300);
+        assertEquals(bytes.get("receivedBytes"), 1000);
+        assertEquals(bytes.get("avgReceivedBytes"), 500);
+
+        PerformanceJsonReport roundTripped = new PerformanceJsonReportJsonStorage().fromJson(json);
+        PerformanceJsonReportApi roundTrippedLogin = roundTripped.getProtocols().get("HTTP").getApis().get(0);
+        assertEquals(roundTrippedLogin.getFirstSampleStartTimeMs(), 1_000L);
+        assertEquals(roundTrippedLogin.getLastSampleEndTimeMs(), 2_250L);
+        assertEquals(roundTrippedLogin.getBytes().getReceivedBytes(), 1_000L);
 
         Map<String, Object> sse = objectMap(protocols.get("SSE"));
         Map<String, Object> sseApi = objectMap(listValue(sse.get("apis")).get(0));

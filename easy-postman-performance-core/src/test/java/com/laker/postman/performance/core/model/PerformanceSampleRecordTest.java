@@ -20,6 +20,8 @@ public class PerformanceSampleRecordTest {
                 .sentMessages(2)
                 .receivedMessages(3)
                 .matchedMessages(1)
+                .sentBytes(128)
+                .receivedBytes(256)
                 .firstMessageLatencyMs(42)
                 .successful(true)
                 .build();
@@ -35,6 +37,8 @@ public class PerformanceSampleRecordTest {
         assertEquals(result.sentMessages, 2);
         assertEquals(result.receivedMessages, 3);
         assertEquals(result.matchedMessages, 1);
+        assertEquals(result.sentBytes, 128L);
+        assertEquals(result.receivedBytes, 256L);
         assertEquals(result.firstMessageLatencyMs, 42L);
     }
 }

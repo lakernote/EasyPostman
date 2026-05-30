@@ -17,6 +17,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Collection;
@@ -34,6 +35,7 @@ public class EasyConsoleEventListener extends EventListener {
     private final NetworkLogSink networkLogSink;
 
     // 精细化控制开关
+    private final boolean collectMetricsInfo; // 是否收集轻量统计指标（时间戳、发送/接收字节）
     private final boolean collectEventInfo; // 是否收集完整事件信息（DNS、连接等）
     private final boolean enableNetworkLog; // 是否启用网络日志面板输出
 
@@ -47,6 +49,9 @@ public class EasyConsoleEventListener extends EventListener {
         this.networkLogSink = preparedRequest.networkLogSink == null
                 ? NetworkLogSink.noop()
                 : preparedRequest.networkLogSink;
+        this.collectMetricsInfo = preparedRequest.collectMetricsInfo
+                || preparedRequest.collectEventInfo
+                || preparedRequest.enableNetworkLog;
         this.collectEventInfo = preparedRequest.collectEventInfo;
         this.enableNetworkLog = preparedRequest.enableNetworkLog;
     }
@@ -71,14 +76,18 @@ public class EasyConsoleEventListener extends EventListener {
 
     @Override
     public void callStart(Call call) {
-        if (!collectEventInfo) {
+        if (!collectMetricsInfo) {
             return;
         }
-        SSLConfigurationUtil.clearValidationResult();
-        CertificateCapturingSSLSocketFactory.clearLastCapturedCertificates();
+        if (collectEventInfo) {
+            SSLConfigurationUtil.clearValidationResult();
+            CertificateCapturingSSLSocketFactory.clearLastCapturedCertificates();
+        }
         info.setCallStart(System.currentTimeMillis());
-        Request request = call.request();
-        log(NetworkLogEventStage.CALL_START, request.method() + " " + request.url());
+        if (enableNetworkLog) {
+            Request request = call.request();
+            log(NetworkLogEventStage.CALL_START, request.method() + " " + request.url());
+        }
     }
 
     @Override
@@ -333,7 +342,7 @@ public class EasyConsoleEventListener extends EventListener {
 
     @Override
     public void requestHeadersStart(Call call) {
-        if (!collectEventInfo) {
+        if (!collectMetricsInfo) {
             return;
         }
         info.setRequestHeadersStart(System.currentTimeMillis());
@@ -344,11 +353,14 @@ public class EasyConsoleEventListener extends EventListener {
     public void requestHeadersEnd(Call call, Request request) {
         Headers headers = request.headers();
         preparedRequest.okHttpHeaders = headers;
-        if (!collectEventInfo) {
+        if (!collectMetricsInfo) {
             return;
         }
-        info.setHeaderBytesSent(headers.toString().getBytes().length);
+        info.setHeaderBytesSent(headers.toString().getBytes(StandardCharsets.UTF_8).length);
         info.setRequestHeadersEnd(System.currentTimeMillis());
+        if (!enableNetworkLog) {
+            return;
+        }
         StringBuilder sb = new StringBuilder();
         sb.append("\n");
         for (int i = 0; i < headers.size(); i++) {
@@ -365,8 +377,11 @@ public class EasyConsoleEventListener extends EventListener {
 
     @Override
     public void requestBodyStart(Call call) {
-        if (collectEventInfo) {
+        if (collectMetricsInfo) {
             info.setRequestBodyStart(System.currentTimeMillis());
+        }
+        if (!collectEventInfo) {
+            return;
         }
         Request request = call.request();
         if (request.body() != null) {
@@ -423,7 +438,7 @@ public class EasyConsoleEventListener extends EventListener {
 
     @Override
     public void requestBodyEnd(Call call, long byteCount) {
-        if (!collectEventInfo) {
+        if (!collectMetricsInfo) {
             return;
         }
         info.setBodyBytesSent(byteCount);
@@ -433,17 +448,20 @@ public class EasyConsoleEventListener extends EventListener {
 
     @Override
     public void requestFailed(Call call, IOException ioe) {
-        if (!collectEventInfo) {
+        if (!collectMetricsInfo) {
             return;
         }
         info.setErrorMessage(NetworkErrorMessageResolver.toUserFriendlyMessage(ioe));
         info.setError(ioe);
+        if (!enableNetworkLog) {
+            return;
+        }
         log(NetworkLogEventStage.REQUEST_FAILED, ioe.getMessage() + "\n" + getStackTrace(ioe));
     }
 
     @Override
     public void responseHeadersStart(Call call) {
-        if (!collectEventInfo) {
+        if (!collectMetricsInfo) {
             return;
         }
         info.setResponseHeadersStart(System.currentTimeMillis());
@@ -452,11 +470,14 @@ public class EasyConsoleEventListener extends EventListener {
 
     @Override
     public void responseHeadersEnd(Call call, Response response) {
-        if (!collectEventInfo) {
+        if (!collectMetricsInfo) {
             return;
         }
-        info.setHeaderBytesReceived(response.headers().toString().getBytes().length);
+        info.setHeaderBytesReceived(response.headers().toString().getBytes(StandardCharsets.UTF_8).length);
         info.setResponseHeadersEnd(System.currentTimeMillis());
+        if (!enableNetworkLog) {
+            return;
+        }
         StringBuilder sb = new StringBuilder("\n");
         boolean isRedirect = response.isRedirect();
         sb.append("Redirect: ").append(isRedirect).append("\n");
@@ -503,7 +524,7 @@ public class EasyConsoleEventListener extends EventListener {
 
     @Override
     public void responseBodyStart(Call call) {
-        if (!collectEventInfo) {
+        if (!collectMetricsInfo) {
             return;
         }
         info.setResponseBodyStart(System.currentTimeMillis());
@@ -512,7 +533,7 @@ public class EasyConsoleEventListener extends EventListener {
 
     @Override
     public void responseBodyEnd(Call call, long byteCount) {
-        if (!collectEventInfo) {
+        if (!collectMetricsInfo) {
             return;
         }
         info.setBodyBytesReceived(byteCount);
@@ -522,18 +543,21 @@ public class EasyConsoleEventListener extends EventListener {
 
     @Override
     public void responseFailed(Call call, IOException ioe) {
-        if (!collectEventInfo) {
+        if (!collectMetricsInfo) {
             return;
         }
         info.setErrorMessage(NetworkErrorMessageResolver.toUserFriendlyMessage(ioe));
         info.setError(ioe);
+        if (!enableNetworkLog) {
+            return;
+        }
         String errorMsg = ioe.getMessage() != null ? ioe.getMessage() : ioe.getClass().getSimpleName();
         log(NetworkLogEventStage.RESPONSE_FAILED, errorMsg + "\n" + getStackTrace(ioe));
     }
 
     @Override
     public void callEnd(Call call) {
-        if (!collectEventInfo) {
+        if (!collectMetricsInfo) {
             return;
         }
         info.setCallEnd(System.currentTimeMillis());
@@ -542,12 +566,15 @@ public class EasyConsoleEventListener extends EventListener {
 
     @Override
     public void callFailed(Call call, IOException ioe) {
-        if (!collectEventInfo) {
+        if (!collectMetricsInfo) {
             return;
         }
         info.setCallFailed(System.currentTimeMillis());
         info.setErrorMessage(NetworkErrorMessageResolver.toUserFriendlyMessage(ioe));
         info.setError(ioe);
+        if (!enableNetworkLog) {
+            return;
+        }
         String errorMsg = ioe.getMessage() != null ? ioe.getMessage() : ioe.getClass().getSimpleName();
         log(NetworkLogEventStage.CALL_FAILED, errorMsg);
     }

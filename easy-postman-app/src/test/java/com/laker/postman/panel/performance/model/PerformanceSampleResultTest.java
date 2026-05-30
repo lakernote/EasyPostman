@@ -1,6 +1,7 @@
 package com.laker.postman.panel.performance.model;
 
 import com.laker.postman.performance.core.model.PerformanceProtocol;
+import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.script.TestResult;
@@ -57,6 +58,41 @@ public class PerformanceSampleResultTest {
         assertEquals(sampleResult.getFirstMessageLatencyMs(), 88L);
         assertTrue(sampleResult.isSuccessful());
         assertFalse(sampleResult.isExecutionFailed());
+    }
+
+    @Test
+    public void shouldMapHttpByteMetricsIntoCoreSampleRecord() {
+        HttpEventInfo eventInfo = new HttpEventInfo();
+        eventInfo.setHeaderBytesSent(120L);
+        eventInfo.setBodyBytesSent(380L);
+        eventInfo.setHeaderBytesReceived(240L);
+        eventInfo.setBodyBytesReceived(760L);
+        HttpResponse response = new HttpResponse();
+        response.code = 200;
+        response.costMs = 20;
+        response.endTime = 120;
+        response.httpEventInfo = eventInfo;
+
+        PerformanceRequestExecutionResult executionResult = new PerformanceRequestExecutionResult(
+                "api",
+                "API",
+                new PreparedRequest(),
+                response,
+                "",
+                List.of(),
+                false,
+                false,
+                PerformanceProtocol.HTTP,
+                100L,
+                0L
+        );
+
+        PerformanceSampleResult sampleResult = PerformanceSampleResult.fromExecutionResult(executionResult);
+
+        assertEquals(sampleResult.getSentBytes(), 500L);
+        assertEquals(sampleResult.getReceivedBytes(), 1_000L);
+        assertEquals(sampleResult.toRequestResult().sentBytes, 500L);
+        assertEquals(sampleResult.toRequestResult().receivedBytes, 1_000L);
     }
 
     @Test

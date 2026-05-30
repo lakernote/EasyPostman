@@ -150,6 +150,8 @@ public class PerformanceRequestExecutorTest {
         PerformanceRequestPreparationSupport.configurePreparedRequest(eventLoggingDisabled, false);
         PerformanceRequestPreparationSupport.configurePreparedRequest(eventLoggingEnabled, true);
 
+        assertTrue(eventLoggingDisabled.collectMetricsInfo);
+        assertTrue(eventLoggingEnabled.collectMetricsInfo);
         assertFalse(eventLoggingDisabled.collectEventInfo);
         assertTrue(eventLoggingEnabled.collectEventInfo);
     }
@@ -179,6 +181,7 @@ public class PerformanceRequestExecutorTest {
             );
 
             assertFalse(result.executionFailed, result.errorMsg);
+            assertTrue(result.request.collectMetricsInfo);
             assertTrue(result.request.collectEventInfo);
             assertEquals(result.request.responseBodyPreviewLimitBytes, 1024);
         }

@@ -36,14 +36,31 @@ public class PerformanceWorkerProtocolJsonStorage {
 
     public PerformanceWorkerRunStatusResponse statusResponseFromJson(String json) {
         Map<String, Object> root = root(json);
+        PerformanceJsonReport report = root.get("report") == null
+                ? null
+                : reportStorage.fromJson(JsonUtil.toJsonStr(root.get("report")));
         return PerformanceWorkerRunStatusResponse.builder()
                 .runId(stringValue(root, "runId", ""))
                 .workerId(stringValue(root, "workerId", ""))
                 .status(stringValue(root, "status", PerformanceRunStatus.UNKNOWN))
+                .activeUsers(intValue(root, "activeUsers", 0))
+                .totalUsers(intValue(root, "totalUsers", 0))
                 .totalRequests(longValue(root, "totalRequests", 0))
                 .successRequests(longValue(root, "successRequests", 0))
                 .failedRequests(longValue(root, "failedRequests", 0))
+                .qps(doubleValue(root, "qps", 0))
+                .report(report)
                 .error(stringValue(root, "error", ""))
+                .build();
+    }
+
+    public PerformanceWorkerRunAcceptedResponse acceptedResponseFromJson(String json) {
+        Map<String, Object> root = root(json);
+        return PerformanceWorkerRunAcceptedResponse.builder()
+                .runId(stringValue(root, "runId", ""))
+                .workerId(stringValue(root, "workerId", ""))
+                .status(stringValue(root, "status", PerformanceRunStatus.ACCEPTED))
+                .message(stringValue(root, "message", ""))
                 .build();
     }
 
@@ -86,9 +103,13 @@ public class PerformanceWorkerProtocolJsonStorage {
             json.put("runId", response.getRunId());
             json.put("workerId", response.getWorkerId());
             json.put("status", response.getStatus());
+            json.put("activeUsers", response.getActiveUsers());
+            json.put("totalUsers", response.getTotalUsers());
             json.put("totalRequests", response.getTotalRequests());
             json.put("successRequests", response.getSuccessRequests());
             json.put("failedRequests", response.getFailedRequests());
+            json.put("qps", response.getQps());
+            json.put("report", response.getReport() == null ? null : reportStorage.toMap(response.getReport()));
             json.put("error", response.getError());
             return json;
         }
@@ -141,6 +162,32 @@ public class PerformanceWorkerProtocolJsonStorage {
         if (value instanceof String text && !text.isBlank()) {
             try {
                 return Long.parseLong(text);
+            } catch (NumberFormatException ignored) {
+                return defaultValue;
+            }
+        }
+        return defaultValue;
+    }
+
+    private int intValue(Map<String, Object> json, String key, int defaultValue) {
+        long value = longValue(json, key, defaultValue);
+        if (value > Integer.MAX_VALUE) {
+            return Integer.MAX_VALUE;
+        }
+        if (value < Integer.MIN_VALUE) {
+            return Integer.MIN_VALUE;
+        }
+        return (int) value;
+    }
+
+    private double doubleValue(Map<String, Object> json, String key, double defaultValue) {
+        Object value = json.get(key);
+        if (value instanceof Number number) {
+            return number.doubleValue();
+        }
+        if (value instanceof String text && !text.isBlank()) {
+            try {
+                return Double.parseDouble(text);
             } catch (NumberFormatException ignored) {
                 return defaultValue;
             }

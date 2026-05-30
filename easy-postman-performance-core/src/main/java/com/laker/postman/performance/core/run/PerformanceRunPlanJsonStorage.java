@@ -109,6 +109,10 @@ public class PerformanceRunPlanJsonStorage {
         PerformanceRunSettings safeSettings = settings == null ? PerformanceRunSettings.defaults() : settings;
         Map<String, Object> json = new LinkedHashMap<>();
         json.put("efficientMode", safeSettings.isEfficientMode());
+        json.put("httpMaxIdleConnections", safeSettings.getHttpMaxIdleConnections());
+        json.put("httpKeepAliveSeconds", safeSettings.getHttpKeepAliveSeconds());
+        json.put("httpMaxRequests", safeSettings.getHttpMaxRequests());
+        json.put("httpMaxRequestsPerHost", safeSettings.getHttpMaxRequestsPerHost());
         return json;
     }
 
@@ -148,6 +152,14 @@ public class PerformanceRunPlanJsonStorage {
         }
         return PerformanceRunSettings.builder()
                 .efficientMode(booleanValue(json, "efficientMode", true))
+                .httpMaxIdleConnections(intValue(json, "httpMaxIdleConnections",
+                        PerformanceRunSettings.DEFAULT_HTTP_MAX_IDLE_CONNECTIONS))
+                .httpKeepAliveSeconds(longValue(json, "httpKeepAliveSeconds",
+                        PerformanceRunSettings.DEFAULT_HTTP_KEEP_ALIVE_SECONDS))
+                .httpMaxRequests(intValue(json, "httpMaxRequests",
+                        PerformanceRunSettings.DEFAULT_HTTP_MAX_REQUESTS))
+                .httpMaxRequestsPerHost(intValue(json, "httpMaxRequestsPerHost",
+                        PerformanceRunSettings.DEFAULT_HTTP_MAX_REQUESTS_PER_HOST))
                 .build();
     }
 
@@ -218,6 +230,36 @@ public class PerformanceRunPlanJsonStorage {
         }
         if (value instanceof String text && !text.isBlank()) {
             return Boolean.parseBoolean(text);
+        }
+        return defaultValue;
+    }
+
+    private int intValue(Map<String, Object> json, String key, int defaultValue) {
+        Object value = json.get(key);
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        if (value instanceof String text && !text.isBlank()) {
+            try {
+                return Integer.parseInt(text);
+            } catch (NumberFormatException ignored) {
+                return defaultValue;
+            }
+        }
+        return defaultValue;
+    }
+
+    private long longValue(Map<String, Object> json, String key, long defaultValue) {
+        Object value = json.get(key);
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        if (value instanceof String text && !text.isBlank()) {
+            try {
+                return Long.parseLong(text);
+            } catch (NumberFormatException ignored) {
+                return defaultValue;
+            }
         }
         return defaultValue;
     }

@@ -65,7 +65,8 @@ EasyPostman provides developers with a **local, privacy-first** API debugging ex
 - **Thread Group Modes** - Fixed, Ramp-up, Stair-step, Spike
 - **Real-time Monitoring** - TPS, response time, error rate
 - **Visual Reports** - Performance trend charts and result trees
-- **Batch Requests** - Performance testing
+- **Headless & Distributed Runs** - Export `plan.json` from the GUI, then run it on servers with CLI or master/worker mode
+- **Global User Sharding** - GUI virtual users are total concurrency; workers split continuous ranges and CSV rows follow the same ranges to avoid duplicates
 
 ### 📝 Advanced Features
 - **Pre-request Scripts** - JavaScript execution before requests with Redis/Kafka/Elasticsearch/InfluxDB access

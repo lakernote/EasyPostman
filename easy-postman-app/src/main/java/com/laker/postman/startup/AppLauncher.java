@@ -12,9 +12,7 @@ import jiconfont.swing.IconFontSwing;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.JDialog;
-import javax.swing.JFrame;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 import java.util.OptionalInt;
 
 /**
@@ -24,10 +22,6 @@ import java.util.OptionalInt;
 @UtilityClass
 public class AppLauncher {
     public static final int GUI_STARTED = Integer.MIN_VALUE;
-
-    public int launch() {
-        return launch(new String[0]);
-    }
 
     public int launch(String[] args) {
         configureBaseRuntimeEnvironment();

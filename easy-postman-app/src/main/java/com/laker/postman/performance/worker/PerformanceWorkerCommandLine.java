@@ -22,6 +22,18 @@ public class PerformanceWorkerCommandLine {
                 builder.port(parsePort(requiredValue(safeArgs, ++i, "--port")));
                 continue;
             }
+            if ("--progress-interval".equals(arg)) {
+                builder.progressIntervalMs(parseProgressIntervalSeconds(requiredValue(
+                        safeArgs,
+                        ++i,
+                        "--progress-interval"
+                )));
+                continue;
+            }
+            if ("--no-progress".equals(arg)) {
+                builder.progressIntervalMs(0L);
+                continue;
+            }
             throw new IllegalArgumentException("Unknown option: " + arg);
         }
         return builder.build();
@@ -43,6 +55,18 @@ public class PerformanceWorkerCommandLine {
             return port;
         } catch (NumberFormatException ex) {
             throw new IllegalArgumentException("--port must be a number");
+        }
+    }
+
+    private long parseProgressIntervalSeconds(String value) {
+        try {
+            long seconds = Long.parseLong(value);
+            if (seconds < 0) {
+                throw new IllegalArgumentException("--progress-interval must be >= 0");
+            }
+            return seconds * 1000L;
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("--progress-interval must be a number");
         }
     }
 }

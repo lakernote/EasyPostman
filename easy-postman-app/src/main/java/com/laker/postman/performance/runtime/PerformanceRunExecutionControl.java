@@ -1,13 +1,19 @@
 package com.laker.postman.performance.runtime;
 
+import com.laker.postman.performance.core.model.PerformanceStatsCollector;
+import com.laker.postman.performance.core.model.PerformanceStatsSnapshot;
 import com.laker.postman.performance.core.runtime.PerformanceRunHandle;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class PerformanceRunExecutionControl {
     private final AtomicBoolean running = new AtomicBoolean(true);
     private final AtomicReference<PerformanceRunHandle> handle = new AtomicReference<>();
+    private final AtomicInteger activeUsers = new AtomicInteger();
+    private final AtomicInteger totalUsers = new AtomicInteger();
+    private final AtomicReference<PerformanceStatsCollector> statsCollector = new AtomicReference<>();
 
     public boolean isRunning() {
         return running.get();
@@ -19,6 +25,28 @@ public class PerformanceRunExecutionControl {
 
     public void bind(PerformanceRunHandle runHandle) {
         handle.set(runHandle);
+    }
+
+    public void bindStatsCollector(PerformanceStatsCollector collector) {
+        statsCollector.set(collector);
+    }
+
+    public void recordProgress(int activeUsers, int totalUsers) {
+        this.activeUsers.set(Math.max(0, activeUsers));
+        this.totalUsers.set(Math.max(0, totalUsers));
+    }
+
+    public int getActiveUsers() {
+        return activeUsers.get();
+    }
+
+    public int getTotalUsers() {
+        return totalUsers.get();
+    }
+
+    public PerformanceStatsSnapshot statsSnapshot() {
+        PerformanceStatsCollector collector = statsCollector.get();
+        return collector == null ? new PerformanceStatsCollector().snapshot() : collector.snapshot();
     }
 
     public void stop() {

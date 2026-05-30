@@ -2,6 +2,7 @@ package com.laker.postman.performance.runtime;
 
 import com.laker.postman.model.Environment;
 import com.laker.postman.model.Variable;
+import com.laker.postman.panel.performance.execution.DefaultPerformanceNetworkRuntime;
 import com.laker.postman.panel.performance.execution.PerformanceExecutionConfig;
 import com.laker.postman.panel.performance.model.PerformanceStatsCollectorListener;
 import com.laker.postman.panel.performance.plan.PerformanceCorePlanAdapter;
@@ -25,9 +26,12 @@ import com.laker.postman.performance.core.run.PerformanceRunVariable;
 import com.laker.postman.performance.core.run.PerformanceRunVariableSet;
 import com.laker.postman.performance.core.runtime.PerformanceRunError;
 import com.laker.postman.performance.core.runtime.PerformanceRunHandle;
+import com.laker.postman.performance.core.runtime.PerformanceRunListener;
+import com.laker.postman.performance.core.runtime.PerformanceRunProgress;
 import com.laker.postman.performance.core.runtime.PerformanceRunSummary;
 import com.laker.postman.performance.core.worker.PerformanceWorkerAssignment;
 import com.laker.postman.performance.core.worker.PerformanceWorkerExecutionPlanPartitioner;
+import com.laker.postman.service.http.okhttp.HttpClientRuntimeConfig;
 import com.laker.postman.service.variable.RunScopedVariableContext;
 
 import java.io.PrintStream;
@@ -102,6 +106,7 @@ public class PerformanceRunPlanExecutor {
 
         AtomicBoolean running = new AtomicBoolean(false);
         PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
+        control.bindStatsCollector(statsCollector);
         PerformanceResultCollector resultCollector = new PerformanceResultCollector(
                 List.of(new PerformanceStatsCollectorListener(statsCollector))
         );
@@ -122,8 +127,18 @@ public class PerformanceRunPlanExecutor {
         PerformanceExecutionEngine executionEngine = new PerformanceExecutionEngine(
                 () -> running.get() && control.isRunning(),
                 executionConfig(runPlan.getSettings(), environment, scriptOutput),
-                resultCollector
+                resultCollector,
+                new PerformanceRunListener() {
+                    @Override
+                    public void onProgress(PerformanceRunProgress progress) {
+                        if (progress != null) {
+                            control.recordProgress(progress.getActiveThreads(), progress.getTotalThreads());
+                        }
+                    }
+                },
+                new DefaultPerformanceNetworkRuntime(() -> httpClientConfig(runPlan.getSettings()))
         );
+        control.recordProgress(0, executionEngine.getTotalThreads(appExecutablePlan));
         PerformanceRunSession runSession = new PerformanceRunSession(
                 () -> running.get() && control.isRunning(),
                 value -> {
@@ -162,6 +177,16 @@ public class PerformanceRunPlanExecutor {
                     }
                 },
                 () -> environment
+        );
+    }
+
+    private HttpClientRuntimeConfig httpClientConfig(PerformanceRunSettings settings) {
+        PerformanceRunSettings safeSettings = settings == null ? PerformanceRunSettings.defaults() : settings;
+        return new HttpClientRuntimeConfig(
+                safeSettings.getHttpMaxIdleConnections(),
+                safeSettings.getHttpKeepAliveSeconds(),
+                safeSettings.getHttpMaxRequests(),
+                safeSettings.getHttpMaxRequestsPerHost()
         );
     }
 

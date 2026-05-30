@@ -48,15 +48,24 @@ public final class PerformanceRunUiController {
     }
 
     public void initializeProgress(JLabel progressLabel, int totalThreads) {
-        progressLabel.setText(formatProgress(0, totalThreads));
+        setProgressText(progressLabel, formatProgress(0, totalThreads));
     }
 
     public void updateProgressAsync(JLabel progressLabel, int activeThreads, int totalThreads) {
-        SwingUtilities.invokeLater(() -> progressLabel.setText(formatProgress(activeThreads, totalThreads)));
+        SwingUtilities.invokeLater(() -> setProgressText(progressLabel, formatProgress(activeThreads, totalThreads)));
     }
 
     private String formatProgress(int activeThreads, int totalThreads) {
         return activeThreads + "/" + totalThreads;
+    }
+
+    private void setProgressText(JLabel progressLabel, String text) {
+        if (progressLabel == null) {
+            return;
+        }
+        String safeText = text == null || text.isBlank() ? "0/0" : text;
+        progressLabel.setText(safeText);
+        progressLabel.setToolTipText(safeText);
     }
 
     private void setRunLockedComponentsEnabled(boolean enabled) {

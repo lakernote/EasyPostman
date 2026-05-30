@@ -19,9 +19,11 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -89,6 +91,141 @@ public class PerformanceWorkerServerTest {
 
             assertEquals(result.statusCode(), 200, result.body());
             assertEquals(resultResponse.getReport().getSummary().getTotalRequests(), 2L);
+        }
+    }
+
+    @Test
+    public void shouldNotifyWorkerRunLifecycleForConsoleFeedback() throws Exception {
+        List<String> events = new CopyOnWriteArrayList<>();
+        CountDownLatch completed = new CountDownLatch(1);
+        PerformanceWorkerProtocolJsonStorage storage = new PerformanceWorkerProtocolJsonStorage();
+        PerformanceWorkerServerListener listener = new PerformanceWorkerServerListener() {
+            @Override
+            public void onRunAccepted(String runId, String workerId) {
+                events.add("accepted:" + runId);
+            }
+
+            @Override
+            public void onRunStarted(String runId, String workerId) {
+                events.add("started:" + runId);
+            }
+
+            @Override
+            public void onRunCompleted(String runId,
+                                       String workerId,
+                                       String status,
+                                       PerformanceJsonReportSummary summary,
+                                       long elapsedMs,
+                                       String error) {
+                events.add("completed:" + runId + ":" + status + ":" + summary.getTotalRequests());
+                completed.countDown();
+            }
+        };
+        try (PerformanceWorkerServer server = new PerformanceWorkerServer(
+                PerformanceWorkerOptions.builder().host("127.0.0.1").port(0).build(),
+                (request, control) -> PerformanceJsonReport.builder()
+                        .metadata(PerformanceJsonReportMetadata.builder()
+                                .runId(request.getRunId())
+                                .source("worker")
+                                .status("SUCCESS")
+                                .build())
+                        .summary(PerformanceJsonReportSummary.builder()
+                                .totalRequests(3L)
+                                .successRequests(3L)
+                                .build())
+                        .protocols(PerformanceJsonReportSummaryMapper.emptyProtocols())
+                        .build(),
+                listener
+        )) {
+            server.start();
+            submitRun(HttpClient.newHttpClient(), storage, server.getPort(), "run-events");
+
+            assertTrue(completed.await(1, TimeUnit.SECONDS));
+            assertTrue(events.indexOf("accepted:run-events") >= 0, events.toString());
+            assertTrue(events.indexOf("started:run-events") > events.indexOf("accepted:run-events"), events.toString());
+            assertTrue(events.contains("completed:run-events:SUCCESS:3"), events.toString());
+        }
+    }
+
+    @Test
+    public void shouldExposeLiveWorkerProgressForStatusAndConsoleFeedback() throws Exception {
+        CountDownLatch started = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        CountDownLatch progressSeen = new CountDownLatch(1);
+        AtomicReference<PerformanceWorkerRunStatusResponse> progressRef = new AtomicReference<>();
+        PerformanceWorkerProtocolJsonStorage storage = new PerformanceWorkerProtocolJsonStorage();
+        PerformanceWorkerServerListener listener = new PerformanceWorkerServerListener() {
+            @Override
+            public void onRunProgress(String runId,
+                                      String workerId,
+                                      String status,
+                                      int activeUsers,
+                                      int totalUsers,
+                                      long totalRequests,
+                                      long successRequests,
+                                      long failedRequests,
+                                      double qps) {
+                progressRef.set(PerformanceWorkerRunStatusResponse.builder()
+                        .runId(runId)
+                        .workerId(workerId)
+                        .status(status)
+                        .activeUsers(activeUsers)
+                        .totalUsers(totalUsers)
+                        .totalRequests(totalRequests)
+                        .successRequests(successRequests)
+                        .failedRequests(failedRequests)
+                        .qps(qps)
+                        .build());
+                progressSeen.countDown();
+            }
+        };
+        try (PerformanceWorkerServer server = new PerformanceWorkerServer(
+                PerformanceWorkerOptions.builder()
+                        .host("127.0.0.1")
+                        .port(0)
+                        .progressIntervalMs(10L)
+                        .build(),
+                (request, control) -> {
+                    control.recordProgress(3, 7);
+                    started.countDown();
+                    assertTrue(release.await(2, TimeUnit.SECONDS));
+                    control.recordProgress(0, 7);
+                    return PerformanceJsonReport.builder()
+                            .metadata(PerformanceJsonReportMetadata.builder()
+                                    .runId(request.getRunId())
+                                    .source("worker")
+                                    .status("SUCCESS")
+                                    .build())
+                            .summary(PerformanceJsonReportSummary.builder()
+                                    .totalRequests(1L)
+                                    .successRequests(1L)
+                                    .build())
+                            .protocols(PerformanceJsonReportSummaryMapper.emptyProtocols())
+                            .build();
+                },
+                listener
+        )) {
+            server.start();
+            HttpClient client = HttpClient.newHttpClient();
+            submitRun(client, storage, server.getPort(), "run-progress");
+
+            assertTrue(started.await(1, TimeUnit.SECONDS));
+            HttpResponse<String> status = client.send(HttpRequest.newBuilder()
+                            .uri(URI.create("http://127.0.0.1:" + server.getPort()
+                                    + "/api/performance/v1/runs/run-progress"))
+                            .GET()
+                            .build(),
+                    HttpResponse.BodyHandlers.ofString());
+            PerformanceWorkerRunStatusResponse statusResponse = storage.statusResponseFromJson(status.body());
+
+            assertEquals(status.statusCode(), 200, status.body());
+            assertEquals(statusResponse.getActiveUsers(), 3);
+            assertEquals(statusResponse.getTotalUsers(), 7);
+            assertTrue(progressSeen.await(1, TimeUnit.SECONDS));
+            assertEquals(progressRef.get().getActiveUsers(), 3);
+            assertEquals(progressRef.get().getTotalUsers(), 7);
+            release.countDown();
+            awaitStatus(client, storage, server.getPort(), "run-progress", "SUCCESS");
         }
     }
 
@@ -236,6 +373,7 @@ public class PerformanceWorkerServerTest {
             PerformanceWorkerRunRequest secondRun = PerformanceWorkerRunRequest.builder()
                     .runId("run-second")
                     .plan(emptyPlan())
+                    .assignment(PerformanceWorkerAssignment.builder().runId("run-second").workerId("worker-a").build())
                     .build();
             HttpResponse<String> second = client.send(HttpRequest.newBuilder()
                             .uri(URI.create("http://127.0.0.1:" + server.getPort() + "/api/performance/v1/runs"))
@@ -247,6 +385,73 @@ public class PerformanceWorkerServerTest {
             assertEquals(second.statusCode(), 409, second.body());
             release.countDown();
             awaitStatus(client, storage, server.getPort(), "run-active", "SUCCESS");
+        }
+    }
+
+    @Test
+    public void shouldRejectRunWithoutWorkerAssignment() throws Exception {
+        PerformanceWorkerProtocolJsonStorage storage = new PerformanceWorkerProtocolJsonStorage();
+        try (PerformanceWorkerServer server = new PerformanceWorkerServer(
+                PerformanceWorkerOptions.builder().host("127.0.0.1").port(0).build(),
+                (request, control) -> PerformanceJsonReport.builder().build()
+        )) {
+            server.start();
+            HttpClient client = HttpClient.newHttpClient();
+            PerformanceWorkerRunRequest runRequest = PerformanceWorkerRunRequest.builder()
+                    .runId("run-no-assignment")
+                    .plan(emptyPlan())
+                    .build();
+
+            HttpResponse<String> rejected = client.send(HttpRequest.newBuilder()
+                            .uri(URI.create("http://127.0.0.1:" + server.getPort() + "/api/performance/v1/runs"))
+                            .header("Content-Type", "application/json")
+                            .POST(HttpRequest.BodyPublishers.ofString(storage.toJson(runRequest)))
+                            .build(),
+                    HttpResponse.BodyHandlers.ofString());
+
+            assertEquals(rejected.statusCode(), 400, rejected.body());
+            assertTrue(rejected.body().contains("assignment"), rejected.body());
+        }
+    }
+
+    @Test
+    public void shouldUseAssignmentRunIdWhenRequestRunIdIsBlank() throws Exception {
+        AtomicReference<PerformanceWorkerRunRequest> captured = new AtomicReference<>();
+        PerformanceWorkerProtocolJsonStorage storage = new PerformanceWorkerProtocolJsonStorage();
+        try (PerformanceWorkerServer server = new PerformanceWorkerServer(
+                PerformanceWorkerOptions.builder().host("127.0.0.1").port(0).build(),
+                (request, control) -> {
+                    captured.set(request);
+                    return PerformanceJsonReport.builder()
+                            .metadata(PerformanceJsonReportMetadata.builder()
+                                    .runId(request.getRunId())
+                                    .status("SUCCESS")
+                                    .build())
+                            .build();
+                }
+        )) {
+            server.start();
+            HttpClient client = HttpClient.newHttpClient();
+            PerformanceWorkerRunRequest runRequest = PerformanceWorkerRunRequest.builder()
+                    .plan(emptyPlan())
+                    .assignment(PerformanceWorkerAssignment.builder()
+                            .runId("assignment-run")
+                            .workerId("worker-a")
+                            .build())
+                    .build();
+
+            HttpResponse<String> accepted = client.send(HttpRequest.newBuilder()
+                            .uri(URI.create("http://127.0.0.1:" + server.getPort() + "/api/performance/v1/runs"))
+                            .header("Content-Type", "application/json")
+                            .POST(HttpRequest.BodyPublishers.ofString(storage.toJson(runRequest)))
+                            .build(),
+                    HttpResponse.BodyHandlers.ofString());
+
+            assertEquals(accepted.statusCode(), 202, accepted.body());
+            assertEquals(storage.acceptedResponseFromJson(accepted.body()).getRunId(), "assignment-run");
+            awaitStatus(client, storage, server.getPort(), "assignment-run", "SUCCESS");
+            assertEquals(captured.get().getRunId(), "assignment-run");
+            assertEquals(captured.get().getAssignment().getRunId(), "assignment-run");
         }
     }
 

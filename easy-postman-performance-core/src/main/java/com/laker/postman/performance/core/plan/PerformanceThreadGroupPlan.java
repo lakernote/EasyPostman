@@ -56,6 +56,7 @@ public final class PerformanceThreadGroupPlan {
     }
 
     public Map<String, String> csvRowForVirtualUser(int virtualUserIndex) {
+        // 分布式执行时 virtualUserIndexOffset 表示 worker 分到的全局用户起点，CSV 行也按这个全局编号绑定。
         return csvDataSetData == null ? null : csvDataSetData.rowForVirtualUser(virtualUserIndexOffset + virtualUserIndex);
     }
 

@@ -55,6 +55,38 @@ public class PerformanceWorkerProtocolJsonStorageTest {
 
         assertEquals(loadedResult.getStatus(), PerformanceRunStatus.SUCCESS);
         assertEquals(loadedResult.getReport().getSummary().getTotalRequests(), 4L);
+
+        PerformanceWorkerRunStatusResponse status = PerformanceWorkerRunStatusResponse.builder()
+                .runId("run-1")
+                .workerId("worker-a")
+                .status(PerformanceRunStatus.RUNNING)
+                .activeUsers(2)
+                .totalUsers(7)
+                .totalRequests(10L)
+                .successRequests(9L)
+                .failedRequests(1L)
+                .qps(12.5)
+                .report(report)
+                .build();
+        PerformanceWorkerRunStatusResponse loadedStatus = storage.statusResponseFromJson(storage.toJson(status));
+
+        assertEquals(loadedStatus.getActiveUsers(), 2);
+        assertEquals(loadedStatus.getTotalUsers(), 7);
+        assertEquals(loadedStatus.getTotalRequests(), 10L);
+        assertEquals(loadedStatus.getSuccessRequests(), 9L);
+        assertEquals(loadedStatus.getFailedRequests(), 1L);
+        assertEquals(loadedStatus.getQps(), 12.5);
+        assertEquals(loadedStatus.getReport().getSummary().getTotalRequests(), 4L);
+
+        PerformanceWorkerRunAcceptedResponse accepted = PerformanceWorkerRunAcceptedResponse.builder()
+                .runId("run-1")
+                .workerId("worker-a")
+                .build();
+        PerformanceWorkerRunAcceptedResponse loadedAccepted = storage.acceptedResponseFromJson(storage.toJson(accepted));
+
+        assertEquals(loadedAccepted.getRunId(), "run-1");
+        assertEquals(loadedAccepted.getWorkerId(), "worker-a");
+        assertEquals(loadedAccepted.getStatus(), PerformanceRunStatus.ACCEPTED);
     }
 
     private static PerformanceRunPlan emptyPlan() {

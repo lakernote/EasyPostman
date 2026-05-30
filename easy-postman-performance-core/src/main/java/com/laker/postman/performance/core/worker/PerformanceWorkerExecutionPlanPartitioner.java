@@ -26,6 +26,7 @@ public class PerformanceWorkerExecutionPlanPartitioner {
                 continue;
             }
             PerformanceThreadGroupPlan source = plan.getThreadGroups().get(groupIndex);
+            // CSV 数据不在 master 端物理截断，worker 通过全局虚拟用户起点取行，避免每台 worker 都从第 0 行读取。
             groups.add(new PerformanceThreadGroupPlan(
                     source.getName(),
                     adjustThreadGroupData(source.getThreadGroupData(), threadGroupAssignment.getVirtualUserCount()),

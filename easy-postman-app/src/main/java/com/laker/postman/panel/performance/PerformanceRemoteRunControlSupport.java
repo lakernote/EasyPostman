@@ -2,6 +2,8 @@ package com.laker.postman.panel.performance;
 
 import com.laker.postman.panel.performance.control.PerformanceRunUiController;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
+import com.laker.postman.panel.performance.result.PerformanceTrendView;
+import com.laker.postman.performance.core.model.PerformanceTrendSnapshot;
 import com.laker.postman.performance.core.report.PerformanceJsonReport;
 import com.laker.postman.performance.core.report.PerformanceJsonReportMetadata;
 import com.laker.postman.performance.core.report.PerformanceJsonReportSummary;
@@ -21,14 +23,17 @@ import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jfree.data.time.Millisecond;
 
 import javax.swing.JLabel;
 import javax.swing.SwingUtilities;
+import java.util.Date;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -40,12 +45,20 @@ final class PerformanceRemoteRunControlSupport {
     private final Consumer<Boolean> runningSetter;
     private final PerformanceRunUiController runUiController;
     private final PerformanceReportPanel performanceReportPanel;
+    private final PerformanceTrendView performanceTrendPanel;
     private final Runnable clearCachedPerformanceResultsAction;
+    private final Runnable showReportTabAction;
+    private final BooleanSupplier trendEnabledSupplier;
+    private final BooleanSupplier reportRealtimeEnabledSupplier;
+    private final LongSupplier trendSamplingIntervalMsSupplier;
     private final PerformanceWorkerAssignmentPlanner assignmentPlanner = new PerformanceWorkerAssignmentPlanner();
     private final PerformanceWorkerHttpClient workerClient = new PerformanceWorkerHttpClient();
+    private final PerformanceRemoteTrendWindowSampler trendWindowSampler = new PerformanceRemoteTrendWindowSampler();
     private final AtomicBoolean stopping = new AtomicBoolean(false);
     private volatile String currentRunId = "";
     private volatile List<PerformanceWorkerEndpoint> currentWorkers = List.of();
+    private volatile int currentTotalUsers;
+    private volatile long lastTrendSampleAtMs;
 
     Thread startRun(PerformanceRunPlan runPlan,
                     List<PerformanceWorkerEndpoint> workers,
@@ -64,7 +77,10 @@ final class PerformanceRemoteRunControlSupport {
         runningSetter.accept(true);
         runUiController.markRunning();
         clearCachedPerformanceResultsAction.run();
-        runUiController.initializeProgress(progressLabel, safeWorkers.size());
+        currentTotalUsers = 0;
+        lastTrendSampleAtMs = System.currentTimeMillis();
+        trendWindowSampler.reset(lastTrendSampleAtMs);
+        runUiController.initializeProgress(progressLabel, 0);
 
         Thread thread = PerformanceThreadFactory.newDaemonThread(
                 "PerformanceRemoteRun",
@@ -90,26 +106,30 @@ final class PerformanceRemoteRunControlSupport {
         currentRunId = runId;
         currentWorkers = workers;
         try {
-            submitRun(runPlan, workers, runId);
+            int totalUsers = submitRun(runPlan, workers, runId);
+            currentTotalUsers = totalUsers;
+            runUiController.initializeProgress(progressLabel, totalUsers);
+            notifyStarted(workers.size(), runId);
+            updateRemoteProgress(progressLabel, RemoteProgressSnapshot.empty(totalUsers));
             if (stopping.get()) {
                 sendStopAsync(runId, workers);
             }
-            waitForWorkers(workers, runId, progressLabel);
+            waitForWorkers(workers, runId, progressLabel, totalUsers);
             PerformanceJsonReport report = collectReport(workers, runId);
-            finishRun(report, workers.size(), System.currentTimeMillis() - startTime);
+            finishRun(report, workers.size(), totalUsers, progressLabel);
         } catch (Exception ex) {
             sendStopAsync(runId, workers);
             log.error("Remote performance run failed", ex);
-            finishFailed(ex);
+            finishFailed(ex, progressLabel);
         } finally {
             currentRunId = "";
             currentWorkers = List.of();
         }
     }
 
-    private void submitRun(PerformanceRunPlan runPlan,
-                           List<PerformanceWorkerEndpoint> workers,
-                           String runId) throws Exception {
+    private int submitRun(PerformanceRunPlan runPlan,
+                          List<PerformanceWorkerEndpoint> workers,
+                          String runId) throws Exception {
         // GUI remote 只做 JMeter 风格的控制面分发；plan 中的本地资产路径由用户提前放到每台 worker。
         List<PerformanceWorkerAssignment> assignments = assignmentPlanner.plan(runPlan, workers, runId);
         for (int i = 0; i < workers.size(); i++) {
@@ -119,6 +139,15 @@ final class PerformanceRemoteRunControlSupport {
                     .assignment(assignments.get(i))
                     .build());
         }
+        return totalAssignedUsers(assignments);
+    }
+
+    private void notifyStarted(int workerCount, String runId) {
+        SwingUtilities.invokeLater(() -> NotificationUtil.showInfo(I18nUtil.getMessage(
+                MessageKeys.PERFORMANCE_REMOTE_MSG_STARTED,
+                workerCount,
+                runId
+        )));
     }
 
     private void showAssetWarningIfNeeded(PerformanceRunPlan runPlan) {
@@ -132,18 +161,14 @@ final class PerformanceRemoteRunControlSupport {
 
     private void waitForWorkers(List<PerformanceWorkerEndpoint> workers,
                                 String runId,
-                                JLabel progressLabel) throws Exception {
+                                JLabel progressLabel,
+                                int totalAssignedUsers) throws Exception {
         long deadline = System.currentTimeMillis() + TIMEOUT_MS;
         while (true) {
-            int done = 0;
-            for (PerformanceWorkerEndpoint worker : workers) {
-                PerformanceWorkerRunStatusResponse status = workerClient.status(worker, runId);
-                if (isTerminal(status.getStatus())) {
-                    done++;
-                }
-            }
-            runUiController.updateProgressAsync(progressLabel, done, workers.size());
-            if (done == workers.size()) {
+            RemoteProgressSnapshot progress = pollProgress(workers, runId, totalAssignedUsers);
+            updateRemoteProgress(progressLabel, progress);
+            updateLiveViews(progress, false);
+            if (progress.completedWorkers() == workers.size()) {
                 return;
             }
             if (System.currentTimeMillis() >= deadline) {
@@ -151,6 +176,48 @@ final class PerformanceRemoteRunControlSupport {
             }
             Thread.sleep(POLL_INTERVAL_MS);
         }
+    }
+
+    private RemoteProgressSnapshot pollProgress(List<PerformanceWorkerEndpoint> workers,
+                                                String runId,
+                                                int totalAssignedUsers) throws Exception {
+        int done = 0;
+        int activeUsers = 0;
+        int totalUsers = 0;
+        long totalRequests = 0;
+        long failedRequests = 0;
+        List<PerformanceJsonReport> reports = new ArrayList<>();
+        for (PerformanceWorkerEndpoint worker : workers) {
+            PerformanceWorkerRunStatusResponse status = workerClient.status(worker, runId);
+            if (isTerminal(status.getStatus())) {
+                done++;
+            }
+            activeUsers += Math.max(0, status.getActiveUsers());
+            totalUsers += Math.max(0, status.getTotalUsers());
+            totalRequests += Math.max(0L, status.getTotalRequests());
+            failedRequests += Math.max(0L, status.getFailedRequests());
+            if (status.getReport() != null) {
+                reports.add(status.getReport());
+            }
+        }
+        int resolvedTotalUsers = totalUsers > 0 ? totalUsers : Math.max(0, totalAssignedUsers);
+        PerformanceJsonReport report = reports.isEmpty()
+                ? null
+                : PerformanceJsonReportSummaryMapper.merge(
+                runId,
+                "gui-master",
+                stopping.get() ? PerformanceRunStatus.STOPPING : PerformanceRunStatus.RUNNING,
+                "GUI",
+                reports
+        );
+        return new RemoteProgressSnapshot(
+                activeUsers,
+                resolvedTotalUsers,
+                totalRequests,
+                failedRequests,
+                done,
+                report
+        );
     }
 
     private PerformanceJsonReport collectReport(List<PerformanceWorkerEndpoint> workers,
@@ -188,33 +255,43 @@ final class PerformanceRemoteRunControlSupport {
                 .build();
     }
 
-    private void finishRun(PerformanceJsonReport report, int workerCount, long elapsedMs) {
+    private void finishRun(PerformanceJsonReport report, int workerCount, int totalUsers, JLabel progressLabel) {
         SwingUtilities.invokeLater(() -> {
             runningSetter.accept(false);
             runUiController.markIdle();
+            if (showReportTabAction != null) {
+                showReportTabAction.run();
+            }
             performanceReportPanel.updateReport(report);
-            PerformanceJsonReportSummary summary = report.getSummary();
             if (PerformanceRunStatus.STOPPED.equals(report.getMetadata().getStatus())) {
+                updateCompletionProgress(progressLabel, totalUsers);
+                updateFinalTrend(report, totalUsers, workerCount);
                 NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_MSG_STOPPED));
             } else if (PerformanceRunStatus.FAILED.equals(report.getMetadata().getStatus())) {
+                updateCompletionProgress(progressLabel, totalUsers);
+                updateFinalTrend(report, totalUsers, workerCount);
                 NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_MSG_FAILED,
                         report.getMetadata().getError()));
             } else {
+                PerformanceJsonReportSummary summary = report.getSummary();
+                updateCompletionProgress(progressLabel, totalUsers);
+                updateFinalTrend(report, totalUsers, workerCount);
                 NotificationUtil.showSuccess(I18nUtil.getMessage(
                         MessageKeys.PERFORMANCE_REMOTE_MSG_COMPLETED,
                         workerCount,
                         summary.getTotalRequests(),
-                        summary.getSuccessRequests(),
-                        elapsedMs / 1000.0
+                        summary.getSuccessRequests()
                 ));
             }
         });
     }
 
-    private void finishFailed(Exception ex) {
+    private void finishFailed(Exception ex, JLabel progressLabel) {
+        int totalUsers = currentTotalUsers;
         SwingUtilities.invokeLater(() -> {
             runningSetter.accept(false);
             runUiController.markIdle();
+            runUiController.updateProgressAsync(progressLabel, 0, totalUsers);
             NotificationUtil.showError(I18nUtil.getMessage(
                     MessageKeys.PERFORMANCE_REMOTE_MSG_FAILED,
                     ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage()
@@ -242,7 +319,117 @@ final class PerformanceRemoteRunControlSupport {
         return PerformanceRunStatus.isTerminal(status);
     }
 
+    private void updateRemoteProgress(JLabel progressLabel, RemoteProgressSnapshot progress) {
+        if (progressLabel == null) {
+            return;
+        }
+        runUiController.updateProgressAsync(progressLabel, progress.activeUsers(), progress.totalUsers());
+    }
+
+    private void updateCompletionProgress(JLabel progressLabel, int totalUsers) {
+        runUiController.updateProgressAsync(progressLabel, 0, Math.max(0, totalUsers));
+    }
+
+    private void updateLiveViews(RemoteProgressSnapshot progress, boolean forceTrend) {
+        if (progress == null) {
+            return;
+        }
+        if (isReportRealtimeEnabled() && progress.report() != null) {
+            SwingUtilities.invokeLater(() -> performanceReportPanel.updateReport(progress.report()));
+        }
+        if (shouldUpdateTrend(forceTrend)) {
+            updateTrendView(progress);
+        }
+    }
+
+    private boolean shouldUpdateTrend(boolean forceTrend) {
+        if (!isTrendEnabled() || performanceTrendPanel == null) {
+            return false;
+        }
+        if (forceTrend) {
+            return true;
+        }
+        long now = System.currentTimeMillis();
+        long intervalMs = trendSamplingIntervalMs();
+        if (lastTrendSampleAtMs <= 0) {
+            lastTrendSampleAtMs = now;
+            return false;
+        }
+        if (now - lastTrendSampleAtMs < intervalMs) {
+            return false;
+        }
+        lastTrendSampleAtMs = now;
+        return true;
+    }
+
+    private void updateTrendView(RemoteProgressSnapshot progress) {
+        long now = System.currentTimeMillis();
+        PerformanceTrendSnapshot trendSnapshot = trendWindowSampler.sample(
+                progress.activeUsers(),
+                progress.totalRequests(),
+                progress.failedRequests(),
+                progress.report(),
+                now
+        );
+        SwingUtilities.invokeLater(() -> performanceTrendPanel.addOrUpdate(
+                new Millisecond(new Date(now)),
+                trendSnapshot
+        ));
+    }
+
+    private void updateFinalTrend(PerformanceJsonReport report, int totalUsers, int workerCount) {
+        updateLiveViews(finalProgress(report, totalUsers, workerCount), true);
+    }
+
+    private RemoteProgressSnapshot finalProgress(PerformanceJsonReport report, int totalUsers, int workerCount) {
+        PerformanceJsonReportSummary summary = report == null ? null : report.getSummary();
+        long totalRequests = summary == null ? 0L : summary.getTotalRequests();
+        long successRequests = summary == null ? 0L : summary.getSuccessRequests();
+        return new RemoteProgressSnapshot(
+                0,
+                Math.max(0, totalUsers),
+                totalRequests,
+                Math.max(0L, totalRequests - successRequests),
+                Math.max(0, workerCount),
+                report
+        );
+    }
+
+    private int totalAssignedUsers(List<PerformanceWorkerAssignment> assignments) {
+        if (assignments == null) {
+            return 0;
+        }
+        return assignments.stream()
+                .flatMap(assignment -> assignment.getThreadGroups().stream())
+                .mapToInt(com.laker.postman.performance.core.worker.PerformanceWorkerThreadGroupAssignment::getVirtualUserCount)
+                .sum();
+    }
+
+    private boolean isTrendEnabled() {
+        return trendEnabledSupplier == null || trendEnabledSupplier.getAsBoolean();
+    }
+
+    private boolean isReportRealtimeEnabled() {
+        return reportRealtimeEnabledSupplier != null && reportRealtimeEnabledSupplier.getAsBoolean();
+    }
+
+    private long trendSamplingIntervalMs() {
+        long value = trendSamplingIntervalMsSupplier == null ? POLL_INTERVAL_MS : trendSamplingIntervalMsSupplier.getAsLong();
+        return Math.max(POLL_INTERVAL_MS, value);
+    }
+
     private String endpointLabel(PerformanceWorkerEndpoint endpoint) {
         return endpoint == null ? "" : endpoint.getHost() + ":" + endpoint.getPort();
+    }
+
+    private record RemoteProgressSnapshot(int activeUsers,
+                                          int totalUsers,
+                                          long totalRequests,
+                                          long failedRequests,
+                                          int completedWorkers,
+                                          PerformanceJsonReport report) {
+        private static RemoteProgressSnapshot empty(int totalUsers) {
+            return new RemoteProgressSnapshot(0, totalUsers, 0, 0, 0, null);
+        }
     }
 }

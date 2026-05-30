@@ -4,6 +4,8 @@
     <define name="LOG_HOME" class="com.laker.postman.logging.LogHomePropertyDefiner"/>
     <!-- 支持通过系统属性覆盖日志级别，默认为 INFO -->
     <property name="LOG_LEVEL" value="${LOG_LEVEL:-INFO}"/>
+    <!-- 控制台日志可通过 -DCONSOLE_LOG_LEVEL=ERROR 手动收敛；默认保持 INFO，方便 headless 排查。 -->
+    <property name="CONSOLE_LOG_LEVEL" value="${CONSOLE_LOG_LEVEL:-INFO}"/>
 
     <!-- 控制台输出配置 - 将日志信息输出到控制台 -->
     <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
@@ -16,10 +18,9 @@
             <pattern>%cyan(%d{HH:mm:ss.SSS}) %white([%thread]) %highlight(%-5level) %magenta(%logger{36}) %white(:%line) %msg%n
             </pattern>
         </encoder>
-        <!-- 控制台日志级别过滤器：只输出 INFO 及以上级别的日志 (INFO, WARN, ERROR) -->
-<!--        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">-->
-<!--            <level>${LOG_LEVEL}</level>-->
-<!--        </filter>-->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>${CONSOLE_LOG_LEVEL}</level>
+        </filter>
     </appender>
 
     <!-- 文件输出配置 - 记录所有级别的日志到文件 -->

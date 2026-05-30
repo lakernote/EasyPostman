@@ -367,7 +367,12 @@ public class PerformancePanel extends UiSingletonPanel {
                 value -> running = value,
                 runUiController,
                 performanceReportPanel,
-                this::clearCachedPerformanceResults
+                performanceTrendPanel,
+                this::clearCachedPerformanceResults,
+                () -> resultTabbedPane.setSelectedIndex(PerformancePanelViewFactory.RESULT_TAB_REPORT),
+                () -> trendEnabled,
+                () -> reportRealtimeEnabled,
+                this::trendSamplingIntervalMs
         );
 
         treeSupport.syncAllRequestStructures((DefaultMutableTreeNode) treeModel.getRoot());
@@ -883,6 +888,10 @@ public class PerformancePanel extends UiSingletonPanel {
         if (statisticsCoordinator != null) {
             statisticsCoordinator.updateReportWithLatestDataSync();
         }
+    }
+
+    private long trendSamplingIntervalMs() {
+        return Math.max(1, SettingManager.getTrendSamplingIntervalSeconds()) * 1000L;
     }
 
     private void syncTrendResultTabState() {

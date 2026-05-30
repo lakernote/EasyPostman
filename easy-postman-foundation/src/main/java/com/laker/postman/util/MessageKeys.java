@@ -661,6 +661,7 @@ public final class MessageKeys {
     public static final String PERFORMANCE_REMOTE_MSG_COMPLETED = "performance.remote.msg.completed";
     public static final String PERFORMANCE_REMOTE_MSG_STOPPED = "performance.remote.msg.stopped";
     public static final String PERFORMANCE_REMOTE_MSG_FAILED = "performance.remote.msg.failed";
+    public static final String PERFORMANCE_REMOTE_MSG_STARTED = "performance.remote.msg.started";
     public static final String PERFORMANCE_REMOTE_ASSETS_WARNING = "performance.remote.assets.warning";
     public static final String PERFORMANCE_USAGE_HELP_TOOLTIP = "performance.usage.help.tooltip";
     public static final String PERFORMANCE_USAGE_HELP_TITLE = "performance.usage.help.title";

@@ -35,6 +35,10 @@ public class PerformanceRunPlanJsonStorageTest {
                 ))
                 .settings(PerformanceRunSettings.builder()
                         .efficientMode(false)
+                        .httpMaxIdleConnections(12)
+                        .httpKeepAliveSeconds(34L)
+                        .httpMaxRequests(123)
+                        .httpMaxRequestsPerHost(45)
                         .build())
                 .testPlan(document)
                 .assets(PerformanceRunPlanAssetScanner.scan(document))
@@ -47,6 +51,8 @@ public class PerformanceRunPlanJsonStorageTest {
         assertTrue(json.contains("\"environment\""));
         assertTrue(json.contains("\"globals\""));
         assertTrue(json.contains("\"settings\""));
+        assertTrue(json.contains("\"httpMaxRequests\""));
+        assertTrue(json.contains("\"httpMaxRequestsPerHost\""));
         assertFalse(json.contains("\"trendEnabled\""));
         assertFalse(json.contains("\"reportRealtimeEnabled\""));
         assertTrue(json.contains("\"testPlan\""));
@@ -62,6 +68,10 @@ public class PerformanceRunPlanJsonStorageTest {
         assertEquals(loaded.getEnvironment().getVariables().get(0).getKey(), "baseUrl");
         assertEquals(loaded.getGlobals().getVariables().get(0).getValue(), "abc123");
         assertFalse(loaded.getSettings().isEfficientMode());
+        assertEquals(loaded.getSettings().getHttpMaxIdleConnections(), 12);
+        assertEquals(loaded.getSettings().getHttpKeepAliveSeconds(), 34L);
+        assertEquals(loaded.getSettings().getHttpMaxRequests(), 123);
+        assertEquals(loaded.getSettings().getHttpMaxRequestsPerHost(), 45);
         assertEquals(loaded.getAssets().size(), 2);
 
         PerformanceCorePlanNode loadedGroup = loaded.getTestPlan().getRoot().getChildren().get(0);

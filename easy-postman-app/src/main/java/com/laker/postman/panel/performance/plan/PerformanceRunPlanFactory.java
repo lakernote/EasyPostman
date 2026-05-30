@@ -9,6 +9,7 @@ import com.laker.postman.performance.core.run.PerformanceRunPlanAssetScanner;
 import com.laker.postman.performance.core.run.PerformanceRunSettings;
 import com.laker.postman.performance.core.run.PerformanceRunVariable;
 import com.laker.postman.performance.core.run.PerformanceRunVariableSet;
+import com.laker.postman.service.setting.SettingManager;
 import lombok.experimental.UtilityClass;
 
 import java.util.ArrayList;
@@ -33,6 +34,10 @@ public class PerformanceRunPlanFactory {
                 .globals(new PerformanceRunVariableSet(toRunVariables(globals == null ? null : globals.getVariableList())))
                 .settings(PerformanceRunSettings.builder()
                         .efficientMode(safeConfiguration.isEfficientMode())
+                        .httpMaxIdleConnections(SettingManager.getPerformanceMaxIdleConnections())
+                        .httpKeepAliveSeconds(SettingManager.getPerformanceKeepAliveSeconds())
+                        .httpMaxRequests(SettingManager.getPerformanceMaxRequests())
+                        .httpMaxRequestsPerHost(SettingManager.getPerformanceMaxRequestsPerHost())
                         .build())
                 .testPlan(coreDocument)
                 .assets(PerformanceRunPlanAssetScanner.scan(coreDocument))

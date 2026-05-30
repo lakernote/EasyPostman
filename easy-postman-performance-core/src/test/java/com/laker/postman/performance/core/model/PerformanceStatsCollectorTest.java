@@ -28,6 +28,21 @@ public class PerformanceStatsCollectorTest {
     }
 
     @Test
+    public void shouldExposeLightweightProgressSnapshot() {
+        PerformanceStatsCollector collector = new PerformanceStatsCollector();
+
+        collector.record(new RequestResult(1_000L, 1_010L, true, "search", "Search API", PerformanceProtocol.HTTP));
+        collector.record(new RequestResult(1_020L, 1_040L, false, "search", "Search API", PerformanceProtocol.HTTP));
+
+        PerformanceStatsProgressSnapshot progress = collector.progressSnapshot();
+
+        assertEquals(progress.totalRequests(), 2L);
+        assertEquals(progress.successRequests(), 1L);
+        assertEquals(progress.failedRequests(), 1L);
+        assertEquals(progress.qps(), 50.0);
+    }
+
+    @Test
     public void statsCollectorShouldOnlyExposeReportAggregationApi() {
         assertFalse(hasMethodNamed(PerformanceStatsCollector.class, "setTrendEnabled"));
         assertFalse(hasMethodNamed(PerformanceStatsCollector.class, "sampleTrendSnapshot"));

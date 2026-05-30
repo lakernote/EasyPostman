@@ -172,12 +172,70 @@ jq . /tmp/easy-postman-master-result.json
 
 打包脚本的 `jlink --add-modules` 已包含 `jdk.httpserver`，否则 jpackage 后的 worker 模式会因为精简运行时缺少 `com.sun.net.httpserver.HttpServer` 而启动失败。
 
+### Master / Worker 时序与协议
+
+Master / worker 使用 JDK `HttpClient` + JDK `HttpServer`，控制面是 HTTP/JSON，数据面仍由各 worker 本机执行 OkHttp 请求。GUI 远程模式和 CLI master 使用同一套协议。
+
+```mermaid
+sequenceDiagram
+    participant GUI as GUI / CLI Master
+    participant W1 as Worker 1
+    participant W2 as Worker 2
+    participant T as Target API
+
+    GUI->>W1: GET /api/performance/v1/health
+    W1-->>GUI: {"status":"UP","workerId":"host:port"}
+    GUI->>W2: GET /api/performance/v1/health
+    W2-->>GUI: {"status":"UP","workerId":"host:port"}
+
+    GUI->>GUI: load plan.json and build assignments
+    GUI->>W1: POST /api/performance/v1/runs {runId, plan, assignment[0]}
+    W1-->>GUI: 202 {runId, workerId}
+    GUI->>W2: POST /api/performance/v1/runs {runId, plan, assignment[1]}
+    W2-->>GUI: 202 {runId, workerId}
+
+    par worker execution
+        W1->>T: execute assigned virtual users and CSV range
+        W2->>T: execute assigned virtual users and CSV range
+    and progress polling
+        GUI->>W1: GET /api/performance/v1/runs/{runId}?report=false
+        W1-->>GUI: lightweight status
+        GUI->>W2: GET /api/performance/v1/runs/{runId}?report=false
+        W2-->>GUI: lightweight status
+    end
+
+    GUI->>W1: GET /api/performance/v1/runs/{runId}/result
+    W1-->>GUI: final JSON report
+    GUI->>W2: GET /api/performance/v1/runs/{runId}/result
+    W2-->>GUI: final JSON report
+    GUI->>GUI: merge reports and refresh GUI report
+```
+
+协议端点：
+
+| Method | Path | 用途 | 时间口径 |
+|---|---|---|---|
+| `GET` | `/api/performance/v1/health` | 探活，返回 worker id、host、port。 | 不计入压测时间。 |
+| `POST` | `/api/performance/v1/runs` | 提交一次运行，body 包含完整 `plan` 和该 worker 的 `assignment`。 | plan 上传、JSON 解析和 assignment 校验不计入最终 report 的执行时间。 |
+| `GET` | `/api/performance/v1/runs/{runId}?report=false` | 轻量状态轮询，只返回 users、requests、QPS、状态，不构建完整 report。 | 不改变最终 report 时间；GUI 趋势按轮询间隔计算窗口 QPS。 |
+| `GET` | `/api/performance/v1/runs/{runId}` | 兼容完整状态轮询，默认包含运行中 report。 | 只在需要实时报表时使用，开销高于轻量状态。 |
+| `POST` | `/api/performance/v1/runs/{runId}/stop` | 请求 worker 停止当前运行。 | 停止控制面不计入成功请求数。 |
+| `GET` | `/api/performance/v1/runs/{runId}/result` | 拉取 worker 最终 JSON report。 | 最终 report 已固定，不再重新采样。 |
+
+时间口径：
+
+1. `plan.json` 通过 `POST /runs` 发送到 worker，这属于控制面分发，不计入最终 report 的 `elapsedTimeMs` 和报表 QPS。
+2. worker 控制台的 `completed run ... elapsedMs` 从 worker 异步开始执行算起，包含 worker 侧 plan 编译、分片应用、脚本池启动和实际请求执行，不包含 HTTP body 上传时间。
+3. 最终 JSON report 的 `metadata.startTimeMs/endTimeMs` 来自 worker 内部 `PerformanceRunSession`，从执行引擎 `beginRun` 开始，到运行结束为止；不包含 master 读 plan、生成 assignment、POST plan 和最终拉取 result 的时间。
+4. GUI 远程趋势图按 worker status 的增量请求数采样。采样窗口在所有 worker 接收 plan 后重置，避免第一秒趋势点把 plan 分发耗时算进 QPS。
+5. CLI master 默认使用 `report=false` 轻量轮询；GUI remote 只有在“实时报表”开启时才请求运行中完整 report。关闭实时报表时，趋势和顶部虚拟用户数仍实时刷新。
+
 ### GUI 远程控制方式
 
 1. 在每台压测机上启动 worker：`java -jar easy-postman.jar performance worker --host 0.0.0.0 --port 19090`。worker 默认每秒打印一次 `users/requests/QPS` 进度，可用 `--progress-interval <seconds>` 调整或 `--no-progress` 关闭。
 2. GUI 导入或手工创建的 CSV 行已包含在 `plan.json` 内；如果压测计划引用 file-source CSV 或 multipart 文件，按 `plan.assets` 中的路径把文件放到每台 worker 的相同路径。
 3. 在 GUI 顶部工具栏勾选 `Remote`，在 `Workers` 输入框中填写 `host:port` 列表，支持逗号或空白分隔，例如 `10.0.0.11:19090,10.0.0.12:19090`。
-4. 点击 `Start` 后 GUI 作为 master 分发当前计划；点击 `Stop` 后向所有 worker 发送 `/stop`。顶部状态仍显示“活跃虚拟用户/总虚拟用户”，`启用趋势` 和 `报表更新方式` 与本机执行使用相同开关。运行结束后 GUI 报表页展示 master 聚合后的 JSON report 数据。
+4. 点击 `Start` 后 GUI 作为 master 分发当前计划；点击 `Stop` 后向所有 worker 发送 `/stop`。顶部状态仍显示“活跃虚拟用户/总虚拟用户”，`启用趋势` 和 `报表更新方式` 与本机执行使用相同开关。运行中如果关闭实时报表，GUI 只向 worker 拉取轻量状态，不构建完整 report；运行结束后 GUI 报表页展示 master 聚合后的 JSON report 数据。
 5. 分布式并发采用总量分摊：GUI 配置 100 个虚拟用户、2 个 worker 时，每台 worker 默认约 50 个；101 个虚拟用户、2 个 worker 时按 51/50 分配。CSV 行跟随虚拟用户全局区间分配，避免不同 worker 同时从第 0 行开始读取。
 
 ## 线程模型

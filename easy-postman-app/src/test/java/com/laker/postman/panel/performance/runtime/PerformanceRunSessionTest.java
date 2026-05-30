@@ -5,7 +5,11 @@ import com.laker.postman.performance.core.runtime.PerformanceRunListener;
 import com.laker.postman.performance.core.runtime.PerformanceRunSummary;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.panel.performance.execution.PerformanceNetworkRuntime;
+import com.laker.postman.performance.core.plan.PerformanceCoreRequestSampler;
 import com.laker.postman.performance.core.plan.PerformanceTestPlan;
+import com.laker.postman.performance.core.plan.PerformanceThreadGroupPlan;
+import com.laker.postman.performance.core.request.PerformanceRequestSnapshot;
+import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
 import com.laker.postman.panel.performance.result.PerformanceResultCollector;
 import okhttp3.Call;
 import okhttp3.OkHttpClient;
@@ -13,6 +17,7 @@ import okhttp3.WebSocket;
 import okhttp3.sse.EventSource;
 import org.testng.annotations.Test;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -20,6 +25,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 
 public class PerformanceRunSessionTest {
 
@@ -84,6 +91,64 @@ public class PerformanceRunSessionTest {
 
         assertFalse(handle.isAlive());
         assertEquals(networkRuntime.cancelAllCount, 1);
+    }
+
+    @Test
+    public void beginRunShouldSkipScriptExecutorForPlansWithoutScripts() throws Exception {
+        PerformanceExecutionEngine engine = new PerformanceExecutionEngine(
+                () -> true,
+                () -> true,
+                () -> 64,
+                new PerformanceResultCollector(PerformanceResultSink.NOOP)
+        );
+
+        engine.prepareRun(plan(false));
+        engine.beginRun(System.currentTimeMillis());
+        try {
+            assertNull(runScriptExecutor(engine));
+        } finally {
+            engine.endRun();
+        }
+    }
+
+    @Test
+    public void beginRunShouldStartScriptExecutorForPlansWithScripts() throws Exception {
+        PerformanceExecutionEngine engine = new PerformanceExecutionEngine(
+                () -> true,
+                () -> true,
+                () -> 64,
+                new PerformanceResultCollector(PerformanceResultSink.NOOP)
+        );
+
+        engine.prepareRun(plan(true));
+        engine.beginRun(System.currentTimeMillis());
+        try {
+            assertNotNull(runScriptExecutor(engine));
+        } finally {
+            engine.endRun();
+        }
+    }
+
+    private static Object runScriptExecutor(PerformanceExecutionEngine engine) throws Exception {
+        Field field = PerformanceExecutionEngine.class.getDeclaredField("runScriptExecutor");
+        field.setAccessible(true);
+        return field.get(engine);
+    }
+
+    private static PerformanceTestPlan plan(boolean withScript) {
+        ThreadGroupData threadGroupData = new ThreadGroupData();
+        threadGroupData.numThreads = 1;
+        PerformanceRequestSnapshot request = PerformanceRequestSnapshot.builder()
+                .url("http://localhost")
+                .prescript(withScript ? "pm.variables.set('a', '1')" : "")
+                .build();
+        return new PerformanceTestPlan(List.of(
+                new PerformanceThreadGroupPlan(
+                        "thread group",
+                        threadGroupData,
+                        List.of(new PerformanceCoreRequestSampler("request", request, null, List.of()))
+                )
+        ));
     }
 
     private static final class TrackingNetworkRuntime implements PerformanceNetworkRuntime {

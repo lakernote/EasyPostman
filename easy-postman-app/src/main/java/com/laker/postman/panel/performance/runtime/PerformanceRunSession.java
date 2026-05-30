@@ -7,17 +7,17 @@ import com.laker.postman.performance.core.runtime.PerformanceRunError;
 import com.laker.postman.performance.core.runtime.PerformanceRunHandle;
 import com.laker.postman.performance.core.runtime.PerformanceRunSummary;
 
-
-
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 public final class PerformanceRunSession {
     private final PerformanceCoreRunSession delegate;
+    private final PerformanceExecutionEngine executionEngine;
 
     public PerformanceRunSession(BooleanSupplier runningSupplier,
                                  Consumer<Boolean> runningSetter,
                                  PerformanceExecutionEngine executionEngine) {
+        this.executionEngine = executionEngine;
         this.delegate = new PerformanceCoreRunSession(
                 runningSupplier,
                 runningSetter,
@@ -62,6 +62,9 @@ public final class PerformanceRunSession {
         PerformanceResultSink resultSink = request.getResultSink() == null
                 ? PerformanceResultSink.NOOP
                 : request.getResultSink();
+        if (executionEngine != null) {
+            executionEngine.prepareRun(request.getPlan());
+        }
         return delegate.start(request.getPlan(), resultSink);
     }
 

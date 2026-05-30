@@ -22,6 +22,7 @@ public final class PerformanceExecutionEngine {
     private final PerformanceCoreExecutionEngine<ExecutionVariableContext> delegate;
     private volatile PerformanceCoreResultSink resultSink = PerformanceCoreResultSink.NOOP;
     private volatile JsScriptExecutor.PooledScriptExecutor runScriptExecutor;
+    private volatile boolean preparedPlanUsesScripts = true;
 
     public PerformanceExecutionEngine(BooleanSupplier runningSupplier,
                                       BooleanSupplier efficientModeSupplier,
@@ -178,6 +179,11 @@ public final class PerformanceExecutionEngine {
         return delegate.estimateTotalRequests(plan);
     }
 
+    void prepareRun(PerformanceTestPlan plan) {
+        // 纯 HTTP/CSV 压测不需要启动 GraalJS 池，避免首秒被无用初始化拉低。
+        preparedPlanUsesScripts = PerformancePlanScriptUsageDetector.usesScripts(plan);
+    }
+
     public void runTestPlan(PerformanceTestPlan plan, int totalThreads) {
         delegate.runTestPlan(plan, totalThreads);
     }
@@ -192,6 +198,7 @@ public final class PerformanceExecutionEngine {
             delegate.endRun();
         } finally {
             closeRunScriptExecutor();
+            preparedPlanUsesScripts = true;
             networkRuntime.endRun();
         }
     }
@@ -229,7 +236,14 @@ public final class PerformanceExecutionEngine {
     }
 
     private void startRunScriptExecutor() {
+        startRunScriptExecutor(preparedPlanUsesScripts);
+    }
+
+    private void startRunScriptExecutor(boolean planUsesScripts) {
         closeRunScriptExecutor();
+        if (!planUsesScripts) {
+            return;
+        }
         runScriptExecutor = new JsScriptExecutor.PooledScriptExecutor(
                 SettingManager.getPerformanceJsContextPoolSize(),
                 SettingManager.getPerformanceJsContextAcquireTimeoutMs()

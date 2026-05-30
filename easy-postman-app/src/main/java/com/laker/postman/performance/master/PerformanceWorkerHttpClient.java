@@ -70,9 +70,23 @@ public class PerformanceWorkerHttpClient {
 
     public PerformanceWorkerRunStatusResponse status(PerformanceWorkerEndpoint endpoint,
                                                      String runId,
+                                                     boolean includeReport) throws IOException, InterruptedException {
+        return status(endpoint, runId, includeReport, requestTimeout);
+    }
+
+    public PerformanceWorkerRunStatusResponse status(PerformanceWorkerEndpoint endpoint,
+                                                     String runId,
                                                      Duration timeout) throws IOException, InterruptedException {
+        return status(endpoint, runId, true, timeout);
+    }
+
+    public PerformanceWorkerRunStatusResponse status(PerformanceWorkerEndpoint endpoint,
+                                                     String runId,
+                                                     boolean includeReport,
+                                                     Duration timeout) throws IOException, InterruptedException {
+        String path = PerformanceWorkerApiPaths.run(pathSegment(runId)) + (includeReport ? "" : "?report=false");
         HttpResponse<String> response = client.send(HttpRequest.newBuilder()
-                        .uri(uri(endpoint, PerformanceWorkerApiPaths.run(pathSegment(runId))))
+                        .uri(uri(endpoint, path))
                         .timeout(effectiveTimeout(timeout))
                         .GET()
                         .build(),

@@ -125,8 +125,19 @@ public class PerformanceWorkerCommand {
     }
 
     private static String threadGroupAssignmentSummary(PerformanceWorkerThreadGroupAssignment assignment) {
+        int first = assignment.getFirstVirtualUserIndex();
+        int count = assignment.getVirtualUserCount();
         return "groupIndex=" + assignment.getThreadGroupIndex()
-                + ",first=" + assignment.getFirstVirtualUserIndex()
-                + ",count=" + assignment.getVirtualUserCount();
+                + ",first=" + first
+                + ",count=" + count
+                // CSV 不做物理切片，按全局虚拟用户编号取行；这里把绑定范围直接打到日志里，方便验收分片是否重复。
+                + ",csvGlobalUsers=" + csvGlobalUserRange(first, count);
+    }
+
+    private static String csvGlobalUserRange(int firstVirtualUserIndex, int virtualUserCount) {
+        if (virtualUserCount <= 0) {
+            return "none";
+        }
+        return firstVirtualUserIndex + "-" + (firstVirtualUserIndex + virtualUserCount - 1);
     }
 }

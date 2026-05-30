@@ -2,6 +2,7 @@ package com.laker.postman.panel.performance.plan;
 
 import com.laker.postman.model.Environment;
 import com.laker.postman.model.HttpFormData;
+import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.Variable;
@@ -48,8 +49,18 @@ public class PerformanceRunPlanFactoryTest {
                 .trendEnabled(true)
                 .reportRealtimeEnabled(true)
                 .build();
-        Environment environment = environment("env-dev", "Dev", new Variable(true, "baseUrl", "https://example.test"));
-        Environment globals = environment("globals", "Globals", new Variable(true, "token", "abc123"));
+        Environment environment = environment(
+                "env-dev",
+                "Dev",
+                new Variable(true, "baseUrl", "https://example.test"),
+                new Variable(false, "disabledEnv", "ignored")
+        );
+        Environment globals = environment(
+                "globals",
+                "Globals",
+                new Variable(true, "token", "abc123"),
+                new Variable(false, "disabledGlobal", "ignored")
+        );
 
         PerformanceRunPlan runPlan = PerformanceRunPlanFactory.create(
                 configuration,
@@ -60,7 +71,9 @@ public class PerformanceRunPlanFactoryTest {
 
         assertEquals(runPlan.getGeneratedBy(), "EasyPostman Test");
         assertFalse(runPlan.getSettings().isEfficientMode());
+        assertEquals(runPlan.getEnvironment().getVariables().size(), 1);
         assertEquals(runPlan.getEnvironment().getVariables().get(0).getKey(), "baseUrl");
+        assertEquals(runPlan.getGlobals().getVariables().size(), 1);
         assertEquals(runPlan.getGlobals().getVariables().get(0).getValue(), "abc123");
         assertEquals(runPlan.getAssets().size(), 1);
         PerformanceRunAsset asset = runPlan.getAssets().get(0);
@@ -73,6 +86,10 @@ public class PerformanceRunPlanFactoryTest {
         assertFalse(json.contains("\"trendEnabled\""));
         assertFalse(json.contains("\"reportRealtimeEnabled\""));
         assertFalse(json.contains("\"requestItem\""));
+        assertFalse(json.contains("disabledEnv"));
+        assertFalse(json.contains("disabledGlobal"));
+        assertFalse(json.contains("X-Disabled"));
+        assertFalse(json.contains("ignored-file.png"));
 
         PerformanceRequestFormDataPart formData = runPlan.getTestPlan()
                 .getRoot()
@@ -94,19 +111,31 @@ public class PerformanceRunPlanFactoryTest {
         item.setProtocol(RequestItemProtocolEnum.HTTP);
         item.setMethod("POST");
         item.setUrl("https://example.test/upload");
-        item.setFormDataList(List.of(new HttpFormData(
-                true,
-                "avatar",
-                HttpFormData.TYPE_FILE,
-                "assets/files/avatar.png"
-        )));
+        item.setHeadersList(List.of(
+                new HttpHeader(true, "X-Enabled", "1"),
+                new HttpHeader(false, "X-Disabled", "2")
+        ));
+        item.setFormDataList(List.of(
+                new HttpFormData(
+                        true,
+                        "avatar",
+                        HttpFormData.TYPE_FILE,
+                        "assets/files/avatar.png"
+                ),
+                new HttpFormData(
+                        false,
+                        "ignored",
+                        HttpFormData.TYPE_FILE,
+                        "ignored-file.png"
+                )
+        ));
         return item;
     }
 
-    private static Environment environment(String id, String name, Variable variable) {
+    private static Environment environment(String id, String name, Variable... variables) {
         Environment environment = new Environment(name);
         environment.setId(id);
-        environment.setVariableList(List.of(variable));
+        environment.setVariableList(List.of(variables));
         return environment;
     }
 }

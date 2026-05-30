@@ -59,7 +59,8 @@ public class PerformanceWorkerCommandLineTest {
                 .build();
 
         assertEquals(PerformanceWorkerCommand.assignmentSummary(assignment),
-                "[groupIndex=0,first=0,count=50;groupIndex=1,first=50,count=50]");
+                "[groupIndex=0,first=0,count=50,csvGlobalUsers=0-49;"
+                        + "groupIndex=1,first=50,count=50,csvGlobalUsers=50-99]");
     }
 
     @Test

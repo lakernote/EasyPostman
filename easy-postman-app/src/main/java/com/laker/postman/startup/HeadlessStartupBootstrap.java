@@ -1,7 +1,5 @@
 package com.laker.postman.startup;
 
-import com.laker.postman.common.constants.AppConstants;
-import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.plugin.api.service.RequestCollectionImportService;
 import com.laker.postman.plugin.host.AppRequestCollectionImportService;
 import com.laker.postman.plugin.runtime.PluginRuntime;
@@ -17,7 +15,7 @@ public class HeadlessStartupBootstrap {
         if (!INITIALIZED.compareAndSet(false, true)) {
             return;
         }
-        BeanFactory.init(AppConstants.BASE_PACKAGE);
+        // headless 压测只需要插件脚本扩展，不启动 app IOC，避免把工作区/GUI bean 扫描带入 worker。
         PluginRuntime.getRegistry().registerService(
                 RequestCollectionImportService.class,
                 new AppRequestCollectionImportService()

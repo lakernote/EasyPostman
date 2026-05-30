@@ -14,6 +14,7 @@ import org.testng.annotations.Test;
 import java.util.List;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 
 public class PerformanceWorkerProtocolJsonStorageTest {
 
@@ -87,6 +88,34 @@ public class PerformanceWorkerProtocolJsonStorageTest {
         assertEquals(loadedAccepted.getRunId(), "run-1");
         assertEquals(loadedAccepted.getWorkerId(), "worker-a");
         assertEquals(loadedAccepted.getStatus(), PerformanceRunStatus.ACCEPTED);
+    }
+
+    @Test
+    public void workerRunRequestJsonShouldOnlySendEnabledPlanNodes() {
+        PerformanceWorkerRunRequest request = PerformanceWorkerRunRequest.builder()
+                .runId("run-1")
+                .plan(PerformanceRunPlan.builder()
+                        .testPlan(new PerformanceCorePlanDocument(PerformanceCorePlanNode.builder()
+                                .name("run plan")
+                                .type(NodeType.ROOT)
+                                .children(List.of(
+                                        PerformanceCorePlanNode.builder()
+                                                .name("disabled group")
+                                                .type(NodeType.THREAD_GROUP)
+                                                .enabled(false)
+                                                .build(),
+                                        PerformanceCorePlanNode.builder()
+                                                .name("enabled group")
+                                                .type(NodeType.THREAD_GROUP)
+                                                .build()
+                                ))
+                                .build()))
+                        .build())
+                .build();
+
+        String json = new PerformanceWorkerProtocolJsonStorage().toJson(request);
+
+        assertFalse(json.contains("disabled group"));
     }
 
     private static PerformanceRunPlan emptyPlan() {

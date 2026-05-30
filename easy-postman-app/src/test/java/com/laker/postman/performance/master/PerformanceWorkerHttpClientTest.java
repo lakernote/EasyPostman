@@ -72,6 +72,20 @@ public class PerformanceWorkerHttpClientTest {
         }
     }
 
+    @Test
+    public void shouldRequestLightweightStatusWithoutReport() throws Exception {
+        AtomicReference<String> method = new AtomicReference<>();
+        AtomicReference<String> path = new AtomicReference<>();
+        try (TestServer server = TestServer.start(200, "{\"status\":\"RUNNING\"}", method, path)) {
+            PerformanceWorkerHttpClient client = new PerformanceWorkerHttpClient();
+
+            client.status(server.endpoint(), "run with space", false);
+
+            assertEquals(method.get(), "GET");
+            assertEquals(path.get(), "/api/performance/v1/runs/run%20with%20space?report=false");
+        }
+    }
+
     private record TestServer(HttpServer server,
                               AtomicReference<String> method,
                               AtomicReference<String> path) implements AutoCloseable {
@@ -91,7 +105,8 @@ public class PerformanceWorkerHttpClientTest {
             HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
             server.createContext("/", exchange -> {
                 method.set(exchange.getRequestMethod());
-                path.set(exchange.getRequestURI().getRawPath());
+                String rawQuery = exchange.getRequestURI().getRawQuery();
+                path.set(exchange.getRequestURI().getRawPath() + (rawQuery == null ? "" : "?" + rawQuery));
                 if (delayMs > 0) {
                     try {
                         Thread.sleep(delayMs);

@@ -135,6 +135,19 @@ final class PerformanceSampleAccumulator {
         );
     }
 
+    synchronized PerformanceStatsProgressSnapshot toProgressSnapshot() {
+        if (total == 0) {
+            return PerformanceStatsProgressSnapshot.empty();
+        }
+        double spanSeconds = Math.max(0.001, (lastEnd - firstStart) / 1000.0);
+        return new PerformanceStatsProgressSnapshot(
+                total,
+                success,
+                fail(),
+                round(total / spanSeconds)
+        );
+    }
+
     private static double round(double value) {
         return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP).doubleValue();
     }

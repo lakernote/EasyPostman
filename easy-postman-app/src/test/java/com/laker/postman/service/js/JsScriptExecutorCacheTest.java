@@ -112,6 +112,28 @@ public class JsScriptExecutorCacheTest {
         }
     }
 
+    @Test(description = "run-scoped script executor should not initialize the shared JS pool")
+    public void pooledScriptExecutorShouldNotInitializeSharedContextPool() throws Exception {
+        JsContextPool previousPool = getStaticField("contextPool", JsContextPool.class);
+        int previousPoolSize = getStaticIntField("contextPoolSize");
+        int previousTimeoutMs = getStaticIntField("contextAcquireTimeoutMs");
+        setStaticField("contextPool", null);
+        setStaticField("contextPoolSize", 0);
+        setStaticField("contextAcquireTimeoutMs", 0);
+
+        try (JsScriptExecutor.PooledScriptExecutor ignored = new JsScriptExecutor.PooledScriptExecutor(1, 1000)) {
+            assertEquals(getStaticField("contextPool", JsContextPool.class), null);
+        } finally {
+            JsContextPool createdPool = getStaticField("contextPool", JsContextPool.class);
+            if (createdPool != null && createdPool != previousPool) {
+                createdPool.shutdown();
+            }
+            setStaticField("contextPool", previousPool);
+            setStaticField("contextPoolSize", previousPoolSize);
+            setStaticField("contextAcquireTimeoutMs", previousTimeoutMs);
+        }
+    }
+
     @SuppressWarnings("unchecked")
     private static Map<Object, Object> sourceCache() throws Exception {
         Field cacheField = JsScriptExecutor.class.getDeclaredField("SCRIPT_SOURCE_CACHE");

@@ -3,6 +3,9 @@ package com.laker.postman.performance.worker;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.plan.PerformanceCorePlanDocument;
 import com.laker.postman.performance.core.plan.PerformanceCorePlanNode;
+import com.laker.postman.performance.core.model.PerformanceProtocol;
+import com.laker.postman.performance.core.model.PerformanceStatsCollector;
+import com.laker.postman.performance.core.model.RequestResult;
 import com.laker.postman.performance.core.report.PerformanceJsonReport;
 import com.laker.postman.performance.core.report.PerformanceJsonReportMetadata;
 import com.laker.postman.performance.core.report.PerformanceJsonReportSummary;
@@ -27,6 +30,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 public class PerformanceWorkerServerTest {
@@ -226,6 +230,59 @@ public class PerformanceWorkerServerTest {
             assertEquals(progressRef.get().getTotalUsers(), 7);
             release.countDown();
             awaitStatus(client, storage, server.getPort(), "run-progress", "SUCCESS");
+        }
+    }
+
+    @Test
+    public void shouldReturnLightweightStatusWhenReportIsNotRequested() throws Exception {
+        CountDownLatch started = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        PerformanceWorkerProtocolJsonStorage storage = new PerformanceWorkerProtocolJsonStorage();
+        try (PerformanceWorkerServer server = new PerformanceWorkerServer(
+                PerformanceWorkerOptions.builder().host("127.0.0.1").port(0).build(),
+                (request, control) -> {
+                    PerformanceStatsCollector collector = new PerformanceStatsCollector();
+                    collector.record(new RequestResult(1_000L, 1_010L, true,
+                            "api", "API", PerformanceProtocol.HTTP));
+                    control.bindStatsCollector(collector);
+                    control.recordProgress(1, 1);
+                    started.countDown();
+                    assertTrue(release.await(2, TimeUnit.SECONDS));
+                    return PerformanceJsonReport.builder()
+                            .metadata(PerformanceJsonReportMetadata.builder()
+                                    .runId(request.getRunId())
+                                    .source("worker")
+                                    .status("SUCCESS")
+                                    .build())
+                            .summary(PerformanceJsonReportSummary.builder()
+                                    .totalRequests(1L)
+                                    .successRequests(1L)
+                                    .build())
+                            .protocols(PerformanceJsonReportSummaryMapper.emptyProtocols())
+                            .build();
+                }
+        )) {
+            server.start();
+            HttpClient client = HttpClient.newHttpClient();
+            submitRun(client, storage, server.getPort(), "run-light-status");
+            assertTrue(started.await(1, TimeUnit.SECONDS));
+
+            HttpResponse<String> status = client.send(HttpRequest.newBuilder()
+                            .uri(URI.create("http://127.0.0.1:" + server.getPort()
+                                    + "/api/performance/v1/runs/run-light-status?report=false"))
+                            .GET()
+                            .build(),
+                    HttpResponse.BodyHandlers.ofString());
+            PerformanceWorkerRunStatusResponse statusResponse = storage.statusResponseFromJson(status.body());
+
+            assertEquals(status.statusCode(), 200, status.body());
+            assertEquals(statusResponse.getTotalRequests(), 1L);
+            assertEquals(statusResponse.getSuccessRequests(), 1L);
+            assertEquals(statusResponse.getFailedRequests(), 0L);
+            assertEquals(statusResponse.getQps(), 100.0);
+            assertNull(statusResponse.getReport());
+            release.countDown();
+            awaitStatus(client, storage, server.getPort(), "run-light-status", "SUCCESS");
         }
     }
 

@@ -14,6 +14,7 @@ import com.laker.postman.service.variable.ExecutionContextScope;
 import com.laker.postman.service.variable.ExecutionVariableContext;
 import com.laker.postman.service.variable.RequestContext;
 import com.laker.postman.service.variable.RequestExecutionScope;
+import com.laker.postman.service.variable.RunScopedVariableContext;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -415,7 +416,7 @@ public class ScriptExecutionPipeline {
      */
     private Map<String, Object> preparePreRequestBindings(PreparedRequest req) {
         Environment activeEnv = resolveActiveEnvironment();
-        PostmanApiContext postman = new PostmanApiContext(activeEnv);
+        PostmanApiContext postman = createPostmanApiContext(activeEnv);
         postman.setRequest(req);
 
         Map<String, Object> bindings = new java.util.LinkedHashMap<>();
@@ -443,6 +444,13 @@ public class ScriptExecutionPipeline {
         }
 
         return bindings;
+    }
+
+    private PostmanApiContext createPostmanApiContext(Environment activeEnv) {
+        if (environmentSupplier != null) {
+            return PostmanApiContext.scoped(activeEnv, RunScopedVariableContext.currentGlobals());
+        }
+        return new PostmanApiContext(activeEnv);
     }
 
     private Environment resolveActiveEnvironment() {

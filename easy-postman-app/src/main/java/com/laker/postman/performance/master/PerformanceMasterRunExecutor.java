@@ -93,7 +93,7 @@ public class PerformanceMasterRunExecutor {
         do {
             allDone = true;
             for (PerformanceWorkerEndpoint endpoint : options.getWorkers()) {
-                PerformanceWorkerRunStatusResponse status = workerClient.status(endpoint, runId, timeoutUntil(deadline));
+                PerformanceWorkerRunStatusResponse status = workerClient.status(endpoint, runId, false, timeoutUntil(deadline));
                 if (!isTerminal(status.getStatus())) {
                     allDone = false;
                 }

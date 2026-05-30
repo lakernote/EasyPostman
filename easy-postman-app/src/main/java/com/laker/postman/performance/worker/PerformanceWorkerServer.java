@@ -1,6 +1,7 @@
 package com.laker.postman.performance.worker;
 
 import com.laker.postman.performance.core.model.PerformanceStatsSnapshot;
+import com.laker.postman.performance.core.model.PerformanceStatsProgressSnapshot;
 import com.laker.postman.performance.core.report.PerformanceJsonReport;
 import com.laker.postman.performance.core.report.PerformanceJsonReportSummary;
 import com.laker.postman.performance.core.report.PerformanceJsonReportMapper;
@@ -22,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.UUID;
@@ -280,7 +282,7 @@ public class PerformanceWorkerServer implements AutoCloseable {
             write(exchange, 404, error("Run not found: " + runId));
             return;
         }
-        write(exchange, 200, jsonStorage.toJson(statusResponse(runId, state)));
+        write(exchange, 200, jsonStorage.toJson(statusResponse(runId, state, includeReport(exchange))));
     }
 
     private void handleRunResult(HttpExchange exchange, String runId) throws IOException {
@@ -311,7 +313,7 @@ public class PerformanceWorkerServer implements AutoCloseable {
         if (state.isActive()) {
             state.status = PerformanceRunStatus.STOPPING;
         }
-        write(exchange, 200, jsonStorage.toJson(statusResponse(runId, state)));
+        write(exchange, 200, jsonStorage.toJson(statusResponse(runId, state, false)));
     }
 
     private void pruneCompletedRuns() {
@@ -370,12 +372,15 @@ public class PerformanceWorkerServer implements AutoCloseable {
         for (Map.Entry<String, WorkerRunState> entry : runs.entrySet()) {
             WorkerRunState state = entry.getValue();
             if (state != null && state.isActive()) {
-                notifyProgress(entry.getKey(), statusResponse(entry.getKey(), state));
+                notifyProgress(entry.getKey(), statusResponse(entry.getKey(), state, false));
             }
         }
     }
 
-    private PerformanceWorkerRunStatusResponse statusResponse(String runId, WorkerRunState state) {
+    private PerformanceWorkerRunStatusResponse statusResponse(String runId, WorkerRunState state, boolean includeReport) {
+        if (!includeReport) {
+            return lightweightStatusResponse(runId, state);
+        }
         PerformanceJsonReport report = currentReport(runId, state);
         PerformanceJsonReportSummary summary = report == null ? null : report.getSummary();
         return PerformanceWorkerRunStatusResponse.builder()
@@ -391,6 +396,54 @@ public class PerformanceWorkerServer implements AutoCloseable {
                 .report(report)
                 .error(state.error)
                 .build();
+    }
+
+    private PerformanceWorkerRunStatusResponse lightweightStatusResponse(String runId, WorkerRunState state) {
+        PerformanceJsonReportSummary summary = state.report == null ? null : state.report.getSummary();
+        if (summary != null) {
+            return PerformanceWorkerRunStatusResponse.builder()
+                    .runId(runId)
+                    .workerId(state.workerId)
+                    .status(state.status)
+                    .activeUsers(state.control.getActiveUsers())
+                    .totalUsers(state.control.getTotalUsers())
+                    .totalRequests(summary.getTotalRequests())
+                    .successRequests(summary.getSuccessRequests())
+                    .failedRequests(summary.getFailedRequests())
+                    .qps(qps(state.report))
+                    .error(state.error)
+                    .build();
+        }
+        PerformanceStatsProgressSnapshot progress = state.control.progressSnapshot();
+        return PerformanceWorkerRunStatusResponse.builder()
+                .runId(runId)
+                .workerId(state.workerId)
+                .status(state.status)
+                .activeUsers(state.control.getActiveUsers())
+                .totalUsers(state.control.getTotalUsers())
+                .totalRequests(progress.totalRequests())
+                .successRequests(progress.successRequests())
+                .failedRequests(progress.failedRequests())
+                .qps(progress.qps())
+                .error(state.error)
+                .build();
+    }
+
+    private boolean includeReport(HttpExchange exchange) {
+        String rawQuery = exchange.getRequestURI().getRawQuery();
+        if (rawQuery == null || rawQuery.isBlank()) {
+            return true;
+        }
+        for (String part : rawQuery.split("&")) {
+            int separator = part.indexOf('=');
+            String rawName = separator < 0 ? part : part.substring(0, separator);
+            if (!"report".equals(URLDecoder.decode(rawName, StandardCharsets.UTF_8))) {
+                continue;
+            }
+            String rawValue = separator < 0 ? "" : part.substring(separator + 1);
+            return !"false".equalsIgnoreCase(URLDecoder.decode(rawValue, StandardCharsets.UTF_8));
+        }
+        return true;
     }
 
     private PerformanceJsonReport currentReport(String runId, WorkerRunState state) {

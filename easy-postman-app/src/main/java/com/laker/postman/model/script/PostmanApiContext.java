@@ -135,13 +135,29 @@ public class PostmanApiContext {
      * @param environment 当前激活的环境对象
      */
     public PostmanApiContext(Environment environment) {
+        this(
+                environment,
+                GlobalVariablesService.getInstance().getGlobalVariables(),
+                createEnvironmentPersistAction(environment)
+        );
+    }
+
+    /**
+     * 构造 headless / run-scoped 脚本上下文。
+     * 这里直接使用 plan 内携带的环境和全局变量，避免 worker 执行时回落到 GUI 工作区服务。
+     */
+    public static PostmanApiContext scoped(Environment environment, Environment globals) {
+        return new PostmanApiContext(environment, globals, null);
+    }
+
+    private PostmanApiContext(Environment environment, Environment globals, Runnable environmentPersistAction) {
         this.environment = new ScriptScopedVariablesApi(
                 environment,
-                createEnvironmentPersistAction(environment)
+                environmentPersistAction
         );
         this.env = this.environment; // Postman 中 env 和 environment 指向同一对象
         this.globals = new ScriptScopedVariablesApi(
-                GlobalVariablesService.getInstance().getGlobalVariables(),
+                globals,
                 null
         );
         this.cookies = new CookieApi(); // 初始化 cookies

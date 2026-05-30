@@ -51,6 +51,10 @@ public final class PerformanceStatsCollector {
         );
     }
 
+    public PerformanceStatsProgressSnapshot progressSnapshot() {
+        return overallStats.toProgressSnapshot();
+    }
+
     public void clear() {
         apiStatsByProtocol.clear();
         protocolTotals.clear();

@@ -190,6 +190,15 @@ public class PerformanceMasterRunCommandTest {
                 com.laker.postman.performance.core.worker.PerformanceWorkerEndpoint endpoint,
                 String runId,
                 Duration timeout) {
+            return status(endpoint, runId, true, timeout);
+        }
+
+        @Override
+        public com.laker.postman.performance.core.worker.PerformanceWorkerRunStatusResponse status(
+                com.laker.postman.performance.core.worker.PerformanceWorkerEndpoint endpoint,
+                String runId,
+                boolean includeReport,
+                Duration timeout) {
             timeouts.add(timeout);
             return com.laker.postman.performance.core.worker.PerformanceWorkerRunStatusResponse.builder()
                     .runId(runId)

@@ -86,8 +86,6 @@ public class JsScriptExecutor {
     }
 
     static {
-        reconfigureContextPoolFromSettings();
-
         // 注册 shutdown hook，在应用退出时关闭池
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             log.info("Shutting down JS Context Pool...");
@@ -194,7 +192,7 @@ public class JsScriptExecutor {
 
             // 从池中获取 Context
             while (pooledContext == null) {
-                borrowedPool = pool == null ? contextPool : pool;
+                borrowedPool = pool == null ? sharedContextPool() : pool;
                 if (borrowedPool == null) {
                     throw new ScriptExecutionException("JS context pool is not initialized", null);
                 }
@@ -244,6 +242,15 @@ public class JsScriptExecutor {
                 borrowedPool.returnContext(pooledContext);
             }
         }
+    }
+
+    private static JsContextPool sharedContextPool() {
+        JsContextPool pool = contextPool;
+        if (pool == null) {
+            reconfigureContextPoolFromSettings();
+            pool = contextPool;
+        }
+        return pool;
     }
 
     /**

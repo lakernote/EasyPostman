@@ -78,8 +78,8 @@ final class PerformanceRemoteRunControlSupport {
         runUiController.markRunning();
         clearCachedPerformanceResultsAction.run();
         currentTotalUsers = 0;
-        lastTrendSampleAtMs = System.currentTimeMillis();
-        trendWindowSampler.reset(lastTrendSampleAtMs);
+        lastTrendSampleAtMs = 0L;
+        trendWindowSampler.reset(0L);
         runUiController.initializeProgress(progressLabel, 0);
 
         Thread thread = PerformanceThreadFactory.newDaemonThread(
@@ -108,6 +108,7 @@ final class PerformanceRemoteRunControlSupport {
         try {
             int totalUsers = submitRun(runPlan, workers, runId);
             currentTotalUsers = totalUsers;
+            resetRemoteTrendSamplingWindow();
             runUiController.initializeProgress(progressLabel, totalUsers);
             notifyStarted(workers.size(), runId);
             updateRemoteProgress(progressLabel, RemoteProgressSnapshot.empty(totalUsers));
@@ -140,6 +141,12 @@ final class PerformanceRemoteRunControlSupport {
                     .build());
         }
         return totalAssignedUsers(assignments);
+    }
+
+    private void resetRemoteTrendSamplingWindow() {
+        long now = System.currentTimeMillis();
+        lastTrendSampleAtMs = now;
+        trendWindowSampler.reset(now);
     }
 
     private void notifyStarted(int workerCount, String runId) {
@@ -187,8 +194,9 @@ final class PerformanceRemoteRunControlSupport {
         long totalRequests = 0;
         long failedRequests = 0;
         List<PerformanceJsonReport> reports = new ArrayList<>();
+        boolean includeReport = reportRealtimeEnabledSupplier.getAsBoolean();
         for (PerformanceWorkerEndpoint worker : workers) {
-            PerformanceWorkerRunStatusResponse status = workerClient.status(worker, runId);
+            PerformanceWorkerRunStatusResponse status = workerClient.status(worker, runId, includeReport);
             if (isTerminal(status.getStatus())) {
                 done++;
             }

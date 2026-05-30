@@ -1,6 +1,7 @@
 package com.laker.postman.performance.runtime;
 
 import com.laker.postman.performance.core.model.PerformanceStatsCollector;
+import com.laker.postman.performance.core.model.PerformanceStatsProgressSnapshot;
 import com.laker.postman.performance.core.model.PerformanceStatsSnapshot;
 import com.laker.postman.performance.core.runtime.PerformanceRunHandle;
 
@@ -47,6 +48,11 @@ public class PerformanceRunExecutionControl {
     public PerformanceStatsSnapshot statsSnapshot() {
         PerformanceStatsCollector collector = statsCollector.get();
         return collector == null ? new PerformanceStatsCollector().snapshot() : collector.snapshot();
+    }
+
+    public PerformanceStatsProgressSnapshot progressSnapshot() {
+        PerformanceStatsCollector collector = statsCollector.get();
+        return collector == null ? PerformanceStatsProgressSnapshot.empty() : collector.progressSnapshot();
     }
 
     public void stop() {

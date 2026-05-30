@@ -12,8 +12,7 @@ easy-postman-parent (root pom.xml, revision = host version)
 ├── easy-postman-plugin-api      # Stable plugin SPI and service contracts: EasyPostmanPlugin, PluginContext, PluginDescriptor, GitPluginService, ClientCertificatePluginService
 ├── easy-postman-platform        # Host platform framework: custom IOC + update discovery core; startup/welcome/help/settings orchestration later
 ├── easy-postman-ui              # Common Swing UI base components, FontsUtil, IconUtil, NotificationUtil, EditorThemeUtil, ModernColors, ModernButtonFactory
-├── easy-postman-performance-core           # Headless performance domain core: plan, runtime contracts, stats, report snapshots
-├── easy-postman-performance-runtime-okhttp # OkHttp-backed performance transport runtime
+├── easy-postman-performance-core           # Headless performance domain core: editable plan contracts, run plan.json, runtime contracts, stats, report snapshots
 ├── easy-postman-plugin-runtime  # Plugin scan/load/lifecycle: PluginRuntime, PluginScanner, PluginLoader, PluginRegistry
 ├── easy-postman-plugins/        # Official plugins (each builds an independent JAR)
 │   ├── plugin-manager           # Catalog parsing, online/offline install facade
@@ -69,17 +68,25 @@ Native installers are produced by `build/mac.sh`, `build/win-exe.bat`, `build/li
 
 ```
 App.main()
-  -> configurePlatformSpecificSettings()   // Linux: FlatLaf window decorations
-  -> SwingUtilities.invokeLater()
-       -> SimpleThemeManager.initTheme()   // reads easy_postman_settings.properties
-       -> FontManager.applyFontSettings()
-       -> SplashWindow or direct SwingWorker
-            -> StartupCoordinator.prepareMainFrame()
-                 -> BeanFactory.init("com.laker.postman")   // scans @Component beans
-                 -> PluginRuntime.initialize()               // scan, load, lifecycle
-                 -> MainFrame (EDT)
-  -> registerShutdownHook()
-       -> PluginRuntime.shutdown() + BeanFactory.destroy()
+  -> AppLauncher.launch(args)
+       -> configureBaseRuntimeEnvironment()
+       -> registerShutdownHook()
+       -> AppCommandRouter.route(args)
+            -> performance run/worker/master: set java.awt.headless=true
+            -> run/worker: HeadlessStartupBootstrap.initRuntime()
+                 -> BeanFactory.init("com.laker.postman")
+                 -> PluginRuntime.initialize()
+            -> master: load plan + dispatch workers over HTTP/JSON
+            -> return CLI exit code without entering Swing EDT
+       -> configurePlatformWindowDecorations()  // GUI branch, Linux: FlatLaf window decorations
+       -> SwingUtilities.invokeLater()
+            -> SimpleThemeManager.initTheme()   // reads easy_postman_settings.properties
+            -> FontManager.applyFontSettings()
+            -> SplashWindow or direct SwingWorker
+                 -> StartupCoordinator.prepareMainFrame()
+                      -> BeanFactory.init("com.laker.postman")   // scans @Component beans
+                      -> PluginRuntime.initialize()               // scan, load, lifecycle
+                      -> MainFrame (EDT)
 ```
 
 ---

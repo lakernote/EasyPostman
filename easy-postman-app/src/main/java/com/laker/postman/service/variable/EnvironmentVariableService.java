@@ -43,7 +43,7 @@ public class EnvironmentVariableService implements VariableProvider {
             return null;
         }
 
-        Environment activeEnv = EnvironmentService.getActiveEnvironment();
+        Environment activeEnv = activeEnvironment();
         if (activeEnv == null) {
             return null;
         }
@@ -57,7 +57,7 @@ public class EnvironmentVariableService implements VariableProvider {
             return false;
         }
 
-        Environment activeEnv = EnvironmentService.getActiveEnvironment();
+        Environment activeEnv = activeEnvironment();
         if (activeEnv == null) {
             return false;
         }
@@ -67,7 +67,7 @@ public class EnvironmentVariableService implements VariableProvider {
 
     @Override
     public Map<String, String> getAll() {
-        Environment activeEnv = EnvironmentService.getActiveEnvironment();
+        Environment activeEnv = activeEnvironment();
         if (activeEnv == null || activeEnv.getVariables() == null) {
             return Collections.emptyMap();
         }
@@ -83,5 +83,10 @@ public class EnvironmentVariableService implements VariableProvider {
     @Override
     public VariableType getType() {
         return VariableType.ENVIRONMENT;
+    }
+
+    private Environment activeEnvironment() {
+        Environment scopedEnvironment = RunScopedVariableContext.currentEnvironment();
+        return scopedEnvironment == null ? EnvironmentService.getActiveEnvironment() : scopedEnvironment;
     }
 }

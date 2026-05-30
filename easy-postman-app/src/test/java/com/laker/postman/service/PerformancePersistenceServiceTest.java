@@ -14,6 +14,7 @@ import com.laker.postman.performance.core.model.WebSocketPerformanceData;
 import com.laker.postman.panel.performance.plan.PerformancePlanDocument;
 import com.laker.postman.panel.performance.plan.PerformancePlanConfiguration;
 import com.laker.postman.panel.performance.plan.PerformancePlanNode;
+import com.laker.postman.panel.performance.plan.PerformanceRemoteWorkerSettings;
 import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
 import com.laker.postman.performance.core.timer.TimerData;
 import com.laker.postman.service.variable.RequestExecutionScope;
@@ -282,6 +283,37 @@ public class PerformancePersistenceServiceTest {
         DefaultMutableTreeNode loadedTree = service.load("Loaded Bundle");
         assertNotNull(loadedTree);
         assertEquals(((PerformanceTreeNode) loadedTree.getUserObject()).name, "Loaded Bundle");
+    }
+
+    @Test(description = "应保存并恢复 GUI 远程 worker 配置，便于像 JMeter 一样远程启动全部 worker")
+    public void shouldSaveAndLoadRemoteWorkerSettings() throws IOException {
+        Path tempDir = Files.createTempDirectory("performance-persistence-remote-workers");
+        Path configPath = tempDir.resolve("performance_config.json");
+        TestablePerformancePersistenceService service = new TestablePerformancePersistenceService(configPath);
+        service.init();
+
+        service.saveConfiguration(PerformancePlanConfiguration.builder()
+                .efficientMode(true)
+                .trendEnabled(true)
+                .reportRealtimeEnabled(false)
+                .remoteWorkerSettings(PerformanceRemoteWorkerSettings.builder()
+                        .enabled(true)
+                        .workerEndpoints("127.0.0.1:19090,127.0.0.1:19091")
+                        .build())
+                .build());
+
+        PerformancePlanConfiguration loadedConfiguration = service.loadConfiguration();
+
+        assertNotNull(loadedConfiguration);
+        assertTrue(loadedConfiguration.getRemoteWorkerSettings().isEnabled());
+        assertEquals(
+                loadedConfiguration.getRemoteWorkerSettings().getWorkerEndpoints(),
+                "127.0.0.1:19090,127.0.0.1:19091"
+        );
+
+        String json = Files.readString(configPath, StandardCharsets.UTF_8);
+        assertTrue(json.contains("\"remoteExecutionEnabled\": true"));
+        assertTrue(json.contains("\"remoteWorkers\": \"127.0.0.1:19090,127.0.0.1:19091\""));
     }
 
     @Test(description = "应保存并恢复请求执行作用域，确保无界面运行器不依赖集合树也能解析分组变量")

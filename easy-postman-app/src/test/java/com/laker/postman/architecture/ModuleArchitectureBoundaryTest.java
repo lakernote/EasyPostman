@@ -22,13 +22,34 @@ public class ModuleArchitectureBoundaryTest {
         assertTrue(Files.isDirectory(root.resolve("easy-postman-foundation")));
         assertTrue(Files.isDirectory(root.resolve("easy-postman-platform")));
         assertTrue(Files.isDirectory(root.resolve("easy-postman-ui")));
+        assertFalse(Files.exists(root.resolve("easy-postman-performance-runtime-okhttp")));
         assertFalse(Files.exists(root.resolve("easy-postman-plugin-bridge")));
         assertFalse(Files.exists(root.resolve("easy-postman-plugin-ui")));
 
         for (Path pom : pomFiles(root)) {
             String source = Files.readString(pom);
+            assertFalse(source.contains("easy-postman-performance-runtime-okhttp"), pom + " still references the retired performance runtime module");
             assertFalse(source.contains("easy-postman-plugin-bridge"), pom + " still references the old bridge module");
             assertFalse(source.contains("easy-postman-plugin-ui"), pom + " still references the old plugin UI module");
+        }
+    }
+
+    @Test
+    public void packagingRuntimeModulesIncludePerformanceWorkerHttpServer() throws IOException {
+        Path root = repositoryRoot();
+        List<Path> packagingFiles = List.of(
+                root.resolve(".github/workflows/pr-check.yml"),
+                root.resolve(".github/workflows/release.yml"),
+                root.resolve("build/mac.sh"),
+                root.resolve("build/linux-deb.sh"),
+                root.resolve("build/linux-rpm.sh"),
+                root.resolve("build/win-exe.bat")
+        );
+
+        for (Path file : packagingFiles) {
+            String source = Files.readString(file);
+            assertTrue(source.contains("java.net.http"), file + " must keep java.net.http for master HTTP client");
+            assertTrue(source.contains("jdk.httpserver"), file + " must keep jdk.httpserver for worker mode");
         }
     }
 
@@ -230,6 +251,8 @@ public class ModuleArchitectureBoundaryTest {
             assertFalse(source.contains("easy-postman-plugin-bridge"), file + " still documents the old bridge module");
             assertFalse(source.contains("easy-postman-plugin-ui"), file + " still documents the old plugin UI module");
             assertFalse(source.contains("api / bridge / ui"), file + " still documents the old bridge wording");
+            assertFalse(source.contains("easy-postman-performance-runtime-okhttp"),
+                    file + " still documents the retired performance runtime module");
         }
     }
 

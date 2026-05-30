@@ -250,6 +250,13 @@ public class PerformanceCorePlanJsonStorage {
         }
         Map<String, Object> json = new LinkedHashMap<>();
         json.put("sourceName", data.getSourceName());
+        putIfNotBlank(json, "sourceType", data.getSourceType());
+        putIfNotBlank(json, "filePath", data.getFilePath());
+        putIfNotBlank(json, "encoding", data.getEncoding());
+        putIfNotBlank(json, "delimiter", data.getDelimiter());
+        json.put("hasHeader", data.isHasHeader());
+        putIfNotBlank(json, "sharingMode", data.getSharingMode());
+        putIfNotBlank(json, "eofMode", data.getEofMode());
         json.put("headers", new ArrayList<>(data.getHeaders()));
 
         List<Map<String, String>> rows = new ArrayList<>();
@@ -534,7 +541,15 @@ public class PerformanceCorePlanJsonStorage {
             rows.add(row);
         }
 
-        return new CsvDataSetData(stringValue(json, "sourceName", null), headers, rows);
+        CsvDataSetData data = new CsvDataSetData(stringValue(json, "sourceName", null), headers, rows);
+        data.setSourceType(stringValue(json, "sourceType", CsvDataSetData.SOURCE_INLINE));
+        data.setFilePath(stringValue(json, "filePath", null));
+        data.setEncoding(stringValue(json, "encoding", "UTF-8"));
+        data.setDelimiter(stringValue(json, "delimiter", ","));
+        data.setHasHeader(booleanValue(json, "hasHeader", true));
+        data.setSharingMode(stringValue(json, "sharingMode", CsvDataSetData.SHARING_THREAD_GROUP));
+        data.setEofMode(stringValue(json, "eofMode", CsvDataSetData.EOF_RECYCLE));
+        return data;
     }
 
     private AssertionData deserializeAssertionData(Map<String, Object> json) {
@@ -647,6 +662,12 @@ public class PerformanceCorePlanJsonStorage {
 
     private static void putIfNotNull(Map<String, Object> target, String key, Object value) {
         if (value != null) {
+            target.put(key, value);
+        }
+    }
+
+    private static void putIfNotBlank(Map<String, Object> target, String key, String value) {
+        if (value != null && !value.isBlank()) {
             target.put(key, value);
         }
     }

@@ -28,7 +28,7 @@ permissions:
 env:
   JAVA_VERSION: '17'
   JAVA_DISTRIBUTION: 'jetbrains'
-  JLINK_MODULES: 'java.base,java.desktop,java.logging,jdk.unsupported,java.naming,java.net.http,java.prefs,java.sql,java.security.sasl,java.security.jgss,jdk.crypto.ec,java.management,java.management.rmi,jdk.crypto.cryptoki'
+  JLINK_MODULES: 'java.base,java.desktop,java.logging,jdk.unsupported,java.naming,java.net.http,jdk.httpserver,java.prefs,java.sql,java.security.sasl,java.security.jgss,jdk.crypto.ec,java.management,java.management.rmi,jdk.crypto.cryptoki'
   JAVA_OPTIONS: '-Xms256m|-Xmx512m|-Dfile.encoding=UTF-8'
   JAVA_OPTIONS_MACOS: '-Dsun.java2d.metal=false'
 
@@ -291,7 +291,7 @@ jobs:
           Write-Host "🧪 Running Windows smoke test..."
           $exeFile = "target\EasyPostman\EasyPostMan.exe"
           
-          # 启动应用（后台运行，使用 headless 模式）
+          # 启动 GUI smoke test（显式 non-headless）
           $env:JAVA_TOOL_OPTIONS = "-Djava.awt.headless=false"
           $process = Start-Process -FilePath $exeFile -PassThru -WindowStyle Hidden -RedirectStandardError "stderr.log" -RedirectStandardOutput "stdout.log"
           

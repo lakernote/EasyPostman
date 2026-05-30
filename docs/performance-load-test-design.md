@@ -9,6 +9,7 @@
 - 线程模型集中管理：所有性能压测后台线程通过统一工厂命名和设置 daemon，便于调试、关闭和日志排查。
 - 指标数据增量采样：总报表使用累计统计，趋势图使用采样窗口统计，WebSocket/SSE 长连接使用实时计数补充窗口内没有完成样本的情况。
 - 高并发结果显示保持有界：结果表通过队列和 Swing Timer 分批刷新，避免每个请求都直接触发 EDT 更新。
+- GUI、headless CLI 和 worker 使用同一份运行态 `plan.json`。`collections.json`、`environments.json`、`performance_config.json` 是编辑态工作区文件；`plan.json` 是可执行语义快照，包含环境、全局变量、执行设置、执行计划和外部 asset 引用。
 
 ## 主要组件
 
@@ -16,21 +17,161 @@
 
 - `PerformancePanel`：模块入口，创建树、属性面板、结果页、执行引擎、统计协调器和定时器。
 - `PerformancePanelViewFactory`：集中创建 Swing 组件，降低 `PerformancePanel` 的 UI 构建代码量。
+- 顶部工具栏支持 `Remote` 模式和 worker 列表配置。开启后 GUI 的 Start/Stop 不再本机执行，而是按 JMeter Remote Start/Stop All 的语义控制所有配置的 worker。
 - `PerformanceTreeSupport` / `PerformanceTreeInteractionSupport`：管理树节点结构、右键菜单、节点选择和请求结构同步。
 - `PerformancePropertyPanelSupport`：保存当前属性面板数据，屏蔽线程组、断言、定时器、SSE、WebSocket 配置面板的细节。
 - `PerformanceRunControlSupport`：处理启动、停止、按钮状态、最终 flush 和完成通知。
+- `PerformanceRemoteRunControlSupport`：GUI 远程执行控制器，负责生成运行态 `plan`、向 worker 分发 assignment、轮询状态、Stop All 和把 master 聚合报表写回 GUI 报表页。
 
 ### 执行模型
 
 - `PerformanceTestPlanCompiler`：将执行快照从 Swing `DefaultMutableTreeNode` 编译成不可变的性能执行计划。计划由 `PerformanceTestPlan`、`PerformanceThreadGroupPlan`、`PerformanceLoopController`、`PerformanceTimerElement`、`PerformanceRequestSampler`、断言元素和协议阶段元素组成。
 - `com.laker.postman.panel.performance.plan`：只保存执行所需的不可变 plan 数据。除编译器负责读取 Swing tree 外，plan 元素不再提供反向重建 Swing tree 的 API。
-- `PerformanceExecutionEngine`：执行门面，负责运行生命周期、实时指标、网络取消资源和树到 plan 的入口兼容。它不再直接遍历 Swing tree。
+- `easy-postman-performance-core` 的 `PerformanceRunPlan`：运行态 envelope，保存 `environment`、`globals`、`settings`、`testPlan`、`assets`。它不保存 Swing tree 或 `HttpRequestItem`，而是保存跨 GUI/CLI/worker 可消费的请求快照。
+- `PerformanceRunPlanFactory`：GUI 导出 `plan.json` 时将当前压测配置、活动环境、全局变量和 asset 引用冻结成运行态计划。
+- `com.laker.postman.performance.runtime.PerformanceRunPlanExecutor`：headless CLI 和 worker 共用的 app 侧运行适配器，加载 `plan.json`，将 core plan 编译后通过 `PerformanceCorePlanAdapter.toGuiExecutablePlan(...)` 转成 app 现有执行链可消费的 plan，并复用 `PerformanceExecutionEngine` 执行。CLI 包只负责参数解析和结果输出。
+- `PerformanceExecutionEngine`：执行门面，负责运行生命周期、实时指标、网络取消资源和树到 plan 的入口转换。它不再直接遍历 Swing tree。
 - `PerformanceThreadGroupRunner`：执行启用的线程组，并根据 FIXED、RAMP_UP、SPIKE、STAIRS 调度虚拟用户 worker。
 - `PerformancePlanExecutor`：执行线程组内的控制器模型，按顺序处理 Loop、Timer 和 Request Sampler。
 - `PerformanceSamplerExecutor`：把 request sampler 交给 `PerformanceRequestExecutor`，并通过 `PerformanceResultRecorder` 记录结果。执行层直接消费 plan model，request 级别不再保留 tree-based 执行入口。
 - `PerformanceIterationContextFactory`：为每次虚拟用户迭代创建 `ExecutionVariableContext`，设置迭代编号，并按当前 `PerformanceThreadGroupPlan` 的 CSV Data Set 和线程组内虚拟用户编号绑定 CSV 行。
 - `PerformanceThreadGroupPlanner`：基于编译后的 plan 计算线程数和预估请求量。旧的 tree-based 方法保留，但内部会先编译 plan。
 - `PerformanceVirtualUserCoordinator`：维护虚拟用户上下文，包括 active user 数、虚拟用户编号、当前迭代编号和进度回调。
+
+### Headless CLI 与 Worker 边界
+
+- 单机 headless 使用主 app jar，不单独发布 CLI jar：`java -jar easy-postman.jar performance run --plan plan.json [--out result.json]`。
+- `App.main(args)` 先经 `AppCommandRouter` 判断命令行模式；命中 `performance run`、`performance worker` 或 `performance master run` 时自动设置 `java.awt.headless=true`，并且不进入 Swing EDT。
+- `performance run` 和 `performance worker` 初始化 IOC、宿主插件桥接服务和插件运行时，不创建 `MainFrame`、主题、字体或 Splash；`performance master run` 当前只读取 plan、生成 assignment 并通过 HTTP 调度 worker。
+- CLI 运行期间通过 `RunScopedVariableContext` 注入 `plan.json` 内的 environment/globals；请求最终发送前的 `{{var}}` 替换、脚本 `pm.environment` / `pm.globals` 和子线程变量解析都走同一份运行态变量，不写回用户持久化全局变量文件。
+- CLI 输出的 `result.json` 包含顶层摘要和 `report` 节点。`report` 保存机器可读的原始数值：总请求数、成功/失败数、协议级 total、API 级 total、samplesPerSecond、耗时分位数，以及 WebSocket/SSE 的消息数、消息速率和首消息/首事件延迟。
+- worker 使用主 app jar 内的 JDK `HttpServer`，不引入 Jetty/Netty/Spring Boot。server 只在 `performance worker` 模式启动，GUI 默认不监听端口。
+- worker 控制面协议为 HTTP/JSON：`GET /api/performance/v1/health`、`POST /api/performance/v1/runs`、`GET /api/performance/v1/runs/{runId}`、`GET /api/performance/v1/runs/{runId}/result`、`POST /api/performance/v1/runs/{runId}/stop`。
+- master 使用 JDK `HttpClient` 调度 worker：`performance master run --plan plan.json --workers host:port[,host:port] [--out result.json]`。master 读取同一份 `plan.json`，生成 `PerformanceWorkerAssignment`，将 plan + assignment 发送给各 worker，轮询状态后拉取 worker report 并聚合。
+- GUI 远程模式复用同一套 HTTP/JSON worker 协议和 assignment planner。GUI 不上传 `assets.zip`；GUI 导入或手工创建的 CSV 行会内嵌进 `plan`，file-source CSV 和 multipart 文件引用会进入 `plan.assets` 并保持原路径，用户需要按这些路径把文件提前放到每台 worker 服务器上。
+- `performance-core.worker` 保存无 UI 的 assignment/protocol DTO、assignment planner 和 worker execution plan partitioner；`performance.worker` / `performance.master` 保存 app 侧 server/client/命令实现。后续要做认证、心跳、资产 bundle、精确全局分位数聚合时，仍按这个边界扩展。
+
+### Headless CLI 验证脚本
+
+从 GUI 导出 `plan.json` 后，headless 单机验证使用主 app jar：
+
+```bash
+mvn -q -pl easy-postman-app -am -DskipTests package
+java -jar easy-postman-app/target/easy-postman-5.5.28.jar \
+  performance run \
+  --plan "$HOME/Downloads/plan.json" \
+  --out /tmp/easy-postman-headless-result.json
+jq . /tmp/easy-postman-headless-result.json
+```
+
+macOS 本机如果需要给压测命令加最长运行时间保护，可以用 `perl` 的 alarm 包一层：
+
+```bash
+perl -e 'alarm shift; exec @ARGV' 90 \
+  java -jar easy-postman-app/target/easy-postman-5.5.28.jar \
+  performance run \
+  --plan "$HOME/Downloads/plan.json" \
+  --out /tmp/easy-postman-headless-result.json
+```
+
+本地验证记录：使用 GUI 导出的 `$HOME/Downloads/plan.json`，线程组为固定 20 线程、按时间运行 60 秒，CLI 成功完成并写出结果。下面是 `result.json` 节选，字段名与真实输出一致：
+
+```json
+{
+  "status": "SUCCESS",
+  "totalRequests": 858211,
+  "successRequests": 858211,
+  "failedRequests": 0,
+  "stopped": false,
+  "elapsedTimeMs": 60084,
+  "report": {
+    "schemaVersion": "1.0",
+    "source": "local",
+    "status": "SUCCESS",
+    "summary": {
+      "totalRequests": 858211,
+      "successRequests": 858211,
+      "failedRequests": 0
+    },
+    "protocols": {
+      "HTTP": {
+        "total": {
+          "samplesPerSecond": 14283.1,
+          "durationMs": {
+            "avg": 0,
+            "min": 0,
+            "max": 0,
+            "p90": 0,
+            "p95": 0,
+            "p99": 0
+          }
+        },
+        "apis": []
+      }
+    }
+  }
+}
+```
+
+### Master / Worker 本机验证脚本
+
+先启动两个 worker 进程：
+
+```bash
+java -jar easy-postman-app/target/easy-postman-5.5.28.jar \
+  performance worker \
+  --host 127.0.0.1 \
+  --port 19090
+
+java -jar easy-postman-app/target/easy-postman-5.5.28.jar \
+  performance worker \
+  --host 127.0.0.1 \
+  --port 19091
+```
+
+再由 master 分发同一份 `plan.json`：
+
+```bash
+java -jar easy-postman-app/target/easy-postman-5.5.28.jar \
+  performance master run \
+  --plan "$HOME/Downloads/plan.json" \
+  --workers 127.0.0.1:19090,127.0.0.1:19091 \
+  --out /tmp/easy-postman-master-result.json
+jq . /tmp/easy-postman-master-result.json
+```
+
+本地验证记录：同一份 `$HOME/Downloads/plan.json` 通过两个本机 worker 分片执行，master 成功聚合。下面是 `master-result.json` 节选：
+
+```json
+{
+  "schemaVersion": "1.0",
+  "status": "SUCCESS",
+  "source": "master",
+  "summary": {
+    "totalRequests": 981956,
+    "successRequests": 981956,
+    "failedRequests": 0,
+    "successRate": 100.0
+  },
+  "protocols": {
+    "HTTP": {
+      "total": {
+        "total": 981956,
+        "successRate": 100.0
+      }
+    }
+  }
+}
+```
+
+打包脚本的 `jlink --add-modules` 已包含 `jdk.httpserver`，否则 jpackage 后的 worker 模式会因为精简运行时缺少 `com.sun.net.httpserver.HttpServer` 而启动失败。
+
+### GUI 远程控制方式
+
+1. 在每台压测机上启动 worker：`java -jar easy-postman.jar performance worker --host 0.0.0.0 --port 19090`。
+2. GUI 导入或手工创建的 CSV 行已包含在 `plan.json` 内；如果压测计划引用 file-source CSV 或 multipart 文件，按 `plan.assets` 中的路径把文件放到每台 worker 的相同路径。
+3. 在 GUI 顶部工具栏勾选 `Remote`，在 `Workers` 输入框中填写 `host:port` 列表，支持逗号或空白分隔，例如 `10.0.0.11:19090,10.0.0.12:19090`。
+4. 点击 `Start` 后 GUI 作为 master 分发当前计划；点击 `Stop` 后向所有 worker 发送 `/stop`。运行结束后 GUI 报表页展示 master 聚合后的 JSON report 数据。
 
 ## 线程模型
 

@@ -1,6 +1,8 @@
 package com.laker.postman.panel.performance;
 
 import com.laker.postman.common.component.placeholder.PerformanceTrendPlaceholderPanel;
+import com.laker.postman.common.component.button.ExportButton;
+import com.laker.postman.common.component.button.HelpButton;
 import com.laker.postman.panel.performance.result.LazyPerformanceTrendPanel;
 import com.laker.postman.test.AbstractSwingUiTest;
 import com.laker.postman.util.I18nUtil;
@@ -10,6 +12,7 @@ import org.testng.annotations.Test;
 import javax.swing.AbstractButton;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
+import javax.swing.JTextField;
 import java.awt.Component;
 import java.awt.Container;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -121,18 +124,43 @@ public class PerformancePanelViewFactoryTest extends AbstractSwingUiTest {
     }
 
     @Test
-    public void topToolbarShouldOnlyContainExecutionControls() {
+    public void topToolbarShouldExposeRunRefreshAndExportControls() {
         PerformancePanelViewFactory viewFactory = new PerformancePanelViewFactory();
+        AtomicInteger exportCount = new AtomicInteger();
+        AtomicInteger usageHelpCount = new AtomicInteger();
+        AtomicInteger remoteToggleCount = new AtomicInteger();
 
         PerformancePanelViewFactory.ToolbarSection toolbarSection = viewFactory.createToolbarSection(
+                exportCount::incrementAndGet,
+                usageHelpCount::incrementAndGet,
                 () -> {
-                }
+                },
+                false,
+                "127.0.0.1:19090",
+                ignored -> remoteToggleCount.incrementAndGet(),
+                ignored -> remoteToggleCount.incrementAndGet()
         );
 
-        assertEquals(countCheckBoxes(toolbarSection.topPanel()), 0);
+        assertEquals(countCheckBoxes(toolbarSection.topPanel()), 1);
+        assertEquals(countTextFields(toolbarSection.topPanel()), 1);
         assertNotNull(toolbarSection.runBtn());
         assertNotNull(toolbarSection.stopBtn());
         assertNotNull(toolbarSection.refreshBtn());
+        assertNotNull(toolbarSection.exportBtn());
+        assertNotNull(toolbarSection.usageHelpBtn());
+        assertNotNull(toolbarSection.remoteModeCheckBox());
+        assertNotNull(toolbarSection.workerEndpointsField());
+        assertTrue(hasComponent(toolbarSection.topPanel(), ExportButton.class));
+        assertTrue(hasComponent(toolbarSection.topPanel(), HelpButton.class));
+        assertFalse(toolbarSection.remoteModeCheckBox().isSelected());
+        assertEquals(toolbarSection.workerEndpointsField().getText(), "127.0.0.1:19090");
+
+        toolbarSection.exportBtn().doClick();
+        assertEquals(exportCount.get(), 1);
+        toolbarSection.usageHelpBtn().doClick();
+        assertEquals(usageHelpCount.get(), 1);
+        toolbarSection.remoteModeCheckBox().doClick();
+        assertEquals(remoteToggleCount.get(), 1);
     }
 
     private static int countCheckBoxes(Component component) {
@@ -140,6 +168,16 @@ public class PerformancePanelViewFactoryTest extends AbstractSwingUiTest {
         if (component instanceof Container container) {
             for (Component child : container.getComponents()) {
                 count += countCheckBoxes(child);
+            }
+        }
+        return count;
+    }
+
+    private static int countTextFields(Component component) {
+        int count = component instanceof JTextField ? 1 : 0;
+        if (component instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                count += countTextFields(child);
             }
         }
         return count;

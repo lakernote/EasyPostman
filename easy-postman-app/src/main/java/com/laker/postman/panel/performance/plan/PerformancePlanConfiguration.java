@@ -1,6 +1,5 @@
 package com.laker.postman.panel.performance.plan;
 
-
 import lombok.Builder;
 import lombok.Value;
 
@@ -10,15 +9,20 @@ public class PerformancePlanConfiguration {
     boolean efficientMode;
     boolean trendEnabled;
     boolean reportRealtimeEnabled;
+    PerformanceRemoteWorkerSettings remoteWorkerSettings;
 
     @Builder
     public PerformancePlanConfiguration(PerformancePlanDocument planDocument,
                                         Boolean efficientMode,
                                         Boolean trendEnabled,
-                                        Boolean reportRealtimeEnabled) {
+                                        Boolean reportRealtimeEnabled,
+                                        PerformanceRemoteWorkerSettings remoteWorkerSettings) {
         this.planDocument = planDocument;
         this.efficientMode = efficientMode == null || efficientMode;
         this.trendEnabled = trendEnabled == null || trendEnabled;
         this.reportRealtimeEnabled = reportRealtimeEnabled != null && reportRealtimeEnabled;
+        this.remoteWorkerSettings = remoteWorkerSettings == null
+                ? PerformanceRemoteWorkerSettings.disabled()
+                : remoteWorkerSettings;
     }
 }

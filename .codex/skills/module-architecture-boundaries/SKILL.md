@@ -27,7 +27,7 @@ Read `docs/ARCHITECTURE_MODULES_zh.md` first when the task is about module place
 4. Put plugin loading mechanics in `easy-postman-plugin-runtime`.
    Examples: plugin scanning, descriptor parsing, classloaders, registry, lifecycle, disabled/uninstall state.
 
-5. Put performance domain core in `easy-postman-performance-core` and OkHttp transport implementation in `easy-postman-performance-runtime-okhttp`.
+5. Put performance domain core contracts in `easy-postman-performance-core`: editable plan data, executable `plan.json`, runtime contracts, stats/report snapshots, worker assignments, and asset references. Keep concrete GUI/headless execution adapters in `easy-postman-app` until the app execution semantics can be extracted without pulling in Swing, workspace services, or app-only state.
 
 6. Put host platform framework capabilities in `easy-postman-platform` when they can be separated from concrete app UI.
    Current examples: the custom IOC container under `com.laker.postman.ioc`, and update discovery core under `com.laker.postman.platform.update` (version comparison, update source selection, asset resolution, changelog fetching/formatting, update result models).

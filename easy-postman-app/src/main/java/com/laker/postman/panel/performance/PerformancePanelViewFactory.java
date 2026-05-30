@@ -1,8 +1,10 @@
 package com.laker.postman.panel.performance;
 
-
+import com.formdev.flatlaf.FlatClientProperties;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.MemoryLabel;
+import com.laker.postman.common.component.button.ExportButton;
+import com.laker.postman.common.component.button.HelpButton;
 import com.laker.postman.common.component.button.RefreshButton;
 import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
 import com.laker.postman.common.component.button.SegmentedToggleButton;
@@ -28,6 +30,8 @@ import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.plaf.basic.BasicTabbedPaneUI;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeSelectionModel;
@@ -183,7 +187,13 @@ final class PerformancePanelViewFactory {
         );
     }
 
-    ToolbarSection createToolbarSection(Runnable refreshRequestsAction) {
+    ToolbarSection createToolbarSection(Runnable exportRunPlanAction,
+                                        Runnable usageHelpAction,
+                                        Runnable refreshRequestsAction,
+                                        boolean remoteExecutionEnabled,
+                                        String workerEndpoints,
+                                        Consumer<Boolean> remoteExecutionEnabledAction,
+                                        Consumer<String> workerEndpointsAction) {
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()));
 
@@ -194,11 +204,44 @@ final class PerformancePanelViewFactory {
         btnPanel.add(runBtn);
         btnPanel.add(stopBtn);
 
+        ExportButton exportBtn = new ExportButton();
+        exportBtn.addActionListener(e -> exportRunPlanAction.run());
+        btnPanel.add(exportBtn);
+
         RefreshButton refreshBtn = new RefreshButton();
         refreshBtn.addActionListener(e -> refreshRequestsAction.run());
         btnPanel.add(refreshBtn);
 
+        HelpButton usageHelpBtn = new HelpButton();
+        usageHelpBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_USAGE_HELP_TOOLTIP));
+        usageHelpBtn.addActionListener(e -> usageHelpAction.run());
+        btnPanel.add(usageHelpBtn);
+
         topPanel.add(btnPanel, BorderLayout.WEST);
+
+        JPanel remotePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 3));
+        JCheckBox remoteModeCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_MODE));
+        remoteModeCheckBox.setSelected(remoteExecutionEnabled);
+        remoteModeCheckBox.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_MODE_TOOLTIP));
+        JTextField workerEndpointsField = new JTextField(workerEndpoints == null ? "" : workerEndpoints, 28);
+        workerEndpointsField.putClientProperty(
+                FlatClientProperties.PLACEHOLDER_TEXT,
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_WORKERS_PLACEHOLDER)
+        );
+        workerEndpointsField.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_WORKERS_TOOLTIP));
+        JLabel workersLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_WORKERS_LABEL));
+        workersLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        workersLabel.setForeground(ModernColors.getTextSecondary());
+        remoteModeCheckBox.addActionListener(e -> {
+            if (remoteExecutionEnabledAction != null) {
+                remoteExecutionEnabledAction.accept(remoteModeCheckBox.isSelected());
+            }
+        });
+        addWorkerEndpointsListener(workerEndpointsField, workerEndpointsAction);
+        remotePanel.add(remoteModeCheckBox);
+        remotePanel.add(workersLabel);
+        remotePanel.add(workerEndpointsField);
+        topPanel.add(remotePanel, BorderLayout.CENTER);
 
         JPanel progressPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 5));
         JLabel progressLabel = new JLabel("0/0");
@@ -211,7 +254,44 @@ final class PerformancePanelViewFactory {
         progressPanel.add(new MemoryLabel());
         topPanel.add(progressPanel, BorderLayout.EAST);
 
-        return new ToolbarSection(topPanel, runBtn, stopBtn, refreshBtn, progressLabel);
+        return new ToolbarSection(
+                topPanel,
+                runBtn,
+                stopBtn,
+                exportBtn,
+                refreshBtn,
+                usageHelpBtn,
+                remoteModeCheckBox,
+                workerEndpointsField,
+                progressLabel
+        );
+    }
+
+    private void addWorkerEndpointsListener(JTextField workerEndpointsField,
+                                            Consumer<String> workerEndpointsAction) {
+        if (workerEndpointsAction == null) {
+            return;
+        }
+        workerEndpointsField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                update();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                update();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                update();
+            }
+
+            private void update() {
+                workerEndpointsAction.accept(workerEndpointsField.getText());
+            }
+        });
     }
 
     private ResultToolbar createResultToolbar(JTabbedPane resultTabbedPane,
@@ -455,7 +535,11 @@ final class PerformancePanelViewFactory {
     record ToolbarSection(JPanel topPanel,
                           StartButton runBtn,
                           StopButton stopBtn,
+                          ExportButton exportBtn,
                           RefreshButton refreshBtn,
+                          HelpButton usageHelpBtn,
+                          JCheckBox remoteModeCheckBox,
+                          JTextField workerEndpointsField,
                           JLabel progressLabel) {
     }
 

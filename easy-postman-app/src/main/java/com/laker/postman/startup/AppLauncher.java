@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
+import java.util.OptionalInt;
 
 /**
  * 应用启动器：负责主入口之后的启动编排。
@@ -22,19 +23,29 @@ import javax.swing.SwingUtilities;
 @Slf4j
 @UtilityClass
 public class AppLauncher {
+    public static final int GUI_STARTED = Integer.MIN_VALUE;
 
-    public void launch() {
-        // 先完成 JVM 级别配置，再把 Swing 初始化切到 EDT，避免 UI 线程外创建组件。
-        configureRuntimeEnvironment();
-        registerShutdownHook();
-        SwingUtilities.invokeLater(AppLauncher::startSwingApplication);
+    public int launch() {
+        return launch(new String[0]);
     }
 
-    private void configureRuntimeEnvironment() {
-        // 这些配置必须早于主窗口创建：全局异常处理、系统代理、平台窗口装饰。
+    public int launch(String[] args) {
+        configureBaseRuntimeEnvironment();
+        registerShutdownHook();
+        OptionalInt commandExitCode = new AppCommandRouter().route(args, System.out, System.err);
+        if (commandExitCode.isPresent()) {
+            return commandExitCode.getAsInt();
+        }
+        // 先完成 Swing 平台配置，再把组件初始化切到 EDT，避免 UI 线程外创建组件。
+        configurePlatformWindowDecorations();
+        SwingUtilities.invokeLater(AppLauncher::startSwingApplication);
+        return GUI_STARTED;
+    }
+
+    private void configureBaseRuntimeEnvironment() {
+        // 这些配置对 GUI 和 headless CLI 都有效，且不应触发 Swing 初始化。
         Thread.setDefaultUncaughtExceptionHandler(new AppUncaughtExceptionHandler());
         System.setProperty("java.net.useSystemProxies", "true");
-        configurePlatformWindowDecorations();
     }
 
     private void configurePlatformWindowDecorations() {

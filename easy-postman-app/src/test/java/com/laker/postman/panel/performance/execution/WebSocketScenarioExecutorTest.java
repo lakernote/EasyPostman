@@ -73,6 +73,16 @@ public class WebSocketScenarioExecutorTest {
         assertFalse(source.contains("\"WebSocket target message count timeout\""));
     }
 
+    @Test
+    public void webSocketReadShouldNotPollEveryHundredMillisecondsWhileIdle() throws Exception {
+        String source = Files.readString(Path.of(
+                "src/main/java/com/laker/postman/panel/performance/execution/WebSocketScenarioExecutor.java"
+        ));
+
+        assertTrue(source.contains("READ_IDLE_CHECK_INTERVAL_MS"));
+        assertFalse(source.contains("Math.min(100, Math.max(1, deadline - now))"));
+    }
+
     private static final long SESSION_END_DELAY_MS = 220;
 
     @Test

@@ -5,9 +5,15 @@ import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
 import com.laker.postman.performance.core.model.PerformanceReportSnapshot;
 import com.laker.postman.performance.core.model.PerformanceStatsCollector;
 import com.laker.postman.performance.core.model.RequestResult;
+import com.laker.postman.performance.core.report.PerformanceJsonReport;
+import com.laker.postman.performance.core.report.PerformanceJsonReportApi;
+import com.laker.postman.performance.core.report.PerformanceJsonReportDuration;
+import com.laker.postman.performance.core.report.PerformanceJsonReportProtocol;
+import com.laker.postman.performance.core.report.PerformanceJsonReportStream;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.List;
 
 import static org.testng.Assert.assertEquals;
@@ -126,5 +132,86 @@ public class PerformanceProtocolReportDataTest {
         assertEquals(row.p90FirstMessageLatencyMs(), 910L);
         assertEquals(row.p95FirstMessageLatencyMs(), 955L);
         assertEquals(row.p99FirstMessageLatencyMs(), 991L);
+    }
+
+    @Test
+    public void shouldBuildRowsFromDistributedJsonReport() {
+        PerformanceJsonReport report = PerformanceJsonReport.builder()
+                .protocols(Map.of(
+                        "HTTP",
+                        PerformanceJsonReportProtocol.builder()
+                                .protocol("HTTP")
+                                .total(PerformanceJsonReportApi.builder()
+                                        .protocol("HTTP")
+                                        .total(5L)
+                                        .success(4L)
+                                        .samplesPerSecond(12.5)
+                                        .durationMs(PerformanceJsonReportDuration.builder()
+                                                .avg(30L)
+                                                .min(10L)
+                                                .max(90L)
+                                                .p90(70L)
+                                                .p95(80L)
+                                                .p99(90L)
+                                                .build())
+                                        .build())
+                                .apis(List.of(PerformanceJsonReportApi.builder()
+                                        .apiId("api-1")
+                                        .name("Remote API")
+                                        .protocol("HTTP")
+                                        .total(5L)
+                                        .success(4L)
+                                        .samplesPerSecond(12.5)
+                                        .durationMs(PerformanceJsonReportDuration.builder()
+                                                .avg(30L)
+                                                .min(10L)
+                                                .max(90L)
+                                                .p90(70L)
+                                                .p95(80L)
+                                                .p99(90L)
+                                                .build())
+                                        .build()))
+                                .build(),
+                        "WEBSOCKET",
+                        PerformanceJsonReportProtocol.builder()
+                                .protocol("WEBSOCKET")
+                                .total(PerformanceJsonReportApi.builder()
+                                        .protocol("WEBSOCKET")
+                                        .total(2L)
+                                        .success(2L)
+                                        .stream(PerformanceJsonReportStream.builder()
+                                                .sentMessages(3L)
+                                                .receivedMessages(4L)
+                                                .matchedMessages(1L)
+                                                .sendRate(1.5)
+                                                .receiveRate(2.5)
+                                                .matchedRate(0.5)
+                                                .build())
+                                        .firstMessageLatencyMs(PerformanceJsonReportDuration.builder()
+                                                .avg(45L)
+                                                .p90(60L)
+                                                .p95(70L)
+                                                .p99(80L)
+                                                .build())
+                                        .durationMs(PerformanceJsonReportDuration.builder()
+                                                .avg(500L)
+                                                .p95(900L)
+                                                .build())
+                                        .build())
+                                .apis(List.of())
+                                .build()
+                ))
+                .build();
+
+        PerformanceProtocolReportData reportData = PerformanceProtocolReportData.fromJsonReport(report, "Total");
+
+        assertEquals(reportData.httpRows().get(0).name(), "Remote API");
+        assertEquals(reportData.httpRows().get(0).total(), 5L);
+        assertEquals(reportData.httpRows().get(1).name(), "Total");
+        assertEquals(reportData.httpRows().get(1).qps(), 12.5);
+        assertEquals(reportData.webSocketRows().get(0).name(), "Total");
+        assertEquals(reportData.webSocketRows().get(0).sentMessages(), 3L);
+        assertEquals(reportData.webSocketRows().get(0).avgFirstMessageLatencyMs(), 45L);
+        assertEquals(reportData.webSocketRows().get(0).avgDurationMs(), 500L);
     }
 }

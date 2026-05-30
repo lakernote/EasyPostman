@@ -277,7 +277,7 @@ jdeps --print-module-deps target/easy-postman-{版本号}.jar
 
 # 创建自定义运行时
 jlink \
-  --add-modules java.base,java.desktop,java.logging,java.naming,java.net.http,java.sql,java.xml \
+  --add-modules java.base,java.desktop,java.logging,java.naming,java.net.http,jdk.httpserver,java.sql,java.xml \
   --output target/custom-runtime \
   --strip-debug \
   --compress 2 \

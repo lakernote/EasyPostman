@@ -8,6 +8,9 @@ import com.laker.postman.startup.AppLauncher;
 public final class App {
 
     public static void main(String[] args) {
-        AppLauncher.launch();
+        int exitCode = AppLauncher.launch(args);
+        if (exitCode != AppLauncher.GUI_STARTED) {
+            System.exit(exitCode);
+        }
     }
 }

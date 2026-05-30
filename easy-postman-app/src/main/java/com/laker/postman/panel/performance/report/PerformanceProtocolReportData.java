@@ -5,8 +5,10 @@ import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
 import com.laker.postman.performance.core.model.PerformanceReportSnapshot;
 import com.laker.postman.performance.core.model.PerformanceStatsSnapshot;
 import com.laker.postman.performance.core.model.RequestResult;
-
-
+import com.laker.postman.performance.core.report.PerformanceJsonReport;
+import com.laker.postman.performance.core.report.PerformanceJsonReportApi;
+import com.laker.postman.performance.core.report.PerformanceJsonReportDuration;
+import com.laker.postman.performance.core.report.PerformanceJsonReportProtocol;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -65,6 +67,17 @@ public final class PerformanceProtocolReportData {
         );
     }
 
+    public static PerformanceProtocolReportData fromJsonReport(PerformanceJsonReport report, String totalRowName) {
+        if (report == null || report.getProtocols() == null) {
+            return new PerformanceProtocolReportData(List.of(), List.of(), List.of());
+        }
+        return new PerformanceProtocolReportData(
+                buildHttpRows(reportProtocol(report, PerformanceProtocol.HTTP), totalRowName),
+                buildStreamRows(reportProtocol(report, PerformanceProtocol.WEBSOCKET), totalRowName),
+                buildStreamRows(reportProtocol(report, PerformanceProtocol.SSE), totalRowName)
+        );
+    }
+
     public List<HttpReportRow> httpRows() {
         return httpRows;
     }
@@ -105,6 +118,22 @@ public final class PerformanceProtocolReportData {
         return rows;
     }
 
+    private static List<HttpReportRow> buildHttpRows(PerformanceJsonReportProtocol protocolReport,
+                                                     String totalRowName) {
+        if (protocolReport == null) {
+            return List.of();
+        }
+        List<HttpReportRow> rows = new ArrayList<>();
+        for (PerformanceJsonReportApi api : safeApis(protocolReport)) {
+            rows.add(toHttpRow(api, null));
+        }
+        sortByName(rows);
+        if (protocolReport.getTotal() != null && protocolReport.getTotal().getTotal() > 0) {
+            rows.add(toHttpRow(protocolReport.getTotal(), totalRowName));
+        }
+        return rows;
+    }
+
     private static List<StreamReportRow> buildStreamRows(List<RequestResult> results,
                                                          PerformanceProtocol protocol,
                                                          String totalRowName) {
@@ -140,6 +169,22 @@ public final class PerformanceProtocolReportData {
             }
         }
         sortByName(rows);
+        return rows;
+    }
+
+    private static List<StreamReportRow> buildStreamRows(PerformanceJsonReportProtocol protocolReport,
+                                                         String totalRowName) {
+        if (protocolReport == null) {
+            return List.of();
+        }
+        List<StreamReportRow> rows = new ArrayList<>();
+        for (PerformanceJsonReportApi api : safeApis(protocolReport)) {
+            rows.add(toStreamRow(api, null));
+        }
+        sortByName(rows);
+        if (protocolReport.getTotal() != null && protocolReport.getTotal().getTotal() > 0) {
+            rows.add(toStreamRow(protocolReport.getTotal(), totalRowName));
+        }
         return rows;
     }
 
@@ -239,6 +284,20 @@ public final class PerformanceProtocolReportData {
         rows.sort(Comparator.comparing(NamedReportRow::name, String.CASE_INSENSITIVE_ORDER));
     }
 
+    private static PerformanceJsonReportProtocol reportProtocol(PerformanceJsonReport report,
+                                                                PerformanceProtocol protocol) {
+        if (report == null || report.getProtocols() == null || protocol == null) {
+            return null;
+        }
+        return report.getProtocols().get(protocol.name());
+    }
+
+    private static List<PerformanceJsonReportApi> safeApis(PerformanceJsonReportProtocol protocolReport) {
+        return protocolReport == null || protocolReport.getApis() == null
+                ? List.of()
+                : protocolReport.getApis();
+    }
+
     private static HttpReportRow toHttpRow(String name, List<RequestResult> results) {
         int total = results.size();
         int success = countSuccess(results);
@@ -276,6 +335,26 @@ public final class PerformanceProtocolReportData {
                 stats.p90(),
                 stats.p95(),
                 stats.p99()
+        );
+    }
+
+    private static HttpReportRow toHttpRow(PerformanceJsonReportApi api, String fallbackName) {
+        PerformanceJsonReportDuration duration = api.getDurationMs() == null
+                ? PerformanceJsonReportDuration.builder().build()
+                : api.getDurationMs();
+        return new HttpReportRow(
+                resolveApiName(api, fallbackName),
+                api.getTotal(),
+                api.getSuccess(),
+                api.getFailed(),
+                api.getSuccessRate(),
+                api.getSamplesPerSecond(),
+                duration.getAvg(),
+                duration.getMin(),
+                duration.getMax(),
+                duration.getP90(),
+                duration.getP95(),
+                duration.getP99()
         );
     }
 
@@ -351,6 +430,47 @@ public final class PerformanceProtocolReportData {
                 stats.avg(),
                 stats.p95()
         );
+    }
+
+    private static StreamReportRow toStreamRow(PerformanceJsonReportApi api, String fallbackName) {
+        PerformanceJsonReportDuration duration = api.getDurationMs() == null
+                ? PerformanceJsonReportDuration.builder().build()
+                : api.getDurationMs();
+        PerformanceJsonReportDuration firstLatency = api.getFirstMessageLatencyMs() == null
+                ? PerformanceJsonReportDuration.builder().build()
+                : api.getFirstMessageLatencyMs();
+        return new StreamReportRow(
+                resolveApiName(api, fallbackName),
+                api.getTotal(),
+                api.getSuccess(),
+                api.getFailed(),
+                api.getSuccessRate(),
+                api.getStream().getSentMessages(),
+                api.getStream().getReceivedMessages(),
+                api.getStream().getMatchedMessages(),
+                api.getStream().getSendRate(),
+                api.getStream().getReceiveRate(),
+                api.getStream().getMatchedRate(),
+                firstLatency.getAvg(),
+                firstLatency.getP90(),
+                firstLatency.getP95(),
+                firstLatency.getP99(),
+                duration.getAvg(),
+                duration.getP95()
+        );
+    }
+
+    private static String resolveApiName(PerformanceJsonReportApi api, String fallbackName) {
+        if (fallbackName != null && !fallbackName.isBlank()) {
+            return fallbackName;
+        }
+        if (api.getName() != null && !api.getName().isBlank()) {
+            return api.getName();
+        }
+        if (api.getApiId() != null && !api.getApiId().isBlank()) {
+            return api.getApiId();
+        }
+        return api.getProtocol();
     }
 
     private static StreamReportRow toLiveStreamRow(String name,

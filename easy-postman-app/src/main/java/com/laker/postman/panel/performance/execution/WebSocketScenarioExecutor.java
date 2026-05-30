@@ -38,6 +38,8 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 
 public class WebSocketScenarioExecutor {
+    private static final long READ_IDLE_CHECK_INTERVAL_MS = 1000;
+
     public static final class Result {
         public final HttpResponse response;
         public final String errorMsg;
@@ -550,7 +552,10 @@ public class WebSocketScenarioExecutor {
                                                 : I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_WS_READ_TIMEOUT));
                                         break;
                                     }
-                                    long waitMs = Math.min(100, Math.max(1, deadline - now));
+                                    long waitMs = Math.min(
+                                            READ_IDLE_CHECK_INTERVAL_MS,
+                                            Math.max(1, deadline - now)
+                                    );
                                     messageLock.wait(waitMs);
                                 }
                             }

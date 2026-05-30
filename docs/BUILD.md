@@ -251,7 +251,7 @@ jdeps --print-module-deps target/easy-postman-{version}.jar
 
 # Create custom runtime
 jlink \
-  --add-modules java.base,java.desktop,java.logging,java.naming,java.net.http,java.sql,java.xml \
+  --add-modules java.base,java.desktop,java.logging,java.naming,java.net.http,jdk.httpserver,java.sql,java.xml \
   --output target/custom-runtime \
   --strip-debug \
   --compress 2 \

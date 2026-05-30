@@ -35,6 +35,9 @@ public class PerformancePlanStorage {
             jsonRoot.set("efficientMode", safeConfiguration.isEfficientMode());
             jsonRoot.set("trendEnabled", safeConfiguration.isTrendEnabled());
             jsonRoot.set("reportRealtimeEnabled", safeConfiguration.isReportRealtimeEnabled());
+            PerformanceRemoteWorkerSettings remoteWorkerSettings = safeConfiguration.getRemoteWorkerSettings();
+            jsonRoot.set("remoteExecutionEnabled", remoteWorkerSettings.isEnabled());
+            jsonRoot.set("remoteWorkers", remoteWorkerSettings.getWorkerEndpoints());
             PerformancePlanDocument document = safeConfiguration.getPlanDocument();
             PerformanceCorePlanDocument coreDocument = PerformanceCorePlanAdapter.toCoreDocument(document);
             jsonRoot.set("tree", corePlanJsonStorage.toTreeMap(coreDocument == null ? null : coreDocument.getRoot()));
@@ -134,6 +137,10 @@ public class PerformancePlanStorage {
                 .efficientMode(jsonRoot.getBool("efficientMode", true))
                 .trendEnabled(jsonRoot.getBool("trendEnabled", true))
                 .reportRealtimeEnabled(jsonRoot.getBool("reportRealtimeEnabled", false))
+                .remoteWorkerSettings(PerformanceRemoteWorkerSettings.builder()
+                        .enabled(jsonRoot.getBool("remoteExecutionEnabled", false))
+                        .workerEndpoints(jsonRoot.getStr("remoteWorkers", ""))
+                        .build())
                 .build();
         return new DeserializedConfiguration(configuration, legacyRequestSnapshotsMigrated);
     }

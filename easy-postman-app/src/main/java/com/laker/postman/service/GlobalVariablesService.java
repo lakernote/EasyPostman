@@ -8,6 +8,7 @@ import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.model.Environment;
 import com.laker.postman.model.Variable;
 import com.laker.postman.service.variable.VariableProvider;
+import com.laker.postman.service.variable.RunScopedVariableContext;
 import com.laker.postman.service.variable.VariableType;
 import lombok.extern.slf4j.Slf4j;
 
@@ -44,7 +45,8 @@ public class GlobalVariablesService implements VariableProvider {
     }
 
     public synchronized Environment getGlobalVariables() {
-        return globalVariables;
+        Environment scopedGlobals = RunScopedVariableContext.currentGlobals();
+        return scopedGlobals == null ? globalVariables : scopedGlobals;
     }
 
     public synchronized String getDataFilePath() {
@@ -290,7 +292,7 @@ public class GlobalVariablesService implements VariableProvider {
         if (key == null || key.isBlank()) {
             return null;
         }
-        return globalVariables.get(key);
+        return getGlobalVariables().get(key);
     }
 
     @Override
@@ -300,7 +302,7 @@ public class GlobalVariablesService implements VariableProvider {
 
     @Override
     public synchronized Map<String, String> getAll() {
-        Map<String, String> variables = globalVariables.getVariables();
+        Map<String, String> variables = getGlobalVariables().getVariables();
         return variables.isEmpty() ? Collections.emptyMap() : variables;
     }
 

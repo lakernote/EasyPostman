@@ -13,6 +13,7 @@ public final class PerformanceThreadGroupPlan {
     private final ThreadGroupData threadGroupData;
     private final CsvDataSetData csvDataSetData;
     private final List<PerformancePlanElement> elements;
+    private final int virtualUserIndexOffset;
 
     public PerformanceThreadGroupPlan(String name,
                                       ThreadGroupData threadGroupData,
@@ -24,6 +25,14 @@ public final class PerformanceThreadGroupPlan {
                                       ThreadGroupData threadGroupData,
                                       CsvDataSetData csvDataSetData,
                                       List<PerformancePlanElement> elements) {
+        this(name, threadGroupData, csvDataSetData, elements, 0);
+    }
+
+    public PerformanceThreadGroupPlan(String name,
+                                      ThreadGroupData threadGroupData,
+                                      CsvDataSetData csvDataSetData,
+                                      List<PerformancePlanElement> elements,
+                                      int virtualUserIndexOffset) {
         this.name = name;
         this.threadGroupData = PerformancePlanCoreDataCopies.copyThreadGroupData(threadGroupData);
         if (this.threadGroupData != null) {
@@ -31,6 +40,7 @@ public final class PerformanceThreadGroupPlan {
         }
         this.csvDataSetData = PerformancePlanCoreDataCopies.copyCsvDataSetData(csvDataSetData);
         this.elements = Collections.unmodifiableList(new ArrayList<>(elements == null ? List.of() : elements));
+        this.virtualUserIndexOffset = Math.max(0, virtualUserIndexOffset);
     }
 
     public String getName() {
@@ -46,10 +56,14 @@ public final class PerformanceThreadGroupPlan {
     }
 
     public Map<String, String> csvRowForVirtualUser(int virtualUserIndex) {
-        return csvDataSetData == null ? null : csvDataSetData.rowForVirtualUser(virtualUserIndex);
+        return csvDataSetData == null ? null : csvDataSetData.rowForVirtualUser(virtualUserIndexOffset + virtualUserIndex);
     }
 
     public List<PerformancePlanElement> getElements() {
         return elements;
+    }
+
+    public int getVirtualUserIndexOffset() {
+        return virtualUserIndexOffset;
     }
 }

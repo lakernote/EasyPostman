@@ -11,7 +11,6 @@ easy-postman-parent
 ├── easy-postman-platform
 ├── easy-postman-ui
 ├── easy-postman-performance-core
-├── easy-postman-performance-runtime-okhttp
 ├── easy-postman-plugin-runtime
 ├── easy-postman-plugins/*
 └── easy-postman-app
@@ -33,9 +32,9 @@ easy-postman-parent
 
 `easy-postman-plugin-runtime` 只负责插件扫描、descriptor 解析、classloader、registry、生命周期和状态持久化。它不放具体业务插件能力。
 
-`easy-postman-performance-core` 放无 UI、无传输实现绑定的压测领域核心：计划、节点数据、运行时契约、线程组规划、统计、趋势、报告快照。
+`easy-postman-performance-core` 放无 UI、无传输实现绑定的压测领域核心：编辑态计划节点数据、运行态 `plan.json` 模型、运行时契约、线程组规划、统计、趋势、报告快照、worker assignment/asset reference 这类 GUI、CLI、worker 都要复用的契约。它不直接依赖 OkHttp、Swing、workspace 服务或 app 执行链。
 
-`easy-postman-performance-runtime-okhttp` 放 OkHttp/SSE/WebSocket 传输适配和可复用运行时实现。
+压测的具体执行适配当前留在 `easy-postman-app`：GUI 运行、headless CLI、worker server 先复用 app 内完整执行链，包含变量解析、环境/全局变量、脚本、断言、提取器、CSV inline/file asset、multipart 文件、证书和 HTTP/SSE/WebSocket 传输。后续只有在这些非 UI 语义能从 app 干净抽离后，才考虑新增独立 headless/runner 模块。
 
 `easy-postman-app` 是宿主组装层。它可以放主入口、MainFrame、菜单、具体 app 面板、具体启动 wiring、设置页、更新页、欢迎页、帮助页、app-only 服务，以及宿主侧插件访问适配 `com.laker.postman.plugin.host`。后续迁移平台能力时，从这里逐步迁到 `easy-postman-platform`。
 

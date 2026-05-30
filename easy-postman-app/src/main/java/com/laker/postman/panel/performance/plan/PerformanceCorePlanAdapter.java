@@ -13,7 +13,6 @@ import com.laker.postman.performance.core.plan.PerformanceTestPlan;
 import com.laker.postman.performance.core.plan.PerformanceThreadGroupPlan;
 import com.laker.postman.performance.core.plan.PerformanceTimerElement;
 
-
 import lombok.experimental.UtilityClass;
 
 import java.util.ArrayList;
@@ -81,11 +80,13 @@ public class PerformanceCorePlanAdapter {
         }
         List<PerformanceThreadGroupPlan> threadGroups = new ArrayList<>();
         for (PerformanceThreadGroupPlan group : corePlan.getThreadGroups()) {
+            // worker 分片后的虚拟用户 offset 必须保留下来，否则 CSV 行会从第 0 行重新分配。
             threadGroups.add(new PerformanceThreadGroupPlan(
                     group.getName(),
                     group.getThreadGroupData(),
                     group.getCsvDataSetData(),
-                    toAppElements(group.getElements())
+                    toAppElements(group.getElements()),
+                    group.getVirtualUserIndexOffset()
             ));
         }
         return new PerformanceTestPlan(threadGroups);

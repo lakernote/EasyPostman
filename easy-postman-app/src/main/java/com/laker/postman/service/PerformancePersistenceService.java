@@ -8,6 +8,7 @@ import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.performance.plan.PerformancePlanConfiguration;
 import com.laker.postman.panel.performance.plan.PerformancePlanDocument;
 import com.laker.postman.panel.performance.plan.PerformancePlanStorage;
+import com.laker.postman.panel.performance.plan.PerformanceRemoteWorkerSettings;
 import com.laker.postman.panel.performance.plan.PerformanceSwingTreePlanAdapter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -89,18 +90,41 @@ public class PerformancePersistenceService {
                      boolean efficientMode,
                      boolean trendEnabled,
                      boolean reportRealtimeEnabled) {
-        saveDocument(PerformanceSwingTreePlanAdapter.toDocument(rootNode), efficientMode, trendEnabled, reportRealtimeEnabled);
+        save(rootNode, efficientMode, trendEnabled, reportRealtimeEnabled, PerformanceRemoteWorkerSettings.disabled());
+    }
+
+    public void save(DefaultMutableTreeNode rootNode,
+                     boolean efficientMode,
+                     boolean trendEnabled,
+                     boolean reportRealtimeEnabled,
+                     PerformanceRemoteWorkerSettings remoteWorkerSettings) {
+        saveDocument(
+                PerformanceSwingTreePlanAdapter.toDocument(rootNode),
+                efficientMode,
+                trendEnabled,
+                reportRealtimeEnabled,
+                remoteWorkerSettings
+        );
     }
 
     private void saveDocument(PerformancePlanDocument document,
                               boolean efficientMode,
                               boolean trendEnabled,
                               boolean reportRealtimeEnabled) {
+        saveDocument(document, efficientMode, trendEnabled, reportRealtimeEnabled, PerformanceRemoteWorkerSettings.disabled());
+    }
+
+    private void saveDocument(PerformancePlanDocument document,
+                              boolean efficientMode,
+                              boolean trendEnabled,
+                              boolean reportRealtimeEnabled,
+                              PerformanceRemoteWorkerSettings remoteWorkerSettings) {
         saveConfiguration(PerformancePlanConfiguration.builder()
                 .planDocument(document)
                 .efficientMode(efficientMode)
                 .trendEnabled(trendEnabled)
                 .reportRealtimeEnabled(reportRealtimeEnabled)
+                .remoteWorkerSettings(remoteWorkerSettings)
                 .build());
     }
 
@@ -109,11 +133,22 @@ public class PerformancePersistenceService {
                               boolean efficientMode,
                               boolean trendEnabled,
                               boolean reportRealtimeEnabled) {
+        saveDocument(configPath, document, efficientMode, trendEnabled, reportRealtimeEnabled,
+                PerformanceRemoteWorkerSettings.disabled());
+    }
+
+    private void saveDocument(Path configPath,
+                              PerformancePlanDocument document,
+                              boolean efficientMode,
+                              boolean trendEnabled,
+                              boolean reportRealtimeEnabled,
+                              PerformanceRemoteWorkerSettings remoteWorkerSettings) {
         saveConfiguration(configPath, PerformancePlanConfiguration.builder()
                 .planDocument(document)
                 .efficientMode(efficientMode)
                 .trendEnabled(trendEnabled)
                 .reportRealtimeEnabled(reportRealtimeEnabled)
+                .remoteWorkerSettings(remoteWorkerSettings)
                 .build());
     }
 
@@ -159,10 +194,25 @@ public class PerformancePersistenceService {
                           boolean efficientMode,
                           boolean trendEnabled,
                           boolean reportRealtimeEnabled) {
+        saveAsync(rootNode, efficientMode, trendEnabled, reportRealtimeEnabled, PerformanceRemoteWorkerSettings.disabled());
+    }
+
+    public void saveAsync(DefaultMutableTreeNode rootNode,
+                          boolean efficientMode,
+                          boolean trendEnabled,
+                          boolean reportRealtimeEnabled,
+                          PerformanceRemoteWorkerSettings remoteWorkerSettings) {
         // 异步线程启动前先固定路径，防止用户切换 workspace 后把旧性能方案写到新 workspace。
         Path configPath = getConfigFilePath();
         PerformancePlanDocument document = PerformanceSwingTreePlanAdapter.toDocument(rootNode);
-        saveExecutor.execute(() -> saveDocument(configPath, document, efficientMode, trendEnabled, reportRealtimeEnabled));
+        saveExecutor.execute(() -> saveDocument(
+                configPath,
+                document,
+                efficientMode,
+                trendEnabled,
+                reportRealtimeEnabled,
+                remoteWorkerSettings
+        ));
     }
 
     /**

@@ -4,6 +4,7 @@ import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.performance.core.model.PerformanceReportSnapshot;
 import com.laker.postman.performance.core.model.PerformanceStatsSnapshot;
 import com.laker.postman.performance.core.model.RequestResult;
+import com.laker.postman.performance.core.report.PerformanceJsonReport;
 
 
 import com.laker.postman.common.component.button.ModernButtonFactory;
@@ -504,6 +505,10 @@ public class PerformanceReportPanel extends JPanel {
 
     public void updateReport(PerformanceReportSnapshot reportSnapshot) {
         updateReport(PerformanceProtocolReportData.fromReportSnapshot(reportSnapshot, totalRowName));
+    }
+
+    public void updateReport(PerformanceJsonReport jsonReport) {
+        updateReport(PerformanceProtocolReportData.fromJsonReport(jsonReport, totalRowName));
     }
 
     private void updateReport(PerformanceProtocolReportData reportData) {

@@ -7,6 +7,7 @@ import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.common.component.button.*;
 import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.functional.model.FunctionalCsvDataState;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.RequestSelectionDialogSupport;
@@ -860,7 +861,7 @@ public class FunctionalPanel extends UiSingletonPanel {
     private void loadSaved() {
         try {
             List<RunnerRowData> savedRows = persistenceService.load();
-            csvDataPanel.restoreState(persistenceService.loadCsvState());
+            csvDataPanel.restoreState(toCsvState(persistenceService.loadCsvState()));
             if (savedRows != null && !savedRows.isEmpty()) {
                 for (RunnerRowData row : savedRows) {
                     tableModel.addRow(row);
@@ -946,7 +947,7 @@ public class FunctionalPanel extends UiSingletonPanel {
             }
             autoSaveSupport.cancel();
             List<RunnerRowData> rows = tableModel.getAllRows();
-            persistenceService.save(rows, csvDataPanel != null ? csvDataPanel.exportState() : null);
+            persistenceService.save(rows, exportFunctionalCsvState());
         } catch (Exception e) {
             log.error("Failed to save config", e);
         }
@@ -963,10 +964,32 @@ public class FunctionalPanel extends UiSingletonPanel {
                 return;
             }
             List<RunnerRowData> rows = tableModel.getAllRows();
-            persistenceService.saveAsync(rows, csvDataPanel != null ? csvDataPanel.exportState() : null);
+            persistenceService.saveAsync(rows, exportFunctionalCsvState());
         } catch (Exception e) {
             log.error("Failed to schedule functional config save", e);
         }
+    }
+
+    private FunctionalCsvDataState exportFunctionalCsvState() {
+        if (csvDataPanel == null) {
+            return null;
+        }
+        CsvDataPanel.CsvState state = csvDataPanel.exportState();
+        return toFunctionalCsvDataState(state);
+    }
+
+    private static FunctionalCsvDataState toFunctionalCsvDataState(CsvDataPanel.CsvState state) {
+        if (state == null) {
+            return null;
+        }
+        return new FunctionalCsvDataState(state.getSourceName(), state.getHeaders(), state.getRows());
+    }
+
+    private static CsvDataPanel.CsvState toCsvState(FunctionalCsvDataState state) {
+        if (state == null) {
+            return null;
+        }
+        return new CsvDataPanel.CsvState(state.getSourceName(), state.getHeaders(), state.getRows());
     }
 
     /**

@@ -1,6 +1,6 @@
 package com.laker.postman.service;
 
-import com.laker.postman.common.component.CsvDataPanel;
+import com.laker.postman.functional.model.FunctionalCsvDataState;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.Workspace;
@@ -46,7 +46,7 @@ public class FunctionalPersistenceServiceTest {
         RunnerRowData row = new RunnerRowData(requestItem, new PreparedRequest());
         service.stubRequest(requestItem);
 
-        CsvDataPanel.CsvState csvState = new CsvDataPanel.CsvState(
+        FunctionalCsvDataState csvState = new FunctionalCsvDataState(
                 "workspace-users.csv",
                 List.of("username", "password"),
                 List.of(csvRow("username", "alice", "password", "secret"))
@@ -60,7 +60,7 @@ public class FunctionalPersistenceServiceTest {
         List<RunnerRowData> loadedRows = service.load();
         assertEquals(loadedRows.size(), 1);
         assertEquals(loadedRows.get(0).requestItem.getId(), "req-workspace");
-        CsvDataPanel.CsvState loadedCsvState = service.loadCsvState();
+        FunctionalCsvDataState loadedCsvState = service.loadCsvState();
         assertNotNull(loadedCsvState);
         assertEquals(loadedCsvState.getSourceName(), "workspace-users.csv");
         assertEquals(loadedCsvState.getHeaders(), List.of("username", "password"));
@@ -77,7 +77,7 @@ public class FunctionalPersistenceServiceTest {
         HttpRequestItem requestItem = requestItem("req-async", "async");
         RunnerRowData row = new RunnerRowData(requestItem, new PreparedRequest());
 
-        CsvDataPanel.CsvState csvState = new CsvDataPanel.CsvState(
+        FunctionalCsvDataState csvState = new FunctionalCsvDataState(
                 "async-users.csv",
                 List.of("username"),
                 List.of(csvRow("username", "bob"))
@@ -150,7 +150,7 @@ public class FunctionalPersistenceServiceTest {
         HttpRequestItem requestItem = requestItem("req-1", "login");
         RunnerRowData row = new RunnerRowData(requestItem, new PreparedRequest());
         row.selected = false;
-        CsvDataPanel.CsvState csvState = new CsvDataPanel.CsvState(
+        FunctionalCsvDataState csvState = new FunctionalCsvDataState(
                 "users.csv",
                 List.of("username", "password"),
                 List.of(csvRow("username", "alice", "password", "secret"))
@@ -160,7 +160,7 @@ public class FunctionalPersistenceServiceTest {
         service.save(List.of(row), csvState);
 
         List<RunnerRowData> loadedRows = service.load();
-        CsvDataPanel.CsvState loadedCsvState = service.loadCsvState();
+        FunctionalCsvDataState loadedCsvState = service.loadCsvState();
 
         assertEquals(loadedRows.size(), 1);
         assertEquals(loadedRows.get(0).requestItem.getId(), "req-1");
@@ -169,6 +169,30 @@ public class FunctionalPersistenceServiceTest {
         assertEquals(loadedCsvState.getSourceName(), "users.csv");
         assertEquals(loadedCsvState.getHeaders(), List.of("username", "password"));
         assertEquals(loadedCsvState.getRows().get(0).get("username"), "alice");
+    }
+
+    @Test(description = "Functional CSV 状态应在构造和读取时做防御性拷贝")
+    public void shouldDefensivelyCopyFunctionalCsvDataState() {
+        List<String> headers = new java.util.ArrayList<>(List.of("username"));
+        Map<String, String> originalRow = csvRow("username", "alice");
+        List<Map<String, String>> rows = new java.util.ArrayList<>(List.of(originalRow));
+
+        FunctionalCsvDataState state = new FunctionalCsvDataState("users.csv", headers, rows);
+        headers.add("password");
+        originalRow.put("username", "bob");
+        rows.add(csvRow("username", "carol"));
+
+        assertEquals(state.getHeaders(), List.of("username"));
+        assertEquals(state.getRows().size(), 1);
+        assertEquals(state.getRows().get(0).get("username"), "alice");
+
+        List<String> exportedHeaders = state.getHeaders();
+        List<Map<String, String>> exportedRows = state.getRows();
+        exportedHeaders.add("mutated");
+        exportedRows.get(0).put("username", "dave");
+
+        assertEquals(state.getHeaders(), List.of("username"));
+        assertEquals(state.getRows().get(0).get("username"), "alice");
     }
 
     @Test(description = "应通过已注册的 Collection 树根节点按 ID 查找请求")

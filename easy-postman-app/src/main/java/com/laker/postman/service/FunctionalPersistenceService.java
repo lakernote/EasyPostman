@@ -3,16 +3,16 @@ package com.laker.postman.service;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.laker.postman.common.component.CsvDataPanel;
+import com.laker.postman.common.constants.ConfigPathConstants;
+import com.laker.postman.functional.model.FunctionalCsvDataState;
 import com.laker.postman.ioc.Component;
 import com.laker.postman.ioc.PostConstruct;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.model.Workspace;
 import com.laker.postman.model.RunnerRowData;
+import com.laker.postman.model.Workspace;
 import com.laker.postman.service.collections.ActiveCollectionTreeNodeRepository;
 import com.laker.postman.service.http.PreparedRequestBuilder;
-import com.laker.postman.common.constants.ConfigPathConstants;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -23,7 +23,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 功能测试配置持久化服务
@@ -66,11 +68,11 @@ public class FunctionalPersistenceService {
     /**
      * 保存功能测试配置
      */
-    public void save(List<RunnerRowData> rows, CsvDataPanel.CsvState csvState) {
+    public void save(List<RunnerRowData> rows, FunctionalCsvDataState csvState) {
         save(getConfigFilePath(), rows, csvState);
     }
 
-    private void save(Path configPath, List<RunnerRowData> rows, CsvDataPanel.CsvState csvState) {
+    private void save(Path configPath, List<RunnerRowData> rows, FunctionalCsvDataState csvState) {
         try {
             ensureDirExists(configPath);
             JSONObject root = new JSONObject();
@@ -100,7 +102,7 @@ public class FunctionalPersistenceService {
     /**
      * 异步保存配置
      */
-    public void saveAsync(List<RunnerRowData> rows, CsvDataPanel.CsvState csvState) {
+    public void saveAsync(List<RunnerRowData> rows, FunctionalCsvDataState csvState) {
         // 异步线程启动前先固定路径，防止用户切换 workspace 后把旧数据写到新 workspace。
         Path configPath = getConfigFilePath();
         Thread saveThread = new Thread(() -> save(configPath, rows, csvState), "functional-config-save");
@@ -155,7 +157,7 @@ public class FunctionalPersistenceService {
         return rows;
     }
 
-    public CsvDataPanel.CsvState loadCsvState() {
+    public FunctionalCsvDataState loadCsvState() {
         Path configPath = getConfigFilePath();
         File file = configPath.toFile();
 
@@ -281,7 +283,7 @@ public class FunctionalPersistenceService {
         return rows;
     }
 
-    private JSONObject serializeCsvState(CsvDataPanel.CsvState csvState) {
+    private JSONObject serializeCsvState(FunctionalCsvDataState csvState) {
         JSONObject json = new JSONObject();
         json.set("sourceName", csvState.getSourceName());
 
@@ -292,10 +294,10 @@ public class FunctionalPersistenceService {
         json.set("headers", headers);
 
         JSONArray rows = new JSONArray();
-        for (java.util.Map<String, String> row : csvState.getRows()) {
+        for (Map<String, String> row : csvState.getRows()) {
             JSONObject rowJson = new JSONObject();
             if (row != null) {
-                for (java.util.Map.Entry<String, String> entry : row.entrySet()) {
+                for (Map.Entry<String, String> entry : row.entrySet()) {
                     rowJson.set(entry.getKey(), entry.getValue());
                 }
             }
@@ -305,7 +307,7 @@ public class FunctionalPersistenceService {
         return json;
     }
 
-    private CsvDataPanel.CsvState deserializeCsvState(JSONObject json) {
+    private FunctionalCsvDataState deserializeCsvState(JSONObject json) {
         if (json == null) {
             return null;
         }
@@ -321,10 +323,10 @@ public class FunctionalPersistenceService {
             headers.add(headersJson.getStr(i));
         }
 
-        List<java.util.Map<String, String>> rows = new ArrayList<>();
+        List<Map<String, String>> rows = new ArrayList<>();
         for (int i = 0; i < rowsJson.size(); i++) {
             JSONObject rowJson = rowsJson.getJSONObject(i);
-            java.util.Map<String, String> row = new java.util.LinkedHashMap<>();
+            Map<String, String> row = new LinkedHashMap<>();
             if (rowJson != null) {
                 for (String header : headers) {
                     row.put(header, rowJson.getStr(header, ""));
@@ -333,7 +335,7 @@ public class FunctionalPersistenceService {
             rows.add(row);
         }
 
-        return new CsvDataPanel.CsvState(json.getStr("sourceName"), headers, rows);
+        return new FunctionalCsvDataState(json.getStr("sourceName"), headers, rows);
     }
 
     protected Path getConfigFilePath() {

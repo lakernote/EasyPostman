@@ -2,6 +2,7 @@ package com.laker.postman.panel.functional;
 
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.component.CsvDataPanel;
+import com.laker.postman.functional.model.FunctionalCsvDataState;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.panel.functional.table.FunctionalRunnerTableModel;
@@ -16,12 +17,15 @@ import javax.swing.event.TableModelEvent;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 public class FunctionalPanelSaveTest {
@@ -74,6 +78,34 @@ public class FunctionalPanelSaveTest {
         assertEquals(row.preparedRequest.url, "https://new.example.com");
     }
 
+    @Test(description = "FunctionalPanel 保存时应将 UI CSV 快照转换为功能持久化状态")
+    public void shouldSaveFunctionalCsvDataStateFromCsvPanelSnapshot() throws Exception {
+        FunctionalPanel panel = newPanelWithoutInit();
+        FunctionalRunnerTableModel tableModel = new FunctionalRunnerTableModel();
+        JTable table = new JTable(tableModel);
+        CsvDataPanel csvDataPanel = new CsvDataPanel();
+        RecordingFunctionalPersistenceService persistenceService = new RecordingFunctionalPersistenceService();
+
+        SwingUtilities.invokeAndWait(() -> csvDataPanel.restoreState(new CsvDataPanel.CsvState(
+                "users.csv",
+                List.of("username"),
+                List.of(Map.of("username", "alice"))
+        )));
+
+        setField(panel, "tableModel", tableModel);
+        setField(panel, "table", table);
+        setField(panel, "csvDataPanel", csvDataPanel);
+        setField(panel, "persistenceService", persistenceService);
+
+        SwingUtilities.invokeAndWait(panel::save);
+
+        FunctionalCsvDataState savedState = persistenceService.lastCsvState.get();
+        assertNotNull(savedState);
+        assertEquals(savedState.getSourceName(), "users.csv");
+        assertEquals(savedState.getHeaders(), List.of("username"));
+        assertEquals(savedState.getRows().get(0).get("username"), "alice");
+    }
+
     private static FunctionalPanel newPanelWithoutInit() throws Exception {
         UiSingletonPanel.setFactoryCreationAllowed(true);
         try {
@@ -116,14 +148,16 @@ public class FunctionalPanelSaveTest {
     private static final class RecordingFunctionalPersistenceService extends FunctionalPersistenceService {
         private final AtomicInteger syncSaveCount = new AtomicInteger();
         private final CountDownLatch asyncSaveLatch = new CountDownLatch(1);
+        private final AtomicReference<FunctionalCsvDataState> lastCsvState = new AtomicReference<>();
 
         @Override
-        public void save(List<RunnerRowData> rows, CsvDataPanel.CsvState csvState) {
+        public void save(List<RunnerRowData> rows, FunctionalCsvDataState csvState) {
             syncSaveCount.incrementAndGet();
+            lastCsvState.set(csvState);
         }
 
         @Override
-        public void saveAsync(List<RunnerRowData> rows, CsvDataPanel.CsvState csvState) {
+        public void saveAsync(List<RunnerRowData> rows, FunctionalCsvDataState csvState) {
             asyncSaveLatch.countDown();
         }
     }

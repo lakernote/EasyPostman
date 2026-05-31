@@ -1,6 +1,6 @@
 package com.laker.postman.panel.performance;
 
-import com.laker.postman.panel.performance.model.PerformanceTreeNode;
+import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.model.NodeType;
 import org.testng.annotations.Test;
 

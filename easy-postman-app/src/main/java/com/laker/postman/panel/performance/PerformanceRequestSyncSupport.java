@@ -2,7 +2,7 @@ package com.laker.postman.panel.performance;
 
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.panel.performance.model.PerformanceTreeNode;
+import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.service.http.PreparedRequestBuilder;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;

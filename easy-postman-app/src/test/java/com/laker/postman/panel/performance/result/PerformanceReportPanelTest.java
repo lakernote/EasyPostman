@@ -3,7 +3,7 @@ package com.laker.postman.panel.performance.result;
 import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
 import com.laker.postman.common.component.button.SegmentedToggleButton;
 import com.laker.postman.performance.core.model.PerformanceProtocol;
-import com.laker.postman.panel.performance.model.PerformanceProtocolLabels;
+import com.laker.postman.performance.model.PerformanceProtocolLabels;
 import com.laker.postman.performance.core.model.RequestResult;
 import com.laker.postman.test.AbstractSwingUiTest;
 import com.laker.postman.util.I18nUtil;

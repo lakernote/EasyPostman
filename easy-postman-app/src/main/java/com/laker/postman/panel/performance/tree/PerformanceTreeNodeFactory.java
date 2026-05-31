@@ -8,7 +8,7 @@ import com.laker.postman.performance.core.model.WebSocketPerformanceData;
 
 
 import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.panel.performance.model.PerformanceTreeNode;
+import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.experimental.UtilityClass;

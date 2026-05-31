@@ -1,10 +1,11 @@
 package com.laker.postman.panel.performance.result;
 
 
-import com.laker.postman.panel.performance.model.PerformanceResultListener;
-import com.laker.postman.panel.performance.model.PerformanceResultRetentionPolicy;
-import com.laker.postman.panel.performance.model.PerformanceSampleEvent;
-import com.laker.postman.panel.performance.model.PerformanceSampleResult;
+import com.laker.postman.performance.model.PerformanceResultListener;
+import com.laker.postman.performance.model.PerformanceResultRetentionPolicy;
+import com.laker.postman.performance.model.PerformanceSampleEvent;
+import com.laker.postman.performance.model.PerformanceSampleResult;
+import com.laker.postman.performance.result.PerformanceResultDisplayMapper;
 import lombok.RequiredArgsConstructor;
 
 import java.util.function.IntSupplier;

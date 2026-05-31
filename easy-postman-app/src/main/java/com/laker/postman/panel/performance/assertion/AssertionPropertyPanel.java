@@ -5,7 +5,7 @@ import com.laker.postman.performance.core.assertion.AssertionType;
 
 
 import com.formdev.flatlaf.FlatClientProperties;
-import com.laker.postman.panel.performance.model.PerformanceTreeNode;
+import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;

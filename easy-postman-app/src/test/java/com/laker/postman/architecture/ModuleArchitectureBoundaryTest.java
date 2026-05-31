@@ -310,12 +310,13 @@ public class ModuleArchitectureBoundaryTest {
                         + existingRetiredPackages);
 
         Path performanceSource = root.resolve("easy-postman-app/src/main/java/com/laker/postman/performance");
+        String retiredPanelPerformanceImportPrefix = "import com.laker.postman.panel.performance.";
         List<String> violations = sourcePackageViolations(performanceSource, List.of(
-                "import com.laker.postman.panel.performance.execution.",
-                "import com.laker.postman.panel.performance.runtime.",
-                "import com.laker.postman.panel.performance.model.",
-                "import com.laker.postman.panel.performance.plan.",
-                "import com.laker.postman.panel.performance.report."
+                retiredPanelPerformanceImportPrefix + "execution.",
+                retiredPanelPerformanceImportPrefix + "runtime.",
+                retiredPanelPerformanceImportPrefix + "model.",
+                retiredPanelPerformanceImportPrefix + "plan.",
+                retiredPanelPerformanceImportPrefix + "report."
         ));
 
         assertTrue(violations.isEmpty(),

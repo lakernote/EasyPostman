@@ -3,7 +3,7 @@ package com.laker.postman.panel.performance.config;
 import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.panel.performance.model.PerformanceTreeNode;
+import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.panel.performance.tree.PerformanceTreeNodeTitleFormatter;
 import com.laker.postman.performance.core.config.CsvDataSetData;
 import com.laker.postman.util.FontsUtil;

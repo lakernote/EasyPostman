@@ -2,9 +2,9 @@ package com.laker.postman.service.render;
 
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.*;
-import com.laker.postman.panel.performance.model.PerformanceInternalHeaders;
+import com.laker.postman.performance.model.PerformanceInternalHeaders;
 import com.laker.postman.model.TestResult;
-import com.laker.postman.panel.performance.model.ResultNodeInfo;
+import com.laker.postman.performance.model.ResultNodeInfo;
 import com.laker.postman.service.setting.SettingManager;
 import lombok.experimental.UtilityClass;
 

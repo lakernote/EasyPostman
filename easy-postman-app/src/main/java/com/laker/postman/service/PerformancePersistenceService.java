@@ -5,12 +5,12 @@ import com.laker.postman.ioc.Component;
 import com.laker.postman.ioc.PostConstruct;
 import com.laker.postman.ioc.PreDestroy;
 import com.laker.postman.model.Workspace;
-import com.laker.postman.panel.performance.plan.PerformancePlanConfiguration;
-import com.laker.postman.panel.performance.plan.PerformancePlanDocument;
-import com.laker.postman.panel.performance.plan.PerformancePlanStorage;
-import com.laker.postman.panel.performance.plan.PerformancePlanWorkspace;
-import com.laker.postman.panel.performance.plan.PerformanceRemoteWorkerSettings;
-import com.laker.postman.panel.performance.plan.PerformanceSwingTreePlanAdapter;
+import com.laker.postman.performance.plan.PerformancePlanConfiguration;
+import com.laker.postman.performance.plan.PerformancePlanDocument;
+import com.laker.postman.performance.plan.PerformancePlanStorage;
+import com.laker.postman.performance.plan.PerformancePlanWorkspace;
+import com.laker.postman.performance.plan.PerformanceRemoteWorkerSettings;
+import com.laker.postman.panel.performance.tree.PerformanceSwingTreePlanAdapter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.tree.DefaultMutableTreeNode;

@@ -4,7 +4,7 @@ import com.laker.postman.performance.core.timer.TimerData;
 
 
 import com.laker.postman.common.component.EasyJSpinner;
-import com.laker.postman.panel.performance.model.PerformanceTreeNode;
+import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;

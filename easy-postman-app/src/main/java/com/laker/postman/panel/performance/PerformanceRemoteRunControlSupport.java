@@ -3,7 +3,7 @@ package com.laker.postman.panel.performance;
 import com.laker.postman.panel.performance.control.PerformanceRunUiController;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
-import com.laker.postman.panel.performance.result.PerformanceWorkerResultDetailDisplayMapper;
+import com.laker.postman.performance.result.PerformanceWorkerResultDetailDisplayMapper;
 import com.laker.postman.panel.performance.result.PerformanceTrendView;
 import com.laker.postman.performance.core.model.PerformanceTrendSnapshot;
 import com.laker.postman.performance.core.report.PerformanceJsonReport;

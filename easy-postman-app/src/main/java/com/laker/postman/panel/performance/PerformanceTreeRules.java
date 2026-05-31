@@ -5,8 +5,8 @@ import com.laker.postman.performance.core.model.NodeType;
 
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.panel.performance.model.PerformanceTreeNode;
-import com.laker.postman.panel.performance.model.PerformanceProtocolRules;
+import com.laker.postman.performance.model.PerformanceTreeNode;
+import com.laker.postman.performance.model.PerformanceProtocolRules;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 

@@ -13,7 +13,7 @@ import com.laker.postman.performance.core.timer.TimerData;
 
 
 import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.panel.performance.model.PerformanceTreeNode;
+import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.service.variable.RequestExecutionScope;
 import com.laker.postman.util.JsonUtil;
 import lombok.experimental.UtilityClass;

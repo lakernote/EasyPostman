@@ -5,7 +5,7 @@ import com.laker.postman.performance.core.extractor.ExtractorType;
 
 
 import com.formdev.flatlaf.FlatClientProperties;
-import com.laker.postman.panel.performance.model.PerformanceTreeNode;
+import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.panel.performance.tree.PerformanceTreeNodeTitleFormatter;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;

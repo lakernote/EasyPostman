@@ -5,7 +5,7 @@ import com.laker.postman.performance.core.model.NodeType;
 
 import com.laker.postman.panel.performance.PerformanceTreeRules;
 import com.laker.postman.panel.performance.PerformanceTreeSnapshot;
-import com.laker.postman.panel.performance.model.PerformanceTreeNode;
+import com.laker.postman.performance.model.PerformanceTreeNode;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 

@@ -7,7 +7,7 @@ import com.laker.postman.performance.core.model.PerformanceTrendSnapshot;
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
 import com.laker.postman.common.component.button.SegmentedToggleButton;
-import com.laker.postman.panel.performance.model.PerformanceProtocolLabels;
+import com.laker.postman.performance.model.PerformanceProtocolLabels;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;

@@ -4,7 +4,7 @@ package com.laker.postman.panel.performance.component;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.panel.performance.model.PerformanceTreeNode;
+import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.IconUtil;

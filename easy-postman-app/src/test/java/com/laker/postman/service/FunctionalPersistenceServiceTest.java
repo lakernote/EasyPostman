@@ -171,6 +171,24 @@ public class FunctionalPersistenceServiceTest {
         assertEquals(loadedCsvState.getRows().get(0).get("username"), "alice");
     }
 
+    @Test(description = "应兼容加载旧 JSON 中的 Functional CSV 状态")
+    public void shouldLoadCsvStateFromLegacyJsonFixture() throws IOException {
+        Path tempDir = Files.createTempDirectory("functional-legacy-csv-state");
+        Path configPath = tempDir.resolve("functional_config.json");
+        Files.writeString(configPath, """
+                {"version":"1.0","rows":[],"csvState":{"sourceName":"users.csv","headers":["username"],"rows":[{"username":"alice"}]}}
+                """);
+        TestableFunctionalPersistenceService service = new TestableFunctionalPersistenceService(configPath);
+
+        FunctionalCsvDataState loadedCsvState = service.loadCsvState();
+
+        assertNotNull(loadedCsvState);
+        assertEquals(loadedCsvState.getSourceName(), "users.csv");
+        assertEquals(loadedCsvState.getHeaders(), List.of("username"));
+        assertEquals(loadedCsvState.getRows().size(), 1);
+        assertEquals(loadedCsvState.getRows().get(0).get("username"), "alice");
+    }
+
     @Test(description = "Functional CSV 状态应在构造和读取时做防御性拷贝")
     public void shouldDefensivelyCopyFunctionalCsvDataState() {
         List<String> headers = new java.util.ArrayList<>(List.of("username"));

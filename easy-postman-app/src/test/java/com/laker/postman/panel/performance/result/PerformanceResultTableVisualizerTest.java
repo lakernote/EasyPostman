@@ -12,6 +12,7 @@ import com.laker.postman.performance.result.PerformanceResultCollector;
 import com.laker.postman.test.AbstractSwingUiTest;
 import org.testng.annotations.Test;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 
 import static org.testng.Assert.assertEquals;
@@ -24,6 +25,7 @@ public class PerformanceResultTableVisualizerTest extends AbstractSwingUiTest {
         RecordingResultTablePanel tablePanel = new RecordingResultTablePanel();
         try {
             HttpResponse response = new HttpResponse();
+            response.headers = new LinkedHashMap<>();
             response.code = 101;
             response.costMs = 2500;
             response.endTime = 3500;

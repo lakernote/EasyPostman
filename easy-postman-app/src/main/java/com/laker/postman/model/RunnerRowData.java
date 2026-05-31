@@ -1,6 +1,6 @@
 package com.laker.postman.model;
 
-import com.laker.postman.model.script.TestResult;
+import com.laker.postman.model.TestResult;
 
 import java.util.List;
 

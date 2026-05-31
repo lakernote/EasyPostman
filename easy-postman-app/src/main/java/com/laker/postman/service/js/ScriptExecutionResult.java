@@ -1,6 +1,6 @@
 package com.laker.postman.service.js;
 
-import com.laker.postman.model.script.TestResult;
+import com.laker.postman.model.TestResult;
 import lombok.Builder;
 import lombok.Getter;
 

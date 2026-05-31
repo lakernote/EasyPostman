@@ -1,4 +1,4 @@
-package com.laker.postman.service.variable;
+package com.laker.postman.variable;
 
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;

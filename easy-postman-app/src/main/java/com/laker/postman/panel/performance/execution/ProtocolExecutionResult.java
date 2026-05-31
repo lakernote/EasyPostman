@@ -2,7 +2,7 @@ package com.laker.postman.panel.performance.execution;
 
 
 import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.script.TestResult;
+import com.laker.postman.model.TestResult;
 
 import java.util.List;
 

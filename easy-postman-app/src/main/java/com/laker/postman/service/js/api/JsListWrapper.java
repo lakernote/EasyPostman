@@ -1,4 +1,4 @@
-package com.laker.postman.model.script;
+package com.laker.postman.service.js.api;
 
 import com.laker.postman.model.HttpFormData;
 import com.laker.postman.model.HttpFormUrlencoded;

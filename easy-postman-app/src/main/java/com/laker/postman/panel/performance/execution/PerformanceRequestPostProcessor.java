@@ -5,7 +5,7 @@ import com.laker.postman.performance.core.plan.PerformanceExtractorElement;
 
 
 import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.script.TestResult;
+import com.laker.postman.model.TestResult;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.service.js.ScriptExecutionResult;
 import lombok.RequiredArgsConstructor;

@@ -1,5 +1,6 @@
-package com.laker.postman.model.script;
+package com.laker.postman.service.js.api;
 
+import com.laker.postman.model.TestResult;
 import lombok.extern.slf4j.Slf4j;
 import org.graalvm.polyglot.Value;
 
@@ -132,4 +133,3 @@ public class TestApi {
         return (int) context.testResults.stream().filter(t -> !t.passed).count();
     }
 }
-

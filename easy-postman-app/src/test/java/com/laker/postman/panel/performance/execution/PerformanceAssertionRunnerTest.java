@@ -1,7 +1,7 @@
 package com.laker.postman.panel.performance.execution;
 
 import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.script.TestResult;
+import com.laker.postman.model.TestResult;
 import com.laker.postman.performance.core.assertion.AssertionData;
 import com.laker.postman.panel.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.model.NodeType;

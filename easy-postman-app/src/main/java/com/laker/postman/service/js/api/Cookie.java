@@ -1,4 +1,4 @@
-package com.laker.postman.model.script;
+package com.laker.postman.service.js.api;
 
 /**
  * Cookie 数据对象

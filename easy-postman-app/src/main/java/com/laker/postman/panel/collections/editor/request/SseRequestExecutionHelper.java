@@ -3,7 +3,7 @@ package com.laker.postman.panel.collections.editor.request;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.MessageType;
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.model.script.TestResult;
+import com.laker.postman.model.TestResult;
 import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;
 import com.laker.postman.service.http.HttpSingleRequestExecutor;
 import com.laker.postman.service.http.NetworkErrorMessageResolver;

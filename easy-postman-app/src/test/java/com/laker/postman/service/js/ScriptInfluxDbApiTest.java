@@ -1,8 +1,8 @@
 package com.laker.postman.service.js;
 
 import com.laker.postman.model.Environment;
-import com.laker.postman.model.script.PostmanApiContext;
-import com.laker.postman.model.script.ScriptInfluxDbApi;
+import com.laker.postman.service.js.api.PostmanApiContext;
+import com.laker.postman.service.js.api.ScriptInfluxDbApi;
 import okhttp3.*;
 import okio.Buffer;
 import org.graalvm.polyglot.Context;

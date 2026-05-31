@@ -1,4 +1,4 @@
-package com.laker.postman.model.script;
+package com.laker.postman.service.js.api;
 
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;

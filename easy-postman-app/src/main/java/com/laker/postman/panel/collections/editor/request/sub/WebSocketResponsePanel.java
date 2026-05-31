@@ -9,7 +9,7 @@ import com.laker.postman.common.component.button.ClearButton;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.MessageType;
 import com.laker.postman.panel.collections.editor.request.StreamMessageUiMetadata;
-import com.laker.postman.model.script.TestResult;
+import com.laker.postman.model.TestResult;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.JsonUtil;

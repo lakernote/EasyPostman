@@ -5,7 +5,7 @@ import com.laker.postman.model.Environment;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.model.script.PostmanApiContext;
+import com.laker.postman.service.js.api.PostmanApiContext;
 import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.http.PreparedRequestBuilder;

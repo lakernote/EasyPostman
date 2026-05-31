@@ -2,6 +2,7 @@ package com.laker.postman.service.variable;
 
 import com.laker.postman.model.Environment;
 import com.laker.postman.service.EnvironmentService;
+import com.laker.postman.variable.VariableType;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collections;

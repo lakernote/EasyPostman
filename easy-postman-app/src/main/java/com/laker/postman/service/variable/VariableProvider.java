@@ -1,5 +1,7 @@
 package com.laker.postman.service.variable;
 
+import com.laker.postman.variable.VariableType;
+
 import java.util.Map;
 
 /**

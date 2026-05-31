@@ -1,4 +1,4 @@
-package com.laker.postman.model.script;
+package com.laker.postman.service.js.api;
 
 import lombok.extern.slf4j.Slf4j;
 import org.graalvm.polyglot.Value;

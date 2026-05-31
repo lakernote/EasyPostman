@@ -1,4 +1,4 @@
-package com.laker.postman.model.script;
+package com.laker.postman.service.js.api;
 
 import com.laker.postman.model.*;
 import com.laker.postman.plugin.host.PluginAccess;

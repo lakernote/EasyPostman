@@ -2,8 +2,8 @@ package com.laker.postman.service.http.okhttp;
 
 import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.service.http.NetworkLogEventStage;
-import com.laker.postman.service.http.NetworkLogSink;
+import com.laker.postman.http.trace.NetworkLogEventStage;
+import com.laker.postman.http.trace.NetworkLogSink;
 import com.laker.postman.service.http.NetworkErrorMessageResolver;
 import com.laker.postman.service.http.ssl.CertificateCapturingSSLSocketFactory;
 import com.laker.postman.service.http.ssl.SSLCertificateValidator;

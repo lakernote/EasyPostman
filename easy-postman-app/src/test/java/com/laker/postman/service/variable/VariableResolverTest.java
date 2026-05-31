@@ -1,9 +1,10 @@
 package com.laker.postman.service.variable;
 
-import com.laker.postman.model.script.ScriptVariablesApi;
+import com.laker.postman.service.js.api.ScriptVariablesApi;
 import com.laker.postman.model.Environment;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.GlobalVariablesService;
+import com.laker.postman.variable.VariableType;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;

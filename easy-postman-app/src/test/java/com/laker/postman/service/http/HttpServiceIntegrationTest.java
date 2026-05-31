@@ -8,6 +8,8 @@ import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.TransportAuth;
+import com.laker.postman.http.trace.NetworkLogEvent;
+import com.laker.postman.http.trace.NetworkLogEventStage;
 import com.laker.postman.service.http.okhttp.OkHttpClientManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;

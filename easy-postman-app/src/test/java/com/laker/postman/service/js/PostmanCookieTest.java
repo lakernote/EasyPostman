@@ -2,8 +2,8 @@ package com.laker.postman.service.js;
 
 import com.laker.postman.model.Environment;
 import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.script.Cookie;
-import com.laker.postman.model.script.PostmanApiContext;
+import com.laker.postman.service.js.api.Cookie;
+import com.laker.postman.service.js.api.PostmanApiContext;
 import org.graalvm.polyglot.Context;
 import org.testng.annotations.Test;
 

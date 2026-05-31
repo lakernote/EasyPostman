@@ -17,7 +17,7 @@ import com.laker.postman.service.variable.IterationDataVariableService;
 import com.laker.postman.service.variable.RequestContext;
 import com.laker.postman.service.variable.RequestExecutionScope;
 import com.laker.postman.service.variable.VariablesService;
-import com.laker.postman.service.variable.VariableType;
+import com.laker.postman.variable.VariableType;
 import com.laker.postman.service.variable.VariableResolver;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;

@@ -1,4 +1,4 @@
-package com.laker.postman.service.http;
+package com.laker.postman.http.trace;
 
 /**
  * HTTP 执行层产出的网络日志阶段。

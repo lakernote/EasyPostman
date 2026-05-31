@@ -9,7 +9,7 @@ import com.laker.postman.model.Environment;
 import com.laker.postman.model.Variable;
 import com.laker.postman.service.variable.VariableProvider;
 import com.laker.postman.service.variable.RunScopedVariableContext;
-import com.laker.postman.service.variable.VariableType;
+import com.laker.postman.variable.VariableType;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;

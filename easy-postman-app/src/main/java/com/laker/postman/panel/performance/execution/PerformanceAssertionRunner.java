@@ -10,7 +10,7 @@ import com.laker.postman.performance.core.plan.PerformanceProtocolStageElement;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.script.TestResult;
+import com.laker.postman.model.TestResult;
 import com.laker.postman.panel.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.service.variable.VariableResolver;
 import com.laker.postman.util.I18nUtil;

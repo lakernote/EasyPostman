@@ -1,7 +1,7 @@
 package com.laker.postman.panel.performance.model;
 
 import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.script.TestResult;
+import com.laker.postman.model.TestResult;
 import org.testng.annotations.Test;
 
 import java.util.List;

@@ -243,8 +243,7 @@ public class ModuleArchitectureBoundaryTest {
     @Test
     public void modelPackageDoesNotDependOnServiceLayer() throws IOException {
         Path modelSource = repositoryRoot().resolve("easy-postman-app/src/main/java/com/laker/postman/model");
-        List<String> violations = directJavaSourceFiles(modelSource).stream()
-                .filter(file -> !knownPendingModelServiceBoundaryFiles().contains(file.getFileName().toString()))
+        List<String> violations = javaSourceFiles(modelSource).stream()
                 .flatMap(file -> sourceContainsViolations(file, List.of("com.laker.postman.service.")).stream())
                 .toList();
 
@@ -573,24 +572,6 @@ public class ModuleArchitectureBoundaryTest {
                     .filter(path -> path.getFileName().toString().endsWith(".java"))
                     .toList();
         }
-    }
-
-    private static List<Path> directJavaSourceFiles(Path root) throws IOException {
-        if (!Files.isDirectory(root)) {
-            return List.of();
-        }
-        try (Stream<Path> files = Files.list(root)) {
-            return files
-                    .filter(path -> path.getFileName().toString().endsWith(".java"))
-                    .toList();
-        }
-    }
-
-    private static Set<String> knownPendingModelServiceBoundaryFiles() {
-        return Set.of(
-                "PreparedRequest.java",
-                "VariableInfo.java"
-        );
     }
 
     private static List<String> sourceContainsViolations(Path file, List<String> forbiddenPatterns) {

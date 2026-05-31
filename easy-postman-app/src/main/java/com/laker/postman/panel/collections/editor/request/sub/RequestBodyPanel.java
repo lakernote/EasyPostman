@@ -12,7 +12,7 @@ import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.VariableInfo;
 import com.laker.postman.model.VariableSegment;
 import com.laker.postman.service.variable.VariableResolver;
-import com.laker.postman.service.variable.VariableType;
+import com.laker.postman.variable.VariableType;
 import com.laker.postman.util.*;
 import lombok.Getter;
 import lombok.Setter;

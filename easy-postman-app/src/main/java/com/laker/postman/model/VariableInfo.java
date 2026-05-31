@@ -1,6 +1,6 @@
 package com.laker.postman.model;
 
-import com.laker.postman.service.variable.VariableType;
+import com.laker.postman.variable.VariableType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 

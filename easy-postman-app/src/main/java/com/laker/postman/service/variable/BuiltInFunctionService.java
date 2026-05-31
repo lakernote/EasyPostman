@@ -1,6 +1,7 @@
 package com.laker.postman.service.variable;
 
 import com.laker.postman.util.I18nUtil;
+import com.laker.postman.variable.VariableType;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 

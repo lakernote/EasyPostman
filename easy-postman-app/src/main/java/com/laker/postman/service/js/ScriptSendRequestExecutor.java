@@ -5,7 +5,7 @@ import com.laker.postman.model.HttpFormUrlencoded;
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.model.script.ResponseAssertion;
+import com.laker.postman.service.js.api.ResponseAssertion;
 import com.laker.postman.service.http.HttpService;
 import com.laker.postman.service.http.RequestFinalizer;
 import org.graalvm.polyglot.Value;

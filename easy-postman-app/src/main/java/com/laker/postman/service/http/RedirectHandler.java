@@ -4,6 +4,8 @@ import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RedirectInfo;
+import com.laker.postman.http.trace.NetworkLogEventStage;
+import com.laker.postman.http.trace.NetworkLogSink;
 import com.laker.postman.service.http.sse.SseResEventListener;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;

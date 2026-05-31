@@ -224,6 +224,78 @@ public class ModuleArchitectureBoundaryTest {
     }
 
     @Test
+    public void appModelPackageStaysHeadless() throws IOException {
+        Path modelSource = repositoryRoot().resolve("easy-postman-app/src/main/java/com/laker/postman/model");
+        List<String> violations = sourcePackageViolations(modelSource, List.of(
+                "javax.swing",
+                "java.awt",
+                "com.formdev",
+                "org.fife",
+                "UiSingletonFactory",
+                "IconUtil",
+                "com.laker.postman.panel."
+        ));
+
+        assertTrue(violations.isEmpty(),
+                "App model package must stay headless and must not depend on Swing/editor/UI panel types: " + violations);
+    }
+
+    @Test
+    public void serviceLayerDoesNotDependOnSwingPanels() throws IOException {
+        Path serviceSource = repositoryRoot().resolve("easy-postman-app/src/main/java/com/laker/postman/service");
+        List<String> violations = sourcePackageViolations(serviceSource, List.of(
+                "com.laker.postman.common.component.CsvDataPanel",
+                "CsvDataPanel.CsvState"
+        ));
+
+        assertTrue(violations.isEmpty(),
+                "App service layer must not depend on concrete Swing panels or panel-owned DTOs: " + violations);
+    }
+
+    @Test
+    public void pluginApiDoesNotExposeEditorImplementationTypes() throws IOException {
+        Path pluginApiSource = repositoryRoot().resolve("easy-postman-plugin-api/src/main/java");
+        List<String> violations = sourcePackageViolations(pluginApiSource, List.of(
+                "org.fife.ui.autocomplete"
+        ));
+
+        assertTrue(violations.isEmpty(),
+                "Plugin API must not expose concrete editor implementation types: " + violations);
+    }
+
+    @Test
+    public void performanceHeadlessPackagesStayOutOfPanelNamespace() throws IOException {
+        Path root = repositoryRoot();
+        List<Path> retiredHeadlessPanelPackages = List.of(
+                root.resolve("easy-postman-app/src/main/java/com/laker/postman/panel/performance/execution"),
+                root.resolve("easy-postman-app/src/main/java/com/laker/postman/panel/performance/runtime"),
+                root.resolve("easy-postman-app/src/main/java/com/laker/postman/panel/performance/model"),
+                root.resolve("easy-postman-app/src/main/java/com/laker/postman/panel/performance/plan"),
+                root.resolve("easy-postman-app/src/main/java/com/laker/postman/panel/performance/report")
+        );
+        List<Path> existingRetiredPackages = retiredHeadlessPanelPackages.stream()
+                .filter(Files::exists)
+                .toList();
+
+        assertTrue(existingRetiredPackages.isEmpty(),
+                "Headless performance execution/runtime/model/plan/report packages must move out of panel namespace: "
+                        + existingRetiredPackages);
+
+        Path performanceSource = root.resolve("easy-postman-app/src/main/java/com/laker/postman/performance");
+        List<String> violations = sourcePackageViolations(performanceSource, List.of(
+                "import com.laker.postman.panel.performance.execution.",
+                "import com.laker.postman.panel.performance.runtime.",
+                "import com.laker.postman.panel.performance.model.",
+                "import com.laker.postman.panel.performance.plan.",
+                "import com.laker.postman.panel.performance.report."
+        ));
+
+        assertTrue(violations.isEmpty(),
+                "Headless performance packages must not import retired panel.performance implementation packages: "
+                        + violations);
+    }
+
+    @Test
     public void appPluginRuntimeAccessorsUseHostPackageName() {
         Path root = repositoryRoot();
         assertTrue(Files.isRegularFile(root.resolve("easy-postman-app/src/main/java/com/laker/postman/plugin/host/PluginAccess.java")));
@@ -472,6 +544,27 @@ public class ModuleArchitectureBoundaryTest {
                     .filter(path -> path.getFileName().toString().endsWith(".java"))
                     .toList();
         }
+    }
+
+    private static List<String> sourceContainsViolations(Path file, List<String> forbiddenPatterns) {
+        try {
+            String source = Files.readString(file);
+            return forbiddenPatterns.stream()
+                    .filter(source::contains)
+                    .map(pattern -> file + " contains " + pattern)
+                    .toList();
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to read " + file, e);
+        }
+    }
+
+    private static List<String> sourcePackageViolations(Path sourceRoot, List<String> forbiddenPatterns) throws IOException {
+        if (!Files.isDirectory(sourceRoot)) {
+            return List.of();
+        }
+        return javaSourceFiles(sourceRoot).stream()
+                .flatMap(file -> sourceContainsViolations(file, forbiddenPatterns).stream())
+                .toList();
     }
 
     private static List<String> uiImportViolations(Path file) {

@@ -3,7 +3,7 @@ package com.laker.postman.panel.topmenu.setting;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.NotificationPosition;
-import com.laker.postman.model.SidebarTab;
+import com.laker.postman.panel.sidebar.SidebarTab;
 import com.laker.postman.panel.sidebar.SidebarTabPanel;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FontManager;

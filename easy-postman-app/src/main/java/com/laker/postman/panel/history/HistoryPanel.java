@@ -15,7 +15,7 @@ import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestHistoryItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.model.SidebarTab;
+import com.laker.postman.panel.sidebar.SidebarTab;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.panel.collections.editor.request.sub.RequestBodyPanel;

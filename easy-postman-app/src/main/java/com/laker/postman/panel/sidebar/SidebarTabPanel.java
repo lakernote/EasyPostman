@@ -4,7 +4,6 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.model.SidebarTab;
 import com.laker.postman.model.TabInfo;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;

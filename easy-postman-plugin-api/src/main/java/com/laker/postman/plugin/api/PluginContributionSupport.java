@@ -67,10 +67,10 @@ public final class PluginContributionSupport {
         }
     }
 
-    public static void addShorthand\u0043ompletion(ScriptCompletionSink sink,
-                                              String inputText,
-                                              String replacementText,
-                                              String shortDescription) {
+    public static void addSnippetCompletion(ScriptCompletionSink sink,
+                                            String inputText,
+                                            String replacementText,
+                                            String shortDescription) {
         if (sink == null || inputText == null || inputText.isBlank()) {
             return;
         }

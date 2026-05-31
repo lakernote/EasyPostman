@@ -34,7 +34,7 @@ public class RedisPlugin implements EasyPostmanPlugin {
                     "execute",
                     "query"
             );
-            PluginContributionSupport.addShorthandCompletion(
+            PluginContributionSupport.addSnippetCompletion(
                     sink,
                     "redis.get",
                     """

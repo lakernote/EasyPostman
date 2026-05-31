@@ -52,10 +52,10 @@ public class PluginContributionSupportTest {
     }
 
     @Test
-    public void shouldAddNeutralShorthandCompletion() {
+    public void shouldAddNeutralSnippetCompletion() {
         CollectingSink sink = new CollectingSink();
 
-        PluginContributionSupport.addShorthandCompletion(
+        PluginContributionSupport.addSnippetCompletion(
                 sink,
                 "redis.get",
                 "pm.plugin(\"redis\").execute({});",
@@ -77,7 +77,7 @@ public class PluginContributionSupportTest {
         sink.basic("", "blank");
         sink.shorthand(" ", "replacement", "blank");
         PluginContributionSupport.addScriptApiCompletions(sink, " ", "Blank alias", "method");
-        PluginContributionSupport.addShorthandCompletion(sink, null, "replacement", "null input");
+        PluginContributionSupport.addSnippetCompletion(sink, null, "replacement", "null input");
 
         assertTrue(sink.items().isEmpty());
     }

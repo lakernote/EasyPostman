@@ -5,6 +5,7 @@ import com.laker.postman.plugin.api.ScriptCompletionKind;
 import com.laker.postman.plugin.host.PluginAccess;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import lombok.extern.slf4j.Slf4j;
 import lombok.experimental.UtilityClass;
 import org.fife.ui.autocomplete.BasicCompletion;
 import org.fife.ui.autocomplete.CompletionProvider;
@@ -29,6 +30,7 @@ import javax.swing.text.JTextComponent;
  *
  */
 @UtilityClass
+@Slf4j
 public class ScriptSnippetManager {
 
     /**
@@ -142,7 +144,11 @@ public class ScriptSnippetManager {
         for (var contributor : PluginAccess.getScriptCompletionContributors()) {
             // 内建补全先注册，插件补全后追加。
             // 这样宿主负责“基础语言 + 核心 pm”，插件只补自己的增量能力。
-            contributor.contribute(item -> addPluginCompletion(provider, item));
+            try {
+                contributor.contribute(item -> addPluginCompletion(provider, item));
+            } catch (Throwable t) {
+                log.warn("Plugin script completion contributor failed. Skipping contributor.", t);
+            }
         }
     }
 
@@ -159,10 +165,7 @@ public class ScriptSnippetManager {
             ));
             return;
         }
-        String replacementText = item.replacementText() == null || item.replacementText().isBlank()
-                ? item.inputText()
-                : item.replacementText();
-        provider.addCompletion(new BasicCompletion(provider, replacementText, item.shortDescription()));
+        provider.addCompletion(new BasicCompletion(provider, item.inputText(), item.shortDescription()));
     }
 
     // ========================================

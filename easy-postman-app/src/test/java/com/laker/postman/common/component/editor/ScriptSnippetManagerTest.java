@@ -1,5 +1,7 @@
 package com.laker.postman.common.component.editor;
 
+import com.laker.postman.plugin.api.ScriptCompletionItem;
+import com.laker.postman.plugin.api.ScriptCompletionKind;
 import com.laker.postman.plugin.runtime.PluginRuntime;
 import org.fife.ui.autocomplete.BasicCompletion;
 import org.fife.ui.autocomplete.Completion;
@@ -13,6 +15,7 @@ import java.util.List;
 
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 public class ScriptSnippetManagerTest {
@@ -66,8 +69,39 @@ public class ScriptSnippetManagerTest {
         assertTrue("pm.neutral.run();".equals(shorthand.getReplacementText()));
     }
 
+    @Test(description = "BASIC 中立补全应使用 inputText 作为 provider 输入")
+    public void shouldUseInputTextForDirectBasicCompletionItems() {
+        PluginRuntime.getRegistry().registerScriptCompletionContributor(sink ->
+                sink.add(new ScriptCompletionItem(
+                        ScriptCompletionKind.BASIC,
+                        "pm.direct.basic",
+                        "pm.direct.replacement",
+                        "Direct basic completion"
+                )));
+
+        DefaultCompletionProvider provider =
+                (DefaultCompletionProvider) ScriptSnippetManager.createCompletionProvider();
+
+        assertNotNull(findCompletion(provider, "pm.direct.basic"));
+        assertNull(findCompletion(provider, "pm.direct.replacement"));
+    }
+
+    @Test(description = "单个插件补全贡献异常不应阻断后续插件补全")
+    public void shouldContinueAfterPluginCompletionContributorThrows() {
+        PluginRuntime.getRegistry().registerScriptCompletionContributor(sink -> {
+            throw new IllegalStateException("broken contributor");
+        });
+        PluginRuntime.getRegistry().registerScriptCompletionContributor(sink ->
+                sink.basic("pm.after.failure", "Contributor after failure"));
+
+        DefaultCompletionProvider provider =
+                (DefaultCompletionProvider) ScriptSnippetManager.createCompletionProvider();
+
+        assertNotNull(findCompletion(provider, "pm.after.failure"));
+    }
+
     private static Completion findCompletion(DefaultCompletionProvider provider, String inputText) {
         List<Completion> completions = provider.getCompletionByInputText(inputText);
-        return completions.isEmpty() ? null : completions.get(0);
+        return completions == null || completions.isEmpty() ? null : completions.get(0);
     }
 }

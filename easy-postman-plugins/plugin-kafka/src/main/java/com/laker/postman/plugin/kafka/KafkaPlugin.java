@@ -32,7 +32,7 @@ public class KafkaPlugin implements EasyPostmanPlugin {
                     "send",
                     "poll"
             );
-            PluginContributionSupport.addShorthandCompletion(
+            PluginContributionSupport.addSnippetCompletion(
                     sink,
                     "kafka.poll",
                     """

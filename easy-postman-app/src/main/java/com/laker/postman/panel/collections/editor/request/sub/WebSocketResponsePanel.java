@@ -8,6 +8,7 @@ import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.button.ClearButton;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.MessageType;
+import com.laker.postman.panel.collections.editor.request.StreamMessageUiMetadata;
 import com.laker.postman.model.script.TestResult;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.I18nUtil;
@@ -257,13 +258,13 @@ public class WebSocketResponsePanel extends JPanel {
         }
         List<MessageRow> filtered = rowsCopy.stream()
                 .filter(row -> (I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_ALL).equals(typeFilter)
-                        || row.type.display.equals(typeFilter)))
+                        || StreamMessageUiMetadata.display(row.type).equals(typeFilter)))
                 .filter(row -> search.isEmpty() || row.content.toLowerCase().contains(search))
                 .toList();
         tableModel.setRowCount(0);
         for (MessageRow row : filtered) {
             Icon summaryIcon = getSummaryIcon(row.testResults);
-            tableModel.addRow(new Object[]{row.type.icon, row.time, row.content, summaryIcon});
+            tableModel.addRow(new Object[]{StreamMessageUiMetadata.icon(row.type), row.time, row.content, summaryIcon});
         }
         // 始终滚动到底部（如果有行）
         if (tableModel.getRowCount() > 0) {

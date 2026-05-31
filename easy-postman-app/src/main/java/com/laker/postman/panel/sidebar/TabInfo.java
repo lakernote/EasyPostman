@@ -1,4 +1,4 @@
-package com.laker.postman.model;
+package com.laker.postman.panel.sidebar;
 
 import javax.swing.*;
 import java.util.function.Supplier;

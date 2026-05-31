@@ -39,7 +39,7 @@ final class RequestStreamUiHelper {
                 .append('[')
                 .append(currentTimestamp())
                 .append("] ")
-                .append(type.display)
+                .append(StreamMessageUiMetadata.display(type))
                 .append(": ")
                 .append(normalizedText)
                 .append('\n');

@@ -5,9 +5,10 @@ import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
+import com.laker.postman.panel.collections.editor.request.RequestProtocolUiMetadata;
+import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.service.setting.ShortcutManager;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -135,7 +136,7 @@ public class ClosableTabComponent extends JPanel {
     }
 
     private static Icon resolveIcon(RequestItemProtocolEnum protocol, boolean isRoot) {
-        if (protocol != null) return protocol.getIcon();
+        if (protocol != null) return RequestProtocolUiMetadata.iconFor(protocol);
         return new FlatSVGIcon(isRoot ? "icons/collection.svg" : "icons/group.svg", 18, 18);
     }
 

@@ -8,6 +8,7 @@ import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.button.ClearButton;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.MessageType;
+import com.laker.postman.panel.collections.editor.request.StreamMessageUiMetadata;
 import com.laker.postman.model.script.TestResult;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.I18nUtil;
@@ -254,7 +255,7 @@ public class SSEResponsePanel extends JPanel {
         String typeFilter = (String) typeFilterBox.getSelectedItem();
         List<MessageRow> filtered = allRows.stream()
                 .filter(row -> I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_ALL).equals(typeFilter)
-                        || row.messageType.display.equals(typeFilter))
+                        || StreamMessageUiMetadata.display(row.messageType).equals(typeFilter))
                 .filter(row -> search.isEmpty()
                         || safeLower(row.content).contains(search)
                         || safeLower(row.eventId).contains(search)
@@ -266,7 +267,7 @@ public class SSEResponsePanel extends JPanel {
         tableModel.setRowCount(0);
         for (MessageRow row : filtered) {
             tableModel.addRow(new Object[]{
-                    row.messageType.icon,
+                    StreamMessageUiMetadata.icon(row.messageType),
                     row.time,
                     blankToDash(row.eventId),
                     blankToDash(row.eventType),
@@ -393,7 +394,7 @@ public class SSEResponsePanel extends JPanel {
 
     private String buildDetailContent(MessageRow row) {
         String none = I18nUtil.getMessage(MessageKeys.SSE_VALUE_NONE);
-        return I18nUtil.getMessage(MessageKeys.SSE_DETAIL_TYPE) + ": " + row.messageType.display + "\n"
+        return I18nUtil.getMessage(MessageKeys.SSE_DETAIL_TYPE) + ": " + StreamMessageUiMetadata.display(row.messageType) + "\n"
                 + I18nUtil.getMessage(MessageKeys.SSE_DETAIL_TIME) + ": " + blankToDash(row.time) + "\n"
                 + I18nUtil.getMessage(MessageKeys.SSE_DETAIL_EVENT_ID) + ": " + blankToDash(row.eventId) + "\n"
                 + I18nUtil.getMessage(MessageKeys.SSE_DETAIL_EVENT_TYPE) + ": " + blankToDash(row.eventType) + "\n"

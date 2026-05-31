@@ -21,8 +21,8 @@ public class RequestStreamUiHelperTest {
         helper.appendWebSocketRawEvent(bodyBuilder, MessageType.RECEIVED, "{\"ok\":true}");
         helper.finalizeWebSocketResponse(response, bodyBuilder, startTime);
 
-        assertTrue(response.body.contains("CONNECTED") || response.body.contains(MessageType.CONNECTED.display));
-        assertTrue(response.body.contains("RECEIVED") || response.body.contains(MessageType.RECEIVED.display));
+        assertTrue(response.body.contains("CONNECTED") || response.body.contains(StreamMessageUiMetadata.display(MessageType.CONNECTED)));
+        assertTrue(response.body.contains("RECEIVED") || response.body.contains(StreamMessageUiMetadata.display(MessageType.RECEIVED)));
         assertTrue(response.bodySize > 0);
         assertTrue(response.endTime > 0);
         assertTrue(response.costMs >= 0);

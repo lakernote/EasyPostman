@@ -1,25 +1,18 @@
 package com.laker.postman.model;
 
-
-import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.util.IconUtil;
 import lombok.Getter;
-
-import javax.swing.*;
 
 @Getter
 public enum RequestItemProtocolEnum {
-    HTTP("HTTP", new FlatSVGIcon("icons/http.svg", 24, 24)),
-    WEBSOCKET("WebSocket", new FlatSVGIcon("icons/websocket.svg", 24, 24)),
-    SSE("SSE", new FlatSVGIcon("icons/sse.svg", 24, 24)),
-    SAVED_RESPONSE("SavedResponse", IconUtil.createThemed("icons/save-response.svg", 24, 24));
+    HTTP("HTTP"),
+    WEBSOCKET("WebSocket"),
+    SSE("SSE"),
+    SAVED_RESPONSE("SavedResponse");
 
     private final String protocol;
-    private final Icon icon;
 
-    RequestItemProtocolEnum(String protocol, Icon icon) {
+    RequestItemProtocolEnum(String protocol) {
         this.protocol = protocol;
-        this.icon = icon;
     }
 
     public boolean isWebSocketProtocol() {

@@ -28,9 +28,9 @@ easy-postman-parent
 
 资源归属按唯一 owner 管理：`easy-postman-ui/src/main/resources/icons` 放通用控件/动作/状态图标，例如 save、copy、paste、search、clear、cancel、close、delete、duplicate、eye、info、warning、arrow、chevron、wrap、start、stop、send、connect、collapse、expand、more、detail、import、export；`easy-postman-app/src/main/resources/icons` 只放宿主业务、品牌、协议、工作区、压测、集合树等 app 专属图标；插件入口图标放插件自己的 `src/main/resources/icons`。两个模块不要保留同路径同名资源，避免 classpath 资源遮蔽和图标版本漂移。官方插件若引用 `icons/*.svg`，该图标必须来自插件自身或 `easy-postman-ui`，不能依赖 app resources。
 
-其他资源也按 owner 管理：`easy-postman-app/src/main/resources/js-libs` 是宿主脚本运行时内置库，`logback.xml` 是宿主运行配置，`plugin-manager/src/main/resources/plugin-catalog` 是插件市场兜底目录，插件 descriptor 和插件专属 icon/message bundle 跟随插件模块。
+其他资源也按 owner 管理：`easy-postman-app/src/main/resources/js-libs` 是宿主脚本运行时内置库，`logback.xml` 是宿主运行配置，`easy-postman-plugins/plugin-manager/src/main/resources/plugin-catalog` 是宿主侧插件市场兜底目录，普通插件 descriptor 和插件专属 icon/message bundle 跟随各自插件模块。
 
-`easy-postman-plugin-runtime` 只负责插件扫描、descriptor 解析、classloader、registry、生命周期和状态持久化。它不放具体业务插件能力。
+`easy-postman-plugin-runtime` 只负责插件扫描、descriptor 解析、classloader、registry、生命周期和状态持久化。它不放具体业务插件能力，也不负责 catalog 解析、下载或安装 UI。
 
 `easy-postman-performance-core` 放无 UI、无传输实现绑定的压测领域核心：编辑态计划节点数据、运行态 `plan.json` 模型、运行时契约、线程组规划、统计、趋势、报告快照、worker assignment/asset reference 这类 GUI、CLI、worker 都要复用的契约。它不直接依赖 OkHttp、Swing、workspace 服务或 app 执行链。
 
@@ -38,7 +38,9 @@ easy-postman-parent
 
 `easy-postman-app` 是宿主组装层。它可以放主入口、MainFrame、菜单、具体 app 面板、具体启动 wiring、设置页、更新页、欢迎页、帮助页、app-only 服务，以及宿主侧插件访问适配 `com.laker.postman.plugin.host`。后续迁移平台能力时，从这里逐步迁到 `easy-postman-platform`。
 
-`easy-postman-plugins/*` 是官方插件。插件不得反向依赖宿主 app 内部实现；需要扩展宿主时通过 `easy-postman-plugin-api` 注册能力，需要共享基础 DTO/工具时依赖 `easy-postman-foundation`，需要统一 Swing 风格时依赖 `easy-postman-ui`。
+`easy-postman-plugins/*` 通常是官方插件 JAR。普通插件不得反向依赖宿主 app 内部实现；需要扩展宿主时通过 `easy-postman-plugin-api` 注册能力，需要共享基础 DTO/工具时依赖 `easy-postman-foundation`，需要统一 Swing 风格时依赖 `easy-postman-ui`。
+
+`easy-postman-plugins/plugin-manager` 是这个目录下的 ownership 特例：它是宿主 app 直接依赖的 host-side plugin management helper / official plugin catalog installer facade，负责 catalog 解析、在线/离线安装门面和安装来源记录，不是由 `easy-postman-plugin-runtime` 当作普通运行时插件扫描加载的插件模板。它继续放在 `easy-postman-plugins` 聚合目录下，是历史路径和发布组织选择；新的宿主侧 plugin-management library 不应默认继续放到 `easy-postman-plugins/*`，后续可以把这类代码迁到更清晰的模块名或目录。依赖方向上，普通插件仍不得依赖 `easy-postman-app`，但宿主 app 可以依赖 `plugin-manager` 这个特例。
 
 ## 国际化、字体、主题放置
 
@@ -69,7 +71,7 @@ easy-postman-parent
 
 - 不要把 Swing 组件放进 `foundation`。
 - 不要把插件服务接口放进 `foundation`。
-- 不要让官方插件依赖 `easy-postman-app`。
+- 不要让普通官方插件依赖 `easy-postman-app`；`easy-postman-plugins/plugin-manager` 是宿主 app 可直接依赖的插件管理特例，不能作为新插件模板。
 - 不要让公共 UI 组件依赖 app resources 才能加载自身 icons。
 - 不要在 app 和 ui 中重复放同名 `icons/*.svg`；通用图标归 `easy-postman-ui`，业务图标归使用方模块。
 - 不要在 app 面板里新增一套私有按钮/颜色/字体规则，优先沉淀到 `easy-postman-ui`。

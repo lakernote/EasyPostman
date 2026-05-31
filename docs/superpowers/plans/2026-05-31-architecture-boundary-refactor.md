@@ -326,22 +326,22 @@ git commit -m "refactor: move headless performance code out of panel package"
 
 ## Task 8: Document plugin-manager Ownership Exception
 
-- [ ] Update `docs/ARCHITECTURE_MODULES_zh.md`:
+- [x] Update `docs/ARCHITECTURE_MODULES_zh.md`:
   - State that `easy-postman-plugins/plugin-manager` is a host plugin-management library packaged under the official plugin aggregation directory for release/build convenience.
   - State it is not loaded as an ordinary runtime plugin by end users.
-- [ ] Update `docs/PLUGINS_zh.md` with the same ownership note if the plugin manager catalog/install flow is described there.
+- [x] Update `docs/PLUGIN_RUNTIME_ARCHITECTURE_zh.md` and `docs/PLUGINS_zh.md` with the same ownership note where runtime and catalog/install flows are described.
 - [ ] Add a short note to `AGENTS.md` only if the local module instructions need to be changed for future agents.
-- [ ] Run docs consistency guard:
+- [x] Run lightweight docs guard requested for this task:
 
 ```bash
-mvn -q -pl easy-postman-app -am -Dtest=ModuleArchitectureBoundaryTest -Dsurefire.failIfNoSpecifiedTests=false test
+git diff --check
 ```
 
 - [ ] Commit:
 
 ```bash
-git add docs/ARCHITECTURE_MODULES_zh.md docs/PLUGINS_zh.md AGENTS.md
-git commit -m "docs: clarify plugin manager ownership"
+git add docs/ARCHITECTURE_MODULES_zh.md docs/PLUGIN_RUNTIME_ARCHITECTURE_zh.md docs/PLUGINS_zh.md docs/superpowers/plans/2026-05-31-architecture-boundary-refactor.md
+git commit -m "docs: document plugin manager ownership exception"
 ```
 
 ## Task 9: Final Verification

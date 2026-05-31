@@ -1,5 +1,7 @@
 package com.laker.postman.common.component.editor;
 
+import com.laker.postman.plugin.api.ScriptCompletionItem;
+import com.laker.postman.plugin.api.ScriptCompletionKind;
 import com.laker.postman.plugin.host.PluginAccess;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -140,8 +142,27 @@ public class ScriptSnippetManager {
         for (var contributor : PluginAccess.getScriptCompletionContributors()) {
             // 内建补全先注册，插件补全后追加。
             // 这样宿主负责“基础语言 + 核心 pm”，插件只补自己的增量能力。
-            contributor.contribute(provider);
+            contributor.contribute(item -> addPluginCompletion(provider, item));
         }
+    }
+
+    private static void addPluginCompletion(DefaultCompletionProvider provider, ScriptCompletionItem item) {
+        if (item == null || item.inputText() == null || item.inputText().isBlank()) {
+            return;
+        }
+        if (item.kind() == ScriptCompletionKind.SHORTHAND) {
+            provider.addCompletion(new ShorthandCompletion(
+                    provider,
+                    item.inputText(),
+                    item.replacementText() == null ? "" : item.replacementText(),
+                    item.shortDescription()
+            ));
+            return;
+        }
+        String replacementText = item.replacementText() == null || item.replacementText().isBlank()
+                ? item.inputText()
+                : item.replacementText();
+        provider.addCompletion(new BasicCompletion(provider, replacementText, item.shortDescription()));
     }
 
     // ========================================

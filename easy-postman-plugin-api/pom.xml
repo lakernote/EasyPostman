@@ -25,10 +25,10 @@
             <artifactId>easy-postman-foundation</artifactId>
             <version>${revision}</version>
         </dependency>
-        <!-- 自动补全 SPI 会被插件扩展点直接复用 -->
         <dependency>
-            <groupId>com.fifesoft</groupId>
-            <artifactId>autocomplete</artifactId>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

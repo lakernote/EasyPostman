@@ -23,9 +23,9 @@ public class KafkaPlugin implements EasyPostmanPlugin {
                 KafkaPanel::new,
                 KafkaPlugin.class
         );
-        context.registerScriptCompletionContributor(provider -> {
+        context.registerScriptCompletionContributor(sink -> {
             PluginContributionSupport.addScriptApiCompletions(
-                    provider,
+                    sink,
                     "kafka",
                     "Kafka script API",
                     "listTopics",
@@ -33,7 +33,7 @@ public class KafkaPlugin implements EasyPostmanPlugin {
                     "poll"
             );
             PluginContributionSupport.addShorthandCompletion(
-                    provider,
+                    sink,
                     "kafka.poll",
                     """
                     const records = pm.kafka.poll({

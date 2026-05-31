@@ -26,16 +26,16 @@ public class RedisPlugin implements EasyPostmanPlugin {
                 RedisPanel::new,
                 RedisPlugin.class
         );
-        context.registerScriptCompletionContributor(provider -> {
+        context.registerScriptCompletionContributor(sink -> {
             PluginContributionSupport.addScriptApiCompletions(
-                    provider,
+                    sink,
                     "redis",
                     "Redis plugin API",
                     "execute",
                     "query"
             );
             PluginContributionSupport.addShorthandCompletion(
-                    provider,
+                    sink,
                     "redis.get",
                     """
                             const redis = pm.plugin("redis");

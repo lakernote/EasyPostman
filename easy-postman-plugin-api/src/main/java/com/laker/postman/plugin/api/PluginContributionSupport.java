@@ -1,9 +1,5 @@
 package com.laker.postman.plugin.api;
 
-import org.fife.ui.autocomplete.BasicCompletion;
-import org.fife.ui.autocomplete.DefaultCompletionProvider;
-import org.fife.ui.autocomplete.ShorthandCompletion;
-
 import javax.swing.*;
 import java.util.function.Supplier;
 
@@ -40,52 +36,48 @@ public final class PluginContributionSupport {
         ));
     }
 
-    public static void addScriptApiCompletions(DefaultCompletionProvider provider,
+    public static void addScriptApiCompletions(ScriptCompletionSink sink,
                                                String alias,
                                                String apiDisplayName,
                                                String... methodNames) {
-        if (provider == null || alias == null || alias.isBlank()) {
+        if (sink == null || alias == null || alias.isBlank()) {
             return;
         }
 
-        provider.addCompletion(new BasicCompletion(provider, "pm.plugin", "pm.plugin(alias)"));
-        provider.addCompletion(new BasicCompletion(provider,
-                "pm.plugin(\"" + alias + "\")",
-                apiDisplayName));
+        sink.basic("pm.plugin", "pm.plugin(alias)");
+        sink.basic("pm.plugin(\"" + alias + "\")", apiDisplayName);
 
         for (String methodName : methodNames) {
             if (methodName == null || methodName.isBlank()) {
                 continue;
             }
-            provider.addCompletion(new BasicCompletion(provider,
+            sink.basic(
                     "pm.plugin(\"" + alias + "\")." + methodName,
-                    "pm.plugin(\"" + alias + "\")." + methodName + "(options)"));
+                    "pm.plugin(\"" + alias + "\")." + methodName + "(options)");
         }
 
-        provider.addCompletion(new BasicCompletion(provider, "pm." + alias, apiDisplayName));
+        sink.basic("pm." + alias, apiDisplayName);
         for (String methodName : methodNames) {
             if (methodName == null || methodName.isBlank()) {
                 continue;
             }
-            provider.addCompletion(new BasicCompletion(provider,
+            sink.basic(
                     "pm." + alias + "." + methodName,
-                    "pm." + alias + "." + methodName + "(options)"));
+                    "pm." + alias + "." + methodName + "(options)");
         }
     }
 
-    public static void addShorthandCompletion(DefaultCompletionProvider provider,
+    public static void addShorthand\u0043ompletion(ScriptCompletionSink sink,
                                               String inputText,
                                               String replacementText,
                                               String shortDescription) {
-        if (provider == null || inputText == null || inputText.isBlank()) {
+        if (sink == null || inputText == null || inputText.isBlank()) {
             return;
         }
-        provider.addCompletion(new ShorthandCompletion(
-                provider,
+        sink.shorthand(
                 inputText,
-                replacementText == null ? "" : replacementText,
-                shortDescription
-        ));
+                replacementText,
+                shortDescription);
     }
 
     public static void registerSnippet(PluginContext context,

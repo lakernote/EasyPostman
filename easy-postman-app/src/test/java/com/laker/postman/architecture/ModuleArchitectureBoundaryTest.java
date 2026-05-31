@@ -244,13 +244,29 @@ public class ModuleArchitectureBoundaryTest {
     public void serviceLayerDoesNotDependOnSwingPanels() throws IOException {
         Path serviceSource = repositoryRoot().resolve("easy-postman-app/src/main/java/com/laker/postman/service");
         List<String> violations = sourcePackageViolations(serviceSource, List.of(
-                "com.laker.postman.panel.",
                 "com.laker.postman.common.component.CsvDataPanel",
                 "CsvDataPanel.CsvState"
         ));
 
         assertTrue(violations.isEmpty(),
                 "App service layer must not depend on concrete Swing panels or panel-owned DTOs: " + violations);
+    }
+
+    @Test
+    public void settingManagerDoesNotResolveSidebarUiTabs() {
+        Path settingManager = repositoryRoot()
+                .resolve("easy-postman-app/src/main/java/com/laker/postman/service/setting/SettingManager.java");
+        List<String> violations = sourceContainsViolations(settingManager, List.of(
+                "com.laker.postman.panel.",
+                "panel.sidebar",
+                "List<SidebarTab>",
+                "Set<SidebarTab>",
+                "SidebarTab.resolve"
+        ));
+
+        assertTrue(violations.isEmpty(),
+                "SettingManager must expose raw sidebar settings only and must not resolve UI sidebar tabs: "
+                        + violations);
     }
 
     @Test

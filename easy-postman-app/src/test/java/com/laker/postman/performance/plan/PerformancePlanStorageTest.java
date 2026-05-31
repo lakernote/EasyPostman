@@ -8,7 +8,6 @@ import com.laker.postman.performance.core.model.WebSocketPerformanceData;
 import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
 import org.testng.annotations.Test;
 
-import javax.swing.tree.DefaultMutableTreeNode;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
@@ -25,7 +24,7 @@ public class PerformancePlanStorageTest {
 
     @Test
     public void storageApiShouldNotExposeSwingOrCsvPanelTypes() {
-        assertFalse(exposesType(PerformancePlanStorage.class, DefaultMutableTreeNode.class));
+        assertFalse(exposesType(PerformancePlanStorage.class, PerformanceTestPlanNode.class));
         assertFalse(exposesType(PerformancePlanStorage.class, CsvDataPanel.CsvState.class));
     }
 

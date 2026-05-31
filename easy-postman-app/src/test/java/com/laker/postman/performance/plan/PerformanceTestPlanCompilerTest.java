@@ -19,7 +19,6 @@ import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
 import com.laker.postman.performance.core.timer.TimerData;
 import org.testng.annotations.Test;
 
-import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.List;
 import java.util.Map;
 
@@ -32,10 +31,10 @@ public class PerformanceTestPlanCompilerTest {
 
     @Test(description = "root 编译时只保留 enabled thread group，并跳过 disabled 子节点")
     public void shouldCompileOnlyEnabledThreadGroupsAndElements() {
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new PerformanceTreeNode("Plan", NodeType.ROOT));
+        PerformanceTestPlanNode root = new PerformanceTestPlanNode(new PerformanceTreeNode("Plan", NodeType.ROOT));
         root.add(threadGroupNode("disabled group", false));
 
-        DefaultMutableTreeNode enabledGroup = threadGroupNode("enabled group", true);
+        PerformanceTestPlanNode enabledGroup = threadGroupNode("enabled group", true);
         enabledGroup.add(timerNode("disabled timer", false, 10));
         enabledGroup.add(timerNode("enabled timer", true, 20));
         root.add(enabledGroup);
@@ -52,7 +51,7 @@ public class PerformanceTestPlanCompilerTest {
 
     @Test(description = "传入单个 thread group 也应编译成 plan")
     public void shouldCompileSingleThreadGroupAsPlan() {
-        DefaultMutableTreeNode groupNode = threadGroupNode("single group", true);
+        PerformanceTestPlanNode groupNode = threadGroupNode("single group", true);
         groupNode.add(requestNode("request", true, RequestItemProtocolEnum.HTTP));
 
         PerformanceTestPlan plan = PerformanceTestPlanCompiler.compile(groupNode);
@@ -64,7 +63,7 @@ public class PerformanceTestPlanCompilerTest {
 
     @Test(description = "thread group 下的 CSV Data Set 应编译为线程组数据源，不作为执行元素")
     public void shouldCompileCsvDataSetIntoThreadGroupScope() {
-        DefaultMutableTreeNode groupNode = threadGroupNode("group", true);
+        PerformanceTestPlanNode groupNode = threadGroupNode("group", true);
         groupNode.add(csvDataSetNode(
                 "CSV Data Set",
                 true,
@@ -85,8 +84,8 @@ public class PerformanceTestPlanCompilerTest {
 
     @Test(description = "nested loop、timer、request 应编译成 immutable plan elements")
     public void shouldCompileNestedLoopTimerAndRequest() {
-        DefaultMutableTreeNode groupNode = threadGroupNode("group", true);
-        DefaultMutableTreeNode loopNode = loopNode("loop", true, 0);
+        PerformanceTestPlanNode groupNode = threadGroupNode("group", true);
+        PerformanceTestPlanNode loopNode = loopNode("loop", true, 0);
         loopNode.add(timerNode("timer", true, 250));
         loopNode.add(requestNode("request", true, RequestItemProtocolEnum.HTTP));
         groupNode.add(loopNode);
@@ -103,9 +102,9 @@ public class PerformanceTestPlanCompilerTest {
 
     @Test(description = "request sampler 应保留协议 stage、controller 和 assertion 子元素")
     public void shouldPreserveProtocolStagesControllersAndAssertions() {
-        DefaultMutableTreeNode groupNode = threadGroupNode("group", true);
-        DefaultMutableTreeNode requestNode = requestNode("ws request", true, RequestItemProtocolEnum.WEBSOCKET);
-        DefaultMutableTreeNode connectNode = protocolStageNode("connect", NodeType.WS_CONNECT, true);
+        PerformanceTestPlanNode groupNode = threadGroupNode("group", true);
+        PerformanceTestPlanNode requestNode = requestNode("ws request", true, RequestItemProtocolEnum.WEBSOCKET);
+        PerformanceTestPlanNode connectNode = protocolStageNode("connect", NodeType.WS_CONNECT, true);
         requestNode.add(connectNode);
         requestNode.add(loopNode("stage loop", true, 2));
         requestNode.add(assertionNode("assertion", true, "200"));
@@ -141,10 +140,10 @@ public class PerformanceTestPlanCompilerTest {
 
     @Test(description = "编译应深拷贝 thread group、loop、timer、request、协议阶段、WS data")
     public void shouldDeepCopyAllRuntimeData() {
-        DefaultMutableTreeNode groupNode = threadGroupNode("group", true);
+        PerformanceTestPlanNode groupNode = threadGroupNode("group", true);
         PerformanceTreeNode groupData = (PerformanceTreeNode) groupNode.getUserObject();
         groupData.threadGroupData.numThreads = 3;
-        DefaultMutableTreeNode csvNode = csvDataSetNode(
+        PerformanceTestPlanNode csvNode = csvDataSetNode(
                 "CSV Data Set",
                 true,
                 "users.csv",
@@ -153,14 +152,14 @@ public class PerformanceTestPlanCompilerTest {
         );
         PerformanceTreeNode csvData = (PerformanceTreeNode) csvNode.getUserObject();
 
-        DefaultMutableTreeNode loopNode = loopNode("loop", true, 5);
+        PerformanceTestPlanNode loopNode = loopNode("loop", true, 5);
         PerformanceTreeNode loopData = (PerformanceTreeNode) loopNode.getUserObject();
-        DefaultMutableTreeNode timerNode = timerNode("timer", true, 150);
+        PerformanceTestPlanNode timerNode = timerNode("timer", true, 150);
         PerformanceTreeNode timerData = (PerformanceTreeNode) timerNode.getUserObject();
-        DefaultMutableTreeNode requestNode = requestNode("sse request", true, RequestItemProtocolEnum.SSE);
+        PerformanceTestPlanNode requestNode = requestNode("sse request", true, RequestItemProtocolEnum.SSE);
         PerformanceTreeNode requestData = (PerformanceTreeNode) requestNode.getUserObject();
         requestData.webSocketPerformanceData.connectTimeoutMs = 222;
-        DefaultMutableTreeNode sseReadNode = protocolStageNode("sse read", NodeType.SSE_READ, true);
+        PerformanceTestPlanNode sseReadNode = protocolStageNode("sse read", NodeType.SSE_READ, true);
         PerformanceTreeNode sseReadData = (PerformanceTreeNode) sseReadNode.getUserObject();
         sseReadData.ssePerformanceData.connectTimeoutMs = 111;
         requestNode.add(sseReadNode);
@@ -201,7 +200,7 @@ public class PerformanceTestPlanCompilerTest {
 
     @Test(description = "plan 列表和 data getter 不应允许调用方反向修改 plan")
     public void shouldExposeImmutablePlanState() {
-        DefaultMutableTreeNode groupNode = threadGroupNode("group", true);
+        PerformanceTestPlanNode groupNode = threadGroupNode("group", true);
         groupNode.add(csvDataSetNode(
                 "CSV Data Set",
                 true,
@@ -227,29 +226,29 @@ public class PerformanceTestPlanCompilerTest {
         assertEquals(timer.getTimerData().delayMs, 150);
     }
 
-    private static DefaultMutableTreeNode threadGroupNode(String name, boolean enabled) {
+    private static PerformanceTestPlanNode threadGroupNode(String name, boolean enabled) {
         PerformanceTreeNode node = new PerformanceTreeNode(name, NodeType.THREAD_GROUP, new ThreadGroupData());
         node.enabled = enabled;
-        return new DefaultMutableTreeNode(node);
+        return new PerformanceTestPlanNode(node);
     }
 
-    private static DefaultMutableTreeNode loopNode(String name, boolean enabled, int iterations) {
+    private static PerformanceTestPlanNode loopNode(String name, boolean enabled, int iterations) {
         LoopData data = new LoopData();
         data.iterations = iterations;
         PerformanceTreeNode node = new PerformanceTreeNode(name, NodeType.LOOP, data);
         node.enabled = enabled;
-        return new DefaultMutableTreeNode(node);
+        return new PerformanceTestPlanNode(node);
     }
 
-    private static DefaultMutableTreeNode timerNode(String name, boolean enabled, int delayMs) {
+    private static PerformanceTestPlanNode timerNode(String name, boolean enabled, int delayMs) {
         TimerData data = new TimerData();
         data.delayMs = delayMs;
         PerformanceTreeNode node = new PerformanceTreeNode(name, NodeType.TIMER, data);
         node.enabled = enabled;
-        return new DefaultMutableTreeNode(node);
+        return new PerformanceTestPlanNode(node);
     }
 
-    private static DefaultMutableTreeNode requestNode(String name, boolean enabled, RequestItemProtocolEnum protocol) {
+    private static PerformanceTestPlanNode requestNode(String name, boolean enabled, RequestItemProtocolEnum protocol) {
         HttpRequestItem item = new HttpRequestItem();
         item.setId(name + "-id");
         item.setName(name);
@@ -257,10 +256,10 @@ public class PerformanceTestPlanCompilerTest {
         PerformanceTreeNode node = new PerformanceTreeNode(name, NodeType.REQUEST, item);
         node.enabled = enabled;
         node.webSocketPerformanceData = new WebSocketPerformanceData();
-        return new DefaultMutableTreeNode(node);
+        return new PerformanceTestPlanNode(node);
     }
 
-    private static DefaultMutableTreeNode csvDataSetNode(String name,
+    private static PerformanceTestPlanNode csvDataSetNode(String name,
                                                          boolean enabled,
                                                          String sourceName,
                                                          List<String> headers,
@@ -268,24 +267,24 @@ public class PerformanceTestPlanCompilerTest {
         PerformanceTreeNode node = new PerformanceTreeNode(name, NodeType.CSV_DATA_SET);
         node.enabled = enabled;
         node.csvDataSetData = new CsvDataSetData(sourceName, headers, rows);
-        return new DefaultMutableTreeNode(node);
+        return new PerformanceTestPlanNode(node);
     }
 
-    private static DefaultMutableTreeNode protocolStageNode(String name, NodeType type, boolean enabled) {
+    private static PerformanceTestPlanNode protocolStageNode(String name, NodeType type, boolean enabled) {
         PerformanceTreeNode node = new PerformanceTreeNode(name, type);
         node.enabled = enabled;
         node.webSocketPerformanceData = new WebSocketPerformanceData();
         node.webSocketPerformanceData.connectTimeoutMs = 1234;
         node.ssePerformanceData = new SsePerformanceData();
         node.ssePerformanceData.connectTimeoutMs = 5678;
-        return new DefaultMutableTreeNode(node);
+        return new PerformanceTestPlanNode(node);
     }
 
-    private static DefaultMutableTreeNode assertionNode(String name, boolean enabled, String value) {
+    private static PerformanceTestPlanNode assertionNode(String name, boolean enabled, String value) {
         AssertionData data = new AssertionData();
         data.value = value;
         PerformanceTreeNode node = new PerformanceTreeNode(name, NodeType.ASSERTION, data);
         node.enabled = enabled;
-        return new DefaultMutableTreeNode(node);
+        return new PerformanceTestPlanNode(node);
     }
 }

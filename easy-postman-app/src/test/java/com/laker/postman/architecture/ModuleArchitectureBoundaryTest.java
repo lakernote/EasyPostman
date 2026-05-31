@@ -322,6 +322,19 @@ public class ModuleArchitectureBoundaryTest {
         assertTrue(violations.isEmpty(),
                 "Headless performance packages must not import retired panel.performance implementation packages: "
                         + violations);
+
+        Path performanceTestSource = root.resolve("easy-postman-app/src/test/java/com/laker/postman/performance");
+        List<String> testUiImportViolations = sourcePackageViolations(performanceTestSource, List.of(
+                "import javax.swing.",
+                "import java.awt.",
+                "import com.formdev.",
+                "import net.miginfocom.",
+                "import com.laker.postman.panel."
+        ));
+
+        assertTrue(testUiImportViolations.isEmpty(),
+                "Headless performance tests must not import Swing or panel UI packages: "
+                        + testUiImportViolations);
     }
 
     @Test

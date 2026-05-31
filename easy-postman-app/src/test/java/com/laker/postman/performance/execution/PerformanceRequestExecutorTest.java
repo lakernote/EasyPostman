@@ -5,7 +5,6 @@ import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.Environment;
-import com.laker.postman.model.RequestGroup;
 import com.laker.postman.performance.core.assertion.AssertionData;
 import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.model.NodeType;
@@ -17,8 +16,7 @@ import com.laker.postman.performance.core.model.WebSocketPerformanceData;
 import com.laker.postman.performance.core.plan.PerformanceAssertionElement;
 import com.laker.postman.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.performance.plan.PerformanceTestPlanCompiler;
-import com.laker.postman.service.collections.CollectionTreeNodes;
-import com.laker.postman.service.collections.CollectionTreeRootRegistry;
+import com.laker.postman.performance.plan.PerformanceTestPlanNode;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.service.variable.ExecutionVariableContext;
 import com.laker.postman.service.variable.RequestExecutionScope;
@@ -28,7 +26,6 @@ import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.testng.annotations.Test;
 
-import javax.swing.tree.DefaultMutableTreeNode;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -359,23 +356,8 @@ public class PerformanceRequestExecutorTest {
             server.enqueue(new MockResponse().setBody("ok"));
             server.start();
 
-            HttpRequestItem collectionRequest = new HttpRequestItem();
-            collectionRequest.setId("execution-tree-isolation");
-            collectionRequest.setName("Collection Request");
-            collectionRequest.setProtocol(RequestItemProtocolEnum.HTTP);
-            collectionRequest.setMethod("GET");
-            collectionRequest.setUrl(server.url("/collection").toString());
-
-            RequestGroup group = new RequestGroup("collection group");
-            group.setHeaders(List.of(new HttpHeader(true, "X-Tree-Inherited", "tree-value")));
-            DefaultMutableTreeNode collectionRoot = new DefaultMutableTreeNode("root");
-            DefaultMutableTreeNode groupNode = CollectionTreeNodes.groupNode(group);
-            groupNode.add(CollectionTreeNodes.requestNode(collectionRequest));
-            collectionRoot.add(groupNode);
-            CollectionTreeRootRegistry.registerRootSupplier(() -> collectionRoot);
-
             HttpRequestItem headlessSnapshot = new HttpRequestItem();
-            headlessSnapshot.setId(collectionRequest.getId());
+            headlessSnapshot.setId("execution-tree-isolation");
             headlessSnapshot.setName("Headless Snapshot");
             headlessSnapshot.setProtocol(RequestItemProtocolEnum.HTTP);
             headlessSnapshot.setMethod("GET");
@@ -393,8 +375,6 @@ public class PerformanceRequestExecutorTest {
 
             assertFalse(result.executionFailed, result.errorMsg);
             assertEquals(server.takeRequest().getHeader("X-Tree-Inherited"), null);
-        } finally {
-            CollectionTreeRootRegistry.clear();
         }
     }
 
@@ -447,7 +427,7 @@ public class PerformanceRequestExecutorTest {
             PerformanceTreeNode requestData = new PerformanceTreeNode(item.getName(), NodeType.REQUEST, item);
             requestData.webSocketPerformanceData = new WebSocketPerformanceData();
             requestData.webSocketPerformanceData.connectTimeoutMs = 500;
-            DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(requestData);
+            PerformanceTestPlanNode requestNode = new PerformanceTestPlanNode(requestData);
 
             PerformanceRequestExecutionResult result = new PerformanceRequestExecutor(
                     () -> true,
@@ -480,7 +460,7 @@ public class PerformanceRequestExecutorTest {
             item.setUrl(server.url("/events").toString());
             item.setHeadersList(List.of(new HttpHeader(true, "Accept", "text/event-stream")));
             PerformanceTreeNode requestData = new PerformanceTreeNode(item.getName(), NodeType.REQUEST, item);
-            DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(requestData);
+            PerformanceTestPlanNode requestNode = new PerformanceTestPlanNode(requestData);
 
             PerformanceRequestExecutionResult result = new PerformanceRequestExecutor(
                     () -> true,
@@ -518,15 +498,15 @@ public class PerformanceRequestExecutorTest {
                     });
                     """);
 
-            DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(new PerformanceTreeNode(item.getName(), NodeType.REQUEST, item));
+            PerformanceTestPlanNode requestNode = new PerformanceTestPlanNode(new PerformanceTreeNode(item.getName(), NodeType.REQUEST, item));
             PerformanceTreeNode connectData = new PerformanceTreeNode("connect", NodeType.SSE_CONNECT);
             connectData.ssePerformanceData = new SsePerformanceData();
             connectData.ssePerformanceData.connectTimeoutMs = 2000;
-            requestNode.add(new DefaultMutableTreeNode(connectData));
+            requestNode.add(new PerformanceTestPlanNode(connectData));
             PerformanceTreeNode readData = new PerformanceTreeNode("read", NodeType.SSE_READ);
             readData.ssePerformanceData = new SsePerformanceData();
             readData.ssePerformanceData.firstMessageTimeoutMs = 2000;
-            requestNode.add(new DefaultMutableTreeNode(readData));
+            requestNode.add(new PerformanceTestPlanNode(readData));
 
             PerformanceRequestExecutionResult result = new PerformanceRequestExecutor(
                     () -> true,
@@ -572,13 +552,13 @@ public class PerformanceRequestExecutorTest {
             PerformanceTreeNode requestData = new PerformanceTreeNode(item.getName(), NodeType.REQUEST, item);
             requestData.webSocketPerformanceData = new WebSocketPerformanceData();
             requestData.webSocketPerformanceData.connectTimeoutMs = 2000;
-            DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(requestData);
-            requestNode.add(new DefaultMutableTreeNode(new PerformanceTreeNode("connect", NodeType.WS_CONNECT)));
+            PerformanceTestPlanNode requestNode = new PerformanceTestPlanNode(requestData);
+            requestNode.add(new PerformanceTestPlanNode(new PerformanceTreeNode("connect", NodeType.WS_CONNECT)));
             PerformanceTreeNode readData = new PerformanceTreeNode("read", NodeType.WS_READ);
             readData.webSocketPerformanceData = new WebSocketPerformanceData();
             readData.webSocketPerformanceData.completionMode = WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE;
             readData.webSocketPerformanceData.firstMessageTimeoutMs = 2000;
-            requestNode.add(new DefaultMutableTreeNode(readData));
+            requestNode.add(new PerformanceTestPlanNode(readData));
 
             PerformanceRequestExecutionResult result = new PerformanceRequestExecutor(
                     () -> true,

@@ -1,8 +1,5 @@
 package com.laker.postman.performance.result;
 
-import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
-import com.laker.postman.panel.performance.result.PerformanceResultTableVisualizer;
-
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.performance.execution.PerformanceRequestExecutionResult;
@@ -16,7 +13,6 @@ import com.laker.postman.performance.model.PerformanceStatsCollectorListener;
 import com.laker.postman.performance.core.model.PerformanceStatsSnapshot;
 import com.laker.postman.performance.core.model.RequestResult;
 import com.laker.postman.performance.core.runtime.PerformanceCoreResultSink;
-import com.laker.postman.performance.model.ResultNodeInfo;
 import com.laker.postman.performance.runtime.PerformanceResultSink;
 import org.testng.annotations.Test;
 
@@ -34,7 +30,6 @@ public class PerformanceResultCollectorTest {
     @Test
     public void collectorShouldOnlyBeWiredWithExplicitResultListeners() {
         assertFalse(hasConstructorParameter(PerformanceResultCollector.class, PerformanceStatsCollector.class));
-        assertFalse(hasConstructorParameter(PerformanceResultCollector.class, PerformanceResultTablePanel.class));
     }
 
     @Test
@@ -223,177 +218,113 @@ public class PerformanceResultCollectorTest {
     @Test
     public void shouldRecordInterruptedStreamResultWhenResponseContainsCollectedMetrics() {
         PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
-        RecordingResultTablePanel tablePanel = new RecordingResultTablePanel();
-        try {
-            HttpResponse response = new HttpResponse();
-            response.headers = new LinkedHashMap<>();
-            response.code = 101;
-            response.costMs = 2500;
-            response.endTime = 3500;
-            response.addHeader("X-Easy-WS-Sent-Count", List.of("12"));
-            response.addHeader("X-Easy-WS-Received-Count", List.of("7"));
-            response.addHeader("X-Easy-WS-Message-Count", List.of("3"));
+        List<PerformanceSampleEvent> events = new ArrayList<>();
+        HttpResponse response = new HttpResponse();
+        response.headers = new LinkedHashMap<>();
+        response.code = 101;
+        response.costMs = 2500;
+        response.endTime = 3500;
+        response.addHeader("X-Easy-WS-Sent-Count", List.of("12"));
+        response.addHeader("X-Easy-WS-Received-Count", List.of("7"));
+        response.addHeader("X-Easy-WS-Message-Count", List.of("3"));
 
-            PerformanceResultCollector collector = newCollector(statsCollector, tablePanel);
+        PerformanceResultCollector collector = new PerformanceResultCollector(List.of(
+                new PerformanceStatsCollectorListener(statsCollector),
+                events::add
+        ));
 
-            collector.collect(new PerformanceRequestExecutionResult(
-                    "api-ws",
-                    "WS API",
-                    new PreparedRequest(),
-                    response,
-                    "",
-                    List.of(),
-                    false,
-                    true,
-                    PerformanceProtocol.WEBSOCKET,
-                    1000L,
-                    0L
-            ), false);
+        collector.collect(new PerformanceRequestExecutionResult(
+                "api-ws",
+                "WS API",
+                new PreparedRequest(),
+                response,
+                "",
+                List.of(),
+                false,
+                true,
+                PerformanceProtocol.WEBSOCKET,
+                1000L,
+                0L
+        ), false);
 
-            PerformanceStatsSnapshot snapshot = statsCollector.snapshot();
-            assertEquals(snapshot.totalRequests(), 1L);
-            assertEquals(snapshot.summaries().size(), 1);
+        PerformanceStatsSnapshot snapshot = statsCollector.snapshot();
+        assertEquals(snapshot.totalRequests(), 1L);
+        assertEquals(snapshot.summaries().size(), 1);
 
-            PerformanceStatsSnapshot.ApiSummary summary = snapshot.summaries().get(0);
-            assertEquals(snapshot.successRequests(), 0L);
-            assertEquals(summary.sentMessages(), 12L);
-            assertEquals(summary.receivedMessages(), 7L);
-            assertEquals(summary.matchedMessages(), 3L);
-            assertEquals(tablePanel.recordedRows, 1);
-        } finally {
-            tablePanel.dispose();
-        }
+        PerformanceStatsSnapshot.ApiSummary summary = snapshot.summaries().get(0);
+        assertEquals(snapshot.successRequests(), 0L);
+        assertEquals(summary.sentMessages(), 12L);
+        assertEquals(summary.receivedMessages(), 7L);
+        assertEquals(summary.matchedMessages(), 3L);
+        assertEquals(events.size(), 1);
     }
 
     @Test
     public void shouldRetainInterruptedStreamDetailsInEfficientMode() {
         PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
-        RecordingResultTablePanel tablePanel = new RecordingResultTablePanel();
-        try {
-            HttpResponse response = new HttpResponse();
-            response.headers = new LinkedHashMap<>();
-            response.code = 101;
-            response.costMs = 100;
-            response.endTime = 1100;
-            response.addHeader("X-Easy-WS-Sent-Count", List.of("1"));
+        List<PerformanceSampleEvent> events = new ArrayList<>();
+        HttpResponse response = new HttpResponse();
+        response.headers = new LinkedHashMap<>();
+        response.code = 101;
+        response.costMs = 100;
+        response.endTime = 1100;
+        response.addHeader("X-Easy-WS-Sent-Count", List.of("1"));
 
-            PerformanceResultCollector collector = newCollector(statsCollector, tablePanel);
+        PerformanceResultCollector collector = new PerformanceResultCollector(List.of(
+                new PerformanceStatsCollectorListener(statsCollector),
+                events::add
+        ));
 
-            collector.collect(new PerformanceRequestExecutionResult(
-                    "api-ws",
-                    "WS API",
-                    new PreparedRequest(),
-                    response,
-                    "",
-                    List.of(),
-                    false,
-                    true,
-                    PerformanceProtocol.WEBSOCKET,
-                    1000L,
-                    0L
-            ), true);
+        collector.collect(new PerformanceRequestExecutionResult(
+                "api-ws",
+                "WS API",
+                new PreparedRequest(),
+                response,
+                "",
+                List.of(),
+                false,
+                true,
+                PerformanceProtocol.WEBSOCKET,
+                1000L,
+                0L
+        ), true);
 
-            assertEquals(statsCollector.snapshot().totalRequests(), 1L);
-            assertEquals(tablePanel.recordedRows, 1);
-        } finally {
-            tablePanel.dispose();
-        }
+        assertEquals(statsCollector.snapshot().totalRequests(), 1L);
+        assertEquals(events.size(), 1);
     }
 
     @Test
     public void shouldRetainInterruptedStreamDetailsInEfficientModeWhenFailed() {
         PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
-        RecordingResultTablePanel tablePanel = new RecordingResultTablePanel();
-        try {
-            HttpResponse response = new HttpResponse();
-            response.headers = new LinkedHashMap<>();
-            response.code = 101;
-            response.costMs = 100;
-            response.endTime = 1100;
-            response.addHeader("X-Easy-WS-Sent-Count", List.of("1"));
+        List<PerformanceSampleEvent> events = new ArrayList<>();
+        HttpResponse response = new HttpResponse();
+        response.headers = new LinkedHashMap<>();
+        response.code = 101;
+        response.costMs = 100;
+        response.endTime = 1100;
+        response.addHeader("X-Easy-WS-Sent-Count", List.of("1"));
 
-            PerformanceResultCollector collector = newCollector(statsCollector, tablePanel);
-
-            collector.collect(new PerformanceRequestExecutionResult(
-                    "api-ws",
-                    "WS API",
-                    new PreparedRequest(),
-                    response,
-                    "",
-                    List.of(),
-                    true,
-                    true,
-                    PerformanceProtocol.WEBSOCKET,
-                    1000L,
-                    0L
-            ), true);
-
-            assertEquals(statsCollector.snapshot().totalRequests(), 1L);
-            assertEquals(tablePanel.recordedRows, 1);
-        } finally {
-            tablePanel.dispose();
-        }
-    }
-
-    @Test
-    public void shouldAggregateFastSuccessesWithoutRecordingDetailsInEfficientMode() {
-        PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
-        RecordingResultTablePanel tablePanel = new RecordingResultTablePanel();
-        try {
-            PerformanceResultCollector collector = newCollector(statsCollector, tablePanel);
-
-            for (int i = 0; i < 10_000; i++) {
-                HttpResponse response = new HttpResponse();
-                response.code = 200;
-                response.costMs = 100;
-                response.endTime = i + 100L;
-
-                collector.collect(new PerformanceRequestExecutionResult(
-                        "api",
-                        "API",
-                        new PreparedRequest(),
-                        response,
-                        "",
-                        List.of(),
-                        false,
-                        false,
-                        PerformanceProtocol.HTTP,
-                        i,
-                        0
-                ), true);
-            }
-
-            PerformanceStatsSnapshot snapshot = statsCollector.snapshot();
-
-            assertEquals(snapshot.totalRequests(), 10_000L);
-            assertEquals(snapshot.successRequests(), 10_000L);
-            assertEquals(snapshot.retainedRequestResultCount(), 0L);
-            assertEquals(tablePanel.recordedRows, 0);
-        } finally {
-            tablePanel.dispose();
-        }
-    }
-
-    private static final class RecordingResultTablePanel extends PerformanceResultTablePanel {
-        private int recordedRows;
-
-        @Override
-        public void addResult(ResultNodeInfo info) {
-            recordedRows++;
-        }
-
-        @Override
-        public void addResult(ResultNodeInfo info, boolean compactRetention) {
-            recordedRows++;
-        }
-    }
-
-    private static PerformanceResultCollector newCollector(PerformanceStatsCollector statsCollector,
-                                                           PerformanceResultTablePanel tablePanel) {
-        return new PerformanceResultCollector(List.of(
+        PerformanceResultCollector collector = new PerformanceResultCollector(List.of(
                 new PerformanceStatsCollectorListener(statsCollector),
-                new PerformanceResultTableVisualizer(tablePanel, () -> 3_000)
+                events::add
         ));
+
+        collector.collect(new PerformanceRequestExecutionResult(
+                "api-ws",
+                "WS API",
+                new PreparedRequest(),
+                response,
+                "",
+                List.of(),
+                true,
+                true,
+                PerformanceProtocol.WEBSOCKET,
+                1000L,
+                0L
+        ), true);
+
+        assertEquals(statsCollector.snapshot().totalRequests(), 1L);
+        assertEquals(events.size(), 1);
     }
 
     private static PerformanceRequestExecutionResult successfulHttpResult() {

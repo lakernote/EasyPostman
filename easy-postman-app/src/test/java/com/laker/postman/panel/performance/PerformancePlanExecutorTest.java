@@ -10,8 +10,10 @@ import com.laker.postman.performance.execution.PerformanceRequestExecutor;
 import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.plan.PerformanceRequestSampler;
-import com.laker.postman.performance.plan.PerformanceTestPlanCompiler;
+import com.laker.postman.performance.plan.PerformancePlanDocumentCompiler;
+import com.laker.postman.panel.performance.tree.PerformanceSwingTreePlanAdapter;
 import com.laker.postman.performance.core.plan.PerformanceThreadGroupPlan;
+import com.laker.postman.performance.core.plan.PerformanceTestPlan;
 import com.laker.postman.performance.result.PerformanceResultCollector;
 import com.laker.postman.performance.runtime.PerformanceIterationContextFactory;
 import com.laker.postman.performance.runtime.PerformancePlanExecutor;
@@ -50,7 +52,7 @@ public class PerformancePlanExecutorTest {
         );
 
         executor.executeIteration(
-                PerformanceTestPlanCompiler.compile(groupNode).getThreadGroups().get(0),
+                compile(groupNode).getThreadGroups().get(0),
                 new ExecutionVariableContext()
         );
 
@@ -80,7 +82,7 @@ public class PerformancePlanExecutorTest {
         );
 
         executor.executeIteration(
-                PerformanceTestPlanCompiler.compile(groupNode).getThreadGroups().get(0),
+                compile(groupNode).getThreadGroups().get(0),
                 new ExecutionVariableContext()
         );
 
@@ -108,7 +110,7 @@ public class PerformancePlanExecutorTest {
         );
 
         executor.executeIteration(
-                PerformanceTestPlanCompiler.compile(groupNode).getThreadGroups().get(0),
+                compile(groupNode).getThreadGroups().get(0),
                 new ExecutionVariableContext()
         );
 
@@ -137,7 +139,7 @@ public class PerformancePlanExecutorTest {
         );
 
         executor.executeIteration(
-                PerformanceTestPlanCompiler.compile(groupNode).getThreadGroups().get(0),
+                compile(groupNode).getThreadGroups().get(0),
                 new ExecutionVariableContext()
         );
 
@@ -221,6 +223,10 @@ public class PerformancePlanExecutorTest {
                 new PerformanceResultCollector(List.of())
         );
         return new PerformancePlanExecutor(running, samplerExecutor, timerSleeper);
+    }
+
+    private static PerformanceTestPlan compile(DefaultMutableTreeNode root) {
+        return PerformancePlanDocumentCompiler.compile(PerformanceSwingTreePlanAdapter.toDocument(root));
     }
 
     private static DefaultMutableTreeNode threadGroupNode() {

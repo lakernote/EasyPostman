@@ -10,11 +10,11 @@ import com.laker.postman.performance.core.plan.PerformancePlanElement;
 import com.laker.postman.performance.core.plan.PerformanceProtocolStageElement;
 import com.laker.postman.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.performance.plan.PerformanceTestPlanCompiler;
+import com.laker.postman.performance.plan.PerformanceTestPlanNode;
 import com.laker.postman.service.variable.ExecutionContextScope;
 import com.laker.postman.service.variable.ExecutionVariableContext;
 import org.testng.annotations.Test;
 
-import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.LinkedHashMap;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,7 +42,7 @@ public class PerformanceAssertionRunnerTest {
 
     @Test
     public void shouldIgnoreDisabledBodyAssertionsWhenCheckingBodyNeed() {
-        DefaultMutableTreeNode requestNode = new DefaultMutableTreeNode(new PerformanceTreeNode("Request", NodeType.REQUEST));
+        PerformanceTestPlanNode requestNode = new PerformanceTestPlanNode(new PerformanceTreeNode("Request", NodeType.REQUEST));
         requestNode.add(assertionTreeNode("Contains", false));
         PerformanceRequestSampler requestSampler = PerformanceTestPlanCompiler.compileRequestSampler(requestNode);
 
@@ -265,12 +265,12 @@ public class PerformanceAssertionRunnerTest {
         return new PerformanceAssertionElement(type, data);
     }
 
-    private static DefaultMutableTreeNode assertionTreeNode(String type, boolean enabled) {
+    private static PerformanceTestPlanNode assertionTreeNode(String type, boolean enabled) {
         AssertionData data = new AssertionData();
         data.type = type;
         PerformanceTreeNode node = new PerformanceTreeNode(type, NodeType.ASSERTION, data);
         node.enabled = enabled;
-        return new DefaultMutableTreeNode(node);
+        return new PerformanceTestPlanNode(node);
     }
 
     private static AssertionData assertionData(String type, String content, String value) {

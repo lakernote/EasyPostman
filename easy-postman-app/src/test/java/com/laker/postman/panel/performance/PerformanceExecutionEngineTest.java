@@ -10,7 +10,8 @@ import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.PerformanceStatsCollector;
 import com.laker.postman.performance.model.PerformanceStatsCollectorListener;
 import com.laker.postman.performance.core.model.WebSocketPerformanceData;
-import com.laker.postman.performance.plan.PerformanceTestPlanCompiler;
+import com.laker.postman.performance.plan.PerformancePlanDocumentCompiler;
+import com.laker.postman.panel.performance.tree.PerformanceSwingTreePlanAdapter;
 import com.laker.postman.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.performance.core.plan.PerformanceTestPlan;
 import com.laker.postman.performance.core.plan.PerformanceThreadGroupPlan;
@@ -116,7 +117,7 @@ public class PerformanceExecutionEngineTest {
                 emptyResultCollector()
         );
 
-        assertEquals(engine.getTotalThreads(PerformanceTestPlanCompiler.compile(root)), 1);
+        assertEquals(engine.getTotalThreads(compile(root)), 1);
     }
 
     @Test
@@ -144,7 +145,7 @@ public class PerformanceExecutionEngineTest {
                 emptyResultCollector()
         );
 
-        assertEquals(engine.estimateTotalRequests(PerformanceTestPlanCompiler.compile(root)), 400L);
+        assertEquals(engine.estimateTotalRequests(compile(root)), 400L);
     }
 
     @Test
@@ -179,7 +180,7 @@ public class PerformanceExecutionEngineTest {
                 emptyResultCollector()
         );
 
-        assertEquals(engine.estimateTotalRequests(PerformanceTestPlanCompiler.compile(root)), 10_000_000_000L);
+        assertEquals(engine.estimateTotalRequests(compile(root)), 10_000_000_000L);
     }
 
     @Test
@@ -220,7 +221,7 @@ public class PerformanceExecutionEngineTest {
                     statsResultCollector(statsCollector)
             );
 
-            engine.runTestPlan(PerformanceTestPlanCompiler.compile(group), 1);
+            engine.runTestPlan(compile(group), 1);
 
             assertEquals(server.getRequestCount(), 2);
             assertEquals(statsCollector.snapshot().totalRequests(), 2);
@@ -293,7 +294,7 @@ public class PerformanceExecutionEngineTest {
                     () -> false,
                     () -> 4,
                     statsResultCollector(statsCollector)
-            ).runTestPlan(PerformanceTestPlanCompiler.compile(group), 1);
+            ).runTestPlan(compile(group), 1);
 
             assertEquals(server.getRequestCount(), 1);
             assertEquals(statsCollector.snapshot().totalRequests(), 1);
@@ -325,7 +326,7 @@ public class PerformanceExecutionEngineTest {
                     () -> false,
                     () -> 4,
                     statsResultCollector(statsCollector)
-            ).runTestPlan(PerformanceTestPlanCompiler.compile(group), 1);
+            ).runTestPlan(compile(group), 1);
 
             assertEquals(server.getRequestCount(), 0);
             assertEquals(statsCollector.snapshot().totalRequests(), 1);
@@ -359,7 +360,7 @@ public class PerformanceExecutionEngineTest {
                     () -> false,
                     () -> 4,
                     statsResultCollector(statsCollector)
-            ).runTestPlan(PerformanceTestPlanCompiler.compile(group), 1);
+            ).runTestPlan(compile(group), 1);
 
             assertEquals(server.getRequestCount(), 0);
             assertEquals(statsCollector.snapshot().totalRequests(), 1);
@@ -388,7 +389,7 @@ public class PerformanceExecutionEngineTest {
                 }
         );
 
-        engine.runTestPlan(PerformanceTestPlanCompiler.compile(fixedThreadGroup(1)), 1);
+        engine.runTestPlan(compile(fixedThreadGroup(1)), 1);
 
         assertTrue(progressEvents.stream().anyMatch(progress ->
                 progress.getActiveThreads() == 1 && progress.getTotalThreads() == 1));
@@ -410,7 +411,7 @@ public class PerformanceExecutionEngineTest {
                 }
         );
 
-        engine.runTestPlan(PerformanceTestPlanCompiler.compile(fixedThreadGroup(1)), 1);
+        engine.runTestPlan(compile(fixedThreadGroup(1)), 1);
 
         assertEquals(engine.getActiveThreads(), 0);
     }
@@ -481,6 +482,10 @@ public class PerformanceExecutionEngineTest {
         assertionData.operator = "=";
         assertionData.value = expectedStatus;
         return new DefaultMutableTreeNode(new PerformanceTreeNode("status assertion", NodeType.ASSERTION, assertionData));
+    }
+
+    private static PerformanceTestPlan compile(DefaultMutableTreeNode root) {
+        return PerformancePlanDocumentCompiler.compile(PerformanceSwingTreePlanAdapter.toDocument(root));
     }
 
     private static boolean hasDefaultMutableTreeNodeParameter(Class<?> type) {

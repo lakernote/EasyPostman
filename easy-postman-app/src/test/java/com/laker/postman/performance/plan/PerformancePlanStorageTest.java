@@ -1,6 +1,5 @@
 package com.laker.postman.performance.plan;
 
-import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.performance.core.model.NodeType;
@@ -25,7 +24,7 @@ public class PerformancePlanStorageTest {
     @Test
     public void storageApiShouldNotExposeSwingOrCsvPanelTypes() {
         assertFalse(exposesType(PerformancePlanStorage.class, PerformanceTestPlanNode.class));
-        assertFalse(exposesType(PerformancePlanStorage.class, CsvDataPanel.CsvState.class));
+        assertFalse(exposesTypeInPackage(PerformancePlanStorage.class, "com.laker.postman.common.component."));
     }
 
     @Test
@@ -258,6 +257,30 @@ public class PerformancePlanStorageTest {
             }
         }
         return false;
+    }
+
+    private static boolean exposesTypeInPackage(Class<?> owner, String forbiddenPackagePrefix) {
+        for (Executable constructor : owner.getConstructors()) {
+            if (containsTypeInPackage(constructor.getParameterTypes(), forbiddenPackagePrefix)) {
+                return true;
+            }
+        }
+        for (Method method : owner.getMethods()) {
+            if (isTypeInPackage(method.getReturnType(), forbiddenPackagePrefix)
+                    || containsTypeInPackage(method.getParameterTypes(), forbiddenPackagePrefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean containsTypeInPackage(Class<?>[] types, String forbiddenPackagePrefix) {
+        return java.util.Arrays.stream(types)
+                .anyMatch(type -> isTypeInPackage(type, forbiddenPackagePrefix));
+    }
+
+    private static boolean isTypeInPackage(Class<?> type, String forbiddenPackagePrefix) {
+        return type.getName().startsWith(forbiddenPackagePrefix);
     }
 
     private static HttpRequestItem request(String id, String url) {

@@ -684,7 +684,13 @@ public class ModuleArchitectureBoundaryTest {
                 "import java.awt.",
                 "import com.formdev.",
                 "import net.miginfocom.",
-                "import com.laker.postman.panel."
+                "import com.laker.postman.panel.",
+                "import com.laker.postman.common.component.",
+                "import com.laker.postman.common.util.FontsUtil",
+                "import com.laker.postman.common.util.IconUtil",
+                "import com.laker.postman.common.util.NotificationUtil",
+                "import com.laker.postman.common.util.EditorThemeUtil",
+                "import com.laker.postman.common.constants.ModernColors"
         );
     }
 

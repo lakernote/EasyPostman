@@ -658,6 +658,10 @@ public final class MessageKeys {
     public static final String PERFORMANCE_REMOTE_WORKERS_PLACEHOLDER = "performance.remote.workers.placeholder";
     public static final String PERFORMANCE_REMOTE_WORKERS_TOOLTIP = "performance.remote.workers.tooltip";
     public static final String PERFORMANCE_REMOTE_WORKERS_REQUIRED = "performance.remote.workers.required";
+    public static final String PERFORMANCE_REMOTE_WORKERS_STATUS_LOCAL = "performance.remote.workers.status.local";
+    public static final String PERFORMANCE_REMOTE_WORKERS_STATUS_REQUIRED = "performance.remote.workers.status.required";
+    public static final String PERFORMANCE_REMOTE_WORKERS_STATUS_COUNT = "performance.remote.workers.status.count";
+    public static final String PERFORMANCE_REMOTE_WORKERS_STATUS_INVALID = "performance.remote.workers.status.invalid";
     public static final String PERFORMANCE_REMOTE_MSG_COMPLETED = "performance.remote.msg.completed";
     public static final String PERFORMANCE_REMOTE_MSG_STOPPED = "performance.remote.msg.stopped";
     public static final String PERFORMANCE_REMOTE_MSG_FAILED = "performance.remote.msg.failed";

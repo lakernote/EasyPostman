@@ -4,7 +4,6 @@ import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.model.NotificationPosition;
 import com.laker.postman.model.TrustedCertificateEntry;
-import com.laker.postman.panel.sidebar.SidebarTab;
 import com.laker.postman.service.http.okhttp.OkHttpClientManager;
 import com.laker.postman.util.NotificationUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -825,14 +824,6 @@ public class SettingManager {
 
     public static void setHiddenSidebarTabs(Collection<String> hiddenTabs) {
         setAndSaveProperty("sidebar_hidden_tabs", hiddenTabs == null || hiddenTabs.isEmpty() ? null : String.join(",", hiddenTabs));
-    }
-
-    public static List<SidebarTab> getOrderedSidebarTabs() {
-        return SidebarTab.resolveOrderedTabs(getSidebarTabOrder());
-    }
-
-    public static List<SidebarTab> getVisibleSidebarTabs() {
-        return SidebarTab.resolveVisibleTabs(getSidebarTabOrder(), getHiddenSidebarTabs());
     }
 
     /**

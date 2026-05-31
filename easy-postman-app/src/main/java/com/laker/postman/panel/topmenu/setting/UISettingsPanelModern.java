@@ -4,6 +4,7 @@ import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.NotificationPosition;
 import com.laker.postman.panel.sidebar.SidebarTab;
+import com.laker.postman.panel.sidebar.SidebarTabSettingsResolver;
 import com.laker.postman.panel.sidebar.SidebarTabPanel;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FontManager;
@@ -338,7 +339,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
 
         sidebarTabListModel = new DefaultListModel<>();
         Set<String> hiddenTabs = SettingManager.getHiddenSidebarTabs();
-        for (SidebarTab tab : SettingManager.getOrderedSidebarTabs()) {
+        for (SidebarTab tab : SidebarTabSettingsResolver.getOrderedSidebarTabs()) {
             sidebarTabListModel.addElement(new SidebarTabSettingItem(tab, !hiddenTabs.contains(tab.name())));
         }
 
@@ -487,7 +488,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
     private String getPersistedSidebarTabsStateSnapshot() {
         List<String> persistedState = new ArrayList<>();
         Set<String> hiddenTabs = SettingManager.getHiddenSidebarTabs();
-        for (SidebarTab tab : SettingManager.getOrderedSidebarTabs()) {
+        for (SidebarTab tab : SidebarTabSettingsResolver.getOrderedSidebarTabs()) {
             persistedState.add(tab.name() + ":" + (hiddenTabs.contains(tab.name()) ? "0" : "1"));
         }
         return String.join(",", persistedState);

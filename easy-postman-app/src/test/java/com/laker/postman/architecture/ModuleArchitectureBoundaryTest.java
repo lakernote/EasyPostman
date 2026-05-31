@@ -244,6 +244,7 @@ public class ModuleArchitectureBoundaryTest {
     public void serviceLayerDoesNotDependOnSwingPanels() throws IOException {
         Path serviceSource = repositoryRoot().resolve("easy-postman-app/src/main/java/com/laker/postman/service");
         List<String> violations = sourcePackageViolations(serviceSource, List.of(
+                "com.laker.postman.panel.",
                 "com.laker.postman.common.component.CsvDataPanel",
                 "CsvDataPanel.CsvState"
         ));

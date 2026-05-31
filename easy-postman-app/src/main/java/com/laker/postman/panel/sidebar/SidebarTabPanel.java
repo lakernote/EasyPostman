@@ -985,7 +985,7 @@ public class SidebarTabPanel extends UiSingletonPanel {
             sidebarToggleLabel.setToolTipText(sidebarExpanded ? TOOLTIP_COLLAPSE_SIDEBAR : TOOLTIP_EXPAND_SIDEBAR);
         }
 
-        List<SidebarTab> configuredTabs = SettingManager.getVisibleSidebarTabs();
+        List<SidebarTab> configuredTabs = SidebarTabSettingsResolver.getVisibleSidebarTabs();
         boolean tabsChanged = visibleTabs == null || !visibleTabs.equals(configuredTabs);
         if (expansionChanged || tabsChanged) {
             resetTabLayoutCache();
@@ -1077,7 +1077,7 @@ public class SidebarTabPanel extends UiSingletonPanel {
     }
 
     private void reloadTabInfosFromSettings() {
-        visibleTabs = new ArrayList<>(SettingManager.getVisibleSidebarTabs());
+        visibleTabs = new ArrayList<>(SidebarTabSettingsResolver.getVisibleSidebarTabs());
         tabInfos = new ArrayList<>(visibleTabs.size());
         for (SidebarTab tab : visibleTabs) {
             tabInfos.add(tab.toTabInfo());

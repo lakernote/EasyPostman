@@ -12,7 +12,7 @@ import java.util.List;
 
 /**
  * Params table panel with checkbox and delete button columns
- * Similar to EasyHttpHeadersTablePanel but for request parameters
+ * Similar to the request headers table panel but for request parameters
  */
 @Slf4j
 public class ParamsTablePanel extends AbstractTablePanel<HttpParam> {

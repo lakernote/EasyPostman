@@ -10,7 +10,7 @@ import org.brotli.dec.BrotliInputStream;
 import java.io.IOException;
 import java.util.zip.Inflater;
 
-import static com.laker.postman.service.http.EasyHttpHeaders.*;
+import static com.laker.postman.util.HttpHeaderConstants.*;
 
 /**
  * 网络拦截器：自动解压 gzip、deflate、br 三种压缩格式，流式解压，兼容 SSE/chunked/普通响应

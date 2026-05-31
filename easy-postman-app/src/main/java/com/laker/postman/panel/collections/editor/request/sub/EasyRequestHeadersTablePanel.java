@@ -11,7 +11,7 @@ import javax.swing.*;
 import java.util.*;
 
 @Slf4j
-public class EasyHttpHeadersTablePanel extends AbstractTablePanel<Map<String, Object>> {
+public class EasyRequestHeadersTablePanel extends AbstractTablePanel<Map<String, Object>> {
 
     // Default header keys for consistency
     private static final String USER_AGENT = "User-Agent";
@@ -36,7 +36,7 @@ public class EasyHttpHeadersTablePanel extends AbstractTablePanel<Map<String, Ob
     // Parent panel reference for handling default headers
     private EasyRequestHttpHeadersPanel parentPanel;
 
-    public EasyHttpHeadersTablePanel() {
+    public EasyRequestHeadersTablePanel() {
         super(new String[]{"", "Key", "Value", ""});
         initializeComponents();
         initializeTableUI();

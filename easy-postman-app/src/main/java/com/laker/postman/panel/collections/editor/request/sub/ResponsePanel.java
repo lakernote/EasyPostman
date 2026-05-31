@@ -8,11 +8,11 @@ import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.script.TestResult;
-import com.laker.postman.service.http.EasyHttpHeaders;
 import com.laker.postman.service.http.HttpUtil;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FontsUtil;
+import com.laker.postman.util.HttpHeaderConstants;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.TimeDisplayUtil;
@@ -513,7 +513,7 @@ public class ResponsePanel extends JPanel {
         String encoding = null;
         HttpEventInfo httpEventInfo = httpResponse != null ? httpResponse.httpEventInfo : null;
         if (httpResponse != null && httpResponse.headers != null) {
-            List<String> enc = httpResponse.headers.get(EasyHttpHeaders.CONTENT_ENCODING);
+            List<String> enc = httpResponse.headers.get(HttpHeaderConstants.CONTENT_ENCODING);
             if (enc != null && !enc.isEmpty()) {
                 encoding = enc.get(0);
             }

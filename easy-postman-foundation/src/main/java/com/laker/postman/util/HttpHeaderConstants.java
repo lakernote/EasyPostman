@@ -12,6 +12,11 @@ import java.util.List;
 @UtilityClass
 public class HttpHeaderConstants {
 
+    public static final String CONTENT_ENCODING = "Content-Encoding";
+    public static final String CONTENT_LENGTH = "Content-Length";
+    public static final String EASY_CONTENT_LENGTH = "Easy-Content-Length";
+    public static final String EASY_CONTENT_ENCODING = "Easy-Content-Encoding";
+
     /**
      * 常见的HTTP请求头列表（按字母顺序排列）
      * 参考 Postman 和标准 HTTP 规范

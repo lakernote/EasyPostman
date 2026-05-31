@@ -26,7 +26,7 @@ import java.util.List;
  * 4. 中间是表格
  */
 public class EasyRequestHttpHeadersPanel extends JPanel {
-    private EasyHttpHeadersTablePanel tablePanel;
+    private EasyRequestHeadersTablePanel tablePanel;
 
     // Default headers constants
     private static final String USER_AGENT = "User-Agent";
@@ -139,7 +139,7 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
         headerPanel.add(bulkEditButton);
 
         // Create table panel and set parent reference
-        tablePanel = new EasyHttpHeadersTablePanel();
+        tablePanel = new EasyRequestHeadersTablePanel();
         tablePanel.setParentPanel(this);
 
         add(headerPanel, BorderLayout.NORTH);

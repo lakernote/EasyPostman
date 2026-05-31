@@ -4,10 +4,10 @@ import com.laker.postman.common.component.DownloadProgressDialog;
 import com.laker.postman.common.exception.DownloadCancelledException;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.service.http.EasyHttpHeaders;
 import com.laker.postman.service.http.sse.SseResEventListener;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FileExtensionUtil;
+import com.laker.postman.util.HttpHeaderConstants;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +40,6 @@ public class OkHttpResponseHandler {
 
     // 常量定义
     private static final String CONTENT_TYPE_HEADER = "Content-Type";
-    private static final String CONTENT_LENGTH_HEADER = "Content-Length";
     private static final String CONTENT_DISPOSITION_HEADER = "Content-Disposition";
     private static final String SSE_CONTENT_TYPE = "text/event-stream";
 
@@ -242,9 +241,9 @@ public class OkHttpResponseHandler {
      * 回退到 Easy-Content-Length（存储的是压缩前的原始大小，可作为近似估算）
      */
     private static int parseContentLength(Response okResponse) {
-        String contentLength = okResponse.header(CONTENT_LENGTH_HEADER);
+        String contentLength = okResponse.header(HttpHeaderConstants.CONTENT_LENGTH);
         if (contentLength == null) {
-            contentLength = okResponse.header(EasyHttpHeaders.EASY_CONTENT_LENGTH);
+            contentLength = okResponse.header(HttpHeaderConstants.EASY_CONTENT_LENGTH);
         }
         return parseContentLength(contentLength);
     }

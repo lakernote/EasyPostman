@@ -1,6 +1,6 @@
 package com.laker.postman.model;
 
-import com.laker.postman.service.http.EasyHttpHeaders;
+import com.laker.postman.util.HttpHeaderConstants;
 
 import java.util.List;
 import java.util.Map;
@@ -30,12 +30,12 @@ public class HttpResponse {
         if (headers == null) {
             return;
         }
-        if (EasyHttpHeaders.EASY_CONTENT_ENCODING.equalsIgnoreCase(name)) {
-            headers.put(EasyHttpHeaders.CONTENT_ENCODING, value);
-            headers.remove(EasyHttpHeaders.EASY_CONTENT_ENCODING);
-        } else if (EasyHttpHeaders.EASY_CONTENT_LENGTH.equalsIgnoreCase(name)) {
-            headers.put(EasyHttpHeaders.CONTENT_LENGTH, value);
-            headers.remove(EasyHttpHeaders.EASY_CONTENT_LENGTH);
+        if (HttpHeaderConstants.EASY_CONTENT_ENCODING.equalsIgnoreCase(name)) {
+            headers.put(HttpHeaderConstants.CONTENT_ENCODING, value);
+            headers.remove(HttpHeaderConstants.EASY_CONTENT_ENCODING);
+        } else if (HttpHeaderConstants.EASY_CONTENT_LENGTH.equalsIgnoreCase(name)) {
+            headers.put(HttpHeaderConstants.CONTENT_LENGTH, value);
+            headers.remove(HttpHeaderConstants.EASY_CONTENT_LENGTH);
         } else {
             headers.put(name, value);
         }

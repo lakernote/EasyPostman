@@ -357,6 +357,23 @@ public class ModuleArchitectureBoundaryTest {
     }
 
     @Test
+    public void performanceRuntimeBehaviorTestsStayInHeadlessRuntimePackage() {
+        Path root = repositoryRoot();
+        Path panelPerformanceTests = root.resolve("easy-postman-app/src/test/java/com/laker/postman/panel/performance");
+        Path headlessRuntimeTests = root.resolve("easy-postman-app/src/test/java/com/laker/postman/performance/runtime");
+
+        for (String testFile : List.of(
+                "PerformanceExecutionEngineTest.java",
+                "PerformancePlanExecutorTest.java"
+        )) {
+            assertTrue(Files.isRegularFile(headlessRuntimeTests.resolve(testFile)),
+                    testFile + " exercises headless runtime behavior and belongs in com.laker.postman.performance.runtime");
+            assertFalse(Files.exists(panelPerformanceTests.resolve(testFile)),
+                    testFile + " must not stay in the panel.performance UI test package");
+        }
+    }
+
+    @Test
     public void performanceSwingTreePlanAdapterStaysInUiTreePackage() {
         Path root = repositoryRoot();
         assertTrue(Files.isRegularFile(root.resolve(

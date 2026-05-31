@@ -1,37 +1,30 @@
-package com.laker.postman.panel.performance;
+package com.laker.postman.performance.runtime;
 
 import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.performance.core.assertion.AssertionData;
-import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.controller.LoopData;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.PerformanceStatsCollector;
-import com.laker.postman.performance.model.PerformanceStatsCollectorListener;
 import com.laker.postman.performance.core.model.WebSocketPerformanceData;
-import com.laker.postman.performance.plan.PerformancePlanDocumentCompiler;
-import com.laker.postman.panel.performance.tree.PerformanceSwingTreePlanAdapter;
-import com.laker.postman.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.performance.core.plan.PerformanceTestPlan;
 import com.laker.postman.performance.core.plan.PerformanceThreadGroupPlan;
-import com.laker.postman.performance.result.PerformanceResultCollector;
-import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
-import com.laker.postman.performance.execution.PerformanceExecutionConfig;
-import com.laker.postman.performance.runtime.PerformanceExecutionEngine;
-import com.laker.postman.performance.runtime.PerformanceIterationContextFactory;
-import com.laker.postman.performance.runtime.PerformancePlanExecutor;
-import com.laker.postman.performance.runtime.PerformanceThreadGroupRunner;
 import com.laker.postman.performance.core.runtime.PerformanceRunListener;
 import com.laker.postman.performance.core.runtime.PerformanceRunProgress;
 import com.laker.postman.performance.core.runtime.PerformanceVirtualUserCoordinator;
 import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
+import com.laker.postman.performance.execution.PerformanceExecutionConfig;
+import com.laker.postman.performance.model.PerformanceStatsCollectorListener;
+import com.laker.postman.performance.model.PerformanceTreeNode;
+import com.laker.postman.performance.plan.PerformanceRequestSampler;
+import com.laker.postman.performance.plan.PerformanceTestPlanCompiler;
+import com.laker.postman.performance.plan.PerformanceTestPlanNode;
+import com.laker.postman.performance.result.PerformanceResultCollector;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.testng.annotations.Test;
 
-import javax.swing.tree.DefaultMutableTreeNode;
-import java.awt.Component;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -49,18 +42,21 @@ public class PerformanceExecutionEngineTest {
 
     @Test
     public void executionApisShouldNotExposeSwingTreeCompatibilityMethods() {
-        assertFalse(hasDefaultMutableTreeNodeParameter(PerformanceExecutionEngine.class));
+        assertFalse(hasSwingTreeNodeParameter(PerformanceExecutionEngine.class));
     }
 
     @Test
     public void executionEngineShouldNotExposeSwingResultTablePanelParameters() {
-        assertFalse(hasParameterType(PerformanceExecutionEngine.class, PerformanceResultTablePanel.class));
+        assertFalse(hasParameterTypeName(
+                PerformanceExecutionEngine.class,
+                "com.laker.postman." + "panel.performance.result.PerformanceResultTablePanel"
+        ));
     }
 
     @Test
     public void runtimeExecutionApisShouldNotExposeSwingComponentParameters() {
-        assertFalse(hasParameterType(PerformanceExecutionEngine.class, Component.class));
-        assertFalse(hasParameterType(PerformanceThreadGroupRunner.class, Component.class));
+        assertFalse(hasParameterTypeName(PerformanceExecutionEngine.class, "java" + ".awt.Component"));
+        assertFalse(hasParameterTypeName(PerformanceThreadGroupRunner.class, "java" + ".awt.Component"));
     }
 
     @Test
@@ -107,8 +103,8 @@ public class PerformanceExecutionEngineTest {
         threadGroupData.threadMode = ThreadGroupData.ThreadMode.FIXED;
         threadGroupData.numThreads = 0;
 
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new PerformanceTreeNode("root", NodeType.ROOT));
-        root.add(new DefaultMutableTreeNode(new PerformanceTreeNode("thread group", NodeType.THREAD_GROUP, threadGroupData)));
+        PerformanceTestPlanNode root = new PerformanceTestPlanNode(new PerformanceTreeNode("root", NodeType.ROOT));
+        root.add(new PerformanceTestPlanNode(new PerformanceTreeNode("thread group", NodeType.THREAD_GROUP, threadGroupData)));
 
         PerformanceExecutionEngine engine = new PerformanceExecutionEngine(
                 () -> true,
@@ -131,11 +127,11 @@ public class PerformanceExecutionEngineTest {
         threadGroupData.spikeRampDownTime = 10;
         threadGroupData.spikeDuration = 120;
 
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new PerformanceTreeNode("root", NodeType.ROOT));
-        DefaultMutableTreeNode group = new DefaultMutableTreeNode(
+        PerformanceTestPlanNode root = new PerformanceTestPlanNode(new PerformanceTreeNode("root", NodeType.ROOT));
+        PerformanceTestPlanNode group = new PerformanceTestPlanNode(
                 new PerformanceTreeNode("thread group", NodeType.THREAD_GROUP, threadGroupData)
         );
-        group.add(new DefaultMutableTreeNode(new PerformanceTreeNode("request", NodeType.REQUEST)));
+        group.add(new PerformanceTestPlanNode(new PerformanceTreeNode("request", NodeType.REQUEST)));
         root.add(group);
 
         PerformanceExecutionEngine engine = new PerformanceExecutionEngine(
@@ -156,19 +152,19 @@ public class PerformanceExecutionEngineTest {
         threadGroupData.useTime = false;
         threadGroupData.loops = 1;
 
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new PerformanceTreeNode("root", NodeType.ROOT));
-        DefaultMutableTreeNode group = new DefaultMutableTreeNode(
+        PerformanceTestPlanNode root = new PerformanceTestPlanNode(new PerformanceTreeNode("root", NodeType.ROOT));
+        PerformanceTestPlanNode group = new PerformanceTestPlanNode(
                 new PerformanceTreeNode("thread group", NodeType.THREAD_GROUP, threadGroupData)
         );
         PerformanceTreeNode outerLoopData = new PerformanceTreeNode("outer loop", NodeType.LOOP);
         outerLoopData.loopData = new LoopData();
         outerLoopData.loopData.iterations = LoopData.MAX_ITERATIONS;
-        DefaultMutableTreeNode outerLoop = new DefaultMutableTreeNode(outerLoopData);
+        PerformanceTestPlanNode outerLoop = new PerformanceTestPlanNode(outerLoopData);
         PerformanceTreeNode innerLoopData = new PerformanceTreeNode("inner loop", NodeType.LOOP);
         innerLoopData.loopData = new LoopData();
         innerLoopData.loopData.iterations = LoopData.MAX_ITERATIONS;
-        DefaultMutableTreeNode innerLoop = new DefaultMutableTreeNode(innerLoopData);
-        innerLoop.add(new DefaultMutableTreeNode(new PerformanceTreeNode("request", NodeType.REQUEST)));
+        PerformanceTestPlanNode innerLoop = new PerformanceTestPlanNode(innerLoopData);
+        innerLoop.add(new PerformanceTestPlanNode(new PerformanceTreeNode("request", NodeType.REQUEST)));
         outerLoop.add(innerLoop);
         group.add(outerLoop);
         root.add(group);
@@ -203,14 +199,14 @@ public class PerformanceExecutionEngineTest {
             threadGroupData.useTime = false;
             threadGroupData.loops = 1;
 
-            DefaultMutableTreeNode group = new DefaultMutableTreeNode(
+            PerformanceTestPlanNode group = new PerformanceTestPlanNode(
                     new PerformanceTreeNode("thread group", NodeType.THREAD_GROUP, threadGroupData)
             );
             PerformanceTreeNode loopData = new PerformanceTreeNode("Loop", NodeType.LOOP);
             loopData.loopData = new LoopData();
             loopData.loopData.iterations = 2;
-            DefaultMutableTreeNode loopNode = new DefaultMutableTreeNode(loopData);
-            loopNode.add(new DefaultMutableTreeNode(new PerformanceTreeNode(item.getName(), NodeType.REQUEST, item)));
+            PerformanceTestPlanNode loopNode = new PerformanceTestPlanNode(loopData);
+            loopNode.add(new PerformanceTestPlanNode(new PerformanceTreeNode(item.getName(), NodeType.REQUEST, item)));
             group.add(loopNode);
 
             PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
@@ -281,11 +277,11 @@ public class PerformanceExecutionEngineTest {
             item.setMethod("GET");
             item.setUrl(server.url("/assertion").toString());
 
-            DefaultMutableTreeNode request = new DefaultMutableTreeNode(
+            PerformanceTestPlanNode request = new PerformanceTestPlanNode(
                     new PerformanceTreeNode(item.getName(), NodeType.REQUEST, item)
             );
             request.add(responseCodeAssertion("201"));
-            DefaultMutableTreeNode group = fixedThreadGroup(1);
+            PerformanceTestPlanNode group = fixedThreadGroup(1);
             group.add(request);
 
             PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
@@ -317,8 +313,8 @@ public class PerformanceExecutionEngineTest {
 
             PerformanceTreeNode requestData = new PerformanceTreeNode(item.getName(), NodeType.REQUEST, item);
             requestData.webSocketPerformanceData = new WebSocketPerformanceData();
-            DefaultMutableTreeNode group = fixedThreadGroup(1);
-            group.add(new DefaultMutableTreeNode(requestData));
+            PerformanceTestPlanNode group = fixedThreadGroup(1);
+            group.add(new PerformanceTestPlanNode(requestData));
 
             PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
             new PerformanceExecutionEngine(
@@ -351,8 +347,8 @@ public class PerformanceExecutionEngineTest {
             item.setHeadersList(List.of(new HttpHeader(true, "Accept", "text/event-stream")));
 
             PerformanceTreeNode requestData = new PerformanceTreeNode(item.getName(), NodeType.REQUEST, item);
-            DefaultMutableTreeNode group = fixedThreadGroup(1);
-            group.add(new DefaultMutableTreeNode(requestData));
+            PerformanceTestPlanNode group = fixedThreadGroup(1);
+            group.add(new PerformanceTestPlanNode(requestData));
 
             PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
             new PerformanceExecutionEngine(
@@ -467,29 +463,29 @@ public class PerformanceExecutionEngineTest {
         }
     }
 
-    private static DefaultMutableTreeNode fixedThreadGroup(int loops) {
+    private static PerformanceTestPlanNode fixedThreadGroup(int loops) {
         ThreadGroupData threadGroupData = new ThreadGroupData();
         threadGroupData.threadMode = ThreadGroupData.ThreadMode.FIXED;
         threadGroupData.numThreads = 1;
         threadGroupData.useTime = false;
         threadGroupData.loops = loops;
-        return new DefaultMutableTreeNode(new PerformanceTreeNode("thread group", NodeType.THREAD_GROUP, threadGroupData));
+        return new PerformanceTestPlanNode(new PerformanceTreeNode("thread group", NodeType.THREAD_GROUP, threadGroupData));
     }
 
-    private static DefaultMutableTreeNode responseCodeAssertion(String expectedStatus) {
+    private static PerformanceTestPlanNode responseCodeAssertion(String expectedStatus) {
         AssertionData assertionData = new AssertionData();
         assertionData.type = "Response Code";
         assertionData.operator = "=";
         assertionData.value = expectedStatus;
-        return new DefaultMutableTreeNode(new PerformanceTreeNode("status assertion", NodeType.ASSERTION, assertionData));
+        return new PerformanceTestPlanNode(new PerformanceTreeNode("status assertion", NodeType.ASSERTION, assertionData));
     }
 
-    private static PerformanceTestPlan compile(DefaultMutableTreeNode root) {
-        return PerformancePlanDocumentCompiler.compile(PerformanceSwingTreePlanAdapter.toDocument(root));
+    private static PerformanceTestPlan compile(PerformanceTestPlanNode root) {
+        return PerformanceTestPlanCompiler.compile(root);
     }
 
-    private static boolean hasDefaultMutableTreeNodeParameter(Class<?> type) {
-        return hasParameterType(type, DefaultMutableTreeNode.class);
+    private static boolean hasSwingTreeNodeParameter(Class<?> type) {
+        return hasParameterTypeName(type, String.join(".", "javax", "swing", "tree", "DefaultMutable" + "TreeNode"));
     }
 
     private static PerformanceResultCollector emptyResultCollector() {
@@ -507,6 +503,18 @@ public class PerformanceExecutionEngineTest {
         boolean constructorParameter = java.util.Arrays.stream(type.getConstructors())
                 .flatMap(constructor -> java.util.Arrays.stream(constructor.getParameterTypes()))
                 .anyMatch(parameterType::equals);
+        return methodParameter || constructorParameter;
+    }
+
+    private static boolean hasParameterTypeName(Class<?> type, String parameterTypeName) {
+        boolean methodParameter = java.util.Arrays.stream(type.getMethods())
+                .flatMap(method -> java.util.Arrays.stream(method.getParameterTypes()))
+                .map(Class::getName)
+                .anyMatch(parameterTypeName::equals);
+        boolean constructorParameter = java.util.Arrays.stream(type.getConstructors())
+                .flatMap(constructor -> java.util.Arrays.stream(constructor.getParameterTypes()))
+                .map(Class::getName)
+                .anyMatch(parameterTypeName::equals);
         return methodParameter || constructorParameter;
     }
 

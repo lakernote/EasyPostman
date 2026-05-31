@@ -1,30 +1,26 @@
-package com.laker.postman.panel.performance;
+package com.laker.postman.performance.runtime;
 
 import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.performance.core.config.CsvDataSetData;
 import com.laker.postman.performance.core.controller.LoopData;
-import com.laker.postman.performance.execution.PerformanceRequestExecutionResult;
-import com.laker.postman.performance.execution.PerformanceRequestExecutor;
-import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.model.NodeType;
-import com.laker.postman.performance.plan.PerformanceRequestSampler;
-import com.laker.postman.performance.plan.PerformancePlanDocumentCompiler;
-import com.laker.postman.panel.performance.tree.PerformanceSwingTreePlanAdapter;
 import com.laker.postman.performance.core.plan.PerformanceThreadGroupPlan;
 import com.laker.postman.performance.core.plan.PerformanceTestPlan;
-import com.laker.postman.performance.result.PerformanceResultCollector;
-import com.laker.postman.performance.runtime.PerformanceIterationContextFactory;
-import com.laker.postman.performance.runtime.PerformancePlanExecutor;
-import com.laker.postman.performance.runtime.PerformanceSamplerExecutor;
 import com.laker.postman.performance.core.runtime.PerformanceVirtualUserCoordinator;
 import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
 import com.laker.postman.performance.core.timer.TimerData;
+import com.laker.postman.performance.execution.PerformanceRequestExecutionResult;
+import com.laker.postman.performance.execution.PerformanceRequestExecutor;
+import com.laker.postman.performance.model.PerformanceTreeNode;
+import com.laker.postman.performance.plan.PerformanceRequestSampler;
+import com.laker.postman.performance.plan.PerformanceTestPlanCompiler;
+import com.laker.postman.performance.plan.PerformanceTestPlanNode;
+import com.laker.postman.performance.result.PerformanceResultCollector;
 import com.laker.postman.service.variable.ExecutionVariableContext;
 import org.testng.annotations.Test;
 
-import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -37,8 +33,8 @@ public class PerformancePlanExecutorTest {
 
     @Test
     public void shouldExecuteLoopControllerTimerAndRequestSamplerInOrder() {
-        DefaultMutableTreeNode groupNode = threadGroupNode();
-        DefaultMutableTreeNode loopNode = loopNode(2);
+        PerformanceTestPlanNode groupNode = threadGroupNode();
+        PerformanceTestPlanNode loopNode = loopNode(2);
         loopNode.add(timerNode("loop timer", 11));
         loopNode.add(requestNode("loop request", RequestItemProtocolEnum.HTTP));
         groupNode.add(loopNode);
@@ -66,10 +62,10 @@ public class PerformancePlanExecutorTest {
 
     @Test
     public void shouldApplyScopedTimersBeforeEachSamplerRegardlessOfSiblingOrder() {
-        DefaultMutableTreeNode groupNode = threadGroupNode();
+        PerformanceTestPlanNode groupNode = threadGroupNode();
         groupNode.add(requestNode("first request", RequestItemProtocolEnum.HTTP));
         groupNode.add(timerNode("group scoped timer", 50));
-        DefaultMutableTreeNode loopNode = loopNode(1);
+        PerformanceTestPlanNode loopNode = loopNode(1);
         loopNode.add(requestNode("loop request", RequestItemProtocolEnum.HTTP));
         groupNode.add(loopNode);
 
@@ -96,8 +92,8 @@ public class PerformancePlanExecutorTest {
 
     @Test
     public void shouldApplyHttpRequestChildTimerBeforeSampler() {
-        DefaultMutableTreeNode groupNode = threadGroupNode();
-        DefaultMutableTreeNode httpRequest = requestNode("http request", RequestItemProtocolEnum.HTTP);
+        PerformanceTestPlanNode groupNode = threadGroupNode();
+        PerformanceTestPlanNode httpRequest = requestNode("http request", RequestItemProtocolEnum.HTTP);
         httpRequest.add(timerNode("http child timer", 21));
         groupNode.add(httpRequest);
 
@@ -122,10 +118,10 @@ public class PerformancePlanExecutorTest {
 
     @Test
     public void shouldRunHttpRequestChildTimersBeforeSamplerButSkipThemForWebSocket() {
-        DefaultMutableTreeNode groupNode = threadGroupNode();
-        DefaultMutableTreeNode httpRequest = requestNode("http request", RequestItemProtocolEnum.HTTP);
+        PerformanceTestPlanNode groupNode = threadGroupNode();
+        PerformanceTestPlanNode httpRequest = requestNode("http request", RequestItemProtocolEnum.HTTP);
         httpRequest.add(timerNode("http child timer", 21));
-        DefaultMutableTreeNode wsRequest = requestNode("ws request", RequestItemProtocolEnum.WEBSOCKET);
+        PerformanceTestPlanNode wsRequest = requestNode("ws request", RequestItemProtocolEnum.WEBSOCKET);
         wsRequest.add(timerNode("ws child timer", 31));
         groupNode.add(httpRequest);
         groupNode.add(wsRequest);
@@ -225,36 +221,36 @@ public class PerformancePlanExecutorTest {
         return new PerformancePlanExecutor(running, samplerExecutor, timerSleeper);
     }
 
-    private static PerformanceTestPlan compile(DefaultMutableTreeNode root) {
-        return PerformancePlanDocumentCompiler.compile(PerformanceSwingTreePlanAdapter.toDocument(root));
+    private static PerformanceTestPlan compile(PerformanceTestPlanNode root) {
+        return PerformanceTestPlanCompiler.compile(root);
     }
 
-    private static DefaultMutableTreeNode threadGroupNode() {
+    private static PerformanceTestPlanNode threadGroupNode() {
         ThreadGroupData data = new ThreadGroupData();
         data.threadMode = ThreadGroupData.ThreadMode.FIXED;
         data.numThreads = 1;
         data.useTime = false;
         data.loops = 1;
-        return new DefaultMutableTreeNode(new PerformanceTreeNode("group", NodeType.THREAD_GROUP, data));
+        return new PerformanceTestPlanNode(new PerformanceTreeNode("group", NodeType.THREAD_GROUP, data));
     }
 
-    private static DefaultMutableTreeNode loopNode(int iterations) {
+    private static PerformanceTestPlanNode loopNode(int iterations) {
         LoopData data = new LoopData();
         data.iterations = iterations;
-        return new DefaultMutableTreeNode(new PerformanceTreeNode("loop", NodeType.LOOP, data));
+        return new PerformanceTestPlanNode(new PerformanceTreeNode("loop", NodeType.LOOP, data));
     }
 
-    private static DefaultMutableTreeNode timerNode(String name, int delayMs) {
+    private static PerformanceTestPlanNode timerNode(String name, int delayMs) {
         TimerData data = new TimerData();
         data.delayMs = delayMs;
-        return new DefaultMutableTreeNode(new PerformanceTreeNode(name, NodeType.TIMER, data));
+        return new PerformanceTestPlanNode(new PerformanceTreeNode(name, NodeType.TIMER, data));
     }
 
-    private static DefaultMutableTreeNode requestNode(String name, RequestItemProtocolEnum protocol) {
+    private static PerformanceTestPlanNode requestNode(String name, RequestItemProtocolEnum protocol) {
         HttpRequestItem item = new HttpRequestItem();
         item.setId(name + "-id");
         item.setName(name);
         item.setProtocol(protocol);
-        return new DefaultMutableTreeNode(new PerformanceTreeNode(name, NodeType.REQUEST, item));
+        return new PerformanceTestPlanNode(new PerformanceTreeNode(name, NodeType.REQUEST, item));
     }
 }

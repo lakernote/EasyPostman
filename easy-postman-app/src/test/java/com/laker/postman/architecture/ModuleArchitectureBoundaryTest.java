@@ -292,14 +292,19 @@ public class ModuleArchitectureBoundaryTest {
     }
 
     @Test
-    public void performanceHeadlessPackagesStayOutOfPanelNamespace() throws IOException {
+    public void performanceHeadlessPackageDirectoriesStayOutOfPanelNamespace() {
         Path root = repositoryRoot();
         List<Path> retiredHeadlessPanelPackages = List.of(
                 root.resolve("easy-postman-app/src/main/java/com/laker/postman/panel/performance/execution"),
                 root.resolve("easy-postman-app/src/main/java/com/laker/postman/panel/performance/runtime"),
                 root.resolve("easy-postman-app/src/main/java/com/laker/postman/panel/performance/model"),
                 root.resolve("easy-postman-app/src/main/java/com/laker/postman/panel/performance/plan"),
-                root.resolve("easy-postman-app/src/main/java/com/laker/postman/panel/performance/report")
+                root.resolve("easy-postman-app/src/main/java/com/laker/postman/panel/performance/report"),
+                root.resolve("easy-postman-app/src/test/java/com/laker/postman/panel/performance/execution"),
+                root.resolve("easy-postman-app/src/test/java/com/laker/postman/panel/performance/runtime"),
+                root.resolve("easy-postman-app/src/test/java/com/laker/postman/panel/performance/model"),
+                root.resolve("easy-postman-app/src/test/java/com/laker/postman/panel/performance/plan"),
+                root.resolve("easy-postman-app/src/test/java/com/laker/postman/panel/performance/report")
         );
         List<Path> existingRetiredPackages = retiredHeadlessPanelPackages.stream()
                 .filter(Files::exists)
@@ -308,33 +313,90 @@ public class ModuleArchitectureBoundaryTest {
         assertTrue(existingRetiredPackages.isEmpty(),
                 "Headless performance execution/runtime/model/plan/report packages must move out of panel namespace: "
                         + existingRetiredPackages);
+    }
 
-        Path performanceSource = root.resolve("easy-postman-app/src/main/java/com/laker/postman/performance");
-        String retiredPanelPerformanceImportPrefix = "import com.laker.postman.panel.performance.";
-        List<String> violations = sourcePackageViolations(performanceSource, List.of(
-                retiredPanelPerformanceImportPrefix + "execution.",
-                retiredPanelPerformanceImportPrefix + "runtime.",
-                retiredPanelPerformanceImportPrefix + "model.",
-                retiredPanelPerformanceImportPrefix + "plan.",
-                retiredPanelPerformanceImportPrefix + "report."
-        ));
+    @Test
+    public void performanceSourcesDoNotReferenceRetiredPanelHeadlessPackages() throws IOException {
+        Path root = repositoryRoot();
+        List<String> retiredPackageNames = retiredPanelPerformanceHeadlessPackageNames();
+        List<String> violations = Stream.of(
+                        root.resolve("easy-postman-app/src/main/java"),
+                        root.resolve("easy-postman-app/src/test/java")
+                )
+                .flatMap(sourceRoot -> {
+                    try {
+                        return sourcePackageViolations(sourceRoot, retiredPackageNames).stream();
+                    } catch (IOException e) {
+                        throw new IllegalStateException("Failed to scan " + sourceRoot, e);
+                    }
+                })
+                .toList();
 
         assertTrue(violations.isEmpty(),
-                "Headless performance packages must not import retired panel.performance implementation packages: "
+                "Main/test sources must not reference retired panel.performance execution/runtime/model/plan/report packages: "
                         + violations);
+    }
+
+    @Test
+    public void performanceHeadlessSourcesDoNotImportSwingOrPanelUi() throws IOException {
+        Path root = repositoryRoot();
+        Path performanceSource = root.resolve("easy-postman-app/src/main/java/com/laker/postman/performance");
+        List<String> mainUiImportViolations = sourcePackageViolations(performanceSource, forbiddenSwingAndPanelImports());
+        assertTrue(mainUiImportViolations.isEmpty(),
+                "Headless performance production sources must not import Swing or panel UI packages: "
+                        + mainUiImportViolations);
 
         Path performanceTestSource = root.resolve("easy-postman-app/src/test/java/com/laker/postman/performance");
-        List<String> testUiImportViolations = sourcePackageViolations(performanceTestSource, List.of(
-                "import javax.swing.",
-                "import java.awt.",
-                "import com.formdev.",
-                "import net.miginfocom.",
-                "import com.laker.postman.panel."
-        ));
-
+        List<String> testUiImportViolations = sourcePackageViolations(performanceTestSource, forbiddenSwingAndPanelImports());
         assertTrue(testUiImportViolations.isEmpty(),
                 "Headless performance tests must not import Swing or panel UI packages: "
                         + testUiImportViolations);
+    }
+
+    @Test
+    public void performanceSwingTreePlanAdapterStaysInUiTreePackage() {
+        Path root = repositoryRoot();
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/panel/performance/tree/PerformanceSwingTreePlanAdapter.java")),
+                "PerformanceSwingTreePlanAdapter is a Swing tree adapter and belongs in panel.performance.tree");
+        assertFalse(Files.exists(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/performance/plan/PerformanceSwingTreePlanAdapter.java")),
+                "PerformanceSwingTreePlanAdapter must not live in the headless performance.plan package");
+        assertFalse(Files.exists(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/panel/performance/plan/PerformanceSwingTreePlanAdapter.java")),
+                "PerformanceSwingTreePlanAdapter must not live in the retired panel.performance.plan package");
+    }
+
+    @Test
+    public void performanceResultCollectorsAndSwingPanelsStayInOwnedPackages() {
+        Path root = repositoryRoot();
+        Path headlessResultPackage = root.resolve("easy-postman-app/src/main/java/com/laker/postman/performance/result");
+        for (String file : List.of(
+                "PerformanceResultCollector.java",
+                "PerformanceResultDisplayMapper.java",
+                "PerformanceWorkerResultDetailDisplayMapper.java"
+        )) {
+            assertTrue(Files.isRegularFile(headlessResultPackage.resolve(file)),
+                    file + " is non-UI result logic and belongs in com.laker.postman.performance.result");
+            assertFalse(Files.exists(root.resolve("easy-postman-app/src/main/java/com/laker/postman/panel/performance/result/" + file)),
+                    file + " must not remain in panel.performance.result");
+        }
+
+        Path swingResultPackage = root.resolve("easy-postman-app/src/main/java/com/laker/postman/panel/performance/result");
+        for (String file : List.of(
+                "PerformanceReportPanel.java",
+                "PerformanceResultTablePanel.java",
+                "PerformanceResultTableVisualizer.java",
+                "PerformanceTrendPanel.java",
+                "PerformanceTrendTheme.java",
+                "PerformanceTrendView.java",
+                "LazyPerformanceTrendPanel.java"
+        )) {
+            assertTrue(Files.isRegularFile(swingResultPackage.resolve(file)),
+                    file + " is Swing result UI and belongs in panel.performance.result");
+            assertFalse(Files.exists(root.resolve("easy-postman-app/src/main/java/com/laker/postman/performance/result/" + file)),
+                    file + " must not move into the headless performance.result package");
+        }
     }
 
     @Test
@@ -607,6 +669,23 @@ public class ModuleArchitectureBoundaryTest {
         return javaSourceFiles(sourceRoot).stream()
                 .flatMap(file -> sourceContainsViolations(file, forbiddenPatterns).stream())
                 .toList();
+    }
+
+    private static List<String> retiredPanelPerformanceHeadlessPackageNames() {
+        String retiredPackagePrefix = "com.laker.postman.panel.performance.";
+        return List.of("execution.", "runtime.", "model.", "plan.", "report.").stream()
+                .map(retiredPackagePrefix::concat)
+                .toList();
+    }
+
+    private static List<String> forbiddenSwingAndPanelImports() {
+        return List.of(
+                "import javax.swing.",
+                "import java.awt.",
+                "import com.formdev.",
+                "import net.miginfocom.",
+                "import com.laker.postman.panel."
+        );
     }
 
     private static List<String> uiImportViolations(Path file) {

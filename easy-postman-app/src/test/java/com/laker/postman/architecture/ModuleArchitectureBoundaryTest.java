@@ -338,19 +338,22 @@ public class ModuleArchitectureBoundaryTest {
     }
 
     @Test
-    public void performanceHeadlessSourcesDoNotImportSwingOrPanelUi() throws IOException {
+    public void performanceHeadlessSourcesStayUiFree() throws IOException {
         Path root = repositoryRoot();
-        Path performanceSource = root.resolve("easy-postman-app/src/main/java/com/laker/postman/performance");
-        List<String> mainUiImportViolations = sourcePackageViolations(performanceSource, forbiddenSwingAndPanelImports());
-        assertTrue(mainUiImportViolations.isEmpty(),
-                "Headless performance production sources must not import Swing or panel UI packages: "
-                        + mainUiImportViolations);
+        List<Path> performanceHeadlessRoots = List.of(
+                root.resolve("easy-postman-app/src/main/java/com/laker/postman/performance"),
+                root.resolve("easy-postman-app/src/test/java/com/laker/postman/performance"),
+                root.resolve("easy-postman-performance-core/src/main/java/com/laker/postman/performance"),
+                root.resolve("easy-postman-performance-core/src/test/java/com/laker/postman/performance")
+        );
 
-        Path performanceTestSource = root.resolve("easy-postman-app/src/test/java/com/laker/postman/performance");
-        List<String> testUiImportViolations = sourcePackageViolations(performanceTestSource, forbiddenSwingAndPanelImports());
-        assertTrue(testUiImportViolations.isEmpty(),
-                "Headless performance tests must not import Swing or panel UI packages: "
-                        + testUiImportViolations);
+        List<String> uiImportViolations = sourceRootsPackageViolations(
+                performanceHeadlessRoots,
+                forbiddenSwingAndPanelImports()
+        );
+        assertTrue(uiImportViolations.isEmpty(),
+                "Headless performance app/core main/test sources must not import Swing, panel, or shared UI packages: "
+                        + uiImportViolations);
     }
 
     @Test
@@ -668,6 +671,19 @@ public class ModuleArchitectureBoundaryTest {
         }
         return javaSourceFiles(sourceRoot).stream()
                 .flatMap(file -> sourceContainsViolations(file, forbiddenPatterns).stream())
+                .toList();
+    }
+
+    private static List<String> sourceRootsPackageViolations(List<Path> sourceRoots,
+                                                             List<String> forbiddenPatterns) throws IOException {
+        return sourceRoots.stream()
+                .flatMap(sourceRoot -> {
+                    try {
+                        return sourcePackageViolations(sourceRoot, forbiddenPatterns).stream();
+                    } catch (IOException e) {
+                        throw new IllegalStateException("Failed to scan " + sourceRoot, e);
+                    }
+                })
                 .toList();
     }
 

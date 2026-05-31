@@ -327,7 +327,7 @@ git commit -m "refactor: move headless performance code out of panel package"
 ## Task 8: Document plugin-manager Ownership Exception
 
 - [x] Update `docs/ARCHITECTURE_MODULES_zh.md`:
-  - State that `easy-postman-plugins/plugin-manager` is a host plugin-management library packaged under the official plugin aggregation directory for release/build convenience.
+  - 说明 `easy-postman-plugins/plugin-manager` 是宿主侧插件管理库，目前放在官方插件聚合目录下是为了发布/构建组织便利。
   - State it is not loaded as an ordinary runtime plugin by end users.
 - [x] Update `docs/PLUGIN_RUNTIME_ARCHITECTURE_zh.md` and `docs/PLUGINS_zh.md` with the same ownership note where runtime and catalog/install flows are described.
 - [ ] Add a short note to `AGENTS.md` only if the local module instructions need to be changed for future agents.
@@ -387,4 +387,4 @@ git status --short
 - `FunctionalPersistenceService` 使用中立 DTO 持久化 CSV 状态。
 - 插件补全 SPI 不再暴露 RSyntax 类型；RSyntax 只在 app editor adapter 中出现。
 - `plugin.platform.version` 已升到 `3.0.0`，官方 Redis/Kafka 插件已适配新 SPI。
-- 文档明确 `plugin-manager` 是 host plugin-management library 的目录特例。
+- 文档明确 `plugin-manager` 是宿主侧插件管理库的目录特例。

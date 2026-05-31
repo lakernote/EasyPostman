@@ -90,8 +90,8 @@ PluginManager / 本地放入 jar
 - 安装和加载分离
   - `easy-postman-plugin-runtime` 只负责扫描、descriptor 解析、classloader、registry、生命周期和“当前进程应该加载谁”
   - `easy-postman-plugins/*` 通常是官方插件 JAR，由 runtime 按 descriptor 加载
-  - `easy-postman-plugins/plugin-manager` 是 host-side plugin management helper / official plugin catalog installer facade，宿主 app 可直接依赖它来做 catalog 解析、下载、落盘、校验和安装来源记录
-  - `plugin-manager` 不是由 runtime 加载的普通插件，也不应作为新普通插件或新 host-side plugin-management library 的默认目录模板；它保留在 `easy-postman-plugins` 下只是历史路径和发布组织选择
+  - `easy-postman-plugins/plugin-manager` 是宿主侧插件管理辅助模块，宿主 app 可直接依赖它来做 catalog 解析、下载、落盘、校验和安装来源记录
+  - `plugin-manager` 不是由 runtime 加载的普通插件，也不应作为新普通插件或新宿主侧插件管理库的默认目录模板；它保留在 `easy-postman-plugins` 下只是历史路径和发布组织选择
 - 扫描和选择分离
   - `PluginScanner` 负责“看见什么”
   - `PluginCandidateResolver` 负责“最终选谁”

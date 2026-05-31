@@ -40,7 +40,7 @@ easy-postman-parent
 
 `easy-postman-plugins/*` 通常是官方插件 JAR。普通插件不得反向依赖宿主 app 内部实现；需要扩展宿主时通过 `easy-postman-plugin-api` 注册能力，需要共享基础 DTO/工具时依赖 `easy-postman-foundation`，需要统一 Swing 风格时依赖 `easy-postman-ui`。
 
-`easy-postman-plugins/plugin-manager` 是这个目录下的 ownership 特例：它是宿主 app 直接依赖的 host-side plugin management helper / official plugin catalog installer facade，负责 catalog 解析、在线/离线安装门面和安装来源记录，不是由 `easy-postman-plugin-runtime` 当作普通运行时插件扫描加载的插件模板。它继续放在 `easy-postman-plugins` 聚合目录下，是历史路径和发布组织选择；新的宿主侧 plugin-management library 不应默认继续放到 `easy-postman-plugins/*`，后续可以把这类代码迁到更清晰的模块名或目录。依赖方向上，普通插件仍不得依赖 `easy-postman-app`，但宿主 app 可以依赖 `plugin-manager` 这个特例。
+`easy-postman-plugins/plugin-manager` 是这个目录下的归属特例：它是宿主 app 直接依赖的宿主侧插件管理辅助模块，负责 catalog 解析、在线/离线安装门面和安装来源记录；它不是由 `easy-postman-plugin-runtime` 扫描加载的普通运行时插件，也不能作为普通插件模板。它继续放在 `easy-postman-plugins` 聚合目录下，是历史路径和发布组织选择；新的宿主侧插件管理库不应默认继续放到 `easy-postman-plugins/*`，后续可以迁到更清晰的模块名或目录。依赖方向上，普通插件仍不得依赖 `easy-postman-app`，但宿主 app 可以依赖 `plugin-manager` 这个特例。
 
 ## 国际化、字体、主题放置
 

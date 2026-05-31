@@ -62,7 +62,7 @@ easy-postman-parent
 - `easy-postman-plugins`
   - 通常是官方插件 JAR 集合
   - `plugin-client-cert`、`plugin-capture`、`plugin-redis`、`plugin-kafka`、`plugin-decompiler` 这类 `plugin-*` 是普通运行时插件
-  - `plugin-manager` 是例外：它是宿主 app 直接依赖的 host-side plugin management helper / official plugin catalog installer facade，负责 catalog 解析、在线/离线安装门面和安装来源记录，不是 runtime 扫描加载的普通插件
+  - `plugin-manager` 是例外：它是宿主 app 直接依赖的宿主侧插件管理辅助模块，负责 catalog 解析、在线/离线安装门面和安装来源记录，不是 runtime 扫描加载的普通插件
 
 ### 1.2 插件是怎么被宿主加载的
 
@@ -88,7 +88,7 @@ easy-postman-parent
 
 - 插件不是直接依赖宿主内部实现，而是通过 `PluginContext` 声明能力
 - 插件之间不共享类加载器，避免依赖冲突污染宿主
-- `easy-postman-plugin-runtime` owns 插件扫描、加载、生命周期和 registry；`plugin-manager` 只负责安装/catalog 侧的宿主辅助能力
+- `easy-postman-plugin-runtime` 负责插件扫描、加载、生命周期和 registry；`plugin-manager` 只负责安装/catalog 侧的宿主辅助能力
 - 普通插件不得依赖 `easy-postman-app`；宿主 app 可以依赖 `easy-postman-plugins/plugin-manager` 这个目录特例
 - 同一 `plugin.id` 存在多个版本时，运行时只会选择最高版本加载
 - 安装阶段就会做兼容性拦截，避免出现“安装成功但运行时跳过”的假成功状态
@@ -220,7 +220,7 @@ easy-postman-plugins/plugin-xxx
 
 然后把模块加入聚合构建。
 
-不要把 `easy-postman-plugins/plugin-manager` 当作普通插件模板。它留在 `easy-postman-plugins` 下是历史路径和发布组织选择；新的宿主侧 plugin-management library 不应默认继续放到 `easy-postman-plugins/*`，后续可迁到更清晰的模块名或目录。
+不要把 `easy-postman-plugins/plugin-manager` 当作普通插件模板。它留在 `easy-postman-plugins` 下是历史路径和发布组织选择；新的宿主侧插件管理库不应默认继续放到 `easy-postman-plugins/*`，后续可迁到更清晰的模块名或目录。
 
 ### 3.2 写插件 `pom.xml`
 

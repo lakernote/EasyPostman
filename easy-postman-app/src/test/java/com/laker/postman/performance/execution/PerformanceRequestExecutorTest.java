@@ -1,10 +1,12 @@
 package com.laker.postman.performance.execution;
 
-import com.laker.postman.model.HttpHeader;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.Environment;
+import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.HttpHeader;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.laker.postman.performance.core.assertion.AssertionData;
 import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.model.NodeType;
@@ -111,7 +113,7 @@ public class PerformanceRequestExecutorTest {
         ));
 
         assertFalse(source.contains("HttpRequestItem"));
-        assertFalse(source.contains("PreparedRequestBuilder"));
+        assertFalse(source.contains("PreparedRequestFactory"));
         assertTrue(source.contains("PerformanceRequestRuntime"));
     }
 

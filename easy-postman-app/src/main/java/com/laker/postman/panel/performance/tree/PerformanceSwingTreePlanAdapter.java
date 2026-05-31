@@ -1,11 +1,13 @@
 package com.laker.postman.panel.performance.tree;
 
+import com.laker.postman.collection.model.RequestGroup;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.request.PerformanceRequestSnapshot;
 
 
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestGroup;
 import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.plan.PerformancePlanDataCopies;
 import com.laker.postman.performance.plan.PerformancePlanDocument;

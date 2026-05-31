@@ -1,8 +1,10 @@
 package com.laker.postman.panel.collections.tree.action;
 
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestGroup;
-import com.laker.postman.model.SavedResponse;
+import com.laker.postman.collection.model.RequestGroup;
+import com.laker.postman.request.model.SavedResponse;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.laker.postman.service.collections.CollectionTreeNodes;
 import com.laker.postman.util.JsonUtil;
 import lombok.experimental.UtilityClass;

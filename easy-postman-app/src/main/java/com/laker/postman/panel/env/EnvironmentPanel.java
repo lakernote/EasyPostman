@@ -15,7 +15,7 @@ import com.laker.postman.common.component.list.EnvironmentListCellRenderer;
 import com.laker.postman.common.component.table.EasyVariableTablePanel;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.Environment;
-import com.laker.postman.model.EnvironmentItem;
+import com.laker.postman.environment.EnvironmentItem;
 import com.laker.postman.model.Variable;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.topmenu.TopMenuBar;

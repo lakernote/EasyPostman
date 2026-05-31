@@ -1,8 +1,10 @@
 package com.laker.postman.service;
 
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.model.Workspace;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.laker.postman.performance.core.assertion.AssertionData;
 import com.laker.postman.performance.core.config.CsvDataSetData;
 import com.laker.postman.performance.core.extractor.ExtractorData;

@@ -1,5 +1,8 @@
 package com.laker.postman.panel.performance.tree;
 
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.laker.postman.performance.core.controller.LoopData;
 import com.laker.postman.performance.core.extractor.ExtractorData;
 import com.laker.postman.performance.core.model.NodeType;
@@ -7,7 +10,6 @@ import com.laker.postman.performance.core.model.SsePerformanceData;
 import com.laker.postman.performance.core.model.WebSocketPerformanceData;
 
 
-import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;

@@ -3,7 +3,7 @@ package com.laker.postman.panel.toolbox;
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.button.*;
-import com.laker.postman.service.http.okhttp.OkHttpClientManager;
+import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
 import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
 import net.miginfocom.swing.MigLayout;

@@ -1,10 +1,12 @@
 package com.laker.postman.plugin.host;
 
-import com.laker.postman.common.UiSingletonFactory;
-import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.collection.model.RequestGroup;
 import com.laker.postman.model.RequestImportDraft;
 import com.laker.postman.model.RequestImportResult;
-import com.laker.postman.model.RequestGroup;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.panel.collections.tree.CollectionGroupSelectionDialog;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;

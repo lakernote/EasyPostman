@@ -1,19 +1,30 @@
 package com.laker.postman.service.swagger;
 
+import com.laker.postman.model.Environment;
+import com.laker.postman.collection.model.RequestGroup;
+import com.laker.postman.request.model.HttpHeader;
+import com.laker.postman.request.model.HttpParam;
+import com.laker.postman.request.model.HttpFormData;
+import com.laker.postman.request.model.HttpFormUrlencoded;
+import com.laker.postman.request.model.HttpRequestItem;
+
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.laker.postman.model.*;
-import com.laker.postman.service.common.CollectionNode;
-import com.laker.postman.service.common.CollectionParseResult;
-import com.laker.postman.service.common.NodeType;
+import com.laker.postman.collection.model.CollectionNode;
+import com.laker.postman.collection.model.CollectionParseResult;
+import com.laker.postman.collection.model.CollectionNodeType;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 
-import static com.laker.postman.model.RequestAuthTypes.*;
-import static com.laker.postman.model.RequestBodyTypes.*;
+import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_BASIC;
+import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_BEARER;
+import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_NONE;
+import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_FORM_DATA;
+import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_FORM_URLENCODED;
+import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_RAW;
 
 /**
  * OpenAPI 3.x 格式解析器
@@ -73,7 +84,7 @@ class OpenApi3Parser {
                 }
 
                 CollectionNode tagNode = getOrCreateTagNode(tagNodes, getTag(operation));
-                tagNode.addChild(new CollectionNode(NodeType.REQUEST, requestItem));
+                tagNode.addChild(new CollectionNode(CollectionNodeType.REQUEST, requestItem));
             }
         }
 
@@ -87,7 +98,7 @@ class OpenApi3Parser {
     }
 
     private static CollectionNode getOrCreateTagNode(Map<String, CollectionNode> tagNodes, String tag) {
-        return tagNodes.computeIfAbsent(tag, key -> new CollectionNode(NodeType.GROUP, new RequestGroup(key)));
+        return tagNodes.computeIfAbsent(tag, key -> new CollectionNode(CollectionNodeType.GROUP, new RequestGroup(key)));
     }
 
     private static HttpRequestItem parseOperation(

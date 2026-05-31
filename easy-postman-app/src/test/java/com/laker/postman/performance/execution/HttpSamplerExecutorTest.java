@@ -1,9 +1,11 @@
 package com.laker.postman.performance.execution;
 
-import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.laker.postman.performance.plan.PerformanceRequestSampler;
-import com.laker.postman.service.http.PreparedRequestBuilder;
+import com.laker.postman.http.request.PreparedRequestFactory;
 import okhttp3.Call;
 import okhttp3.OkHttpClient;
 import okhttp3.WebSocket;
@@ -33,7 +35,7 @@ public class HttpSamplerExecutorTest {
             item.setName("Tracked HTTP Call");
             item.setMethod("GET");
             item.setUrl(server.url("/tracked").toString());
-            PreparedRequest request = PreparedRequestBuilder.build(item);
+            PreparedRequest request = PreparedRequestFactory.build(item);
             RecordingNetworkRuntime networkRuntime = new RecordingNetworkRuntime();
             PerformanceRequestSampler sampler = new PerformanceRequestSampler(item.getName(), item, null, List.of());
 

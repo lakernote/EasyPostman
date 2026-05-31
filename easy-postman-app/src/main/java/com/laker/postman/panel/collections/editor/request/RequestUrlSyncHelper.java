@@ -1,6 +1,8 @@
 package com.laker.postman.panel.collections.editor.request;
 
-import com.laker.postman.model.HttpParam;
+import com.laker.postman.request.model.HttpParam;
+
+
 import com.laker.postman.panel.collections.editor.request.sub.EasyRequestParamsPanel;
 
 import javax.swing.*;

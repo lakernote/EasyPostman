@@ -1,6 +1,9 @@
 package com.laker.postman.service.js.api;
 
-import com.laker.postman.model.*;
+import com.laker.postman.model.Environment;
+import com.laker.postman.model.HttpResponse;
+import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.script.model.TestResult;
 import com.laker.postman.plugin.host.PluginAccess;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.GlobalVariablesService;

@@ -1,7 +1,9 @@
 package com.laker.postman.panel.collections.editor.request;
 
-import com.laker.postman.model.HttpParam;
-import com.laker.postman.service.http.HttpUtil;
+import com.laker.postman.request.model.HttpParam;
+
+
+import com.laker.postman.http.request.HttpUrlUtil;
 import lombok.experimental.UtilityClass;
 
 import java.util.ArrayList;
@@ -12,7 +14,7 @@ import java.util.Objects;
 class RequestUrlHelper {
 
     static List<HttpParam> mergeUrlParamsWithDisabledParams(String url, List<HttpParam> currentParams) {
-        List<HttpParam> urlParams = HttpUtil.getParamsListFromUrl(url);
+        List<HttpParam> urlParams = HttpUrlUtil.parseQueryParams(url);
         List<HttpParam> enabledCurrentParams = currentParams.stream()
                 .filter(HttpParam::isEnabled)
                 .toList();
@@ -31,11 +33,11 @@ class RequestUrlHelper {
     }
 
     static String rebuildUrlFromParams(String currentUrl, List<HttpParam> params) {
-        String baseUrl = HttpUtil.getBaseUrlWithoutParams(currentUrl);
+        String baseUrl = HttpUrlUtil.baseUrlWithoutQuery(currentUrl);
         if (baseUrl == null || baseUrl.isEmpty()) {
             return currentUrl;
         }
-        return HttpUtil.buildUrlFromParamsList(baseUrl, params);
+        return HttpUrlUtil.buildUrl(baseUrl, params);
     }
 
     static String prependProtocolIfNeeded(String url, boolean webSocketProtocol, String defaultProtocol) {

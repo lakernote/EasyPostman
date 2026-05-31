@@ -1,6 +1,8 @@
 package com.laker.postman.panel.collections.tree.action;
 
-import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import lombok.experimental.UtilityClass;
 
 import javax.swing.*;

@@ -1,5 +1,8 @@
 package com.laker.postman.performance.plan;
 
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.WebSocketPerformanceData;
 import com.laker.postman.performance.core.plan.PerformancePlanElement;
@@ -7,7 +10,6 @@ import com.laker.postman.performance.core.plan.PerformanceSampler;
 import com.laker.postman.performance.core.request.PerformanceRequestSnapshot;
 
 
-import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.service.variable.RequestExecutionScope;
 
 import java.util.ArrayList;

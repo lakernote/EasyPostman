@@ -2,7 +2,7 @@ package com.laker.postman.performance.runtime;
 
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.model.TestResult;
+import com.laker.postman.script.model.TestResult;
 import com.laker.postman.performance.model.PerformanceResultListener;
 import com.laker.postman.performance.model.PerformanceResultRetentionPolicy;
 import com.laker.postman.performance.model.PerformanceSampleEvent;

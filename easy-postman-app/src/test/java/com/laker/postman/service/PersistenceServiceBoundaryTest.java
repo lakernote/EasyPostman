@@ -12,7 +12,12 @@ public class PersistenceServiceBoundaryTest {
 
     @Test
     public void functionalPersistenceServiceShouldNotDependOnUiSingletons() throws IOException {
-        assertNoUiDependency(readMainSource("com/laker/postman/service/FunctionalPersistenceService.java"));
+        String source = readMainSource("com/laker/postman/service/FunctionalPersistenceService.java");
+        assertNoUiDependency(source);
+        assertFalse(source.contains("DefaultMutableTreeNode"),
+                "functional persistence must not depend on Swing tree nodes");
+        assertFalse(source.contains("ActiveCollectionTreeNodeRepository"),
+                "functional persistence must use collection request lookup instead of concrete tree repository");
     }
 
     @Test

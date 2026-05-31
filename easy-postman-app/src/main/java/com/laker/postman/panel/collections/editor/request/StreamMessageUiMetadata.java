@@ -1,7 +1,7 @@
 package com.laker.postman.panel.collections.editor.request;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.model.MessageType;
+import com.laker.postman.stream.MessageType;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;

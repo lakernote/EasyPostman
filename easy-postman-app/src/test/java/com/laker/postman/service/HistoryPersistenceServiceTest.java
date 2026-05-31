@@ -3,7 +3,7 @@ package com.laker.postman.service;
 import cn.hutool.json.JSONObject;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.model.RequestHistoryItem;
+import com.laker.postman.history.RequestHistoryItem;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Method;

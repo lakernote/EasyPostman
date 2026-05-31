@@ -1,6 +1,8 @@
 package com.laker.postman.common.component.table;
 
-import com.laker.postman.model.HttpFormData;
+import com.laker.postman.request.model.HttpFormData;
+
+
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.IconUtil;
 import lombok.extern.slf4j.Slf4j;

@@ -1,9 +1,11 @@
 package com.laker.postman.service.js.api;
 
-import com.laker.postman.model.HttpFormData;
-import com.laker.postman.model.HttpFormUrlencoded;
-import com.laker.postman.model.HttpHeader;
-import com.laker.postman.model.HttpParam;
+import com.laker.postman.request.model.HttpHeader;
+import com.laker.postman.request.model.HttpParam;
+import com.laker.postman.request.model.HttpFormData;
+import com.laker.postman.request.model.HttpFormUrlencoded;
+
+
 import lombok.Getter;
 import org.graalvm.polyglot.Value;
 
@@ -11,7 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.laker.postman.model.HttpFormData.TYPE_TEXT;
+import static com.laker.postman.request.model.HttpFormData.TYPE_TEXT;
 
 /**
  * JS 专用 List 包装类，支持 add 方法

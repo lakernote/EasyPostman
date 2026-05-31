@@ -1,5 +1,8 @@
 package com.laker.postman.panel.performance;
 
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+
+
 import com.formdev.flatlaf.FlatClientProperties;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.MemoryLabel;
@@ -14,7 +17,6 @@ import com.laker.postman.common.component.button.SegmentedToggleButton;
 import com.laker.postman.common.component.button.StartButton;
 import com.laker.postman.common.component.button.StopButton;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
 import com.laker.postman.panel.performance.component.PerformanceTreeCellRenderer;

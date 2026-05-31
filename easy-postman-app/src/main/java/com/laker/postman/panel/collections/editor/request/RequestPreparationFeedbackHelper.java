@@ -5,7 +5,7 @@ import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.panel.collections.editor.request.sub.RequestLinePanel;
 import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;
 import com.laker.postman.panel.sidebar.ConsolePanel;
-import com.laker.postman.service.http.HttpUtil;
+import com.laker.postman.http.request.HttpRequestValidationResult;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -50,6 +50,27 @@ final class RequestPreparationFeedbackHelper {
         ConsolePanel.appendLog("[Warning] " + result.getValidationResult().getMessage(), ConsolePanel.LogType.WARN);
     }
 
+    boolean confirmContinuationIfNeeded(RequestPreparationResult result,
+                                        RequestLinePanel requestLinePanel,
+                                        ActionListener sendAction,
+                                        ResponsePanel responsePanel) {
+        if (result == null || !result.requiresConfirmation()) {
+            return true;
+        }
+        int confirm = JOptionPane.showConfirmDialog(
+                responsePanel,
+                result.getValidationResult().getMessage(),
+                result.getValidationResult().getConfirmationTitle(),
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE
+        );
+        if (confirm == JOptionPane.YES_OPTION) {
+            return true;
+        }
+        resetUiAfterPreparationFailure(requestLinePanel, sendAction, responsePanel);
+        return false;
+    }
+
     private void resetUiAfterPreparationFailure(RequestLinePanel requestLinePanel,
                                                 ActionListener sendAction,
                                                 ResponsePanel responsePanel) {
@@ -57,7 +78,7 @@ final class RequestPreparationFeedbackHelper {
         responsePanel.hideLoadingOverlay();
     }
 
-    private void showValidationFailure(JTextField urlField, HttpUtil.ValidationResult validationResult) {
+    private void showValidationFailure(JTextField urlField, HttpRequestValidationResult validationResult) {
         String message = validationResult.getMessage();
         if (CharSequenceUtil.isNotBlank(message)) {
             if (validationResult.isWarning()) {

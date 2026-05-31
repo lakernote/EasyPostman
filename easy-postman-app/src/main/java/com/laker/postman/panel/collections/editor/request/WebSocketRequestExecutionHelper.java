@@ -1,10 +1,10 @@
 package com.laker.postman.panel.collections.editor.request;
 
 import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.MessageType;
+import com.laker.postman.stream.MessageType;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;
-import com.laker.postman.service.http.HttpSingleRequestExecutor;
+import com.laker.postman.http.runtime.transport.HttpRuntimeExecutor;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -71,7 +71,7 @@ final class WebSocketRequestExecutionHelper {
                     session.markStarted();
                     log.debug("Starting WebSocket connection with ID: {}", session.connectionId());
 
-                    HttpSingleRequestExecutor.executeWebSocket(req, session.newListener());
+                    HttpRuntimeExecutor.openWebSocket(req, session.newListener());
                     SwingUtilities.invokeLater(session::enableResponseTabsIfActive);
                     session.awaitCompletion();
                 } catch (InterruptedException ex) {

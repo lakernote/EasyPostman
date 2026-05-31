@@ -1,11 +1,14 @@
 package com.laker.postman.service.postman;
 
-import com.laker.postman.model.AuthType;
-import com.laker.postman.service.common.CollectionParseResult;
+import com.laker.postman.collection.importer.postman.PostmanCollectionParser;
+import com.laker.postman.collection.model.CollectionParseResult;
+import com.laker.postman.request.model.AuthType;
+import com.laker.postman.request.model.HttpRequestItem;
+import com.laker.postman.request.model.RequestBodyTypes;
 import org.testng.annotations.Test;
 
-import static com.laker.postman.model.RequestBodyTypes.BODY_TYPE_FORM_DATA;
-import static com.laker.postman.model.RequestBodyTypes.BODY_TYPE_RAW;
+import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_FORM_DATA;
+import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_RAW;
 import static org.testng.Assert.*;
 
 /**

@@ -1,7 +1,7 @@
 package com.laker.postman.common.component.tree;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.model.RequestGroup;
+import com.laker.postman.collection.model.RequestGroup;
 import com.laker.postman.service.collections.CollectionTreeNodes;
 import lombok.experimental.UtilityClass;
 

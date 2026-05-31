@@ -1,20 +1,33 @@
 package com.laker.postman.service.apipost;
 
+import com.laker.postman.model.Environment;
+import com.laker.postman.collection.model.RequestGroup;
+import com.laker.postman.request.model.HttpHeader;
+import com.laker.postman.request.model.HttpParam;
+import com.laker.postman.request.model.HttpFormData;
+import com.laker.postman.request.model.HttpFormUrlencoded;
+import com.laker.postman.request.model.SavedResponse;
+import com.laker.postman.request.model.HttpRequestItem;
+
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.laker.postman.model.*;
-import com.laker.postman.service.common.AuthParserUtil;
-import com.laker.postman.service.common.CollectionNode;
-import com.laker.postman.service.common.CollectionParseResult;
-import com.laker.postman.service.common.NodeType;
+import com.laker.postman.collection.model.CollectionNode;
+import com.laker.postman.collection.model.CollectionParseResult;
+import com.laker.postman.collection.model.CollectionNodeType;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 
-import static com.laker.postman.model.RequestAuthTypes.*;
-import static com.laker.postman.model.RequestBodyTypes.*;
+import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_BASIC;
+import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_BEARER;
+import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_DIGEST;
+import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_INHERIT;
+import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_NONE;
+import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_FORM_DATA;
+import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_FORM_URLENCODED;
+import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_RAW;
 
 /**
  * ApiPost Collection解析器
@@ -54,10 +67,10 @@ public class ApiPostCollectionParser {
                 if (request != null) {
                     JSONObject auth = request.getJSONObject("auth");
                     if (auth != null) {
-                        AuthParserUtil.parseApiPostAuthToGroup(auth, group);
+                        parseApiPostAuthToGroup(auth, group);
                     }
                 }
-                idToNodeMap.put(api.getStr("target_id"), new CollectionNode(NodeType.GROUP, group));
+                idToNodeMap.put(api.getStr("target_id"), new CollectionNode(CollectionNodeType.GROUP, group));
             }
 
             List<CollectionNode> topLevelNodes = new ArrayList<>();
@@ -73,7 +86,7 @@ public class ApiPostCollectionParser {
                 } else if ("api".equals(targetType)) {
                     HttpRequestItem req = parseApiPostApi(api);
                     if (req != null) {
-                        currentNode = new CollectionNode(NodeType.REQUEST, req);
+                        currentNode = new CollectionNode(CollectionNodeType.REQUEST, req);
                     }
                 }
 
@@ -102,7 +115,7 @@ public class ApiPostCollectionParser {
                 if (globalParam != null) {
                     JSONObject auth = globalParam.getJSONObject("auth");
                     if (auth != null) {
-                        AuthParserUtil.parseApiPostAuthToGroup(auth, collectionGroup);
+                        parseApiPostAuthToGroup(auth, collectionGroup);
                     }
                 }
             }
@@ -192,6 +205,35 @@ public class ApiPostCollectionParser {
             return;
         }
         req.setAuthType(AUTH_TYPE_NONE);
+    }
+
+    private static void parseApiPostAuthToGroup(JSONObject auth, RequestGroup group) {
+        String authType = auth.getStr("type", "");
+        if ("basic".equals(authType)) {
+            group.setAuthType(AUTH_TYPE_BASIC);
+            JSONObject basic = auth.getJSONObject("basic");
+            if (basic != null) {
+                group.setAuthUsername(basic.getStr("username", ""));
+                group.setAuthPassword(basic.getStr("password", ""));
+            }
+        } else if ("bearer".equals(authType)) {
+            group.setAuthType(AUTH_TYPE_BEARER);
+            JSONObject bearer = auth.getJSONObject("bearer");
+            if (bearer != null) {
+                group.setAuthToken(bearer.getStr("key", ""));
+            }
+        } else if ("digest".equals(authType)) {
+            group.setAuthType(AUTH_TYPE_DIGEST);
+            JSONObject digest = auth.getJSONObject("digest");
+            if (digest != null) {
+                group.setAuthUsername(digest.getStr("username", ""));
+                group.setAuthPassword(digest.getStr("password", ""));
+            }
+        } else if ("inherit".equals(authType)) {
+            group.setAuthType(AUTH_TYPE_INHERIT);
+        } else {
+            group.setAuthType(AUTH_TYPE_NONE);
+        }
     }
 
     private static void parseHeaders(JSONObject request, HttpRequestItem req) {

@@ -33,7 +33,7 @@ import com.laker.postman.performance.core.runtime.PerformanceRunProgress;
 import com.laker.postman.performance.core.runtime.PerformanceRunSummary;
 import com.laker.postman.performance.core.worker.PerformanceWorkerAssignment;
 import com.laker.postman.performance.core.worker.PerformanceWorkerExecutionPlanPartitioner;
-import com.laker.postman.service.http.okhttp.HttpClientRuntimeConfig;
+import com.laker.postman.http.runtime.okhttp.HttpClientRuntimeConfig;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.service.variable.RunScopedVariableContext;
 

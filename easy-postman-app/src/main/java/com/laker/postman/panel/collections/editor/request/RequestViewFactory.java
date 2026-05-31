@@ -1,10 +1,11 @@
 package com.laker.postman.panel.collections.editor.request;
 
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+
+
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.component.MarkdownEditorPanel;
 import com.laker.postman.common.component.tab.IndicatorTabComponent;
-import com.laker.postman.model.RequestEditSubPanelType;
-import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.editor.request.sub.*;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;

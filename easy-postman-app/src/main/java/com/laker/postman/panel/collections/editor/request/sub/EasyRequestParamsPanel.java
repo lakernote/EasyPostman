@@ -1,8 +1,10 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
+import com.laker.postman.request.model.HttpParam;
+
+
 import com.laker.postman.common.component.button.EditButton;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.model.HttpParam;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;

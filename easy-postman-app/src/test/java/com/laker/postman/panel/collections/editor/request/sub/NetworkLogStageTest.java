@@ -1,7 +1,7 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
 import com.laker.postman.common.constants.ThemeColors;
-import com.laker.postman.http.trace.NetworkLogEventStage;
+import com.laker.postman.http.runtime.observation.NetworkLogEventStage;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;

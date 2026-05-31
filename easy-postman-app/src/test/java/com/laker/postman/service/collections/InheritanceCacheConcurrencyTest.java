@@ -1,6 +1,6 @@
 package com.laker.postman.service.collections;
 
-import com.laker.postman.model.RequestGroup;
+import com.laker.postman.collection.model.RequestGroup;
 import org.testng.annotations.Test;
 
 import java.util.List;

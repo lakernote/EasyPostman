@@ -1,7 +1,7 @@
 package com.laker.postman.common.component.combobox;
 
 import com.laker.postman.model.Environment;
-import com.laker.postman.model.EnvironmentItem;
+import com.laker.postman.environment.EnvironmentItem;
 
 import javax.swing.*;
 import java.awt.*;

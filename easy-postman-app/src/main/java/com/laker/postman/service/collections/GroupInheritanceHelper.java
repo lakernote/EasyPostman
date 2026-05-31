@@ -1,11 +1,13 @@
 package com.laker.postman.service.collections;
 
-import cn.hutool.core.collection.CollUtil;
-import com.laker.postman.model.AuthType;
+import com.laker.postman.collection.model.RequestGroup;
 import com.laker.postman.model.Variable;
-import com.laker.postman.model.HttpHeader;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestGroup;
+import com.laker.postman.request.model.AuthType;
+import com.laker.postman.request.model.HttpHeader;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
+import cn.hutool.core.collection.CollUtil;
 import com.laker.postman.service.js.ScriptFragment;
 import com.laker.postman.service.js.ScriptMerger;
 import lombok.experimental.UtilityClass;

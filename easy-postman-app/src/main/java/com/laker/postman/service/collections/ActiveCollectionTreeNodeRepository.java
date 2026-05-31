@@ -1,6 +1,8 @@
 package com.laker.postman.service.collections;
 
-import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.tree.DefaultMutableTreeNode;

@@ -1,9 +1,11 @@
 package com.laker.postman.panel.collections.tree.handler;
 
+import com.laker.postman.collection.model.RequestGroup;
+import com.laker.postman.request.model.SavedResponse;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.laker.postman.common.UiSingletonFactory;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestGroup;
-import com.laker.postman.model.SavedResponse;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.panel.collections.tree.action.RequestTreeActions;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;

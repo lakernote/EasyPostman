@@ -1,14 +1,16 @@
 package com.laker.postman.plugin.host;
 
-import cn.hutool.core.util.IdUtil;
-import com.laker.postman.model.HttpHeader;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestBodyTypes;
 import com.laker.postman.model.RequestImportBodyTypes;
 import com.laker.postman.model.RequestImportDraft;
 import com.laker.postman.model.RequestImportHeader;
 import com.laker.postman.model.RequestImportProtocol;
-import com.laker.postman.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.RequestBodyTypes;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.HttpHeader;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
+import cn.hutool.core.util.IdUtil;
 import lombok.experimental.UtilityClass;
 
 import java.util.List;

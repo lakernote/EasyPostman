@@ -1,9 +1,10 @@
 package com.laker.postman.service.js;
 
-import lombok.extern.slf4j.Slf4j;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.HostAccess;
 import org.graalvm.polyglot.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -31,8 +32,9 @@ import static org.testng.Assert.*;
  *
  * @author laker
  */
-@Slf4j
 public class PostmanBuiltinLibrariesTest {
+
+    private static final Logger log = LoggerFactory.getLogger(PostmanBuiltinLibrariesTest.class);
 
     private Context context;
     private HttpServer httpServer;

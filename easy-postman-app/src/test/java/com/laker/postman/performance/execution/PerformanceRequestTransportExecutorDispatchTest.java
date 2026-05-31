@@ -1,9 +1,11 @@
 package com.laker.postman.performance.execution;
 
-import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
 import com.laker.postman.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.performance.core.request.PerformanceRequestSnapshot;

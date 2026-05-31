@@ -1,9 +1,11 @@
 package com.laker.postman.performance.plan;
 
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.HttpHeader;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
-import com.laker.postman.model.HttpHeader;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.performance.core.controller.LoopData;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.PerformanceProtocol;

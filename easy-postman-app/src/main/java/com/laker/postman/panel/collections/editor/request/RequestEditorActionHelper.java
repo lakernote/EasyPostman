@@ -1,17 +1,19 @@
 package com.laker.postman.panel.collections.editor.request;
 
+import com.laker.postman.service.curl.CurlRequest;
+import com.laker.postman.stream.MessageType;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import cn.hutool.core.text.CharSequenceUtil;
-import com.laker.postman.model.CurlRequest;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.MessageType;
-import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.editor.request.sub.EasyRequestHttpHeadersPanel;
 import com.laker.postman.panel.collections.editor.request.sub.RequestBodyPanel;
 import com.laker.postman.panel.collections.editor.request.sub.RequestLinePanel;
 import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.setting.SettingManager;
-import com.laker.postman.util.CurlImportUtil;
+import com.laker.postman.service.curl.CurlImportUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;

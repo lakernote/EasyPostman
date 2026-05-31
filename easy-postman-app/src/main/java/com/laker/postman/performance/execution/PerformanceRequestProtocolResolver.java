@@ -1,14 +1,16 @@
 package com.laker.postman.performance.execution;
 
+import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.performance.core.request.PerformanceRequestSnapshot;
 
 
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.performance.model.PerformanceProtocolRules;
-import com.laker.postman.service.http.HttpUtil;
+import com.laker.postman.http.request.HttpRequestProtocol;
 import lombok.experimental.UtilityClass;
 
 @UtilityClass
@@ -24,13 +26,13 @@ class PerformanceRequestProtocolResolver {
 
     boolean isSseRequest(HttpRequestItem item, PreparedRequest request) {
         RequestItemProtocolEnum protocol = resolveProtocol(item);
-        return protocol.isSseProtocol() || (protocol.isHttpProtocol() && HttpUtil.isSSERequest(request));
+        return protocol.isSseProtocol() || (protocol.isHttpProtocol() && HttpRequestProtocol.isSse(request));
     }
 
     boolean isSseRequest(PerformanceRequestSnapshot snapshot, PreparedRequest request) {
         PerformanceProtocol protocol = snapshot == null ? PerformanceProtocol.HTTP : snapshot.getProtocol();
         return protocol == PerformanceProtocol.SSE
-                || (protocol == PerformanceProtocol.HTTP && HttpUtil.isSSERequest(request));
+                || (protocol == PerformanceProtocol.HTTP && HttpRequestProtocol.isSse(request));
     }
 
     boolean isWebSocketRequest(HttpRequestItem item) {

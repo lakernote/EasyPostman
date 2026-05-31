@@ -2,8 +2,8 @@ package com.laker.postman.service.js.api;
 
 import com.laker.postman.model.Environment;
 import com.laker.postman.service.EnvironmentService;
-import com.laker.postman.service.http.CookieService;
-import com.laker.postman.service.http.okhttp.OkHttpClientManager;
+import com.laker.postman.http.runtime.cookie.HttpCookieStore;
+import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -43,7 +43,7 @@ public class PostmanApiContextSendRequestTest {
             server = null;
         }
         OkHttpClientManager.clearClientCache();
-        CookieService.clearAllCookies();
+        HttpCookieStore.clearAllCookies();
         if (originalDataFilePath != null && !originalDataFilePath.isBlank()) {
             EnvironmentService.setDataFilePath(originalDataFilePath);
         }

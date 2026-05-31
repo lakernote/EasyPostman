@@ -1,7 +1,9 @@
 package com.laker.postman.panel.collections;
 
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.laker.postman.common.UiSingletonFactory;
-import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.panel.collections.editor.RequestEditorTabController;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;

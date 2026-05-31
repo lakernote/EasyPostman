@@ -1,12 +1,14 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+
+
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.EasyTextField;
 import com.laker.postman.common.component.button.PrimaryButton;
 import com.laker.postman.common.component.button.SecondaryButton;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;

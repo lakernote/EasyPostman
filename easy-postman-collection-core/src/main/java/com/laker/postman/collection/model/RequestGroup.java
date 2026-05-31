@@ -1,0 +1,86 @@
+package com.laker.postman.collection.model;
+
+import com.laker.postman.model.Variable;
+import com.laker.postman.request.model.AuthType;
+import com.laker.postman.request.model.HttpHeader;
+
+
+import lombok.Getter;
+import lombok.Setter;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * RequestGroup 类表示一个请求分组的配置项
+ * 包含分组的名称、认证、脚本等信息
+ * 分组级别的认证和脚本会被其下的请求继承
+ */
+@Getter
+@Setter
+public class RequestGroup implements Serializable {
+    private String id = ""; // 唯一标识符
+    private String name = ""; // 分组名称
+    private String description = ""; // 分组描述
+    private String authType = AuthType.INHERIT.getConstant(); // 认证类型（none/basic/bearer/digest/inherit），分组默认继承父级认证
+    private String authUsername = ""; // Basic/Digest用户名
+    private String authPassword = ""; // Basic/Digest密码
+    private String authToken = "";    // Bearer Token
+    // 前置脚本（请求前执行）
+    private String prescript = "";
+    // 后置脚本（响应后执行）
+    private String postscript = "";
+    // 公共请求头（会被子请求继承）
+    private List<HttpHeader> headers = new ArrayList<>();
+    // 分组级别的变量（会被子请求继承）
+    private List<Variable> variables = new ArrayList<>();
+
+    public RequestGroup() {
+        this.id = UUID.randomUUID().toString();
+    }
+
+    public RequestGroup(String name) {
+        this.id = UUID.randomUUID().toString();
+        this.name = name;
+    }
+
+    /**
+     * 判断分组是否有认证配置
+     * 需要同时排除 NONE 和 INHERIT 类型，只有配置了实际认证（Basic/Bearer/Digest 等）才返回 true
+     */
+    public boolean hasAuth() {
+        return authType != null
+                && !AuthType.NONE.getConstant().equals(authType)
+                && !AuthType.INHERIT.getConstant().equals(authType);
+    }
+
+    /**
+     * 判断分组是否有前置脚本
+     */
+    public boolean hasPreScript() {
+        return prescript != null && !prescript.trim().isEmpty();
+    }
+
+    /**
+     * 判断分组是否有后置脚本
+     */
+    public boolean hasPostScript() {
+        return postscript != null && !postscript.trim().isEmpty();
+    }
+
+    /**
+     * 判断分组是否有公共请求头
+     */
+    public boolean hasHeaders() {
+        return headers != null && !headers.isEmpty();
+    }
+
+    /**
+     * 判断分组是否有变量
+     */
+    public boolean hasVariables() {
+        return variables != null && !variables.isEmpty();
+    }
+}

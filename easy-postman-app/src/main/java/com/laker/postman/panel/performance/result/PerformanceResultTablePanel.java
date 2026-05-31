@@ -1,9 +1,11 @@
 package com.laker.postman.panel.performance.result;
 
+import com.laker.postman.request.model.HttpHeader;
+
+
 
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.model.HttpHeader;
 import com.laker.postman.performance.model.PerformanceInternalHeaders;
 import com.laker.postman.performance.model.PerformanceProtocolLabels;
 import com.laker.postman.performance.model.ResultNodeInfo;

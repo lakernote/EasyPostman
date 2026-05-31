@@ -1,10 +1,12 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
+import com.laker.postman.request.model.HttpParam;
+
+
 import com.laker.postman.common.component.table.AbstractTablePanel;
 import com.laker.postman.common.component.table.EasyPostmanTextFieldCellEditor;
 import com.laker.postman.common.component.table.EasySmartValueCellEditor;
 import com.laker.postman.common.component.table.EasyTextFieldCellRenderer;
-import com.laker.postman.model.HttpParam;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;

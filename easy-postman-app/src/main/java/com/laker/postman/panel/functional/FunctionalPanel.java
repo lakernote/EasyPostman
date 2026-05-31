@@ -1,5 +1,14 @@
 package com.laker.postman.panel.functional;
 
+import com.laker.postman.functional.model.AssertionResult;
+import com.laker.postman.functional.model.BatchExecutionHistory;
+import com.laker.postman.model.HttpResponse;
+import com.laker.postman.functional.model.IterationResult;
+import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.functional.model.RequestResult;
+import com.laker.postman.functional.model.RunnerRowData;
+import com.laker.postman.request.model.HttpRequestItem;
+
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.DebouncedSaveSupport;
 import com.laker.postman.common.UiSingletonPanel;
@@ -9,18 +18,16 @@ import com.laker.postman.common.component.button.*;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.functional.model.FunctionalCsvDataState;
 import com.laker.postman.ioc.BeanFactory;
-import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.RequestSelectionDialogSupport;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.panel.functional.table.FunctionalRunnerTableModel;
-import com.laker.postman.model.RunnerRowData;
 import com.laker.postman.panel.functional.table.TableRowTransferHandler;
 import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.panel.sidebar.SidebarTabPanel;
 import com.laker.postman.service.FunctionalPersistenceService;
-import com.laker.postman.service.http.HttpSingleRequestExecutor;
-import com.laker.postman.service.http.HttpUtil;
-import com.laker.postman.service.http.PreparedRequestBuilder;
+import com.laker.postman.http.runtime.transport.HttpRuntimeExecutor;
+import com.laker.postman.common.component.RequestMethodUiMetadata;
+import com.laker.postman.http.request.PreparedRequestFactory;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.service.js.ScriptExecutionResult;
 import com.laker.postman.service.variable.ExecutionVariableContext;
@@ -445,7 +452,7 @@ public class FunctionalPanel extends UiSingletonPanel {
         HttpRequestItem item = row.requestItem;
 
         // build() 会自动应用 group 继承，并将合并后的脚本存储在 req 中
-        PreparedRequest req = PreparedRequestBuilder.build(item);
+        PreparedRequest req = PreparedRequestFactory.build(item);
 
         // Functional 场景：收集完整信息（用于结果展示），但不输出 UI 日志
         req.collectBasicInfo = true;   // 收集 headers、body
@@ -480,7 +487,7 @@ public class FunctionalPanel extends UiSingletonPanel {
             status = ERROR;
         } else {
             try {
-                resp = HttpSingleRequestExecutor.executeHttp(req);
+                resp = HttpRuntimeExecutor.executeHttp(req);
                 status = String.valueOf(resp.code); // HTTP状态码
 
                 // 执行后置脚本
@@ -622,7 +629,7 @@ public class FunctionalPanel extends UiSingletonPanel {
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
                 if (value != null) {
-                    String color = HttpUtil.getMethodColor(value.toString());
+                    String color = RequestMethodUiMetadata.methodColorHex(value.toString());
                     c.setForeground(Color.decode(color));
                 }
                 return c;
@@ -838,7 +845,7 @@ public class FunctionalPanel extends UiSingletonPanel {
                 continue; // 跳过已存在的请求，避免重复
             }
             // build() 会自动应用 group 继承
-            PreparedRequest req = PreparedRequestBuilder.build(item);
+            PreparedRequest req = PreparedRequestFactory.build(item);
             tableModel.addRow(new RunnerRowData(item, req));
             if (item.getId() != null) {
                 existingIds.add(item.getId()); // 同批次中也去重
@@ -924,7 +931,7 @@ public class FunctionalPanel extends UiSingletonPanel {
             if (row != null && row.requestItem != null && item.getId().equals(row.requestItem.getId())) {
                 row.requestItem = item;
                 // collection 保存后请求配置可能已变更，必须同步重建派生请求，避免执行历史继续引用旧 URL。
-                row.preparedRequest = PreparedRequestBuilder.build(item);
+                row.preparedRequest = PreparedRequestFactory.build(item);
                 row.name = item.getName();
                 row.url = item.getUrl();
                 row.method = item.getMethod();
@@ -1027,7 +1034,7 @@ public class FunctionalPanel extends UiSingletonPanel {
                 // 更新请求数据
                 try {
                     // build() 会自动应用 group 继承
-                    PreparedRequest preparedRequest = PreparedRequestBuilder.build(latestRequestItem);
+                    PreparedRequest preparedRequest = PreparedRequestFactory.build(latestRequestItem);
                     row.requestItem = latestRequestItem;
                     row.preparedRequest = preparedRequest;
                     row.name = latestRequestItem.getName();

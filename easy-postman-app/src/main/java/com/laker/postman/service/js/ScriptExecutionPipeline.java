@@ -1,15 +1,17 @@
 package com.laker.postman.service.js;
 
-import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.model.Environment;
-import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
+import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.service.js.api.PostmanApiContext;
 import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.service.EnvironmentService;
-import com.laker.postman.service.http.PreparedRequestBuilder;
-import com.laker.postman.service.http.RequestFinalizer;
+import com.laker.postman.http.request.PreparedRequestFactory;
+import com.laker.postman.http.request.PreparedRequestFinalizer;
 import com.laker.postman.service.variable.ExecutionContextScope;
 import com.laker.postman.service.variable.ExecutionVariableContext;
 import com.laker.postman.service.variable.RequestContext;
@@ -88,7 +90,7 @@ public class ScriptExecutionPipeline {
                 .requestExecutionScope(requestExecutionScope != null
                         ? requestExecutionScope
                         : RequestContext.captureCurrentExecutionScope())
-                .deferredAuthorization(PreparedRequestBuilder.resolveDeferredAuthorization(item, useCache))
+                .deferredAuthorization(PreparedRequestFactory.resolveDeferredAuthorization(item, useCache))
                 .outputCallback(outputCallback)
                 .environmentSupplier(environmentSupplier)
                 .build();
@@ -151,7 +153,7 @@ public class ScriptExecutionPipeline {
      * 延迟到执行上下文挂载后再生成的自动认证配置。
      * 这样同一轮共享变量可用于 Basic/Bearer 认证，同时 pre-script 仍可删除/覆盖该请求头。
      */
-    private PreparedRequestBuilder.DeferredAuthorization deferredAuthorization;
+    private PreparedRequestFactory.DeferredAuthorization deferredAuthorization;
 
     private transient ExecutionVariableContext runtimeExecutionContext;
 
@@ -349,10 +351,10 @@ public class ScriptExecutionPipeline {
     /**
      * 前置脚本执行成功后，统一进入最终收尾阶段。
      * 这里不再散落处理变量替换 / Authorization 兜底规则，
-     * 而是全部委托给 RequestFinalizer，保证各发送入口行为一致。
+     * 而是全部委托给 PreparedRequestFinalizer，保证各发送入口行为一致。
      */
     public void finalizeRequest() {
-        withExecutionContext(() -> RequestFinalizer.finalizeForSend(request, deferredAuthorization));
+        withExecutionContext(() -> PreparedRequestFinalizer.finalizeForSend(request, deferredAuthorization));
         deferredAuthorization = null;
     }
 

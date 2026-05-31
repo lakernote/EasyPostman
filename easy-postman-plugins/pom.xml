@@ -16,7 +16,8 @@
     <packaging>pom</packaging>
 
     <!--
-        这里放“官方插件”本体：
+        这里主要放普通官方插件 JAR；plugin-manager 是历史路径特例：
+        它是宿主 app 直接依赖的插件管理辅助库，不是 runtime 扫描加载的普通插件。
         - plugin-manager：安装/卸载/目录与市场门面
         - plugin-client-cert：客户端证书能力插件
         - plugin-capture：HTTP 抓包能力插件

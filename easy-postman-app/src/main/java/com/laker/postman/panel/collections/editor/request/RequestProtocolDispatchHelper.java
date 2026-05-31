@@ -1,9 +1,13 @@
 package com.laker.postman.panel.collections.editor.request;
 
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+
+
+import com.laker.postman.panel.http.runtime.SwingHttpRuntimeInteractionAdapter;
 import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;
-import com.laker.postman.service.http.HttpUtil;
+import com.laker.postman.http.request.HttpRequestProtocol;
+import com.laker.postman.http.runtime.ssl.SSLConfigurationUtil;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
 
 import javax.swing.*;
@@ -38,8 +42,9 @@ final class RequestProtocolDispatchHelper {
         RequestItemProtocolEnum protocol = result.getItem().getProtocol();
         PreparedRequest request = result.getRequest();
         attachNetworkLogSink(request);
+        attachHttpResponseInteraction(request);
         ScriptExecutionPipeline pipeline = result.getPipeline();
-        boolean expectedHttpSse = protocol.isHttpProtocol() && HttpUtil.isSSERequest(request);
+        boolean expectedHttpSse = protocol.isHttpProtocol() && HttpRequestProtocol.isSse(request);
 
         SwingWorker<Void, Void> worker;
         // 这里是协议分发的唯一出口：上游不用关心 HTTP / SSE / WebSocket 的执行细节。
@@ -66,5 +71,16 @@ final class RequestProtocolDispatchHelper {
         }
         // HTTP 执行层只发布 NetworkLogEvent；请求编辑器在这里把事件接回当前响应面板。
         request.networkLogSink = event -> responsePanel.getNetworkLogPanel().appendLog(event);
+        request.lifecycleLogSink = SwingHttpRuntimeInteractionAdapter.lifecycleLogSink();
+    }
+
+    private void attachHttpResponseInteraction(PreparedRequest request) {
+        if (request == null) {
+            return;
+        }
+        // HTTP 执行层只依赖 UI-neutral sink；Swing 请求编辑器在这里挂接具体交互。
+        request.downloadProgressSinkFactory = SwingHttpRuntimeInteractionAdapter.downloadProgressSinkFactory();
+        request.responseSizeLimitWarningSink = SwingHttpRuntimeInteractionAdapter.responseSizeLimitWarningSink();
+        SSLConfigurationUtil.setLifecycleLogSink(request.lifecycleLogSink);
     }
 }

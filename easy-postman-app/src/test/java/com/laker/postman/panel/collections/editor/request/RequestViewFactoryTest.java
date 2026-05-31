@@ -1,8 +1,9 @@
 package com.laker.postman.panel.collections.editor.request;
 
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+
+
 import com.laker.postman.common.constants.ConfigPathConstants;
-import com.laker.postman.model.RequestEditSubPanelType;
-import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.test.AbstractSwingUiTest;
 import com.laker.postman.util.I18nUtil;

@@ -13,10 +13,10 @@ import com.laker.postman.performance.core.timer.TimerData;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.model.TestResult;
+import com.laker.postman.script.model.TestResult;
 import com.laker.postman.performance.plan.PerformanceRequestSampler;
-import com.laker.postman.service.http.HttpBaseClientProvider;
-import com.laker.postman.service.http.HttpSingleRequestExecutor;
+import com.laker.postman.http.runtime.transport.HttpBaseClientProvider;
+import com.laker.postman.http.runtime.transport.HttpRuntimeExecutor;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import okhttp3.Response;
@@ -290,7 +290,7 @@ public class WebSocketScenarioExecutor {
                     }
                 };
 
-                WebSocket webSocket = HttpSingleRequestExecutor.executeWebSocket(req, listener, baseClientProvider, false);
+                WebSocket webSocket = HttpRuntimeExecutor.openWebSocket(req, listener, baseClientProvider, false);
                 session.webSocket = webSocket;
                 sessions.add(session);
                 currentSession = session;

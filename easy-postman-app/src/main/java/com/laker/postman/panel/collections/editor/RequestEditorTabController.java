@@ -1,9 +1,11 @@
 package com.laker.postman.panel.collections.editor;
 
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.tab.ClosableTabComponent;
-import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.service.collections.ActiveCollectionTreeNodeRepository;
 import com.laker.postman.service.collections.CollectionTreeQueryService;

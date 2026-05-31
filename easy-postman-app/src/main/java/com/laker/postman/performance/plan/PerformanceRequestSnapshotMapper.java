@@ -1,5 +1,14 @@
 package com.laker.postman.performance.plan;
 
+import com.laker.postman.request.model.AuthType;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.HttpHeader;
+import com.laker.postman.request.model.HttpParam;
+import com.laker.postman.request.model.HttpFormData;
+import com.laker.postman.request.model.HttpFormUrlencoded;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.performance.core.request.PerformanceAuthType;
 import com.laker.postman.performance.core.request.PerformanceRequestExecutionScopeSnapshot;
@@ -7,13 +16,6 @@ import com.laker.postman.performance.core.request.PerformanceRequestFormDataPart
 import com.laker.postman.performance.core.request.PerformanceRequestKeyValue;
 import com.laker.postman.performance.core.request.PerformanceRequestSnapshot;
 
-import com.laker.postman.model.HttpFormData;
-import com.laker.postman.model.HttpFormUrlencoded;
-import com.laker.postman.model.HttpHeader;
-import com.laker.postman.model.HttpParam;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.model.AuthType;
 import com.laker.postman.service.variable.RequestExecutionScope;
 import lombok.experimental.UtilityClass;
 

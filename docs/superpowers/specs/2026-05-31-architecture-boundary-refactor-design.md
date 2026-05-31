@@ -37,7 +37,7 @@ Do not create a broad `easy-postman-api-core` module in this first pass. The fir
 
 `com.laker.postman.navigation.*` owns host navigation metadata such as sidebar tabs, panel factories, title keys, and icon paths. Domain model packages must not know about sidebar panels.
 
-`com.laker.postman.service.http.*` may keep concrete HTTP/OkHttp implementation code for now, but it must not directly show Swing dialogs or expose UI component types. UI feedback must be returned as structured outcomes or delegated through UI-layer callbacks.
+HTTP request preparation belongs in `com.laker.postman.http.request.*`; concrete runtime adapters belong in `com.laker.postman.http.runtime.*`. These packages must not directly show Swing dialogs or expose UI component types. UI feedback must be returned as structured outcomes or delegated through UI-layer callbacks.
 
 `easy-postman-performance-core` remains the headless performance domain core. It owns plan data, executable run plan JSON models, runtime contracts, thread-group scheduling, worker protocol DTOs, stats, trends, and report snapshots. It must not depend on app, Swing, OkHttp, workspace services, or app settings.
 
@@ -70,7 +70,7 @@ Split protocol and stream-message domain data from UI metadata:
 - `MessageType` keeps only message type values.
 - A UI mapper such as `StreamMessageUiMetadata` supplies icons and localized labels.
 
-Move HTTP header constants used by models into foundation, or move header normalization out of `HttpResponse` into an HTTP response mapper. `HttpResponse` must not depend on `com.laker.postman.service.http`.
+Move HTTP header constants used by models into foundation, or move header normalization out of `HttpResponse` into an HTTP response mapper. `HttpResponse` must not depend on app service HTTP packages.
 
 ## Plugin SPI Breaking Change
 

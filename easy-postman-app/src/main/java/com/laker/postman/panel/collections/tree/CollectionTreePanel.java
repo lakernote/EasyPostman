@@ -1,13 +1,15 @@
 package com.laker.postman.panel.collections.tree;
 
+import com.laker.postman.collection.model.RequestGroup;
+import com.laker.postman.model.Workspace;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.async.EasyTaskExecutor;
 import com.laker.postman.common.component.tree.RequestTreeCellRenderer;
 import com.laker.postman.common.component.tree.TreeTransferHandler;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestGroup;
-import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.collections.OpenedRequestTabSessionRestorer;
 import com.laker.postman.panel.collections.tree.action.TreeNodeCloner;
 import com.laker.postman.panel.collections.tree.handler.RequestTreeKeyboardHandler;
@@ -21,7 +23,7 @@ import com.laker.postman.service.collections.CollectionTreeRootRegistry;
 import com.laker.postman.service.collections.OpenedRequestTabsStore;
 import com.laker.postman.service.collections.CollectionTreeQueryService;
 import com.laker.postman.service.collections.RequestsPersistence;
-import com.laker.postman.service.http.PreparedRequestBuilder;
+import com.laker.postman.http.request.PreparedRequestFactory;
 import com.laker.postman.util.SystemUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -216,7 +218,7 @@ public class CollectionTreePanel extends UiSingletonPanel {
     private void saveRequestGroups() {
         persistence.saveRequestGroups();
         // 保存后使预计算缓存失效（可能有修改）
-        PreparedRequestBuilder.invalidateCache();
+        PreparedRequestFactory.invalidateCache();
     }
 
 
@@ -320,7 +322,7 @@ public class CollectionTreePanel extends UiSingletonPanel {
         CollectionTreeNodes.setRequest(requestNode, item);
         treeModel.nodeChanged(requestNode);
 
-        PreparedRequestBuilder.invalidateCacheForRequest(item.getId());
+        PreparedRequestFactory.invalidateCacheForRequest(item.getId());
 
         persistence.saveRequestGroups();
         // 保存后去除Tab红点，同时通知 FunctionalPanel 和 PerformancePanel 同步最新数据

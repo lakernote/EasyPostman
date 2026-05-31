@@ -1,11 +1,18 @@
 package com.laker.postman.panel.collections.tree.action;
 
+import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.collection.model.RequestGroup;
+import com.laker.postman.model.Workspace;
+import com.laker.postman.request.model.AuthType;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.SavedResponse;
+import com.laker.postman.request.model.HttpRequestItem;
+
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.json.JSONObject;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.tab.ClosableTabComponent;
 import com.laker.postman.frame.MainFrame;
-import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.panel.collections.tree.dialog.AddRequestDialog;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
@@ -14,9 +21,9 @@ import com.laker.postman.panel.functional.FunctionalPanel;
 import com.laker.postman.panel.sidebar.SidebarTabPanel;
 import com.laker.postman.service.collections.RequestsPersistence;
 import com.laker.postman.service.curl.CurlParser;
-import com.laker.postman.service.http.HttpRequestFactory;
-import com.laker.postman.service.http.PreparedRequestBuilder;
-import com.laker.postman.service.http.RequestFinalizer;
+import com.laker.postman.http.request.HttpRequestFactory;
+import com.laker.postman.http.request.PreparedRequestFactory;
+import com.laker.postman.http.request.PreparedRequestFinalizer;
 import com.laker.postman.service.postman.PostmanCollectionExporter;
 import com.laker.postman.panel.workspace.WorkspaceTransferCoordinator;
 import com.laker.postman.service.collections.CollectionTreeNodes;
@@ -112,7 +119,7 @@ public class RequestTreeActions {
         requestTree.expandPath(new TreePath(parentNode.getPath()));
 
         // 缓存失效（新增分组可能影响子请求的继承）
-        PreparedRequestBuilder.invalidateCache();
+        PreparedRequestFactory.invalidateCache();
 
         leftPanel.getPersistence().saveRequestGroups();
     }
@@ -214,7 +221,7 @@ public class RequestTreeActions {
         leftPanel.getTreeModel().nodeChanged(node);
 
         // 缓存失效（分组名称改变会影响脚本注释）
-        PreparedRequestBuilder.invalidateCache();
+        PreparedRequestFactory.invalidateCache();
 
         leftPanel.getPersistence().saveRequestGroups();
     }
@@ -424,7 +431,7 @@ public class RequestTreeActions {
         }
 
         // 缓存失效（删除节点可能影响树结构）
-        PreparedRequestBuilder.invalidateCache();
+        PreparedRequestFactory.invalidateCache();
 
         leftPanel.getPersistence().saveRequestGroups();
     }
@@ -618,8 +625,8 @@ public class RequestTreeActions {
         HttpRequestItem item = CollectionTreeNodes.request(selectedNode).orElse(null);
         if (item == null) return;
         try {
-            PreparedRequest req = PreparedRequestBuilder.build(item);
-            RequestFinalizer.finalizeForSend(req, item, true);
+            PreparedRequest req = PreparedRequestFactory.build(item);
+            PreparedRequestFinalizer.finalizeForSend(req, item, true);
             String curl = CurlParser.toCurl(req);
 
             Toolkit.getDefaultToolkit().getSystemClipboard()
@@ -661,7 +668,7 @@ public class RequestTreeActions {
             requestTree.expandPath(new TreePath(parent.getPath()));
 
             // 缓存失效（复制分组可能影响树结构）
-            PreparedRequestBuilder.invalidateCache();
+            PreparedRequestFactory.invalidateCache();
 
             leftPanel.getPersistence().saveRequestGroups();
         }
@@ -757,7 +764,7 @@ public class RequestTreeActions {
             leftPanel.getTreeModel().reload();
 
             // 缓存失效（移动集合会改变树结构）
-            PreparedRequestBuilder.invalidateCache();
+            PreparedRequestFactory.invalidateCache();
 
             leftPanel.getPersistence().saveRequestGroups();
         }

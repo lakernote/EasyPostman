@@ -1,5 +1,8 @@
 package com.laker.postman.performance.plan;
 
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.laker.postman.performance.core.assertion.AssertionData;
 import com.laker.postman.performance.core.config.CsvDataSetData;
 import com.laker.postman.performance.core.controller.LoopData;
@@ -10,7 +13,6 @@ import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
 import com.laker.postman.performance.core.timer.TimerData;
 
 
-import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.service.variable.RequestExecutionScope;
 import com.laker.postman.util.JsonUtil;
 import lombok.experimental.UtilityClass;

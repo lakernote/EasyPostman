@@ -1,10 +1,12 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.common.component.button.SwitchButton;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.service.http.RequestSettingsResolver;
+import com.laker.postman.http.request.HttpRequestSettingsResolver;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -87,9 +89,9 @@ public class RequestSettingsPanel extends JScrollPane {
     public void populate(HttpRequestItem item) {
         updateRequestTimeoutHint();
         followRedirectsComboBox.setSelectedItem(findBooleanOption(followRedirectsComboBox, item != null ? item.getFollowRedirects() : null));
-        useCookieJarSwitch.setSelected(RequestSettingsResolver.resolveCookieJarEnabled(item));
+        useCookieJarSwitch.setSelected(HttpRequestSettingsResolver.resolveCookieJarEnabled(item));
         httpVersionComboBox.setSelectedItem(findHttpVersionOption(
-                RequestSettingsResolver.normalizeStoredHttpVersion(item != null ? item.getHttpVersion() : null)
+                HttpRequestSettingsResolver.normalizeStoredHttpVersion(item != null ? item.getHttpVersion() : null)
         ));
         Integer requestTimeout = item != null ? item.getRequestTimeoutMs() : null;
         requestTimeoutField.setText(requestTimeout != null ? String.valueOf(requestTimeout) : "");
@@ -256,13 +258,13 @@ public class RequestSettingsPanel extends JScrollPane {
     }
 
     private Boolean getStoredCookieJarValue() {
-        return RequestSettingsResolver.normalizeStoredCookieJarEnabled(
+        return HttpRequestSettingsResolver.normalizeStoredCookieJarEnabled(
                 useCookieJarSwitch.isSelected() ? Boolean.TRUE : Boolean.FALSE
         );
     }
 
     private String getStoredHttpVersionValue() {
-        return RequestSettingsResolver.normalizeStoredHttpVersion(getSelectedHttpVersion());
+        return HttpRequestSettingsResolver.normalizeStoredHttpVersion(getSelectedHttpVersion());
     }
 
     private Integer getStoredRequestTimeoutValue() {

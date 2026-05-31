@@ -1,13 +1,15 @@
 package com.laker.postman.performance.execution;
 
+import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.laker.postman.performance.core.request.PerformanceRequestSnapshot;
 
 
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.performance.plan.PerformanceRequestSnapshotMapper;
-import com.laker.postman.service.http.PreparedRequestBuilder;
+import com.laker.postman.http.request.PreparedRequestFactory;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.service.variable.ExecutionVariableContext;
 
@@ -26,14 +28,14 @@ final class DefaultPerformanceRequestRuntime implements PerformanceRequestRuntim
         PerformanceExecutionConfig resolvedConfig = executionConfig == null
                 ? PerformanceExecutionConfig.DEFAULT
                 : executionConfig;
-        PreparedRequest request = PreparedRequestBuilder.buildWithoutInheritance(requestItem);
+        PreparedRequest request = PreparedRequestFactory.buildWithoutInheritance(requestItem);
         ScriptExecutionPipeline pipeline = ScriptExecutionPipeline.builder()
                 .request(request)
                 .preScript(request.prescript)
                 .postScript(request.postscript)
                 .sharedExecutionContext(iterationContext)
                 .requestExecutionScope(requestSampler == null ? null : requestSampler.getRequestExecutionScope())
-                .deferredAuthorization(PreparedRequestBuilder.resolveDeferredAuthorizationWithoutInheritance(requestItem))
+                .deferredAuthorization(PreparedRequestFactory.resolveDeferredAuthorizationWithoutInheritance(requestItem))
                 .outputCallback(resolvedConfig.scriptOutputCallback())
                 .environmentSupplier(resolvedConfig.environmentSupplier())
                 .scriptExecutor(resolvedConfig.scriptExecutor())

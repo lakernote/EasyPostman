@@ -1,7 +1,7 @@
 package com.laker.postman.performance.execution;
 
 
-import com.laker.postman.service.http.HttpSingleRequestExecutor;
+import com.laker.postman.http.runtime.transport.HttpRuntimeExecutor;
 
 import java.util.List;
 
@@ -19,7 +19,7 @@ final class HttpSamplerExecutor implements PerformanceProtocolSamplerExecutor {
     @Override
     public ProtocolExecutionResult execute(PerformanceProtocolSamplerContext context) throws Exception {
         return new ProtocolExecutionResult(
-                HttpSingleRequestExecutor.executeHttp(context.getRequest(), null, networkRuntime, networkRuntime),
+                HttpRuntimeExecutor.executeHttp(context.getRequest(), null, networkRuntime, networkRuntime),
                 "",
                 false,
                 false,

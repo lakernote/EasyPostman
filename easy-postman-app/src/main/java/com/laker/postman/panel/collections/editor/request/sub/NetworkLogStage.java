@@ -1,7 +1,7 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.http.trace.NetworkLogEventStage;
+import com.laker.postman.http.runtime.observation.NetworkLogEventStage;
 import lombok.Getter;
 
 import java.awt.*;

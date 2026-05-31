@@ -5,7 +5,7 @@ import com.laker.postman.performance.core.model.PerformanceProtocol;
 
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.model.TestResult;
+import com.laker.postman.script.model.TestResult;
 
 import java.util.List;
 

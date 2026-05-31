@@ -1,13 +1,15 @@
 package com.laker.postman.performance.plan;
 
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.laker.postman.performance.core.plan.PerformanceAssertionElement;
 import com.laker.postman.performance.core.plan.PerformanceLoopController;
 import com.laker.postman.performance.core.plan.PerformanceProtocolStageElement;
 import com.laker.postman.performance.core.plan.PerformanceTestPlan;
 import com.laker.postman.performance.core.plan.PerformanceThreadGroupPlan;
 import com.laker.postman.performance.core.plan.PerformanceTimerElement;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.performance.core.assertion.AssertionData;
 import com.laker.postman.performance.core.controller.LoopData;
 import com.laker.postman.performance.core.config.CsvDataSetData;

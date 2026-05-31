@@ -1,5 +1,11 @@
 package com.laker.postman.service;
 
+import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.functional.model.RunnerRowData;
+import com.laker.postman.model.Workspace;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
@@ -7,15 +13,10 @@ import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.functional.model.FunctionalCsvDataState;
 import com.laker.postman.ioc.Component;
 import com.laker.postman.ioc.PostConstruct;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.model.RunnerRowData;
-import com.laker.postman.model.Workspace;
-import com.laker.postman.service.collections.ActiveCollectionTreeNodeRepository;
-import com.laker.postman.service.http.PreparedRequestBuilder;
+import com.laker.postman.service.collections.CollectionRequestLookup;
+import com.laker.postman.http.request.PreparedRequestFactory;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.tree.DefaultMutableTreeNode;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -36,6 +37,15 @@ import java.util.Map;
 public class FunctionalPersistenceService {
     private static final String FILE_PATH = ConfigPathConstants.FUNCTIONAL_CONFIG;
     private static final long MAX_FILE_SIZE = 2L * 1024 * 1024; // 2MB
+    private final CollectionRequestLookup requestLookup;
+
+    public FunctionalPersistenceService() {
+        this(new CollectionRequestLookup());
+    }
+
+    FunctionalPersistenceService(CollectionRequestLookup requestLookup) {
+        this.requestLookup = requestLookup;
+    }
 
     @PostConstruct
     public void init() {
@@ -207,18 +217,7 @@ public class FunctionalPersistenceService {
         }
 
         try {
-            DefaultMutableTreeNode requestNode = new ActiveCollectionTreeNodeRepository()
-                    .findNodeByRequestId(requestId)
-                    .orElse(null);
-
-            if (requestNode != null) {
-                Object userObj = requestNode.getUserObject();
-                if (userObj instanceof Object[] obj) {
-                    if (obj.length > 1 && obj[1] instanceof HttpRequestItem) {
-                        return (HttpRequestItem) obj[1];
-                    }
-                }
-            }
+            return requestLookup.findRequestItemById(requestId).orElse(null);
         } catch (Exception e) {
             log.error("Failed to find request item by ID {}: {}", requestId, e.getMessage());
         }
@@ -272,7 +271,7 @@ public class FunctionalPersistenceService {
                     continue;
                 }
 
-                PreparedRequest preparedRequest = PreparedRequestBuilder.build(requestItem);
+                PreparedRequest preparedRequest = PreparedRequestFactory.build(requestItem);
                 RunnerRowData row = new RunnerRowData(requestItem, preparedRequest);
                 row.selected = selected;
                 rows.add(row);

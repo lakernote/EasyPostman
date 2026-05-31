@@ -1,7 +1,9 @@
 package com.laker.postman.common.component.tree;
 
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestGroup;
+import com.laker.postman.collection.model.RequestGroup;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.laker.postman.service.collections.CollectionTreeNodes;
 import org.testng.annotations.Test;
 

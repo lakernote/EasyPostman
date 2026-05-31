@@ -1,22 +1,24 @@
 package com.laker.postman.panel.collections.editor.request;
 
-import cn.hutool.core.text.CharSequenceUtil;
-import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.service.http.HttpUtil;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
+import cn.hutool.core.text.CharSequenceUtil;
+import com.laker.postman.http.request.HttpRequestValidationResult;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
 
 final class RequestPreparationResult {
     private final HttpRequestItem item;
     private final PreparedRequest request;
     private final ScriptExecutionPipeline pipeline;
-    private final HttpUtil.ValidationResult validationResult;
+    private final HttpRequestValidationResult validationResult;
     private final String errorMessage;
 
     private RequestPreparationResult(HttpRequestItem item,
                                      PreparedRequest request,
                                      ScriptExecutionPipeline pipeline,
-                                     HttpUtil.ValidationResult validationResult,
+                                     HttpRequestValidationResult validationResult,
                                      String errorMessage) {
         this.item = item;
         this.request = request;
@@ -28,16 +30,16 @@ final class RequestPreparationResult {
     static RequestPreparationResult success(HttpRequestItem item,
                                             PreparedRequest request,
                                             ScriptExecutionPipeline pipeline,
-                                            HttpUtil.ValidationResult validationResult) {
+                                            HttpRequestValidationResult validationResult) {
         return new RequestPreparationResult(item, request, pipeline, validationResult, null);
     }
 
-    static RequestPreparationResult validationFailure(HttpUtil.ValidationResult validationResult) {
+    static RequestPreparationResult validationFailure(HttpRequestValidationResult validationResult) {
         return new RequestPreparationResult(null, null, null, validationResult, null);
     }
 
     static RequestPreparationResult error(String errorMessage) {
-        return new RequestPreparationResult(null, null, null, HttpUtil.ValidationResult.ok(), errorMessage);
+        return new RequestPreparationResult(null, null, null, HttpRequestValidationResult.ok(), errorMessage);
     }
 
     HttpRequestItem getItem() {
@@ -52,7 +54,7 @@ final class RequestPreparationResult {
         return pipeline;
     }
 
-    HttpUtil.ValidationResult getValidationResult() {
+    HttpRequestValidationResult getValidationResult() {
         return validationResult;
     }
 
@@ -67,6 +69,12 @@ final class RequestPreparationResult {
     boolean hasWarning() {
         return validationResult.isValid()
                 && validationResult.isWarning()
+                && CharSequenceUtil.isNotBlank(validationResult.getMessage());
+    }
+
+    boolean requiresConfirmation() {
+        return validationResult.isValid()
+                && validationResult.requiresConfirmation()
                 && CharSequenceUtil.isNotBlank(validationResult.getMessage());
     }
 

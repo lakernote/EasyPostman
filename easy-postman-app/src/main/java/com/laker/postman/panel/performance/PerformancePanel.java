@@ -1,5 +1,9 @@
 package com.laker.postman.panel.performance;
 
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
@@ -16,8 +20,6 @@ import com.laker.postman.common.component.button.StopButton;
 import com.laker.postman.common.constants.AppConstants;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.ioc.BeanFactory;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
 import com.laker.postman.panel.performance.control.PerformanceSaveShortcutSupport;
@@ -57,7 +59,7 @@ import com.laker.postman.performance.core.worker.PerformanceWorkerEndpointParser
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.GlobalVariablesService;
 import com.laker.postman.service.PerformancePersistenceService;
-import com.laker.postman.service.http.okhttp.HttpClientRuntimeConfig;
+import com.laker.postman.http.runtime.okhttp.HttpClientRuntimeConfig;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;

@@ -2,9 +2,9 @@ package com.laker.postman.panel.topmenu.setting;
 
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.model.TrustedCertificateEntry;
-import com.laker.postman.service.http.okhttp.OkHttpClientManager;
-import com.laker.postman.service.http.ssl.CustomTrustMaterialLoader;
+import com.laker.postman.certificate.TrustedCertificateEntry;
+import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
+import com.laker.postman.http.runtime.ssl.CustomTrustMaterialLoader;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;

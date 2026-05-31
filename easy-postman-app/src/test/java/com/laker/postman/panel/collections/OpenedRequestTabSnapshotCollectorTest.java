@@ -1,6 +1,8 @@
 package com.laker.postman.panel.collections;
 
-import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import org.testng.annotations.Test;
 
 import java.util.List;

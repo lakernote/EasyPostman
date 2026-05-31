@@ -1,6 +1,8 @@
 package com.laker.postman.panel.collections.editor.request;
 
-import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.laker.postman.service.setting.SettingManager;
 import org.testng.annotations.Test;
 

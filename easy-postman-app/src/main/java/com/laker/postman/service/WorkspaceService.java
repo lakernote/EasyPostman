@@ -1,7 +1,15 @@
 package com.laker.postman.service;
 
+import com.laker.postman.model.GitAuthType;
+import com.laker.postman.model.GitCommitInfo;
+import com.laker.postman.model.GitOperation;
+import com.laker.postman.model.GitOperationResult;
+import com.laker.postman.model.GitRepoSource;
+import com.laker.postman.model.GitStatusCheck;
+import com.laker.postman.model.RemoteStatus;
+import com.laker.postman.model.Workspace;
+import com.laker.postman.model.WorkspaceType;
 import com.laker.postman.common.constants.ConfigPathConstants;
-import com.laker.postman.model.*;
 import com.laker.postman.plugin.api.service.GitPluginService;
 import com.laker.postman.plugin.host.GitServiceAccess;
 import com.laker.postman.util.SystemUtil;

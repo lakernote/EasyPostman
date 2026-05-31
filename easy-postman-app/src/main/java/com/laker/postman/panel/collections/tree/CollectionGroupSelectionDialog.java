@@ -4,7 +4,7 @@ import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.tree.CollectionGroupTreeFactory;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.frame.MainFrame;
-import com.laker.postman.model.RequestGroup;
+import com.laker.postman.collection.model.RequestGroup;
 import com.laker.postman.service.collections.CollectionTreeNodes;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;

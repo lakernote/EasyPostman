@@ -1,7 +1,9 @@
 package com.laker.postman.service.common;
 
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.SavedResponse;
+import com.laker.postman.collection.model.CollectionNode;
+import com.laker.postman.collection.model.CollectionParseResult;
+import com.laker.postman.request.model.HttpRequestItem;
+import com.laker.postman.request.model.SavedResponse;
 import com.laker.postman.service.collections.CollectionTreeNodes;
 
 import javax.swing.tree.DefaultMutableTreeNode;

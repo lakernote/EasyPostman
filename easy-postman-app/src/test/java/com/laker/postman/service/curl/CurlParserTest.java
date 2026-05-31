@@ -1,7 +1,14 @@
 package com.laker.postman.service.curl;
 
-import com.laker.postman.model.*;
-import com.laker.postman.util.CurlImportUtil;
+import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.request.model.AuthType;
+import com.laker.postman.request.model.HttpHeader;
+import com.laker.postman.request.model.HttpParam;
+import com.laker.postman.request.model.HttpFormData;
+import com.laker.postman.request.model.HttpFormUrlencoded;
+import com.laker.postman.request.model.HttpRequestItem;
+import com.laker.postman.request.model.TransportAuth;
+
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -969,8 +976,8 @@ public class CurlParserTest {
         req.method = "POST";
         req.url = "https://example.com/api";
         req.urlencodedList = new java.util.ArrayList<>();
-        req.urlencodedList.add(new com.laker.postman.model.HttpFormUrlencoded(true, "username", "admin"));
-        req.urlencodedList.add(new com.laker.postman.model.HttpFormUrlencoded(true, "password", "secret123"));
+        req.urlencodedList.add(new com.laker.postman.request.model.HttpFormUrlencoded(true, "username", "admin"));
+        req.urlencodedList.add(new com.laker.postman.request.model.HttpFormUrlencoded(true, "password", "secret123"));
 
         String curl = CurlParser.toCurl(req);
 
@@ -995,8 +1002,8 @@ public class CurlParserTest {
         original.method = "POST";
         original.url = "https://example.com/api";
         original.urlencodedList = new java.util.ArrayList<>();
-        original.urlencodedList.add(new com.laker.postman.model.HttpFormUrlencoded(true, "key1", "value1"));
-        original.urlencodedList.add(new com.laker.postman.model.HttpFormUrlencoded(true, "key2", "value2"));
+        original.urlencodedList.add(new com.laker.postman.request.model.HttpFormUrlencoded(true, "key1", "value1"));
+        original.urlencodedList.add(new com.laker.postman.request.model.HttpFormUrlencoded(true, "key2", "value2"));
 
         String curlCommand = CurlParser.toCurl(original);
         CurlRequest parsed = CurlParser.parse(curlCommand);
@@ -1074,7 +1081,7 @@ public class CurlParserTest {
         req.url = "https://example.com/api";
         req.body = "{\"raw\":\"json\"}";
         req.urlencodedList = new java.util.ArrayList<>();
-        req.urlencodedList.add(new com.laker.postman.model.HttpFormUrlencoded(true, "key", "value"));
+        req.urlencodedList.add(new com.laker.postman.request.model.HttpFormUrlencoded(true, "key", "value"));
 
         String curl = CurlParser.toCurl(req);
 
@@ -1140,9 +1147,9 @@ public class CurlParserTest {
     /**
      * 从 urlencodedList 中查找指定 key 的 value
      */
-    private String findUrlencodedValue(java.util.List<com.laker.postman.model.HttpFormUrlencoded> list, String key) {
+    private String findUrlencodedValue(java.util.List<com.laker.postman.request.model.HttpFormUrlencoded> list, String key) {
         if (list == null) return null;
-        for (com.laker.postman.model.HttpFormUrlencoded item : list) {
+        for (com.laker.postman.request.model.HttpFormUrlencoded item : list) {
             if (item.getKey() != null && item.getKey().equals(key)) {
                 return item.getValue();
             }

@@ -307,6 +307,8 @@ public final class MessageKeys {
     public static final String REQUEST_VALIDATION_UNRESOLVED_QUERY_VARIABLES = "request.validation.unresolved_query_variables";
     public static final String REQUEST_VALIDATION_NO_ACTIVE_ENVIRONMENT = "request.validation.no_active_environment";
     public static final String REQUEST_VALIDATION_WEBSOCKET_PROTOCOL = "request.validation.websocket_protocol";
+    public static final String REQUEST_VALIDATION_GET_BODY_CONFIRM = "request.validation.get_body.confirm";
+    public static final String REQUEST_VALIDATION_GET_BODY_CONFIRM_TITLE = "request.validation.get_body.confirm_title";
     public static final String SELECT_GROUP = "select.group";
     public static final String PLEASE_ENTER_REQUEST_NAME = "please.enter.request.name";
     public static final String PLEASE_SELECT_GROUP = "please.select.group";

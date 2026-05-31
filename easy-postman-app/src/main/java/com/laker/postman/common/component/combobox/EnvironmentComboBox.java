@@ -1,7 +1,7 @@
 package com.laker.postman.common.component.combobox;
 
 import com.laker.postman.model.Environment;
-import com.laker.postman.model.EnvironmentItem;
+import com.laker.postman.environment.EnvironmentItem;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.util.FontsUtil;
 import lombok.Setter;

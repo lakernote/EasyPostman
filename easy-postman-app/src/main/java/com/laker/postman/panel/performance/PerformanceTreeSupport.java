@@ -1,17 +1,19 @@
 package com.laker.postman.panel.performance;
 
+import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.PerformanceProtocol;
 
 
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.panel.performance.tree.PerformanceTreeClipboardSupport;
 import com.laker.postman.panel.performance.tree.PerformanceTreeNodeFactory;
 import com.laker.postman.panel.performance.tree.PerformanceTreeStructureSupport;
-import com.laker.postman.service.http.HttpUtil;
+import com.laker.postman.http.request.HttpRequestProtocol;
 
 import javax.swing.JTree;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -39,7 +41,7 @@ final class PerformanceTreeSupport {
 
     boolean isSsePerfRequest(HttpRequestItem item, PreparedRequest req) {
         RequestItemProtocolEnum protocol = resolveRequestProtocol(item);
-        return protocol.isSseProtocol() || (protocol.isHttpProtocol() && HttpUtil.isSSERequest(req));
+        return protocol.isSseProtocol() || (protocol.isHttpProtocol() && HttpRequestProtocol.isSse(req));
     }
 
     boolean isWebSocketPerfRequest(HttpRequestItem item) {

@@ -1,10 +1,12 @@
 package com.laker.postman.service;
 
-import com.laker.postman.functional.model.FunctionalCsvDataState;
-import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.functional.model.RunnerRowData;
 import com.laker.postman.model.Workspace;
-import com.laker.postman.model.RunnerRowData;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
+import com.laker.postman.functional.model.FunctionalCsvDataState;
 import com.laker.postman.service.collections.CollectionTreeRootRegistry;
 import org.testng.annotations.Test;
 

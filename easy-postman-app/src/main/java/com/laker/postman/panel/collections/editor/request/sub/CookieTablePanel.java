@@ -1,10 +1,13 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
+import com.laker.postman.request.model.CookieInfo;
+
+
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.button.*;
-import com.laker.postman.model.CookieInfo;
-import com.laker.postman.service.http.CookieService;
+import com.laker.postman.panel.http.runtime.SwingHttpRuntimeInteractionAdapter;
+import com.laker.postman.http.runtime.cookie.HttpCookieStore;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -98,7 +101,8 @@ public class CookieTablePanel extends JPanel {
         });
 
         // 注册监听器并加载数据
-        CookieService.registerCookieChangeListener(cookieListener);
+        HttpCookieStore.setNotificationDispatcher(SwingHttpRuntimeInteractionAdapter.callbackDispatcher());
+        HttpCookieStore.registerCookieChangeListener(cookieListener);
         loadCookies();
 
         // 禁用搜索框的自动聚焦
@@ -153,7 +157,7 @@ public class CookieTablePanel extends JPanel {
         btnEdit.addActionListener(e -> editSelectedCookie());
         btnDelete.addActionListener(e -> deleteSelectedCookie());
         btnClear.addActionListener(e -> clearAllCookies());
-        btnRefresh.addActionListener(e -> CookieService.refreshCookies());
+        btnRefresh.addActionListener(e -> HttpCookieStore.refreshCookies());
 
         btnPanel.add(btnAdd);
         btnPanel.add(btnEdit);
@@ -280,7 +284,7 @@ public class CookieTablePanel extends JPanel {
 
     private void loadCookies() {
         model.setRowCount(0);
-        List<CookieInfo> cookies = CookieService.getAllCookieInfos();
+        List<CookieInfo> cookies = HttpCookieStore.getAllCookieInfos();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
         for (CookieInfo c : cookies) {
@@ -360,7 +364,7 @@ public class CookieTablePanel extends JPanel {
                 JOptionPane.QUESTION_MESSAGE);
 
         if (confirm == JOptionPane.YES_OPTION) {
-            CookieService.removeCookie(name, domain, path);
+            HttpCookieStore.removeCookie(name, domain, path);
         }
     }
 
@@ -369,7 +373,7 @@ public class CookieTablePanel extends JPanel {
                 I18nUtil.getMessage(MessageKeys.COOKIE_DIALOG_CLEAR_CONFIRM),
                 I18nUtil.getMessage(MessageKeys.COOKIE_DIALOG_CLEAR_CONFIRM_TITLE), JOptionPane.YES_NO_OPTION);
         if (confirm == JOptionPane.YES_OPTION) {
-            CookieService.clearAllCookies();
+            HttpCookieStore.clearAllCookies();
         }
     }
 
@@ -483,16 +487,16 @@ public class CookieTablePanel extends JPanel {
 
             // 编辑模式：先删除旧的，再添加新的
             if (isEdit) {
-                CookieService.removeCookie(defaultName, defaultDomain, defaultPath);
+                HttpCookieStore.removeCookie(defaultName, defaultDomain, defaultPath);
             }
 
-            CookieService.addCookie(name, value, domain, path, secure, httpOnly);
+            HttpCookieStore.addCookie(name, value, domain, path, secure, httpOnly);
         }
     }
 
     @Override
     public void removeNotify() {
         super.removeNotify();
-        CookieService.unregisterCookieChangeListener(cookieListener);
+        HttpCookieStore.unregisterCookieChangeListener(cookieListener);
     }
 }

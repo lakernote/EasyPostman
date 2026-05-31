@@ -1,10 +1,16 @@
 package com.laker.postman.service.har;
 
+import com.laker.postman.collection.model.RequestGroup;
+import com.laker.postman.request.model.HttpHeader;
+import com.laker.postman.request.model.HttpParam;
+import com.laker.postman.request.model.HttpFormData;
+import com.laker.postman.request.model.HttpFormUrlencoded;
+import com.laker.postman.request.model.HttpRequestItem;
+
 import cn.hutool.core.lang.Pair;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.laker.postman.model.*;
 import com.laker.postman.service.collections.CollectionTreeNodes;
 import lombok.extern.slf4j.Slf4j;
 
@@ -17,8 +23,12 @@ import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 
-import static com.laker.postman.model.RequestAuthTypes.*;
-import static com.laker.postman.model.RequestBodyTypes.*;
+import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_BASIC;
+import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_BEARER;
+import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_NONE;
+import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_FORM_DATA;
+import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_FORM_URLENCODED;
+import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_RAW;
 
 /**
  * HAR (HTTP Archive) 格式解析器

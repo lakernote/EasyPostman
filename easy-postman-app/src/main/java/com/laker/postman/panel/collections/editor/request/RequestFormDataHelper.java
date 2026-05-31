@@ -1,24 +1,27 @@
 package com.laker.postman.panel.collections.editor.request;
 
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.HttpParam;
+import com.laker.postman.request.model.HttpFormData;
+import com.laker.postman.request.model.HttpFormUrlencoded;
+import com.laker.postman.request.model.SavedResponse;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.component.MarkdownEditorPanel;
 import com.laker.postman.common.component.table.FormDataTablePanel;
 import com.laker.postman.common.component.table.FormUrlencodedTablePanel;
-import com.laker.postman.model.HttpFormData;
-import com.laker.postman.model.HttpFormUrlencoded;
-import com.laker.postman.model.HttpParam;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.model.SavedResponse;
 import com.laker.postman.panel.collections.editor.request.sub.AuthTabPanel;
 import com.laker.postman.panel.collections.editor.request.sub.EasyRequestHttpHeadersPanel;
 import com.laker.postman.panel.collections.editor.request.sub.EasyRequestParamsPanel;
 import com.laker.postman.panel.collections.editor.request.sub.RequestBodyPanel;
 import com.laker.postman.panel.collections.editor.request.sub.RequestSettingsPanel;
 import com.laker.postman.panel.collections.editor.request.sub.ScriptPanel;
-import com.laker.postman.service.http.HttpUtil;
+import com.laker.postman.http.request.HttpHeaders;
+import com.laker.postman.http.request.HttpUrlUtil;
 import com.laker.postman.util.XmlUtil;
 
 import javax.swing.*;
@@ -72,7 +75,7 @@ final class RequestFormDataHelper {
         if (CollUtil.isNotEmpty(item.getParamsList())) {
             paramsPanel.setParamsList(item.getParamsList());
         } else {
-            List<HttpParam> urlParams = HttpUtil.getParamsListFromUrl(url);
+            List<HttpParam> urlParams = HttpUrlUtil.parseQueryParams(url);
             if (!urlParams.isEmpty()) {
                 paramsPanel.setParamsList(urlParams);
                 item.setParamsList(paramsPanel.getParamsList());
@@ -113,7 +116,7 @@ final class RequestFormDataHelper {
             return;
         }
 
-        urlField.setText(HttpUtil.decodeUrlQueryForDisplay(originalRequest.getUrl()));
+        urlField.setText(HttpUrlUtil.decodeQueryForDisplay(originalRequest.getUrl()));
         urlField.setCaretPosition(0);
         methodBox.setSelectedItem(originalRequest.getMethod());
         paramsPanel.setParamsList(copyList(originalRequest.getParams()));
@@ -265,7 +268,7 @@ final class RequestFormDataHelper {
             return item.getBodyType();
         }
 
-        String contentType = HttpUtil.getHeaderIgnoreCase(item, "Content-Type");
+        String contentType = HttpHeaders.getIgnoreCase(item, "Content-Type");
         if (CharSequenceUtil.isBlank(contentType)) {
             return item.getBodyType();
         }

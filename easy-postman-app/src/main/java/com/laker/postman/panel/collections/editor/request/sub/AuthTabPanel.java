@@ -1,9 +1,11 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
+import com.laker.postman.request.model.AuthType;
+import com.laker.postman.request.model.RequestAuthTypes;
+
+
 import com.laker.postman.common.component.EasyTextField;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.model.AuthType;
-import com.laker.postman.model.RequestAuthTypes;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -43,6 +45,20 @@ public class AuthTabPanel extends JPanel {
 
         // 初始化所有字段
         typeCombo = new JComboBox<>(AuthType.values());
+        typeCombo.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list,
+                                                          Object value,
+                                                          int index,
+                                                          boolean isSelected,
+                                                          boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof AuthType authType) {
+                    setText(authTypeDisplayText(authType));
+                }
+                return this;
+            }
+        });
         typeCombo.setPreferredSize(new Dimension(220, 32));
         typeCombo.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
 
@@ -122,6 +138,16 @@ public class AuthTabPanel extends JPanel {
 
         // 默认显示继承面板
         ((CardLayout) cardPanel.getLayout()).show(cardPanel, AUTH_TYPE_INHERIT);
+    }
+
+    private static String authTypeDisplayText(AuthType type) {
+        return switch (type) {
+            case INHERIT -> I18nUtil.getMessage(MessageKeys.AUTH_TYPE_INHERIT);
+            case NONE -> I18nUtil.getMessage(MessageKeys.AUTH_TYPE_NONE);
+            case BASIC -> I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BASIC);
+            case BEARER -> I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BEARER);
+            case DIGEST -> I18nUtil.getMessage(MessageKeys.AUTH_TYPE_DIGEST);
+        };
     }
 
     /**

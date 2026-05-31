@@ -1,7 +1,18 @@
 package com.laker.postman.model;
 
+import com.laker.postman.request.model.HttpHeader;
+import com.laker.postman.request.model.HttpParam;
+import com.laker.postman.request.model.HttpFormData;
+import com.laker.postman.request.model.HttpFormUrlencoded;
+import com.laker.postman.request.model.HttpRequestItem;
+import com.laker.postman.request.model.TransportAuth;
 
-import com.laker.postman.http.trace.NetworkLogSink;
+
+
+import com.laker.postman.http.runtime.interaction.DownloadProgressSinkFactory;
+import com.laker.postman.http.runtime.interaction.ResponseSizeLimitWarningSink;
+import com.laker.postman.http.runtime.observation.HttpLifecycleLogSink;
+import com.laker.postman.http.runtime.observation.NetworkLogSink;
 import okhttp3.Headers;
 
 import java.util.List;
@@ -37,6 +48,9 @@ public class PreparedRequest {
     public boolean collectEventInfo = true; // 收集完整事件信息（DNS、连接、SSL等），默认开启
     public boolean enableNetworkLog = false; // 启用网络日志面板输出，默认关闭
     public transient NetworkLogSink networkLogSink = NetworkLogSink.noop(); // 网络日志输出端口，由 UI 层按需注入
+    public transient HttpLifecycleLogSink lifecycleLogSink = HttpLifecycleLogSink.noop();
+    public transient DownloadProgressSinkFactory downloadProgressSinkFactory = DownloadProgressSinkFactory.noop();
+    public transient ResponseSizeLimitWarningSink responseSizeLimitWarningSink = ResponseSizeLimitWarningSink.noop();
     public boolean notifyCookieChanges = true; // 请求完成后是否通知 Cookie UI 刷新
     public ResponseBodyMode responseBodyMode = ResponseBodyMode.FULL;
     public int responseBodyPreviewLimitBytes = 64 * 1024;
@@ -74,6 +88,9 @@ public class PreparedRequest {
         copy.collectEventInfo = this.collectEventInfo;
         copy.enableNetworkLog = this.enableNetworkLog;
         copy.networkLogSink = this.networkLogSink;
+        copy.lifecycleLogSink = this.lifecycleLogSink;
+        copy.downloadProgressSinkFactory = this.downloadProgressSinkFactory;
+        copy.responseSizeLimitWarningSink = this.responseSizeLimitWarningSink;
         copy.notifyCookieChanges = this.notifyCookieChanges;
         copy.responseBodyMode = this.responseBodyMode;
         copy.responseBodyPreviewLimitBytes = this.responseBodyPreviewLimitBytes;

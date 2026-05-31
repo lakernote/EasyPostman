@@ -1,8 +1,17 @@
 package com.laker.postman.service.postman;
 
+import com.laker.postman.collection.model.RequestGroup;
+import com.laker.postman.model.Variable;
+import com.laker.postman.request.model.RequestAuthTypes;
+import com.laker.postman.request.model.HttpHeader;
+import com.laker.postman.request.model.HttpParam;
+import com.laker.postman.request.model.HttpFormData;
+import com.laker.postman.request.model.HttpFormUrlencoded;
+import com.laker.postman.request.model.SavedResponse;
+import com.laker.postman.request.model.HttpRequestItem;
+
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
-import com.laker.postman.model.*;
 import com.laker.postman.service.collections.CollectionTreeNodes;
 import lombok.experimental.UtilityClass;
 
@@ -10,7 +19,10 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.Arrays;
 import java.util.UUID;
 
-import static com.laker.postman.model.RequestAuthTypes.*;
+import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_BASIC;
+import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_BEARER;
+import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_DIGEST;
+import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_NONE;
 
 /**
  * Postman Collection导出器

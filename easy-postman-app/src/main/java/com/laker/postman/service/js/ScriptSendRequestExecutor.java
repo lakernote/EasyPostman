@@ -1,13 +1,15 @@
 package com.laker.postman.service.js;
 
-import com.laker.postman.model.HttpFormData;
-import com.laker.postman.model.HttpFormUrlencoded;
-import com.laker.postman.model.HttpHeader;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.request.model.HttpHeader;
+import com.laker.postman.request.model.HttpFormData;
+import com.laker.postman.request.model.HttpFormUrlencoded;
+
+
 import com.laker.postman.service.js.api.ResponseAssertion;
-import com.laker.postman.service.http.HttpService;
-import com.laker.postman.service.http.RequestFinalizer;
+import com.laker.postman.http.runtime.transport.HttpRuntimeExecutor;
+import com.laker.postman.http.request.PreparedRequestFinalizer;
 import org.graalvm.polyglot.Value;
 
 import java.util.ArrayList;
@@ -32,9 +34,9 @@ public final class ScriptSendRequestExecutor {
 
         PreparedRequest preparedRequest = buildPreparedRequest(requestOptions);
         validate(preparedRequest);
-        RequestFinalizer.finalizeForSend(preparedRequest, null);
+        PreparedRequestFinalizer.finalizeForSend(preparedRequest, null);
 
-        HttpResponse httpResponse = HttpService.sendRequest(preparedRequest, null);
+        HttpResponse httpResponse = HttpRuntimeExecutor.executeHttp(preparedRequest, null);
         ResponseAssertion responseWrapper = new ResponseAssertion(httpResponse);
         executeSuccessCallback(callback, responseWrapper);
     }

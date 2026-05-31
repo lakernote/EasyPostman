@@ -1,9 +1,13 @@
 package com.laker.postman.service.swagger;
 
 import com.laker.postman.model.Environment;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestGroup;
-import com.laker.postman.service.common.CollectionParseResult;
+import com.laker.postman.collection.model.RequestGroup;
+import com.laker.postman.request.model.RequestAuthTypes;
+import com.laker.postman.request.model.RequestBodyTypes;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
+import com.laker.postman.collection.model.CollectionParseResult;
 import com.laker.postman.service.common.TreeNodeBuilder;
 import org.testng.annotations.Test;
 
@@ -13,8 +17,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-import static com.laker.postman.model.RequestAuthTypes.AUTH_TYPE_BEARER;
-import static com.laker.postman.model.RequestBodyTypes.BODY_TYPE_RAW;
+import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_BEARER;
+import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_RAW;
 import static org.testng.Assert.*;
 
 

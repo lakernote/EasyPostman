@@ -2,7 +2,7 @@ package com.laker.postman.service.swagger;
 
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.laker.postman.service.common.CollectionParseResult;
+import com.laker.postman.collection.model.CollectionParseResult;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 

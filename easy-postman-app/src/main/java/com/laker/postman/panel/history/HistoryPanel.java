@@ -1,20 +1,22 @@
 package com.laker.postman.panel.history;
 
+import com.laker.postman.model.HttpResponse;
+import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.history.RequestHistoryItem;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.HttpHeader;
+import com.laker.postman.request.model.HttpParam;
+import com.laker.postman.request.model.HttpFormData;
+import com.laker.postman.request.model.HttpFormUrlencoded;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.button.ClearButton;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.ioc.BeanFactory;
-import com.laker.postman.model.HttpFormData;
-import com.laker.postman.model.HttpFormUrlencoded;
-import com.laker.postman.model.HttpHeader;
-import com.laker.postman.model.HttpParam;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.model.RequestHistoryItem;
-import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.sidebar.SidebarTab;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
@@ -1276,7 +1278,7 @@ public class HistoryPanel extends UiSingletonPanel {
         requestItem.setProtocol(protocol);
         requestItem.setMethod(request.method != null ? request.method : item.method);
         String historyUrl = request.url != null ? request.url : item.url;
-        requestItem.setUrl(com.laker.postman.service.http.HttpUtil.decodeUrlQueryForDisplay(historyUrl));
+        requestItem.setUrl(com.laker.postman.http.request.HttpUrlUtil.decodeQueryForDisplay(historyUrl));
         requestItem.setHeadersList(copyHeaders(request));
         requestItem.setParamsList(copyParams(request.paramsList));
         requestItem.setFormDataList(copyFormData(request.formDataList));

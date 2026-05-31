@@ -1,11 +1,13 @@
 package com.laker.postman.panel.performance.component;
 
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.performance.model.PerformanceTreeNode;
-import com.laker.postman.service.http.HttpUtil;
+import com.laker.postman.http.request.HttpRequestProtocol;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.IconUtil;
 
@@ -63,7 +65,7 @@ public class PerformanceTreeCellRenderer extends DefaultTreeCellRenderer {
         RequestItemProtocolEnum protocol = item != null && item.getProtocol() != null
                 ? item.getProtocol()
                 : RequestItemProtocolEnum.HTTP;
-        if (protocol.isSseProtocol() || (protocol.isHttpProtocol() && HttpUtil.isSSERequest(item))) {
+        if (protocol.isSseProtocol() || (protocol.isHttpProtocol() && HttpRequestProtocol.isSse(item))) {
             return new FlatSVGIcon("icons/sse.svg", SIZE, SIZE);
         }
         if (protocol.isWebSocketProtocol()) {

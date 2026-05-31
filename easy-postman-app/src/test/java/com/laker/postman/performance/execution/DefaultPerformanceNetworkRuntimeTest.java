@@ -1,7 +1,7 @@
 package com.laker.postman.performance.execution;
 
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.service.http.okhttp.HttpClientRuntimeConfig;
+import com.laker.postman.http.runtime.okhttp.HttpClientRuntimeConfig;
 import okhttp3.Cookie;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;

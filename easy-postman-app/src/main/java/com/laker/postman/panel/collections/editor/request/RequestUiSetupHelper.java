@@ -1,7 +1,8 @@
 package com.laker.postman.panel.collections.editor.request;
 
-import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.model.RequestEditSubPanelType;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+
+
 import com.laker.postman.panel.collections.editor.request.sub.AuthTabPanel;
 import com.laker.postman.panel.collections.editor.request.sub.EasyRequestHttpHeadersPanel;
 import com.laker.postman.panel.collections.editor.request.sub.EasyRequestParamsPanel;

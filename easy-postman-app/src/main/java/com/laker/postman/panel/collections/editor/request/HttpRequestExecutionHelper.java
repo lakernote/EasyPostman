@@ -2,15 +2,15 @@ package com.laker.postman.panel.collections.editor.request;
 
 import com.laker.postman.common.exception.DownloadCancelledException;
 import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.MessageType;
+import com.laker.postman.stream.MessageType;
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.model.TestResult;
+import com.laker.postman.script.model.TestResult;
 import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;
 import com.laker.postman.panel.sidebar.ConsolePanel;
-import com.laker.postman.service.http.NetworkErrorMessageResolver;
-import com.laker.postman.service.http.HttpUtil;
-import com.laker.postman.service.http.RedirectHandler;
-import com.laker.postman.service.http.sse.SseResEventListener;
+import com.laker.postman.http.runtime.error.NetworkErrorMessageResolver;
+import com.laker.postman.http.request.HttpRequestProtocol;
+import com.laker.postman.http.runtime.redirect.HttpRedirectExecutor;
+import com.laker.postman.http.runtime.sse.SseResponseCallback;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -59,7 +59,7 @@ final class HttpRequestExecutionHelper {
     SwingWorker<Void, Void> createWorker(PreparedRequest req, ScriptExecutionPipeline pipeline, int maxRedirectCount) {
         return new SwingWorker<>() {
             HttpResponse resp;
-            final boolean expectedSse = HttpUtil.isSSERequest(req);
+            final boolean expectedSse = HttpRequestProtocol.isSse(req);
             final StringBuilder sseBodyBuilder = new StringBuilder();
             final long sseStartTime = System.currentTimeMillis();
 
@@ -68,7 +68,7 @@ final class HttpRequestExecutionHelper {
                 try {
                     responsePanel.setResponseTabButtonsEnable(true);
                     responsePanel.switchTabButtonHttpOrSse(expectedSse ? "sse" : "http");
-                    resp = RedirectHandler.executeWithRedirects(req, maxRedirectCount, new SseResEventListener() {
+                    resp = HttpRedirectExecutor.executeWithRedirects(req, maxRedirectCount, new SseResponseCallback() {
                         @Override
                         public void onOpen(HttpResponse response) {
                             SwingUtilities.invokeLater(() -> {

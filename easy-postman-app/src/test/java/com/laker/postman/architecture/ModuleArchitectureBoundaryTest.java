@@ -5,6 +5,7 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -20,6 +21,8 @@ public class ModuleArchitectureBoundaryTest {
     public void mavenModulesUseFoundationAndUiNames() throws IOException {
         Path root = repositoryRoot();
         assertTrue(Files.isDirectory(root.resolve("easy-postman-foundation")));
+        assertTrue(Files.isDirectory(root.resolve("easy-postman-request-core")));
+        assertTrue(Files.isDirectory(root.resolve("easy-postman-collection-core")));
         assertTrue(Files.isDirectory(root.resolve("easy-postman-platform")));
         assertTrue(Files.isDirectory(root.resolve("easy-postman-ui")));
         assertFalse(Files.exists(root.resolve("easy-postman-performance-runtime-okhttp")));
@@ -32,6 +35,226 @@ public class ModuleArchitectureBoundaryTest {
             assertFalse(source.contains("easy-postman-plugin-bridge"), pom + " still references the old bridge module");
             assertFalse(source.contains("easy-postman-plugin-ui"), pom + " still references the old plugin UI module");
         }
+    }
+
+    @Test
+    public void requestCoreOwnsRequestSpecificationModels() {
+        Path root = repositoryRoot();
+        Path requestModelPackage = root.resolve("easy-postman-request-core/src/main/java/com/laker/postman/request/model");
+        Path legacyAppModelPackage = root.resolve("easy-postman-app/src/main/java/com/laker/postman/model");
+        List<String> requestModelFiles = List.of(
+                "AuthType.java",
+                "CookieInfo.java",
+                "HttpFormData.java",
+                "HttpFormUrlencoded.java",
+                "HttpHeader.java",
+                "HttpParam.java",
+                "HttpRequestItem.java",
+                "RedirectInfo.java",
+                "RequestAuthTypes.java",
+                "RequestBodyTypes.java",
+                "RequestItemProtocolEnum.java",
+                "SavedResponse.java",
+                "TransportAuth.java"
+        );
+
+        for (String requestModelFile : requestModelFiles) {
+            assertTrue(Files.isRegularFile(requestModelPackage.resolve(requestModelFile)),
+                    requestModelFile + " is request specification data and belongs in easy-postman-request-core");
+            assertFalse(Files.exists(legacyAppModelPackage.resolve(requestModelFile)),
+                    requestModelFile + " must not stay in the app model package");
+        }
+    }
+
+    @Test
+    public void requestCoreSourcesStayUiAndTransportFree() throws IOException {
+        Path root = repositoryRoot();
+        List<String> violations = sourceRootsPackageViolations(
+                List.of(root.resolve("easy-postman-request-core/src/main/java")),
+                forbiddenRequestCoreImports()
+        );
+
+        assertTrue(violations.isEmpty(),
+                "Request core must stay UI-free and transport-implementation-free: " + violations);
+    }
+
+    @Test
+    public void collectionCoreOwnsCollectionModelsAndPostmanParser() {
+        Path root = repositoryRoot();
+        Path collectionModelPackage = root.resolve("easy-postman-collection-core/src/main/java/com/laker/postman/collection/model");
+        Path importerPackage = root.resolve("easy-postman-collection-core/src/main/java/com/laker/postman/collection/importer");
+        Path postmanImporterPackage = importerPackage.resolve("postman");
+
+        List<String> collectionModelFiles = List.of(
+                "RequestGroup.java",
+                "CollectionNodeType.java",
+                "CollectionNode.java",
+                "CollectionParseResult.java"
+        );
+        for (String collectionModelFile : collectionModelFiles) {
+            assertTrue(Files.isRegularFile(collectionModelPackage.resolve(collectionModelFile)),
+                    collectionModelFile + " is collection domain data and belongs in easy-postman-collection-core");
+        }
+
+        assertTrue(Files.isRegularFile(importerPackage.resolve("AuthParserUtil.java")));
+        assertTrue(Files.isRegularFile(postmanImporterPackage.resolve("PostmanCollectionParser.java")));
+
+        assertFalse(Files.exists(root.resolve("easy-postman-app/src/main/java/com/laker/postman/model/RequestGroup.java")),
+                "RequestGroup must not stay in the app model package");
+        assertFalse(Files.exists(root.resolve("easy-postman-app/src/main/java/com/laker/postman/service/common/NodeType.java")),
+                "NodeType must be renamed to CollectionNodeType in collection-core");
+        assertFalse(Files.exists(root.resolve("easy-postman-app/src/main/java/com/laker/postman/service/common/CollectionNode.java")),
+                "CollectionNode must not stay in app service/common");
+        assertFalse(Files.exists(root.resolve("easy-postman-app/src/main/java/com/laker/postman/service/common/CollectionParseResult.java")),
+                "CollectionParseResult must not stay in app service/common");
+        assertFalse(Files.exists(root.resolve("easy-postman-app/src/main/java/com/laker/postman/service/common/AuthParserUtil.java")),
+                "AuthParserUtil must not stay in app service/common");
+        assertFalse(Files.exists(root.resolve("easy-postman-app/src/main/java/com/laker/postman/service/postman/PostmanCollectionParser.java")),
+                "PostmanCollectionParser must not stay in the app postman service package");
+    }
+
+    @Test
+    public void foundationOwnsEnvironmentVariableModels() {
+        Path root = repositoryRoot();
+        Path foundationModelPackage = root.resolve("easy-postman-foundation/src/main/java/com/laker/postman/model");
+        Path legacyAppModelPackage = root.resolve("easy-postman-app/src/main/java/com/laker/postman/model");
+
+        for (String foundationModelFile : List.of("Environment.java", "Variable.java")) {
+            assertTrue(Files.isRegularFile(foundationModelPackage.resolve(foundationModelFile)),
+                    foundationModelFile + " is shared non-UI environment data and belongs in easy-postman-foundation");
+            assertFalse(Files.exists(legacyAppModelPackage.resolve(foundationModelFile)),
+                    foundationModelFile + " must not stay in the app model package");
+        }
+    }
+
+    @Test
+    public void foundationEnvironmentModelDoesNotOwnScriptRuntimeApi() {
+        Path environmentModel = repositoryRoot()
+                .resolve("easy-postman-foundation/src/main/java/com/laker/postman/model/Environment.java");
+        List<String> violations = sourceContainsViolations(environmentModel, List.of(
+                "public void unset(",
+                "public void clear()",
+                "public String replaceIn(",
+                "public Map<String, String> toObject(",
+                "replaceDynamicVariables",
+                "$isoTimestamp",
+                "$guid",
+                "set(String key, Object value)"
+        ));
+
+        assertTrue(violations.isEmpty(),
+                "Foundation Environment is shared data and must not own Postman script/runtime API behavior: "
+                        + violations);
+    }
+
+    @Test
+    public void collectionCoreSourcesStayHeadlessAndHostFree() throws IOException {
+        Path root = repositoryRoot();
+        List<String> violations = sourceRootsPackageViolations(
+                List.of(root.resolve("easy-postman-collection-core/src/main/java")),
+                forbiddenCollectionCoreImports()
+        );
+
+        assertTrue(violations.isEmpty(),
+                "Collection core must stay UI-free and host/runtime/transport-free: " + violations);
+    }
+
+    @Test
+    public void collectionCorePomDoesNotDependOnHostUiRuntimeOrTransport() throws IOException {
+        Path collectionPom = repositoryRoot().resolve("easy-postman-collection-core/pom.xml");
+        String source = Files.readString(collectionPom);
+        List<String> forbiddenDependencies = List.of(
+                "<artifactId>easy-postman</artifactId>",
+                "<artifactId>easy-postman-ui</artifactId>",
+                "<artifactId>easy-postman-platform</artifactId>",
+                "<artifactId>easy-postman-plugin-runtime</artifactId>",
+                "<groupId>com.squareup.okhttp3</groupId>",
+                "<artifactId>okhttp",
+                "<artifactId>flatlaf</artifactId>",
+                "<artifactId>miglayout-swing</artifactId>",
+                "<artifactId>rsyntaxtextarea</artifactId>",
+                "<artifactId>autocomplete</artifactId>",
+                "<artifactId>hutool-core</artifactId>"
+        );
+        List<String> violations = forbiddenDependencies.stream()
+                .filter(source::contains)
+                .toList();
+
+        assertTrue(violations.isEmpty(),
+                "Collection core pom must not depend on host UI/runtime or transport implementations: " + violations);
+    }
+
+    @Test
+    public void collectionCoreDoesNotOwnAppSpecificImportersUntilTheyMoveAsAWhole() throws IOException {
+        Path collectionCoreSource = repositoryRoot().resolve("easy-postman-collection-core/src/main/java");
+        List<String> violations = sourcePackageViolations(collectionCoreSource, List.of(
+                "ApiPost",
+                "parseApiPost",
+                "IntelliJ",
+                "Swagger",
+                "OpenAPI",
+                "HAR"
+        ));
+
+        assertTrue(violations.isEmpty(),
+                "Collection core should not contain slices of app-owned importers before those importers move as a whole: "
+                        + violations);
+    }
+
+    @Test
+    public void appOwnedCollectionAdaptersAndRuntimeTypesStayOutOfCollectionCore() throws IOException {
+        Path root = repositoryRoot();
+        for (String appOwnedFile : List.of(
+                "easy-postman-app/src/main/java/com/laker/postman/service/postman/PostmanCollectionExporter.java",
+                "easy-postman-app/src/main/java/com/laker/postman/service/common/TreeNodeBuilder.java",
+                "easy-postman-app/src/main/java/com/laker/postman/service/collections/RequestsPersistence.java",
+                "easy-postman-app/src/main/java/com/laker/postman/service/collections/InheritanceService.java",
+                "easy-postman-app/src/main/java/com/laker/postman/model/PreparedRequest.java",
+                "easy-postman-app/src/main/java/com/laker/postman/model/HttpResponse.java",
+                "easy-postman-app/src/main/java/com/laker/postman/model/HttpEventInfo.java"
+        )) {
+            assertTrue(Files.isRegularFile(root.resolve(appOwnedFile)),
+                    appOwnedFile + " is still app-owned and must not move into collection-core in this slice");
+        }
+
+        Path collectionCoreSource = root.resolve("easy-postman-collection-core/src/main/java");
+        for (String forbiddenFileName : List.of(
+                "PostmanCollectionExporter.java",
+                "TreeNodeBuilder.java",
+                "RequestsPersistence.java",
+                "InheritanceService.java",
+                "PreparedRequest.java",
+                "HttpResponse.java",
+                "HttpEventInfo.java"
+        )) {
+            assertFalse(javaSourceFiles(collectionCoreSource).stream()
+                            .anyMatch(path -> path.getFileName().toString().equals(forbiddenFileName)),
+                    forbiddenFileName + " must not be owned by easy-postman-collection-core");
+        }
+    }
+
+    @Test
+    public void sourcesDoNotUseWildcardImportsForSplitDomainModels() throws IOException {
+        Path root = repositoryRoot();
+        List<String> violations = sourceRootsLinePatternViolations(
+                List.of(
+                        root.resolve("easy-postman-app/src/main/java"),
+                        root.resolve("easy-postman-app/src/test/java"),
+                        root.resolve("easy-postman-request-core/src/main/java"),
+                        root.resolve("easy-postman-collection-core/src/main/java")
+                ),
+                List.of(
+                        "import\\s+com\\.laker\\.postman\\.request\\.model\\.\\*;",
+                        "import\\s+static\\s+com\\.laker\\.postman\\.request\\.model\\.[A-Za-z0-9_]+\\.\\*;",
+                        "import\\s+com\\.laker\\.postman\\.collection(\\.[A-Za-z0-9_]+)*\\.\\*;",
+                        "import\\s+static\\s+com\\.laker\\.postman\\.collection(\\.[A-Za-z0-9_]+)*\\.[A-Za-z0-9_]+\\.\\*;",
+                        "import\\s+com\\.laker\\.postman\\.model\\.\\*;",
+                        "import\\s+static\\s+com\\.laker\\.postman\\.model\\.[A-Za-z0-9_]+\\.\\*;"
+                )
+        );
+
+        assertTrue(violations.isEmpty(),
+                "Request/collection/model packages span modules, so app sources must use explicit imports: " + violations);
     }
 
     @Test
@@ -241,6 +464,107 @@ public class ModuleArchitectureBoundaryTest {
     }
 
     @Test
+    public void appModelPackageDoesNotOwnUiViewStateTypes() {
+        Path root = repositoryRoot();
+        Path appModelPackage = root.resolve("easy-postman-app/src/main/java/com/laker/postman/model");
+
+        for (String modelFile : List.of(
+                "EnvironmentItem.java",
+                "VariableInfo.java",
+                "RequestEditSubPanelType.java",
+                "VariableSegment.java",
+                "CurlRequest.java",
+                "TrustedCertificateEntry.java",
+                "RequestHistoryItem.java",
+                "Category.java",
+                "Snippet.java",
+                "SnippetType.java",
+                "AssertionResult.java",
+                "BatchExecutionHistory.java",
+                "IterationResult.java",
+                "RequestResult.java",
+                "RunnerRowData.java",
+                "TestResult.java",
+                "MessageType.java"
+        )) {
+            assertFalse(Files.exists(appModelPackage.resolve(modelFile)),
+                    modelFile + " is UI/view-state or parser-owned metadata and must not live in the app model package");
+        }
+
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/environment/EnvironmentItem.java")),
+                "EnvironmentItem belongs to the environment UI/application owner package");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/variable/VariableInfo.java")),
+                "VariableInfo belongs to the variable autocomplete owner package");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/panel/collections/editor/request/RequestEditSubPanelType.java")),
+                "RequestEditSubPanelType belongs with the request editor UI package");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/variable/VariableSegment.java")),
+                "VariableSegment belongs with variable parsing/autocomplete metadata");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/variable/VariableParser.java")),
+                "VariableParser belongs with variable parsing/autocomplete metadata");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/service/curl/CurlRequest.java")),
+                "CurlRequest is a cURL parser DTO and belongs with the cURL parser package");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/service/curl/CurlImportUtil.java")),
+                "CurlImportUtil is a cURL import adapter and belongs with the cURL parser package");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/certificate/TrustedCertificateEntry.java")),
+                "TrustedCertificateEntry belongs with certificate/trust-material settings");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/history/RequestHistoryItem.java")),
+                "RequestHistoryItem belongs with request history ownership");
+        for (String snippetFile : List.of("Category.java", "Snippet.java", "SnippetType.java")) {
+            assertTrue(Files.isRegularFile(root.resolve(
+                            "easy-postman-app/src/main/java/com/laker/postman/snippet/" + snippetFile)),
+                    snippetFile + " belongs with script snippet ownership");
+        }
+        for (String functionalFile : List.of(
+                "AssertionResult.java",
+                "BatchExecutionHistory.java",
+                "IterationResult.java",
+                "RequestResult.java",
+                "RunnerRowData.java"
+        )) {
+            assertTrue(Files.isRegularFile(root.resolve(
+                            "easy-postman-app/src/main/java/com/laker/postman/functional/model/" + functionalFile)),
+                    functionalFile + " belongs with functional runner ownership");
+        }
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/script/model/TestResult.java")),
+                "TestResult belongs with script assertion result ownership");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/stream/MessageType.java")),
+                "MessageType belongs with stream message ownership");
+
+        assertFalse(Files.exists(root.resolve("easy-postman-app/src/main/java/com/laker/postman/util/VariableParser.java")),
+                "VariableParser is variable-domain parsing logic, not a generic app util");
+        assertFalse(Files.exists(root.resolve("easy-postman-app/src/main/java/com/laker/postman/util/CurlImportUtil.java")),
+                "CurlImportUtil is cURL import logic, not a generic app util");
+    }
+
+    @Test
+    public void appModelPackageOnlyOwnsRuntimeHttpExchangeModels() throws IOException {
+        Path modelSource = repositoryRoot().resolve("easy-postman-app/src/main/java/com/laker/postman/model");
+        Set<String> expectedFiles = new TreeSet<>(Set.of(
+                "HttpEventInfo.java",
+                "HttpResponse.java",
+                "PreparedRequest.java"
+        ));
+        Set<String> actualFiles = javaSourceFiles(modelSource).stream()
+                .map(path -> path.getFileName().toString())
+                .collect(Collectors.toCollection(TreeSet::new));
+
+        assertTrue(actualFiles.equals(expectedFiles),
+                "App model package should only contain app-owned runtime HTTP exchange snapshots; actual files: "
+                        + actualFiles);
+    }
+
+    @Test
     public void modelPackageDoesNotDependOnServiceLayer() throws IOException {
         Path modelSource = repositoryRoot().resolve("easy-postman-app/src/main/java/com/laker/postman/model");
         List<String> violations = javaSourceFiles(modelSource).stream()
@@ -261,6 +585,231 @@ public class ModuleArchitectureBoundaryTest {
 
         assertTrue(violations.isEmpty(),
                 "App service layer must not depend on concrete Swing panels or panel-owned DTOs: " + violations);
+    }
+
+    @Test
+    public void httpRequestValidationDoesNotOwnUiPromptsOrColors() {
+        Path root = repositoryRoot();
+        List<String> violations = new ArrayList<>();
+        for (String relativePath : List.of(
+                "easy-postman-app/src/main/java/com/laker/postman/http/request/HttpRequestValidator.java",
+                "easy-postman-app/src/main/java/com/laker/postman/http/request/HttpRequestValidationResult.java",
+                "easy-postman-app/src/main/java/com/laker/postman/http/request/HttpUrlUtil.java",
+                "easy-postman-app/src/main/java/com/laker/postman/http/request/HttpRequestProtocol.java",
+                "easy-postman-app/src/main/java/com/laker/postman/http/request/HttpHeaders.java")) {
+            violations.addAll(sourceContainsViolations(root.resolve(relativePath), List.of(
+                    "import javax.swing",
+                    "import java.awt",
+                    "JOptionPane",
+                    "ModernColors",
+                    "methodColor"
+            )));
+        }
+
+        assertTrue(violations.isEmpty(),
+                "HTTP request validation/utilities must return structured results; UI prompts and colors belong in panels: "
+                        + violations);
+    }
+
+    @Test
+    public void okHttpResponseHandlerDoesNotOwnSwingDownloadUi() {
+        Path responseHandler = repositoryRoot()
+                .resolve("easy-postman-app/src/main/java/com/laker/postman/http/runtime/okhttp/OkHttpResponseHandler.java");
+        List<String> violations = sourceContainsViolations(responseHandler, List.of(
+                "import javax.swing",
+                "DownloadProgressDialog",
+                "JOptionPane",
+                "SwingUtilities"
+        ));
+
+        assertTrue(violations.isEmpty(),
+                "OkHttp response handling must use UI-neutral sinks; Swing/JavaFX adapters belong in the UI layer: "
+                        + violations);
+    }
+
+    @Test
+    public void webSocketLifecycleLoggingDoesNotOwnConsolePanelUi() {
+        Path listener = repositoryRoot()
+                .resolve("easy-postman-app/src/main/java/com/laker/postman/http/runtime/okhttp/WebSocketLifecycleLogListener.java");
+        List<String> violations = sourceContainsViolations(listener, List.of(
+                "ConsolePanel",
+                "GraphicsEnvironment",
+                "javax.swing",
+                "java.awt"
+        ));
+
+        assertTrue(violations.isEmpty(),
+                "WebSocket transport lifecycle logging must use UI-neutral sinks; Swing/JavaFX adapters belong in UI: "
+                        + violations);
+    }
+
+    @Test
+    public void sslConfigurationDoesNotOwnConsolePanelUi() {
+        Path sslConfiguration = repositoryRoot()
+                .resolve("easy-postman-app/src/main/java/com/laker/postman/http/runtime/ssl/SSLConfigurationUtil.java");
+        List<String> violations = sourceContainsViolations(sslConfiguration, List.of(
+                "ConsolePanel",
+                "GraphicsEnvironment",
+                "javax.swing",
+                "java.awt"
+        ));
+
+        assertTrue(violations.isEmpty(),
+                "SSL transport configuration must use UI-neutral lifecycle logging sinks: " + violations);
+    }
+
+    @Test
+    public void cookieServiceDoesNotOwnSwingDispatch() {
+        Path cookieService = repositoryRoot()
+                .resolve("easy-postman-app/src/main/java/com/laker/postman/http/runtime/cookie/HttpCookieStore.java");
+        List<String> violations = sourceContainsViolations(cookieService, List.of(
+                "SwingUtilities",
+                "javax.swing",
+                "java.awt",
+                "com.laker.postman.panel."
+        ));
+
+        assertTrue(violations.isEmpty(),
+                "Cookie change notification must use UI-neutral callback dispatchers; Swing/JavaFX adapters belong in UI: "
+                        + violations);
+    }
+
+    @Test
+    public void httpRuntimeServicesUseSettingsProviderBoundary() throws IOException {
+        Path root = repositoryRoot();
+        List<String> violations = new ArrayList<>();
+        for (String runtimeSource : List.of(
+                "easy-postman-app/src/main/java/com/laker/postman/http/request",
+                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/transport",
+                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/okhttp",
+                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/ssl",
+                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/sse",
+                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/cookie",
+                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/redirect",
+                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/error")) {
+            violations.addAll(sourcePackageViolations(root.resolve(runtimeSource), List.of(
+                    "import com.laker.postman.service.setting.SettingManager",
+                    "SettingManager."
+            )));
+        }
+
+        assertTrue(violations.isEmpty(),
+                "HTTP runtime/service code must read runtime settings through HttpRuntimeSettingsProvider so Swing, JavaFX, CLI, "
+                        + "and tests can provide different hosts: " + violations);
+    }
+
+    @Test
+    public void httpRuntimeTransportDoesNotOwnUiCode() throws IOException {
+        Path root = repositoryRoot();
+        List<String> violations = new ArrayList<>();
+        for (String runtimeSource : List.of(
+                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/transport",
+                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/okhttp",
+                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/ssl",
+                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/sse",
+                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/interaction",
+                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/observation")) {
+            violations.addAll(sourcePackageViolations(root.resolve(runtimeSource), List.of(
+                    "import javax.swing",
+                    "import java.awt",
+                    "com.laker.postman.panel.",
+                    "UiSingletonFactory"
+            )));
+        }
+
+        assertTrue(violations.isEmpty(),
+                "HTTP transport runtime must stay UI-neutral so Swing, JavaFX, CLI, and performance runners can share it: "
+                        + violations);
+    }
+
+    @Test
+    public void httpRuntimeUsesExplicitPackageAndClassNames() {
+        Path root = repositoryRoot();
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/http/runtime/transport/HttpTransportRuntime.java")),
+                "HTTP transport runtime belongs in http.runtime.transport instead of generic service.http");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/http/runtime/transport/HttpRuntimeExecutor.java")),
+                "HTTP facade should express runtime execution instead of single-request only semantics");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/http/runtime/transport/ScopedHttpBaseClientProvider.java")),
+                "Scoped HTTP base clients belong with transport runtime execution");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/http/runtime/okhttp/OkHttpExchangeEventListener.java")),
+                "OkHttp exchange event collection belongs in http.runtime.okhttp and should not be named Console");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/http/runtime/okhttp/WebSocketLifecycleLogListener.java")),
+                "WebSocket lifecycle logging belongs in http.runtime.okhttp");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/http/runtime/ssl/SSLConfigurationUtil.java")),
+                "TLS/certificate configuration belongs in http.runtime.ssl");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/http/runtime/sse/SseResponseCallback.java")),
+                "SSE response callbacks belong in http.runtime.sse and should not carry UI names");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/http/runtime/cookie/HttpCookieStore.java")),
+                "HTTP cookie state belongs in http.runtime.cookie");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/http/runtime/redirect/HttpRedirectExecutor.java")),
+                "Manual redirect execution belongs in http.runtime.redirect");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/http/runtime/error/NetworkErrorMessageResolver.java")),
+                "Network transport error mapping belongs in http.runtime.error");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/http/request/PreparedRequestFactory.java")),
+                "Prepared request creation belongs in http.request and should use a factory name");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/http/request/PreparedRequestFinalizer.java")),
+                "Prepared request send-time finalization belongs in http.request");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/http/request/HttpRequestSettingsResolver.java")),
+                "Request setting normalization belongs in http.request");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/http/runtime/config/HttpRuntimeSettingsProvider.java")),
+                "HTTP runtime settings belong in http.runtime.config");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/http/runtime/interaction/DownloadProgressSink.java")),
+                "HTTP UI-neutral interaction ports belong in http.runtime.interaction");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/http/runtime/observation/NetworkLogSink.java")),
+                "HTTP network observation ports belong in http.runtime.observation");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/panel/http/runtime/SwingHttpRuntimeInteractionAdapter.java")),
+                "Swing-specific HTTP runtime adapters belong in panel.http.runtime");
+
+        for (String retiredPath : List.of(
+                "easy-postman-app/src/main/java/com/laker/postman/service/http/HttpService.java",
+                "easy-postman-app/src/main/java/com/laker/postman/service/http/HttpSingleRequestExecutor.java",
+                "easy-postman-app/src/main/java/com/laker/postman/service/http/HttpTransportRuntime.java",
+                "easy-postman-app/src/main/java/com/laker/postman/service/http/HttpRuntimeExecutor.java",
+                "easy-postman-app/src/main/java/com/laker/postman/service/http/HttpBaseClientProvider.java",
+                "easy-postman-app/src/main/java/com/laker/postman/service/http/HttpCallTracker.java",
+                "easy-postman-app/src/main/java/com/laker/postman/service/http/ScopedHttpBaseClientProvider.java",
+                "easy-postman-app/src/main/java/com/laker/postman/service/http/CompressionDecompressNetworkInterceptor.java",
+                "easy-postman-app/src/main/java/com/laker/postman/service/http/HttpUtil.java",
+                "easy-postman-app/src/main/java/com/laker/postman/service/http/HttpRequestUtil.java",
+                "easy-postman-app/src/main/java/com/laker/postman/service/http/PreparedRequestBuilder.java",
+                "easy-postman-app/src/main/java/com/laker/postman/service/http/RequestFinalizer.java",
+                "easy-postman-app/src/main/java/com/laker/postman/service/http/RequestSettingsResolver.java",
+                "easy-postman-app/src/main/java/com/laker/postman/service/http/CookieService.java",
+                "easy-postman-app/src/main/java/com/laker/postman/service/http/RedirectHandler.java",
+                "easy-postman-app/src/main/java/com/laker/postman/service/http/NetworkErrorMessageResolver.java",
+                "easy-postman-app/src/main/java/com/laker/postman/service/http/okhttp",
+                "easy-postman-app/src/main/java/com/laker/postman/service/http/ssl",
+                "easy-postman-app/src/main/java/com/laker/postman/service/http/sse",
+                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/okhttp/EasyConsoleEventListener.java",
+                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/okhttp/LogWebSocketListener.java",
+                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/sse/SseUiCallback.java",
+                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/sse/SseResEventListener.java",
+                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/sse/SseEventListener.java",
+                "easy-postman-app/src/main/java/com/laker/postman/http/callback",
+                "easy-postman-app/src/main/java/com/laker/postman/http/response",
+                "easy-postman-app/src/main/java/com/laker/postman/http/trace",
+                "easy-postman-app/src/main/java/com/laker/postman/panel/http/SwingHttpResponseInteraction.java"
+        )) {
+            assertFalse(Files.exists(root.resolve(retiredPath)),
+                    retiredPath + " is a retired HTTP runtime name/package");
+        }
     }
 
     @Test
@@ -385,6 +934,20 @@ public class ModuleArchitectureBoundaryTest {
         assertFalse(Files.exists(root.resolve(
                         "easy-postman-app/src/main/java/com/laker/postman/panel/performance/plan/PerformanceSwingTreePlanAdapter.java")),
                 "PerformanceSwingTreePlanAdapter must not live in the retired panel.performance.plan package");
+    }
+
+    @Test
+    public void performanceThreadGroupPlannerDoesNotHavePanelWrapper() {
+        Path root = repositoryRoot();
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-performance-core/src/main/java/com/laker/postman/performance/core/threadgroup/PerformanceCoreThreadGroupPlanner.java")),
+                "Thread group planning is already implemented by performance-core");
+        assertFalse(Files.exists(root.resolve(
+                        "easy-postman-app/src/main/java/com/laker/postman/panel/performance/threadgroup/PerformanceThreadGroupPlanner.java")),
+                "Do not keep a panel package wrapper around PerformanceCoreThreadGroupPlanner");
+        assertFalse(Files.exists(root.resolve(
+                        "easy-postman-app/src/test/java/com/laker/postman/panel/performance/threadgroup/PerformanceThreadGroupPlannerTest.java")),
+                "Wrapper tests belong with the core planner test after the wrapper is removed");
     }
 
     @Test
@@ -704,6 +1267,35 @@ public class ModuleArchitectureBoundaryTest {
                 .toList();
     }
 
+    private static List<String> sourceRootsLinePatternViolations(List<Path> sourceRoots,
+                                                                 List<String> forbiddenRegexes) throws IOException {
+        return sourceRoots.stream()
+                .flatMap(sourceRoot -> {
+                    try {
+                        return javaSourceFiles(sourceRoot).stream()
+                                .flatMap(file -> sourceLinePatternViolations(file, forbiddenRegexes).stream());
+                    } catch (IOException e) {
+                        throw new IllegalStateException("Failed to scan " + sourceRoot, e);
+                    }
+                })
+                .toList();
+    }
+
+    private static List<String> sourceLinePatternViolations(Path file, List<String> forbiddenRegexes) {
+        try {
+            List<java.util.regex.Pattern> forbiddenPatterns = forbiddenRegexes.stream()
+                    .map(java.util.regex.Pattern::compile)
+                    .toList();
+            return Files.readString(file).lines()
+                    .map(String::trim)
+                    .filter(line -> forbiddenPatterns.stream().anyMatch(pattern -> pattern.matcher(line).matches()))
+                    .map(line -> file + " contains " + line)
+                    .toList();
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to read " + file, e);
+        }
+    }
+
     private static List<String> retiredPanelPerformanceHeadlessPackageNames() {
         String retiredPackagePrefix = "com.laker.postman.panel.performance.";
         return List.of("execution.", "runtime.", "model.", "plan.", "report.").stream()
@@ -724,6 +1316,55 @@ public class ModuleArchitectureBoundaryTest {
                 "import com.laker.postman.common.util.NotificationUtil",
                 "import com.laker.postman.common.util.EditorThemeUtil",
                 "import com.laker.postman.common.constants.ModernColors"
+        );
+    }
+
+    private static List<String> forbiddenRequestCoreImports() {
+        return List.of(
+                "import javax.swing.",
+                "import java.awt.",
+                "import okhttp",
+                "import org.fife",
+                "import com.formdev.",
+                "import net.miginfocom.",
+                "import com.laker.postman.panel.",
+                "import com.laker.postman.service.",
+                "import com.laker.postman.common.component.",
+                "import com.laker.postman.common.UiSingleton",
+                "import com.laker.postman.plugin.runtime.",
+                "import com.laker.postman.ioc.",
+                "import com.laker.postman.platform.",
+                "import com.laker.postman.util.I18nUtil",
+                "import com.laker.postman.util.MessageKeys",
+                "import com.laker.postman.model.PreparedRequest",
+                "import com.laker.postman.model.HttpResponse",
+                "import com.laker.postman.model.HttpEventInfo"
+        );
+    }
+
+    private static List<String> forbiddenCollectionCoreImports() {
+        return List.of(
+                "import javax.swing.",
+                "import java.awt.",
+                "import okhttp",
+                "import org.fife",
+                "import com.formdev.",
+                "import net.miginfocom.",
+                "import com.laker.postman.panel.",
+                "import com.laker.postman.service.",
+                "import com.laker.postman.common.component.",
+                "import com.laker.postman.common.UiSingleton",
+                "import com.laker.postman.common.util.FontsUtil",
+                "import com.laker.postman.common.util.IconUtil",
+                "import com.laker.postman.common.util.NotificationUtil",
+                "import com.laker.postman.common.util.EditorThemeUtil",
+                "import com.laker.postman.common.constants.ModernColors",
+                "import com.laker.postman.plugin.runtime.",
+                "import com.laker.postman.ioc.",
+                "import com.laker.postman.platform.",
+                "import com.laker.postman.model.PreparedRequest",
+                "import com.laker.postman.model.HttpResponse",
+                "import com.laker.postman.model.HttpEventInfo"
         );
     }
 

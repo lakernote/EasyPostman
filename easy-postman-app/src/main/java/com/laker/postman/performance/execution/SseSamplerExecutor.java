@@ -10,7 +10,7 @@ import com.laker.postman.performance.core.plan.PerformanceProtocolStageElement;
 
 
 import com.laker.postman.performance.plan.PerformanceRequestSampler;
-import com.laker.postman.service.http.HttpBaseClientProvider;
+import com.laker.postman.http.runtime.transport.HttpBaseClientProvider;
 import lombok.RequiredArgsConstructor;
 import okhttp3.sse.EventSource;
 

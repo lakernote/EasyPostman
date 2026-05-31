@@ -1,12 +1,14 @@
 package com.laker.postman.plugin.host;
 
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestBodyTypes;
 import com.laker.postman.model.RequestImportBodyTypes;
 import com.laker.postman.model.RequestImportDraft;
 import com.laker.postman.model.RequestImportHeader;
 import com.laker.postman.model.RequestImportProtocol;
-import com.laker.postman.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.RequestBodyTypes;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import org.testng.annotations.Test;
 
 import java.util.List;

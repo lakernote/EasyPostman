@@ -2,7 +2,7 @@ package com.laker.postman.panel.topmenu.setting;
 
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
-import com.laker.postman.service.http.okhttp.OkHttpClientManager;
+import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;

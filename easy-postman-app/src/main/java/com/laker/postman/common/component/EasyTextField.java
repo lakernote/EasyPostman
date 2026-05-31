@@ -2,14 +2,14 @@ package com.laker.postman.common.component;
 
 import com.formdev.flatlaf.extras.components.FlatTextField;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.model.VariableInfo;
-import com.laker.postman.model.VariableSegment;
+import com.laker.postman.variable.VariableInfo;
+import com.laker.postman.variable.VariableSegment;
 import com.laker.postman.service.variable.VariableResolver;
 import com.laker.postman.variable.VariableType;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.VariableParser;
+import com.laker.postman.variable.VariableParser;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;

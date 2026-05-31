@@ -1,6 +1,6 @@
 package com.laker.postman.panel.topmenu.setting;
 
-import com.laker.postman.service.http.okhttp.OkHttpClientManager;
+import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;

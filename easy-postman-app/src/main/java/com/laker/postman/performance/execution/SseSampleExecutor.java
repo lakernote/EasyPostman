@@ -5,8 +5,8 @@ import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
 import com.laker.postman.performance.core.model.SsePerformanceData;
-import com.laker.postman.service.http.HttpBaseClientProvider;
-import com.laker.postman.service.http.HttpSingleRequestExecutor;
+import com.laker.postman.http.runtime.transport.HttpBaseClientProvider;
+import com.laker.postman.http.runtime.transport.HttpRuntimeExecutor;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import okhttp3.Response;
@@ -251,7 +251,7 @@ public class SseSampleExecutor {
             }
         };
 
-        EventSource eventSource = HttpSingleRequestExecutor.executeSSE(req, listener, baseClientProvider);
+        EventSource eventSource = HttpRuntimeExecutor.openSse(req, listener, baseClientProvider);
         activeSources.add(eventSource);
         if (sessionRegistered.compareAndSet(false, true)) {
             realtimeMetrics.recordSseSessionStart(eventSource, requestStartTime, apiId, apiName);

@@ -1,8 +1,10 @@
 package com.laker.postman.performance.plan;
 
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.performance.core.request.PerformanceRequestSnapshot;
 import com.laker.postman.util.JsonUtil;
 import lombok.experimental.UtilityClass;

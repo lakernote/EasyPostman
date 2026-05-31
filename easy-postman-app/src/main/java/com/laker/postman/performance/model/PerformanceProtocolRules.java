@@ -1,9 +1,11 @@
 package com.laker.postman.performance.model;
 
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.HttpRequestItem;
 
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.service.http.HttpUtil;
+
+
+import com.laker.postman.http.request.HttpRequestProtocol;
 import lombok.experimental.UtilityClass;
 
 @UtilityClass
@@ -15,7 +17,7 @@ public class PerformanceProtocolRules {
 
     public boolean isSsePerfRequest(HttpRequestItem item) {
         RequestItemProtocolEnum protocol = resolveRequestProtocol(item);
-        return protocol.isSseProtocol() || (protocol.isHttpProtocol() && HttpUtil.isSSERequest(item));
+        return protocol.isSseProtocol() || (protocol.isHttpProtocol() && HttpRequestProtocol.isSse(item));
     }
 
     public boolean isWebSocketPerfRequest(HttpRequestItem item) {

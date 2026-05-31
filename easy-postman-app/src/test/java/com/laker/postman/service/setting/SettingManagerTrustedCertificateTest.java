@@ -2,7 +2,7 @@ package com.laker.postman.service.setting;
 
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.constants.ConfigPathConstants;
-import com.laker.postman.model.TrustedCertificateEntry;
+import com.laker.postman.certificate.TrustedCertificateEntry;
 import com.laker.postman.model.PreparedRequest;
 import org.testng.annotations.Test;
 

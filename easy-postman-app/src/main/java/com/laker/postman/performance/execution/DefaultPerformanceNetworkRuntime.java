@@ -2,8 +2,8 @@ package com.laker.postman.performance.execution;
 
 
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.service.http.ScopedHttpBaseClientProvider;
-import com.laker.postman.service.http.okhttp.HttpClientRuntimeConfig;
+import com.laker.postman.http.runtime.transport.ScopedHttpBaseClientProvider;
+import com.laker.postman.http.runtime.okhttp.HttpClientRuntimeConfig;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Call;
 import okhttp3.OkHttpClient;

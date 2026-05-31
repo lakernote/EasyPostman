@@ -1,8 +1,10 @@
 package com.laker.postman.panel.collections.editor.request;
 
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.SavedResponse;
-import com.laker.postman.service.http.RequestSettingsResolver;
+import com.laker.postman.request.model.SavedResponse;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
+import com.laker.postman.http.request.HttpRequestSettingsResolver;
 import com.laker.postman.util.JsonUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -63,8 +65,8 @@ final class RequestDirtyStateHelper {
         }
 
         try {
-            HttpRequestItem normalizedOriginal = RequestSettingsResolver.normalizeForComparison(original);
-            HttpRequestItem normalizedCurrent = RequestSettingsResolver.normalizeForComparison(current);
+            HttpRequestItem normalizedOriginal = HttpRequestSettingsResolver.normalizeForComparison(original);
+            HttpRequestItem normalizedCurrent = HttpRequestSettingsResolver.normalizeForComparison(current);
 
             List<SavedResponse> originalSavedResponses = normalizedOriginal.getResponse();
             List<SavedResponse> currentSavedResponses = normalizedCurrent.getResponse();

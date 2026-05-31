@@ -259,23 +259,13 @@ public class GlobalVariablesService implements VariableProvider {
         }
 
         @Override
-        public void set(String key, Object value) {
-            mutateAndPersist(() -> super.set(key, value));
-        }
-
-        @Override
         public void removeVariable(String key) {
             mutateAndPersist(() -> super.removeVariable(key));
         }
 
         @Override
-        public void unset(String key) {
-            mutateAndPersist(() -> super.unset(key));
-        }
-
-        @Override
-        public void clear() {
-            mutateAndPersist(super::clear);
+        public void clearVariables() {
+            mutateAndPersist(super::clearVariables);
         }
 
         private void mutateAndPersist(Runnable mutation) {

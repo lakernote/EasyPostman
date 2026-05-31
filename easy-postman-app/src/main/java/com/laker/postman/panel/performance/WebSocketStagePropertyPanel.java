@@ -13,7 +13,7 @@ import com.laker.postman.common.component.editor.PostmanJavaScriptTokenMaker;
 import com.laker.postman.common.component.editor.ScriptSnippetManager;
 import com.laker.postman.common.component.tab.IndicatorTabComponent;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.model.Snippet;
+import com.laker.postman.snippet.Snippet;
 import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.util.EditorThemeUtil;
 import com.laker.postman.util.FontsUtil;

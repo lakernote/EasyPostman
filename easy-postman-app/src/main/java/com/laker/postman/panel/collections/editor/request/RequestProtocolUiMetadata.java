@@ -1,7 +1,9 @@
 package com.laker.postman.panel.collections.editor.request;
 
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+
+
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.util.IconUtil;
 
 import javax.swing.*;

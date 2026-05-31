@@ -1,11 +1,13 @@
 package com.laker.postman.panel.collections.editor.request;
 
-import com.laker.postman.common.UiSingletonFactory;
-import com.laker.postman.model.HttpHeader;
-import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.model.SavedResponse;
+import com.laker.postman.request.model.HttpHeader;
+import com.laker.postman.request.model.SavedResponse;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
+import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.panel.collections.editor.request.sub.RequestLinePanel;
 import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;
@@ -25,6 +27,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 final class SavedResponseHelper {
@@ -47,7 +51,7 @@ final class SavedResponseHelper {
                       HttpResponse lastResponse,
                       HttpRequestItem originalRequestItem) {
         try {
-            SavedResponse savedResponse = SavedResponse.fromRequestAndResponse(name, lastRequest, lastResponse);
+            SavedResponse savedResponse = fromRequestAndResponse(name, lastRequest, lastResponse);
             CollectionTreePanel leftPanel = UiSingletonFactory.getInstance(CollectionTreePanel.class);
             DefaultMutableTreeNode requestNode = findRequestNodeInTree(leftPanel.getRootTreeNode(), originalRequestItem);
 
@@ -84,6 +88,83 @@ final class SavedResponseHelper {
             log.error("保存响应失败", ex);
             NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.RESPONSE_SAVE_ERROR, ex.getMessage()));
         }
+    }
+
+    private static SavedResponse fromRequestAndResponse(String name, PreparedRequest request, HttpResponse response) {
+        SavedResponse saved = new SavedResponse();
+        saved.setId(UUID.randomUUID().toString());
+        saved.setName(name);
+        saved.setTimestamp(System.currentTimeMillis());
+
+        SavedResponse.OriginalRequest originalRequest = new SavedResponse.OriginalRequest();
+        originalRequest.setMethod(request.method);
+        originalRequest.setUrl(request.url);
+        originalRequest.setHeaders(request.headersList != null ? new ArrayList<>(request.headersList) : new ArrayList<>());
+        originalRequest.setParams(request.paramsList != null ? new ArrayList<>(request.paramsList) : new ArrayList<>());
+        originalRequest.setBodyType(request.bodyType);
+        originalRequest.setBody(request.body);
+        originalRequest.setFormDataList(request.formDataList != null ? new ArrayList<>(request.formDataList) : new ArrayList<>());
+        originalRequest.setUrlencodedList(request.urlencodedList != null ? new ArrayList<>(request.urlencodedList) : new ArrayList<>());
+        saved.setOriginalRequest(originalRequest);
+
+        saved.setCode(response.code);
+        saved.setHeaders(toSavedHeaders(response));
+        saved.setBody(response.body);
+        saved.setCostMs(response.costMs);
+        saved.setBodySize(response.bodySize);
+        saved.setHeadersSize(response.headersSize);
+        saved.setPreviewLanguage(detectPreviewLanguage(response));
+
+        return saved;
+    }
+
+    private static List<HttpHeader> toSavedHeaders(HttpResponse response) {
+        List<HttpHeader> headers = new ArrayList<>();
+        if (response.headers == null) {
+            return headers;
+        }
+        for (Map.Entry<String, List<String>> entry : response.headers.entrySet()) {
+            String key = entry.getKey();
+            if (entry.getValue() != null && !entry.getValue().isEmpty()) {
+                String value = String.join(", ", entry.getValue());
+                headers.add(new HttpHeader(true, key, value));
+            }
+        }
+        return headers;
+    }
+
+    private static String detectPreviewLanguage(HttpResponse response) {
+        if (response.headers != null) {
+            for (Map.Entry<String, List<String>> entry : response.headers.entrySet()) {
+                if (entry.getKey() != null && entry.getKey().equalsIgnoreCase("Content-Type")) {
+                    List<String> values = entry.getValue();
+                    if (values != null && !values.isEmpty()) {
+                        String contentType = values.get(0).toLowerCase();
+                        if (contentType.contains("json")) return "json";
+                        if (contentType.contains("xml")) return "xml";
+                        if (contentType.contains("html")) return "html";
+                        if (contentType.contains("javascript")) return "javascript";
+                        if (contentType.contains("css")) return "css";
+                        if (contentType.contains("text")) return "text";
+                    }
+                }
+            }
+        }
+
+        String body = response.body;
+        if (body != null && !body.isEmpty()) {
+            String trimmed = body.trim();
+            if ((trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+                    (trimmed.startsWith("[") && trimmed.endsWith("]"))) {
+                return "json";
+            }
+            if (trimmed.startsWith("<") && trimmed.endsWith(">")) {
+                if (trimmed.toLowerCase().contains("<html")) return "html";
+                if (trimmed.toLowerCase().contains("<?xml")) return "xml";
+            }
+        }
+
+        return "text";
     }
 
     void displaySavedResponse(ResponsePanel responsePanel,

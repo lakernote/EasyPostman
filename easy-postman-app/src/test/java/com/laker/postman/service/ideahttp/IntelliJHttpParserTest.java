@@ -1,15 +1,18 @@
 package com.laker.postman.service.ideahttp;
 
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestGroup;
-import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.service.common.CollectionParseResult;
+import com.laker.postman.collection.model.RequestGroup;
+import com.laker.postman.request.model.RequestAuthTypes;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
+import com.laker.postman.collection.model.CollectionParseResult;
 import org.testng.annotations.Test;
 
 import java.util.Base64;
 
-import static com.laker.postman.model.RequestAuthTypes.AUTH_TYPE_BASIC;
-import static com.laker.postman.model.RequestAuthTypes.AUTH_TYPE_BEARER;
+import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_BASIC;
+import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_BEARER;
 import static org.testng.Assert.*;
 
 /**

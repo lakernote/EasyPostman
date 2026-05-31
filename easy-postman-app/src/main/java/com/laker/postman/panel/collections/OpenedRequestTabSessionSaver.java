@@ -1,9 +1,11 @@
 package com.laker.postman.panel.collections;
 
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.exception.CancelException;
 import com.laker.postman.frame.MainFrame;
-import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.service.collections.OpenedRequestTabsStore;
 import com.laker.postman.service.setting.SettingManager;

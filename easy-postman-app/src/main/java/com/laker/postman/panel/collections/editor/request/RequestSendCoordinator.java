@@ -63,6 +63,10 @@ final class RequestSendCoordinator {
                 }
 
                 requestPreparationFeedbackHelper.showPreparationWarningIfNeeded(preparationResult);
+                if (!requestPreparationFeedbackHelper.confirmContinuationIfNeeded(
+                        preparationResult, requestLinePanel, sendAction, responsePanel)) {
+                    return;
+                }
                 dispatchAction.accept(preparationResult);
             }
         };

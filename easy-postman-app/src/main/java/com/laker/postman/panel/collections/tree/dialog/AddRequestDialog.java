@@ -1,16 +1,18 @@
 package com.laker.postman.panel.collections.tree.dialog;
 
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.HttpHeader;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.frame.MainFrame;
-import com.laker.postman.model.HttpHeader;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.panel.collections.editor.request.sub.RequestBodyPanel;
 import com.laker.postman.service.collections.CollectionTreeNodes;
-import com.laker.postman.service.http.HttpRequestFactory;
+import com.laker.postman.http.request.HttpRequestFactory;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -22,7 +24,7 @@ import java.awt.*;
 
 import static com.laker.postman.service.collections.DefaultRequestsFactory.APPLICATION_JSON;
 import static com.laker.postman.service.collections.DefaultRequestsFactory.CONTENT_TYPE;
-import static com.laker.postman.service.http.HttpRequestFactory.*;
+import static com.laker.postman.http.request.HttpRequestFactory.*;
 
 /**
  * 添加请求对话框

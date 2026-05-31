@@ -1,14 +1,15 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
-import com.laker.postman.common.component.EasyComboBox;
-import com.laker.postman.common.component.LoadingOverlay;
-import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.HttpEventInfo;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.model.TestResult;
-import com.laker.postman.service.http.HttpUtil;
+import com.laker.postman.script.model.TestResult;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+
+
+import com.laker.postman.common.component.EasyComboBox;
+import com.laker.postman.common.component.LoadingOverlay;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FontsUtil;
@@ -487,8 +488,7 @@ public class ResponsePanel extends JPanel {
         if (code > 0) {
             // 显示状态码
             statusCodeLabel.setText(String.valueOf(code));
-            // 根据状态码获取对应的颜色（使用 HttpUtil 工具方法）
-            statusCodeLabel.setForeground(HttpUtil.getStatusColor(code));
+            statusCodeLabel.setForeground(ResponseStatusUiMetadata.statusColor(code));
         } else {
             // 清空状态码
             statusCodeLabel.setText("");

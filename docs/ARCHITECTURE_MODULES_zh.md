@@ -7,6 +7,8 @@
 ```text
 easy-postman-parent
 ├── easy-postman-foundation
+├── easy-postman-request-core
+├── easy-postman-collection-core
 ├── easy-postman-plugin-api
 ├── easy-postman-platform
 ├── easy-postman-ui
@@ -19,6 +21,10 @@ easy-postman-parent
 ## 模块职责
 
 `easy-postman-foundation` 是最底层非 UI 基础层。它可以放共享 DTO、enum、常量、路径、JSON、系统工具、用户设置工具、国际化机制、基础消息 key，以及可跨宿主/插件复用的通用解析和格式化工具，例如 Cron、JSON Path、XML、文件大小、文件扩展名、时间显示、HTTP header 常量。它不能依赖 Swing、插件运行时、宿主 app、压测运行实现或业务 UI。
+
+`easy-postman-request-core` 是请求规格核心模型层。它放可被集合、导入导出、脚本、压测计划等复用的请求配置数据，例如 `HttpRequestItem`、`SavedResponse`、`HttpHeader`、`HttpParam`、`HttpFormData`、`HttpFormUrlencoded`、`CookieInfo`、`AuthType`、`RequestAuthTypes`、`RequestBodyTypes`、`RequestItemProtocolEnum`、`TransportAuth`、`RedirectInfo`。它只表达“请求是什么”，不能依赖 Swing、OkHttp、app service、panel、插件运行时或具体发送/渲染实现。`PreparedRequest`、`HttpResponse`、`HttpEventInfo` 这类当前仍绑定发送阶段、OkHttp/trace 或结果渲染语义的类型，先留在 `easy-postman-app`，后续再按 transport/runtime 边界继续下沉。
+
+`easy-postman-collection-core` 是集合领域核心层。它放集合树和导入解析可复用的无 UI 类型，例如 `RequestGroup`、`CollectionNode`、`CollectionNodeType`、`CollectionParseResult`、集合认证解析 helper，以及 Postman collection parser。它可以依赖 `easy-postman-foundation` 和 `easy-postman-request-core`，但不能依赖 Swing/AWT、OkHttp、app service/panel/runtime、platform、plugin-runtime、IOC 或具体发送/渲染实现。`TreeNodeBuilder`、集合树 UI、持久化服务、导出器和其他仍绑定宿主 UI/服务的逻辑先留在 `easy-postman-app`。
 
 `easy-postman-plugin-api` 是插件契约层。它放插件 SPI、插件描述、插件上下文、扩展点数据结构和插件服务接口，例如 `GitPluginService`、`ClientCertificatePluginService`、`RequestCollectionImportService`。插件和宿主通过这里的类型建立契约。
 
@@ -36,7 +42,11 @@ easy-postman-parent
 
 压测的具体执行适配当前留在 `easy-postman-app`：GUI 运行、headless CLI、worker server 先复用 app 内完整执行链，包含变量解析、环境/全局变量、脚本、断言、提取器、CSV inline/file asset、multipart 文件、证书和 HTTP/SSE/WebSocket 传输。后续只有在这些非 UI 语义能从 app 干净抽离后，才考虑新增独立 headless/runner 模块。
 
+HTTP 发送执行链当前仍在 `easy-postman-app`，但必须先按 UI-neutral runtime 约束演进：请求准备、URL/query、请求级设置解析、校验和默认请求工厂放在 `http.request`；`HttpTransportRuntime`、`HttpRuntimeExecutor`、作用域 client provider 和压缩解码拦截器放在 `http.runtime.transport`；OkHttp 实现适配放在 `http.runtime.okhttp`；TLS/证书配置放在 `http.runtime.ssl`；SSE 运行时回调放在 `http.runtime.sse`；Cookie 状态放在 `http.runtime.cookie`；手动 redirect 执行放在 `http.runtime.redirect`；网络错误文案映射放在 `http.runtime.error`；运行期设置放在 `http.runtime.config` 并通过 `HttpRuntimeSettingsProvider` 注入；UI 交互端口放在 `http.runtime.interaction`；网络/生命周期观测端口放在 `http.runtime.observation`；Swing 实现放在 `panel/http/runtime` 这类 UI adapter 中。上述 runtime、OkHttp 适配、SSL 配置、Cookie 通知、下载进度、响应大小警告和 WebSocket 生命周期日志都不能直接依赖 Swing/panel，也不能直接读取 app 的 `SettingManager`。等变量解析、脚本、证书、Cookie、响应模型和 app-only 服务进一步解开后，再新增类似 `easy-postman-http-runtime` 的独立模块，而不是把 HTTP runtime 放进泛化的 `easy-postman-core`。
+
 `easy-postman-app` 是宿主组装层。它可以放主入口、MainFrame、菜单、具体 app 面板、具体启动 wiring、设置页、更新页、欢迎页、帮助页、app-only 服务，以及宿主侧插件访问适配 `com.laker.postman.plugin.host`。后续迁移平台能力时，从这里逐步迁到 `easy-postman-platform`。
+
+`easy-postman-app` 内部也要避免再形成新的泛化 model 包。`com.laker.postman.model` 只保留当前还绑定 app 发送链或结果渲染语义的运行期 HTTP 交换快照，例如 `PreparedRequest`、`HttpResponse`、`HttpEventInfo`。功能测试 runner 数据放 `com.laker.postman.functional.model`，脚本断言结果放 `com.laker.postman.script.model`，SSE/WebSocket 消息类型放 `com.laker.postman.stream`，脚本片段目录放 `com.laker.postman.snippet`，历史、证书、变量、环境、cURL 导入等 app 内模型跟随各自 owner 包。不要把 UI view-state、导入临时 DTO 或领域专属模型重新塞回 `com.laker.postman.model`。
 
 `easy-postman-plugins/*` 通常是官方插件 JAR。普通插件不得反向依赖宿主 app 内部实现；需要扩展宿主时通过 `easy-postman-plugin-api` 注册能力，需要共享基础 DTO/工具时依赖 `easy-postman-foundation`，需要统一 Swing 风格时依赖 `easy-postman-ui`。
 
@@ -57,11 +67,13 @@ easy-postman-parent
 先问 5 个问题：
 
 1. 是否完全无 UI 且多个模块要用？是则优先 `foundation`。
-2. 是否是插件对宿主声明能力的契约？是则 `plugin-api`。
-3. 是否是可复用 Swing 组件、颜色、字体、图标或 UI 工具？是则 `ui`。
-4. 是否是插件加载、扫描、生命周期或 registry？是则 `plugin-runtime`。
-5. 是否是平台框架能力，例如 IOC、启动编排、升级、欢迎页、帮助、设置中心、主题/字体应用编排？能脱离具体 app UI 时放 `platform`，否则先留 `app`。
-6. 是否是具体宿主页面、菜单或业务组装？是则放 `app`。
+2. 是否是请求配置/保存响应/请求协议这类可复用请求规格模型？是则 `request-core`。
+3. 是否是集合树/集合分组/导入解析这类可复用且无 UI 的集合领域模型？是则 `collection-core`。
+4. 是否是插件对宿主声明能力的契约？是则 `plugin-api`。
+5. 是否是可复用 Swing 组件、颜色、字体、图标或 UI 工具？是则 `ui`。
+6. 是否是插件加载、扫描、生命周期或 registry？是则 `plugin-runtime`。
+7. 是否是平台框架能力，例如 IOC、启动编排、升级、欢迎页、帮助、设置中心、主题/字体应用编排？能脱离具体 app UI 时放 `platform`，否则先留 `app`。
+8. 是否是具体宿主页面、菜单或业务组装？是则放 `app`。
 
 更新能力按这条边界拆：版本检查、更新源、资产解析、变更日志和 `UpdateInfo`/`UpdateCheckFrequency` 这类平台数据放 `easy-postman-platform`；`AutoUpdateManager`、`UpdateUIManager`、`UpdateDownloader`、更新弹窗、安装/退出流程、插件市场更新 UI 留在 `easy-postman-app`。platform 不能直接依赖 app 的 `SettingManager`，需要通过 `UpdateSettingsProvider` 这类最小接口由 app 适配。
 
@@ -70,6 +82,10 @@ easy-postman-parent
 ## 禁止事项
 
 - 不要把 Swing 组件放进 `foundation`。
+- 不要把请求规格模型重新放回 `easy-postman-app` 的 `com.laker.postman.model`。
+- 不要让 `easy-postman-request-core` 依赖 Swing、OkHttp、app service、panel 或插件运行时。
+- 不要把集合核心模型或 Postman collection parser 放回 `easy-postman-app`，也不要让 `easy-postman-collection-core` 依赖 Swing、OkHttp、app service/panel/runtime、platform、plugin-runtime 或 IOC。
+- 不要让 HTTP 发送、OkHttp 适配、SSL、Cookie 通知这类 runtime/service 代码直接依赖 Swing/panel；使用中立 sink/dispatcher，由 Swing/JavaFX adapter 实现。
 - 不要把插件服务接口放进 `foundation`。
 - 不要让普通官方插件依赖 `easy-postman-app`；`easy-postman-plugins/plugin-manager` 是宿主 app 可直接依赖的插件管理特例，不能作为新插件模板。
 - 不要让公共 UI 组件依赖 app resources 才能加载自身 icons。
@@ -86,8 +102,19 @@ easy-postman-platform
   已有：IOC、更新发现核心
   后续：启动、欢迎页、帮助、设置中心、主题/字体应用编排
 
-easy-postman-api-core
-  API 请求/响应模型、集合、环境、变量、导入导出、脚本流水线核心
+easy-postman-request-core
+  已有：请求配置模型、保存响应、header/body/auth/protocol DTO
+  后续：继续拆出 transport-neutral 的请求结果/事件快照，但不要把 OkHttp/trace 直接带入核心
+
+easy-postman-collection-core
+  已有：集合树纯模型、分组模型、解析结果、Postman collection parser
+  后续：导出中立 DTO、集合读写契约、非 UI 查询/复制/继承逻辑
+
+easy-postman-runtime-core
+  后续：变量解析、脚本流水线契约、断言/提取器中立运行模型；具体 Rhino/Graal/HTTP 适配仍按依赖拆分
+
+easy-postman-http-runtime
+  后续：`PreparedRequest`/`HttpResponse` 的 transport-neutral 化、`http.runtime.transport`、`http.runtime.okhttp`、`http.runtime.ssl`、Cookie store、SSE/WebSocket runtime；UI 仅通过 sink/dispatcher 接入
 ```
 
 抽取时保持 app 只做组装，核心模块不反向依赖 app UI。

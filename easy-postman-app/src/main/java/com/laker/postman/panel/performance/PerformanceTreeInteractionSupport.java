@@ -1,9 +1,11 @@
 package com.laker.postman.panel.performance;
 
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.laker.postman.performance.core.model.NodeType;
 
 
-import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
 import com.laker.postman.panel.performance.config.CsvDataSetPropertyPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;

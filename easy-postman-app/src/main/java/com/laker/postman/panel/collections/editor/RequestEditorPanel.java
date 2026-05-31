@@ -1,5 +1,11 @@
 package com.laker.postman.panel.collections.editor;
 
+import com.laker.postman.collection.model.RequestGroup;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.SavedResponse;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.IdUtil;
 import com.laker.postman.common.UiSingletonPanel;
@@ -9,10 +15,6 @@ import com.laker.postman.common.component.tab.PlusPanel;
 import com.laker.postman.common.component.tab.PlusTabComponent;
 import com.laker.postman.common.component.tab.TabbedPaneDragHandler;
 import com.laker.postman.frame.MainFrame;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestGroup;
-import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.model.SavedResponse;
 import com.laker.postman.panel.collections.tree.CollectionGroupSelectionDialog;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
@@ -20,7 +22,7 @@ import com.laker.postman.service.collections.ActiveCollectionTreeNodeRepository;
 import com.laker.postman.service.collections.CollectionTreeQueryService;
 import com.laker.postman.service.setting.ShortcutManager;
 import com.laker.postman.service.variable.RequestContext;
-import com.laker.postman.util.CurlImportUtil;
+import com.laker.postman.service.curl.CurlImportUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;

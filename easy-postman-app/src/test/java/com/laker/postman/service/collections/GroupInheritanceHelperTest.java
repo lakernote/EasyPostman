@@ -1,7 +1,9 @@
 package com.laker.postman.service.collections;
 
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestGroup;
+import com.laker.postman.collection.model.RequestGroup;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import org.testng.annotations.Test;
 
 import java.util.List;

@@ -1,14 +1,17 @@
 package com.laker.postman.panel.collections.editor.request;
 
+import com.laker.postman.request.model.RequestAuthTypes;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.HttpHeader;
+import com.laker.postman.request.model.HttpParam;
+import com.laker.postman.request.model.HttpFormData;
+import com.laker.postman.request.model.HttpFormUrlencoded;
+
+
 import com.laker.postman.common.component.MarkdownEditorPanel;
 import com.laker.postman.common.component.tab.IndicatorTabComponent;
 import com.laker.postman.common.component.table.FormDataTablePanel;
 import com.laker.postman.common.component.table.FormUrlencodedTablePanel;
-import com.laker.postman.model.HttpFormData;
-import com.laker.postman.model.HttpFormUrlencoded;
-import com.laker.postman.model.HttpHeader;
-import com.laker.postman.model.HttpParam;
-import com.laker.postman.model.RequestItemProtocolEnum;
 import com.laker.postman.panel.collections.editor.request.sub.AuthTabPanel;
 import com.laker.postman.panel.collections.editor.request.sub.EasyRequestHttpHeadersPanel;
 import com.laker.postman.panel.collections.editor.request.sub.EasyRequestParamsPanel;
@@ -22,8 +25,8 @@ import javax.swing.event.DocumentListener;
 import javax.swing.text.Document;
 import java.util.List;
 
-import static com.laker.postman.model.RequestAuthTypes.AUTH_TYPE_INHERIT;
-import static com.laker.postman.model.RequestAuthTypes.AUTH_TYPE_NONE;
+import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_INHERIT;
+import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_NONE;
 
 final class RequestTabStateHelper {
     private final RequestItemProtocolEnum protocol;

@@ -1,5 +1,13 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
+import com.laker.postman.model.Variable;
+import com.laker.postman.variable.VariableInfo;
+import com.laker.postman.variable.VariableParser;
+import com.laker.postman.variable.VariableSegment;
+import com.laker.postman.request.model.RequestBodyTypes;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+
+
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.common.component.SearchableTextArea;
@@ -7,10 +15,6 @@ import com.laker.postman.common.component.ViewportClippedTokenPainter;
 import com.laker.postman.common.component.button.*;
 import com.laker.postman.common.component.table.FormDataTablePanel;
 import com.laker.postman.common.component.table.FormUrlencodedTablePanel;
-import com.laker.postman.model.RequestBodyTypes;
-import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.model.VariableInfo;
-import com.laker.postman.model.VariableSegment;
 import com.laker.postman.service.variable.VariableResolver;
 import com.laker.postman.variable.VariableType;
 import com.laker.postman.util.*;

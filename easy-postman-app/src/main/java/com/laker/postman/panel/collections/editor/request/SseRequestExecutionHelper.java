@@ -1,14 +1,14 @@
 package com.laker.postman.panel.collections.editor.request;
 
 import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.MessageType;
+import com.laker.postman.stream.MessageType;
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.model.TestResult;
+import com.laker.postman.script.model.TestResult;
 import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;
-import com.laker.postman.service.http.HttpSingleRequestExecutor;
-import com.laker.postman.service.http.NetworkErrorMessageResolver;
-import com.laker.postman.service.http.sse.SseEventListener;
-import com.laker.postman.service.http.sse.SseUiCallback;
+import com.laker.postman.http.runtime.transport.HttpRuntimeExecutor;
+import com.laker.postman.http.runtime.error.NetworkErrorMessageResolver;
+import com.laker.postman.http.runtime.sse.SseStreamEventListener;
+import com.laker.postman.http.runtime.sse.SseStreamCallback;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -69,7 +69,7 @@ final class SseRequestExecutionHelper {
                     startTime = System.currentTimeMillis();
                     resp = new HttpResponse();
                     sseBodyBuilder = new StringBuilder();
-                    SseUiCallback callback = new SseUiCallback() {
+                    SseStreamCallback callback = new SseStreamCallback() {
                         @Override
                         public void onOpen(HttpResponse r, String headersText) {
                             SwingUtilities.invokeLater(() -> {
@@ -142,8 +142,8 @@ final class SseRequestExecutionHelper {
                         }
                     };
                     currentSseCancelled.set(false);
-                    currentEventSourceSetter.accept(HttpSingleRequestExecutor.executeSSE(
-                            req, new SseEventListener(callback, resp, sseBodyBuilder, startTime, currentSseCancelled::get)));
+                    currentEventSourceSetter.accept(HttpRuntimeExecutor.openSse(
+                            req, new SseStreamEventListener(callback, resp, sseBodyBuilder, startTime, currentSseCancelled::get)));
                     responsePanel.setResponseTabButtonsEnable(true);
                 } catch (Exception ex) {
                     log.error("Error executing SSE request: {} - {}", req.url, ex.getMessage(), ex);

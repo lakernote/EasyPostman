@@ -1,9 +1,18 @@
 package com.laker.postman.service.ideahttp;
 
-import com.laker.postman.model.*;
-import com.laker.postman.service.common.AuthParserUtil;
-import com.laker.postman.service.common.CollectionParseResult;
-import com.laker.postman.service.http.HttpUtil;
+import com.laker.postman.collection.model.RequestGroup;
+import com.laker.postman.model.Variable;
+import com.laker.postman.request.model.RequestAuthTypes;
+import com.laker.postman.request.model.RequestBodyTypes;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.HttpHeader;
+import com.laker.postman.request.model.HttpFormData;
+import com.laker.postman.request.model.HttpFormUrlencoded;
+import com.laker.postman.request.model.HttpRequestItem;
+
+import com.laker.postman.collection.importer.AuthParserUtil;
+import com.laker.postman.collection.model.CollectionParseResult;
+import com.laker.postman.http.request.HttpRequestProtocol;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.experimental.UtilityClass;
@@ -15,9 +24,12 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.laker.postman.model.RequestAuthTypes.AUTH_TYPE_BASIC;
-import static com.laker.postman.model.RequestAuthTypes.AUTH_TYPE_BEARER;
-import static com.laker.postman.model.RequestBodyTypes.*;
+import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_BASIC;
+import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_BEARER;
+import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_FORM_DATA;
+import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_FORM_URLENCODED;
+import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_NONE;
+import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_RAW;
 
 /**
  * IntelliJ IDEA HTTP Client 文件解析器
@@ -504,9 +516,9 @@ public class IntelliJHttpParser {
      */
     private static void finishRequest(HttpRequestItem request, StringBuilder bodyBuilder, String contentType, String boundary) {
         // 设置协议类型
-        if (HttpUtil.isSSERequest(request)) {
+        if (HttpRequestProtocol.isSse(request)) {
             request.setProtocol(RequestItemProtocolEnum.SSE);
-        } else if (HttpUtil.isWebSocketRequest(request.getUrl())) {
+        } else if (HttpRequestProtocol.isWebSocketUrl(request.getUrl())) {
             request.setProtocol(RequestItemProtocolEnum.WEBSOCKET);
         } else {
             request.setProtocol(RequestItemProtocolEnum.HTTP);

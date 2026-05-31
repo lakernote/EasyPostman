@@ -1,19 +1,22 @@
 package com.laker.postman.panel.collections.editor;
 
+import com.laker.postman.collection.model.RequestGroup;
+import com.laker.postman.model.Variable;
+import com.laker.postman.request.model.RequestAuthTypes;
+import com.laker.postman.request.model.HttpHeader;
+
+
 import cn.hutool.core.collection.CollUtil;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.EasyTextField;
 import com.laker.postman.common.component.MarkdownEditorPanel;
 import com.laker.postman.common.component.tab.IndicatorTabComponent;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.model.HttpHeader;
-import com.laker.postman.model.RequestGroup;
-import com.laker.postman.model.Variable;
 import com.laker.postman.panel.collections.editor.request.sub.AuthTabPanel;
 import com.laker.postman.panel.collections.editor.request.sub.EasyRequestHttpHeadersPanel;
 import com.laker.postman.panel.collections.editor.request.sub.EasyVariablesPanel;
 import com.laker.postman.panel.collections.editor.request.sub.ScriptPanel;
-import com.laker.postman.service.http.PreparedRequestBuilder;
+import com.laker.postman.http.request.PreparedRequestFactory;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -30,8 +33,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.util.List;
 
-import static com.laker.postman.model.RequestAuthTypes.AUTH_TYPE_INHERIT;
-import static com.laker.postman.model.RequestAuthTypes.AUTH_TYPE_NONE;
+import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_INHERIT;
+import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_NONE;
 
 /**
  * 分组编辑面板 - 现代化版本
@@ -522,7 +525,7 @@ public class GroupEditPanel extends JPanel {
         group.setVariables(variablesPanel.getVariableListFromModel());
 
         // ⚡ 重要：使缓存失效，确保分组修改立即生效
-        PreparedRequestBuilder.invalidateCache();
+        PreparedRequestFactory.invalidateCache();
 
         // 通知保存完成（触发持久化）
         if (onSave != null) {

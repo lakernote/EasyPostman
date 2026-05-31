@@ -1,11 +1,13 @@
 package com.laker.postman.panel.performance.tree;
 
-import com.laker.postman.model.AuthType;
-import com.laker.postman.model.HttpHeader;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestGroup;
-import com.laker.postman.model.RequestItemProtocolEnum;
+import com.laker.postman.collection.model.RequestGroup;
 import com.laker.postman.model.Variable;
+import com.laker.postman.request.model.AuthType;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.HttpHeader;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.laker.postman.panel.performance.PerformanceTreeSnapshot;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.request.PerformanceAuthType;

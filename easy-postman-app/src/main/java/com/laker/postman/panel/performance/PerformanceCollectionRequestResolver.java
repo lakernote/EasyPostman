@@ -1,6 +1,8 @@
 package com.laker.postman.panel.performance;
 
-import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.laker.postman.service.collections.ActiveCollectionTreeNodeRepository;
 import com.laker.postman.util.JsonUtil;
 import lombok.extern.slf4j.Slf4j;

@@ -1,10 +1,12 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
+import com.laker.postman.request.model.HttpHeader;
+
+
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.button.EditButton;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.model.HttpHeader;
-import com.laker.postman.service.http.HttpRequestFactory;
+import com.laker.postman.http.request.HttpRequestFactory;
 import com.laker.postman.util.*;
 
 import javax.swing.*;

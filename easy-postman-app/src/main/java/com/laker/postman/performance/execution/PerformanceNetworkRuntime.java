@@ -1,8 +1,8 @@
 package com.laker.postman.performance.execution;
 
 
-import com.laker.postman.service.http.HttpBaseClientProvider;
-import com.laker.postman.service.http.HttpCallTracker;
+import com.laker.postman.http.runtime.transport.HttpBaseClientProvider;
+import com.laker.postman.http.runtime.transport.HttpCallTracker;
 import okhttp3.WebSocket;
 import okhttp3.sse.EventSource;
 

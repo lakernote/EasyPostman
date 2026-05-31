@@ -1,6 +1,8 @@
 package com.laker.postman.service.js.api;
 
-import com.laker.postman.model.HttpParam;
+import com.laker.postman.request.model.HttpParam;
+
+
 
 import java.util.ArrayList;
 import java.util.List;

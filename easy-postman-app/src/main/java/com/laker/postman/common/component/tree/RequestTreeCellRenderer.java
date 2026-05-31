@@ -1,14 +1,16 @@
 package com.laker.postman.common.component.tree;
 
+import com.laker.postman.collection.model.RequestGroup;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.SavedResponse;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.model.HttpRequestItem;
-import com.laker.postman.model.RequestGroup;
-import com.laker.postman.model.RequestItemProtocolEnum;
-import com.laker.postman.model.SavedResponse;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.service.collections.CollectionTreeNodes;
-import com.laker.postman.service.http.HttpUtil;
+import com.laker.postman.common.component.RequestMethodUiMetadata;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.IconUtil;
 
@@ -171,7 +173,7 @@ public class RequestTreeCellRenderer extends DefaultTreeCellRenderer {
         String method = item.getMethod();
         String name = item.getName();
         RequestItemProtocolEnum protocol = item.getProtocol();
-        String methodColor = HttpUtil.getMethodColor(method);
+        String methodColor = RequestMethodUiMetadata.methodColorHex(method);
 
         if (protocol.isWebSocketProtocol()) {
             method = "WS";

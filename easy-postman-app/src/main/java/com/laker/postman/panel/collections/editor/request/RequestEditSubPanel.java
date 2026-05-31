@@ -1,12 +1,17 @@
 package com.laker.postman.panel.collections.editor.request;
 
+import com.laker.postman.model.HttpResponse;
+import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.SavedResponse;
+import com.laker.postman.request.model.HttpRequestItem;
+
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.animation.ComponentSnapshotTransition;
 import com.laker.postman.common.component.MarkdownEditorPanel;
 import com.laker.postman.common.component.placeholder.RequestEditorPlaceholderPanel;
 import com.laker.postman.common.component.tab.IndicatorTabComponent;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.panel.collections.editor.request.sub.*;
 import com.laker.postman.service.setting.SettingManager;

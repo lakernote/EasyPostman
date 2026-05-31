@@ -1,6 +1,6 @@
 package com.laker.postman.service.variable;
 
-import com.laker.postman.model.VariableInfo;
+import com.laker.postman.variable.VariableInfo;
 import com.laker.postman.service.GlobalVariablesService;
 import com.laker.postman.variable.VariableType;
 import lombok.experimental.UtilityClass;

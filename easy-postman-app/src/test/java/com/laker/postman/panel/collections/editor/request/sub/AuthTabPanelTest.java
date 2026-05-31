@@ -1,6 +1,8 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
-import com.laker.postman.model.AuthType;
+import com.laker.postman.request.model.AuthType;
+
+
 import com.laker.postman.test.AbstractSwingUiTest;
 import org.testng.annotations.Test;
 

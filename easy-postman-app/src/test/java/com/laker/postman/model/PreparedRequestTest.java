@@ -1,7 +1,7 @@
 package com.laker.postman.model;
 
-import com.laker.postman.http.trace.NetworkLogEvent;
-import com.laker.postman.http.trace.NetworkLogSink;
+import com.laker.postman.http.runtime.observation.NetworkLogEvent;
+import com.laker.postman.http.runtime.observation.NetworkLogSink;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.atomic.AtomicReference;

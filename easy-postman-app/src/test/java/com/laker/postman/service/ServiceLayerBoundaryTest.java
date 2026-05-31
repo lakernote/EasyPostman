@@ -42,8 +42,8 @@ public class ServiceLayerBoundaryTest {
     @Test
     public void httpExecutionLayerShouldNotWriteNetworkLogsThroughRequestEditorUi() throws IOException {
         for (String relativePath : new String[]{
-                "src/main/java/com/laker/postman/service/http/RedirectHandler.java",
-                "src/main/java/com/laker/postman/service/http/okhttp/EasyConsoleEventListener.java"
+                "src/main/java/com/laker/postman/http/runtime/redirect/HttpRedirectExecutor.java",
+                "src/main/java/com/laker/postman/http/runtime/okhttp/OkHttpExchangeEventListener.java"
         }) {
             Path sourceFile = moduleDir().resolve(relativePath);
             String source = Files.readString(sourceFile);

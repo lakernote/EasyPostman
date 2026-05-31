@@ -20,7 +20,7 @@ public class ScriptExecutionPipelineHeadlessIsolationTest {
 
     @AfterMethod(alwaysRun = true)
     public void tearDown() {
-        GlobalVariablesService.getInstance().getGlobalVariables().unset(GLOBAL_KEY);
+        GlobalVariablesService.getInstance().getGlobalVariables().removeVariable(GLOBAL_KEY);
     }
 
     @Test

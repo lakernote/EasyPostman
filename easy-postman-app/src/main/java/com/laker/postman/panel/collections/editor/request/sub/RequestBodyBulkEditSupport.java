@@ -1,10 +1,12 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
+import com.laker.postman.request.model.HttpFormData;
+import com.laker.postman.request.model.HttpFormUrlencoded;
+
+
 import com.laker.postman.common.component.table.FormDataTablePanel;
 import com.laker.postman.common.component.table.FormUrlencodedTablePanel;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.model.HttpFormData;
-import com.laker.postman.model.HttpFormUrlencoded;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;

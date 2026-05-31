@@ -1,8 +1,10 @@
 package com.laker.postman.performance.runtime;
 
-import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.laker.postman.performance.core.config.CsvDataSetData;
 import com.laker.postman.performance.core.controller.LoopData;
 import com.laker.postman.performance.core.model.NodeType;

@@ -1,5 +1,9 @@
 package com.laker.postman.panel.collections.tree;
 
+import com.laker.postman.model.Environment;
+import com.laker.postman.collection.model.RequestGroup;
+import com.laker.postman.request.model.HttpRequestItem;
+
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.json.JSONArray;
@@ -12,27 +16,25 @@ import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.button.PlusButton;
 import com.laker.postman.common.component.dialog.CurlImportDialog;
 import com.laker.postman.frame.MainFrame;
-import com.laker.postman.model.*;
 import com.laker.postman.panel.collections.tree.action.RequestTreeActions;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.panel.topmenu.TopMenuBar;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.apipost.ApiPostCollectionParser;
-import com.laker.postman.service.common.CollectionParseResult;
+import com.laker.postman.collection.model.CollectionParseResult;
 import com.laker.postman.service.common.TreeNodeBuilder;
 import com.laker.postman.service.collections.CollectionTreeNodes;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.har.HarParser;
-import com.laker.postman.service.http.HttpUtil;
-import com.laker.postman.service.http.PreparedRequestBuilder;
+import com.laker.postman.http.request.PreparedRequestFactory;
 import com.laker.postman.service.ideahttp.IntelliJHttpParser;
-import com.laker.postman.service.postman.PostmanCollectionParser;
+import com.laker.postman.collection.importer.postman.PostmanCollectionParser;
 import com.laker.postman.service.swagger.SwaggerParser;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
-import com.laker.postman.util.CurlImportUtil;
+import com.laker.postman.service.curl.CurlImportUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -291,7 +293,7 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
                 leftPanel.getTreeModel().reload();
 
                 // 缓存失效（导入Collection）
-                PreparedRequestBuilder.invalidateCache();
+                PreparedRequestFactory.invalidateCache();
 
                 leftPanel.getPersistence().saveRequestGroups();
                 leftPanel.getRequestTree().expandPath(new TreePath(easyPostmanGroup.getPath()));

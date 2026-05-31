@@ -1,7 +1,13 @@
 package com.laker.postman.service.curl;
 
-import com.laker.postman.model.*;
-import com.laker.postman.service.http.HttpUtil;
+import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.request.model.AuthType;
+import com.laker.postman.request.model.HttpHeader;
+import com.laker.postman.request.model.HttpParam;
+import com.laker.postman.request.model.HttpFormData;
+import com.laker.postman.request.model.HttpFormUrlencoded;
+import com.laker.postman.request.model.TransportAuth;
+import com.laker.postman.http.request.HttpUrlUtil;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -196,10 +202,10 @@ public class CurlParser {
                 String[] kv = dataParam.split("=", 2);
                 if (kv.length == 2) {
                     req.paramsList.add(new HttpParam(true,
-                            HttpUtil.decodeURIComponent(kv[0]),
-                            HttpUtil.decodeURIComponent(kv[1])));
+                            HttpUrlUtil.decodeComponent(kv[0]),
+                            HttpUrlUtil.decodeComponent(kv[1])));
                 } else if (kv.length == 1) {
-                    req.paramsList.add(new HttpParam(true, HttpUtil.decodeURIComponent(kv[0]), ""));
+                    req.paramsList.add(new HttpParam(true, HttpUrlUtil.decodeComponent(kv[0]), ""));
                 }
             }
         } else {
@@ -208,7 +214,7 @@ public class CurlParser {
                 // 获取 Content-Type
                 String contentType = "";
                 if (req.headersList != null) {
-                    for (com.laker.postman.model.HttpHeader h : req.headersList) {
+                    for (com.laker.postman.request.model.HttpHeader h : req.headersList) {
                         if (h.isEnabled() && CONTENT_TYPE.equalsIgnoreCase(h.getKey())) {
                             contentType = h.getValue();
                             break;
@@ -257,13 +263,13 @@ public class CurlParser {
                             String[] kv = pair.split("=", 2);
                             if (kv.length == 2) {
                                 req.urlencodedList.add(new HttpFormUrlencoded(true,
-                                        HttpUtil.decodeURIComponent(kv[0].trim()),
-                                        HttpUtil.decodeURIComponent(kv[1].trim())));
+                                        HttpUrlUtil.decodeComponent(kv[0].trim()),
+                                        HttpUrlUtil.decodeComponent(kv[1].trim())));
                                 hasValidPairs = true;
                             } else if (kv.length == 1 && !kv[0].trim().isEmpty()) {
                                 // 只有 key 没有 value，也作为 urlencoded 字段
                                 req.urlencodedList.add(new HttpFormUrlencoded(true,
-                                        HttpUtil.decodeURIComponent(kv[0].trim()), ""));
+                                        HttpUrlUtil.decodeComponent(kv[0].trim()), ""));
                                 hasValidPairs = true;
                             }
                         }
@@ -303,10 +309,10 @@ public class CurlParser {
                 String[] kv = param.split("=", 2);
                 if (kv.length == 2) {
                     req.paramsList.add(new HttpParam(true,
-                            HttpUtil.decodeURIComponent(kv[0]),
-                            HttpUtil.decodeURIComponent(kv[1])));
+                            HttpUrlUtil.decodeComponent(kv[0]),
+                            HttpUrlUtil.decodeComponent(kv[1])));
                 } else if (kv.length == 1) {
-                    req.paramsList.add(new HttpParam(true, HttpUtil.decodeURIComponent(kv[0]), ""));
+                    req.paramsList.add(new HttpParam(true, HttpUrlUtil.decodeComponent(kv[0]), ""));
                 }
             }
         }
@@ -482,7 +488,7 @@ public class CurlParser {
             // 从 Content-Type 提取 boundary
             String contentType = null;
             if (req.headersList != null) {
-                for (com.laker.postman.model.HttpHeader h : req.headersList) {
+                for (com.laker.postman.request.model.HttpHeader h : req.headersList) {
                     if (h.isEnabled() && CONTENT_TYPE.equalsIgnoreCase(h.getKey())) {
                         contentType = h.getValue();
                         break;

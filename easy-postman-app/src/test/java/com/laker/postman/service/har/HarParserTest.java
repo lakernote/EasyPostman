@@ -1,11 +1,14 @@
 package com.laker.postman.service.har;
 
-import com.laker.postman.model.HttpRequestItem;
+import com.laker.postman.request.model.RequestBodyTypes;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import org.testng.annotations.Test;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 
-import static com.laker.postman.model.RequestBodyTypes.BODY_TYPE_FORM_URLENCODED;
+import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_FORM_URLENCODED;
 import static org.testng.Assert.*;
 
 public class HarParserTest {

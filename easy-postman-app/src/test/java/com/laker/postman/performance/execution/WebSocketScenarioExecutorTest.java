@@ -1,9 +1,12 @@
 package com.laker.postman.performance.execution;
 
-import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.model.HttpResponse;
 import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.model.RequestItemProtocolEnum;
+import com.laker.postman.model.Variable;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.laker.postman.performance.core.assertion.AssertionData;
 import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.controller.LoopData;
@@ -59,7 +62,7 @@ public class WebSocketScenarioExecutorTest {
                 "src/main/java/com/laker/postman/performance/execution/WebSocketScenarioExecutor.java"
         ));
 
-        assertTrue(source.contains("executeWebSocket(req, listener, baseClientProvider, false)"));
+        assertTrue(source.contains("openWebSocket(req, listener, baseClientProvider, false)"));
     }
 
     @Test

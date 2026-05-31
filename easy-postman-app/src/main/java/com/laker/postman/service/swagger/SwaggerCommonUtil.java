@@ -1,10 +1,12 @@
 package com.laker.postman.service.swagger;
 
+import com.laker.postman.model.Environment;
+import com.laker.postman.request.model.HttpHeader;
+
+
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.laker.postman.model.Environment;
-import com.laker.postman.model.HttpHeader;
 import lombok.experimental.UtilityClass;
 
 import java.util.ArrayList;

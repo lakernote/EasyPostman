@@ -6,7 +6,7 @@ import com.laker.postman.performance.core.model.WebSocketPerformanceData;
 
 
 import com.laker.postman.performance.plan.PerformanceRequestSampler;
-import com.laker.postman.service.http.HttpBaseClientProvider;
+import com.laker.postman.http.runtime.transport.HttpBaseClientProvider;
 import lombok.RequiredArgsConstructor;
 import okhttp3.WebSocket;
 

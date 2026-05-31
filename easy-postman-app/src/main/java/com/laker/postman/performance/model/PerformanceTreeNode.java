@@ -1,5 +1,8 @@
 package com.laker.postman.performance.model;
 
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.laker.postman.performance.core.assertion.AssertionData;
 import com.laker.postman.performance.core.config.CsvDataSetData;
 import com.laker.postman.performance.core.controller.LoopData;
@@ -12,7 +15,6 @@ import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
 import com.laker.postman.performance.core.timer.TimerData;
 
 
-import com.laker.postman.model.HttpRequestItem;
 import com.laker.postman.service.variable.RequestExecutionScope;
 
 public class PerformanceTreeNode {
@@ -72,7 +74,7 @@ public class PerformanceTreeNode {
             case THREAD_GROUP -> this.threadGroupData = (ThreadGroupData) data;
             case CSV_DATA_SET -> this.csvDataSetData = (CsvDataSetData) data;
             case LOOP -> this.loopData = (LoopData) data;
-            case REQUEST -> this.httpRequestItem = (com.laker.postman.model.HttpRequestItem) data;
+            case REQUEST -> this.httpRequestItem = (com.laker.postman.request.model.HttpRequestItem) data;
             case ASSERTION -> this.assertionData = (AssertionData) data;
             case EXTRACTOR -> this.extractorData = (ExtractorData) data;
             case TIMER -> this.timerData = (TimerData) data;

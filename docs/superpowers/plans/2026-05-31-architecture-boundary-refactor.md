@@ -74,13 +74,14 @@ git commit -m "test: add architecture boundary guards"
   - `List<Map<String, String>> rows`
   - getters return copies.
 - [ ] Update `easy-postman-app/src/main/java/com/laker/postman/common/component/CsvDataPanel.java`:
-  - Remove inner `CsvState`.
-  - `exportState()` returns `FunctionalCsvDataState`.
-  - `restoreState(FunctionalCsvDataState state)` accepts the neutral DTO.
-  - `applyState(...)` reads from the neutral DTO.
+  - Keep inner `CsvState` as the UI component snapshot type because performance CSV UI also reuses it.
+  - Do not make `CsvDataPanel` depend on `com.laker.postman.functional.model`.
 - [ ] Update `easy-postman-app/src/main/java/com/laker/postman/service/FunctionalPersistenceService.java`:
   - Replace `CsvDataPanel.CsvState` import and method signatures with `FunctionalCsvDataState`.
   - `serializeCsvState(...)` and `deserializeCsvState(...)` use the neutral DTO.
+- [ ] Update `easy-postman-app/src/main/java/com/laker/postman/panel/functional/FunctionalPanel.java`:
+  - Convert `CsvDataPanel.CsvState` to `FunctionalCsvDataState` before calling persistence save APIs.
+  - Convert `FunctionalCsvDataState` back to `CsvDataPanel.CsvState` before restoring the UI.
 - [ ] Update all references found by:
 
 ```bash
@@ -100,7 +101,7 @@ mvn -q -pl easy-postman-app -am -Dtest=CsvDataPanelTest,FunctionalPanelSaveTest,
 - [ ] Commit:
 
 ```bash
-git add easy-postman-app/src/main/java/com/laker/postman/functional/model/FunctionalCsvDataState.java easy-postman-app/src/main/java/com/laker/postman/common/component/CsvDataPanel.java easy-postman-app/src/main/java/com/laker/postman/service/FunctionalPersistenceService.java easy-postman-app/src/test/java
+git add easy-postman-app/src/main/java/com/laker/postman/functional/model/FunctionalCsvDataState.java easy-postman-app/src/main/java/com/laker/postman/panel/functional/FunctionalPanel.java easy-postman-app/src/main/java/com/laker/postman/service/FunctionalPersistenceService.java easy-postman-app/src/test/java
 git commit -m "refactor: decouple functional csv state from ui panel"
 ```
 

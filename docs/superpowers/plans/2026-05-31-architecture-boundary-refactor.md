@@ -135,6 +135,10 @@ git commit -m "refactor: move sidebar tab metadata to sidebar ui package"
 
 ## Task 4: Split Domain Enums From UI Metadata
 
+- [ ] Move `easy-postman-app/src/main/java/com/laker/postman/model/TabInfo.java` to `easy-postman-app/src/main/java/com/laker/postman/panel/sidebar/TabInfo.java`:
+  - Change package to `com.laker.postman.panel.sidebar`.
+  - Update `SidebarTab` and `SidebarTabPanel` imports.
+  - Do not change behavior; this is sidebar UI metadata.
 - [ ] Update `easy-postman-app/src/main/java/com/laker/postman/model/RequestItemProtocolEnum.java`:
   - Keep only protocol identity and helpers: `protocol`, `isWebSocketProtocol()`, `isHttpProtocol()`, `isSseProtocol()`.
   - Remove `FlatSVGIcon`, `IconUtil`, `Icon`, and icon fields.
@@ -172,7 +176,7 @@ mvn -q -pl easy-postman-app -am -Dtest=RequestStreamUiHelperTest,ModuleArchitect
 - [ ] Commit:
 
 ```bash
-git add easy-postman-app/src/main/java/com/laker/postman/model easy-postman-app/src/main/java/com/laker/postman/panel/collections/editor/request easy-postman-app/src/test/java
+git add easy-postman-app/src/main/java/com/laker/postman/model easy-postman-app/src/main/java/com/laker/postman/panel/sidebar easy-postman-app/src/main/java/com/laker/postman/panel/collections/editor/request easy-postman-app/src/main/java/com/laker/postman/common/component/tab easy-postman-app/src/test/java
 git commit -m "refactor: split model enums from ui metadata"
 ```
 

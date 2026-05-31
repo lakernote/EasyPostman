@@ -50,6 +50,8 @@ public class PerformanceWorkerProtocolJsonStorage {
                 .status(stringValue(root, "status", PerformanceRunStatus.UNKNOWN))
                 .activeUsers(intValue(root, "activeUsers", 0))
                 .totalUsers(intValue(root, "totalUsers", 0))
+                .activeWebSocketConnections(intValue(root, "activeWebSocketConnections", 0))
+                .activeSseStreams(intValue(root, "activeSseStreams", 0))
                 .totalRequests(longValue(root, "totalRequests", 0))
                 .successRequests(longValue(root, "successRequests", 0))
                 .failedRequests(longValue(root, "failedRequests", 0))
@@ -121,6 +123,8 @@ public class PerformanceWorkerProtocolJsonStorage {
             json.put("status", response.getStatus());
             json.put("activeUsers", response.getActiveUsers());
             json.put("totalUsers", response.getTotalUsers());
+            json.put("activeWebSocketConnections", response.getActiveWebSocketConnections());
+            json.put("activeSseStreams", response.getActiveSseStreams());
             json.put("totalRequests", response.getTotalRequests());
             json.put("successRequests", response.getSuccessRequests());
             json.put("failedRequests", response.getFailedRequests());

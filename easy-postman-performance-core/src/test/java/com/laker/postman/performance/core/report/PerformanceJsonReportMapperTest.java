@@ -1,6 +1,8 @@
 package com.laker.postman.performance.core.report;
 
 import com.laker.postman.performance.core.model.PerformanceProtocol;
+import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
+import com.laker.postman.performance.core.model.PerformanceReportSnapshot;
 import com.laker.postman.performance.core.model.PerformanceStatsCollector;
 import com.laker.postman.performance.core.model.RequestResult;
 import com.laker.postman.util.JsonUtil;
@@ -79,6 +81,32 @@ public class PerformanceJsonReportMapperTest {
         Map<String, Object> sseApi = objectMap(listValue(sse.get("apis")).get(0));
         assertEquals(objectMap(sseApi.get("stream")).get("receivedMessages"), 8);
         assertEquals(objectMap(sseApi.get("firstMessageLatencyMs")).get("avg"), 120);
+    }
+
+    @Test
+    public void shouldMapLiveWebSocketSnapshotWithoutCompletedSamples() {
+        PerformanceRealtimeMetrics metrics = new PerformanceRealtimeMetrics();
+        metrics.recordWebSocketSessionStart("ws-1", 1_000L, "ws-api", "WS Echo");
+        metrics.recordWebSocketSessionStart("ws-2", 1_000L, "ws-api", "WS Echo");
+        metrics.recordWebSocketSent("ws-1");
+        metrics.recordWebSocketSent("ws-2");
+        metrics.recordWebSocketReceived("ws-1");
+        metrics.recordWebSocketMatched("ws-1");
+
+        PerformanceJsonReport report = PerformanceJsonReportMapper.fromReportSnapshot(
+                PerformanceJsonReportMetadata.builder().source("worker-a").status("RUNNING").build(),
+                PerformanceReportSnapshot.of(new PerformanceStatsCollector().snapshot(), metrics.liveSnapshot(2_000L))
+        );
+
+        assertEquals(report.getSummary().getTotalRequests(), 0L);
+        PerformanceJsonReportProtocol webSocket = report.getProtocols().get("WEBSOCKET");
+        assertEquals(webSocket.getTotal().getTotal(), 2L);
+        assertEquals(webSocket.getTotal().getSuccess(), 2L);
+        assertEquals(webSocket.getTotal().getStream().getSentMessages(), 2L);
+        assertEquals(webSocket.getTotal().getStream().getReceivedMessages(), 1L);
+        assertEquals(webSocket.getTotal().getStream().getMatchedMessages(), 1L);
+        assertEquals(webSocket.getApis().get(0).getApiId(), "ws-api");
+        assertEquals(webSocket.getApis().get(0).getName(), "WS Echo");
     }
 
     @Test

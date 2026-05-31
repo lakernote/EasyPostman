@@ -2,6 +2,8 @@ package com.laker.postman.performance.worker;
 
 import com.laker.postman.performance.core.model.PerformanceStatsSnapshot;
 import com.laker.postman.performance.core.model.PerformanceStatsProgressSnapshot;
+import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
+import com.laker.postman.performance.core.model.PerformanceReportSnapshot;
 import com.laker.postman.performance.core.report.PerformanceJsonReport;
 import com.laker.postman.performance.core.report.PerformanceJsonReportSummary;
 import com.laker.postman.performance.core.report.PerformanceJsonReportMapper;
@@ -411,6 +413,8 @@ public class PerformanceWorkerServer implements AutoCloseable {
                 .status(state.status)
                 .activeUsers(state.control.getActiveUsers())
                 .totalUsers(state.control.getTotalUsers())
+                .activeWebSocketConnections(state.control.getActiveWebSocketConnections())
+                .activeSseStreams(state.control.getActiveSseStreams())
                 .totalRequests(summary == null ? 0L : summary.getTotalRequests())
                 .successRequests(summary == null ? 0L : summary.getSuccessRequests())
                 .failedRequests(summary == null ? 0L : summary.getFailedRequests())
@@ -429,6 +433,8 @@ public class PerformanceWorkerServer implements AutoCloseable {
                     .status(state.status)
                     .activeUsers(state.control.getActiveUsers())
                     .totalUsers(state.control.getTotalUsers())
+                    .activeWebSocketConnections(state.control.getActiveWebSocketConnections())
+                    .activeSseStreams(state.control.getActiveSseStreams())
                     .totalRequests(summary.getTotalRequests())
                     .successRequests(summary.getSuccessRequests())
                     .failedRequests(summary.getFailedRequests())
@@ -443,6 +449,8 @@ public class PerformanceWorkerServer implements AutoCloseable {
                 .status(state.status)
                 .activeUsers(state.control.getActiveUsers())
                 .totalUsers(state.control.getTotalUsers())
+                .activeWebSocketConnections(state.control.getActiveWebSocketConnections())
+                .activeSseStreams(state.control.getActiveSseStreams())
                 .totalRequests(progress.totalRequests())
                 .successRequests(progress.successRequests())
                 .failedRequests(progress.failedRequests())
@@ -473,11 +481,12 @@ public class PerformanceWorkerServer implements AutoCloseable {
             return state.report;
         }
         PerformanceStatsSnapshot snapshot = state.control.statsSnapshot();
-        if (snapshot.totalRequests() == 0 && snapshot.summaries().isEmpty()) {
+        long now = System.currentTimeMillis();
+        PerformanceRealtimeMetrics.LiveSnapshot liveSnapshot = state.control.liveRealtimeMetrics(now);
+        if (snapshot.totalRequests() == 0 && snapshot.summaries().isEmpty() && !hasLiveStreamData(liveSnapshot)) {
             return null;
         }
-        long now = System.currentTimeMillis();
-        return PerformanceJsonReportMapper.fromStatsSnapshot(
+        return PerformanceJsonReportMapper.fromReportSnapshot(
                 PerformanceJsonReportMetadata.builder()
                         .runId(runId)
                         .source(state.workerId)
@@ -488,8 +497,15 @@ public class PerformanceWorkerServer implements AutoCloseable {
                         .stopped(state.stopRequested)
                         .error(state.error)
                         .build(),
-                snapshot
+                PerformanceReportSnapshot.of(snapshot, liveSnapshot)
         );
+    }
+
+    private boolean hasLiveStreamData(PerformanceRealtimeMetrics.LiveSnapshot snapshot) {
+        if (snapshot == null) {
+            return false;
+        }
+        return snapshot.webSocket().hasData() || snapshot.sse().hasData();
     }
 
     private double qps(PerformanceJsonReport report) {

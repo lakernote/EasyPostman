@@ -146,6 +146,11 @@ public class PerformanceRunPlanExecutor {
                 },
                 new DefaultPerformanceNetworkRuntime(() -> httpClientConfig(runPlan.getSettings()))
         );
+        control.bindRealtimeMetrics(
+                executionEngine::liveRealtimeMetrics,
+                executionEngine::getActiveWebSockets,
+                executionEngine::getActiveSseStreams
+        );
         control.recordProgress(0, executionEngine.getTotalThreads(appExecutablePlan));
         PerformanceRunSession runSession = new PerformanceRunSession(
                 () -> running.get() && control.isRunning(),

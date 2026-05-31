@@ -1,6 +1,8 @@
 package com.laker.postman.performance.core.report;
 
 import com.laker.postman.performance.core.model.PerformanceProtocol;
+import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
+import com.laker.postman.performance.core.model.PerformanceReportSnapshot;
 import com.laker.postman.performance.core.model.PerformanceStatsSnapshot;
 import lombok.experimental.UtilityClass;
 
@@ -27,6 +29,37 @@ public class PerformanceJsonReportMapper {
                 .build();
     }
 
+    public PerformanceJsonReport fromReportSnapshot(PerformanceJsonReportMetadata metadata,
+                                                    PerformanceReportSnapshot snapshot) {
+        PerformanceReportSnapshot safeSnapshot = snapshot == null
+                ? PerformanceReportSnapshot.of(null, null)
+                : snapshot;
+        PerformanceJsonReport completed = fromStatsSnapshot(metadata, safeSnapshot.completedStats());
+        if (!hasLiveStreamData(safeSnapshot.liveSnapshot())) {
+            return completed;
+        }
+        PerformanceJsonReport live = fromLiveSnapshot(metadata, safeSnapshot.liveSnapshot());
+        PerformanceJsonReport merged = PerformanceJsonReportSummaryMapper.merge(
+                "",
+                "",
+                "",
+                "",
+                List.of(completed, live)
+        );
+        return PerformanceJsonReport.builder()
+                .metadata(metadata)
+                .summary(completed.getSummary())
+                .protocols(merged.getProtocols())
+                .build();
+    }
+
+    private boolean hasLiveStreamData(PerformanceRealtimeMetrics.LiveSnapshot liveSnapshot) {
+        if (liveSnapshot == null) {
+            return false;
+        }
+        return liveSnapshot.webSocket().hasData() || liveSnapshot.sse().hasData();
+    }
+
     private Map<String, PerformanceJsonReportProtocol> toProtocols(PerformanceStatsSnapshot snapshot) {
         Map<String, PerformanceJsonReportProtocol> protocols = PerformanceJsonReportSummaryMapper.emptyProtocols();
         if (snapshot == null) {
@@ -48,6 +81,43 @@ public class PerformanceJsonReportMapper {
                     .build());
         }
         return protocols;
+    }
+
+    private PerformanceJsonReport fromLiveSnapshot(PerformanceJsonReportMetadata metadata,
+                                                   PerformanceRealtimeMetrics.LiveSnapshot liveSnapshot) {
+        PerformanceRealtimeMetrics.LiveSnapshot safeLiveSnapshot = liveSnapshot == null
+                ? PerformanceRealtimeMetrics.LiveSnapshot.empty()
+                : liveSnapshot;
+        Map<String, PerformanceJsonReportProtocol> protocols = PerformanceJsonReportSummaryMapper.emptyProtocols();
+        putLiveProtocol(protocols, PerformanceProtocol.WEBSOCKET, safeLiveSnapshot.webSocket());
+        putLiveProtocol(protocols, PerformanceProtocol.SSE, safeLiveSnapshot.sse());
+        return PerformanceJsonReport.builder()
+                .metadata(metadata)
+                .summary(PerformanceJsonReportSummary.builder().build())
+                .protocols(protocols)
+                .build();
+    }
+
+    private void putLiveProtocol(Map<String, PerformanceJsonReportProtocol> protocols,
+                                 PerformanceProtocol protocol,
+                                 PerformanceRealtimeMetrics.LiveProtocolSnapshot snapshot) {
+        if (protocol == null || snapshot == null || !snapshot.hasData()) {
+            return;
+        }
+        List<PerformanceJsonReportApi> apis = new ArrayList<>();
+        if (snapshot.apiSnapshots() != null) {
+            for (PerformanceRealtimeMetrics.LiveApiSnapshot apiSnapshot : snapshot.apiSnapshots()) {
+                if (apiSnapshot != null && apiSnapshot.metrics() != null && apiSnapshot.metrics().hasData()) {
+                    apis.add(toLiveApi(protocol, apiSnapshot.apiId(), apiSnapshot.apiName(), apiSnapshot.metrics()));
+                }
+            }
+        }
+        apis.sort(Comparator.comparing(PerformanceJsonReportApi::getName, String.CASE_INSENSITIVE_ORDER));
+        protocols.put(protocol.name(), PerformanceJsonReportProtocol.builder()
+                .protocol(protocol.name())
+                .total(toLiveApi(protocol, "", protocol.name() + " Total", snapshot))
+                .apis(apis)
+                .build());
     }
 
     private PerformanceJsonReportApi emptyApi(String protocol) {
@@ -92,14 +162,46 @@ public class PerformanceJsonReportMapper {
                 .build();
     }
 
+    private PerformanceJsonReportApi toLiveApi(PerformanceProtocol protocol,
+                                               String apiId,
+                                               String apiName,
+                                               PerformanceRealtimeMetrics.LiveProtocolSnapshot snapshot) {
+        int activeSessions = Math.max(0, snapshot == null ? 0 : snapshot.activeSessions());
+        return PerformanceJsonReportApi.builder()
+                .apiId(apiId)
+                .name(apiName)
+                .protocol(protocol == null ? "" : protocol.name())
+                .total((long) activeSessions)
+                .success((long) activeSessions)
+                .failed(0L)
+                .durationMs(toDuration(snapshot == null
+                        ? PerformanceStatsSnapshot.DurationStats.empty()
+                        : snapshot.activeDurationStats()))
+                .stream(PerformanceJsonReportStream.builder()
+                        .sentMessages(snapshot == null ? 0L : snapshot.sentMessages())
+                        .receivedMessages(snapshot == null ? 0L : snapshot.receivedMessages())
+                        .matchedMessages(snapshot == null ? 0L : snapshot.matchedMessages())
+                        .sendRate(snapshot == null ? 0D : snapshot.sendRate())
+                        .receiveRate(snapshot == null ? 0D : snapshot.receiveRate())
+                        .matchedRate(snapshot == null ? 0D : snapshot.matchedRate())
+                        .build())
+                .firstMessageLatencyMs(toDuration(snapshot == null
+                        ? PerformanceStatsSnapshot.DurationStats.empty()
+                        : snapshot.firstMessageLatencyStats()))
+                .build();
+    }
+
     private PerformanceJsonReportDuration toDuration(PerformanceStatsSnapshot.DurationStats stats) {
+        PerformanceStatsSnapshot.DurationStats safeStats = stats == null
+                ? PerformanceStatsSnapshot.DurationStats.empty()
+                : stats;
         return PerformanceJsonReportDuration.builder()
-                .avg(stats.avg())
-                .min(stats.min())
-                .max(stats.max())
-                .p90(stats.p90())
-                .p95(stats.p95())
-                .p99(stats.p99())
+                .avg(safeStats.avg())
+                .min(safeStats.min())
+                .max(safeStats.max())
+                .p90(safeStats.p90())
+                .p95(safeStats.p95())
+                .p99(safeStats.p99())
                 .build();
     }
 }

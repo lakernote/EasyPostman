@@ -4,6 +4,7 @@ import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.plan.PerformanceCorePlanDocument;
 import com.laker.postman.performance.core.plan.PerformanceCorePlanNode;
 import com.laker.postman.performance.core.model.PerformanceProtocol;
+import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
 import com.laker.postman.performance.core.model.PerformanceStatsCollector;
 import com.laker.postman.performance.core.model.RequestResult;
 import com.laker.postman.performance.core.report.PerformanceJsonReport;
@@ -303,6 +304,67 @@ public class PerformanceWorkerServerTest {
             assertEquals(progressRef.get().getTotalUsers(), 7);
             release.countDown();
             awaitStatus(client, storage, server.getPort(), "run-progress", "SUCCESS");
+        }
+    }
+
+    @Test
+    public void shouldExposeLiveWebSocketReportBeforeAnyCompletedSample() throws Exception {
+        CountDownLatch started = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        PerformanceWorkerProtocolJsonStorage storage = new PerformanceWorkerProtocolJsonStorage();
+        try (PerformanceWorkerServer server = new PerformanceWorkerServer(
+                PerformanceWorkerOptions.builder().host("127.0.0.1").port(0).build(),
+                (request, control) -> {
+                    PerformanceRealtimeMetrics realtimeMetrics = new PerformanceRealtimeMetrics();
+                    long startTimeMs = System.currentTimeMillis() - 1_000L;
+                    realtimeMetrics.recordWebSocketSessionStart("ws-1", startTimeMs, "ws-api", "WS Echo");
+                    realtimeMetrics.recordWebSocketSent("ws-1");
+                    realtimeMetrics.recordWebSocketReceived("ws-1");
+                    control.bindRealtimeMetrics(
+                            realtimeMetrics::liveSnapshot,
+                            () -> realtimeMetrics.liveSnapshot(System.currentTimeMillis()).webSocket().activeSessions(),
+                            () -> realtimeMetrics.liveSnapshot(System.currentTimeMillis()).sse().activeSessions()
+                    );
+                    control.recordProgress(1, 1);
+                    started.countDown();
+                    assertTrue(release.await(2, TimeUnit.SECONDS));
+                    realtimeMetrics.recordWebSocketSessionEnd("ws-1");
+                    return PerformanceJsonReport.builder()
+                            .metadata(PerformanceJsonReportMetadata.builder()
+                                    .runId(request.getRunId())
+                                    .source("worker")
+                                    .status("SUCCESS")
+                                    .build())
+                            .summary(PerformanceJsonReportSummary.builder().build())
+                            .protocols(PerformanceJsonReportSummaryMapper.emptyProtocols())
+                            .build();
+                }
+        )) {
+            server.start();
+            HttpClient client = HttpClient.newHttpClient();
+            submitRun(client, storage, server.getPort(), "run-live-ws");
+            assertTrue(started.await(1, TimeUnit.SECONDS));
+
+            HttpResponse<String> status = client.send(HttpRequest.newBuilder()
+                            .uri(URI.create("http://127.0.0.1:" + server.getPort()
+                                    + "/api/performance/v1/runs/run-live-ws"))
+                            .GET()
+                            .build(),
+                    HttpResponse.BodyHandlers.ofString());
+            PerformanceWorkerRunStatusResponse statusResponse = storage.statusResponseFromJson(status.body());
+
+            assertEquals(status.statusCode(), 200, status.body());
+            assertEquals(statusResponse.getActiveWebSocketConnections(), 1);
+            assertNotNull(statusResponse.getReport());
+            assertEquals(statusResponse.getReport().getProtocols().get("WEBSOCKET").getTotal().getTotal(), 1L);
+            assertEquals(statusResponse.getReport().getProtocols().get("WEBSOCKET").getTotal()
+                    .getStream().getSentMessages(), 1L);
+            assertEquals(statusResponse.getReport().getProtocols().get("WEBSOCKET").getTotal()
+                    .getStream().getReceivedMessages(), 1L);
+            assertEquals(statusResponse.getReport().getProtocols().get("WEBSOCKET").getApis().get(0)
+                    .getApiId(), "ws-api");
+            release.countDown();
+            awaitStatus(client, storage, server.getPort(), "run-live-ws", "SUCCESS");
         }
     }
 

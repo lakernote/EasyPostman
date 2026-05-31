@@ -7,6 +7,7 @@ import com.laker.postman.panel.performance.result.PerformanceWorkerResultDetailD
 import com.laker.postman.panel.performance.result.PerformanceTrendView;
 import com.laker.postman.performance.core.model.PerformanceTrendSnapshot;
 import com.laker.postman.performance.core.report.PerformanceJsonReport;
+import com.laker.postman.performance.core.report.PerformanceJsonReportTrendWindowSampler;
 import com.laker.postman.performance.core.report.PerformanceJsonReportMetadata;
 import com.laker.postman.performance.core.report.PerformanceJsonReportSummary;
 import com.laker.postman.performance.core.report.PerformanceJsonReportSummaryMapper;
@@ -60,7 +61,7 @@ final class PerformanceRemoteRunControlSupport {
     private final PerformanceWorkerAssignmentPlanner assignmentPlanner = new PerformanceWorkerAssignmentPlanner();
     private final PerformanceWorkerHttpClient workerClient = new PerformanceWorkerHttpClient();
     private final PerformanceWorkerReportCollector reportCollector = new PerformanceWorkerReportCollector(workerClient);
-    private final PerformanceRemoteTrendWindowSampler trendWindowSampler = new PerformanceRemoteTrendWindowSampler();
+    private final PerformanceJsonReportTrendWindowSampler trendWindowSampler = new PerformanceJsonReportTrendWindowSampler();
     private final AtomicBoolean stopping = new AtomicBoolean(false);
     private volatile String currentRunId = "";
     private volatile List<PerformanceWorkerEndpoint> currentWorkers = List.of();
@@ -201,6 +202,8 @@ final class PerformanceRemoteRunControlSupport {
         int done = 0;
         int activeUsers = 0;
         int totalUsers = 0;
+        int activeWebSocketConnections = 0;
+        int activeSseStreams = 0;
         long totalRequests = 0;
         long failedRequests = 0;
         List<PerformanceJsonReport> reports = new ArrayList<>();
@@ -212,6 +215,8 @@ final class PerformanceRemoteRunControlSupport {
             }
             activeUsers += Math.max(0, status.getActiveUsers());
             totalUsers += Math.max(0, status.getTotalUsers());
+            activeWebSocketConnections += Math.max(0, status.getActiveWebSocketConnections());
+            activeSseStreams += Math.max(0, status.getActiveSseStreams());
             totalRequests += Math.max(0L, status.getTotalRequests());
             failedRequests += Math.max(0L, status.getFailedRequests());
             if (status.getReport() != null) {
@@ -232,6 +237,8 @@ final class PerformanceRemoteRunControlSupport {
         return new RemoteProgressSnapshot(
                 activeUsers,
                 resolvedTotalUsers,
+                activeWebSocketConnections,
+                activeSseStreams,
                 totalRequests,
                 failedRequests,
                 done,
@@ -429,6 +436,8 @@ final class PerformanceRemoteRunControlSupport {
         long now = System.currentTimeMillis();
         PerformanceTrendSnapshot trendSnapshot = trendWindowSampler.sample(
                 progress.activeUsers(),
+                progress.activeWebSocketConnections(),
+                progress.activeSseStreams(),
                 progress.totalRequests(),
                 progress.failedRequests(),
                 progress.report(),
@@ -451,6 +460,8 @@ final class PerformanceRemoteRunControlSupport {
         return new RemoteProgressSnapshot(
                 0,
                 Math.max(0, totalUsers),
+                0,
+                0,
                 totalRequests,
                 Math.max(0L, totalRequests - successRequests),
                 Math.max(0, workerCount),
@@ -492,12 +503,14 @@ final class PerformanceRemoteRunControlSupport {
 
     private record RemoteProgressSnapshot(int activeUsers,
                                           int totalUsers,
+                                          int activeWebSocketConnections,
+                                          int activeSseStreams,
                                           long totalRequests,
                                           long failedRequests,
                                           int completedWorkers,
                                           PerformanceJsonReport report) {
         private static RemoteProgressSnapshot empty(int totalUsers) {
-            return new RemoteProgressSnapshot(0, totalUsers, 0, 0, 0, null);
+            return new RemoteProgressSnapshot(0, totalUsers, 0, 0, 0, 0, 0, null);
         }
     }
 }

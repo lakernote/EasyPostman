@@ -1,27 +1,23 @@
-package com.laker.postman.panel.performance;
+package com.laker.postman.performance.core.report;
 
 import com.laker.postman.performance.core.model.PerformanceTrendSnapshot;
-import com.laker.postman.performance.core.report.PerformanceJsonReport;
-import com.laker.postman.performance.core.report.PerformanceJsonReportApi;
-import com.laker.postman.performance.core.report.PerformanceJsonReportDuration;
-import com.laker.postman.performance.core.report.PerformanceJsonReportProtocol;
-import com.laker.postman.performance.core.report.PerformanceJsonReportStream;
-import com.laker.postman.performance.core.report.PerformanceJsonReportSummary;
 import org.testng.annotations.Test;
 
 import java.util.Map;
 
 import static org.testng.Assert.assertEquals;
 
-public class PerformanceRemoteTrendWindowSamplerTest {
+public class PerformanceJsonReportTrendWindowSamplerTest {
 
     @Test
     public void shouldCalculateQpsFromRemoteRequestDeltas() {
-        PerformanceRemoteTrendWindowSampler sampler = new PerformanceRemoteTrendWindowSampler();
+        PerformanceJsonReportTrendWindowSampler sampler = new PerformanceJsonReportTrendWindowSampler();
         sampler.reset(1_000L);
 
         PerformanceTrendSnapshot first = sampler.sample(
                 70,
+                0,
+                0,
                 100,
                 5,
                 report(100, 95, 5, 4),
@@ -29,6 +25,8 @@ public class PerformanceRemoteTrendWindowSamplerTest {
         );
         PerformanceTrendSnapshot second = sampler.sample(
                 70,
+                0,
+                0,
                 150,
                 8,
                 report(150, 142, 8, 5),
@@ -46,17 +44,21 @@ public class PerformanceRemoteTrendWindowSamplerTest {
 
     @Test
     public void shouldCalculateWebSocketAndSseMetricsFromRemoteReportDeltas() {
-        PerformanceRemoteTrendWindowSampler sampler = new PerformanceRemoteTrendWindowSampler();
+        PerformanceJsonReportTrendWindowSampler sampler = new PerformanceJsonReportTrendWindowSampler();
         sampler.reset(1_000L);
 
         PerformanceTrendSnapshot snapshot = sampler.sample(
                 10,
+                8,
+                7,
                 15,
                 1,
                 streamReport(),
                 2_000L
         );
 
+        assertEquals(snapshot.activeWebSocketConnections(), 8);
+        assertEquals(snapshot.activeSseStreams(), 7);
         assertEquals(snapshot.webSocket().samples(), 8);
         assertEquals(snapshot.webSocket().sentMessages(), 100);
         assertEquals(snapshot.webSocket().receivedMessages(), 80);

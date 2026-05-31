@@ -12,6 +12,8 @@ public class PerformanceWorkerRunStatusResponse {
     String status;
     int activeUsers;
     int totalUsers;
+    int activeWebSocketConnections;
+    int activeSseStreams;
     long totalRequests;
     long successRequests;
     long failedRequests;
@@ -25,6 +27,8 @@ public class PerformanceWorkerRunStatusResponse {
                                               String status,
                                               Integer activeUsers,
                                               Integer totalUsers,
+                                              Integer activeWebSocketConnections,
+                                              Integer activeSseStreams,
                                               Long totalRequests,
                                               Long successRequests,
                                               Long failedRequests,
@@ -36,6 +40,9 @@ public class PerformanceWorkerRunStatusResponse {
         this.status = status == null || status.isBlank() ? PerformanceRunStatus.UNKNOWN : status;
         this.activeUsers = Math.max(0, activeUsers == null ? 0 : activeUsers);
         this.totalUsers = Math.max(0, totalUsers == null ? 0 : totalUsers);
+        this.activeWebSocketConnections = Math.max(0,
+                activeWebSocketConnections == null ? 0 : activeWebSocketConnections);
+        this.activeSseStreams = Math.max(0, activeSseStreams == null ? 0 : activeSseStreams);
         this.totalRequests = Math.max(0L, totalRequests == null ? 0L : totalRequests);
         this.successRequests = Math.max(0L, successRequests == null ? 0L : successRequests);
         this.failedRequests = Math.max(0L, failedRequests == null ? this.totalRequests - this.successRequests : failedRequests);

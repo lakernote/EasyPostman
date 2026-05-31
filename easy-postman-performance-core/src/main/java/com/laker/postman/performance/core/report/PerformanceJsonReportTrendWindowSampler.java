@@ -1,12 +1,12 @@
-package com.laker.postman.panel.performance;
+package com.laker.postman.performance.core.report;
 
 import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.performance.core.model.PerformanceTrendSnapshot;
-import com.laker.postman.performance.core.report.PerformanceJsonReport;
-import com.laker.postman.performance.core.report.PerformanceJsonReportApi;
-import com.laker.postman.performance.core.report.PerformanceJsonReportProtocol;
 
-final class PerformanceRemoteTrendWindowSampler {
+/**
+ * 从 worker/master JSON 报表的累计值中切出单个趋势采样窗口，GUI/CLI/master 只负责传入当前报表。
+ */
+public final class PerformanceJsonReportTrendWindowSampler {
     private long lastSampleAtMs;
     private long lastTotalRequests;
     private long lastFailedRequests;
@@ -14,7 +14,7 @@ final class PerformanceRemoteTrendWindowSampler {
     private final ProtocolCounter webSocket = new ProtocolCounter();
     private final ProtocolCounter sse = new ProtocolCounter();
 
-    void reset(long nowMs) {
+    public void reset(long nowMs) {
         lastSampleAtMs = Math.max(0L, nowMs);
         lastTotalRequests = 0L;
         lastFailedRequests = 0L;
@@ -23,11 +23,13 @@ final class PerformanceRemoteTrendWindowSampler {
         sse.reset();
     }
 
-    PerformanceTrendSnapshot sample(int activeUsers,
-                                    long totalRequests,
-                                    long failedRequests,
-                                    PerformanceJsonReport report,
-                                    long nowMs) {
+    public PerformanceTrendSnapshot sample(int activeUsers,
+                                           int activeWebSocketConnections,
+                                           int activeSseStreams,
+                                           long totalRequests,
+                                           long failedRequests,
+                                           PerformanceJsonReport report,
+                                           long nowMs) {
         long elapsedMs = elapsedMs(nowMs);
         long sampleDelta = positiveDelta(totalRequests, lastTotalRequests);
         long failureDelta = positiveDelta(failedRequests, lastFailedRequests);
@@ -44,8 +46,8 @@ final class PerformanceRemoteTrendWindowSampler {
 
         return new PerformanceTrendSnapshot(
                 Math.max(0, activeUsers),
-                0,
-                0,
+                Math.max(0, activeWebSocketConnections),
+                Math.max(0, activeSseStreams),
                 overview(sampleDelta, failureDelta, elapsedMs, webSocketMetrics, sseMetrics),
                 httpMetrics,
                 webSocketMetrics,
@@ -123,8 +125,12 @@ final class PerformanceRemoteTrendWindowSampler {
             long currentTotal = api == null ? total : api.getTotal();
             long currentFailed = api == null ? failed : api.getFailed();
             long currentSent = api == null || api.getStream() == null ? sentMessages : api.getStream().getSentMessages();
-            long currentReceived = api == null || api.getStream() == null ? receivedMessages : api.getStream().getReceivedMessages();
-            long currentMatched = api == null || api.getStream() == null ? matchedMessages : api.getStream().getMatchedMessages();
+            long currentReceived = api == null || api.getStream() == null
+                    ? receivedMessages
+                    : api.getStream().getReceivedMessages();
+            long currentMatched = api == null || api.getStream() == null
+                    ? matchedMessages
+                    : api.getStream().getMatchedMessages();
 
             long totalDelta = positiveDelta(currentTotal, total);
             long failedDelta = positiveDelta(currentFailed, failed);

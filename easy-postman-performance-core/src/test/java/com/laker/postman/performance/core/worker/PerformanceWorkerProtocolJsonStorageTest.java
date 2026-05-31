@@ -63,6 +63,8 @@ public class PerformanceWorkerProtocolJsonStorageTest {
                 .status(PerformanceRunStatus.RUNNING)
                 .activeUsers(2)
                 .totalUsers(7)
+                .activeWebSocketConnections(3)
+                .activeSseStreams(4)
                 .totalRequests(10L)
                 .successRequests(9L)
                 .failedRequests(1L)
@@ -73,6 +75,8 @@ public class PerformanceWorkerProtocolJsonStorageTest {
 
         assertEquals(loadedStatus.getActiveUsers(), 2);
         assertEquals(loadedStatus.getTotalUsers(), 7);
+        assertEquals(loadedStatus.getActiveWebSocketConnections(), 3);
+        assertEquals(loadedStatus.getActiveSseStreams(), 4);
         assertEquals(loadedStatus.getTotalRequests(), 10L);
         assertEquals(loadedStatus.getSuccessRequests(), 9L);
         assertEquals(loadedStatus.getFailedRequests(), 1L);

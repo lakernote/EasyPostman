@@ -18,18 +18,15 @@ public final class RealtimeConnectionFactory {
         this.clientResolver = clientResolver == null ? HttpClientResolver.DEFAULT : clientResolver;
     }
 
-    private EventSource openSse(PreparedRequest request, EventSourceListener listener) {
-        return openSse(request, listener, null);
-    }
-
-    public RealtimeConnectionHandle openSseConnection(PreparedRequest request, EventSourceListener listener) {
-        return openSseConnection(request, listener, null);
-    }
-
     public RealtimeConnectionHandle openSseConnection(PreparedRequest request,
                                                       EventSourceListener listener,
-                                                      HttpBaseClientProvider baseClientProvider) {
-        return OkHttpRealtimeConnectionHandles.sse(openSse(request, listener, baseClientProvider));
+                                                      RealtimeConnectionOptions options) {
+        RealtimeConnectionOptions resolvedOptions = options == null ? RealtimeConnectionOptions.defaults() : options;
+        return OkHttpRealtimeConnectionHandles.sse(openSse(
+                request,
+                listener,
+                resolvedOptions.getBaseClientProvider()
+        ));
     }
 
     private EventSource openSse(PreparedRequest request,
@@ -40,36 +37,16 @@ public final class RealtimeConnectionFactory {
         return EventSources.createFactory(customClient).newEventSource(okRequest, listener);
     }
 
-    private WebSocket openWebSocket(PreparedRequest request, WebSocketListener listener) {
-        return openWebSocket(request, listener, null);
-    }
-
-    public RealtimeWebSocketConnection openWebSocketConnection(PreparedRequest request, WebSocketListener listener) {
-        return openWebSocketConnection(request, listener, null);
-    }
-
     public RealtimeWebSocketConnection openWebSocketConnection(PreparedRequest request,
                                                               WebSocketListener listener,
-                                                              HttpBaseClientProvider baseClientProvider) {
-        return openWebSocketConnection(request, listener, baseClientProvider, true);
-    }
-
-    public RealtimeWebSocketConnection openWebSocketConnection(PreparedRequest request,
-                                                              WebSocketListener listener,
-                                                              HttpBaseClientProvider baseClientProvider,
-                                                              boolean lifecycleLoggingEnabled) {
+                                                              RealtimeConnectionOptions options) {
+        RealtimeConnectionOptions resolvedOptions = options == null ? RealtimeConnectionOptions.defaults() : options;
         return OkHttpRealtimeConnectionHandles.webSocket(openWebSocket(
                 request,
                 listener,
-                baseClientProvider,
-                lifecycleLoggingEnabled
+                resolvedOptions.getBaseClientProvider(),
+                resolvedOptions.isLifecycleLoggingEnabled()
         ));
-    }
-
-    private WebSocket openWebSocket(PreparedRequest request,
-                                    WebSocketListener listener,
-                                    HttpBaseClientProvider baseClientProvider) {
-        return openWebSocket(request, listener, baseClientProvider, true);
     }
 
     private WebSocket openWebSocket(PreparedRequest request,

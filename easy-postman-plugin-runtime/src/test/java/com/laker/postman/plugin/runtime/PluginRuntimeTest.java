@@ -20,6 +20,7 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 public class PluginRuntimeTest {
+    private static final String CURRENT_PLUGIN_PLATFORM_VERSION = "3.0.0";
 
     private Path dataDir;
 
@@ -61,7 +62,7 @@ public class PluginRuntimeTest {
 
     @Test
     public void shouldExposeIndependentPluginPlatformVersion() {
-        assertEquals(PluginRuntime.getCurrentPluginPlatformVersion(), "2.0.0");
+        assertEquals(PluginRuntime.getCurrentPluginPlatformVersion(), CURRENT_PLUGIN_PLATFORM_VERSION);
     }
 
     @Test
@@ -106,7 +107,7 @@ public class PluginRuntimeTest {
         assertFalse(compatibility.compatible());
         assertTrue(compatibility.appVersionCompatible());
         assertFalse(compatibility.platformVersionCompatible());
-        assertEquals(compatibility.currentPlatformVersion(), "2.0.0");
+        assertEquals(compatibility.currentPlatformVersion(), CURRENT_PLUGIN_PLATFORM_VERSION);
         assertEquals(compatibility.maxPlatformVersion(), "1.0.0");
     }
 

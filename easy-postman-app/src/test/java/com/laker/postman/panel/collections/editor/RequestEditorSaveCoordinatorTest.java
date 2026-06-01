@@ -50,6 +50,20 @@ public class RequestEditorSaveCoordinatorTest {
     }
 
     @Test
+    public void shouldReturnFalseWhenNewRequestDialogIsCancelled() {
+        RequestEditorSaveCoordinator coordinator = new RequestEditorSaveCoordinator();
+        FakeSaveContext context = new FakeSaveContext();
+
+        boolean saved = coordinator.saveCurrentRequest(context);
+
+        assertFalse(saved);
+        assertTrue(context.promotedPreviewTab);
+        assertTrue(context.newRequestDialogOpened);
+        assertFalse(context.newRequestSaved);
+        assertFalse(context.newRequestTabRefreshed);
+    }
+
+    @Test
     public void shouldUpdateExistingRequestAndReportFailure() {
         RequestEditorSaveCoordinator coordinator = new RequestEditorSaveCoordinator();
         FakeSaveContext context = new FakeSaveContext();
@@ -77,6 +91,8 @@ public class RequestEditorSaveCoordinatorTest {
         private RequestGroup savedGroup;
         private HttpRequestItem savedRequest;
         private String refreshedTabName;
+        private boolean newRequestSaved;
+        private boolean newRequestTabRefreshed;
         private boolean existingUpdateResult = true;
         private boolean existingRequestUpdated;
         private HttpRequestItem updatedExistingRequest;
@@ -136,12 +152,14 @@ public class RequestEditorSaveCoordinatorTest {
 
         @Override
         public void saveRequestToGroup(RequestGroup group, HttpRequestItem item) {
+            newRequestSaved = true;
             savedGroup = group;
             savedRequest = item;
         }
 
         @Override
         public void refreshNewRequestTab(String requestName, HttpRequestItem item) {
+            newRequestTabRefreshed = true;
             refreshedTabName = requestName;
         }
 

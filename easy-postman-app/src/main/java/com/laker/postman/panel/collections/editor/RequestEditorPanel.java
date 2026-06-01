@@ -20,6 +20,7 @@ import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.service.collections.ActiveCollectionTreeNodeRepository;
 import com.laker.postman.service.collections.CollectionTreeQueryService;
+import com.laker.postman.service.collections.RequestSaveEventPublisher;
 import com.laker.postman.service.setting.ShortcutManager;
 import com.laker.postman.service.collections.GroupInheritanceHelper;
 import com.laker.postman.service.variable.RequestExecutionContext;
@@ -210,7 +211,7 @@ public class RequestEditorPanel extends UiSingletonPanel {
         GroupEditPanel groupEditPanel = new GroupEditPanel(groupNode, group, () -> {
             CollectionTreePanel leftPanel = UiSingletonFactory.getInstance(CollectionTreePanel.class);
             leftPanel.getTreeModel().nodeChanged(groupNode);
-            leftPanel.getPersistence().saveRequestGroups();
+            leftPanel.getCollectionTreePersistence().saveCurrentTree();
         });
 
         boolean isRoot = groupNode.getLevel() == 1;
@@ -509,6 +510,22 @@ public class RequestEditorPanel extends UiSingletonPanel {
         }
     }
 
+    public void syncSavedRequest(HttpRequestItem updatedItem) {
+        if (updatedItem == null || updatedItem.getId() == null) {
+            return;
+        }
+        for (int i = 0; i < tabbedPane.getTabCount(); i++) {
+            Component comp = tabbedPane.getComponentAt(i);
+            if (comp instanceof RequestEditSubPanel subPanel) {
+                HttpRequestItem tabItem = subPanel.getCurrentRequest();
+                if (tabItem != null && updatedItem.getId().equals(tabItem.getId())) {
+                    updateTabDirty(subPanel, false);
+                    subPanel.setOriginalRequestItem(updatedItem);
+                }
+            }
+        }
+    }
+
     public void updateTabProtocol(RequestEditSubPanel panel, RequestItemProtocolEnum protocol) {
         int idx = tabbedPane.indexOfComponent(panel);
         if (idx < 0 || protocol == null) {
@@ -627,6 +644,7 @@ public class RequestEditorPanel extends UiSingletonPanel {
 
     @Override
     protected void registerListeners() {
+        RequestSaveEventPublisher.register(this::syncSavedRequest);
         // 统一注册所有快捷键
         registerShortcuts();
         // 添加鼠标监听，只在左键点击"+"Tab时新增
@@ -724,7 +742,7 @@ public class RequestEditorPanel extends UiSingletonPanel {
             // 保存回调
             CollectionTreePanel leftPanel = UiSingletonFactory.getInstance(CollectionTreePanel.class);
             leftPanel.getTreeModel().nodeChanged(groupNode);
-            leftPanel.getPersistence().saveRequestGroups();
+            leftPanel.getCollectionTreePersistence().saveCurrentTree();
         });
 
         // 添加为新 Tab

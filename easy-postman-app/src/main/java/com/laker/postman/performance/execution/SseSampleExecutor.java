@@ -6,7 +6,9 @@ import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
 import com.laker.postman.performance.core.model.SsePerformanceData;
 import com.laker.postman.http.runtime.transport.HttpBaseClientProvider;
-import com.laker.postman.http.runtime.transport.HttpTransportRuntime;
+import com.laker.postman.http.runtime.transport.DefaultHttpTransport;
+import com.laker.postman.http.runtime.transport.HttpTransport;
+import com.laker.postman.http.runtime.transport.RealtimeConnectionOptions;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import okhttp3.Response;
@@ -49,6 +51,7 @@ public class SseSampleExecutor {
     private final boolean retainResponseBody;
     private final boolean trackResponseBodySize;
     private final HttpBaseClientProvider baseClientProvider;
+    private final HttpTransport httpTransport;
 
     public SseSampleExecutor(BooleanSupplier runningSupplier,
                              Predicate<Throwable> cancelledChecker,
@@ -100,6 +103,19 @@ public class SseSampleExecutor {
                              boolean retainResponseBody,
                              boolean trackResponseBodySize,
                              HttpBaseClientProvider baseClientProvider) {
+        this(runningSupplier, cancelledChecker, activeSources, realtimeMetrics, responseBodyPreviewLimitBytes,
+                retainResponseBody, trackResponseBodySize, baseClientProvider, new DefaultHttpTransport());
+    }
+
+    public SseSampleExecutor(BooleanSupplier runningSupplier,
+                             Predicate<Throwable> cancelledChecker,
+                             Set<RealtimeConnectionHandle> activeSources,
+                             PerformanceRealtimeMetrics realtimeMetrics,
+                             int responseBodyPreviewLimitBytes,
+                             boolean retainResponseBody,
+                             boolean trackResponseBodySize,
+                             HttpBaseClientProvider baseClientProvider,
+                             HttpTransport httpTransport) {
         this.runningSupplier = runningSupplier;
         this.cancelledChecker = cancelledChecker;
         this.activeSources = activeSources;
@@ -108,6 +124,7 @@ public class SseSampleExecutor {
         this.retainResponseBody = retainResponseBody;
         this.trackResponseBodySize = trackResponseBodySize;
         this.baseClientProvider = baseClientProvider;
+        this.httpTransport = httpTransport == null ? new DefaultHttpTransport() : httpTransport;
     }
 
     public Result execute(PreparedRequest req, SsePerformanceData cfg) {
@@ -252,7 +269,13 @@ public class SseSampleExecutor {
             }
         };
 
-        RealtimeConnectionHandle eventSource = HttpTransportRuntime.openSseConnection(req, listener, baseClientProvider);
+        RealtimeConnectionHandle eventSource = httpTransport.openSse(
+                req,
+                listener,
+                RealtimeConnectionOptions.builder()
+                        .baseClientProvider(baseClientProvider)
+                        .build()
+        );
         activeSources.add(eventSource);
         if (sessionRegistered.compareAndSet(false, true)) {
             realtimeMetrics.recordSseSessionStart(eventSource.metricKey(), requestStartTime, apiId, apiName);

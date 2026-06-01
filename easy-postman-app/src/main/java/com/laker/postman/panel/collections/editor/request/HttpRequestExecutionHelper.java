@@ -30,6 +30,7 @@ final class HttpRequestExecutionHelper {
     private final RequestExecutionUiHelper requestExecutionUiHelper;
     private final RequestStreamUiHelper requestStreamUiHelper;
     private final RequestResponseHelper requestResponseHelper;
+    private final HttpRedirectExecutor redirectExecutor;
     private final Runnable convertCurrentRequestToSse;
     private final Consumer<Boolean> httpSseStreamOpenedSetter;
     private final Supplier<Boolean> httpSseStreamOpenedSupplier;
@@ -49,6 +50,7 @@ final class HttpRequestExecutionHelper {
         this.requestExecutionUiHelper = requestExecutionUiHelper;
         this.requestStreamUiHelper = requestStreamUiHelper;
         this.requestResponseHelper = requestResponseHelper;
+        this.redirectExecutor = new HttpRedirectExecutor();
         this.convertCurrentRequestToSse = convertCurrentRequestToSse;
         this.httpSseStreamOpenedSetter = httpSseStreamOpenedSetter;
         this.httpSseStreamOpenedSupplier = httpSseStreamOpenedSupplier;
@@ -68,7 +70,7 @@ final class HttpRequestExecutionHelper {
                 try {
                     responsePanel.setResponseTabButtonsEnable(true);
                     responsePanel.switchTabButtonHttpOrSse(expectedSse ? "sse" : "http");
-                    resp = HttpRedirectExecutor.executeWithRedirects(req, maxRedirectCount, new SseResponseCallback() {
+                    resp = redirectExecutor.executeWithRedirects(req, maxRedirectCount, new SseResponseCallback() {
                         @Override
                         public void onOpen(HttpResponse response) {
                             SwingUtilities.invokeLater(() -> {

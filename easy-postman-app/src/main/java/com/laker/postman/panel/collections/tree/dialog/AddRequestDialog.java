@@ -215,7 +215,7 @@ public class AddRequestDialog {
         leftPanel.getTreeModel().reload(groupNode);
         JTree tree = leftPanel.getRequestTree();
         tree.expandPath(new TreePath(groupNode.getPath()));
-        leftPanel.getPersistence().saveRequestGroups();
+        leftPanel.getCollectionTreePersistence().saveCurrentTree();
 
         // 定位到新创建的请求节点
         TreePath newPath = new TreePath(reqNode.getPath());

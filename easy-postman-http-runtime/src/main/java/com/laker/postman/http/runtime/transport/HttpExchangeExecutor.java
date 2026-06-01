@@ -20,22 +20,16 @@ public final class HttpExchangeExecutor {
         this.clientResolver = clientResolver == null ? HttpClientResolver.DEFAULT : clientResolver;
     }
 
-    public HttpResponse executeHttp(PreparedRequest request, SseResponseCallback callback) throws Exception {
-        return executeHttp(request, callback, HttpCallTracker.NOOP, null);
-    }
-
-    public HttpResponse executeHttp(PreparedRequest request,
-                                    SseResponseCallback callback,
-                                    HttpCallTracker callTracker) throws Exception {
-        return executeHttp(request, callback, callTracker, null);
-    }
-
-    public HttpResponse executeHttp(PreparedRequest request,
-                                    SseResponseCallback callback,
-                                    HttpCallTracker callTracker,
-                                    HttpBaseClientProvider baseClientProvider) throws Exception {
+    public HttpResponse executeHttp(PreparedRequest request, HttpExchangeOptions options) throws Exception {
+        HttpExchangeOptions resolvedOptions = options == null ? HttpExchangeOptions.defaults() : options;
         Request okRequest = PreparedOkHttpRequestFactory.build(request);
-        return executeRequest(request, okRequest, callback, callTracker, baseClientProvider);
+        return executeRequest(
+                request,
+                okRequest,
+                resolvedOptions.getCallback(),
+                resolvedOptions.resolvedCallTracker(),
+                resolvedOptions.getBaseClientProvider()
+        );
     }
 
     private HttpResponse executeRequest(PreparedRequest request,
@@ -45,12 +39,11 @@ public final class HttpExchangeExecutor {
                                         HttpBaseClientProvider baseClientProvider) throws Exception {
         OkHttpClient client = clientResolver.resolveClient(request, baseClientProvider);
         Call call = client.newCall(okRequest);
-        HttpCallTracker resolvedTracker = callTracker == null ? HttpCallTracker.NOOP : callTracker;
-        resolvedTracker.onCallStarted(call);
+        callTracker.onCallStarted(call);
         try {
             return callWithRequest(request, call, client, callback);
         } finally {
-            resolvedTracker.onCallFinished(call);
+            callTracker.onCallFinished(call);
         }
     }
 

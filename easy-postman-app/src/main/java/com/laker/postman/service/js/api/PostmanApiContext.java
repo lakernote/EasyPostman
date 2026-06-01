@@ -110,6 +110,7 @@ public class PostmanApiContext {
     public TestApi test;
 
     private final Map<String, Object> pluginApis = new LinkedHashMap<>();
+    private final ScriptSendRequestExecutor sendRequestExecutor;
 
     /**
      * Elasticsearch API - 对应 pm.elasticsearch
@@ -143,6 +144,16 @@ public class PostmanApiContext {
     }
 
     private PostmanApiContext(Environment environment, Environment globals, Runnable environmentPersistAction) {
+        this(environment, globals, environmentPersistAction, new ScriptSendRequestExecutor());
+    }
+
+    private PostmanApiContext(Environment environment,
+                              Environment globals,
+                              Runnable environmentPersistAction,
+                              ScriptSendRequestExecutor sendRequestExecutor) {
+        this.sendRequestExecutor = sendRequestExecutor == null
+                ? new ScriptSendRequestExecutor()
+                : sendRequestExecutor;
         this.environment = new ScriptScopedVariablesApi(
                 environment,
                 environmentPersistAction
@@ -431,7 +442,7 @@ public class PostmanApiContext {
         }
 
         try {
-            ScriptSendRequestExecutor.sendRequest(requestOptions, callback);
+            sendRequestExecutor.sendRequest(requestOptions, callback);
         } catch (Exception e) {
             log.error("pm.sendRequest failed: {}", e.getMessage(), e);
 

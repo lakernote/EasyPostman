@@ -5,23 +5,33 @@ import com.laker.postman.functional.model.RunnerRowData;
 import com.laker.postman.http.request.PreparedRequestFactory;
 import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.http.runtime.model.PreparedRequest;
-import com.laker.postman.http.runtime.transport.HttpTransportRuntime;
+import com.laker.postman.http.runtime.transport.DefaultHttpTransport;
+import com.laker.postman.http.runtime.transport.HttpExchangeOptions;
+import com.laker.postman.http.runtime.transport.HttpTransport;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.service.js.ScriptExecutionResult;
 import com.laker.postman.service.variable.ExecutionVariableContext;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 @Slf4j
-@RequiredArgsConstructor
 public final class FunctionalRequestExecutor {
     public static final String ERROR = "Error";
 
     private final Consumer<String> requestErrorConsumer;
+    private final HttpTransport httpTransport;
+
+    public FunctionalRequestExecutor(Consumer<String> requestErrorConsumer) {
+        this(requestErrorConsumer, new DefaultHttpTransport());
+    }
+
+    FunctionalRequestExecutor(Consumer<String> requestErrorConsumer, HttpTransport httpTransport) {
+        this.requestErrorConsumer = requestErrorConsumer;
+        this.httpTransport = httpTransport == null ? new DefaultHttpTransport() : httpTransport;
+    }
 
     public FunctionalRequestExecutionResult execute(RunnerRowData row,
                                                     ExecutionVariableContext iterationContext,
@@ -60,7 +70,7 @@ public final class FunctionalRequestExecutor {
             status = ERROR;
         } else {
             try {
-                response = HttpTransportRuntime.executeHttp(request, null);
+                response = httpTransport.execute(request, HttpExchangeOptions.defaults());
                 status = String.valueOf(response.code);
                 postResult = pipeline.executePostScript(response);
                 if (postResult.hasTestResults()) {

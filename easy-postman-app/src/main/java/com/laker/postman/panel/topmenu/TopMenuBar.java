@@ -234,7 +234,7 @@ public class TopMenuBar extends UiSingletonMenuBar implements IRefreshable {
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToSave = fileChooser.getSelectedFile();
             try {
-                leftPanel.getPersistence().exportRequestCollection(fileToSave);
+                leftPanel.getCollectionTreePersistence().exportCurrentTree(fileToSave);
                 NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_SUCCESS));
             } catch (Exception ex) {
                 log.error("Export error", ex);

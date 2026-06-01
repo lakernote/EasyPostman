@@ -62,7 +62,7 @@ public class WebSocketScenarioExecutorTest {
                 "src/main/java/com/laker/postman/performance/execution/WebSocketScenarioExecutor.java"
         ));
 
-        assertTrue(source.contains("openWebSocketConnection("));
+        assertTrue(source.contains("openWebSocket("));
     }
 
     @Test

@@ -11,15 +11,12 @@ import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.panel.collections.editor.request.sub.RequestLinePanel;
 import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;
 import com.laker.postman.service.collections.SavedResponseSnapshotMapper;
-import com.laker.postman.service.collections.SavedResponseTreeMutation;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.TreePath;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.text.SimpleDateFormat;
@@ -48,20 +45,12 @@ final class SavedResponseHelper {
         try {
             SavedResponse savedResponse = SavedResponseSnapshotMapper.fromExchange(name, lastRequest, lastResponse);
             CollectionTreePanel leftPanel = UiSingletonFactory.getInstance(CollectionTreePanel.class);
-            SavedResponseTreeMutation.Result mutation = SavedResponseTreeMutation
-                    .appendSavedResponse(leftPanel.getRootTreeNode(), originalRequestItem, savedResponse)
-                    .orElse(null);
 
-            if (mutation == null) {
+            if (!leftPanel.saveResponseForRequest(originalRequestItem, savedResponse)) {
                 log.warn("无法找到请求节点，保存响应失败");
                 NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.RESPONSE_SAVE_REQUEST_NOT_FOUND));
                 return;
             }
-
-            DefaultMutableTreeNode requestNode = mutation.requestNode();
-            leftPanel.getTreeModel().reload(requestNode);
-            leftPanel.getRequestTree().expandPath(new TreePath(requestNode.getPath()));
-            leftPanel.getPersistence().saveRequestGroups();
 
             NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.RESPONSE_SAVE_SUCCESS, name));
         } catch (Exception ex) {

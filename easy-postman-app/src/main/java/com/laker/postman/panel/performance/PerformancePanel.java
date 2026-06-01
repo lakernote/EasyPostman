@@ -59,6 +59,7 @@ import com.laker.postman.performance.core.worker.PerformanceWorkerEndpointParser
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.GlobalVariablesService;
 import com.laker.postman.service.PerformancePersistenceService;
+import com.laker.postman.service.collections.RequestSaveEventPublisher;
 import com.laker.postman.http.runtime.okhttp.HttpClientRuntimeConfig;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
@@ -1096,6 +1097,7 @@ public class PerformancePanel extends UiSingletonPanel {
 
     @Override
     protected void registerListeners() {
+        RequestSaveEventPublisher.register(this::syncRequestItem);
         new PerformanceTreeInteractionSupport(
                 this,
                 performanceTree,

@@ -6,11 +6,12 @@ import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.RedirectInfo;
 
 
-import com.laker.postman.http.runtime.transport.HttpTransportRuntime;
+import com.laker.postman.http.runtime.transport.DefaultHttpTransport;
+import com.laker.postman.http.runtime.transport.HttpExchangeOptions;
+import com.laker.postman.http.runtime.transport.HttpTransport;
 import com.laker.postman.http.runtime.observation.NetworkLogEventStage;
 import com.laker.postman.http.runtime.observation.NetworkLogSink;
 import com.laker.postman.http.runtime.sse.SseResponseCallback;
-import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.URL;
@@ -23,10 +24,18 @@ import java.util.Map;
  * 负责处理重定向链
  */
 @Slf4j
-@UtilityClass
 public class HttpRedirectExecutor {
+    private final HttpTransport httpTransport;
 
-    public static HttpResponse executeWithRedirects(PreparedRequest req, int maxRedirects, SseResponseCallback callback) throws Exception {
+    public HttpRedirectExecutor() {
+        this(new DefaultHttpTransport());
+    }
+
+    public HttpRedirectExecutor(HttpTransport httpTransport) {
+        this.httpTransport = httpTransport == null ? new DefaultHttpTransport() : httpTransport;
+    }
+
+    public HttpResponse executeWithRedirects(PreparedRequest req, int maxRedirects, SseResponseCallback callback) throws Exception {
         // 创建工作副本
         PreparedRequest workingReq = req.shallowCopy();
 
@@ -71,10 +80,15 @@ public class HttpRedirectExecutor {
         }
     }
 
-    private static HttpResponse executeAndSyncRequestMetadata(PreparedRequest originalReq,
-                                                              PreparedRequest workingReq,
-                                                              SseResponseCallback callback) throws Exception {
-        HttpResponse resp = HttpTransportRuntime.executeHttp(workingReq, callback);
+    private HttpResponse executeAndSyncRequestMetadata(PreparedRequest originalReq,
+                                                       PreparedRequest workingReq,
+                                                       SseResponseCallback callback) throws Exception {
+        HttpResponse resp = httpTransport.execute(
+                workingReq,
+                HttpExchangeOptions.builder()
+                        .callback(callback)
+                        .build()
+        );
 
         // 更新原始请求对象的 OkHttp 相关字段
         originalReq.sentHeadersList = workingReq.sentHeadersList;

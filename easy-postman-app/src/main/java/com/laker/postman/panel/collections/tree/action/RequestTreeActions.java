@@ -19,7 +19,7 @@ import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.panel.functional.FunctionalPanel;
 import com.laker.postman.panel.sidebar.SidebarTabPanel;
-import com.laker.postman.service.collections.RequestsPersistence;
+import com.laker.postman.service.collections.SwingCollectionTreePersistence;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.http.request.HttpRequestFactory;
 import com.laker.postman.http.request.PreparedRequestFactory;
@@ -121,7 +121,7 @@ public class RequestTreeActions {
         // 缓存失效（新增分组可能影响子请求的继承）
         PreparedRequestFactory.invalidateCache();
 
-        leftPanel.getPersistence().saveRequestGroups();
+        leftPanel.getCollectionTreePersistence().saveCurrentTree();
     }
 
     /**
@@ -155,7 +155,7 @@ public class RequestTreeActions {
         leftPanel.getTreeModel().insertNodeInto(reqNode, groupNode, groupNode.getChildCount());
         JTree tree = leftPanel.getRequestTree();
         tree.expandPath(new TreePath(groupNode.getPath()));
-        leftPanel.getPersistence().saveRequestGroups();
+        leftPanel.getCollectionTreePersistence().saveCurrentTree();
 
         TreePath newPath = new TreePath(reqNode.getPath());
         // 设置保护路径：TreeSelectionListener 会拦截 BasicTreeUI 在 mouseReleased 里
@@ -223,7 +223,7 @@ public class RequestTreeActions {
         // 缓存失效（分组名称改变会影响脚本注释）
         PreparedRequestFactory.invalidateCache();
 
-        leftPanel.getPersistence().saveRequestGroups();
+        leftPanel.getCollectionTreePersistence().saveCurrentTree();
     }
 
     /**
@@ -262,7 +262,7 @@ public class RequestTreeActions {
     private void updateRequestName(DefaultMutableTreeNode node, HttpRequestItem item, String newName) {
         item.setName(newName);
         leftPanel.getTreeModel().nodeChanged(node);
-        leftPanel.getPersistence().saveRequestGroups();
+        leftPanel.getCollectionTreePersistence().saveCurrentTree();
 
         // 同步更新已打开Tab的标题
         updateOpenedTabsTitle(item, newName);
@@ -325,7 +325,7 @@ public class RequestTreeActions {
     private void updateSavedResponseName(DefaultMutableTreeNode node, SavedResponse savedResponse, String newName) {
         savedResponse.setName(newName);
         leftPanel.getTreeModel().nodeChanged(node);
-        leftPanel.getPersistence().saveRequestGroups();
+        leftPanel.getCollectionTreePersistence().saveCurrentTree();
 
         // 同步更新已打开Tab的标题
         updateOpenedSavedResponseTabsTitle(savedResponse, newName);
@@ -433,7 +433,7 @@ public class RequestTreeActions {
         // 缓存失效（删除节点可能影响树结构）
         PreparedRequestFactory.invalidateCache();
 
-        leftPanel.getPersistence().saveRequestGroups();
+        leftPanel.getCollectionTreePersistence().saveCurrentTree();
     }
 
     /**
@@ -495,7 +495,7 @@ public class RequestTreeActions {
             createDuplicateRequest(info);
         }
 
-        leftPanel.getPersistence().saveRequestGroups();
+        leftPanel.getCollectionTreePersistence().saveCurrentTree();
         NotificationUtil.showSuccess(
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_COPY_SUCCESS, copyInfos.size())
         );
@@ -572,7 +572,7 @@ public class RequestTreeActions {
 
         leftPanel.getTreeModel().reload(targetParent);
         requestTree.expandPath(new TreePath(targetParent.getPath()));
-        leftPanel.getPersistence().saveRequestGroups();
+        leftPanel.getCollectionTreePersistence().saveCurrentTree();
 
         NotificationUtil.showSuccess(
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_PASTE_SUCCESS, copiedRequests.size())
@@ -670,7 +670,7 @@ public class RequestTreeActions {
             // 缓存失效（复制分组可能影响树结构）
             PreparedRequestFactory.invalidateCache();
 
-            leftPanel.getPersistence().saveRequestGroups();
+            leftPanel.getCollectionTreePersistence().saveCurrentTree();
         }
     }
 
@@ -745,17 +745,17 @@ public class RequestTreeActions {
         // 3. 创建目标工作区的持久化工具
         DefaultMutableTreeNode targetRootNode = new DefaultMutableTreeNode(ROOT);
         DefaultTreeModel targetTreeModel = new DefaultTreeModel(targetRootNode);
-        RequestsPersistence targetPersistence = new RequestsPersistence(
+        SwingCollectionTreePersistence targetPersistence = new SwingCollectionTreePersistence(
                 targetCollectionPath, targetRootNode, targetTreeModel);
 
         // 4. 加载目标工作区的现有集合
-        targetPersistence.initRequestGroupsFromFile();
+        targetPersistence.loadIntoTree();
 
         // 5. 将集合添加到目标工作区
         targetRootNode.add(copiedNode);
 
         // 6. 保存到目标工作区
-        targetPersistence.saveRequestGroups();
+        targetPersistence.saveCurrentTree();
 
         // 7. 从当前工作区删除原集合
         DefaultMutableTreeNode parent = (DefaultMutableTreeNode) collectionNode.getParent();
@@ -766,7 +766,7 @@ public class RequestTreeActions {
             // 缓存失效（移动集合会改变树结构）
             PreparedRequestFactory.invalidateCache();
 
-            leftPanel.getPersistence().saveRequestGroups();
+            leftPanel.getCollectionTreePersistence().saveCurrentTree();
         }
 
         log.info("Successfully moved collection '{}' to workspace '{}'",

@@ -28,6 +28,7 @@ import com.laker.postman.panel.sidebar.SidebarTabPanel;
 import com.laker.postman.service.FunctionalPersistenceService;
 import com.laker.postman.common.component.RequestMethodUiMetadata;
 import com.laker.postman.service.collections.CollectionRequestLookup;
+import com.laker.postman.service.collections.RequestSaveEventPublisher;
 import com.laker.postman.service.variable.ExecutionVariableContext;
 import com.laker.postman.service.variable.IterationDataRuntimeSupport;
 import com.laker.postman.util.*;
@@ -638,6 +639,7 @@ public class FunctionalPanel extends UiSingletonPanel {
 
     @Override
     protected void registerListeners() {
+        RequestSaveEventPublisher.register(this::syncRequestItem);
         // 添加表格鼠标监听器
         table.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override

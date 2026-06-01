@@ -1,0 +1,68 @@
+package com.laker.postman.service.collections;
+
+import com.laker.postman.collection.model.CollectionDocument;
+import lombok.extern.slf4j.Slf4j;
+
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
+import java.io.File;
+import java.io.IOException;
+
+@Slf4j
+public class SwingCollectionTreePersistence {
+    private final CollectionFilePersistence filePersistence;
+    private final DefaultMutableTreeNode rootTreeNode;
+    private final DefaultTreeModel treeModel;
+
+    public SwingCollectionTreePersistence(String filePath, DefaultMutableTreeNode rootTreeNode, DefaultTreeModel treeModel) {
+        this(new CollectionFilePersistence(filePath), rootTreeNode, treeModel);
+    }
+
+    SwingCollectionTreePersistence(CollectionFilePersistence filePersistence,
+                                   DefaultMutableTreeNode rootTreeNode,
+                                   DefaultTreeModel treeModel) {
+        this.filePersistence = filePersistence;
+        this.rootTreeNode = rootTreeNode;
+        this.treeModel = treeModel;
+    }
+
+    public void exportCurrentTree(File fileToSave) throws IOException {
+        filePersistence.export(currentDocument(), fileToSave);
+    }
+
+    public void loadIntoTree() {
+        try {
+            applyDocument(filePersistence.loadOrCreate(this::defaultDocument));
+        } catch (Exception e) {
+            log.error("Error loading request collections", e);
+        }
+    }
+
+    public void saveCurrentTree() {
+        filePersistence.save(currentDocument());
+    }
+
+    public void switchDataFilePath(String path) {
+        try {
+            applyDocument(filePersistence.switchFilePathAndLoad(path, this::defaultDocument));
+        } catch (Exception e) {
+            log.error("Error switching collection data file", e);
+        }
+    }
+
+    private CollectionDocument currentDocument() {
+        return SwingCollectionTreeDocumentMapper.fromRoot(rootTreeNode);
+    }
+
+    private CollectionDocument defaultDocument() {
+        DefaultMutableTreeNode defaultRoot = new DefaultMutableTreeNode("root");
+        DefaultTreeModel defaultModel = new DefaultTreeModel(defaultRoot);
+        DefaultRequestsFactory.create(defaultRoot, defaultModel);
+        return SwingCollectionTreeDocumentMapper.fromRoot(defaultRoot);
+    }
+
+    private void applyDocument(CollectionDocument document) {
+        SwingCollectionTreeDocumentMapper.replaceRootChildren(rootTreeNode, document);
+        treeModel.reload(rootTreeNode);
+    }
+}

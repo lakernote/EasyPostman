@@ -6,10 +6,8 @@ import com.laker.postman.request.model.HttpRequestItem;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.IdUtil;
-import cn.hutool.json.JSONArray;
-import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.collection.model.CollectionDocument;
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
@@ -23,7 +21,9 @@ import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.apipost.ApiPostCollectionParser;
 import com.laker.postman.collection.model.CollectionParseResult;
 import com.laker.postman.service.common.TreeNodeBuilder;
+import com.laker.postman.service.collections.CollectionDocumentJsonCodec;
 import com.laker.postman.service.collections.CollectionTreeNodes;
+import com.laker.postman.service.collections.SwingCollectionTreeDocumentMapper;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.har.HarParser;
 import com.laker.postman.http.request.PreparedRequestFactory;
@@ -283,11 +283,8 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
                     easyPostmanGroup = CollectionTreeNodes.groupNode(group);
                     leftPanel.getRootTreeNode().add(easyPostmanGroup);
                 }
-                // 读取并解析文件
-                JSONArray array = JSONUtil.readJSONArray(fileToOpen, java.nio.charset.StandardCharsets.UTF_8);
-                for (Object o : array) {
-                    JSONObject groupJson = (JSONObject) o;
-                    DefaultMutableTreeNode groupNode = leftPanel.getPersistence().parseGroupNode(groupJson);
+                CollectionDocument document = CollectionDocumentJsonCodec.read(fileToOpen);
+                for (DefaultMutableTreeNode groupNode : SwingCollectionTreeDocumentMapper.toTreeNodes(document)) {
                     easyPostmanGroup.add(groupNode);
                 }
                 leftPanel.getTreeModel().reload();
@@ -295,7 +292,7 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
                 // 缓存失效（导入Collection）
                 PreparedRequestFactory.invalidateCache();
 
-                leftPanel.getPersistence().saveRequestGroups();
+                leftPanel.getCollectionTreePersistence().saveCurrentTree();
                 leftPanel.getRequestTree().expandPath(new TreePath(easyPostmanGroup.getPath()));
                 NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_SUCCESS));
             } catch (Exception ex) {
@@ -326,7 +323,7 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
                             TreeNodeBuilder.buildFromParseResult(parseResult);
                     leftPanel.getRootTreeNode().add(collectionNode);
                     leftPanel.getTreeModel().reload();
-                    leftPanel.getPersistence().saveRequestGroups();
+                    leftPanel.getCollectionTreePersistence().saveCurrentTree();
                     leftPanel.getRequestTree().expandPath(new TreePath(collectionNode.getPath()));
                     NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_SUCCESS));
                 } else {
@@ -355,7 +352,7 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
                 if (collectionNode != null) {
                     leftPanel.getRootTreeNode().add(collectionNode);
                     leftPanel.getTreeModel().reload();
-                    leftPanel.getPersistence().saveRequestGroups();
+                    leftPanel.getCollectionTreePersistence().saveCurrentTree();
                     leftPanel.getRequestTree().expandPath(new TreePath(collectionNode.getPath()));
                     NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_SUCCESS));
                 } else {
@@ -386,7 +383,7 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
                             TreeNodeBuilder.buildFromParseResult(parseResult);
                     leftPanel.getRootTreeNode().add(collectionNode);
                     leftPanel.getTreeModel().reload();
-                    leftPanel.getPersistence().saveRequestGroups();
+                    leftPanel.getCollectionTreePersistence().saveCurrentTree();
                     leftPanel.getRequestTree().expandPath(new TreePath(collectionNode.getPath()));
 
                     // 导入环境变量
@@ -471,7 +468,7 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
                             TreeNodeBuilder.buildFromParseResult(parseResult);
                     leftPanel.getRootTreeNode().add(collectionNode);
                     leftPanel.getTreeModel().reload();
-                    leftPanel.getPersistence().saveRequestGroups();
+                    leftPanel.getCollectionTreePersistence().saveCurrentTree();
                     leftPanel.getRequestTree().expandPath(new TreePath(collectionNode.getPath()));
                     NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_SUCCESS));
                 } else {
@@ -505,7 +502,7 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
                             TreeNodeBuilder.buildFromParseResult(parseResult);
                     leftPanel.getRootTreeNode().add(collectionNode);
                     leftPanel.getTreeModel().reload();
-                    leftPanel.getPersistence().saveRequestGroups();
+                    leftPanel.getCollectionTreePersistence().saveCurrentTree();
                     leftPanel.getRequestTree().expandPath(new TreePath(collectionNode.getPath()));
 
                     importEnvironmentsFromParseResult(parseResult);

@@ -3,7 +3,9 @@ package com.laker.postman.http.runtime.redirect;
 import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.runtime.cookie.HttpCookieStore;
-import com.laker.postman.http.runtime.transport.HttpTransportRuntime;
+import com.laker.postman.http.runtime.transport.DefaultHttpTransport;
+import com.laker.postman.http.runtime.transport.HttpExchangeOptions;
+import com.laker.postman.http.runtime.transport.HttpTransport;
 import com.laker.postman.request.model.AuthType;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpFormData;
@@ -54,7 +56,9 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.expectThrows;
 
-public class HttpTransportRuntimeIntegrationTest {
+public class DefaultHttpTransportIntegrationTest {
+
+    private final HttpTransport httpTransport = new DefaultHttpTransport();
 
     private MockWebServer server;
 
@@ -80,7 +84,7 @@ public class HttpTransportRuntimeIntegrationTest {
         request.headersList.add(new HttpHeader(true, "Accept", "*/*"));
         request.headersList.add(new HttpHeader(true, "User-Agent", "EasyPostman/Test"));
 
-        HttpResponse response = HttpTransportRuntime.executeHttp(request, null);
+        HttpResponse response = httpTransport.execute(request, HttpExchangeOptions.defaults());
         RecordedRequest recordedRequest = server.takeRequest();
 
         assertEquals(response.code, 200);
@@ -103,7 +107,7 @@ public class HttpTransportRuntimeIntegrationTest {
         request.headersList.add(new HttpHeader(true, "Content-Type", "application/json; charset=utf-8"));
         request.headersList.add(new HttpHeader(true, "Accept", "application/json"));
 
-        HttpResponse response = HttpTransportRuntime.executeHttp(request, null);
+        HttpResponse response = httpTransport.execute(request, HttpExchangeOptions.defaults());
         RecordedRequest recordedRequest = server.takeRequest();
 
         assertEquals(response.code, 200);
@@ -125,7 +129,7 @@ public class HttpTransportRuntimeIntegrationTest {
         request.body = "{\n  // comment\n  \"chatId\": 1,\n  \"text\": \"hello\" // trailing comment\n}";
         request.headersList.add(new HttpHeader(true, "Content-Type", "application/json; charset=utf-8"));
 
-        HttpTransportRuntime.executeHttp(request, null);
+        httpTransport.execute(request, HttpExchangeOptions.defaults());
         RecordedRequest recordedRequest = server.takeRequest();
 
         assertEquals(recordedRequest.getBody().readUtf8(), "{\"chatId\":1,\"text\":\"hello\"}");
@@ -143,7 +147,7 @@ public class HttpTransportRuntimeIntegrationTest {
         request.headersList.add(new HttpHeader(true, "Bad:Header", "should-skip"));
         request.headersList.add(new HttpHeader(true, "", "also-skip"));
 
-        HttpTransportRuntime.executeHttp(request, null);
+        httpTransport.execute(request, HttpExchangeOptions.defaults());
         RecordedRequest recordedRequest = server.takeRequest();
 
         assertEquals(recordedRequest.getHeader("Valid-Header"), "value");
@@ -173,7 +177,7 @@ public class HttpTransportRuntimeIntegrationTest {
         PreparedRequest request = createRequest("GET", serverUrl("/digest"));
         request.transportAuth = new TransportAuth(AuthType.DIGEST.getConstant(), "Mufasa", "Circle Of Life");
 
-        HttpResponse response = HttpTransportRuntime.executeHttp(request, null);
+        HttpResponse response = httpTransport.execute(request, HttpExchangeOptions.defaults());
         RecordedRequest firstRequest = server.takeRequest(1, TimeUnit.SECONDS);
         RecordedRequest retryRequest = server.takeRequest(1, TimeUnit.SECONDS);
 
@@ -219,7 +223,7 @@ public class HttpTransportRuntimeIntegrationTest {
         PreparedRequest request = createRequest("GET", serverUrl("/digest-stale"));
         request.transportAuth = new TransportAuth(AuthType.DIGEST.getConstant(), "Mufasa", "Circle Of Life");
 
-        HttpResponse response = HttpTransportRuntime.executeHttp(request, null);
+        HttpResponse response = httpTransport.execute(request, HttpExchangeOptions.defaults());
         RecordedRequest firstRequest = server.takeRequest(1, TimeUnit.SECONDS);
         RecordedRequest staleRequest = server.takeRequest(1, TimeUnit.SECONDS);
         RecordedRequest refreshedRequest = server.takeRequest(1, TimeUnit.SECONDS);
@@ -244,7 +248,7 @@ public class HttpTransportRuntimeIntegrationTest {
         request.headersList.add(new HttpHeader(false, "X-Disabled", "skip-me"));
         request.headersList.add(new HttpHeader(true, "X-Enabled", "keep-me"));
 
-        HttpTransportRuntime.executeHttp(request, null);
+        httpTransport.execute(request, HttpExchangeOptions.defaults());
         RecordedRequest recordedRequest = server.takeRequest();
 
         assertEquals(recordedRequest.getHeader("X-Disabled"), null);
@@ -262,7 +266,7 @@ public class HttpTransportRuntimeIntegrationTest {
         request.headersList.add(new HttpHeader(true, "X-Trace", "one"));
         request.headersList.add(new HttpHeader(true, "X-Trace", "two"));
 
-        HttpTransportRuntime.executeHttp(request, null);
+        httpTransport.execute(request, HttpExchangeOptions.defaults());
         RecordedRequest recordedRequest = server.takeRequest();
 
         assertEquals(recordedRequest.getHeaders().values("X-Trace"), List.of("one", "two"));
@@ -277,7 +281,7 @@ public class HttpTransportRuntimeIntegrationTest {
 
         PreparedRequest request = createRequest("POST", serverUrl("/empty-post"));
 
-        HttpTransportRuntime.executeHttp(request, null);
+        httpTransport.execute(request, HttpExchangeOptions.defaults());
         RecordedRequest recordedRequest = server.takeRequest();
 
         assertEquals(recordedRequest.getMethod(), "POST");
@@ -296,7 +300,7 @@ public class HttpTransportRuntimeIntegrationTest {
         request.urlencodedList.add(new HttpFormUrlencoded(true, "name", "Alice"));
         request.urlencodedList.add(new HttpFormUrlencoded(true, "city", "Shanghai"));
 
-        HttpTransportRuntime.executeHttp(request, null);
+        httpTransport.execute(request, HttpExchangeOptions.defaults());
         RecordedRequest recordedRequest = server.takeRequest();
 
         assertEquals(recordedRequest.getMethod(), "POST");
@@ -316,7 +320,7 @@ public class HttpTransportRuntimeIntegrationTest {
         request.urlencodedList.add(new HttpFormUrlencoded(false, "disabled", "skip"));
         request.urlencodedList.add(new HttpFormUrlencoded(true, "enabled", "keep"));
 
-        HttpTransportRuntime.executeHttp(request, null);
+        httpTransport.execute(request, HttpExchangeOptions.defaults());
         RecordedRequest recordedRequest = server.takeRequest();
 
         assertEquals(recordedRequest.getBody().readUtf8(), "enabled=keep");
@@ -334,7 +338,7 @@ public class HttpTransportRuntimeIntegrationTest {
         request.formDataList = new ArrayList<>();
         request.formDataList.add(new HttpFormData(true, "field1", HttpFormData.TYPE_TEXT, "value1"));
 
-        HttpTransportRuntime.executeHttp(request, null);
+        httpTransport.execute(request, HttpExchangeOptions.defaults());
         RecordedRequest recordedRequest = server.takeRequest();
         String body = recordedRequest.getBody().readUtf8();
 
@@ -357,7 +361,7 @@ public class HttpTransportRuntimeIntegrationTest {
         request.formDataList.add(new HttpFormData(false, "hidden", HttpFormData.TYPE_TEXT, "skip"));
         request.formDataList.add(new HttpFormData(true, "visible", HttpFormData.TYPE_TEXT, "keep"));
 
-        HttpTransportRuntime.executeHttp(request, null);
+        httpTransport.execute(request, HttpExchangeOptions.defaults());
         RecordedRequest recordedRequest = server.takeRequest();
         String body = recordedRequest.getBody().readUtf8();
 
@@ -378,7 +382,7 @@ public class HttpTransportRuntimeIntegrationTest {
         request.formDataList = new ArrayList<>();
         request.formDataList.add(new HttpFormData(true, "upload", HttpFormData.TYPE_FILE, "/path/does/not/exist.txt"));
 
-        HttpTransportRuntime.executeHttp(request, null);
+        httpTransport.execute(request, HttpExchangeOptions.defaults());
         RecordedRequest recordedRequest = server.takeRequest();
         String body = recordedRequest.getBody().readUtf8();
 
@@ -398,7 +402,7 @@ public class HttpTransportRuntimeIntegrationTest {
         PreparedRequest request = createRequest("GET", serverUrl("/brotli"));
         request.headersList.add(new HttpHeader(true, "Accept-Encoding", "br"));
 
-        HttpResponse response = HttpTransportRuntime.executeHttp(request, null);
+        HttpResponse response = httpTransport.execute(request, HttpExchangeOptions.defaults());
 
         assertEquals(response.code, 200);
         assertEquals(response.body, "pong-br");
@@ -416,7 +420,7 @@ public class HttpTransportRuntimeIntegrationTest {
 
         PreparedRequest request = createRequest("GET", serverUrl("/multi-cookie"));
 
-        HttpResponse response = HttpTransportRuntime.executeHttp(request, null);
+        HttpResponse response = httpTransport.execute(request, HttpExchangeOptions.defaults());
 
         assertNotNull(response.headers);
         assertEquals(response.headers.get("Set-Cookie"), List.of("a=1; Path=/", "b=2; Path=/"));
@@ -434,7 +438,7 @@ public class HttpTransportRuntimeIntegrationTest {
         PreparedRequest request = createRequest("GET", serverUrl("/gzip"));
         request.headersList.add(new HttpHeader(true, "Accept-Encoding", "gzip"));
 
-        HttpResponse response = HttpTransportRuntime.executeHttp(request, null);
+        HttpResponse response = httpTransport.execute(request, HttpExchangeOptions.defaults());
 
         assertEquals(response.code, 200);
         assertEquals(response.body, "pong-gzip");
@@ -454,7 +458,7 @@ public class HttpTransportRuntimeIntegrationTest {
         request.sslVerificationEnabled = false;
         request.headersList.add(new HttpHeader(true, "Accept", "*/*"));
 
-        HttpResponse response = HttpTransportRuntime.executeHttp(request, null);
+        HttpResponse response = httpTransport.execute(request, HttpExchangeOptions.defaults());
         RecordedRequest recordedRequest = server.takeRequest();
 
         assertEquals(response.code, 200);
@@ -475,7 +479,7 @@ public class HttpTransportRuntimeIntegrationTest {
         request.sslVerificationEnabled = false;
         request.httpVersion = HttpRequestItem.HTTP_VERSION_HTTP_2;
 
-        HttpResponse response = HttpTransportRuntime.executeHttp(request, null);
+        HttpResponse response = httpTransport.execute(request, HttpExchangeOptions.defaults());
         RecordedRequest recordedRequest = server.takeRequest();
 
         assertEquals(response.code, 200);
@@ -495,7 +499,7 @@ public class HttpTransportRuntimeIntegrationTest {
         request.sslVerificationEnabled = false;
         request.httpVersion = HttpRequestItem.HTTP_VERSION_HTTP_1_1;
 
-        HttpResponse response = HttpTransportRuntime.executeHttp(request, null);
+        HttpResponse response = httpTransport.execute(request, HttpExchangeOptions.defaults());
         RecordedRequest recordedRequest = server.takeRequest();
 
         assertEquals(response.code, 200);
@@ -515,7 +519,7 @@ public class HttpTransportRuntimeIntegrationTest {
         request.sslVerificationEnabled = true;
 
         SSLHandshakeException exception = expectThrows(SSLHandshakeException.class,
-                () -> HttpTransportRuntime.executeHttp(request, null));
+                () -> httpTransport.execute(request, HttpExchangeOptions.defaults()));
 
         assertNotNull(exception.getMessage());
         assertFalse(exception.getMessage().isBlank());
@@ -532,7 +536,7 @@ public class HttpTransportRuntimeIntegrationTest {
 
         PreparedRequest request = createRequest("HEAD", serverUrl("/head"));
 
-        HttpResponse response = HttpTransportRuntime.executeHttp(request, null);
+        HttpResponse response = httpTransport.execute(request, HttpExchangeOptions.defaults());
         RecordedRequest recordedRequest = server.takeRequest();
 
         assertEquals(recordedRequest.getMethod(), "HEAD");
@@ -550,7 +554,7 @@ public class HttpTransportRuntimeIntegrationTest {
 
         PreparedRequest request = createRequest("GET", serverUrl("/no-content"));
 
-        HttpResponse response = HttpTransportRuntime.executeHttp(request, null);
+        HttpResponse response = httpTransport.execute(request, HttpExchangeOptions.defaults());
 
         assertEquals(response.code, 204);
         assertEquals(response.body, "");
@@ -566,7 +570,7 @@ public class HttpTransportRuntimeIntegrationTest {
 
         PreparedRequest request = createRequest("GET", serverUrl("/not-modified"));
 
-        HttpResponse response = HttpTransportRuntime.executeHttp(request, null);
+        HttpResponse response = httpTransport.execute(request, HttpExchangeOptions.defaults());
 
         assertEquals(response.code, 304);
         assertEquals(response.body, "");
@@ -590,7 +594,7 @@ public class HttpTransportRuntimeIntegrationTest {
         request.headersList.add(new HttpHeader(true, "Accept", "*/*"));
         request.headersList.add(new HttpHeader(true, "Connection", "keep-alive"));
 
-        IOException exception = expectThrows(IOException.class, () -> HttpTransportRuntime.executeHttp(request, null));
+        IOException exception = expectThrows(IOException.class, () -> httpTransport.execute(request, HttpExchangeOptions.defaults()));
         RecordedRequest recordedRequest = server.takeRequest();
 
         assertEquals(recordedRequest.getMethod(), "POST");
@@ -613,7 +617,7 @@ public class HttpTransportRuntimeIntegrationTest {
         PreparedRequest request = createRequest("GET", serverUrl("/start"));
         request.followRedirects = false;
 
-        HttpResponse response = HttpRedirectExecutor.executeWithRedirects(request, 10, null);
+        HttpResponse response = new HttpRedirectExecutor().executeWithRedirects(request, 10, null);
         RecordedRequest recordedRequest = server.takeRequest();
 
         assertEquals(response.code, 302);
@@ -637,7 +641,7 @@ public class HttpTransportRuntimeIntegrationTest {
         request.followRedirects = true;
         request.networkLogSink = events::add;
 
-        HttpResponse response = HttpRedirectExecutor.executeWithRedirects(request, 10, null);
+        HttpResponse response = new HttpRedirectExecutor().executeWithRedirects(request, 10, null);
         RecordedRequest startRequest = server.takeRequest();
         RecordedRequest targetRequest = server.takeRequest();
 
@@ -801,8 +805,8 @@ public class HttpTransportRuntimeIntegrationTest {
         PreparedRequest secondRequest = createRequest("GET", serverUrl("/cookie/check"));
         secondRequest.cookieJarEnabled = true;
 
-        HttpTransportRuntime.executeHttp(firstRequest, null);
-        HttpTransportRuntime.executeHttp(secondRequest, null);
+        httpTransport.execute(firstRequest, HttpExchangeOptions.defaults());
+        httpTransport.execute(secondRequest, HttpExchangeOptions.defaults());
         server.takeRequest();
         RecordedRequest cookieRequest = server.takeRequest();
 
@@ -825,8 +829,8 @@ public class HttpTransportRuntimeIntegrationTest {
         PreparedRequest secondRequest = createRequest("GET", serverUrl("/cookie/check"));
         secondRequest.cookieJarEnabled = false;
 
-        HttpTransportRuntime.executeHttp(firstRequest, null);
-        HttpTransportRuntime.executeHttp(secondRequest, null);
+        httpTransport.execute(firstRequest, HttpExchangeOptions.defaults());
+        httpTransport.execute(secondRequest, HttpExchangeOptions.defaults());
         server.takeRequest();
         RecordedRequest cookieRequest = server.takeRequest();
 
@@ -841,7 +845,7 @@ public class HttpTransportRuntimeIntegrationTest {
         PreparedRequest request = createRequest("GET", serverUrl("/hang"));
         request.requestTimeoutMs = 200;
 
-        InterruptedIOException exception = expectThrows(InterruptedIOException.class, () -> HttpTransportRuntime.executeHttp(request, null));
+        InterruptedIOException exception = expectThrows(InterruptedIOException.class, () -> httpTransport.execute(request, HttpExchangeOptions.defaults()));
 
         assertNotNull(exception.getMessage());
         assertFalse(exception.getMessage().isBlank());
@@ -859,7 +863,7 @@ public class HttpTransportRuntimeIntegrationTest {
 
         PreparedRequest request = createRequest("GET", serverUrl("/partial"));
 
-        HttpResponse response = HttpTransportRuntime.executeHttp(request, null);
+        HttpResponse response = httpTransport.execute(request, HttpExchangeOptions.defaults());
 
         assertEquals(response.code, 200);
         assertEquals(response.body, I18nUtil.getMessage(MessageKeys.RESPONSE_INCOMPLETE, "unexpected end of stream"));
@@ -882,7 +886,7 @@ public class HttpTransportRuntimeIntegrationTest {
 
         PreparedRequest request = createRequest("GET", serverUrl("/partial-binary"));
 
-        HttpResponse response = HttpTransportRuntime.executeHttp(request, null);
+        HttpResponse response = httpTransport.execute(request, HttpExchangeOptions.defaults());
 
         assertEquals(response.code, 200);
         assertEquals(response.body, I18nUtil.getMessage(MessageKeys.RESPONSE_INCOMPLETE, "unexpected end of stream"));

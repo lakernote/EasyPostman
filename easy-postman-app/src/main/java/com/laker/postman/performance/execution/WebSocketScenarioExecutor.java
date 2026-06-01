@@ -16,7 +16,9 @@ import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.script.model.TestResult;
 import com.laker.postman.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.http.runtime.transport.HttpBaseClientProvider;
-import com.laker.postman.http.runtime.transport.HttpTransportRuntime;
+import com.laker.postman.http.runtime.transport.DefaultHttpTransport;
+import com.laker.postman.http.runtime.transport.HttpTransport;
+import com.laker.postman.http.runtime.transport.RealtimeConnectionOptions;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import okhttp3.Response;
@@ -64,6 +66,7 @@ public class WebSocketScenarioExecutor {
     private final PerformanceRealtimeMetrics realtimeMetrics;
     private final int responseBodyPreviewLimitBytes;
     private final HttpBaseClientProvider baseClientProvider;
+    private final HttpTransport httpTransport;
 
     public WebSocketScenarioExecutor(BooleanSupplier runningSupplier,
                                      Predicate<Throwable> cancelledChecker,
@@ -94,12 +97,24 @@ public class WebSocketScenarioExecutor {
                                      PerformanceRealtimeMetrics realtimeMetrics,
                                      int responseBodyPreviewLimitBytes,
                                      HttpBaseClientProvider baseClientProvider) {
+        this(runningSupplier, cancelledChecker, activeWebSockets, realtimeMetrics, responseBodyPreviewLimitBytes,
+                baseClientProvider, new DefaultHttpTransport());
+    }
+
+    public WebSocketScenarioExecutor(BooleanSupplier runningSupplier,
+                                     Predicate<Throwable> cancelledChecker,
+                                     Set<RealtimeWebSocketConnection> activeWebSockets,
+                                     PerformanceRealtimeMetrics realtimeMetrics,
+                                     int responseBodyPreviewLimitBytes,
+                                     HttpBaseClientProvider baseClientProvider,
+                                     HttpTransport httpTransport) {
         this.runningSupplier = runningSupplier;
         this.cancelledChecker = cancelledChecker;
         this.activeWebSockets = activeWebSockets;
         this.realtimeMetrics = realtimeMetrics == null ? new PerformanceRealtimeMetrics() : realtimeMetrics;
         this.responseBodyPreviewLimitBytes = Math.max(1, responseBodyPreviewLimitBytes);
         this.baseClientProvider = baseClientProvider;
+        this.httpTransport = httpTransport == null ? new DefaultHttpTransport() : httpTransport;
     }
 
     public Result execute(PreparedRequest req,
@@ -291,11 +306,13 @@ public class WebSocketScenarioExecutor {
                     }
                 };
 
-                RealtimeWebSocketConnection webSocket = HttpTransportRuntime.openWebSocketConnection(
+                RealtimeWebSocketConnection webSocket = httpTransport.openWebSocket(
                         req,
                         listener,
-                        baseClientProvider,
-                        false
+                        RealtimeConnectionOptions.builder()
+                                .baseClientProvider(baseClientProvider)
+                                .lifecycleLoggingEnabled(false)
+                                .build()
                 );
                 session.webSocket = webSocket;
                 sessions.add(session);

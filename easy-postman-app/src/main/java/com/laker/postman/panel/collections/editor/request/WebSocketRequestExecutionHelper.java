@@ -4,7 +4,9 @@ import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.stream.MessageType;
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;
-import com.laker.postman.http.runtime.transport.HttpTransportRuntime;
+import com.laker.postman.http.runtime.transport.DefaultHttpTransport;
+import com.laker.postman.http.runtime.transport.HttpTransport;
+import com.laker.postman.http.runtime.transport.RealtimeConnectionOptions;
 import com.laker.postman.http.runtime.transport.RealtimeWebSocketConnection;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.util.I18nUtil;
@@ -38,6 +40,7 @@ final class WebSocketRequestExecutionHelper {
     private final Supplier<SwingWorker<Void, Void>> currentWorkerSupplier;
     private final Runnable clearCurrentWorker;
     private final BooleanSupplier disposedSupplier;
+    private final HttpTransport httpTransport;
 
     WebSocketRequestExecutionHelper(ResponsePanel responsePanel,
                                     RequestExecutionUiHelper requestExecutionUiHelper,
@@ -59,6 +62,7 @@ final class WebSocketRequestExecutionHelper {
         this.currentWorkerSupplier = currentWorkerSupplier;
         this.clearCurrentWorker = clearCurrentWorker;
         this.disposedSupplier = disposedSupplier;
+        this.httpTransport = new DefaultHttpTransport();
     }
 
     SwingWorker<Void, Void> createWorker(PreparedRequest req, ScriptExecutionPipeline pipeline) {
@@ -72,7 +76,11 @@ final class WebSocketRequestExecutionHelper {
                     session.markStarted();
                     log.debug("Starting WebSocket connection with ID: {}", session.connectionId());
 
-                    currentWebSocketSetter.accept(HttpTransportRuntime.openWebSocketConnection(req, session.newListener()));
+                    currentWebSocketSetter.accept(httpTransport.openWebSocket(
+                            req,
+                            session.newListener(),
+                            RealtimeConnectionOptions.defaults()
+                    ));
                     SwingUtilities.invokeLater(session::enableResponseTabsIfActive);
                     session.awaitCompletion();
                 } catch (InterruptedException ex) {

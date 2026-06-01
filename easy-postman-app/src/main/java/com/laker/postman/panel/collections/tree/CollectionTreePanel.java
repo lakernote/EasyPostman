@@ -3,6 +3,7 @@ package com.laker.postman.panel.collections.tree;
 import com.laker.postman.collection.model.RequestGroup;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.request.model.HttpRequestItem;
+import com.laker.postman.request.model.SavedResponse;
 
 
 import com.laker.postman.common.UiSingletonPanel;
@@ -17,13 +18,15 @@ import com.laker.postman.panel.collections.tree.handler.RequestTreeMouseHandler;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.service.collections.CollectionDocumentRegistry;
-import com.laker.postman.service.collections.CollectionRequestMutation;
+import com.laker.postman.service.collections.CollectionRequestSaveService;
 import com.laker.postman.service.collections.CollectionTreeNodeTypes;
 import com.laker.postman.service.collections.CollectionTreeNodes;
 import com.laker.postman.service.collections.CollectionTreeRootRegistry;
 import com.laker.postman.service.collections.OpenedRequestTabsStore;
 import com.laker.postman.service.collections.CollectionTreeQueryService;
-import com.laker.postman.service.collections.RequestsPersistence;
+import com.laker.postman.service.collections.RequestSaveEventPublisher;
+import com.laker.postman.service.collections.SwingCollectionTreePersistence;
+import com.laker.postman.service.collections.SwingCollectionTreeDocumentMapper;
 import com.laker.postman.http.request.PreparedRequestFactory;
 import com.laker.postman.util.SystemUtil;
 import lombok.Getter;
@@ -39,7 +42,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * 请求集合面板，展示所有请求分组和请求项
@@ -62,7 +64,8 @@ public class CollectionTreePanel extends UiSingletonPanel {
     @Getter
     private DefaultTreeModel treeModel;
     @Getter
-    private transient RequestsPersistence persistence;
+    private transient SwingCollectionTreePersistence collectionTreePersistence;
+    private transient CollectionRequestSaveService requestSaveService;
 
     private record StartupLoadSnapshot(List<HttpRequestItem> openedRequests, HttpRequestItem lastNonNewRequest) {
     }
@@ -85,12 +88,13 @@ public class CollectionTreePanel extends UiSingletonPanel {
         // 初始化请求树
         rootTreeNode = new DefaultMutableTreeNode(ROOT);
         CollectionTreeRootRegistry.registerRootSupplier(() -> rootTreeNode);
-        CollectionDocumentRegistry.registerDocumentSupplier(() -> CollectionTreeDocumentMapper.fromRoot(rootTreeNode));
+        CollectionDocumentRegistry.registerDocumentSupplier(() -> SwingCollectionTreeDocumentMapper.fromRoot(rootTreeNode));
         treeModel = new DefaultTreeModel(rootTreeNode);
         Workspace currentWorkspace = WorkspaceService.getInstance().getCurrentWorkspace();
         String filePath = SystemUtil.getCollectionPathForWorkspace(currentWorkspace);
         // 初始化持久化工具
-        persistence = new RequestsPersistence(filePath, rootTreeNode, treeModel);
+        collectionTreePersistence = new SwingCollectionTreePersistence(filePath, rootTreeNode, treeModel);
+        requestSaveService = new CollectionRequestSaveService(rootTreeNode, collectionTreePersistence::saveCurrentTree);
         // 创建树组件，重写 getScrollableTracksViewportWidth 确保树宽度始终铺满 viewport，
         // 这样鼠标在行的右侧空白区域仍在 JTree 上，mouseMoved 事件能正常触发
         requestTree = new JTree(treeModel) {
@@ -136,7 +140,7 @@ public class CollectionTreePanel extends UiSingletonPanel {
         // 启用拖拽排序
         requestTree.setDragEnabled(true);
         requestTree.setDropMode(DropMode.ON_OR_INSERT);
-        requestTree.setTransferHandler(new TreeTransferHandler(requestTree, treeModel, this::saveRequestGroups));
+        requestTree.setTransferHandler(new TreeTransferHandler(requestTree, treeModel, this::saveCurrentTree));
         return treeScrollPane;
     }
 
@@ -161,7 +165,7 @@ public class CollectionTreePanel extends UiSingletonPanel {
     }
 
     private StartupLoadSnapshot loadStartupSnapshot() {
-        persistence.initRequestGroupsFromFile();
+        collectionTreePersistence.loadIntoTree();
         List<HttpRequestItem> openedRequests = OpenedRequestTabsStore.loadAll();
         HttpRequestItem lastNonNewRequest = CollectionTreeQueryService.getLastNonNewRequest(openedRequests);
         return new StartupLoadSnapshot(openedRequests, lastNonNewRequest);
@@ -217,8 +221,8 @@ public class CollectionTreePanel extends UiSingletonPanel {
     }
 
 
-    private void saveRequestGroups() {
-        persistence.saveRequestGroups();
+    private void saveCurrentTree() {
+        collectionTreePersistence.saveCurrentTree();
         // 保存后使预计算缓存失效（可能有修改）
         PreparedRequestFactory.invalidateCache();
     }
@@ -231,18 +235,11 @@ public class CollectionTreePanel extends UiSingletonPanel {
      * @param item        请求项
      */
     public void saveRequestToGroup(RequestGroup targetGroup, HttpRequestItem item) {
-        if (targetGroup == null || item == null) {
-            return;
-        }
-        DefaultMutableTreeNode groupNode = findGroupNode(rootTreeNode, targetGroup);
-        if (groupNode == null) {
-            return;
-        }
-        DefaultMutableTreeNode requestNode = CollectionTreeNodes.requestNode(item);
-        groupNode.add(requestNode);
-        treeModel.reload(groupNode);
-        requestTree.expandPath(new TreePath(groupNode.getPath()));
-        persistence.saveRequestGroups();
+        requestSaveService.addRequestToGroup(targetGroup, item)
+                .ifPresent(result -> {
+                    treeModel.reload(result.groupNode());
+                    requestTree.expandPath(new TreePath(result.groupNode().getPath()));
+                });
     }
 
     /**
@@ -268,33 +265,6 @@ public class CollectionTreePanel extends UiSingletonPanel {
         return null;
     }
 
-    private DefaultMutableTreeNode findGroupNode(DefaultMutableTreeNode node, RequestGroup targetGroup) {
-        if (node == null || targetGroup == null) {
-            return null;
-        }
-        RequestGroup currentGroup = CollectionTreeNodes.group(node).orElse(null);
-        if (currentGroup != null && sameGroup(currentGroup, targetGroup)) {
-            return node;
-        }
-
-        for (int i = 0; i < node.getChildCount(); i++) {
-            DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(i);
-            DefaultMutableTreeNode result = findGroupNode(child, targetGroup);
-            if (result != null) {
-                return result;
-            }
-        }
-
-        return null;
-    }
-
-    private boolean sameGroup(RequestGroup currentGroup, RequestGroup targetGroup) {
-        if (currentGroup.getId() != null && !currentGroup.getId().isBlank()) {
-            return currentGroup.getId().equals(targetGroup.getId());
-        }
-        return currentGroup == targetGroup || Objects.equals(currentGroup.getName(), targetGroup.getName());
-    }
-
     /**
      * 更新已存在的请求
      *
@@ -305,21 +275,31 @@ public class CollectionTreePanel extends UiSingletonPanel {
         if (item == null || item.getId() == null || item.getId().isEmpty()) {
             return false;
         }
-        CollectionRequestMutation.Result mutation = CollectionRequestMutation
-                .updateExistingRequest(rootTreeNode, item)
+        CollectionRequestSaveService.RequestSaveResult result = requestSaveService
+                .updateExistingRequest(item)
                 .orElse(null);
-        if (mutation == null) {
+        if (result == null) {
             return false;
         }
-        HttpRequestItem updatedItem = mutation.updatedItem();
+        HttpRequestItem updatedItem = result.requestItem();
 
-        treeModel.nodeChanged(mutation.requestNode());
+        treeModel.nodeChanged(result.requestNode());
+        // 保存后通知各 UI 订阅者自行同步最新数据。
+        SwingUtilities.invokeLater(() -> RequestSaveEventPublisher.publishRequestSaved(updatedItem));
+        return true;
+    }
 
-        PreparedRequestFactory.invalidateCacheForRequest(updatedItem.getId());
+    public boolean saveResponseForRequest(HttpRequestItem requestItem, SavedResponse savedResponse) {
+        CollectionRequestSaveService.SavedResponseSaveResult result = requestSaveService
+                .appendSavedResponse(requestItem, savedResponse)
+                .orElse(null);
+        if (result == null) {
+            return false;
+        }
 
-        persistence.saveRequestGroups();
-        // 保存后去除Tab红点，同时通知 FunctionalPanel 和 PerformancePanel 同步最新数据
-        SwingUtilities.invokeLater(() -> SavedRequestUiSynchronizer.syncRequest(updatedItem));
+        DefaultMutableTreeNode requestNode = result.requestNode();
+        treeModel.reload(requestNode);
+        requestTree.expandPath(new TreePath(requestNode.getPath()));
         return true;
     }
 
@@ -402,8 +382,8 @@ public class CollectionTreePanel extends UiSingletonPanel {
                 .threadName("SwitchWorkspace-Loader")
                 .backgroundTask(() -> {
                     // 后台线程：执行文件加载操作
-                    if (persistence != null) {
-                        persistence.setDataFilePath(collectionFilePath);
+                    if (collectionTreePersistence != null) {
+                        collectionTreePersistence.switchDataFilePath(collectionFilePath);
                     }
                 })
                 .onSuccess(() -> {

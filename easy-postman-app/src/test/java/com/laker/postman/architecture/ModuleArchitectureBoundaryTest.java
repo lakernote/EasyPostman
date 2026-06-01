@@ -210,7 +210,7 @@ public class ModuleArchitectureBoundaryTest {
         for (String appOwnedFile : List.of(
                 "easy-postman-app/src/main/java/com/laker/postman/service/postman/PostmanCollectionExporter.java",
                 "easy-postman-app/src/main/java/com/laker/postman/service/common/TreeNodeBuilder.java",
-                "easy-postman-app/src/main/java/com/laker/postman/service/collections/RequestsPersistence.java",
+                "easy-postman-app/src/main/java/com/laker/postman/service/collections/SwingCollectionTreePersistence.java",
                 "easy-postman-app/src/main/java/com/laker/postman/service/collections/InheritanceService.java"
         )) {
             assertTrue(Files.isRegularFile(root.resolve(appOwnedFile)),
@@ -238,7 +238,7 @@ public class ModuleArchitectureBoundaryTest {
         for (String forbiddenFileName : List.of(
                 "PostmanCollectionExporter.java",
                 "TreeNodeBuilder.java",
-                "RequestsPersistence.java",
+                "SwingCollectionTreePersistence.java",
                 "InheritanceService.java",
                 "PreparedRequest.java",
                 "HttpResponse.java",
@@ -742,8 +742,11 @@ public class ModuleArchitectureBoundaryTest {
     public void httpRuntimeUsesExplicitPackageAndClassNames() {
         Path root = repositoryRoot();
         assertTrue(Files.isRegularFile(root.resolve(
-                        "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/transport/HttpTransportRuntime.java")),
-                "HTTP transport runtime belongs in easy-postman-http-runtime/http.runtime.transport");
+                        "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/transport/HttpTransport.java")),
+                "HTTP transport execution should be exposed through an injectable port");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/transport/DefaultHttpTransport.java")),
+                "Default HTTP transport wiring belongs in easy-postman-http-runtime/http.runtime.transport");
         assertTrue(Files.isRegularFile(root.resolve(
                         "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/transport/ScopedHttpBaseClientProvider.java")),
                 "Scoped HTTP base clients belong with transport runtime execution");
@@ -790,6 +793,18 @@ public class ModuleArchitectureBoundaryTest {
                         "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/config/HttpRuntimeSettingsProvider.java")),
                 "HTTP runtime settings belong in easy-postman-http-runtime/http.runtime.config");
         assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/transport/HttpTransport.java")),
+                "HTTP transport port belongs in easy-postman-http-runtime/http.runtime.transport");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/transport/DefaultHttpTransport.java")),
+                "Default HTTP transport orchestration belongs in easy-postman-http-runtime/http.runtime.transport");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/transport/HttpExchangeOptions.java")),
+                "HTTP exchange options keep the transport port small and UI-neutral");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/transport/RealtimeConnectionOptions.java")),
+                "Realtime connection options keep SSE/WebSocket transport calls explicit");
+        assertTrue(Files.isRegularFile(root.resolve(
                         "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/interaction/DownloadProgressSink.java")),
                 "HTTP UI-neutral interaction ports belong in http.runtime.interaction");
         assertTrue(Files.isRegularFile(root.resolve(
@@ -804,6 +819,7 @@ public class ModuleArchitectureBoundaryTest {
                 "easy-postman-app/src/main/java/com/laker/postman/service/http/HttpSingleRequestExecutor.java",
                 "easy-postman-app/src/main/java/com/laker/postman/service/http/HttpTransportRuntime.java",
                 "easy-postman-app/src/main/java/com/laker/postman/service/http/HttpRuntimeExecutor.java",
+                "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/transport/HttpTransportRuntime.java",
                 "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/transport/HttpRuntimeExecutor.java",
                 "easy-postman-app/src/main/java/com/laker/postman/service/http/HttpBaseClientProvider.java",
                 "easy-postman-app/src/main/java/com/laker/postman/service/http/HttpCallTracker.java",

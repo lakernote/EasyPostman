@@ -8,7 +8,9 @@ import com.laker.postman.request.model.HttpFormUrlencoded;
 
 
 import com.laker.postman.service.js.api.ResponseAssertion;
-import com.laker.postman.http.runtime.transport.HttpTransportRuntime;
+import com.laker.postman.http.runtime.transport.DefaultHttpTransport;
+import com.laker.postman.http.runtime.transport.HttpExchangeOptions;
+import com.laker.postman.http.runtime.transport.HttpTransport;
 import com.laker.postman.http.request.PreparedRequestFinalizer;
 import org.graalvm.polyglot.Value;
 
@@ -23,11 +25,17 @@ import java.util.Map;
  * 确保变量替换、URL 编码和请求体处理规则与普通请求保持一致。
  */
 public final class ScriptSendRequestExecutor {
+    private final HttpTransport httpTransport;
 
-    private ScriptSendRequestExecutor() {
+    public ScriptSendRequestExecutor() {
+        this(new DefaultHttpTransport());
     }
 
-    public static void sendRequest(Object requestOptions, Value callback) throws Exception {
+    public ScriptSendRequestExecutor(HttpTransport httpTransport) {
+        this.httpTransport = httpTransport == null ? new DefaultHttpTransport() : httpTransport;
+    }
+
+    public void sendRequest(Object requestOptions, Value callback) throws Exception {
         if (requestOptions == null) {
             return;
         }
@@ -36,7 +44,7 @@ public final class ScriptSendRequestExecutor {
         validate(preparedRequest);
         PreparedRequestFinalizer.finalizeForSend(preparedRequest, null);
 
-        HttpResponse httpResponse = HttpTransportRuntime.executeHttp(preparedRequest, null);
+        HttpResponse httpResponse = httpTransport.execute(preparedRequest, HttpExchangeOptions.defaults());
         ResponseAssertion responseWrapper = new ResponseAssertion(httpResponse);
         executeSuccessCallback(callback, responseWrapper);
     }

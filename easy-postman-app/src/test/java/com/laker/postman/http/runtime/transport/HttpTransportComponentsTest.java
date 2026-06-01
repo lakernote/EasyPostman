@@ -13,18 +13,22 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.net.Proxy;
 import java.net.ProxySelector;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
-public class HttpTransportRuntimeTest {
+public class HttpTransportComponentsTest {
     private static final HttpClientResolver CLIENT_RESOLVER = new HttpClientResolver();
     private static final RealtimeConnectionFactory REALTIME_CONNECTION_FACTORY =
             new RealtimeConnectionFactory(CLIENT_RESOLVER);
@@ -224,6 +228,22 @@ public class HttpTransportRuntimeTest {
 
         assertSame(resolvedListener, listener);
         assertFalse(resolvedListener instanceof WebSocketLifecycleLogListener);
+    }
+
+    @Test
+    public void transportPortShouldExposeOnlyUseCaseMethods() {
+        Set<String> methodNames = Arrays.stream(HttpTransport.class.getDeclaredMethods())
+                .map(Method::getName)
+                .collect(Collectors.toSet());
+
+        assertEquals(methodNames, Set.of("execute", "openSse", "openWebSocket"));
+        assertEquals(HttpTransport.class.getDeclaredMethods().length, 3);
+    }
+
+    @Test
+    public void transportOptionsShouldResolveDefaults() {
+        assertSame(HttpExchangeOptions.defaults().resolvedCallTracker(), HttpCallTracker.NOOP);
+        assertTrue(RealtimeConnectionOptions.defaults().isLifecycleLoggingEnabled());
     }
 
     private static Properties getSettingsProperties() throws Exception {

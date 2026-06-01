@@ -1,7 +1,8 @@
 package com.laker.postman.performance.runtime;
 
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.HttpResponse;
+import com.laker.postman.http.runtime.model.PreparedRequest;
+import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.script.model.TestResult;
 import com.laker.postman.performance.model.PerformanceResultListener;
 import com.laker.postman.performance.model.PerformanceResultRetentionPolicy;
@@ -101,19 +102,22 @@ public final class PerformanceRunDetailCollector implements PerformanceResultLis
         return DetailRequest.builder()
                 .method(request.method)
                 .url(request.url)
-                .body(request.okHttpRequestBody)
-                .headers(okHttpHeadersToMap(request))
+                .body(request.sentRequestBody)
+                .headers(sentHeadersListToMap(request))
                 .build();
     }
 
-    private Map<String, List<String>> okHttpHeadersToMap(PreparedRequest request) {
+    private Map<String, List<String>> sentHeadersListToMap(PreparedRequest request) {
         Map<String, List<String>> headers = new LinkedHashMap<>();
-        if (request == null || request.okHttpHeaders == null) {
+        if (request == null || request.sentHeadersList == null) {
             return headers;
         }
-        for (int i = 0; i < request.okHttpHeaders.size(); i++) {
-            headers.computeIfAbsent(request.okHttpHeaders.name(i), ignored -> new ArrayList<>())
-                    .add(request.okHttpHeaders.value(i));
+        for (HttpHeader header : request.sentHeadersList) {
+            if (header == null || header.getKey() == null || header.getKey().isBlank()) {
+                continue;
+            }
+            headers.computeIfAbsent(header.getKey(), ignored -> new ArrayList<>())
+                    .add(header.getValue());
         }
         return headers;
     }

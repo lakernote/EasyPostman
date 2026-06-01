@@ -103,7 +103,7 @@ EasyPostman
 
 ### Script Engine
 
-- **Nashorn** (Java 11-14): Legacy JavaScript engine
+- **GraalVM JavaScript**: Embedded script runtime for pre/post request scripts
   - ECMAScript 5.1 support
   - Java interoperability
   

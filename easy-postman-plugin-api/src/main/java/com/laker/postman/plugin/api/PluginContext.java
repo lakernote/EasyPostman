@@ -19,7 +19,7 @@ public interface PluginContext {
 
     /**
      * 注册脚本 API。
-     * 例如插件可以把自己暴露成 pm.redis / pm.kafka。
+     * 例如插件可以把自己暴露成 pm.plugin("redis") / pm.plugin("kafka")。
      */
     void registerScriptApi(String alias, Supplier<Object> factory);
 

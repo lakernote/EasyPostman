@@ -1,6 +1,6 @@
 package com.laker.postman.service.curl;
 
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.request.model.AuthType;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpParam;

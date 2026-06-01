@@ -1,7 +1,8 @@
 package com.laker.postman.performance.result;
 
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.HttpResponse;
+import com.laker.postman.http.runtime.model.PreparedRequest;
+import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.script.model.TestResult;
 import com.laker.postman.performance.model.ResultNodeInfo;
 import com.laker.postman.performance.core.model.PerformanceProtocol;
@@ -10,8 +11,8 @@ import com.laker.postman.performance.core.worker.PerformanceWorkerResultDetail.D
 import com.laker.postman.performance.core.worker.PerformanceWorkerResultDetail.DetailResponse;
 import com.laker.postman.performance.core.worker.PerformanceWorkerResultDetail.DetailTestResult;
 import lombok.experimental.UtilityClass;
-import okhttp3.Headers;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -41,8 +42,8 @@ public class PerformanceWorkerResultDetailDisplayMapper {
         PreparedRequest request = new PreparedRequest();
         request.method = source.getMethod();
         request.url = source.getUrl();
-        request.okHttpRequestBody = source.getBody();
-        request.okHttpHeaders = toOkHttpHeaders(source.getHeaders());
+        request.sentRequestBody = source.getBody();
+        request.sentHeadersList = toHttpHeaders(source.getHeaders());
         return request;
     }
 
@@ -76,24 +77,24 @@ public class PerformanceWorkerResultDetailDisplayMapper {
                 .toList();
     }
 
-    private Headers toOkHttpHeaders(Map<String, List<String>> headers) {
-        Headers.Builder builder = new Headers.Builder();
+    private List<HttpHeader> toHttpHeaders(Map<String, List<String>> headers) {
+        List<HttpHeader> result = new ArrayList<>();
         if (headers == null || headers.isEmpty()) {
-            return builder.build();
+            return result;
         }
         headers.forEach((key, values) -> {
             if (key == null || key.isBlank()) {
                 return;
             }
             if (values == null || values.isEmpty()) {
-                builder.add(key, "");
+                result.add(new HttpHeader(true, key, ""));
                 return;
             }
             for (String value : values) {
-                builder.add(key, value == null ? "" : value);
+                result.add(new HttpHeader(true, key, value == null ? "" : value));
             }
         });
-        return builder.build();
+        return result;
     }
 
     private PerformanceProtocol toProtocol(String protocol) {

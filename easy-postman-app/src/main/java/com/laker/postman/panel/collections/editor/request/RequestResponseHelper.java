@@ -1,8 +1,8 @@
 package com.laker.postman.panel.collections.editor.request;
 
 import com.laker.postman.common.UiSingletonFactory;
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.HttpResponse;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.script.model.TestResult;
 import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;
 import com.laker.postman.panel.history.HistoryPanel;

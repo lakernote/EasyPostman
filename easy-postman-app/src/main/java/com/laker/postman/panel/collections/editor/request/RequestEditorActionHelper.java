@@ -11,14 +11,14 @@ import com.laker.postman.panel.collections.editor.request.sub.EasyRequestHttpHea
 import com.laker.postman.panel.collections.editor.request.sub.RequestBodyPanel;
 import com.laker.postman.panel.collections.editor.request.sub.RequestLinePanel;
 import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;
+import com.laker.postman.http.runtime.transport.RealtimeConnectionHandle;
+import com.laker.postman.http.runtime.transport.RealtimeWebSocketConnection;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.service.curl.CurlImportUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
-import okhttp3.WebSocket;
-import okhttp3.sse.EventSource;
 
 import javax.swing.*;
 import java.awt.*;
@@ -42,10 +42,10 @@ final class RequestEditorActionHelper {
     private final Supplier<Boolean> isBaseHttpProtocolSupplier;
     private final Supplier<Boolean> isEffectiveSseProtocolSupplier;
     private final Supplier<Boolean> isEffectiveWebSocketProtocolSupplier;
-    private final Supplier<WebSocket> currentWebSocketSupplier;
-    private final Consumer<WebSocket> currentWebSocketSetter;
-    private final Supplier<EventSource> currentEventSourceSupplier;
-    private final Consumer<EventSource> currentEventSourceSetter;
+    private final Supplier<RealtimeWebSocketConnection> currentWebSocketSupplier;
+    private final Consumer<RealtimeWebSocketConnection> currentWebSocketSetter;
+    private final Supplier<RealtimeConnectionHandle> currentEventSourceSupplier;
+    private final Consumer<RealtimeConnectionHandle> currentEventSourceSetter;
     private final Supplier<SwingWorker<Void, Void>> currentWorkerSupplier;
     private final Consumer<SwingWorker<Void, Void>> currentWorkerSetter;
     private final Consumer<String> currentWebSocketConnectionIdSetter;
@@ -67,10 +67,10 @@ final class RequestEditorActionHelper {
                               Supplier<Boolean> isBaseHttpProtocolSupplier,
                               Supplier<Boolean> isEffectiveSseProtocolSupplier,
                               Supplier<Boolean> isEffectiveWebSocketProtocolSupplier,
-                              Supplier<WebSocket> currentWebSocketSupplier,
-                              Consumer<WebSocket> currentWebSocketSetter,
-                              Supplier<EventSource> currentEventSourceSupplier,
-                              Consumer<EventSource> currentEventSourceSetter,
+                              Supplier<RealtimeWebSocketConnection> currentWebSocketSupplier,
+                              Consumer<RealtimeWebSocketConnection> currentWebSocketSetter,
+                              Supplier<RealtimeConnectionHandle> currentEventSourceSupplier,
+                              Consumer<RealtimeConnectionHandle> currentEventSourceSetter,
                               Supplier<SwingWorker<Void, Void>> currentWorkerSupplier,
                               Consumer<SwingWorker<Void, Void>> currentWorkerSetter,
                               Consumer<String> currentWebSocketConnectionIdSetter,
@@ -108,7 +108,7 @@ final class RequestEditorActionHelper {
     }
 
     void sendWebSocketMessage() {
-        WebSocket currentWebSocket = currentWebSocketSupplier.get();
+        RealtimeWebSocketConnection currentWebSocket = currentWebSocketSupplier.get();
         if (currentWebSocket == null) {
             requestStreamUiHelper.appendWebSocketMessage(MessageType.INFO,
                     I18nUtil.getMessage(MessageKeys.WEBSOCKET_NOT_CONNECTED));
@@ -123,14 +123,14 @@ final class RequestEditorActionHelper {
     }
 
     void cancelCurrentRequest() {
-        EventSource currentEventSource = currentEventSourceSupplier.get();
+        RealtimeConnectionHandle currentEventSource = currentEventSourceSupplier.get();
         if (currentEventSource != null) {
             currentSseCancelled.set(true);
             currentEventSource.cancel();
             currentEventSourceSetter.accept(null);
         }
 
-        WebSocket currentWebSocket = currentWebSocketSupplier.get();
+        RealtimeWebSocketConnection currentWebSocket = currentWebSocketSupplier.get();
         if (currentWebSocket != null) {
             currentWebSocket.close(WEBSOCKET_NORMAL_CLOSURE, "User canceled");
             SwingWorker<Void, Void> currentWorker = currentWorkerSupplier.get();

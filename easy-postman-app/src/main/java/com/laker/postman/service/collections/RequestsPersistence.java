@@ -17,7 +17,6 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -161,13 +160,11 @@ public class RequestsPersistence {
         // 创建RequestGroup对象
         RequestGroup group = new RequestGroup(name);
 
-        // 解析分组ID（向后兼容：如果没有ID则自动生成）
-        if (groupJson.containsKey("id")) {
-            String id = groupJson.getStr("id");
-            if (id != null && !id.isEmpty()) {
-                group.setId(id);
-            }
+        String id = groupJson.getStr("id");
+        if (id == null || id.isBlank()) {
+            throw new IllegalArgumentException("Collection group is missing required id: " + name);
         }
+        group.setId(id);
 
         // 解析分组描述
         if (groupJson.containsKey("description")) {
@@ -224,12 +221,7 @@ public class RequestsPersistence {
                     // 确保请求体不为 null
                     item.setBody(item.getBody() != null ? item.getBody() : "");
                     if (item.getId() == null || item.getId().isEmpty()) {
-                        String id = dataJson.getStr("id");
-                        if (id == null || id.isEmpty()) {
-                            item.setId(UUID.randomUUID().toString());
-                        } else {
-                            item.setId(id);
-                        }
+                        throw new IllegalArgumentException("Collection request is missing required id: " + item.getName());
                     }
 
                     // 创建请求节点

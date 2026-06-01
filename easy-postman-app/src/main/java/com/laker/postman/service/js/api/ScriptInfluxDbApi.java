@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- * Script InfluxDB API for pm.influxdb / pm.influx.
+ * Script InfluxDB API for pm.influxdb.
  */
 public class ScriptInfluxDbApi {
     private static final String DEFAULT_BASE_URL = "http://localhost:8086";

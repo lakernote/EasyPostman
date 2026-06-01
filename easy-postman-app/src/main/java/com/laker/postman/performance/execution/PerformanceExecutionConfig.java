@@ -98,9 +98,9 @@ public final class PerformanceExecutionConfig {
         );
     }
 
-    public static PerformanceExecutionConfig guiSupplying(BooleanSupplier efficientModeSupplier,
-                                                          IntSupplier responseBodyPreviewLimitKbSupplier,
-                                                          BooleanSupplier eventLoggingEnabledSupplier) {
+    public static PerformanceExecutionConfig uiSupplying(BooleanSupplier efficientModeSupplier,
+                                                         IntSupplier responseBodyPreviewLimitKbSupplier,
+                                                         BooleanSupplier eventLoggingEnabledSupplier) {
         return create(
                 efficientModeSupplier,
                 responseBodyPreviewLimitKbSupplier,

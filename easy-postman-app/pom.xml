@@ -32,6 +32,11 @@
         </dependency>
         <dependency>
             <groupId>com.laker.tools</groupId>
+            <artifactId>easy-postman-http-runtime</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.laker.tools</groupId>
             <artifactId>easy-postman-collection-core</artifactId>
             <version>${project.version}</version>
         </dependency>

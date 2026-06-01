@@ -4,7 +4,7 @@ import com.laker.postman.performance.core.model.WebSocketPerformanceData;
 
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.laker.postman.model.HttpResponse;
+import com.laker.postman.http.runtime.model.HttpResponse;
 import lombok.experimental.UtilityClass;
 
 import java.util.Collections;

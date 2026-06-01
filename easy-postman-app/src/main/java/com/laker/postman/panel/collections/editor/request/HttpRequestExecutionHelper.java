@@ -1,9 +1,9 @@
 package com.laker.postman.panel.collections.editor.request;
 
-import com.laker.postman.common.exception.DownloadCancelledException;
-import com.laker.postman.model.HttpResponse;
+import com.laker.postman.http.runtime.error.DownloadCancelledException;
+import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.stream.MessageType;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.script.model.TestResult;
 import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;
 import com.laker.postman.panel.sidebar.ConsolePanel;

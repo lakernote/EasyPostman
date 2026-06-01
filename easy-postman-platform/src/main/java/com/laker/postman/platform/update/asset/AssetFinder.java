@@ -72,26 +72,4 @@ public class AssetFinder {
         return null;
     }
 
-    /**
-     * 查找通用 DMG 文件（不包含架构后缀）
-     *
-     * @param assets 资源列表
-     * @return 下载 URL，未找到返回 null
-     */
-    public String findGenericDmg(JSONArray assets) {
-        for (int i = 0; i < assets.size(); i++) {
-            JSONObject asset = assets.getJSONObject(i);
-            String name = asset.getStr("name");
-            if (name != null && name.endsWith(".dmg") &&
-                    !name.endsWith("-intel.dmg") &&
-                    !name.endsWith("-arm64.dmg") &&
-                    !name.endsWith("-macos-x86_64.dmg") &&
-                    !name.endsWith("-macos-arm64.dmg")) {
-                String url = asset.getStr(BROWSER_DOWNLOAD_URL);
-                log.debug("Found generic DMG (without architecture suffix): {} -> {}", name, url);
-                return url;
-            }
-        }
-        return null;
-    }
 }

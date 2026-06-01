@@ -1,6 +1,6 @@
 package com.laker.postman.service.render;
 
-import com.laker.postman.model.HttpEventInfo;
+import com.laker.postman.http.runtime.model.HttpEventInfo;
 
 // 时序计算辅助类
 public class TimingCalculator {

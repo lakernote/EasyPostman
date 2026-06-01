@@ -29,7 +29,7 @@ public class PerformanceCorePlanAdapterTest {
                 )
         ));
 
-        PerformanceTestPlan appPlan = PerformanceCorePlanAdapter.toGuiExecutablePlan(partitionedPlan);
+        PerformanceTestPlan appPlan = PerformanceCorePlanAdapter.toExecutablePlan(partitionedPlan);
 
         PerformanceThreadGroupPlan group = appPlan.getThreadGroups().get(0);
         assertEquals(group.getVirtualUserIndexOffset(), 2);

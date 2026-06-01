@@ -614,7 +614,9 @@ jar.get('https://api.example.com', 'token', function(error, cookie) {
 
 ### Redis 读写断言
 ```javascript
-pm.redis.execute({
+const redis = pm.plugin('redis');
+
+redis.execute({
     host: 'localhost',
     port: 6379,
     db: 0,
@@ -623,7 +625,7 @@ pm.redis.execute({
     value: '{"id":1001,"status":"CREATED"}'
 });
 
-const value = pm.redis.query({
+const value = redis.query({
     host: 'localhost',
     port: 6379,
     db: 0,
@@ -638,7 +640,9 @@ pm.test('Redis value exists', function () {
 
 ### Kafka 发消息断言
 ```javascript
-const resp = pm.kafka.send({
+const kafka = pm.plugin('kafka');
+
+const resp = kafka.send({
     bootstrapServers: 'localhost:9092',
     topic: 'orders',
     key: 'order-1001',
@@ -653,7 +657,7 @@ pm.test('Kafka send success', function () {
 
 ### Elasticsearch 写入断言
 ```javascript
-const resp = pm.es.request({
+const resp = pm.elasticsearch.request({
     baseUrl: 'http://localhost:9200',
     method: 'POST',
     path: '/orders/_doc/order-1001',
@@ -681,7 +685,7 @@ pm.test('Influx write success', function () {
     pm.expect(writeResp.code).to.equal(204);
 });
 
-const queryResp = pm.influx.query({
+const queryResp = pm.influxdb.query({
     baseUrl: 'http://localhost:8086',
     version: 'v1',
     db: 'metrics',
@@ -917,12 +921,8 @@ if (jsonData.code === 200 && jsonData.data) {
 const responseTime = pm.response.responseTime;
 console.log('响应时间:', responseTime, 'ms');
 
-// 6. 测试结果统计
-const results = pm.test.index();
-const passCount = _.filter(results, { passed: true }).length;
-const failCount = _.filter(results, { passed: false }).length;
-
-console.log('测试通过:', passCount, '/ 失败:', failCount);
+// 6. 记录关键指标；测试结果由运行器统一汇总
+console.log('业务状态:', jsonData.code);
 ```
 
 ---
@@ -991,7 +991,7 @@ console.log('✓ Post-request 完成');
 ## 提示
 
 1. **直接使用全局变量**：`CryptoJS`、`_`（lodash）、`moment` 已预加载，无需 `require()`
-2. **也支持 require()**：`var CryptoJS = require('crypto-js')` 也可以使用（兼容 Postman）
+2. **也支持 require()**：`var CryptoJS = require('crypto-js')` 也可以使用
 3. **善用 console.log**：调试时输出关键信息
 4. **环境变量命名**：使用有意义的名称，如 `authToken`、`userId`
 5. **错误处理**：关键操作使用 try-catch 包裹

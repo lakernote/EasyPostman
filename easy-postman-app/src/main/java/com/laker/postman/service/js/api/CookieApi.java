@@ -75,18 +75,6 @@ public class CookieApi {
     }
 
     /**
-     * 获取所有 Cookie（Postman 兼容别名）
-     * <p>
-     * 该方法是 getAll() 的别名，用于支持 Postman 的 pm.cookies.all() 语法。
-     * </p>
-     *
-     * @return Cookie 数组
-     */
-    public Cookie[] all() {
-        return cookiesList.toArray(new Cookie[0]);
-    }
-
-    /**
      * 设置 Cookie（通过名称和值）
      *
      * @param name  Cookie 名称
@@ -203,7 +191,7 @@ public class CookieApi {
     /**
      * 获取 Cookie Jar 实例
      * <p>
-     * Cookie Jar 提供 Postman 兼容的异步 Cookie 操作接口。
+     * Cookie Jar 提供异步 Cookie 操作接口。
      * </p>
      *
      * @return CookieJar 实例

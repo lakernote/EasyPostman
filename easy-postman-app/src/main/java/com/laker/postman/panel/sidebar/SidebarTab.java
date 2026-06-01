@@ -128,7 +128,7 @@ public enum SidebarTab {
     }
 
     /**
-     * 转换为 TabInfo 对象（为了兼容现有代码）
+     * 转换为 TabInfo 对象
      */
     public TabInfo toTabInfo() {
         return new TabInfo(getDisplayTitle(), getIcon(), this::getPanel);

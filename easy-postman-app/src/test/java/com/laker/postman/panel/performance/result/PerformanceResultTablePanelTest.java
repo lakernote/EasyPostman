@@ -1,7 +1,7 @@
 package com.laker.postman.panel.performance.result;
 
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.HttpResponse;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.performance.model.ResultNodeInfo;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.test.AbstractSwingUiTest;

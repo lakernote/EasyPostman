@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.editor.request;
 
+import com.laker.postman.http.execution.RequestPreparationResult;
 import com.laker.postman.panel.collections.editor.request.sub.RequestLinePanel;
 import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;
 import lombok.RequiredArgsConstructor;

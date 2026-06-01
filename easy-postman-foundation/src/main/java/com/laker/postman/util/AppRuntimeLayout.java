@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.File;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -75,10 +74,7 @@ public final class AppRuntimeLayout {
         }
         if (isPortableMode(anchorClass)) {
             Path applicationRoot = applicationRootDirectory(anchorClass);
-            Path preferredDataDir = resolvePortableDataDirectory(applicationRoot, codeSourceDirectory(anchorClass));
-            // TODO(compat-cleanup): 便携版 data 目录稳定迁移后删除 applicationRoot/data 兼容搬迁。
-            Path legacyDataDir = applicationRoot.toAbsolutePath().normalize().resolve("data");
-            return harmonizePortableDataDirectory(preferredDataDir, legacyDataDir);
+            return resolvePortableDataDirectory(applicationRoot, codeSourceDirectory(anchorClass));
         }
         return Paths.get(System.getProperty("user.home"), "EasyPostman").toAbsolutePath().normalize();
     }
@@ -107,30 +103,4 @@ public final class AppRuntimeLayout {
         return normalizedAppRoot.resolve("data").toAbsolutePath().normalize();
     }
 
-    static Path harmonizePortableDataDirectory(Path preferredDataDir, Path legacyDataDir) {
-        Path normalizedPreferred = preferredDataDir.toAbsolutePath().normalize();
-        Path normalizedLegacy = legacyDataDir.toAbsolutePath().normalize();
-        if (normalizedPreferred.equals(normalizedLegacy)) {
-            return normalizedPreferred;
-        }
-
-        if (Files.exists(normalizedLegacy) && !Files.exists(normalizedPreferred)) {
-            try {
-                Path parent = normalizedPreferred.getParent();
-                if (parent != null) {
-                    Files.createDirectories(parent);
-                }
-                Files.move(normalizedLegacy, normalizedPreferred);
-                log.info("Migrated portable data directory: {} -> {}", normalizedLegacy, normalizedPreferred);
-            } catch (Exception e) {
-                log.warn("Failed to migrate portable data directory: {} -> {}",
-                        normalizedLegacy, normalizedPreferred, e);
-            }
-        }
-
-        if (Files.exists(normalizedPreferred) || !Files.exists(normalizedLegacy)) {
-            return normalizedPreferred;
-        }
-        return normalizedLegacy;
-    }
 }

@@ -7,7 +7,7 @@ import com.laker.postman.request.model.RequestItemProtocolEnum;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.http.request.HttpRequestProtocol;
-import com.laker.postman.http.request.HttpUrlUtil;
+import com.laker.postman.request.util.HttpUrlUtil;
 import com.laker.postman.util.JsonUtil;
 import lombok.experimental.UtilityClass;
 

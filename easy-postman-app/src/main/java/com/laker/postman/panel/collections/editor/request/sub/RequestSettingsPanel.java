@@ -1,12 +1,10 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
-import com.laker.postman.request.model.HttpRequestItem;
-
-
 import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.common.component.button.SwitchButton;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.http.request.HttpRequestSettingsResolver;
+import com.laker.postman.request.edit.HttpRequestSettingsDraft;
+import com.laker.postman.request.model.HttpRequestVersions;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -86,22 +84,26 @@ public class RequestSettingsPanel extends JScrollPane {
         populate(null);
     }
 
-    public void populate(HttpRequestItem item) {
+    public void populate(HttpRequestSettingsDraft settings) {
         updateRequestTimeoutHint();
-        followRedirectsComboBox.setSelectedItem(findBooleanOption(followRedirectsComboBox, item != null ? item.getFollowRedirects() : null));
-        useCookieJarSwitch.setSelected(HttpRequestSettingsResolver.resolveCookieJarEnabled(item));
-        httpVersionComboBox.setSelectedItem(findHttpVersionOption(
-                HttpRequestSettingsResolver.normalizeStoredHttpVersion(item != null ? item.getHttpVersion() : null)
+        followRedirectsComboBox.setSelectedItem(findBooleanOption(
+                followRedirectsComboBox,
+                settings != null ? settings.getFollowRedirects() : null
         ));
-        Integer requestTimeout = item != null ? item.getRequestTimeoutMs() : null;
+        Boolean cookieJarEnabled = settings != null ? settings.getCookieJarEnabled() : null;
+        useCookieJarSwitch.setSelected(cookieJarEnabled == null || cookieJarEnabled);
+        httpVersionComboBox.setSelectedItem(findHttpVersionOption(settings != null ? settings.getHttpVersion() : null));
+        Integer requestTimeout = settings != null ? settings.getRequestTimeoutMs() : null;
         requestTimeoutField.setText(requestTimeout != null ? String.valueOf(requestTimeout) : "");
     }
 
-    public void applyTo(HttpRequestItem item) {
-        item.setFollowRedirects(getSelectedBooleanValue(followRedirectsComboBox));
-        item.setCookieJarEnabled(getStoredCookieJarValue());
-        item.setHttpVersion(getStoredHttpVersionValue());
-        item.setRequestTimeoutMs(getStoredRequestTimeoutValue());
+    public HttpRequestSettingsDraft collectSettings() {
+        return HttpRequestSettingsDraft.builder()
+                .followRedirects(getSelectedBooleanValue(followRedirectsComboBox))
+                .cookieJarEnabled(getStoredCookieJarValue())
+                .httpVersion(getStoredHttpVersionValue())
+                .requestTimeoutMs(getStoredRequestTimeoutValue())
+                .build();
     }
 
     public void rebaseline() {
@@ -110,13 +112,6 @@ public class RequestSettingsPanel extends JScrollPane {
 
     public String validateSettings() {
         return validateRequestTimeout(requestTimeoutField.getText());
-    }
-
-    public boolean hasCustomSettings() {
-        return getSelectedBooleanValue(followRedirectsComboBox) != null
-                || Boolean.FALSE.equals(getStoredCookieJarValue())
-                || getStoredHttpVersionValue() != null
-                || getStoredRequestTimeoutValue() != null;
     }
 
     public void setEditable(boolean editable) {
@@ -258,13 +253,11 @@ public class RequestSettingsPanel extends JScrollPane {
     }
 
     private Boolean getStoredCookieJarValue() {
-        return HttpRequestSettingsResolver.normalizeStoredCookieJarEnabled(
-                useCookieJarSwitch.isSelected() ? Boolean.TRUE : Boolean.FALSE
-        );
+        return useCookieJarSwitch.isSelected() ? Boolean.TRUE : Boolean.FALSE;
     }
 
     private String getStoredHttpVersionValue() {
-        return HttpRequestSettingsResolver.normalizeStoredHttpVersion(getSelectedHttpVersion());
+        return getSelectedHttpVersion();
     }
 
     private Integer getStoredRequestTimeoutValue() {
@@ -291,15 +284,15 @@ public class RequestSettingsPanel extends JScrollPane {
     private HttpVersionOption[] createHttpVersionOptions() {
         List<HttpVersionOption> options = new ArrayList<>();
         options.add(new HttpVersionOption(
-                HttpRequestItem.HTTP_VERSION_AUTO,
+                HttpRequestVersions.AUTO,
                 I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_HTTP_VERSION_AUTO)
         ));
         options.add(new HttpVersionOption(
-                HttpRequestItem.HTTP_VERSION_HTTP_1_1,
+                HttpRequestVersions.HTTP_1_1,
                 I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_HTTP_VERSION_HTTP_1_1)
         ));
         options.add(new HttpVersionOption(
-                HttpRequestItem.HTTP_VERSION_HTTP_2,
+                HttpRequestVersions.HTTP_2,
                 I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_HTTP_VERSION_HTTP_2)
         ));
         return options.toArray(new HttpVersionOption[0]);
@@ -318,7 +311,7 @@ public class RequestSettingsPanel extends JScrollPane {
 
     private HttpVersionOption findHttpVersionOption(String value) {
         String normalizedValue = (value == null || value.trim().isEmpty())
-                ? HttpRequestItem.HTTP_VERSION_AUTO
+                ? HttpRequestVersions.AUTO
                 : value;
         ComboBoxModel<HttpVersionOption> model = httpVersionComboBox.getModel();
         for (int i = 0; i < model.getSize(); i++) {
@@ -337,7 +330,7 @@ public class RequestSettingsPanel extends JScrollPane {
 
     private String getSelectedHttpVersion() {
         HttpVersionOption option = (HttpVersionOption) httpVersionComboBox.getSelectedItem();
-        return option != null ? option.value : HttpRequestItem.HTTP_VERSION_AUTO;
+        return option != null ? option.value : HttpRequestVersions.AUTO;
     }
 
     private Integer parseRequestTimeoutOrNull() {

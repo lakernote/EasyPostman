@@ -56,15 +56,6 @@ public final class PluginContributionSupport {
                     "pm.plugin(\"" + alias + "\")." + methodName + "(options)");
         }
 
-        sink.basic("pm." + alias, apiDisplayName);
-        for (String methodName : methodNames) {
-            if (methodName == null || methodName.isBlank()) {
-                continue;
-            }
-            sink.basic(
-                    "pm." + alias + "." + methodName,
-                    "pm." + alias + "." + methodName + "(options)");
-        }
     }
 
     public static void addSnippetCompletion(ScriptCompletionSink sink,

@@ -538,30 +538,6 @@ jobs:
                   releases = []
                   plugin_entry["releases"] = releases
 
-              if not releases and plugin_entry.get("version") and plugin_entry.get("downloadUrl"):
-                  migrated_release = {
-                      "version": plugin_entry.get("version"),
-                      "downloadUrl": plugin_entry.get("downloadUrl"),
-                      "sha256": plugin_entry.get("sha256", ""),
-                  }
-                  put_if_not_blank(migrated_release, "minAppVersion", plugin_entry.get("minAppVersion", ""))
-                  put_if_not_blank(migrated_release, "maxAppVersion", plugin_entry.get("maxAppVersion", ""))
-                  put_if_not_blank(migrated_release, "minPlatformVersion", plugin_entry.get("minPlatformVersion", ""))
-                  put_if_not_blank(migrated_release, "maxPlatformVersion", plugin_entry.get("maxPlatformVersion", ""))
-                  releases.append(migrated_release)
-
-              for legacy_key in (
-                  "version",
-                  "downloadUrl",
-                  "download_url",
-                  "sha256",
-                  "minAppVersion",
-                  "maxAppVersion",
-                  "minPlatformVersion",
-                  "maxPlatformVersion",
-              ):
-                  plugin_entry.pop(legacy_key, None)
-
               new_release = {
                   "version": plugin_version,
                   "downloadUrl": download_url,

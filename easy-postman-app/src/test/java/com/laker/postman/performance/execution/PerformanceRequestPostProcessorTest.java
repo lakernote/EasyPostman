@@ -1,7 +1,7 @@
 package com.laker.postman.performance.execution;
 
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.HttpResponse;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.script.model.TestResult;
 import com.laker.postman.performance.core.assertion.AssertionData;
 import com.laker.postman.performance.core.extractor.ExtractorData;

@@ -11,12 +11,12 @@ import static org.testng.Assert.assertFalse;
 public class RequestsPersistenceBoundaryTest {
 
     @Test
-    public void shouldNotPersistLegacyStringGroupNodes() throws IOException {
+    public void shouldRejectStringBackedGroupNodes() throws IOException {
         String source = Files.readString(moduleDir()
                 .resolve("src/main/java/com/laker/postman/service/collections/RequestsPersistence.java"));
 
         assertFalse(source.contains("groupData instanceof String"),
-                "RequestsPersistence should no longer support legacy String group nodes");
+                "RequestsPersistence should no longer support string-backed group nodes");
         assertFalse(source.contains("new Object[]{\"group\""),
                 "RequestsPersistence should create group nodes through CollectionTreeNodes");
         assertFalse(source.contains("new Object[]{\"request\""),

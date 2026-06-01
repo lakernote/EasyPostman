@@ -4,11 +4,11 @@ import com.laker.postman.performance.core.runtime.PerformanceRunListener;
 import com.laker.postman.performance.execution.PerformanceExecutionConfig;
 import com.laker.postman.performance.execution.PerformanceNetworkRuntime;
 import com.laker.postman.performance.result.PerformanceResultCollector;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import okhttp3.Call;
 import okhttp3.OkHttpClient;
-import okhttp3.WebSocket;
-import okhttp3.sse.EventSource;
+import com.laker.postman.http.runtime.transport.RealtimeConnectionHandle;
+import com.laker.postman.http.runtime.transport.RealtimeWebSocketConnection;
 import org.testng.annotations.Test;
 
 import java.util.Set;
@@ -37,8 +37,8 @@ public class PerformanceExecutionEngineNetworkRuntimeTest {
 
     private static final class RecordingNetworkRuntime implements PerformanceNetworkRuntime {
         private final AtomicBoolean cancelled = new AtomicBoolean(false);
-        private final Set<EventSource> sseSources = ConcurrentHashMap.newKeySet();
-        private final Set<WebSocket> webSockets = ConcurrentHashMap.newKeySet();
+        private final Set<RealtimeConnectionHandle> sseSources = ConcurrentHashMap.newKeySet();
+        private final Set<RealtimeWebSocketConnection> webSockets = ConcurrentHashMap.newKeySet();
 
         @Override
         public void onCallStarted(Call call) {
@@ -49,12 +49,12 @@ public class PerformanceExecutionEngineNetworkRuntimeTest {
         }
 
         @Override
-        public Set<EventSource> activeSseSources() {
+        public Set<RealtimeConnectionHandle> activeSseSources() {
             return sseSources;
         }
 
         @Override
-        public Set<WebSocket> activeWebSockets() {
+        public Set<RealtimeWebSocketConnection> activeWebSockets() {
             return webSockets;
         }
 

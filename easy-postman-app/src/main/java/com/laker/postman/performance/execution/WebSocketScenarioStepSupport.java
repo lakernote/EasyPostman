@@ -8,7 +8,7 @@ import com.laker.postman.performance.core.plan.PerformanceProtocolStageElement;
 
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.service.js.ScriptExecutionResult;
 import com.laker.postman.service.variable.VariableResolver;

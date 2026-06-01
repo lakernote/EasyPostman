@@ -15,9 +15,9 @@ import java.util.List;
 @Setter
 @Getter
 public class HttpRequestItem implements Serializable {
-    public static final String HTTP_VERSION_AUTO = "AUTO";
-    public static final String HTTP_VERSION_HTTP_1_1 = "HTTP_1_1";
-    public static final String HTTP_VERSION_HTTP_2 = "HTTP_2";
+    public static final String HTTP_VERSION_AUTO = HttpRequestVersions.AUTO;
+    public static final String HTTP_VERSION_HTTP_1_1 = HttpRequestVersions.HTTP_1_1;
+    public static final String HTTP_VERSION_HTTP_2 = HttpRequestVersions.HTTP_2;
 
     private String id = ""; // 唯一标识符
     private String name = ""; // 请求名称

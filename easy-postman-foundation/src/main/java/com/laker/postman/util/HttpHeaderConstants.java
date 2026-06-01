@@ -163,7 +163,7 @@ public class HttpHeaderConstants {
             return Collections.emptyList();
         }
 
-        // 大小写不敏感匹配，兼容用户输入 content-type / Content-Type 等形式
+        // 大小写不敏感匹配，支持用户输入 content-type / Content-Type 等形式
         String normalizedHeader = headerName.trim().toLowerCase(java.util.Locale.ROOT);
 
         return switch (normalizedHeader) {

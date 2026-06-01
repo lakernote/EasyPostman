@@ -87,38 +87,6 @@ public class PlatformDownloadUrlResolver {
             return downloadUrl;
         }
 
-        // TODO(compat-cleanup): release 资产全部采用 -macos-{aarch64,x86_64}.dmg 后删除旧 DMG 命名 fallback。
-        // 2. 回退到旧格式
-        if (isAppleSilicon) {
-            log.info("New format not found, trying legacy format: -arm64.dmg");
-            downloadUrl = assetFinder.findByExtension(assets, "-arm64.dmg");
-
-            if (downloadUrl != null) {
-                log.info("Found legacy ARM64 DMG");
-                return downloadUrl;
-            }
-
-            // 3. 尝试通用 DMG（仅支持 M 芯片）
-            log.info("Legacy ARM64 DMG not found, trying generic .dmg");
-            downloadUrl = assetFinder.findGenericDmg(assets);
-
-            if (downloadUrl != null) {
-                log.info("Found generic DMG (legacy version, M chip compatible)");
-                return downloadUrl;
-            }
-        } else {
-            // Intel Mac
-            log.info("New format not found, trying legacy format: -intel.dmg");
-            downloadUrl = assetFinder.findByExtension(assets, "-intel.dmg");
-
-            if (downloadUrl != null) {
-                log.info("Found legacy Intel DMG");
-                return downloadUrl;
-            }
-
-            log.warn("Intel Mac requires -intel.dmg or -macos-x86_64.dmg file");
-        }
-
         log.warn("No suitable DMG file found for current architecture");
         return null;
     }
@@ -139,27 +107,13 @@ public class PlatformDownloadUrlResolver {
 
     private String resolveLinuxDebUrl(JSONArray assets, boolean isArm64, LinuxReleaseInfo releaseInfo) {
         if (isArm64) {
-            if (releaseInfo.isUosLike()) {
-                String compatUrl = assetFinder.findByPattern(assets, "-linux-arm64-compat.deb");
-                if (compatUrl != null) {
-                    log.info("Detected UOS-like ARM64 system, using compatibility DEB");
-                    return compatUrl;
-                }
-            }
-
-            String genericArmUrl = assetFinder.findFirstByPatterns(
-                    assets,
-                    "-linux-arm64.deb",
-                    "_arm64.deb");
+            String genericArmUrl = assetFinder.findByPattern(assets, "-linux-arm64.deb");
             if (genericArmUrl != null) {
                 log.info("Detected Linux ARM64, using generic ARM64 DEB");
                 return genericArmUrl;
             }
         } else {
-            String amd64Url = assetFinder.findFirstByPatterns(
-                    assets,
-                    "-linux-amd64.deb",
-                    "_amd64.deb");
+            String amd64Url = assetFinder.findByPattern(assets, "-linux-amd64.deb");
             if (amd64Url != null) {
                 log.info("Detected Linux AMD64, using AMD64 DEB");
                 return amd64Url;

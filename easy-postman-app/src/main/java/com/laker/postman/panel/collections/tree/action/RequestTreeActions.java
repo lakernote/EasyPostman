@@ -1,6 +1,6 @@
 package com.laker.postman.panel.collections.tree.action;
 
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.collection.model.RequestGroup;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.request.model.AuthType;

@@ -87,7 +87,7 @@ public interface ScriptCompletionContributor {
 
 新 SPI 需要覆盖 Redis 和 Kafka 官方插件当前的补全场景：
 
-- 类似 `pm.redis` 的变量式补全
+- 类似 `pm.plugin("redis")` 的插件入口补全
 - function 或 method 补全
 - 可选简短描述
 - 可选 replacement text

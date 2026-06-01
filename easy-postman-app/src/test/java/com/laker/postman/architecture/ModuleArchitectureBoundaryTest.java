@@ -22,15 +22,18 @@ public class ModuleArchitectureBoundaryTest {
         Path root = repositoryRoot();
         assertTrue(Files.isDirectory(root.resolve("easy-postman-foundation")));
         assertTrue(Files.isDirectory(root.resolve("easy-postman-request-core")));
+        assertTrue(Files.isDirectory(root.resolve("easy-postman-http-runtime")));
         assertTrue(Files.isDirectory(root.resolve("easy-postman-collection-core")));
         assertTrue(Files.isDirectory(root.resolve("easy-postman-platform")));
         assertTrue(Files.isDirectory(root.resolve("easy-postman-ui")));
+        assertFalse(Files.exists(root.resolve("easy-postman-core")));
         assertFalse(Files.exists(root.resolve("easy-postman-performance-runtime-okhttp")));
         assertFalse(Files.exists(root.resolve("easy-postman-plugin-bridge")));
         assertFalse(Files.exists(root.resolve("easy-postman-plugin-ui")));
 
         for (Path pom : pomFiles(root)) {
             String source = Files.readString(pom);
+            assertFalse(source.contains("<module>easy-postman-core</module>"), pom + " still references a vague core module");
             assertFalse(source.contains("easy-postman-performance-runtime-okhttp"), pom + " still references the retired performance runtime module");
             assertFalse(source.contains("easy-postman-plugin-bridge"), pom + " still references the old bridge module");
             assertFalse(source.contains("easy-postman-plugin-ui"), pom + " still references the old plugin UI module");
@@ -41,7 +44,7 @@ public class ModuleArchitectureBoundaryTest {
     public void requestCoreOwnsRequestSpecificationModels() {
         Path root = repositoryRoot();
         Path requestModelPackage = root.resolve("easy-postman-request-core/src/main/java/com/laker/postman/request/model");
-        Path legacyAppModelPackage = root.resolve("easy-postman-app/src/main/java/com/laker/postman/model");
+        Path appModelPackage = root.resolve("easy-postman-app/src/main/java/com/laker/postman/model");
         List<String> requestModelFiles = List.of(
                 "AuthType.java",
                 "CookieInfo.java",
@@ -61,7 +64,7 @@ public class ModuleArchitectureBoundaryTest {
         for (String requestModelFile : requestModelFiles) {
             assertTrue(Files.isRegularFile(requestModelPackage.resolve(requestModelFile)),
                     requestModelFile + " is request specification data and belongs in easy-postman-request-core");
-            assertFalse(Files.exists(legacyAppModelPackage.resolve(requestModelFile)),
+            assertFalse(Files.exists(appModelPackage.resolve(requestModelFile)),
                     requestModelFile + " must not stay in the app model package");
         }
     }
@@ -117,12 +120,12 @@ public class ModuleArchitectureBoundaryTest {
     public void foundationOwnsEnvironmentVariableModels() {
         Path root = repositoryRoot();
         Path foundationModelPackage = root.resolve("easy-postman-foundation/src/main/java/com/laker/postman/model");
-        Path legacyAppModelPackage = root.resolve("easy-postman-app/src/main/java/com/laker/postman/model");
+        Path appModelPackage = root.resolve("easy-postman-app/src/main/java/com/laker/postman/model");
 
         for (String foundationModelFile : List.of("Environment.java", "Variable.java")) {
             assertTrue(Files.isRegularFile(foundationModelPackage.resolve(foundationModelFile)),
                     foundationModelFile + " is shared non-UI environment data and belongs in easy-postman-foundation");
-            assertFalse(Files.exists(legacyAppModelPackage.resolve(foundationModelFile)),
+            assertFalse(Files.exists(appModelPackage.resolve(foundationModelFile)),
                     foundationModelFile + " must not stay in the app model package");
         }
     }
@@ -208,13 +211,27 @@ public class ModuleArchitectureBoundaryTest {
                 "easy-postman-app/src/main/java/com/laker/postman/service/postman/PostmanCollectionExporter.java",
                 "easy-postman-app/src/main/java/com/laker/postman/service/common/TreeNodeBuilder.java",
                 "easy-postman-app/src/main/java/com/laker/postman/service/collections/RequestsPersistence.java",
-                "easy-postman-app/src/main/java/com/laker/postman/service/collections/InheritanceService.java",
+                "easy-postman-app/src/main/java/com/laker/postman/service/collections/InheritanceService.java"
+        )) {
+            assertTrue(Files.isRegularFile(root.resolve(appOwnedFile)),
+                    appOwnedFile + " is still app-owned and must not move into collection-core in this slice");
+        }
+
+        for (String runtimeOwnedFile : List.of(
+                "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/model/PreparedRequest.java",
+                "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/model/HttpResponse.java",
+                "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/model/HttpEventInfo.java"
+        )) {
+            assertTrue(Files.isRegularFile(root.resolve(runtimeOwnedFile)),
+                    runtimeOwnedFile + " is HTTP runtime exchange data and must not move into collection-core");
+        }
+        for (String retiredAppModelFile : List.of(
                 "easy-postman-app/src/main/java/com/laker/postman/model/PreparedRequest.java",
                 "easy-postman-app/src/main/java/com/laker/postman/model/HttpResponse.java",
                 "easy-postman-app/src/main/java/com/laker/postman/model/HttpEventInfo.java"
         )) {
-            assertTrue(Files.isRegularFile(root.resolve(appOwnedFile)),
-                    appOwnedFile + " is still app-owned and must not move into collection-core in this slice");
+            assertFalse(Files.exists(root.resolve(retiredAppModelFile)),
+                    retiredAppModelFile + " must stay out of the app model package");
         }
 
         Path collectionCoreSource = root.resolve("easy-postman-collection-core/src/main/java");
@@ -513,8 +530,8 @@ public class ModuleArchitectureBoundaryTest {
                         "easy-postman-app/src/main/java/com/laker/postman/service/curl/CurlImportUtil.java")),
                 "CurlImportUtil is a cURL import adapter and belongs with the cURL parser package");
         assertTrue(Files.isRegularFile(root.resolve(
-                        "easy-postman-app/src/main/java/com/laker/postman/certificate/TrustedCertificateEntry.java")),
-                "TrustedCertificateEntry belongs with certificate/trust-material settings");
+                        "easy-postman-foundation/src/main/java/com/laker/postman/certificate/TrustedCertificateEntry.java")),
+                "TrustedCertificateEntry is a headless trust-material DTO and belongs in foundation");
         assertTrue(Files.isRegularFile(root.resolve(
                         "easy-postman-app/src/main/java/com/laker/postman/history/RequestHistoryItem.java")),
                 "RequestHistoryItem belongs with request history ownership");
@@ -548,28 +565,23 @@ public class ModuleArchitectureBoundaryTest {
     }
 
     @Test
-    public void appModelPackageOnlyOwnsRuntimeHttpExchangeModels() throws IOException {
+    public void appModelPackageDoesNotOwnRuntimeHttpExchangeModels() throws IOException {
         Path modelSource = repositoryRoot().resolve("easy-postman-app/src/main/java/com/laker/postman/model");
-        Set<String> expectedFiles = new TreeSet<>(Set.of(
-                "HttpEventInfo.java",
-                "HttpResponse.java",
-                "PreparedRequest.java"
-        ));
-        Set<String> actualFiles = javaSourceFiles(modelSource).stream()
+        Set<String> actualFiles = Files.isDirectory(modelSource)
+                ? javaSourceFiles(modelSource).stream()
                 .map(path -> path.getFileName().toString())
-                .collect(Collectors.toCollection(TreeSet::new));
+                .collect(Collectors.toCollection(TreeSet::new))
+                : Set.of();
 
-        assertTrue(actualFiles.equals(expectedFiles),
-                "App model package should only contain app-owned runtime HTTP exchange snapshots; actual files: "
+        assertTrue(actualFiles.isEmpty(),
+                "App model package must stay empty; runtime HTTP exchange snapshots belong in easy-postman-http-runtime: "
                         + actualFiles);
     }
 
     @Test
     public void modelPackageDoesNotDependOnServiceLayer() throws IOException {
         Path modelSource = repositoryRoot().resolve("easy-postman-app/src/main/java/com/laker/postman/model");
-        List<String> violations = javaSourceFiles(modelSource).stream()
-                .flatMap(file -> sourceContainsViolations(file, List.of("com.laker.postman.service.")).stream())
-                .toList();
+        List<String> violations = sourcePackageViolations(modelSource, List.of("com.laker.postman.service."));
 
         assertTrue(violations.isEmpty(),
                 "App model package must not depend on app service layer types: " + violations);
@@ -594,7 +606,7 @@ public class ModuleArchitectureBoundaryTest {
         for (String relativePath : List.of(
                 "easy-postman-app/src/main/java/com/laker/postman/http/request/HttpRequestValidator.java",
                 "easy-postman-app/src/main/java/com/laker/postman/http/request/HttpRequestValidationResult.java",
-                "easy-postman-app/src/main/java/com/laker/postman/http/request/HttpUrlUtil.java",
+                "easy-postman-request-core/src/main/java/com/laker/postman/request/util/HttpUrlUtil.java",
                 "easy-postman-app/src/main/java/com/laker/postman/http/request/HttpRequestProtocol.java",
                 "easy-postman-app/src/main/java/com/laker/postman/http/request/HttpHeaders.java")) {
             violations.addAll(sourceContainsViolations(root.resolve(relativePath), List.of(
@@ -614,7 +626,7 @@ public class ModuleArchitectureBoundaryTest {
     @Test
     public void okHttpResponseHandlerDoesNotOwnSwingDownloadUi() {
         Path responseHandler = repositoryRoot()
-                .resolve("easy-postman-app/src/main/java/com/laker/postman/http/runtime/okhttp/OkHttpResponseHandler.java");
+                .resolve("easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/okhttp/OkHttpResponseHandler.java");
         List<String> violations = sourceContainsViolations(responseHandler, List.of(
                 "import javax.swing",
                 "DownloadProgressDialog",
@@ -630,7 +642,7 @@ public class ModuleArchitectureBoundaryTest {
     @Test
     public void webSocketLifecycleLoggingDoesNotOwnConsolePanelUi() {
         Path listener = repositoryRoot()
-                .resolve("easy-postman-app/src/main/java/com/laker/postman/http/runtime/okhttp/WebSocketLifecycleLogListener.java");
+                .resolve("easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/okhttp/WebSocketLifecycleLogListener.java");
         List<String> violations = sourceContainsViolations(listener, List.of(
                 "ConsolePanel",
                 "GraphicsEnvironment",
@@ -646,7 +658,7 @@ public class ModuleArchitectureBoundaryTest {
     @Test
     public void sslConfigurationDoesNotOwnConsolePanelUi() {
         Path sslConfiguration = repositoryRoot()
-                .resolve("easy-postman-app/src/main/java/com/laker/postman/http/runtime/ssl/SSLConfigurationUtil.java");
+                .resolve("easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/ssl/SSLConfigurationUtil.java");
         List<String> violations = sourceContainsViolations(sslConfiguration, List.of(
                 "ConsolePanel",
                 "GraphicsEnvironment",
@@ -661,7 +673,7 @@ public class ModuleArchitectureBoundaryTest {
     @Test
     public void cookieServiceDoesNotOwnSwingDispatch() {
         Path cookieService = repositoryRoot()
-                .resolve("easy-postman-app/src/main/java/com/laker/postman/http/runtime/cookie/HttpCookieStore.java");
+                .resolve("easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/cookie/HttpCookieStore.java");
         List<String> violations = sourceContainsViolations(cookieService, List.of(
                 "SwingUtilities",
                 "javax.swing",
@@ -680,13 +692,14 @@ public class ModuleArchitectureBoundaryTest {
         List<String> violations = new ArrayList<>();
         for (String runtimeSource : List.of(
                 "easy-postman-app/src/main/java/com/laker/postman/http/request",
-                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/transport",
-                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/okhttp",
-                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/ssl",
-                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/sse",
-                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/cookie",
-                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/redirect",
-                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/error")) {
+                "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/transport",
+                "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/okhttp",
+                "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/ssl",
+                "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/sse",
+                "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/cookie",
+                "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/redirect",
+                "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/error",
+                "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/config")) {
             violations.addAll(sourcePackageViolations(root.resolve(runtimeSource), List.of(
                     "import com.laker.postman.service.setting.SettingManager",
                     "SettingManager."
@@ -703,12 +716,15 @@ public class ModuleArchitectureBoundaryTest {
         Path root = repositoryRoot();
         List<String> violations = new ArrayList<>();
         for (String runtimeSource : List.of(
-                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/transport",
-                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/okhttp",
-                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/ssl",
-                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/sse",
-                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/interaction",
-                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/observation")) {
+                "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/transport",
+                "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/okhttp",
+                "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/ssl",
+                "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/sse",
+                "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/interaction",
+                "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/observation",
+                "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/cookie",
+                "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/redirect",
+                "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/error")) {
             violations.addAll(sourcePackageViolations(root.resolve(runtimeSource), List.of(
                     "import javax.swing",
                     "import java.awt",
@@ -726,35 +742,41 @@ public class ModuleArchitectureBoundaryTest {
     public void httpRuntimeUsesExplicitPackageAndClassNames() {
         Path root = repositoryRoot();
         assertTrue(Files.isRegularFile(root.resolve(
-                        "easy-postman-app/src/main/java/com/laker/postman/http/runtime/transport/HttpTransportRuntime.java")),
-                "HTTP transport runtime belongs in http.runtime.transport instead of generic service.http");
+                        "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/transport/HttpTransportRuntime.java")),
+                "HTTP transport runtime belongs in easy-postman-http-runtime/http.runtime.transport");
         assertTrue(Files.isRegularFile(root.resolve(
-                        "easy-postman-app/src/main/java/com/laker/postman/http/runtime/transport/HttpRuntimeExecutor.java")),
-                "HTTP facade should express runtime execution instead of single-request only semantics");
-        assertTrue(Files.isRegularFile(root.resolve(
-                        "easy-postman-app/src/main/java/com/laker/postman/http/runtime/transport/ScopedHttpBaseClientProvider.java")),
+                        "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/transport/ScopedHttpBaseClientProvider.java")),
                 "Scoped HTTP base clients belong with transport runtime execution");
         assertTrue(Files.isRegularFile(root.resolve(
-                        "easy-postman-app/src/main/java/com/laker/postman/http/runtime/okhttp/OkHttpExchangeEventListener.java")),
+                        "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/okhttp/OkHttpExchangeEventListener.java")),
                 "OkHttp exchange event collection belongs in http.runtime.okhttp and should not be named Console");
         assertTrue(Files.isRegularFile(root.resolve(
-                        "easy-postman-app/src/main/java/com/laker/postman/http/runtime/okhttp/WebSocketLifecycleLogListener.java")),
+                        "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/okhttp/WebSocketLifecycleLogListener.java")),
                 "WebSocket lifecycle logging belongs in http.runtime.okhttp");
         assertTrue(Files.isRegularFile(root.resolve(
-                        "easy-postman-app/src/main/java/com/laker/postman/http/runtime/ssl/SSLConfigurationUtil.java")),
+                        "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/ssl/SSLConfigurationUtil.java")),
                 "TLS/certificate configuration belongs in http.runtime.ssl");
         assertTrue(Files.isRegularFile(root.resolve(
-                        "easy-postman-app/src/main/java/com/laker/postman/http/runtime/sse/SseResponseCallback.java")),
+                        "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/sse/SseResponseCallback.java")),
                 "SSE response callbacks belong in http.runtime.sse and should not carry UI names");
         assertTrue(Files.isRegularFile(root.resolve(
-                        "easy-postman-app/src/main/java/com/laker/postman/http/runtime/cookie/HttpCookieStore.java")),
+                        "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/cookie/HttpCookieStore.java")),
                 "HTTP cookie state belongs in http.runtime.cookie");
         assertTrue(Files.isRegularFile(root.resolve(
-                        "easy-postman-app/src/main/java/com/laker/postman/http/runtime/redirect/HttpRedirectExecutor.java")),
+                        "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/redirect/HttpRedirectExecutor.java")),
                 "Manual redirect execution belongs in http.runtime.redirect");
         assertTrue(Files.isRegularFile(root.resolve(
-                        "easy-postman-app/src/main/java/com/laker/postman/http/runtime/error/NetworkErrorMessageResolver.java")),
+                        "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/error/NetworkErrorMessageResolver.java")),
                 "Network transport error mapping belongs in http.runtime.error");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/model/PreparedRequest.java")),
+                "Prepared request exchange snapshot belongs in easy-postman-http-runtime");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/model/HttpResponse.java")),
+                "HTTP response exchange snapshot belongs in easy-postman-http-runtime");
+        assertTrue(Files.isRegularFile(root.resolve(
+                        "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/model/HttpEventInfo.java")),
+                "HTTP timing/trace snapshot belongs in easy-postman-http-runtime");
         assertTrue(Files.isRegularFile(root.resolve(
                         "easy-postman-app/src/main/java/com/laker/postman/http/request/PreparedRequestFactory.java")),
                 "Prepared request creation belongs in http.request and should use a factory name");
@@ -762,16 +784,16 @@ public class ModuleArchitectureBoundaryTest {
                         "easy-postman-app/src/main/java/com/laker/postman/http/request/PreparedRequestFinalizer.java")),
                 "Prepared request send-time finalization belongs in http.request");
         assertTrue(Files.isRegularFile(root.resolve(
-                        "easy-postman-app/src/main/java/com/laker/postman/http/request/HttpRequestSettingsResolver.java")),
-                "Request setting normalization belongs in http.request");
+                        "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/config/HttpRequestRuntimeSettingsResolver.java")),
+                "Request setting normalization belongs in HTTP runtime config");
         assertTrue(Files.isRegularFile(root.resolve(
-                        "easy-postman-app/src/main/java/com/laker/postman/http/runtime/config/HttpRuntimeSettingsProvider.java")),
-                "HTTP runtime settings belong in http.runtime.config");
+                        "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/config/HttpRuntimeSettingsProvider.java")),
+                "HTTP runtime settings belong in easy-postman-http-runtime/http.runtime.config");
         assertTrue(Files.isRegularFile(root.resolve(
-                        "easy-postman-app/src/main/java/com/laker/postman/http/runtime/interaction/DownloadProgressSink.java")),
+                        "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/interaction/DownloadProgressSink.java")),
                 "HTTP UI-neutral interaction ports belong in http.runtime.interaction");
         assertTrue(Files.isRegularFile(root.resolve(
-                        "easy-postman-app/src/main/java/com/laker/postman/http/runtime/observation/NetworkLogSink.java")),
+                        "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/observation/NetworkLogSink.java")),
                 "HTTP network observation ports belong in http.runtime.observation");
         assertTrue(Files.isRegularFile(root.resolve(
                         "easy-postman-app/src/main/java/com/laker/postman/panel/http/runtime/SwingHttpRuntimeInteractionAdapter.java")),
@@ -782,6 +804,7 @@ public class ModuleArchitectureBoundaryTest {
                 "easy-postman-app/src/main/java/com/laker/postman/service/http/HttpSingleRequestExecutor.java",
                 "easy-postman-app/src/main/java/com/laker/postman/service/http/HttpTransportRuntime.java",
                 "easy-postman-app/src/main/java/com/laker/postman/service/http/HttpRuntimeExecutor.java",
+                "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/transport/HttpRuntimeExecutor.java",
                 "easy-postman-app/src/main/java/com/laker/postman/service/http/HttpBaseClientProvider.java",
                 "easy-postman-app/src/main/java/com/laker/postman/service/http/HttpCallTracker.java",
                 "easy-postman-app/src/main/java/com/laker/postman/service/http/ScopedHttpBaseClientProvider.java",
@@ -802,6 +825,19 @@ public class ModuleArchitectureBoundaryTest {
                 "easy-postman-app/src/main/java/com/laker/postman/http/runtime/sse/SseUiCallback.java",
                 "easy-postman-app/src/main/java/com/laker/postman/http/runtime/sse/SseResEventListener.java",
                 "easy-postman-app/src/main/java/com/laker/postman/http/runtime/sse/SseEventListener.java",
+                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/transport",
+                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/okhttp",
+                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/ssl",
+                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/sse",
+                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/cookie",
+                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/redirect",
+                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/error",
+                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/config",
+                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/interaction",
+                "easy-postman-app/src/main/java/com/laker/postman/http/runtime/observation",
+                "easy-postman-app/src/main/java/com/laker/postman/model/PreparedRequest.java",
+                "easy-postman-app/src/main/java/com/laker/postman/model/HttpResponse.java",
+                "easy-postman-app/src/main/java/com/laker/postman/model/HttpEventInfo.java",
                 "easy-postman-app/src/main/java/com/laker/postman/http/callback",
                 "easy-postman-app/src/main/java/com/laker/postman/http/response",
                 "easy-postman-app/src/main/java/com/laker/postman/http/trace",
@@ -1336,9 +1372,9 @@ public class ModuleArchitectureBoundaryTest {
                 "import com.laker.postman.platform.",
                 "import com.laker.postman.util.I18nUtil",
                 "import com.laker.postman.util.MessageKeys",
-                "import com.laker.postman.model.PreparedRequest",
-                "import com.laker.postman.model.HttpResponse",
-                "import com.laker.postman.model.HttpEventInfo"
+                "import com.laker.postman.http.runtime.model.PreparedRequest",
+                "import com.laker.postman.http.runtime.model.HttpResponse",
+                "import com.laker.postman.http.runtime.model.HttpEventInfo"
         );
     }
 
@@ -1362,9 +1398,9 @@ public class ModuleArchitectureBoundaryTest {
                 "import com.laker.postman.plugin.runtime.",
                 "import com.laker.postman.ioc.",
                 "import com.laker.postman.platform.",
-                "import com.laker.postman.model.PreparedRequest",
-                "import com.laker.postman.model.HttpResponse",
-                "import com.laker.postman.model.HttpEventInfo"
+                "import com.laker.postman.http.runtime.model.PreparedRequest",
+                "import com.laker.postman.http.runtime.model.HttpResponse",
+                "import com.laker.postman.http.runtime.model.HttpEventInfo"
         );
     }
 

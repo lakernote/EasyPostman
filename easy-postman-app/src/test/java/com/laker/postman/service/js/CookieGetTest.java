@@ -1,6 +1,6 @@
 package com.laker.postman.service.js;
 
-import com.laker.postman.model.HttpResponse;
+import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.service.js.api.Cookie;
 import com.laker.postman.service.js.api.PostmanApiContext;
 import org.graalvm.polyglot.Context;
@@ -107,10 +107,10 @@ public class CookieGetTest {
 
         pm.setResponse(response);
 
-        // 测试 pm.cookies.all()
-        Cookie[] allCookies = pm.cookies.all();
+        // 测试 pm.cookies.getAll()
+        java.util.List<Cookie> allCookies = pm.cookies.getAll();
         assertNotNull(allCookies);
-        assertEquals(3, allCookies.length, "Should have 3 cookies");
+        assertEquals(3, allCookies.size(), "Should have 3 cookies");
 
         // 验证所有 Cookie 都被填充了
         Set<String> cookieNames = new HashSet<>();
@@ -162,9 +162,9 @@ public class CookieGetTest {
         assertFalse(result.isNull(), "pm.cookies.get('JSESSIONID') should return a valid cookie");
         assertEquals("ABC123", result.asString());
 
-        // 测试 pm.cookies.all()
+        // 测试 pm.cookies.getAll()
         Value allResult = context.eval("js",
-                "var allCookies = pm.cookies.all();" +
+                "var allCookies = pm.cookies.getAll();" +
                         "allCookies.length"
         );
         assertEquals(2, allResult.asInt(), "Should have 2 cookies");
@@ -206,4 +206,3 @@ public class CookieGetTest {
                 "Both methods should return the same cookie value");
     }
 }
-

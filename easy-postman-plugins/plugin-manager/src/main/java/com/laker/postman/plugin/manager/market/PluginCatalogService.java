@@ -141,53 +141,25 @@ public class PluginCatalogService {
         String id = text(pluginJson, "id", "");
         String entryName = text(pluginJson, "name", id);
         String description = text(pluginJson, "description", "");
-        String homepage = text(pluginJson, "homepage", text(pluginJson, "homepageUrl", ""));
+        String homepage = text(pluginJson, "homepage", "");
         if (id.isBlank()) {
             log.warn("Skip invalid plugin catalog entry without id: {}", pluginJson);
             return List.of();
         }
 
         JsonNode releases = pluginJson.get("releases");
-        if (releases != null && releases.isArray()) {
-            List<PluginCatalogEntry> entries = new ArrayList<>();
-            for (JsonNode releaseJson : releases) {
-                PluginCatalogEntry entry = parseReleaseEntry(id, entryName, description, homepage, releaseJson, catalogBaseUri);
-                if (entry != null) {
-                    entries.add(entry);
-                }
+        if (releases == null || !releases.isArray()) {
+            log.warn("Skip plugin catalog entry without releases[]: {}", id);
+            return List.of();
+        }
+        List<PluginCatalogEntry> entries = new ArrayList<>();
+        for (JsonNode releaseJson : releases) {
+            PluginCatalogEntry entry = parseReleaseEntry(id, entryName, description, homepage, releaseJson, catalogBaseUri);
+            if (entry != null) {
+                entries.add(entry);
             }
-            return entries;
         }
-
-        // TODO(compat-cleanup): 官方 catalog 已切到 releases[] 后，删除旧 flat entry 解析。
-        PluginCatalogEntry legacyEntry = parseFlatEntry(pluginJson, catalogBaseUri);
-        return legacyEntry == null ? List.of() : List.of(legacyEntry);
-    }
-
-    private static PluginCatalogEntry parseFlatEntry(JsonNode pluginJson, URI catalogBaseUri) {
-        String downloadUrl = text(pluginJson, "downloadUrl", text(pluginJson, "download_url", ""));
-        String id = text(pluginJson, "id", "");
-        String entryName = text(pluginJson, "name", id);
-        String version = text(pluginJson, "version", "dev");
-        if (id.isBlank() || downloadUrl.isBlank()) {
-            log.warn("Skip invalid plugin catalog entry: {}", pluginJson);
-            return null;
-        }
-        String resolvedDownloadUrl = resolveLocation(catalogBaseUri, downloadUrl);
-        return new PluginCatalogEntry(
-                id,
-                entryName,
-                version,
-                text(pluginJson, "description", ""),
-                downloadUrl,
-                text(pluginJson, "homepage", text(pluginJson, "homepageUrl", "")),
-                text(pluginJson, "sha256", ""),
-                resolvedDownloadUrl,
-                text(pluginJson, "minAppVersion", ""),
-                text(pluginJson, "maxAppVersion", ""),
-                text(pluginJson, "minPlatformVersion", ""),
-                text(pluginJson, "maxPlatformVersion", "")
-        );
+        return entries;
     }
 
     private static PluginCatalogEntry parseReleaseEntry(String id,
@@ -196,7 +168,7 @@ public class PluginCatalogService {
                                                         String homepage,
                                                         JsonNode releaseJson,
                                                         URI catalogBaseUri) {
-        String downloadUrl = text(releaseJson, "downloadUrl", text(releaseJson, "download_url", ""));
+        String downloadUrl = text(releaseJson, "downloadUrl", "");
         String version = text(releaseJson, "version", "dev");
         if (downloadUrl.isBlank()) {
             log.warn("Skip invalid plugin release entry: {} {}", id, releaseJson);
@@ -209,7 +181,7 @@ public class PluginCatalogService {
                 version,
                 text(releaseJson, "description", description),
                 downloadUrl,
-                text(releaseJson, "homepage", text(releaseJson, "homepageUrl", homepage)),
+                text(releaseJson, "homepage", homepage),
                 text(releaseJson, "sha256", ""),
                 resolvedDownloadUrl,
                 text(releaseJson, "minAppVersion", ""),

@@ -1,6 +1,6 @@
 package com.laker.postman.service.js.api;
 
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpParam;
 import com.laker.postman.request.model.HttpFormData;
@@ -93,12 +93,6 @@ public class ScriptRequestAccessor {
     public UrlWrapper url;
 
     /**
-     * 请求 URL 字符串（用于向后兼容）
-     */
-    // TODO(compat-cleanup): 确认脚本迁移到 pm.request.url 后，删除 urlStr 兼容字段。
-    public String urlStr;
-
-    /**
      * 请求方法 (GET, POST, PUT, DELETE 等)
      */
     public String method;
@@ -151,7 +145,6 @@ public class ScriptRequestAccessor {
         this.params = new JsListWrapper<>(req.paramsList, JsListWrapper.ListType.PARAM);
 
         this.id = req.id;
-        this.urlStr = req.url;
         this.url = new UrlWrapper(req.url, req.paramsList);
         this.method = req.method;
         this.body = req.body;

@@ -5,7 +5,7 @@ import com.laker.postman.performance.core.plan.PerformanceExtractorElement;
 
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.performance.plan.PerformanceRequestSampler;
 
 import java.util.List;
@@ -71,15 +71,11 @@ record PerformanceResponseCapturePlan(PreparedRequest.ResponseBodyMode httpRespo
 
     private static final class PerformancePostScriptResponseUsage {
         private static final List<Pattern> RESPONSE_BODY_ACCESS_PATTERNS = List.of(
-                Pattern.compile("\\bresponseBody\\b"),
-                Pattern.compile("\\bresponse\\s*\\.\\s*body\\b"),
-                Pattern.compile("\\b(?:pm|postman)\\s*\\.\\s*response\\s*\\.\\s*(?:text|json)\\s*\\("),
-                Pattern.compile("\\b(?:pm|postman)\\s*\\.\\s*response\\s*\\.\\s*body\\b"),
-                Pattern.compile("\\b(?:pm|postman)\\s*\\.\\s*response\\s*\\.\\s*to\\s*\\.\\s*have\\s*\\.\\s*body\\b")
+                Pattern.compile("\\bpm\\s*\\.\\s*response\\s*\\.\\s*(?:text|json)\\s*\\("),
+                Pattern.compile("\\bpm\\s*\\.\\s*response\\s*\\.\\s*to\\s*\\.\\s*have\\s*\\.\\s*body\\b")
         );
         private static final List<Pattern> RESPONSE_SIZE_ACCESS_PATTERNS = List.of(
-                Pattern.compile("\\bresponse\\s*\\.\\s*bodySize\\b"),
-                Pattern.compile("\\b(?:pm|postman)\\s*\\.\\s*response\\s*\\.\\s*size\\s*\\(")
+                Pattern.compile("\\bpm\\s*\\.\\s*response\\s*\\.\\s*size\\s*\\(")
         );
 
         private PerformancePostScriptResponseUsage() {

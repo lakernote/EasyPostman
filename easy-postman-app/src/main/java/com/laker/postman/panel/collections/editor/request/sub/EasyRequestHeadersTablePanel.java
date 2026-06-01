@@ -4,6 +4,7 @@ import com.laker.postman.common.component.table.AbstractTablePanel;
 import com.laker.postman.common.component.table.HttpHeaderKeyEasyTextFieldCellEditor;
 import com.laker.postman.common.component.table.EasyTextFieldCellRenderer;
 import com.laker.postman.common.component.table.HttpHeaderValueEasyTextFieldCellEditor;
+import com.laker.postman.request.defaults.HttpRequestDefaults;
 import com.laker.postman.util.HttpHeaderConstants;
 import lombok.extern.slf4j.Slf4j;
 
@@ -14,10 +15,10 @@ import java.util.*;
 public class EasyRequestHeadersTablePanel extends AbstractTablePanel<Map<String, Object>> {
 
     // Default header keys for consistency
-    private static final String USER_AGENT = "User-Agent";
-    private static final String ACCEPT = "Accept";
-    private static final String ACCEPT_ENCODING = "Accept-Encoding";
-    private static final String CONNECTION = "Connection";
+    private static final String USER_AGENT = HttpRequestDefaults.USER_AGENT;
+    private static final String ACCEPT = HttpRequestDefaults.ACCEPT;
+    private static final String ACCEPT_ENCODING = HttpRequestDefaults.ACCEPT_ENCODING;
+    private static final String CONNECTION = HttpRequestDefaults.CONNECTION;
     private static final Set<String> DEFAULT_HEADER_KEYS = new HashSet<>();
 
     static {

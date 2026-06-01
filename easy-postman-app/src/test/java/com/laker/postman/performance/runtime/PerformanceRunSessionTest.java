@@ -3,7 +3,7 @@ package com.laker.postman.performance.runtime;
 import com.laker.postman.performance.core.runtime.PerformanceRunHandle;
 import com.laker.postman.performance.core.runtime.PerformanceRunListener;
 import com.laker.postman.performance.core.runtime.PerformanceRunSummary;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.performance.execution.PerformanceNetworkRuntime;
 import com.laker.postman.performance.core.plan.PerformanceCoreRequestSampler;
 import com.laker.postman.performance.core.plan.PerformanceTestPlan;
@@ -13,8 +13,8 @@ import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
 import com.laker.postman.performance.result.PerformanceResultCollector;
 import okhttp3.Call;
 import okhttp3.OkHttpClient;
-import okhttp3.WebSocket;
-import okhttp3.sse.EventSource;
+import com.laker.postman.http.runtime.transport.RealtimeConnectionHandle;
+import com.laker.postman.http.runtime.transport.RealtimeWebSocketConnection;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Field;
@@ -155,12 +155,12 @@ public class PerformanceRunSessionTest {
         private int cancelAllCount;
 
         @Override
-        public Set<EventSource> activeSseSources() {
+        public Set<RealtimeConnectionHandle> activeSseSources() {
             return Set.of();
         }
 
         @Override
-        public Set<WebSocket> activeWebSockets() {
+        public Set<RealtimeWebSocketConnection> activeWebSockets() {
             return Set.of();
         }
 

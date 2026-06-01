@@ -362,7 +362,7 @@ public class PerformancePanel extends UiSingletonPanel {
         );
         executionEngine = new PerformanceExecutionEngine(
                 () -> running,
-                PerformanceExecutionConfig.guiSupplying(
+                PerformanceExecutionConfig.uiSupplying(
                         () -> efficientMode,
                         SettingManager::getPerformanceResponseBodyPreviewLimitKb,
                         SettingManager::isPerformanceEventLoggingEnabled

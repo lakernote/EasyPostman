@@ -9,7 +9,9 @@ import com.laker.postman.common.component.tab.ClosableTabComponent;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.service.collections.ActiveCollectionTreeNodeRepository;
 import com.laker.postman.service.collections.CollectionTreeQueryService;
-import com.laker.postman.service.variable.RequestContext;
+import com.laker.postman.service.collections.GroupInheritanceHelper;
+import com.laker.postman.service.variable.RequestExecutionContext;
+import com.laker.postman.service.variable.RequestExecutionScope;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.experimental.UtilityClass;
@@ -42,7 +44,9 @@ public class RequestEditorTabController {
         repository.getRootNode().ifPresent(rootNode -> {
             DefaultMutableTreeNode requestNode = CollectionTreeQueryService.findRequestNodeById(rootNode, id);
             if (requestNode != null) {
-                RequestContext.setCurrentRequestNode(requestNode);
+                RequestExecutionContext.setCurrentScope(RequestExecutionScope.fromVariables(
+                        GroupInheritanceHelper.getMergedGroupVariables(requestNode)
+                ));
             }
         });
 

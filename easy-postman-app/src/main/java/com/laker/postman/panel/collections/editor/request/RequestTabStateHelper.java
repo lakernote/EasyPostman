@@ -1,13 +1,5 @@
 package com.laker.postman.panel.collections.editor.request;
 
-import com.laker.postman.request.model.RequestAuthTypes;
-import com.laker.postman.request.model.RequestItemProtocolEnum;
-import com.laker.postman.request.model.HttpHeader;
-import com.laker.postman.request.model.HttpParam;
-import com.laker.postman.request.model.HttpFormData;
-import com.laker.postman.request.model.HttpFormUrlencoded;
-
-
 import com.laker.postman.common.component.MarkdownEditorPanel;
 import com.laker.postman.common.component.tab.IndicatorTabComponent;
 import com.laker.postman.common.component.table.FormDataTablePanel;
@@ -18,15 +10,19 @@ import com.laker.postman.panel.collections.editor.request.sub.EasyRequestParamsP
 import com.laker.postman.panel.collections.editor.request.sub.RequestBodyPanel;
 import com.laker.postman.panel.collections.editor.request.sub.RequestSettingsPanel;
 import com.laker.postman.panel.collections.editor.request.sub.ScriptPanel;
+import com.laker.postman.request.edit.HttpRequestEditorContentSummary;
+import com.laker.postman.request.edit.HttpRequestEditorDraft;
+import com.laker.postman.request.edit.HttpRequestSettingsDraft;
+import com.laker.postman.request.model.HttpFormData;
+import com.laker.postman.request.model.HttpFormUrlencoded;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.Document;
+import java.util.ArrayList;
 import java.util.List;
-
-import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_INHERIT;
-import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_NONE;
 
 final class RequestTabStateHelper {
     private final RequestItemProtocolEnum protocol;
@@ -115,97 +111,57 @@ final class RequestTabStateHelper {
 
     void updateTabIndicators() {
         SwingUtilities.invokeLater(() -> {
+            HttpRequestEditorContentSummary summary =
+                    HttpRequestEditorContentSummary.from(collectContentDraft());
             if (paramsTabIndicator != null) {
-                paramsTabIndicator.setShowIndicator(hasParamsContent());
+                paramsTabIndicator.setShowIndicator(summary.isHasParams());
             }
             if (authTabIndicator != null) {
-                authTabIndicator.setShowIndicator(hasAuthContent());
+                authTabIndicator.setShowIndicator(summary.isHasAuth());
             }
             if (headersTabIndicator != null) {
-                headersTabIndicator.setShowIndicator(hasHeadersContent());
+                headersTabIndicator.setShowIndicator(summary.isHasHeaders());
             }
             if (bodyTabIndicator != null) {
-                bodyTabIndicator.setShowIndicator(hasBodyContent());
+                bodyTabIndicator.setShowIndicator(summary.isHasBody());
             }
             if (settingsTabIndicator != null) {
-                settingsTabIndicator.setShowIndicator(hasSettingsContent());
+                settingsTabIndicator.setShowIndicator(summary.isHasSettings());
             }
             if (scriptsTabIndicator != null) {
-                scriptsTabIndicator.setShowIndicator(hasScriptsContent());
+                scriptsTabIndicator.setShowIndicator(summary.isHasScripts());
             }
         });
     }
 
-    private boolean hasParamsContent() {
-        List<HttpParam> params = paramsPanel.getParamsListFromModel();
-        return params != null && params.stream().anyMatch(param ->
-                param.getKey() != null && !param.getKey().trim().isEmpty()
-        );
+    private HttpRequestEditorDraft collectContentDraft() {
+        HttpRequestSettingsDraft settings = requestSettingsPanel.collectSettings();
+        return HttpRequestEditorDraft.builder()
+                .protocol(protocol)
+                .params(paramsPanel.getParamsListFromModel())
+                .headers(headersPanel.getHeadersListFromModel())
+                .bodyType(requestBodyPanel.getBodyType())
+                .body(requestBodyPanel.getRawBody())
+                .formData(readFormDataFromModel())
+                .urlencoded(readUrlencodedFromModel())
+                .authType(authTabPanel.getAuthType())
+                .followRedirects(settings.getFollowRedirects())
+                .cookieJarEnabled(settings.getCookieJarEnabled())
+                .httpVersion(settings.getHttpVersion())
+                .requestTimeoutMs(settings.getRequestTimeoutMs())
+                .prescript(scriptPanel.getPrescript())
+                .postscript(scriptPanel.getPostscript())
+                .build();
     }
 
-    private boolean hasAuthContent() {
-        String authType = authTabPanel.getAuthType();
-        return authType != null
-                && !AUTH_TYPE_INHERIT.equals(authType)
-                && !AUTH_TYPE_NONE.equals(authType);
+    private List<HttpFormData> readFormDataFromModel() {
+        FormDataTablePanel formDataPanel = requestBodyPanel.getFormDataTablePanel();
+        return formDataPanel == null ? new ArrayList<>() : formDataPanel.getFormDataListFromModel();
     }
 
-    private boolean hasHeadersContent() {
-        List<HttpHeader> headers = headersPanel.getHeadersListFromModel();
-        return headers != null && headers.stream().anyMatch(header ->
-                header.getKey() != null && !header.getKey().trim().isEmpty()
-        );
-    }
-
-    private boolean hasBodyContent() {
-        if (!protocol.isHttpProtocol()) {
-            return false;
-        }
-
-        String bodyType = requestBodyPanel.getBodyType();
-        if (bodyType == null) {
-            return false;
-        }
-
-        switch (bodyType) {
-            case "none":
-                return false;
-            case "raw":
-            case "binary":
-                String rawBody = requestBodyPanel.getRawBody();
-                return rawBody != null && !rawBody.trim().isEmpty();
-            case "form-data":
-                FormDataTablePanel formDataPanel = requestBodyPanel.getFormDataTablePanel();
-                if (formDataPanel == null) {
-                    return false;
-                }
-                List<HttpFormData> formDataItems = formDataPanel.getFormDataListFromModel();
-                return formDataItems != null && formDataItems.stream().anyMatch(item ->
-                        item.getKey() != null && !item.getKey().trim().isEmpty()
-                );
-            case "x-www-form-urlencoded":
-                FormUrlencodedTablePanel urlencodedPanel = requestBodyPanel.getFormUrlencodedTablePanel();
-                if (urlencodedPanel == null) {
-                    return false;
-                }
-                List<HttpFormUrlencoded> urlencodedItems = urlencodedPanel.getFormDataListFromModel();
-                return urlencodedItems != null && urlencodedItems.stream().anyMatch(item ->
-                        item.getKey() != null && !item.getKey().trim().isEmpty()
-                );
-            default:
-                return false;
-        }
-    }
-
-    private boolean hasScriptsContent() {
-        String prescript = scriptPanel.getPrescript();
-        String postscript = scriptPanel.getPostscript();
-        return (prescript != null && !prescript.trim().isEmpty())
-                || (postscript != null && !postscript.trim().isEmpty());
-    }
-
-    private boolean hasSettingsContent() {
-        return requestSettingsPanel.hasCustomSettings();
+    private List<HttpFormUrlencoded> readUrlencodedFromModel() {
+        FormUrlencodedTablePanel urlencodedPanel = requestBodyPanel.getFormUrlencodedTablePanel();
+        return urlencodedPanel == null ? new ArrayList<>() : urlencodedPanel.getFormDataListFromModel();
     }
 
     private void addDocumentListener(Document document, Runnable action) {

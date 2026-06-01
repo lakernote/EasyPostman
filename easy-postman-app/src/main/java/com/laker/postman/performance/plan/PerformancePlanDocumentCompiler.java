@@ -15,14 +15,14 @@ public class PerformancePlanDocumentCompiler {
         PerformanceTestPlan corePlan = PerformanceCorePlanDocumentCompiler.compile(
                 PerformanceCorePlanAdapter.toCoreDocument(document)
         );
-        return PerformanceCorePlanAdapter.toGuiExecutablePlan(corePlan);
+        return PerformanceCorePlanAdapter.toExecutablePlan(corePlan);
     }
 
     public PerformanceTestPlan compile(PerformancePlanNode root) {
         PerformanceTestPlan corePlan = PerformanceCorePlanDocumentCompiler.compile(
                 PerformanceCorePlanAdapter.toCoreNode(root)
         );
-        return PerformanceCorePlanAdapter.toGuiExecutablePlan(corePlan);
+        return PerformanceCorePlanAdapter.toExecutablePlan(corePlan);
     }
 
     public PerformanceRequestSampler compileRequestSampler(PerformancePlanNode requestNode) {

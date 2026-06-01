@@ -1,28 +1,26 @@
 package com.laker.postman.panel.collections.editor.request;
 
-import com.laker.postman.request.model.SavedResponse;
+import com.laker.postman.request.compare.HttpRequestDirtyComparator;
+import com.laker.postman.request.defaults.GeneratedRequestHeaderPolicy;
 import com.laker.postman.request.model.HttpRequestItem;
-
-
-import com.laker.postman.http.request.HttpRequestSettingsResolver;
 import com.laker.postman.util.JsonUtil;
-import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-@Slf4j
 final class RequestDirtyStateHelper {
     private final Supplier<HttpRequestItem> currentRequestFromModelSupplier;
     private final Consumer<Boolean> dirtyIndicatorUpdater;
+    private final GeneratedRequestHeaderPolicy generatedHeaderPolicy;
     private HttpRequestItem originalRequestItem;
 
     RequestDirtyStateHelper(Supplier<HttpRequestItem> currentRequestFromModelSupplier,
-                            Consumer<Boolean> dirtyIndicatorUpdater) {
+                            Consumer<Boolean> dirtyIndicatorUpdater,
+                            GeneratedRequestHeaderPolicy generatedHeaderPolicy) {
         this.currentRequestFromModelSupplier = currentRequestFromModelSupplier;
         this.dirtyIndicatorUpdater = dirtyIndicatorUpdater;
+        this.generatedHeaderPolicy = generatedHeaderPolicy;
     }
 
     HttpRequestItem getOriginalRequestItem() {
@@ -44,7 +42,11 @@ final class RequestDirtyStateHelper {
 
         // 脏检查始终基于“原始快照 vs 当前表单快照”，这样 UI 不需要了解比较细节。
         HttpRequestItem current = currentRequestFromModelSupplier.get();
-        return !equalsIgnoringResponse(originalRequestItem, current);
+        return HttpRequestDirtyComparator.isDirty(
+                originalRequestItem,
+                current,
+                generatedHeaderPolicy.generatedHeaders()
+        );
     }
 
     void updateTabDirty() {
@@ -54,36 +56,6 @@ final class RequestDirtyStateHelper {
             }
             dirtyIndicatorUpdater.accept(isModified());
         });
-    }
-
-    private boolean equalsIgnoringResponse(HttpRequestItem original, HttpRequestItem current) {
-        if (original == current) {
-            return true;
-        }
-        if (original == null || current == null) {
-            return false;
-        }
-
-        try {
-            HttpRequestItem normalizedOriginal = HttpRequestSettingsResolver.normalizeForComparison(original);
-            HttpRequestItem normalizedCurrent = HttpRequestSettingsResolver.normalizeForComparison(current);
-
-            List<SavedResponse> originalSavedResponses = normalizedOriginal.getResponse();
-            List<SavedResponse> currentSavedResponses = normalizedCurrent.getResponse();
-
-            try {
-                // response 是历史结果，不属于请求编辑内容；比较时剔除，避免误判整页已修改。
-                normalizedOriginal.setResponse(null);
-                normalizedCurrent.setResponse(null);
-                return JsonUtil.toJsonStr(normalizedOriginal).equals(JsonUtil.toJsonStr(normalizedCurrent));
-            } finally {
-                normalizedOriginal.setResponse(originalSavedResponses);
-                normalizedCurrent.setResponse(currentSavedResponses);
-            }
-        } catch (Exception ex) {
-            log.error("比较请求时发生异常", ex);
-            return false;
-        }
     }
 
 }

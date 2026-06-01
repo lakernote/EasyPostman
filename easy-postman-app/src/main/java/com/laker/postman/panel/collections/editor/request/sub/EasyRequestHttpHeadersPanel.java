@@ -6,7 +6,7 @@ import com.laker.postman.request.model.HttpHeader;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.button.EditButton;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.http.request.HttpRequestFactory;
+import com.laker.postman.request.defaults.GeneratedRequestHeaderPolicy;
 import com.laker.postman.util.*;
 
 import javax.swing.*;
@@ -29,31 +29,7 @@ import java.util.List;
  */
 public class EasyRequestHttpHeadersPanel extends JPanel {
     private EasyRequestHeadersTablePanel tablePanel;
-
-    // Default headers constants
-    private static final String USER_AGENT = "User-Agent";
-    private static final String ACCEPT = "Accept";
-    private static final String ACCEPT_ENCODING = "Accept-Encoding";
-    private static final String CONNECTION = "Connection";
-    private static final String USER_AGENT_VALUE = HttpRequestFactory.EASY_POSTMAN_CLIENT;
-    private static final String ACCEPT_VALUE = "*/*";
-    private static final String ACCEPT_ENCODING_VALUE = "gzip, deflate, br";
-    private static final String CONNECTION_VALUE = "keep-alive";
-
-    private static final Object[][] DEFAULT_HEADERS = {
-            {USER_AGENT, USER_AGENT_VALUE},
-            {ACCEPT, ACCEPT_VALUE},
-            {ACCEPT_ENCODING, ACCEPT_ENCODING_VALUE},
-            {CONNECTION, CONNECTION_VALUE}
-    };
-
-    private static final Set<String> DEFAULT_HEADER_KEYS = new HashSet<>();
-
-    static {
-        for (Object[] header : DEFAULT_HEADERS) {
-            DEFAULT_HEADER_KEYS.add((String) header[0]);
-        }
-    }
+    private final GeneratedRequestHeaderPolicy generatedHeaderPolicy;
 
     // UI components
     private final FlatSVGIcon eyeOpenIcon;
@@ -67,7 +43,8 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
     private transient DefaultHeaderRowFilter defaultHeaderFilter;
     private boolean showDefaultHeaders = false;
 
-    public EasyRequestHttpHeadersPanel() {
+    public EasyRequestHttpHeadersPanel(GeneratedRequestHeaderPolicy generatedHeaderPolicy) {
+        this.generatedHeaderPolicy = Objects.requireNonNull(generatedHeaderPolicy, "generatedHeaderPolicy");
         // 初始化图标（添加颜色过滤器以适配主题）
         eyeOpenIcon = IconUtil.createThemed("icons/eye-open.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL);
         eyeCloseIcon = IconUtil.createThemed("icons/eye-close.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL);
@@ -102,7 +79,7 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
     private JLabel createCountLabel() {
         JLabel label = new JLabel();
         // 设置初始文本（隐藏状态显示数量）
-        int count = DEFAULT_HEADERS.length;
+        int count = generatedHeaderPolicy.generatedHeaderCount();
         String countText = "(" + count + ")";
         String countHtml = "<span style='color:#009900;font-weight:bold;'>" + countText + "</span>";
         label.setText("<html>" + countHtml + "</html>");
@@ -154,8 +131,8 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
 
     private void initializeTableWithDefaults() {
         // 将默认请求头添加到表格
-        for (Object[] header : DEFAULT_HEADERS) {
-            tablePanel.addRow(header[0], header[1]);
+        for (HttpHeader header : generatedHeaderPolicy.generatedHeaders()) {
+            tablePanel.addRow(header.getKey(), header.getValue());
         }
     }
 
@@ -180,7 +157,7 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
 
     private void updateCountLabel() {
         if (!showDefaultHeaders) {
-            int hiddenCount = DEFAULT_HEADERS.length;
+            int hiddenCount = generatedHeaderPolicy.generatedHeaderCount();
             String countText = "(" + hiddenCount + ")";
             String countHtml = "<span style='color:#009900;font-weight:bold;'>" + countText + "</span>";
             countLabel.setText("<html>" + countHtml + "</html>");
@@ -212,7 +189,7 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
     /**
      * Custom row filter for managing default headers visibility
      */
-    private static class DefaultHeaderRowFilter extends RowFilter<DefaultTableModel, Integer> {
+    private class DefaultHeaderRowFilter extends RowFilter<DefaultTableModel, Integer> {
         private boolean showDefaultHeaders = false;
 
         public void setShowDefaultHeaders(boolean showDefaultHeaders) {
@@ -232,7 +209,7 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
                     return true; // Show empty key rows
                 }
 
-                boolean isDefaultHeader = DEFAULT_HEADER_KEYS.contains(key);
+                boolean isDefaultHeader = generatedHeaderPolicy.isGeneratedHeaderKey(key);
                 return showDefaultHeaders || !isDefaultHeader;
             } catch (Exception e) {
                 // In case of any errors, show the row
@@ -347,74 +324,14 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
      * Build sorted headers list with default headers first
      */
     private List<HttpHeader> buildSortedHeadersList(List<HttpHeader> inputList) {
-        List<HttpHeader> sortedList = new ArrayList<>();
-        Map<String, HttpHeader> inputMap = new LinkedHashMap<>();
-
-        // Convert list to map for easy lookup
-        for (HttpHeader header : inputList) {
-            inputMap.put(header.getKey(), header);
-        }
-
-        // Add default headers first (in order)
-        for (Object[] defaultHeader : DEFAULT_HEADERS) {
-            String key = (String) defaultHeader[0];
-            HttpHeader header = findHeaderIgnoreCase(inputMap, key);
-
-            if (header != null) {
-                sortedList.add(header);
-            } else {
-                // Add default header with default value
-                String defaultValue = (String) defaultHeader[1];
-                sortedList.add(new HttpHeader(true, key, defaultValue));
-            }
-        }
-
-        // Add non-default headers
-        for (HttpHeader header : inputList) {
-            if (!isDefaultHeader(header.getKey())) {
-                sortedList.add(header);
-            }
-        }
-
-        return sortedList;
-    }
-
-    /**
-     * Find header ignoring case
-     */
-    private HttpHeader findHeaderIgnoreCase(Map<String, HttpHeader> map, String targetKey) {
-        // First try exact match
-        if (map.containsKey(targetKey)) {
-            return map.get(targetKey);
-        }
-
-        // Then try case-insensitive match
-        for (Map.Entry<String, HttpHeader> entry : map.entrySet()) {
-            if (entry.getKey().equalsIgnoreCase(targetKey)) {
-                return entry.getValue();
-            }
-        }
-
-        return null;
+        return generatedHeaderPolicy.applyDefaults(inputList);
     }
 
     /**
      * Check if header is a default header (case-insensitive)
      */
     private boolean isDefaultHeader(String key) {
-        // First try exact match for performance
-        if (DEFAULT_HEADER_KEYS.contains(key)) {
-            return true;
-        }
-
-        // Then try case-insensitive match
-        for (String defaultKey : DEFAULT_HEADER_KEYS) {
-            if (defaultKey.equalsIgnoreCase(key)) {
-                return true;
-            }
-        }
-
-        return false;
+        return generatedHeaderPolicy.isGeneratedHeaderKey(key);
     }
 
     /**
@@ -550,7 +467,7 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
         // If not found, add new header
         if (!found) {
             // Check if this is a default header that should be added in the correct position
-            if (DEFAULT_HEADER_KEYS.contains(key)) {
+            if (generatedHeaderPolicy.isGeneratedHeaderKey(key)) {
                 addDefaultHeaderInOrder(key, value, model);
             } else {
                 // Add as regular header using direct model manipulation to avoid triggering auto-append
@@ -586,14 +503,13 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
 
     /** 返回默认 header 应插入的行索引，-1 表示追加到末尾 */
     private int findInsertPositionForDefaultHeader(String key, DefaultTableModel model) {
-        String[] defaultOrder = {USER_AGENT, ACCEPT, ACCEPT_ENCODING, CONNECTION};
-        int keyIndex = indexInArray(defaultOrder, key);
+        int keyIndex = generatedHeaderOrder(key);
         if (keyIndex < 0) return -1;
 
         for (int row = 0; row < model.getRowCount(); row++) {
             Object rowKeyObj = model.getValueAt(row, 1);
             if (rowKeyObj == null) continue;
-            int rowKeyIndex = indexInArray(defaultOrder, rowKeyObj.toString().trim());
+            int rowKeyIndex = generatedHeaderOrder(rowKeyObj.toString().trim());
             if (rowKeyIndex > keyIndex || rowKeyIndex == -1) {
                 return row;
             }
@@ -601,10 +517,13 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
         return -1;
     }
 
-    /** 返回字符串在数组中的索引，不存在返回 -1 */
-    private static int indexInArray(String[] array, String target) {
-        for (int i = 0; i < array.length; i++) {
-            if (array[i].equals(target)) return i;
+    /** 返回默认 header 的顺序索引，不存在返回 -1 */
+    private int generatedHeaderOrder(String target) {
+        List<HttpHeader> generatedHeaders = generatedHeaderPolicy.generatedHeaders();
+        for (int i = 0; i < generatedHeaders.size(); i++) {
+            if (generatedHeaders.get(i).getKey().equalsIgnoreCase(target)) {
+                return i;
+            }
         }
         return -1;
     }
@@ -760,7 +679,7 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
         }
 
         List<HttpHeader> headers = new ArrayList<>();
-        // 兼容 \r\n（Windows 粘贴）和 \n
+        // 支持 \r\n（Windows 粘贴）和 \n
         String[] lines = text.split("\\r?\\n");
 
         for (String line : lines) {
@@ -803,13 +722,6 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
      * 清空所有非默认请求头
      */
     private void clearNonDefaultHeaders() {
-        List<HttpHeader> defaultOnlyHeaders = new ArrayList<>();
-        // 只保留默认请求头
-        for (Object[] defaultHeader : DEFAULT_HEADERS) {
-            String key = (String) defaultHeader[0];
-            String value = (String) defaultHeader[1];
-            defaultOnlyHeaders.add(new HttpHeader(true, key, value));
-        }
-        setHeadersList(defaultOnlyHeaders);
+        setHeadersList(generatedHeaderPolicy.generatedHeaders());
     }
 }

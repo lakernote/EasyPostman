@@ -1,8 +1,8 @@
 package com.laker.postman.service.js.api;
 
 import com.laker.postman.model.Environment;
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.HttpResponse;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.script.model.TestResult;
 import com.laker.postman.plugin.host.PluginAccess;
 import com.laker.postman.service.EnvironmentService;
@@ -64,7 +64,8 @@ public class PostmanApiContext {
     public ScriptScopedVariablesApi environment;
 
     /**
-     * 环境变量别名 - Postman 中 pm.env 和 pm.environment 指向同一对象
+     * 历史兼容别名 - 对应 pm.env。
+     * Postman 官方 API 使用 pm.environment，新脚本和内置片段仍应优先使用 pm.environment。
      */
     public ScriptScopedVariablesApi env;
 
@@ -104,33 +105,21 @@ public class PostmanApiContext {
     public CookieApi cookies;
 
     /**
-     * 测试 API - 对应 pm.test，支持 pm.test() 调用和 pm.test.index() 方法
+     * 测试 API - 对应 pm.test。
      */
     public TestApi test;
-
-    /**
-     * Kafka API - 保留 pm.kafka 兼容别名，实际由插件在运行时注入。
-     */
-    public Object kafka;
-
-    /**
-     * Redis API - 保留 pm.redis 兼容别名，实际由插件在运行时注入。
-     */
-    public Object redis;
 
     private final Map<String, Object> pluginApis = new LinkedHashMap<>();
 
     /**
-     * Elasticsearch API - 对应 pm.elasticsearch / pm.es
+     * Elasticsearch API - 对应 pm.elasticsearch
      */
     public ScriptElasticsearchApi elasticsearch;
-    public ScriptElasticsearchApi es;
 
     /**
-     * InfluxDB API - 对应 pm.influxdb / pm.influx
+     * InfluxDB API - 对应 pm.influxdb
      */
     public ScriptInfluxDbApi influxdb;
-    public ScriptInfluxDbApi influx;
 
     /**
      * 构造 Postman API 上下文
@@ -158,7 +147,7 @@ public class PostmanApiContext {
                 environment,
                 environmentPersistAction
         );
-        this.env = this.environment; // Postman 中 env 和 environment 指向同一对象
+        this.env = this.environment;
         this.globals = new ScriptScopedVariablesApi(
                 globals,
                 null
@@ -167,9 +156,7 @@ public class PostmanApiContext {
         this.test = new TestApi(this); // 初始化 test API
         this.info = new PostmanInfoApi(IterationInfoService.getInstance().getCurrentInfo());
         this.elasticsearch = new ScriptElasticsearchApi();
-        this.es = this.elasticsearch;
         this.influxdb = new ScriptInfluxDbApi();
-        this.influx = this.influxdb;
         // 核心 pm 能力先由宿主内建，再把插件注册表里的扩展 API 动态挂进来。
         // 这样脚本层看到的是一个统一的 pm 对象，而不是“宿主 API + 插件 API”两套入口。
         PluginAccess.createScriptApis().forEach(this::registerPluginApi);
@@ -187,14 +174,6 @@ public class PostmanApiContext {
             return;
         }
         pluginApis.put(alias, api);
-        // 对 kafka / redis 保留字段别名，是为了兼容已有脚本里直接写 pm.kafka / pm.redis 的习惯。
-        // 新能力统一建议走 pm.plugin(alias)，这样未来不会因为字段膨胀把 pm 顶层塞满。
-        if ("kafka".equals(alias)) {
-            this.kafka = api;
-        }
-        if ("redis".equals(alias)) {
-            this.redis = api;
-        }
     }
 
     public Object plugin(String alias) {
@@ -204,96 +183,6 @@ public class PostmanApiContext {
 
     public boolean hasPlugin(String alias) {
         return alias != null && pluginApis.containsKey(alias);
-    }
-
-    /**
-     * 设置环境变量
-     * 对应脚本中的: pm.environment.set(key, value)
-     *
-     * @param key   变量名
-     * @param value 变量值
-     */
-    public void setEnvironmentVariable(String key, String value) {
-        environment.set(key, value);
-    }
-
-    /**
-     * 设置环境变量（支持任意类型）
-     * 对应脚本中的: pm.environment.set(key, value)
-     *
-     * @param key   变量名
-     * @param value 变量值（任意类型）
-     */
-    public void setEnvironmentVariable(String key, Object value) {
-        environment.set(key, value);
-    }
-
-    /**
-     * 获取环境变量
-     * 对应脚本中的: pm.environment.get(key)
-     *
-     * @param key 变量名
-     * @return 变量值，不存在则返回 null
-     */
-    public String getEnvironmentVariable(String key) {
-        return environment.get(key);
-    }
-
-    /**
-     * 设置全局变量
-     * 对应脚本中的: pm.globals.set(key, value)
-     *
-     * @param key   变量名
-     * @param value 变量值
-     */
-    public void setGlobalVariable(String key, String value) {
-        globals.set(key, value);
-    }
-
-    /**
-     * 设置全局变量（支持任意类型）
-     * 对应脚本中的: pm.globals.set(key, value)
-     *
-     * @param key   变量名
-     * @param value 变量值（任意类型）
-     */
-    public void setGlobalVariable(String key, Object value) {
-        globals.set(key, value);
-    }
-
-    /**
-     * 获取全局变量
-     * 对应脚本中的: pm.globals.get(key)
-     *
-     * @param key 变量名
-     * @return 变量值，不存在则返回 null
-     */
-    public String getGlobalVariable(String key) {
-        return globals.get(key);
-    }
-
-    /**
-     * 执行测试断言（保持向后兼容）
-     * 对应脚本中的: pm.test(name, function)
-     *
-     * <p>示例：
-     * <pre>{@code
-     * pm.test("Response time is less than 200ms", function() {
-     *     pm.expect(pm.response.responseTime).to.be.below(200);
-     * });
-     * }</pre>
-     *
-     * @param name         测试名称
-     * @param testFunction 测试函数，使用 GraalVM Value 类型以支持 JavaScript 函数
-     * @deprecated 推荐使用 test 对象，但保留此方法以保持向后兼容
-     */
-    // TODO(compat-cleanup): 等脚本兼容窗口结束后，删除直接 pm.test(...) Java 入口，仅保留 test API 委托。
-    @Deprecated(forRemoval = false)
-    public void test(String name, Value testFunction) {
-        // 委托给 TestApi
-        if (test != null) {
-            test.run(name, testFunction);
-        }
     }
 
     /**
@@ -369,16 +258,6 @@ public class PostmanApiContext {
     }
 
     /**
-     * 生成 UUID（别名方法）
-     * 对应脚本中的: pm.generateUUID()
-     *
-     * @return UUID 字符串
-     */
-    public String generateUUID() {
-        return uuid();
-    }
-
-    /**
      * 获取当前时间戳（毫秒）
      * 对应脚本中的: pm.getTimestamp()
      *
@@ -386,30 +265,6 @@ public class PostmanApiContext {
      */
     public long getTimestamp() {
         return System.currentTimeMillis();
-    }
-
-    /**
-     * 设置执行变量
-     * 对应脚本中的: pm.setVariable(key, value)
-     *
-     * @param key   变量名
-     * @param value 变量值
-     */
-    // TODO(compat-cleanup): 等脚本迁移到 pm.variables.set 后，删除旧 pm.setVariable 入口。
-    public void setVariable(String key, String value) {
-        variables.set(key, value);
-    }
-
-    /**
-     * 获取执行变量
-     * 对应脚本中的: pm.getVariable(key)
-     *
-     * @param key 变量名
-     * @return 变量值，不存在则返回 null
-     */
-    // TODO(compat-cleanup): 等脚本迁移到 pm.variables.get 后，删除旧 pm.getVariable 入口。
-    public String getVariable(String key) {
-        return variables.get(key);
     }
 
     /**

@@ -1,8 +1,8 @@
 package com.laker.postman.service.js;
 
 import com.laker.postman.model.Environment;
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.HttpResponse;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.request.model.AuthType;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpParam;
@@ -16,7 +16,7 @@ import com.laker.postman.http.request.PreparedRequestFactory;
 import com.laker.postman.http.request.PreparedRequestFinalizer;
 import com.laker.postman.service.variable.ExecutionVariableContext;
 import com.laker.postman.service.variable.IterationDataVariableService;
-import com.laker.postman.service.variable.RequestContext;
+import com.laker.postman.service.variable.RequestExecutionContext;
 import com.laker.postman.service.variable.RequestExecutionScope;
 import com.laker.postman.service.variable.VariablesService;
 import com.laker.postman.variable.VariableType;
@@ -78,7 +78,7 @@ public class ScriptExecutionPipelineTest {
                 EnvironmentService.deleteEnvironment(testEnv.getId());
             }
             clearExecutionContext();
-            RequestContext.clearCurrentRequestNode();
+            RequestExecutionContext.clearCurrentScope();
         } finally {
             if (originalDataFilePath != null && !originalDataFilePath.isBlank()) {
                 EnvironmentService.setDataFilePath(originalDataFilePath);
@@ -331,6 +331,40 @@ public class ScriptExecutionPipelineTest {
                 .orElseThrow();
         assertEquals(persistedActiveEnv.get("shared"), "env-value");
         assertEquals(persistedActiveEnv.get("envOnly"), "env-only");
+    }
+
+    @Test
+    public void shouldSupportPmEnvAliasForHistoricalScripts() {
+        PreparedRequest request = new PreparedRequest();
+        request.id = "script-pipeline-pm-env-alias-request";
+        request.method = "GET";
+        request.url = "https://example.com/{{aliasValue}}/{{canonicalValue}}";
+        request.headersList = new ArrayList<>();
+        request.paramsList = new ArrayList<>();
+        request.formDataList = new ArrayList<>();
+        request.urlencodedList = new ArrayList<>();
+
+        ScriptExecutionPipeline pipeline = ScriptExecutionPipeline.builder()
+                .request(request)
+                .preScript("""
+                        pm.env.set('aliasValue', 'from-alias');
+                        pm.environment.set('canonicalValue', 'from-canonical');
+                        pm.variables.set('aliasCanReadCanonical', pm.env.get('canonicalValue'));
+                        pm.variables.set('canonicalCanReadAlias', pm.environment.get('aliasValue'));
+                        """)
+                .postScript("")
+                .build();
+
+        ScriptExecutionResult preResult = pipeline.executePreScript();
+
+        assertTrue(preResult.isSuccess(), "Pre-request scripts using pm.env should remain compatible");
+        pipeline.withExecutionContext(() -> {
+            assertEquals(VariableResolver.resolve("{{aliasCanReadCanonical}}"), "from-canonical");
+            assertEquals(VariableResolver.resolve("{{canonicalCanReadAlias}}"), "from-alias");
+        });
+
+        pipeline.finalizeRequest();
+        assertEquals(request.url, "https://example.com/from-alias/from-canonical");
     }
 
     @Test
@@ -1024,6 +1058,67 @@ public class ScriptExecutionPipelineTest {
     }
 
     @Test
+    public void shouldSupportPostmanStyleExpectationPatternsUsedByBuiltInSnippets() {
+        PreparedRequest request = new PreparedRequest();
+        request.id = "script-pipeline-snippet-expectation-patterns-request";
+        request.method = "GET";
+        request.url = "https://example.com";
+        request.headersList = new ArrayList<>();
+        request.paramsList = new ArrayList<>();
+        request.formDataList = new ArrayList<>();
+        request.urlencodedList = new ArrayList<>();
+
+        ScriptExecutionPipeline pipeline = ScriptExecutionPipeline.builder()
+                .request(request)
+                .preScript("")
+                .postScript("""
+                        pm.test('Snippet assertion patterns work', function () {
+                            var jsonData = pm.response.json();
+                            var schema = {
+                                type: 'object',
+                                required: ['code', 'data'],
+                                properties: {
+                                    code: { type: 'number' },
+                                    data: { type: 'object' }
+                                }
+                            };
+                            var errors = [];
+
+                            pm.expect(jsonData).to.have.jsonSchema(schema);
+                            pm.expect(errors).to.have.lengthOf(0);
+                            pm.expect(jsonData.list).to.be.an('array').that.is.not.empty;
+                            pm.expect(jsonData).to.have.property('success', true);
+                            pm.expect(jsonData.status).to.be.oneOf(['ok', 'done']);
+                            pm.expect(jsonData.tags).to.include('api');
+                            pm.expect(jsonData).to.have.keys(['code', 'data', 'success', 'status', 'tags', 'list']);
+                        });
+                        """)
+                .build();
+
+        assertTrue(pipeline.executePreScript().isSuccess(), "Pre-request script should execute successfully");
+
+        HttpResponse response = new HttpResponse();
+        response.code = 200;
+        response.headers = new java.util.LinkedHashMap<>();
+        response.body = """
+                {
+                  "code": 0,
+                  "data": {"id": "order-1"},
+                  "success": true,
+                  "status": "ok",
+                  "tags": ["api", "smoke"],
+                  "list": [1]
+                }
+                """;
+
+        ScriptExecutionResult postResult = pipeline.executePostScript(response);
+
+        assertTrue(postResult.isSuccess(), "Built-in snippet assertion patterns should execute successfully");
+        assertTrue(postResult.hasTestResults(), "Snippet assertion pattern test should produce a result");
+        assertTrue(postResult.allTestsPassed(), "Snippet assertion pattern test should pass");
+    }
+
+    @Test
     public void shouldExposeIterationDataWithoutMixingItIntoExecutionVariables() {
         ExecutionVariableContext sharedContext = new ExecutionVariableContext();
         sharedContext.replaceIterationData(Map.of(
@@ -1059,7 +1154,7 @@ public class ScriptExecutionPipelineTest {
         assertTrue(preResult.isSuccess(), "Iteration data pre-script should execute successfully");
         pipeline.withExecutionContext(() -> {
             assertEquals(VariableResolver.resolve("{{iterationOrderIdAfterClear}}"), "csv-001");
-            assertEquals(VariableResolver.resolve("{{sharedAfterClear}}"), "csv-shared");
+            assertEquals(VariableResolver.resolve("{{sharedAfterClear}}"), "env-shared");
             assertEquals(VariableResolver.resolve("{{shared}}"), "csv-shared");
             assertEquals(VariableResolver.getVariableType("shared"), VariableType.ITERATION_DATA);
             assertEquals(VariableResolver.resolve("{{csvOrderId}}"), "csv-001");
@@ -1123,7 +1218,7 @@ public class ScriptExecutionPipelineTest {
     private void clearExecutionContext() {
         VariablesService.getInstance().detachContext();
         IterationDataVariableService.getInstance().detachContext();
-        RequestContext.clearCurrentRequestNode();
+        RequestExecutionContext.clearCurrentScope();
     }
 
     private String findAuthorizationHeader(PreparedRequest request) {

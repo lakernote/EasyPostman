@@ -1,8 +1,8 @@
 package com.laker.postman.performance.result;
 
-import com.laker.postman.model.HttpEventInfo;
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.HttpEventInfo;
+import com.laker.postman.http.runtime.model.HttpResponse;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.request.model.HttpHeader;
 
 

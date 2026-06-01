@@ -5,6 +5,7 @@ import com.laker.postman.performance.core.model.PerformanceStatsCollector;
 import com.laker.postman.performance.core.model.PerformanceTrendSnapshot;
 import com.laker.postman.performance.core.model.PerformanceTrendWindowCollector;
 import com.laker.postman.performance.core.runtime.PerformanceThreadFactory;
+import com.laker.postman.performance.result.PerformanceMetricsSnapshotService;
 
 
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;

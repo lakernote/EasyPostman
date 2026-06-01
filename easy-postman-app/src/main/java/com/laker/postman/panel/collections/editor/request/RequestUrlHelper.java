@@ -3,7 +3,7 @@ package com.laker.postman.panel.collections.editor.request;
 import com.laker.postman.request.model.HttpParam;
 
 
-import com.laker.postman.http.request.HttpUrlUtil;
+import com.laker.postman.request.util.HttpUrlUtil;
 import lombok.experimental.UtilityClass;
 
 import java.util.ArrayList;

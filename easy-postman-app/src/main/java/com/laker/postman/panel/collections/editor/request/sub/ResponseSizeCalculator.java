@@ -1,7 +1,7 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.model.HttpEventInfo;
+import com.laker.postman.http.runtime.model.HttpEventInfo;
 import lombok.Data;
 import lombok.experimental.UtilityClass;
 

@@ -1,8 +1,8 @@
 package com.laker.postman.service;
 
 import cn.hutool.json.JSONObject;
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.HttpResponse;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.history.RequestHistoryItem;
 import org.testng.annotations.Test;
 
@@ -23,7 +23,7 @@ public class HistoryPersistenceServiceTest {
         request.method = "POST";
         request.url = "https://example.com/api/test";
         request.body = largeBody;
-        request.okHttpRequestBody = largeBody;
+        request.sentRequestBody = largeBody;
 
         HttpResponse response = new HttpResponse();
         response.code = 200;
@@ -36,7 +36,7 @@ public class HistoryPersistenceServiceTest {
 
         assertNotNull(restored.request);
         assertTrue(restored.request.body.length() < largeBody.length());
-        assertEquals(restored.request.body, restored.request.okHttpRequestBody);
+        assertEquals(restored.request.body, restored.request.sentRequestBody);
         assertTrue(restored.request.body.contains("内容过大，已截断"));
     }
 

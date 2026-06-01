@@ -1,6 +1,6 @@
 package com.laker.postman.performance.execution;
 
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.request.model.HttpRequestItem;
 

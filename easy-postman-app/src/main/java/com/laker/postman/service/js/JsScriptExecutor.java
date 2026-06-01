@@ -163,7 +163,7 @@ public class JsScriptExecutor {
      * </p>
      *
      * @param script         脚本内容
-     * @param bindings       需要注入的变量（变量名->对象），如request/env/postman/responseBody等
+     * @param bindings       需要注入的变量（变量名->对象），如 pm
      * @param outputCallback 输出回调（可为null）
      * @throws ScriptExecutionException 脚本执行异常
      */

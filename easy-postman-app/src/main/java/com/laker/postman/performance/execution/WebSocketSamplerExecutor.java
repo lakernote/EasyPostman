@@ -7,8 +7,8 @@ import com.laker.postman.performance.core.model.WebSocketPerformanceData;
 
 import com.laker.postman.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.http.runtime.transport.HttpBaseClientProvider;
+import com.laker.postman.http.runtime.transport.RealtimeWebSocketConnection;
 import lombok.RequiredArgsConstructor;
-import okhttp3.WebSocket;
 
 import java.util.List;
 import java.util.Set;
@@ -20,14 +20,14 @@ import java.util.function.Predicate;
 final class WebSocketSamplerExecutor implements PerformanceProtocolSamplerExecutor {
     private final BooleanSupplier runningSupplier;
     private final Predicate<Throwable> cancelledChecker;
-    private final Set<WebSocket> activeWebSockets;
+    private final Set<RealtimeWebSocketConnection> activeWebSockets;
     private final PerformanceRealtimeMetrics realtimeMetrics;
     private final IntSupplier responseBodyPreviewLimitKbSupplier;
     private final HttpBaseClientProvider baseClientProvider;
 
     WebSocketSamplerExecutor(BooleanSupplier runningSupplier,
                              Predicate<Throwable> cancelledChecker,
-                             Set<WebSocket> activeWebSockets,
+                             Set<RealtimeWebSocketConnection> activeWebSockets,
                              PerformanceRealtimeMetrics realtimeMetrics,
                              IntSupplier responseBodyPreviewLimitKbSupplier) {
         this(runningSupplier, cancelledChecker, activeWebSockets, realtimeMetrics, responseBodyPreviewLimitKbSupplier,

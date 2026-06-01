@@ -1,13 +1,9 @@
 package com.laker.postman.service.variable;
 
-import com.laker.postman.model.Variable;
-import com.laker.postman.service.collections.GroupInheritanceHelper;
 import com.laker.postman.variable.VariableType;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -16,7 +12,7 @@ import java.util.Map;
  * 提供从请求所在分组继承的变量
  * 变量优先级：内层分组 > 外层分组
  * <p>
- * 注意：使用全局 RequestContext 获取当前请求节点
+ * 注意：使用全局 RequestExecutionContext 获取当前请求执行 scope
  */
 @Slf4j
 public class GroupVariableService implements VariableProvider {
@@ -47,22 +43,11 @@ public class GroupVariableService implements VariableProvider {
             return null;
         }
 
-        RequestExecutionScope executionScope = RequestContext.getCurrentExecutionScope();
+        RequestExecutionScope executionScope = RequestExecutionContext.getCurrentScope();
         if (executionScope != null) {
             return executionScope.getGroupVariable(key);
         }
 
-        DefaultMutableTreeNode requestNode = RequestContext.getCurrentRequestNode();
-        if (requestNode == null) {
-            return null;
-        }
-
-        List<Variable> variables = GroupInheritanceHelper.getMergedGroupVariables(requestNode);
-        for (Variable variable : variables) {
-            if (key.equals(variable.getKey())) {
-                return variable.getValue();
-            }
-        }
         return null;
     }
 
@@ -75,23 +60,12 @@ public class GroupVariableService implements VariableProvider {
     public Map<String, String> getAll() {
         Map<String, String> result = new HashMap<>();
 
-        RequestExecutionScope executionScope = RequestContext.getCurrentExecutionScope();
+        RequestExecutionScope executionScope = RequestExecutionContext.getCurrentScope();
         if (executionScope != null) {
             result.putAll(executionScope.getGroupVariables());
             return result;
         }
 
-        DefaultMutableTreeNode requestNode = RequestContext.getCurrentRequestNode();
-        if (requestNode == null) {
-            return result;
-        }
-
-        List<Variable> variables = GroupInheritanceHelper.getMergedGroupVariables(requestNode);
-        for (Variable variable : variables) {
-            if (variable.getKey() != null && !variable.getKey().trim().isEmpty()) {
-                result.put(variable.getKey(), variable.getValue());
-            }
-        }
         return result;
     }
 

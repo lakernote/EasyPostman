@@ -242,7 +242,7 @@ public class JsContextPool {
      * 清理脚本执行期间新增的全局变量。
      * <p>
      * 注意：由于用户脚本使用 IIFE 包装，let/const 变量都是局部变量，
-     * 这里主要处理显式写到 globalThis 的变量和我们注入的变量（pm、request 等）。
+     * 这里主要处理显式写到 globalThis 的变量和我们注入的变量（pm）。
      * </p>
      */
     private void cleanupGlobalVariables(Context context) {
@@ -265,11 +265,7 @@ public class JsContextPool {
                             });
                         }
 
-                        const injectedVars = [
-                            'pm', 'postman', 'request', 'env', 'environment', 'globals',
-                            'response', 'responseBody', 'responseHeaders', 'statusCode',
-                            'tests', 'iterationData'
-                        ];
+                        const injectedVars = ['pm'];
                         injectedVars.forEach(varName => {
                             try {
                                 delete globalThis[varName];

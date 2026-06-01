@@ -1,12 +1,12 @@
 package com.laker.postman.panel.functional;
 
-import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.functional.model.RunnerRowData;
 import com.laker.postman.request.model.HttpRequestItem;
 
 
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.component.CsvDataPanel;
+import com.laker.postman.functional.model.FunctionalConfigSnapshot;
 import com.laker.postman.functional.model.FunctionalCsvDataState;
 import com.laker.postman.panel.functional.table.FunctionalRunnerTableModel;
 import com.laker.postman.service.FunctionalPersistenceService;
@@ -39,7 +39,7 @@ public class FunctionalPanelSaveTest {
         JTable table = new JTable(tableModel);
         RecordingFunctionalPersistenceService persistenceService = new RecordingFunctionalPersistenceService();
 
-        tableModel.addRow(new RunnerRowData(requestItem(), new PreparedRequest()));
+        tableModel.addRow(new RunnerRowData(requestItem()));
         installSelectionAutosaveListener(panel, tableModel);
         setField(panel, "tableModel", tableModel);
         setField(panel, "table", table);
@@ -60,14 +60,12 @@ public class FunctionalPanelSaveTest {
         );
     }
 
-    @Test(description = "Collections 保存同步到 FunctionalPanel 时应同时刷新 preparedRequest")
-    public void shouldRefreshPreparedRequestWhenSyncingCollectionItem() throws Exception {
+    @Test(description = "Collections 保存同步到 FunctionalPanel 时应刷新表格行的请求快照")
+    public void shouldRefreshRowWhenSyncingCollectionItem() throws Exception {
         FunctionalPanel panel = newPanelWithoutInit();
         FunctionalRunnerTableModel tableModel = new FunctionalRunnerTableModel();
         HttpRequestItem oldItem = requestItem();
-        PreparedRequest oldPrepared = new PreparedRequest();
-        oldPrepared.url = "https://old.example.com";
-        tableModel.addRow(new RunnerRowData(oldItem, oldPrepared));
+        tableModel.addRow(new RunnerRowData(oldItem));
         setField(panel, "tableModel", tableModel);
 
         HttpRequestItem latestItem = requestItem();
@@ -77,7 +75,7 @@ public class FunctionalPanelSaveTest {
 
         RunnerRowData row = tableModel.getRow(0);
         assertEquals(row.url, "https://new.example.com");
-        assertEquals(row.preparedRequest.url, "https://new.example.com");
+        assertEquals(row.requestItem.getUrl(), "https://new.example.com");
     }
 
     @Test(description = "FunctionalPanel 保存时应将 UI CSV 快照转换为功能持久化状态")
@@ -153,13 +151,13 @@ public class FunctionalPanelSaveTest {
         private final AtomicReference<FunctionalCsvDataState> lastCsvState = new AtomicReference<>();
 
         @Override
-        public void save(List<RunnerRowData> rows, FunctionalCsvDataState csvState) {
+        public void save(FunctionalConfigSnapshot snapshot) {
             syncSaveCount.incrementAndGet();
-            lastCsvState.set(csvState);
+            lastCsvState.set(snapshot.getCsvState());
         }
 
         @Override
-        public void saveAsync(List<RunnerRowData> rows, FunctionalCsvDataState csvState) {
+        public void saveAsync(FunctionalConfigSnapshot snapshot) {
             asyncSaveLatch.countDown();
         }
     }

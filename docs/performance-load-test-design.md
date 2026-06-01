@@ -21,7 +21,7 @@
 
 当前边界：
 
-1. 编辑态存储为 `plans[] + activePlanId`，每个 plan 保存自己的 tree、efficientMode、trendEnabled、reportRealtimeEnabled、remote worker 配置；旧 `performance_config.json` 读取时自动包成一个默认 plan。
+1. 编辑态存储为 `plans[] + activePlanId`，每个 plan 保存自己的 tree、efficientMode、trendEnabled、reportRealtimeEnabled、remote worker 配置。
 2. 单次点击 Start 只执行当前选中的 active plan。批量执行多个 plan 应作为独立的“批量编排/套件”能力，串行或并行策略需要显式配置。
 3. `plan.json` 仍表示一个可执行 plan，不改成一次包含多个 plan。CLI/master/worker 继续以一个 plan 为最小执行单位；批量编排层负责按多个 `plan.json` 发起多次 run。
 4. 报表、趋势、结果明细都以 runId 隔离。后续如做批量编排，再在套件层加 planId 和跨 plan 对比摘要，不在单次压测 report 中混合。
@@ -45,7 +45,7 @@
 - `com.laker.postman.panel.performance.plan`：只保存执行所需的不可变 plan 数据。除编译器负责读取 Swing tree 外，plan 元素不再提供反向重建 Swing tree 的 API。
 - `easy-postman-performance-core` 的 `PerformanceRunPlan`：运行态 envelope，保存 `environment`、`globals`、`settings`、`testPlan`、`assets`。它不保存 Swing tree 或 `HttpRequestItem`，而是保存跨 GUI/CLI/worker 可消费的请求快照；`settings` 只放执行语义，例如 efficientMode 和 HTTP runtime 并发参数，不放趋势开关、实时报表刷新等 GUI 展示状态。
 - `PerformanceRunPlanFactory`：GUI 导出 `plan.json` 时将当前压测配置、活动环境、全局变量和 asset 引用冻结成运行态计划。
-- `com.laker.postman.performance.runtime.PerformanceRunPlanExecutor`：headless CLI 和 worker 共用的 app 侧运行适配器，加载 `plan.json`，将 core plan 编译后通过 `PerformanceCorePlanAdapter.toGuiExecutablePlan(...)` 转成 app 现有执行链可消费的 plan，并复用 `PerformanceExecutionEngine` 执行。CLI 包只负责参数解析和结果输出。
+- `com.laker.postman.performance.runtime.PerformanceRunPlanExecutor`：headless CLI 和 worker 共用的 app 侧运行适配器，加载 `plan.json`，将 core plan 编译后通过 `PerformanceCorePlanAdapter.toExecutablePlan(...)` 转成 app 现有执行链可消费的 plan，并复用 `PerformanceExecutionEngine` 执行。CLI 包只负责参数解析和结果输出。
 - `PerformanceExecutionEngine`：执行门面，负责运行生命周期、实时指标、网络取消资源和树到 plan 的入口转换。它不再直接遍历 Swing tree。
 - `PerformanceThreadGroupRunner`：执行启用的线程组，并根据 FIXED、RAMP_UP、SPIKE、STAIRS 调度虚拟用户 worker。
 - `PerformancePlanExecutor`：执行线程组内的控制器模型，按顺序处理 Loop、Timer 和 Request Sampler。

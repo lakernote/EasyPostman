@@ -1,8 +1,8 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
-import com.laker.postman.request.model.HttpRequestItem;
-
-
+import com.laker.postman.request.edit.HttpRequestEditorContentSummary;
+import com.laker.postman.request.edit.HttpRequestEditorDraft;
+import com.laker.postman.request.edit.HttpRequestSettingsDraft;
 import com.laker.postman.service.setting.SettingManager;
 import org.testng.annotations.Test;
 
@@ -30,10 +30,7 @@ public class RequestSettingsPanelTest {
         RequestSettingsPanel panel = new RequestSettingsPanel();
         setRequestTimeoutText(panel, "999999999999");
 
-        HttpRequestItem item = new HttpRequestItem();
-        panel.applyTo(item);
-
-        assertNull(item.getRequestTimeoutMs());
+        assertNull(panel.collectSettings().getRequestTimeoutMs());
     }
 
     @Test
@@ -43,19 +40,15 @@ public class RequestSettingsPanelTest {
         try {
             SettingManager.setFollowRedirects(true);
 
-            HttpRequestItem original = new HttpRequestItem();
-            original.setFollowRedirects(null);
-
             RequestSettingsPanel panel = new RequestSettingsPanel();
-            panel.populate(original);
+            panel.populate(HttpRequestSettingsDraft.builder().followRedirects(null).build());
 
             SettingManager.setFollowRedirects(false);
 
-            HttpRequestItem saved = new HttpRequestItem();
-            panel.applyTo(saved);
+            HttpRequestSettingsDraft saved = panel.collectSettings();
 
             assertNull(saved.getFollowRedirects());
-            assertFalse(panel.hasCustomSettings());
+            assertFalse(hasSettingsContent(saved));
         } finally {
             SettingManager.setFollowRedirects(oldFollowRedirects);
         }
@@ -63,18 +56,14 @@ public class RequestSettingsPanelTest {
 
     @Test
     public void shouldAllowExplicitFollowRedirectsOverrideToReturnToDefault() throws Exception {
-        HttpRequestItem original = new HttpRequestItem();
-        original.setFollowRedirects(Boolean.FALSE);
-
         RequestSettingsPanel panel = new RequestSettingsPanel();
-        panel.populate(original);
+        panel.populate(HttpRequestSettingsDraft.builder().followRedirects(Boolean.FALSE).build());
         selectBooleanSetting(panel, "followRedirectsComboBox", null);
 
-        HttpRequestItem saved = new HttpRequestItem();
-        panel.applyTo(saved);
+        HttpRequestSettingsDraft saved = panel.collectSettings();
 
         assertNull(saved.getFollowRedirects());
-        assertFalse(panel.hasCustomSettings());
+        assertFalse(hasSettingsContent(saved));
     }
 
     @Test
@@ -84,18 +73,14 @@ public class RequestSettingsPanelTest {
         try {
             SettingManager.setFollowRedirects(true);
 
-            HttpRequestItem original = new HttpRequestItem();
-            original.setFollowRedirects(null);
-
             RequestSettingsPanel panel = new RequestSettingsPanel();
-            panel.populate(original);
+            panel.populate(HttpRequestSettingsDraft.builder().followRedirects(null).build());
             selectBooleanSetting(panel, "followRedirectsComboBox", Boolean.TRUE);
 
-            HttpRequestItem saved = new HttpRequestItem();
-            panel.applyTo(saved);
+            HttpRequestSettingsDraft saved = panel.collectSettings();
 
             assertTrue(saved.getFollowRedirects());
-            assertTrue(panel.hasCustomSettings());
+            assertTrue(hasSettingsContent(saved));
         } finally {
             SettingManager.setFollowRedirects(oldFollowRedirects);
         }
@@ -108,20 +93,16 @@ public class RequestSettingsPanelTest {
         try {
             SettingManager.setFollowRedirects(true);
 
-            HttpRequestItem original = new HttpRequestItem();
-            original.setFollowRedirects(null);
-
             RequestSettingsPanel panel = new RequestSettingsPanel();
-            panel.populate(original);
+            panel.populate(HttpRequestSettingsDraft.builder().followRedirects(null).build());
 
             SettingManager.setFollowRedirects(false);
             selectBooleanSetting(panel, "followRedirectsComboBox", Boolean.FALSE);
 
-            HttpRequestItem saved = new HttpRequestItem();
-            panel.applyTo(saved);
+            HttpRequestSettingsDraft saved = panel.collectSettings();
 
             assertFalse(saved.getFollowRedirects());
-            assertTrue(panel.hasCustomSettings());
+            assertTrue(hasSettingsContent(saved));
         } finally {
             SettingManager.setFollowRedirects(oldFollowRedirects);
         }
@@ -134,20 +115,15 @@ public class RequestSettingsPanelTest {
         try {
             SettingManager.setFollowRedirects(false);
 
-            HttpRequestItem original = new HttpRequestItem();
-            original.setFollowRedirects(null);
-
             RequestSettingsPanel panel = new RequestSettingsPanel();
-            panel.populate(original);
+            panel.populate(HttpRequestSettingsDraft.builder().followRedirects(null).build());
 
             selectBooleanSetting(panel, "followRedirectsComboBox", Boolean.TRUE);
-            HttpRequestItem saved = new HttpRequestItem();
-            panel.applyTo(saved);
+            panel.collectSettings();
             panel.rebaseline();
 
             selectBooleanSetting(panel, "followRedirectsComboBox", Boolean.FALSE);
-            HttpRequestItem savedAgain = new HttpRequestItem();
-            panel.applyTo(savedAgain);
+            HttpRequestSettingsDraft savedAgain = panel.collectSettings();
 
             assertFalse(savedAgain.getFollowRedirects());
         } finally {
@@ -178,6 +154,15 @@ public class RequestSettingsPanelTest {
             }
         }
         throw new IllegalArgumentException("No combo option found for value: " + value);
+    }
+
+    private static boolean hasSettingsContent(HttpRequestSettingsDraft settings) {
+        return HttpRequestEditorContentSummary.from(HttpRequestEditorDraft.builder()
+                .followRedirects(settings.getFollowRedirects())
+                .cookieJarEnabled(settings.getCookieJarEnabled())
+                .httpVersion(settings.getHttpVersion())
+                .requestTimeoutMs(settings.getRequestTimeoutMs())
+                .build()).isHasSettings();
     }
 
 }

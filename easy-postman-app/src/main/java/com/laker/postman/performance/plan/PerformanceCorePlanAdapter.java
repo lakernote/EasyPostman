@@ -74,7 +74,7 @@ public class PerformanceCorePlanAdapter {
                 .build();
     }
 
-    public PerformanceTestPlan toGuiExecutablePlan(PerformanceTestPlan corePlan) {
+    public PerformanceTestPlan toExecutablePlan(PerformanceTestPlan corePlan) {
         if (corePlan == null) {
             return new PerformanceTestPlan(List.of());
         }

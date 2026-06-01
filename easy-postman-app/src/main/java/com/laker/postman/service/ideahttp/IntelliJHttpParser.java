@@ -41,7 +41,7 @@ import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_RAW;
 public class IntelliJHttpParser {
     // 匹配请求分隔符：### 开头的注释
     private static final Pattern REQUEST_SEPARATOR_PATTERN = Pattern.compile("^###\\s*(.+)$");
-    // 匹配 HTTP 方法 + URL + 可选 HTTP 版本，兼容自定义方法
+    // 匹配 HTTP 方法 + URL + 可选 HTTP 版本，支持自定义方法
     private static final Pattern HTTP_METHOD_PATTERN = Pattern.compile(
             "^([A-Z][A-Z0-9_-]*)\\s+(.+?)(?:\\s+(HTTP/1\\.1|HTTP/2(?:\\s*\\(Prior Knowledge\\))?))?$"
     );

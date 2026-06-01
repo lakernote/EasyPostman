@@ -1,7 +1,7 @@
 package com.laker.postman.service.js;
 
 import com.laker.postman.model.Environment;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.service.GlobalVariablesService;
 import com.laker.postman.service.variable.RunScopedVariableContext;
 import org.testng.annotations.AfterMethod;

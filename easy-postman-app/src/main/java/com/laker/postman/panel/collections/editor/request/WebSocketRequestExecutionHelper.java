@@ -1,10 +1,11 @@
 package com.laker.postman.panel.collections.editor.request;
 
-import com.laker.postman.model.HttpResponse;
+import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.stream.MessageType;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;
-import com.laker.postman.http.runtime.transport.HttpRuntimeExecutor;
+import com.laker.postman.http.runtime.transport.HttpTransportRuntime;
+import com.laker.postman.http.runtime.transport.RealtimeWebSocketConnection;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -31,7 +32,7 @@ final class WebSocketRequestExecutionHelper {
     private final RequestExecutionUiHelper requestExecutionUiHelper;
     private final RequestStreamUiHelper requestStreamUiHelper;
     private final RequestResponseHelper requestResponseHelper;
-    private final Consumer<WebSocket> currentWebSocketSetter;
+    private final Consumer<RealtimeWebSocketConnection> currentWebSocketSetter;
     private final Consumer<String> currentConnectionIdSetter;
     private final Supplier<String> currentConnectionIdSupplier;
     private final Supplier<SwingWorker<Void, Void>> currentWorkerSupplier;
@@ -42,7 +43,7 @@ final class WebSocketRequestExecutionHelper {
                                     RequestExecutionUiHelper requestExecutionUiHelper,
                                     RequestStreamUiHelper requestStreamUiHelper,
                                     RequestResponseHelper requestResponseHelper,
-                                    Consumer<WebSocket> currentWebSocketSetter,
+                                    Consumer<RealtimeWebSocketConnection> currentWebSocketSetter,
                                     Consumer<String> currentConnectionIdSetter,
                                     Supplier<String> currentConnectionIdSupplier,
                                     Supplier<SwingWorker<Void, Void>> currentWorkerSupplier,
@@ -71,7 +72,7 @@ final class WebSocketRequestExecutionHelper {
                     session.markStarted();
                     log.debug("Starting WebSocket connection with ID: {}", session.connectionId());
 
-                    HttpRuntimeExecutor.openWebSocket(req, session.newListener());
+                    currentWebSocketSetter.accept(HttpTransportRuntime.openWebSocketConnection(req, session.newListener()));
                     SwingUtilities.invokeLater(session::enableResponseTabsIfActive);
                     session.awaitCompletion();
                 } catch (InterruptedException ex) {
@@ -137,7 +138,6 @@ final class WebSocketRequestExecutionHelper {
                     }
 
                     applyHandshakeResponse(response);
-                    currentWebSocketSetter.accept(webSocket);
                     SwingUtilities.invokeLater(() -> {
                         if (!shouldHandleActiveCallback(null)) {
                             return;

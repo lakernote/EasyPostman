@@ -74,7 +74,7 @@ public class CookieJar {
     /**
      * 设置 Cookie（支持回调）
      *
-     * @param url      目标 URL（兼容参数，当前实现忽略，支持 String 或 UrlWrapper）
+     * @param url      目标 URL（当前实现忽略，支持 String 或 UrlWrapper）
      * @param cookie   Cookie 对象或名称
      * @param callback 回调函数
      */
@@ -123,7 +123,7 @@ public class CookieJar {
     /**
      * 获取 Cookie（支持回调）
      *
-     * @param url      目标 URL（兼容参数，当前实现忽略，支持 String 或 UrlWrapper）
+     * @param url      目标 URL（当前实现忽略，支持 String 或 UrlWrapper）
      * @param name     Cookie 名称
      * @param callback 回调函数，接收 (error, cookie) 参数
      */
@@ -139,7 +139,7 @@ public class CookieJar {
     /**
      * 删除 Cookie（2 参数版本：url, name，无回调）
      *
-     * @param url  目标 URL（兼容参数，当前实现忽略，支持 String 或 UrlWrapper）
+     * @param url  目标 URL（当前实现忽略，支持 String 或 UrlWrapper）
      * @param name Cookie 名称
      */
     public void unset(Object url, String name) {
@@ -154,7 +154,7 @@ public class CookieJar {
     /**
      * 删除 Cookie（3 参数版本：url, name, callback）
      *
-     * @param url      目标 URL（兼容参数，当前实现忽略，支持 String 或 UrlWrapper）
+     * @param url      目标 URL（当前实现忽略，支持 String 或 UrlWrapper）
      * @param name     Cookie 名称
      * @param callback 回调函数
      */
@@ -170,7 +170,7 @@ public class CookieJar {
     /**
      * 获取所有 Cookie（支持回调）
      *
-     * @param url      目标 URL（兼容参数，当前实现忽略，支持 String 或 UrlWrapper）
+     * @param url      目标 URL（当前实现忽略，支持 String 或 UrlWrapper）
      * @param callback 回调函数，接收 (error, cookies) 参数
      */
     public void getAll(Object url, Value callback) {
@@ -185,7 +185,7 @@ public class CookieJar {
     /**
      * 清空所有 Cookie（支持回调）
      *
-     * @param url      目标 URL（兼容参数，当前实现忽略，支持 String 或 UrlWrapper）
+     * @param url      目标 URL（当前实现忽略，支持 String 或 UrlWrapper）
      * @param callback 回调函数
      */
     public void clear(Object url, Value callback) {

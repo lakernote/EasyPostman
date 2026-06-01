@@ -1,6 +1,6 @@
 package com.laker.postman.performance.runtime;
 
-import com.laker.postman.model.HttpResponse;
+import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.performance.execution.PerformanceRequestExecutionResult;
 import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.performance.model.PerformanceResultListener;

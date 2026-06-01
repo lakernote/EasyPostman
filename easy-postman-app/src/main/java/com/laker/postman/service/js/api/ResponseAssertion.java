@@ -1,7 +1,7 @@
 package com.laker.postman.service.js.api;
 
 import cn.hutool.json.JSONUtil;
-import com.laker.postman.model.HttpResponse;
+import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 

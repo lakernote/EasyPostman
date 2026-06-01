@@ -302,16 +302,5 @@ public class PerformancePanelSaveTest extends AbstractSwingUiTest {
             savedRoot = PerformanceSwingTreePlanAdapter.toTree(workspace.getActiveConfiguration().getPlanDocument(), "Plan");
             savedRemoteWorkerSettings = workspace.getActiveConfiguration().getRemoteWorkerSettings();
         }
-
-        @Override
-        public void save(DefaultMutableTreeNode rootNode,
-                         boolean efficientMode,
-                         boolean trendEnabled,
-                         boolean reportRealtimeEnabled,
-                         PerformanceRemoteWorkerSettings remoteWorkerSettings) {
-            saveCount.incrementAndGet();
-            savedRoot = rootNode;
-            savedRemoteWorkerSettings = remoteWorkerSettings;
-        }
     }
 }

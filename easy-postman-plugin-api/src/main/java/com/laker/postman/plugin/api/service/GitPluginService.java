@@ -14,8 +14,6 @@ public interface GitPluginService {
 
     void prepareGitWorkspace(Workspace workspace) throws Exception;
 
-    void migrateDefaultWorkspaceGit(Workspace workspace, String commitMessage) throws Exception;
-
     GitStatusCheck checkGitStatus(Workspace workspace, GitOperation operation);
 
     void clearSshCache(String privateKeyPath);

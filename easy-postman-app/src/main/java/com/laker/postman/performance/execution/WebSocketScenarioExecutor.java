@@ -11,15 +11,16 @@ import com.laker.postman.performance.core.timer.TimerData;
 
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.HttpResponse;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.script.model.TestResult;
 import com.laker.postman.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.http.runtime.transport.HttpBaseClientProvider;
-import com.laker.postman.http.runtime.transport.HttpRuntimeExecutor;
+import com.laker.postman.http.runtime.transport.HttpTransportRuntime;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import okhttp3.Response;
+import com.laker.postman.http.runtime.transport.RealtimeWebSocketConnection;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 import okio.ByteString;
@@ -59,20 +60,20 @@ public class WebSocketScenarioExecutor {
 
     private final BooleanSupplier runningSupplier;
     private final Predicate<Throwable> cancelledChecker;
-    private final Set<WebSocket> activeWebSockets;
+    private final Set<RealtimeWebSocketConnection> activeWebSockets;
     private final PerformanceRealtimeMetrics realtimeMetrics;
     private final int responseBodyPreviewLimitBytes;
     private final HttpBaseClientProvider baseClientProvider;
 
     public WebSocketScenarioExecutor(BooleanSupplier runningSupplier,
                                      Predicate<Throwable> cancelledChecker,
-                                     Set<WebSocket> activeWebSockets) {
+                                     Set<RealtimeWebSocketConnection> activeWebSockets) {
         this(runningSupplier, cancelledChecker, activeWebSockets, new PerformanceRealtimeMetrics());
     }
 
     public WebSocketScenarioExecutor(BooleanSupplier runningSupplier,
                                      Predicate<Throwable> cancelledChecker,
-                                     Set<WebSocket> activeWebSockets,
+                                     Set<RealtimeWebSocketConnection> activeWebSockets,
                                      PerformanceRealtimeMetrics realtimeMetrics) {
         this(runningSupplier, cancelledChecker, activeWebSockets, realtimeMetrics,
                 BoundedTextAccumulator.DEFAULT_PREVIEW_BYTES);
@@ -80,7 +81,7 @@ public class WebSocketScenarioExecutor {
 
     public WebSocketScenarioExecutor(BooleanSupplier runningSupplier,
                                      Predicate<Throwable> cancelledChecker,
-                                     Set<WebSocket> activeWebSockets,
+                                     Set<RealtimeWebSocketConnection> activeWebSockets,
                                      PerformanceRealtimeMetrics realtimeMetrics,
                                      int responseBodyPreviewLimitBytes) {
         this(runningSupplier, cancelledChecker, activeWebSockets, realtimeMetrics, responseBodyPreviewLimitBytes,
@@ -89,7 +90,7 @@ public class WebSocketScenarioExecutor {
 
     public WebSocketScenarioExecutor(BooleanSupplier runningSupplier,
                                      Predicate<Throwable> cancelledChecker,
-                                     Set<WebSocket> activeWebSockets,
+                                     Set<RealtimeWebSocketConnection> activeWebSockets,
                                      PerformanceRealtimeMetrics realtimeMetrics,
                                      int responseBodyPreviewLimitBytes,
                                      HttpBaseClientProvider baseClientProvider) {
@@ -167,7 +168,7 @@ public class WebSocketScenarioExecutor {
             private final AtomicBoolean registered = new AtomicBoolean(false);
             private final AtomicInteger closeCode = new AtomicInteger(-1);
             private final AtomicReference<String> closeReason = new AtomicReference<>("");
-            private WebSocket webSocket;
+            private RealtimeWebSocketConnection webSocket;
             private boolean ended;
         }
 
@@ -290,12 +291,17 @@ public class WebSocketScenarioExecutor {
                     }
                 };
 
-                WebSocket webSocket = HttpRuntimeExecutor.openWebSocket(req, listener, baseClientProvider, false);
+                RealtimeWebSocketConnection webSocket = HttpTransportRuntime.openWebSocketConnection(
+                        req,
+                        listener,
+                        baseClientProvider,
+                        false
+                );
                 session.webSocket = webSocket;
                 sessions.add(session);
                 currentSession = session;
                 activeWebSockets.add(webSocket);
-                recordStart(session, webSocket);
+                recordStart(session, webSocket.metricKey());
 
                 boolean opened = session.openLatch.await(Math.max(100, connectCfg.connectTimeoutMs), TimeUnit.MILLISECONDS);
                 if (!opened && !failed.get() && !interrupted.get()) {
@@ -325,7 +331,7 @@ public class WebSocketScenarioExecutor {
                 currentSession = null;
             }
 
-            private void recordStart(WebSocketScenarioSession session, WebSocket webSocket) {
+            private void recordStart(WebSocketScenarioSession session, Object webSocket) {
                 if (session.registered.compareAndSet(false, true)) {
                     realtimeMetrics.recordWebSocketSessionStart(webSocket, session.startTimeMs, apiId, apiName);
                 }
@@ -336,7 +342,7 @@ public class WebSocketScenarioExecutor {
                     return;
                 }
                 session.closingSocket.set(true);
-                WebSocket webSocket = session.webSocket;
+                RealtimeWebSocketConnection webSocket = session.webSocket;
                 if (webSocket != null) {
                     try {
                         webSocket.close(1000, reason);
@@ -352,7 +358,7 @@ public class WebSocketScenarioExecutor {
                     }
                     webSocket.cancel();
                     activeWebSockets.remove(webSocket);
-                    realtimeMetrics.recordWebSocketSessionEnd(webSocket);
+                    realtimeMetrics.recordWebSocketSessionEnd(webSocket.metricKey());
                 }
                 session.ended = true;
             }
@@ -401,7 +407,7 @@ public class WebSocketScenarioExecutor {
                             if (session == null || failed.get() || interrupted.get()) {
                                 break;
                             }
-                            WebSocket webSocket = session.webSocket;
+                            RealtimeWebSocketConnection webSocket = session.webSocket;
                             int sendTimes = stepCfg.sendMode == WebSocketPerformanceData.SendMode.REQUEST_BODY_REPEAT
                                     ? Math.max(1, stepCfg.sendCount)
                                     : 1;
@@ -433,7 +439,7 @@ public class WebSocketScenarioExecutor {
                                 boolean sent = webSocket.send(payload == null ? "" : payload);
                                 if (sent) {
                                     sentMessageCount.incrementAndGet();
-                                    realtimeMetrics.recordWebSocketSent(webSocket);
+                                    realtimeMetrics.recordWebSocketSent(webSocket.metricKey());
                                 } else {
                                     failed.set(true);
                                     errorRef.set(session.remoteClosed.get()
@@ -468,7 +474,7 @@ public class WebSocketScenarioExecutor {
                             if (session == null || failed.get() || interrupted.get()) {
                                 break;
                             }
-                            WebSocket webSocket = session.webSocket;
+                            RealtimeWebSocketConnection webSocket = session.webSocket;
                             WebSocketPerformanceData.CompletionMode readMode = stepCfg.completionMode == null
                                     ? WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE
                                     : stepCfg.completionMode;
@@ -690,7 +696,7 @@ public class WebSocketScenarioExecutor {
         return CharSequenceUtil.isBlank(filter) || CharSequenceUtil.contains(payload, filter.trim());
     }
 
-    private void waitForSendQueueToDrain(WebSocket webSocket) throws InterruptedException {
+    private void waitForSendQueueToDrain(RealtimeWebSocketConnection webSocket) throws InterruptedException {
         long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(500);
         while (webSocket.queueSize() > 0 && System.nanoTime() < deadline && runningSupplier.getAsBoolean()) {
             TimeUnit.MILLISECONDS.sleep(10);

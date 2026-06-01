@@ -42,34 +42,12 @@ public class PlatformDownloadUrlResolverTest {
     }
 
     @Test
-    public void shouldPreferCompatibilityDebOnUosLikeArm64() throws IOException {
-        useLinux("aarch64", "ID=uos\nID_LIKE=debian deepin\nNAME=\"UnionTech OS\"\n");
-
-        String url = new PlatformDownloadUrlResolver().resolveDownloadUrl(sampleAssets());
-
-        assertEquals(url, "https://example.com/EasyPostman-5.4.15-linux-arm64-compat.deb");
-    }
-
-    @Test
     public void shouldResolveRpmOnRpmBasedLinux() throws IOException {
         useLinux("x86_64", "ID=fedora\nID_LIKE=\"fedora rhel\"\n");
 
         String url = new PlatformDownloadUrlResolver().resolveDownloadUrl(sampleAssets());
 
         assertEquals(url, "https://example.com/EasyPostman-5.4.15-1.x86_64.rpm");
-    }
-
-    @Test
-    public void shouldFallbackToLegacyArm64DebName() throws IOException {
-        useLinux("aarch64", "ID=ubuntu\nID_LIKE=debian\n");
-
-        JSONArray assets = new JSONArray()
-                .put(asset("easypostman_5.4.15_arm64.deb"))
-                .put(asset("EasyPostman-5.4.15-1.x86_64.rpm"));
-
-        String url = new PlatformDownloadUrlResolver().resolveDownloadUrl(assets);
-
-        assertEquals(url, "https://example.com/easypostman_5.4.15_arm64.deb");
     }
 
     private static void useLinux(String arch, String osReleaseContent) throws IOException {
@@ -85,7 +63,6 @@ public class PlatformDownloadUrlResolverTest {
         return new JSONArray()
                 .put(asset("EasyPostman-5.4.15-linux-amd64.deb"))
                 .put(asset("EasyPostman-5.4.15-linux-arm64.deb"))
-                .put(asset("EasyPostman-5.4.15-linux-arm64-compat.deb"))
                 .put(asset("EasyPostman-5.4.15-1.x86_64.rpm"))
                 .put(asset("EasyPostman-5.4.15-1.aarch64.rpm"));
     }

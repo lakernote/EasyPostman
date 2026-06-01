@@ -16,7 +16,10 @@ import com.laker.postman.performance.core.model.WebSocketPerformanceData;
 import com.laker.postman.performance.plan.PerformancePlanDocument;
 import com.laker.postman.performance.plan.PerformancePlanConfiguration;
 import com.laker.postman.performance.plan.PerformancePlanNode;
+import com.laker.postman.performance.plan.PerformancePlanWorkspace;
 import com.laker.postman.performance.plan.PerformanceRemoteWorkerSettings;
+import com.laker.postman.performance.plan.PerformanceSavedPlan;
+import com.laker.postman.panel.performance.tree.PerformanceSwingTreePlanAdapter;
 import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
 import com.laker.postman.performance.core.timer.TimerData;
 import com.laker.postman.service.variable.RequestExecutionScope;
@@ -57,13 +60,13 @@ public class PerformancePersistenceServiceTest {
 
         DefaultMutableTreeNode root = new DefaultMutableTreeNode(new PerformanceTreeNode("Plan", NodeType.ROOT));
 
-        service.save(root, false);
+        save(service, root, false);
 
         Path configPath = workspaceDir.resolve("performance_config.json");
         assertTrue(Files.exists(configPath));
         assertFalse(Files.readString(configPath).contains("responseBodyPreviewLimitKb"));
 
-        DefaultMutableTreeNode loadedRoot = service.load("Loaded Plan");
+        DefaultMutableTreeNode loadedRoot = load(service, "Loaded Plan");
         assertNotNull(loadedRoot);
         assertEquals(((PerformanceTreeNode) loadedRoot.getUserObject()).name, "Loaded Plan");
         assertFalse(service.loadConfiguration().isEfficientMode());
@@ -79,7 +82,7 @@ public class PerformancePersistenceServiceTest {
 
         DefaultMutableTreeNode root = new DefaultMutableTreeNode(new PerformanceTreeNode("Plan", NodeType.ROOT));
 
-        service.saveAsync(root, false);
+        saveAsync(service, root, false);
         if (service.awaitWorkerWorkspaceLookup()) {
             service.setWorkspace(workspace(workspaceB));
             service.releaseWorkerWorkspaceLookup();
@@ -112,14 +115,14 @@ public class PerformancePersistenceServiceTest {
         group.add(new DefaultMutableTreeNode(csvNodeData));
         root.add(group);
 
-        service.save(root, true, true, false);
+        save(service, root, true, true, false);
 
         String json = Files.readString(configPath, StandardCharsets.UTF_8);
         assertTrue(json.contains("\"type\": \"CSV_DATA_SET\""));
         assertTrue(json.contains("\"csvDataSetData\""));
         assertFalse(json.contains("\"csvState\""));
 
-        DefaultMutableTreeNode loadedRoot = service.load("Loaded Plan");
+        DefaultMutableTreeNode loadedRoot = load(service, "Loaded Plan");
         DefaultMutableTreeNode loadedGroup = (DefaultMutableTreeNode) loadedRoot.getChildAt(0);
         DefaultMutableTreeNode loadedCsvNode = (DefaultMutableTreeNode) loadedGroup.getChildAt(0);
         PerformanceTreeNode loadedCsvData = (PerformanceTreeNode) loadedCsvNode.getUserObject();
@@ -138,7 +141,7 @@ public class PerformancePersistenceServiceTest {
         service.init();
 
         DefaultMutableTreeNode root = new DefaultMutableTreeNode(new PerformanceTreeNode("Plan", NodeType.ROOT));
-        service.save(root, true, false);
+        save(service, root, true, false);
 
         assertFalse(service.loadConfiguration().isTrendEnabled());
         assertTrue(Files.readString(configPath, StandardCharsets.UTF_8).contains("\"trendEnabled\": false"));
@@ -152,7 +155,7 @@ public class PerformancePersistenceServiceTest {
         service.init();
 
         DefaultMutableTreeNode root = new DefaultMutableTreeNode(new PerformanceTreeNode("Plan", NodeType.ROOT));
-        service.save(root, true, true, true);
+        save(service, root, true, true, true);
 
         assertTrue(service.loadConfiguration().isReportRealtimeEnabled());
         assertTrue(Files.readString(configPath, StandardCharsets.UTF_8).contains("\"reportRealtimeEnabled\": true"));
@@ -282,7 +285,7 @@ public class PerformancePersistenceServiceTest {
         assertFalse(loadedConfiguration.isTrendEnabled());
         assertTrue(loadedConfiguration.isReportRealtimeEnabled());
 
-        DefaultMutableTreeNode loadedTree = service.load("Loaded Bundle");
+        DefaultMutableTreeNode loadedTree = load(service, "Loaded Bundle");
         assertNotNull(loadedTree);
         assertEquals(((PerformanceTreeNode) loadedTree.getUserObject()).name, "Loaded Bundle");
     }
@@ -368,8 +371,8 @@ public class PerformancePersistenceServiceTest {
         assertEquals(loadedRequest.getRequestExecutionScope().getGroupVariable("tenantId"), "persisted-tenant");
     }
 
-    @Test(description = "不含 csvState 的配置应按默认值加载")
-    public void shouldLoadConfigWithoutCsvState() throws IOException {
+    @Test(description = "旧版单计划配置不再兼容加载")
+    public void shouldRejectLegacySinglePlanConfiguration() throws IOException {
         Path tempDir = Files.createTempDirectory("performance-persistence-no-csv");
         Path configPath = tempDir.resolve("performance_config.json");
         TestablePerformancePersistenceService service = new TestablePerformancePersistenceService(configPath);
@@ -384,18 +387,11 @@ public class PerformancePersistenceServiceTest {
                     "type": "ROOT",
                     "enabled": true
                   }
-                }
-                """, StandardCharsets.UTF_8);
+	                }
+	                """, StandardCharsets.UTF_8);
 
-        DefaultMutableTreeNode loadedRoot = service.load("Loaded Plan");
-        PerformancePlanConfiguration loadedConfiguration = service.loadConfiguration();
-
-        assertNotNull(loadedRoot);
-        assertNotNull(loadedConfiguration);
-        assertTrue(loadedConfiguration.isEfficientMode());
-        assertTrue(loadedConfiguration.isTrendEnabled());
-        assertFalse(loadedConfiguration.isReportRealtimeEnabled());
-        assertEquals(((PerformanceTreeNode) loadedRoot.getUserObject()).name, "Loaded Plan");
+        assertNull(service.loadConfiguration());
+        assertFalse(Files.exists(configPath));
     }
 
     @Test(description = "空 CSV 状态不应写出脏数据")
@@ -406,7 +402,7 @@ public class PerformancePersistenceServiceTest {
         service.init();
 
         DefaultMutableTreeNode root = new DefaultMutableTreeNode(new PerformanceTreeNode("Plan", NodeType.ROOT));
-        service.save(root, true);
+        save(service, root, true);
 
         String json = Files.readString(configPath, StandardCharsets.UTF_8);
         assertFalse(json.contains("\"csvState\""));
@@ -439,9 +435,9 @@ public class PerformancePersistenceServiceTest {
 
         root.add(requestNode);
 
-        service.save(root, false);
+        save(service, root, false);
 
-        DefaultMutableTreeNode loadedRoot = service.load("Loaded Plan");
+        DefaultMutableTreeNode loadedRoot = load(service, "Loaded Plan");
         DefaultMutableTreeNode loadedRequestNode = (DefaultMutableTreeNode) loadedRoot.getChildAt(0);
         PerformanceTreeNode loadedSendNode = (PerformanceTreeNode) ((DefaultMutableTreeNode) loadedRequestNode.getChildAt(0)).getUserObject();
         PerformanceTreeNode loadedReadNode = (PerformanceTreeNode) ((DefaultMutableTreeNode) loadedRequestNode.getChildAt(1)).getUserObject();
@@ -480,9 +476,9 @@ public class PerformancePersistenceServiceTest {
 
         root.add(requestNode);
 
-        service.save(root, false);
+        save(service, root, false);
 
-        DefaultMutableTreeNode loadedRoot = service.load("Loaded Plan");
+        DefaultMutableTreeNode loadedRoot = load(service, "Loaded Plan");
         DefaultMutableTreeNode loadedRequestNode = (DefaultMutableTreeNode) loadedRoot.getChildAt(0);
         PerformanceTreeNode loadedConnectNode = (PerformanceTreeNode) ((DefaultMutableTreeNode) loadedRequestNode.getChildAt(0)).getUserObject();
         PerformanceTreeNode loadedReadNode = (PerformanceTreeNode) ((DefaultMutableTreeNode) loadedRequestNode.getChildAt(1)).getUserObject();
@@ -495,99 +491,104 @@ public class PerformancePersistenceServiceTest {
         assertEquals(loadedReadNode.ssePerformanceData.holdConnectionMs, 30000);
     }
 
-    @Test(description = "WebSocket 读取配置遇到未知枚举值时应使用默认值，并继续读取其它字段")
-    public void shouldDefaultUnknownWebSocketReadEnumsWhenLoading() throws IOException {
+    @Test(description = "WebSocket 配置遇到未知枚举值时不再兼容回退")
+    public void shouldRejectUnknownWebSocketEnumsWhenLoading() throws IOException {
         Path tempDir = Files.createTempDirectory("performance-persistence-ws-defaults");
         Path configPath = tempDir.resolve("performance_config.json");
         Files.writeString(configPath, """
                 {
-                  "version": "1.0",
-                  "tree": {
-                    "name": "Plan",
-                    "type": "ROOT",
-                    "enabled": true,
-                    "children": [
-                      {
-                        "name": "WebSocket Example",
-                        "type": "REQUEST",
-                        "enabled": true,
-                        "webSocketPerformanceData": {
-                          "sendMode": "LEGACY_SEND",
-                          "sendContentSource": "LEGACY_BODY",
-                          "completionMode": "MATCHED_MESSAGE",
-                          "firstMessageTimeoutMs": 2222,
-                          "targetMessageCount": 3,
-                          "messageFilter": "ack"
-                        }
-                      }
-                    ]
-                  }
-                }
-                """, StandardCharsets.UTF_8);
-        TestablePerformancePersistenceService service = new TestablePerformancePersistenceService(configPath);
-
-        DefaultMutableTreeNode loadedRoot = service.load("Loaded Plan");
-        DefaultMutableTreeNode loadedRequestNode = (DefaultMutableTreeNode) loadedRoot.getChildAt(0);
-        PerformanceTreeNode loadedRequest = (PerformanceTreeNode) loadedRequestNode.getUserObject();
-
-        assertEquals(loadedRequest.webSocketPerformanceData.sendMode,
-                WebSocketPerformanceData.SendMode.REQUEST_BODY_ON_CONNECT);
-        assertEquals(loadedRequest.webSocketPerformanceData.sendContentSource,
-                WebSocketPerformanceData.SendContentSource.REQUEST_BODY);
-        assertEquals(loadedRequest.webSocketPerformanceData.completionMode,
-                WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE);
-        assertEquals(loadedRequest.webSocketPerformanceData.firstMessageTimeoutMs, 2222);
-        assertEquals(loadedRequest.webSocketPerformanceData.targetMessageCount, 3);
-        assertEquals(loadedRequest.webSocketPerformanceData.messageFilter, "ack");
-    }
-
-    @Test(description = "SSE Read 阶段配置遇到未知枚举值时应使用默认值，并继续读取其它字段")
-    public void shouldDefaultUnknownSseReadEnumsWhenLoading() throws IOException {
-        Path tempDir = Files.createTempDirectory("performance-persistence-sse-defaults");
-        Path configPath = tempDir.resolve("performance_config.json");
-        Files.writeString(configPath, """
-                {
-                  "version": "1.0",
-                  "tree": {
-                    "name": "Plan",
-                    "type": "ROOT",
-                    "enabled": true,
-                    "children": [
-                      {
-                        "name": "SSE Example",
-                        "type": "REQUEST",
+                  "version": "1.1",
+                  "activePlanId": "plan-a",
+                  "plans": [
+                    {
+                      "id": "plan-a",
+                      "name": "Plan A",
+                      "efficientMode": true,
+                      "trendEnabled": true,
+                      "reportRealtimeEnabled": false,
+                      "remoteExecutionEnabled": false,
+                      "remoteWorkers": "",
+                      "tree": {
+                        "name": "Plan",
+                        "type": "ROOT",
                         "enabled": true,
                         "children": [
                           {
-                            "name": "SSE Read",
-                            "type": "SSE_READ",
+                            "name": "WebSocket Example",
+                            "type": "REQUEST",
                             "enabled": true,
-                            "ssePerformanceData": {
-                              "completionMode": "FIRST_MESSAGE",
+                            "webSocketPerformanceData": {
+                              "sendMode": "UNKNOWN_SEND",
+                              "sendContentSource": "UNKNOWN_BODY",
+                              "completionMode": "MATCHED_MESSAGE",
                               "firstMessageTimeoutMs": 2222,
                               "targetMessageCount": 3,
-                              "eventNameFilter": "orders",
-                              "messageFilter": "ready"
+                              "messageFilter": "ack"
                             }
                           }
                         ]
                       }
-                    ]
-                  }
+                    }
+                  ]
                 }
                 """, StandardCharsets.UTF_8);
         TestablePerformancePersistenceService service = new TestablePerformancePersistenceService(configPath);
 
-        DefaultMutableTreeNode loadedRoot = service.load("Loaded Plan");
-        DefaultMutableTreeNode loadedRequestNode = (DefaultMutableTreeNode) loadedRoot.getChildAt(0);
-        PerformanceTreeNode loadedRead = (PerformanceTreeNode) ((DefaultMutableTreeNode) loadedRequestNode.getChildAt(0)).getUserObject();
+        assertNull(service.loadConfiguration());
+        assertFalse(Files.exists(configPath));
+    }
 
-        assertEquals(loadedRead.ssePerformanceData.completionMode,
-                SsePerformanceData.CompletionMode.SINGLE_MESSAGE);
-        assertEquals(loadedRead.ssePerformanceData.firstMessageTimeoutMs, 2222);
-        assertEquals(loadedRead.ssePerformanceData.targetMessageCount, 3);
-        assertEquals(loadedRead.ssePerformanceData.eventNameFilter, "orders");
-        assertEquals(loadedRead.ssePerformanceData.messageFilter, "ready");
+    @Test(description = "SSE Read 阶段配置遇到未知枚举值时不再兼容回退")
+    public void shouldRejectUnknownSseReadEnumsWhenLoading() throws IOException {
+        Path tempDir = Files.createTempDirectory("performance-persistence-sse-defaults");
+        Path configPath = tempDir.resolve("performance_config.json");
+        Files.writeString(configPath, """
+                {
+                  "version": "1.1",
+                  "activePlanId": "plan-a",
+                  "plans": [
+                    {
+                      "id": "plan-a",
+                      "name": "Plan A",
+                      "efficientMode": true,
+                      "trendEnabled": true,
+                      "reportRealtimeEnabled": false,
+                      "remoteExecutionEnabled": false,
+                      "remoteWorkers": "",
+                      "tree": {
+                        "name": "Plan",
+                        "type": "ROOT",
+                        "enabled": true,
+                        "children": [
+                          {
+                            "name": "SSE Example",
+                            "type": "REQUEST",
+                            "enabled": true,
+                            "children": [
+                              {
+                                "name": "SSE Read",
+                                "type": "SSE_READ",
+                                "enabled": true,
+                                "ssePerformanceData": {
+                                  "completionMode": "UNKNOWN_COMPLETION",
+                                  "firstMessageTimeoutMs": 2222,
+                                  "targetMessageCount": 3,
+                                  "eventNameFilter": "orders",
+                                  "messageFilter": "ready"
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+                """, StandardCharsets.UTF_8);
+        TestablePerformancePersistenceService service = new TestablePerformancePersistenceService(configPath);
+
+        assertNull(service.loadConfiguration());
+        assertFalse(Files.exists(configPath));
     }
 
     @Test(description = "应保存并恢复 WebSocket Connect 步骤的独立配置")
@@ -606,9 +607,9 @@ public class PerformancePersistenceServiceTest {
         requestNode.add(new DefaultMutableTreeNode(connectNode));
         root.add(requestNode);
 
-        service.save(root, false);
+        save(service, root, false);
 
-        DefaultMutableTreeNode loadedRoot = service.load("Loaded Plan");
+        DefaultMutableTreeNode loadedRoot = load(service, "Loaded Plan");
         DefaultMutableTreeNode loadedRequestNode = (DefaultMutableTreeNode) loadedRoot.getChildAt(0);
         PerformanceTreeNode loadedConnectNode = (PerformanceTreeNode) ((DefaultMutableTreeNode) loadedRequestNode.getChildAt(0)).getUserObject();
 
@@ -632,9 +633,9 @@ public class PerformancePersistenceServiceTest {
         groupNode.add(loopNode);
         root.add(groupNode);
 
-        service.save(root, false);
+        save(service, root, false);
 
-        DefaultMutableTreeNode loadedRoot = service.load("Loaded Plan");
+        DefaultMutableTreeNode loadedRoot = load(service, "Loaded Plan");
         DefaultMutableTreeNode loadedGroupNode = (DefaultMutableTreeNode) loadedRoot.getChildAt(0);
         PerformanceTreeNode loadedLoop = (PerformanceTreeNode) ((DefaultMutableTreeNode) loadedGroupNode.getChildAt(0)).getUserObject();
 
@@ -701,9 +702,9 @@ public class PerformancePersistenceServiceTest {
         wsRequestNode.add(new DefaultMutableTreeNode(timer));
         threadGroupNode.add(wsRequestNode);
 
-        service.save(root, false);
+        save(service, root, false);
 
-        DefaultMutableTreeNode loadedRoot = service.load("Loaded Plan");
+        DefaultMutableTreeNode loadedRoot = load(service, "Loaded Plan");
         DefaultMutableTreeNode loadedThreadGroupNode = (DefaultMutableTreeNode) loadedRoot.getChildAt(0);
         PerformanceTreeNode loadedThreadGroup = (PerformanceTreeNode) loadedThreadGroupNode.getUserObject();
         DefaultMutableTreeNode loadedSseRequestNode = (DefaultMutableTreeNode) loadedThreadGroupNode.getChildAt(0);
@@ -737,6 +738,55 @@ public class PerformancePersistenceServiceTest {
             row.put(keyValues[i], keyValues[i + 1]);
         }
         return row;
+    }
+
+    private static void save(PerformancePersistenceService service,
+                             DefaultMutableTreeNode root,
+                             boolean efficientMode) {
+        save(service, root, efficientMode, true, false);
+    }
+
+    private static void save(PerformancePersistenceService service,
+                             DefaultMutableTreeNode root,
+                             boolean efficientMode,
+                             boolean trendEnabled) {
+        save(service, root, efficientMode, trendEnabled, false);
+    }
+
+    private static void save(PerformancePersistenceService service,
+                             DefaultMutableTreeNode root,
+                             boolean efficientMode,
+                             boolean trendEnabled,
+                             boolean reportRealtimeEnabled) {
+        service.saveConfiguration(PerformancePlanConfiguration.builder()
+                .planDocument(PerformanceSwingTreePlanAdapter.toDocument(root))
+                .efficientMode(efficientMode)
+                .trendEnabled(trendEnabled)
+                .reportRealtimeEnabled(reportRealtimeEnabled)
+                .remoteWorkerSettings(PerformanceRemoteWorkerSettings.disabled())
+                .build());
+    }
+
+    private static void saveAsync(PerformancePersistenceService service,
+                                  DefaultMutableTreeNode root,
+                                  boolean efficientMode) {
+        PerformancePlanConfiguration configuration = PerformancePlanConfiguration.builder()
+                .planDocument(PerformanceSwingTreePlanAdapter.toDocument(root))
+                .efficientMode(efficientMode)
+                .trendEnabled(true)
+                .reportRealtimeEnabled(false)
+                .remoteWorkerSettings(PerformanceRemoteWorkerSettings.disabled())
+                .build();
+        service.saveWorkspaceAsync(PerformancePlanWorkspace.builder()
+                .activePlanId("async-plan")
+                .plans(List.of(PerformanceSavedPlan.fromConfiguration("async-plan", "Plan", configuration)))
+                .build());
+    }
+
+    private static DefaultMutableTreeNode load(PerformancePersistenceService service, String rootName) {
+        PerformancePlanConfiguration configuration = service.loadConfiguration();
+        PerformancePlanDocument document = configuration == null ? null : configuration.getPlanDocument();
+        return PerformanceSwingTreePlanAdapter.toTree(document, rootName);
     }
 
     private static Workspace workspace(Path workspaceDir) {

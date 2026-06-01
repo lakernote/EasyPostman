@@ -1,7 +1,6 @@
 package com.laker.postman.functional.model;
 
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.script.model.TestResult;
 
@@ -16,11 +15,10 @@ public class RunnerRowData {
     public String status;
     public AssertionResult assertion;
     public HttpRequestItem requestItem;
-    public PreparedRequest preparedRequest;
     public HttpResponse response;
     public List<TestResult> testResults;
 
-    public RunnerRowData(HttpRequestItem item, PreparedRequest prepared) {
+    public RunnerRowData(HttpRequestItem item) {
         this.selected = true;
         this.name = item.getName();
         this.url = item.getUrl();
@@ -29,7 +27,6 @@ public class RunnerRowData {
         this.status = "";
         this.assertion = AssertionResult.NO_TESTS;
         this.requestItem = item;
-        this.preparedRequest = prepared;
         this.response = null;
         this.testResults = null;
     }

@@ -26,7 +26,7 @@ import static org.testng.Assert.*;
 /**
  * Postman 内置库完整测试套件
  * <p>
- * 测试所有内置 JavaScript 库的功能，确保与 Postman 兼容
+ * 测试所有内置 JavaScript 库的功能，确保与 Postman 风格
  * 包括: CryptoJS, Lodash, Moment, atob/btoa
  * </p>
  *

@@ -1,10 +1,12 @@
 package com.laker.postman.http.runtime.transport;
 
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.app.AppHttpRuntimeBootstrap;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.runtime.okhttp.HttpClientRuntimeConfig;
 import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
 import com.laker.postman.service.setting.SettingManager;
 import okhttp3.OkHttpClient;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Field;
@@ -18,6 +20,11 @@ import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertTrue;
 
 public class ScopedHttpBaseClientProviderTest {
+
+    @BeforeMethod
+    public void configureRuntimeAdapters() {
+        AppHttpRuntimeBootstrap.configure();
+    }
 
     @Test
     public void shouldNotReuseRunScopedClientWhenProxySettingsChange() throws Exception {

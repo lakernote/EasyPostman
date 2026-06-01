@@ -602,23 +602,10 @@ public class SettingManager {
                     return sanitizeTrustedCertificateEntries(entries);
                 }
             } catch (Exception e) {
-                log.warn("Failed to parse custom trust material entries, falling back to legacy settings", e);
+                log.warn("Failed to parse custom trust material entries", e);
             }
         }
-
-        // TODO(compat-cleanup): 多证书配置已使用 custom_trust_material_entries，确认旧设置迁移后删除 path/password fallback。
-        String legacyPath = props.getProperty("custom_trust_material_path", "").trim();
-        if (legacyPath.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        TrustedCertificateEntry entry = new TrustedCertificateEntry();
-        entry.setEnabled(true);
-        entry.setPath(legacyPath);
-        entry.setPassword(props.getProperty("custom_trust_material_password", ""));
-        List<TrustedCertificateEntry> entries = new ArrayList<>();
-        entries.add(entry);
-        return entries;
+        return new ArrayList<>();
     }
 
     public static void setCustomTrustMaterialEntries(List<TrustedCertificateEntry> entries) {
@@ -626,66 +613,11 @@ public class SettingManager {
         updateAndSaveProperties(settings -> {
             if (sanitizedEntries.isEmpty()) {
                 settings.remove("custom_trust_material_entries");
-                // TODO(compat-cleanup): 删除 legacy path/password fallback 时一并停止写入这两个键。
-                settings.setProperty("custom_trust_material_path", "");
-                settings.setProperty("custom_trust_material_password", "");
             } else {
                 settings.setProperty("custom_trust_material_entries", JSONUtil.toJsonStr(sanitizedEntries));
-                TrustedCertificateEntry firstEntry = sanitizedEntries.get(0);
-                // TODO(compat-cleanup): 删除 legacy path/password fallback 时一并停止写入这两个键。
-                settings.setProperty("custom_trust_material_path", firstEntry.getPath());
-                settings.setProperty("custom_trust_material_password", firstEntry.getPassword() != null ? firstEntry.getPassword() : "");
             }
         });
         OkHttpClientManager.clearClientCache();
-    }
-
-    /**
-     * 自定义受信任证书或 truststore 文件路径。
-     */
-    public static String getCustomTrustMaterialPath() {
-        List<TrustedCertificateEntry> entries = getCustomTrustMaterialEntries();
-        if (!entries.isEmpty()) {
-            return entries.get(0).getPath();
-        }
-        String val = props.getProperty("custom_trust_material_path");
-        return val != null ? val : "";
-    }
-
-    public static void setCustomTrustMaterialPath(String path) {
-        List<TrustedCertificateEntry> entries = getCustomTrustMaterialEntries();
-        if (entries.isEmpty()) {
-            TrustedCertificateEntry entry = new TrustedCertificateEntry();
-            entry.setPath(path != null ? path : "");
-            entries.add(entry);
-        } else {
-            entries.get(0).setPath(path != null ? path : "");
-        }
-        setCustomTrustMaterialEntries(entries);
-    }
-
-    /**
-     * 自定义 truststore 密码。仅对 JKS/PKCS12 文件有效。
-     */
-    public static String getCustomTrustMaterialPassword() {
-        List<TrustedCertificateEntry> entries = getCustomTrustMaterialEntries();
-        if (!entries.isEmpty()) {
-            return entries.get(0).getPassword();
-        }
-        String val = props.getProperty("custom_trust_material_password");
-        return val != null ? val : "";
-    }
-
-    public static void setCustomTrustMaterialPassword(String password) {
-        List<TrustedCertificateEntry> entries = getCustomTrustMaterialEntries();
-        if (entries.isEmpty()) {
-            TrustedCertificateEntry entry = new TrustedCertificateEntry();
-            entry.setPassword(password != null ? password : "");
-            entries.add(entry);
-        } else {
-            entries.get(0).setPassword(password != null ? password : "");
-        }
-        setCustomTrustMaterialEntries(entries);
     }
 
     private static List<TrustedCertificateEntry> sanitizeTrustedCertificateEntries(List<TrustedCertificateEntry> entries) {

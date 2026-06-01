@@ -1,8 +1,8 @@
 package com.laker.postman.service;
 
-import com.laker.postman.model.HttpEventInfo;
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.HttpEventInfo;
+import com.laker.postman.http.runtime.model.HttpResponse;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.history.RequestHistoryItem;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpParam;
@@ -276,8 +276,8 @@ public class HistoryPersistenceService {
         requestJson.set("url", item.request.url);
         // 请求体 - 保留完整内容，历史记录支持重新打开为可编辑请求时需要精确还原
         String requestBody = "";
-        if (item.request.okHttpRequestBody != null && !item.request.okHttpRequestBody.isEmpty()) {
-            requestBody = item.request.okHttpRequestBody;
+        if (item.request.sentRequestBody != null && !item.request.sentRequestBody.isEmpty()) {
+            requestBody = item.request.sentRequestBody;
         } else if (item.request.body != null) {
             requestBody = item.request.body;
         }
@@ -300,14 +300,13 @@ public class HistoryPersistenceService {
         requestJson.set("prescript", item.request.prescript);
         requestJson.set("postscript", item.request.postscript);
 
-        // 请求头 - 优先保存实际发送的okHttpHeaders
+        // 请求头 - 优先保存实际发送的sentHeadersList
         JSONObject requestHeaders = new JSONObject();
-        if (item.request.okHttpHeaders != null && item.request.okHttpHeaders.size() > 0) {
-            // 使用实际发送的OkHttp Headers
-            for (int i = 0; i < item.request.okHttpHeaders.size(); i++) {
-                String name = item.request.okHttpHeaders.name(i);
-                String value = item.request.okHttpHeaders.value(i);
-                requestHeaders.set(name, value);
+        if (item.request.sentHeadersList != null && !item.request.sentHeadersList.isEmpty()) {
+            for (HttpHeader header : item.request.sentHeadersList) {
+                if (header != null && header.getKey() != null && !header.getKey().isBlank()) {
+                    requestHeaders.set(header.getKey(), header.getValue());
+                }
             }
         }
         requestJson.set("headers", requestHeaders);
@@ -380,7 +379,7 @@ public class HistoryPersistenceService {
             eventInfo.set("canceled", item.response.httpEventInfo.getCanceled());
             eventInfo.set("queueingCost", item.response.httpEventInfo.getQueueingCost());
             eventInfo.set("stalledCost", item.response.httpEventInfo.getStalledCost());
-            eventInfo.set("protocol", item.response.httpEventInfo.getProtocol() != null ? item.response.httpEventInfo.getProtocol().toString() : null);
+            eventInfo.set("protocol", item.response.httpEventInfo.getProtocol());
             eventInfo.set("tlsVersion", item.response.httpEventInfo.getTlsVersion());
             eventInfo.set("errorMessage", item.response.httpEventInfo.getErrorMessage());
             eventInfo.set("threadName", item.response.httpEventInfo.getThreadName());
@@ -403,7 +402,7 @@ public class HistoryPersistenceService {
         request.url = requestJson.getStr("url");
         request.body = requestJson.getStr("originalBody", requestJson.getStr("body"));
         request.bodyType = requestJson.getStr("bodyType");
-        request.okHttpRequestBody = requestJson.getStr("body");
+        request.sentRequestBody = requestJson.getStr("body");
         request.id = requestJson.getStr("id");
         request.followRedirects = requestJson.getBool("followRedirects", true);
         request.isMultipart = requestJson.getBool("isMultipart", false);
@@ -421,31 +420,25 @@ public class HistoryPersistenceService {
         request.formDataList = convertFormDataListFromJson(requestJson.getJSONArray("formDataList"));
         request.urlencodedList = convertUrlencodedListFromJson(requestJson.getJSONArray("urlencodedList"));
 
-        // 重建请求头 - 构建 okHttpHeaders 供 HttpHtmlRenderer 使用
+        // 重建请求头 - 构建 sentHeadersList 供 HttpHtmlRenderer 使用
         JSONObject requestHeaders = requestJson.getJSONObject("headers");
         if (requestHeaders != null && !requestHeaders.isEmpty()) {
-            okhttp3.Headers.Builder headersBuilder = new okhttp3.Headers.Builder();
+            List<HttpHeader> sentHeaders = new ArrayList<>();
             for (String key : requestHeaders.keySet()) {
-                try {
-                    headersBuilder.add(key, requestHeaders.getStr(key));
-                } catch (Exception e) {
-                    // 忽略无效的头信息
+                if (key != null && !key.isBlank()) {
+                    sentHeaders.add(new HttpHeader(true, key, requestHeaders.getStr(key)));
                 }
             }
-            request.okHttpHeaders = headersBuilder.build();
+            request.sentHeadersList = sentHeaders;
         } else if (request.headersList != null && !request.headersList.isEmpty()) {
-            okhttp3.Headers.Builder headersBuilder = new okhttp3.Headers.Builder();
+            List<HttpHeader> sentHeaders = new ArrayList<>();
             for (HttpHeader header : request.headersList) {
                 if (header == null || !header.isEnabled() || header.getKey() == null || header.getKey().isBlank()) {
                     continue;
                 }
-                try {
-                    headersBuilder.add(header.getKey(), header.getValue());
-                } catch (Exception e) {
-                    // 忽略无效的头信息
-                }
+                sentHeaders.add(new HttpHeader(true, header.getKey(), header.getValue()));
             }
-            request.okHttpHeaders = headersBuilder.build();
+            request.sentHeadersList = sentHeaders;
         }
 
         // 重建 HttpResponse
@@ -483,7 +476,7 @@ public class HistoryPersistenceService {
         // 重建事件信息
         JSONObject eventInfoJson = responseJson.getJSONObject("httpEventInfo");
         if (eventInfoJson != null) {
-            response.httpEventInfo = new com.laker.postman.model.HttpEventInfo();
+            response.httpEventInfo = new com.laker.postman.http.runtime.model.HttpEventInfo();
             response.httpEventInfo.setLocalAddress(eventInfoJson.getStr("localAddress"));
             response.httpEventInfo.setRemoteAddress(eventInfoJson.getStr("remoteAddress"));
             response.httpEventInfo.setQueueStart(eventInfoJson.getLong("queueStart", 0L));
@@ -512,14 +505,9 @@ public class HistoryPersistenceService {
             response.httpEventInfo.setQueueingCost(eventInfoJson.getLong("queueingCost", 0L));
             response.httpEventInfo.setStalledCost(eventInfoJson.getLong("stalledCost", 0L));
 
-            // 处理协议类型
             String protocolStr = eventInfoJson.getStr("protocol");
             if (protocolStr != null && !protocolStr.isEmpty()) {
-                try {
-                    response.httpEventInfo.setProtocol(okhttp3.Protocol.valueOf(protocolStr));
-                } catch (IllegalArgumentException e) {
-                    // 忽略无法解析的协议类型
-                }
+                response.httpEventInfo.setProtocol(protocolStr);
             }
 
             response.httpEventInfo.setTlsVersion(eventInfoJson.getStr("tlsVersion"));

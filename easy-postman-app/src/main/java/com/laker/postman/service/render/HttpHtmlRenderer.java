@@ -1,10 +1,11 @@
 package com.laker.postman.service.render;
 
-import com.laker.postman.model.HttpEventInfo;
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.HttpEventInfo;
+import com.laker.postman.http.runtime.model.HttpResponse;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.functional.model.RequestResult;
 import com.laker.postman.script.model.TestResult;
+import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpFormUrlencoded;
 
 import com.laker.postman.common.constants.ModernColors;
@@ -126,12 +127,16 @@ public class HttpHtmlRenderer {
         sb.append(kvRow(colorPrimary(), "URL",    escapeHtml(safeStr(req.url)),    false));
         sb.append(kvRow(colorPrimary(), "Method", escapeHtml(safeStr(req.method)), true));
 
-        if (req.okHttpHeaders != null && req.okHttpHeaders.size() > 0) {
+        if (req.sentHeadersList != null && !req.sentHeadersList.isEmpty()) {
             sb.append(sectionTitle(colorPrimary(), "Headers"));
-            for (int i = 0; i < req.okHttpHeaders.size(); i++) {
+            for (int i = 0; i < req.sentHeadersList.size(); i++) {
+                HttpHeader header = req.sentHeadersList.get(i);
+                if (header == null) {
+                    continue;
+                }
                 sb.append(kvRow(colorPrimary(),
-                        escapeHtml(req.okHttpHeaders.name(i)),
-                        escapeHtml(req.okHttpHeaders.value(i)), i % 2 != 0));
+                        escapeHtml(header.getKey()),
+                        escapeHtml(header.getValue()), i % 2 != 0));
             }
         }
 
@@ -159,9 +164,9 @@ public class HttpHtmlRenderer {
                     sb.append(kvRow(colorPrimary(), escapeHtml(e.getKey()), escapeHtml(e.getValue()), idx[0]++ % 2 != 0)));
         }
 
-        if (isNotEmpty(req.okHttpRequestBody)) {
+        if (isNotEmpty(req.sentRequestBody)) {
             sb.append(sectionTitle(colorPrimary(), "Body"));
-            sb.append(codeBlock(truncate(req.okHttpRequestBody)));
+            sb.append(codeBlock(truncate(req.sentRequestBody)));
         }
 
         return htmlDoc(sb.toString());
@@ -402,7 +407,7 @@ public class HttpHtmlRenderer {
         sb.append("<table style='border-collapse:collapse;width:100%;margin-bottom:8px;'>");
         eventRow(sb, "Local Address",  escapeHtml(info.getLocalAddress()),  false);
         eventRow(sb, "Remote Address", escapeHtml(info.getRemoteAddress()),  true);
-        eventRow(sb, "Protocol",       info.getProtocol() != null ? info.getProtocol().toString() : "-", false);
+        eventRow(sb, "Protocol",       info.getProtocol() != null ? info.getProtocol() : "-", false);
         eventRow(sb, "TLS Version",    safeStr(info.getTlsVersion()),        true);
         eventRow(sb, "Thread",         safeStr(info.getThreadName()),        false);
         if (isNotEmpty(info.getErrorMessage())) {

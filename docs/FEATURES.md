@@ -159,7 +159,7 @@
 ## 🔄 Data Migration
 
 ### Import Support
-- ✅ **Postman Collection v2.1**: Full compatibility
+- ✅ **Postman Collection v2.1**: Supported import/export
 - ✅ **cURL commands**: Convert to requests
 - 🚧 **HAR files**: In development
 - 🚧 **OpenAPI/Swagger**: In development

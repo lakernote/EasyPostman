@@ -1,6 +1,6 @@
 package com.laker.postman.service.js.api;
 
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.service.variable.IterationInfoService;
 
 /**

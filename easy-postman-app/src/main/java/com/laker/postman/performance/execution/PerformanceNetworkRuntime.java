@@ -3,8 +3,8 @@ package com.laker.postman.performance.execution;
 
 import com.laker.postman.http.runtime.transport.HttpBaseClientProvider;
 import com.laker.postman.http.runtime.transport.HttpCallTracker;
-import okhttp3.WebSocket;
-import okhttp3.sse.EventSource;
+import com.laker.postman.http.runtime.transport.RealtimeConnectionHandle;
+import com.laker.postman.http.runtime.transport.RealtimeWebSocketConnection;
 
 import java.util.Set;
 
@@ -12,9 +12,9 @@ public interface PerformanceNetworkRuntime extends HttpCallTracker, HttpBaseClie
     default void beginRun() {
     }
 
-    Set<EventSource> activeSseSources();
+    Set<RealtimeConnectionHandle> activeSseSources();
 
-    Set<WebSocket> activeWebSockets();
+    Set<RealtimeWebSocketConnection> activeWebSockets();
 
     int activeHttpCallCount();
 

@@ -1,7 +1,7 @@
 package com.laker.postman.http.runtime.redirect;
 
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.HttpResponse;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.runtime.cookie.HttpCookieStore;
 import com.laker.postman.http.runtime.transport.HttpTransportRuntime;
 import com.laker.postman.request.model.AuthType;

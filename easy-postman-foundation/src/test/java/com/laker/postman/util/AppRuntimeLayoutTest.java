@@ -7,8 +7,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
 
 public class AppRuntimeLayoutTest {
 
@@ -28,17 +26,4 @@ public class AppRuntimeLayoutTest {
         assertEquals(AppRuntimeLayout.resolvePortableDataDirectory(rootDir, classesDir), rootDir.resolve("data"));
     }
 
-    @Test
-    public void shouldMigrateLegacyPortableDataDirectoryToPreferredLocation() throws IOException {
-        Path rootDir = Files.createTempDirectory("portable-root");
-        Path legacyDataDir = Files.createDirectories(rootDir.resolve("data"));
-        Path preferredDataDir = rootDir.resolve("app").resolve("data");
-        Files.writeString(legacyDataDir.resolve("collections.json"), "{}");
-
-        Path resolved = AppRuntimeLayout.harmonizePortableDataDirectory(preferredDataDir, legacyDataDir);
-
-        assertEquals(resolved, preferredDataDir);
-        assertTrue(Files.exists(preferredDataDir.resolve("collections.json")));
-        assertFalse(Files.exists(legacyDataDir));
-    }
 }

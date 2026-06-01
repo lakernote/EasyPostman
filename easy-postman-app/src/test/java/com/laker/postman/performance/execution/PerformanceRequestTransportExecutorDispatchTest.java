@@ -1,7 +1,7 @@
 package com.laker.postman.performance.execution;
 
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.HttpResponse;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.request.model.HttpRequestItem;
 
@@ -9,8 +9,8 @@ import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
 import com.laker.postman.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.performance.core.request.PerformanceRequestSnapshot;
-import okhttp3.WebSocket;
-import okhttp3.sse.EventSource;
+import com.laker.postman.http.runtime.transport.RealtimeConnectionHandle;
+import com.laker.postman.http.runtime.transport.RealtimeWebSocketConnection;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -33,8 +33,8 @@ public class PerformanceRequestTransportExecutorDispatchTest {
         PerformanceRequestTransportExecutor transportExecutor = new PerformanceRequestTransportExecutor(
                 () -> true,
                 throwable -> false,
-                ConcurrentHashMap.<EventSource>newKeySet(),
-                ConcurrentHashMap.<WebSocket>newKeySet(),
+                ConcurrentHashMap.<RealtimeConnectionHandle>newKeySet(),
+                ConcurrentHashMap.<RealtimeWebSocketConnection>newKeySet(),
                 new PerformanceRealtimeMetrics(),
                 () -> 64,
                 context -> {

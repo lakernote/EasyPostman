@@ -7,7 +7,7 @@ import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.ViewportClippedTokenPainter;
 import com.laker.postman.common.component.button.*;
 import com.laker.postman.frame.MainFrame;
-import com.laker.postman.model.HttpResponse;
+import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.*;
 import lombok.Getter;

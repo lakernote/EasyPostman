@@ -156,10 +156,10 @@
 
 ---
 
-## 🔄 数据迁移
+## 🔄 数据管理
 
 ### 导入支持
-- ✅ **Postman Collection v2.1**：完全兼容
+- ✅ **Postman Collection v2.1**：支持导入导出
 - ✅ **cURL 命令**：转换为请求
 - 🚧 **HAR 文件**：开发中
 - 🚧 **OpenAPI/Swagger**：开发中

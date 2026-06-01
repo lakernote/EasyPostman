@@ -390,24 +390,12 @@ public class EasyVariableTablePanel extends AbstractTablePanel<Variable> {
     public void addRow(Object... values) {
         if (values == null || values.length == 0) {
             tableModel.addRow(new Object[]{true, "", "", ""});
-        } else if (values.length == 2) {
-            // Legacy support: if 2 values provided, treat as Key, Value
-            tableModel.addRow(new Object[]{true, values[0], values[1], ""});
-        } else if (values.length == 3) {
-            // New format: enabled, key, value
-            tableModel.addRow(new Object[]{values[0], values[1], values[2], ""});
-        } else {
-            Object[] row = new Object[4];
-            row[0] = true; // enabled
-            for (int i = 0; i < Math.min(values.length, 2); i++) {
-                row[i + 1] = values[i];
-            }
-            for (int i = values.length; i < 2; i++) {
-                row[i + 1] = "";
-            }
-            row[3] = ""; // delete
-            tableModel.addRow(row);
+            return;
         }
+        if (values.length != 4) {
+            throw new IllegalArgumentException("Variable table rows must use [enabled, key, value, action]");
+        }
+        tableModel.addRow(new Object[]{values[0], values[1], values[2], values[3]});
     }
 
     /**

@@ -1,6 +1,6 @@
 package com.laker.postman.service.js;
 
-import com.laker.postman.http.request.HttpUrlUtil;
+import com.laker.postman.request.util.HttpUrlUtil;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;

@@ -1,15 +1,16 @@
 package com.laker.postman.performance.execution;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.HttpResponse;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
 import com.laker.postman.performance.core.model.SsePerformanceData;
 import com.laker.postman.http.runtime.transport.HttpBaseClientProvider;
-import com.laker.postman.http.runtime.transport.HttpRuntimeExecutor;
+import com.laker.postman.http.runtime.transport.HttpTransportRuntime;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import okhttp3.Response;
+import com.laker.postman.http.runtime.transport.RealtimeConnectionHandle;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
 
@@ -42,7 +43,7 @@ public class SseSampleExecutor {
 
     private final BooleanSupplier runningSupplier;
     private final Predicate<Throwable> cancelledChecker;
-    private final Set<EventSource> activeSources;
+    private final Set<RealtimeConnectionHandle> activeSources;
     private final PerformanceRealtimeMetrics realtimeMetrics;
     private final int responseBodyPreviewLimitBytes;
     private final boolean retainResponseBody;
@@ -51,20 +52,20 @@ public class SseSampleExecutor {
 
     public SseSampleExecutor(BooleanSupplier runningSupplier,
                              Predicate<Throwable> cancelledChecker,
-                             Set<EventSource> activeSources) {
+                             Set<RealtimeConnectionHandle> activeSources) {
         this(runningSupplier, cancelledChecker, activeSources, new PerformanceRealtimeMetrics());
     }
 
     public SseSampleExecutor(BooleanSupplier runningSupplier,
                              Predicate<Throwable> cancelledChecker,
-                             Set<EventSource> activeSources,
+                             Set<RealtimeConnectionHandle> activeSources,
                              PerformanceRealtimeMetrics realtimeMetrics) {
         this(runningSupplier, cancelledChecker, activeSources, realtimeMetrics, BoundedTextAccumulator.DEFAULT_PREVIEW_BYTES);
     }
 
     public SseSampleExecutor(BooleanSupplier runningSupplier,
                              Predicate<Throwable> cancelledChecker,
-                             Set<EventSource> activeSources,
+                             Set<RealtimeConnectionHandle> activeSources,
                              PerformanceRealtimeMetrics realtimeMetrics,
                              int responseBodyPreviewLimitBytes) {
         this(runningSupplier, cancelledChecker, activeSources, realtimeMetrics, responseBodyPreviewLimitBytes, true);
@@ -72,7 +73,7 @@ public class SseSampleExecutor {
 
     public SseSampleExecutor(BooleanSupplier runningSupplier,
                              Predicate<Throwable> cancelledChecker,
-                             Set<EventSource> activeSources,
+                             Set<RealtimeConnectionHandle> activeSources,
                              PerformanceRealtimeMetrics realtimeMetrics,
                              int responseBodyPreviewLimitBytes,
                              boolean retainResponseBody) {
@@ -82,7 +83,7 @@ public class SseSampleExecutor {
 
     public SseSampleExecutor(BooleanSupplier runningSupplier,
                              Predicate<Throwable> cancelledChecker,
-                             Set<EventSource> activeSources,
+                             Set<RealtimeConnectionHandle> activeSources,
                              PerformanceRealtimeMetrics realtimeMetrics,
                              int responseBodyPreviewLimitBytes,
                              boolean retainResponseBody,
@@ -93,7 +94,7 @@ public class SseSampleExecutor {
 
     public SseSampleExecutor(BooleanSupplier runningSupplier,
                              Predicate<Throwable> cancelledChecker,
-                             Set<EventSource> activeSources,
+                             Set<RealtimeConnectionHandle> activeSources,
                              PerformanceRealtimeMetrics realtimeMetrics,
                              int responseBodyPreviewLimitBytes,
                              boolean retainResponseBody,
@@ -251,10 +252,10 @@ public class SseSampleExecutor {
             }
         };
 
-        EventSource eventSource = HttpRuntimeExecutor.openSse(req, listener, baseClientProvider);
+        RealtimeConnectionHandle eventSource = HttpTransportRuntime.openSseConnection(req, listener, baseClientProvider);
         activeSources.add(eventSource);
         if (sessionRegistered.compareAndSet(false, true)) {
-            realtimeMetrics.recordSseSessionStart(eventSource, requestStartTime, apiId, apiName);
+            realtimeMetrics.recordSseSessionStart(eventSource.metricKey(), requestStartTime, apiId, apiName);
         }
 
         try {
@@ -361,7 +362,7 @@ public class SseSampleExecutor {
             interrupted.set(true);
         } finally {
             markSampleEnd(sampleEndTimeMs);
-            realtimeMetrics.recordSseSessionEnd(eventSource);
+            realtimeMetrics.recordSseSessionEnd(eventSource.metricKey());
             closingSource.set(true);
             eventSource.cancel();
             activeSources.remove(eventSource);

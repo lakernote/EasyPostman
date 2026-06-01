@@ -7,14 +7,14 @@ import java.util.Optional;
 
 @Slf4j
 public class CollectionRequestLookup {
-    private final TreeNodeRepository treeRepository;
+    private final CollectionRequestRepository requestRepository;
 
     public CollectionRequestLookup() {
-        this(new ActiveCollectionTreeNodeRepository());
+        this(new ActiveCollectionRequestRepository());
     }
 
-    CollectionRequestLookup(TreeNodeRepository treeRepository) {
-        this.treeRepository = treeRepository;
+    CollectionRequestLookup(CollectionRequestRepository requestRepository) {
+        this.requestRepository = requestRepository;
     }
 
     public Optional<HttpRequestItem> findRequestItemById(String requestId) {
@@ -23,8 +23,8 @@ public class CollectionRequestLookup {
         }
 
         try {
-            return treeRepository.findNodeByRequestId(requestId)
-                    .flatMap(CollectionTreeNodes::request);
+            return requestRepository.findRequestContextById(requestId)
+                    .map(com.laker.postman.collection.model.CollectionRequestContext::getRequest);
         } catch (Exception e) {
             log.error("Failed to find request item by ID {}: {}", requestId, e.getMessage());
             return Optional.empty();

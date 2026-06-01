@@ -1,6 +1,5 @@
 package com.laker.postman.service.js.api;
 
-import com.laker.postman.service.variable.IterationDataVariableService;
 import com.laker.postman.service.variable.VariableResolver;
 import com.laker.postman.service.variable.VariablesService;
 import com.laker.postman.service.GlobalVariablesService;
@@ -16,7 +15,6 @@ import java.util.Map;
  * <p>
  * set/unset/clear 作用于当前执行上下文变量。
  * get/has/toObject/replaceIn 按应用内变量优先级读取，行为与 {{variable}} 解析保持一致。
- * 当 key 未命中执行变量时，会继续回退读取 iteration data，但不会修改 iteration data。
  */
 public class ScriptVariablesApi {
 
@@ -51,7 +49,6 @@ public class ScriptVariablesApi {
         merged.putAll(GlobalVariablesService.getInstance().getAll());
         merged.putAll(EnvironmentVariableService.getInstance().getAll());
         merged.putAll(GroupVariableService.getInstance().getAll());
-        merged.putAll(IterationDataVariableService.getInstance().getAll());
         merged.putAll(VariablesService.getInstance().getAll());
         Map<String, Object> jsObject = new LinkedHashMap<>();
         jsObject.putAll(merged);
@@ -68,11 +65,6 @@ public class ScriptVariablesApi {
         }
 
         String value = VariablesService.getInstance().get(key);
-        if (value != null) {
-            return value;
-        }
-
-        value = IterationDataVariableService.getInstance().get(key);
         if (value != null) {
             return value;
         }

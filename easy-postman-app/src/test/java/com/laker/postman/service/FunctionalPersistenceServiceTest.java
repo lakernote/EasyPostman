@@ -1,16 +1,12 @@
 package com.laker.postman.service;
 
-import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.functional.model.RunnerRowData;
+import com.laker.postman.functional.model.FunctionalConfigRow;
+import com.laker.postman.functional.model.FunctionalConfigSnapshot;
 import com.laker.postman.model.Workspace;
-import com.laker.postman.request.model.HttpRequestItem;
-
 
 import com.laker.postman.functional.model.FunctionalCsvDataState;
-import com.laker.postman.service.collections.CollectionTreeRootRegistry;
 import org.testng.annotations.Test;
 
-import javax.swing.tree.DefaultMutableTreeNode;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -21,7 +17,6 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static com.laker.postman.service.collections.CollectionTreeNodeTypes.REQUEST;
 import static org.testng.Assert.*;
 
 public class FunctionalPersistenceServiceTest {
@@ -44,25 +39,24 @@ public class FunctionalPersistenceServiceTest {
         workspace.setPath(workspaceDir.toString());
         WorkspaceAwareFunctionalPersistenceService service = new WorkspaceAwareFunctionalPersistenceService(workspace);
 
-        HttpRequestItem requestItem = requestItem("req-workspace", "workspace");
-        RunnerRowData row = new RunnerRowData(requestItem, new PreparedRequest());
-        service.stubRequest(requestItem);
-
         FunctionalCsvDataState csvState = new FunctionalCsvDataState(
                 "workspace-users.csv",
                 List.of("username", "password"),
                 List.of(csvRow("username", "alice", "password", "secret"))
         );
 
-        service.save(List.of(row), csvState);
+        service.save(new FunctionalConfigSnapshot(
+                List.of(new FunctionalConfigRow("req-workspace", true)),
+                csvState
+        ));
 
         Path configPath = workspaceDir.resolve("functional_config.json");
         assertTrue(Files.exists(configPath));
 
-        List<RunnerRowData> loadedRows = service.load();
-        assertEquals(loadedRows.size(), 1);
-        assertEquals(loadedRows.get(0).requestItem.getId(), "req-workspace");
-        FunctionalCsvDataState loadedCsvState = service.loadCsvState();
+        FunctionalConfigSnapshot loaded = service.loadSnapshot();
+        assertEquals(loaded.getRows().size(), 1);
+        assertEquals(loaded.getRows().get(0).getRequestId(), "req-workspace");
+        FunctionalCsvDataState loadedCsvState = loaded.getCsvState();
         assertNotNull(loadedCsvState);
         assertEquals(loadedCsvState.getSourceName(), "workspace-users.csv");
         assertEquals(loadedCsvState.getHeaders(), List.of("username", "password"));
@@ -76,16 +70,16 @@ public class FunctionalPersistenceServiceTest {
         BlockingWorkspaceFunctionalPersistenceService service =
                 new BlockingWorkspaceFunctionalPersistenceService(workspace(workspaceA));
 
-        HttpRequestItem requestItem = requestItem("req-async", "async");
-        RunnerRowData row = new RunnerRowData(requestItem, new PreparedRequest());
-
         FunctionalCsvDataState csvState = new FunctionalCsvDataState(
                 "async-users.csv",
                 List.of("username"),
                 List.of(csvRow("username", "bob"))
         );
 
-        service.saveAsync(List.of(row), csvState);
+        service.saveAsync(new FunctionalConfigSnapshot(
+                List.of(new FunctionalConfigRow("req-async", true)),
+                csvState
+        ));
         if (service.awaitWorkerWorkspaceLookup()) {
             service.setWorkspace(workspace(workspaceB));
             service.releaseWorkerWorkspaceLookup();
@@ -100,48 +94,6 @@ public class FunctionalPersistenceServiceTest {
         assertTrue(Files.readString(configInA).contains("async-users.csv"));
     }
 
-    @Test(description = "默认工作区迁移旧功能测试配置后应移除工作区外的旧文件")
-    public void shouldMoveLegacyConfigIntoDefaultWorkspace() throws IOException {
-        Path tempDir = Files.createTempDirectory("functional-legacy-move");
-        Path legacyPath = tempDir.resolve("functional_config.json");
-        Path workspaceDir = tempDir.resolve("workspaces").resolve("default");
-        Files.createDirectories(workspaceDir);
-        Files.writeString(legacyPath, "{\"version\":\"1.0\",\"rows\":[]}");
-
-        Workspace defaultWorkspace = workspace(workspaceDir);
-        defaultWorkspace.setId("default-workspace");
-        LegacyAwareFunctionalPersistenceService service =
-                new LegacyAwareFunctionalPersistenceService(defaultWorkspace, legacyPath);
-
-        Path configPath = service.getConfigFilePath();
-
-        assertEquals(configPath, workspaceDir.resolve("functional_config.json"));
-        assertTrue(Files.exists(configPath));
-        assertFalse(Files.exists(legacyPath));
-    }
-
-    @Test(description = "默认工作区已有功能测试配置时应清理工作区外旧文件")
-    public void shouldRemoveLegacyConfigWhenWorkspaceConfigAlreadyExists() throws IOException {
-        Path tempDir = Files.createTempDirectory("functional-legacy-clean");
-        Path legacyPath = tempDir.resolve("functional_config.json");
-        Path workspaceDir = tempDir.resolve("workspaces").resolve("default");
-        Path workspaceConfigPath = workspaceDir.resolve("functional_config.json");
-        Files.createDirectories(workspaceDir);
-        Files.writeString(legacyPath, "{\"version\":\"1.0\",\"rows\":[]}");
-        Files.writeString(workspaceConfigPath, "{\"version\":\"1.0\",\"rows\":[{\"selected\":true}]}");
-
-        Workspace defaultWorkspace = workspace(workspaceDir);
-        defaultWorkspace.setId("default-workspace");
-        LegacyAwareFunctionalPersistenceService service =
-                new LegacyAwareFunctionalPersistenceService(defaultWorkspace, legacyPath);
-
-        Path configPath = service.getConfigFilePath();
-
-        assertEquals(configPath, workspaceConfigPath);
-        assertTrue(Files.exists(workspaceConfigPath));
-        assertFalse(Files.exists(legacyPath));
-    }
-
     @Test(description = "应支持保存并恢复 FunctionalPanel CSV 快照")
     public void shouldPersistAndLoadCsvState() throws IOException {
         Path tempDir = Files.createTempDirectory("functional-persistence-test");
@@ -149,40 +101,39 @@ public class FunctionalPersistenceServiceTest {
         TestableFunctionalPersistenceService service = new TestableFunctionalPersistenceService(configPath);
         service.init();
 
-        HttpRequestItem requestItem = requestItem("req-1", "login");
-        RunnerRowData row = new RunnerRowData(requestItem, new PreparedRequest());
-        row.selected = false;
         FunctionalCsvDataState csvState = new FunctionalCsvDataState(
                 "users.csv",
                 List.of("username", "password"),
                 List.of(csvRow("username", "alice", "password", "secret"))
         );
 
-        service.stubRequest(requestItem);
-        service.save(List.of(row), csvState);
+        service.save(new FunctionalConfigSnapshot(
+                List.of(new FunctionalConfigRow("req-1", false)),
+                csvState
+        ));
 
-        List<RunnerRowData> loadedRows = service.load();
-        FunctionalCsvDataState loadedCsvState = service.loadCsvState();
+        FunctionalConfigSnapshot loaded = service.loadSnapshot();
+        FunctionalCsvDataState loadedCsvState = loaded.getCsvState();
 
-        assertEquals(loadedRows.size(), 1);
-        assertEquals(loadedRows.get(0).requestItem.getId(), "req-1");
-        assertFalse(loadedRows.get(0).selected);
+        assertEquals(loaded.getRows().size(), 1);
+        assertEquals(loaded.getRows().get(0).getRequestId(), "req-1");
+        assertFalse(loaded.getRows().get(0).isSelected());
         assertNotNull(loadedCsvState);
         assertEquals(loadedCsvState.getSourceName(), "users.csv");
         assertEquals(loadedCsvState.getHeaders(), List.of("username", "password"));
         assertEquals(loadedCsvState.getRows().get(0).get("username"), "alice");
     }
 
-    @Test(description = "应兼容加载旧 JSON 中的 Functional CSV 状态")
-    public void shouldLoadCsvStateFromLegacyJsonFixture() throws IOException {
-        Path tempDir = Files.createTempDirectory("functional-legacy-csv-state");
+    @Test(description = "应从当前 JSON 结构加载 Functional CSV 状态")
+    public void shouldLoadCsvStateFromCurrentJsonFixture() throws IOException {
+        Path tempDir = Files.createTempDirectory("functional-csv-state");
         Path configPath = tempDir.resolve("functional_config.json");
         Files.writeString(configPath, """
                 {"version":"1.0","rows":[],"csvState":{"sourceName":"users.csv","headers":["username"],"rows":[{"username":"alice"}]}}
                 """);
         TestableFunctionalPersistenceService service = new TestableFunctionalPersistenceService(configPath);
 
-        FunctionalCsvDataState loadedCsvState = service.loadCsvState();
+        FunctionalCsvDataState loadedCsvState = service.loadSnapshot().getCsvState();
 
         assertNotNull(loadedCsvState);
         assertEquals(loadedCsvState.getSourceName(), "users.csv");
@@ -215,30 +166,6 @@ public class FunctionalPersistenceServiceTest {
         assertEquals(state.getRows().get(0).get("username"), "alice");
     }
 
-    @Test(description = "应通过已注册的 Collection 树根节点按 ID 查找请求")
-    public void shouldFindRequestItemFromRegisteredCollectionTreeRoot() {
-        HttpRequestItem requestItem = requestItem("req-registered", "registered");
-        DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode("root");
-        rootNode.add(new DefaultMutableTreeNode(new Object[]{REQUEST, requestItem}));
-
-        try {
-            CollectionTreeRootRegistry.registerRootSupplier(() -> rootNode);
-
-            assertSame(new FunctionalPersistenceService().findRequestItemById("req-registered"), requestItem);
-        } finally {
-            CollectionTreeRootRegistry.clear();
-        }
-    }
-
-    private static HttpRequestItem requestItem(String id, String name) {
-        HttpRequestItem item = new HttpRequestItem();
-        item.setId(id);
-        item.setName(name);
-        item.setUrl("https://example.com/" + name);
-        item.setMethod("GET");
-        return item;
-    }
-
     private static Workspace workspace(Path workspaceDir) {
         Workspace workspace = new Workspace();
         workspace.setPath(workspaceDir.toString());
@@ -266,19 +193,9 @@ public class FunctionalPersistenceServiceTest {
 
     private static final class TestableFunctionalPersistenceService extends FunctionalPersistenceService {
         private final Path configPath;
-        private final Map<String, HttpRequestItem> requests = new LinkedHashMap<>();
 
         private TestableFunctionalPersistenceService(Path configPath) {
             this.configPath = configPath;
-        }
-
-        private void stubRequest(HttpRequestItem requestItem) {
-            requests.put(requestItem.getId(), requestItem);
-        }
-
-        @Override
-        public HttpRequestItem findRequestItemById(String requestId) {
-            return requests.get(requestId);
         }
 
         @Override
@@ -289,44 +206,14 @@ public class FunctionalPersistenceServiceTest {
 
     private static final class WorkspaceAwareFunctionalPersistenceService extends FunctionalPersistenceService {
         private final Workspace workspace;
-        private final Map<String, HttpRequestItem> requests = new LinkedHashMap<>();
 
         private WorkspaceAwareFunctionalPersistenceService(Workspace workspace) {
             this.workspace = workspace;
         }
 
-        private void stubRequest(HttpRequestItem requestItem) {
-            requests.put(requestItem.getId(), requestItem);
-        }
-
-        @Override
-        public HttpRequestItem findRequestItemById(String requestId) {
-            return requests.get(requestId);
-        }
-
         @Override
         protected Workspace getCurrentWorkspace() {
             return workspace;
-        }
-    }
-
-    private static final class LegacyAwareFunctionalPersistenceService extends FunctionalPersistenceService {
-        private final Workspace workspace;
-        private final Path legacyConfigPath;
-
-        private LegacyAwareFunctionalPersistenceService(Workspace workspace, Path legacyConfigPath) {
-            this.workspace = workspace;
-            this.legacyConfigPath = legacyConfigPath;
-        }
-
-        @Override
-        protected Workspace getCurrentWorkspace() {
-            return workspace;
-        }
-
-        @Override
-        protected Path getLegacyConfigFilePath() {
-            return legacyConfigPath;
         }
     }
 

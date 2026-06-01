@@ -6,7 +6,6 @@ import com.laker.postman.service.js.api.ScriptInfluxDbApi;
 import okhttp3.*;
 import okio.Buffer;
 import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.Value;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -74,7 +73,7 @@ public class ScriptInfluxDbApiTest {
     }
 
     @Test
-    public void testPmInfluxQueryAndAliasInJavaScript() throws Exception {
+    public void testPmInfluxQueryInJavaScript() throws Exception {
         AtomicReference<Request> requestRef = new AtomicReference<>();
         String csv = """
                 #datatype,string,long,dateTime:RFC3339,double
@@ -88,8 +87,6 @@ public class ScriptInfluxDbApiTest {
         Environment env = new Environment();
         PostmanApiContext pm = new PostmanApiContext(env);
         pm.influxdb = api;
-        pm.influx = api;
-        assertSame(pm.influx, pm.influxdb);
 
         try (Context context = Context.newBuilder("js")
                 .allowAllAccess(true)
@@ -99,7 +96,7 @@ public class ScriptInfluxDbApiTest {
             context.getBindings("js").putMember("pm", pm);
 
             String script = """
-                    const resp = pm.influx.query({
+                    const resp = pm.influxdb.query({
                       baseUrl: 'http://localhost:8086',
                       version: 'v2',
                       org: 'demo-org',
@@ -113,14 +110,12 @@ public class ScriptInfluxDbApiTest {
                     pm.test("Influx mode is v2", function () {
                       pm.expect(resp.meta.mode).to.equal("v2");
                     });
-                    JSON.stringify(pm.test.index());
+                    "done";
                     """;
-            Value result = context.eval("js", script);
+            context.eval("js", script);
 
-            String json = result.asString();
-            assertTrue(json.contains("\"passed\":true"));
-            assertEquals(pm.test.count(), 2);
-            assertEquals(pm.test.failedCount(), 0);
+            assertEquals(pm.testResults.size(), 2);
+            assertTrue(pm.testResults.stream().allMatch(result -> result.passed));
         }
 
         assertEquals(requestRef.get().method(), "POST");

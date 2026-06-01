@@ -726,7 +726,7 @@ public class RequestBodyPanel extends JPanel {
                     Color labelColor = varType.getColor();
                     String symbol = varType.getIconSymbol();
 
-                    // 使用彩色圆点代替 Emoji（更好的跨平台兼容性）
+                    // 使用彩色圆点代替 Emoji（更好的跨平台表现）
                     JPanel iconPanel = new JPanel() {
                         @Override
                         protected void paintComponent(Graphics g) {

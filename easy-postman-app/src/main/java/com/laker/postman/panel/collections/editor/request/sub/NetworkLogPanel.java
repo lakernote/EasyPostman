@@ -1,7 +1,7 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.HttpResponse;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.runtime.observation.NetworkLogEvent;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.FontsUtil;

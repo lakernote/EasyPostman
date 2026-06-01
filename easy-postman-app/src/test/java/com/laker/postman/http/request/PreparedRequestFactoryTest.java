@@ -1,6 +1,7 @@
 package com.laker.postman.http.request;
 
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.app.AppHttpRuntimeBootstrap;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.request.model.AuthType;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpRequestItem;
@@ -8,6 +9,7 @@ import com.laker.postman.request.model.TransportAuth;
 
 
 import com.laker.postman.service.setting.SettingManager;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -20,6 +22,11 @@ import static org.testng.Assert.*;
  * 测试 PreparedRequestFactory，特别是 Authorization 头的处理
  */
 public class PreparedRequestFactoryTest {
+
+    @BeforeClass
+    public void configureHttpRuntime() {
+        AppHttpRuntimeBootstrap.configure();
+    }
 
     @Test
     public void testBasicAuthorizationHeaderIsAdded() {

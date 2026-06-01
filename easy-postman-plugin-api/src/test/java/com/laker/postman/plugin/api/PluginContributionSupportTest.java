@@ -44,11 +44,11 @@ public class PluginContributionSupportTest {
         )));
         assertTrue(sink.items().contains(new ScriptCompletionItem(
                 ScriptCompletionKind.BASIC,
-                "pm.redis.query",
-                "pm.redis.query",
-                "pm.redis.query(options)"
+                "pm.plugin(\"redis\").query",
+                "pm.plugin(\"redis\").query",
+                "pm.plugin(\"redis\").query(options)"
         )));
-        assertEquals(sink.items().size(), 7);
+        assertEquals(sink.items().size(), 4);
     }
 
     @Test

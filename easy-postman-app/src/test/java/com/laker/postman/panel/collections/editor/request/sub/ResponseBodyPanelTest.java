@@ -1,7 +1,7 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
 import com.laker.postman.common.component.button.WrapToggleButton;
-import com.laker.postman.model.HttpResponse;
+import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.test.AbstractSwingUiTest;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;

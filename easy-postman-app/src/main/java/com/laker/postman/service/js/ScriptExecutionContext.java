@@ -16,7 +16,7 @@ import java.util.Map;
  * <h3>主要职责：</h3>
  * <ul>
  *   <li>存储脚本内容和类型（前置/后置）</li>
- *   <li>管理脚本执行的变量绑定（pm, env, request, response 等）</li>
+ *   <li>管理脚本执行的变量绑定（例如 pm）</li>
  *   <li>提供构建器模式方便创建实例</li>
  * </ul>
  *
@@ -57,12 +57,6 @@ public class ScriptExecutionContext {
      * 包含脚本执行时可访问的所有变量，例如：
      * <ul>
      *   <li>"pm" → PostmanApiContext 实例</li>
-     *   <li>"postman" → PostmanApiContext 实例（别名）</li>
-     *   <li>"env" → Environment 实例</li>
-     *   <li>"request" → PreparedRequest 实例</li>
-     *   <li>"response" → HttpResponse 实例（仅后置脚本）</li>
-     *   <li>"responseBody" → 响应体字符串（仅后置脚本）</li>
-     *   <li>"statusCode" → 响应状态码（仅后置脚本）</li>
      * </ul>
      * </p>
      */

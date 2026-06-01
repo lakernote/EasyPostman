@@ -157,22 +157,22 @@ final class PerformanceRequestSyncSupport {
         int updatedCount = 0;
 
         Object userObj = treeNode.getUserObject();
-        if (userObj instanceof PerformanceTreeNode jmNode
-                && jmNode.type == NodeType.REQUEST
-                && jmNode.httpRequestItem != null) {
-            String requestId = jmNode.httpRequestItem.getId();
+        if (userObj instanceof PerformanceTreeNode requestNodeData
+                && requestNodeData.type == NodeType.REQUEST
+                && requestNodeData.httpRequestItem != null) {
+            String requestId = requestNodeData.httpRequestItem.getId();
             if (requestId == null || requestId.trim().isEmpty()) {
-                log.warn("刷新集合请求时发现请求节点 id 为空，已移除: {}", jmNode.name);
+                log.warn("刷新集合请求时发现请求节点 id 为空，已移除: {}", requestNodeData.name);
                 nodesToRemove.add(treeNode);
             } else {
                 HttpRequestItem latestRequestItem = requestResolver.findRequestItemById(requestId);
                 if (latestRequestItem == null) {
-                    log.warn("刷新集合请求时找不到 requestId={}，已移除: {}", requestId, jmNode.name);
+                    log.warn("刷新集合请求时找不到 requestId={}，已移除: {}", requestId, requestNodeData.name);
                     nodesToRemove.add(treeNode);
                 } else {
-                    jmNode.httpRequestItem = latestRequestItem;
-                    syncRequestStructureAction.accept(treeNode, jmNode);
-                    jmNode.name = latestRequestItem.getName();
+                    requestNodeData.httpRequestItem = latestRequestItem;
+                    syncRequestStructureAction.accept(treeNode, requestNodeData);
+                    requestNodeData.name = latestRequestItem.getName();
                     treeModel.nodeChanged(treeNode);
                     PreparedRequestFactory.invalidateCacheForRequest(requestId);
                     updatedCount++;
@@ -199,7 +199,7 @@ final class PerformanceRequestSyncSupport {
 
         for (int i = 1; i < oldPathObjects.length; i++) {
             Object oldNodeUserObj = ((DefaultMutableTreeNode) oldPathObjects[i]).getUserObject();
-            if (!(oldNodeUserObj instanceof PerformanceTreeNode oldJmNode)) {
+            if (!(oldNodeUserObj instanceof PerformanceTreeNode oldNodeData)) {
                 return null;
             }
 
@@ -207,9 +207,9 @@ final class PerformanceRequestSyncSupport {
             for (int j = 0; j < currentNode.getChildCount(); j++) {
                 DefaultMutableTreeNode child = (DefaultMutableTreeNode) currentNode.getChildAt(j);
                 Object childUserObj = child.getUserObject();
-                if (childUserObj instanceof PerformanceTreeNode childJmNode
-                        && childJmNode.type == oldJmNode.type
-                        && childJmNode.name.equals(oldJmNode.name)) {
+                if (childUserObj instanceof PerformanceTreeNode childNodeData
+                        && childNodeData.type == oldNodeData.type
+                        && childNodeData.name.equals(oldNodeData.name)) {
                     matchedChild = child;
                     break;
                 }

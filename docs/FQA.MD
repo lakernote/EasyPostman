@@ -58,7 +58,7 @@ maxIdleConnections 控制同一主机（baseUri）下，连接池中最多可以
 
 #### 适用场景
 - **接口调试/开发环境**：通常 6 足够。
-- **性能压测/高并发场景**：可通过 setConnectionPoolConfig 动态调大 maxIdleConnections，例如设置为 50 或 100，以适应更多并发连接需求。
+- **性能压测/高并发场景**：压测运行态使用独立的 `HttpClientRuntimeConfig` 控制连接池与并发参数，避免修改桌面调试链路的全局 OkHttpClient。
 
 ### maxIdleConnections 详解（更详细流程说明）
 

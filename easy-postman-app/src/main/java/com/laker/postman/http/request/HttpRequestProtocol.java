@@ -1,6 +1,6 @@
 package com.laker.postman.http.request;
 
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpRequestItem;
 import lombok.experimental.UtilityClass;

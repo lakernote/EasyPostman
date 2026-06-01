@@ -3,6 +3,7 @@ package com.laker.postman.startup;
 import com.formdev.flatlaf.util.SystemInfo;
 import com.laker.postman.common.themes.SimpleThemeManager;
 import com.laker.postman.common.window.SplashWindow;
+import com.laker.postman.http.runtime.app.AppHttpRuntimeBootstrap;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.plugin.runtime.PluginRuntime;
 import com.laker.postman.service.setting.SettingManager;
@@ -40,6 +41,7 @@ public class AppLauncher {
         // 这些配置对 GUI 和 headless CLI 都有效，且不应触发 Swing 初始化。
         Thread.setDefaultUncaughtExceptionHandler(new AppUncaughtExceptionHandler());
         System.setProperty("java.net.useSystemProxies", "true");
+        AppHttpRuntimeBootstrap.configure();
     }
 
     private void configurePlatformWindowDecorations() {

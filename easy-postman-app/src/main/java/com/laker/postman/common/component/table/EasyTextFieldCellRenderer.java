@@ -71,7 +71,7 @@ public class EasyTextFieldCellRenderer extends EasyTextField implements TableCel
 
     /**
      * 从 JTable 向上遍历父容器层级，找到 AbstractTablePanel 并返回 hoveredRow。
-     * 使用循环遍历而非固定深度，兼容不同的容器嵌套结构。
+     * 使用循环遍历而非固定深度，适配不同的容器嵌套结构。
      */
     private static int getHoveredRow(JTable table) {
         java.awt.Container parent = table.getParent();

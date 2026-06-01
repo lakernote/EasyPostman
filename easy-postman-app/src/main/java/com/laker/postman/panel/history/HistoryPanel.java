@@ -1,7 +1,7 @@
 package com.laker.postman.panel.history;
 
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.HttpResponse;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.history.RequestHistoryItem;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.request.model.HttpHeader;
@@ -1198,7 +1198,7 @@ public class HistoryPanel extends UiSingletonPanel {
                 || contains(item.url, keyword, caseSensitive, wholeWord)
                 || contains(String.valueOf(item.responseCode), keyword, caseSensitive, wholeWord)
                 || contains(item.request != null ? item.request.body : null, keyword, caseSensitive, wholeWord)
-                || contains(item.request != null ? item.request.okHttpRequestBody : null, keyword, caseSensitive, wholeWord)
+                || contains(item.request != null ? item.request.sentRequestBody : null, keyword, caseSensitive, wholeWord)
                 || contains(item.response != null ? item.response.body : null, keyword, caseSensitive, wholeWord);
     }
 
@@ -1278,7 +1278,7 @@ public class HistoryPanel extends UiSingletonPanel {
         requestItem.setProtocol(protocol);
         requestItem.setMethod(request.method != null ? request.method : item.method);
         String historyUrl = request.url != null ? request.url : item.url;
-        requestItem.setUrl(com.laker.postman.http.request.HttpUrlUtil.decodeQueryForDisplay(historyUrl));
+        requestItem.setUrl(com.laker.postman.request.util.HttpUrlUtil.decodeQueryForDisplay(historyUrl));
         requestItem.setHeadersList(copyHeaders(request));
         requestItem.setParamsList(copyParams(request.paramsList));
         requestItem.setFormDataList(copyFormData(request.formDataList));
@@ -1290,7 +1290,7 @@ public class HistoryPanel extends UiSingletonPanel {
         requestItem.setPrescript(request.prescript == null ? "" : request.prescript);
         requestItem.setPostscript(request.postscript == null ? "" : request.postscript);
 
-        String requestBody = request.body != null ? request.body : request.okHttpRequestBody;
+        String requestBody = request.body != null ? request.body : request.sentRequestBody;
         requestItem.setBody(requestBody == null ? "" : requestBody);
         requestItem.setBodyType(resolveBodyType(request));
         return requestItem;
@@ -1301,11 +1301,13 @@ public class HistoryPanel extends UiSingletonPanel {
         if (!copiedHeaders.isEmpty()) {
             return copiedHeaders;
         }
-        if (request.okHttpHeaders == null || request.okHttpHeaders.size() == 0) {
+        if (request.sentHeadersList == null || request.sentHeadersList.isEmpty()) {
             return copiedHeaders;
         }
-        for (int i = 0; i < request.okHttpHeaders.size(); i++) {
-            copiedHeaders.add(new HttpHeader(true, request.okHttpHeaders.name(i), request.okHttpHeaders.value(i)));
+        for (HttpHeader header : request.sentHeadersList) {
+            if (header != null) {
+                copiedHeaders.add(new HttpHeader(header.isEnabled(), header.getKey(), header.getValue()));
+            }
         }
         return copiedHeaders;
     }
@@ -1372,7 +1374,7 @@ public class HistoryPanel extends UiSingletonPanel {
         }
         String bodyType = request.bodyType;
         if (bodyType == null || bodyType.isBlank()) {
-            return (request.okHttpRequestBody != null && !request.okHttpRequestBody.isBlank())
+            return (request.sentRequestBody != null && !request.sentRequestBody.isBlank())
                     || (request.body != null && !request.body.isBlank())
                     ? RequestBodyPanel.BODY_TYPE_RAW
                     : RequestBodyPanel.BODY_TYPE_NONE;
@@ -1564,7 +1566,7 @@ public class HistoryPanel extends UiSingletonPanel {
             }
             return count;
         }
-        return request.okHttpHeaders != null ? request.okHttpHeaders.size() : 0;
+        return request.sentHeadersList != null ? request.sentHeadersList.size() : 0;
     }
 
     private int countEnabledFormData(List<HttpFormData> formDataList) {

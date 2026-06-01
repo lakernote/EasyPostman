@@ -3,11 +3,13 @@ package com.laker.postman.http.runtime.okhttp;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.model.ClientCertificate;
 import com.laker.postman.certificate.TrustedCertificateEntry;
+import com.laker.postman.http.runtime.app.AppHttpRuntimeBootstrap;
 import com.laker.postman.plugin.api.service.ClientCertificatePluginService;
 import com.laker.postman.plugin.runtime.PluginRegistry;
 import com.laker.postman.plugin.runtime.PluginRuntime;
 import com.laker.postman.service.setting.SettingManager;
 import okhttp3.OkHttpClient;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import javax.net.ssl.KeyManager;
@@ -31,6 +33,11 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 public class OkHttpClientManagerTest {
+
+    @BeforeMethod
+    public void configureRuntimeAdapters() {
+        AppHttpRuntimeBootstrap.configure();
+    }
 
     @Test
     public void defaultProxySettingsShouldDisableProxyWhenUnset() throws Exception {
@@ -69,8 +76,6 @@ public class OkHttpClientManagerTest {
             entry.setPath(trustFile.toString());
             entry.setPassword("");
             props.setProperty("custom_trust_material_entries", JSONUtil.toJsonStr(java.util.List.of(entry)));
-            props.setProperty("custom_trust_material_path", trustFile.toString());
-            props.setProperty("custom_trust_material_password", "");
 
             String firstKey = getProxyConfigKey("https://localhost:8443");
 

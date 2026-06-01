@@ -81,7 +81,6 @@ public class JsScriptExecutorCacheTest {
                 pm.info.setWebSocketSendInfo(17, 700, "WS Send");
                 Map<String, Object> bindings = new HashMap<>();
                 bindings.put("pm", pm);
-                bindings.put("postman", pm);
 
                 JsScriptExecutor.executeScript("""
                         pm.variables.set('i', pm.info.wsSendIndex);

@@ -10,7 +10,7 @@ import static org.testng.Assert.assertTrue;
 public class CaptureRequestFilterTest {
 
     @Test
-    public void shouldKeepLegacyHostFilterBehavior() {
+    public void shouldKeepHostSuffixFilterBehavior() {
         CaptureRequestFilter filter = CaptureRequestFilter.parse("api.example.com");
 
         assertTrue(filter.matches("api.example.com", "/orders", "https://api.example.com/orders", Map.of()));

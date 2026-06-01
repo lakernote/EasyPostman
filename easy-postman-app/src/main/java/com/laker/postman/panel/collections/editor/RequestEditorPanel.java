@@ -21,7 +21,9 @@ import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.service.collections.ActiveCollectionTreeNodeRepository;
 import com.laker.postman.service.collections.CollectionTreeQueryService;
 import com.laker.postman.service.setting.ShortcutManager;
-import com.laker.postman.service.variable.RequestContext;
+import com.laker.postman.service.collections.GroupInheritanceHelper;
+import com.laker.postman.service.variable.RequestExecutionContext;
+import com.laker.postman.service.variable.RequestExecutionScope;
 import com.laker.postman.service.curl.CurlImportUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -66,6 +68,7 @@ public class RequestEditorPanel extends UiSingletonPanel {
     // 预览模式：单击使用的临时 tab（可被下次单击替换）
     private Component previewTab = null; // 可以是 RequestEditSubPanel 或 GroupEditPanel
     private int previewTabIndex = -1; // 预览 tab 的索引
+    private final RequestEditorSaveCoordinator saveCoordinator = new RequestEditorSaveCoordinator();
 
 
     // 新建Tab，可指定标题
@@ -151,7 +154,9 @@ public class RequestEditorPanel extends UiSingletonPanel {
         repository.getRootNode().ifPresent(rootNode -> {
             DefaultMutableTreeNode requestNode = CollectionTreeQueryService.findRequestNodeById(rootNode, id);
             if (requestNode != null) {
-                RequestContext.setCurrentRequestNode(requestNode);
+                RequestExecutionContext.setCurrentScope(RequestExecutionScope.fromVariables(
+                        GroupInheritanceHelper.getMergedGroupVariables(requestNode)
+                ));
             }
         });
 
@@ -227,7 +232,9 @@ public class RequestEditorPanel extends UiSingletonPanel {
         repository.getRootNode().ifPresent(rootNode -> {
             DefaultMutableTreeNode requestNode = CollectionTreeQueryService.findRequestNodeById(rootNode, id);
             if (requestNode != null) {
-                RequestContext.setCurrentRequestNode(requestNode);
+                RequestExecutionContext.setCurrentScope(RequestExecutionScope.fromVariables(
+                        GroupInheritanceHelper.getMergedGroupVariables(requestNode)
+                ));
             }
         });
 
@@ -386,57 +393,91 @@ public class RequestEditorPanel extends UiSingletonPanel {
      * 保存当前请求
      */
     public boolean saveCurrentRequest() {
-        // 检查当前 tab 是否是 saved-response 类型
         RequestEditSubPanel currentSubPanel = getCurrentSubPanel();
-        if (currentSubPanel != null && currentSubPanel.isSavedResponseTab()) {
-            NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.SAVED_RESPONSE_READONLY));
-            return false;
-        }
-
-
-        // 保存请求时，如果当前是预览 tab，则转为固定 tab（模仿 Postman 行为）
-        promotePreviewTabToPermanent();
-
-        String settingsValidationError = currentSubPanel != null ? currentSubPanel.validateRequestSettings() : null;
-        if (settingsValidationError != null) {
-            NotificationUtil.showError(settingsValidationError);
-            return false;
-        }
-
-        HttpRequestItem currentItem = getCurrentRequest();
-        if (currentItem == null) {
-            log.warn("没有可保存的请求");
-            return false;
-        }
-
-        boolean isNewRequest = currentItem.isNewRequest();
-
-        // 查找请求集合面板
         CollectionTreePanel collectionPanel = UiSingletonFactory.getInstance(CollectionTreePanel.class);
-
-        if (isNewRequest) {
-            // 新请求：弹出对话框让用户输入名称和选择文件夹
-            if (!saveNewRequest(collectionPanel, currentItem)) {
-                return false;
+        return saveCoordinator.saveCurrentRequest(new RequestEditorSaveCoordinator.SaveContext() {
+            @Override
+            public boolean isSavedResponseTab() {
+                return currentSubPanel != null && currentSubPanel.isSavedResponseTab();
             }
-        } else {
-            updateExistingRequest(collectionPanel, currentItem);
-        }
-        return true;
+
+            @Override
+            public void showSavedResponseReadonly() {
+                NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.SAVED_RESPONSE_READONLY));
+            }
+
+            @Override
+            public void promotePreviewTabToPermanent() {
+                RequestEditorPanel.this.promotePreviewTabToPermanent();
+            }
+
+            @Override
+            public String validateRequestSettings() {
+                return currentSubPanel != null ? currentSubPanel.validateRequestSettings() : null;
+            }
+
+            @Override
+            public void showSettingsValidationError(String error) {
+                NotificationUtil.showError(error);
+            }
+
+            @Override
+            public HttpRequestItem currentRequest() {
+                return getCurrentRequest();
+            }
+
+            @Override
+            public void onNoRequestToSave() {
+                log.warn("没有可保存的请求");
+            }
+
+            @Override
+            public TreeModel groupTreeModel() {
+                return collectionPanel.getGroupTreeModel();
+            }
+
+            @Override
+            public Optional<CollectionGroupSelectionDialog.RequestNameSelection> chooseGroupAndRequestName(
+                    TreeModel groupTreeModel,
+                    String defaultName
+            ) {
+                return RequestEditorPanel.this.chooseGroupAndRequestName(groupTreeModel, defaultName);
+            }
+
+            @Override
+            public String newRequestId() {
+                return IdUtil.simpleUUID();
+            }
+
+            @Override
+            public void saveRequestToGroup(RequestGroup group, HttpRequestItem item) {
+                collectionPanel.saveRequestToGroup(group, item);
+            }
+
+            @Override
+            public void refreshNewRequestTab(String requestName, HttpRequestItem item) {
+                RequestEditorPanel.this.refreshNewRequestTab(requestName, item);
+            }
+
+            @Override
+            public boolean updateExistingRequest(HttpRequestItem item) {
+                return collectionPanel.updateExistingRequest(item);
+            }
+
+            @Override
+            public void showUpdateExistingRequestFailed(HttpRequestItem item) {
+                log.error("更新请求失败: {}", item.getId() + " - " + item.getName());
+                JOptionPane.showMessageDialog(
+                        RequestEditorPanel.this,
+                        I18nUtil.getMessage(MessageKeys.UPDATE_REQUEST_FAILED),
+                        I18nUtil.getMessage(MessageKeys.ERROR),
+                        JOptionPane.ERROR_MESSAGE
+                );
+            }
+        });
     }
 
-    /**
-     * 保存新请求（分组选择优化为树结构）
-     */
-    private boolean saveNewRequest(CollectionTreePanel collectionPanel, HttpRequestItem item) {
-        TreeModel groupTreeModel = collectionPanel.getGroupTreeModel();
-        CollectionGroupSelectionDialog.RequestNameSelection selection = chooseGroupAndRequestName(groupTreeModel, item.getName())
-                .orElse(null);
-        if (selection == null) return false;
-        String requestName = selection.requestName();
-        item.setName(requestName);
-        item.setId(IdUtil.simpleUUID());
-        collectionPanel.saveRequestToGroup(selection.group(), item);
+    private void refreshNewRequestTab(String requestName, HttpRequestItem item) {
         int currentTabIndex = tabbedPane.getSelectedIndex();
         if (currentTabIndex >= 0) {
             tabbedPane.setTitleAt(currentTabIndex, requestName);
@@ -449,7 +490,6 @@ public class RequestEditorPanel extends UiSingletonPanel {
                 subPanel.initPanelData(item);
             }
         }
-        return true;
     }
 
     protected Optional<CollectionGroupSelectionDialog.RequestNameSelection> chooseGroupAndRequestName(
@@ -457,17 +497,6 @@ public class RequestEditorPanel extends UiSingletonPanel {
             String defaultName
     ) {
         return CollectionGroupSelectionDialog.chooseGroupAndRequestName(groupTreeModel, defaultName);
-    }
-
-    /**
-     * 更新已存在的请求
-     */
-    private void updateExistingRequest(CollectionTreePanel collectionPanel, HttpRequestItem item) {
-        if (!collectionPanel.updateExistingRequest(item)) {
-            log.error("更新请求失败: {}", item.getId() + " - " + item.getName());
-            JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.UPDATE_REQUEST_FAILED),
-                    I18nUtil.getMessage(MessageKeys.ERROR), JOptionPane.ERROR_MESSAGE);
-        }
     }
 
     // 用于动态更新tab红点

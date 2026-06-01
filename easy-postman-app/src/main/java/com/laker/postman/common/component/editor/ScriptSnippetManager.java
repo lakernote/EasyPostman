@@ -128,7 +128,6 @@ public class ScriptSnippetManager {
         addPmCookies(provider);
         addPmInfo(provider);
         addPmSendRequest(provider);
-        addPmExecution(provider);
         addPmDataStoreApis(provider);
 
         // ===== Chai 断言库 =====
@@ -495,28 +494,12 @@ public class ScriptSnippetManager {
         provider.addCompletion(new BasicCompletion(provider, "pm.expect",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT)));
         provider.addCompletion(new BasicCompletion(provider, "pm.sendRequest", "pm.sendRequest() - send HTTP request"));
-        provider.addCompletion(new BasicCompletion(provider, "pm.setNextRequest", "pm.setNextRequest() - set next request"));
 
         // UUID 和时间戳
         provider.addCompletion(new BasicCompletion(provider, "pm.uuid",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_UUID)));
-        provider.addCompletion(new BasicCompletion(provider, "pm.generateUUID",
-                I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_GENERATE_UUID)));
         provider.addCompletion(new BasicCompletion(provider, "pm.getTimestamp",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_GET_TIMESTAMP)));
-
-        // 变量操作（旧版 API，保留兼容）
-        // TODO(compat-cleanup): 统计脚本侧 pm.setVariable/getVariable 使用情况后，决定是否只保留标准 pm.* 变量对象补全。
-        provider.addCompletion(new BasicCompletion(provider, "pm.setVariable",
-                I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_SET_VARIABLE)));
-        provider.addCompletion(new BasicCompletion(provider, "pm.getVariable",
-                I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_GET_VARIABLE)));
-        provider.addCompletion(new BasicCompletion(provider, "pm.setGlobalVariable",
-                I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_SET_GLOBAL_VARIABLE)));
-        provider.addCompletion(new BasicCompletion(provider, "pm.getGlobalVariable",
-                I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_GET_GLOBAL_VARIABLE)));
-        provider.addCompletion(new BasicCompletion(provider, "pm.setEnvironmentVariable", "pm.setEnvironmentVariable() - set env var"));
-        provider.addCompletion(new BasicCompletion(provider, "pm.getEnvironmentVariable", "pm.getEnvironmentVariable() - get env var"));
 
         // Cookie
         provider.addCompletion(new BasicCompletion(provider, "pm.getResponseCookie",
@@ -712,26 +695,15 @@ public class ScriptSnippetManager {
     }
 
     /**
-     * 添加 pm.execution - 执行上下文
-     */
-    private static void addPmExecution(DefaultCompletionProvider provider) {
-        provider.addCompletion(new BasicCompletion(provider, "pm.execution", "Execution context"));
-        provider.addCompletion(new BasicCompletion(provider, "pm.execution.skipRequest", "Skip current request"));
-        provider.addCompletion(new BasicCompletion(provider, "pm.execution.setNextRequest", "Set next request"));
-    }
-
-    /**
      * Add built-in data store APIs and plugin-provided script APIs.
      */
     private static void addPmDataStoreApis(DefaultCompletionProvider provider) {
-        provider.addCompletion(new BasicCompletion(provider, "pm.es", "Elasticsearch script API"));
         provider.addCompletion(new BasicCompletion(provider, "pm.elasticsearch", "Elasticsearch script API"));
-        provider.addCompletion(new BasicCompletion(provider, "pm.es.request", "pm.es.request(options)"));
-        provider.addCompletion(new BasicCompletion(provider, "pm.es.query", "pm.es.query(options)"));
         provider.addCompletion(new BasicCompletion(provider, "pm.elasticsearch.request", "pm.elasticsearch.request(options)"));
+        provider.addCompletion(new BasicCompletion(provider, "pm.elasticsearch.query", "pm.elasticsearch.query(options)"));
         provider.addCompletion(new ShorthandCompletion(provider, "es.query",
                 """
-                const resp = pm.es.request({
+                const resp = pm.elasticsearch.request({
                   baseUrl: "http://localhost:9200",
                   method: "GET",
                   path: "/orders/_search",
@@ -743,15 +715,12 @@ public class ScriptSnippetManager {
                 "Elasticsearch query + assert"));
 
         provider.addCompletion(new BasicCompletion(provider, "pm.influxdb", "InfluxDB script API"));
-        provider.addCompletion(new BasicCompletion(provider, "pm.influx", "InfluxDB script API"));
         provider.addCompletion(new BasicCompletion(provider, "pm.influxdb.query", "pm.influxdb.query(options)"));
         provider.addCompletion(new BasicCompletion(provider, "pm.influxdb.write", "pm.influxdb.write(options)"));
         provider.addCompletion(new BasicCompletion(provider, "pm.influxdb.request", "pm.influxdb.request(options)"));
-        provider.addCompletion(new BasicCompletion(provider, "pm.influx.query", "pm.influx.query(options)"));
-        provider.addCompletion(new BasicCompletion(provider, "pm.influx.write", "pm.influx.write(options)"));
         provider.addCompletion(new ShorthandCompletion(provider, "influx.query",
                 """
-                const resp = pm.influx.query({
+                const resp = pm.influxdb.query({
                   baseUrl: "http://localhost:8086",
                   version: "v1",
                   db: "metrics",
@@ -846,10 +815,6 @@ public class ScriptSnippetManager {
         provider.addCompletion(new ShorthandCompletion(provider, "expect.an",
                 "pm.expect(${value}).to.be.an(\"${type}\")",
                 I18nUtil.getMessage(MessageKeys.AUTOCOMPLETE_PM_EXPECT_TO_BE_AN)));
-        provider.addCompletion(new ShorthandCompletion(provider, "expect.instanceof",
-                "pm.expect(${value}).to.be.instanceof(${Constructor})",
-                "Check if instanceof"));
-
         // 长度断言
         provider.addCompletion(new ShorthandCompletion(provider, "expect.length",
                 "pm.expect(${array}).to.have.length(${expectedLength})",
@@ -920,14 +885,6 @@ public class ScriptSnippetManager {
         provider.addCompletion(new ShorthandCompletion(provider, "expect.not.exist",
                 "pm.expect(${value}).to.not.exist",
                 "Assert value does not exist"));
-
-        // 异常断言
-        provider.addCompletion(new ShorthandCompletion(provider, "expect.throw",
-                "pm.expect(${fn}).to.throw()",
-                "Assert function throws error"));
-        provider.addCompletion(new ShorthandCompletion(provider, "expect.throw.error",
-                "pm.expect(${fn}).to.throw(${ErrorType})",
-                "Assert function throws specific error"));
 
         // 响应断言
         provider.addCompletion(new ShorthandCompletion(provider, "expect.respondTo",

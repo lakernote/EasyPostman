@@ -47,7 +47,7 @@ public class JsContextPoolTest {
         }
     }
 
-    @Test(description = "returned contexts should not retain request/response bindings from previous scripts")
+    @Test(description = "returned contexts should not retain globals from previous scripts")
     public void shouldCleanupInjectedBindingsBeforeContextReuse() throws Exception {
         JsContextPool pool = new JsContextPool(1);
         JsContextPool.PooledContext borrowed = null;
@@ -56,28 +56,16 @@ public class JsContextPoolTest {
             var context = borrowed.getContext();
             context.eval("js", """
                     globalThis.pm = {};
-                    globalThis.postman = {};
-                    globalThis.request = {};
-                    globalThis.env = {};
-                    globalThis.environment = {};
-                    globalThis.globals = {};
-                    globalThis.response = { body: 'large-body' };
-                    globalThis.responseBody = 'large-body';
-                    globalThis.responseHeaders = {};
-                    globalThis.statusCode = 200;
-                    globalThis.tests = {};
-                    globalThis.iterationData = {};
+                    globalThis.customScriptGlobal = {};
                     """);
             pool.returnContext(borrowed);
             borrowed = null;
 
             borrowed = pool.borrowContext(1000);
             String retainedGlobals = borrowed.getContext().eval("js", """
-                    [
-                      'pm', 'postman', 'request', 'env', 'environment', 'globals',
-                      'response', 'responseBody', 'responseHeaders', 'statusCode',
-                      'tests', 'iterationData'
-                    ].filter(name => typeof globalThis[name] !== 'undefined').join(',')
+                    ['pm', 'customScriptGlobal']
+                        .filter(name => typeof globalThis[name] !== 'undefined')
+                        .join(',')
                     """).asString();
 
             assertEquals(retainedGlobals, "");

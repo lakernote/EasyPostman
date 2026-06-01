@@ -730,10 +730,6 @@ public class PerformanceCorePlanJsonStorage {
         if (value == null || value.isBlank()) {
             return defaultValue;
         }
-        try {
-            return Enum.valueOf(enumType, value);
-        } catch (IllegalArgumentException e) {
-            return defaultValue;
-        }
+        return Enum.valueOf(enumType, value);
     }
 }

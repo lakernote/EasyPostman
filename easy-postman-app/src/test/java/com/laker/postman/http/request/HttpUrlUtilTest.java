@@ -1,5 +1,6 @@
 package com.laker.postman.http.request;
 
+import com.laker.postman.request.util.HttpUrlUtil;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;

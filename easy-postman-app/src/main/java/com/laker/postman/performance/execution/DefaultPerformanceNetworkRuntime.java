@@ -1,14 +1,14 @@
 package com.laker.postman.performance.execution;
 
 
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.runtime.transport.ScopedHttpBaseClientProvider;
 import com.laker.postman.http.runtime.okhttp.HttpClientRuntimeConfig;
+import com.laker.postman.http.runtime.transport.RealtimeConnectionHandle;
+import com.laker.postman.http.runtime.transport.RealtimeWebSocketConnection;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Call;
 import okhttp3.OkHttpClient;
-import okhttp3.WebSocket;
-import okhttp3.sse.EventSource;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,8 +20,8 @@ import java.util.function.Supplier;
 @Slf4j
 public final class DefaultPerformanceNetworkRuntime implements PerformanceNetworkRuntime {
     private final Set<Call> activeHttpCalls;
-    private final Set<EventSource> activeSseSources;
-    private final Set<WebSocket> activeWebSockets;
+    private final Set<RealtimeConnectionHandle> activeSseSources;
+    private final Set<RealtimeWebSocketConnection> activeWebSockets;
     private final Supplier<HttpClientRuntimeConfig> httpClientConfigSupplier;
     private final ScopedHttpBaseClientProvider httpClientProvider;
     private volatile boolean cancelling;
@@ -40,8 +40,8 @@ public final class DefaultPerformanceNetworkRuntime implements PerformanceNetwor
         );
     }
 
-    DefaultPerformanceNetworkRuntime(Set<EventSource> activeSseSources,
-                                     Set<WebSocket> activeWebSockets) {
+    DefaultPerformanceNetworkRuntime(Set<RealtimeConnectionHandle> activeSseSources,
+                                     Set<RealtimeWebSocketConnection> activeWebSockets) {
         this(
                 ConcurrentHashMap.newKeySet(),
                 activeSseSources,
@@ -51,8 +51,8 @@ public final class DefaultPerformanceNetworkRuntime implements PerformanceNetwor
     }
 
     private DefaultPerformanceNetworkRuntime(Set<Call> activeHttpCalls,
-                                             Set<EventSource> activeSseSources,
-                                             Set<WebSocket> activeWebSockets,
+                                             Set<RealtimeConnectionHandle> activeSseSources,
+                                             Set<RealtimeWebSocketConnection> activeWebSockets,
                                              Supplier<HttpClientRuntimeConfig> httpClientConfigSupplier) {
         this.activeHttpCalls = activeHttpCalls == null ? ConcurrentHashMap.newKeySet() : activeHttpCalls;
         this.activeSseSources = activeSseSources == null ? ConcurrentHashMap.newKeySet() : activeSseSources;
@@ -87,12 +87,12 @@ public final class DefaultPerformanceNetworkRuntime implements PerformanceNetwor
     }
 
     @Override
-    public Set<EventSource> activeSseSources() {
+    public Set<RealtimeConnectionHandle> activeSseSources() {
         return activeSseSources;
     }
 
     @Override
-    public Set<WebSocket> activeWebSockets() {
+    public Set<RealtimeWebSocketConnection> activeWebSockets() {
         return activeWebSockets;
     }
 

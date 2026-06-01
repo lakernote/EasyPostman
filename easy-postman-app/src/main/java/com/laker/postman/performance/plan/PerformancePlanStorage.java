@@ -2,6 +2,7 @@ package com.laker.postman.performance.plan;
 
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.plan.PerformanceCorePlanDocument;
 import com.laker.postman.performance.core.plan.PerformanceCorePlanJsonStorage;
 import com.laker.postman.performance.core.plan.PerformanceCorePlanNode;
@@ -40,14 +41,9 @@ public class PerformancePlanStorage {
         }
         try {
             PerformancePlanWorkspace safeWorkspace = normalizeWorkspace(workspace);
-            PerformanceSavedPlan activePlan = safeWorkspace.getActivePlan();
-            PerformancePlanConfiguration activeConfiguration = activePlan == null
-                    ? PerformancePlanConfiguration.builder().build()
-                    : activePlan.toConfiguration();
             ensureDirExists(configPath);
             JSONObject jsonRoot = new JSONObject();
             jsonRoot.set("version", "1.1");
-            writeConfiguration(jsonRoot, activeConfiguration);
             jsonRoot.set("activePlanId", safeWorkspace.getActivePlanId());
             List<JSONObject> planJsonList = new ArrayList<>();
             for (PerformanceSavedPlan plan : safeWorkspace.getPlans()) {
@@ -92,12 +88,7 @@ public class PerformancePlanStorage {
             }
 
             JSONObject jsonRoot = JSONUtil.parseObj(jsonString);
-            DeserializedWorkspace result = deserializeWorkspace(jsonRoot, configPath);
-            if (result.legacyRequestSnapshotsMigrated()) {
-                saveWorkspace(configPath, result.workspace());
-                log.info("Migrated legacy performance request snapshots: {}", configPath);
-            }
-            return result.workspace();
+            return deserializeWorkspace(jsonRoot);
         } catch (Exception e) {
             log.error("Failed to load performance test config: {}", e.getMessage(), e);
             deleteFile(file);
@@ -139,72 +130,58 @@ public class PerformancePlanStorage {
         }
     }
 
-    private DeserializedWorkspace deserializeWorkspace(JSONObject jsonRoot, Path configPath) {
+    private PerformancePlanWorkspace deserializeWorkspace(JSONObject jsonRoot) {
         List<PerformanceSavedPlan> plans = new ArrayList<>();
-        boolean legacyRequestSnapshotsMigrated = false;
         Object plansValue = jsonRoot.get("plans");
-        if (plansValue instanceof Iterable<?> iterable) {
-            for (Object planValue : iterable) {
-                if (planValue instanceof JSONObject planJson) {
-                    DeserializedPlan deserializedPlan = deserializePlan(planJson, configPath);
-                    plans.add(deserializedPlan.plan());
-                    legacyRequestSnapshotsMigrated |= deserializedPlan.legacyRequestSnapshotsMigrated();
-                } else if (planValue instanceof Map<?, ?> planMap) {
-                    DeserializedPlan deserializedPlan = deserializePlan(new JSONObject(planMap), configPath);
-                    plans.add(deserializedPlan.plan());
-                    legacyRequestSnapshotsMigrated |= deserializedPlan.legacyRequestSnapshotsMigrated();
-                }
+        if (!(plansValue instanceof Iterable<?> iterable)) {
+            throw new IllegalArgumentException("Performance config must contain plans[]");
+        }
+        for (Object planValue : iterable) {
+            if (planValue instanceof JSONObject planJson) {
+                plans.add(deserializePlan(planJson));
+            } else if (planValue instanceof Map<?, ?> planMap) {
+                plans.add(deserializePlan(new JSONObject(planMap)));
+            } else {
+                throw new IllegalArgumentException("Performance plan entry must be an object");
             }
         }
-
         if (plans.isEmpty()) {
-            DeserializedPlan activePlan = deserializePlan(jsonRoot, configPath);
-            plans.add(PerformanceSavedPlan.builder()
-                    .id(jsonRoot.getStr("activePlanId", DEFAULT_PLAN_ID))
-                    .name(resolvePlanName(activePlan.plan(), DEFAULT_PLAN_NAME))
-                    .planDocument(activePlan.plan().getPlanDocument())
-                    .efficientMode(activePlan.plan().isEfficientMode())
-                    .trendEnabled(activePlan.plan().isTrendEnabled())
-                    .reportRealtimeEnabled(activePlan.plan().isReportRealtimeEnabled())
-                    .remoteWorkerSettings(activePlan.plan().getRemoteWorkerSettings())
-                    .build());
-            legacyRequestSnapshotsMigrated = activePlan.legacyRequestSnapshotsMigrated();
+            throw new IllegalArgumentException("Performance config must contain at least one plan");
         }
 
-        PerformancePlanWorkspace workspace = PerformancePlanWorkspace.builder()
-                .activePlanId(jsonRoot.getStr("activePlanId", plans.get(0).getId()))
+        return PerformancePlanWorkspace.builder()
+                .activePlanId(requiredString(jsonRoot, "activePlanId"))
                 .plans(plans)
                 .build();
-        return new DeserializedWorkspace(workspace, legacyRequestSnapshotsMigrated);
     }
 
-    private DeserializedPlan deserializePlan(JSONObject jsonRoot, Path configPath) {
-        PerformancePlanDocument document = null;
-        boolean legacyRequestSnapshotsMigrated = false;
+    private PerformanceSavedPlan deserializePlan(JSONObject jsonRoot) {
         JSONObject treeJson = jsonRoot.getJSONObject("tree");
-        if (treeJson != null) {
-            Map<String, Object> treeMap = jsonObjectToMap(treeJson);
-            legacyRequestSnapshotsMigrated = PerformancePlanLegacyRequestHydrator.hydrate(treeMap, configPath);
-            PerformanceCorePlanNode coreRootNode = corePlanJsonStorage.fromTreeMap(treeMap);
-            document = PerformanceCorePlanAdapter.toAppDocument(new PerformanceCorePlanDocument(coreRootNode));
+        if (treeJson == null) {
+            throw new IllegalArgumentException("Performance plan must contain tree");
         }
+        Map<String, Object> treeMap = jsonObjectToMap(treeJson);
+        PerformanceCorePlanNode coreRootNode = corePlanJsonStorage.fromTreeMap(treeMap);
+        if (coreRootNode == null) {
+            throw new IllegalArgumentException("Performance plan tree is invalid");
+        }
+        PerformancePlanDocument document = PerformanceCorePlanAdapter.toAppDocument(new PerformanceCorePlanDocument(coreRootNode));
 
         PerformancePlanConfiguration configuration = PerformancePlanConfiguration.builder()
                 .planDocument(document)
-                .efficientMode(jsonRoot.getBool("efficientMode", true))
-                .trendEnabled(jsonRoot.getBool("trendEnabled", true))
-                .reportRealtimeEnabled(jsonRoot.getBool("reportRealtimeEnabled", false))
+                .efficientMode(requiredBoolean(jsonRoot, "efficientMode"))
+                .trendEnabled(requiredBoolean(jsonRoot, "trendEnabled"))
+                .reportRealtimeEnabled(requiredBoolean(jsonRoot, "reportRealtimeEnabled"))
                 .remoteWorkerSettings(PerformanceRemoteWorkerSettings.builder()
-                        .enabled(jsonRoot.getBool("remoteExecutionEnabled", false))
-                        .workerEndpoints(jsonRoot.getStr("remoteWorkers", ""))
+                        .enabled(requiredBoolean(jsonRoot, "remoteExecutionEnabled"))
+                        .workerEndpoints(requiredString(jsonRoot, "remoteWorkers"))
                         .build())
                 .build();
-        PerformanceSavedPlan plan = PerformanceSavedPlan.fromConfiguration(
-                jsonRoot.getStr("id", DEFAULT_PLAN_ID),
-                jsonRoot.getStr("name", resolvePlanName(configuration, DEFAULT_PLAN_NAME)),
+        return PerformanceSavedPlan.fromConfiguration(
+                requiredString(jsonRoot, "id"),
+                requiredString(jsonRoot, "name"),
                 configuration
         );
-        return new DeserializedPlan(plan, legacyRequestSnapshotsMigrated);
     }
 
     private JSONObject toPlanJson(PerformanceSavedPlan plan) {
@@ -227,6 +204,9 @@ public class PerformancePlanStorage {
         json.set("remoteExecutionEnabled", remoteWorkerSettings.isEnabled());
         json.set("remoteWorkers", remoteWorkerSettings.getWorkerEndpoints());
         PerformancePlanDocument document = safeConfiguration.getPlanDocument();
+        if (document == null) {
+            document = defaultDocument();
+        }
         PerformanceCorePlanDocument coreDocument = PerformanceCorePlanAdapter.toCoreDocument(document);
         json.set("tree", corePlanJsonStorage.toTreeMap(coreDocument == null ? null : coreDocument.getRoot()));
     }
@@ -238,6 +218,7 @@ public class PerformancePlanStorage {
         PerformanceSavedPlan defaultPlan = PerformanceSavedPlan.builder()
                 .id(DEFAULT_PLAN_ID)
                 .name(DEFAULT_PLAN_NAME)
+                .planDocument(defaultDocument())
                 .build();
         return PerformancePlanWorkspace.builder()
                 .activePlanId(defaultPlan.getId())
@@ -245,22 +226,32 @@ public class PerformancePlanStorage {
                 .build();
     }
 
-    private String resolvePlanName(PerformanceSavedPlan plan, String fallback) {
-        if (plan != null && plan.getName() != null && !plan.getName().trim().isEmpty()) {
-            return plan.getName();
-        }
-        return resolvePlanName(plan == null ? null : plan.toConfiguration(), fallback);
-    }
-
-    private String resolvePlanName(PerformancePlanConfiguration configuration, String fallback) {
-        PerformancePlanDocument document = configuration == null ? null : configuration.getPlanDocument();
-        String rootName = document == null || document.getRoot() == null ? null : document.getRoot().getName();
-        return rootName == null || rootName.trim().isEmpty() ? fallback : rootName.trim();
+    private PerformancePlanDocument defaultDocument() {
+        return new PerformancePlanDocument(PerformancePlanNode.builder()
+                .name(DEFAULT_PLAN_NAME)
+                .type(NodeType.ROOT)
+                .build());
     }
 
     @SuppressWarnings("unchecked")
     private Map<String, Object> jsonObjectToMap(JSONObject json) {
         return JsonUtil.convertValue(JsonUtil.readTree(json.toString()), Map.class);
+    }
+
+    private String requiredString(JSONObject json, String key) {
+        String value = json.getStr(key);
+        if (value == null) {
+            throw new IllegalArgumentException("Missing required performance config field: " + key);
+        }
+        return value;
+    }
+
+    private boolean requiredBoolean(JSONObject json, String key) {
+        Boolean value = json.getBool(key);
+        if (value == null) {
+            throw new IllegalArgumentException("Missing required performance config field: " + key);
+        }
+        return value;
     }
 
     private void deleteFile(File file) {
@@ -273,11 +264,4 @@ public class PerformancePlanStorage {
         }
     }
 
-    private record DeserializedWorkspace(PerformancePlanWorkspace workspace,
-                                         boolean legacyRequestSnapshotsMigrated) {
-    }
-
-    private record DeserializedPlan(PerformanceSavedPlan plan,
-                                    boolean legacyRequestSnapshotsMigrated) {
-    }
 }

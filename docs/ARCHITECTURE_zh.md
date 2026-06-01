@@ -103,7 +103,7 @@ EasyPostman
 
 ### 脚本引擎
 
-- **Nashorn** (Java 11-14): 传统 JavaScript 引擎
+- **GraalVM JavaScript**：用于前置/后置脚本的嵌入式脚本运行时
   - ECMAScript 5.1 支持
   - Java 互操作性
   

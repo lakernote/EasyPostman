@@ -36,7 +36,8 @@ public class KafkaPlugin implements EasyPostmanPlugin {
                     sink,
                     "kafka.poll",
                     """
-                    const records = pm.kafka.poll({
+                    const kafka = pm.plugin("kafka");
+                    const records = kafka.poll({
                       bootstrapServers: "localhost:9092",
                       topic: "demo-topic",
                       groupId: "easy-postman-script",
@@ -53,13 +54,13 @@ public class KafkaPlugin implements EasyPostmanPlugin {
                 context,
                 t(MessageKeys.SNIPPET_EXAMPLE_KAFKA_ASSERT_TITLE),
                 t(MessageKeys.SNIPPET_EXAMPLE_KAFKA_ASSERT_DESC),
-                "// Kafka 查询 + 断言\nvar records = pm.kafka.poll({\n    bootstrapServers: pm.environment.get('kafkaBootstrap') || 'localhost:9092',\n    topic: pm.environment.get('kafkaTopic') || 'demo-topic',\n    groupId: 'easy-postman-script-' + Date.now(),\n    autoOffsetReset: 'earliest',\n    pollTimeoutMs: 1000,\n    maxMessages: 20\n});\n\npm.test('Kafka records should not be empty', function () {\n    pm.expect(records.length).to.be.above(0);\n});\n\nconsole.log('Kafka records count:', records.length);"
+                "// Kafka 查询 + 断言\nvar kafka = pm.plugin('kafka');\nvar records = kafka.poll({\n    bootstrapServers: pm.environment.get('kafkaBootstrap') || 'localhost:9092',\n    topic: pm.environment.get('kafkaTopic') || 'demo-topic',\n    groupId: 'easy-postman-script-' + Date.now(),\n    autoOffsetReset: 'earliest',\n    pollTimeoutMs: 1000,\n    maxMessages: 20\n});\n\npm.test('Kafka records should not be empty', function () {\n    pm.expect(records.length).to.be.above(0);\n});\n\nconsole.log('Kafka records count:', records.length);"
         );
         PluginContributionSupport.registerExampleSnippet(
                 context,
                 t(MessageKeys.SNIPPET_EXAMPLE_KAFKA_SEND_ASSERT_TITLE),
                 t(MessageKeys.SNIPPET_EXAMPLE_KAFKA_SEND_ASSERT_DESC),
-                "// Kafka 发送 + 断言\nvar kafkaTopic = pm.environment.get('kafkaTopic') || 'demo-topic';\nvar kafkaResp = pm.kafka.send({\n    bootstrapServers: pm.environment.get('kafkaBootstrap') || 'localhost:9092',\n    topic: kafkaTopic,\n    key: 'order-1001',\n    value: JSON.stringify({ orderId: 1001, status: 'CREATED', source: 'easy-postman' })\n});\n\npm.test('Kafka send success', function () {\n    pm.expect(kafkaResp.topic).to.equal(kafkaTopic);\n    pm.expect(kafkaResp.offset).to.be.least(0);\n});\n\nconsole.log('Kafka send metadata:', JSON.stringify(kafkaResp));"
+                "// Kafka 发送 + 断言\nvar kafka = pm.plugin('kafka');\nvar kafkaTopic = pm.environment.get('kafkaTopic') || 'demo-topic';\nvar kafkaResp = kafka.send({\n    bootstrapServers: pm.environment.get('kafkaBootstrap') || 'localhost:9092',\n    topic: kafkaTopic,\n    key: 'order-1001',\n    value: JSON.stringify({ orderId: 1001, status: 'CREATED', source: 'easy-postman' })\n});\n\npm.test('Kafka send success', function () {\n    pm.expect(kafkaResp.topic).to.equal(kafkaTopic);\n    pm.expect(kafkaResp.offset).to.be.least(0);\n});\n\nconsole.log('Kafka send metadata:', JSON.stringify(kafkaResp));"
         );
     }
 }

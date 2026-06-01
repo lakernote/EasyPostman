@@ -1,7 +1,7 @@
 package com.laker.postman.service.variable;
 
 /**
- * Thread-scoped Postman-compatible runner metadata.
+ * Thread-scoped Postman-style runner metadata.
  */
 public class IterationInfoService {
 

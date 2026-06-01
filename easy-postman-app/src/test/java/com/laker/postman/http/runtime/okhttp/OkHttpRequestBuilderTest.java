@@ -1,6 +1,6 @@
 package com.laker.postman.http.runtime.okhttp;
 
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpFormData;
 import com.laker.postman.request.model.HttpFormUrlencoded;

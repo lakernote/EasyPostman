@@ -15,8 +15,9 @@ import com.laker.postman.panel.collections.tree.action.TreeNodeCloner;
 import com.laker.postman.panel.collections.tree.handler.RequestTreeKeyboardHandler;
 import com.laker.postman.panel.collections.tree.handler.RequestTreeMouseHandler;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
-import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.service.WorkspaceService;
+import com.laker.postman.service.collections.CollectionDocumentRegistry;
+import com.laker.postman.service.collections.CollectionRequestMutation;
 import com.laker.postman.service.collections.CollectionTreeNodeTypes;
 import com.laker.postman.service.collections.CollectionTreeNodes;
 import com.laker.postman.service.collections.CollectionTreeRootRegistry;
@@ -84,6 +85,7 @@ public class CollectionTreePanel extends UiSingletonPanel {
         // 初始化请求树
         rootTreeNode = new DefaultMutableTreeNode(ROOT);
         CollectionTreeRootRegistry.registerRootSupplier(() -> rootTreeNode);
+        CollectionDocumentRegistry.registerDocumentSupplier(() -> CollectionTreeDocumentMapper.fromRoot(rootTreeNode));
         treeModel = new DefaultTreeModel(rootTreeNode);
         Workspace currentWorkspace = WorkspaceService.getInstance().getCurrentWorkspace();
         String filePath = SystemUtil.getCollectionPathForWorkspace(currentWorkspace);
@@ -303,50 +305,21 @@ public class CollectionTreePanel extends UiSingletonPanel {
         if (item == null || item.getId() == null || item.getId().isEmpty()) {
             return false;
         }
-        DefaultMutableTreeNode requestNode = CollectionTreeQueryService.findRequestNodeById(rootTreeNode, item.getId());
-        if (requestNode == null) {
+        CollectionRequestMutation.Result mutation = CollectionRequestMutation
+                .updateExistingRequest(rootTreeNode, item)
+                .orElse(null);
+        if (mutation == null) {
             return false;
         }
-        HttpRequestItem originalItem = CollectionTreeNodes.request(requestNode).orElse(null);
-        if (originalItem == null) {
-            return false;
-        }
-        String originalName = originalItem.getName();
-        item.setName(originalName);
+        HttpRequestItem updatedItem = mutation.updatedItem();
 
-        // 保留原对象的 response，避免在保存请求时丢失已保存的响应
-        if (originalItem.getResponse() != null && !originalItem.getResponse().isEmpty()) {
-            item.setResponse(originalItem.getResponse());
-        }
+        treeModel.nodeChanged(mutation.requestNode());
 
-        CollectionTreeNodes.setRequest(requestNode, item);
-        treeModel.nodeChanged(requestNode);
-
-        PreparedRequestFactory.invalidateCacheForRequest(item.getId());
+        PreparedRequestFactory.invalidateCacheForRequest(updatedItem.getId());
 
         persistence.saveRequestGroups();
         // 保存后去除Tab红点，同时通知 FunctionalPanel 和 PerformancePanel 同步最新数据
-        SwingUtilities.invokeLater(() -> {
-            // 1. 去除 Collections Tab 红点
-            RequestEditorPanel editPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class);
-            JTabbedPane tabbedPane = editPanel.getTabbedPane();
-            for (int i = 0; i < tabbedPane.getTabCount(); i++) {
-                Component comp = tabbedPane.getComponentAt(i);
-                if (comp instanceof RequestEditSubPanel subPanel) {
-                    HttpRequestItem tabItem = subPanel.getCurrentRequest();
-                    if (tabItem != null && item.getId().equals(tabItem.getId())) {
-                        editPanel.updateTabDirty(subPanel, false);
-                        subPanel.setOriginalRequestItem(item);
-                    }
-                }
-            }
-            // 2. 同步 FunctionalPanel
-            UiSingletonFactory.getInstance(com.laker.postman.panel.functional.FunctionalPanel.class)
-                    .syncRequestItem(item);
-            // 3. 同步 PerformancePanel
-            UiSingletonFactory.getInstance(com.laker.postman.panel.performance.PerformancePanel.class)
-                    .syncRequestItem(item);
-        });
+        SwingUtilities.invokeLater(() -> SavedRequestUiSynchronizer.syncRequest(updatedItem));
         return true;
     }
 

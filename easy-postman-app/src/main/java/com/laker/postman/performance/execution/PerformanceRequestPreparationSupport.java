@@ -4,7 +4,7 @@ import com.laker.postman.performance.core.plan.PerformanceAssertionElement;
 import com.laker.postman.performance.core.plan.PerformanceExtractorElement;
 
 
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import lombok.experimental.UtilityClass;
 
 import java.util.List;

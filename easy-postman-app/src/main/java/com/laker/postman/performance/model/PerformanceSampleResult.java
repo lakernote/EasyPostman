@@ -5,8 +5,8 @@ import com.laker.postman.performance.core.model.PerformanceSampleRecord;
 import com.laker.postman.performance.core.model.RequestResult;
 
 
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.HttpResponse;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.script.model.TestResult;
 import com.laker.postman.performance.execution.PerformanceRequestExecutionResult;
 import lombok.Builder;

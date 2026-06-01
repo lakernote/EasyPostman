@@ -6,6 +6,7 @@ import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.component.MarkdownEditorPanel;
 import com.laker.postman.common.component.tab.IndicatorTabComponent;
+import com.laker.postman.http.request.AppRequestHeaderDefaults;
 import com.laker.postman.panel.collections.editor.request.sub.*;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
@@ -62,7 +63,8 @@ final class RequestViewFactory {
                         && SettingManager.isRequestEditorTabVisible(SettingManager.REQUEST_EDITOR_TAB_AUTH)
         );
 
-        EasyRequestHttpHeadersPanel headersPanel = new EasyRequestHttpHeadersPanel();
+        EasyRequestHttpHeadersPanel headersPanel =
+                new EasyRequestHttpHeadersPanel(AppRequestHeaderDefaults.generatedHeaderPolicy());
         IndicatorTabComponent headersTabIndicator = new IndicatorTabComponent(I18nUtil.getMessage(MessageKeys.TAB_REQUEST_HEADERS));
         addTabIfVisible(
                 reqTabs,

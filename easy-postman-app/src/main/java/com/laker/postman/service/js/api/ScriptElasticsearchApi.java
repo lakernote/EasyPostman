@@ -13,7 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Script Elasticsearch API for pm.es / pm.elasticsearch.
+ * Script Elasticsearch API for pm.elasticsearch.
  */
 public class ScriptElasticsearchApi {
     private static final String DEFAULT_BASE_URL = "http://localhost:9200";
@@ -96,12 +96,10 @@ public class ScriptElasticsearchApi {
             }
             case "HEAD" -> builder.head();
             case "GET" -> {
-                if (requestBody == null) {
-                    builder.get();
-                } else {
-                    // Keep toolbox behavior: GET with body falls back to POST for compatibility.
-                    builder.method("POST", requestBody);
+                if (requestBody != null) {
+                    throw new IllegalArgumentException("GET requests must not include a request body");
                 }
+                builder.get();
             }
             default -> builder.method(method, requestBody);
         }

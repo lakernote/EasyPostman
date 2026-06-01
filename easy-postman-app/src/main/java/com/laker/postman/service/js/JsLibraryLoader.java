@@ -31,7 +31,7 @@ import com.laker.postman.util.SystemUtil;
  * JS 外部库加载器
  * <p>
  * 支持加载内置 JS 库和用户自定义的外部 JS 库，模拟 Node.js 的 require() 机制。
- * 与 Postman 兼容，提供相同的内置库支持。
+ * 与 Postman 风格，提供 Postman 风格的内置库支持。
  * </p>
  *
  * <h3>支持的内置库：</h3>

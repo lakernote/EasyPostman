@@ -1,6 +1,6 @@
 package com.laker.postman.panel.collections.editor.request;
 
-import com.laker.postman.model.HttpResponse;
+import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.stream.MessageType;
 import org.testng.annotations.Test;
 

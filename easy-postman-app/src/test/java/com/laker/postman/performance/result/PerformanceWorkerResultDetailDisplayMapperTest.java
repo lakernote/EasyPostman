@@ -47,7 +47,8 @@ public class PerformanceWorkerResultDetailDisplayMapperTest {
         assertEquals(row.responseCode, 500);
         assertEquals(row.costMs, 25);
         assertEquals(row.req.method, "POST");
-        assertEquals(row.req.okHttpHeaders.get("Content-Type"), "application/json");
+        assertEquals(row.req.sentHeadersList.get(0).getKey(), "Content-Type");
+        assertEquals(row.req.sentHeadersList.get(0).getValue(), "application/json");
         assertEquals(row.resp.headers.get("X-Trace"), List.of("abc"));
         assertTrue(row.executionFailed);
         assertTrue(row.hasAssertionFailed());

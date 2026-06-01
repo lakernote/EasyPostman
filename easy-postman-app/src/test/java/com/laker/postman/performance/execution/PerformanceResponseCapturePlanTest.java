@@ -1,6 +1,6 @@
 package com.laker.postman.performance.execution;
 
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.performance.core.assertion.AssertionData;
 import com.laker.postman.performance.core.extractor.ExtractorData;
 import com.laker.postman.performance.core.model.NodeType;
@@ -112,12 +112,27 @@ public class PerformanceResponseCapturePlanTest {
                 sampler(List.of()),
                 true,
                 false,
-                "pm.test('body', function () { pm.expect(responseBody).to.contain('done'); });"
+                "pm.test('body', function () { pm.expect(pm.response.text()).to.contain('done'); });"
         );
 
         assertTrue(plan.runPostScript());
         assertTrue(plan.postScriptNeedsResponseBody());
         assertTrue(plan.retainStreamResponseBody());
+    }
+
+    @Test
+    public void shouldNotRetainSseStreamBodyForRemovedResponseBodyGlobal() {
+        PerformanceResponseCapturePlan plan = PerformanceResponseCapturePlan.resolve(
+                true,
+                sampler(List.of()),
+                true,
+                false,
+                "pm.test('body', function () { pm.expect(responseBody).to.contain('done'); });"
+        );
+
+        assertTrue(plan.runPostScript());
+        assertFalse(plan.postScriptNeedsResponseBody());
+        assertFalse(plan.retainStreamResponseBody());
     }
 
     @Test

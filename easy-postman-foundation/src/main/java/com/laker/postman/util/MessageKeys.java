@@ -1387,6 +1387,7 @@ public final class MessageKeys {
     public static final String RESPONSE_SAVE_ERROR = "response.save.error";
     public static final String RESPONSE_SAVE_NO_RESPONSE = "response.save.no_response";
     public static final String RESPONSE_SAVE_REQUEST_NOT_SAVED = "response.save.request_not_saved";
+    public static final String RESPONSE_SAVE_REQUEST_NOT_FOUND = "response.save.request_not_found";
     public static final String RESPONSE_BODY_COPY_JSON_KEY = "response.body.copy_json_key";
     public static final String RESPONSE_BODY_COPY_JSON_VALUE = "response.body.copy_json_value";
     public static final String RESPONSE_BODY_CONTEXT_COPY_SELECTED = "response.body.context.copy_selected";
@@ -1526,10 +1527,7 @@ public final class MessageKeys {
     // ========== pm 对象方法自动补全 ==========
     public static final String AUTOCOMPLETE_PM_TEST = "autocomplete.pm.test";
     public static final String AUTOCOMPLETE_PM_EXPECT = "autocomplete.pm.expect";
-    public static final String AUTOCOMPLETE_PM_GENERATE_UUID = "autocomplete.pm.generateUUID";
     public static final String AUTOCOMPLETE_PM_GET_TIMESTAMP = "autocomplete.pm.getTimestamp";
-    public static final String AUTOCOMPLETE_PM_SET_VARIABLE = "autocomplete.pm.setVariable";
-    public static final String AUTOCOMPLETE_PM_GET_VARIABLE = "autocomplete.pm.getVariable";
     public static final String AUTOCOMPLETE_PM_GET_RESPONSE_COOKIE = "autocomplete.pm.getResponseCookie";
 
     // ========== pm.environment 方法 ==========
@@ -1576,8 +1574,6 @@ public final class MessageKeys {
 
     // ========== pm 对象核心方法 ==========
     public static final String AUTOCOMPLETE_PM_UUID = "autocomplete.pm.uuid";
-    public static final String AUTOCOMPLETE_PM_SET_GLOBAL_VARIABLE = "autocomplete.pm.setGlobalVariable";
-    public static final String AUTOCOMPLETE_PM_GET_GLOBAL_VARIABLE = "autocomplete.pm.getGlobalVariable";
 
     // ========== pm 子对象 ==========
     public static final String AUTOCOMPLETE_PM_ENVIRONMENT = "autocomplete.pm.environment";

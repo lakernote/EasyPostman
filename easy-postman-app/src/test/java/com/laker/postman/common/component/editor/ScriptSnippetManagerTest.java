@@ -3,6 +3,7 @@ package com.laker.postman.common.component.editor;
 import com.laker.postman.plugin.api.ScriptCompletionItem;
 import com.laker.postman.plugin.api.ScriptCompletionKind;
 import com.laker.postman.plugin.runtime.PluginRuntime;
+import com.laker.postman.snippet.SnippetType;
 import org.fife.ui.autocomplete.BasicCompletion;
 import org.fife.ui.autocomplete.Completion;
 import org.fife.ui.autocomplete.DefaultCompletionProvider;
@@ -98,6 +99,24 @@ public class ScriptSnippetManagerTest {
                 (DefaultCompletionProvider) ScriptSnippetManager.createCompletionProvider();
 
         assertNotNull(findCompletion(provider, "pm.after.failure"));
+    }
+
+    @Test(description = "内置代码片段应优先使用 Postman 官方 pm.environment，而不是历史 pm.env 简写")
+    public void builtInSnippetsShouldUseCanonicalEnvironmentApi() {
+        for (SnippetType snippetType : SnippetType.values()) {
+            assertFalse(snippetType.code.contains("pm.env."),
+                    snippetType.name() + " should not advertise pm.env in built-in snippets");
+        }
+    }
+
+    @Test(description = "补全不应提示当前运行时无法可靠支持的 Chai 关键字方法")
+    public void shouldNotAdvertiseUnsupportedChaiKeywordMethods() {
+        DefaultCompletionProvider provider =
+                (DefaultCompletionProvider) ScriptSnippetManager.createCompletionProvider();
+
+        assertNull(findCompletion(provider, "expect.instanceof"));
+        assertNull(findCompletion(provider, "expect.throw"));
+        assertNull(findCompletion(provider, "expect.throw.error"));
     }
 
     private static Completion findCompletion(DefaultCompletionProvider provider, String inputText) {

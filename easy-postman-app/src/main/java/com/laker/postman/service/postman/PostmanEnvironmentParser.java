@@ -18,7 +18,7 @@ public class PostmanEnvironmentParser {
      */
     public static List<Environment> parsePostmanEnvironments(String json) {
         List<Environment> result = new ArrayList<>();
-        // 兼容单个对象或数组
+        // 支持单个对象或数组
         if (JSONUtil.isTypeJSONArray(json)) {
             JSONArray arr = JSONUtil.parseArray(json);
             for (Object obj : arr) {

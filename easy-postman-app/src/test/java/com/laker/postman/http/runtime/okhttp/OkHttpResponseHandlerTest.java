@@ -1,7 +1,7 @@
 package com.laker.postman.http.runtime.okhttp;
 
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.HttpResponse;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import okhttp3.MediaType;
 import okhttp3.Protocol;
 import okhttp3.Request;

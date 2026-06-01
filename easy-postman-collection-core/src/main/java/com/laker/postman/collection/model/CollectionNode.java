@@ -20,6 +20,14 @@ public class CollectionNode {
         this.children = new ArrayList<>();
     }
 
+    public static CollectionNode group(RequestGroup group) {
+        return new CollectionNode(CollectionNodeType.GROUP, group);
+    }
+
+    public static CollectionNode request(HttpRequestItem request) {
+        return new CollectionNode(CollectionNodeType.REQUEST, request);
+    }
+
     public void addChild(CollectionNode child) {
         this.children.add(child);
     }
@@ -36,7 +44,15 @@ public class CollectionNode {
         return (RequestGroup) data;
     }
 
+    public RequestGroup getGroup() {
+        return isGroup() ? asGroup() : null;
+    }
+
     public HttpRequestItem asRequest() {
         return (HttpRequestItem) data;
+    }
+
+    public HttpRequestItem getRequest() {
+        return isRequest() ? asRequest() : null;
     }
 }

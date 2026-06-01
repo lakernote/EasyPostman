@@ -7,6 +7,7 @@ import com.laker.postman.request.model.HttpRequestItem;
 
 
 import cn.hutool.core.util.IdUtil;
+import com.laker.postman.request.defaults.HttpRequestDefaults;
 import com.laker.postman.util.SystemUtil;
 import lombok.experimental.UtilityClass;
 
@@ -21,13 +22,13 @@ import static com.laker.postman.service.collections.DefaultRequestsFactory.CONTE
 public class HttpRequestFactory {
     private static final String DEFAULT_USER_AGENT_VERSION = "dev";
     public static final String TEXT_EVENT_STREAM = "text/event-stream";
-    public static final String ACCEPT = "Accept";
-    public static final String USER_AGENT = "User-Agent";
+    public static final String ACCEPT = HttpRequestDefaults.ACCEPT;
+    public static final String USER_AGENT = HttpRequestDefaults.USER_AGENT;
     public static final String EASY_POSTMAN_CLIENT = "EasyPostman/" + resolveUserAgentVersion();
-    public static final String ACCEPT_ENCODING = "Accept-Encoding";
-    public static final String CONNECTION = "Connection";
-    public static final String ACCEPT_ENCODING_VALUE = "gzip, deflate, br";
-    public static final String CONNECTION_VALUE = "keep-alive";
+    public static final String ACCEPT_ENCODING = HttpRequestDefaults.ACCEPT_ENCODING;
+    public static final String CONNECTION = HttpRequestDefaults.CONNECTION;
+    public static final String ACCEPT_ENCODING_VALUE = HttpRequestDefaults.ACCEPT_ENCODING_VALUE;
+    public static final String CONNECTION_VALUE = HttpRequestDefaults.CONNECTION_VALUE;
 
     private static String resolveUserAgentVersion() {
         String version = SystemUtil.getCurrentVersion();
@@ -47,12 +48,7 @@ public class HttpRequestFactory {
         testItem.setUrl("https://httpbin.org/get");
         testItem.setMethod("GET");
         // Add some default headers (using ArrayList to ensure mutability)
-        List<HttpHeader> headers = new ArrayList<>();
-        headers.add(new HttpHeader(true, USER_AGENT, EASY_POSTMAN_CLIENT));
-        headers.add(new HttpHeader(true, ACCEPT, "*/*"));
-        headers.add(new HttpHeader(true, ACCEPT_ENCODING, ACCEPT_ENCODING_VALUE));
-        headers.add(new HttpHeader(true, CONNECTION, CONNECTION_VALUE));
-        testItem.setHeadersList(headers);
+        testItem.setHeadersList(new ArrayList<>(AppRequestHeaderDefaults.generatedHeaders()));
         return testItem;
     }
 
@@ -65,12 +61,7 @@ public class HttpRequestFactory {
         testItem.setUrl("https://httpbin.org/redirect/1");
         testItem.setMethod("GET");
         // Add some default headers
-        List<HttpHeader> headers = new ArrayList<>();
-        headers.add(new HttpHeader(true, USER_AGENT, EASY_POSTMAN_CLIENT));
-        headers.add(new HttpHeader(true, ACCEPT, "*/*"));
-        headers.add(new HttpHeader(true, ACCEPT_ENCODING, ACCEPT_ENCODING_VALUE));
-        headers.add(new HttpHeader(true, CONNECTION, CONNECTION_VALUE));
-        testItem.setHeadersList(headers);
+        testItem.setHeadersList(new ArrayList<>(AppRequestHeaderDefaults.generatedHeaders()));
         return testItem;
     }
 

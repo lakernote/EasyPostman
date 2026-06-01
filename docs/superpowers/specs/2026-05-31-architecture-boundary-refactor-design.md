@@ -87,7 +87,7 @@ public interface ScriptCompletionContributor {
 
 The new SPI should support the official plugin use cases currently implemented by Redis and Kafka completions:
 
-- variable-like completions such as `pm.redis`
+- plugin-entry completions such as `pm.plugin("redis")`
 - function or method completions
 - optional short descriptions
 - optional replacement text

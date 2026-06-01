@@ -1,20 +1,20 @@
 package com.laker.postman.service.js;
 
 import com.laker.postman.model.Environment;
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.HttpResponse;
+import com.laker.postman.http.runtime.mapper.PreparedRequestMapper;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.request.model.HttpRequestItem;
 
 
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.service.js.api.PostmanApiContext;
-import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.http.request.PreparedRequestFactory;
 import com.laker.postman.http.request.PreparedRequestFinalizer;
 import com.laker.postman.service.variable.ExecutionContextScope;
 import com.laker.postman.service.variable.ExecutionVariableContext;
-import com.laker.postman.service.variable.RequestContext;
+import com.laker.postman.service.variable.RequestExecutionContext;
 import com.laker.postman.service.variable.RequestExecutionScope;
 import com.laker.postman.service.variable.RunScopedVariableContext;
 import lombok.Builder;
@@ -71,7 +71,7 @@ public class ScriptExecutionPipeline {
                 useCache,
                 outputCallback,
                 environmentSupplier,
-                RequestContext.captureCurrentExecutionScope()
+                RequestExecutionContext.captureCurrentScope()
         );
     }
 
@@ -89,7 +89,7 @@ public class ScriptExecutionPipeline {
                 .sharedExecutionContext(sharedExecutionContext)
                 .requestExecutionScope(requestExecutionScope != null
                         ? requestExecutionScope
-                        : RequestContext.captureCurrentExecutionScope())
+                        : RequestExecutionContext.captureCurrentScope())
                 .deferredAuthorization(PreparedRequestFactory.resolveDeferredAuthorization(item, useCache))
                 .outputCallback(outputCallback)
                 .environmentSupplier(environmentSupplier)
@@ -153,7 +153,7 @@ public class ScriptExecutionPipeline {
      * 延迟到执行上下文挂载后再生成的自动认证配置。
      * 这样同一轮共享变量可用于 Basic/Bearer 认证，同时 pre-script 仍可删除/覆盖该请求头。
      */
-    private PreparedRequestFactory.DeferredAuthorization deferredAuthorization;
+    private PreparedRequestMapper.DeferredAuthorization deferredAuthorization;
 
     private transient ExecutionVariableContext runtimeExecutionContext;
 
@@ -311,41 +311,26 @@ public class ScriptExecutionPipeline {
      */
     private JsScriptExecutor.OutputCallback getEffectiveOutputCallback(String prefix) {
         if (outputCallback != null) {
-            return outputCallback;
-        }
-        // 返回一个带颜色支持的回调
-        return new JsScriptExecutor.OutputCallback() {
-            @Override
-            public void onOutput(String output) {
-                ConsolePanel.appendLog(prefix + output);
-            }
+            return new JsScriptExecutor.OutputCallback() {
+                @Override
+                public void onOutput(String output) {
+                    outputCallback.onOutput(prefix + output);
+                }
 
-            @Override
-            public void onOutput(String output, JsScriptExecutor.ConsoleType consoleType) {
-                ConsolePanel.appendLog(prefix + output, mapConsoleType(consoleType));
-            }
+                @Override
+                public void onOutput(String output, JsScriptExecutor.ConsoleType consoleType) {
+                    outputCallback.onOutput(prefix + output, consoleType);
+                }
+            };
+        }
+        return output -> {
         };
     }
 
     private void appendScriptOutput(String output, JsScriptExecutor.ConsoleType consoleType) {
         if (outputCallback != null) {
             outputCallback.onOutput(output, consoleType);
-            return;
         }
-        ConsolePanel.appendLog(output, mapConsoleType(consoleType));
-    }
-
-    /**
-     * 将 ConsoleType 映射到 ConsolePanel.LogType
-     */
-    private ConsolePanel.LogType mapConsoleType(JsScriptExecutor.ConsoleType consoleType) {
-        return switch (consoleType) {
-            case ERROR -> ConsolePanel.LogType.ERROR;
-            case WARN -> ConsolePanel.LogType.WARN;
-            case INFO -> ConsolePanel.LogType.INFO;
-            case DEBUG -> ConsolePanel.LogType.DEBUG;
-            case LOG -> ConsolePanel.LogType.INFO;
-        };
     }
 
     /**
@@ -411,7 +396,7 @@ public class ScriptExecutionPipeline {
 
     /**
      * 准备前置脚本的变量绑定
-     * 包含请求、环境、PostmanAPI 上下文等，并初始化空响应对象
+     * 只暴露 pm 上下文，并初始化空响应对象。
      *
      * @param req 准备好的请求对象
      * @return 变量绑定 Map
@@ -422,11 +407,6 @@ public class ScriptExecutionPipeline {
         postman.setRequest(req);
 
         Map<String, Object> bindings = new java.util.LinkedHashMap<>();
-        bindings.put("request", req);
-        bindings.put("env", activeEnv);
-        bindings.put("globals", postman.globals);
-        bindings.put("iterationData", postman.iterationData);
-        bindings.put("postman", postman);
         bindings.put("pm", postman);
 
         // 为前置脚本提供一个空的响应对象，防止 pm.response 为 undefined
@@ -436,11 +416,6 @@ public class ScriptExecutionPipeline {
             emptyResponse.headers = new java.util.LinkedHashMap<>();
             emptyResponse.body = "{}";
             postman.setResponse(emptyResponse);
-
-            bindings.put("response", emptyResponse);
-            bindings.put("responseBody", "{}");
-            bindings.put("responseHeaders", emptyResponse.headers);
-            bindings.put("statusCode", 0);
         } catch (Exception e) {
             log.warn("Failed to initialize empty response object for pre-request script", e);
         }
@@ -478,10 +453,5 @@ public class ScriptExecutionPipeline {
         if (pm != null) {
             pm.setResponse(response);
         }
-
-        bindings.put("response", response);
-        bindings.put("responseBody", response.body);
-        bindings.put("responseHeaders", response.headers);
-        bindings.put("statusCode", response.code);
     }
 }

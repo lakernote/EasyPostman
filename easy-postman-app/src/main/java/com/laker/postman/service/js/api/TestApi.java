@@ -3,17 +3,15 @@ package com.laker.postman.service.js.api;
 import com.laker.postman.script.model.TestResult;
 import lombok.extern.slf4j.Slf4j;
 import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.proxy.ProxyExecutable;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 /**
  * 测试 API (pm.test)
  * <p>
- * 提供 Postman 兼容的测试接口，支持：
+ * 提供 Postman 风格的测试接口，支持：
  * - pm.test(name, function) - 执行测试
- * - pm.test.index() - 获取所有测试结果
  * </p>
  *
  * <h3>使用示例：</h3>
@@ -22,22 +20,25 @@ import java.util.UUID;
  * pm.test("Status code is 200", function() {
  *     pm.expect(pm.response.code).to.equal(200);
  * });
- *
- * // 获取所有测试结果
- * var results = pm.test.index();
- * results.forEach(function(result) {
- *     console.log(result.name + ": " + (result.passed ? "PASS" : "FAIL"));
- * });
  * }</pre>
  */
 @Slf4j
-public class TestApi {
+public class TestApi implements ProxyExecutable {
     private final PostmanApiContext context;
 
     public TestApi(PostmanApiContext context) {
         this.context = context;
     }
 
+    @Override
+    public Object execute(Value... arguments) {
+        String name = arguments != null && arguments.length > 0 && !arguments[0].isNull()
+                ? arguments[0].asString()
+                : "";
+        Value testFunction = arguments != null && arguments.length > 1 ? arguments[1] : null;
+        run(name, testFunction);
+        return null;
+    }
 
     /**
      * 执行测试断言
@@ -63,73 +64,5 @@ public class TestApi {
         TestResult result = new TestResult(name, passed, errorMessage);
         result.id = UUID.randomUUID().toString();
         context.testResults.add(result);
-    }
-
-    /**
-     * 获取所有测试结果
-     * 对应脚本中的: pm.test.index()
-     *
-     * @return 测试结果数组
-     */
-    public TestResult[] index() {
-        if (context.testResults == null) {
-            return new TestResult[0];
-        }
-        return context.testResults.toArray(new TestResult[0]);
-    }
-
-    /**
-     * 获取测试结果列表（ArrayList）
-     * 方便在 Java 代码中使用
-     *
-     * @return 测试结果列表
-     */
-    public List<TestResult> getResults() {
-        if (context.testResults == null) {
-            return new ArrayList<>();
-        }
-        return new ArrayList<>(context.testResults);
-    }
-
-    /**
-     * 清空所有测试结果
-     */
-    public void clear() {
-        if (context.testResults != null) {
-            context.testResults.clear();
-        }
-    }
-
-    /**
-     * 获取测试总数
-     *
-     * @return 测试总数
-     */
-    public int count() {
-        return context.testResults != null ? context.testResults.size() : 0;
-    }
-
-    /**
-     * 获取通过的测试数量
-     *
-     * @return 通过的测试数量
-     */
-    public int passedCount() {
-        if (context.testResults == null) {
-            return 0;
-        }
-        return (int) context.testResults.stream().filter(t -> t.passed).count();
-    }
-
-    /**
-     * 获取失败的测试数量
-     *
-     * @return 失败的测试数量
-     */
-    public int failedCount() {
-        if (context.testResults == null) {
-            return 0;
-        }
-        return (int) context.testResults.stream().filter(t -> !t.passed).count();
     }
 }

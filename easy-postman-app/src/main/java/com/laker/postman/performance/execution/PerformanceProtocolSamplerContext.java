@@ -3,7 +3,7 @@ package com.laker.postman.performance.execution;
 import com.laker.postman.performance.core.request.PerformanceRequestSnapshot;
 
 
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.performance.plan.PerformanceRequestSampler;
 import lombok.Value;
 

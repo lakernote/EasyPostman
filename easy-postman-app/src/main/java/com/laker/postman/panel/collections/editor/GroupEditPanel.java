@@ -16,6 +16,7 @@ import com.laker.postman.panel.collections.editor.request.sub.AuthTabPanel;
 import com.laker.postman.panel.collections.editor.request.sub.EasyRequestHttpHeadersPanel;
 import com.laker.postman.panel.collections.editor.request.sub.EasyVariablesPanel;
 import com.laker.postman.panel.collections.editor.request.sub.ScriptPanel;
+import com.laker.postman.http.request.AppRequestHeaderDefaults;
 import com.laker.postman.http.request.PreparedRequestFactory;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -123,7 +124,7 @@ public class GroupEditPanel extends JPanel {
         tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.GROUP_EDIT_TAB_GENERAL), createGeneralPanel());
 
         // Headers Tab - 公共请求头配置
-        headersPanel = new EasyRequestHttpHeadersPanel();
+        headersPanel = new EasyRequestHttpHeadersPanel(AppRequestHeaderDefaults.generatedHeaderPolicy());
         JPanel headersWrapperPanel = new JPanel(new BorderLayout());
         headersWrapperPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         headersWrapperPanel.add(headersPanel, BorderLayout.CENTER);

@@ -11,8 +11,8 @@ import com.laker.postman.performance.core.plan.PerformanceProtocolStageElement;
 
 import com.laker.postman.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.http.runtime.transport.HttpBaseClientProvider;
+import com.laker.postman.http.runtime.transport.RealtimeConnectionHandle;
 import lombok.RequiredArgsConstructor;
-import okhttp3.sse.EventSource;
 
 import java.util.List;
 import java.util.Set;
@@ -24,14 +24,14 @@ import java.util.function.Predicate;
 final class SseSamplerExecutor implements PerformanceProtocolSamplerExecutor {
     private final BooleanSupplier runningSupplier;
     private final Predicate<Throwable> cancelledChecker;
-    private final Set<EventSource> activeSseSources;
+    private final Set<RealtimeConnectionHandle> activeSseSources;
     private final PerformanceRealtimeMetrics realtimeMetrics;
     private final IntSupplier responseBodyPreviewLimitKbSupplier;
     private final HttpBaseClientProvider baseClientProvider;
 
     SseSamplerExecutor(BooleanSupplier runningSupplier,
                        Predicate<Throwable> cancelledChecker,
-                       Set<EventSource> activeSseSources,
+                       Set<RealtimeConnectionHandle> activeSseSources,
                        PerformanceRealtimeMetrics realtimeMetrics,
                        IntSupplier responseBodyPreviewLimitKbSupplier) {
         this(runningSupplier, cancelledChecker, activeSseSources, realtimeMetrics, responseBodyPreviewLimitKbSupplier,

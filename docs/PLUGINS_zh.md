@@ -98,7 +98,7 @@ easy-postman-parent
 当前 `PluginContext` 支持这几类扩展点：
 
 - `registerScriptApi`
-  - 给脚本环境暴露 `pm.xxx`
+  - 给脚本环境暴露 `pm.plugin("xxx")`
 - `registerService`
   - 给宿主侧访问层按类型取服务
 - `registerToolboxContribution`
@@ -110,7 +110,7 @@ easy-postman-parent
 
 以 `plugin-kafka` 为例，`KafkaPlugin` 在 `onLoad` 里一次性注册了：
 
-- `pm.kafka`
+- `pm.plugin("kafka")`
 - Kafka Toolbox 面板
 - Kafka 相关脚本补全
 - Kafka 示例片段

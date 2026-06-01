@@ -24,7 +24,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Script Kafka API for pm.kafka.
+ * Script Kafka API for pm.plugin("kafka").
  */
 public class ScriptKafkaApi {
 

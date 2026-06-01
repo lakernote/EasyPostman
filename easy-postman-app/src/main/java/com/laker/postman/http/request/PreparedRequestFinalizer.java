@@ -1,7 +1,7 @@
 package com.laker.postman.http.request;
 
-import com.laker.postman.model.PreparedRequest;
-import com.laker.postman.request.model.RequestAuthTypes;
+import com.laker.postman.http.runtime.model.PreparedRequest;
+import com.laker.postman.http.runtime.mapper.PreparedRequestMapper;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpParam;
 import com.laker.postman.request.model.HttpFormData;
@@ -10,8 +10,9 @@ import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.model.TransportAuth;
 
 
-import com.laker.postman.service.variable.RequestContext;
+import com.laker.postman.service.variable.RequestExecutionContext;
 import com.laker.postman.service.variable.VariableResolver;
+import com.laker.postman.request.util.HttpUrlUtil;
 import lombok.experimental.UtilityClass;
 
 import java.util.ArrayList;
@@ -48,7 +49,7 @@ public class PreparedRequestFinalizer {
      * 都应尽量复用这里，避免不同入口出现不一致行为。
      */
     public void finalizeForSend(PreparedRequest request,
-                                PreparedRequestFactory.DeferredAuthorization deferredAuthorization) {
+                                PreparedRequestMapper.DeferredAuthorization deferredAuthorization) {
         try {
             replaceVariablesInHeadersList(request.headersList);
             replaceVariablesInFormDataList(request.formDataList);
@@ -61,7 +62,7 @@ public class PreparedRequestFinalizer {
 
             applyDeferredAuthorization(request, deferredAuthorization);
         } finally {
-            RequestContext.clearCurrentRequestNode();
+            RequestExecutionContext.clearCurrentScope();
         }
     }
 
@@ -72,7 +73,7 @@ public class PreparedRequestFinalizer {
     }
 
     private void applyDeferredAuthorization(PreparedRequest request,
-                                            PreparedRequestFactory.DeferredAuthorization deferredAuthorization) {
+                                            PreparedRequestMapper.DeferredAuthorization deferredAuthorization) {
         if (request == null) {
             return;
         }
@@ -115,7 +116,7 @@ public class PreparedRequestFinalizer {
     }
 
     private void applyTransportAuthorization(PreparedRequest request,
-                                             PreparedRequestFactory.DeferredAuthorization deferredAuthorization) {
+                                             PreparedRequestMapper.DeferredAuthorization deferredAuthorization) {
         if (!AUTH_TYPE_DIGEST.equals(deferredAuthorization.authType())) {
             return;
         }
@@ -145,7 +146,7 @@ public class PreparedRequestFinalizer {
     }
 
     private List<HttpHeader> findPreviewAuthorizationHeaders(List<HttpHeader> authorizationHeaders,
-                                                             PreparedRequestFactory.DeferredAuthorization deferredAuthorization) {
+                                                             PreparedRequestMapper.DeferredAuthorization deferredAuthorization) {
         String previewValue = deferredAuthorization.previewAuthorizationHeaderValue();
         if (previewValue == null || authorizationHeaders == null || authorizationHeaders.isEmpty()) {
             return List.of();
@@ -162,7 +163,7 @@ public class PreparedRequestFinalizer {
         headersList.removeIf(headersToRemove::contains);
     }
 
-    private HttpHeader createAuthHeader(PreparedRequestFactory.DeferredAuthorization deferredAuthorization) {
+    private HttpHeader createAuthHeader(PreparedRequestMapper.DeferredAuthorization deferredAuthorization) {
         if (deferredAuthorization == null || deferredAuthorization.authType() == null) {
             return null;
         }

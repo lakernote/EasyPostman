@@ -1,17 +1,18 @@
 package com.laker.postman.http.runtime.transport;
 
-import com.laker.postman.model.HttpEventInfo;
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.app.AppHttpRuntimeBootstrap;
+import com.laker.postman.http.runtime.model.HttpEventInfo;
+import com.laker.postman.http.runtime.model.HttpResponse;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.runtime.okhttp.WebSocketLifecycleLogListener;
 import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
 import com.laker.postman.service.setting.SettingManager;
 import okhttp3.OkHttpClient;
 import okhttp3.WebSocketListener;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.net.Proxy;
 import java.net.ProxySelector;
 import java.net.URI;
@@ -24,6 +25,14 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class HttpTransportRuntimeTest {
+    private static final HttpClientResolver CLIENT_RESOLVER = new HttpClientResolver();
+    private static final RealtimeConnectionFactory REALTIME_CONNECTION_FACTORY =
+            new RealtimeConnectionFactory(CLIENT_RESOLVER);
+
+    @BeforeMethod
+    public void configureRuntimeAdapters() {
+        AppHttpRuntimeBootstrap.configure();
+    }
 
     @Test
     public void shouldIsolateConnectionPoolWhenRequestSslModeDiffersFromGlobal() throws Exception {
@@ -41,7 +50,7 @@ public class HttpTransportRuntimeTest {
             request.url = "https://api.example.com/data";
             request.sslVerificationEnabled = false;
 
-            assertTrue(HttpTransportRuntime.shouldIsolateConnectionPool(request));
+            assertTrue(CLIENT_RESOLVER.shouldIsolateConnectionPool(request));
         } finally {
             props.clear();
             props.putAll(backup);
@@ -64,7 +73,7 @@ public class HttpTransportRuntimeTest {
             request.url = "https://api.example.com/data";
             request.sslVerificationEnabled = true;
 
-            assertFalse(HttpTransportRuntime.shouldIsolateConnectionPool(request));
+            assertFalse(CLIENT_RESOLVER.shouldIsolateConnectionPool(request));
         } finally {
             props.clear();
             props.putAll(backup);
@@ -73,8 +82,8 @@ public class HttpTransportRuntimeTest {
 
     @Test
     public void shouldUseSecureDefaultPortForWss() {
-        assertTrue(HttpTransportRuntime.resolveSecurePort("wss", -1) == 443);
-        assertTrue(HttpTransportRuntime.resolveSecurePort("https", -1) == 443);
+        assertTrue(CLIENT_RESOLVER.resolveSecurePort("wss", -1) == 443);
+        assertTrue(CLIENT_RESOLVER.resolveSecurePort("https", -1) == 443);
     }
 
     @Test
@@ -86,14 +95,7 @@ public class HttpTransportRuntimeTest {
         HttpResponse response = new HttpResponse();
         response.httpEventInfo = eventInfo;
 
-        Method method = HttpTransportRuntime.class.getDeclaredMethod(
-                "resolveResponseReceivedEndTime",
-                HttpResponse.class,
-                long.class
-        );
-        method.setAccessible(true);
-
-        long resolvedEnd = (long) method.invoke(null, response, 1_500L);
+        long resolvedEnd = HttpTraceInfoAttacher.resolveResponseReceivedEndTime(response, 1_500L);
 
         assertEquals(resolvedEnd, 1_130L);
     }
@@ -117,7 +119,7 @@ public class HttpTransportRuntimeTest {
             request.sslVerificationEnabled = true;
 
             OkHttpClient baseClient = OkHttpClientManager.getClient("https://api.example.com", true);
-            OkHttpClient customClient = invokeBuildCustomClient(request);
+            OkHttpClient customClient = CLIENT_RESOLVER.resolveClient(request, null);
 
             assertSame(customClient.sslSocketFactory(), baseClient.sslSocketFactory());
             assertSame(customClient.hostnameVerifier(), baseClient.hostnameVerifier());
@@ -157,7 +159,7 @@ public class HttpTransportRuntimeTest {
             request.url = "https://bypass.example.com/data";
             request.sslVerificationEnabled = true;
 
-            assertFalse(HttpTransportRuntime.shouldIsolateConnectionPool(request));
+            assertFalse(CLIENT_RESOLVER.shouldIsolateConnectionPool(request));
         } finally {
             ProxySelector.setDefault(originalSelector);
             props.clear();
@@ -185,7 +187,7 @@ public class HttpTransportRuntimeTest {
             request.sslVerificationEnabled = true;
 
             OkHttpClient lenientBaseClient = OkHttpClientManager.getClient("https://api.example.com", true);
-            OkHttpClient strictClient = invokeBuildCustomClient(request);
+            OkHttpClient strictClient = CLIENT_RESOLVER.resolveClient(request, null);
             OkHttpClient strictDefaultClient = new OkHttpClient();
 
             assertEquals(
@@ -218,7 +220,7 @@ public class HttpTransportRuntimeTest {
         WebSocketListener listener = new WebSocketListener() {
         };
 
-        WebSocketListener resolvedListener = HttpTransportRuntime.wrapWebSocketListener(listener, false);
+        WebSocketListener resolvedListener = REALTIME_CONNECTION_FACTORY.wrapWebSocketListener(listener, false);
 
         assertSame(resolvedListener, listener);
         assertFalse(resolvedListener instanceof WebSocketLifecycleLogListener);
@@ -228,11 +230,5 @@ public class HttpTransportRuntimeTest {
         Field propsField = SettingManager.class.getDeclaredField("props");
         propsField.setAccessible(true);
         return (Properties) propsField.get(null);
-    }
-
-    private static OkHttpClient invokeBuildCustomClient(PreparedRequest request) throws Exception {
-        Method method = HttpTransportRuntime.class.getDeclaredMethod("buildCustomClient", PreparedRequest.class);
-        method.setAccessible(true);
-        return (OkHttpClient) method.invoke(null, request);
     }
 }

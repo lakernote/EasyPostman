@@ -4,7 +4,7 @@ import com.laker.postman.performance.core.model.PerformanceProtocol;
 
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.laker.postman.model.HttpResponse;
+import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.performance.model.PerformanceInternalHeaders;
 import com.laker.postman.performance.model.PerformanceSampleResult;
 import com.laker.postman.performance.model.ResultNodeInfo;

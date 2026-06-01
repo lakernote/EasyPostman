@@ -33,7 +33,7 @@
         <plugin.id>plugin-kafka</plugin.id>
         <plugin.name>Kafka Plugin</plugin.name>
         <plugin.entryClass>com.laker.postman.plugin.kafka.KafkaPlugin</plugin.entryClass>
-        <plugin.description>Kafka toolbox panel, pm.kafka script API, completions and snippets.</plugin.description>
+        <plugin.description>Kafka toolbox panel, pm.plugin("kafka") script API, completions and snippets.</plugin.description>
         <plugin.minAppVersion>5.5.28</plugin.minAppVersion>
         <!--
             运行时插件平台兼容范围，匹配的是 runtime/SPI 装配边界，不是宿主发行版 revision。

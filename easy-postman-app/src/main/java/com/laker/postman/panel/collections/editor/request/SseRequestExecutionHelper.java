@@ -1,11 +1,12 @@
 package com.laker.postman.panel.collections.editor.request;
 
-import com.laker.postman.model.HttpResponse;
+import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.stream.MessageType;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.script.model.TestResult;
 import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;
-import com.laker.postman.http.runtime.transport.HttpRuntimeExecutor;
+import com.laker.postman.http.runtime.transport.HttpTransportRuntime;
+import com.laker.postman.http.runtime.transport.RealtimeConnectionHandle;
 import com.laker.postman.http.runtime.error.NetworkErrorMessageResolver;
 import com.laker.postman.http.runtime.sse.SseStreamEventListener;
 import com.laker.postman.http.runtime.sse.SseStreamCallback;
@@ -14,7 +15,6 @@ import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.sse.EventSource;
 
 import javax.swing.*;
 import java.util.List;
@@ -29,7 +29,7 @@ final class SseRequestExecutionHelper {
     private final RequestStreamUiHelper requestStreamUiHelper;
     private final RequestResponseHelper requestResponseHelper;
     private final AtomicBoolean currentSseCancelled;
-    private final Consumer<EventSource> currentEventSourceSetter;
+    private final Consumer<RealtimeConnectionHandle> currentEventSourceSetter;
     private final Runnable clearCurrentEventSource;
     private final Runnable clearCurrentWorker;
     private final BooleanSupplier disposedSupplier;
@@ -39,7 +39,7 @@ final class SseRequestExecutionHelper {
                               RequestStreamUiHelper requestStreamUiHelper,
                               RequestResponseHelper requestResponseHelper,
                               AtomicBoolean currentSseCancelled,
-                              Consumer<EventSource> currentEventSourceSetter,
+                              Consumer<RealtimeConnectionHandle> currentEventSourceSetter,
                               Runnable clearCurrentEventSource,
                               Runnable clearCurrentWorker,
                               BooleanSupplier disposedSupplier) {
@@ -142,7 +142,7 @@ final class SseRequestExecutionHelper {
                         }
                     };
                     currentSseCancelled.set(false);
-                    currentEventSourceSetter.accept(HttpRuntimeExecutor.openSse(
+                    currentEventSourceSetter.accept(HttpTransportRuntime.openSseConnection(
                             req, new SseStreamEventListener(callback, resp, sseBodyBuilder, startTime, currentSseCancelled::get)));
                     responsePanel.setResponseTabButtonsEnable(true);
                 } catch (Exception ex) {

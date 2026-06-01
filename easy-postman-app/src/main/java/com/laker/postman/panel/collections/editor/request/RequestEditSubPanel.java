@@ -1,7 +1,7 @@
 package com.laker.postman.panel.collections.editor.request;
 
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.HttpResponse;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.request.model.SavedResponse;
 import com.laker.postman.request.model.HttpRequestItem;
@@ -12,16 +12,21 @@ import com.laker.postman.common.component.MarkdownEditorPanel;
 import com.laker.postman.common.component.placeholder.RequestEditorPlaceholderPanel;
 import com.laker.postman.common.component.tab.IndicatorTabComponent;
 import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.http.execution.RequestPreparationResult;
+import com.laker.postman.http.execution.RequestPreparationService;
+import com.laker.postman.http.request.AppRequestHeaderDefaults;
+import com.laker.postman.http.runtime.transport.RealtimeConnectionHandle;
+import com.laker.postman.http.runtime.transport.RealtimeWebSocketConnection;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.panel.collections.editor.request.sub.*;
+import com.laker.postman.panel.sidebar.ConsoleScriptOutputAdapter;
+import com.laker.postman.request.edit.HttpRequestEditorDraftMapper;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.WebSocket;
-import okhttp3.sse.EventSource;
 
 import javax.swing.*;
 import java.awt.*;
@@ -76,12 +81,14 @@ public class RequestEditSubPanel extends JPanel {
     private MarkdownEditorPanel descriptionEditor; // Docs tab
     private JTabbedPane reqTabs; // 请求选项卡面板
     // 主面板只保留“编排”和“状态持有”，具体行为拆给各个 helper，避免再次演变成巨型类。
-    private final RequestPreparationService requestPreparationService = new RequestPreparationService();
+    private final RequestPreparationService requestPreparationService =
+            new RequestPreparationService(ConsoleScriptOutputAdapter.outputCallback());
     private final RequestPreparationFeedbackHelper requestPreparationFeedbackHelper = new RequestPreparationFeedbackHelper();
     private RequestExecutionUiHelper requestExecutionUiHelper;
     private RequestStreamUiHelper requestStreamUiHelper;
     private RequestResponseHelper requestResponseHelper;
-    private RequestFormDataHelper requestFormDataHelper;
+    private RequestEditorBinder requestEditorBinder;
+    private RequestEditorDefaultTabSelector requestEditorDefaultTabSelector;
     private RequestTabStateHelper requestTabStateHelper;
     private RequestDirtyStateHelper requestDirtyStateHelper;
     private RequestUrlSyncHelper requestUrlSyncHelper;
@@ -105,13 +112,13 @@ public class RequestEditSubPanel extends JPanel {
     // 当前请求的 SwingWorker，用于支持取消
     private transient volatile SwingWorker<Void, Void> currentWorker;
     // 当前 SSE 事件源, 用于取消 SSE 请求
-    private transient volatile EventSource currentEventSource;
+    private transient volatile RealtimeConnectionHandle currentEventSource;
     // HTTP 请求自动识别为 SSE 后，用于在取消时保持 SSE 视图
     private transient volatile boolean httpSseStreamOpened;
     // 标记当前 SSE 是否由用户主动取消，避免把预期断开误报为失败
     private final transient AtomicBoolean currentSseCancelled = new AtomicBoolean(false);
     // WebSocket连接对象
-    private transient volatile WebSocket currentWebSocket;
+    private transient volatile RealtimeWebSocketConnection currentWebSocket;
     // WebSocket连接ID，用于防止过期连接的回调
     private volatile String currentWebSocketConnectionId;
     JSplitPane splitPane;
@@ -293,7 +300,7 @@ public class RequestEditSubPanel extends JPanel {
             RequestUiSetupHelper.bindParamsSync(paramsPanel, this::parseParamsPanelToUrl);
         }
         requestUrlSyncHelper = new RequestUrlSyncHelper(urlField, paramsPanel);
-        requestFormDataHelper = new RequestFormDataHelper(
+        requestEditorBinder = new RequestEditorBinder(
                 urlField,
                 methodBox,
                 paramsPanel,
@@ -302,8 +309,12 @@ public class RequestEditSubPanel extends JPanel {
                 requestSettingsPanel,
                 authTabPanel,
                 scriptPanel,
-                descriptionEditor,
-                reqTabs
+                descriptionEditor
+        );
+        requestEditorDefaultTabSelector = new RequestEditorDefaultTabSelector(
+                reqTabs,
+                requestBodyPanel,
+                paramsPanel
         );
         requestTabStateHelper = new RequestTabStateHelper(
                 protocol,
@@ -326,7 +337,8 @@ public class RequestEditSubPanel extends JPanel {
         if (!isPerformanceSnapshot()) {
             requestDirtyStateHelper = new RequestDirtyStateHelper(
                     this::getCurrentRequestFromModel,
-                    dirty -> UiSingletonFactory.getInstance(RequestEditorPanel.class).updateTabDirty(this, dirty)
+                    dirty -> UiSingletonFactory.getInstance(RequestEditorPanel.class).updateTabDirty(this, dirty),
+                    AppRequestHeaderDefaults.generatedHeaderPolicy()
             );
             requestExecutionUiHelper = new RequestExecutionUiHelper(
                     responsePanel,
@@ -614,7 +626,7 @@ public class RequestEditSubPanel extends JPanel {
         if (!editorInitialized) {
             return pendingRequestItem != null ? pendingRequestItem : pendingOriginalRequestItem;
         }
-        return requestFormDataHelper.buildCurrentRequest(id, name, currentProtocol, getOriginalRequestItem(), true);
+        return collectCurrentRequest(true);
     }
 
     /**
@@ -687,7 +699,7 @@ public class RequestEditSubPanel extends JPanel {
             this.id = item.getId();
             this.name = item.getName();
             this.currentProtocol = item.getProtocol() != null ? item.getProtocol() : protocol;
-            requestFormDataHelper.populate(item);
+            requestEditorBinder.populate(item);
 
             // 设置原始数据用于脏检测
             if (requestDirtyStateHelper != null) {
@@ -696,7 +708,7 @@ public class RequestEditSubPanel extends JPanel {
             requestSettingsPanel.rebaseline();
 
             // 根据请求类型智能选择默认Tab
-            requestFormDataHelper.selectDefaultTabByRequestType(getEffectiveProtocol(), item);
+            requestEditorDefaultTabSelector.selectByRequestType(getEffectiveProtocol(), item);
             updateTabIndicators();
         } finally {
             // 确保标志一定会被清除，即使发生异常
@@ -713,7 +725,18 @@ public class RequestEditSubPanel extends JPanel {
         if (!editorInitialized) {
             return pendingRequestItem != null ? pendingRequestItem : pendingOriginalRequestItem;
         }
-        return requestFormDataHelper.buildCurrentRequest(id, name, currentProtocol, getOriginalRequestItem(), false);
+        return collectCurrentRequest(false);
+    }
+
+    private HttpRequestItem collectCurrentRequest(boolean fromModel) {
+        HttpRequestItem originalRequestItem = getOriginalRequestItem();
+        return HttpRequestEditorDraftMapper.toRequestItem(requestEditorBinder.collectCurrentDraft(
+                id,
+                name,
+                currentProtocol,
+                originalRequestItem != null ? originalRequestItem.getResponse() : null,
+                fromModel
+        ));
     }
 
     /**
@@ -824,8 +847,8 @@ public class RequestEditSubPanel extends JPanel {
             if (originalRequest != null) {
                 isLoadingData = true;
                 try {
-                    requestFormDataHelper.populateSavedResponseRequest(originalRequest);
-                    requestFormDataHelper.selectDefaultTabBySavedResponse(getEffectiveProtocol(), originalRequest);
+                    requestEditorBinder.populateSavedResponseRequest(originalRequest);
+                    requestEditorDefaultTabSelector.selectBySavedResponse(getEffectiveProtocol(), originalRequest);
                 } finally {
                     isLoadingData = false;
                 }

@@ -7,8 +7,8 @@ import com.laker.postman.performance.core.request.PerformanceRequestSnapshot;
 
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.HttpResponse;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.script.model.TestResult;
 import com.laker.postman.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.service.js.ScriptExecutionResult;
@@ -16,8 +16,8 @@ import com.laker.postman.service.variable.ExecutionVariableContext;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.WebSocket;
-import okhttp3.sse.EventSource;
+import com.laker.postman.http.runtime.transport.RealtimeConnectionHandle;
+import com.laker.postman.http.runtime.transport.RealtimeWebSocketConnection;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,8 +31,8 @@ public class PerformanceRequestExecutor {
 
     private final BooleanSupplier runningSupplier;
     private final Predicate<Throwable> cancelledChecker;
-    private final Set<EventSource> activeSseSources;
-    private final Set<WebSocket> activeWebSockets;
+    private final Set<RealtimeConnectionHandle> activeSseSources;
+    private final Set<RealtimeWebSocketConnection> activeWebSockets;
     private final PerformanceRealtimeMetrics realtimeMetrics;
     private final PerformanceExecutionConfig executionConfig;
     private final PerformanceNetworkRuntime networkRuntime;
@@ -42,15 +42,15 @@ public class PerformanceRequestExecutor {
 
     public PerformanceRequestExecutor(BooleanSupplier runningSupplier,
                                       Predicate<Throwable> cancelledChecker,
-                                      Set<EventSource> activeSseSources,
-                                      Set<WebSocket> activeWebSockets) {
+                                      Set<RealtimeConnectionHandle> activeSseSources,
+                                      Set<RealtimeWebSocketConnection> activeWebSockets) {
         this(runningSupplier, cancelledChecker, activeSseSources, activeWebSockets, new PerformanceRealtimeMetrics());
     }
 
     public PerformanceRequestExecutor(BooleanSupplier runningSupplier,
                                       Predicate<Throwable> cancelledChecker,
-                                      Set<EventSource> activeSseSources,
-                                      Set<WebSocket> activeWebSockets,
+                                      Set<RealtimeConnectionHandle> activeSseSources,
+                                      Set<RealtimeWebSocketConnection> activeWebSockets,
                                       PerformanceRealtimeMetrics realtimeMetrics) {
         this(runningSupplier, cancelledChecker, activeSseSources, activeWebSockets, realtimeMetrics,
                 PerformanceExecutionConfig.DEFAULT);
@@ -58,8 +58,8 @@ public class PerformanceRequestExecutor {
 
     public PerformanceRequestExecutor(BooleanSupplier runningSupplier,
                                       Predicate<Throwable> cancelledChecker,
-                                      Set<EventSource> activeSseSources,
-                                      Set<WebSocket> activeWebSockets,
+                                      Set<RealtimeConnectionHandle> activeSseSources,
+                                      Set<RealtimeWebSocketConnection> activeWebSockets,
                                       PerformanceRealtimeMetrics realtimeMetrics,
                                       BooleanSupplier efficientModeSupplier,
                                       IntSupplier responseBodyPreviewLimitKbSupplier) {
@@ -69,8 +69,8 @@ public class PerformanceRequestExecutor {
 
     public PerformanceRequestExecutor(BooleanSupplier runningSupplier,
                                       Predicate<Throwable> cancelledChecker,
-                                      Set<EventSource> activeSseSources,
-                                      Set<WebSocket> activeWebSockets,
+                                      Set<RealtimeConnectionHandle> activeSseSources,
+                                      Set<RealtimeWebSocketConnection> activeWebSockets,
                                       PerformanceRealtimeMetrics realtimeMetrics,
                                       BooleanSupplier efficientModeSupplier,
                                       IntSupplier responseBodyPreviewLimitKbSupplier,
@@ -85,8 +85,8 @@ public class PerformanceRequestExecutor {
 
     public PerformanceRequestExecutor(BooleanSupplier runningSupplier,
                                       Predicate<Throwable> cancelledChecker,
-                                      Set<EventSource> activeSseSources,
-                                      Set<WebSocket> activeWebSockets,
+                                      Set<RealtimeConnectionHandle> activeSseSources,
+                                      Set<RealtimeWebSocketConnection> activeWebSockets,
                                       PerformanceExecutionConfig executionConfig) {
         this(runningSupplier, cancelledChecker, activeSseSources, activeWebSockets, new PerformanceRealtimeMetrics(),
                 executionConfig);
@@ -94,8 +94,8 @@ public class PerformanceRequestExecutor {
 
     public PerformanceRequestExecutor(BooleanSupplier runningSupplier,
                                       Predicate<Throwable> cancelledChecker,
-                                      Set<EventSource> activeSseSources,
-                                      Set<WebSocket> activeWebSockets,
+                                      Set<RealtimeConnectionHandle> activeSseSources,
+                                      Set<RealtimeWebSocketConnection> activeWebSockets,
                                       PerformanceRealtimeMetrics realtimeMetrics,
                                       PerformanceExecutionConfig executionConfig) {
         this(runningSupplier, cancelledChecker, activeSseSources, activeWebSockets, realtimeMetrics, executionConfig,
@@ -104,8 +104,8 @@ public class PerformanceRequestExecutor {
 
     public PerformanceRequestExecutor(BooleanSupplier runningSupplier,
                                       Predicate<Throwable> cancelledChecker,
-                                      Set<EventSource> activeSseSources,
-                                      Set<WebSocket> activeWebSockets,
+                                      Set<RealtimeConnectionHandle> activeSseSources,
+                                      Set<RealtimeWebSocketConnection> activeWebSockets,
                                       PerformanceRealtimeMetrics realtimeMetrics,
                                       PerformanceExecutionConfig executionConfig,
                                       PerformanceNetworkRuntime networkRuntime) {
@@ -115,8 +115,8 @@ public class PerformanceRequestExecutor {
 
     PerformanceRequestExecutor(BooleanSupplier runningSupplier,
                                Predicate<Throwable> cancelledChecker,
-                               Set<EventSource> activeSseSources,
-                               Set<WebSocket> activeWebSockets,
+                               Set<RealtimeConnectionHandle> activeSseSources,
+                               Set<RealtimeWebSocketConnection> activeWebSockets,
                                PerformanceRealtimeMetrics realtimeMetrics,
                                PerformanceExecutionConfig executionConfig,
                                PerformanceNetworkRuntime networkRuntime,

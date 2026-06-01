@@ -10,7 +10,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Script Redis API for pm.redis.
+ * Script Redis API for pm.plugin("redis").
  */
 public class ScriptRedisApi {
     private static final Pattern ARG_PATTERN = Pattern.compile("\"([^\"]*)\"|'([^']*)'|(\\S+)");

@@ -1,7 +1,7 @@
 package com.laker.postman.service.render;
 
 import com.laker.postman.common.constants.ThemeColors;
-import com.laker.postman.model.HttpResponse;
+import com.laker.postman.http.runtime.model.HttpResponse;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;

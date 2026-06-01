@@ -54,32 +54,6 @@ public class GitWorkspacePluginService implements GitPluginService {
     }
 
     @Override
-    public void migrateDefaultWorkspaceGit(Workspace workspace, String commitMessage) throws Exception {
-        try (Git git = Git.init().setDirectory(new File(workspace.getPath())).call()) {
-            createGitignore(workspace);
-            git.add().addFilepattern(".").call();
-            git.commit().setMessage(commitMessage).call();
-
-            String oldBranch = workspace.getCurrentBranch();
-            String actualBranch = git.getRepository().getBranch();
-            if (oldBranch != null && !oldBranch.isBlank() && !oldBranch.equals(actualBranch)) {
-                git.branchCreate().setName(oldBranch).call();
-                git.checkout().setName(oldBranch).call();
-            } else {
-                workspace.setCurrentBranch(actualBranch);
-            }
-
-            String remoteUrl = workspace.getGitRemoteUrl();
-            if (remoteUrl != null && !remoteUrl.isBlank()) {
-                git.remoteAdd().setName("origin").setUri(new URIish(remoteUrl)).call();
-            }
-
-            workspace.setLastCommitId(getLastCommitId(git));
-            workspace.setUpdatedAt(System.currentTimeMillis());
-        }
-    }
-
-    @Override
     public GitStatusCheck checkGitStatus(Workspace workspace, GitOperation operation) {
         return GitConflictDetector.checkGitStatus(
                 workspace.getPath(),

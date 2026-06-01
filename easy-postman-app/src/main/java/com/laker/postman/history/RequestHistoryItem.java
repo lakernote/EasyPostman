@@ -1,7 +1,7 @@
 package com.laker.postman.history;
 
-import com.laker.postman.model.HttpResponse;
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.HttpResponse;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 
 /**
  * 请求历史项，包含请求和响应的简要信息

@@ -4,10 +4,10 @@ import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
 import com.laker.postman.performance.core.request.PerformanceRequestSnapshot;
 
 
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.PreparedRequest;
+import com.laker.postman.http.runtime.transport.RealtimeConnectionHandle;
+import com.laker.postman.http.runtime.transport.RealtimeWebSocketConnection;
 import com.laker.postman.performance.plan.PerformanceRequestSampler;
-import okhttp3.WebSocket;
-import okhttp3.sse.EventSource;
 
 import java.util.Set;
 import java.util.function.BooleanSupplier;
@@ -22,8 +22,8 @@ final class PerformanceRequestTransportExecutor {
 
     PerformanceRequestTransportExecutor(BooleanSupplier runningSupplier,
                                         Predicate<Throwable> cancelledChecker,
-                                        Set<EventSource> activeSseSources,
-                                        Set<WebSocket> activeWebSockets,
+                                        Set<RealtimeConnectionHandle> activeSseSources,
+                                        Set<RealtimeWebSocketConnection> activeWebSockets,
                                         PerformanceRealtimeMetrics realtimeMetrics,
                                         IntSupplier responseBodyPreviewLimitKbSupplier) {
         this(
@@ -62,8 +62,8 @@ final class PerformanceRequestTransportExecutor {
 
     PerformanceRequestTransportExecutor(BooleanSupplier runningSupplier,
                                         Predicate<Throwable> cancelledChecker,
-                                        Set<EventSource> activeSseSources,
-                                        Set<WebSocket> activeWebSockets,
+                                        Set<RealtimeConnectionHandle> activeSseSources,
+                                        Set<RealtimeWebSocketConnection> activeWebSockets,
                                         PerformanceRealtimeMetrics realtimeMetrics,
                                         IntSupplier responseBodyPreviewLimitKbSupplier,
                                         PerformanceProtocolSamplerExecutor httpSamplerExecutor,

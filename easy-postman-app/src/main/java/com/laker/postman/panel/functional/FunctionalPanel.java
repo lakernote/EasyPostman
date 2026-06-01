@@ -2,9 +2,9 @@ package com.laker.postman.panel.functional;
 
 import com.laker.postman.functional.model.AssertionResult;
 import com.laker.postman.functional.model.BatchExecutionHistory;
-import com.laker.postman.model.HttpResponse;
+import com.laker.postman.functional.execution.FunctionalRequestExecutionResult;
+import com.laker.postman.functional.execution.FunctionalRequestExecutor;
 import com.laker.postman.functional.model.IterationResult;
-import com.laker.postman.model.PreparedRequest;
 import com.laker.postman.functional.model.RequestResult;
 import com.laker.postman.functional.model.RunnerRowData;
 import com.laker.postman.request.model.HttpRequestItem;
@@ -16,20 +16,18 @@ import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.common.component.button.*;
 import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.functional.model.FunctionalConfigRow;
+import com.laker.postman.functional.model.FunctionalConfigSnapshot;
 import com.laker.postman.functional.model.FunctionalCsvDataState;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.panel.collections.RequestSelectionDialogSupport;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.panel.functional.table.FunctionalRunnerTableModel;
 import com.laker.postman.panel.functional.table.TableRowTransferHandler;
-import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.panel.sidebar.SidebarTabPanel;
 import com.laker.postman.service.FunctionalPersistenceService;
-import com.laker.postman.http.runtime.transport.HttpRuntimeExecutor;
 import com.laker.postman.common.component.RequestMethodUiMetadata;
-import com.laker.postman.http.request.PreparedRequestFactory;
-import com.laker.postman.service.js.ScriptExecutionPipeline;
-import com.laker.postman.service.js.ScriptExecutionResult;
+import com.laker.postman.service.collections.CollectionRequestLookup;
 import com.laker.postman.service.variable.ExecutionVariableContext;
 import com.laker.postman.service.variable.IterationDataRuntimeSupport;
 import com.laker.postman.util.*;
@@ -70,7 +68,13 @@ public class FunctionalPanel extends UiSingletonPanel {
 
     // 持久化服务
     private transient FunctionalPersistenceService persistenceService;
+    private final transient CollectionRequestLookup requestLookup = new CollectionRequestLookup();
     private final transient DebouncedSaveSupport autoSaveSupport = new DebouncedSaveSupport(500, this::saveAsync);
+    private final transient FunctionalRequestExecutor requestExecutor =
+            new FunctionalRequestExecutor(error -> com.laker.postman.panel.sidebar.ConsolePanel.appendLog(
+                    "[Request Error]\n" + error,
+                    com.laker.postman.panel.sidebar.ConsolePanel.LogType.ERROR
+            ));
 
 
     @Override
@@ -319,7 +323,7 @@ public class FunctionalPanel extends UiSingletonPanel {
     }
 
     private boolean isValidRow(RunnerRowData row) {
-        if (row == null || row.requestItem == null || row.preparedRequest == null) {
+        if (row == null || row.requestItem == null) {
             log.warn("Row is invalid, skipping execution");
             return false;
         }
@@ -363,17 +367,22 @@ public class FunctionalPanel extends UiSingletonPanel {
             });
         }
 
-        BatchResult result = executeSingleRequestWithCsv(row, iterationContext, generation);
+        FunctionalRequestExecutionResult result = requestExecutor.execute(
+                row,
+                iterationContext,
+                () -> isExecutionActive(generation)
+        );
         if (!isExecutionGenerationCurrent(generation)) {
             return totalFinished;
         }
 
         // 更新表格中的执行结果
         if (currentRowIndex >= 0) {
-            row.status = result.status;
-            row.cost = result.cost;
-            row.assertion = result.assertion;
-            row.response = result.resp;
+            row.status = result.getStatus();
+            row.cost = result.getCost();
+            row.assertion = result.getAssertion();
+            row.response = result.getResponse();
+            row.testResults = result.getTestResults();
 
             SwingUtilities.invokeLater(() -> {
                 if (isExecutionGenerationCurrent(generation) && currentRowIndex < tableModel.getRowCount()) {
@@ -386,14 +395,14 @@ public class FunctionalPanel extends UiSingletonPanel {
         RequestResult requestResult = new RequestResult(
                 row.requestItem.getName(),
                 row.requestItem.getMethod(),
-                row.preparedRequest.url,
-                result.req,
-                result.resp,
-                result.cost,
-                result.status,
-                result.assertion,
-                row.testResults,
-                result.errorMessage
+                result.getRequest().url,
+                result.getRequest(),
+                result.getResponse(),
+                result.getCost(),
+                result.getStatus(),
+                result.getAssertion(),
+                result.getTestResults(),
+                result.getErrorMessage()
         );
         iterationResult.addRequestResult(requestResult);
 
@@ -434,88 +443,6 @@ public class FunctionalPanel extends UiSingletonPanel {
             executionTimer.stop();
         }
     }
-
-    private static class BatchResult {
-        PreparedRequest req;
-        HttpResponse resp;
-        long cost;
-        String status;
-        String errorMessage;
-        AssertionResult assertion;
-    }
-
-    private BatchResult executeSingleRequestWithCsv(RunnerRowData row, ExecutionVariableContext iterationContext,
-                                                    int generation) {
-        if (!isExecutionActive(generation)) return new BatchResult(); // 检查停止标志，直接返回空结果
-        BatchResult result = new BatchResult();
-        long start = System.currentTimeMillis();
-        HttpRequestItem item = row.requestItem;
-
-        // build() 会自动应用 group 继承，并将合并后的脚本存储在 req 中
-        PreparedRequest req = PreparedRequestFactory.build(item);
-
-        // Functional 场景：收集完整信息（用于结果展示），但不输出 UI 日志
-        req.collectBasicInfo = true;   // 收集 headers、body
-        req.collectEventInfo = true;   // 收集完整事件信息（DNS、连接时间等），用于结果表格展示
-        req.enableNetworkLog = false;  // 不输出 NetworkLogPanel，避免 UI 开销
-
-        result.req = req;
-
-        // 创建脚本执行流水线（使用 req 中合并后的脚本）
-        ScriptExecutionPipeline pipeline = ScriptExecutionPipeline.forRequestExecution(
-                item,
-                req,
-                iterationContext,
-                true
-        );
-
-        // 执行前置脚本
-        ScriptExecutionResult preResult = pipeline.executePreScript();
-
-        // 前置脚本执行完成后，进行变量替换
-        if (preResult.isSuccess()) {
-            pipeline.finalizeRequest();
-        }
-
-        HttpResponse resp = null;
-        String status; // HTTP状态码
-        AssertionResult assertion = AssertionResult.NO_TESTS; // 断言结果
-
-
-        if (!preResult.isSuccess()) {
-            result.errorMessage = preResult.getErrorMessage();
-            status = ERROR;
-        } else {
-            try {
-                resp = HttpRuntimeExecutor.executeHttp(req);
-                status = String.valueOf(resp.code); // HTTP状态码
-
-                // 执行后置脚本
-                ScriptExecutionResult postResult = pipeline.executePostScript(resp);
-                row.testResults = postResult.getTestResults();
-
-                // 判断断言结果
-                if (postResult.hasTestResults()) {
-                    // 有测试时，根据结果设置断言状态
-                    assertion = postResult.allTestsPassed() ? AssertionResult.PASS : AssertionResult.FAIL;
-                }
-                // 没有测试时，保持默认的 NO_TESTS
-            } catch (Exception ex) {
-                log.error("请求执行失败", ex);
-                ConsolePanel.appendLog("[Request Error]\n" + ex.getMessage(), ConsolePanel.LogType.ERROR);
-                assertion = AssertionResult.FAIL; // 错误消息也作为断言结果
-                result.errorMessage = ex.getMessage();
-                status = ERROR;
-            }
-        }
-        long cost = System.currentTimeMillis() - start;
-        result.resp = resp;
-        result.cost = resp == null ? cost : resp.costMs;
-        result.status = status;
-        result.assertion = assertion;
-        return result;
-    }
-
 
     // 更新执行时间显示
     private void updateExecutionTime() {
@@ -844,9 +771,7 @@ public class FunctionalPanel extends UiSingletonPanel {
                 skippedCount++;
                 continue; // 跳过已存在的请求，避免重复
             }
-            // build() 会自动应用 group 继承
-            PreparedRequest req = PreparedRequestFactory.build(item);
-            tableModel.addRow(new RunnerRowData(item, req));
+            tableModel.addRow(new RunnerRowData(item));
             if (item.getId() != null) {
                 existingIds.add(item.getId()); // 同批次中也去重
             }
@@ -867,9 +792,10 @@ public class FunctionalPanel extends UiSingletonPanel {
      */
     private void loadSaved() {
         try {
-            List<RunnerRowData> savedRows = persistenceService.load();
-            csvDataPanel.restoreState(toCsvState(persistenceService.loadCsvState()));
-            if (savedRows != null && !savedRows.isEmpty()) {
+            FunctionalConfigSnapshot snapshot = persistenceService.loadSnapshot();
+            csvDataPanel.restoreState(toCsvState(snapshot.getCsvState()));
+            List<RunnerRowData> savedRows = restoreRows(snapshot.getRows());
+            if (!savedRows.isEmpty()) {
                 for (RunnerRowData row : savedRows) {
                     tableModel.addRow(row);
                 }
@@ -930,8 +856,6 @@ public class FunctionalPanel extends UiSingletonPanel {
             RunnerRowData row = rows.get(i);
             if (row != null && row.requestItem != null && item.getId().equals(row.requestItem.getId())) {
                 row.requestItem = item;
-                // collection 保存后请求配置可能已变更，必须同步重建派生请求，避免执行历史继续引用旧 URL。
-                row.preparedRequest = PreparedRequestFactory.build(item);
                 row.name = item.getName();
                 row.url = item.getUrl();
                 row.method = item.getMethod();
@@ -953,8 +877,7 @@ public class FunctionalPanel extends UiSingletonPanel {
                 table.getCellEditor().stopCellEditing();
             }
             autoSaveSupport.cancel();
-            List<RunnerRowData> rows = tableModel.getAllRows();
-            persistenceService.save(rows, exportFunctionalCsvState());
+            persistenceService.save(toConfigSnapshot(tableModel.getAllRows()));
         } catch (Exception e) {
             log.error("Failed to save config", e);
         }
@@ -970,11 +893,47 @@ public class FunctionalPanel extends UiSingletonPanel {
             if (tableModel == null || persistenceService == null) {
                 return;
             }
-            List<RunnerRowData> rows = tableModel.getAllRows();
-            persistenceService.saveAsync(rows, exportFunctionalCsvState());
+            persistenceService.saveAsync(toConfigSnapshot(tableModel.getAllRows()));
         } catch (Exception e) {
             log.error("Failed to schedule functional config save", e);
         }
+    }
+
+    private List<RunnerRowData> restoreRows(List<FunctionalConfigRow> configRows) {
+        List<RunnerRowData> rows = new ArrayList<>();
+        if (configRows == null || configRows.isEmpty()) {
+            return rows;
+        }
+        for (FunctionalConfigRow configRow : configRows) {
+            if (configRow == null || configRow.getRequestId() == null || configRow.getRequestId().isBlank()) {
+                continue;
+            }
+            try {
+                Optional<HttpRequestItem> requestItem = requestLookup.findRequestItemById(configRow.getRequestId());
+                if (requestItem.isEmpty()) {
+                    log.warn("Request with ID {} not found in collections, skipping", configRow.getRequestId());
+                    continue;
+                }
+                RunnerRowData row = new RunnerRowData(requestItem.get());
+                row.selected = configRow.isSelected();
+                rows.add(row);
+            } catch (Exception e) {
+                log.warn("Failed to restore functional row for request {}: {}", configRow.getRequestId(), e.getMessage());
+            }
+        }
+        return rows;
+    }
+
+    private FunctionalConfigSnapshot toConfigSnapshot(List<RunnerRowData> rows) {
+        List<FunctionalConfigRow> configRows = new ArrayList<>();
+        if (rows != null) {
+            for (RunnerRowData row : rows) {
+                if (row != null && row.requestItem != null && row.requestItem.getId() != null) {
+                    configRows.add(new FunctionalConfigRow(row.requestItem.getId(), row.selected));
+                }
+            }
+        }
+        return new FunctionalConfigSnapshot(configRows, exportFunctionalCsvState());
     }
 
     private FunctionalCsvDataState exportFunctionalCsvState() {
@@ -1023,7 +982,7 @@ public class FunctionalPanel extends UiSingletonPanel {
             }
 
             // 通过ID从集合中查找最新的请求配置
-            HttpRequestItem latestRequestItem = persistenceService.findRequestItemById(row.requestItem.getId());
+            HttpRequestItem latestRequestItem = requestLookup.findRequestItemById(row.requestItem.getId()).orElse(null);
 
             if (latestRequestItem == null) {
                 // 请求在集合中已被删除
@@ -1033,10 +992,7 @@ public class FunctionalPanel extends UiSingletonPanel {
             } else {
                 // 更新请求数据
                 try {
-                    // build() 会自动应用 group 继承
-                    PreparedRequest preparedRequest = PreparedRequestFactory.build(latestRequestItem);
                     row.requestItem = latestRequestItem;
-                    row.preparedRequest = preparedRequest;
                     row.name = latestRequestItem.getName();
                     row.url = latestRequestItem.getUrl();
                     row.method = latestRequestItem.getMethod();

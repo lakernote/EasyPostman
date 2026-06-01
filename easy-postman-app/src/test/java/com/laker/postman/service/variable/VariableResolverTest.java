@@ -69,7 +69,7 @@ public class VariableResolverTest {
                 EnvironmentService.deleteEnvironment(testEnv.getId());
             }
             clearExecutionContext();
-            RequestContext.clearCurrentRequestNode();
+            RequestExecutionContext.clearCurrentScope();
         } finally {
             // 恢复原始环境文件路径
             if (originalDataFilePath != null && !originalDataFilePath.isBlank()) {

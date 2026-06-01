@@ -1,13 +1,15 @@
 package com.laker.postman.service.collections;
 
+import com.laker.postman.collection.CollectionInheritance;
+import com.laker.postman.collection.model.CollectionRequestContext;
 import com.laker.postman.collection.model.RequestGroup;
 import com.laker.postman.request.model.HttpRequestItem;
 
 
-import com.laker.postman.service.variable.RequestContext;
+import com.laker.postman.service.variable.RequestExecutionContext;
+import com.laker.postman.service.variable.RequestExecutionScope;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,24 +30,24 @@ import java.util.Optional;
 @Slf4j
 public class InheritanceService {
 
-    private final TreeNodeRepository treeRepository;
+    private final CollectionRequestRepository requestRepository;
     private final InheritanceCache cache;
 
     /**
      * 创建继承服务（使用默认实现）
      */
     public InheritanceService() {
-        this(new ActiveCollectionTreeNodeRepository(), new InheritanceCache());
+        this(new ActiveCollectionRequestRepository(), new InheritanceCache());
     }
 
     /**
      * 创建继承服务（依赖注入，便于测试）
      *
-     * @param treeRepository 树节点仓库
+     * @param requestRepository 请求仓库
      * @param cache          缓存管理器
      */
-    public InheritanceService(TreeNodeRepository treeRepository, InheritanceCache cache) {
-        this.treeRepository = treeRepository;
+    public InheritanceService(CollectionRequestRepository requestRepository, InheritanceCache cache) {
+        this.requestRepository = requestRepository;
         this.cache = cache;
     }
 
@@ -78,15 +80,15 @@ public class InheritanceService {
 
         // 获取（或计算并缓存）该请求对应的 Group 链
         List<RequestGroup> groupChain = cache.computeIfAbsent(requestId, id -> {
-            Optional<DefaultMutableTreeNode> nodeOpt = treeRepository.findNodeByRequestId(id);
-            if (nodeOpt.isEmpty()) {
+            Optional<CollectionRequestContext> requestContext = requestRepository.findRequestContextById(id);
+            if (requestContext.isEmpty()) {
                 return List.of(); // 不在 Collections 树中，空 group 链
             }
-            DefaultMutableTreeNode requestNode = nodeOpt.get();
-            // 设置全局上下文（供分组变量服务使用）
-            RequestContext.setCurrentRequestNode(requestNode);
-            return GroupInheritanceHelper.collectGroupChain(requestNode);
+            return requestContext.get().getGroupChain();
         });
+        RequestExecutionContext.setCurrentScope(RequestExecutionScope.fromVariables(
+                CollectionInheritance.mergeGroupVariables(groupChain)
+        ));
 
         // 用最新的 item + 缓存的 group 链合并（每次都重新合并，保证 url/params 最新）
         if (groupChain.isEmpty()) {
@@ -94,11 +96,7 @@ public class InheritanceService {
             return item;
         }
 
-        // 需要设置 RequestContext（后续变量解析依赖）
-        Optional<DefaultMutableTreeNode> nodeOpt = treeRepository.findNodeByRequestId(requestId);
-        nodeOpt.ifPresent(RequestContext::setCurrentRequestNode);
-
-        return GroupInheritanceHelper.mergeGroupSettingsWithChain(item, groupChain);
+        return CollectionInheritance.apply(item, groupChain);
     }
 
     /**
@@ -106,17 +104,18 @@ public class InheritanceService {
      */
     private HttpRequestItem applyInheritanceInternal(HttpRequestItem item) {
         try {
-            Optional<DefaultMutableTreeNode> nodeOpt =
-                    treeRepository.findNodeByRequestId(item.getId());
+            Optional<CollectionRequestContext> requestContext = requestRepository.findRequestContextById(item.getId());
 
-            if (nodeOpt.isEmpty()) {
+            if (requestContext.isEmpty()) {
                 log.trace("请求 [{}] 不在 Collections 树中，使用原始配置", item.getName());
                 return item;
             }
 
-            DefaultMutableTreeNode requestNode = nodeOpt.get();
-            RequestContext.setCurrentRequestNode(requestNode);
-            HttpRequestItem result = GroupInheritanceHelper.mergeGroupSettings(item, requestNode);
+            List<RequestGroup> groupChain = requestContext.get().getGroupChain();
+            RequestExecutionContext.setCurrentScope(RequestExecutionScope.fromVariables(
+                    CollectionInheritance.mergeGroupVariables(groupChain)
+            ));
+            HttpRequestItem result = CollectionInheritance.apply(item, groupChain);
 
             if (result == item) {
                 log.trace("请求 [{}] 没有父分组，使用原始配置", item.getName());

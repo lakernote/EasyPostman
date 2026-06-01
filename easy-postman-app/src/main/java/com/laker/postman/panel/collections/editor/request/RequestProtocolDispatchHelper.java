@@ -1,6 +1,7 @@
 package com.laker.postman.panel.collections.editor.request;
 
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.PreparedRequest;
+import com.laker.postman.http.execution.RequestPreparationResult;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
 
 

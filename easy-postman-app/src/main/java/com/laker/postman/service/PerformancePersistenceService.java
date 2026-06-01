@@ -6,14 +6,10 @@ import com.laker.postman.ioc.PostConstruct;
 import com.laker.postman.ioc.PreDestroy;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.performance.plan.PerformancePlanConfiguration;
-import com.laker.postman.performance.plan.PerformancePlanDocument;
 import com.laker.postman.performance.plan.PerformancePlanStorage;
 import com.laker.postman.performance.plan.PerformancePlanWorkspace;
-import com.laker.postman.performance.plan.PerformanceRemoteWorkerSettings;
-import com.laker.postman.panel.performance.tree.PerformanceSwingTreePlanAdapter;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.tree.DefaultMutableTreeNode;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -56,103 +52,6 @@ public class PerformancePersistenceService {
         }
     }
 
-    /**
-     * 保存性能测试配置树结构
-     * UI 树会先转换为纯计划文档，持久化层不直接依赖 Swing 节点。
-     */
-    public void save(DefaultMutableTreeNode rootNode) {
-        save(rootNode, true, true, false);
-    }
-
-    /**
-     * 保存性能测试配置树结构
-     *
-     * @param rootNode      树根节点
-     * @param efficientMode 是否开启精简明细
-     */
-    public void save(DefaultMutableTreeNode rootNode, boolean efficientMode) {
-        save(rootNode, efficientMode, true, false);
-    }
-
-    /**
-     * 保存性能测试配置树结构
-     *
-     * @param rootNode      树根节点
-     * @param efficientMode 是否开启精简明细
-     * @param trendEnabled  是否开启趋势采样
-     */
-    public void save(DefaultMutableTreeNode rootNode,
-                     boolean efficientMode,
-                     boolean trendEnabled) {
-        save(rootNode, efficientMode, trendEnabled, false);
-    }
-
-    public void save(DefaultMutableTreeNode rootNode,
-                     boolean efficientMode,
-                     boolean trendEnabled,
-                     boolean reportRealtimeEnabled) {
-        save(rootNode, efficientMode, trendEnabled, reportRealtimeEnabled, PerformanceRemoteWorkerSettings.disabled());
-    }
-
-    public void save(DefaultMutableTreeNode rootNode,
-                     boolean efficientMode,
-                     boolean trendEnabled,
-                     boolean reportRealtimeEnabled,
-                     PerformanceRemoteWorkerSettings remoteWorkerSettings) {
-        saveDocument(
-                PerformanceSwingTreePlanAdapter.toDocument(rootNode),
-                efficientMode,
-                trendEnabled,
-                reportRealtimeEnabled,
-                remoteWorkerSettings
-        );
-    }
-
-    private void saveDocument(PerformancePlanDocument document,
-                              boolean efficientMode,
-                              boolean trendEnabled,
-                              boolean reportRealtimeEnabled) {
-        saveDocument(document, efficientMode, trendEnabled, reportRealtimeEnabled, PerformanceRemoteWorkerSettings.disabled());
-    }
-
-    private void saveDocument(PerformancePlanDocument document,
-                              boolean efficientMode,
-                              boolean trendEnabled,
-                              boolean reportRealtimeEnabled,
-                              PerformanceRemoteWorkerSettings remoteWorkerSettings) {
-        saveConfiguration(PerformancePlanConfiguration.builder()
-                .planDocument(document)
-                .efficientMode(efficientMode)
-                .trendEnabled(trendEnabled)
-                .reportRealtimeEnabled(reportRealtimeEnabled)
-                .remoteWorkerSettings(remoteWorkerSettings)
-                .build());
-    }
-
-    private void saveDocument(Path configPath,
-                              PerformancePlanDocument document,
-                              boolean efficientMode,
-                              boolean trendEnabled,
-                              boolean reportRealtimeEnabled) {
-        saveDocument(configPath, document, efficientMode, trendEnabled, reportRealtimeEnabled,
-                PerformanceRemoteWorkerSettings.disabled());
-    }
-
-    private void saveDocument(Path configPath,
-                              PerformancePlanDocument document,
-                              boolean efficientMode,
-                              boolean trendEnabled,
-                              boolean reportRealtimeEnabled,
-                              PerformanceRemoteWorkerSettings remoteWorkerSettings) {
-        saveConfiguration(configPath, PerformancePlanConfiguration.builder()
-                .planDocument(document)
-                .efficientMode(efficientMode)
-                .trendEnabled(trendEnabled)
-                .reportRealtimeEnabled(reportRealtimeEnabled)
-                .remoteWorkerSettings(remoteWorkerSettings)
-                .build());
-    }
-
     public void saveConfiguration(PerformancePlanConfiguration configuration) {
         saveConfiguration(getConfigFilePath(), configuration);
     }
@@ -168,71 +67,6 @@ public class PerformancePersistenceService {
     public void saveWorkspaceAsync(PerformancePlanWorkspace workspace) {
         Path configPath = getConfigFilePath();
         saveExecutor.execute(() -> planStorage.saveWorkspace(configPath, workspace));
-    }
-
-    /**
-     * 异步保存配置
-     */
-    public void saveAsync(DefaultMutableTreeNode rootNode) {
-        saveAsync(rootNode, true, true, false);
-    }
-
-    /**
-     * 异步保存配置
-     *
-     * @param rootNode      树根节点
-     * @param efficientMode 是否开启精简明细
-     */
-    public void saveAsync(DefaultMutableTreeNode rootNode, boolean efficientMode) {
-        saveAsync(rootNode, efficientMode, true, false);
-    }
-
-    /**
-     * 异步保存配置
-     *
-     * @param rootNode      树根节点
-     * @param efficientMode 是否开启精简明细
-     * @param trendEnabled  是否开启趋势采样
-     */
-    public void saveAsync(DefaultMutableTreeNode rootNode,
-                          boolean efficientMode,
-                          boolean trendEnabled) {
-        saveAsync(rootNode, efficientMode, trendEnabled, false);
-    }
-
-    public void saveAsync(DefaultMutableTreeNode rootNode,
-                          boolean efficientMode,
-                          boolean trendEnabled,
-                          boolean reportRealtimeEnabled) {
-        saveAsync(rootNode, efficientMode, trendEnabled, reportRealtimeEnabled, PerformanceRemoteWorkerSettings.disabled());
-    }
-
-    public void saveAsync(DefaultMutableTreeNode rootNode,
-                          boolean efficientMode,
-                          boolean trendEnabled,
-                          boolean reportRealtimeEnabled,
-                          PerformanceRemoteWorkerSettings remoteWorkerSettings) {
-        // 异步线程启动前先固定路径，防止用户切换 workspace 后把旧性能方案写到新 workspace。
-        Path configPath = getConfigFilePath();
-        PerformancePlanDocument document = PerformanceSwingTreePlanAdapter.toDocument(rootNode);
-        saveExecutor.execute(() -> saveDocument(
-                configPath,
-                document,
-                efficientMode,
-                trendEnabled,
-                reportRealtimeEnabled,
-                remoteWorkerSettings
-        ));
-    }
-
-    /**
-     * 加载性能测试配置
-     * UI 层需要树节点时由纯计划文档适配生成。
-     */
-    public DefaultMutableTreeNode load(String rootName) {
-        PerformancePlanConfiguration configuration = loadConfiguration();
-        PerformancePlanDocument document = configuration == null ? null : configuration.getPlanDocument();
-        return PerformanceSwingTreePlanAdapter.toTree(document, rootName);
     }
 
     public PerformancePlanConfiguration loadConfiguration() {

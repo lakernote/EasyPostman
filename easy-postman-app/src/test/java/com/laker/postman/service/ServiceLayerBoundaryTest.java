@@ -20,8 +20,12 @@ public class ServiceLayerBoundaryTest {
                         sourceFile + " must use domain auth constants, not Swing panel constants");
                 assertFalse(source.contains("panel.collections.editor.request.sub.RequestBodyPanel"),
                         sourceFile + " must use domain body constants, not Swing panel constants");
-                assertFalse(source.contains("panel.functional.table.RunnerRowData"),
-                        sourceFile + " must use functional runner model data, not Swing table package data");
+                if (sourceFile.endsWith("FunctionalPersistenceService.java")) {
+                    assertFalse(source.contains("RunnerRowData"),
+                            sourceFile + " must persist neutral functional config rows, not UI/runtime runner rows");
+                    assertFalse(source.contains("PreparedRequest"),
+                            sourceFile + " must not build execution requests while loading persisted config");
+                }
             }
         }
     }
@@ -42,10 +46,10 @@ public class ServiceLayerBoundaryTest {
     @Test
     public void httpExecutionLayerShouldNotWriteNetworkLogsThroughRequestEditorUi() throws IOException {
         for (String relativePath : new String[]{
-                "src/main/java/com/laker/postman/http/runtime/redirect/HttpRedirectExecutor.java",
-                "src/main/java/com/laker/postman/http/runtime/okhttp/OkHttpExchangeEventListener.java"
+                "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/redirect/HttpRedirectExecutor.java",
+                "easy-postman-http-runtime/src/main/java/com/laker/postman/http/runtime/okhttp/OkHttpExchangeEventListener.java"
         }) {
-            Path sourceFile = moduleDir().resolve(relativePath);
+            Path sourceFile = projectRootDir().resolve(relativePath);
             String source = Files.readString(sourceFile);
             assertFalse(source.contains("com.laker.postman.common.UiSingletonFactory"),
                     sourceFile + " must publish network log events instead of looking up UI singletons");
@@ -58,11 +62,31 @@ public class ServiceLayerBoundaryTest {
         }
     }
 
+    @Test
+    public void scriptExecutionPipelineShouldNotWriteThroughSwingConsole() throws IOException {
+        Path sourceFile = moduleDir().resolve("src/main/java/com/laker/postman/service/js/ScriptExecutionPipeline.java");
+        String source = Files.readString(sourceFile);
+        assertFalse(source.contains("com.laker.postman.panel.sidebar.ConsolePanel"),
+                sourceFile + " must receive script output through an injected callback");
+        assertFalse(source.contains("ConsolePanel.appendLog"),
+                sourceFile + " must not write directly to the Swing console");
+        assertFalse(source.contains("ConsolePanel.LogType"),
+                sourceFile + " must not map service output to Swing console types");
+    }
+
     private Path moduleDir() {
         Path moduleDir = Path.of(System.getProperty("user.dir"));
         if (!Files.exists(moduleDir.resolve("src/main/java"))) {
             moduleDir = moduleDir.resolve("easy-postman-app");
         }
         return moduleDir;
+    }
+
+    private Path projectRootDir() {
+        Path currentDir = Path.of(System.getProperty("user.dir"));
+        if (Files.exists(currentDir.resolve("easy-postman-app"))) {
+            return currentDir;
+        }
+        return currentDir.getParent();
     }
 }

@@ -109,7 +109,7 @@ public class ModernTabButton extends JButton {
     }
 
     /**
-     * 判断是否被选中（兼容JToggleButton接口）
+     * 判断是否被选中（匹配 JToggleButton 接口）
      */
     @Override
     public boolean isSelected() {

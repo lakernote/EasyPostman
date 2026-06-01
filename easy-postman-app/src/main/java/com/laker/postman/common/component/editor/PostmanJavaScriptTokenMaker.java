@@ -41,17 +41,9 @@ public class PostmanJavaScriptTokenMaker extends JavaScriptTokenMaker {
         postmanWordsToHighlight.put("test", TokenTypes.FUNCTION);
         postmanWordsToHighlight.put("expect", TokenTypes.FUNCTION);
         postmanWordsToHighlight.put("uuid", TokenTypes.FUNCTION);
-        postmanWordsToHighlight.put("generateUUID", TokenTypes.FUNCTION);
         postmanWordsToHighlight.put("getTimestamp", TokenTypes.FUNCTION);
-        postmanWordsToHighlight.put("setVariable", TokenTypes.FUNCTION);
-        postmanWordsToHighlight.put("getVariable", TokenTypes.FUNCTION);
-        postmanWordsToHighlight.put("setGlobalVariable", TokenTypes.FUNCTION);
-        postmanWordsToHighlight.put("getGlobalVariable", TokenTypes.FUNCTION);
-        postmanWordsToHighlight.put("setEnvironmentVariable", TokenTypes.FUNCTION);
-        postmanWordsToHighlight.put("getEnvironmentVariable", TokenTypes.FUNCTION);
         postmanWordsToHighlight.put("getResponseCookie", TokenTypes.FUNCTION);
         postmanWordsToHighlight.put("sendRequest", TokenTypes.FUNCTION);
-        postmanWordsToHighlight.put("setNextRequest", TokenTypes.FUNCTION);
 
         // ===== Chai 断言链式关键字 - 使用 RESERVED_WORD_2（与关键字同级）=====
         postmanWordsToHighlight.put("to", TokenTypes.RESERVED_WORD_2);

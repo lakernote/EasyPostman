@@ -1,6 +1,6 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
-import com.laker.postman.model.HttpEventInfo;
+import com.laker.postman.http.runtime.model.HttpEventInfo;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -177,7 +177,7 @@ public class TimelinePanel extends JPanel {
         // 动态渲染字段并在remote address/cipher name下方画线
         String protocol = null, localAddr = null, remoteAddr = null, tls = null, cipher = null, certCN = null, issuerCN = null, validUntil = null;
         if (httpEventInfo != null) {
-            protocol = httpEventInfo.getProtocol() != null ? httpEventInfo.getProtocol().toString() : null;
+            protocol = httpEventInfo.getProtocol();
             localAddr = httpEventInfo.getLocalAddress();
             remoteAddr = httpEventInfo.getRemoteAddress();
             tls = httpEventInfo.getTlsVersion();

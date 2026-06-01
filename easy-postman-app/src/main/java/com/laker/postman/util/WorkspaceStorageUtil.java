@@ -107,19 +107,10 @@ public class WorkspaceStorageUtil {
                         workspaces = JSONUtil.parseArray(json).toList(Workspace.class);
                     }
                 }
-                // 保证默认工作区始终存在
+                // 运行时视图保证默认工作区可用；持久化只在 saveWorkspaces 中发生。
                 boolean hasDefault = workspaces.stream().anyMatch(WorkspaceStorageUtil::isDefaultWorkspace);
                 if (!hasDefault) {
                     workspaces.add(0, getDefaultWorkspace());
-                    // 默认工作区缺失时立即回写文件，避免下次启动重复触发迁移逻辑
-                    try {
-                        File saveFile = new File(WORKSPACES_PATH);
-                        FileUtil.mkParentDirs(saveFile);
-                        FileUtil.writeString(JSONUtil.toJsonPrettyStr(workspaces), saveFile, StandardCharsets.UTF_8);
-                        log.info("Default workspace was missing from workspaces.json, auto-saved it back.");
-                    } catch (Exception saveEx) {
-                        log.warn("Failed to auto-save default workspace back to workspaces.json", saveEx);
-                    }
                 }
                 log.debug("Loaded {} workspaces from {}", workspaces.size(), WORKSPACES_PATH);
                 return workspaces;

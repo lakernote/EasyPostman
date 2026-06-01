@@ -1,6 +1,6 @@
 package com.laker.postman.panel.collections.editor.request;
 
-import com.laker.postman.model.HttpResponse;
+import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.panel.collections.editor.request.sub.RequestBodyPanel;
 import com.laker.postman.panel.collections.editor.request.sub.RequestLinePanel;
 import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;

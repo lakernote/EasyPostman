@@ -1,5 +1,6 @@
 package com.laker.postman.service.collections;
 
+import com.laker.postman.collection.CollectionInheritance;
 import com.laker.postman.collection.model.RequestGroup;
 import com.laker.postman.model.Variable;
 import com.laker.postman.request.model.AuthType;
@@ -72,37 +73,7 @@ public class GroupInheritanceHelper {
             return item; // 无父分组，直接返回原对象
         }
 
-        // 创建副本，避免修改原对象
-        HttpRequestItem mergedItem = cloneRequest(item);
-
-        // 保存请求自己的脚本
-        String requestPreScript = mergedItem.getPrescript();
-        String requestPostScript = mergedItem.getPostscript();
-
-        // 收集分组脚本和请求头
-        List<ScriptFragment> groupPreScripts = new ArrayList<>();
-        List<ScriptFragment> groupPostScripts = new ArrayList<>();
-        List<HttpHeader> groupHeaders = new ArrayList<>();
-        List<Variable> groupVariables = new ArrayList<>();
-
-        // 应用继承逻辑
-        applyAuthInheritance(mergedItem, groupChain);
-        collectScriptsHeadersAndVariables(groupChain, groupPreScripts, groupPostScripts, groupHeaders, groupVariables);
-
-        // 合并前置脚本（外层到内层的顺序）
-        String mergedPreScript = ScriptMerger.mergePreScripts(groupPreScripts, requestPreScript);
-        mergedItem.setPrescript(mergedPreScript);
-
-        // 合并后置脚本（内层到外层的顺序）
-        // 注意：groupPostScripts已经按从内到外的顺序收集
-        String mergedPostScript = ScriptMerger.mergePostScripts(requestPostScript, groupPostScripts);
-        mergedItem.setPostscript(mergedPostScript);
-
-        // 合并请求头（外层到内层累积，内层覆盖外层）
-        List<HttpHeader> mergedHeaders = mergeHeaders(groupHeaders, mergedItem.getHeadersList());
-        mergedItem.setHeadersList(mergedHeaders);
-
-        return mergedItem;
+        return CollectionInheritance.apply(item, groupChain);
     }
 
     /**
@@ -120,25 +91,8 @@ public class GroupInheritanceHelper {
             return item;
         }
 
-        HttpRequestItem mergedItem = cloneRequest(item);
-
-        String requestPreScript = mergedItem.getPrescript();
-        String requestPostScript = mergedItem.getPostscript();
-
-        List<ScriptFragment> groupPreScripts = new ArrayList<>();
-        List<ScriptFragment> groupPostScripts = new ArrayList<>();
-        List<HttpHeader> groupHeaders = new ArrayList<>();
-        List<Variable> groupVariables = new ArrayList<>();
-
-        applyAuthInheritance(mergedItem, groupChain);
-        collectScriptsHeadersAndVariables(groupChain, groupPreScripts, groupPostScripts, groupHeaders, groupVariables);
-
-        mergedItem.setPrescript(ScriptMerger.mergePreScripts(groupPreScripts, requestPreScript));
-        mergedItem.setPostscript(ScriptMerger.mergePostScripts(requestPostScript, groupPostScripts));
-        mergedItem.setHeadersList(mergeHeaders(groupHeaders, mergedItem.getHeadersList()));
-
         log.debug("为请求 [{}] 应用分组继承（缓存 group 链）", item.getName());
-        return mergedItem;
+        return CollectionInheritance.apply(item, groupChain);
     }
 
     /**
@@ -400,7 +354,7 @@ public class GroupInheritanceHelper {
             return new ArrayList<>();
         }
 
-        return mergeVariables(groupChain);
+        return CollectionInheritance.mergeGroupVariables(groupChain);
     }
 
     private static List<Variable> mergeVariables(List<RequestGroup> groups) {

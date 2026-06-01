@@ -1,13 +1,13 @@
 package com.laker.postman.service.curl;
 
-import com.laker.postman.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.request.model.AuthType;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpParam;
 import com.laker.postman.request.model.HttpFormData;
 import com.laker.postman.request.model.HttpFormUrlencoded;
 import com.laker.postman.request.model.TransportAuth;
-import com.laker.postman.http.request.HttpUrlUtil;
+import com.laker.postman.request.util.HttpUrlUtil;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -247,7 +247,7 @@ public class CurlParser {
                     // 合并所有 dataParams（用 & 连接），然后按 & 分割成多个键值对
                     String combinedData = String.join("&", dataParams);
                     
-                    // 检查是否包含 =，如果不包含，则作为原始 body（兼容非 key=value 格式）
+                    // 检查是否包含 =，如果不包含，则作为原始 body（支持非 key=value 格式）
                     if (combinedData.contains("=")) {
                         if (req.urlencodedList == null) {
                             req.urlencodedList = new ArrayList<>();
@@ -279,7 +279,7 @@ public class CurlParser {
                             req.body = combinedData;
                         }
                     } else {
-                        // 不包含 =，作为原始 body（兼容 testDataParamWithoutEquals 等测试）
+                        // 不包含 =，作为原始 body（覆盖 testDataParamWithoutEquals 等测试）
                         req.body = combinedData;
                     }
                 }

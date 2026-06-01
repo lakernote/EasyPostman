@@ -139,6 +139,54 @@ public class ScriptExecutionPipelineTest {
     }
 
     @Test
+    public void shouldSupportLegacyPostmanVariableAndResponseAliasesInPostScript() {
+        PreparedRequest request = new PreparedRequest();
+        ScriptExecutionPipeline pipeline = ScriptExecutionPipeline.builder()
+                .request(request)
+                .preScript("")
+                .postScript("""
+                        var response = JSON.parse(pm.response.text())
+                        pm.setEnvironmentVariable("smal2BearerToken", response.BearerToken)
+                        pm.test('Status code is 200', function () {
+                            pm.response.to.have.status(200);
+                        });
+
+                        var legacyResponse = JSON.parse(responseBody)
+                        pm.setEnvironmentVariable("legacyBearerToken", legacyResponse.BearerToken)
+
+                        var response = JSON.parse(pm.response.text())
+                        postman.setEnvironmentVariable("access_token", response.access_token)
+
+                        var accountExpiration = response.accountExpiration;
+
+                        pm.test('password expiration', function () {
+                            var jsonData = pm.response.json();
+                            pm.expect(accountExpiration).to.be.above(30)
+                        });
+
+                        console.log('expires in ' + accountExpiration + ' days')
+                        pm.setEnvironmentVariable("legacyStatusCode", String(statusCode))
+                        """)
+                .build();
+        HttpResponse response = new HttpResponse();
+        response.code = 200;
+        response.headers = new java.util.LinkedHashMap<>();
+        response.body = """
+                {"BearerToken":"bearer-token-value","access_token":"access-token-value","accountExpiration":31}
+                """;
+
+        ScriptExecutionResult postResult = pipeline.executePostScript(response);
+
+        assertTrue(postResult.isSuccess(), postResult.getErrorMessage());
+        assertEquals(postResult.getTestResults().size(), 2);
+        assertTrue(postResult.getTestResults().stream().allMatch(result -> result.passed));
+        assertEquals(EnvironmentService.getActiveEnvironment().get("smal2BearerToken"), "bearer-token-value");
+        assertEquals(EnvironmentService.getActiveEnvironment().get("legacyBearerToken"), "bearer-token-value");
+        assertEquals(EnvironmentService.getActiveEnvironment().get("access_token"), "access-token-value");
+        assertEquals(EnvironmentService.getActiveEnvironment().get("legacyStatusCode"), "200");
+    }
+
+    @Test
     public void shouldSyncPmVariablesToVariableResolverAfterPreScript() {
         PreparedRequest request = new PreparedRequest();
         request.id = "script-pipeline-test-request";

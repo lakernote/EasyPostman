@@ -13,6 +13,8 @@ import com.laker.postman.performance.core.runtime.PerformanceThreadFactory;
 import com.laker.postman.performance.core.worker.PerformanceWorkerErrorResponse;
 import com.laker.postman.performance.core.worker.PerformanceWorkerApiPaths;
 import com.laker.postman.performance.core.worker.PerformanceWorkerAssignment;
+import com.laker.postman.performance.core.worker.PerformanceWorkerHealthResponse;
+import com.laker.postman.performance.core.worker.PerformanceWorkerProtocol;
 import com.laker.postman.performance.core.worker.PerformanceWorkerProtocolJsonStorage;
 import com.laker.postman.performance.core.worker.PerformanceWorkerRunAcceptedResponse;
 import com.laker.postman.performance.core.worker.PerformanceWorkerRunDetailsResponse;
@@ -40,6 +42,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class PerformanceWorkerServer implements AutoCloseable {
+    private static final long STOPPED_RESULT_DRAIN_TIMEOUT_MS = 5_000L;
+    private static final long STOPPED_RESULT_DRAIN_POLL_MS = 25L;
+
     private final PerformanceWorkerOptions options;
     private final PerformanceWorkerRunExecutor runExecutor;
     private final PerformanceWorkerServerListener listener;
@@ -137,9 +142,13 @@ public class PerformanceWorkerServer implements AutoCloseable {
             write(exchange, 405, error("Method not allowed"));
             return;
         }
-        write(exchange, 200, """
-                {"status":"UP","workerId":"%s","host":"%s","port":%d}
-                """.formatted(workerId(), options.getHost(), getPort()));
+        write(exchange, 200, jsonStorage.toJson(PerformanceWorkerHealthResponse.builder()
+                .status("UP")
+                .workerId(workerId())
+                .host(options.getHost())
+                .port(getPort())
+                .workerProtocolVersion(PerformanceWorkerProtocol.CURRENT_VERSION)
+                .build()));
     }
 
     private void handleRuns(HttpExchange exchange) throws IOException {
@@ -268,10 +277,11 @@ public class PerformanceWorkerServer implements AutoCloseable {
         notifyStarted(runId, state.workerId);
         try {
             PerformanceJsonReport report = runExecutor.execute(request, state.control);
-            state.report = report;
+            waitForStoppedResultDrain(state);
+            state.report = refreshStoppedReportFromControl(runId, state, report);
             String reportStatus = report == null || report.getMetadata() == null
                     ? PerformanceRunStatus.SUCCESS
-                    : report.getMetadata().getStatus();
+                    : state.report.getMetadata().getStatus();
             state.status = state.stopRequested ? PerformanceRunStatus.STOPPED : reportStatus;
         } catch (Exception ex) {
             state.status = PerformanceRunStatus.FAILED;
@@ -289,7 +299,7 @@ public class PerformanceWorkerServer implements AutoCloseable {
             write(exchange, 404, error("Run not found: " + runId));
             return;
         }
-        write(exchange, 200, jsonStorage.toJson(statusResponse(runId, state, includeReport(exchange))));
+        write(exchange, 200, jsonStorage.toJson(statusResponse(runId, state, includeReport(exchange), includeTrend(exchange))));
     }
 
     private void handleRunResult(HttpExchange exchange, String runId) throws IOException {
@@ -303,7 +313,7 @@ public class PerformanceWorkerServer implements AutoCloseable {
                 .runId(runId)
                 .workerId(state.workerId)
                 .status(state.status)
-                .report(state.report)
+                .report(currentReport(runId, state))
                 .error(state.error)
                 .build()));
     }
@@ -401,9 +411,18 @@ public class PerformanceWorkerServer implements AutoCloseable {
         }
     }
 
-    private PerformanceWorkerRunStatusResponse statusResponse(String runId, WorkerRunState state, boolean includeReport) {
+    private PerformanceWorkerRunStatusResponse statusResponse(String runId,
+                                                              WorkerRunState state,
+                                                              boolean includeReport) {
+        return statusResponse(runId, state, includeReport, false);
+    }
+
+    private PerformanceWorkerRunStatusResponse statusResponse(String runId,
+                                                              WorkerRunState state,
+                                                              boolean includeReport,
+                                                              boolean includeTrend) {
         if (!includeReport) {
-            return lightweightStatusResponse(runId, state);
+            return lightweightStatusResponse(runId, state, includeTrend);
         }
         PerformanceJsonReport report = currentReport(runId, state);
         PerformanceJsonReportSummary summary = report == null ? null : report.getSummary();
@@ -420,11 +439,14 @@ public class PerformanceWorkerServer implements AutoCloseable {
                 .failedRequests(summary == null ? 0L : summary.getFailedRequests())
                 .qps(qps(report))
                 .report(report)
+                .trendSnapshot(includeTrend ? state.control.trendSnapshot(System.currentTimeMillis()) : null)
                 .error(state.error)
                 .build();
     }
 
-    private PerformanceWorkerRunStatusResponse lightweightStatusResponse(String runId, WorkerRunState state) {
+    private PerformanceWorkerRunStatusResponse lightweightStatusResponse(String runId,
+                                                                         WorkerRunState state,
+                                                                         boolean includeTrend) {
         PerformanceJsonReportSummary summary = state.report == null ? null : state.report.getSummary();
         if (summary != null) {
             return PerformanceWorkerRunStatusResponse.builder()
@@ -439,6 +461,7 @@ public class PerformanceWorkerServer implements AutoCloseable {
                     .successRequests(summary.getSuccessRequests())
                     .failedRequests(summary.getFailedRequests())
                     .qps(qps(state.report))
+                    .trendSnapshot(includeTrend ? state.control.trendSnapshot(System.currentTimeMillis()) : null)
                     .error(state.error)
                     .build();
         }
@@ -455,6 +478,7 @@ public class PerformanceWorkerServer implements AutoCloseable {
                 .successRequests(progress.successRequests())
                 .failedRequests(progress.failedRequests())
                 .qps(progress.qps())
+                .trendSnapshot(includeTrend ? state.control.trendSnapshot(System.currentTimeMillis()) : null)
                 .error(state.error)
                 .build();
     }
@@ -476,9 +500,34 @@ public class PerformanceWorkerServer implements AutoCloseable {
         return true;
     }
 
+    private boolean includeTrend(HttpExchange exchange) {
+        return queryFlag(exchange, "trend", false);
+    }
+
+    private boolean queryFlag(HttpExchange exchange, String name, boolean defaultValue) {
+        String rawQuery = exchange.getRequestURI().getRawQuery();
+        if (rawQuery == null || rawQuery.isBlank()) {
+            return defaultValue;
+        }
+        for (String part : rawQuery.split("&")) {
+            int separator = part.indexOf('=');
+            String rawName = separator < 0 ? part : part.substring(0, separator);
+            if (!name.equals(URLDecoder.decode(rawName, StandardCharsets.UTF_8))) {
+                continue;
+            }
+            String rawValue = separator < 0 ? "true" : part.substring(separator + 1);
+            return Boolean.parseBoolean(URLDecoder.decode(rawValue, StandardCharsets.UTF_8));
+        }
+        return defaultValue;
+    }
+
     private PerformanceJsonReport currentReport(String runId, WorkerRunState state) {
-        if (state.report != null) {
-            return state.report;
+        PerformanceJsonReport completedReport = refreshStoppedReportFromControl(runId, state, state.report);
+        if (completedReport != null) {
+            if (completedReport != state.report) {
+                state.report = completedReport;
+            }
+            return completedReport;
         }
         PerformanceStatsSnapshot snapshot = state.control.statsSnapshot();
         long now = System.currentTimeMillis();
@@ -499,6 +548,66 @@ public class PerformanceWorkerServer implements AutoCloseable {
                         .build(),
                 PerformanceReportSnapshot.of(snapshot, liveSnapshot)
         );
+    }
+
+    private void waitForStoppedResultDrain(WorkerRunState state) {
+        if (state == null || !state.stopRequested) {
+            return;
+        }
+        long deadline = System.currentTimeMillis() + STOPPED_RESULT_DRAIN_TIMEOUT_MS;
+        while (hasActiveExecutionResources(state.control) && System.currentTimeMillis() < deadline) {
+            try {
+                TimeUnit.MILLISECONDS.sleep(STOPPED_RESULT_DRAIN_POLL_MS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
+    }
+
+    private boolean hasActiveExecutionResources(PerformanceRunExecutionControl control) {
+        if (control == null) {
+            return false;
+        }
+        // stop 后 WebSocket/SSE 可能还在 finally 中生成中断样本；这里等控制面归零再冻结最终 report。
+        return control.getActiveUsers() > 0
+                || control.getActiveWebSocketConnections() > 0
+                || control.getActiveSseStreams() > 0;
+    }
+
+    private PerformanceJsonReport refreshStoppedReportFromControl(String runId,
+                                                                  WorkerRunState state,
+                                                                  PerformanceJsonReport report) {
+        if (state == null || !state.stopRequested) {
+            return report;
+        }
+        PerformanceStatsSnapshot snapshot = state.control.statsSnapshot();
+        if (snapshot == null || snapshot.totalRequests() <= reportTotalRequests(report)) {
+            return report;
+        }
+        long now = System.currentTimeMillis();
+        PerformanceJsonReportMetadata baseMetadata = report == null ? null : report.getMetadata();
+        return PerformanceJsonReportMapper.fromStatsSnapshot(
+                PerformanceJsonReportMetadata.builder()
+                        .runId(runId)
+                        .source(state.workerId)
+                        .status(PerformanceRunStatus.STOPPED)
+                        .planPath(baseMetadata == null ? "worker:" + runId : baseMetadata.getPlanPath())
+                        .startTimeMs(baseMetadata == null ? state.startedAtMs : baseMetadata.getStartTimeMs())
+                        .endTimeMs(Math.max(now, baseMetadata == null ? 0L : baseMetadata.getEndTimeMs()))
+                        .elapsedTimeMs(Math.max(0L, now - state.startedAtMs))
+                        .stopped(true)
+                        .error(baseMetadata == null ? state.error : baseMetadata.getError())
+                        .build(),
+                snapshot
+        );
+    }
+
+    private long reportTotalRequests(PerformanceJsonReport report) {
+        if (report == null || report.getSummary() == null) {
+            return 0L;
+        }
+        return report.getSummary().getTotalRequests();
     }
 
     private boolean hasLiveStreamData(PerformanceRealtimeMetrics.LiveSnapshot snapshot) {

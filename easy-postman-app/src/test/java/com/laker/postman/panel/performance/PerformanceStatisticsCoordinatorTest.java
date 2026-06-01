@@ -3,8 +3,10 @@ package com.laker.postman.panel.performance;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.panel.performance.control.PerformanceStatisticsCoordinator;
 import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
+import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.performance.core.model.PerformanceStatsCollector;
 import com.laker.postman.performance.core.model.PerformanceTrendWindowCollector;
+import com.laker.postman.performance.core.model.RequestResult;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceTrendPanel;
 import com.laker.postman.test.AbstractSwingUiTest;
@@ -155,6 +157,54 @@ public class PerformanceStatisticsCoordinatorTest extends AbstractSwingUiTest {
     }
 
     @Test
+    public void finalReportShouldIgnoreLiveStreamRows() throws Exception {
+        PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
+        RequestResult completed = new RequestResult(1_000, 1_500, true,
+                "ws-api", "WS API", PerformanceProtocol.WEBSOCKET);
+        completed.sentMessages = 1;
+        completed.receivedMessages = 1;
+        completed.matchedMessages = 1;
+        statsCollector.record(completed);
+
+        PerformanceRealtimeMetrics metrics = new PerformanceRealtimeMetrics();
+        Object liveSession = new Object();
+        metrics.reset(0);
+        metrics.recordWebSocketSessionStart(liveSession, 2_000, "ws-api", "WS API");
+        metrics.recordWebSocketSent(liveSession);
+        metrics.recordWebSocketSent(liveSession);
+        metrics.recordWebSocketReceived(liveSession);
+
+        PerformanceReportPanel reportPanel = new PerformanceReportPanel();
+        PerformanceStatisticsCoordinator coordinator = new PerformanceStatisticsCoordinator(
+                statsCollector,
+                new PerformanceTrendWindowCollector(),
+                reportPanel,
+                null,
+                new JTabbedPane(),
+                () -> 0,
+                () -> 1,
+                () -> 0,
+                () -> 1000L,
+                () -> true,
+                now -> PerformanceRealtimeMetrics.Sample.empty(),
+                metrics::liveSnapshot
+        );
+
+        try {
+            SwingUtilities.invokeAndWait(coordinator::updateFinalReportWithStatsSync);
+
+            DefaultTableModel webSocketModel = getWebSocketReportTableModel(reportPanel);
+            assertEquals(webSocketModel.getRowCount(), 2);
+            assertEquals(webSocketModel.getValueAt(0, 0), "WS API");
+            assertEquals(webSocketModel.getValueAt(0, 1), 1L);
+            assertEquals(webSocketModel.getValueAt(0, 5), 1L);
+            assertEquals(webSocketModel.getValueAt(0, 6), 1L);
+        } finally {
+            coordinator.dispose();
+        }
+    }
+
+    @Test
     public void sampleTrendShouldUseWindowPeakWebSocketSessionsWhenSocketsCloseBeforeSampling() throws Exception {
         PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
         PerformanceRealtimeMetrics metrics = new PerformanceRealtimeMetrics();
@@ -181,7 +231,7 @@ public class PerformanceStatisticsCoordinatorTest extends AbstractSwingUiTest {
                 () -> 0,
                 () -> 1000L,
                 () -> true,
-                metrics::sample,
+                metrics::drainWindow,
                 metrics::liveSnapshot
         );
 

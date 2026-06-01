@@ -3,8 +3,7 @@ package com.laker.postman.util;
 import lombok.experimental.UtilityClass;
 
 /**
- * 异常处理工具类
- * 提供异常检查、分析、过滤等工具方法
+ * 全局未捕获异常过滤器的判断逻辑。
  */
 @UtilityClass
 public class ExceptionUtil {
@@ -23,15 +22,7 @@ public class ExceptionUtil {
             return false;
         }
 
-        // 1. 检查SSH executor shutdown错误（JGit + Apache SSHD）
-        if (isSshExecutorShutdownError(throwable)) {
-            return true;
-        }
-
-        // 2. 可以在这里添加更多需要忽略的异常类型
-        // 例如：InterruptedException in background threads, etc.
-
-        return false;
+        return isSshExecutorShutdownError(throwable);
     }
 
     /**
@@ -63,49 +54,6 @@ public class ExceptionUtil {
                 "AsynchronousSocketChannel");
     }
 
-    /**
-     * 获取异常的根本原因
-     *
-     * @param throwable 异常对象
-     * @return 根本原因异常，如果没有cause则返回原异常本身
-     */
-    public static Throwable getRootCause(Throwable throwable) {
-        if (throwable == null) {
-            return null;
-        }
-
-        Throwable cause = throwable;
-        while (cause.getCause() != null && cause.getCause() != cause) {
-            cause = cause.getCause();
-        }
-        return cause;
-    }
-
-    /**
-     * 检查异常链中是否包含特定类型的异常
-     *
-     * @param throwable     要检查的异常
-     * @param exceptionType 目标异常类型
-     * @return 如果异常链中包含指定类型的异常返回true
-     */
-    public static boolean containsException(Throwable throwable, Class<? extends Throwable> exceptionType) {
-        if (throwable == null || exceptionType == null) {
-            return false;
-        }
-
-        Throwable current = throwable;
-        while (current != null) {
-            if (exceptionType.isInstance(current)) {
-                return true;
-            }
-            current = current.getCause();
-            // 防止循环引用
-            if (current == throwable) {
-                break;
-            }
-        }
-        return false;
-    }
 
     /**
      * 检查异常的调用栈中是否包含指定的类名片段

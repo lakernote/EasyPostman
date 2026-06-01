@@ -131,6 +131,53 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
     }
 
     @Test
+    public void shouldUseTerminalIdleSnapshotOnlyForActiveSeries() throws Exception {
+        PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
+        panel.clearTrendDataset();
+        TimeSeries activeUsers = getTimeSeries(panel, "httpVirtualUsersSeries");
+        TimeSeries qps = getTimeSeries(panel, "httpRpsSeries");
+        TimeSeries errorRate = getTimeSeries(panel, "httpErrorRateSeries");
+        TimeSeries wsSentRate = getTimeSeries(panel, "wsSentRateSeries");
+        long base = System.currentTimeMillis();
+
+        panel.addOrUpdate(new Millisecond(new Date(base)), snapshotWithAllProtocolMetrics());
+        panel.addOrUpdate(new Millisecond(new Date(base + 1_000)), PerformanceTrendSnapshot.terminalIdle());
+
+        assertEquals(activeUsers.getValue(0).intValue(), 5);
+        assertEquals(activeUsers.getValue(1).intValue(), 0);
+        assertEquals(qps.getValue(0).doubleValue(), 1.0);
+        assertNull(qps.getValue(1));
+        assertEquals(errorRate.getValue(0).doubleValue(), 0.0);
+        assertNull(errorRate.getValue(1));
+        assertEquals(wsSentRate.getValue(0).doubleValue(), 1.0);
+        assertNull(wsSentRate.getValue(1));
+    }
+
+    @Test
+    public void shouldSynchronizeSeparateChartDomainRangeAcrossSparseSeries() throws Exception {
+        PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
+        panel.clearTrendDataset();
+        TimeSeries activeUsers = getTimeSeries(panel, "httpVirtualUsersSeries");
+        TimeSeries qps = getTimeSeries(panel, "httpRpsSeries");
+        long base = System.currentTimeMillis();
+
+        panel.addOrUpdate(new Millisecond(new Date(base)), PerformanceTrendSnapshot.terminalIdle());
+        panel.addOrUpdate(new Millisecond(new Date(base + 10_000)), snapshotWithAllProtocolMetrics());
+
+        DateAxis activeDomainAxis = (DateAxis) findChartPanelForSeries(panel, activeUsers)
+                .getChart()
+                .getXYPlot()
+                .getDomainAxis();
+        DateAxis qpsDomainAxis = (DateAxis) findChartPanelForSeries(panel, qps)
+                .getChart()
+                .getXYPlot()
+                .getDomainAxis();
+
+        assertEquals(qpsDomainAxis.getLowerBound(), activeDomainAxis.getLowerBound(), 0.1);
+        assertEquals(qpsDomainAxis.getUpperBound(), activeDomainAxis.getUpperBound(), 0.1);
+    }
+
+    @Test
     public void shouldRenderSingleFinitePointWhenLaterTrendSamplesAreEmpty() throws Exception {
         PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
         panel.clearTrendDataset();
@@ -148,6 +195,27 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
     }
 
     @Test
+    public void shouldRenderIsolatedFinitePointInsideSparseTrendSeries() throws Exception {
+        PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
+        panel.clearTrendDataset();
+        TimeSeries series = getTimeSeries(panel, "httpAvgResponseSeries");
+        long base = System.currentTimeMillis();
+
+        panel.addOrUpdate(new Millisecond(new Date(base)), snapshotWithHttpResponse(3_200.0));
+        panel.addOrUpdate(new Millisecond(new Date(base + 1_000)), snapshotWithHttpResponse(Double.NaN));
+        panel.addOrUpdate(new Millisecond(new Date(base + 2_000)), snapshotWithHttpResponse(1_400.0));
+        panel.addOrUpdate(new Millisecond(new Date(base + 3_000)), snapshotWithHttpResponse(1_300.0));
+
+        ChartPanel chartPanel = findChartPanelForSeries(panel, series);
+        XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer) chartPanel.getChart().getXYPlot().getRenderer();
+
+        assertTrue(renderer.getItemShapeVisible(0, 0));
+        assertFalse(renderer.getItemShapeVisible(0, 1));
+        assertFalse(renderer.getItemShapeVisible(0, 2));
+        assertFalse(renderer.getItemShapeVisible(0, 3));
+    }
+
+    @Test
     public void clearTrendDatasetShouldRestoreAutoRangeForSplitCharts() throws Exception {
         PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
         panel.clearTrendDataset();
@@ -158,7 +226,7 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
         rangeAxis.setAutoRange(false);
 
         panel.clearTrendDataset();
-        panel.addOrUpdate(new Millisecond(new Date(System.currentTimeMillis())), 100, 50, 12, 0);
+        panel.addOrUpdate(new Millisecond(new Date(System.currentTimeMillis())), snapshotWithAllProtocolMetrics());
 
         assertTrue(rangeAxis.isAutoRange());
         assertTrue(rangeAxis.getUpperBound() < 20_000);

@@ -177,6 +177,8 @@ public class WebSocketScenarioExecutor {
         Object messageLock = new Object();
         class WebSocketScenarioSession {
             private final long startTimeMs = System.currentTimeMillis();
+            // 同一 WS 会话必须用稳定 key 贯穿 open/send/receive/close；OkHttp 回调对象和 runtime 连接对象不一定相同。
+            private final Object metricsKey = new Object();
             private final CountDownLatch openLatch = new CountDownLatch(1);
             private final AtomicBoolean closingSocket = new AtomicBoolean(false);
             private final AtomicBoolean remoteClosed = new AtomicBoolean(false);
@@ -210,21 +212,21 @@ public class WebSocketScenarioExecutor {
                         }
                         resp.code = response.code();
                         resp.protocol = response.protocol().toString();
-                        recordStart(session, webSocket);
+                        recordStart(session);
                         session.openLatch.countDown();
                     }
 
                     @Override
                     public void onMessage(WebSocket webSocket, String text) {
-                        appendMessage(webSocket, text);
+                        appendMessage(text);
                     }
 
                     @Override
                     public void onMessage(WebSocket webSocket, okio.ByteString bytes) {
-                        appendMessage(webSocket, toHexPreview(bytes));
+                        appendMessage(toHexPreview(bytes));
                     }
 
-                    private void appendMessage(WebSocket webSocket, String payload) {
+                    private void appendMessage(String payload) {
                         String value = payload == null ? "" : payload;
                         lastMessageRef.set(headerPreview(value));
                         if (retainResponseBody) {
@@ -237,11 +239,11 @@ public class WebSocketScenarioExecutor {
                         }
                         receivedMessageCount.incrementAndGet();
                         long receivedAtMs = System.currentTimeMillis();
-                        realtimeMetrics.recordWebSocketReceived(webSocket);
+                        realtimeMetrics.recordWebSocketReceived(session.metricsKey);
                         if (firstReceivedMessageRecorded.compareAndSet(false, true)) {
                             long latencyMs = Math.max(0, receivedAtMs - requestStartTime);
                             firstMessageLatencyMs.compareAndSet(-1, latencyMs);
-                            realtimeMetrics.recordWebSocketFirstMessageLatency(webSocket, latencyMs);
+                            realtimeMetrics.recordWebSocketFirstMessageLatency(session.metricsKey, latencyMs);
                         }
                         synchronized (messageLock) {
                             if (keepReceivedMessages) {
@@ -318,7 +320,7 @@ public class WebSocketScenarioExecutor {
                 sessions.add(session);
                 currentSession = session;
                 activeWebSockets.add(webSocket);
-                recordStart(session, webSocket.metricKey());
+                recordStart(session);
 
                 boolean opened = session.openLatch.await(Math.max(100, connectCfg.connectTimeoutMs), TimeUnit.MILLISECONDS);
                 if (!opened && !failed.get() && !interrupted.get()) {
@@ -348,9 +350,9 @@ public class WebSocketScenarioExecutor {
                 currentSession = null;
             }
 
-            private void recordStart(WebSocketScenarioSession session, Object webSocket) {
+            private void recordStart(WebSocketScenarioSession session) {
                 if (session.registered.compareAndSet(false, true)) {
-                    realtimeMetrics.recordWebSocketSessionStart(webSocket, session.startTimeMs, apiId, apiName);
+                    realtimeMetrics.recordWebSocketSessionStart(session.metricsKey, session.startTimeMs, apiId, apiName);
                 }
             }
 
@@ -375,7 +377,7 @@ public class WebSocketScenarioExecutor {
                     }
                     webSocket.cancel();
                     activeWebSockets.remove(webSocket);
-                    realtimeMetrics.recordWebSocketSessionEnd(webSocket.metricKey());
+                    realtimeMetrics.recordWebSocketSessionEnd(session.metricsKey);
                 }
                 session.ended = true;
             }
@@ -456,7 +458,7 @@ public class WebSocketScenarioExecutor {
                                 boolean sent = webSocket.send(payload == null ? "" : payload);
                                 if (sent) {
                                     sentMessageCount.incrementAndGet();
-                                    realtimeMetrics.recordWebSocketSent(webSocket.metricKey());
+                                    realtimeMetrics.recordWebSocketSent(session.metricsKey);
                                 } else {
                                     failed.set(true);
                                     errorRef.set(session.remoteClosed.get()
@@ -491,7 +493,6 @@ public class WebSocketScenarioExecutor {
                             if (session == null || failed.get() || interrupted.get()) {
                                 break;
                             }
-                            RealtimeWebSocketConnection webSocket = session.webSocket;
                             WebSocketPerformanceData.CompletionMode readMode = stepCfg.completionMode == null
                                     ? WebSocketPerformanceData.CompletionMode.SINGLE_MESSAGE
                                     : stepCfg.completionMode;
@@ -532,7 +533,7 @@ public class WebSocketScenarioExecutor {
                                         }
                                         stepMatchedCount++;
                                         matchedMessageCount.incrementAndGet();
-                                        realtimeMetrics.recordWebSocketMatched(webSocket);
+                                        realtimeMetrics.recordWebSocketMatched(session.metricsKey);
                                         if (stepRequiresResponseBody) {
                                             stepAssertionPayload = payload;
                                         }

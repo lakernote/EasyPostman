@@ -297,6 +297,38 @@ public class PostmanApiContext {
         return new Expectation(actual);
     }
 
+    public void setEnvironmentVariable(String key, Object value) {
+        environment.set(key, value);
+    }
+
+    public String getEnvironmentVariable(String key) {
+        return environment.get(key);
+    }
+
+    public void clearEnvironmentVariable(String key) {
+        environment.unset(key);
+    }
+
+    public void clearEnvironmentVariables() {
+        environment.clear();
+    }
+
+    public void setGlobalVariable(String key, Object value) {
+        globals.set(key, value);
+    }
+
+    public String getGlobalVariable(String key) {
+        return globals.get(key);
+    }
+
+    public void clearGlobalVariable(String key) {
+        globals.unset(key);
+    }
+
+    public void clearGlobalVariables() {
+        globals.clear();
+    }
+
     /**
      * 从响应头中获取指定名称的 Cookie
      * 对应脚本中的: pm.getResponseCookie(name)

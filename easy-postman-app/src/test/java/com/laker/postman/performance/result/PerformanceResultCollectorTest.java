@@ -19,6 +19,7 @@ import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -147,6 +148,36 @@ public class PerformanceResultCollectorTest {
         assertTrue(PerformanceResultRetentionPolicy.shouldRecord(true, false, 100, 3000));
         assertTrue(PerformanceResultRetentionPolicy.shouldRecord(false, true, 100, 3000));
         assertFalse(PerformanceResultRetentionPolicy.shouldRecord(true, true, 5000, 0));
+    }
+
+    @Test
+    public void statsListenerShouldUseLightweightSampleRecordWithoutResolvingDetails() {
+        PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
+        AtomicInteger detailResolutionCount = new AtomicInteger();
+        PerformanceSampleRecord record = PerformanceSampleRecord.builder()
+                .apiId("api")
+                .apiName("API")
+                .protocol(PerformanceProtocol.HTTP)
+                .startTimeMs(100)
+                .endTimeMs(110)
+                .elapsedTimeMs(10)
+                .responseCode(200)
+                .successful(true)
+                .build();
+        PerformanceSampleEvent event = PerformanceSampleEvent.lazy(
+                record,
+                successfulHttpResult(),
+                true,
+                () -> {
+                    detailResolutionCount.incrementAndGet();
+                    return PerformanceSampleResult.fromExecutionResult(successfulHttpResult());
+                }
+        );
+
+        new PerformanceStatsCollectorListener(statsCollector).onSample(event);
+
+        assertEquals(statsCollector.snapshot().totalRequests(), 1L);
+        assertEquals(detailResolutionCount.get(), 0);
     }
 
     @Test
@@ -325,6 +356,39 @@ public class PerformanceResultCollectorTest {
 
         assertEquals(statsCollector.snapshot().totalRequests(), 1L);
         assertEquals(events.size(), 1);
+    }
+
+    @Test
+    public void shouldRecordInterruptedHttpResultWithoutResponse() {
+        PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
+        List<PerformanceSampleEvent> events = new ArrayList<>();
+        PerformanceResultCollector collector = new PerformanceResultCollector(List.of(
+                new PerformanceStatsCollectorListener(statsCollector),
+                events::add
+        ));
+
+        collector.collect(new PerformanceRequestExecutionResult(
+                "api-http",
+                "HTTP API",
+                new PreparedRequest(),
+                null,
+                "Client stopped HTTP request before completion",
+                List.of(),
+                false,
+                true,
+                PerformanceProtocol.HTTP,
+                1000L,
+                2500L
+        ), false);
+
+        PerformanceStatsSnapshot snapshot = statsCollector.snapshot();
+        assertEquals(snapshot.totalRequests(), 1L);
+        assertEquals(snapshot.successRequests(), 0L);
+        assertEquals(snapshot.summaries().size(), 1);
+        assertEquals(snapshot.summaries().get(0).total(), 1L);
+        assertEquals(events.size(), 1);
+        assertEquals(events.get(0).getSampleResult().getElapsedTimeMs(), 2500L);
+        assertFalse(events.get(0).getSampleResult().isSuccessful());
     }
 
     private static PerformanceRequestExecutionResult successfulHttpResult() {

@@ -1,6 +1,7 @@
 package com.laker.postman.performance.result;
 
 import com.laker.postman.performance.core.model.PerformanceProtocol;
+import com.laker.postman.performance.core.model.PerformanceSampleRecord;
 import com.laker.postman.performance.core.runtime.PerformanceCoreResultSink;
 
 
@@ -8,6 +9,7 @@ import com.laker.postman.performance.execution.PerformanceRequestExecutionResult
 import com.laker.postman.performance.model.PerformanceResultListener;
 import com.laker.postman.performance.model.PerformanceSampleEvent;
 import com.laker.postman.performance.model.PerformanceSampleResult;
+import com.laker.postman.performance.model.PerformanceSampleRecordFactory;
 import com.laker.postman.performance.runtime.PerformanceResultSink;
 import com.laker.postman.performance.runtime.PerformanceResultSinkListenerAdapter;
 
@@ -41,22 +43,34 @@ public final class PerformanceResultCollector {
             return;
         }
 
-        PerformanceSampleResult sampleResult = PerformanceSampleResult.fromExecutionResult(executionResult);
-        if (sampleResult == null) {
+        PerformanceSampleRecord sampleRecord = PerformanceSampleRecordFactory.fromExecutionResult(executionResult);
+        if (sampleRecord == null) {
             return;
         }
-        PerformanceSampleEvent event = new PerformanceSampleEvent(sampleResult, executionResult, efficientMode);
+        PerformanceSampleEvent event = PerformanceSampleEvent.lazy(
+                sampleRecord,
+                executionResult,
+                efficientMode,
+                () -> PerformanceSampleResult.fromExecutionResult(executionResult)
+        );
         resultSink.onSample(event);
         PerformanceCoreResultSink resolvedRunSink = runResultSink == null
                 ? PerformanceCoreResultSink.NOOP
                 : runResultSink;
         if (resolvedRunSink.acceptsSamples()) {
-            resolvedRunSink.onSample(event.sampleRecord());
+            resolvedRunSink.onSample(sampleRecord);
         }
     }
 
     private boolean isRecordableInterruptedResult(PerformanceRequestExecutionResult executionResult) {
-        if (!executionResult.interrupted || executionResult.response == null) {
+        if (!executionResult.interrupted) {
+            return false;
+        }
+        if (executionResult.protocol == PerformanceProtocol.HTTP) {
+            // HTTP 请求进入传输层后，即使停止时没有拿到响应，也必须进入统计，避免报表/结果表看起来“无数据”。
+            return executionResult.request != null || executionResult.fallbackCostMs > 0;
+        }
+        if (executionResult.response == null) {
             return false;
         }
         if (executionResult.response.code > 0) {

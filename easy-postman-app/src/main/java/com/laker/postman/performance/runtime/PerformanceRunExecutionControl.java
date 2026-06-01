@@ -4,6 +4,7 @@ import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
 import com.laker.postman.performance.core.model.PerformanceStatsCollector;
 import com.laker.postman.performance.core.model.PerformanceStatsProgressSnapshot;
 import com.laker.postman.performance.core.model.PerformanceStatsSnapshot;
+import com.laker.postman.performance.core.model.PerformanceTrendSnapshot;
 import com.laker.postman.performance.core.runtime.PerformanceRunHandle;
 import com.laker.postman.performance.core.worker.PerformanceWorkerResultDetail;
 
@@ -27,6 +28,8 @@ public class PerformanceRunExecutionControl {
             new AtomicReference<>(List::of);
     private final AtomicReference<LongFunction<PerformanceRealtimeMetrics.LiveSnapshot>> liveMetricsSupplier =
             new AtomicReference<>(nowMs -> PerformanceRealtimeMetrics.LiveSnapshot.empty());
+    private final AtomicReference<LongFunction<PerformanceTrendSnapshot>> trendSnapshotSupplier =
+            new AtomicReference<>(nowMs -> PerformanceTrendSnapshot.terminalIdle());
     private final AtomicReference<IntSupplier> activeWebSocketConnectionsSupplier = new AtomicReference<>(() -> 0);
     private final AtomicReference<IntSupplier> activeSseStreamsSupplier = new AtomicReference<>(() -> 0);
 
@@ -64,6 +67,10 @@ public class PerformanceRunExecutionControl {
                 : activeSseStreamsSupplier);
     }
 
+    public void bindTrendSnapshotSupplier(LongFunction<PerformanceTrendSnapshot> supplier) {
+        trendSnapshotSupplier.set(supplier == null ? nowMs -> PerformanceTrendSnapshot.terminalIdle() : supplier);
+    }
+
     public void recordProgress(int activeUsers, int totalUsers) {
         this.activeUsers.set(Math.max(0, activeUsers));
         this.totalUsers.set(Math.max(0, totalUsers));
@@ -91,6 +98,12 @@ public class PerformanceRunExecutionControl {
         LongFunction<PerformanceRealtimeMetrics.LiveSnapshot> supplier = liveMetricsSupplier.get();
         PerformanceRealtimeMetrics.LiveSnapshot snapshot = supplier == null ? null : supplier.apply(nowMs);
         return snapshot == null ? PerformanceRealtimeMetrics.LiveSnapshot.empty() : snapshot;
+    }
+
+    public PerformanceTrendSnapshot trendSnapshot(long nowMs) {
+        LongFunction<PerformanceTrendSnapshot> supplier = trendSnapshotSupplier.get();
+        PerformanceTrendSnapshot snapshot = supplier == null ? null : supplier.apply(nowMs);
+        return snapshot == null ? PerformanceTrendSnapshot.terminalIdle() : snapshot;
     }
 
     public int getActiveWebSocketConnections() {

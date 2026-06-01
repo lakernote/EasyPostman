@@ -22,15 +22,12 @@ import org.jfree.data.time.DateRange;
 import org.jfree.data.time.RegularTimePeriod;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
-import org.jfree.data.xy.XYDataset;
 
 import javax.swing.*;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
-import java.text.NumberFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -87,7 +84,8 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
     private final TimeSeries sseErrorRateSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_ERROR_RATE_PERCENT));
 
     private final List<TrendView> trendViews = new ArrayList<>();
-    private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
+    private Long trendDomainStartMs;
+    private Long trendDomainEndMs;
     private String chartMode = SEPARATE_VIEW;
 
     @Override
@@ -229,7 +227,7 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
         plot.setOutlinePaint(PerformanceTrendTheme.chartBorder());
 
         DateAxis dateAxis = new DateAxis(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_TIME));
-        dateAxis.setDateFormatOverride(timeFormat);
+        PerformanceTrendAxisConfigurer.configureTimeAxis(dateAxis, EMPTY_DOMAIN_WINDOW_MS);
         dateAxis.setTickLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
         dateAxis.setLabelFont(FontsUtil.getDefaultFont(Font.PLAIN));
         dateAxis.setTickLabelPaint(PerformanceTrendTheme.text());
@@ -245,7 +243,7 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
         rangeAxis.setUpperMargin(0.2);
         rangeAxis.setAutoRangeIncludesZero(true);
         if (axisFormat == AxisFormat.INTEGER) {
-            rangeAxis.setNumberFormatOverride(NumberFormat.getIntegerInstance());
+            PerformanceTrendAxisConfigurer.configureIntegerAxis(rangeAxis);
         }
 
         ChartPanel panel = new ChartPanel(chart);
@@ -361,7 +359,7 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
     }
 
     private XYLineAndShapeRenderer createTrendRenderer() {
-        XYLineAndShapeRenderer renderer = new SinglePointAwareRenderer();
+        XYLineAndShapeRenderer renderer = new PerformanceTrendSparsePointRenderer();
         renderer.setDefaultShape(new Ellipse2D.Double(-3.0, -3.0, 6.0, 6.0));
         renderer.setDefaultShapesFilled(true);
         renderer.setDrawOutlines(false);
@@ -374,6 +372,8 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
         for (TimeSeries series : allSeries()) {
             series.clear();
         }
+        trendDomainStartMs = null;
+        trendDomainEndMs = null;
         for (TrendView trendView : trendViews) {
             trendView.resetAxes(resetTimeMs);
         }
@@ -391,6 +391,7 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
             );
             dateAxis.setAutoRange(true);
             dateAxis.setRange(resetRange, false, true);
+            PerformanceTrendAxisConfigurer.configureTimeAxis(dateAxis, EMPTY_DOMAIN_WINDOW_MS);
         }
         if (plot.getRangeAxis() != null) {
             plot.getRangeAxis().setAutoRange(true);
@@ -413,39 +414,58 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
             return;
         }
 
-        httpVirtualUsersSeries.addOrUpdate(period, snapshot.activeUsers());
-        httpRpsSeries.addOrUpdate(period, snapshot.http().sampleRate());
-        httpAvgResponseSeries.addOrUpdate(period, nullableMetric(snapshot.http().avgDurationMs()));
-        httpErrorRateSeries.addOrUpdate(period, snapshot.http().failurePercent());
+        httpVirtualUsersSeries.addOrUpdate(period, PerformanceTrendSeriesValue.activeCount(snapshot.activeUsers()));
+        httpRpsSeries.addOrUpdate(period, PerformanceTrendSeriesValue.sampleMetric(snapshot.http().sampleRate()));
+        httpAvgResponseSeries.addOrUpdate(period, PerformanceTrendSeriesValue.sampleMetric(snapshot.http().avgDurationMs()));
+        httpErrorRateSeries.addOrUpdate(period, PerformanceTrendSeriesValue.sampleMetric(snapshot.http().failurePercent()));
 
-        wsActiveSeries.addOrUpdate(period, snapshot.activeWebSocketConnections());
-        wsSentRateSeries.addOrUpdate(period, snapshot.webSocket().sentRate());
-        wsReceivedRateSeries.addOrUpdate(period, snapshot.webSocket().receivedRate());
-        wsFirstMessageLatencySeries.addOrUpdate(period, nullableMetric(snapshot.webSocket().avgFirstMessageLatencyMs()));
-        wsSessionDurationSeries.addOrUpdate(period, snapshot.webSocket().avgDurationMs());
-        wsErrorRateSeries.addOrUpdate(period, snapshot.webSocket().failurePercent());
+        wsActiveSeries.addOrUpdate(period, PerformanceTrendSeriesValue.activeCount(snapshot.activeWebSocketConnections()));
+        wsSentRateSeries.addOrUpdate(period, PerformanceTrendSeriesValue.sampleMetric(snapshot.webSocket().sentRate()));
+        wsReceivedRateSeries.addOrUpdate(period, PerformanceTrendSeriesValue.sampleMetric(snapshot.webSocket().receivedRate()));
+        wsFirstMessageLatencySeries.addOrUpdate(period,
+                PerformanceTrendSeriesValue.sampleMetric(snapshot.webSocket().avgFirstMessageLatencyMs()));
+        wsSessionDurationSeries.addOrUpdate(period,
+                PerformanceTrendSeriesValue.sampleMetric(snapshot.webSocket().avgDurationMs()));
+        wsErrorRateSeries.addOrUpdate(period,
+                PerformanceTrendSeriesValue.sampleMetric(snapshot.webSocket().failurePercent()));
 
-        sseActiveSeries.addOrUpdate(period, snapshot.activeSseStreams());
-        sseEventRateSeries.addOrUpdate(period, snapshot.sse().receivedRate());
-        sseMatchedRateSeries.addOrUpdate(period, snapshot.sse().matchedRate());
-        sseFirstEventLatencySeries.addOrUpdate(period, nullableMetric(snapshot.sse().avgFirstMessageLatencyMs()));
-        sseStreamDurationSeries.addOrUpdate(period, snapshot.sse().avgDurationMs());
-        sseErrorRateSeries.addOrUpdate(period, snapshot.sse().failurePercent());
+        sseActiveSeries.addOrUpdate(period, PerformanceTrendSeriesValue.activeCount(snapshot.activeSseStreams()));
+        sseEventRateSeries.addOrUpdate(period, PerformanceTrendSeriesValue.sampleMetric(snapshot.sse().receivedRate()));
+        sseMatchedRateSeries.addOrUpdate(period, PerformanceTrendSeriesValue.sampleMetric(snapshot.sse().matchedRate()));
+        sseFirstEventLatencySeries.addOrUpdate(period,
+                PerformanceTrendSeriesValue.sampleMetric(snapshot.sse().avgFirstMessageLatencyMs()));
+        sseStreamDurationSeries.addOrUpdate(period,
+                PerformanceTrendSeriesValue.sampleMetric(snapshot.sse().avgDurationMs()));
+        sseErrorRateSeries.addOrUpdate(period, PerformanceTrendSeriesValue.sampleMetric(snapshot.sse().failurePercent()));
+
+        syncDomainAxes(period);
     }
 
-    private Number nullableMetric(double value) {
-        return Double.isFinite(value) ? value : null;
+    private void syncDomainAxes(RegularTimePeriod period) {
+        long periodStart = period.getFirstMillisecond();
+        long periodEnd = period.getLastMillisecond();
+        trendDomainStartMs = trendDomainStartMs == null ? periodStart : Math.min(trendDomainStartMs, periodStart);
+        trendDomainEndMs = trendDomainEndMs == null ? periodEnd : Math.max(trendDomainEndMs, periodEnd);
+
+        // 同一次压测的分离图必须共享 X 轴，否则空值较多的指标会自动裁剪到不同时间范围。
+        long end = Math.max(trendDomainEndMs, trendDomainStartMs + 1_000L);
+        DateRange range = new DateRange(new Date(trendDomainStartMs), new Date(end));
+        long visibleDurationMs = end - trendDomainStartMs;
+        for (TrendView trendView : trendViews) {
+            trendView.setDomainRange(range, visibleDurationMs);
+        }
     }
 
-    public void addOrUpdate(RegularTimePeriod period, double users,
-                            double responseTime, double qps, double errorPercent) {
-        if (period == null) {
+    private static void setDomainRange(ChartPanel chartPanel, DateRange range, long visibleDurationMs) {
+        if (chartPanel == null || chartPanel.getChart() == null) {
             return;
         }
-        httpVirtualUsersSeries.addOrUpdate(period, users);
-        httpRpsSeries.addOrUpdate(period, qps);
-        httpAvgResponseSeries.addOrUpdate(period, responseTime);
-        httpErrorRateSeries.addOrUpdate(period, errorPercent);
+        XYPlot plot = chartPanel.getChart().getXYPlot();
+        if (plot.getDomainAxis() instanceof DateAxis dateAxis) {
+            dateAxis.setAutoRange(false);
+            dateAxis.setRange(range, false, true);
+            PerformanceTrendAxisConfigurer.configureTimeAxis(dateAxis, visibleDurationMs);
+        }
     }
 
     private void showChartMode(String mode) {
@@ -573,6 +593,13 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
             chartCards.repaint();
         }
 
+        private void setDomainRange(DateRange range, long visibleDurationMs) {
+            PerformanceTrendPanel.setDomainRange(combinedChartPanel, range, visibleDurationMs);
+            for (SplitChart splitChart : splitCharts) {
+                PerformanceTrendPanel.setDomainRange(splitChart.chartPanel(), range, visibleDurationMs);
+            }
+        }
+
         private void resetAxes(long resetTimeMs) {
             PerformanceTrendPanel.resetAxes(combinedChartPanel, resetTimeMs);
             for (SplitChart splitChart : splitCharts) {
@@ -626,34 +653,4 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
         }
     }
 
-    private static final class SinglePointAwareRenderer extends XYLineAndShapeRenderer {
-        private SinglePointAwareRenderer() {
-            super(true, false);
-        }
-
-        @Override
-        public boolean getItemShapeVisible(int series, int item) {
-            XYDataset dataset = null;
-            if (getPlot() != null) {
-                dataset = getPlot().getDataset();
-            }
-            return dataset != null
-                    && finiteItemCount(dataset, series) == 1
-                    && isFinite(dataset.getYValue(series, item));
-        }
-
-        private int finiteItemCount(XYDataset dataset, int series) {
-            int count = 0;
-            for (int i = 0; i < dataset.getItemCount(series); i++) {
-                if (isFinite(dataset.getYValue(series, i))) {
-                    count++;
-                }
-            }
-            return count;
-        }
-
-        private boolean isFinite(double value) {
-            return Double.isFinite(value);
-        }
-    }
 }

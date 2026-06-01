@@ -1,6 +1,7 @@
 package com.laker.postman.performance.core.worker;
 
 import com.laker.postman.performance.core.report.PerformanceJsonReport;
+import com.laker.postman.performance.core.model.PerformanceTrendSnapshot;
 import com.laker.postman.performance.core.run.PerformanceRunStatus;
 import lombok.Builder;
 import lombok.Value;
@@ -19,6 +20,7 @@ public class PerformanceWorkerRunStatusResponse {
     long failedRequests;
     double qps;
     PerformanceJsonReport report;
+    PerformanceTrendSnapshot trendSnapshot;
     String error;
 
     @Builder
@@ -34,6 +36,7 @@ public class PerformanceWorkerRunStatusResponse {
                                               Long failedRequests,
                                               Double qps,
                                               PerformanceJsonReport report,
+                                              PerformanceTrendSnapshot trendSnapshot,
                                               String error) {
         this.runId = runId == null ? "" : runId;
         this.workerId = workerId == null ? "" : workerId;
@@ -48,6 +51,7 @@ public class PerformanceWorkerRunStatusResponse {
         this.failedRequests = Math.max(0L, failedRequests == null ? this.totalRequests - this.successRequests : failedRequests);
         this.qps = Math.max(0.0, qps == null ? 0.0 : qps);
         this.report = report;
+        this.trendSnapshot = trendSnapshot;
         this.error = error == null ? "" : error;
     }
 }

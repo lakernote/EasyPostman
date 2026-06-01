@@ -136,6 +136,10 @@ public final class PerformanceExecutionEngine {
         return delegate.getActiveThreads();
     }
 
+    public int sampleWindowPeakActiveThreads() {
+        return delegate.sampleWindowPeakActiveThreads();
+    }
+
     public int getActiveWebSockets() {
         return delegate.getActiveWebSockets();
     }
@@ -163,8 +167,8 @@ public final class PerformanceExecutionEngine {
         delegate.resetVirtualUsers();
     }
 
-    public PerformanceRealtimeMetrics.Sample sampleRealtimeMetrics(long nowMs) {
-        return delegate.sampleRealtimeMetrics(nowMs);
+    public PerformanceRealtimeMetrics.Sample drainRealtimeMetricsWindow(long nowMs) {
+        return delegate.drainRealtimeMetricsWindow(nowMs);
     }
 
     public PerformanceRealtimeMetrics.LiveSnapshot liveRealtimeMetrics(long nowMs) {

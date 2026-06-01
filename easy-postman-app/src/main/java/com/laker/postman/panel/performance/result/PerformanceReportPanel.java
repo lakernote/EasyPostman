@@ -3,7 +3,6 @@ package com.laker.postman.panel.performance.result;
 import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.performance.core.model.PerformanceReportSnapshot;
 import com.laker.postman.performance.core.model.PerformanceStatsSnapshot;
-import com.laker.postman.performance.core.model.RequestResult;
 import com.laker.postman.performance.core.report.PerformanceJsonReport;
 
 
@@ -30,7 +29,6 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class PerformanceReportPanel extends JPanel {
 
@@ -269,33 +267,29 @@ public class PerformanceReportPanel extends JPanel {
             table.getColumnModel().getColumn(7).setMinWidth(90);
             table.getColumnModel().getColumn(7).setPreferredWidth(105);
 
-            // Avg Bytes 列 - 平均接收字节数
-            table.getColumnModel().getColumn(8).setMinWidth(80);
-            table.getColumnModel().getColumn(8).setPreferredWidth(90);
-
             // Avg 列 - 显示 "Avg"（3个字符）+ 时间
+            table.getColumnModel().getColumn(8).setMinWidth(65);
+            table.getColumnModel().getColumn(8).setPreferredWidth(75);
+
+            // Min 列 - 显示 "Min"（3个字符）+ 时间
             table.getColumnModel().getColumn(9).setMinWidth(65);
             table.getColumnModel().getColumn(9).setPreferredWidth(75);
 
-            // Min 列 - 显示 "Min"（3个字符）+ 时间
+            // Max 列 - 显示 "Max"（3个字符）+ 时间
             table.getColumnModel().getColumn(10).setMinWidth(65);
             table.getColumnModel().getColumn(10).setPreferredWidth(75);
 
-            // Max 列 - 显示 "Max"（3个字符）+ 时间
+            // P90 列 - 显示 "P90"（3个字符）+ 时间
             table.getColumnModel().getColumn(11).setMinWidth(65);
             table.getColumnModel().getColumn(11).setPreferredWidth(75);
 
-            // P90 列 - 显示 "P90"（3个字符）+ 时间
+            // P95 列 - 显示 "P95"（3个字符）+ 时间
             table.getColumnModel().getColumn(12).setMinWidth(65);
             table.getColumnModel().getColumn(12).setPreferredWidth(75);
 
-            // P95 列 - 显示 "P95"（3个字符）+ 时间
+            // P99 列 - 显示 "P99"（3个字符）+ 时间
             table.getColumnModel().getColumn(13).setMinWidth(65);
             table.getColumnModel().getColumn(13).setPreferredWidth(75);
-
-            // P99 列 - 显示 "P99"（3个字符）+ 时间
-            table.getColumnModel().getColumn(14).setMinWidth(65);
-            table.getColumnModel().getColumn(14).setPreferredWidth(75);
         }
     }
 
@@ -502,13 +496,6 @@ public class PerformanceReportPanel extends JPanel {
                             model.getColumnCount(), rowData.length));
         }
         model.addRow(rowData);
-    }
-
-    public void updateReport(Map<String, List<Long>> apiCostMap,
-                             Map<String, Integer> apiSuccessMap,
-                             Map<String, Integer> apiFailMap,
-                             List<RequestResult> allRequestResults) {
-        updateReport(PerformanceProtocolReportData.fromResults(allRequestResults, totalRowName));
     }
 
     public void updateReport(PerformanceStatsSnapshot statsSnapshot) {

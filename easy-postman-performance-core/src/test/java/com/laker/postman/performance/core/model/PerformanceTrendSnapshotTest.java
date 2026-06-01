@@ -5,8 +5,22 @@ import org.testng.annotations.Test;
 import java.util.List;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 public class PerformanceTrendSnapshotTest {
+
+    @Test
+    public void terminalIdleSnapshotShouldOnlyPublishActiveCounts() {
+        PerformanceTrendSnapshot snapshot = PerformanceTrendSnapshot.terminalIdle();
+
+        assertEquals(snapshot.activeUsers(), 0);
+        assertEquals(snapshot.activeWebSocketConnections(), 0);
+        assertEquals(snapshot.activeSseStreams(), 0);
+        assertTrue(Double.isNaN(snapshot.http().sampleRate()));
+        assertTrue(Double.isNaN(snapshot.http().failurePercent()));
+        assertTrue(Double.isNaN(snapshot.webSocket().sentRate()));
+        assertTrue(Double.isNaN(snapshot.sse().receivedRate()));
+    }
 
     @Test
     public void shouldSeparateWindowMetricsByProtocol() {
@@ -43,7 +57,7 @@ public class PerformanceTrendSnapshotTest {
     }
 
     @Test
-    public void shouldUseSessionSpanForStreamMessageRates() {
+    public void shouldUseFixedStepIntervalForRequestWindowRates() {
         RequestResult first = new RequestResult(1_000, 1_010, true, "http-api", PerformanceProtocol.HTTP);
         RequestResult second = new RequestResult(1_020, 1_030, true, "http-api", PerformanceProtocol.HTTP);
         RequestResult ws = new RequestResult(1_000, 3_000, true, "ws-api", PerformanceProtocol.WEBSOCKET);
@@ -60,7 +74,7 @@ public class PerformanceTrendSnapshotTest {
                 1_000
         );
 
-        assertEquals(snapshot.http().sampleRate(), 100.0);
+        assertEquals(snapshot.http().sampleRate(), 2.0);
         assertEquals(snapshot.webSocket().sentRate(), 5.0);
         assertEquals(snapshot.webSocket().receivedRate(), 10.0);
     }

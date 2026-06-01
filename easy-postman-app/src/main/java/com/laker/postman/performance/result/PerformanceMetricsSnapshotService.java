@@ -3,12 +3,14 @@ package com.laker.postman.performance.result;
 import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
 import com.laker.postman.performance.core.model.PerformanceReportSnapshot;
 import com.laker.postman.performance.core.model.PerformanceStatsCollector;
+import com.laker.postman.performance.core.model.PerformanceStatsSnapshot;
 import com.laker.postman.performance.core.model.PerformanceTrendSnapshot;
 import com.laker.postman.performance.core.model.PerformanceTrendWindowCollector;
 
 
 import lombok.RequiredArgsConstructor;
 
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntSupplier;
 import java.util.function.LongFunction;
 import java.util.function.LongSupplier;
@@ -26,6 +28,7 @@ public final class PerformanceMetricsSnapshotService {
     private final LongSupplier samplingIntervalSupplier;
     private final LongFunction<PerformanceRealtimeMetrics.Sample> realtimeMetricsSampler;
     private final LongFunction<PerformanceRealtimeMetrics.LiveSnapshot> liveMetricsSnapshotSupplier;
+    private final AtomicLong lastTrendDrainAtMs = new AtomicLong(-1L);
 
     public PerformanceReportSnapshot reportSnapshot(long nowMs) {
         PerformanceRealtimeMetrics.LiveSnapshot liveSnapshot = liveMetricsSnapshotSupplier == null
@@ -34,15 +37,23 @@ public final class PerformanceMetricsSnapshotService {
         return PerformanceReportSnapshot.of(statsCollector().snapshot(), liveSnapshot);
     }
 
-    public PerformanceTrendSnapshot trendSnapshot(long nowMs) {
-        PerformanceRealtimeMetrics.Sample realtimeMetrics = sampleRealtimeMetrics(nowMs);
-        return trendWindowCollector().sampleSnapshot(
+    public PerformanceStatsSnapshot statsSnapshot() {
+        return statsCollector().snapshot();
+    }
+
+    public PerformanceTrendSnapshot drainTrendWindowSnapshot(long nowMs) {
+        PerformanceRealtimeMetrics.Sample realtimeMetrics = drainRealtimeMetricsWindow(nowMs);
+        return trendWindowCollector().drainWindowSnapshot(
                 activeUsers(),
                 activeWebSocketSessions(realtimeMetrics),
                 activeSseStreams(realtimeMetrics),
-                samplingIntervalMs(),
+                trendWindowElapsedMs(nowMs),
                 realtimeMetrics
         );
+    }
+
+    public void resetTrendWindow(long startTimeMs) {
+        lastTrendDrainAtMs.set(Math.max(0L, startTimeMs));
     }
 
     private PerformanceStatsCollector statsCollector() {
@@ -53,11 +64,11 @@ public final class PerformanceMetricsSnapshotService {
         return trendWindowCollector == null ? new PerformanceTrendWindowCollector() : trendWindowCollector;
     }
 
-    private PerformanceRealtimeMetrics.Sample sampleRealtimeMetrics(long nowMs) {
-        PerformanceRealtimeMetrics.Sample sample = realtimeMetricsSampler == null
-                ? PerformanceRealtimeMetrics.Sample.empty()
-                : realtimeMetricsSampler.apply(nowMs);
-        return sample == null ? PerformanceRealtimeMetrics.Sample.empty() : sample;
+    private PerformanceRealtimeMetrics.Sample drainRealtimeMetricsWindow(long nowMs) {
+        if (realtimeMetricsSampler == null) {
+            return null;
+        }
+        return realtimeMetricsSampler.apply(nowMs);
     }
 
     private int activeUsers() {
@@ -66,15 +77,25 @@ public final class PerformanceMetricsSnapshotService {
 
     private int activeWebSocketSessions(PerformanceRealtimeMetrics.Sample realtimeMetrics) {
         int activeWebSockets = activeWebSocketsSupplier == null ? 0 : activeWebSocketsSupplier.getAsInt();
-        return Math.max(activeWebSockets, realtimeMetrics.webSocketActiveSessions());
+        int realtimeActive = realtimeMetrics == null ? 0 : realtimeMetrics.webSocketActiveSessions();
+        return Math.max(activeWebSockets, realtimeActive);
     }
 
     private int activeSseStreams(PerformanceRealtimeMetrics.Sample realtimeMetrics) {
         int activeSseStreams = activeSseStreamsSupplier == null ? 0 : activeSseStreamsSupplier.getAsInt();
-        return Math.max(activeSseStreams, realtimeMetrics.sseActiveSessions());
+        int realtimeActive = realtimeMetrics == null ? 0 : realtimeMetrics.sseActiveSessions();
+        return Math.max(activeSseStreams, realtimeActive);
     }
 
     private long samplingIntervalMs() {
         return samplingIntervalSupplier == null ? DEFAULT_SAMPLING_INTERVAL_MS : samplingIntervalSupplier.getAsLong();
+    }
+
+    private long trendWindowElapsedMs(long nowMs) {
+        long previous = lastTrendDrainAtMs.getAndSet(Math.max(0L, nowMs));
+        if (previous >= 0L && nowMs > previous) {
+            return Math.max(1L, nowMs - previous);
+        }
+        return samplingIntervalMs();
     }
 }

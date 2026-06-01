@@ -14,7 +14,7 @@ public class PerformanceJsonReportTrendWindowSamplerTest {
         PerformanceJsonReportTrendWindowSampler sampler = new PerformanceJsonReportTrendWindowSampler();
         sampler.reset(1_000L);
 
-        PerformanceTrendSnapshot first = sampler.sample(
+        PerformanceTrendSnapshot first = sampler.drainReportDelta(
                 70,
                 0,
                 0,
@@ -23,7 +23,7 @@ public class PerformanceJsonReportTrendWindowSamplerTest {
                 report(100, 95, 5, 4),
                 2_000L
         );
-        PerformanceTrendSnapshot second = sampler.sample(
+        PerformanceTrendSnapshot second = sampler.drainReportDelta(
                 70,
                 0,
                 0,
@@ -47,7 +47,7 @@ public class PerformanceJsonReportTrendWindowSamplerTest {
         PerformanceJsonReportTrendWindowSampler sampler = new PerformanceJsonReportTrendWindowSampler();
         sampler.reset(1_000L);
 
-        PerformanceTrendSnapshot snapshot = sampler.sample(
+        PerformanceTrendSnapshot snapshot = sampler.drainReportDelta(
                 10,
                 8,
                 7,
@@ -69,6 +69,65 @@ public class PerformanceJsonReportTrendWindowSamplerTest {
         assertEquals(snapshot.sse().receivedRate(), 35.0);
         assertEquals(snapshot.overview().sentMessages(), 100);
         assertEquals(snapshot.overview().receivedMessages(), 115);
+    }
+
+    @Test
+    public void shouldNotCountLiveStreamSessionsAsCompletedSamples() {
+        PerformanceJsonReportTrendWindowSampler sampler = new PerformanceJsonReportTrendWindowSampler();
+        sampler.reset(1_000L);
+
+        sampler.drainReportDelta(
+                10,
+                10,
+                0,
+                0,
+                0,
+                liveWebSocketReport(10, 200),
+                2_000L
+        );
+        PerformanceTrendSnapshot finalSnapshot = sampler.drainReportDelta(
+                0,
+                0,
+                0,
+                10,
+                10,
+                completedWebSocketReport(10, 0, 10, 260),
+                3_000L
+        );
+
+        assertEquals(finalSnapshot.webSocket().samples(), 10);
+        assertEquals(finalSnapshot.webSocket().failures(), 10);
+        assertEquals(finalSnapshot.webSocket().failurePercent(), 100.0);
+        assertEquals(finalSnapshot.webSocket().sentMessages(), 60);
+    }
+
+    @Test
+    public void shouldUsePreviousActiveUsersWhenTerminalPollContainsRequestDeltas() {
+        PerformanceJsonReportTrendWindowSampler sampler = new PerformanceJsonReportTrendWindowSampler();
+        sampler.reset(1_000L);
+
+        sampler.drainReportDelta(
+                2,
+                0,
+                0,
+                0,
+                0,
+                report(0, 0, 0, 0),
+                2_000L
+        );
+        PerformanceTrendSnapshot terminalSnapshot = sampler.drainReportDelta(
+                0,
+                0,
+                0,
+                12,
+                0,
+                report(12, 12, 0, 200),
+                3_000L
+        );
+
+        assertEquals(terminalSnapshot.activeUsers(), 2);
+        assertEquals(terminalSnapshot.http().samples(), 12);
+        assertEquals(terminalSnapshot.http().sampleRate(), 12.0);
     }
 
     private static PerformanceJsonReport report(long total, long success, long failed, long avgDuration) {
@@ -132,6 +191,55 @@ public class PerformanceJsonReportTrendWindowSamplerTest {
                                 .total(sseTotal)
                                 .build()
                 ))
+                .build();
+    }
+
+    private static PerformanceJsonReport liveWebSocketReport(long activeSessions, long sentMessages) {
+        PerformanceJsonReportApi webSocketTotal = PerformanceJsonReportApi.builder()
+                .name("WebSocket Total")
+                .protocol("WEBSOCKET")
+                .total(activeSessions)
+                .success(activeSessions)
+                .failed(0L)
+                .stream(PerformanceJsonReportStream.builder()
+                        .sentMessages(sentMessages)
+                        .receivedMessages(sentMessages)
+                        .build())
+                .build();
+        return PerformanceJsonReport.builder()
+                .summary(PerformanceJsonReportSummary.builder().build())
+                .protocols(Map.of("WEBSOCKET", PerformanceJsonReportProtocol.builder()
+                        .protocol("WEBSOCKET")
+                        .total(webSocketTotal)
+                        .build()))
+                .build();
+    }
+
+    private static PerformanceJsonReport completedWebSocketReport(long total,
+                                                                  long success,
+                                                                  long failed,
+                                                                  long sentMessages) {
+        PerformanceJsonReportApi webSocketTotal = PerformanceJsonReportApi.builder()
+                .name("WebSocket Total")
+                .protocol("WEBSOCKET")
+                .total(total)
+                .success(success)
+                .failed(failed)
+                .stream(PerformanceJsonReportStream.builder()
+                        .sentMessages(sentMessages)
+                        .receivedMessages(sentMessages)
+                        .build())
+                .build();
+        return PerformanceJsonReport.builder()
+                .summary(PerformanceJsonReportSummary.builder()
+                        .totalRequests(total)
+                        .successRequests(success)
+                        .failedRequests(failed)
+                        .build())
+                .protocols(Map.of("WEBSOCKET", PerformanceJsonReportProtocol.builder()
+                        .protocol("WEBSOCKET")
+                        .total(webSocketTotal)
+                        .build()))
                 .build();
     }
 }

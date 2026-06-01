@@ -264,4 +264,35 @@ public class PerformanceResultDisplayMapperTest {
         assertTrue(resultNodeInfo.resp.body.contains("Error: Execution interrupted"));
         assertTrue(resultNodeInfo.resp.body.contains("Sent: 120"));
     }
+
+    @Test
+    public void shouldDisplayInterruptedHttpSampleWithoutResponseAsFailure() {
+        PreparedRequest request = new PreparedRequest();
+        request.collectEventInfo = false;
+
+        PerformanceRequestExecutionResult executionResult = new PerformanceRequestExecutionResult(
+                "api-1",
+                "HTTP API",
+                request,
+                null,
+                "Execution interrupted",
+                List.of(),
+                false,
+                true,
+                PerformanceProtocol.HTTP,
+                1000L,
+                2500L
+        );
+
+        ResultNodeInfo resultNodeInfo = PerformanceResultDisplayMapper.toDisplayNodeInfo(
+                PerformanceSampleResult.fromExecutionResult(executionResult),
+                true
+        );
+
+        assertFalse(resultNodeInfo.isActuallySuccessful());
+        assertEquals(resultNodeInfo.errorMsg, "Execution interrupted");
+        assertEquals(resultNodeInfo.costMs, 2500);
+        assertEquals(resultNodeInfo.responseCode, 0);
+        assertTrue(resultNodeInfo.resp.body.contains("Execution interrupted"));
+    }
 }

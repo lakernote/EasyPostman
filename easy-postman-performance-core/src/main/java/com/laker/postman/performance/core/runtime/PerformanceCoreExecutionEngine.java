@@ -66,6 +66,10 @@ public final class PerformanceCoreExecutionEngine<C> implements PerformanceCoreR
         return virtualUsers.getActiveThreads();
     }
 
+    public int sampleWindowPeakActiveThreads() {
+        return virtualUsers.sampleWindowPeakActiveThreads();
+    }
+
     public int getActiveWebSockets() {
         return networkControl.activeWebSocketCount();
     }
@@ -98,8 +102,8 @@ public final class PerformanceCoreExecutionEngine<C> implements PerformanceCoreR
         return realtimeMetrics;
     }
 
-    public PerformanceRealtimeMetrics.Sample sampleRealtimeMetrics(long nowMs) {
-        return realtimeMetrics.sample(nowMs);
+    public PerformanceRealtimeMetrics.Sample drainRealtimeMetricsWindow(long nowMs) {
+        return realtimeMetrics.drainWindow(nowMs);
     }
 
     public PerformanceRealtimeMetrics.LiveSnapshot liveRealtimeMetrics(long nowMs) {

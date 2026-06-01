@@ -1,5 +1,6 @@
 package com.laker.postman.performance.core.worker;
 
+import com.laker.postman.performance.core.model.PerformanceTrendSnapshot;
 import com.laker.postman.performance.core.report.PerformanceJsonReport;
 import com.laker.postman.performance.core.report.PerformanceJsonReportJsonStorage;
 import com.laker.postman.performance.core.run.PerformanceRunPlan;
@@ -39,6 +40,17 @@ public class PerformanceWorkerProtocolJsonStorage {
                 .build();
     }
 
+    public PerformanceWorkerHealthResponse healthResponseFromJson(String json) {
+        Map<String, Object> root = root(json);
+        return PerformanceWorkerHealthResponse.builder()
+                .status(stringValue(root, "status", ""))
+                .workerId(stringValue(root, "workerId", ""))
+                .host(stringValue(root, "host", ""))
+                .port(intValue(root, "port", 0))
+                .workerProtocolVersion(stringValue(root, "workerProtocolVersion", ""))
+                .build();
+    }
+
     public PerformanceWorkerRunStatusResponse statusResponseFromJson(String json) {
         Map<String, Object> root = root(json);
         PerformanceJsonReport report = root.get("report") == null
@@ -57,6 +69,7 @@ public class PerformanceWorkerProtocolJsonStorage {
                 .failedRequests(longValue(root, "failedRequests", 0))
                 .qps(doubleValue(root, "qps", 0))
                 .report(report)
+                .trendSnapshot(readTrendSnapshot(objectMap(root.get("trendSnapshot"))))
                 .error(stringValue(root, "error", ""))
                 .build();
     }
@@ -108,6 +121,15 @@ public class PerformanceWorkerProtocolJsonStorage {
                     : JsonUtil.convertValue(JsonUtil.readTree(assignmentStorage.toJson(request.getAssignment())), Map.class));
             return json;
         }
+        if (value instanceof PerformanceWorkerHealthResponse response) {
+            Map<String, Object> json = new LinkedHashMap<>();
+            json.put("status", response.getStatus());
+            json.put("workerId", response.getWorkerId());
+            json.put("host", response.getHost());
+            json.put("port", response.getPort());
+            json.put("workerProtocolVersion", response.getWorkerProtocolVersion());
+            return json;
+        }
         if (value instanceof PerformanceWorkerRunAcceptedResponse response) {
             Map<String, Object> json = new LinkedHashMap<>();
             json.put("runId", response.getRunId());
@@ -130,6 +152,7 @@ public class PerformanceWorkerProtocolJsonStorage {
             json.put("failedRequests", response.getFailedRequests());
             json.put("qps", response.getQps());
             json.put("report", response.getReport() == null ? null : reportStorage.toMap(response.getReport()));
+            json.put("trendSnapshot", trendSnapshotToMap(response.getTrendSnapshot()));
             json.put("error", response.getError());
             return json;
         }
@@ -300,6 +323,87 @@ public class PerformanceWorkerProtocolJsonStorage {
             headers.put(entry.getKey(), values);
         }
         return headers;
+    }
+
+    private Map<String, Object> trendSnapshotToMap(PerformanceTrendSnapshot snapshot) {
+        if (snapshot == null) {
+            return null;
+        }
+        Map<String, Object> json = new LinkedHashMap<>();
+        json.put("activeUsers", snapshot.activeUsers());
+        json.put("activeWebSocketConnections", snapshot.activeWebSocketConnections());
+        json.put("activeSseStreams", snapshot.activeSseStreams());
+        json.put("overview", trendMetricsToMap(snapshot.overview()));
+        json.put("http", trendMetricsToMap(snapshot.http()));
+        json.put("webSocket", trendMetricsToMap(snapshot.webSocket()));
+        json.put("sse", trendMetricsToMap(snapshot.sse()));
+        return json;
+    }
+
+    private Map<String, Object> trendMetricsToMap(PerformanceTrendSnapshot.ProtocolWindowMetrics metrics) {
+        if (metrics == null) {
+            return null;
+        }
+        Map<String, Object> json = new LinkedHashMap<>();
+        json.put("samples", metrics.samples());
+        json.put("failures", metrics.failures());
+        json.put("failurePercent", finiteOrNull(metrics.failurePercent()));
+        json.put("sampleRate", finiteOrNull(metrics.sampleRate()));
+        json.put("avgDurationMs", finiteOrNull(metrics.avgDurationMs()));
+        json.put("sentMessages", metrics.sentMessages());
+        json.put("receivedMessages", metrics.receivedMessages());
+        json.put("matchedMessages", metrics.matchedMessages());
+        json.put("sentRate", finiteOrNull(metrics.sentRate()));
+        json.put("receivedRate", finiteOrNull(metrics.receivedRate()));
+        json.put("matchedRate", finiteOrNull(metrics.matchedRate()));
+        json.put("avgFirstMessageLatencyMs", finiteOrNull(metrics.avgFirstMessageLatencyMs()));
+        return json;
+    }
+
+    private PerformanceTrendSnapshot readTrendSnapshot(Map<String, Object> json) {
+        if (json.isEmpty()) {
+            return null;
+        }
+        return new PerformanceTrendSnapshot(
+                intValue(json, "activeUsers", 0),
+                intValue(json, "activeWebSocketConnections", 0),
+                intValue(json, "activeSseStreams", 0),
+                readTrendMetrics(objectMap(json.get("overview"))),
+                readTrendMetrics(objectMap(json.get("http"))),
+                readTrendMetrics(objectMap(json.get("webSocket"))),
+                readTrendMetrics(objectMap(json.get("sse")))
+        );
+    }
+
+    private PerformanceTrendSnapshot.ProtocolWindowMetrics readTrendMetrics(Map<String, Object> json) {
+        if (json.isEmpty()) {
+            return emptyTrendMetrics();
+        }
+        return new PerformanceTrendSnapshot.ProtocolWindowMetrics(
+                intValue(json, "samples", 0),
+                intValue(json, "failures", 0),
+                doubleValue(json, "failurePercent", Double.NaN),
+                doubleValue(json, "sampleRate", Double.NaN),
+                doubleValue(json, "avgDurationMs", Double.NaN),
+                intValue(json, "sentMessages", 0),
+                intValue(json, "receivedMessages", 0),
+                intValue(json, "matchedMessages", 0),
+                doubleValue(json, "sentRate", Double.NaN),
+                doubleValue(json, "receivedRate", Double.NaN),
+                doubleValue(json, "matchedRate", Double.NaN),
+                doubleValue(json, "avgFirstMessageLatencyMs", Double.NaN)
+        );
+    }
+
+    private PerformanceTrendSnapshot.ProtocolWindowMetrics emptyTrendMetrics() {
+        return new PerformanceTrendSnapshot.ProtocolWindowMetrics(
+                0, 0, Double.NaN, Double.NaN, Double.NaN, 0, 0, 0,
+                Double.NaN, Double.NaN, Double.NaN, Double.NaN
+        );
+    }
+
+    private Object finiteOrNull(double value) {
+        return Double.isFinite(value) ? value : null;
     }
 
     private Map<String, Object> root(String json) {

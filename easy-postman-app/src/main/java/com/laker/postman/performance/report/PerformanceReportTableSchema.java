@@ -23,7 +23,6 @@ public class PerformanceReportTableSchema {
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_QPS),
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_SENT_KB_PER_SEC),
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_RECEIVED_KB_PER_SEC),
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG_BYTES),
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG),
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_MIN),
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_MAX),

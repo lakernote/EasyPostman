@@ -229,6 +229,10 @@ public class PerformanceRequestExecutor {
             } catch (Exception ex) {
                 if (cancelledChecker.test(ex)) {
                     log.debug("请求被取消/中断（压测已停止）: {}", ex.getMessage());
+                    errorMsg = I18nUtil.getMessage(
+                            MessageKeys.PERFORMANCE_MSG_EXECUTION_INTERRUPTED,
+                            "Client stopped HTTP request before completion"
+                    );
                     interrupted = true;
                 } else {
                     log.error("请求执行失败: {}", ex.getMessage(), ex);

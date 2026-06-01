@@ -3,8 +3,10 @@ package com.laker.postman.panel.performance.result;
 import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
 import com.laker.postman.common.component.button.SegmentedToggleButton;
 import com.laker.postman.performance.core.model.PerformanceProtocol;
-import com.laker.postman.performance.model.PerformanceProtocolLabels;
 import com.laker.postman.performance.core.model.RequestResult;
+import com.laker.postman.performance.core.model.PerformanceStatsCollector;
+import com.laker.postman.performance.core.model.PerformanceStatsSnapshot;
+import com.laker.postman.performance.model.PerformanceProtocolLabels;
 import com.laker.postman.test.AbstractSwingUiTest;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -23,7 +25,6 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.ResourceBundle;
 
 import static org.testng.Assert.assertEquals;
@@ -41,12 +42,7 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
         );
 
         PerformanceReportPanel panel = new PerformanceReportPanel();
-        panel.updateReport(
-                Map.of("search", List.of(100L, 100L, 100L)),
-                Map.of("search", 3),
-                Map.of(),
-                results
-        );
+        panel.updateReport(statsSnapshot(results));
 
         DefaultTableModel model = getReportTableModel(panel);
         assertEquals(model.getValueAt(0, 5).toString(), "1.50");
@@ -61,12 +57,7 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
         );
 
         PerformanceReportPanel panel = new PerformanceReportPanel();
-        panel.updateReport(
-                Map.of("search", List.of(100L, 100L)),
-                Map.of("search", 2),
-                Map.of(),
-                results
-        );
+        panel.updateReport(statsSnapshot(results));
 
         String markdown = panel.buildMarkdownReport();
 
@@ -74,6 +65,25 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
         assertTrue(markdown.contains("Search API"), markdown);
         assertTrue(markdown.contains("| QPS |"), markdown);
         assertTrue(markdown.contains("1.00"), markdown);
+    }
+
+    @Test
+    public void shouldNotExposeAverageReceivedBytesColumnInHttpReport() throws Exception {
+        RequestResult result = new RequestResult(1_000, 1_100, true,
+                "download", "Download API", PerformanceProtocol.HTTP);
+        result.receivedBytes = 12_288L;
+
+        PerformanceReportPanel panel = new PerformanceReportPanel();
+        panel.updateReport(statsSnapshot(result));
+
+        DefaultTableModel model = getReportTableModel(panel);
+        String markdown = panel.buildMarkdownReport();
+
+        assertEquals(model.getColumnCount(), 14);
+        assertFalse(hasColumn(model, "平均接收字节"));
+        assertFalse(hasColumn(model, "Avg Received Bytes"));
+        assertFalse(markdown.contains("平均接收字节"));
+        assertFalse(markdown.contains("Avg Received Bytes"));
     }
 
     @Test
@@ -146,7 +156,7 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
         }
 
         PerformanceReportPanel panel = new PerformanceReportPanel();
-        panel.updateReport(Map.of(), Map.of(), Map.of(), results);
+        panel.updateReport(statsSnapshot(results));
 
         DefaultTableModel model = getSseReportTableModel(panel);
         assertEquals(model.getColumnCount(), 15);
@@ -159,9 +169,9 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
         assertEquals(model.getColumnName(12),
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_P99_FIRST_EVENT));
         assertEquals(model.getValueAt(0, 9), "550 ms");
-        assertEquals(model.getValueAt(0, 10), "910 ms");
-        assertEquals(model.getValueAt(0, 11), "955 ms");
-        assertEquals(model.getValueAt(0, 12), "991 ms");
+        assertEquals(model.getValueAt(0, 10), "900 ms");
+        assertEquals(model.getValueAt(0, 11), "1000 ms");
+        assertEquals(model.getValueAt(0, 12), "1000 ms");
     }
 
     @Test
@@ -170,7 +180,7 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
         RequestResult sse = new RequestResult(1_000, 2_000, true, "sse", "SSE API", PerformanceProtocol.SSE);
 
         PerformanceReportPanel panel = new PerformanceReportPanel();
-        panel.updateReport(Map.of(), Map.of(), Map.of(), List.of(ws, sse));
+        panel.updateReport(statsSnapshot(ws, sse));
 
         DefaultTableModel webSocketModel = getWebSocketReportTableModel(panel);
         DefaultTableModel sseModel = getSseReportTableModel(panel);
@@ -191,7 +201,7 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
         RequestResult failure = new RequestResult(2_000, 3_000, false, "ws", "WebSocket API", PerformanceProtocol.WEBSOCKET);
 
         PerformanceReportPanel panel = new PerformanceReportPanel();
-        panel.updateReport(Map.of(), Map.of(), Map.of(), List.of(success, failure));
+        panel.updateReport(statsSnapshot(success, failure));
 
         JTable webSocketTable = findTableByColumnCount(findAll(panel, JTable.class), 13);
         Component apiRateCell = webSocketTable.getCellRenderer(0, 4)
@@ -212,7 +222,6 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
         assertEquals(zh.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_P95_STREAM), "P95 样本耗时");
         assertEquals(zh.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_SENT_KB_PER_SEC), "发送 KB/s");
         assertEquals(zh.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_RECEIVED_KB_PER_SEC), "接收 KB/s");
-        assertEquals(zh.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG_BYTES), "平均接收字节");
         assertEquals(zh.getString(MessageKeys.PERFORMANCE_TREND_SESSION_DURATION_MS), "活跃会话时长 (ms)");
         assertEquals(zh.getString(MessageKeys.PERFORMANCE_TREND_STREAM_DURATION_MS), "活跃流时长 (ms)");
         assertEquals(zh.getString(MessageKeys.PERFORMANCE_TREND_ACTIVE_WS), "会话数");
@@ -224,7 +233,6 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
         assertEquals(en.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_P95_STREAM), "P95 Sample Duration");
         assertEquals(en.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_SENT_KB_PER_SEC), "Sent KB/s");
         assertEquals(en.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_RECEIVED_KB_PER_SEC), "Received KB/s");
-        assertEquals(en.getString(MessageKeys.PERFORMANCE_REPORT_COLUMN_AVG_BYTES), "Avg Received Bytes");
         assertEquals(en.getString(MessageKeys.PERFORMANCE_TREND_SESSION_DURATION_MS), "Active Session Duration (ms)");
         assertEquals(en.getString(MessageKeys.PERFORMANCE_TREND_STREAM_DURATION_MS), "Active Stream Duration (ms)");
         assertEquals(en.getString(MessageKeys.PERFORMANCE_TREND_ACTIVE_WS), "Sessions");
@@ -234,6 +242,18 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
         Field field = PerformanceReportPanel.class.getDeclaredField("reportTableModel");
         field.setAccessible(true);
         return (DefaultTableModel) field.get(panel);
+    }
+
+    private static PerformanceStatsSnapshot statsSnapshot(List<RequestResult> results) {
+        PerformanceStatsCollector collector = new PerformanceStatsCollector();
+        for (RequestResult result : results) {
+            collector.record(result);
+        }
+        return collector.snapshot();
+    }
+
+    private static PerformanceStatsSnapshot statsSnapshot(RequestResult... results) {
+        return statsSnapshot(List.of(results));
     }
 
     private static DefaultTableModel getSseReportTableModel(PerformanceReportPanel panel) throws Exception {

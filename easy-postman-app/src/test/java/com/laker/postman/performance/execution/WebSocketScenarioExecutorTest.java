@@ -449,7 +449,7 @@ public class WebSocketScenarioExecutorTest {
             );
 
             executor.execute(PerformanceTestPlanCompiler.compileRequestSampler(requestNode), iterationContext);
-            PerformanceRealtimeMetrics.Sample sample = realtimeMetrics.sample(System.currentTimeMillis());
+            PerformanceRealtimeMetrics.Sample sample = realtimeMetrics.drainWindow(System.currentTimeMillis());
 
             assertTrue(serverReceivedMessage.await(1, TimeUnit.SECONDS), "WebSocket server should receive one message");
             assertEquals(receivedPayload.get(), "script-token/csv-alice");
@@ -1207,6 +1207,52 @@ public class WebSocketScenarioExecutorTest {
     }
 
     @Test
+    public void shouldUseOneStableMetricsKeyForSingleWebSocketSession() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            CountDownLatch serverReceivedMessage = new CountDownLatch(1);
+            server.enqueue(new MockResponse().withWebSocketUpgrade(new WebSocketListener() {
+                @Override
+                public void onMessage(WebSocket webSocket, String text) {
+                    serverReceivedMessage.countDown();
+                    webSocket.send("ack");
+                }
+            }));
+            server.start();
+
+            PreparedRequest request = new PreparedRequest();
+            request.method = "GET";
+            request.url = server.url("/socket").toString().replaceFirst("^http", "ws");
+
+            PerformanceTestPlanNode requestNode = new PerformanceTestPlanNode(new PerformanceTreeNode("request", NodeType.REQUEST));
+            addConnectStep(requestNode, new WebSocketPerformanceData());
+            addCustomSendStep(requestNode, "payload");
+            addFirstMessageReadStep(requestNode);
+            addCloseStep(requestNode);
+
+            RecordingWebSocketMetrics metrics = new RecordingWebSocketMetrics();
+            WebSocketScenarioExecutor.Result result = new WebSocketScenarioExecutor(
+                    () -> true,
+                    throwable -> false,
+                    ConcurrentHashMap.newKeySet(),
+                    metrics
+            ).execute(
+                    request,
+                    PerformanceTestPlanCompiler.compileRequestSampler(requestNode),
+                    new WebSocketPerformanceData(),
+                    "",
+                    null,
+                    "ws-api",
+                    "WS API"
+            );
+
+            assertTrue(serverReceivedMessage.await(1, TimeUnit.SECONDS));
+            assertFalse(result.executionFailed, result.errorMsg);
+            assertEquals(metrics.uniqueSessionKeyCount(), 1,
+                    "同一个 WebSocket 会话的 start/send/receive/match/end 必须落在同一个统计 key 上");
+        }
+    }
+
+    @Test
     public void shouldMarkRepeatedSendAsInterruptedWhenRunStopsBeforeCompletion() throws Exception {
         try (MockWebServer server = new MockWebServer()) {
             CountDownLatch firstMessageReceived = new CountDownLatch(1);
@@ -1339,6 +1385,56 @@ public class WebSocketScenarioExecutorTest {
         public void recordWebSocketSessionEnd(Object session) {
             sleepSessionEndDelay();
             super.recordWebSocketSessionEnd(session);
+        }
+    }
+
+    private static final class RecordingWebSocketMetrics extends PerformanceRealtimeMetrics {
+        private final java.util.Set<Integer> sessionKeys = ConcurrentHashMap.newKeySet();
+
+        @Override
+        public void recordWebSocketSessionStart(Object session, long startTimeMs, String apiId, String apiName) {
+            recordSessionKey(session);
+            super.recordWebSocketSessionStart(session, startTimeMs, apiId, apiName);
+        }
+
+        @Override
+        public void recordWebSocketSent(Object session) {
+            recordSessionKey(session);
+            super.recordWebSocketSent(session);
+        }
+
+        @Override
+        public void recordWebSocketReceived(Object session) {
+            recordSessionKey(session);
+            super.recordWebSocketReceived(session);
+        }
+
+        @Override
+        public void recordWebSocketMatched(Object session) {
+            recordSessionKey(session);
+            super.recordWebSocketMatched(session);
+        }
+
+        @Override
+        public void recordWebSocketFirstMessageLatency(Object session, long latencyMs) {
+            recordSessionKey(session);
+            super.recordWebSocketFirstMessageLatency(session, latencyMs);
+        }
+
+        @Override
+        public void recordWebSocketSessionEnd(Object session) {
+            recordSessionKey(session);
+            super.recordWebSocketSessionEnd(session);
+        }
+
+        private void recordSessionKey(Object session) {
+            if (session != null) {
+                sessionKeys.add(System.identityHashCode(session));
+            }
+        }
+
+        private int uniqueSessionKeyCount() {
+            return sessionKeys.size();
         }
     }
 

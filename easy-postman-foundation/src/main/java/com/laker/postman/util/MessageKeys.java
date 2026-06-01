@@ -669,6 +669,7 @@ public final class MessageKeys {
     public static final String PERFORMANCE_REMOTE_MSG_FAILED = "performance.remote.msg.failed";
     public static final String PERFORMANCE_REMOTE_MSG_STARTED = "performance.remote.msg.started";
     public static final String PERFORMANCE_REMOTE_ASSETS_WARNING = "performance.remote.assets.warning";
+    public static final String PERFORMANCE_REMOTE_WORKER_PROTOCOL_MISMATCH = "performance.remote.worker.protocol_mismatch";
     public static final String PERFORMANCE_PLAN_LABEL = "performance.plan.label";
     public static final String PERFORMANCE_PLAN_ADD_TOOLTIP = "performance.plan.add.tooltip";
     public static final String PERFORMANCE_PLAN_DUPLICATE_TOOLTIP = "performance.plan.duplicate.tooltip";
@@ -877,7 +878,6 @@ public final class MessageKeys {
     public static final String PERFORMANCE_REPORT_COLUMN_QPS = "performance.report.column.qps";
     public static final String PERFORMANCE_REPORT_COLUMN_SENT_KB_PER_SEC = "performance.report.column.sent_kb_per_sec";
     public static final String PERFORMANCE_REPORT_COLUMN_RECEIVED_KB_PER_SEC = "performance.report.column.received_kb_per_sec";
-    public static final String PERFORMANCE_REPORT_COLUMN_AVG_BYTES = "performance.report.column.avg_bytes";
     public static final String PERFORMANCE_REPORT_COLUMN_AVG = "performance.report.column.avg";
     public static final String PERFORMANCE_REPORT_COLUMN_MIN = "performance.report.column.min";
     public static final String PERFORMANCE_REPORT_COLUMN_MAX = "performance.report.column.max";

@@ -17,6 +17,8 @@ import com.laker.postman.performance.core.runtime.PerformanceThreadFactory;
 import com.laker.postman.performance.core.worker.PerformanceWorkerAssignment;
 import com.laker.postman.performance.core.worker.PerformanceWorkerAssignmentPlanner;
 import com.laker.postman.performance.core.worker.PerformanceWorkerEndpoint;
+import com.laker.postman.performance.core.worker.PerformanceWorkerHealthResponse;
+import com.laker.postman.performance.core.worker.PerformanceWorkerProtocol;
 import com.laker.postman.performance.core.worker.PerformanceWorkerResultDetail;
 import com.laker.postman.performance.core.worker.PerformanceWorkerRunDetailsResponse;
 import com.laker.postman.performance.core.worker.PerformanceWorkerRunRequest;
@@ -143,6 +145,7 @@ final class PerformanceRemoteRunControlSupport {
                           List<PerformanceWorkerEndpoint> workers,
                           String runId) throws Exception {
         // GUI remote 只做 JMeter 风格的控制面分发；plan 中的本地资产路径由用户提前放到每台 worker。
+        validateWorkerProtocols(workers);
         List<PerformanceWorkerAssignment> assignments = assignmentPlanner.plan(runPlan, workers, runId);
         for (int i = 0; i < workers.size(); i++) {
             workerClient.submitRun(workers.get(i), PerformanceWorkerRunRequest.builder()
@@ -152,6 +155,23 @@ final class PerformanceRemoteRunControlSupport {
                     .build());
         }
         return totalAssignedUsers(assignments);
+    }
+
+    private void validateWorkerProtocols(List<PerformanceWorkerEndpoint> workers) throws Exception {
+        for (PerformanceWorkerEndpoint worker : workers) {
+            PerformanceWorkerHealthResponse health = workerClient.health(worker);
+            if (health == null || !health.usesCurrentProtocol()) {
+                String actualVersion = health == null || health.getWorkerProtocolVersion().isBlank()
+                        ? "legacy"
+                        : health.getWorkerProtocolVersion();
+                throw new IllegalStateException(I18nUtil.getMessage(
+                        MessageKeys.PERFORMANCE_REMOTE_WORKER_PROTOCOL_MISMATCH,
+                        endpointLabel(worker),
+                        PerformanceWorkerProtocol.CURRENT_VERSION,
+                        actualVersion
+                ));
+            }
+        }
     }
 
     private void resetRemoteTrendSamplingWindow() {
@@ -183,9 +203,10 @@ final class PerformanceRemoteRunControlSupport {
                                 int totalAssignedUsers) throws Exception {
         long deadline = System.currentTimeMillis() + TIMEOUT_MS;
         while (true) {
-            RemoteProgressSnapshot progress = pollProgress(workers, runId, totalAssignedUsers);
+            boolean includeTrendSnapshot = shouldRequestStatusTrendSnapshot(System.currentTimeMillis(), false);
+            RemoteProgressSnapshot progress = pollProgress(workers, runId, totalAssignedUsers, includeTrendSnapshot);
             updateRemoteProgress(progressLabel, progress);
-            updateLiveViews(progress, false);
+            updateLiveViews(progress, includeTrendSnapshot);
             if (progress.completedWorkers() == workers.size()) {
                 return;
             }
@@ -198,7 +219,8 @@ final class PerformanceRemoteRunControlSupport {
 
     private RemoteProgressSnapshot pollProgress(List<PerformanceWorkerEndpoint> workers,
                                                 String runId,
-                                                int totalAssignedUsers) throws Exception {
+                                                int totalAssignedUsers,
+                                                boolean includeTrendSnapshot) throws Exception {
         int done = 0;
         int activeUsers = 0;
         int totalUsers = 0;
@@ -207,9 +229,11 @@ final class PerformanceRemoteRunControlSupport {
         long totalRequests = 0;
         long failedRequests = 0;
         List<PerformanceJsonReport> reports = new ArrayList<>();
+        List<PerformanceTrendSnapshot> trendSnapshots = new ArrayList<>();
         boolean includeReport = shouldIncludeStatusReport();
+        boolean includeTrend = includeTrendSnapshot && shouldIncludeStatusTrend();
         for (PerformanceWorkerEndpoint worker : workers) {
-            PerformanceWorkerRunStatusResponse status = workerClient.status(worker, runId, includeReport);
+            PerformanceWorkerRunStatusResponse status = workerClient.status(worker, runId, includeReport, includeTrend);
             if (isTerminal(status.getStatus())) {
                 done++;
             }
@@ -221,6 +245,9 @@ final class PerformanceRemoteRunControlSupport {
             failedRequests += Math.max(0L, status.getFailedRequests());
             if (status.getReport() != null) {
                 reports.add(status.getReport());
+            }
+            if (status.getTrendSnapshot() != null) {
+                trendSnapshots.add(status.getTrendSnapshot());
             }
         }
         int resolvedTotalUsers = totalUsers > 0 ? totalUsers : Math.max(0, totalAssignedUsers);
@@ -234,6 +261,12 @@ final class PerformanceRemoteRunControlSupport {
                 reports
         );
         rememberLastLiveReport(report);
+        PerformanceTrendSnapshot trendSnapshot = mergeTrendSnapshots(
+                activeUsers,
+                activeWebSocketConnections,
+                activeSseStreams,
+                trendSnapshots
+        );
         return new RemoteProgressSnapshot(
                 activeUsers,
                 resolvedTotalUsers,
@@ -242,7 +275,8 @@ final class PerformanceRemoteRunControlSupport {
                 totalRequests,
                 failedRequests,
                 done,
-                report
+                report,
+                trendSnapshot
         );
     }
 
@@ -413,28 +447,34 @@ final class PerformanceRemoteRunControlSupport {
     }
 
     private boolean shouldUpdateTrend(boolean forceTrend) {
+        return forceTrend && isTrendEnabled() && performanceTrendPanel != null;
+    }
+
+    boolean shouldRequestStatusTrendSnapshot(long nowMs, boolean forceTrend) {
         if (!isTrendEnabled() || performanceTrendPanel == null) {
             return false;
         }
         if (forceTrend) {
+            lastTrendSampleAtMs = Math.max(0L, nowMs);
             return true;
         }
-        long now = System.currentTimeMillis();
         long intervalMs = trendSamplingIntervalMs();
+        long normalizedNow = Math.max(0L, nowMs);
         if (lastTrendSampleAtMs <= 0) {
-            lastTrendSampleAtMs = now;
+            lastTrendSampleAtMs = normalizedNow;
             return false;
         }
-        if (now - lastTrendSampleAtMs < intervalMs) {
+        if (normalizedNow - lastTrendSampleAtMs < intervalMs) {
             return false;
         }
-        lastTrendSampleAtMs = now;
+        lastTrendSampleAtMs = normalizedNow;
         return true;
     }
 
     private void updateTrendView(RemoteProgressSnapshot progress) {
         long now = System.currentTimeMillis();
-        PerformanceTrendSnapshot trendSnapshot = trendWindowSampler.sample(
+        PerformanceTrendSnapshot trendSnapshot = progress.trendSnapshot() == null
+                ? trendWindowSampler.drainReportDelta(
                 progress.activeUsers(),
                 progress.activeWebSocketConnections(),
                 progress.activeSseStreams(),
@@ -442,7 +482,8 @@ final class PerformanceRemoteRunControlSupport {
                 progress.failedRequests(),
                 progress.report(),
                 now
-        );
+        )
+                : progress.trendSnapshot();
         SwingUtilities.invokeLater(() -> performanceTrendPanel.addOrUpdate(
                 new Millisecond(new Date(now)),
                 trendSnapshot
@@ -451,6 +492,17 @@ final class PerformanceRemoteRunControlSupport {
 
     private void updateFinalTrend(PerformanceJsonReport report, int totalUsers, int workerCount) {
         updateLiveViews(finalProgress(report, totalUsers, workerCount), true);
+        appendRemoteIdleTrendPoint();
+    }
+
+    private void appendRemoteIdleTrendPoint() {
+        if (!isTrendEnabled() || performanceTrendPanel == null) {
+            return;
+        }
+        SwingUtilities.invokeLater(() -> performanceTrendPanel.addOrUpdate(
+                new Millisecond(new Date(System.currentTimeMillis() + 1L)),
+                PerformanceTrendSnapshot.terminalIdle()
+        ));
     }
 
     private RemoteProgressSnapshot finalProgress(PerformanceJsonReport report, int totalUsers, int workerCount) {
@@ -465,7 +517,8 @@ final class PerformanceRemoteRunControlSupport {
                 totalRequests,
                 Math.max(0L, totalRequests - successRequests),
                 Math.max(0, workerCount),
-                report
+                report,
+                null
         );
     }
 
@@ -488,8 +541,11 @@ final class PerformanceRemoteRunControlSupport {
     }
 
     boolean shouldIncludeStatusReport() {
-        // WS/SSE 趋势依赖 worker 的协议聚合计数；只拉轻量 status 时只能得到 HTTP 总请求数。
-        return isReportRealtimeEnabled() || isTrendEnabled();
+        return isReportRealtimeEnabled();
+    }
+
+    boolean shouldIncludeStatusTrend() {
+        return isTrendEnabled() && !isReportRealtimeEnabled();
     }
 
     private long trendSamplingIntervalMs() {
@@ -508,9 +564,99 @@ final class PerformanceRemoteRunControlSupport {
                                           long totalRequests,
                                           long failedRequests,
                                           int completedWorkers,
-                                          PerformanceJsonReport report) {
+                                          PerformanceJsonReport report,
+                                          PerformanceTrendSnapshot trendSnapshot) {
         private static RemoteProgressSnapshot empty(int totalUsers) {
-            return new RemoteProgressSnapshot(0, totalUsers, 0, 0, 0, 0, 0, null);
+            return new RemoteProgressSnapshot(0, totalUsers, 0, 0, 0, 0, 0, null, null);
         }
+    }
+
+    private PerformanceTrendSnapshot mergeTrendSnapshots(int activeUsers,
+                                                         int activeWebSocketConnections,
+                                                         int activeSseStreams,
+                                                         List<PerformanceTrendSnapshot> snapshots) {
+        if (snapshots == null || snapshots.isEmpty()) {
+            return null;
+        }
+        return new PerformanceTrendSnapshot(
+                activeUsers,
+                activeWebSocketConnections,
+                activeSseStreams,
+                mergeTrendMetrics(snapshots, PerformanceTrendSnapshot::overview),
+                mergeTrendMetrics(snapshots, PerformanceTrendSnapshot::http),
+                mergeTrendMetrics(snapshots, PerformanceTrendSnapshot::webSocket),
+                mergeTrendMetrics(snapshots, PerformanceTrendSnapshot::sse)
+        );
+    }
+
+    private PerformanceTrendSnapshot.ProtocolWindowMetrics mergeTrendMetrics(
+            List<PerformanceTrendSnapshot> snapshots,
+            TrendMetricsSelector selector) {
+        int samples = 0;
+        int failures = 0;
+        int sentMessages = 0;
+        int receivedMessages = 0;
+        int matchedMessages = 0;
+        double sampleRate = 0;
+        double sentRate = 0;
+        double receivedRate = 0;
+        double matchedRate = 0;
+        double durationTotal = 0;
+        int durationWeight = 0;
+        double firstLatencyTotal = 0;
+        int firstLatencyWeight = 0;
+
+        for (PerformanceTrendSnapshot snapshot : snapshots) {
+            if (snapshot == null) {
+                continue;
+            }
+            PerformanceTrendSnapshot.ProtocolWindowMetrics metrics = selector.select(snapshot);
+            if (metrics == null) {
+                continue;
+            }
+            samples += Math.max(0, metrics.samples());
+            failures += Math.max(0, metrics.failures());
+            sentMessages += Math.max(0, metrics.sentMessages());
+            receivedMessages += Math.max(0, metrics.receivedMessages());
+            matchedMessages += Math.max(0, metrics.matchedMessages());
+            sampleRate += finite(metrics.sampleRate());
+            sentRate += finite(metrics.sentRate());
+            receivedRate += finite(metrics.receivedRate());
+            matchedRate += finite(metrics.matchedRate());
+            int weight = Math.max(0, metrics.samples());
+            if (Double.isFinite(metrics.avgDurationMs())) {
+                int resolvedWeight = weight == 0 ? 1 : weight;
+                durationTotal += metrics.avgDurationMs() * resolvedWeight;
+                durationWeight += resolvedWeight;
+            }
+            if (Double.isFinite(metrics.avgFirstMessageLatencyMs())) {
+                int resolvedWeight = weight == 0 ? 1 : weight;
+                firstLatencyTotal += metrics.avgFirstMessageLatencyMs() * resolvedWeight;
+                firstLatencyWeight += resolvedWeight;
+            }
+        }
+
+        return new PerformanceTrendSnapshot.ProtocolWindowMetrics(
+                samples,
+                failures,
+                samples == 0 ? 0.0 : failures * 100.0 / samples,
+                sampleRate,
+                durationWeight == 0 ? Double.NaN : durationTotal / durationWeight,
+                sentMessages,
+                receivedMessages,
+                matchedMessages,
+                sentRate,
+                receivedRate,
+                matchedRate,
+                firstLatencyWeight == 0 ? Double.NaN : firstLatencyTotal / firstLatencyWeight
+        );
+    }
+
+    private double finite(double value) {
+        return Double.isFinite(value) ? value : 0.0;
+    }
+
+    private interface TrendMetricsSelector {
+        PerformanceTrendSnapshot.ProtocolWindowMetrics select(PerformanceTrendSnapshot snapshot);
     }
 }

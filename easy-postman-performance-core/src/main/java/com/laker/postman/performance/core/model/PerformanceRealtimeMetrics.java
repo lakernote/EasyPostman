@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class PerformanceRealtimeMetrics {
 
-    private static final long MIN_RATE_SAMPLE_INTERVAL_MS = 1000L;
+    private static final long MIN_RATE_SAMPLE_INTERVAL_MS = 1L;
 
     private final AtomicLong webSocketSentMessages = new AtomicLong();
     private final AtomicLong webSocketReceivedMessages = new AtomicLong();
@@ -26,8 +26,12 @@ public class PerformanceRealtimeMetrics {
     private final Map<Object, StreamSessionMetrics> sseSessionStarts = new ConcurrentHashMap<>();
     private final AtomicInteger activeWebSocketSessions = new AtomicInteger();
     private final AtomicInteger peakWebSocketSessions = new AtomicInteger();
+    // 趋势采样只需要平均活跃时长，维护 startTime 总和可避免每秒遍历全部活跃连接。
+    private final AtomicLong webSocketActiveSessionStartTotalMs = new AtomicLong();
     private final AtomicInteger activeSseSessions = new AtomicInteger();
     private final AtomicInteger peakSseSessions = new AtomicInteger();
+    // 实时报告仍可读取 session map 生成明细，趋势路径只走 O(1) 聚合。
+    private final AtomicLong sseActiveSessionStartTotalMs = new AtomicLong();
 
     private final AtomicLong lastSampleTimeMs = new AtomicLong();
     private final AtomicLong lastWebSocketSentMessages = new AtomicLong();
@@ -54,8 +58,10 @@ public class PerformanceRealtimeMetrics {
         sseSessionStarts.clear();
         activeWebSocketSessions.set(0);
         peakWebSocketSessions.set(0);
+        webSocketActiveSessionStartTotalMs.set(0);
         activeSseSessions.set(0);
         peakSseSessions.set(0);
+        sseActiveSessionStartTotalMs.set(0);
 
         lastSampleTimeMs.set(nowMs);
         lastWebSocketSentMessages.set(0);
@@ -117,13 +123,19 @@ public class PerformanceRealtimeMetrics {
                     new StreamSessionMetrics(startTimeMs, apiId, apiName)
             );
             if (previous == null) {
+                webSocketActiveSessionStartTotalMs.addAndGet(startTimeMs);
                 updatePeak(peakWebSocketSessions, activeWebSocketSessions.incrementAndGet());
             }
         }
     }
 
     public void recordWebSocketSessionEnd(Object session) {
-        if (session != null && webSocketSessionStarts.remove(session) != null) {
+        if (session == null) {
+            return;
+        }
+        StreamSessionMetrics removed = webSocketSessionStarts.remove(session);
+        if (removed != null) {
+            webSocketActiveSessionStartTotalMs.addAndGet(-removed.startTimeMs);
             decrementActive(activeWebSocketSessions);
         }
     }
@@ -167,13 +179,19 @@ public class PerformanceRealtimeMetrics {
                     new StreamSessionMetrics(startTimeMs, apiId, apiName)
             );
             if (previous == null) {
+                sseActiveSessionStartTotalMs.addAndGet(startTimeMs);
                 updatePeak(peakSseSessions, activeSseSessions.incrementAndGet());
             }
         }
     }
 
     public void recordSseSessionEnd(Object session) {
-        if (session != null && sseSessionStarts.remove(session) != null) {
+        if (session == null) {
+            return;
+        }
+        StreamSessionMetrics removed = sseSessionStarts.remove(session);
+        if (removed != null) {
+            sseActiveSessionStartTotalMs.addAndGet(-removed.startTimeMs);
             decrementActive(activeSseSessions);
         }
     }
@@ -185,7 +203,10 @@ public class PerformanceRealtimeMetrics {
         );
     }
 
-    public synchronized Sample sample(long nowMs) {
+    /**
+     * 读取流式协议实时窗口并推进上次计数，QPS/消息速率类指标不能重复读取。
+     */
+    public synchronized Sample drainWindow(long nowMs) {
         long previousSampleTimeMs = lastSampleTimeMs.getAndSet(nowMs);
         long elapsedMs = Math.max(MIN_RATE_SAMPLE_INTERVAL_MS, nowMs - previousSampleTimeMs);
         double seconds = elapsedMs / 1000.0;
@@ -216,7 +237,7 @@ public class PerformanceRealtimeMetrics {
                         webSocketLatencyCountDelta
                 ),
                 webSocketActiveSessionCount,
-                activeDuration(webSocketSessionStarts, nowMs),
+                activeDuration(activeWebSocketSessions.get(), webSocketActiveSessionStartTotalMs.get(), nowMs),
                 rate(currentSseReceived - lastSseReceivedMessages.getAndSet(currentSseReceived), seconds),
                 rate(currentSseMatched - lastSseMatchedMessages.getAndSet(currentSseMatched), seconds),
                 average(
@@ -224,7 +245,7 @@ public class PerformanceRealtimeMetrics {
                         sseLatencyCountDelta
                 ),
                 sseActiveSessionCount,
-                activeDuration(sseSessionStarts, nowMs)
+                activeDuration(activeSseSessions.get(), sseActiveSessionStartTotalMs.get(), nowMs)
         );
     }
 
@@ -236,20 +257,13 @@ public class PerformanceRealtimeMetrics {
         return count > 0 ? round((double) Math.max(0, total) / count) : Double.NaN;
     }
 
-    private static double activeDuration(Map<Object, StreamSessionMetrics> sessionStarts, long nowMs) {
-        if (sessionStarts.isEmpty()) {
+    private static double activeDuration(int activeSessions, long activeStartTotalMs, long nowMs) {
+        int count = Math.max(0, activeSessions);
+        if (count == 0) {
             return 0;
         }
-        long total = 0;
-        int count = 0;
-        for (StreamSessionMetrics session : sessionStarts.values()) {
-            if (session == null) {
-                continue;
-            }
-            total += Math.max(0, nowMs - session.startTimeMs);
-            count++;
-        }
-        return count > 0 ? round((double) total / count) : 0;
+        long total = Math.max(0, nowMs * (long) count - activeStartTotalMs);
+        return round((double) total / count);
     }
 
     private static void updatePeak(AtomicInteger peak, int activeSessions) {

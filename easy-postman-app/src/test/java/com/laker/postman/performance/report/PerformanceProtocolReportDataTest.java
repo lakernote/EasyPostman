@@ -13,7 +13,6 @@ import com.laker.postman.performance.core.report.PerformanceJsonReportProtocol;
 import com.laker.postman.performance.core.report.PerformanceJsonReportStream;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.List;
 
@@ -36,8 +35,8 @@ public class PerformanceProtocolReportDataTest {
         sse.matchedMessages = 4;
         sse.firstMessageLatencyMs = 140;
 
-        PerformanceProtocolReportData reportData = PerformanceProtocolReportData.fromResults(
-                List.of(http, ws, sse),
+        PerformanceProtocolReportData reportData = PerformanceProtocolReportData.fromStatsSnapshot(
+                statsSnapshot(http, ws, sse),
                 "Total"
         );
 
@@ -119,25 +118,25 @@ public class PerformanceProtocolReportDataTest {
     }
 
     @Test
-    public void shouldCalculateSseFirstEventLatencyPercentilesFromResults() {
-        List<RequestResult> results = new ArrayList<>();
+    public void shouldCalculateSseFirstEventLatencyPercentilesFromStatsSnapshot() {
+        PerformanceStatsCollector collector = new PerformanceStatsCollector();
         for (int i = 1; i <= 10; i++) {
             RequestResult result = new RequestResult(i * 1_000L, i * 1_000L + 2_000L,
                     true, "stream", "Stream API", PerformanceProtocol.SSE);
             result.firstMessageLatencyMs = i * 100L;
             result.receivedMessages = 1;
             result.matchedMessages = 1;
-            results.add(result);
+            collector.record(result);
         }
 
-        PerformanceProtocolReportData reportData = PerformanceProtocolReportData.fromResults(results, "Total");
+        PerformanceProtocolReportData reportData = PerformanceProtocolReportData.fromStatsSnapshot(collector.snapshot(), "Total");
         PerformanceProtocolReportData.StreamReportRow row = reportData.sseRows().get(0);
 
         assertEquals(row.name(), "Stream API");
         assertEquals(row.avgFirstMessageLatencyMs(), 550L);
-        assertEquals(row.p90FirstMessageLatencyMs(), 910L);
-        assertEquals(row.p95FirstMessageLatencyMs(), 955L);
-        assertEquals(row.p99FirstMessageLatencyMs(), 991L);
+        assertEquals(row.p90FirstMessageLatencyMs(), 900L);
+        assertEquals(row.p95FirstMessageLatencyMs(), 1000L);
+        assertEquals(row.p99FirstMessageLatencyMs(), 1000L);
     }
 
     @Test
@@ -232,5 +231,14 @@ public class PerformanceProtocolReportDataTest {
         assertEquals(reportData.webSocketRows().get(0).sentMessages(), 3L);
         assertEquals(reportData.webSocketRows().get(0).avgFirstMessageLatencyMs(), 45L);
         assertEquals(reportData.webSocketRows().get(0).avgDurationMs(), 500L);
+    }
+
+    private static com.laker.postman.performance.core.model.PerformanceStatsSnapshot statsSnapshot(
+            RequestResult... results) {
+        PerformanceStatsCollector collector = new PerformanceStatsCollector();
+        for (RequestResult result : results) {
+            collector.record(result);
+        }
+        return collector.snapshot();
     }
 }

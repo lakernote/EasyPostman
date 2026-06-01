@@ -11,19 +11,19 @@ import static org.testng.Assert.assertTrue;
 public class PerformanceTrendWindowCollectorTest {
 
     @Test
-    public void shouldSampleTrendDataFromDeltasAndThenResetWindow() {
+    public void shouldDrainTrendDataFromDeltasAndThenResetWindow() {
         PerformanceTrendWindowCollector collector = new PerformanceTrendWindowCollector();
         collector.record(new RequestResult(1_000, 1_100, true, "search", PerformanceProtocol.HTTP));
         collector.record(new RequestResult(1_100, 1_400, false, "search", PerformanceProtocol.HTTP));
 
-        PerformanceTrendSnapshot first = collector.sampleSnapshot(
+        PerformanceTrendSnapshot first = collector.drainWindowSnapshot(
                 5,
                 0,
                 0,
                 1_000,
                 PerformanceRealtimeMetrics.Sample.empty()
         );
-        PerformanceTrendSnapshot second = collector.sampleSnapshot(
+        PerformanceTrendSnapshot second = collector.drainWindowSnapshot(
                 5,
                 0,
                 0,
@@ -45,7 +45,7 @@ public class PerformanceTrendWindowCollectorTest {
         collector.setEnabled(false);
         collector.record(new RequestResult(1_000, 1_100, true, "search", PerformanceProtocol.HTTP));
 
-        PerformanceTrendSnapshot disabledSnapshot = collector.sampleSnapshot(
+        PerformanceTrendSnapshot disabledSnapshot = collector.drainWindowSnapshot(
                 5,
                 0,
                 0,
@@ -57,7 +57,7 @@ public class PerformanceTrendWindowCollectorTest {
 
         collector.setEnabled(true);
         collector.record(new RequestResult(2_000, 2_200, true, "search", PerformanceProtocol.HTTP));
-        PerformanceTrendSnapshot enabledSnapshot = collector.sampleSnapshot(
+        PerformanceTrendSnapshot enabledSnapshot = collector.drainWindowSnapshot(
                 5,
                 0,
                 0,
@@ -66,6 +66,26 @@ public class PerformanceTrendWindowCollectorTest {
         );
 
         assertEquals(enabledSnapshot.http().samples(), 1);
+    }
+
+    @Test
+    public void shouldUseRealtimeStreamStepRatesInsteadOfCompletedSessionTotals() {
+        PerformanceTrendWindowCollector collector = new PerformanceTrendWindowCollector();
+        RequestResult completedSession = new RequestResult(0, 10_000, true, "ws", PerformanceProtocol.WEBSOCKET);
+        completedSession.sentMessages = 1_000;
+        completedSession.receivedMessages = 1_000;
+        collector.record(completedSession);
+
+        PerformanceTrendSnapshot snapshot = collector.drainWindowSnapshot(
+                1,
+                1,
+                0,
+                1_000,
+                PerformanceRealtimeMetrics.Sample.empty()
+        );
+
+        assertEquals(snapshot.webSocket().sentRate(), 0.0);
+        assertEquals(snapshot.webSocket().receivedRate(), 0.0);
     }
 
     @Test

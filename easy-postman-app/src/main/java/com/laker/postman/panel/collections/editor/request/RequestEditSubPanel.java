@@ -1,18 +1,17 @@
 package com.laker.postman.panel.collections.editor.request;
 
-import com.laker.postman.http.runtime.model.HttpResponse;
-import com.laker.postman.http.runtime.model.PreparedRequest;
-import com.laker.postman.request.model.RequestItemProtocolEnum;
-import com.laker.postman.request.model.SavedResponse;
-import com.laker.postman.request.model.HttpRequestItem;
-
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.MarkdownEditorPanel;
 import com.laker.postman.common.component.tab.IndicatorTabComponent;
 import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.http.runtime.model.HttpResponse;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.panel.collections.editor.CollectionTreeEditorGateway;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.panel.collections.editor.request.sub.*;
+import com.laker.postman.request.model.HttpRequestItem;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.SavedResponse;
 import lombok.Getter;
 
 import javax.swing.*;
@@ -23,7 +22,6 @@ import java.awt.event.ActionEvent;
  * 单个请求编辑子面板，包含 URL、方法选择、Headers、Body 和响应展示
  */
 public class RequestEditSubPanel extends JPanel {
-    // 常量定义
     private static final int MAX_REDIRECT_COUNT = 10;
 
     private JTextField urlField;
@@ -33,26 +31,24 @@ public class RequestEditSubPanel extends JPanel {
     private final RequestEditorDataController dataController;
     private final RequestItemProtocolEnum protocol;
     private final boolean deferEditorInitialization;
+    @Getter
     private boolean editorInitialized;
     private Boolean pendingLayoutVertical;
     private final transient RequestEditorDeferredInitializationController deferredInitializationController;
 
-    // 面板类型
     @Getter
     private final RequestEditSubPanelType panelType;
 
-    // 如果是 SAVED_RESPONSE 类型，保存关联的 savedResponse 和 parentRequest
     @Getter
     private final SavedResponse savedResponse;
 
     private RequestLinePanel requestLinePanel;
-    //  RequestBodyPanel
     private RequestBodyPanel requestBodyPanel;
     private RequestSettingsPanel requestSettingsPanel;
     private AuthTabPanel authTabPanel;
     private ScriptPanel scriptPanel;
-    private MarkdownEditorPanel descriptionEditor; // Docs tab
-    private JTabbedPane reqTabs; // 请求选项卡面板
+    private MarkdownEditorPanel descriptionEditor;
+    private JTabbedPane reqTabs;
     // 主面板只保留“编排”和“状态持有”，具体行为拆给各个 helper，避免再次演变成巨型类。
     private final RequestPreparationFeedbackHelper requestPreparationFeedbackHelper = new RequestPreparationFeedbackHelper();
     private final RequestEditorSendPreparationController sendPreparationController =
@@ -73,7 +69,6 @@ public class RequestEditSubPanel extends JPanel {
     private final SavedResponseHelper savedResponseHelper = new SavedResponseHelper(new CollectionTreeEditorGateway());
     private RequestSavedResponseController savedResponseController;
 
-    // Tab indicators for showing content status
     private IndicatorTabComponent paramsTabIndicator;
     private IndicatorTabComponent authTabIndicator;
     private IndicatorTabComponent headersTabIndicator;
@@ -204,10 +199,6 @@ public class RequestEditSubPanel extends JPanel {
         } catch (Exception e) {
             throw new IllegalStateException("Failed to initialize RequestEditSubPanel on EDT", e);
         }
-    }
-
-    public boolean isEditorInitialized() {
-        return editorInitialized;
     }
 
     public String getId() {
@@ -513,14 +504,6 @@ public class RequestEditSubPanel extends JPanel {
         return dataController.currentRequest();
     }
 
-    // 取消当前请求
-    private void cancelCurrentRequest() {
-        if (runtimeController == null) {
-            return;
-        }
-        runtimeController.cancelCurrentRequest();
-    }
-
     /**
      * 关闭标签页前释放网络资源，避免后台连接在 UI 被移除后继续存活。
      */
@@ -530,21 +513,8 @@ public class RequestEditSubPanel extends JPanel {
         }
         if (!editorInitialized) {
             dataController.clearPending();
-            return;
         }
     }
-
-    boolean isDisposed() {
-        return runtimeController != null && runtimeController.isDisposed();
-    }
-
-    private void convertCurrentRequestToSse() {
-        if (runtimeController == null) {
-            return;
-        }
-        runtimeController.convertCurrentRequestToSse();
-    }
-
 
     /**
      * 如果urlField内容没有协议，自动补全 http:// 或 https:// 或 ws:// 或 wss://，根据 protocol 和用户配置判断

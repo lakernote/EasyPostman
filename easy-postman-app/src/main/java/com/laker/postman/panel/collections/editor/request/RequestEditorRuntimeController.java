@@ -156,20 +156,8 @@ final class RequestEditorRuntimeController {
         actionsController.sendWebSocketMessage();
     }
 
-    void cancelCurrentRequest() {
-        actionsController.cancelCurrentRequest();
-    }
-
     void disposeOpenConnections() {
         executionState.disposeOpenConnections();
-    }
-
-    boolean isDisposed() {
-        return executionState.isDisposed();
-    }
-
-    void convertCurrentRequestToSse() {
-        actionsController.convertCurrentRequestToSse();
     }
 
     void autoPrependProtocolIfNeeded() {

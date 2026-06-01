@@ -1,6 +1,7 @@
 package com.laker.postman.performance.core.worker;
 
 import com.laker.postman.performance.core.model.NodeType;
+import com.laker.postman.performance.core.model.PerformanceTrendSnapshot;
 import com.laker.postman.performance.core.plan.PerformanceCorePlanDocument;
 import com.laker.postman.performance.core.plan.PerformanceCorePlanNode;
 import com.laker.postman.performance.core.report.PerformanceJsonReport;
@@ -32,6 +33,19 @@ public class PerformanceWorkerProtocolJsonStorageTest {
                         .build())
                 .build();
         PerformanceWorkerProtocolJsonStorage storage = new PerformanceWorkerProtocolJsonStorage();
+
+        PerformanceWorkerHealthResponse health = PerformanceWorkerHealthResponse.builder()
+                .status("UP")
+                .workerId("worker-a")
+                .host("127.0.0.1")
+                .port(19090)
+                .workerProtocolVersion(PerformanceWorkerProtocol.CURRENT_VERSION)
+                .build();
+        PerformanceWorkerHealthResponse loadedHealth = storage.healthResponseFromJson(storage.toJson(health));
+
+        assertEquals(loadedHealth.getStatus(), "UP");
+        assertEquals(loadedHealth.getWorkerProtocolVersion(), PerformanceWorkerProtocol.CURRENT_VERSION);
+        assertEquals(loadedHealth.getPort(), 19090);
 
         PerformanceWorkerRunRequest loaded = storage.runRequestFromJson(storage.toJson(request));
 
@@ -70,6 +84,15 @@ public class PerformanceWorkerProtocolJsonStorageTest {
                 .failedRequests(1L)
                 .qps(12.5)
                 .report(report)
+                .trendSnapshot(new PerformanceTrendSnapshot(
+                        2,
+                        3,
+                        4,
+                        new PerformanceTrendSnapshot.ProtocolWindowMetrics(10, 1, 10.0, 5.0, 20.0, 0, 0, 0, 0, 0, 0, Double.NaN),
+                        new PerformanceTrendSnapshot.ProtocolWindowMetrics(10, 1, 10.0, 5.0, 20.0, 0, 0, 0, 0, 0, 0, Double.NaN),
+                        new PerformanceTrendSnapshot.ProtocolWindowMetrics(0, 0, Double.NaN, Double.NaN, Double.NaN, 6, 7, 8, 3.0, 3.5, 4.0, 11.0),
+                        new PerformanceTrendSnapshot.ProtocolWindowMetrics(0, 0, Double.NaN, Double.NaN, Double.NaN, 0, 9, 10, 0, 4.5, 5.0, 12.0)
+                ))
                 .build();
         PerformanceWorkerRunStatusResponse loadedStatus = storage.statusResponseFromJson(storage.toJson(status));
 
@@ -82,6 +105,9 @@ public class PerformanceWorkerProtocolJsonStorageTest {
         assertEquals(loadedStatus.getFailedRequests(), 1L);
         assertEquals(loadedStatus.getQps(), 12.5);
         assertEquals(loadedStatus.getReport().getSummary().getTotalRequests(), 4L);
+        assertEquals(loadedStatus.getTrendSnapshot().activeUsers(), 2);
+        assertEquals(loadedStatus.getTrendSnapshot().webSocket().receivedMessages(), 7);
+        assertEquals(loadedStatus.getTrendSnapshot().sse().matchedRate(), 5.0);
 
         PerformanceWorkerRunAcceptedResponse accepted = PerformanceWorkerRunAcceptedResponse.builder()
                 .runId("run-1")

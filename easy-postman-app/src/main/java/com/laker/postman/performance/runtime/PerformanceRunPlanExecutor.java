@@ -5,7 +5,9 @@ import com.laker.postman.model.Variable;
 import com.laker.postman.performance.execution.DefaultPerformanceNetworkRuntime;
 import com.laker.postman.performance.execution.PerformanceExecutionConfig;
 import com.laker.postman.performance.model.PerformanceStatsCollectorListener;
+import com.laker.postman.performance.model.PerformanceTrendWindowCollectorListener;
 import com.laker.postman.performance.plan.PerformanceCorePlanAdapter;
+import com.laker.postman.performance.result.PerformanceMetricsSnapshotService;
 import com.laker.postman.performance.result.PerformanceResultCollector;
 import com.laker.postman.performance.runtime.PerformanceExecutionEngine;
 import com.laker.postman.performance.runtime.PerformanceResultSink;
@@ -13,6 +15,7 @@ import com.laker.postman.performance.runtime.PerformanceRunRequest;
 import com.laker.postman.performance.runtime.PerformanceRunSession;
 import com.laker.postman.performance.core.model.PerformanceStatsCollector;
 import com.laker.postman.performance.core.model.PerformanceStatsSnapshot;
+import com.laker.postman.performance.core.model.PerformanceTrendWindowCollector;
 import com.laker.postman.performance.core.plan.PerformanceCorePlanDocumentCompiler;
 import com.laker.postman.performance.core.plan.PerformanceTestPlan;
 import com.laker.postman.performance.core.report.PerformanceJsonReport;
@@ -109,6 +112,7 @@ public class PerformanceRunPlanExecutor {
 
         AtomicBoolean running = new AtomicBoolean(false);
         PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
+        PerformanceTrendWindowCollector trendWindowCollector = new PerformanceTrendWindowCollector();
         PerformanceRunDetailCollector detailCollector = new PerformanceRunDetailCollector(
                 SettingManager::getPerformanceSlowRequestThreshold,
                 SettingManager::getPerformanceResultRowLimit
@@ -116,7 +120,11 @@ public class PerformanceRunPlanExecutor {
         control.bindStatsCollector(statsCollector);
         control.bindResultDetailsSupplier(detailCollector::snapshot);
         PerformanceResultCollector resultCollector = new PerformanceResultCollector(
-                List.of(new PerformanceStatsCollectorListener(statsCollector), detailCollector)
+                List.of(
+                        new PerformanceStatsCollectorListener(statsCollector),
+                        new PerformanceTrendWindowCollectorListener(trendWindowCollector),
+                        detailCollector
+                )
         );
         AtomicReference<PerformanceRunSummary> summaryRef = new AtomicReference<>();
         AtomicReference<PerformanceRunError> errorRef = new AtomicReference<>();
@@ -151,6 +159,18 @@ public class PerformanceRunPlanExecutor {
                 executionEngine::getActiveWebSockets,
                 executionEngine::getActiveSseStreams
         );
+        PerformanceMetricsSnapshotService metricsSnapshotService = new PerformanceMetricsSnapshotService(
+                statsCollector,
+                trendWindowCollector,
+                control::getActiveUsers,
+                executionEngine::getActiveWebSockets,
+                executionEngine::getActiveSseStreams,
+                () -> 1_000L,
+                executionEngine::drainRealtimeMetricsWindow,
+                executionEngine::liveRealtimeMetrics
+        );
+        metricsSnapshotService.resetTrendWindow(System.currentTimeMillis());
+        control.bindTrendSnapshotSupplier(metricsSnapshotService::drainTrendWindowSnapshot);
         control.recordProgress(0, executionEngine.getTotalThreads(appExecutablePlan));
         PerformanceRunSession runSession = new PerformanceRunSession(
                 () -> running.get() && control.isRunning(),

@@ -72,7 +72,8 @@ record PerformanceResponseCapturePlan(PreparedRequest.ResponseBodyMode httpRespo
     private static final class PerformancePostScriptResponseUsage {
         private static final List<Pattern> RESPONSE_BODY_ACCESS_PATTERNS = List.of(
                 Pattern.compile("\\bpm\\s*\\.\\s*response\\s*\\.\\s*(?:text|json)\\s*\\("),
-                Pattern.compile("\\bpm\\s*\\.\\s*response\\s*\\.\\s*to\\s*\\.\\s*have\\s*\\.\\s*body\\b")
+                Pattern.compile("\\bpm\\s*\\.\\s*response\\s*\\.\\s*to\\s*\\.\\s*have\\s*\\.\\s*body\\b"),
+                Pattern.compile("\\bresponseBody\\b")
         );
         private static final List<Pattern> RESPONSE_SIZE_ACCESS_PATTERNS = List.of(
                 Pattern.compile("\\bpm\\s*\\.\\s*response\\s*\\.\\s*size\\s*\\(")

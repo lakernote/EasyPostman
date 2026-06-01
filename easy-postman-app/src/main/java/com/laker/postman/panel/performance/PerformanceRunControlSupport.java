@@ -16,6 +16,7 @@ import com.laker.postman.performance.core.plan.PerformanceTestPlan;
 import com.laker.postman.performance.core.runtime.PerformanceRunError;
 import com.laker.postman.performance.core.runtime.PerformanceRunHandle;
 import com.laker.postman.performance.core.runtime.PerformanceRunSummary;
+import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -50,6 +51,7 @@ final class PerformanceRunControlSupport {
     private final PerformanceStatsCollector statsCollector;
     private final Runnable clearCachedPerformanceResultsAction;
     private final AtomicBoolean stopping = new AtomicBoolean(false);
+    private volatile long expectedTrendEndTimeMs;
 
     Thread startRun(DefaultMutableTreeNode rootNode,
                     JLabel progressLabel,
@@ -93,6 +95,8 @@ final class PerformanceRunControlSupport {
 
         long startTime = System.currentTimeMillis();
         startTimeSetter.accept(startTime);
+        expectedTrendEndTimeMs = expectedTrendEndTime(startTime, executionPlan);
+        statisticsCoordinator.markRunStarted(startTime);
         timerManager.startAll();
 
         int totalThreads = executionEngine.getTotalThreads(executionPlan);
@@ -108,7 +112,6 @@ final class PerformanceRunControlSupport {
 
                     @Override
                     public void onComplete(PerformanceRunSummary summary) {
-                        waitForFinalStats();
                         if (summary == null || !summary.isStopped()) {
                             SwingUtilities.invokeLater(PerformanceRunControlSupport.this::finishRunUi);
                         } else {
@@ -140,14 +143,6 @@ final class PerformanceRunControlSupport {
         SwingUtilities.invokeLater(() -> NotificationUtil.showError(message));
     }
 
-    private void waitForFinalStats() {
-        try {
-            Thread.sleep(100);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-    }
-
     private void finishRunUi() {
         stopping.set(false);
         runningSetter.accept(false);
@@ -155,7 +150,7 @@ final class PerformanceRunControlSupport {
         timerManager.stopAll();
 
         flushPendingAndCharts("完成时");
-        statisticsCoordinator.updateReportWithLatestDataSync();
+        statisticsCoordinator.updateFinalReportWithStatsSync();
 
         long totalTime = System.currentTimeMillis() - startTimeSupplier.getAsLong();
         PerformanceStatsSnapshot statsSnapshot = statsCollector.snapshot();
@@ -173,7 +168,7 @@ final class PerformanceRunControlSupport {
 
     private void flushUiAfterStop() {
         flushPendingAndCharts("停止时");
-        statisticsCoordinator.updateReportWithLatestDataSync();
+        statisticsCoordinator.updateFinalReportWithStatsSync();
     }
 
     private void finishStoppedRunUi() {
@@ -193,8 +188,50 @@ final class PerformanceRunControlSupport {
 
         try {
             statisticsCoordinator.sampleTrendDataSync();
+            statisticsCoordinator.appendTerminalIdleTrendPointSync(terminalTrendTimeMs());
         } catch (Exception e) {
             log.warn("{}最后一次趋势图采样失败", phase, e);
         }
+    }
+
+    private long terminalTrendTimeMs() {
+        long now = System.currentTimeMillis();
+        long expectedEnd = expectedTrendEndTimeMs;
+        return Math.max(now + 1L, expectedEnd);
+    }
+
+    private long expectedTrendEndTime(long startTimeMs, PerformanceTestPlan plan) {
+        long expectedDurationMs = expectedTrendDurationMs(plan);
+        return expectedDurationMs <= 0 ? 0L : startTimeMs + expectedDurationMs;
+    }
+
+    private long expectedTrendDurationMs(PerformanceTestPlan plan) {
+        if (plan == null || plan.getThreadGroups().isEmpty()) {
+            return 0L;
+        }
+        long durationSeconds = 0L;
+        for (var group : plan.getThreadGroups()) {
+            if (group == null) {
+                continue;
+            }
+            ThreadGroupData data = group.getThreadGroupData();
+            if (data == null) {
+                continue;
+            }
+            durationSeconds = Math.max(durationSeconds, expectedThreadGroupDurationSeconds(data));
+        }
+        return durationSeconds * 1000L;
+    }
+
+    private long expectedThreadGroupDurationSeconds(ThreadGroupData data) {
+        if (data.threadMode == null) {
+            return 0L;
+        }
+        return switch (data.threadMode) {
+            case FIXED -> data.useTime ? Math.max(0L, data.duration) : 0L;
+            case RAMP_UP -> Math.max(0L, data.rampUpDuration);
+            case SPIKE -> Math.max(0L, data.spikeDuration);
+            case STAIRS -> Math.max(0L, data.stairsDuration);
+        };
     }
 }

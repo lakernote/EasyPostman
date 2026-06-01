@@ -277,13 +277,13 @@ public class PerformancePanel extends UiSingletonPanel {
                 performanceReportPanel,
                 performanceTrendPanel,
                 resultTabbedPane,
-                () -> executionEngine != null ? executionEngine.getActiveThreads() : 0,
+                () -> executionEngine != null ? executionEngine.sampleWindowPeakActiveThreads() : 0,
                 () -> executionEngine != null ? executionEngine.getActiveWebSockets() : 0,
                 () -> executionEngine != null ? executionEngine.getActiveSseStreams() : 0,
                 () -> timerManager != null ? timerManager.getSamplingIntervalMs() : 1000L,
                 () -> trendEnabled,
                 nowMs -> executionEngine != null
-                        ? executionEngine.sampleRealtimeMetrics(nowMs)
+                        ? executionEngine.drainRealtimeMetricsWindow(nowMs)
                         : PerformanceRealtimeMetrics.Sample.empty(),
                 nowMs -> executionEngine != null
                         ? executionEngine.liveRealtimeMetrics(nowMs)

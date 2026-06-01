@@ -2,6 +2,7 @@ package com.laker.postman.performance.master;
 
 import com.laker.postman.performance.core.worker.PerformanceWorkerEndpoint;
 import com.laker.postman.performance.core.worker.PerformanceWorkerApiPaths;
+import com.laker.postman.performance.core.worker.PerformanceWorkerHealthResponse;
 import com.laker.postman.performance.core.worker.PerformanceWorkerProtocolJsonStorage;
 import com.laker.postman.performance.core.worker.PerformanceWorkerRunDetailsResponse;
 import com.laker.postman.performance.core.worker.PerformanceWorkerRunRequest;
@@ -44,6 +45,24 @@ public class PerformanceWorkerHttpClient {
         this.requestTimeout = effectiveTimeout(requestTimeout);
     }
 
+    public PerformanceWorkerHealthResponse health(PerformanceWorkerEndpoint endpoint) throws IOException, InterruptedException {
+        return health(endpoint, requestTimeout);
+    }
+
+    public PerformanceWorkerHealthResponse health(PerformanceWorkerEndpoint endpoint,
+                                                  Duration timeout) throws IOException, InterruptedException {
+        HttpResponse<String> response = client.send(HttpRequest.newBuilder()
+                        .uri(uri(endpoint, PerformanceWorkerApiPaths.HEALTH))
+                        .timeout(effectiveTimeout(timeout))
+                        .GET()
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new IOException("Worker " + endpointLabel(endpoint) + " health failed: " + response.body());
+        }
+        return jsonStorage.healthResponseFromJson(response.body());
+    }
+
     public void submitRun(PerformanceWorkerEndpoint endpoint,
                           PerformanceWorkerRunRequest request) throws IOException, InterruptedException {
         submitRun(endpoint, request, requestTimeout);
@@ -72,20 +91,35 @@ public class PerformanceWorkerHttpClient {
     public PerformanceWorkerRunStatusResponse status(PerformanceWorkerEndpoint endpoint,
                                                      String runId,
                                                      boolean includeReport) throws IOException, InterruptedException {
-        return status(endpoint, runId, includeReport, requestTimeout);
+        return status(endpoint, runId, includeReport, false, requestTimeout);
+    }
+
+    public PerformanceWorkerRunStatusResponse status(PerformanceWorkerEndpoint endpoint,
+                                                     String runId,
+                                                     boolean includeReport,
+                                                     boolean includeTrend) throws IOException, InterruptedException {
+        return status(endpoint, runId, includeReport, includeTrend, requestTimeout);
     }
 
     public PerformanceWorkerRunStatusResponse status(PerformanceWorkerEndpoint endpoint,
                                                      String runId,
                                                      Duration timeout) throws IOException, InterruptedException {
-        return status(endpoint, runId, true, timeout);
+        return status(endpoint, runId, true, false, timeout);
     }
 
     public PerformanceWorkerRunStatusResponse status(PerformanceWorkerEndpoint endpoint,
                                                      String runId,
                                                      boolean includeReport,
                                                      Duration timeout) throws IOException, InterruptedException {
-        String path = PerformanceWorkerApiPaths.run(pathSegment(runId)) + (includeReport ? "" : "?report=false");
+        return status(endpoint, runId, includeReport, false, timeout);
+    }
+
+    public PerformanceWorkerRunStatusResponse status(PerformanceWorkerEndpoint endpoint,
+                                                     String runId,
+                                                     boolean includeReport,
+                                                     boolean includeTrend,
+                                                     Duration timeout) throws IOException, InterruptedException {
+        String path = statusPath(runId, includeReport, includeTrend);
         HttpResponse<String> response = client.send(HttpRequest.newBuilder()
                         .uri(uri(endpoint, path))
                         .timeout(effectiveTimeout(timeout))
@@ -96,6 +130,25 @@ public class PerformanceWorkerHttpClient {
             throw new IOException("Worker " + endpointLabel(endpoint) + " status failed: " + response.body());
         }
         return jsonStorage.statusResponseFromJson(response.body());
+    }
+
+    private String statusPath(String runId, boolean includeReport, boolean includeTrend) {
+        StringBuilder path = new StringBuilder(PerformanceWorkerApiPaths.run(pathSegment(runId)));
+        if (!includeReport || includeTrend) {
+            path.append('?');
+            boolean appended = false;
+            if (!includeReport) {
+                path.append("report=false");
+                appended = true;
+            }
+            if (includeTrend) {
+                if (appended) {
+                    path.append('&');
+                }
+                path.append("trend=true");
+            }
+        }
+        return path.toString();
     }
 
     public PerformanceWorkerRunResultResponse result(PerformanceWorkerEndpoint endpoint,

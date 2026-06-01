@@ -13,6 +13,8 @@ import com.laker.postman.performance.core.report.PerformanceJsonReportSummary;
 import com.laker.postman.performance.core.report.PerformanceJsonReportSummaryMapper;
 import com.laker.postman.performance.core.run.PerformanceRunPlan;
 import com.laker.postman.performance.core.worker.PerformanceWorkerAssignment;
+import com.laker.postman.performance.core.worker.PerformanceWorkerHealthResponse;
+import com.laker.postman.performance.core.worker.PerformanceWorkerProtocol;
 import com.laker.postman.performance.core.worker.PerformanceWorkerProtocolJsonStorage;
 import com.laker.postman.performance.core.worker.PerformanceWorkerResultDetail;
 import com.laker.postman.performance.core.worker.PerformanceWorkerRunDetailsResponse;
@@ -38,6 +40,29 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 public class PerformanceWorkerServerTest {
+
+    @Test
+    public void shouldExposeWorkerProtocolVersionInHealthResponse() throws Exception {
+        PerformanceWorkerProtocolJsonStorage storage = new PerformanceWorkerProtocolJsonStorage();
+        try (PerformanceWorkerServer server = new PerformanceWorkerServer(
+                PerformanceWorkerOptions.builder().host("127.0.0.1").port(0).build(),
+                (request, control) -> PerformanceJsonReport.builder().build()
+        )) {
+            server.start();
+
+            HttpResponse<String> health = HttpClient.newHttpClient().send(HttpRequest.newBuilder()
+                            .uri(URI.create("http://127.0.0.1:" + server.getPort() + "/api/performance/v1/health"))
+                            .GET()
+                            .build(),
+                    HttpResponse.BodyHandlers.ofString());
+            PerformanceWorkerHealthResponse response = storage.healthResponseFromJson(health.body());
+
+            assertEquals(health.statusCode(), 200, health.body());
+            assertEquals(response.getStatus(), "UP");
+            assertEquals(response.getWorkerProtocolVersion(), PerformanceWorkerProtocol.CURRENT_VERSION);
+            assertTrue(response.usesCurrentProtocol());
+        }
+    }
 
     @Test
     public void shouldAcceptRunAndExposeResultOverHttp() throws Exception {
@@ -494,6 +519,98 @@ public class PerformanceWorkerServerTest {
     }
 
     @Test
+    public void shouldIncludeLateInterruptedSamplesInStoppedWorkerReport() throws Exception {
+        CountDownLatch started = new CountDownLatch(1);
+        CountDownLatch stopSeen = new CountDownLatch(1);
+        CountDownLatch lateSampleRecorded = new CountDownLatch(1);
+        PerformanceStatsCollector collector = new PerformanceStatsCollector();
+        List<PerformanceWorkerResultDetail> details = new CopyOnWriteArrayList<>();
+        PerformanceWorkerProtocolJsonStorage storage = new PerformanceWorkerProtocolJsonStorage();
+        try (PerformanceWorkerServer server = new PerformanceWorkerServer(
+                PerformanceWorkerOptions.builder().host("127.0.0.1").port(0).build(),
+                (request, control) -> {
+                    control.bindStatsCollector(collector);
+                    control.bindResultDetailsSupplier(() -> details);
+                    control.recordProgress(1, 1);
+                    started.countDown();
+                    while (control.isRunning()) {
+                        Thread.sleep(10);
+                    }
+                    stopSeen.countDown();
+                    Thread lateRecorder = new Thread(() -> {
+                        try {
+                            Thread.sleep(50);
+                            RequestResult result = new RequestResult(
+                                    1_000L,
+                                    1_100L,
+                                    false,
+                                    "ws-api",
+                                    "WS API",
+                                    PerformanceProtocol.WEBSOCKET
+                            );
+                            result.sentMessages = 15;
+                            result.receivedMessages = 15;
+                            collector.record(result);
+                            details.add(PerformanceWorkerResultDetail.builder()
+                                    .protocol("WEBSOCKET")
+                                    .name("WS API")
+                                    .errorMsg("stopped")
+                                    .responseCode(101)
+                                    .costMs(100)
+                                    .executionFailed(true)
+                                    .build());
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        } finally {
+                            control.recordProgress(0, 1);
+                            lateSampleRecorded.countDown();
+                        }
+                    }, "late-interrupted-sample");
+                    lateRecorder.start();
+                    return PerformanceJsonReport.builder()
+                            .metadata(PerformanceJsonReportMetadata.builder()
+                                    .runId(request.getRunId())
+                                    .source("worker")
+                                    .status("STOPPED")
+                                    .stopped(true)
+                                    .build())
+                            .summary(PerformanceJsonReportSummary.builder().build())
+                            .protocols(PerformanceJsonReportSummaryMapper.emptyProtocols())
+                            .build();
+                }
+        )) {
+            server.start();
+            HttpClient client = HttpClient.newHttpClient();
+            submitRun(client, storage, server.getPort(), "run-late-stop");
+            assertTrue(started.await(1, TimeUnit.SECONDS));
+
+            HttpResponse<String> stop = client.send(HttpRequest.newBuilder()
+                            .uri(URI.create("http://127.0.0.1:" + server.getPort()
+                                    + "/api/performance/v1/runs/run-late-stop/stop"))
+                            .POST(HttpRequest.BodyPublishers.noBody())
+                            .build(),
+                    HttpResponse.BodyHandlers.ofString());
+
+            assertEquals(stop.statusCode(), 200, stop.body());
+            assertTrue(stopSeen.await(1, TimeUnit.SECONDS));
+            PerformanceWorkerRunResultResponse resultResponse = awaitStoppedResult(
+                    client,
+                    storage,
+                    server.getPort(),
+                    "run-late-stop"
+            );
+
+            assertTrue(lateSampleRecorded.await(1, TimeUnit.SECONDS));
+            assertNotNull(resultResponse.getReport());
+            assertEquals(resultResponse.getReport().getSummary().getTotalRequests(), 1L);
+            assertEquals(resultResponse.getReport().getSummary().getFailedRequests(), 1L);
+            assertEquals(resultResponse.getReport().getProtocols().get("WEBSOCKET").getTotal().getTotal(), 1L);
+            assertEquals(resultResponse.getReport().getProtocols().get("WEBSOCKET").getTotal()
+                    .getStream().getSentMessages(), 15L);
+        }
+    }
+
+    @Test
     public void shouldPruneCompletedRunsAfterRetentionWindow() throws Exception {
         PerformanceWorkerProtocolJsonStorage storage = new PerformanceWorkerProtocolJsonStorage();
         try (PerformanceWorkerServer server = new PerformanceWorkerServer(
@@ -678,11 +795,19 @@ public class PerformanceWorkerServerTest {
     private static PerformanceWorkerRunResultResponse awaitStoppedResult(HttpClient client,
                                                                          PerformanceWorkerProtocolJsonStorage storage,
                                                                          int port) throws Exception {
+        return awaitStoppedResult(client, storage, port, "run-stop");
+    }
+
+    private static PerformanceWorkerRunResultResponse awaitStoppedResult(HttpClient client,
+                                                                         PerformanceWorkerProtocolJsonStorage storage,
+                                                                         int port,
+                                                                         String runId) throws Exception {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
         PerformanceWorkerRunResultResponse response;
         do {
             HttpResponse<String> result = client.send(HttpRequest.newBuilder()
-                            .uri(URI.create("http://127.0.0.1:" + port + "/api/performance/v1/runs/run-stop/result"))
+                            .uri(URI.create("http://127.0.0.1:" + port
+                                    + "/api/performance/v1/runs/" + runId + "/result"))
                             .GET()
                             .build(),
                     HttpResponse.BodyHandlers.ofString());

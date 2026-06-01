@@ -29,12 +29,13 @@ public class PerformanceResultDisplayMapper {
             return null;
         }
         String displayErrorMsg = resolveDisplayErrorMsg(sampleResult);
-        simplifyForDisplay(sampleResult, compactMode, displayErrorMsg);
+        HttpResponse displayResponse = responseForDisplay(sampleResult, displayErrorMsg);
+        simplifyForDisplay(sampleResult, displayResponse, compactMode, displayErrorMsg);
         return new ResultNodeInfo(
                 sampleResult.getApiName(),
                 displayErrorMsg,
                 sampleResult.getRequest(),
-                sampleResult.getResponse(),
+                displayResponse,
                 sampleResult.getTestResults(),
                 sampleResult.isExecutionFailed() || sampleResult.isInterrupted(),
                 sampleResult.getProtocol()
@@ -42,40 +43,42 @@ public class PerformanceResultDisplayMapper {
     }
 
     private void simplifyForDisplay(PerformanceSampleResult sampleResult,
+                                    HttpResponse displayResponse,
                                     boolean compactMode,
                                     String displayErrorMsg) {
         if (sampleResult.getRequest() != null) {
             sampleResult.getRequest().simplify();
         }
-        if (sampleResult.getResponse() != null) {
-            sampleResult.getResponse().simplify();
+        if (displayResponse != null) {
+            displayResponse.simplify();
             if (sampleResult.getRequest() == null || !sampleResult.getRequest().collectEventInfo) {
-                sampleResult.getResponse().httpEventInfo = null;
+                displayResponse.httpEventInfo = null;
             }
-            simplifyStreamBodyForResultTable(sampleResult, compactMode, displayErrorMsg);
-            PerformanceInternalHeaders.removeInternalHeaders(sampleResult.getResponse().headers);
+            simplifyStreamBodyForResultTable(sampleResult, displayResponse, compactMode, displayErrorMsg);
+            PerformanceInternalHeaders.removeInternalHeaders(displayResponse.headers);
         }
     }
 
     private void simplifyStreamBodyForResultTable(PerformanceSampleResult sampleResult,
+                                                  HttpResponse response,
                                                   boolean compactMode,
                                                   String displayErrorMsg) {
         if (!isStreamProtocol(sampleResult.getProtocol())) {
             return;
         }
-        HttpResponse response = sampleResult.getResponse();
         if (response == null) {
             return;
         }
         if (compactMode && !sampleResult.isSuccessful()) {
-            response.body = buildCompactFailureBody(sampleResult, displayErrorMsg);
+            response.body = buildCompactFailureBody(sampleResult, response, displayErrorMsg);
             return;
         }
         response.body = retainUtf8PrefixWithNotice(response.body, STREAM_RESULT_BODY_PREVIEW_BYTES);
     }
 
-    private String buildCompactFailureBody(PerformanceSampleResult sampleResult, String displayErrorMsg) {
-        HttpResponse response = sampleResult.getResponse();
+    private String buildCompactFailureBody(PerformanceSampleResult sampleResult,
+                                           HttpResponse response,
+                                           String displayErrorMsg) {
         Map<String, List<String>> headers = response == null ? null : response.headers;
         StringBuilder body = new StringBuilder(512);
         appendLine(body, "Error", CharSequenceUtil.blankToDefault(displayErrorMsg, sampleResult.getErrorMsg()));
@@ -92,6 +95,23 @@ public class PerformanceResultDisplayMapper {
             body.append("\nLast message preview:\n").append(lastPreview);
         }
         return retainUtf8PrefixWithNotice(body.toString(), STREAM_RESULT_BODY_PREVIEW_BYTES);
+    }
+
+    private HttpResponse responseForDisplay(PerformanceSampleResult sampleResult, String displayErrorMsg) {
+        if (sampleResult.getResponse() != null) {
+            return sampleResult.getResponse();
+        }
+        if (!sampleResult.isInterrupted() && !sampleResult.isExecutionFailed()) {
+            return null;
+        }
+
+        // HTTP 在停止时可能没有响应对象；结果表仍要展示耗时和失败原因。
+        HttpResponse response = new HttpResponse();
+        response.code = sampleResult.getResponseCode();
+        response.costMs = Math.max(0L, sampleResult.getElapsedTimeMs());
+        response.endTime = sampleResult.getEndTimeMs();
+        response.body = CharSequenceUtil.blankToDefault(displayErrorMsg, sampleResult.getErrorMsg());
+        return response;
     }
 
     private void appendLine(StringBuilder builder, String label, String value) {

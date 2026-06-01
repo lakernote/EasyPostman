@@ -11,9 +11,9 @@ public final class PerformanceStatsCollectorListener implements PerformanceResul
 
     @Override
     public void onSample(PerformanceSampleEvent event) {
-        if (statsCollector == null || event == null || event.getSampleResult() == null) {
+        if (statsCollector == null || event == null || event.sampleRecord() == null) {
             return;
         }
-        statsCollector.record(event.getSampleResult().toRequestResult());
+        statsCollector.record(event.sampleRecord().toRequestResult());
     }
 }

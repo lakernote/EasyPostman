@@ -8,6 +8,7 @@ import java.util.function.IntSupplier;
 public final class PerformanceVirtualUserCoordinator {
 
     private final AtomicInteger activeThreads = new AtomicInteger(0);
+    private final AtomicInteger peakActiveThreads = new AtomicInteger(0);
     private final AtomicInteger virtualUserCounter = new AtomicInteger(0);
     private final ThreadLocal<Integer> threadVirtualUserIndex = new ThreadLocal<>();
     private final ThreadLocal<Integer> threadIterationIndex = ThreadLocal.withInitial(() -> 0);
@@ -16,8 +17,18 @@ public final class PerformanceVirtualUserCoordinator {
         return activeThreads.get();
     }
 
+    /**
+     * 趋势图采样按窗口峰值展示并重置窗口，避免短请求在采样瞬间结束后被误画成 0 用户。
+     */
+    public int sampleWindowPeakActiveThreads() {
+        int current = activeThreads.get();
+        int peak = peakActiveThreads.getAndSet(current);
+        return Math.max(current, peak);
+    }
+
     public void resetVirtualUsers() {
         virtualUserCounter.set(0);
+        peakActiveThreads.set(activeThreads.get());
     }
 
     public Integer currentVirtualUserIndex() {
@@ -69,7 +80,8 @@ public final class PerformanceVirtualUserCoordinator {
                      Runnable task) {
         threadVirtualUserIndex.set(vuIndex);
         threadIterationIndex.set(0);
-        activeThreads.incrementAndGet();
+        int active = activeThreads.incrementAndGet();
+        updatePeakActiveThreads(active);
         updateProgress(progressUpdater, totalThreads);
         try {
             task.run();
@@ -83,6 +95,10 @@ public final class PerformanceVirtualUserCoordinator {
 
     private void updateProgress(BiConsumer<Integer, Integer> progressUpdater, int totalThreads) {
         progressUpdater.accept(activeThreads.get(), totalThreads);
+    }
+
+    private void updatePeakActiveThreads(int active) {
+        peakActiveThreads.updateAndGet(previous -> Math.max(previous, active));
     }
 
     private int nextVirtualUserIndex(IntSupplier virtualUserIndexSupplier) {

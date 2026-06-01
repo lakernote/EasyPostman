@@ -18,13 +18,13 @@ public class PerformanceRealtimeMetricsTest {
         metrics.recordWebSocketReceived();
         metrics.recordWebSocketFirstMessageLatency(120);
 
-        PerformanceRealtimeMetrics.Sample first = metrics.sample(1_000);
+        PerformanceRealtimeMetrics.Sample first = metrics.drainWindow(1_000);
 
         assertEquals(first.webSocketSentRate(), 3.0);
         assertEquals(first.webSocketReceivedRate(), 1.0);
         assertEquals(first.webSocketFirstMessageLatencyMs(), 120.0);
 
-        PerformanceRealtimeMetrics.Sample second = metrics.sample(2_000);
+        PerformanceRealtimeMetrics.Sample second = metrics.drainWindow(2_000);
 
         assertEquals(second.webSocketSentRate(), 0.0);
         assertEquals(second.webSocketReceivedRate(), 0.0);
@@ -32,7 +32,7 @@ public class PerformanceRealtimeMetricsTest {
     }
 
     @Test
-    public void shouldNotInflateRatesWhenFinalSamplingWindowIsShort() {
+    public void shouldUseActualElapsedTimeWhenFinalSamplingWindowIsShort() {
         PerformanceRealtimeMetrics metrics = new PerformanceRealtimeMetrics();
         metrics.reset(0);
 
@@ -40,18 +40,18 @@ public class PerformanceRealtimeMetricsTest {
             metrics.recordWebSocketSent();
             metrics.recordWebSocketReceived();
         }
-        PerformanceRealtimeMetrics.Sample first = metrics.sample(1_000);
+        PerformanceRealtimeMetrics.Sample first = metrics.drainWindow(1_000);
 
         for (int i = 0; i < 10; i++) {
             metrics.recordWebSocketSent();
             metrics.recordWebSocketReceived();
         }
-        PerformanceRealtimeMetrics.Sample finalSample = metrics.sample(1_100);
+        PerformanceRealtimeMetrics.Sample finalSample = metrics.drainWindow(1_100);
 
         assertEquals(first.webSocketSentRate(), 10.0);
         assertEquals(first.webSocketReceivedRate(), 10.0);
-        assertEquals(finalSample.webSocketSentRate(), 10.0);
-        assertEquals(finalSample.webSocketReceivedRate(), 10.0);
+        assertEquals(finalSample.webSocketSentRate(), 100.0);
+        assertEquals(finalSample.webSocketReceivedRate(), 100.0);
     }
 
     @Test
@@ -65,13 +65,13 @@ public class PerformanceRealtimeMetricsTest {
         metrics.recordSseFirstMessageLatency(80);
         metrics.recordSseFirstMessageLatency(120);
 
-        PerformanceRealtimeMetrics.Sample sample = metrics.sample(1_000);
+        PerformanceRealtimeMetrics.Sample sample = metrics.drainWindow(1_000);
 
         assertEquals(sample.sseReceivedRate(), 2.0);
         assertEquals(sample.sseMatchedRate(), 1.0);
         assertEquals(sample.sseFirstMessageLatencyMs(), 100.0);
 
-        PerformanceRealtimeMetrics.Sample emptySample = metrics.sample(2_000);
+        PerformanceRealtimeMetrics.Sample emptySample = metrics.drainWindow(2_000);
 
         assertEquals(emptySample.sseReceivedRate(), 0.0);
         assertEquals(emptySample.sseMatchedRate(), 0.0);
@@ -90,7 +90,7 @@ public class PerformanceRealtimeMetricsTest {
         metrics.recordWebSocketSessionStart(secondWebSocket, 3_000);
         metrics.recordSseSessionStart(sseStream, 2_000);
 
-        PerformanceRealtimeMetrics.Sample sample = metrics.sample(5_000);
+        PerformanceRealtimeMetrics.Sample sample = metrics.drainWindow(5_000);
 
         assertEquals(sample.webSocketActiveSessionDurationMs(), 3_000.0);
         assertEquals(sample.sseActiveSessionDurationMs(), 3_000.0);
@@ -99,7 +99,7 @@ public class PerformanceRealtimeMetricsTest {
         metrics.recordWebSocketSessionEnd(secondWebSocket);
         metrics.recordSseSessionEnd(sseStream);
 
-        PerformanceRealtimeMetrics.Sample emptySample = metrics.sample(6_000);
+        PerformanceRealtimeMetrics.Sample emptySample = metrics.drainWindow(6_000);
 
         assertEquals(emptySample.webSocketActiveSessionDurationMs(), 0.0);
         assertEquals(emptySample.sseActiveSessionDurationMs(), 0.0);
@@ -120,8 +120,8 @@ public class PerformanceRealtimeMetricsTest {
         metrics.recordWebSocketSessionEnd(secondWebSocket);
         metrics.recordSseSessionEnd(sseStream);
 
-        PerformanceRealtimeMetrics.Sample sample = metrics.sample(1_000);
-        PerformanceRealtimeMetrics.Sample emptySample = metrics.sample(2_000);
+        PerformanceRealtimeMetrics.Sample sample = metrics.drainWindow(1_000);
+        PerformanceRealtimeMetrics.Sample emptySample = metrics.drainWindow(2_000);
 
         assertEquals(sample.webSocketActiveSessions(), 2);
         assertEquals(sample.sseActiveSessions(), 1);
@@ -139,8 +139,8 @@ public class PerformanceRealtimeMetricsTest {
         metrics.recordWebSocketSessionStart(webSocket, 100);
         metrics.recordSseSessionStart(sseStream, 100);
 
-        PerformanceRealtimeMetrics.Sample first = metrics.sample(1_000);
-        PerformanceRealtimeMetrics.Sample second = metrics.sample(2_000);
+        PerformanceRealtimeMetrics.Sample first = metrics.drainWindow(1_000);
+        PerformanceRealtimeMetrics.Sample second = metrics.drainWindow(2_000);
 
         assertEquals(first.webSocketActiveSessions(), 1);
         assertEquals(first.sseActiveSessions(), 1);

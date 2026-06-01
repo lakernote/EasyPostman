@@ -3,6 +3,9 @@ package com.laker.postman.performance.core.model;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -98,6 +101,42 @@ public class PerformanceStatsCollectorTest {
         assertEquals(summary.firstMessageLatencyStats().p90(), 900L);
         assertEquals(summary.firstMessageLatencyStats().p95(), 1000L);
         assertEquals(summary.firstMessageLatencyStats().p99(), 1000L);
+    }
+
+    @Test
+    public void shouldAggregateConcurrentSamplesWithoutLostUpdates() throws Exception {
+        PerformanceStatsCollector collector = new PerformanceStatsCollector();
+        int threads = 8;
+        int samplesPerThread = 1_000;
+        CountDownLatch start = new CountDownLatch(1);
+        CountDownLatch done = new CountDownLatch(threads);
+        List<Thread> workers = new ArrayList<>();
+
+        for (int threadIndex = 0; threadIndex < threads; threadIndex++) {
+            Thread worker = new Thread(() -> {
+                try {
+                    start.await();
+                    for (int i = 0; i < samplesPerThread; i++) {
+                        collector.record(new RequestResult(i, i + 10, true, "search", "Search API", PerformanceProtocol.HTTP));
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } finally {
+                    done.countDown();
+                }
+            });
+            workers.add(worker);
+            worker.start();
+        }
+
+        start.countDown();
+        done.await();
+
+        PerformanceStatsSnapshot snapshot = collector.snapshot();
+
+        assertEquals(snapshot.totalRequests(), (long) threads * samplesPerThread);
+        assertEquals(snapshot.successRequests(), (long) threads * samplesPerThread);
+        assertEquals(snapshot.summaries().get(0).durationStats().avg(), 10L);
     }
 
     private static boolean hasMethodNamed(Class<?> type, String methodName) {

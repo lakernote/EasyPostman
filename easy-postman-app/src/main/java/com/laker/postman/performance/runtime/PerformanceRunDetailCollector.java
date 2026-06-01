@@ -4,6 +4,7 @@ import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.script.model.TestResult;
+import com.laker.postman.performance.core.model.PerformanceSampleRecord;
 import com.laker.postman.performance.model.PerformanceResultListener;
 import com.laker.postman.performance.model.PerformanceResultRetentionPolicy;
 import com.laker.postman.performance.model.PerformanceSampleEvent;
@@ -33,19 +34,23 @@ public final class PerformanceRunDetailCollector implements PerformanceResultLis
 
     @Override
     public void onSample(PerformanceSampleEvent event) {
-        if (event == null || event.getSampleResult() == null) {
+        if (event == null || event.sampleRecord() == null) {
             return;
         }
-        PerformanceSampleResult sampleResult = event.getSampleResult();
+        PerformanceSampleRecord sampleRecord = event.sampleRecord();
         int slowRequestThresholdMs = slowRequestThresholdSupplier == null ? 0 : slowRequestThresholdSupplier.getAsInt();
         if (!PerformanceResultRetentionPolicy.shouldRecord(
                 event.isEfficientMode(),
-                sampleResult.isSuccessful(),
-                sampleResult.getElapsedTimeMs(),
+                sampleRecord.isSuccessful(),
+                sampleRecord.getElapsedTimeMs(),
                 slowRequestThresholdMs)) {
             return;
         }
 
+        PerformanceSampleResult sampleResult = event.getSampleResult();
+        if (sampleResult == null) {
+            return;
+        }
         ResultNodeInfo displayInfo = PerformanceResultDisplayMapper.toDisplayNodeInfo(sampleResult, event.isEfficientMode());
         int rowLimit = event.isEfficientMode()
                 ? COMPACT_DETAIL_ROW_LIMIT

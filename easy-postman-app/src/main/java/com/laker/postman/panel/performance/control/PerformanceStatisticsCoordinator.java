@@ -101,6 +101,16 @@ public final class PerformanceStatisticsCoordinator {
         performanceReportPanel.updateReport(snapshotService.reportSnapshot(System.currentTimeMillis()));
     }
 
+    public void updateFinalReportWithStatsSync() {
+        if (!SwingUtilities.isEventDispatchThread()) {
+            SwingUtilities.invokeLater(this::updateFinalReportWithStatsSync);
+            return;
+        }
+
+        // 最终报表只看累计 stats，不合并实时 live snapshot，避免运行结束瞬间的弱一致数据污染最终结果。
+        performanceReportPanel.updateReport(snapshotService.statsSnapshot());
+    }
+
     public void sampleTrendData() {
         if (!isTrendEnabled()) {
             log.debug("趋势图未启用，跳过采样");
@@ -110,12 +120,13 @@ public final class PerformanceStatisticsCoordinator {
             log.debug("趋势图面板未初始化，跳过采样");
             return;
         }
-        long now = System.currentTimeMillis();
-        RegularTimePeriod period = createTrendPeriod(now);
         long generation = currentGeneration();
 
         submitMetricsTask("趋势图采样", generation, () -> {
-            PerformanceTrendSnapshot snapshot = snapshotService.trendSnapshot(now);
+            // 趋势窗口在这里真正 drain，X 轴时间必须使用 drain 时刻，避免后台队列延迟导致样本画到旧时间点。
+            long sampleTimeMs = System.currentTimeMillis();
+            RegularTimePeriod period = createTrendPeriod(sampleTimeMs);
+            PerformanceTrendSnapshot snapshot = snapshotService.drainTrendWindowSnapshot(sampleTimeMs);
             invokeUiIfActive(generation, () -> {
                 log.debug("采样数据 {} - 用户数: {}, HTTP: {}, WS: {}, SSE: {}",
                         period, snapshot.activeUsers(), snapshot.http().samples(), snapshot.webSocket().samples(), snapshot.sse().samples());
@@ -138,11 +149,33 @@ public final class PerformanceStatisticsCoordinator {
 
         long now = System.currentTimeMillis();
         RegularTimePeriod period = createTrendPeriod(now);
-        PerformanceTrendSnapshot snapshot = snapshotService.trendSnapshot(now);
+        PerformanceTrendSnapshot snapshot = snapshotService.drainTrendWindowSnapshot(now);
 
         log.debug("同步采样数据 {} - 用户数: {}, HTTP: {}, WS: {}, SSE: {}",
                 period, snapshot.activeUsers(), snapshot.http().samples(), snapshot.webSocket().samples(), snapshot.sse().samples());
         performanceTrendPanel.addOrUpdate(period, snapshot);
+    }
+
+    public void appendTerminalIdleTrendPointSync() {
+        appendTerminalIdleTrendPointSync(System.currentTimeMillis() + 1L);
+    }
+
+    public void appendTerminalIdleTrendPointSync(long timestampMs) {
+        if (!isTrendEnabled() || performanceTrendPanel == null) {
+            return;
+        }
+        if (!SwingUtilities.isEventDispatchThread()) {
+            SwingUtilities.invokeLater(() -> appendTerminalIdleTrendPointSync(timestampMs));
+            return;
+        }
+
+        performanceTrendPanel.addOrUpdate(createTrendPeriod(timestampMs),
+                PerformanceTrendSnapshot.terminalIdle());
+    }
+
+    public void markRunStarted(long startTimeMs) {
+        snapshotService.resetTrendWindow(startTimeMs);
+        appendTerminalIdleTrendPointSync(startTimeMs);
     }
 
     private boolean isTrendEnabled() {

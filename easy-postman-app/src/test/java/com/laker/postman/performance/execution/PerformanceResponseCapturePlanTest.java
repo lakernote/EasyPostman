@@ -121,7 +121,7 @@ public class PerformanceResponseCapturePlanTest {
     }
 
     @Test
-    public void shouldNotRetainSseStreamBodyForRemovedResponseBodyGlobal() {
+    public void shouldRetainSseStreamBodyForLegacyResponseBodyGlobal() {
         PerformanceResponseCapturePlan plan = PerformanceResponseCapturePlan.resolve(
                 true,
                 sampler(List.of()),
@@ -131,8 +131,8 @@ public class PerformanceResponseCapturePlanTest {
         );
 
         assertTrue(plan.runPostScript());
-        assertFalse(plan.postScriptNeedsResponseBody());
-        assertFalse(plan.retainStreamResponseBody());
+        assertTrue(plan.postScriptNeedsResponseBody());
+        assertTrue(plan.retainStreamResponseBody());
     }
 
     @Test

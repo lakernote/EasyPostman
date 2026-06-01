@@ -408,6 +408,11 @@ public class ScriptExecutionPipeline {
 
         Map<String, Object> bindings = new java.util.LinkedHashMap<>();
         bindings.put("pm", postman);
+        bindings.put("postman", postman);
+        bindings.put("request", req);
+        bindings.put("env", activeEnv);
+        bindings.put("globals", postman.globals);
+        bindings.put("iterationData", postman.iterationData);
 
         // 为前置脚本提供一个空的响应对象，防止 pm.response 为 undefined
         try {
@@ -416,6 +421,11 @@ public class ScriptExecutionPipeline {
             emptyResponse.headers = new java.util.LinkedHashMap<>();
             emptyResponse.body = "{}";
             postman.setResponse(emptyResponse);
+
+            bindings.put("response", emptyResponse);
+            bindings.put("responseBody", emptyResponse.body);
+            bindings.put("responseHeaders", emptyResponse.headers);
+            bindings.put("statusCode", emptyResponse.code);
         } catch (Exception e) {
             log.warn("Failed to initialize empty response object for pre-request script", e);
         }
@@ -453,5 +463,10 @@ public class ScriptExecutionPipeline {
         if (pm != null) {
             pm.setResponse(response);
         }
+
+        bindings.put("response", response);
+        bindings.put("responseBody", response.body);
+        bindings.put("responseHeaders", response.headers);
+        bindings.put("statusCode", response.code);
     }
 }

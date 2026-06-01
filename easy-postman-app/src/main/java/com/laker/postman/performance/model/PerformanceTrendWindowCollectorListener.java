@@ -11,9 +11,9 @@ public final class PerformanceTrendWindowCollectorListener implements Performanc
 
     @Override
     public void onSample(PerformanceSampleEvent event) {
-        if (trendWindowCollector == null || event == null || event.getSampleResult() == null) {
+        if (trendWindowCollector == null || event == null || event.sampleRecord() == null) {
             return;
         }
-        trendWindowCollector.record(event.getSampleResult().toRequestResult());
+        trendWindowCollector.record(event.sampleRecord().toRequestResult());
     }
 }

@@ -10,6 +10,7 @@ public final class PerformanceJsonReportTrendWindowSampler {
     private long lastSampleAtMs;
     private long lastTotalRequests;
     private long lastFailedRequests;
+    private int lastWindowActiveUsers;
     private final ProtocolCounter http = new ProtocolCounter();
     private final ProtocolCounter webSocket = new ProtocolCounter();
     private final ProtocolCounter sse = new ProtocolCounter();
@@ -18,41 +19,87 @@ public final class PerformanceJsonReportTrendWindowSampler {
         lastSampleAtMs = Math.max(0L, nowMs);
         lastTotalRequests = 0L;
         lastFailedRequests = 0L;
+        lastWindowActiveUsers = 0;
         http.reset();
         webSocket.reset();
         sse.reset();
     }
 
-    public PerformanceTrendSnapshot sample(int activeUsers,
-                                           int activeWebSocketConnections,
-                                           int activeSseStreams,
-                                           long totalRequests,
-                                           long failedRequests,
-                                           PerformanceJsonReport report,
-                                           long nowMs) {
+    /**
+     * 对 worker 累计报表做差分并推进内部游标，结果只代表本次 poll 到上次 poll 之间的窗口。
+     */
+    public PerformanceTrendSnapshot drainReportDelta(int activeUsers,
+                                                     int activeWebSocketConnections,
+                                                     int activeSseStreams,
+                                                     long totalRequests,
+                                                     long failedRequests,
+                                                     PerformanceJsonReport report,
+                                                     long nowMs) {
         long elapsedMs = elapsedMs(nowMs);
         long sampleDelta = positiveDelta(totalRequests, lastTotalRequests);
         long failureDelta = positiveDelta(failedRequests, lastFailedRequests);
         PerformanceTrendSnapshot.ProtocolWindowMetrics httpMetrics =
-                http.sample(protocolTotal(report, PerformanceProtocol.HTTP), elapsedMs);
+                http.drainWindow(protocolTotal(report, PerformanceProtocol.HTTP), elapsedMs);
+        boolean streamReportHasCompletedSamples = reportCompletedSamples(report) > 0;
         PerformanceTrendSnapshot.ProtocolWindowMetrics webSocketMetrics =
-                webSocket.sample(protocolTotal(report, PerformanceProtocol.WEBSOCKET), elapsedMs);
+                webSocket.drainWindow(protocolTotal(report, PerformanceProtocol.WEBSOCKET),
+                        elapsedMs,
+                        streamReportHasCompletedSamples);
         PerformanceTrendSnapshot.ProtocolWindowMetrics sseMetrics =
-                sse.sample(protocolTotal(report, PerformanceProtocol.SSE), elapsedMs);
+                sse.drainWindow(protocolTotal(report, PerformanceProtocol.SSE), elapsedMs, streamReportHasCompletedSamples);
+        PerformanceTrendSnapshot.ProtocolWindowMetrics overviewMetrics =
+                overview(sampleDelta, failureDelta, elapsedMs, webSocketMetrics, sseMetrics);
+        int snapshotActiveUsers = resolveWindowActiveUsers(activeUsers, overviewMetrics, httpMetrics, webSocketMetrics, sseMetrics);
 
         lastSampleAtMs = Math.max(lastSampleAtMs, nowMs);
         lastTotalRequests = Math.max(lastTotalRequests, totalRequests);
         lastFailedRequests = Math.max(lastFailedRequests, failedRequests);
+        if (activeUsers > 0) {
+            lastWindowActiveUsers = Math.max(lastWindowActiveUsers, activeUsers);
+        } else if (!hasWindowActivity(overviewMetrics, httpMetrics, webSocketMetrics, sseMetrics)) {
+            lastWindowActiveUsers = 0;
+        }
 
         return new PerformanceTrendSnapshot(
-                Math.max(0, activeUsers),
+                snapshotActiveUsers,
                 Math.max(0, activeWebSocketConnections),
                 Math.max(0, activeSseStreams),
-                overview(sampleDelta, failureDelta, elapsedMs, webSocketMetrics, sseMetrics),
+                overviewMetrics,
                 httpMetrics,
                 webSocketMetrics,
                 sseMetrics
         );
+    }
+
+    private int resolveWindowActiveUsers(int activeUsers,
+                                         PerformanceTrendSnapshot.ProtocolWindowMetrics overviewMetrics,
+                                         PerformanceTrendSnapshot.ProtocolWindowMetrics httpMetrics,
+                                         PerformanceTrendSnapshot.ProtocolWindowMetrics webSocketMetrics,
+                                         PerformanceTrendSnapshot.ProtocolWindowMetrics sseMetrics) {
+        if (activeUsers > 0) {
+            lastWindowActiveUsers = Math.max(lastWindowActiveUsers, activeUsers);
+            return Math.max(0, activeUsers);
+        }
+        if (hasWindowActivity(overviewMetrics, httpMetrics, webSocketMetrics, sseMetrics)) {
+            // 远程 worker 可能在本轮 poll 时已经完成，activeUsers 已归零，但本轮报表仍有刚完成的样本。
+            return Math.max(0, lastWindowActiveUsers);
+        }
+        return 0;
+    }
+
+    private boolean hasWindowActivity(PerformanceTrendSnapshot.ProtocolWindowMetrics... metrics) {
+        if (metrics == null) {
+            return false;
+        }
+        for (PerformanceTrendSnapshot.ProtocolWindowMetrics metric : metrics) {
+            if (metric != null && (metric.samples() > 0
+                    || metric.sentMessages() > 0
+                    || metric.receivedMessages() > 0
+                    || metric.matchedMessages() > 0)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private long elapsedMs(long nowMs) {
@@ -94,6 +141,13 @@ public final class PerformanceJsonReportTrendWindowSampler {
         return protocolReport == null ? null : protocolReport.getTotal();
     }
 
+    private long reportCompletedSamples(PerformanceJsonReport report) {
+        if (report == null || report.getSummary() == null) {
+            return 0L;
+        }
+        return Math.max(0L, report.getSummary().getTotalRequests());
+    }
+
     private static long positiveDelta(long current, long previous) {
         return Math.max(0L, current - previous);
     }
@@ -121,7 +175,13 @@ public final class PerformanceJsonReportTrendWindowSampler {
             matchedMessages = 0L;
         }
 
-        PerformanceTrendSnapshot.ProtocolWindowMetrics sample(PerformanceJsonReportApi api, long elapsedMs) {
+        PerformanceTrendSnapshot.ProtocolWindowMetrics drainWindow(PerformanceJsonReportApi api, long elapsedMs) {
+            return drainWindow(api, elapsedMs, true);
+        }
+
+        PerformanceTrendSnapshot.ProtocolWindowMetrics drainWindow(PerformanceJsonReportApi api,
+                                                              long elapsedMs,
+                                                              boolean countCompletedSamples) {
             long currentTotal = api == null ? total : api.getTotal();
             long currentFailed = api == null ? failed : api.getFailed();
             long currentSent = api == null || api.getStream() == null ? sentMessages : api.getStream().getSentMessages();
@@ -132,14 +192,16 @@ public final class PerformanceJsonReportTrendWindowSampler {
                     ? matchedMessages
                     : api.getStream().getMatchedMessages();
 
-            long totalDelta = positiveDelta(currentTotal, total);
-            long failedDelta = positiveDelta(currentFailed, failed);
+            long totalDelta = countCompletedSamples ? positiveDelta(currentTotal, total) : 0L;
+            long failedDelta = countCompletedSamples ? positiveDelta(currentFailed, failed) : 0L;
             long sentDelta = positiveDelta(currentSent, sentMessages);
             long receivedDelta = positiveDelta(currentReceived, receivedMessages);
             long matchedDelta = positiveDelta(currentMatched, matchedMessages);
 
-            total = Math.max(total, currentTotal);
-            failed = Math.max(failed, currentFailed);
+            if (countCompletedSamples) {
+                total = Math.max(total, currentTotal);
+                failed = Math.max(failed, currentFailed);
+            }
             sentMessages = Math.max(sentMessages, currentSent);
             receivedMessages = Math.max(receivedMessages, currentReceived);
             matchedMessages = Math.max(matchedMessages, currentMatched);

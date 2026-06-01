@@ -1,6 +1,8 @@
 package com.laker.postman.performance.master;
 
 import com.laker.postman.performance.core.worker.PerformanceWorkerEndpoint;
+import com.laker.postman.performance.core.worker.PerformanceWorkerHealthResponse;
+import com.laker.postman.performance.core.worker.PerformanceWorkerProtocol;
 import com.laker.postman.performance.core.worker.PerformanceWorkerRunDetailsResponse;
 import com.sun.net.httpserver.HttpServer;
 import org.testng.annotations.Test;
@@ -19,6 +21,31 @@ import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class PerformanceWorkerHttpClientTest {
+
+    @Test
+    public void shouldRequestWorkerHealth() throws Exception {
+        AtomicReference<String> method = new AtomicReference<>();
+        AtomicReference<String> path = new AtomicReference<>();
+        String body = """
+                {
+                  "status": "UP",
+                  "workerId": "worker-a",
+                  "host": "127.0.0.1",
+                  "port": 19090,
+                  "workerProtocolVersion": "%s"
+                }
+                """.formatted(PerformanceWorkerProtocol.CURRENT_VERSION);
+        try (TestServer server = TestServer.start(200, body, method, path)) {
+            PerformanceWorkerHttpClient client = new PerformanceWorkerHttpClient();
+
+            PerformanceWorkerHealthResponse response = client.health(server.endpoint());
+
+            assertEquals(method.get(), "GET");
+            assertEquals(path.get(), "/api/performance/v1/health");
+            assertEquals(response.getStatus(), "UP");
+            assertTrue(response.usesCurrentProtocol());
+        }
+    }
 
     @Test
     public void shouldPostStopToWorkerRunEndpoint() throws Exception {
@@ -84,6 +111,20 @@ public class PerformanceWorkerHttpClientTest {
 
             assertEquals(method.get(), "GET");
             assertEquals(path.get(), "/api/performance/v1/runs/run%20with%20space?report=false");
+        }
+    }
+
+    @Test
+    public void shouldRequestLightweightStatusWithTrendSnapshot() throws Exception {
+        AtomicReference<String> method = new AtomicReference<>();
+        AtomicReference<String> path = new AtomicReference<>();
+        try (TestServer server = TestServer.start(200, "{\"status\":\"RUNNING\"}", method, path)) {
+            PerformanceWorkerHttpClient client = new PerformanceWorkerHttpClient();
+
+            client.status(server.endpoint(), "run with space", false, true);
+
+            assertEquals(method.get(), "GET");
+            assertEquals(path.get(), "/api/performance/v1/runs/run%20with%20space?report=false&trend=true");
         }
     }
 

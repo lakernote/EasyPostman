@@ -131,7 +131,7 @@ public class SseSampleExecutorTest {
                     ConcurrentHashMap.newKeySet(),
                     realtimeMetrics
             ).execute(request, cfg);
-            PerformanceRealtimeMetrics.Sample sample = realtimeMetrics.sample(System.currentTimeMillis());
+            PerformanceRealtimeMetrics.Sample sample = realtimeMetrics.drainWindow(System.currentTimeMillis());
 
             assertFalse(result.executionFailed, result.errorMsg);
             assertFalse(result.response.headers.containsKey("X-Easy-SSE-Completion-Reason"));

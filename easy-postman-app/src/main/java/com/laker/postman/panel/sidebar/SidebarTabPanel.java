@@ -1,6 +1,5 @@
 package com.laker.postman.panel.sidebar;
 
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.constants.ModernColors;
@@ -15,16 +14,11 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import javax.swing.plaf.UIResource;
-import javax.swing.plaf.basic.BasicArrowButton;
-import javax.swing.plaf.basic.BasicTabbedPaneUI;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.geom.Path2D;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -40,24 +34,13 @@ public class SidebarTabPanel extends UiSingletonPanel {
     // Constants
     private static final String ICON_LABEL_NAME = "iconLabel";
     private static final String TITLE_LABEL_NAME = "titleLabel";
-    private static final String TOOLTIP_COLLAPSE_SIDEBAR = "Collapse sidebar";
-    private static final String TOOLTIP_EXPAND_SIDEBAR = "Expand sidebar";
-    private static final int BOTTOM_BAR_ICON_SIZE = 20;
-
     @Getter
     private JTabbedPane tabbedPane;
     @Getter
     private transient List<TabInfo> tabInfos;
     private transient List<SidebarTab> visibleTabs;
     private JPanel consoleContainer;
-    private JPanel bottomLeftPanel;  // 底部栏左侧面板缓存
-    private JPanel bottomRightPanel; // 底部栏右侧面板缓存
-    private JLabel consoleLabel;
-    private JLabel sidebarToggleLabel; // 侧边栏展开/收起按钮
-    private JLabel layoutToggleLabel; // 布局切换按钮
-    private JLabel globalVariablesLabel;
-    private JLabel cookieLabel;
-    private JLabel versionLabel;
+    private SidebarBottomBar bottomBar;
     private ConsolePanel consolePanel;
     private boolean sidebarExpanded = false; // 侧边栏展开状态
     private CookieManagerDialog cookieManagerDialog; // Cookie管理器对话框实例
@@ -84,7 +67,7 @@ public class SidebarTabPanel extends UiSingletonPanel {
         setLayout(new BorderLayout());
 
         // 1. 创建标签页
-        tabbedPane = createModernTabbedPane();
+        tabbedPane = createSidebarTabbedPane();
         reloadTabInfosFromSettings();
 
         // Add tabs to the JTabbedPane
@@ -132,9 +115,8 @@ public class SidebarTabPanel extends UiSingletonPanel {
         } else {
             add(tabbedPane, BorderLayout.CENTER);
             consoleContainer.removeAll();
-            // 使用缓存的面板，避免重复创建
-            consoleContainer.add(bottomLeftPanel, BorderLayout.WEST);
-            consoleContainer.add(bottomRightPanel, BorderLayout.EAST);
+            consoleContainer.add(bottomBar.leftPanel(), BorderLayout.WEST);
+            consoleContainer.add(bottomBar.rightPanel(), BorderLayout.EAST);
             add(consoleContainer, BorderLayout.SOUTH);
             revalidate();
             repaint();
@@ -145,40 +127,14 @@ public class SidebarTabPanel extends UiSingletonPanel {
      * 初始化底部栏，包括控制台标签和版本标签
      */
     private void initBottomBar() {
-        // 2. 创建底部栏组件
-        createSidebarToggleLabel();
-        createConsoleLabel();
-        createLayoutToggleLabel();
-        createGlobalVariablesLabel();
-        createCookieLabel();
-        createVersionLabel();
-
-        // 初始化底部栏面板，避免每次展开/收起时重复创建
-        bottomLeftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        bottomLeftPanel.setOpaque(false);
-        bottomLeftPanel.add(sidebarToggleLabel);
-        bottomLeftPanel.add(consoleLabel);
-
-        bottomRightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        bottomRightPanel.setOpaque(false);
-        bottomRightPanel.add(versionLabel);
-        bottomRightPanel.add(globalVariablesLabel);
-        bottomRightPanel.add(cookieLabel);
-        bottomRightPanel.add(layoutToggleLabel);
-    }
-
-    /**
-     * 创建侧边栏展开/收起按钮
-     */
-    private void createSidebarToggleLabel() {
-        sidebarToggleLabel = createBottomBarActionLabel(
-                null,
-                IconUtil.createThemed("icons/sidebar-toggle.svg", BOTTOM_BAR_ICON_SIZE, BOTTOM_BAR_ICON_SIZE),
-                8,
-                4,
-                this::toggleSidebarExpansion
+        bottomBar = new SidebarBottomBar(
+                sidebarExpanded,
+                this::toggleSidebarExpansion,
+                () -> setConsoleExpanded(true),
+                this::toggleLayoutOrientation,
+                this::showGlobalVariablesDialog,
+                this::showCookieManagerDialog
         );
-        sidebarToggleLabel.setToolTipText(sidebarExpanded ? TOOLTIP_COLLAPSE_SIDEBAR : TOOLTIP_EXPAND_SIDEBAR);
     }
 
     /**
@@ -187,87 +143,8 @@ public class SidebarTabPanel extends UiSingletonPanel {
     private void toggleSidebarExpansion() {
         sidebarExpanded = !sidebarExpanded;
         SettingManager.setSidebarExpanded(sidebarExpanded);
-        sidebarToggleLabel.setToolTipText(sidebarExpanded ? TOOLTIP_COLLAPSE_SIDEBAR : TOOLTIP_EXPAND_SIDEBAR);
+        bottomBar.setSidebarExpanded(sidebarExpanded);
         recreateTabbedPane();
-    }
-
-    /**
-     * 创建控制台标签
-     */
-    private void createConsoleLabel() {
-        consoleLabel = createBottomBarActionLabel(
-                I18nUtil.getMessage(MessageKeys.CONSOLE_TITLE),
-                IconUtil.createThemed("icons/console.svg", BOTTOM_BAR_ICON_SIZE, BOTTOM_BAR_ICON_SIZE),
-                4,
-                4,
-                () -> setConsoleExpanded(true)
-        );
-    }
-
-    /**
-     * 创建全局变量标签
-     */
-    private void createGlobalVariablesLabel() {
-        globalVariablesLabel = createBottomBarActionLabel(
-                I18nUtil.getMessage(MessageKeys.GLOBAL_VARIABLES_TITLE),
-                IconUtil.createThemed("icons/global-variables.svg", BOTTOM_BAR_ICON_SIZE, BOTTOM_BAR_ICON_SIZE),
-                4,
-                4,
-                this::showGlobalVariablesDialog
-        );
-    }
-
-    /**
-     * 创建 Cookie 标签
-     */
-    private void createCookieLabel() {
-        cookieLabel = createBottomBarActionLabel(
-                I18nUtil.getMessage(MessageKeys.COOKIES_TITLE),
-                new FlatSVGIcon("icons/cookie.svg", BOTTOM_BAR_ICON_SIZE, BOTTOM_BAR_ICON_SIZE),
-                4,
-                4,
-                this::showCookieManagerDialog
-        );
-    }
-
-    /**
-     * 创建布局切换按钮
-     */
-    private void createLayoutToggleLabel() {
-        boolean isVertical = SettingManager.isLayoutVertical();
-        String iconPath = isVertical ? "icons/layout-horizontal.svg" : "icons/layout-vertical.svg";
-        String tooltip = isVertical ?
-                I18nUtil.getMessage(MessageKeys.LAYOUT_HORIZONTAL_TOOLTIP) :
-                I18nUtil.getMessage(MessageKeys.LAYOUT_VERTICAL_TOOLTIP);
-        layoutToggleLabel = createBottomBarActionLabel(
-                null,
-                IconUtil.createThemed(iconPath, BOTTOM_BAR_ICON_SIZE, BOTTOM_BAR_ICON_SIZE),
-                4,
-                12,
-                this::toggleLayoutOrientation
-        );
-        layoutToggleLabel.setToolTipText(tooltip);
-    }
-
-    private JLabel createBottomBarActionLabel(String text, Icon icon, int leftPadding, int rightPadding, Runnable action) {
-        JLabel label;
-        if (text == null) {
-            label = new JLabel(icon);
-        } else {
-            label = new JLabel(text);
-            label.setIcon(icon);
-        }
-        label.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        label.setBorder(BorderFactory.createEmptyBorder(4, leftPadding, 4, rightPadding));
-        label.setFocusable(true);
-        label.setEnabled(true);
-        label.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                action.run();
-            }
-        });
-        return label;
     }
 
     /**
@@ -278,14 +155,7 @@ public class SidebarTabPanel extends UiSingletonPanel {
         boolean newVertical = !currentVertical;
         SettingManager.setLayoutVertical(newVertical);
 
-        // 更新图标和提示
-        String iconPath = newVertical ? "icons/layout-horizontal.svg" : "icons/layout-vertical.svg";
-        String tooltip = newVertical ?
-                I18nUtil.getMessage(MessageKeys.LAYOUT_HORIZONTAL_TOOLTIP) :
-                I18nUtil.getMessage(MessageKeys.LAYOUT_VERTICAL_TOOLTIP);
-
-        layoutToggleLabel.setIcon(IconUtil.createThemed(iconPath, BOTTOM_BAR_ICON_SIZE, BOTTOM_BAR_ICON_SIZE));
-        layoutToggleLabel.setToolTipText(tooltip);
+        bottomBar.updateLayoutToggleState(newVertical);
 
         // 更新所有已打开的标签页的布局
         try {
@@ -333,15 +203,6 @@ public class SidebarTabPanel extends UiSingletonPanel {
         globalVariablesDialog.requestFocus();
     }
 
-    /**
-     * 创建版本号标签
-     */
-    private void createVersionLabel() {
-        versionLabel = new JLabel(SystemUtil.getCurrentVersion());
-        versionLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用标准字体
-        versionLabel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
-    }
-
     @Override
     public void updateUI() {
         super.updateUI();
@@ -357,8 +218,8 @@ public class SidebarTabPanel extends UiSingletonPanel {
         boolean stateChanged = (this.sidebarExpanded != newExpanded);
         if (stateChanged) {
             this.sidebarExpanded = newExpanded;
-            if (sidebarToggleLabel != null) {
-                sidebarToggleLabel.setToolTipText(sidebarExpanded ? TOOLTIP_COLLAPSE_SIDEBAR : TOOLTIP_EXPAND_SIDEBAR);
+            if (bottomBar != null) {
+                bottomBar.setSidebarExpanded(sidebarExpanded);
             }
         }
 
@@ -369,12 +230,8 @@ public class SidebarTabPanel extends UiSingletonPanel {
         }
 
         // 6. 更新底部栏组件
-        if (consoleLabel != null) {
-            consoleLabel.setText(I18nUtil.getMessage(MessageKeys.CONSOLE_TITLE));
-        }
-
-        if (cookieLabel != null) {
-            cookieLabel.setText(I18nUtil.getMessage(MessageKeys.COOKIES_TITLE));
+        if (bottomBar != null) {
+            bottomBar.refreshLocalizedText();
         }
 
         // 主题切换时更新 consoleContainer 的边框颜色
@@ -408,7 +265,7 @@ public class SidebarTabPanel extends UiSingletonPanel {
      */
     private void recreateTabbedPaneUI() {
         // 应用自定义 UI
-        applyCustomTabbedPaneUI(tabbedPane);
+        applySidebarTabbedPaneUi(tabbedPane);
 
         // 强制刷新 UI,确保自定义渲染立即生效
         tabbedPane.revalidate();
@@ -562,205 +419,28 @@ public class SidebarTabPanel extends UiSingletonPanel {
     }
 
     /**
-     * 创建现代化标签页
+     * 创建侧边栏专用标签页
      */
-    private JTabbedPane createModernTabbedPane() {
+    private JTabbedPane createSidebarTabbedPane() {
         JTabbedPane pane = new JTabbedPane(SwingConstants.LEFT, JTabbedPane.SCROLL_TAB_LAYOUT) {
             @Override
             public void updateUI() {
-                // 先调用父类的 updateUI，这会重置 UI
                 super.updateUI();
-                // 立即重新应用我们的自定义 UI
-                applyCustomTabbedPaneUI(this);
+                applySidebarTabbedPaneUi(this);
             }
         };
-        // 自定义标签页UI（包含统一的分隔线绘制）
-        applyCustomTabbedPaneUI(pane);
+        applySidebarTabbedPaneUi(pane);
         return pane;
     }
 
-    /**
-     * 应用自定义的 TabbedPane UI
-     * 提取为独立方法，便于在 updateUI() 时重用
-     */
-    private void applyCustomTabbedPaneUI(JTabbedPane pane) {
-        pane.setUI(new CustomTabbedPaneUI());
-    }
-
-    /**
-     * 自定义的 TabbedPane UI
-     * 负责绘制左侧渐变指示条、选中背景和自定义 tab 尺寸
-     */
-    private class CustomTabbedPaneUI extends BasicTabbedPaneUI {
-        @Override
-        protected void installDefaults() {
-            super.installDefaults();
-            // 增加 tab 区域的上下边距，让 tab 之间有更多空间
-            tabAreaInsets = new Insets(8, 6, 8, 0);
-            // 内容区域左侧留1像素空间用于绘制分隔线
-            contentBorderInsets = new Insets(0, 1, 0, 0);
-            // tab 之间的间距
-            tabInsets = new Insets(2, 2, 2, 2);
-            selectedTabPadInsets = new Insets(0, 0, 0, 0);
-        }
-
-        @Override
-        protected void paintTabBackground(Graphics g, int tabPlacement, int tabIndex,
-                                          int x, int y, int w, int h, boolean isSelected) {
-            if (!isSelected) {
-                return; // 未选中状态不绘制任何背景
-            }
-
-            Graphics2D g2 = (Graphics2D) g.create();
-            try {
-                enableHighQualityRendering(g2);
-                paintSelectedTabBackground(g2, x, y, w, h);
-                paintSelectedTabIndicator(g2, x, y, h);
-            } finally {
-                g2.dispose();
-            }
-        }
-
-        /**
-         * 启用高质量渲染
-         */
-        private void enableHighQualityRendering(Graphics2D g2) {
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-            g2.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_QUALITY);
-            g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
-        }
-
-        /**
-         * 绘制选中 tab 的淡雅背景
-         */
-        private void paintSelectedTabBackground(Graphics2D g2, int x, int y, int w, int h) {
-            g2.setColor(SidebarTheme.selectedTabBackground());
-            g2.fillRect(x, y, w, h);
-        }
-
-        /**
-         * 绘制选中 tab 的左侧渐变指示条
-         */
-        private void paintSelectedTabIndicator(Graphics2D g2, int x, int y, int h) {
-            int leftMargin = 2;        // 左边距，距离边缘更近
-            int verticalMargin = 6;    // 上下边距，让指示条稍短一些
-            int indicatorWidth = 4;    // 指示条宽度
-            int indicatorRadius = 2;   // 圆角半径，减小到2px避免模糊
-
-            int indicatorX = x + leftMargin;
-            int indicatorY = y + verticalMargin;
-            int indicatorHeight = h - verticalMargin * 2;
-
-            g2.setPaint(SidebarTheme.selectedTabIndicatorPaint(indicatorHeight));
-            g2.translate(indicatorX, indicatorY);
-            // 使用fillRoundRect绘制实心指示条，清晰锐利
-            g2.fillRoundRect(0, 0, indicatorWidth, indicatorHeight, indicatorRadius, indicatorRadius);
-            g2.translate(-indicatorX, -indicatorY);
-        }
-
-        @Override
-        protected void paintTabBorder(Graphics g, int tabPlacement, int tabIndex,
-                                      int x, int y, int w, int h, boolean isSelected) {
-            // 不绘制任何边框
-        }
-
-        @Override
-        protected void paintFocusIndicator(Graphics g, int tabPlacement, Rectangle[] rects,
-                                           int tabIndex, Rectangle iconRect, Rectangle textRect,
-                                           boolean isSelected) {
-            // 不绘制焦点指示器（虚线框）
-        }
-
-        @Override
-        protected void paintContentBorder(Graphics g, int tabPlacement, int selectedIndex) {
-            // 只绘制内容区域左侧的分隔线
-            if (tabPlacement == SwingConstants.LEFT) {
-                int height = tabbedPane.getHeight();
-                int tabAreaWidth = calculateTabAreaWidth(tabPlacement, runCount, maxTabWidth);
-
-                g.setColor(ModernColors.getDividerBorderColor());
-                // 在tab区域右侧绘制一条垂直分隔线
-                g.drawLine(tabAreaWidth, 0, tabAreaWidth, height);
-            }
-        }
-
-        @Override
-        protected int calculateTabWidth(int tabPlacement, int tabIndex, FontMetrics metrics) {
-            // 根据展开状态调整宽度，使用动态计算的宽度
-            return sidebarExpanded ? calculateExpandedTabWidth() : calculateCollapsedTabWidth();
-        }
-
-        @Override
-        protected int calculateTabHeight(int tabPlacement, int tabIndex, int fontHeight) {
-            // 根据展开状态调整高度，使用动态计算的高度
-            return sidebarExpanded ? calculateExpandedTabHeight(fontHeight) : calculateCollapsedTabHeight();
-        }
-
-        @Override
-        protected JButton createScrollButton(int direction) {
-            return new SidebarScrollButton(direction);
-        }
-    }
-
-    private final class SidebarScrollButton extends BasicArrowButton implements UIResource {
-        private final int direction;
-
-        private SidebarScrollButton(int direction) {
-            super(direction,
-                    UIManager.getColor("TabbedPane.selected"),
-                    UIManager.getColor("TabbedPane.shadow"),
-                    UIManager.getColor("TabbedPane.darkShadow"),
-                    UIManager.getColor("TabbedPane.highlight"));
-            this.direction = direction;
-            setFocusable(false);
-            setOpaque(false);
-            setContentAreaFilled(false);
-            setBorderPainted(false);
-            setFocusPainted(false);
-            setRolloverEnabled(true);
-            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            setBorder(new EmptyBorder(0, 0, 0, 0));
-        }
-
-        @Override
-        public void paint(Graphics g) {
-            Graphics2D g2 = (Graphics2D) g.create();
-            try {
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
-
-                ButtonModel model = getModel();
-                boolean hovered = model.isRollover() && isEnabled();
-                boolean pressed = (model.isPressed() || model.isArmed()) && isEnabled();
-                boolean enabled = isEnabled();
-
-                int inset = 2;
-                int width = Math.max(0, getWidth() - inset * 2);
-                int height = Math.max(0, getHeight() - inset * 2);
-
-                if (hovered || pressed) {
-                    Color background = pressed ? ModernColors.getButtonPressedColor() : ModernColors.getHoverBackgroundColor();
-                    g2.setColor(withAlpha(background, 230));
-                    g2.fillRoundRect(inset, inset, width, height, 8, 8);
-                }
-
-                Color arrowColor;
-                if (!enabled) {
-                    arrowColor = ModernColors.getTextDisabled();
-                } else if (pressed || hovered) {
-                    arrowColor = ModernColors.getPrimary();
-                } else {
-                    arrowColor = ModernColors.getTextSecondary();
-                }
-
-                g2.setColor(arrowColor);
-                g2.setStroke(new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                paintChevron(g2, direction, getWidth(), getHeight());
-            } finally {
-                g2.dispose();
-            }
-        }
+    private void applySidebarTabbedPaneUi(JTabbedPane pane) {
+        pane.setUI(new SidebarTabbedPaneUi(
+                () -> sidebarExpanded,
+                this::calculateExpandedTabWidth,
+                this::calculateCollapsedTabWidth,
+                this::calculateExpandedTabHeight,
+                this::calculateCollapsedTabHeight
+        ));
     }
 
     /**
@@ -980,8 +660,8 @@ public class SidebarTabPanel extends UiSingletonPanel {
         boolean newExpanded = SettingManager.isSidebarExpanded();
         boolean expansionChanged = this.sidebarExpanded != newExpanded;
         this.sidebarExpanded = newExpanded;
-        if (sidebarToggleLabel != null) {
-            sidebarToggleLabel.setToolTipText(sidebarExpanded ? TOOLTIP_COLLAPSE_SIDEBAR : TOOLTIP_EXPAND_SIDEBAR);
+        if (bottomBar != null) {
+            bottomBar.setSidebarExpanded(sidebarExpanded);
         }
 
         List<SidebarTab> configuredTabs = SidebarTabSettingsResolver.getVisibleSidebarTabs();
@@ -1032,7 +712,7 @@ public class SidebarTabPanel extends UiSingletonPanel {
         }
 
         // 创建新的 TabbedPane
-        tabbedPane = createModernTabbedPane();
+        tabbedPane = createSidebarTabbedPane();
         reloadTabInfosFromSettings();
 
         // 恢复所有 tab - 重用 tabInfos 中缓存的图标
@@ -1108,39 +788,4 @@ public class SidebarTabPanel extends UiSingletonPanel {
         }
     }
 
-    private void paintChevron(Graphics2D g2, int direction, int width, int height) {
-        int midX = width / 2;
-        int midY = height / 2;
-        int size = 4;
-        Path2D.Float chevron = new Path2D.Float();
-
-        switch (direction) {
-            case SwingConstants.NORTH -> {
-                chevron.moveTo(midX - size, midY + 2);
-                chevron.lineTo(midX, midY - size);
-                chevron.lineTo(midX + size, midY + 2);
-            }
-            case SwingConstants.SOUTH -> {
-                chevron.moveTo(midX - size, midY - 2);
-                chevron.lineTo(midX, midY + size);
-                chevron.lineTo(midX + size, midY - 2);
-            }
-            case SwingConstants.WEST -> {
-                chevron.moveTo(midX + 2, midY - size);
-                chevron.lineTo(midX - size, midY);
-                chevron.lineTo(midX + 2, midY + size);
-            }
-            default -> {
-                chevron.moveTo(midX - 2, midY - size);
-                chevron.lineTo(midX + size, midY);
-                chevron.lineTo(midX - 2, midY + size);
-            }
-        }
-
-        g2.draw(chevron);
-    }
-
-    private Color withAlpha(Color color, int alpha) {
-        return new Color(color.getRed(), color.getGreen(), color.getBlue(), alpha);
-    }
 }

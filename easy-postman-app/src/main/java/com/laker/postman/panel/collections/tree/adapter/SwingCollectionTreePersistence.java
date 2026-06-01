@@ -1,6 +1,8 @@
-package com.laker.postman.service.collections;
+package com.laker.postman.panel.collections.tree.adapter;
 
 import com.laker.postman.collection.model.CollectionDocument;
+import com.laker.postman.service.collections.CollectionFilePersistence;
+import com.laker.postman.service.collections.DefaultCollectionDocumentFactory;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -55,10 +57,7 @@ public class SwingCollectionTreePersistence {
     }
 
     private CollectionDocument defaultDocument() {
-        DefaultMutableTreeNode defaultRoot = new DefaultMutableTreeNode("root");
-        DefaultTreeModel defaultModel = new DefaultTreeModel(defaultRoot);
-        DefaultRequestsFactory.create(defaultRoot, defaultModel);
-        return SwingCollectionTreeDocumentMapper.fromRoot(defaultRoot);
+        return DefaultCollectionDocumentFactory.create();
     }
 
     private void applyDocument(CollectionDocument document) {

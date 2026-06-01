@@ -210,7 +210,7 @@ public class ModuleArchitectureBoundaryTest {
         for (String appOwnedFile : List.of(
                 "easy-postman-app/src/main/java/com/laker/postman/service/postman/PostmanCollectionExporter.java",
                 "easy-postman-app/src/main/java/com/laker/postman/service/common/TreeNodeBuilder.java",
-                "easy-postman-app/src/main/java/com/laker/postman/service/collections/SwingCollectionTreePersistence.java",
+                "easy-postman-app/src/main/java/com/laker/postman/panel/collections/tree/adapter/SwingCollectionTreePersistence.java",
                 "easy-postman-app/src/main/java/com/laker/postman/service/collections/InheritanceService.java"
         )) {
             assertTrue(Files.isRegularFile(root.resolve(appOwnedFile)),
@@ -238,7 +238,12 @@ public class ModuleArchitectureBoundaryTest {
         for (String forbiddenFileName : List.of(
                 "PostmanCollectionExporter.java",
                 "TreeNodeBuilder.java",
+                "SwingCollectionTreeDocumentMapper.java",
+                "SwingCollectionTreeQueries.java",
                 "SwingCollectionTreePersistence.java",
+                "SwingCollectionRequestSaveCoordinator.java",
+                "SwingCollectionRequestMutation.java",
+                "SwingSavedResponseTreeMutation.java",
                 "InheritanceService.java",
                 "PreparedRequest.java",
                 "HttpResponse.java",

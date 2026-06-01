@@ -7,7 +7,6 @@ import com.laker.postman.script.model.TestResult;
 import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;
 import com.laker.postman.http.runtime.transport.DefaultHttpTransport;
 import com.laker.postman.http.runtime.transport.HttpTransport;
-import com.laker.postman.http.runtime.transport.RealtimeConnectionHandle;
 import com.laker.postman.http.runtime.transport.RealtimeConnectionOptions;
 import com.laker.postman.http.runtime.error.NetworkErrorMessageResolver;
 import com.laker.postman.http.runtime.sse.SseStreamEventListener;
@@ -20,9 +19,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
 
 @Slf4j
 final class SseRequestExecutionHelper {
@@ -30,31 +26,19 @@ final class SseRequestExecutionHelper {
     private final RequestExecutionUiHelper requestExecutionUiHelper;
     private final RequestStreamUiHelper requestStreamUiHelper;
     private final RequestResponseHelper requestResponseHelper;
-    private final AtomicBoolean currentSseCancelled;
-    private final Consumer<RealtimeConnectionHandle> currentEventSourceSetter;
-    private final Runnable clearCurrentEventSource;
-    private final Runnable clearCurrentWorker;
-    private final BooleanSupplier disposedSupplier;
+    private final RequestExecutionState executionState;
     private final HttpTransport httpTransport;
 
     SseRequestExecutionHelper(ResponsePanel responsePanel,
                               RequestExecutionUiHelper requestExecutionUiHelper,
                               RequestStreamUiHelper requestStreamUiHelper,
                               RequestResponseHelper requestResponseHelper,
-                              AtomicBoolean currentSseCancelled,
-                              Consumer<RealtimeConnectionHandle> currentEventSourceSetter,
-                              Runnable clearCurrentEventSource,
-                              Runnable clearCurrentWorker,
-                              BooleanSupplier disposedSupplier) {
+                              RequestExecutionState executionState) {
         this.responsePanel = responsePanel;
         this.requestExecutionUiHelper = requestExecutionUiHelper;
         this.requestStreamUiHelper = requestStreamUiHelper;
         this.requestResponseHelper = requestResponseHelper;
-        this.currentSseCancelled = currentSseCancelled;
-        this.currentEventSourceSetter = currentEventSourceSetter;
-        this.clearCurrentEventSource = clearCurrentEventSource;
-        this.clearCurrentWorker = clearCurrentWorker;
-        this.disposedSupplier = disposedSupplier;
+        this.executionState = executionState;
         this.httpTransport = new DefaultHttpTransport();
     }
 
@@ -77,7 +61,7 @@ final class SseRequestExecutionHelper {
                         @Override
                         public void onOpen(HttpResponse r, String headersText) {
                             SwingUtilities.invokeLater(() -> {
-                                if (disposedSupplier.getAsBoolean()) {
+                                if (executionState.isDisposed()) {
                                     return;
                                 }
                                 requestExecutionUiHelper.updateUIForResponse(r);
@@ -91,7 +75,7 @@ final class SseRequestExecutionHelper {
                         @Override
                         public void onEvent(String id, String type, String data) {
                             SwingUtilities.invokeLater(() -> {
-                                if (disposedSupplier.getAsBoolean()) {
+                                if (executionState.isDisposed()) {
                                     return;
                                 }
                                 List<TestResult> testResults = requestResponseHelper.handleStreamMessage(pipeline, data);
@@ -102,7 +86,7 @@ final class SseRequestExecutionHelper {
                         @Override
                         public void onRetryChange(long retryMs) {
                             SwingUtilities.invokeLater(() -> {
-                                if (disposedSupplier.getAsBoolean()) {
+                                if (executionState.isDisposed()) {
                                     return;
                                 }
                                 requestStreamUiHelper.appendSseMessage(MessageType.INFO, null, "retry", retryMs,
@@ -113,7 +97,7 @@ final class SseRequestExecutionHelper {
                         @Override
                         public void onClosed(HttpResponse r) {
                             SwingUtilities.invokeLater(() -> {
-                                if (disposedSupplier.getAsBoolean()) {
+                                if (executionState.isDisposed()) {
                                     return;
                                 }
                                 requestExecutionUiHelper.updateUIForResponse(r);
@@ -122,15 +106,15 @@ final class SseRequestExecutionHelper {
                                 requestExecutionUiHelper.resetSendButton();
                                 requestStreamUiHelper.appendSseMessage(MessageType.CLOSED, null, "closed", null,
                                         I18nUtil.getMessage(MessageKeys.SSE_STREAM_CLOSED), null);
-                                clearCurrentEventSource.run();
-                                clearCurrentWorker.run();
+                                executionState.clearCurrentEventSource();
+                                executionState.clearCurrentWorker();
                             });
                         }
 
                         @Override
                         public void onFailure(String errorMsg, HttpResponse r) {
                             SwingUtilities.invokeLater(() -> {
-                                if (disposedSupplier.getAsBoolean()) {
+                                if (executionState.isDisposed()) {
                                     return;
                                 }
                                 NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.SSE_FAILED, errorMsg));
@@ -140,15 +124,16 @@ final class SseRequestExecutionHelper {
                                 requestExecutionUiHelper.resetSendButton();
                                 requestStreamUiHelper.appendSseMessage(MessageType.WARNING, null, "failure", null,
                                         I18nUtil.getMessage(MessageKeys.SSE_STREAM_FAILED, errorMsg), null);
-                                clearCurrentEventSource.run();
-                                clearCurrentWorker.run();
+                                executionState.clearCurrentEventSource();
+                                executionState.clearCurrentWorker();
                             });
                         }
                     };
-                    currentSseCancelled.set(false);
-                    currentEventSourceSetter.accept(httpTransport.openSse(
+                    executionState.resetSseCancelled();
+                    executionState.startSseConnection(httpTransport.openSse(
                             req,
-                            new SseStreamEventListener(callback, resp, sseBodyBuilder, startTime, currentSseCancelled::get),
+                            new SseStreamEventListener(callback, resp, sseBodyBuilder, startTime,
+                                    executionState::isSseCancelled),
                             RealtimeConnectionOptions.defaults()
                     ));
                     responsePanel.setResponseTabButtonsEnable(true);
@@ -156,7 +141,7 @@ final class SseRequestExecutionHelper {
                     log.error("Error executing SSE request: {} - {}", req.url, ex.getMessage(), ex);
                     String userFriendlyMessage = NetworkErrorMessageResolver.toUserFriendlyMessage(ex);
                     SwingUtilities.invokeLater(() -> {
-                        if (disposedSupplier.getAsBoolean()) {
+                        if (executionState.isDisposed()) {
                             return;
                         }
                         responsePanel.setStatus(0);
@@ -168,7 +153,7 @@ final class SseRequestExecutionHelper {
 
             @Override
             protected void done() {
-                if (!disposedSupplier.getAsBoolean() && resp != null) {
+                if (!executionState.isDisposed() && resp != null) {
                     requestResponseHelper.saveHistory(req, resp, "SSE request");
                 }
             }

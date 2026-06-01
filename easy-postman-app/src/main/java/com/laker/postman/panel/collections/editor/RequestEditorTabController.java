@@ -7,8 +7,8 @@ import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.tab.ClosableTabComponent;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
+import com.laker.postman.panel.collections.tree.adapter.SwingCollectionTreeQueries;
 import com.laker.postman.service.collections.ActiveCollectionTreeNodeRepository;
-import com.laker.postman.service.collections.CollectionTreeQueryService;
 import com.laker.postman.service.collections.GroupInheritanceHelper;
 import com.laker.postman.service.variable.RequestExecutionContext;
 import com.laker.postman.service.variable.RequestExecutionScope;
@@ -42,7 +42,7 @@ public class RequestEditorTabController {
 
         ActiveCollectionTreeNodeRepository repository = new ActiveCollectionTreeNodeRepository();
         repository.getRootNode().ifPresent(rootNode -> {
-            DefaultMutableTreeNode requestNode = CollectionTreeQueryService.findRequestNodeById(rootNode, id);
+            DefaultMutableTreeNode requestNode = SwingCollectionTreeQueries.findRequestNodeById(rootNode, id);
             if (requestNode != null) {
                 RequestExecutionContext.setCurrentScope(RequestExecutionScope.fromVariables(
                         GroupInheritanceHelper.getMergedGroupVariables(requestNode)

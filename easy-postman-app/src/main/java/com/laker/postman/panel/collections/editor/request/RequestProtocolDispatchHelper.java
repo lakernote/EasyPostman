@@ -12,30 +12,26 @@ import com.laker.postman.http.runtime.ssl.SSLConfigurationUtil;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
 
 import javax.swing.*;
-import java.util.function.Consumer;
 
 final class RequestProtocolDispatchHelper {
     private final ResponsePanel responsePanel;
     private final HttpRequestExecutionHelper httpRequestExecutionHelper;
     private final SseRequestExecutionHelper sseRequestExecutionHelper;
     private final WebSocketRequestExecutionHelper webSocketRequestExecutionHelper;
-    private final Consumer<Boolean> httpSseStreamOpenedSetter;
-    private final Consumer<SwingWorker<Void, Void>> currentWorkerSetter;
+    private final RequestExecutionState executionState;
     private final int maxRedirectCount;
 
     RequestProtocolDispatchHelper(ResponsePanel responsePanel,
                                   HttpRequestExecutionHelper httpRequestExecutionHelper,
                                   SseRequestExecutionHelper sseRequestExecutionHelper,
                                   WebSocketRequestExecutionHelper webSocketRequestExecutionHelper,
-                                  Consumer<Boolean> httpSseStreamOpenedSetter,
-                                  Consumer<SwingWorker<Void, Void>> currentWorkerSetter,
+                                  RequestExecutionState executionState,
                                   int maxRedirectCount) {
         this.responsePanel = responsePanel;
         this.httpRequestExecutionHelper = httpRequestExecutionHelper;
         this.sseRequestExecutionHelper = sseRequestExecutionHelper;
         this.webSocketRequestExecutionHelper = webSocketRequestExecutionHelper;
-        this.httpSseStreamOpenedSetter = httpSseStreamOpenedSetter;
-        this.currentWorkerSetter = currentWorkerSetter;
+        this.executionState = executionState;
         this.maxRedirectCount = maxRedirectCount;
     }
 
@@ -54,7 +50,7 @@ final class RequestProtocolDispatchHelper {
         } else if (protocol.isSseProtocol()) {
             worker = sseRequestExecutionHelper.createWorker(request, pipeline);
         } else {
-            httpSseStreamOpenedSetter.accept(false);
+            executionState.clearAutoDetectedHttpSseOpen();
             if (expectedHttpSse) {
                 responsePanel.clearAll();
                 responsePanel.setResponseTabButtonsEnable(false);
@@ -62,7 +58,7 @@ final class RequestProtocolDispatchHelper {
             worker = httpRequestExecutionHelper.createWorker(request, pipeline, maxRedirectCount);
         }
 
-        currentWorkerSetter.accept(worker);
+        executionState.startWorker(worker);
         worker.execute();
     }
 

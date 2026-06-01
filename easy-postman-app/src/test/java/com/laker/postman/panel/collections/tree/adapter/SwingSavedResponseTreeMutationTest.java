@@ -1,8 +1,9 @@
-package com.laker.postman.service.collections;
+package com.laker.postman.panel.collections.tree.adapter;
 
 import com.laker.postman.collection.model.RequestGroup;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.model.SavedResponse;
+import com.laker.postman.service.collections.CollectionTreeNodes;
 import org.testng.annotations.Test;
 
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -11,7 +12,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
-public class SavedResponseTreeMutationTest {
+public class SwingSavedResponseTreeMutationTest {
 
     @Test
     public void shouldAppendSavedResponseToTreeAndEditorRequest() {
@@ -25,7 +26,7 @@ public class SavedResponseTreeMutationTest {
         SavedResponse savedResponse = new SavedResponse();
         savedResponse.setId("response-1");
 
-        SavedResponseTreeMutation.Result result = SavedResponseTreeMutation
+        SwingSavedResponseTreeMutation.Result result = SwingSavedResponseTreeMutation
                 .appendSavedResponse(root, editorItem, savedResponse)
                 .orElseThrow();
 
@@ -46,7 +47,7 @@ public class SavedResponseTreeMutationTest {
         DefaultMutableTreeNode root = rootWith(requestNode);
         SavedResponse savedResponse = new SavedResponse();
 
-        SavedResponseTreeMutation.appendSavedResponse(root, treeItem, savedResponse).orElseThrow();
+        SwingSavedResponseTreeMutation.appendSavedResponse(root, treeItem, savedResponse).orElseThrow();
 
         assertEquals(treeItem.getResponse().size(), 1);
     }

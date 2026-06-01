@@ -18,15 +18,16 @@ import com.laker.postman.panel.collections.tree.handler.RequestTreeMouseHandler;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.service.collections.CollectionDocumentRegistry;
-import com.laker.postman.service.collections.CollectionRequestSaveService;
+import com.laker.postman.panel.collections.tree.adapter.SwingCollectionRequestSaveCoordinator;
 import com.laker.postman.service.collections.CollectionTreeNodeTypes;
 import com.laker.postman.service.collections.CollectionTreeNodes;
 import com.laker.postman.service.collections.CollectionTreeRootRegistry;
 import com.laker.postman.service.collections.OpenedRequestTabsStore;
 import com.laker.postman.service.collections.CollectionTreeQueryService;
 import com.laker.postman.service.collections.RequestSaveEventPublisher;
-import com.laker.postman.service.collections.SwingCollectionTreePersistence;
-import com.laker.postman.service.collections.SwingCollectionTreeDocumentMapper;
+import com.laker.postman.panel.collections.tree.adapter.SwingCollectionTreePersistence;
+import com.laker.postman.panel.collections.tree.adapter.SwingCollectionTreeQueries;
+import com.laker.postman.panel.collections.tree.adapter.SwingCollectionTreeDocumentMapper;
 import com.laker.postman.http.request.PreparedRequestFactory;
 import com.laker.postman.util.SystemUtil;
 import lombok.Getter;
@@ -65,7 +66,7 @@ public class CollectionTreePanel extends UiSingletonPanel {
     private DefaultTreeModel treeModel;
     @Getter
     private transient SwingCollectionTreePersistence collectionTreePersistence;
-    private transient CollectionRequestSaveService requestSaveService;
+    private transient SwingCollectionRequestSaveCoordinator requestSaveCoordinator;
 
     private record StartupLoadSnapshot(List<HttpRequestItem> openedRequests, HttpRequestItem lastNonNewRequest) {
     }
@@ -94,7 +95,7 @@ public class CollectionTreePanel extends UiSingletonPanel {
         String filePath = SystemUtil.getCollectionPathForWorkspace(currentWorkspace);
         // 初始化持久化工具
         collectionTreePersistence = new SwingCollectionTreePersistence(filePath, rootTreeNode, treeModel);
-        requestSaveService = new CollectionRequestSaveService(rootTreeNode, collectionTreePersistence::saveCurrentTree);
+        requestSaveCoordinator = new SwingCollectionRequestSaveCoordinator(rootTreeNode, collectionTreePersistence::saveCurrentTree);
         // 创建树组件，重写 getScrollableTracksViewportWidth 确保树宽度始终铺满 viewport，
         // 这样鼠标在行的右侧空白区域仍在 JTree 上，mouseMoved 事件能正常触发
         requestTree = new JTree(treeModel) {
@@ -167,7 +168,7 @@ public class CollectionTreePanel extends UiSingletonPanel {
     private StartupLoadSnapshot loadStartupSnapshot() {
         collectionTreePersistence.loadIntoTree();
         List<HttpRequestItem> openedRequests = OpenedRequestTabsStore.loadAll();
-        HttpRequestItem lastNonNewRequest = CollectionTreeQueryService.getLastNonNewRequest(openedRequests);
+        HttpRequestItem lastNonNewRequest = CollectionTreeQueryService.findLastPersistedRequest(openedRequests);
         return new StartupLoadSnapshot(openedRequests, lastNonNewRequest);
     }
 
@@ -235,7 +236,7 @@ public class CollectionTreePanel extends UiSingletonPanel {
      * @param item        请求项
      */
     public void saveRequestToGroup(RequestGroup targetGroup, HttpRequestItem item) {
-        requestSaveService.addRequestToGroup(targetGroup, item)
+        requestSaveCoordinator.addRequestToGroup(targetGroup, item)
                 .ifPresent(result -> {
                     treeModel.reload(result.groupNode());
                     requestTree.expandPath(new TreePath(result.groupNode().getPath()));
@@ -275,7 +276,7 @@ public class CollectionTreePanel extends UiSingletonPanel {
         if (item == null || item.getId() == null || item.getId().isEmpty()) {
             return false;
         }
-        CollectionRequestSaveService.RequestSaveResult result = requestSaveService
+        SwingCollectionRequestSaveCoordinator.RequestSaveResult result = requestSaveCoordinator
                 .updateExistingRequest(item)
                 .orElse(null);
         if (result == null) {
@@ -290,7 +291,7 @@ public class CollectionTreePanel extends UiSingletonPanel {
     }
 
     public boolean saveResponseForRequest(HttpRequestItem requestItem, SavedResponse savedResponse) {
-        CollectionRequestSaveService.SavedResponseSaveResult result = requestSaveService
+        SwingCollectionRequestSaveCoordinator.SavedResponseSaveResult result = requestSaveCoordinator
                 .appendSavedResponse(requestItem, savedResponse)
                 .orElse(null);
         if (result == null) {
@@ -362,7 +363,7 @@ public class CollectionTreePanel extends UiSingletonPanel {
             return;
         }
 
-        DefaultMutableTreeNode targetNode = CollectionTreeQueryService.findRequestNodeById(rootTreeNode, requestId);
+        DefaultMutableTreeNode targetNode = SwingCollectionTreeQueries.findRequestNodeById(rootTreeNode, requestId);
         if (targetNode == null) {
             return;
         }

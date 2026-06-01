@@ -1,8 +1,9 @@
-package com.laker.postman.service.collections;
+package com.laker.postman.panel.collections.tree.adapter;
 
 import com.laker.postman.collection.model.RequestGroup;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.model.SavedResponse;
+import com.laker.postman.service.collections.CollectionTreeNodes;
 import org.testng.annotations.Test;
 
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -12,7 +13,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
-public class CollectionRequestMutationTest {
+public class SwingCollectionRequestMutationTest {
 
     @Test
     public void shouldUpdateExistingRequestPayloadAndPreservePersistedFields() {
@@ -30,7 +31,7 @@ public class CollectionRequestMutationTest {
         edited.setName("Edited");
         edited.setUrl("https://api.example.com");
 
-        CollectionRequestMutation.Result result = CollectionRequestMutation
+        SwingCollectionRequestMutation.Result result = SwingCollectionRequestMutation
                 .updateExistingRequest(root, edited)
                 .orElseThrow();
 
@@ -46,7 +47,7 @@ public class CollectionRequestMutationTest {
         HttpRequestItem edited = new HttpRequestItem();
         edited.setId("missing");
 
-        assertTrue(CollectionRequestMutation.updateExistingRequest(rootWith(), edited).isEmpty());
+        assertTrue(SwingCollectionRequestMutation.updateExistingRequest(rootWith(), edited).isEmpty());
     }
 
     private DefaultMutableTreeNode rootWith(DefaultMutableTreeNode... children) {

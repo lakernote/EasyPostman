@@ -1,5 +1,6 @@
 package com.laker.postman.request.edit;
 
+import com.laker.postman.request.defaults.HttpRequestDefaults;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.model.RequestBodyTypes;
@@ -10,7 +11,6 @@ import java.util.Locale;
 
 @UtilityClass
 public class HttpRequestBodyTypeResolver {
-    private static final String HEADER_CONTENT_TYPE = "Content-Type";
     private static final String CONTENT_TYPE_FORM_URLENCODED = "application/x-www-form-urlencoded";
     private static final String CONTENT_TYPE_MULTIPART_FORM = "multipart/form-data";
 
@@ -28,7 +28,7 @@ public class HttpRequestBodyTypeResolver {
             return RequestBodyTypes.BODY_TYPE_NONE;
         }
 
-        String contentType = findHeaderValue(item.getHeadersList(), HEADER_CONTENT_TYPE);
+        String contentType = findHeaderValue(item.getHeadersList(), HttpRequestDefaults.CONTENT_TYPE);
         if (contentType == null || contentType.trim().isEmpty()) {
             return RequestBodyTypes.BODY_TYPE_NONE;
         }

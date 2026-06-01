@@ -1,50 +1,42 @@
 package com.laker.postman.service.collections;
 
-import com.laker.postman.model.Environment;
+import com.laker.postman.collection.model.CollectionDocument;
+import com.laker.postman.collection.model.CollectionNode;
 import com.laker.postman.collection.model.RequestGroup;
-import com.laker.postman.request.model.HttpHeader;
-import com.laker.postman.request.model.HttpParam;
+import com.laker.postman.http.request.HttpRequestFactory;
 import com.laker.postman.request.model.HttpFormData;
 import com.laker.postman.request.model.HttpFormUrlencoded;
+import com.laker.postman.request.model.HttpHeader;
+import com.laker.postman.request.model.HttpParam;
 import com.laker.postman.request.model.HttpRequestItem;
+import lombok.experimental.UtilityClass;
 
-
-import com.laker.postman.http.request.HttpRequestFactory;
-import lombok.extern.slf4j.Slf4j;
-
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeModel;
 import java.util.ArrayList;
 import java.util.List;
 
-@Slf4j
-public class DefaultRequestsFactory {
+import static com.laker.postman.request.defaults.HttpRequestDefaults.APPLICATION_JSON;
+import static com.laker.postman.request.defaults.HttpRequestDefaults.CONTENT_TYPE;
+import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_RAW;
+
+@UtilityClass
+public class DefaultCollectionDocumentFactory {
     private static final String BASIC_HTTP_EXAMPLES_GROUP_NAME = "Basic HTTP Examples";
     private static final String SCRIPT_EXAMPLES_EN_GROUP_NAME = "Script Examples (EN)";
     private static final String SCRIPT_EXAMPLES_ZH_GROUP_NAME = "脚本示例（中文）";
 
-    public static final String BODY_TYPE_RAW = "raw";
-    public static final String APPLICATION_JSON = "application/json";
-    public static final String CONTENT_TYPE = "Content-Type";
-    public static final String HTTPS_HTTPBIN_ORG = "https://httpbin.org";
-    public static final String HTTPS_HTTPBIN_ORG_POST = HTTPS_HTTPBIN_ORG + "/post";
+    public static final String HTTPBIN_BASE_URL = "https://httpbin.org";
+    public static final String HTTPBIN_POST_URL = HTTPBIN_BASE_URL + "/post";
 
-    private DefaultRequestsFactory() {
-        throw new IllegalStateException("Utility class");
+    public CollectionDocument create() {
+        // 默认集合是领域数据，不直接创建 Swing 节点；这样 CLI、导入导出和未来 JavaFX 都能复用同一份示例数据。
+        return new CollectionDocument(List.of(
+                createBasicHttpExamples(),
+                createEnglishScriptExamples(),
+                createChineseScriptExamples()
+        ));
     }
 
-    public static void create(DefaultMutableTreeNode rootTreeNode, DefaultTreeModel treeModel) {
-        try {
-            createBasicHttpExamples(rootTreeNode);
-            createEnglishScriptExamples(rootTreeNode);
-            createChineseScriptExamples(rootTreeNode);
-            treeModel.reload();
-        } catch (Exception ex) {
-            log.error("Failed to create default request groups", ex);
-        }
-    }
-
-    private static void createEnglishScriptExamples(DefaultMutableTreeNode rootTreeNode) {
+    private CollectionNode createEnglishScriptExamples() {
         RequestGroup group = new RequestGroup(SCRIPT_EXAMPLES_EN_GROUP_NAME);
         group.setDescription("""
                 Run requests 1 to 6 in order for the variable workflow examples.
@@ -67,8 +59,7 @@ public class DefaultRequestsFactory {
                 - Authorization priority: script-defined Authorization > existing Authorization header > auth tab generated Authorization
                 - Removing Authorization in pre-script does not disable auth tab; if no Authorization remains, the auth tab configuration is applied at send time
                 """);
-        DefaultMutableTreeNode groupNode = CollectionTreeNodes.groupNode(group);
-        rootTreeNode.add(groupNode);
+        CollectionNode groupNode = CollectionNode.group(group);
 
         HttpRequestItem setup = HttpRequestFactory.createDefaultRequest();
         setup.setName("1. Setup Variables");
@@ -96,13 +87,13 @@ public class DefaultRequestsFactory {
                     pm.expect(jsonData.args.tenant).to.eql(pm.environment.get('tenantId'));
                 });
                 """);
-        addRequestNode(groupNode, setup);
+        addRequestChild(groupNode, setup);
 
         HttpRequestItem reuse = HttpRequestFactory.createDefaultRequest();
         reuse.setName("2. Reuse Variables");
         reuse.setDescription("Reuses environment variables in params, headers, body, and script. Execution-scoped variables are created in this run and reused immediately.");
         reuse.setMethod("POST");
-        reuse.setUrl(HTTPS_HTTPBIN_ORG_POST);
+        reuse.setUrl(HTTPBIN_POST_URL);
         reuse.setBodyType(BODY_TYPE_RAW);
         reuse.setHeadersList(withExtraHeaders(reuse,
                 new HttpHeader(true, CONTENT_TYPE, APPLICATION_JSON),
@@ -146,13 +137,13 @@ public class DefaultRequestsFactory {
                 });
                 console.log('traceId =', pm.variables.get('traceId'));
                 """);
-        addRequestNode(groupNode, reuse);
+        addRequestChild(groupNode, reuse);
 
         HttpRequestItem createOrder = HttpRequestFactory.createDefaultRequest();
         createOrder.setName("3. Create Order Context");
         createOrder.setDescription("Generates or accepts an orderId for the current run, echoes it through httpbin, and stores it in pm.variables for the next request.");
         createOrder.setMethod("POST");
-        createOrder.setUrl(HTTPS_HTTPBIN_ORG_POST);
+        createOrder.setUrl(HTTPBIN_POST_URL);
         createOrder.setBodyType(BODY_TYPE_RAW);
         createOrder.setHeadersList(withExtraHeaders(createOrder,
                 new HttpHeader(true, CONTENT_TYPE, APPLICATION_JSON),
@@ -185,13 +176,13 @@ public class DefaultRequestsFactory {
                     pm.expect(pm.variables.get('orderId')).to.eql(orderId);
                 });
                 """);
-        addRequestNode(groupNode, createOrder);
+        addRequestChild(groupNode, createOrder);
 
         HttpRequestItem reuseOrder = HttpRequestFactory.createDefaultRequest();
         reuseOrder.setName("4. Reuse OrderId Across Requests");
         reuseOrder.setDescription("Consumes the orderId created by request 3. This is the default two-request chain for Functional and Performance testing.");
         reuseOrder.setMethod("GET");
-        reuseOrder.setUrl(HTTPS_HTTPBIN_ORG + "/anything/orders/{{orderId}}");
+        reuseOrder.setUrl(HTTPBIN_BASE_URL + "/anything/orders/{{orderId}}");
         reuseOrder.setHeadersList(withExtraHeaders(reuseOrder,
                 new HttpHeader(true, "X-Order-Id", "{{orderId}}")));
         reuseOrder.setParamsList(List.of(
@@ -210,13 +201,13 @@ public class DefaultRequestsFactory {
                 });
                 console.log('reused orderId =', pm.variables.get('orderId'));
                 """);
-        addRequestNode(groupNode, reuseOrder);
+        addRequestChild(groupNode, reuseOrder);
 
         HttpRequestItem extractOrder = HttpRequestFactory.createDefaultRequest();
         extractOrder.setName("5. Extract OrderId From Response");
         extractOrder.setDescription("Simulates creating an order, then extracts the echoed orderId from the response body into pm.variables for the next request.");
         extractOrder.setMethod("POST");
-        extractOrder.setUrl(HTTPS_HTTPBIN_ORG_POST);
+        extractOrder.setUrl(HTTPBIN_POST_URL);
         extractOrder.setBodyType(BODY_TYPE_RAW);
         extractOrder.setHeadersList(withExtraHeaders(extractOrder,
                 new HttpHeader(true, CONTENT_TYPE, APPLICATION_JSON)));
@@ -242,13 +233,13 @@ public class DefaultRequestsFactory {
                     pm.expect(pm.variables.get('responseOrderId')).to.eql(extractedOrderId);
                 });
                 """);
-        addRequestNode(groupNode, extractOrder);
+        addRequestChild(groupNode, extractOrder);
 
         HttpRequestItem reuseExtractedOrder = HttpRequestFactory.createDefaultRequest();
         reuseExtractedOrder.setName("6. Reuse Extracted OrderId");
         reuseExtractedOrder.setDescription("Consumes the orderId extracted by request 5. Use this pair when you want a response-body extraction workflow.");
         reuseExtractedOrder.setMethod("GET");
-        reuseExtractedOrder.setUrl(HTTPS_HTTPBIN_ORG + "/anything/orders/extracted/{{responseOrderId}}");
+        reuseExtractedOrder.setUrl(HTTPBIN_BASE_URL + "/anything/orders/extracted/{{responseOrderId}}");
         reuseExtractedOrder.setHeadersList(withExtraHeaders(reuseExtractedOrder,
                 new HttpHeader(true, "X-Extracted-Order-Id", "{{responseOrderId}}")));
         reuseExtractedOrder.setParamsList(List.of(
@@ -267,7 +258,7 @@ public class DefaultRequestsFactory {
                 });
                 console.log('reused extracted orderId =', pm.variables.get('responseOrderId'));
                 """);
-        addRequestNode(groupNode, reuseExtractedOrder);
+        addRequestChild(groupNode, reuseExtractedOrder);
 
         HttpRequestItem websocket = HttpRequestFactory.createDefaultWebSocketRequest();
         websocket.setName("7. WebSocket Workflow Check");
@@ -304,7 +295,7 @@ public class DefaultRequestsFactory {
                 });
                 console.log('last websocket message =', messageText);
                 """);
-        addRequestNode(groupNode, websocket);
+        addRequestChild(groupNode, websocket);
 
         HttpRequestItem sse = HttpRequestFactory.createDefaultSseRequest();
         sse.setName("8. SSE Workflow Check");
@@ -338,10 +329,11 @@ public class DefaultRequestsFactory {
                 });
                 console.log('sse event #' + count + ', traceId = ' + pm.variables.get('sseTraceId'));
                 """);
-        addRequestNode(groupNode, sse);
+        addRequestChild(groupNode, sse);
+        return groupNode;
     }
 
-    private static void createChineseScriptExamples(DefaultMutableTreeNode rootTreeNode) {
+    private CollectionNode createChineseScriptExamples() {
         RequestGroup group = new RequestGroup(SCRIPT_EXAMPLES_ZH_GROUP_NAME);
         group.setDescription("""
                 变量流程示例建议按请求 1 到 6 的顺序执行。
@@ -364,8 +356,7 @@ public class DefaultRequestsFactory {
                 - Authorization 优先级：脚本显式写入的 Authorization > 已有 Authorization 请求头 > auth tab 自动生成的 Authorization
                 - 在 pre-script 中删除 Authorization 不表示禁用 auth tab；如果最终没有 Authorization，发送时仍会按 auth tab 配置补齐
                 """);
-        DefaultMutableTreeNode groupNode = CollectionTreeNodes.groupNode(group);
-        rootTreeNode.add(groupNode);
+        CollectionNode groupNode = CollectionNode.group(group);
 
         HttpRequestItem setup = HttpRequestFactory.createDefaultRequest();
         setup.setName("1. 设置变量");
@@ -393,13 +384,13 @@ public class DefaultRequestsFactory {
                     pm.expect(jsonData.args.tenant).to.eql(pm.environment.get('tenantId'));
                 });
                 """);
-        addRequestNode(groupNode, setup);
+        addRequestChild(groupNode, setup);
 
         HttpRequestItem reuse = HttpRequestFactory.createDefaultRequest();
         reuse.setName("2. 复用变量");
         reuse.setDescription("在请求参数、请求头、请求体和脚本里复用环境变量；同时创建并使用当前运行上下文的运行变量。");
         reuse.setMethod("POST");
-        reuse.setUrl(HTTPS_HTTPBIN_ORG_POST);
+        reuse.setUrl(HTTPBIN_POST_URL);
         reuse.setBodyType(BODY_TYPE_RAW);
         reuse.setHeadersList(withExtraHeaders(reuse,
                 new HttpHeader(true, CONTENT_TYPE, APPLICATION_JSON),
@@ -443,13 +434,13 @@ public class DefaultRequestsFactory {
                 });
                 console.log('当前 traceId =', pm.variables.get('traceId'));
                 """);
-        addRequestNode(groupNode, reuse);
+        addRequestChild(groupNode, reuse);
 
         HttpRequestItem createOrder = HttpRequestFactory.createDefaultRequest();
         createOrder.setName("3. 生成订单上下文");
         createOrder.setDescription("为当前运行生成或接收一个 orderId，通过 httpbin 回显后写入 pm.variables，供下一个请求继续复用。");
         createOrder.setMethod("POST");
-        createOrder.setUrl(HTTPS_HTTPBIN_ORG_POST);
+        createOrder.setUrl(HTTPBIN_POST_URL);
         createOrder.setBodyType(BODY_TYPE_RAW);
         createOrder.setHeadersList(withExtraHeaders(createOrder,
                 new HttpHeader(true, CONTENT_TYPE, APPLICATION_JSON),
@@ -482,13 +473,13 @@ public class DefaultRequestsFactory {
                     pm.expect(pm.variables.get('orderId')).to.eql(orderId);
                 });
                 """);
-        addRequestNode(groupNode, createOrder);
+        addRequestChild(groupNode, createOrder);
 
         HttpRequestItem reuseOrder = HttpRequestFactory.createDefaultRequest();
         reuseOrder.setName("4. 跨请求复用 OrderId");
         reuseOrder.setDescription("消费请求 3 生成的 orderId。这是默认可直接用于 Functional 和 Performance 的两请求串联示例。");
         reuseOrder.setMethod("GET");
-        reuseOrder.setUrl(HTTPS_HTTPBIN_ORG + "/anything/orders/{{orderId}}");
+        reuseOrder.setUrl(HTTPBIN_BASE_URL + "/anything/orders/{{orderId}}");
         reuseOrder.setHeadersList(withExtraHeaders(reuseOrder,
                 new HttpHeader(true, "X-Order-Id", "{{orderId}}")));
         reuseOrder.setParamsList(List.of(
@@ -507,13 +498,13 @@ public class DefaultRequestsFactory {
                 });
                 console.log('当前复用的 orderId =', pm.variables.get('orderId'));
                 """);
-        addRequestNode(groupNode, reuseOrder);
+        addRequestChild(groupNode, reuseOrder);
 
         HttpRequestItem extractOrder = HttpRequestFactory.createDefaultRequest();
         extractOrder.setName("5. 从响应提取 OrderId");
         extractOrder.setDescription("模拟创建订单后，从响应体里提取回显的 orderId，写入 pm.variables，供下一个请求复用。");
         extractOrder.setMethod("POST");
-        extractOrder.setUrl(HTTPS_HTTPBIN_ORG_POST);
+        extractOrder.setUrl(HTTPBIN_POST_URL);
         extractOrder.setBodyType(BODY_TYPE_RAW);
         extractOrder.setHeadersList(withExtraHeaders(extractOrder,
                 new HttpHeader(true, CONTENT_TYPE, APPLICATION_JSON)));
@@ -539,13 +530,13 @@ public class DefaultRequestsFactory {
                     pm.expect(pm.variables.get('responseOrderId')).to.eql(extractedOrderId);
                 });
                 """);
-        addRequestNode(groupNode, extractOrder);
+        addRequestChild(groupNode, extractOrder);
 
         HttpRequestItem reuseExtractedOrder = HttpRequestFactory.createDefaultRequest();
         reuseExtractedOrder.setName("6. 复用提取出的 OrderId");
         reuseExtractedOrder.setDescription("消费请求 5 从响应体里提取的 orderId。适合验证“提取响应字段再传给下一请求”的流程。");
         reuseExtractedOrder.setMethod("GET");
-        reuseExtractedOrder.setUrl(HTTPS_HTTPBIN_ORG + "/anything/orders/extracted/{{responseOrderId}}");
+        reuseExtractedOrder.setUrl(HTTPBIN_BASE_URL + "/anything/orders/extracted/{{responseOrderId}}");
         reuseExtractedOrder.setHeadersList(withExtraHeaders(reuseExtractedOrder,
                 new HttpHeader(true, "X-Extracted-Order-Id", "{{responseOrderId}}")));
         reuseExtractedOrder.setParamsList(List.of(
@@ -564,7 +555,7 @@ public class DefaultRequestsFactory {
                 });
                 console.log('当前复用的提取 orderId =', pm.variables.get('responseOrderId'));
                 """);
-        addRequestNode(groupNode, reuseExtractedOrder);
+        addRequestChild(groupNode, reuseExtractedOrder);
 
         HttpRequestItem websocket = HttpRequestFactory.createDefaultWebSocketRequest();
         websocket.setName("7. WebSocket 流程校验");
@@ -601,7 +592,7 @@ public class DefaultRequestsFactory {
                 });
                 console.log('最近一条 WebSocket 消息 =', messageText);
                 """);
-        addRequestNode(groupNode, websocket);
+        addRequestChild(groupNode, websocket);
 
         HttpRequestItem sse = HttpRequestFactory.createDefaultSseRequest();
         sse.setName("8. SSE 流程校验");
@@ -635,22 +626,22 @@ public class DefaultRequestsFactory {
                 });
                 console.log('第 ' + count + ' 条 SSE 事件, traceId = ' + pm.variables.get('sseTraceId'));
                 """);
-        addRequestNode(groupNode, sse);
+        addRequestChild(groupNode, sse);
+        return groupNode;
     }
 
-    private static void createBasicHttpExamples(DefaultMutableTreeNode rootTreeNode) {
+    private CollectionNode createBasicHttpExamples() {
         RequestGroup defaultGroup = new RequestGroup(BASIC_HTTP_EXAMPLES_GROUP_NAME);
         defaultGroup.setDescription("""
                 General-purpose examples for common request types.
                 These requests are independent from the official script examples.
                 """);
-        DefaultMutableTreeNode defaultGroupNode = CollectionTreeNodes.groupNode(defaultGroup);
-        rootTreeNode.add(defaultGroupNode);
+        CollectionNode defaultGroupNode = CollectionNode.group(defaultGroup);
 
         HttpRequestItem getExample = HttpRequestFactory.createDefaultRequest();
         getExample.setName("GET Example");
         getExample.setMethod("GET");
-        getExample.setUrl(HTTPS_HTTPBIN_ORG + "/get?q=easytools&lang=en&page=1&size=10&sort=desc&filter=active");
+        getExample.setUrl(HTTPBIN_BASE_URL + "/get?q=easytools&lang=en&page=1&size=10&sort=desc&filter=active");
         getExample.setParamsList(List.of(
                 new HttpParam(true, "q", "easytools"),
                 new HttpParam(true, "lang", "en"),
@@ -665,12 +656,12 @@ public class DefaultRequestsFactory {
                     pm.expect(jsonData.args.size).to.eql("10");
                 });
                 """);
-        addRequestNode(defaultGroupNode, getExample);
+        addRequestChild(defaultGroupNode, getExample);
 
         HttpRequestItem postJson = HttpRequestFactory.createDefaultRequest();
         postJson.setName("POST JSON Example");
         postJson.setMethod("POST");
-        postJson.setUrl(HTTPS_HTTPBIN_ORG_POST);
+        postJson.setUrl(HTTPBIN_POST_URL);
         postJson.setBodyType(BODY_TYPE_RAW);
         postJson.setHeadersList(withExtraHeaders(postJson,
                 new HttpHeader(true, CONTENT_TYPE, APPLICATION_JSON)));
@@ -686,12 +677,12 @@ public class DefaultRequestsFactory {
                     pm.expect(jsonData.json.key1).to.eql("value1");
                 });
                 """);
-        addRequestNode(defaultGroupNode, postJson);
+        addRequestChild(defaultGroupNode, postJson);
 
         HttpRequestItem postFormData = HttpRequestFactory.createDefaultRequest();
         postFormData.setName("POST form-data Example");
         postFormData.setMethod("POST");
-        postFormData.setUrl(HTTPS_HTTPBIN_ORG_POST);
+        postFormData.setUrl(HTTPBIN_POST_URL);
         postFormData.setHeadersList(withExtraHeaders(postFormData,
                 new HttpHeader(true, CONTENT_TYPE, "multipart/form-data")));
         postFormData.setFormDataList(List.of(
@@ -704,12 +695,12 @@ public class DefaultRequestsFactory {
                     pm.expect(jsonData.form.key1).to.eql("value1");
                 });
                 """);
-        addRequestNode(defaultGroupNode, postFormData);
+        addRequestChild(defaultGroupNode, postFormData);
 
         HttpRequestItem postUrl = HttpRequestFactory.createDefaultRequest();
         postUrl.setName("POST x-www-form-urlencoded Example");
         postUrl.setMethod("POST");
-        postUrl.setUrl(HTTPS_HTTPBIN_ORG_POST);
+        postUrl.setUrl(HTTPBIN_POST_URL);
         postUrl.setHeadersList(withExtraHeaders(postUrl,
                 new HttpHeader(true, CONTENT_TYPE, "application/x-www-form-urlencoded")));
         postUrl.setUrlencodedList(List.of(
@@ -722,43 +713,44 @@ public class DefaultRequestsFactory {
                     pm.expect(jsonData.form.key1).to.eql("value1");
                 });
                 """);
-        addRequestNode(defaultGroupNode, postUrl);
+        addRequestChild(defaultGroupNode, postUrl);
 
         HttpRequestItem put = HttpRequestFactory.createDefaultRequest();
         put.setName("PUT Example");
         put.setMethod("PUT");
-        put.setUrl(HTTPS_HTTPBIN_ORG + "/put");
+        put.setUrl(HTTPBIN_BASE_URL + "/put");
         put.setBodyType(BODY_TYPE_RAW);
         put.setHeadersList(withExtraHeaders(put,
                 new HttpHeader(true, CONTENT_TYPE, APPLICATION_JSON)));
         put.setBody("{\"update\":true}");
-        addRequestNode(defaultGroupNode, put);
+        addRequestChild(defaultGroupNode, put);
 
         HttpRequestItem delete = HttpRequestFactory.createDefaultRequest();
         delete.setName("DELETE Example");
         delete.setMethod("DELETE");
-        delete.setUrl(HTTPS_HTTPBIN_ORG + "/delete");
-        addRequestNode(defaultGroupNode, delete);
+        delete.setUrl(HTTPBIN_BASE_URL + "/delete");
+        addRequestChild(defaultGroupNode, delete);
 
         HttpRequestItem redirect = HttpRequestFactory.createDefaultRedirectRequest();
         redirect.setName("Redirect Example");
-        addRequestNode(defaultGroupNode, redirect);
+        addRequestChild(defaultGroupNode, redirect);
 
         HttpRequestItem websocket = HttpRequestFactory.createDefaultWebSocketRequest();
         websocket.setName("WebSocket Example");
-        addRequestNode(defaultGroupNode, websocket);
+        addRequestChild(defaultGroupNode, websocket);
 
         HttpRequestItem sse = HttpRequestFactory.createDefaultSseRequest();
-        addRequestNode(defaultGroupNode, sse);
+        addRequestChild(defaultGroupNode, sse);
+        return defaultGroupNode;
     }
 
-    private static List<HttpHeader> withExtraHeaders(HttpRequestItem item, HttpHeader... extraHeaders) {
+    private List<HttpHeader> withExtraHeaders(HttpRequestItem item, HttpHeader... extraHeaders) {
         List<HttpHeader> headers = new ArrayList<>(item.getHeadersList());
         headers.addAll(List.of(extraHeaders));
         return headers;
     }
 
-    private static void addRequestNode(DefaultMutableTreeNode parentNode, HttpRequestItem item) {
-        parentNode.add(CollectionTreeNodes.requestNode(item));
+    private void addRequestChild(CollectionNode parentNode, HttpRequestItem item) {
+        parentNode.addChild(CollectionNode.request(item));
     }
 }

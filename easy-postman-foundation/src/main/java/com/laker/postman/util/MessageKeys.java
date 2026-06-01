@@ -1385,6 +1385,7 @@ public final class MessageKeys {
     public static final String RESPONSE_SAVE_DIALOG_MESSAGE = "response.save.dialog.message";
     public static final String RESPONSE_SAVE_SUCCESS = "response.save.success";
     public static final String RESPONSE_SAVE_ERROR = "response.save.error";
+    public static final String RESPONSE_LOAD_ERROR = "response.load.error";
     public static final String RESPONSE_SAVE_NO_RESPONSE = "response.save.no_response";
     public static final String RESPONSE_SAVE_REQUEST_NOT_SAVED = "response.save.request_not_saved";
     public static final String RESPONSE_SAVE_REQUEST_NOT_FOUND = "response.save.request_not_found";

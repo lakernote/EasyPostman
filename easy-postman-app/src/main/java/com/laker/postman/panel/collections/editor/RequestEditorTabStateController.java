@@ -1,0 +1,136 @@
+package com.laker.postman.panel.collections.editor;
+
+import com.laker.postman.common.component.tab.ClosableTabComponent;
+import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
+import com.laker.postman.request.model.HttpRequestItem;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import lombok.RequiredArgsConstructor;
+
+import javax.swing.*;
+import java.awt.*;
+
+/**
+ * 请求编辑器 Tab 状态控制器。
+ * <p>
+ * 标题、协议标识、红点、保存事件同步属于 Tab 状态维护，集中在这里，避免面板类继续膨胀。
+ */
+@RequiredArgsConstructor
+final class RequestEditorTabStateController {
+    private final JTabbedPane tabbedPane;
+
+    RequestEditSubPanel currentRequestTab() {
+        Component component = tabbedPane.getSelectedComponent();
+        if (component instanceof RequestEditSubPanel requestEditSubPanel) {
+            return requestEditSubPanel;
+        }
+        return null;
+    }
+
+    HttpRequestItem currentRequest() {
+        RequestEditSubPanel subPanel = currentRequestTab();
+        return subPanel != null ? subPanel.getCurrentRequest() : null;
+    }
+
+    void updateCurrentRequest(HttpRequestItem item) {
+        RequestEditSubPanel subPanel = currentRequestTab();
+        if (subPanel != null) {
+            subPanel.initPanelData(item);
+        }
+    }
+
+    RequestEditSubPanel findRequestTab(String requestItemId) {
+        for (int i = 0; i < tabbedPane.getTabCount() - 1; i++) {
+            Component component = tabbedPane.getComponentAt(i);
+            if (component instanceof RequestEditSubPanel subPanel && requestItemId.equals(subPanel.getId())) {
+                return subPanel;
+            }
+        }
+        return null;
+    }
+
+    void refreshNewRequestTab(String requestName, HttpRequestItem item) {
+        int currentTabIndex = tabbedPane.getSelectedIndex();
+        if (currentTabIndex < 0) {
+            return;
+        }
+        tabbedPane.setTitleAt(currentTabIndex, requestName);
+        if (tabbedPane.getTabComponentAt(currentTabIndex) instanceof ClosableTabComponent) {
+            tabbedPane.setTabComponentAt(currentTabIndex, new ClosableTabComponent(requestName, item.getProtocol()));
+        }
+        updateCurrentRequest(item);
+    }
+
+    void updateRequestDirty(RequestEditSubPanel panel, boolean dirty) {
+        int index = tabbedPane.indexOfComponent(panel);
+        if (index < 0) {
+            return;
+        }
+        Component tabComponent = tabbedPane.getTabComponentAt(index);
+        if (tabComponent instanceof ClosableTabComponent closable) {
+            closable.setDirty(dirty);
+        }
+    }
+
+    void syncSavedRequest(HttpRequestItem updatedItem) {
+        if (updatedItem == null || updatedItem.getId() == null) {
+            return;
+        }
+        for (int i = 0; i < tabbedPane.getTabCount(); i++) {
+            Component component = tabbedPane.getComponentAt(i);
+            if (!(component instanceof RequestEditSubPanel subPanel)) {
+                continue;
+            }
+            HttpRequestItem tabItem = subPanel.getCurrentRequest();
+            if (tabItem != null && updatedItem.getId().equals(tabItem.getId())) {
+                updateRequestDirty(subPanel, false);
+                subPanel.setOriginalRequestItem(updatedItem);
+            }
+        }
+    }
+
+    void updateRequestProtocol(RequestEditSubPanel panel, RequestItemProtocolEnum protocol) {
+        int index = tabbedPane.indexOfComponent(panel);
+        if (index < 0 || protocol == null) {
+            return;
+        }
+        Component tabComponent = tabbedPane.getTabComponentAt(index);
+        if (!(tabComponent instanceof ClosableTabComponent closable)) {
+            return;
+        }
+
+        String title = tabbedPane.getTitleAt(index);
+        ClosableTabComponent updated = new ClosableTabComponent(title, protocol);
+        updated.setDirty(closable.isDirty());
+        updated.setNewRequest(closable.isNewRequest());
+        updated.setPreviewMode(closable.isPreviewMode());
+        tabbedPane.setTabComponentAt(index, updated);
+    }
+
+    void updateGroupTitle(GroupEditPanel panel, String newTitle) {
+        int index = tabbedPane.indexOfComponent(panel);
+        if (index < 0) {
+            return;
+        }
+
+        boolean rootGroup = panel.getGroupNode() != null && panel.getGroupNode().getLevel() == 1;
+        tabbedPane.setTabComponentAt(index, new ClosableTabComponent(newTitle, null, rootGroup));
+        tabbedPane.setToolTipTextAt(index, newTitle);
+    }
+
+    void updateAllRequestLayouts(boolean vertical) {
+        forEachRequestTab(subPanel -> subPanel.updateLayoutOrientation(vertical));
+    }
+
+    void updateAllRequestEditorTabsVisibility() {
+        forEachRequestTab(RequestEditSubPanel::updateRequestEditorTabsVisibility);
+    }
+
+    private void forEachRequestTab(java.util.function.Consumer<RequestEditSubPanel> action) {
+        for (int i = 0; i < tabbedPane.getTabCount(); i++) {
+            Component component = tabbedPane.getComponentAt(i);
+            if (component instanceof RequestEditSubPanel subPanel) {
+                action.accept(subPanel);
+            }
+        }
+    }
+}

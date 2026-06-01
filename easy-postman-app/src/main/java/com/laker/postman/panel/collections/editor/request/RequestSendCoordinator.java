@@ -12,8 +12,7 @@ import java.util.function.Supplier;
 
 @RequiredArgsConstructor
 final class RequestSendCoordinator {
-    private final Supplier<SwingWorker<Void, Void>> currentWorkerSupplier;
-    private final Consumer<SwingWorker<Void, Void>> currentWorkerSetter;
+    private final RequestExecutionState executionState;
     private final Runnable cancelCurrentRequestAction;
     private final JTextField urlField;
     private final RequestPreparationFeedbackHelper requestPreparationFeedbackHelper;
@@ -25,7 +24,7 @@ final class RequestSendCoordinator {
     private final Consumer<RequestPreparationResult> dispatchAction;
 
     void sendRequest() {
-        if (currentWorkerSupplier.get() != null) {
+        if (executionState.currentWorker() != null) {
             cancelCurrentRequestAction.run();
             return;
         }
@@ -47,16 +46,12 @@ final class RequestSendCoordinator {
             @Override
             protected void done() {
                 if (isCancelled()) {
-                    if (currentWorkerSupplier.get() == this) {
-                        currentWorkerSetter.accept(null);
-                    }
+                    executionState.clearCurrentWorkerIf(this);
                     return;
                 }
 
                 // 预处理 worker 只负责准备数据；进入结果分发前，先把当前 worker 归还给主状态机。
-                if (currentWorkerSupplier.get() == this) {
-                    currentWorkerSetter.accept(null);
-                }
+                executionState.clearCurrentWorkerIf(this);
 
                 if (requestPreparationFeedbackHelper.handlePreparationFailure(
                         preparationResult, urlField, requestLinePanel, sendAction, responsePanel)) {
@@ -72,7 +67,7 @@ final class RequestSendCoordinator {
             }
         };
 
-        currentWorkerSetter.accept(preparationWorker);
+        executionState.startWorker(preparationWorker);
         preparationWorker.execute();
     }
 }

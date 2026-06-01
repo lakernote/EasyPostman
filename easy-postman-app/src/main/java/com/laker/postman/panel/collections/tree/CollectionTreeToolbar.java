@@ -23,7 +23,7 @@ import com.laker.postman.collection.model.CollectionParseResult;
 import com.laker.postman.service.common.TreeNodeBuilder;
 import com.laker.postman.service.collections.CollectionDocumentJsonCodec;
 import com.laker.postman.service.collections.CollectionTreeNodes;
-import com.laker.postman.service.collections.SwingCollectionTreeDocumentMapper;
+import com.laker.postman.panel.collections.tree.adapter.SwingCollectionTreeDocumentMapper;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.har.HarParser;
 import com.laker.postman.http.request.PreparedRequestFactory;

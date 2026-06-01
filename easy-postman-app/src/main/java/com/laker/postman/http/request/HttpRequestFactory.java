@@ -1,13 +1,11 @@
 package com.laker.postman.http.request;
 
-import com.laker.postman.request.model.RequestBodyTypes;
-import com.laker.postman.request.model.RequestItemProtocolEnum;
-import com.laker.postman.request.model.HttpHeader;
-import com.laker.postman.request.model.HttpRequestItem;
-
-
 import cn.hutool.core.util.IdUtil;
 import com.laker.postman.request.defaults.HttpRequestDefaults;
+import com.laker.postman.request.model.HttpHeader;
+import com.laker.postman.request.model.HttpRequestItem;
+import com.laker.postman.request.model.RequestBodyTypes;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.util.SystemUtil;
 import lombok.experimental.UtilityClass;
 
@@ -15,8 +13,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.laker.postman.service.collections.DefaultRequestsFactory.APPLICATION_JSON;
-import static com.laker.postman.service.collections.DefaultRequestsFactory.CONTENT_TYPE;
+import static com.laker.postman.request.defaults.HttpRequestDefaults.APPLICATION_JSON;
+import static com.laker.postman.request.defaults.HttpRequestDefaults.CONTENT_TYPE;
 
 @UtilityClass
 public class HttpRequestFactory {
@@ -28,6 +26,7 @@ public class HttpRequestFactory {
     public static final String ACCEPT_ENCODING = HttpRequestDefaults.ACCEPT_ENCODING;
     public static final String CONNECTION = HttpRequestDefaults.CONNECTION;
     public static final String ACCEPT_ENCODING_VALUE = HttpRequestDefaults.ACCEPT_ENCODING_VALUE;
+    public static final String IDENTITY_ACCEPT_ENCODING = "identity";
     public static final String CONNECTION_VALUE = HttpRequestDefaults.CONNECTION_VALUE;
 
     private static String resolveUserAgentVersion() {
@@ -52,6 +51,25 @@ public class HttpRequestFactory {
         return testItem;
     }
 
+    public static HttpRequestItem createBlankRequest(RequestItemProtocolEnum protocol) {
+        RequestItemProtocolEnum resolvedProtocol = protocol == null ? RequestItemProtocolEnum.HTTP : protocol;
+        HttpRequestItem request = createDefaultRequest();
+        request.setProtocol(resolvedProtocol);
+        request.setMethod("GET");
+        request.setUrl("");
+
+        // 新增请求使用“空白模板”，协议差异只在工厂集中处理，避免 Swing/JavaFX/CLI 各自复制初始化规则。
+        if (resolvedProtocol.isWebSocketProtocol()) {
+            request.setBodyType(RequestBodyTypes.BODY_TYPE_RAW);
+            appendHeader(request, CONTENT_TYPE, APPLICATION_JSON);
+            replaceHeader(request, ACCEPT_ENCODING, IDENTITY_ACCEPT_ENCODING);
+        } else if (resolvedProtocol.isSseProtocol()) {
+            replaceHeader(request, ACCEPT, TEXT_EVENT_STREAM);
+            replaceHeader(request, ACCEPT_ENCODING, IDENTITY_ACCEPT_ENCODING);
+        }
+        return request;
+    }
+
     // Default redirect request
     public static HttpRequestItem createDefaultRedirectRequest() {
         // Create a default redirect request
@@ -66,40 +84,35 @@ public class HttpRequestFactory {
     }
 
     public static HttpRequestItem createDefaultWebSocketRequest() {
-        // Create a default WebSocket request
-        HttpRequestItem testItem = new HttpRequestItem();
-        testItem.setProtocol(RequestItemProtocolEnum.WEBSOCKET);
-        testItem.setId(IdUtil.simpleUUID());
+        HttpRequestItem testItem = createBlankRequest(RequestItemProtocolEnum.WEBSOCKET);
         testItem.setName("WebSocket Example");
         testItem.setUrl("wss://ws.ifelse.io");
-        testItem.setMethod("GET");
-        // Add some default headers
-        List<HttpHeader> headers = new ArrayList<>();
-        headers.add(new HttpHeader(true, USER_AGENT, EASY_POSTMAN_CLIENT));
-        headers.add(new HttpHeader(true, ACCEPT, "*/*"));
-        headers.add(new HttpHeader(true, ACCEPT_ENCODING, "identity"));
-        headers.add(new HttpHeader(true, CONNECTION, CONNECTION_VALUE));
-        headers.add(new HttpHeader(true, CONTENT_TYPE, APPLICATION_JSON));
-        testItem.setHeadersList(headers);
-        testItem.setBodyType(RequestBodyTypes.BODY_TYPE_RAW);
         return testItem;
     }
 
     public static HttpRequestItem createDefaultSseRequest() {
-        // Create a default SSE request
-        HttpRequestItem testItem = new HttpRequestItem();
-        testItem.setProtocol(RequestItemProtocolEnum.SSE);
-        testItem.setId(IdUtil.simpleUUID());
+        HttpRequestItem testItem = createBlankRequest(RequestItemProtocolEnum.SSE);
         testItem.setName("SSE Example");
         testItem.setUrl("https://stream.wikimedia.org/v2/stream/recentchange");
-        testItem.setMethod("GET");
-        // Add some default headers
-        List<HttpHeader> headers = new ArrayList<>();
-        headers.add(new HttpHeader(true, USER_AGENT, EASY_POSTMAN_CLIENT));
-        headers.add(new HttpHeader(true, ACCEPT, TEXT_EVENT_STREAM));
-        headers.add(new HttpHeader(true, ACCEPT_ENCODING, "identity"));
-        headers.add(new HttpHeader(true, CONNECTION, CONNECTION_VALUE));
-        testItem.setHeadersList(headers);
         return testItem;
+    }
+
+    private void appendHeader(HttpRequestItem request, String key, String value) {
+        mutableHeaders(request).add(new HttpHeader(true, key, value));
+    }
+
+    private void replaceHeader(HttpRequestItem request, String key, String value) {
+        List<HttpHeader> headers = mutableHeaders(request);
+        headers.removeIf(header -> key.equalsIgnoreCase(header.getKey()));
+        headers.add(new HttpHeader(true, key, value));
+    }
+
+    private List<HttpHeader> mutableHeaders(HttpRequestItem request) {
+        List<HttpHeader> headers = request.getHeadersList();
+        if (headers == null) {
+            headers = new ArrayList<>();
+            request.setHeadersList(headers);
+        }
+        return headers;
     }
 }

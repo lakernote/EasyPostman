@@ -1,0 +1,125 @@
+package com.laker.postman.panel.collections.editor.request;
+
+import com.laker.postman.stream.MessageType;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+
+import cn.hutool.core.text.CharSequenceUtil;
+import com.laker.postman.panel.collections.editor.request.sub.EasyRequestHttpHeadersPanel;
+import com.laker.postman.panel.collections.editor.request.sub.RequestBodyPanel;
+import com.laker.postman.panel.collections.editor.request.sub.RequestLinePanel;
+import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;
+import com.laker.postman.http.runtime.transport.RealtimeWebSocketConnection;
+import com.laker.postman.service.setting.SettingManager;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
+import lombok.RequiredArgsConstructor;
+
+import javax.swing.*;
+import java.awt.event.ActionListener;
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+@RequiredArgsConstructor
+final class RequestEditorActionsController {
+    private static final int WEBSOCKET_NORMAL_CLOSURE = 1000;
+
+    private final JTextField urlField;
+    private final EasyRequestHttpHeadersPanel headersPanel;
+    private final RequestBodyPanel requestBodyPanel;
+    private final RequestLinePanel requestLinePanel;
+    private final RequestStreamUiHelper requestStreamUiHelper;
+    private final ResponsePanel responsePanel;
+    private final ActionListener sendAction;
+    private final Supplier<Boolean> isBaseHttpProtocolSupplier;
+    private final Supplier<Boolean> isEffectiveSseProtocolSupplier;
+    private final Supplier<Boolean> isEffectiveWebSocketProtocolSupplier;
+    private final RequestExecutionState executionState;
+    private final Supplier<RequestItemProtocolEnum> currentProtocolSupplier;
+    private final Consumer<RequestItemProtocolEnum> currentProtocolSetter;
+    private final Consumer<RequestItemProtocolEnum> protocolTabUpdater;
+    private final RequestCurlImportController curlImportController;
+    private final Runnable updateTabDirtyAction;
+
+    void sendWebSocketMessage() {
+        RealtimeWebSocketConnection currentWebSocket = executionState.currentWebSocket();
+        if (currentWebSocket == null) {
+            requestStreamUiHelper.appendWebSocketMessage(MessageType.INFO,
+                    I18nUtil.getMessage(MessageKeys.WEBSOCKET_NOT_CONNECTED));
+            return;
+        }
+
+        String message = requestBodyPanel.getRawBody();
+        if (CharSequenceUtil.isNotBlank(message)) {
+            currentWebSocket.send(message);
+            requestStreamUiHelper.appendWebSocketMessage(MessageType.SENT, message);
+        }
+    }
+
+    void cancelCurrentRequest() {
+        var currentEventSource = executionState.currentEventSource();
+        if (currentEventSource != null) {
+            executionState.markSseCancelled();
+            currentEventSource.cancel();
+            executionState.clearCurrentEventSource();
+        }
+
+        RealtimeWebSocketConnection currentWebSocket = executionState.currentWebSocket();
+        if (currentWebSocket != null) {
+            currentWebSocket.close(WEBSOCKET_NORMAL_CLOSURE, "User canceled");
+            SwingWorker<Void, Void> currentWorker = executionState.currentWorker();
+            if (currentWorker instanceof UserClosableWebSocketWorker closeableWebSocketWorker) {
+                closeableWebSocketWorker.requestUserClose();
+                responsePanel.hideLoadingOverlay();
+                return;
+            }
+            executionState.clearCurrentWebSocket();
+        }
+
+        executionState.clearCurrentWebSocketConnectionId();
+
+        SwingWorker<Void, Void> currentWorker = executionState.currentWorker();
+        if (currentWorker != null) {
+            currentWorker.cancel(true);
+        }
+        requestLinePanel.setSendButtonToSend(sendAction);
+        executionState.clearCurrentWorker();
+        responsePanel.hideLoadingOverlay();
+
+        if (Boolean.TRUE.equals(isBaseHttpProtocolSupplier.get()) && executionState.isAutoDetectedHttpSseOpen()) {
+            responsePanel.switchTabButtonHttpOrSse("sse");
+            requestStreamUiHelper.appendSseMessage(MessageType.CLOSED, null, "closed", null, "User canceled", null);
+        }
+    }
+
+    void convertCurrentRequestToSse() {
+        if (!Boolean.TRUE.equals(isBaseHttpProtocolSupplier.get()) || Boolean.TRUE.equals(isEffectiveSseProtocolSupplier.get())) {
+            return;
+        }
+
+        currentProtocolSetter.accept(RequestItemProtocolEnum.SSE);
+        headersPanel.setOrUpdateHeader("Accept", "text/event-stream");
+        protocolTabUpdater.accept(currentProtocolSupplier.get());
+        updateTabDirtyAction.run();
+    }
+
+    void autoPrependProtocolIfNeeded() {
+        String url = urlField.getText().trim();
+        if (url.isEmpty()) {
+            return;
+        }
+
+        String normalizedUrl = RequestUrlHelper.prependProtocolIfNeeded(
+                url,
+                Boolean.TRUE.equals(isEffectiveWebSocketProtocolSupplier.get()),
+                SettingManager.getDefaultProtocol()
+        );
+        if (!Objects.equals(normalizedUrl, url)) {
+            urlField.setText(normalizedUrl);
+        }
+    }
+
+    void detectAndParseCurl(boolean isLoadingData) {
+        curlImportController.detectAndImport(isLoadingData);
+    }
+}

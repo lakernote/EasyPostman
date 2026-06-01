@@ -40,6 +40,21 @@ public class CollectionTreeQueryServiceBoundaryTest {
                 "active collection tree lookup should use the registered root repository name");
     }
 
+    @Test
+    public void swingCollectionAdaptersShouldStayInPanelLayer() {
+        for (String fileName : java.util.List.of(
+                "SwingCollectionTreeDocumentMapper.java",
+                "SwingCollectionTreeQueries.java",
+                "SwingCollectionTreePersistence.java",
+                "SwingCollectionRequestSaveCoordinator.java",
+                "SwingCollectionRequestMutation.java",
+                "SwingSavedResponseTreeMutation.java"
+        )) {
+            assertFalse(Files.exists(mainSourcePath("com/laker/postman/service/collections/" + fileName)),
+                    fileName + " is a Swing adapter and must live under panel.collections.tree.adapter");
+        }
+    }
+
     private String readMainSource(String relativePath) throws IOException {
         return Files.readString(mainSourcePath(relativePath));
     }

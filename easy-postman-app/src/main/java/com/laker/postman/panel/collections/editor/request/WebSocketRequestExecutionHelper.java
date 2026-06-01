@@ -22,52 +22,34 @@ import javax.swing.*;
 import java.util.LinkedHashMap;
 import java.util.UUID;
 import java.util.concurrent.CancellationException;
-import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 @Slf4j
 final class WebSocketRequestExecutionHelper {
-    private static final int NORMAL_CLOSURE = 1000;
+    private static final int WEBSOCKET_NORMAL_CLOSURE = 1000;
 
     private final ResponsePanel responsePanel;
     private final RequestExecutionUiHelper requestExecutionUiHelper;
     private final RequestStreamUiHelper requestStreamUiHelper;
     private final RequestResponseHelper requestResponseHelper;
-    private final Consumer<RealtimeWebSocketConnection> currentWebSocketSetter;
-    private final Consumer<String> currentConnectionIdSetter;
-    private final Supplier<String> currentConnectionIdSupplier;
-    private final Supplier<SwingWorker<Void, Void>> currentWorkerSupplier;
-    private final Runnable clearCurrentWorker;
-    private final BooleanSupplier disposedSupplier;
+    private final RequestExecutionState requestExecutionState;
     private final HttpTransport httpTransport;
 
     WebSocketRequestExecutionHelper(ResponsePanel responsePanel,
                                     RequestExecutionUiHelper requestExecutionUiHelper,
                                     RequestStreamUiHelper requestStreamUiHelper,
                                     RequestResponseHelper requestResponseHelper,
-                                    Consumer<RealtimeWebSocketConnection> currentWebSocketSetter,
-                                    Consumer<String> currentConnectionIdSetter,
-                                    Supplier<String> currentConnectionIdSupplier,
-                                    Supplier<SwingWorker<Void, Void>> currentWorkerSupplier,
-                                    Runnable clearCurrentWorker,
-                                    BooleanSupplier disposedSupplier) {
+                                    RequestExecutionState requestExecutionState) {
         this.responsePanel = responsePanel;
         this.requestExecutionUiHelper = requestExecutionUiHelper;
         this.requestStreamUiHelper = requestStreamUiHelper;
         this.requestResponseHelper = requestResponseHelper;
-        this.currentWebSocketSetter = currentWebSocketSetter;
-        this.currentConnectionIdSetter = currentConnectionIdSetter;
-        this.currentConnectionIdSupplier = currentConnectionIdSupplier;
-        this.currentWorkerSupplier = currentWorkerSupplier;
-        this.clearCurrentWorker = clearCurrentWorker;
-        this.disposedSupplier = disposedSupplier;
+        this.requestExecutionState = requestExecutionState;
         this.httpTransport = new DefaultHttpTransport();
     }
 
     SwingWorker<Void, Void> createWorker(PreparedRequest req, ScriptExecutionPipeline pipeline) {
         WebSocketSession session = new WebSocketSession(req, pipeline);
-        currentConnectionIdSetter.accept(session.connectionId());
+        requestExecutionState.beginWebSocketConnection(session.connectionId());
 
         class WebSocketWorker extends SwingWorker<Void, Void> implements UserClosableWebSocketWorker {
             @Override
@@ -76,7 +58,7 @@ final class WebSocketRequestExecutionHelper {
                     session.markStarted();
                     log.debug("Starting WebSocket connection with ID: {}", session.connectionId());
 
-                    currentWebSocketSetter.accept(httpTransport.openWebSocket(
+                    requestExecutionState.attachWebSocketConnection(httpTransport.openWebSocket(
                             req,
                             session.newListener(),
                             RealtimeConnectionOptions.defaults()
@@ -141,7 +123,7 @@ final class WebSocketRequestExecutionHelper {
                 @Override
                 public void onOpen(WebSocket webSocket, Response response) {
                     if (!shouldHandleActiveCallback("onOpen")) {
-                        webSocket.close(NORMAL_CLOSURE, "Connection expired");
+                        webSocket.close(WEBSOCKET_NORMAL_CLOSURE, "Connection expired");
                         return;
                     }
 
@@ -228,7 +210,7 @@ final class WebSocketRequestExecutionHelper {
         void handleExecutionException(Exception ex) {
             log.error("Error executing WebSocket request: {} - {}", req.url, ex.getMessage(), ex);
             SwingUtilities.invokeLater(() -> {
-                if (disposedSupplier.getAsBoolean()) {
+                if (requestExecutionState.isDisposed()) {
                     return;
                 }
                 requestExecutionUiHelper.updateUIForResponse(null);
@@ -238,23 +220,21 @@ final class WebSocketRequestExecutionHelper {
         }
 
         void saveHistoryIfNeeded() {
-            if (executionState.shouldSaveHistory(disposedSupplier.getAsBoolean())) {
+            if (executionState.shouldSaveHistory(requestExecutionState.isDisposed())) {
                 requestResponseHelper.saveHistory(req, response, "WebSocket request");
             }
         }
 
         void clearWorkerIfCurrent(SwingWorker<Void, Void> worker) {
-            if (currentWorkerSupplier.get() == worker) {
-                clearCurrentWorker.run();
-            }
+            requestExecutionState.clearCurrentWorkerIf(worker);
         }
 
         void requestUserClose(SwingWorker<Void, Void> worker) {
             if (!executionState.markClosed()) {
                 return;
             }
-            currentWebSocketSetter.accept(null);
-            currentConnectionIdSetter.accept(null);
+            requestExecutionState.clearCurrentWebSocket();
+            requestExecutionState.clearCurrentWebSocketConnectionId();
             appendTerminalEvent(MessageType.WARNING, "User canceled");
             finalizeResponse();
             runUiTeardown(() -> {
@@ -277,7 +257,7 @@ final class WebSocketRequestExecutionHelper {
         }
 
         private void finishTerminalResponse(Runnable afterUiReset) {
-            currentWebSocketSetter.accept(null);
+            requestExecutionState.clearCurrentWebSocket();
             finalizeResponse();
             SwingUtilities.invokeLater(() -> runUiTeardown(afterUiReset));
         }
@@ -292,7 +272,7 @@ final class WebSocketRequestExecutionHelper {
         }
 
         private void runUiTeardown(Runnable afterUiReset) {
-            if (disposedSupplier.getAsBoolean()) {
+            if (requestExecutionState.isDisposed()) {
                 return;
             }
             requestExecutionUiHelper.updateUIForResponse(response);
@@ -304,8 +284,8 @@ final class WebSocketRequestExecutionHelper {
 
         private boolean shouldHandleActiveCallback(String callbackName) {
             boolean active = executionState.shouldHandleActiveCallback(
-                    currentConnectionIdSupplier.get(),
-                    disposedSupplier.getAsBoolean()
+                    requestExecutionState.currentWebSocketConnectionId(),
+                    requestExecutionState.isDisposed()
             );
             if (!active && callbackName != null) {
                 log.debug("Ignoring {} callback for expired connection ID: {}", callbackName, connectionId);

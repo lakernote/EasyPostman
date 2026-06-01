@@ -19,7 +19,7 @@ import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.panel.functional.FunctionalPanel;
 import com.laker.postman.panel.sidebar.SidebarTabPanel;
-import com.laker.postman.service.collections.SwingCollectionTreePersistence;
+import com.laker.postman.panel.collections.tree.adapter.SwingCollectionTreePersistence;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.http.request.HttpRequestFactory;
 import com.laker.postman.http.request.PreparedRequestFactory;
@@ -146,11 +146,8 @@ public class RequestTreeActions {
      */
     public void addHttpRequestDirectly(DefaultMutableTreeNode groupNode) {
         if (groupNode == null) return;
-        HttpRequestItem item = HttpRequestFactory.createDefaultRequest();
+        HttpRequestItem item = HttpRequestFactory.createBlankRequest(RequestItemProtocolEnum.HTTP);
         item.setName("New Request");
-        item.setMethod("GET");
-        item.setUrl("");
-        item.setProtocol(RequestItemProtocolEnum.HTTP);
         DefaultMutableTreeNode reqNode = CollectionTreeNodes.requestNode(item);
         leftPanel.getTreeModel().insertNodeInto(reqNode, groupNode, groupNode.getChildCount());
         JTree tree = leftPanel.getRequestTree();

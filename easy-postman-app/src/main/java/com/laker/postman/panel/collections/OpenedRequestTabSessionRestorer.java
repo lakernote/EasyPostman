@@ -5,10 +5,10 @@ import com.laker.postman.request.model.HttpRequestItem;
 
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
+import com.laker.postman.panel.collections.tree.adapter.SwingCollectionTreeQueries;
 import com.laker.postman.panel.collections.editor.RequestEditorTabController;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.service.collections.OpenedRequestTabsStore;
-import com.laker.postman.service.collections.CollectionTreeQueryService;
 import lombok.experimental.UtilityClass;
 
 import javax.swing.SwingUtilities;
@@ -24,7 +24,7 @@ public class OpenedRequestTabSessionRestorer {
     public static void restoreOpenedRequests(List<HttpRequestItem> requestItems, Runnable onComplete) {
         Runnable restoreTask = () -> {
             CollectionTreePanel leftPanel = UiSingletonFactory.getInstance(CollectionTreePanel.class);
-            List<HttpRequestItem> restorableRequests = CollectionTreeQueryService.buildRestorableOpenedRequests(
+            List<HttpRequestItem> restorableRequests = SwingCollectionTreeQueries.resolveRestorableOpenedRequests(
                     requestItems,
                     leftPanel.getRootTreeNode()
             );

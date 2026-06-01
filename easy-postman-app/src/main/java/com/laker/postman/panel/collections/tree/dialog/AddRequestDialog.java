@@ -1,18 +1,14 @@
 package com.laker.postman.panel.collections.tree.dialog;
 
-import com.laker.postman.request.model.RequestItemProtocolEnum;
-import com.laker.postman.request.model.HttpHeader;
-import com.laker.postman.request.model.HttpRequestItem;
-
-
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.frame.MainFrame;
-import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
-import com.laker.postman.panel.collections.editor.request.sub.RequestBodyPanel;
-import com.laker.postman.service.collections.CollectionTreeNodes;
+import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.http.request.HttpRequestFactory;
+import com.laker.postman.request.model.HttpRequestItem;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.service.collections.CollectionTreeNodes;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -21,10 +17,6 @@ import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreePath;
 import java.awt.*;
-
-import static com.laker.postman.service.collections.DefaultRequestsFactory.APPLICATION_JSON;
-import static com.laker.postman.service.collections.DefaultRequestsFactory.CONTENT_TYPE;
-import static com.laker.postman.http.request.HttpRequestFactory.*;
 
 /**
  * 添加请求对话框
@@ -203,11 +195,8 @@ public class AddRequestDialog {
     private void createAndAddRequest(String requestName, RequestItemProtocolEnum protocol) {
         if (groupNode == null) return;
 
-        HttpRequestItem defaultRequest = HttpRequestFactory.createDefaultRequest();
-        defaultRequest.setProtocol(protocol);
+        HttpRequestItem defaultRequest = HttpRequestFactory.createBlankRequest(protocol);
         defaultRequest.setName(requestName);
-
-        configureRequestByProtocol(defaultRequest, protocol);
 
         // 添加到树中
         DefaultMutableTreeNode reqNode = CollectionTreeNodes.requestNode(defaultRequest);
@@ -224,26 +213,6 @@ public class AddRequestDialog {
 
         // 自动打开新创建的请求
         UiSingletonFactory.getInstance(RequestEditorPanel.class).showOrCreateTab(defaultRequest);
-    }
-
-    /**
-     * 根据协议类型配置请求
-     */
-    private void configureRequestByProtocol(HttpRequestItem request, RequestItemProtocolEnum protocol) {
-        request.setMethod("GET");
-        request.setUrl("");
-
-        if (protocol.isWebSocketProtocol()) {
-            // WebSocket 默认配置
-            request.getHeadersList().add(new HttpHeader(true, CONTENT_TYPE, APPLICATION_JSON));
-            request.setBodyType(RequestBodyPanel.BODY_TYPE_RAW);
-            request.getHeadersList().add(new HttpHeader(true, ACCEPT_ENCODING, "identity"));
-        } else if (protocol.isSseProtocol()) {
-            // SSE 默认配置
-            request.getHeadersList().add(new HttpHeader(true, ACCEPT, TEXT_EVENT_STREAM));
-            request.getHeadersList().add(new HttpHeader(true, ACCEPT_ENCODING, "identity"));
-        }
-        // HTTP 使用默认配置即可
     }
 
     /**

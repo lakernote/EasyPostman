@@ -23,12 +23,10 @@ public class TabBarBuilder {
      */
     public static class TabConfig {
         public final String[] tabNames;
-        public final JButton[] tabButtons;
         public final boolean[] initialVisibility;
 
-        public TabConfig(String[] tabNames, JButton[] tabButtons, boolean[] initialVisibility) {
+        public TabConfig(String[] tabNames, boolean[] initialVisibility) {
             this.tabNames = tabNames;
-            this.tabButtons = tabButtons;
             this.initialVisibility = initialVisibility;
         }
     }
@@ -79,9 +77,16 @@ public class TabBarBuilder {
      * @return Tab配置对象
      */
     private static TabConfig createTabConfig(String[] names, boolean[] visibility) {
-        JButton[] buttons = new JButton[names.length];
         boolean[] vis = visibility != null ? visibility : createAllVisibleArray(names.length);
-        return new TabConfig(names, buttons, vis);
+        return new TabConfig(names, vis);
+    }
+
+    public static JButton[] createModernTabButtons(String[] names) {
+        JButton[] buttons = new JButton[names.length];
+        for (int i = 0; i < names.length; i++) {
+            buttons[i] = new ModernTabButton(names[i], i);
+        }
+        return buttons;
     }
 
     /**

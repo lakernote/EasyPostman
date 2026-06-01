@@ -1,10 +1,11 @@
-package com.laker.postman.service.collections;
+package com.laker.postman.panel.collections.tree.adapter;
 
 import com.laker.postman.collection.model.CollectionDocument;
 import com.laker.postman.collection.model.CollectionNode;
 import com.laker.postman.collection.model.RequestGroup;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.model.SavedResponse;
+import com.laker.postman.service.collections.CollectionTreeNodes;
 import org.testng.annotations.Test;
 
 import javax.swing.tree.DefaultMutableTreeNode;

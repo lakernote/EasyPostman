@@ -11,6 +11,7 @@ import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -28,6 +29,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class PluginUpdateManager {
 
     private static final String LAST_PLUGIN_UPDATE_CHECK_TIME_KEY = "plugin.market.lastUpdateCheckTime";
@@ -40,10 +42,6 @@ public class PluginUpdateManager {
     });
 
     private final PluginUpdateChecker pluginUpdateChecker;
-
-    public PluginUpdateManager() {
-        this.pluginUpdateChecker = new PluginUpdateChecker();
-    }
 
     public CompletableFuture<PluginUpdateCheckResult> checkForUpdateManually() {
         return CompletableFuture.supplyAsync(() -> {
@@ -92,6 +90,7 @@ public class PluginUpdateManager {
         try {
             List<PluginUpdateCandidate> candidates = pluginUpdateChecker.checkForUpdates();
             setLastCheckTime(System.currentTimeMillis());
+            log.info("Plugin update check completed successfully, candidates={}", candidates.size());
             List<PluginUpdateCandidate> unseenCandidates = filterUnseenCandidates(candidates);
             if (unseenCandidates.isEmpty()) {
                 log.debug("No new plugin updates need notification");

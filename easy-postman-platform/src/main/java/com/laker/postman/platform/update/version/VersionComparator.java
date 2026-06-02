@@ -1,8 +1,11 @@
 package com.laker.postman.platform.update.version;
 
+import lombok.experimental.UtilityClass;
+
 /**
  * 版本比较工具
  */
+@UtilityClass
 public class VersionComparator {
 
     /**

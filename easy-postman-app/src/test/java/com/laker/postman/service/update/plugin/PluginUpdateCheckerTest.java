@@ -81,6 +81,20 @@ public class PluginUpdateCheckerTest {
     }
 
     @Test
+    public void shouldFindCompatibleUpdateForInstalledPluginRejectedByOldPlatform() {
+        List<PluginUpdateCandidate> candidates = PluginUpdateChecker.findUpdateCandidates(
+                List.of(installedPlugin("plugin-kafka", "Kafka Plugin", "5.4.26", false)),
+                List.of(catalogEntry("plugin-kafka", "Kafka Plugin", "5.5.28", "", "",
+                        CURRENT_PLUGIN_PLATFORM_VERSION, CURRENT_PLUGIN_PLATFORM_VERSION))
+        );
+
+        assertEquals(candidates.size(), 1);
+        assertEquals(candidates.get(0).pluginId(), "plugin-kafka");
+        assertEquals(candidates.get(0).installedVersion(), "5.4.26");
+        assertEquals(candidates.get(0).latestVersion(), "5.5.28");
+    }
+
+    @Test
     public void shouldUseHighestInstalledVersionPerPluginId() {
         List<PluginUpdateCandidate> candidates = PluginUpdateChecker.findUpdateCandidates(
                 List.of(
@@ -96,12 +110,16 @@ public class PluginUpdateCheckerTest {
     }
 
     private static PluginFileInfo installedPlugin(String id, String name, String version) {
+        return installedPlugin(id, name, version, true);
+    }
+
+    private static PluginFileInfo installedPlugin(String id, String name, String version, boolean compatible) {
         return new PluginFileInfo(
                 new PluginDescriptor(id, name, version, "com.example." + name.replace(" ", "")),
                 Path.of("/tmp", id + "-" + version + ".jar"),
                 true,
                 true,
-                true
+                compatible
         );
     }
 

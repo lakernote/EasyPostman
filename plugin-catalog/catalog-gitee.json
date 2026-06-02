@@ -53,7 +53,7 @@
     {
       "id": "plugin-kafka",
       "name": "Kafka Plugin",
-      "description": "Kafka toolbox panel, pm.plugin('kafka') script API, completions and snippets.",
+      "description": "Kafka toolbox panel, pm.plugin(\"kafka\") script API, completions and snippets.",
       "homepage": "https://gitee.com/lakernote/easy-postman",
       "releases": [
         {
@@ -85,7 +85,7 @@
     {
       "id": "plugin-redis",
       "name": "Redis Plugin",
-      "description": "Redis toolbox panel, pm.plugin('redis') script API, completions and snippets.",
+      "description": "Redis toolbox panel, pm.plugin(\"redis\") script API, completions and snippets.",
       "homepage": "https://gitee.com/lakernote/easy-postman",
       "releases": [
         {

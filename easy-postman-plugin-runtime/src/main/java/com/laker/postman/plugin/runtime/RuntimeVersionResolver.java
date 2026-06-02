@@ -1,5 +1,7 @@
 package com.laker.postman.plugin.runtime;
 
+import lombok.experimental.UtilityClass;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -13,10 +15,8 @@ import java.util.Properties;
  * 负责解析当前 app 版本和插件平台版本，并在开发态提供 pom 回退读取能力。
  * </p>
  */
-final class RuntimeVersionResolver {
-
-    private RuntimeVersionResolver() {
-    }
+@UtilityClass
+class RuntimeVersionResolver {
 
     static String resolveCurrentAppVersion(Class<?> anchorClass) {
         String implementationVersion = anchorClass.getPackage().getImplementationVersion();

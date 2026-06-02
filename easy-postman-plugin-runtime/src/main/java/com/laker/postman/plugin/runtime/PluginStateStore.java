@@ -1,5 +1,7 @@
 package com.laker.postman.plugin.runtime;
 
+import lombok.experimental.UtilityClass;
+
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -10,13 +12,11 @@ import java.util.Set;
  * 避免 PluginRuntime 自己同时承担编排和状态读写职责。
  * </p>
  */
-final class PluginStateStore {
+@UtilityClass
+class PluginStateStore {
 
     private static final String DISABLED_PLUGIN_IDS_KEY = "plugin.disabledIds";
     private static final String PENDING_UNINSTALL_PLUGIN_IDS_KEY = "plugin.pendingUninstallIds";
-
-    private PluginStateStore() {
-    }
 
     static Set<String> getDisabledPluginIds() {
         return PluginSettingsStore.getStringSet(DISABLED_PLUGIN_IDS_KEY);

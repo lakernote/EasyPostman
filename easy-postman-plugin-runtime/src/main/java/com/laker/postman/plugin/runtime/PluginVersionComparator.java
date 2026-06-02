@@ -1,9 +1,9 @@
 package com.laker.postman.plugin.runtime;
 
-final class PluginVersionComparator {
+import lombok.experimental.UtilityClass;
 
-    private PluginVersionComparator() {
-    }
+@UtilityClass
+class PluginVersionComparator {
 
     static int compare(String v1, String v2) {
         if (v1 == null || v2 == null) {

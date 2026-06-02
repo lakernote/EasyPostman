@@ -1,6 +1,7 @@
 package com.laker.postman.plugin.runtime;
 
 import com.laker.postman.plugin.api.PluginDescriptor;
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -25,13 +26,11 @@ import java.util.stream.Stream;
  * </p>
  */
 @Slf4j
-final class PluginScanner {
+@UtilityClass
+class PluginScanner {
 
     private static final String PLUGIN_DESCRIPTOR_PREFIX = "META-INF/easy-postman/";
     private static final String PLUGIN_DESCRIPTOR_SUFFIX = ".properties";
-
-    private PluginScanner() {
-    }
 
     static Set<Path> resolvePluginDirs(Path managedPluginDir) {
         Set<Path> dirs = new LinkedHashSet<>();

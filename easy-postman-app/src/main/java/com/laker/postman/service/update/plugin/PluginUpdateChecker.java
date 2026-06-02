@@ -1,5 +1,6 @@
 package com.laker.postman.service.update.plugin;
 
+import com.laker.postman.ioc.Component;
 import com.laker.postman.plugin.manager.PluginManagementService;
 import com.laker.postman.plugin.manager.market.PluginCatalogEntry;
 import com.laker.postman.plugin.runtime.PluginCompatibility;
@@ -15,10 +16,8 @@ import java.util.Map;
 /**
  * 插件更新检查器。
  */
-public class PluginUpdateChecker {
-
-    public PluginUpdateChecker() {
-    }
+@Component
+public final class PluginUpdateChecker {
 
     public List<PluginUpdateCandidate> checkForUpdates() throws Exception {
         String catalogUrl = resolveCatalogUrl();

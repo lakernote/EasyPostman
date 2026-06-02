@@ -1,5 +1,6 @@
 package com.laker.postman.plugin.runtime;
 
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.file.Path;
@@ -18,10 +19,8 @@ import java.util.function.Predicate;
  * </p>
  */
 @Slf4j
-final class PluginCandidateResolver {
-
-    private PluginCandidateResolver() {
-    }
+@UtilityClass
+class PluginCandidateResolver {
 
     static List<PluginFileInfo> resolveLoadCandidates(Set<Path> pluginDirs,
                                                       Set<String> disabledPluginIds,

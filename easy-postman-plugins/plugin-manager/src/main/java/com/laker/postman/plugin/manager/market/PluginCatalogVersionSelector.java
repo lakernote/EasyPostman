@@ -1,5 +1,7 @@
 package com.laker.postman.plugin.manager.market;
 
+import lombok.experimental.UtilityClass;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -14,13 +16,11 @@ import java.util.Map;
  * 2. 如果一个兼容版本都没有，回退为最新版本，用于向用户表达“需要升级宿主”
  * </p>
  */
-public final class PluginCatalogVersionSelector {
+@UtilityClass
+public class PluginCatalogVersionSelector {
 
     private static final Comparator<PluginCatalogEntry> VERSION_DESC =
             (left, right) -> compareVersions(right.version(), left.version());
-
-    private PluginCatalogVersionSelector() {
-    }
 
     public static List<PluginCatalogEntry> selectForHost(List<PluginCatalogEntry> entries,
                                                          String currentAppVersion,

@@ -1,17 +1,16 @@
 package com.laker.postman.plugin.runtime;
 
 import com.laker.postman.util.AppRuntimeLayout;
+import lombok.experimental.UtilityClass;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-final class PluginRuntimePaths {
+@UtilityClass
+class PluginRuntimePaths {
 
     private static String cachedDataPath;
-
-    private PluginRuntimePaths() {
-    }
 
     static Path managedPluginDir() {
         Path pluginDir = isPortableMode()

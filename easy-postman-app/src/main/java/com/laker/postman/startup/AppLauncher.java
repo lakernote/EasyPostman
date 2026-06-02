@@ -7,7 +7,6 @@ import com.laker.postman.http.runtime.app.AppHttpRuntimeBootstrap;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.plugin.runtime.PluginRuntime;
 import com.laker.postman.service.setting.SettingManager;
-import com.laker.postman.util.FontManager;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
 import lombok.experimental.UtilityClass;
@@ -54,7 +53,7 @@ public class AppLauncher {
     }
 
     private void startSwingApplication() {
-        // Swing 组件创建前先确定主题、字体和图标字体，防止首屏组件使用默认样式。
+        // Swing 组件创建前先确定主题和图标字体；主题初始化会同步恢复用户字体 defaults。
         initializeLookAndFeel();
         registerIconFonts();
         startMainFrame();
@@ -65,7 +64,6 @@ public class AppLauncher {
      */
     private void initializeLookAndFeel() {
         SimpleThemeManager.initTheme();
-        FontManager.applyFontSettings();
     }
 
     private void registerIconFonts() {

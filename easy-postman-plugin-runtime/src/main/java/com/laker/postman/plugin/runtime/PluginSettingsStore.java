@@ -1,5 +1,6 @@
 package com.laker.postman.plugin.runtime;
 
+import lombok.experimental.UtilityClass;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
@@ -11,13 +12,11 @@ import java.nio.file.Path;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-public final class PluginSettingsStore {
+@UtilityClass
+public class PluginSettingsStore {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final Object LOCK = new Object();
-
-    private PluginSettingsStore() {
-    }
 
     public static String getString(String key) {
         JsonNode root = readSettings();

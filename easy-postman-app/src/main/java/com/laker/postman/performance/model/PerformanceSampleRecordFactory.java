@@ -18,9 +18,7 @@ public class PerformanceSampleRecordFactory {
         }
         HttpResponse response = executionResult.response;
         long elapsedTimeMs = response == null ? executionResult.fallbackCostMs : response.costMs;
-        long endTimeMs = response != null && response.endTime > 0
-                ? response.endTime
-                : executionResult.requestStartTime + elapsedTimeMs;
+        long endTimeMs = executionResult.requestStartTime + Math.max(0L, elapsedTimeMs);
         PerformanceProtocol protocol = executionResult.protocol == null
                 ? PerformanceProtocol.HTTP
                 : executionResult.protocol;

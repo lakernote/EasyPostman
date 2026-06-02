@@ -16,10 +16,13 @@ import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.renderer.xy.XYStepRenderer;
+import org.jfree.chart.ui.Layer;
 import org.jfree.data.time.DateRange;
+import org.jfree.data.time.Millisecond;
 import org.jfree.data.time.RegularTimePeriod;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
@@ -28,7 +31,7 @@ import javax.swing.*;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 import java.awt.*;
-import java.awt.geom.Ellipse2D;
+import java.awt.geom.Line2D;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -42,6 +45,9 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
     private static final String COMBINED_VIEW = "combined";
     private static final int MAX_TREND_POINTS = 3_600;
     private static final long EMPTY_DOMAIN_WINDOW_MS = 60_000L;
+    private static final long MIN_VISIBLE_DOMAIN_WINDOW_MS = 10_000L;
+    private static final long MIN_ACTIVE_IDLE_TRANSITION_MS = 1_000L;
+    private static final float RUN_END_MARKER_ALPHA = 0.55f;
     private static final String JFREE_CHART_BUNDLE = "org.jfree.chart.LocalizationBundle";
     private static final String SAVE_AS_PNG_COMMAND = "SAVE_AS_PNG";
     private static final String SAVE_AS_SVG_COMMAND = "SAVE_AS_SVG";
@@ -87,6 +93,7 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
     private final List<TrendView> trendViews = new ArrayList<>();
     private Long trendDomainStartMs;
     private Long trendDomainEndMs;
+    private Long trendRunEndMs;
     private String chartMode = SEPARATE_VIEW;
 
     @Override
@@ -361,8 +368,8 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
 
     private XYLineAndShapeRenderer createTrendRenderer() {
         XYLineAndShapeRenderer renderer = new PerformanceTrendSinglePointRenderer();
-        renderer.setDefaultShape(new Ellipse2D.Double(-3.0, -3.0, 6.0, 6.0));
-        renderer.setDefaultShapesFilled(true);
+        renderer.setDefaultShape(new Line2D.Double(-8.0, 0.0, 8.0, 0.0));
+        renderer.setDefaultShapesFilled(false);
         renderer.setDrawOutlines(false);
         return renderer;
     }
@@ -384,6 +391,7 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
         }
         trendDomainStartMs = null;
         trendDomainEndMs = null;
+        trendRunEndMs = null;
         for (TrendView trendView : trendViews) {
             trendView.resetAxes(resetTimeMs);
         }
@@ -394,6 +402,7 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
             return;
         }
         XYPlot plot = chartPanel.getChart().getXYPlot();
+        plot.clearDomainMarkers();
         if (plot.getDomainAxis() instanceof DateAxis dateAxis) {
             long rightPaddingMs = PerformanceTrendAxisConfigurer.domainRightPaddingMs(EMPTY_DOMAIN_WINDOW_MS);
             DateRange resetRange = new DateRange(
@@ -424,7 +433,14 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
         if (period == null || snapshot == null) {
             return;
         }
+        period = normalizeDisplayPeriod(period, snapshot);
+        boolean idleSnapshot = isIdleSnapshot(snapshot);
         boolean suppressLeadingIdleActiveCounts = shouldSuppressLeadingIdleActiveCounts(snapshot);
+        if (idleSnapshot && !suppressLeadingIdleActiveCounts) {
+            trendRunEndMs = period.getFirstMillisecond();
+        } else if (!idleSnapshot) {
+            trendRunEndMs = null;
+        }
 
         httpVirtualUsersSeries.addOrUpdate(period, PerformanceTrendSeriesValue.activeCount(
                 snapshot.activeUsers(), suppressLeadingIdleActiveCounts));
@@ -456,9 +472,31 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
         syncDomainAxes(period);
     }
 
+    private RegularTimePeriod normalizeDisplayPeriod(RegularTimePeriod period, PerformanceTrendSnapshot snapshot) {
+        if (trendDomainStartMs == null || !isIdleSnapshot(snapshot)) {
+            return period;
+        }
+        Long lastActiveTimeMs = lastPositiveActiveSampleTimeMs();
+        if (lastActiveTimeMs == null) {
+            return period;
+        }
+        if (period.getFirstMillisecond() - trendDomainStartMs >= MIN_ACTIVE_IDLE_TRANSITION_MS) {
+            return period;
+        }
+        long minTerminalTimeMs = lastActiveTimeMs + MIN_ACTIVE_IDLE_TRANSITION_MS;
+        if (period.getFirstMillisecond() >= minTerminalTimeMs) {
+            return period;
+        }
+        // 极短压测中 active=0 和最后 active>0 可能挤在同一毫秒，才额外拉开一点距离。
+        return new Millisecond(new Date(minTerminalTimeMs));
+    }
+
     private boolean shouldSuppressLeadingIdleActiveCounts(PerformanceTrendSnapshot snapshot) {
-        return trendDomainStartMs == null
-                && snapshot.activeUsers() == 0
+        return trendDomainStartMs == null && isIdleSnapshot(snapshot);
+    }
+
+    private static boolean isIdleSnapshot(PerformanceTrendSnapshot snapshot) {
+        return snapshot.activeUsers() == 0
                 && snapshot.activeWebSocketConnections() == 0
                 && snapshot.activeSseStreams() == 0
                 && hasNoSamples(snapshot.overview())
@@ -471,6 +509,34 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
         return metrics == null || metrics.samples() == 0;
     }
 
+    private Long lastPositiveActiveSampleTimeMs() {
+        Long httpTime = lastPositiveSampleTimeMs(httpVirtualUsersSeries);
+        Long wsTime = lastPositiveSampleTimeMs(wsActiveSeries);
+        Long sseTime = lastPositiveSampleTimeMs(sseActiveSeries);
+        Long latest = latestTime(httpTime, wsTime);
+        return latestTime(latest, sseTime);
+    }
+
+    private static Long latestTime(Long first, Long second) {
+        if (first == null) {
+            return second;
+        }
+        if (second == null) {
+            return first;
+        }
+        return Math.max(first, second);
+    }
+
+    private static Long lastPositiveSampleTimeMs(TimeSeries series) {
+        for (int i = series.getItemCount() - 1; i >= 0; i--) {
+            Number value = series.getValue(i);
+            if (value != null && value.doubleValue() > 0) {
+                return series.getTimePeriod(i).getFirstMillisecond();
+            }
+        }
+        return null;
+    }
+
     private void syncDomainAxes(RegularTimePeriod period) {
         long periodStart = period.getFirstMillisecond();
         long periodEnd = period.getLastMillisecond();
@@ -478,25 +544,53 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
         trendDomainEndMs = trendDomainEndMs == null ? periodEnd : Math.max(trendDomainEndMs, periodEnd);
 
         // 同一次压测的分离图必须共享 X 轴，否则空值较多的指标会自动裁剪到不同时间范围。
-        long end = Math.max(trendDomainEndMs, trendDomainStartMs + 1_000L);
+        long end = Math.max(trendDomainEndMs, trendDomainStartMs + MIN_VISIBLE_DOMAIN_WINDOW_MS);
         long visibleDurationMs = end - trendDomainStartMs;
         long rightPaddingMs = PerformanceTrendAxisConfigurer.domainRightPaddingMs(visibleDurationMs);
         DateRange range = new DateRange(new Date(trendDomainStartMs), new Date(end + rightPaddingMs));
         for (TrendView trendView : trendViews) {
-            trendView.setDomainRange(range, visibleDurationMs);
+            trendView.setDomainRange(range, visibleDurationMs, trendRunEndMs);
         }
     }
 
-    private static void setDomainRange(ChartPanel chartPanel, DateRange range, long visibleDurationMs) {
+    private static void setDomainRange(ChartPanel chartPanel,
+                                       DateRange range,
+                                       long visibleDurationMs,
+                                       Long runEndMs) {
         if (chartPanel == null || chartPanel.getChart() == null) {
             return;
         }
         XYPlot plot = chartPanel.getChart().getXYPlot();
+        setRunEndMarker(plot, runEndMs);
         if (plot.getDomainAxis() instanceof DateAxis dateAxis) {
             dateAxis.setAutoRange(false);
             dateAxis.setRange(range, false, true);
             PerformanceTrendAxisConfigurer.configureTimeAxis(dateAxis, visibleDurationMs);
         }
+    }
+
+    private static void setRunEndMarker(XYPlot plot, Long runEndMs) {
+        plot.clearDomainMarkers();
+        if (runEndMs == null) {
+            return;
+        }
+        ValueMarker marker = new ValueMarker(runEndMs);
+        marker.setPaint(runEndMarkerPaint());
+        marker.setStroke(new BasicStroke(
+                1.2f,
+                BasicStroke.CAP_BUTT,
+                BasicStroke.JOIN_BEVEL,
+                0.0f,
+                new float[]{5.0f, 5.0f},
+                0.0f
+        ));
+        // 结束标记统一所有图的时间参照，避免 active 归零点让其它指标看起来少跑一段。
+        plot.addDomainMarker(marker, Layer.FOREGROUND);
+    }
+
+    private static Color runEndMarkerPaint() {
+        Color text = PerformanceTrendTheme.text();
+        return new Color(text.getRed(), text.getGreen(), text.getBlue(), Math.round(RUN_END_MARKER_ALPHA * 255));
     }
 
     private void showChartMode(String mode) {
@@ -631,10 +725,10 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
             chartCards.repaint();
         }
 
-        private void setDomainRange(DateRange range, long visibleDurationMs) {
-            PerformanceTrendPanel.setDomainRange(combinedChartPanel, range, visibleDurationMs);
+        private void setDomainRange(DateRange range, long visibleDurationMs, Long runEndMs) {
+            PerformanceTrendPanel.setDomainRange(combinedChartPanel, range, visibleDurationMs, runEndMs);
             for (SplitChart splitChart : splitCharts) {
-                PerformanceTrendPanel.setDomainRange(splitChart.chartPanel(), range, visibleDurationMs);
+                PerformanceTrendPanel.setDomainRange(splitChart.chartPanel(), range, visibleDurationMs, runEndMs);
             }
         }
 

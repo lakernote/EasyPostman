@@ -1,36 +1,40 @@
 package com.laker.postman.performance.core.model;
 
+import java.util.concurrent.atomic.LongAdder;
+
 /**
  * 数值分布摘要，对应 Micrometer DistributionSummary 语义，适合记录字节数、消息数等非耗时数量。
  */
 final class PerformanceDistributionSummary {
-    private long count;
-    private long totalAmount;
+    private final LongAdder count = new LongAdder();
+    private final LongAdder totalAmount = new LongAdder();
 
     void record(long amount) {
         long normalized = Math.max(0L, amount);
-        count++;
-        totalAmount += normalized;
+        totalAmount.add(normalized);
+        count.increment();
     }
 
     long count() {
-        return count;
+        return count.sum();
     }
 
     long totalAmount() {
-        return totalAmount;
+        return totalAmount.sum();
     }
 
     double mean() {
-        return count == 0 ? Double.NaN : PerformanceMetricMath.round((double) totalAmount / count);
+        long currentCount = count();
+        return currentCount == 0 ? Double.NaN : PerformanceMetricMath.round((double) totalAmount() / currentCount);
     }
 
     long avg() {
-        return count == 0 ? 0 : totalAmount / count;
+        long currentCount = count();
+        return currentCount == 0 ? 0 : totalAmount() / currentCount;
     }
 
     void clear() {
-        count = 0;
-        totalAmount = 0;
+        count.reset();
+        totalAmount.reset();
     }
 }

@@ -5,6 +5,7 @@ import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.runtime.okhttp.OkHttpResponseHandler;
 import com.laker.postman.http.runtime.sse.SseResponseCallback;
+import com.laker.postman.util.MonotonicStopwatch;
 import okhttp3.Call;
 import okhttp3.ConnectionPool;
 import okhttp3.OkHttpClient;
@@ -51,7 +52,8 @@ public final class HttpExchangeExecutor {
                                          Call call,
                                          OkHttpClient client,
                                          SseResponseCallback callback) throws IOException {
-        long startTime = System.currentTimeMillis();
+        MonotonicStopwatch stopwatch = MonotonicStopwatch.start();
+        long startTime = stopwatch.startWallTimeMs();
         HttpResponse httpResponse = new HttpResponse();
         ConnectionPool pool = client.connectionPool();
         httpResponse.idleConnectionCount = pool.idleConnectionCount();
@@ -71,11 +73,9 @@ public final class HttpExchangeExecutor {
                 request.downloadProgressSinkFactory,
                 request.responseSizeLimitWarningSink
         );
-        httpResponse.endTime = HttpTraceInfoAttacher.resolveResponseReceivedEndTime(
-                httpResponse,
-                System.currentTimeMillis()
-        );
-        httpResponse.costMs = httpResponse.endTime - startTime;
+        long elapsedMs = stopwatch.elapsedMs();
+        httpResponse.costMs = elapsedMs;
+        httpResponse.endTime = startTime + elapsedMs;
         if (request.notifyCookieChanges) {
             HttpCookieStore.notifyCookieChanged();
         }

@@ -1,6 +1,7 @@
 package com.laker.postman.performance.core.runtime;
 
 import com.laker.postman.performance.core.plan.PerformanceTestPlan;
+import com.laker.postman.util.MonotonicStopwatch;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -49,13 +50,14 @@ public final class PerformanceCoreRunSession {
 
         PerformanceCoreResultSink resolvedResultSink = resultSink == null ? PerformanceCoreResultSink.NOOP : resultSink;
         try {
-            long startTime = System.currentTimeMillis();
+            MonotonicStopwatch stopwatch = MonotonicStopwatch.start();
+            long startTime = stopwatch.startWallTimeMs();
             runningSetter.accept(true);
             executionEngine.beginRun(startTime, resolvedResultSink);
             int totalThreads = executionEngine.getTotalThreads(plan);
 
             Thread thread = PerformanceThreadFactory.newDaemonThread("PerformanceRun", () ->
-                    runToCompletion(plan, totalThreads, startTime, resolvedResultSink));
+                    runToCompletion(plan, totalThreads, stopwatch, resolvedResultSink));
             runThread.set(thread);
             thread.start();
             return new PerformanceRunHandle(thread, this::stop);
@@ -85,7 +87,7 @@ public final class PerformanceCoreRunSession {
 
     private void runToCompletion(PerformanceTestPlan plan,
                                  int totalThreads,
-                                 long startTime,
+                                 MonotonicStopwatch stopwatch,
                                  PerformanceCoreResultSink resultSink) {
         Throwable error = null;
         try {
@@ -100,12 +102,14 @@ public final class PerformanceCoreRunSession {
             boolean stopped = !runningSupplier.getAsBoolean() || Thread.currentThread().isInterrupted();
             runningSetter.accept(false);
             executionEngine.cancelAllNetworkCalls();
-            long endTime = System.currentTimeMillis();
+            long startTime = stopwatch.startWallTimeMs();
+            long elapsedTime = stopwatch.elapsedMs();
+            long endTime = startTime + elapsedTime;
             try {
                 resultSink.onComplete(PerformanceRunSummary.builder()
                         .startTimeMs(startTime)
                         .endTimeMs(endTime)
-                        .elapsedTimeMs(endTime - startTime)
+                        .elapsedTimeMs(elapsedTime)
                         .stopped(stopped)
                         .error(error)
                         .build());

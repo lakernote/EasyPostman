@@ -1,5 +1,7 @@
 package com.laker.postman.performance.core.model;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 final class PerformanceSampleMeterSet {
     private final String apiId;
     private final PerformanceProtocol protocol;
@@ -13,15 +15,14 @@ final class PerformanceSampleMeterSet {
     private final PerformanceTimer durations = new PerformanceTimer();
     private final PerformanceTimer firstMessageLatencies = new PerformanceTimer();
     private final PerformanceSampleTimeWindow sampleWindow = new PerformanceSampleTimeWindow();
-    private String apiName;
+    private final AtomicReference<String> apiName = new AtomicReference<>("");
 
     PerformanceSampleMeterSet(String apiId, PerformanceProtocol protocol) {
         this.apiId = apiId == null ? "" : apiId;
         this.protocol = protocol == null ? PerformanceProtocol.HTTP : protocol;
     }
 
-    synchronized void record(RequestResult result) {
-        total.increment();
+    void record(RequestResult result) {
         if (result.success) {
             success.increment();
         }
@@ -32,15 +33,16 @@ final class PerformanceSampleMeterSet {
         matchedMessages.increment(result.matchedMessages);
         sentBytes.record(result.sentBytes);
         receivedBytes.record(result.receivedBytes);
-        if ((apiName == null || apiName.isBlank()) && result.apiName != null && !result.apiName.isBlank()) {
-            apiName = result.apiName;
+        if (result.apiName != null && !result.apiName.isBlank()) {
+            apiName.compareAndSet("", result.apiName);
         }
         if (result.firstMessageLatencyMs >= 0) {
             firstMessageLatencies.record(result.firstMessageLatencyMs);
         }
+        total.increment();
     }
 
-    synchronized void clear() {
+    void clear() {
         total.clear();
         success.clear();
         sentMessages.clear();
@@ -49,29 +51,30 @@ final class PerformanceSampleMeterSet {
         sentBytes.clear();
         receivedBytes.clear();
         sampleWindow.clear();
-        apiName = null;
+        apiName.set("");
         firstMessageLatencies.clear();
         durations.clear();
     }
 
-    synchronized String apiName() {
+    String apiName() {
         String displayName = resolvedApiName();
         return displayName.isBlank() ? apiId : displayName;
     }
 
-    synchronized PerformanceSampleMeterSnapshot snapshot() {
+    PerformanceSampleMeterSnapshot snapshot() {
         String displayName = resolvedApiName();
         long sampleCount = total.count();
         if (sampleCount == 0) {
             return PerformanceSampleMeterSnapshot.empty(apiId, displayName, protocol);
         }
+        long successCount = Math.min(success.count(), sampleCount);
         return new PerformanceSampleMeterSnapshot(
                 apiId,
                 displayName,
                 protocol,
                 sampleCount,
-                success.count(),
-                sampleCount - success.count(),
+                successCount,
+                sampleCount - successCount,
                 sentMessages.count(),
                 receivedMessages.count(),
                 matchedMessages.count(),
@@ -89,7 +92,7 @@ final class PerformanceSampleMeterSet {
         );
     }
 
-    synchronized PerformanceStatsSnapshot.ApiSummary toSummary(String name) {
+    PerformanceStatsSnapshot.ApiSummary toSummary(String name) {
         PerformanceSampleMeterSnapshot snapshot = snapshot();
         String summaryName = name;
         if ((summaryName == null || summaryName.isBlank()) && snapshot.apiName() != null && !snapshot.apiName().isBlank()) {
@@ -124,7 +127,7 @@ final class PerformanceSampleMeterSet {
         );
     }
 
-    synchronized PerformanceStatsProgressSnapshot toProgressSnapshot() {
+    PerformanceStatsProgressSnapshot toProgressSnapshot() {
         PerformanceSampleMeterSnapshot snapshot = snapshot();
         if (snapshot.total() == 0) {
             return PerformanceStatsProgressSnapshot.empty();
@@ -138,8 +141,9 @@ final class PerformanceSampleMeterSet {
     }
 
     private String resolvedApiName() {
-        if (apiName != null && !apiName.isBlank()) {
-            return apiName;
+        String currentApiName = apiName.get();
+        if (currentApiName != null && !currentApiName.isBlank()) {
+            return currentApiName;
         }
         return apiId;
     }

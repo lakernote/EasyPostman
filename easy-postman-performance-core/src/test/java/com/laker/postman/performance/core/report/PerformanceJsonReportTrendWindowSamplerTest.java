@@ -39,7 +39,35 @@ public class PerformanceJsonReportTrendWindowSamplerTest {
         assertEquals(second.http().samples(), 50);
         assertEquals(second.http().failures(), 3);
         assertEquals(second.http().sampleRate(), 50.0);
-        assertEquals(second.http().avgDurationMs(), 5.0);
+        assertEquals(second.http().avgDurationMs(), 7.0);
+    }
+
+    @Test
+    public void shouldCalculateWindowAverageDurationFromCumulativeReportTotals() {
+        PerformanceJsonReportTrendWindowSampler sampler = new PerformanceJsonReportTrendWindowSampler();
+        sampler.reset(1_000L);
+
+        sampler.drainReportDelta(
+                10,
+                0,
+                0,
+                10,
+                0,
+                report(10, 10, 0, 100),
+                2_000L
+        );
+        PerformanceTrendSnapshot second = sampler.drainReportDelta(
+                10,
+                0,
+                0,
+                20,
+                0,
+                report(20, 20, 0, 150),
+                3_000L
+        );
+
+        assertEquals(second.http().samples(), 10);
+        assertEquals(second.http().avgDurationMs(), 200.0);
     }
 
     @Test

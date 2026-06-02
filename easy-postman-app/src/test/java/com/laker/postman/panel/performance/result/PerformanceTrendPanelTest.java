@@ -10,9 +10,12 @@ import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.axis.DateAxis;
+import org.jfree.chart.axis.DateTickUnitType;
 import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.plot.Marker;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.renderer.xy.XYStepRenderer;
+import org.jfree.chart.ui.Layer;
 import org.jfree.data.time.Millisecond;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
@@ -22,6 +25,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -30,6 +34,7 @@ import java.util.ResourceBundle;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
@@ -132,6 +137,20 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
     }
 
     @Test
+    public void shouldLeaveGapWhenHttpErrorRateWindowHasNoSample() throws Exception {
+        PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
+        panel.clearTrendDataset();
+        TimeSeries series = getTimeSeries(panel, "httpErrorRateSeries");
+        long base = System.currentTimeMillis();
+
+        panel.addOrUpdate(new Millisecond(new Date(base)), snapshotWithHttpErrorRate(100.0));
+        panel.addOrUpdate(new Millisecond(new Date(base + 1_000)), snapshotWithHttpErrorRate(Double.NaN));
+
+        assertEquals(series.getValue(0).doubleValue(), 100.0);
+        assertNull(series.getValue(1));
+    }
+
+    @Test
     public void shouldUseTerminalIdleSnapshotOnlyForActiveSeries() throws Exception {
         PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
         panel.clearTrendDataset();
@@ -152,6 +171,35 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
         assertNull(errorRate.getValue(1));
         assertEquals(wsSentRate.getValue(0).doubleValue(), 1.0);
         assertNull(wsSentRate.getValue(1));
+    }
+
+    @Test
+    public void shouldMarkRunEndOnAllTrendChartsWhenTerminalIdleAppended() {
+        PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
+        panel.clearTrendDataset();
+        long base = System.currentTimeMillis();
+
+        panel.addOrUpdate(new Millisecond(new Date(base)), snapshotWithAllProtocolMetrics());
+        panel.addOrUpdate(new Millisecond(new Date(base + 1_000)), PerformanceTrendSnapshot.terminalIdle());
+
+        for (ChartPanel chartPanel : findAll(panel, ChartPanel.class)) {
+            assertRunEndMarkerCount(chartPanel, 1);
+        }
+    }
+
+    @Test
+    public void clearTrendDatasetShouldClearRunEndMarkers() {
+        PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
+        panel.clearTrendDataset();
+        long base = System.currentTimeMillis();
+
+        panel.addOrUpdate(new Millisecond(new Date(base)), snapshotWithAllProtocolMetrics());
+        panel.addOrUpdate(new Millisecond(new Date(base + 1_000)), PerformanceTrendSnapshot.terminalIdle());
+        panel.clearTrendDataset();
+
+        for (ChartPanel chartPanel : findAll(panel, ChartPanel.class)) {
+            assertRunEndMarkerCount(chartPanel, 0);
+        }
     }
 
     @Test
@@ -177,6 +225,57 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
         ChartPanel chartPanel = findChartPanelForSeries(panel, activeUsers);
 
         assertTrue(chartPanel.getChart().getXYPlot().getRenderer() instanceof XYStepRenderer);
+    }
+
+    @Test
+    public void shouldKeepMinimumVisibleDomainWindowForVeryShortRuns() throws Exception {
+        PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
+        panel.clearTrendDataset();
+        TimeSeries activeUsers = getTimeSeries(panel, "httpVirtualUsersSeries");
+        long base = System.currentTimeMillis();
+
+        panel.addOrUpdate(new Millisecond(new Date(base)), PerformanceTrendSnapshot.terminalIdle());
+        panel.addOrUpdate(new Millisecond(new Date(base + 500)), snapshotWithAllProtocolMetrics());
+
+        DateAxis domainAxis = (DateAxis) findChartPanelForSeries(panel, activeUsers)
+                .getChart()
+                .getXYPlot()
+                .getDomainAxis();
+
+        assertTrue(domainAxis.getUpperBound() - domainAxis.getLowerBound() >= 10_000);
+        assertEquals(domainAxis.getTickUnit().getUnitType(), DateTickUnitType.SECOND);
+        assertEquals(domainAxis.getTickUnit().getMultiple(), 1);
+    }
+
+    @Test
+    public void shouldSpaceTerminalIdlePointAfterLastActiveSampleForVeryShortRuns() throws Exception {
+        PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
+        panel.clearTrendDataset();
+        TimeSeries activeUsers = getTimeSeries(panel, "httpVirtualUsersSeries");
+        long base = System.currentTimeMillis();
+
+        panel.addOrUpdate(new Millisecond(new Date(base)), snapshotWithAllProtocolMetrics());
+        panel.addOrUpdate(new Millisecond(new Date(base + 1)), PerformanceTrendSnapshot.terminalIdle());
+
+        assertEquals(activeUsers.getValue(0).intValue(), 5);
+        assertEquals(activeUsers.getValue(1).intValue(), 0);
+        assertTrue(activeUsers.getTimePeriod(1).getFirstMillisecond() >= base + 1_000);
+    }
+
+    @Test
+    public void shouldNotDelayTerminalIdlePointAfterEstablishedRun() throws Exception {
+        PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
+        panel.clearTrendDataset();
+        TimeSeries activeUsers = getTimeSeries(panel, "httpVirtualUsersSeries");
+        long base = System.currentTimeMillis();
+        long runEnd = base + 10_000L;
+
+        panel.addOrUpdate(new Millisecond(new Date(base)), snapshotWithAllProtocolMetrics());
+        panel.addOrUpdate(new Millisecond(new Date(runEnd - 1L)), snapshotWithAllProtocolMetrics());
+        panel.addOrUpdate(new Millisecond(new Date(runEnd)), PerformanceTrendSnapshot.terminalIdle());
+
+        assertEquals(activeUsers.getValue(2).intValue(), 0);
+        assertEquals(activeUsers.getTimePeriod(2).getFirstMillisecond(), runEnd);
     }
 
     @Test
@@ -377,6 +476,14 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
         return new PerformanceTrendSnapshot(0, 0, 0, empty, http, empty, empty);
     }
 
+    private static PerformanceTrendSnapshot snapshotWithHttpErrorRate(double errorRate) {
+        PerformanceTrendSnapshot.ProtocolWindowMetrics empty = emptyMetrics();
+        PerformanceTrendSnapshot.ProtocolWindowMetrics http = new PerformanceTrendSnapshot.ProtocolWindowMetrics(
+                1, Double.isFinite(errorRate) && errorRate > 0 ? 1 : 0, errorRate, 1, 10, 0, 0, 0, 0, 0, 0, Double.NaN
+        );
+        return new PerformanceTrendSnapshot(0, 0, 0, empty, http, empty, empty);
+    }
+
     private static PerformanceTrendSnapshot snapshotWithWebSocketLatency(double latencyMs) {
         PerformanceTrendSnapshot.ProtocolWindowMetrics empty = emptyMetrics();
         PerformanceTrendSnapshot.ProtocolWindowMetrics ws = new PerformanceTrendSnapshot.ProtocolWindowMetrics(
@@ -438,6 +545,16 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
         Field field = ChartPanel.class.getDeclaredField("localizationResources");
         field.setAccessible(true);
         field.set(null, bundle);
+    }
+
+    private static void assertRunEndMarkerCount(ChartPanel chartPanel, int expectedCount) {
+        Collection<Marker> markers = chartPanel.getChart().getXYPlot().getDomainMarkers(Layer.FOREGROUND);
+        String title = chartPanel.getChart().getTitle().getText();
+        if (expectedCount == 0 && markers == null) {
+            return;
+        }
+        assertNotNull(markers, title);
+        assertEquals(markers.size(), expectedCount, title);
     }
 
     private static void clearSingletonInstance(Class<?> clazz) throws Exception {

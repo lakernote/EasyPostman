@@ -136,6 +136,10 @@ public final class PerformanceStatisticsCoordinator {
     }
 
     public void sampleTrendDataSync() {
+        sampleTrendDataSync(System.currentTimeMillis());
+    }
+
+    public void sampleTrendDataSync(long sampleTimeMs) {
         if (!isTrendEnabled()) {
             return;
         }
@@ -143,13 +147,13 @@ public final class PerformanceStatisticsCoordinator {
             return;
         }
         if (!SwingUtilities.isEventDispatchThread()) {
-            SwingUtilities.invokeLater(this::sampleTrendDataSync);
+            SwingUtilities.invokeLater(() -> sampleTrendDataSync(sampleTimeMs));
             return;
         }
 
-        long now = System.currentTimeMillis();
-        RegularTimePeriod period = createTrendPeriod(now);
-        PerformanceTrendSnapshot snapshot = snapshotService.drainTrendWindowSnapshot(now);
+        long normalizedSampleTimeMs = Math.max(0L, sampleTimeMs);
+        RegularTimePeriod period = createTrendPeriod(normalizedSampleTimeMs);
+        PerformanceTrendSnapshot snapshot = snapshotService.drainTrendWindowSnapshot(normalizedSampleTimeMs);
 
         log.debug("同步采样数据 {} - 用户数: {}, HTTP: {}, WS: {}, SSE: {}",
                 period, snapshot.activeUsers(), snapshot.http().samples(), snapshot.webSocket().samples(), snapshot.sse().samples());

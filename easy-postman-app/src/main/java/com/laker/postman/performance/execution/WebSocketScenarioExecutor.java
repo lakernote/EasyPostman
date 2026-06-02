@@ -21,6 +21,7 @@ import com.laker.postman.http.runtime.transport.HttpTransport;
 import com.laker.postman.http.runtime.transport.RealtimeConnectionOptions;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.MonotonicStopwatch;
 import okhttp3.Response;
 import com.laker.postman.http.runtime.transport.RealtimeWebSocketConnection;
 import okhttp3.WebSocket;
@@ -139,7 +140,8 @@ public class WebSocketScenarioExecutor {
                           String apiId,
                           String apiName) {
         WebSocketPerformanceData baseRequestCfg = requestCfg == null ? new WebSocketPerformanceData() : requestCfg;
-        long requestStartTime = System.currentTimeMillis();
+        MonotonicStopwatch sampleStopwatch = MonotonicStopwatch.start();
+        long requestStartTime = sampleStopwatch.startWallTimeMs();
         HttpResponse resp = new HttpResponse();
         AtomicBoolean interrupted = new AtomicBoolean(false);
         AtomicBoolean failed = new AtomicBoolean(false);
@@ -162,6 +164,7 @@ public class WebSocketScenarioExecutor {
                 : null;
         AtomicReference<String> latestResponseBodyRef = new AtomicReference<>("");
         AtomicLong sampleEndTimeMs = new AtomicLong(0);
+        AtomicLong sampleElapsedMs = new AtomicLong(-1);
         AtomicLong firstMessageLatencyMs = new AtomicLong(-1);
         AtomicBoolean firstReceivedMessageRecorded = new AtomicBoolean(false);
         AtomicInteger receivedMessageCount = new AtomicInteger(0);
@@ -241,7 +244,7 @@ public class WebSocketScenarioExecutor {
                         long receivedAtMs = System.currentTimeMillis();
                         realtimeMetrics.recordWebSocketReceived(session.metricsKey);
                         if (firstReceivedMessageRecorded.compareAndSet(false, true)) {
-                            long latencyMs = Math.max(0, receivedAtMs - requestStartTime);
+                            long latencyMs = sampleStopwatch.elapsedMs();
                             firstMessageLatencyMs.compareAndSet(-1, latencyMs);
                             realtimeMetrics.recordWebSocketFirstMessageLatency(session.metricsKey, latencyMs);
                         }
@@ -607,7 +610,7 @@ public class WebSocketScenarioExecutor {
                         case WS_CLOSE -> {
                             if (scenarioSteps.peek() == null) {
                                 scenarioCompleted.set(true);
-                                markSampleEnd(sampleEndTimeMs);
+                                markSampleEnd(sampleEndTimeMs, sampleElapsedMs, sampleStopwatch);
                             }
                             sessionManager.closeCurrent("WebSocket close step");
                             implicitConnectAllowed = false;
@@ -633,13 +636,14 @@ public class WebSocketScenarioExecutor {
             if (!scenarioCompleted.get() && !runningSupplier.getAsBoolean() && !failed.get() && interrupted.compareAndSet(false, true)) {
                 setInterruptedErrorIfBlank(errorRef);
             }
-            markSampleEnd(sampleEndTimeMs);
+            markSampleEnd(sampleEndTimeMs, sampleElapsedMs, sampleStopwatch);
             sessionManager.closeAll("Performance sample complete");
         }
 
-        long endTime = sampleEndTimeMs.get();
+        long elapsedMs = sampleElapsedMs.get() >= 0 ? sampleElapsedMs.get() : sampleStopwatch.elapsedMs();
+        long endTime = requestStartTime + elapsedMs;
         resp.endTime = endTime;
-        resp.costMs = endTime - requestStartTime;
+        resp.costMs = elapsedMs;
         if (retainResponseBody) {
             resp.body = latestResponseBodyRef.get();
         } else {
@@ -702,8 +706,12 @@ public class WebSocketScenarioExecutor {
         );
     }
 
-    private static void markSampleEnd(AtomicLong sampleEndTimeMs) {
-        sampleEndTimeMs.compareAndSet(0, System.currentTimeMillis());
+    private static void markSampleEnd(AtomicLong sampleEndTimeMs,
+                                      AtomicLong sampleElapsedMs,
+                                      MonotonicStopwatch stopwatch) {
+        long elapsedMs = stopwatch.elapsedMs();
+        sampleElapsedMs.compareAndSet(-1, elapsedMs);
+        sampleEndTimeMs.compareAndSet(0, stopwatch.startWallTimeMs() + elapsedMs);
     }
 
     private boolean matchesMessage(WebSocketPerformanceData cfg, String payload) {

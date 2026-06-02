@@ -71,7 +71,7 @@ final class PerformanceWindowMetricsFactory {
             return new PerformanceTrendSnapshot.ProtocolWindowMetrics(
                     0,
                     0,
-                    0,
+                    Double.NaN,
                     0,
                     realtimeMetrics.webSocketActiveSessionDurationMs(),
                     0,
@@ -87,7 +87,7 @@ final class PerformanceWindowMetricsFactory {
             return new PerformanceTrendSnapshot.ProtocolWindowMetrics(
                     0,
                     0,
-                    0,
+                    Double.NaN,
                     0,
                     realtimeMetrics.sseActiveSessionDurationMs(),
                     0,
@@ -102,7 +102,7 @@ final class PerformanceWindowMetricsFactory {
         return new PerformanceTrendSnapshot.ProtocolWindowMetrics(
                 0,
                 0,
-                0,
+                Double.NaN,
                 0,
                 Double.NaN,
                 0,

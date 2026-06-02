@@ -67,16 +67,15 @@ public class PerformanceMeterPrimitiveTest {
     }
 
     @Test
-    public void sampleMeterSetShouldSynchronizeMutationAndSnapshot() throws Exception {
-        assertSynchronizedMethod("record", RequestResult.class);
-        assertSynchronizedMethod("clear");
-        assertSynchronizedMethod("snapshot");
-        assertSynchronizedMethod("toSummary", String.class);
-        assertSynchronizedMethod("toProgressSnapshot");
+    public void sampleMeterSetShouldNotUseObjectMonitorForHotPath() throws Exception {
+        assertNotSynchronizedMethod("record", RequestResult.class);
+        assertNotSynchronizedMethod("snapshot");
+        assertNotSynchronizedMethod("toSummary", String.class);
+        assertNotSynchronizedMethod("toProgressSnapshot");
     }
 
-    private static void assertSynchronizedMethod(String name, Class<?>... parameterTypes) throws NoSuchMethodException {
+    private static void assertNotSynchronizedMethod(String name, Class<?>... parameterTypes) throws NoSuchMethodException {
         Method method = PerformanceSampleMeterSet.class.getDeclaredMethod(name, parameterTypes);
-        assertTrue(Modifier.isSynchronized(method.getModifiers()), name + " must stay synchronized");
+        assertFalse(Modifier.isSynchronized(method.getModifiers()), name + " must not use synchronized object monitor");
     }
 }

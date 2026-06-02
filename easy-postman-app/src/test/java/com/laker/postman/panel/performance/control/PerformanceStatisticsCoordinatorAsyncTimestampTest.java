@@ -17,6 +17,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 public class PerformanceStatisticsCoordinatorAsyncTimestampTest {
@@ -63,6 +64,41 @@ public class PerformanceStatisticsCoordinatorAsyncTimestampTest {
             assertTrue(trendView.period.getFirstMillisecond() >= releaseTimeMs,
                     "趋势图 X 轴应使用实际 drain 时间，period=" + trendView.period.getFirstMillisecond()
                             + ", releaseTimeMs=" + releaseTimeMs);
+        } finally {
+            coordinator.dispose();
+        }
+    }
+
+    @Test
+    public void syncTrendSampleShouldUseExplicitTimestampWhenProvided() throws Exception {
+        CapturingTrendView trendView = new CapturingTrendView();
+        AtomicLong realtimeSamplerNow = new AtomicLong();
+        PerformanceStatisticsCoordinator coordinator = new PerformanceStatisticsCoordinator(
+                new PerformanceStatsCollector(),
+                new PerformanceTrendWindowCollector(),
+                null,
+                trendView,
+                new JTabbedPane(),
+                () -> 0,
+                () -> 0,
+                () -> 0,
+                () -> 1000L,
+                () -> true,
+                now -> {
+                    realtimeSamplerNow.set(now);
+                    return PerformanceRealtimeMetrics.Sample.empty();
+                },
+                now -> PerformanceRealtimeMetrics.LiveSnapshot.empty()
+        );
+
+        try {
+            long sampleTimeMs = 1_776_000_123_456L;
+
+            SwingUtilities.invokeAndWait(() -> coordinator.sampleTrendDataSync(sampleTimeMs));
+
+            assertTrue(trendView.awaitUpdate());
+            assertEquals(trendView.period.getFirstMillisecond(), sampleTimeMs);
+            assertEquals(realtimeSamplerNow.get(), sampleTimeMs);
         } finally {
             coordinator.dispose();
         }

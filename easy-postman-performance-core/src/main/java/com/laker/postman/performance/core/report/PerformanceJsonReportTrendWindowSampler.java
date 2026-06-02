@@ -166,6 +166,8 @@ public final class PerformanceJsonReportTrendWindowSampler {
         private long sentMessages;
         private long receivedMessages;
         private long matchedMessages;
+        private long durationTotalMs;
+        private long firstLatencyTotalMs;
 
         void reset() {
             total = 0L;
@@ -173,6 +175,8 @@ public final class PerformanceJsonReportTrendWindowSampler {
             sentMessages = 0L;
             receivedMessages = 0L;
             matchedMessages = 0L;
+            durationTotalMs = 0L;
+            firstLatencyTotalMs = 0L;
         }
 
         PerformanceTrendSnapshot.ProtocolWindowMetrics drainWindow(PerformanceJsonReportApi api, long elapsedMs) {
@@ -191,16 +195,22 @@ public final class PerformanceJsonReportTrendWindowSampler {
             long currentMatched = api == null || api.getStream() == null
                     ? matchedMessages
                     : api.getStream().getMatchedMessages();
+            long currentDurationTotalMs = durationTotal(api, currentTotal);
+            long currentFirstLatencyTotalMs = durationTotal(api == null ? null : api.getFirstMessageLatencyMs(), currentTotal);
 
             long totalDelta = countCompletedSamples ? positiveDelta(currentTotal, total) : 0L;
             long failedDelta = countCompletedSamples ? positiveDelta(currentFailed, failed) : 0L;
             long sentDelta = positiveDelta(currentSent, sentMessages);
             long receivedDelta = positiveDelta(currentReceived, receivedMessages);
             long matchedDelta = positiveDelta(currentMatched, matchedMessages);
+            long durationDeltaMs = countCompletedSamples ? positiveDelta(currentDurationTotalMs, durationTotalMs) : 0L;
+            long firstLatencyDeltaMs = countCompletedSamples ? positiveDelta(currentFirstLatencyTotalMs, firstLatencyTotalMs) : 0L;
 
             if (countCompletedSamples) {
                 total = Math.max(total, currentTotal);
                 failed = Math.max(failed, currentFailed);
+                durationTotalMs = Math.max(durationTotalMs, currentDurationTotalMs);
+                firstLatencyTotalMs = Math.max(firstLatencyTotalMs, currentFirstLatencyTotalMs);
             }
             sentMessages = Math.max(sentMessages, currentSent);
             receivedMessages = Math.max(receivedMessages, currentReceived);
@@ -213,17 +223,36 @@ public final class PerformanceJsonReportTrendWindowSampler {
                     failures,
                     samples == 0 ? 0.0 : failures * 100.0 / samples,
                     rate(totalDelta, elapsedMs),
-                    api == null || api.getDurationMs() == null ? Double.NaN : api.getDurationMs().getAvg(),
+                    averageDuration(api == null ? null : api.getDurationMs(), totalDelta, durationDeltaMs),
                     clampToInt(sentDelta),
                     clampToInt(receivedDelta),
                     clampToInt(matchedDelta),
                     rate(sentDelta, elapsedMs),
                     rate(receivedDelta, elapsedMs),
                     rate(matchedDelta, elapsedMs),
-                    api == null || api.getFirstMessageLatencyMs() == null
-                            ? Double.NaN
-                            : api.getFirstMessageLatencyMs().getAvg()
+                    averageDuration(api == null ? null : api.getFirstMessageLatencyMs(), totalDelta, firstLatencyDeltaMs)
             );
+        }
+
+        private long durationTotal(PerformanceJsonReportApi api, long sampleCount) {
+            return api == null ? 0L : durationTotal(api.getDurationMs(), sampleCount);
+        }
+
+        private long durationTotal(PerformanceJsonReportDuration duration, long sampleCount) {
+            if (duration == null || sampleCount <= 0 || duration.getAvg() <= 0) {
+                return 0L;
+            }
+            return duration.getAvg() * sampleCount;
+        }
+
+        private double averageDuration(PerformanceJsonReportDuration duration, long sampleDelta, long durationDeltaMs) {
+            if (duration == null) {
+                return Double.NaN;
+            }
+            if (sampleDelta > 0) {
+                return (double) Math.max(0L, durationDeltaMs) / sampleDelta;
+            }
+            return duration.getAvg();
         }
     }
 }

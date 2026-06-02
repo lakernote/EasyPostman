@@ -11,6 +11,7 @@ import com.laker.postman.http.runtime.transport.HttpTransport;
 import com.laker.postman.http.runtime.transport.RealtimeConnectionOptions;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.MonotonicStopwatch;
 import okhttp3.Response;
 import com.laker.postman.http.runtime.transport.RealtimeConnectionHandle;
 import okhttp3.sse.EventSource;
@@ -132,7 +133,8 @@ public class SseSampleExecutor {
     }
 
     public Result execute(PreparedRequest req, SsePerformanceData cfg, String apiId, String apiName) {
-        long requestStartTime = System.currentTimeMillis();
+        MonotonicStopwatch sampleStopwatch = MonotonicStopwatch.start();
+        long requestStartTime = sampleStopwatch.startWallTimeMs();
         HttpResponse resp = new HttpResponse();
         resp.isSse = true;
 
@@ -150,6 +152,7 @@ public class SseSampleExecutor {
                 ? new BoundedTextAccumulator(effectiveRetainResponseBody ? responseBodyPreviewLimitBytes : 0)
                 : null;
         AtomicLong sampleEndTimeMs = new AtomicLong(0);
+        AtomicLong sampleElapsedMs = new AtomicLong(-1);
         AtomicLong firstEventLatencyMs = new AtomicLong(-1);
         AtomicBoolean firstEventRecorded = new AtomicBoolean(false);
         AtomicBoolean sessionRegistered = new AtomicBoolean(false);
@@ -214,10 +217,9 @@ public class SseSampleExecutor {
                 eventCount.incrementAndGet();
                 realtimeMetrics.recordSseReceived(eventSource);
                 String eventType = CharSequenceUtil.blankToDefault(type, "message");
-                long eventReceivedAtMs = System.currentTimeMillis();
                 boolean firstPhysicalEvent = firstEventRecorded.compareAndSet(false, true);
                 if (firstPhysicalEvent) {
-                    long latencyMs = Math.max(0, eventReceivedAtMs - requestStartTime);
+                    long latencyMs = sampleStopwatch.elapsedMs();
                     firstEventLatencyMs.compareAndSet(-1, latencyMs);
                     realtimeMetrics.recordSseFirstMessageLatency(eventSource, latencyMs);
                 }
@@ -289,7 +291,7 @@ public class SseSampleExecutor {
                         failed.set(true);
                         errorRef.set(message(MessageKeys.PERFORMANCE_MSG_SSE_CONNECTION_TIMEOUT));
                         closingSource.set(true);
-                        markSampleEnd(sampleEndTimeMs);
+                        markSampleEnd(sampleEndTimeMs, sampleElapsedMs, sampleStopwatch);
                         eventSource.cancel();
                     }
                     boolean gotFirstMessage = !failed.get() && !interrupted.get()
@@ -298,7 +300,7 @@ public class SseSampleExecutor {
                         failed.set(true);
                         errorRef.set(message(MessageKeys.PERFORMANCE_MSG_SSE_FIRST_EVENT_TIMEOUT));
                         closingSource.set(true);
-                        markSampleEnd(sampleEndTimeMs);
+                        markSampleEnd(sampleEndTimeMs, sampleElapsedMs, sampleStopwatch);
                         eventSource.cancel();
                     }
                 }
@@ -308,7 +310,7 @@ public class SseSampleExecutor {
                         failed.set(true);
                         errorRef.set(message(MessageKeys.PERFORMANCE_MSG_SSE_CONNECTION_TIMEOUT));
                         closingSource.set(true);
-                        markSampleEnd(sampleEndTimeMs);
+                        markSampleEnd(sampleEndTimeMs, sampleElapsedMs, sampleStopwatch);
                         eventSource.cancel();
                     }
                     boolean gotMatchedMessage = !failed.get() && !interrupted.get()
@@ -317,7 +319,7 @@ public class SseSampleExecutor {
                         failed.set(true);
                         errorRef.set(message(MessageKeys.PERFORMANCE_MSG_SSE_MATCHED_MESSAGE_TIMEOUT));
                         closingSource.set(true);
-                        markSampleEnd(sampleEndTimeMs);
+                        markSampleEnd(sampleEndTimeMs, sampleElapsedMs, sampleStopwatch);
                         eventSource.cancel();
                     }
                 }
@@ -327,7 +329,7 @@ public class SseSampleExecutor {
                         failed.set(true);
                         errorRef.set(message(MessageKeys.PERFORMANCE_MSG_SSE_CONNECTION_TIMEOUT));
                         closingSource.set(true);
-                        markSampleEnd(sampleEndTimeMs);
+                        markSampleEnd(sampleEndTimeMs, sampleElapsedMs, sampleStopwatch);
                         eventSource.cancel();
                     } else if (!failed.get() && !interrupted.get()) {
                         boolean terminated = completionLatch.await(Math.max(100, cfg.holdConnectionMs), TimeUnit.MILLISECONDS);
@@ -344,7 +346,7 @@ public class SseSampleExecutor {
                         failed.set(true);
                         errorRef.set(message(MessageKeys.PERFORMANCE_MSG_SSE_CONNECTION_TIMEOUT));
                         closingSource.set(true);
-                        markSampleEnd(sampleEndTimeMs);
+                        markSampleEnd(sampleEndTimeMs, sampleElapsedMs, sampleStopwatch);
                         eventSource.cancel();
                     }
                     if (!failed.get() && !interrupted.get()) {
@@ -355,7 +357,7 @@ public class SseSampleExecutor {
                                     ? message(MessageKeys.PERFORMANCE_MSG_SSE_TARGET_COUNT_CLOSED)
                                     : message(MessageKeys.PERFORMANCE_MSG_SSE_TARGET_MESSAGE_COUNT_TIMEOUT));
                             closingSource.set(true);
-                            markSampleEnd(sampleEndTimeMs);
+                            markSampleEnd(sampleEndTimeMs, sampleElapsedMs, sampleStopwatch);
                             eventSource.cancel();
                         }
                     }
@@ -366,7 +368,7 @@ public class SseSampleExecutor {
                         failed.set(true);
                         errorRef.set(message(MessageKeys.PERFORMANCE_MSG_SSE_CONNECTION_TIMEOUT));
                         closingSource.set(true);
-                        markSampleEnd(sampleEndTimeMs);
+                        markSampleEnd(sampleEndTimeMs, sampleElapsedMs, sampleStopwatch);
                         eventSource.cancel();
                     } else if (!failed.get() && !interrupted.get()) {
                         completionLatch.await(Math.max(100, cfg.holdConnectionMs), TimeUnit.MILLISECONDS);
@@ -374,7 +376,7 @@ public class SseSampleExecutor {
                             failed.set(true);
                             errorRef.set(message(MessageKeys.PERFORMANCE_MSG_SSE_STREAM_CLOSE_TIMEOUT));
                             closingSource.set(true);
-                            markSampleEnd(sampleEndTimeMs);
+                            markSampleEnd(sampleEndTimeMs, sampleElapsedMs, sampleStopwatch);
                             eventSource.cancel();
                         }
                     }
@@ -384,16 +386,17 @@ public class SseSampleExecutor {
             Thread.currentThread().interrupt();
             interrupted.set(true);
         } finally {
-            markSampleEnd(sampleEndTimeMs);
+            markSampleEnd(sampleEndTimeMs, sampleElapsedMs, sampleStopwatch);
             realtimeMetrics.recordSseSessionEnd(eventSource.metricKey());
             closingSource.set(true);
             eventSource.cancel();
             activeSources.remove(eventSource);
         }
 
-        long endTime = sampleEndTimeMs.get();
+        long elapsedMs = sampleElapsedMs.get() >= 0 ? sampleElapsedMs.get() : sampleStopwatch.elapsedMs();
+        long endTime = requestStartTime + elapsedMs;
         resp.endTime = endTime;
-        resp.costMs = endTime - requestStartTime;
+        resp.costMs = elapsedMs;
         resp.body = effectiveRetainResponseBody && matchedEventBody != null ? matchedEventBody.value() : "";
         resp.bodySize = matchedEventBody == null ? 0 : matchedEventBody.totalUtf8Bytes();
         SseSampleResponseBuilder.addSummaryHeaders(
@@ -410,8 +413,12 @@ public class SseSampleExecutor {
         return new Result(resp, errorRef.get(), failed.get(), interrupted.get());
     }
 
-    private static void markSampleEnd(AtomicLong sampleEndTimeMs) {
-        sampleEndTimeMs.compareAndSet(0, System.currentTimeMillis());
+    private static void markSampleEnd(AtomicLong sampleEndTimeMs,
+                                      AtomicLong sampleElapsedMs,
+                                      MonotonicStopwatch stopwatch) {
+        long elapsedMs = stopwatch.elapsedMs();
+        sampleElapsedMs.compareAndSet(-1, elapsedMs);
+        sampleEndTimeMs.compareAndSet(0, stopwatch.startWallTimeMs() + elapsedMs);
     }
 
     private static String message(String key) {

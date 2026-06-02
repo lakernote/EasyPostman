@@ -149,7 +149,7 @@ final class PerformanceRunControlSupport {
         runUiController.markIdle();
         timerManager.stopAll();
 
-        flushPendingAndCharts("完成时");
+        flushPendingAndCharts("完成时", true);
         statisticsCoordinator.updateFinalReportWithStatsSync();
 
         long totalTime = System.currentTimeMillis() - startTimeSupplier.getAsLong();
@@ -167,7 +167,7 @@ final class PerformanceRunControlSupport {
     }
 
     private void flushUiAfterStop() {
-        flushPendingAndCharts("停止时");
+        flushPendingAndCharts("停止时", false);
         statisticsCoordinator.updateFinalReportWithStatsSync();
     }
 
@@ -179,7 +179,7 @@ final class PerformanceRunControlSupport {
         flushUiAfterStop();
     }
 
-    private void flushPendingAndCharts(String phase) {
+    private void flushPendingAndCharts(String phase, boolean preferExpectedEndTime) {
         try {
             performanceResultTablePanel.flushPendingResults();
         } catch (Exception e) {
@@ -187,17 +187,26 @@ final class PerformanceRunControlSupport {
         }
 
         try {
-            statisticsCoordinator.sampleTrendDataSync();
-            statisticsCoordinator.appendTerminalIdleTrendPointSync(terminalTrendTimeMs());
+            long terminalTimeMs = terminalTrendTimeMs(preferExpectedEndTime);
+            statisticsCoordinator.sampleTrendDataSync(finalTrendSampleTimeMs(terminalTimeMs));
+            statisticsCoordinator.appendTerminalIdleTrendPointSync(terminalTimeMs);
         } catch (Exception e) {
             log.warn("{}最后一次趋势图采样失败", phase, e);
         }
     }
 
-    private long terminalTrendTimeMs() {
+    private long terminalTrendTimeMs(boolean preferExpectedEndTime) {
         long now = System.currentTimeMillis();
+        if (!preferExpectedEndTime) {
+            return now + 1L;
+        }
         long expectedEnd = expectedTrendEndTimeMs;
         return Math.max(now + 1L, expectedEnd);
+    }
+
+    private long finalTrendSampleTimeMs(long terminalTimeMs) {
+        long now = System.currentTimeMillis();
+        return Math.max(now, terminalTimeMs - 1L);
     }
 
     private long expectedTrendEndTime(long startTimeMs, PerformanceTestPlan plan) {

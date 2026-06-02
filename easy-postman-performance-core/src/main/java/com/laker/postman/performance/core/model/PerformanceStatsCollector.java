@@ -30,8 +30,7 @@ public final class PerformanceStatsCollector {
     }
 
     public PerformanceStatsSnapshot snapshot() {
-        // 单个 meter 的快照由 PerformanceSampleMeterSet synchronized 保证一致；
-        // 跨 API 的快照允许弱一致，压测完成后采集线程退出时自然收敛为最终准确值。
+        // Meter 内部使用 LongAdder/CAS；运行中快照允许弱一致，压测完成后采集线程退出时收敛为最终准确值。
         List<PerformanceStatsSnapshot.ApiSummary> summaries = new ArrayList<>();
         for (Map<String, PerformanceSampleMeterSet> statsByApi : apiStatsByProtocol.values()) {
             for (PerformanceSampleMeterSet stats : statsByApi.values()) {

@@ -15,6 +15,7 @@ import com.laker.postman.service.js.ScriptExecutionResult;
 import com.laker.postman.service.variable.ExecutionVariableContext;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.MonotonicStopwatch;
 import lombok.extern.slf4j.Slf4j;
 import com.laker.postman.http.runtime.transport.RealtimeConnectionHandle;
 import com.laker.postman.http.runtime.transport.RealtimeWebSocketConnection;
@@ -179,7 +180,8 @@ public class PerformanceRequestExecutor {
             scriptRuntime.finalizeRequest();
         }
 
-        long requestStartTime = System.currentTimeMillis();
+        MonotonicStopwatch requestStopwatch = MonotonicStopwatch.start();
+        long requestStartTime = requestStopwatch.startWallTimeMs();
         long costMs = 0L;
         boolean interrupted = false;
         HttpResponse resp = null;
@@ -240,7 +242,7 @@ public class PerformanceRequestExecutor {
                     executionFailed = true;
                 }
             } finally {
-                costMs = System.currentTimeMillis() - requestStartTime;
+                costMs = requestStopwatch.elapsedMs();
             }
 
             PerformanceRequestPostProcessResult postProcessResult = postProcessor.process(
@@ -257,7 +259,7 @@ public class PerformanceRequestExecutor {
             errorMsg = postProcessResult.errorMsg();
             executionFailed = postProcessResult.executionFailed();
         } else {
-            costMs = System.currentTimeMillis() - requestStartTime;
+            costMs = requestStopwatch.elapsedMs();
         }
 
         return new PerformanceRequestExecutionResult(

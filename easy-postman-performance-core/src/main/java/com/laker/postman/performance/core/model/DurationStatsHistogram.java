@@ -3,68 +3,103 @@ package com.laker.postman.performance.core.model;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.NavigableMap;
-import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 
 final class DurationStatsHistogram {
     private static final int[] DURATION_BUCKET_UPPER_BOUNDS = buildDurationBucketUpperBounds();
 
-    private final NavigableMap<Integer, Long> countsByBucket = new TreeMap<>();
-    private long count;
-    private long sum;
-    private long min = Long.MAX_VALUE;
-    private long max;
+    private final ConcurrentMap<Integer, LongAdder> countsByBucket = new ConcurrentHashMap<>();
+    private final LongAdder count = new LongAdder();
+    private final LongAdder sum = new LongAdder();
+    private final AtomicLong min = new AtomicLong(Long.MAX_VALUE);
+    private final AtomicLong max = new AtomicLong();
 
     void record(long durationMs) {
         long normalized = Math.max(0, durationMs);
-        count++;
-        sum += normalized;
-        min = Math.min(min, normalized);
-        max = Math.max(max, normalized);
+        sum.add(normalized);
+        updateMin(normalized);
+        updateMax(normalized);
         int bucket = bucketIndex(normalized);
-        countsByBucket.merge(bucket, 1L, Long::sum);
+        countsByBucket.computeIfAbsent(bucket, ignored -> new LongAdder()).increment();
+        count.increment();
     }
 
     void clear() {
         countsByBucket.clear();
-        count = 0;
-        sum = 0;
-        min = Long.MAX_VALUE;
-        max = 0;
+        count.reset();
+        sum.reset();
+        min.set(Long.MAX_VALUE);
+        max.set(0);
     }
 
     long avg() {
-        return count == 0 ? 0 : sum / count;
+        long currentCount = count.sum();
+        return currentCount == 0 ? 0 : sum.sum() / currentCount;
     }
 
     PerformanceStatsSnapshot.DurationStats snapshot() {
-        if (count == 0) {
+        long currentCount = count.sum();
+        if (currentCount == 0) {
             return PerformanceStatsSnapshot.DurationStats.empty();
         }
         return new PerformanceStatsSnapshot.DurationStats(
                 avg(),
-                min,
-                max,
-                percentile(0.90),
-                percentile(0.95),
-                percentile(0.99)
+                min.get(),
+                max.get(),
+                percentile(currentCount, 0.90),
+                percentile(currentCount, 0.95),
+                percentile(currentCount, 0.99)
         );
     }
 
-    private long percentile(double percentile) {
-        if (count == 0) {
+    private long percentile(long currentCount, double percentile) {
+        if (currentCount == 0) {
             return 0;
         }
-        long target = Math.max(1, (long) Math.ceil(count * percentile));
+        long target = Math.max(1, (long) Math.ceil(currentCount * percentile));
         long seen = 0;
-        for (Map.Entry<Integer, Long> entry : countsByBucket.entrySet()) {
+        for (Map.Entry<Integer, Long> entry : snapshotCountsByBucket().entrySet()) {
             seen += entry.getValue();
             if (seen >= target) {
                 long upperBound = DURATION_BUCKET_UPPER_BOUNDS[entry.getKey()];
-                return Math.min(upperBound, max);
+                return Math.min(upperBound, max.get());
             }
         }
-        return max;
+        return max.get();
+    }
+
+    private Map<Integer, Long> snapshotCountsByBucket() {
+        Map<Integer, Long> snapshot = new java.util.TreeMap<>();
+        countsByBucket.forEach((bucket, bucketCount) -> {
+            long value = bucketCount.sum();
+            if (value > 0) {
+                snapshot.put(bucket, value);
+            }
+        });
+        return snapshot;
+    }
+
+    private void updateMin(long value) {
+        long observed;
+        do {
+            observed = min.get();
+            if (value >= observed) {
+                return;
+            }
+        } while (!min.compareAndSet(observed, value));
+    }
+
+    private void updateMax(long value) {
+        long observed;
+        do {
+            observed = max.get();
+            if (value <= observed) {
+                return;
+            }
+        } while (!max.compareAndSet(observed, value));
     }
 
     private static int bucketIndex(long durationMs) {

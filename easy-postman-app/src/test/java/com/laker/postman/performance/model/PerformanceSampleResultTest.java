@@ -96,6 +96,33 @@ public class PerformanceSampleResultTest {
     }
 
     @Test
+    public void shouldProjectSampleEndTimeFromMonotonicElapsedCost() {
+        HttpResponse response = new HttpResponse();
+        response.code = 200;
+        response.costMs = 120L;
+        response.endTime = 900L;
+
+        PerformanceRequestExecutionResult executionResult = new PerformanceRequestExecutionResult(
+                "api",
+                "API",
+                new PreparedRequest(),
+                response,
+                "",
+                List.of(),
+                false,
+                false,
+                PerformanceProtocol.HTTP,
+                1_000L,
+                0L
+        );
+
+        PerformanceSampleResult sampleResult = PerformanceSampleResult.fromExecutionResult(executionResult);
+
+        assertEquals(sampleResult.getEndTimeMs(), 1_120L);
+        assertEquals(sampleResult.toRequestResult().getResponseTime(), 120L);
+    }
+
+    @Test
     public void shouldExposeFailedAssertionAsFailedSample() {
         HttpResponse response = new HttpResponse();
         response.code = 200;

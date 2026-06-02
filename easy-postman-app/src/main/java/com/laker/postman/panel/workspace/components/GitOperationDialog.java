@@ -2,6 +2,7 @@ package com.laker.postman.panel.workspace.components;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.UiSingletonFactory;
+import com.laker.postman.common.component.button.PrimaryButton;
 import com.laker.postman.common.component.StepIndicator;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.GitOperation;
@@ -428,13 +429,7 @@ public class GitOperationDialog extends JDialog {
         cancelButton.setPreferredSize(new Dimension(80, 32));
         cancelButton.addActionListener(e -> dispose());
 
-        executeButton = new JButton(operation.getDisplayName());
-        executeButton.setFont(FontsUtil.getDefaultFont(Font.BOLD));
-        executeButton.setPreferredSize(new Dimension(100, 32));
-        executeButton.setBackground(GitOperationPresentation.getColor(operation));
-        // White text on colored button background (operation color)
-        executeButton.setForeground(Color.WHITE);
-        executeButton.setFocusPainted(false);
+        executeButton = createExecuteButton(operation);
         executeButton.addActionListener(new ExecuteActionListener());
 
         buttonPanel.add(cancelButton);
@@ -444,6 +439,28 @@ public class GitOperationDialog extends JDialog {
         panel.add(buttonPanel, BorderLayout.EAST);
 
         return panel;
+    }
+
+    static JButton createExecuteButton(GitOperation operation) {
+        PrimaryButton button = new PrimaryButton(operation.getDisplayName());
+        Color baseColor = GitOperationPresentation.getColor(operation);
+        button.putClientProperty("baseColor", baseColor);
+        button.putClientProperty("hoverColor", scaleColor(baseColor, 0.88f));
+        button.putClientProperty("pressColor", scaleColor(baseColor, 0.74f));
+        button.putClientProperty("colorsInitialized", false);
+        button.setFont(FontsUtil.getDefaultFont(Font.BOLD));
+        button.setPreferredSize(new Dimension(100, 32));
+        // Git 操作按钮必须保持操作色 hover，避免被 FlatLaf 默认蓝色状态覆盖。
+        button.setToolTipText(operation.getDisplayName());
+        return button;
+    }
+
+    private static Color scaleColor(Color color, float factor) {
+        return new Color(
+                Math.max(0, Math.min(255, Math.round(color.getRed() * factor))),
+                Math.max(0, Math.min(255, Math.round(color.getGreen() * factor))),
+                Math.max(0, Math.min(255, Math.round(color.getBlue() * factor)))
+        );
     }
 
 

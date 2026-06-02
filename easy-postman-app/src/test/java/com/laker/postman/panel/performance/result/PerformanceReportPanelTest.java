@@ -170,8 +170,8 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COLUMN_P99_FIRST_EVENT));
         assertEquals(model.getValueAt(0, 9), "550 ms");
         assertEquals(model.getValueAt(0, 10), "900 ms");
-        assertEquals(model.getValueAt(0, 11), "1000 ms");
-        assertEquals(model.getValueAt(0, 12), "1000 ms");
+        assertEquals(model.getValueAt(0, 11), "1.00 s");
+        assertEquals(model.getValueAt(0, 12), "1.00 s");
     }
 
     @Test

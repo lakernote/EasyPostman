@@ -2,6 +2,8 @@ package com.laker.postman.service.render;
 
 import com.laker.postman.common.constants.ThemeColors;
 import com.laker.postman.http.runtime.model.HttpResponse;
+import com.laker.postman.http.runtime.model.PreparedRequest;
+import com.laker.postman.request.model.HttpHeader;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -102,5 +104,76 @@ public class HttpHtmlRendererTest {
         assertTrue(html.contains("background:#0a0b0c"));
         assertTrue(html.contains("background:#0d0e0f"));
         assertTrue(html.contains("border:1px solid #131415"));
+    }
+
+    @Test
+    public void shouldRenderConfiguredRequestWhenSentSnapshotMissing() {
+        PreparedRequest request = new PreparedRequest();
+        request.url = "https://example.test/api";
+        request.method = "POST";
+        request.headersList = List.of(
+                new HttpHeader(true, "Cookie", "cf_clearance=clearance"),
+                new HttpHeader(false, "Disabled", "hidden")
+        );
+        request.body = "{\"action\":\"next\"}";
+
+        String html = HttpHtmlRenderer.renderRequest(request);
+
+        assertTrue(html.contains("Configured Headers"));
+        assertTrue(html.contains("Cookie"));
+        assertTrue(html.contains("cf_clearance=clearance"));
+        assertFalse(html.contains("Disabled"));
+        assertTrue(html.contains("Configured Body"));
+        assertTrue(html.contains("{&quot;action&quot;:&quot;next&quot;}"));
+    }
+
+    @Test
+    public void shouldPreferSentRequestSnapshotInRequestDetails() {
+        PreparedRequest request = new PreparedRequest();
+        request.url = "https://example.test/api";
+        request.method = "POST";
+        request.headersList = List.of(new HttpHeader(true, "Cookie", "configured-cookie"));
+        request.body = "configured body";
+        request.sentHeadersList = List.of(new HttpHeader(true, "Cookie", "sent-cookie"));
+        request.sentRequestBody = "sent body";
+
+        String html = HttpHtmlRenderer.renderRequest(request);
+
+        assertTrue(html.contains("Sent Headers"));
+        assertTrue(html.contains("sent-cookie"));
+        assertFalse(html.contains("configured-cookie"));
+        assertTrue(html.contains("Sent Body"));
+        assertTrue(html.contains("sent body"));
+        assertFalse(html.contains("configured body"));
+    }
+
+    @Test
+    public void shouldKeepRequestBodyPreviewSmall() {
+        String body = "x".repeat(3 * 1024);
+        PreparedRequest request = new PreparedRequest();
+        request.url = "https://example.test/api";
+        request.method = "POST";
+        request.sentRequestBody = body;
+
+        String html = HttpHtmlRenderer.renderRequest(request);
+
+        assertFalse(html.contains(body));
+        assertTrue(html.contains("Truncated"));
+        assertTrue(html.contains("showing first 2KB"));
+    }
+
+    @Test
+    public void shouldNotShowConfiguredBodyWhenSentSnapshotHasNoBody() {
+        PreparedRequest request = new PreparedRequest();
+        request.url = "wss://example.test/socket";
+        request.method = "GET";
+        request.body = "configured websocket message";
+        request.sentHeadersList = List.of(new HttpHeader(true, "Host", "example.test"));
+
+        String html = HttpHtmlRenderer.renderRequest(request);
+
+        assertTrue(html.contains("Sent Headers"));
+        assertFalse(html.contains("Configured Body"));
+        assertFalse(html.contains("configured websocket message"));
     }
 }

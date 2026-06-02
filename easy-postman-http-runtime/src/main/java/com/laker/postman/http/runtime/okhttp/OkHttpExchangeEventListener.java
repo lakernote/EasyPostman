@@ -9,7 +9,6 @@ import com.laker.postman.http.runtime.ssl.CertificateCapturingSSLSocketFactory;
 import com.laker.postman.http.runtime.ssl.SSLCertificateValidator;
 import com.laker.postman.http.runtime.ssl.SSLConfigurationUtil;
 import com.laker.postman.http.runtime.ssl.SSLValidationResult;
-import com.laker.postman.request.model.HttpHeader;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 
@@ -21,7 +20,6 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -86,8 +84,11 @@ public class OkHttpExchangeEventListener extends EventListener {
             CertificateCapturingSSLSocketFactory.clearLastCapturedCertificates();
         }
         info.setCallStart(System.currentTimeMillis());
+        Request request = call.request();
         if (enableNetworkLog) {
-            Request request = call.request();
+            OkHttpRequestSnapshotCapture.capture(preparedRequest, request, false);
+        }
+        if (enableNetworkLog) {
             log(NetworkLogEventStage.CALL_START, request.method() + " " + request.url());
         }
     }
@@ -354,38 +355,14 @@ public class OkHttpExchangeEventListener extends EventListener {
     @Override
     public void requestHeadersEnd(Call call, Request request) {
         Headers headers = request.headers();
-        preparedRequest.sentHeadersList = toHttpHeaders(headers);
+        if (enableNetworkLog) {
+            OkHttpRequestSnapshotCapture.capture(preparedRequest, request, false);
+        }
         if (!collectMetricsInfo) {
             return;
         }
         info.setHeaderBytesSent(headers.toString().getBytes(StandardCharsets.UTF_8).length);
         info.setRequestHeadersEnd(System.currentTimeMillis());
-        if (!enableNetworkLog) {
-            return;
-        }
-        StringBuilder sb = new StringBuilder();
-        sb.append("\n");
-        for (int i = 0; i < headers.size(); i++) {
-            String name = headers.name(i);
-            String value = headers.value(i);
-            if (name.equalsIgnoreCase("cookie")) {
-                // 只保留可见字符，避免乱码
-                value = value.replaceAll("[^\\x20-\\x7E]", "");
-            }
-            sb.append(name).append(": ").append(value).append("\n");
-        }
-        log(NetworkLogEventStage.REQUEST_HEADERS_END, sb.toString());
-    }
-
-    private List<HttpHeader> toHttpHeaders(Headers headers) {
-        if (headers == null || headers.size() == 0) {
-            return List.of();
-        }
-        List<HttpHeader> result = new ArrayList<>(headers.size());
-        for (int i = 0; i < headers.size(); i++) {
-            result.add(new HttpHeader(true, headers.name(i), headers.value(i)));
-        }
-        return result;
     }
 
     @Override
@@ -393,60 +370,6 @@ public class OkHttpExchangeEventListener extends EventListener {
         if (collectMetricsInfo) {
             info.setRequestBodyStart(System.currentTimeMillis());
         }
-        if (!collectEventInfo) {
-            return;
-        }
-        Request request = call.request();
-        if (request.body() != null) {
-            MediaType contentType = request.body().contentType();
-            String desc = null;
-            String type = null;
-            if (contentType != null) {
-                type = contentType.type().toLowerCase();
-                String subtype = contentType.subtype().toLowerCase();
-                if (type.equals("multipart")) {
-                    desc = "[multipart/form-data]";
-                } else if (type.equals("application") && (subtype.contains("octet-stream") || subtype.contains("binary"))) {
-                    desc = "[binary/octet-stream]";
-                } else if (type.equals("image") || type.equals("audio") || type.equals("video")) {
-                    desc = "[" + type + "/" + subtype + "]";
-                }
-            }
-            if (desc != null) {
-                // 尝试获取文件名
-                if (type.equals("multipart")) {
-                    desc = "[multipart/form-data] (see form files)";
-                } else {
-                    try {
-                        if (request.body().contentLength() > 0 && request.body().getClass().getSimpleName().toLowerCase().contains("file")) {
-                            desc += " (file upload)";
-                        }
-                    } catch (IOException ignored) {
-                    }
-                }
-                preparedRequest.sentRequestBody = desc;
-                log(NetworkLogEventStage.REQUEST_BODY_START, desc);
-            } else {
-                try {
-                    okio.Buffer buffer = new okio.Buffer();
-                    request.body().writeTo(buffer);
-                    String bodyString = buffer.readUtf8();
-                    preparedRequest.sentRequestBody = bodyString;
-                    if (!bodyString.isEmpty()) {
-                        log(NetworkLogEventStage.REQUEST_BODY_START, "\n" + bodyString);
-                    } else {
-                        log(NetworkLogEventStage.REQUEST_BODY_START, "Request body is empty");
-                    }
-                } catch (Exception e) {
-                    preparedRequest.sentRequestBody = "[读取请求体失败: " + e.getMessage() + "]";
-                    log(NetworkLogEventStage.REQUEST_BODY_START, "Failed to read request body: " + e.getMessage() + "\n" + getStackTrace(e));
-                }
-            }
-        } else {
-            preparedRequest.sentRequestBody = null;
-            log(NetworkLogEventStage.REQUEST_BODY_START, "No request body");
-        }
-
     }
 
     @Override

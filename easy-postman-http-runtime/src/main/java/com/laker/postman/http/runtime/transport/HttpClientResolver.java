@@ -85,14 +85,19 @@ public final class HttpClientResolver {
                                             PreparedRequest preparedRequest,
                                             int timeoutMs) {
         OkHttpClient.Builder builder = baseClient.newBuilder();
-        builder.addNetworkInterceptor(new CompressionDecompressNetworkInterceptor());
-
-        applyRequestSettings(builder, preparedRequest);
-
         boolean needEventListener = preparedRequest.collectBasicInfo
                 || preparedRequest.collectMetricsInfo
                 || preparedRequest.collectEventInfo
                 || preparedRequest.enableNetworkLog;
+        if (CookieHeaderMergeNetworkInterceptor.hasEnabledExplicitCookieHeader(preparedRequest)) {
+            builder.addNetworkInterceptor(new CookieHeaderMergeNetworkInterceptor(preparedRequest));
+        }
+        if (preparedRequest.enableNetworkLog) {
+            builder.addNetworkInterceptor(new RequestSnapshotNetworkInterceptor(preparedRequest));
+        }
+        builder.addNetworkInterceptor(new CompressionDecompressNetworkInterceptor());
+
+        applyRequestSettings(builder, preparedRequest);
 
         if (needEventListener) {
             builder.eventListenerFactory(call -> new OkHttpExchangeEventListener(preparedRequest));

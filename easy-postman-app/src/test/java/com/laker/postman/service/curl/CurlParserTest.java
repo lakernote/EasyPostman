@@ -1,12 +1,14 @@
 package com.laker.postman.service.curl;
 
 import com.laker.postman.http.runtime.model.PreparedRequest;
+import com.laker.postman.http.request.PreparedRequestFactory;
 import com.laker.postman.request.model.AuthType;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpParam;
 import com.laker.postman.request.model.HttpFormData;
 import com.laker.postman.request.model.HttpFormUrlencoded;
 import com.laker.postman.request.model.HttpRequestItem;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.request.model.TransportAuth;
 
 import org.testng.annotations.DataProvider;
@@ -1284,5 +1286,34 @@ public class CurlParserTest {
 
         assertNotNull(item);
         assertEquals(item.getBody(), "{\"name\":\"张三\",\"roles\":[\"admin\",\"user\"]}");
+    }
+
+    @Test(description = "测试 ChatGPT SSE cURL 导入后保留 cookie、SSE 协议和 raw JSON body")
+    public void testChatGptSseCurlImportPreservesSendShape() {
+        String body = "{\"action\":\"next\",\"messages\":[{\"content\":{\"parts\":[\"1\"]}}]}";
+        String curl = "curl 'https://chatgpt.com/backend-api/f/conversation' " +
+                "-H 'Content-Type: application/json' " +
+                "-H 'accept: text/event-stream' " +
+                "-H 'Authorization: Bearer token' " +
+                "-H 'OpenAI-Sentinel-Chat-Requirements-Token: challenge-token' " +
+                "-b 'cf_clearance=clearance; __Secure-oai-is=ois; __cf_bm=bm' " +
+                "--data-raw '" + body + "'";
+
+        HttpRequestItem item = CurlImportUtil.fromCurl(curl);
+
+        assertNotNull(item);
+        assertEquals(item.getProtocol(), RequestItemProtocolEnum.SSE);
+        assertEquals(item.getMethod(), "POST");
+        assertEquals(item.getBody(), body);
+        assertEquals(findHeaderValue(item.getHeadersList(), "accept"), "text/event-stream");
+        assertEquals(findHeaderValue(item.getHeadersList(), "Cookie"),
+                "cf_clearance=clearance; __Secure-oai-is=ois; __cf_bm=bm");
+
+        PreparedRequest preparedRequest = PreparedRequestFactory.buildWithoutInheritance(item);
+
+        assertEquals(preparedRequest.body, body);
+        assertEquals(findHeaderValue(preparedRequest.headersList, "Content-Type"), "application/json");
+        assertEquals(findHeaderValue(preparedRequest.headersList, "Cookie"),
+                "cf_clearance=clearance; __Secure-oai-is=ois; __cf_bm=bm");
     }
 }

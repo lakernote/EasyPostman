@@ -35,7 +35,12 @@ public class TabBarBuilder {
      * 为WebSocket协议创建Tab配置
      */
     public static TabConfig createWebSocketTabs() {
-        return createSSETabs();
+        String[] names = new String[]{
+                I18nUtil.getMessage(MessageKeys.MENU_FILE_LOG),
+                I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS),
+                I18nUtil.getMessage(MessageKeys.TAB_NETWORK_LOG)
+        };
+        return createTabConfig(names, null);
     }
 
     /**
@@ -44,7 +49,8 @@ public class TabBarBuilder {
     public static TabConfig createSSETabs() {
         String[] names = new String[]{
                 I18nUtil.getMessage(MessageKeys.MENU_FILE_LOG),
-                I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS)
+                I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS),
+                I18nUtil.getMessage(MessageKeys.TAB_NETWORK_LOG)
         };
         return createTabConfig(names, null);
     }

@@ -48,6 +48,10 @@ final class WebSocketRequestExecutionHelper {
     }
 
     SwingWorker<Void, Void> createWorker(PreparedRequest req, ScriptExecutionPipeline pipeline) {
+        req.collectBasicInfo = true;
+        req.collectMetricsInfo = true;
+        req.collectEventInfo = true;
+        req.enableNetworkLog = true;
         WebSocketSession session = new WebSocketSession(req, pipeline);
         requestExecutionState.beginWebSocketConnection(session.connectionId());
 
@@ -136,6 +140,8 @@ final class WebSocketRequestExecutionHelper {
                         requestExecutionUiHelper.activateWebSocketBodyTab();
                         requestExecutionUiHelper.switchSendButtonToClose();
                         requestExecutionUiHelper.setWebSocketConnected(true);
+                        responsePanel.setRequestDetails(req);
+                        responsePanel.setResponseDetails(WebSocketSession.this.response);
                     });
                     if (shouldHandleActiveCallback(null)) {
                         requestStreamUiHelper.appendWebSocketMessage(MessageType.CONNECTED, response.message());
@@ -276,6 +282,7 @@ final class WebSocketRequestExecutionHelper {
                 return;
             }
             requestExecutionUiHelper.updateUIForResponse(response);
+            responsePanel.setRequestDetails(req);
             responsePanel.setResponseDetails(response);
             requestExecutionUiHelper.resetSendButton();
             requestExecutionUiHelper.setWebSocketConnected(false);

@@ -6,6 +6,9 @@ import com.laker.postman.http.runtime.cookie.HttpCookieStore;
 import com.laker.postman.http.runtime.transport.DefaultHttpTransport;
 import com.laker.postman.http.runtime.transport.HttpExchangeOptions;
 import com.laker.postman.http.runtime.transport.HttpTransport;
+import com.laker.postman.http.runtime.transport.RealtimeConnectionHandle;
+import com.laker.postman.http.runtime.transport.RealtimeConnectionOptions;
+import com.laker.postman.http.runtime.transport.RealtimeWebSocketConnection;
 import com.laker.postman.request.model.AuthType;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpFormData;
@@ -21,11 +24,15 @@ import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import okhttp3.HttpUrl;
 import okhttp3.Protocol;
+import okhttp3.WebSocket;
+import okhttp3.WebSocketListener;
 import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import okhttp3.mockwebserver.SocketPolicy;
+import okhttp3.sse.EventSource;
+import okhttp3.sse.EventSourceListener;
 import okhttp3.tls.HandshakeCertificates;
 import okhttp3.tls.HeldCertificate;
 import okio.Buffer;
@@ -41,10 +48,12 @@ import java.security.MessageDigest;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPOutputStream;
 
@@ -134,6 +143,243 @@ public class DefaultHttpTransportIntegrationTest {
 
         assertEquals(recordedRequest.getHeader("Content-Type"), "application/json");
         assertEquals(recordedRequest.getBody().readUtf8(), request.body);
+    }
+
+    @Test
+    public void shouldCaptureSentSnapshotForFailedSseRequest() throws Exception {
+        server = createServer();
+        server.enqueue(new MockResponse()
+                .setResponseCode(403)
+                .addHeader("Content-Type", "application/json")
+                .setBody("{\"error\":\"forbidden\"}"));
+
+        PreparedRequest request = createRequest("POST", serverUrl("/stream"));
+        request.body = "{\"action\":\"next\",\"messages\":[{\"content\":\"hello\"}]}";
+        request.headersList.add(new HttpHeader(true, "Content-Type", "application/json"));
+        request.headersList.add(new HttpHeader(true, "Accept", "text/event-stream"));
+        request.collectBasicInfo = true;
+        request.collectEventInfo = true;
+        request.enableNetworkLog = true;
+        List<NetworkLogEvent> events = Collections.synchronizedList(new ArrayList<>());
+        request.networkLogSink = events::add;
+
+        CountDownLatch failed = new CountDownLatch(1);
+        RealtimeConnectionHandle handle = httpTransport.openSse(
+                request,
+                new EventSourceListener() {
+                    @Override
+                    public void onFailure(EventSource eventSource, Throwable t, okhttp3.Response response) {
+                        failed.countDown();
+                    }
+                },
+                RealtimeConnectionOptions.defaults()
+        );
+        try {
+            assertTrue(failed.await(2, TimeUnit.SECONDS), "SSE 403 should report failure");
+        } finally {
+            handle.cancel();
+        }
+
+        RecordedRequest recordedRequest = server.takeRequest(1, TimeUnit.SECONDS);
+        assertNotNull(recordedRequest);
+        assertEquals(recordedRequest.getMethod(), "POST");
+        assertEquals(recordedRequest.getBody().readUtf8(), request.body);
+        assertNotNull(request.sentHeadersList);
+        assertEquals(request.sentRequestBody, request.body);
+        assertEquals(findHeaderValue(request.sentHeadersList, "Content-Type"), "application/json");
+        assertEquals(findHeaderValue(request.sentHeadersList, "Accept"), "text/event-stream");
+        assertEquals(findHeaderValue(request.sentHeadersList, "Host"), recordedRequest.getHeader("Host"));
+        assertEquals(findHeaderValue(request.sentHeadersList, "Content-Length"),
+                String.valueOf(request.body.getBytes(StandardCharsets.UTF_8).length));
+        assertTrue(events.stream().anyMatch(event -> event.stage() == NetworkLogEventStage.REQUEST_HEADERS_END),
+                "SSE network log should include actual sent headers");
+        assertTrue(events.stream().anyMatch(event -> event.stage() == NetworkLogEventStage.REQUEST_BODY_START),
+                "SSE network log should include actual sent body snapshot");
+        assertTrue(events.stream().anyMatch(event -> event.stage() == NetworkLogEventStage.RESPONSE_HEADERS_END),
+                "SSE network log should include handshake response headers");
+    }
+
+    @Test
+    public void shouldNotifyCookieChangeForSseHandshakeSetCookie() throws Exception {
+        server = createServer();
+        server.enqueue(new MockResponse()
+                .setResponseCode(403)
+                .addHeader("Set-Cookie", "sse_token=abc123; Path=/")
+                .setBody("forbidden"));
+
+        CountDownLatch failed = new CountDownLatch(1);
+        CountDownLatch cookieChanged = new CountDownLatch(1);
+        Runnable cookieListener = cookieChanged::countDown;
+        HttpCookieStore.registerCookieChangeListener(cookieListener);
+        RealtimeConnectionHandle handle = null;
+        try {
+            PreparedRequest request = createRequest("GET", serverUrl("/stream"));
+            request.headersList.add(new HttpHeader(true, "Accept", "text/event-stream"));
+            request.notifyCookieChanges = true;
+
+            handle = httpTransport.openSse(
+                    request,
+                    new EventSourceListener() {
+                        @Override
+                        public void onFailure(EventSource eventSource, Throwable t, okhttp3.Response response) {
+                            failed.countDown();
+                        }
+                    },
+                    RealtimeConnectionOptions.defaults()
+            );
+
+            assertTrue(failed.await(2, TimeUnit.SECONDS), "SSE handshake should complete with failure");
+            assertTrue(cookieChanged.await(2, TimeUnit.SECONDS),
+                    "SSE Set-Cookie should notify the cookie manager");
+        } finally {
+            HttpCookieStore.unregisterCookieChangeListener(cookieListener);
+            if (handle != null) {
+                handle.cancel();
+            }
+        }
+    }
+
+    @Test
+    public void shouldTruncateCapturedSentRequestBodyForNetworkLogSnapshot() throws Exception {
+        server = createServer();
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody("ok"));
+
+        PreparedRequest request = createRequest("POST", serverUrl("/large"));
+        request.body = "x".repeat(3 * 1024);
+        request.headersList.add(new HttpHeader(true, "Content-Type", "text/plain"));
+        request.collectBasicInfo = true;
+        request.collectEventInfo = true;
+        request.enableNetworkLog = true;
+
+        httpTransport.execute(request, HttpExchangeOptions.defaults());
+        RecordedRequest recordedRequest = server.takeRequest();
+
+        assertEquals(recordedRequest.getBody().readUtf8(), request.body);
+        assertNotNull(request.sentRequestBody);
+        assertFalse(request.sentRequestBody.equals(request.body));
+        assertTrue(request.sentRequestBody.contains("Truncated request body"));
+        assertTrue(request.sentRequestBody.length() < request.body.length());
+    }
+
+    @Test
+    public void shouldNotCaptureSnapshotsOrNetworkLogForMetricsOnlyRequests() throws Exception {
+        server = createServer();
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody("ok"));
+
+        PreparedRequest request = createRequest("POST", serverUrl("/metrics-only"));
+        request.body = "{\"payload\":\"hello\"}";
+        request.headersList.add(new HttpHeader(true, "Content-Type", "application/json"));
+        request.collectBasicInfo = true;
+        request.collectMetricsInfo = true;
+        request.collectEventInfo = false;
+        request.enableNetworkLog = false;
+        List<NetworkLogEvent> events = Collections.synchronizedList(new ArrayList<>());
+        request.networkLogSink = events::add;
+
+        HttpResponse response = httpTransport.execute(request, HttpExchangeOptions.defaults());
+        RecordedRequest recordedRequest = server.takeRequest();
+
+        assertEquals(response.code, 200);
+        assertEquals(recordedRequest.getBody().readUtf8(), request.body);
+        assertEquals(request.sentHeadersList, null);
+        assertEquals(request.sentRequestBody, null);
+        assertTrue(events.isEmpty());
+    }
+
+    @Test
+    public void shouldCaptureSentSnapshotAndNetworkLogForWebSocketHandshake() throws Exception {
+        server = createServer();
+        server.enqueue(new MockResponse().withWebSocketUpgrade(new WebSocketListener() {
+            @Override
+            public void onOpen(WebSocket webSocket, okhttp3.Response response) {
+                webSocket.close(1000, "ok");
+            }
+        }));
+
+        PreparedRequest request = createRequest("GET", serverUrl("/ws").replaceFirst("^http://", "ws://"));
+        request.headersList.add(new HttpHeader(true, "X-Trace", "trace-1"));
+        request.collectBasicInfo = true;
+        request.collectEventInfo = true;
+        request.enableNetworkLog = true;
+        List<NetworkLogEvent> events = Collections.synchronizedList(new ArrayList<>());
+        request.networkLogSink = events::add;
+
+        CountDownLatch opened = new CountDownLatch(1);
+        RealtimeWebSocketConnection connection = httpTransport.openWebSocket(
+                request,
+                new WebSocketListener() {
+                    @Override
+                    public void onOpen(WebSocket webSocket, okhttp3.Response response) {
+                        opened.countDown();
+                    }
+                },
+                RealtimeConnectionOptions.defaults()
+        );
+        try {
+            assertTrue(opened.await(2, TimeUnit.SECONDS), "WebSocket handshake should open");
+        } finally {
+            connection.close(1000, "test done");
+        }
+
+        RecordedRequest recordedRequest = server.takeRequest(1, TimeUnit.SECONDS);
+        assertNotNull(recordedRequest);
+        assertEquals(recordedRequest.getMethod(), "GET");
+        assertEquals(recordedRequest.getPath(), "/ws");
+        assertEquals(recordedRequest.getHeader("X-Trace"), "trace-1");
+        assertNotNull(request.sentHeadersList);
+        assertEquals(findHeaderValue(request.sentHeadersList, "X-Trace"), "trace-1");
+        assertEquals(findHeaderValue(request.sentHeadersList, "Host"), recordedRequest.getHeader("Host"));
+        assertNotNull(findHeaderValue(request.sentHeadersList, "Sec-WebSocket-Key"));
+        waitForNetworkLogStage(events, NetworkLogEventStage.CALL_START);
+        assertTrue(events.stream().anyMatch(event -> event.stage() == NetworkLogEventStage.CALL_START),
+                "WebSocket handshake should publish network log events through the shared sink");
+    }
+
+    @Test
+    public void shouldNotifyCookieChangeForWebSocketHandshakeSetCookie() throws Exception {
+        server = createServer();
+        server.enqueue(new MockResponse()
+                .addHeader("Set-Cookie", "ws_token=abc123; Path=/")
+                .withWebSocketUpgrade(new WebSocketListener() {
+                    @Override
+                    public void onOpen(WebSocket webSocket, okhttp3.Response response) {
+                        webSocket.close(1000, "ok");
+                    }
+                }));
+
+        CountDownLatch opened = new CountDownLatch(1);
+        CountDownLatch cookieChanged = new CountDownLatch(1);
+        Runnable cookieListener = cookieChanged::countDown;
+        HttpCookieStore.registerCookieChangeListener(cookieListener);
+        RealtimeWebSocketConnection connection = null;
+        try {
+            PreparedRequest request = createRequest("GET", serverUrl("/ws").replaceFirst("^http://", "ws://"));
+            request.notifyCookieChanges = true;
+
+            connection = httpTransport.openWebSocket(
+                    request,
+                    new WebSocketListener() {
+                        @Override
+                        public void onOpen(WebSocket webSocket, okhttp3.Response response) {
+                            opened.countDown();
+                        }
+                    },
+                    RealtimeConnectionOptions.defaults()
+            );
+
+            assertTrue(opened.await(2, TimeUnit.SECONDS), "WebSocket handshake should open");
+            assertTrue(cookieChanged.await(2, TimeUnit.SECONDS),
+                    "WebSocket Set-Cookie should notify the cookie manager");
+        } finally {
+            HttpCookieStore.unregisterCookieChangeListener(cookieListener);
+            if (connection != null) {
+                connection.close(1000, "test done");
+            }
+        }
     }
 
     @Test
@@ -857,6 +1103,113 @@ public class DefaultHttpTransportIntegrationTest {
     }
 
     @Test
+    public void shouldMergeCookieJarWithExplicitCookieHeaderForLoggedRequests() throws Exception {
+        server = createServer();
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .addHeader("Set-Cookie", "__cf_bm=jar-value; Path=/")
+                .addHeader("Set-Cookie", "_cfuvid=jar-fuvid; Path=/")
+                .setBody("cookie-set"));
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody("cookie-check"));
+
+        PreparedRequest firstRequest = createRequest("POST", serverUrl("/cookie/set"));
+        firstRequest.body = "{}";
+        firstRequest.headersList.add(new HttpHeader(true, "Content-Type", "application/json"));
+        firstRequest.headersList.add(new HttpHeader(true, "Cookie", "browser_session=keep; __cf_bm=old-value"));
+        firstRequest.enableNetworkLog = true;
+
+        PreparedRequest secondRequest = createRequest("POST", serverUrl("/cookie/check"));
+        secondRequest.body = "{}";
+        secondRequest.headersList.add(new HttpHeader(true, "Content-Type", "application/json"));
+        secondRequest.headersList.add(new HttpHeader(true, "Cookie", "browser_session=keep; __cf_bm=old-value"));
+        secondRequest.enableNetworkLog = true;
+
+        httpTransport.execute(firstRequest, HttpExchangeOptions.defaults());
+        httpTransport.execute(secondRequest, HttpExchangeOptions.defaults());
+        server.takeRequest();
+        RecordedRequest cookieRequest = server.takeRequest();
+
+        String cookie = cookieRequest.getHeader("Cookie");
+        assertNotNull(cookie);
+        assertTrue(cookie.contains("browser_session=keep"));
+        assertTrue(cookie.contains("__cf_bm=jar-value"));
+        assertTrue(cookie.contains("_cfuvid=jar-fuvid"));
+        assertFalse(cookie.contains("__cf_bm=old-value"));
+    }
+
+    @Test
+    public void shouldMergeCookieJarWithExplicitCookieHeaderWhenNetworkLogDisabled() throws Exception {
+        server = createServer();
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .addHeader("Set-Cookie", "__cf_bm=jar-value; Path=/")
+                .addHeader("Set-Cookie", "_cfuvid=jar-fuvid; Path=/")
+                .setBody("cookie-set"));
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody("cookie-check"));
+
+        PreparedRequest firstRequest = createRequest("POST", serverUrl("/cookie/set"));
+        firstRequest.body = "{}";
+        firstRequest.headersList.add(new HttpHeader(true, "Content-Type", "application/json"));
+        firstRequest.headersList.add(new HttpHeader(true, "Cookie", "browser_session=keep; __cf_bm=old-value"));
+        firstRequest.enableNetworkLog = false;
+
+        PreparedRequest secondRequest = createRequest("POST", serverUrl("/cookie/check"));
+        secondRequest.body = "{}";
+        secondRequest.headersList.add(new HttpHeader(true, "Content-Type", "application/json"));
+        secondRequest.headersList.add(new HttpHeader(true, "Cookie", "browser_session=keep; __cf_bm=old-value"));
+        secondRequest.enableNetworkLog = false;
+
+        httpTransport.execute(firstRequest, HttpExchangeOptions.defaults());
+        httpTransport.execute(secondRequest, HttpExchangeOptions.defaults());
+        server.takeRequest();
+        RecordedRequest cookieRequest = server.takeRequest();
+
+        String cookie = cookieRequest.getHeader("Cookie");
+        assertNotNull(cookie);
+        assertTrue(cookie.contains("browser_session=keep"));
+        assertTrue(cookie.contains("__cf_bm=jar-value"));
+        assertTrue(cookie.contains("_cfuvid=jar-fuvid"));
+        assertFalse(cookie.contains("__cf_bm=old-value"));
+    }
+
+    @Test
+    public void shouldPreserveDuplicateCookieNamesFromCookieJarWhenMergingExplicitCookieHeader() throws Exception {
+        server = createServer();
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .addHeader("Set-Cookie", "jar_token=abc123; Path=/")
+                .setBody("cookie-set"));
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody("cookie-check"));
+
+        PreparedRequest firstRequest = createRequest("GET", serverUrl("/api/set"));
+        firstRequest.cookieJarEnabled = true;
+
+        PreparedRequest secondRequest = createRequest("GET", serverUrl("/api/check"));
+        secondRequest.cookieJarEnabled = true;
+        secondRequest.headersList.add(new HttpHeader(true, "Cookie",
+                "browser_session=keep; theme=root; theme=api"));
+
+        httpTransport.execute(firstRequest, HttpExchangeOptions.defaults());
+        httpTransport.execute(secondRequest, HttpExchangeOptions.defaults());
+        server.takeRequest();
+        RecordedRequest cookieRequest = server.takeRequest();
+
+        String cookie = cookieRequest.getHeader("Cookie");
+        assertNotNull(cookie);
+        assertTrue(cookie.contains("browser_session=keep"));
+        assertTrue(cookie.contains("theme=root"));
+        assertTrue(cookie.contains("theme=api"));
+        assertTrue(cookie.contains("jar_token=abc123"));
+        assertEquals(countOccurrences(cookie, "theme="), 2);
+    }
+
+    @Test
     public void shouldRespectRequestTimeoutWhenServerDoesNotRespond() throws Exception {
         server = createServer();
         server.enqueue(new MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE));
@@ -973,6 +1326,27 @@ public class DefaultHttpTransportIntegrationTest {
             }
         }
         return null;
+    }
+
+    private void waitForNetworkLogStage(List<NetworkLogEvent> events,
+                                        NetworkLogEventStage expectedStage) throws InterruptedException {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+        while (System.nanoTime() < deadline) {
+            if (events.stream().anyMatch(event -> event.stage() == expectedStage)) {
+                return;
+            }
+            Thread.sleep(10);
+        }
+    }
+
+    private int countOccurrences(String value, String token) {
+        int count = 0;
+        int index = 0;
+        while ((index = value.indexOf(token, index)) != -1) {
+            count++;
+            index += token.length();
+        }
+        return count;
     }
 
     private MockResponse digestChallenge(String realm, String nonce, String opaque, boolean stale) {

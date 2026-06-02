@@ -26,6 +26,7 @@ import java.util.Map;
 public class HttpHtmlRenderer {
 
     private static final int MAX_DISPLAY_SIZE = 2 * 1024;
+    private static final int MAX_REQUEST_DISPLAY_SIZE = 2 * 1024;
 
     // ==================== 字号 ====================
 
@@ -127,10 +128,14 @@ public class HttpHtmlRenderer {
         sb.append(kvRow(colorPrimary(), "URL",    escapeHtml(safeStr(req.url)),    false));
         sb.append(kvRow(colorPrimary(), "Method", escapeHtml(safeStr(req.method)), true));
 
-        if (req.sentHeadersList != null && !req.sentHeadersList.isEmpty()) {
-            sb.append(sectionTitle(colorPrimary(), "Headers"));
-            for (int i = 0; i < req.sentHeadersList.size(); i++) {
-                HttpHeader header = req.sentHeadersList.get(i);
+        boolean hasSentHeaders = hasHeaders(req.sentHeadersList);
+        List<HttpHeader> displayHeaders = hasSentHeaders
+                ? req.sentHeadersList
+                : enabledHeaders(req.headersList);
+        if (!displayHeaders.isEmpty()) {
+            sb.append(sectionTitle(colorPrimary(), hasSentHeaders ? "Sent Headers" : "Configured Headers"));
+            for (int i = 0; i < displayHeaders.size(); i++) {
+                HttpHeader header = displayHeaders.get(i);
                 if (header == null) {
                     continue;
                 }
@@ -164,9 +169,11 @@ public class HttpHtmlRenderer {
                     sb.append(kvRow(colorPrimary(), escapeHtml(e.getKey()), escapeHtml(e.getValue()), idx[0]++ % 2 != 0)));
         }
 
-        if (isNotEmpty(req.sentRequestBody)) {
-            sb.append(sectionTitle(colorPrimary(), "Body"));
-            sb.append(codeBlock(truncate(req.sentRequestBody)));
+        boolean hasSentSnapshot = hasSentHeaders || req.sentRequestBody != null;
+        String displayBody = hasSentSnapshot ? req.sentRequestBody : req.body;
+        if (isNotEmpty(displayBody)) {
+            sb.append(sectionTitle(colorPrimary(), isNotEmpty(req.sentRequestBody) ? "Sent Body" : "Configured Body"));
+            sb.append(codeBlock(truncate(displayBody, MAX_REQUEST_DISPLAY_SIZE)));
         }
 
         return htmlDoc(sb.toString());
@@ -471,15 +478,32 @@ public class HttpHtmlRenderer {
     private static String safeStr(String s) { return s != null ? s : "-"; }
     private static boolean isNotEmpty(String s) { return s != null && !s.isEmpty(); }
 
+    private static boolean hasHeaders(List<HttpHeader> headers) {
+        return headers != null && !headers.isEmpty();
+    }
+
+    private static List<HttpHeader> enabledHeaders(List<HttpHeader> headers) {
+        if (headers == null || headers.isEmpty()) {
+            return List.of();
+        }
+        return headers.stream()
+                .filter(header -> header != null && header.isEnabled())
+                .toList();
+    }
+
     private static String formatMillis(long millis) {
         return millis <= 0 ? "-" : new SimpleDateFormat("HH:mm:ss.SSS").format(new Date(millis));
     }
 
     private static String truncate(String content) {
+        return truncate(content, MAX_DISPLAY_SIZE);
+    }
+
+    private static String truncate(String content, int maxDisplaySize) {
         if (content == null) return "";
-        if (content.length() <= MAX_DISPLAY_SIZE) return content;
-        return content.substring(0, MAX_DISPLAY_SIZE)
-                + "\n\n[Truncated: " + content.length() + " chars, showing first " + (MAX_DISPLAY_SIZE / 1024) + "KB]";
+        if (content.length() <= maxDisplaySize) return content;
+        return content.substring(0, maxDisplaySize)
+                + "\n\n[Truncated: " + content.length() + " chars, showing first " + (maxDisplaySize / 1024) + "KB]";
     }
 
     public static String escapeHtml(String s) {

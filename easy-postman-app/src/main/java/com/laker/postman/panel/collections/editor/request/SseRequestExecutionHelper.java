@@ -44,8 +44,9 @@ final class SseRequestExecutionHelper {
 
     SwingWorker<Void, Void> createWorker(PreparedRequest req, ScriptExecutionPipeline pipeline) {
         req.collectBasicInfo = true;
+        req.collectMetricsInfo = true;
         req.collectEventInfo = true;
-        req.enableNetworkLog = false;
+        req.enableNetworkLog = true;
         return new SwingWorker<>() {
             HttpResponse resp;
             StringBuilder sseBodyBuilder;

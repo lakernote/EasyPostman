@@ -68,9 +68,10 @@ public class ResponsePanel extends JPanel {
             cardPanel = new JPanel(new CardLayout());
             webSocketResponsePanel = new WebSocketResponsePanel();
             responseHeadersPanel = new ResponseHeadersPanel();
+            networkLogPanel = new NetworkLogPanel();
             cardPanel.add(webSocketResponsePanel, tabNames[0]);
             cardPanel.add(responseHeadersPanel, tabNames[1]);
-            networkLogPanel = null;
+            cardPanel.add(networkLogPanel, tabNames[2]);
             timelinePanel = null;
             responseBodyPanel = null;
             testsPane = null;
@@ -89,9 +90,10 @@ public class ResponsePanel extends JPanel {
             cardPanel = new JPanel(new CardLayout());
             sseResponsePanel = new SSEResponsePanel();
             responseHeadersPanel = new ResponseHeadersPanel();
+            networkLogPanel = new NetworkLogPanel();
             cardPanel.add(sseResponsePanel, tabNames[0]);
             cardPanel.add(responseHeadersPanel, tabNames[1]);
-            networkLogPanel = null;
+            cardPanel.add(networkLogPanel, tabNames[2]);
             timelinePanel = null;
             responseBodyPanel = null;
             webSocketResponsePanel = null;
@@ -244,10 +246,14 @@ public class ResponsePanel extends JPanel {
         tabBadgeController.updateResponseHeadersCount(0);
         if (protocol.isWebSocketProtocol()) {
             webSocketResponsePanel.clearMessages();
+            networkLogPanel.clearLog();
+            networkLogPanel.clearAllDetails();
         }
 
         if (protocol.isSseProtocol()) {
             sseResponsePanel.clearMessages();
+            networkLogPanel.clearLog();
+            networkLogPanel.clearAllDetails();
         }
         if (protocol.isHttpProtocol()) {
             responseBodyPanel.setBodyText(null);

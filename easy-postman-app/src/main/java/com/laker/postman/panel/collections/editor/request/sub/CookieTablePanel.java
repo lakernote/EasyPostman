@@ -1,14 +1,12 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
 import com.laker.postman.request.model.CookieInfo;
-
-
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.button.*;
 import com.laker.postman.panel.http.runtime.SwingHttpRuntimeInteractionAdapter;
 import com.laker.postman.http.runtime.cookie.HttpCookieStore;
 import com.laker.postman.util.FontsUtil;
+import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 
@@ -259,7 +257,7 @@ public class CookieTablePanel extends JPanel {
         );
         label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +2));
         try {
-            label.setIcon(new FlatSVGIcon("icons/cookie.svg", 48, 48));
+            label.setIcon(IconUtil.create("icons/cookie.svg", 48, 48));
         } catch (Exception e) {
             // 图标加载失败也不影响
         }

@@ -13,7 +13,7 @@ class SidebarTheme {
     }
 
     Color selectedTabTitleForeground() {
-        return ModernColors.getTextPrimary();
+        return ModernColors.getPrimary();
     }
 
     GradientPaint selectedTabIndicatorPaint(int indicatorHeight) {

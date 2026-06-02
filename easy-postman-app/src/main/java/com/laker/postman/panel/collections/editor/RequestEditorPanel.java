@@ -27,8 +27,8 @@ import static com.formdev.flatlaf.FlatClientProperties.*;
  * 请求编辑面板，支持多标签页，每个标签页为独立的请求编辑子面板
  */
 public class RequestEditorPanel extends UiSingletonPanel {
-    public static final String REQUEST_STRING = I18nUtil.getMessage(MessageKeys.NEW_REQUEST);
-    public static final String PLUS_TAB = "+";
+    private static final String REQUEST_STRING = I18nUtil.getMessage(MessageKeys.NEW_REQUEST);
+    static final String PLUS_TAB = "+";
     @Getter
     private JTabbedPane tabbedPane; // 使用 JTabbedPane 管理多个请求编辑子面板
 
@@ -58,7 +58,7 @@ public class RequestEditorPanel extends UiSingletonPanel {
     // 新建Tab，可指定标题
     public RequestEditSubPanel addNewTab(String title, RequestItemProtocolEnum protocol) {
         cancelStartupRestoreAutoSelectionIfNeeded();
-        return getTabLifecycleController().addNewRequestTab(title, protocol);
+        return tabLifecycleController.addNewRequestTab(title, protocol);
     }
 
     // 新建Tab，可指定标题
@@ -68,22 +68,12 @@ public class RequestEditorPanel extends UiSingletonPanel {
 
     // 添加"+"Tab
     public void addPlusTab() {
-        getTabLifecycleController().addPlusTab();
+        tabLifecycleController.addPlusTab();
     }
 
     // 判断是否为“+”Tab
     private boolean isPlusTab(int idx) {
-        return getTabLifecycleController().isPlusTab(idx);
-    }
-
-    // 获取当前激活的请求内容
-    public HttpRequestItem getCurrentRequest() {
-        return getTabStateController().currentRequest();
-    }
-
-    // 更新当前Tab内容
-    public void updateRequest(HttpRequestItem item) {
-        getTabStateController().updateCurrentRequest(item);
+        return tabLifecycleController.isPlusTab(idx);
     }
 
     /**
@@ -95,7 +85,7 @@ public class RequestEditorPanel extends UiSingletonPanel {
      * 4. 预览 tab 会在标题显示斜体，提示这是临时的
      */
     public void showOrCreatePreviewTab(HttpRequestItem item) {
-        getTabOpenController().showOrCreateRequestPreview(item);
+        tabOpenController.showOrCreateRequestPreview(item);
     }
 
     /**
@@ -109,21 +99,18 @@ public class RequestEditorPanel extends UiSingletonPanel {
      * 显示或创建 Group 的预览 tab（用于单击 Group 时）
      */
     public void showOrCreatePreviewTabForGroup(DefaultMutableTreeNode groupNode, RequestGroup group) {
-        getTabOpenController().showOrCreateGroupPreview(groupNode, group);
+        tabOpenController.showOrCreateGroupPreview(groupNode, group);
     }
 
     // showOrCreateTab 需适配 "+" Tab（双击时调用，创建固定 tab）
     public void showOrCreateTab(HttpRequestItem item) {
-        getTabOpenController().showOrCreateRequestTab(item);
+        tabOpenController.showOrCreateRequestTab(item);
     }
 
     /**
      * 重新加载快捷键（快捷键设置修改后调用）
      */
     public void reloadShortcuts() {
-        if (shortcutInstaller == null) {
-            shortcutInstaller = createShortcutInstaller();
-        }
         shortcutInstaller.install();
     }
 
@@ -131,7 +118,7 @@ public class RequestEditorPanel extends UiSingletonPanel {
      * 保存当前请求
      */
     public boolean saveCurrentRequest() {
-        return getSaveController().saveCurrentRequest();
+        return saveController.saveCurrentRequest();
     }
 
     protected Optional<CollectionGroupSelectionDialog.RequestNameSelection> chooseGroupAndRequestName(
@@ -143,39 +130,46 @@ public class RequestEditorPanel extends UiSingletonPanel {
 
     // 用于动态更新tab红点
     public void updateTabDirty(RequestEditSubPanel panel, boolean dirty) {
-        getTabStateController().updateRequestDirty(panel, dirty);
+        tabStateController.updateRequestDirty(panel, dirty);
     }
 
     public void updateTabProtocol(RequestEditSubPanel panel, RequestItemProtocolEnum protocol) {
-        getTabStateController().updateRequestProtocol(panel, protocol);
+        tabStateController.updateRequestProtocol(panel, protocol);
     }
 
     /**
      * 更新 GroupEditPanel 的 Tab 标题
      */
-    public void updateGroupTabTitle(GroupEditPanel panel, String newTitle) {
-        getTabStateController().updateGroupTitle(panel, newTitle);
+    void updateGroupTabTitle(GroupEditPanel panel, String newTitle) {
+        tabStateController.updateGroupTitle(panel, newTitle);
     }
 
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
-        // 设置tabbedPane为单行滚动模式，防止多行tab顺序混乱
-        tabbedPane = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
+        tabbedPane = createRequestTabbedPane();
         tabLifecycleController = new RequestEditorTabLifecycleController(
                 tabbedPane,
                 PLUS_TAB,
                 REQUEST_STRING,
                 () -> autoInitializeSelectedTabOnTabAdd,
                 this::initializeSelectedTabSoon);
-        // 设置整个tabbedPane区域的内边距
-        tabbedPane.putClientProperty(TABBED_PANE_TAB_AREA_INSETS, new Insets(0, 0, 0, 5));
-        // 设置tabbedPane中一个个头部标签的的内边距（上、左、下、右）
-        tabbedPane.putClientProperty(TABBED_PANE_TAB_INSETS, new Insets(3, 5, 3, 5));
-        tabbedPane.putClientProperty(TABBED_PANE_TAB_HEIGHT, 38); // 设置tab高度，配合内边距让tab更美观
-        tabInitializationScheduler = new RequestEditorTabInitializationScheduler(
-                tabbedPane,
-                () -> startupRestoreSelectingLastTab);
+        installDeferredTabInitialization();
+        add(tabbedPane, BorderLayout.CENTER);
+        installPreviewAndDragSupport();
+        createTabControllers();
+    }
+
+    private JTabbedPane createRequestTabbedPane() {
+        JTabbedPane tabs = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
+        tabs.putClientProperty(TABBED_PANE_TAB_AREA_INSETS, new Insets(0, 0, 0, 5));
+        tabs.putClientProperty(TABBED_PANE_TAB_INSETS, new Insets(3, 5, 3, 5));
+        tabs.putClientProperty(TABBED_PANE_TAB_HEIGHT, 38);
+        return tabs;
+    }
+
+    private void installDeferredTabInitialization() {
+        tabInitializationScheduler = new RequestEditorTabInitializationScheduler(tabbedPane, () -> startupRestoreSelectingLastTab);
         tabbedPane.addContainerListener(new ContainerAdapter() {
             @Override
             public void componentAdded(ContainerEvent e) {
@@ -185,26 +179,54 @@ public class RequestEditorPanel extends UiSingletonPanel {
             }
         });
         tabbedPane.addChangeListener(e -> tabInitializationScheduler.initializeSelectedTabSoon());
+    }
 
-        add(tabbedPane, BorderLayout.CENTER);
-
-        // 安装 Tab 拖拽排序支持（IDEA 风格蓝色竖线指示）
+    private void installPreviewAndDragSupport() {
         previewTabManager = new RequestEditorPreviewTabManager(
                 tabbedPane,
                 this::isPlusTab,
                 this::addPlusTab,
                 RequestEditorTabResourceCleaner::cleanup);
 
-        // 通过预览 Tab 管理器同步索引，确保拖拽移动后状态仍然正确
         dragHandler = TabbedPaneDragHandler.install(tabbedPane,
                 previewTabManager::previewTabIndex,
                 previewTabManager::setPreviewTabIndex);
     }
 
+    private void createTabControllers() {
+        tabStateController = new RequestEditorTabStateController(tabbedPane);
+        tabRemovalController = new RequestEditorTabRemovalController(tabbedPane, previewTabManager);
+        saveController = new RequestEditorSaveController(
+                this,
+                tabStateController::currentRequestTab,
+                this::promotePreviewTabToPermanent,
+                this::chooseGroupAndRequestName,
+                tabStateController::refreshNewRequestTab,
+                collectionTreeGateway);
+        tabCloseController = new RequestEditorTabCloseController(
+                tabbedPane,
+                this::isPlusTab,
+                this::saveCurrentRequest,
+                tabRemovalController::removeAt,
+                tabRemovalController::removeComponent);
+        tabOpenController = new RequestEditorTabOpenController(
+                tabbedPane,
+                previewTabManager,
+                new RequestEditorRequestScopeSynchronizer(),
+                this::cancelStartupRestoreAutoSelectionIfNeeded,
+                this::addPlusTab,
+                this::isPlusTab,
+                this::addNewTab,
+                (item, tab) -> tab.initPanelData(item),
+                REQUEST_STRING,
+                collectionTreeGateway);
+        shortcutInstaller = createShortcutInstaller();
+    }
+
     /**
      * 在下一轮 EDT 初始化当前选中的请求编辑器，保持切换直接且不额外引入定时器。
      */
-    public void initializeSelectedTabSoon() {
+    void initializeSelectedTabSoon() {
         tabInitializationScheduler.initializeSelectedTabSoon();
     }
 
@@ -225,7 +247,7 @@ public class RequestEditorPanel extends UiSingletonPanel {
 
     @Override
     protected void registerListeners() {
-        RequestSaveEventPublisher.register(updatedItem -> getTabStateController().syncSavedRequest(updatedItem));
+        RequestSaveEventPublisher.register(tabStateController::syncSavedRequest);
         reloadShortcuts();
         new RequestEditorPlusTabController(tabbedPane, this, PLUS_TAB, REQUEST_STRING, this::addNewTab).install();
     }
@@ -233,84 +255,11 @@ public class RequestEditorPanel extends UiSingletonPanel {
     private RequestEditorShortcutInstaller createShortcutInstaller() {
         return new RequestEditorShortcutInstaller(
                 this,
-                () -> getTabStateController().currentRequestTab(),
+                tabStateController::currentRequestTab,
                 () -> addNewTab(null),
                 this::closeCurrentTab,
                 this::closeOtherTabs,
                 this::closeAllTabs);
-    }
-
-    private RequestEditorTabCloseController getTabCloseController() {
-        if (tabCloseController == null) {
-            tabCloseController = new RequestEditorTabCloseController(
-                    tabbedPane,
-                    this::isPlusTab,
-                    () -> saveCurrentRequest(),
-                    index -> getTabRemovalController().removeAt(index),
-                    component -> getTabRemovalController().removeComponent(component));
-        }
-        return tabCloseController;
-    }
-
-    private RequestEditorSaveController getSaveController() {
-        if (saveController == null) {
-            saveController = new RequestEditorSaveController(
-                    this,
-                    () -> getTabStateController().currentRequestTab(),
-                    this::promotePreviewTabToPermanent,
-                    this::chooseGroupAndRequestName,
-                    (requestName, item) -> getTabStateController().refreshNewRequestTab(requestName, item),
-                    collectionTreeGateway);
-        }
-        return saveController;
-    }
-
-    private RequestEditorTabStateController getTabStateController() {
-        if (tabStateController == null) {
-            tabStateController = new RequestEditorTabStateController(tabbedPane);
-        }
-        return tabStateController;
-    }
-
-    private RequestEditorTabLifecycleController getTabLifecycleController() {
-        if (tabLifecycleController == null) {
-            tabLifecycleController = new RequestEditorTabLifecycleController(
-                    tabbedPane,
-                    PLUS_TAB,
-                    REQUEST_STRING,
-                    () -> autoInitializeSelectedTabOnTabAdd,
-                    this::initializeSelectedTabSoon);
-        }
-        return tabLifecycleController;
-    }
-
-    private RequestEditorTabRemovalController getTabRemovalController() {
-        if (tabRemovalController == null) {
-            tabRemovalController = new RequestEditorTabRemovalController(tabbedPane, previewTabManager);
-        }
-        return tabRemovalController;
-    }
-
-    private RequestEditorTabOpenController getTabOpenController() {
-        if (tabOpenController == null) {
-            tabOpenController = new RequestEditorTabOpenController(
-                    tabbedPane,
-                    previewTabManager,
-                    new RequestEditorRequestScopeSynchronizer(),
-                    this::cancelStartupRestoreAutoSelectionIfNeeded,
-                    this::addPlusTab,
-                    this::isPlusTab,
-                    this::addNewTab,
-                    (item, tab) -> tab.initPanelData(item),
-                    REQUEST_STRING,
-                    collectionTreeGateway);
-        }
-        return tabOpenController;
-    }
-
-
-    public RequestEditSubPanel getRequestEditSubPanel(String reqItemId) {
-        return getTabStateController().findRequestTab(reqItemId);
     }
 
     /**
@@ -318,52 +267,48 @@ public class RequestEditorPanel extends UiSingletonPanel {
      * 双击时调用，创建固定 tab
      */
     public void showGroupEditPanel(DefaultMutableTreeNode groupNode, RequestGroup group) {
-        getTabOpenController().showOrCreateGroupTab(groupNode, group);
+        tabOpenController.showOrCreateGroupTab(groupNode, group);
     }
 
     /**
      * 关闭当前标签页
      */
     public void closeCurrentTab() {
-        getTabCloseController().closeCurrentTab();
+        tabCloseController.closeCurrentTab();
     }
 
     /**
      * 关闭其他标签页
      */
     public void closeOtherTabs() {
-        getTabCloseController().closeOtherTabs();
+        tabCloseController.closeOtherTabs();
     }
 
     /**
      * 关闭所有标签页
      */
     public void closeAllTabs() {
-        getTabCloseController().closeAllTabs();
+        tabCloseController.closeAllTabs();
     }
 
     /**
      * 单击保存的响应：在预览 Tab 中显示
      */
     public void showOrCreatePreviewTabForSavedResponse(SavedResponse savedResponse) {
-        getTabOpenController().showOrCreateSavedResponsePreview(savedResponse);
+        tabOpenController.showOrCreateSavedResponsePreview(savedResponse);
     }
 
     /**
      * 双击保存的响应：在固定 Tab 中显示
      */
     public void showOrCreateTabForSavedResponse(SavedResponse savedResponse) {
-        getTabOpenController().showOrCreateSavedResponseTab(savedResponse);
+        tabOpenController.showOrCreateSavedResponseTab(savedResponse);
     }
 
     // ==================== Helper Methods ====================
 
     public void removeTabAtWithCleanup(int index) {
-        getTabRemovalController().removeAt(index);
-    }
-
-    public void removeTabComponentWithCleanup(Component component) {
-        getTabRemovalController().removeComponent(component);
+        tabRemovalController.removeAt(index);
     }
 
     /**
@@ -372,11 +317,11 @@ public class RequestEditorPanel extends UiSingletonPanel {
      * @param isVertical true=垂直布局，false=水平布局
      */
     public void updateAllTabsLayout(boolean isVertical) {
-        getTabStateController().updateAllRequestLayouts(isVertical);
+        tabStateController.updateAllRequestLayouts(isVertical);
     }
 
     public void updateAllRequestEditorTabsVisibility() {
-        getTabStateController().updateAllRequestEditorTabsVisibility();
+        tabStateController.updateAllRequestEditorTabsVisibility();
     }
 
 }

@@ -1,9 +1,6 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
 import com.laker.postman.request.model.HttpHeader;
-
-
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.button.EditButton;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.request.defaults.GeneratedRequestHeaderPolicy;
@@ -32,8 +29,8 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
     private final GeneratedRequestHeaderPolicy generatedHeaderPolicy;
 
     // UI components
-    private final FlatSVGIcon eyeOpenIcon;
-    private final FlatSVGIcon eyeCloseIcon;
+    private final Icon eyeOpenIcon;
+    private final Icon eyeCloseIcon;
     private JButton eyeButton;
     private JLabel countLabel;
     private EditButton bulkEditButton;

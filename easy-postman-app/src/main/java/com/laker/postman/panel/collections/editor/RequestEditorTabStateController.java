@@ -26,26 +26,11 @@ final class RequestEditorTabStateController {
         return null;
     }
 
-    HttpRequestItem currentRequest() {
-        RequestEditSubPanel subPanel = currentRequestTab();
-        return subPanel != null ? subPanel.getCurrentRequest() : null;
-    }
-
     void updateCurrentRequest(HttpRequestItem item) {
         RequestEditSubPanel subPanel = currentRequestTab();
         if (subPanel != null) {
             subPanel.initPanelData(item);
         }
-    }
-
-    RequestEditSubPanel findRequestTab(String requestItemId) {
-        for (int i = 0; i < tabbedPane.getTabCount() - 1; i++) {
-            Component component = tabbedPane.getComponentAt(i);
-            if (component instanceof RequestEditSubPanel subPanel && requestItemId.equals(subPanel.getId())) {
-                return subPanel;
-            }
-        }
-        return null;
     }
 
     void refreshNewRequestTab(String requestName, HttpRequestItem item) {

@@ -1,8 +1,7 @@
 package com.laker.postman.panel.topmenu;
 
-import com.laker.postman.common.UiSingletonMenuBar;
-import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.UiSingletonFactory;
+import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.model.GitOperation;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.panel.functional.FunctionalPanel;
@@ -13,11 +12,10 @@ import org.testng.annotations.Test;
 import java.awt.GraphicsEnvironment;
 import java.awt.HeadlessException;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.swing.JPanel;
 
 import static org.testng.Assert.assertEquals;
 
@@ -33,12 +31,13 @@ public class TopMenuBarGitOperationTest {
         Map<Class<?>, Object> snapshot = new LinkedHashMap<>(singletonMap);
         RecordingFunctionalPanel functionalPanel = newRecordingFunctionalPanel();
         RecordingPerformancePanel performancePanel = newRecordingPerformancePanel();
-        TopMenuBar menuBar = newTopMenuBarWithoutInit();
+        TopMenuWorkspaceControls controls = new TopMenuWorkspaceControls(new JPanel(), () -> {
+        });
         try {
             singletonMap.put(FunctionalPanel.class, functionalPanel);
             singletonMap.put(PerformancePanel.class, performancePanel);
 
-            invokePerformGitOperation(menuBar);
+            invokePerformGitOperation(controls);
 
             assertEquals(functionalPanel.saveCount.get(), 1);
             assertEquals(performancePanel.saveCount.get(), 1);
@@ -53,23 +52,6 @@ public class TopMenuBarGitOperationTest {
         Field field = UiSingletonFactory.class.getDeclaredField("INSTANCE_MAP");
         field.setAccessible(true);
         return (Map<Class<?>, Object>) field.get(null);
-    }
-
-    private static TopMenuBar newTopMenuBarWithoutInit() {
-        UiSingletonMenuBar.setFactoryCreationAllowed(true);
-        try {
-            return new TopMenuBar() {
-                @Override
-                protected void initUI() {
-                }
-
-                @Override
-                protected void registerListeners() {
-                }
-            };
-        } finally {
-            UiSingletonMenuBar.setFactoryCreationAllowed(false);
-        }
     }
 
     private static RecordingFunctionalPanel newRecordingFunctionalPanel() {
@@ -90,15 +72,11 @@ public class TopMenuBarGitOperationTest {
         }
     }
 
-    private static void invokePerformGitOperation(TopMenuBar menuBar) throws Exception {
-        Method method = TopMenuBar.class.getDeclaredMethod("performGitOperation", Workspace.class, GitOperation.class);
-        method.setAccessible(true);
+    private static void invokePerformGitOperation(TopMenuWorkspaceControls controls) {
         try {
-            method.invoke(menuBar, workspace(), GitOperation.COMMIT);
-        } catch (InvocationTargetException e) {
-            if (!(e.getCause() instanceof HeadlessException)) {
-                throw e;
-            }
+            controls.performGitOperation(workspace(), GitOperation.COMMIT);
+        } catch (HeadlessException ignored) {
+            // Expected in headless mode after the panel save ordering has already happened.
         }
     }
 

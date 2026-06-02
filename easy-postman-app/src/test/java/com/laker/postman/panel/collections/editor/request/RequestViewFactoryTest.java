@@ -11,6 +11,8 @@ import com.laker.postman.util.MessageKeys;
 import org.testng.annotations.Test;
 
 import javax.swing.*;
+import java.awt.Component;
+import java.awt.Container;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,6 +21,7 @@ import java.util.Properties;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
@@ -100,9 +103,29 @@ public class RequestViewFactoryTest extends AbstractSwingUiTest {
     }
 
     private JTabbedPane getRequestTabs(RequestEditSubPanel panel) throws Exception {
-        Field reqTabsField = RequestEditSubPanel.class.getDeclaredField("reqTabs");
-        reqTabsField.setAccessible(true);
-        return (JTabbedPane) reqTabsField.get(panel);
+        JTabbedPane[] holder = new JTabbedPane[1];
+        SwingUtilities.invokeAndWait(() -> holder[0] = findTabbedPaneContaining(
+                panel,
+                I18nUtil.getMessage(MessageKeys.REQUEST_DOCS_TAB_TITLE)
+        ));
+        assertNotNull(holder[0]);
+        return holder[0];
+    }
+
+    private JTabbedPane findTabbedPaneContaining(Component component, String tabTitle) {
+        if (component instanceof JTabbedPane tabs && hasTab(tabs, tabTitle)) {
+            return tabs;
+        }
+        if (!(component instanceof Container container)) {
+            return null;
+        }
+        for (Component child : container.getComponents()) {
+            JTabbedPane tabs = findTabbedPaneContaining(child, tabTitle);
+            if (tabs != null) {
+                return tabs;
+            }
+        }
+        return null;
     }
 
     private boolean hasTab(JTabbedPane tabs, String title) {

@@ -1,6 +1,5 @@
 package com.laker.postman.panel.sidebar;
 
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.panel.collections.RequestCollectionsPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
@@ -68,8 +67,8 @@ public enum SidebarTab {
     private final Supplier<JPanel> panelSupplier;
 
     // 懒加载缓存
-    private FlatSVGIcon icon;
-    private FlatSVGIcon selectedIcon;  // 选中状态的图标（带颜色）
+    private Icon icon;
+    private Icon selectedIcon;  // 选中状态的图标（带颜色）
     private String title;
     private JPanel panel;
 

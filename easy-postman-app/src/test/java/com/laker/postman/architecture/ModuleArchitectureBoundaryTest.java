@@ -613,7 +613,8 @@ public class ModuleArchitectureBoundaryTest {
                 "easy-postman-app/src/main/java/com/laker/postman/http/request/HttpRequestValidationResult.java",
                 "easy-postman-request-core/src/main/java/com/laker/postman/request/util/HttpUrlUtil.java",
                 "easy-postman-app/src/main/java/com/laker/postman/http/request/HttpRequestProtocol.java",
-                "easy-postman-app/src/main/java/com/laker/postman/http/request/HttpHeaders.java")) {
+                "easy-postman-request-core/src/main/java/com/laker/postman/request/defaults/HttpRequestDefaults.java",
+                "easy-postman-request-core/src/main/java/com/laker/postman/request/defaults/GeneratedRequestHeaderPolicy.java")) {
             violations.addAll(sourceContainsViolations(root.resolve(relativePath), List.of(
                     "import javax.swing",
                     "import java.awt",

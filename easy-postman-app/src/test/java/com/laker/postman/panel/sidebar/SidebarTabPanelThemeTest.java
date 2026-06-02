@@ -19,7 +19,7 @@ public class SidebarTabPanelThemeTest {
 
     @BeforeMethod
     public void rememberThemeTokens() {
-        previousThemeTokens = remember(ThemeColors.PRIMARY, ThemeColors.PRIMARY_LIGHT, ThemeColors.TEXT_PRIMARY);
+        previousThemeTokens = remember(ThemeColors.PRIMARY, ThemeColors.PRIMARY_LIGHT);
     }
 
     @AfterMethod
@@ -54,10 +54,10 @@ public class SidebarTabPanelThemeTest {
     }
 
     @Test
-    public void selectedTabTitleShouldUseReadableThemeForeground() {
-        Color textPrimary = new Color(221, 222, 223);
-        UIManager.put(ThemeColors.TEXT_PRIMARY, textPrimary);
+    public void selectedTabTitleShouldUsePrimaryThemeColor() {
+        Color primary = new Color(0, 122, 255);
+        UIManager.put(ThemeColors.PRIMARY, primary);
 
-        assertEquals(SidebarTheme.selectedTabTitleForeground(), textPrimary);
+        assertEquals(SidebarTheme.selectedTabTitleForeground(), primary);
     }
 }

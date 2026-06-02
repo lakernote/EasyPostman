@@ -1,8 +1,6 @@
 package com.laker.postman.panel.collections.editor.request;
 
 import com.laker.postman.common.UiSingletonFactory;
-import com.laker.postman.common.component.MarkdownEditorPanel;
-import com.laker.postman.common.component.tab.IndicatorTabComponent;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.http.runtime.model.PreparedRequest;
@@ -24,10 +22,6 @@ import java.awt.event.ActionEvent;
 public class RequestEditSubPanel extends JPanel {
     private static final int MAX_REDIRECT_COUNT = 10;
 
-    private JTextField urlField;
-    private JComboBox<String> methodBox;
-    private EasyRequestParamsPanel paramsPanel;
-    private EasyRequestHttpHeadersPanel headersPanel;
     private final RequestEditorDataController dataController;
     private final RequestItemProtocolEnum protocol;
     private final boolean deferEditorInitialization;
@@ -42,20 +36,14 @@ public class RequestEditSubPanel extends JPanel {
     @Getter
     private final SavedResponse savedResponse;
 
-    private RequestLinePanel requestLinePanel;
-    private RequestBodyPanel requestBodyPanel;
-    private RequestSettingsPanel requestSettingsPanel;
-    private AuthTabPanel authTabPanel;
-    private ScriptPanel scriptPanel;
-    private MarkdownEditorPanel descriptionEditor;
-    private JTabbedPane reqTabs;
+    private RequestViewComponents view;
     // 主面板只保留“编排”和“状态持有”，具体行为拆给各个 helper，避免再次演变成巨型类。
     private final RequestPreparationFeedbackHelper requestPreparationFeedbackHelper = new RequestPreparationFeedbackHelper();
     private final RequestEditorSendPreparationController sendPreparationController =
             RequestEditorSendPreparationController.createDefault(
                     this::ensureEditorInitialized,
                     this::promotePreviewTabToPermanent,
-                    () -> requestSettingsPanel.validateSettings(),
+                    () -> view.requestSettingsPanel.validateSettings(),
                     this::getCurrentRequest,
                     this::getOriginalRequestItem,
                     this::isModified
@@ -69,17 +57,8 @@ public class RequestEditSubPanel extends JPanel {
     private final SavedResponseHelper savedResponseHelper = new SavedResponseHelper(new CollectionTreeEditorGateway());
     private RequestSavedResponseController savedResponseController;
 
-    private IndicatorTabComponent paramsTabIndicator;
-    private IndicatorTabComponent authTabIndicator;
-    private IndicatorTabComponent headersTabIndicator;
-    private IndicatorTabComponent bodyTabIndicator;
-    private IndicatorTabComponent settingsTabIndicator;
-    private IndicatorTabComponent scriptsTabIndicator;
-
-    JSplitPane splitPane;
     // 数据加载标志，防止加载时触发自动保存和联动更新
     private boolean isLoadingData = false;
-    private ResponsePanel responsePanel;
 
     // 保存最后一次请求和响应，用于保存响应功能
     private PreparedRequest lastRequest;
@@ -174,7 +153,7 @@ public class RequestEditSubPanel extends JPanel {
         setOpaque(true);
         setBackground(ModernColors.getBackgroundColor());
         if (!this.deferEditorInitialization) {
-            initializeEditorUiIfNeeded();
+            initializeEditorUiIfNeeded(false);
         } else {
             deferredInitializationController.installPlaceholder();
         }
@@ -207,16 +186,7 @@ public class RequestEditSubPanel extends JPanel {
 
     public RequestLinePanel getRequestLinePanel() {
         ensureEditorInitialized();
-        return requestLinePanel;
-    }
-
-    public ResponsePanel getResponsePanel() {
-        ensureEditorInitialized();
-        return responsePanel;
-    }
-
-    private void initializeEditorUiIfNeeded() {
-        initializeEditorUiIfNeeded(false);
+        return view.requestLinePanel;
     }
 
     private void initializeEditorUiIfNeeded(boolean animatePlaceholderTransition) {
@@ -227,19 +197,18 @@ public class RequestEditSubPanel extends JPanel {
                 ? deferredInitializationController.capturePlaceholderSnapshot()
                 : null;
         removeAll();
-        // 先集中创建视图组件，再把交互逻辑按职责注入 helper，构造阶段就能看清依赖方向。
-        RequestViewComponents components = RequestViewFactory.create(protocol, panelType, this::sendRequest);
-        installViewComponents(components);
+        view = RequestViewFactory.create(protocol, panelType, this::sendRequest);
+        add(view.requestLinePanel, BorderLayout.NORTH);
         createEditorBindingHelpers();
         bindBasicEditorInteractions();
 
         if (!isPerformanceSnapshot()) {
-            createInteractiveRequestHelpers();
+            createRuntimeController();
         } else {
-            RequestEditorReadOnlyMode.apply(components);
+            RequestEditorReadOnlyMode.apply(view);
         }
 
-        finishEditorUiInitialization(components);
+        finishEditorUiInitialization();
 
         dataController.populatePendingRequestIfPresent();
         if (pendingLayoutVertical != null) {
@@ -253,117 +222,41 @@ public class RequestEditSubPanel extends JPanel {
         deferredInitializationController.startTransition(placeholderSnapshot);
     }
 
-    private void installViewComponents(RequestViewComponents components) {
-        requestLinePanel = components.requestLinePanel;
-        methodBox = components.methodBox;
-        urlField = components.urlField;
-        reqTabs = components.reqTabs;
-        descriptionEditor = components.descriptionEditor;
-        paramsPanel = components.paramsPanel;
-        paramsTabIndicator = components.paramsTabIndicator;
-        authTabPanel = components.authTabPanel;
-        authTabIndicator = components.authTabIndicator;
-        headersPanel = components.headersPanel;
-        headersTabIndicator = components.headersTabIndicator;
-        requestBodyPanel = components.requestBodyPanel;
-        bodyTabIndicator = components.bodyTabIndicator;
-        settingsTabIndicator = components.settingsTabIndicator;
-        requestSettingsPanel = components.requestSettingsPanel;
-        scriptPanel = components.scriptPanel;
-        scriptsTabIndicator = components.scriptsTabIndicator;
-        responsePanel = components.responsePanel;
-        splitPane = components.splitPane;
-
-        JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.add(requestLinePanel, BorderLayout.CENTER);
-        add(topPanel, BorderLayout.NORTH);
-    }
-
     private void bindBasicEditorInteractions() {
         if (!isPerformanceSnapshot()) {
             RequestUiSetupHelper.bindUrlField(
-                    urlField,
+                    view.urlField,
                     requestPreparationFeedbackHelper,
                     this::detectAndParseCurl,
                     () -> requestUrlSyncHelper.syncUrlToParams(isLoadingData),
                     this::autoPrependHttpsIfNeeded
             );
-            RequestUiSetupHelper.bindParamsSync(paramsPanel, () -> requestUrlSyncHelper.syncParamsToUrl(isLoadingData));
+            RequestUiSetupHelper.bindParamsSync(view.paramsPanel, () -> requestUrlSyncHelper.syncParamsToUrl(isLoadingData));
         }
     }
 
     private void createEditorBindingHelpers() {
-        requestUrlSyncHelper = new RequestUrlSyncHelper(urlField, paramsPanel);
-        requestEditorBinder = new RequestEditorBinder(
-                urlField,
-                methodBox,
-                paramsPanel,
-                headersPanel,
-                requestBodyPanel,
-                requestSettingsPanel,
-                authTabPanel,
-                scriptPanel,
-                descriptionEditor
-        );
-        requestEditorDefaultTabSelector = new RequestEditorDefaultTabSelector(
-                reqTabs,
-                requestBodyPanel,
-                paramsPanel
-        );
+        requestUrlSyncHelper = new RequestUrlSyncHelper(view.urlField, view.paramsPanel);
+        requestEditorBinder = new RequestEditorBinder(view);
+        requestEditorDefaultTabSelector = new RequestEditorDefaultTabSelector(view);
         dataController.bindEditor(
                 requestEditorBinder,
                 requestEditorDefaultTabSelector,
-                this::dirtyStateHelper,
-                requestSettingsPanel
+                () -> runtimeController != null ? runtimeController.dirtyStateHelper() : null,
+                view.requestSettingsPanel
         );
         requestEditorTabsVisibilityController = new RequestEditorTabsVisibilityController(
                 protocol,
-                reqTabs,
-                descriptionEditor,
-                paramsPanel,
-                paramsTabIndicator,
-                authTabPanel,
-                authTabIndicator,
-                headersPanel,
-                headersTabIndicator,
-                requestBodyPanel,
-                bodyTabIndicator,
-                scriptPanel,
-                scriptsTabIndicator,
-                requestSettingsPanel,
-                settingsTabIndicator,
+                view,
                 this::updateTabIndicators
         );
-        requestTabStateHelper = new RequestTabStateHelper(
-                protocol,
-                urlField,
-                methodBox,
-                descriptionEditor,
-                paramsPanel,
-                authTabPanel,
-                headersPanel,
-                requestBodyPanel,
-                requestSettingsPanel,
-                scriptPanel,
-                paramsTabIndicator,
-                authTabIndicator,
-                headersTabIndicator,
-                bodyTabIndicator,
-                settingsTabIndicator,
-                scriptsTabIndicator
-        );
+        requestTabStateHelper = new RequestTabStateHelper(protocol, view);
     }
 
-    private void createInteractiveRequestHelpers() {
+    private void createRuntimeController() {
         runtimeController = RequestEditorRuntimeController.create(new RequestEditorRuntimeController.Config(
                 this,
-                urlField,
-                headersPanel,
-                requestBodyPanel,
-                requestLinePanel,
-                reqTabs,
-                responsePanel,
-                splitPane,
+                view,
                 requestPreparationFeedbackHelper,
                 sendPreparationController::prepareForSending,
                 this::sendRequest,
@@ -373,52 +266,46 @@ public class RequestEditSubPanel extends JPanel {
                 this::isEffectiveWebSocketProtocol,
                 this::getEffectiveProtocol,
                 dataController::setCurrentProtocol,
-                newProtocol -> UiSingletonFactory.getInstance(RequestEditorPanel.class).updateTabProtocol(this, newProtocol),
+                this::updateParentTabProtocol,
                 this::initPanelData,
                 this::getCurrentRequestFromModel,
-                dirty -> UiSingletonFactory.getInstance(RequestEditorPanel.class).updateTabDirty(this, dirty),
-                (request, response) -> {
-                    lastRequest = request;
-                    lastResponse = response;
-                },
+                this::updateParentTabDirty,
+                this::recordExchange,
                 this::updateTabDirty,
                 MAX_REDIRECT_COUNT
         ));
     }
 
-    private void finishEditorUiInitialization(RequestViewComponents components) {
-        add(components.editorContent, BorderLayout.CENTER);
+    private void finishEditorUiInitialization() {
+        add(view.editorContent, BorderLayout.CENTER);
         RequestUiSetupHelper.applyInitialProtocolUi(
                 protocol,
-                reqTabs,
-                requestBodyPanel,
-                paramsPanel,
-                authTabPanel,
+                view.reqTabs,
+                view.requestBodyPanel,
+                view.paramsPanel,
+                view.authTabPanel,
                 e -> sendWebSocketMessage()
         );
         if (!isPerformanceSnapshot()) {
-            addDirtyListeners();
+            requestTabStateHelper.bindListeners(this::updateTabDirty);
         }
 
         SwingUtilities.invokeLater(this::updateTabIndicators);
-        RequestUiSetupHelper.bindSaveResponseButton(protocol, panelType, responsePanel, e -> saveResponseDialog());
+        RequestUiSetupHelper.bindSaveResponseButton(protocol, panelType, view.responsePanel,
+                e -> getSavedResponseController().showSaveDialog());
         if (!isPerformanceSnapshot()) {
-            RequestUiSetupHelper.bindBodyTypeHeaderSync(requestBodyPanel, headersPanel, () -> isLoadingData);
+            RequestUiSetupHelper.bindBodyTypeHeaderSync(view.requestBodyPanel, view.headersPanel, () -> isLoadingData);
         }
         editorInitialized = true;
-    }
-
-    /**
-     * 添加监听器，表单内容变化时在tab标题显示红点
-     */
-    private void addDirtyListeners() {
-        requestTabStateHelper.bindListeners(this::updateTabDirty);
     }
 
     /**
      * 更新所有tab的内容指示器
      */
     private void updateTabIndicators() {
+        if (requestTabStateHelper == null) {
+            return;
+        }
         requestTabStateHelper.updateTabIndicators();
     }
 
@@ -461,8 +348,17 @@ public class RequestEditSubPanel extends JPanel {
         runtimeController.updateTabDirty();
     }
 
-    private RequestDirtyStateHelper dirtyStateHelper() {
-        return runtimeController != null ? runtimeController.dirtyStateHelper() : null;
+    private void updateParentTabProtocol(RequestItemProtocolEnum newProtocol) {
+        UiSingletonFactory.getInstance(RequestEditorPanel.class).updateTabProtocol(this, newProtocol);
+    }
+
+    private void updateParentTabDirty(boolean dirty) {
+        UiSingletonFactory.getInstance(RequestEditorPanel.class).updateTabDirty(this, dirty);
+    }
+
+    private void recordExchange(PreparedRequest request, HttpResponse response) {
+        lastRequest = request;
+        lastResponse = response;
     }
 
     private void sendRequest(ActionEvent e) {
@@ -477,10 +373,7 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     private void promotePreviewTabToPermanent() {
-        SwingUtilities.invokeLater(() -> {
-            RequestEditorPanel editPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class);
-            editPanel.promotePreviewTabToPermanent();
-        });
+        SwingUtilities.invokeLater(() -> UiSingletonFactory.getInstance(RequestEditorPanel.class).promotePreviewTabToPermanent());
     }
 
     // WebSocket消息发送逻辑
@@ -517,20 +410,13 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     /**
-     * 如果urlField内容没有协议，自动补全 http:// 或 https:// 或 ws:// 或 wss://，根据 protocol 和用户配置判断
+     * 如果 URL 没有协议，按当前协议和用户配置补全。
      */
     private void autoPrependHttpsIfNeeded() {
         if (runtimeController == null) {
             return;
         }
         runtimeController.autoPrependProtocolIfNeeded();
-    }
-
-    /**
-     * 显示保存响应对话框
-     */
-    private void saveResponseDialog() {
-        getSavedResponseController().showSaveDialog();
     }
 
     private RequestSavedResponseController getSavedResponseController() {
@@ -545,8 +431,8 @@ public class RequestEditSubPanel extends JPanel {
                     requestEditorDefaultTabSelector,
                     this::getEffectiveProtocol,
                     loading -> isLoadingData = loading,
-                    responsePanel,
-                    requestLinePanel,
+                    view.responsePanel,
+                    view.requestLinePanel,
                     this::sendRequest
             );
         }

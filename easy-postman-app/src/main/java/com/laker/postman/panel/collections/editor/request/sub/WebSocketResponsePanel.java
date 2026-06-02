@@ -2,7 +2,6 @@ package com.laker.postman.panel.collections.editor.request.sub;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.json.JSONUtil;
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.button.ClearButton;
@@ -11,6 +10,7 @@ import com.laker.postman.stream.MessageType;
 import com.laker.postman.panel.collections.editor.request.StreamMessageUiMetadata;
 import com.laker.postman.script.model.TestResult;
 import com.laker.postman.service.render.HttpHtmlRenderer;
+import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.JsonUtil;
 import com.laker.postman.util.MessageKeys;
@@ -236,10 +236,10 @@ public class WebSocketResponsePanel extends JPanel {
         }
         if (hasFail) {
             // 有失败，柔和红色叉
-            return new FlatSVGIcon("icons/fail.svg", 16, 16);
+            return IconUtil.create("icons/fail.svg", 16, 16);
         } else {
             // 全部成功，柔和绿色对勾
-            return new FlatSVGIcon("icons/pass.svg", 16, 16);
+            return IconUtil.create("icons/pass.svg", 16, 16);
         }
     }
 

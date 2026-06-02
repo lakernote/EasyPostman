@@ -1,6 +1,5 @@
 package com.laker.postman.panel.sidebar;
 
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -68,7 +67,7 @@ final class SidebarBottomBar {
         );
         cookieLabel = createActionLabel(
                 I18nUtil.getMessage(MessageKeys.COOKIES_TITLE),
-                new FlatSVGIcon("icons/cookie.svg", BOTTOM_BAR_ICON_SIZE, BOTTOM_BAR_ICON_SIZE),
+                IconUtil.create("icons/cookie.svg", BOTTOM_BAR_ICON_SIZE, BOTTOM_BAR_ICON_SIZE),
                 4,
                 4,
                 openCookieManagerAction

@@ -1,9 +1,6 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
 import com.laker.postman.request.model.RequestItemProtocolEnum;
-
-
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.EasyTextField;
 import com.laker.postman.common.component.button.PrimaryButton;
@@ -11,6 +8,7 @@ import com.laker.postman.common.component.button.SecondaryButton;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.util.FontsUtil;
+import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -212,11 +210,11 @@ public class RequestLinePanel extends JPanel {
         // 设置文本和图标
         if (protocol.isWebSocketProtocol()) {
             sendButton.setText(I18nUtil.getMessage(MessageKeys.BUTTON_CONNECT));
-            sendButton.setIcon(new FlatSVGIcon("icons/connect.svg", ICON_SIZE, ICON_SIZE));
+            sendButton.setIcon(IconUtil.createOnPrimary("icons/connect.svg", ICON_SIZE, ICON_SIZE));
             sendButton.setToolTipText(I18nUtil.getMessage(MessageKeys.BUTTON_CONNECT_TOOLTIP));
         } else {
             sendButton.setText(I18nUtil.getMessage(MessageKeys.BUTTON_SEND));
-            sendButton.setIcon(new FlatSVGIcon("icons/send.svg", ICON_SIZE, ICON_SIZE));
+            sendButton.setIcon(IconUtil.createOnPrimary("icons/send.svg", ICON_SIZE, ICON_SIZE));
             sendButton.setToolTipText(I18nUtil.getMessage(MessageKeys.BUTTON_SEND_TOOLTIP));
         }
 
@@ -241,7 +239,7 @@ public class RequestLinePanel extends JPanel {
 
         // 设置为取消按钮样式
         sendButton.setText(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL));
-        sendButton.setIcon(new FlatSVGIcon("icons/cancel.svg", ICON_SIZE, ICON_SIZE));
+        sendButton.setIcon(IconUtil.createOnPrimary("icons/cancel.svg", ICON_SIZE, ICON_SIZE));
         sendButton.setEnabled(true);
 
         // 改变按钮为警告色（橙色）
@@ -263,7 +261,7 @@ public class RequestLinePanel extends JPanel {
 
         // 设置为关闭按钮样式
         sendButton.setText(I18nUtil.getMessage(MessageKeys.BUTTON_CLOSE));
-        sendButton.setIcon(new FlatSVGIcon("icons/close.svg", ICON_SIZE, ICON_SIZE));
+        sendButton.setIcon(IconUtil.createOnPrimary("icons/close.svg", ICON_SIZE, ICON_SIZE));
         sendButton.setEnabled(true);
 
         // 改变按钮为中性灰色

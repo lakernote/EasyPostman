@@ -4,10 +4,6 @@ import com.laker.postman.http.execution.RequestPreparationResult;
 import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.request.AppRequestHeaderDefaults;
-import com.laker.postman.panel.collections.editor.request.sub.EasyRequestHttpHeadersPanel;
-import com.laker.postman.panel.collections.editor.request.sub.RequestBodyPanel;
-import com.laker.postman.panel.collections.editor.request.sub.RequestLinePanel;
-import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.service.setting.SettingManager;
@@ -40,6 +36,7 @@ final class RequestEditorRuntimeController {
     private final RequestSplitLayoutHelper splitLayoutHelper;
 
     static RequestEditorRuntimeController create(Config config) {
+        RequestViewComponents view = config.view();
         RequestExecutionState executionState = new RequestExecutionState();
         RequestDirtyStateHelper dirtyStateHelper = new RequestDirtyStateHelper(
                 config.currentRequestFromModelSupplier(),
@@ -47,24 +44,24 @@ final class RequestEditorRuntimeController {
                 AppRequestHeaderDefaults.generatedHeaderPolicy()
         );
         RequestExecutionUiHelper executionUiHelper = new RequestExecutionUiHelper(
-                config.responsePanel(),
-                config.requestLinePanel(),
-                config.requestBodyPanel(),
-                config.requestTabs(),
+                view.responsePanel,
+                view.requestLinePanel,
+                view.requestBodyPanel,
+                view.reqTabs,
                 config.sendAction(),
                 config.baseHttpProtocolSupplier(),
                 config.effectiveHttpProtocolSupplier(),
                 config.effectiveSseProtocolSupplier(),
                 config.effectiveWebSocketProtocolSupplier()
         );
-        RequestStreamUiHelper streamUiHelper = new RequestStreamUiHelper(config.responsePanel(), TIME_FORMATTER);
+        RequestStreamUiHelper streamUiHelper = new RequestStreamUiHelper(view.responsePanel, TIME_FORMATTER);
         RequestEditorActionsController actionsController = new RequestEditorActionsController(
-                config.urlField(),
-                config.headersPanel(),
-                config.requestBodyPanel(),
-                config.requestLinePanel(),
+                view.urlField,
+                view.headersPanel,
+                view.requestBodyPanel,
+                view.requestLinePanel,
                 streamUiHelper,
-                config.responsePanel(),
+                view.responsePanel,
                 config.sendAction(),
                 () -> config.baseHttpProtocolSupplier().getAsBoolean(),
                 () -> config.effectiveSseProtocolSupplier().getAsBoolean(),
@@ -73,17 +70,17 @@ final class RequestEditorRuntimeController {
                 config.currentProtocolSupplier(),
                 config.currentProtocolSetter(),
                 config.protocolTabUpdater(),
-                new RequestCurlImportController(config.urlField(), config.requestImporter()),
+                new RequestCurlImportController(view.urlField, config.requestImporter()),
                 config.updateTabDirtyAction()
         );
         RequestResponseHelper responseHelper = new RequestResponseHelper(
                 config.owner(),
-                config.responsePanel(),
-                config.responsePanel()::setTestResults,
+                view.responsePanel,
+                view.responsePanel::setTestResults,
                 config.exchangeRecorder()
         );
         HttpRequestExecutionHelper httpExecutionHelper = new HttpRequestExecutionHelper(
-                config.responsePanel(),
+                view.responsePanel,
                 executionUiHelper,
                 streamUiHelper,
                 responseHelper,
@@ -91,21 +88,21 @@ final class RequestEditorRuntimeController {
                 executionState
         );
         SseRequestExecutionHelper sseExecutionHelper = new SseRequestExecutionHelper(
-                config.responsePanel(),
+                view.responsePanel,
                 executionUiHelper,
                 streamUiHelper,
                 responseHelper,
                 executionState
         );
         WebSocketRequestExecutionHelper webSocketExecutionHelper = new WebSocketRequestExecutionHelper(
-                config.responsePanel(),
+                view.responsePanel,
                 executionUiHelper,
                 streamUiHelper,
                 responseHelper,
                 executionState
         );
         RequestProtocolDispatchHelper protocolDispatchHelper = new RequestProtocolDispatchHelper(
-                config.responsePanel(),
+                view.responsePanel,
                 httpExecutionHelper,
                 sseExecutionHelper,
                 webSocketExecutionHelper,
@@ -115,22 +112,22 @@ final class RequestEditorRuntimeController {
         RequestSendCoordinator sendCoordinator = new RequestSendCoordinator(
                 executionState,
                 actionsController::cancelCurrentRequest,
-                config.urlField(),
+                view.urlField,
                 config.preparationFeedbackHelper(),
-                config.requestLinePanel(),
+                view.requestLinePanel,
                 config.sendAction(),
-                config.responsePanel(),
+                view.responsePanel,
                 config.preparationSupplier(),
                 executionUiHelper::updateUIForRequesting,
                 protocolDispatchHelper::dispatch
         );
         RequestSplitLayoutHelper splitLayoutHelper = new RequestSplitLayoutHelper(
-                config.splitPane(),
-                config.responsePanel(),
+                view.splitPane,
+                view.responsePanel,
                 () -> config.effectiveSseProtocolSupplier().getAsBoolean(),
                 () -> config.effectiveWebSocketProtocolSupplier().getAsBoolean()
         );
-        applyInitialSplitLayout(config.splitPane(), splitLayoutHelper);
+        applyInitialSplitLayout(view.splitPane, splitLayoutHelper);
         return new RequestEditorRuntimeController(
                 executionState,
                 dirtyStateHelper,
@@ -183,13 +180,7 @@ final class RequestEditorRuntimeController {
     }
 
     record Config(Component owner,
-                  JTextField urlField,
-                  EasyRequestHttpHeadersPanel headersPanel,
-                  RequestBodyPanel requestBodyPanel,
-                  RequestLinePanel requestLinePanel,
-                  JTabbedPane requestTabs,
-                  ResponsePanel responsePanel,
-                  JSplitPane splitPane,
+                  RequestViewComponents view,
                   RequestPreparationFeedbackHelper preparationFeedbackHelper,
                   Supplier<RequestPreparationResult> preparationSupplier,
                   ActionListener sendAction,

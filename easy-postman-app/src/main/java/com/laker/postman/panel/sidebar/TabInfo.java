@@ -1,14 +1,21 @@
 package com.laker.postman.panel.sidebar;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import javax.swing.*;
 import java.util.function.Supplier;
 
-// Tab元数据结构，便于维护和扩展
+/**
+ * 侧边栏 Tab 元数据，面板内容按需懒加载。
+ */
+@Getter
 public class TabInfo {
-    public String title;
-    public Icon icon;
-    public Supplier<JPanel> panelSupplier; // 用于懒加载面板
-    public JPanel panel;
+    @Setter
+    private String title;
+    private final Icon icon;
+    private final Supplier<JPanel> panelSupplier;
+    private JPanel panel;
 
     public TabInfo(String title, Icon icon, Supplier<JPanel> panelSupplier) {
         this.title = title;
@@ -16,7 +23,7 @@ public class TabInfo {
         this.panelSupplier = panelSupplier;
     }
 
-    public JPanel getPanel() { // 懒加载面板
+    public JPanel getPanel() {
         if (panel == null) {
             panel = panelSupplier.get();
         }

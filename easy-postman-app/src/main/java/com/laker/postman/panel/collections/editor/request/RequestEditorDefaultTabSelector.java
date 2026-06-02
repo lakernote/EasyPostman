@@ -2,26 +2,15 @@ package com.laker.postman.panel.collections.editor.request;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
-import com.laker.postman.panel.collections.editor.request.sub.EasyRequestParamsPanel;
 import com.laker.postman.panel.collections.editor.request.sub.RequestBodyPanel;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.request.model.SavedResponse;
+import lombok.RequiredArgsConstructor;
 
-import javax.swing.*;
-
+@RequiredArgsConstructor
 final class RequestEditorDefaultTabSelector {
-    private final JTabbedPane reqTabs;
-    private final RequestBodyPanel requestBodyPanel;
-    private final EasyRequestParamsPanel paramsPanel;
-
-    RequestEditorDefaultTabSelector(JTabbedPane reqTabs,
-                                    RequestBodyPanel requestBodyPanel,
-                                    EasyRequestParamsPanel paramsPanel) {
-        this.reqTabs = reqTabs;
-        this.requestBodyPanel = requestBodyPanel;
-        this.paramsPanel = paramsPanel;
-    }
+    private final RequestViewComponents view;
 
     void selectByRequestType(RequestItemProtocolEnum effectiveProtocol, HttpRequestItem item) {
         if (item == null) {
@@ -60,31 +49,31 @@ final class RequestEditorDefaultTabSelector {
                                   String bodyType,
                                   String body,
                                   boolean hasFormData,
-                                  boolean hasParams) {
+        boolean hasParams) {
         if (effectiveProtocol != null && effectiveProtocol.isWebSocketProtocol()) {
-            RequestTabSelectionHelper.selectFirstVisible(reqTabs, requestBodyPanel, paramsPanel);
+            RequestTabSelectionHelper.selectFirstVisible(view.reqTabs, view.requestBodyPanel, view.paramsPanel);
             return;
         }
         if (effectiveProtocol != null && effectiveProtocol.isSseProtocol()) {
-            RequestTabSelectionHelper.selectFirstVisible(reqTabs, paramsPanel, requestBodyPanel);
+            RequestTabSelectionHelper.selectFirstVisible(view.reqTabs, view.paramsPanel, view.requestBodyPanel);
             return;
         }
         if (CharSequenceUtil.isNotBlank(body) && !RequestBodyPanel.BODY_TYPE_NONE.equals(bodyType)) {
-            RequestTabSelectionHelper.selectFirstVisible(reqTabs, requestBodyPanel, paramsPanel);
+            RequestTabSelectionHelper.selectFirstVisible(view.reqTabs, view.requestBodyPanel, view.paramsPanel);
             return;
         }
         if (hasFormData) {
-            RequestTabSelectionHelper.selectFirstVisible(reqTabs, requestBodyPanel, paramsPanel);
+            RequestTabSelectionHelper.selectFirstVisible(view.reqTabs, view.requestBodyPanel, view.paramsPanel);
             return;
         }
         if ("POST".equals(method) || "PUT".equals(method) || "PATCH".equals(method)) {
             if (hasParams) {
-                RequestTabSelectionHelper.selectFirstVisible(reqTabs, paramsPanel, requestBodyPanel);
+                RequestTabSelectionHelper.selectFirstVisible(view.reqTabs, view.paramsPanel, view.requestBodyPanel);
             } else {
-                RequestTabSelectionHelper.selectFirstVisible(reqTabs, requestBodyPanel, paramsPanel);
+                RequestTabSelectionHelper.selectFirstVisible(view.reqTabs, view.requestBodyPanel, view.paramsPanel);
             }
             return;
         }
-        RequestTabSelectionHelper.selectFirstVisible(reqTabs, paramsPanel, requestBodyPanel);
+        RequestTabSelectionHelper.selectFirstVisible(view.reqTabs, view.paramsPanel, view.requestBodyPanel);
     }
 }

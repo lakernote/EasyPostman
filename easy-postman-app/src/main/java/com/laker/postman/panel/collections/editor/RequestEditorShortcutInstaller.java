@@ -1,6 +1,7 @@
 package com.laker.postman.panel.collections.editor;
 
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
+import com.laker.postman.panel.collections.editor.request.sub.RequestLinePanel;
 import com.laker.postman.service.setting.ShortcutManager;
 import lombok.RequiredArgsConstructor;
 
@@ -59,21 +60,27 @@ final class RequestEditorShortcutInstaller {
     }
 
     private void clickCurrentSendButton() {
-        RequestEditSubPanel currentSubPanel = currentSubPanelSupplier.get();
-        if (currentSubPanel == null || currentSubPanel.getRequestLinePanel() == null) {
+        RequestLinePanel requestLinePanel = currentRequestLinePanel();
+        if (requestLinePanel == null) {
             return;
         }
-        JButton sendButton = currentSubPanel.getRequestLinePanel().getSendButton();
-        clickAfterCommittingCellEditor(sendButton);
+        clickAfterCommittingCellEditor(requestLinePanel.getSendButton());
     }
 
     private void clickCurrentSaveButton() {
-        RequestEditSubPanel currentSubPanel = currentSubPanelSupplier.get();
-        if (currentSubPanel == null || currentSubPanel.getRequestLinePanel() == null) {
+        RequestLinePanel requestLinePanel = currentRequestLinePanel();
+        if (requestLinePanel == null) {
             return;
         }
-        JButton saveButton = currentSubPanel.getRequestLinePanel().getSaveButton();
-        clickAfterCommittingCellEditor(saveButton);
+        clickAfterCommittingCellEditor(requestLinePanel.getSaveButton());
+    }
+
+    private RequestLinePanel currentRequestLinePanel() {
+        RequestEditSubPanel currentSubPanel = currentSubPanelSupplier.get();
+        if (currentSubPanel == null) {
+            return null;
+        }
+        return currentSubPanel.getRequestLinePanel();
     }
 
     private void clickAfterCommittingCellEditor(JButton button) {

@@ -1,0 +1,164 @@
+package com.laker.postman.panel.sidebar;
+
+import com.laker.postman.common.constants.ModernColors;
+import lombok.RequiredArgsConstructor;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.Icon;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTabbedPane;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.function.BooleanSupplier;
+import java.util.function.Function;
+import java.util.function.IntSupplier;
+import java.util.function.Supplier;
+
+/**
+ * 创建和刷新侧边栏自定义 tab 组件。
+ */
+@RequiredArgsConstructor
+final class SidebarTabComponentFactory {
+    private static final String ICON_LABEL_NAME = "iconLabel";
+    private static final String TITLE_LABEL_NAME = "titleLabel";
+
+    private final JTabbedPane tabbedPane;
+    private final BooleanSupplier sidebarExpanded;
+    private final Function<SidebarTab, Integer> tabIndexResolver;
+    private final IntSupplier expandedWidthSupplier;
+    private final IntSupplier collapsedWidthSupplier;
+    private final Supplier<Font> normalFontSupplier;
+    private final Supplier<Font> boldFontSupplier;
+
+    Component create(SidebarTab sidebarTab, String title, Icon icon) {
+        JPanel panel = new JPanel() {
+            @Override
+            public Dimension getPreferredSize() {
+                Dimension size = super.getPreferredSize();
+                size.width = sidebarExpanded.getAsBoolean()
+                        ? expandedWidthSupplier.getAsInt()
+                        : collapsedWidthSupplier.getAsInt();
+                return size;
+            }
+        };
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setOpaque(false);
+
+        if (sidebarExpanded.getAsBoolean()) {
+            addExpandedContent(panel, sidebarTab, title, icon);
+        } else {
+            addCollapsedContent(panel, title, icon);
+        }
+
+        panel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                int tabIndex = tabIndexResolver.apply(sidebarTab);
+                if (tabIndex >= 0) {
+                    tabbedPane.setSelectedIndex(tabIndex);
+                }
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                panel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                panel.setCursor(Cursor.getDefaultCursor());
+            }
+        });
+
+        return panel;
+    }
+
+    void updateSelection(Component tabComponent, SidebarTab sidebarTab, boolean selected) {
+        if (!(tabComponent instanceof JPanel panel)) {
+            return;
+        }
+        updateTabIcon(panel, sidebarTab, selected);
+        updateTabTitle(panel, selected);
+    }
+
+    private void addExpandedContent(JPanel panel, SidebarTab sidebarTab, String title, Icon icon) {
+        JLabel iconLabel = createIconLabel(icon);
+
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setName(TITLE_LABEL_NAME);
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        applyTitleSelection(titleLabel, isCurrentlySelected(sidebarTab));
+
+        panel.add(Box.createVerticalStrut(SidebarTabMetrics.EXPANDED_TAB_SPACING_TOP));
+        panel.add(iconLabel);
+        panel.add(Box.createVerticalStrut(SidebarTabMetrics.EXPANDED_TAB_SPACING_MIDDLE));
+        panel.add(titleLabel);
+        panel.add(Box.createVerticalStrut(SidebarTabMetrics.EXPANDED_TAB_SPACING_BOTTOM));
+        panel.setBorder(BorderFactory.createEmptyBorder(
+                SidebarTabMetrics.EXPANDED_TAB_PADDING_VERTICAL,
+                SidebarTabMetrics.EXPANDED_TAB_PADDING_HORIZONTAL,
+                SidebarTabMetrics.EXPANDED_TAB_PADDING_VERTICAL,
+                SidebarTabMetrics.EXPANDED_TAB_PADDING_HORIZONTAL
+        ));
+    }
+
+    private void addCollapsedContent(JPanel panel, String title, Icon icon) {
+        panel.setToolTipText(title);
+        panel.add(Box.createVerticalGlue());
+        panel.add(createIconLabel(icon));
+        panel.add(Box.createVerticalGlue());
+        panel.setBorder(BorderFactory.createEmptyBorder(
+                SidebarTabMetrics.COLLAPSED_TAB_PADDING_VERTICAL,
+                SidebarTabMetrics.COLLAPSED_TAB_PADDING_HORIZONTAL,
+                SidebarTabMetrics.COLLAPSED_TAB_PADDING_VERTICAL,
+                SidebarTabMetrics.COLLAPSED_TAB_PADDING_HORIZONTAL
+        ));
+    }
+
+    private JLabel createIconLabel(Icon icon) {
+        JLabel iconLabel = new JLabel(icon);
+        iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        iconLabel.setName(ICON_LABEL_NAME);
+        return iconLabel;
+    }
+
+    private boolean isCurrentlySelected(SidebarTab sidebarTab) {
+        int currentIndex = tabIndexResolver.apply(sidebarTab);
+        return currentIndex >= 0 && tabbedPane.getSelectedIndex() == currentIndex;
+    }
+
+    private void updateTabIcon(JPanel panel, SidebarTab sidebarTab, boolean selected) {
+        for (Component comp : panel.getComponents()) {
+            if (comp instanceof JLabel label && ICON_LABEL_NAME.equals(label.getName())) {
+                label.setIcon(selected ? sidebarTab.getSelectedIcon() : sidebarTab.getIcon());
+                break;
+            }
+        }
+    }
+
+    private void updateTabTitle(JPanel panel, boolean selected) {
+        for (Component comp : panel.getComponents()) {
+            if (comp instanceof JLabel label && TITLE_LABEL_NAME.equals(label.getName())) {
+                applyTitleSelection(label, selected);
+                break;
+            }
+        }
+    }
+
+    private void applyTitleSelection(JLabel label, boolean selected) {
+        if (selected) {
+            label.setForeground(SidebarTheme.selectedTabTitleForeground());
+            label.setFont(boldFontSupplier.get());
+        } else {
+            label.setForeground(ModernColors.getTextSecondary());
+            label.setFont(normalFontSupplier.get());
+        }
+    }
+}

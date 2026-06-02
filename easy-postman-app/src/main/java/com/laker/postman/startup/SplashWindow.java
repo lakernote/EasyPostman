@@ -21,7 +21,6 @@ import java.io.Serial;
 class SplashWindow extends JFrame {
     @Serial
     private static final long serialVersionUID = 1L;
-    private static final int MIN_DISPLAY_TIME_MS = 350;
     private JLabel statusLabel;
     private volatile boolean isDisposed = false;
 
@@ -258,89 +257,13 @@ class SplashWindow extends JFrame {
     }
 
     public void startMainFrameInitialization(StartupCoordinator startupCoordinator) {
-        SwingWorker<MainFrame, String> worker = new SwingWorker<>() {
-            @Override
-            protected MainFrame doInBackground() {
-                long start = System.currentTimeMillis();
-
-                try {
-                    MainFrame mainFrame = startupCoordinator.prepareMainFrameShell(stage -> {
-                        switch (stage) {
-                            case STARTING -> {
-                                publish(MessageKeys.SPLASH_STATUS_STARTING);
-                                setProgress(10);
-                            }
-                            case LOADING_PLUGINS -> {
-                                publish(MessageKeys.SPLASH_STATUS_LOADING_PLUGINS);
-                                setProgress(20);
-                            }
-                            case LOADING_MAIN -> {
-                                publish(MessageKeys.SPLASH_STATUS_LOADING_MAIN);
-                                setProgress(45);
-                            }
-                            case READY -> {
-                                publish(MessageKeys.SPLASH_STATUS_READY);
-                                setProgress(100);
-                            }
-                        }
-                    });
-                    ensureMinimumDisplayTime(start);
-                    return mainFrame;
-                } catch (Exception e) {
-                    throw new RuntimeException("Failed to prepare main frame", e);
-                }
-            }
-
-            @Override
-            protected void process(java.util.List<String> chunks) {
-                // 在EDT中更新状态
-                if (!chunks.isEmpty() && !isDisposed) {
-                    setStatus(chunks.get(chunks.size() - 1));
-                }
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    if (isDisposed) {
-                        return;
-                    }
-
-                    setStatus(MessageKeys.SPLASH_STATUS_DONE);
-                    MainFrame mainFrame = get();
-
-                    // 启动渐隐动画关闭 SplashWindow
-                    startFadeOutAnimation(mainFrame, startupCoordinator);
-
-                } catch (Exception e) {
-                    handleMainFrameLoadError(e);
-                }
-            }
-        };
-        worker.execute();
-    }
-
-    /**
-     * 确保最小显示时间
-     */
-    private void ensureMinimumDisplayTime(long startTimeMillis) {
-        long elapsed = System.currentTimeMillis() - startTimeMillis;
-        long remaining = MIN_DISPLAY_TIME_MS - elapsed;
-        if (remaining <= 0) {
-            return;
-        }
-        try {
-            Thread.sleep(remaining);
-        } catch (InterruptedException interruptedException) {
-            Thread.currentThread().interrupt(); // 恢复中断状态
-            log.warn("Thread interrupted while sleeping", interruptedException);
-        }
+        new SplashStartupWorker(this, startupCoordinator).execute();
     }
 
     /**
      * 处理主窗口加载错误
      */
-    private void handleMainFrameLoadError(Throwable e) {
+    void handleMainFrameLoadError(Throwable e) {
         if (e instanceof InterruptedException) {
             Thread.currentThread().interrupt();
         }
@@ -350,7 +273,7 @@ class SplashWindow extends JFrame {
     /**
      * 启动渐隐动画
      */
-    private void startFadeOutAnimation(MainFrame mainFrame, StartupCoordinator startupCoordinator) {
+    void startFadeOutAnimation(MainFrame mainFrame, StartupCoordinator startupCoordinator) {
         if (isDisposed) return;
 
         // 先显示主窗口；一旦启动占位符稳定绘制完成就尽快退场，不再阻塞等待主内容完全加载。
@@ -360,6 +283,10 @@ class SplashWindow extends JFrame {
                 () -> closeSplash(startupCoordinator),
                 this::handleMainFrameLoadError
         );
+    }
+
+    boolean isDisposed() {
+        return isDisposed;
     }
 
     private void closeSplash(StartupCoordinator startupCoordinator) {

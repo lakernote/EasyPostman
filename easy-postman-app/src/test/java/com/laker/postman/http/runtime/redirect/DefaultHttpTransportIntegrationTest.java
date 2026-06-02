@@ -200,6 +200,63 @@ public class DefaultHttpTransportIntegrationTest {
     }
 
     @Test
+    public void shouldPublishCallStartAndConnectionMetadataForSseNetworkLog() throws Exception {
+        server = createServer();
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .addHeader("Content-Type", "text/event-stream; charset=utf-8")
+                .setBody("data: hello\n\n"));
+
+        PreparedRequest request = createRequest("GET", serverUrl("/events"));
+        request.headersList.add(new HttpHeader(true, "Accept", "text/event-stream"));
+        request.collectBasicInfo = true;
+        request.collectEventInfo = true;
+        request.enableNetworkLog = true;
+        List<NetworkLogEvent> events = Collections.synchronizedList(new ArrayList<>());
+        request.networkLogSink = events::add;
+
+        CountDownLatch opened = new CountDownLatch(1);
+        CountDownLatch closed = new CountDownLatch(1);
+        RealtimeConnectionHandle handle = httpTransport.openSse(
+                request,
+                new EventSourceListener() {
+                    @Override
+                    public void onOpen(EventSource eventSource, okhttp3.Response response) {
+                        opened.countDown();
+                    }
+
+                    @Override
+                    public void onClosed(EventSource eventSource) {
+                        closed.countDown();
+                    }
+                },
+                RealtimeConnectionOptions.defaults()
+        );
+        try {
+            assertTrue(opened.await(2, TimeUnit.SECONDS), "SSE stream should open");
+            assertTrue(closed.await(2, TimeUnit.SECONDS), "SSE stream should close after mock body");
+        } finally {
+            handle.cancel();
+        }
+
+        RecordedRequest recordedRequest = server.takeRequest(1, TimeUnit.SECONDS);
+        assertNotNull(recordedRequest);
+        assertEquals(recordedRequest.getPath(), "/events");
+
+        waitForNetworkLogStage(events, NetworkLogEventStage.CALL_START);
+        waitForNetworkLogStage(events, NetworkLogEventStage.RESPONSE_HEADERS_END);
+        String callStart = firstEventMessage(events, NetworkLogEventStage.CALL_START);
+        String responseHeaders = firstEventMessage(events, NetworkLogEventStage.RESPONSE_HEADERS_END);
+
+        assertEquals(countEvents(events, NetworkLogEventStage.CALL_START), 1,
+                "SSE should publish a single CallStart event");
+        assertTrue(callStart.contains("GET " + request.url), callStart);
+        assertTrue(responseHeaders.matches("(?s).*Thread: \\S+.*"), responseHeaders);
+        assertTrue(responseHeaders.contains("Connection: "), responseHeaders);
+        assertTrue(responseHeaders.contains("Protocol: http/1.1"), responseHeaders);
+    }
+
+    @Test
     public void shouldNotifyCookieChangeForSseHandshakeSetCookie() throws Exception {
         server = createServer();
         server.enqueue(new MockResponse()
@@ -335,8 +392,16 @@ public class DefaultHttpTransportIntegrationTest {
         assertEquals(findHeaderValue(request.sentHeadersList, "Host"), recordedRequest.getHeader("Host"));
         assertNotNull(findHeaderValue(request.sentHeadersList, "Sec-WebSocket-Key"));
         waitForNetworkLogStage(events, NetworkLogEventStage.CALL_START);
-        assertTrue(events.stream().anyMatch(event -> event.stage() == NetworkLogEventStage.CALL_START),
-                "WebSocket handshake should publish network log events through the shared sink");
+        assertEquals(countEvents(events, NetworkLogEventStage.CALL_START), 1,
+                "WebSocket should publish a single CallStart event");
+        waitForNetworkLogStage(events, NetworkLogEventStage.REQUEST_BODY_START);
+        waitForNetworkLogStage(events, NetworkLogEventStage.RESPONSE_HEADERS_END);
+        String requestBody = firstEventMessage(events, NetworkLogEventStage.REQUEST_BODY_START);
+        String responseHeaders = firstEventMessage(events, NetworkLogEventStage.RESPONSE_HEADERS_END);
+        assertTrue(requestBody.contains("No request body"), requestBody);
+        assertTrue(responseHeaders.contains("Protocol: http/1.1"), responseHeaders);
+        assertTrue(responseHeaders.matches("(?s).*Thread: \\S+.*"), responseHeaders);
+        assertTrue(responseHeaders.contains("Connection: "), responseHeaders);
     }
 
     @Test
@@ -1125,6 +1190,8 @@ public class DefaultHttpTransportIntegrationTest {
         secondRequest.headersList.add(new HttpHeader(true, "Content-Type", "application/json"));
         secondRequest.headersList.add(new HttpHeader(true, "Cookie", "browser_session=keep; __cf_bm=old-value"));
         secondRequest.enableNetworkLog = true;
+        List<NetworkLogEvent> secondRequestEvents = Collections.synchronizedList(new ArrayList<>());
+        secondRequest.networkLogSink = secondRequestEvents::add;
 
         httpTransport.execute(firstRequest, HttpExchangeOptions.defaults());
         httpTransport.execute(secondRequest, HttpExchangeOptions.defaults());
@@ -1137,6 +1204,9 @@ public class DefaultHttpTransportIntegrationTest {
         assertTrue(cookie.contains("__cf_bm=jar-value"));
         assertTrue(cookie.contains("_cfuvid=jar-fuvid"));
         assertFalse(cookie.contains("__cf_bm=old-value"));
+        assertEquals(findHeaderValue(secondRequest.sentHeadersList, "Cookie"), cookie);
+        String loggedHeaders = firstEventMessage(secondRequestEvents, NetworkLogEventStage.REQUEST_HEADERS_END);
+        assertTrue(loggedHeaders.contains("Cookie: " + cookie), loggedHeaders);
     }
 
     @Test
@@ -1337,6 +1407,20 @@ public class DefaultHttpTransportIntegrationTest {
             }
             Thread.sleep(10);
         }
+    }
+
+    private String firstEventMessage(List<NetworkLogEvent> events, NetworkLogEventStage expectedStage) {
+        return events.stream()
+                .filter(event -> event.stage() == expectedStage)
+                .map(NetworkLogEvent::message)
+                .findFirst()
+                .orElse("");
+    }
+
+    private long countEvents(List<NetworkLogEvent> events, NetworkLogEventStage expectedStage) {
+        return events.stream()
+                .filter(event -> event.stage() == expectedStage)
+                .count();
     }
 
     private int countOccurrences(String value, String token) {

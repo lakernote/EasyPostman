@@ -3,12 +3,13 @@ package com.laker.postman.http.runtime.okhttp;
 import com.laker.postman.http.runtime.model.HttpEventInfo;
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.runtime.observation.NetworkLogEventStage;
-import com.laker.postman.http.runtime.observation.NetworkLogSink;
+import com.laker.postman.http.runtime.observation.NetworkLogSupport;
 import com.laker.postman.http.runtime.error.NetworkErrorMessageResolver;
 import com.laker.postman.http.runtime.ssl.CertificateCapturingSSLSocketFactory;
 import com.laker.postman.http.runtime.ssl.SSLCertificateValidator;
 import com.laker.postman.http.runtime.ssl.SSLConfigurationUtil;
 import com.laker.postman.http.runtime.ssl.SSLValidationResult;
+import com.laker.postman.http.runtime.transport.HttpExchangeTraceSupport;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 
@@ -32,7 +33,6 @@ public class OkHttpExchangeEventListener extends EventListener {
     private final long callStartNanos;
     private final HttpEventInfo info;
     private final PreparedRequest preparedRequest;
-    private final NetworkLogSink networkLogSink;
 
     // 精细化控制开关
     private final boolean collectMetricsInfo; // 是否收集轻量统计指标（时间戳、发送/接收字节）
@@ -41,14 +41,11 @@ public class OkHttpExchangeEventListener extends EventListener {
 
     public OkHttpExchangeEventListener(PreparedRequest preparedRequest) {
         this.callStartNanos = System.nanoTime();
-        String threadName = Thread.currentThread().getName();
         this.info = new HttpEventInfo();
-        info.setThreadName(threadName);
-        eventInfoThreadLocal.set(info);
         this.preparedRequest = preparedRequest;
-        this.networkLogSink = preparedRequest.networkLogSink == null
-                ? NetworkLogSink.noop()
-                : preparedRequest.networkLogSink;
+        // EventListener 可能在发起线程构造，真实 callStart 在 OkHttp 线程触发；ThreadLocal 只绑定真实回调线程。
+        eventInfoThreadLocal.remove();
+        HttpExchangeTraceSupport.bindToRequest(preparedRequest, info);
         this.collectMetricsInfo = preparedRequest.collectMetricsInfo
                 || preparedRequest.collectEventInfo
                 || preparedRequest.enableNetworkLog;
@@ -67,11 +64,7 @@ public class OkHttpExchangeEventListener extends EventListener {
 
         long now = System.nanoTime();
         long elapsedMs = (now - callStartNanos) / 1_000_000;
-        try {
-            networkLogSink.append(stage, msg, elapsedMs);
-        } catch (Throwable e) {
-            // 防止日志异常影响主流程
-        }
+        NetworkLogSupport.append(preparedRequest, stage, msg, elapsedMs);
     }
 
     @Override
@@ -83,7 +76,9 @@ public class OkHttpExchangeEventListener extends EventListener {
             SSLConfigurationUtil.clearValidationResult();
             CertificateCapturingSSLSocketFactory.clearLastCapturedCertificates();
         }
+        eventInfoThreadLocal.set(info);
         info.setCallStart(System.currentTimeMillis());
+        info.setThreadName(Thread.currentThread().getName());
         Request request = call.request();
         if (enableNetworkLog) {
             OkHttpRequestSnapshotCapture.capture(preparedRequest, request, false);
@@ -327,6 +322,9 @@ public class OkHttpExchangeEventListener extends EventListener {
             String remote = socket.getInetAddress().getHostAddress() + ":" + socket.getPort();
             info.setLocalAddress(local);
             info.setRemoteAddress(remote);
+            if (connection.protocol() != null) {
+                info.setProtocol(connection.protocol().toString());
+            }
         } catch (Exception e) {
             info.setLocalAddress("无法获取");
             info.setRemoteAddress("无法获取");

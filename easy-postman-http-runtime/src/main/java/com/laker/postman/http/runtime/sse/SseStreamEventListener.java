@@ -1,8 +1,9 @@
 package com.laker.postman.http.runtime.sse;
 
 import com.laker.postman.http.runtime.model.HttpResponse;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.runtime.error.NetworkErrorMessageResolver;
-import com.laker.postman.http.runtime.transport.HttpTraceInfoAttacher;
+import com.laker.postman.http.runtime.transport.HttpExchangeTraceSupport;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
@@ -17,16 +18,18 @@ public class SseStreamEventListener extends EventSourceListener {
     private final SseStreamCallback callback;
     private final HttpResponse resp;
     private final StringBuilder sseBodyBuilder;
-    private final long startTime;
+    private final long queueStartMs;
     private final BooleanSupplier cancelledChecker;
+    private final PreparedRequest preparedRequest;
 
-    public SseStreamEventListener(SseStreamCallback callback, HttpResponse resp, StringBuilder sseBodyBuilder, long startTime,
-                            BooleanSupplier cancelledChecker) {
+    public SseStreamEventListener(SseStreamCallback callback, HttpResponse resp, StringBuilder sseBodyBuilder, long queueStartMs,
+                            BooleanSupplier cancelledChecker, PreparedRequest preparedRequest) {
         this.callback = callback;
         this.resp = resp;
         this.sseBodyBuilder = sseBodyBuilder;
-        this.startTime = startTime;
+        this.queueStartMs = queueStartMs;
         this.cancelledChecker = cancelledChecker;
+        this.preparedRequest = preparedRequest;
     }
 
     @Override
@@ -38,7 +41,7 @@ public class SseStreamEventListener extends EventSourceListener {
         resp.code = response.code();
         resp.protocol = response.protocol().toString();
         resp.isSse = true;
-        HttpTraceInfoAttacher.attachTraceInfo(resp, startTime);
+        HttpExchangeTraceSupport.attachToResponse(resp, queueStartMs, preparedRequest);
         callback.onOpen(resp, buildResponseHeadersTextStatic(resp));
     }
 
@@ -74,7 +77,7 @@ public class SseStreamEventListener extends EventSourceListener {
         }
         resp.isSse = true;
         if (resp.httpEventInfo == null) {
-            HttpTraceInfoAttacher.attachTraceInfo(resp, startTime);
+            HttpExchangeTraceSupport.attachToResponse(resp, queueStartMs, preparedRequest);
         }
         finalizeResponse();
         if (cancelled) {
@@ -109,7 +112,7 @@ public class SseStreamEventListener extends EventSourceListener {
     }
 
     private void finalizeResponse() {
-        long cost = System.currentTimeMillis() - startTime;
+        long cost = System.currentTimeMillis() - queueStartMs;
         resp.body = sseBodyBuilder.toString();
         resp.bodySize = resp.body.getBytes(StandardCharsets.UTF_8).length;
         resp.costMs = cost;

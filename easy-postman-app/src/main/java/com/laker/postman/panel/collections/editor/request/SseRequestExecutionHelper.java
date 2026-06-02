@@ -50,12 +50,12 @@ final class SseRequestExecutionHelper {
         return new SwingWorker<>() {
             HttpResponse resp;
             StringBuilder sseBodyBuilder;
-            long startTime;
+            long queueStartMs;
 
             @Override
             protected Void doInBackground() {
                 try {
-                    startTime = System.currentTimeMillis();
+                    queueStartMs = System.currentTimeMillis();
                     resp = new HttpResponse();
                     sseBodyBuilder = new StringBuilder();
                     SseStreamCallback callback = new SseStreamCallback() {
@@ -133,8 +133,8 @@ final class SseRequestExecutionHelper {
                     executionState.resetSseCancelled();
                     executionState.startSseConnection(httpTransport.openSse(
                             req,
-                            new SseStreamEventListener(callback, resp, sseBodyBuilder, startTime,
-                                    executionState::isSseCancelled),
+                            new SseStreamEventListener(callback, resp, sseBodyBuilder, queueStartMs,
+                                    executionState::isSseCancelled, req),
                             RealtimeConnectionOptions.defaults()
                     ));
                     responsePanel.setResponseTabButtonsEnable(true);

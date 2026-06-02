@@ -2,7 +2,7 @@ package com.laker.postman.http.runtime.transport;
 
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.runtime.observation.NetworkLogEventStage;
-import com.laker.postman.http.runtime.observation.NetworkLogSink;
+import com.laker.postman.http.runtime.observation.NetworkLogSupport;
 import com.laker.postman.http.runtime.okhttp.OkHttpRequestSnapshotCapture;
 import com.laker.postman.request.model.HttpHeader;
 import okhttp3.Interceptor;
@@ -19,28 +19,23 @@ final class RequestSnapshotNetworkInterceptor implements Interceptor {
 
     @Override
     public Response intercept(Chain chain) throws IOException {
+        // network interceptor 才能看到 OkHttp 实际使用的连接和补齐后的请求头。
+        HttpExchangeTraceSupport.updateFromConnection(preparedRequest, chain.connection());
         OkHttpRequestSnapshotCapture.capture(preparedRequest, chain.request(), shouldCaptureBody());
         logRequestSnapshot();
         return chain.proceed(chain.request());
     }
 
     private boolean shouldCaptureBody() {
-        return preparedRequest != null && preparedRequest.enableNetworkLog;
+        return NetworkLogSupport.isEnabled(preparedRequest);
     }
 
     private void logRequestSnapshot() {
-        if (preparedRequest == null || !preparedRequest.enableNetworkLog) {
+        if (!NetworkLogSupport.isEnabled(preparedRequest)) {
             return;
         }
-        NetworkLogSink sink = preparedRequest.networkLogSink == null
-                ? NetworkLogSink.noop()
-                : preparedRequest.networkLogSink;
-        try {
-            sink.append(NetworkLogEventStage.REQUEST_HEADERS_END, formatHeaders(), null);
-            sink.append(NetworkLogEventStage.REQUEST_BODY_START, formatBody(), null);
-        } catch (Throwable ignored) {
-            // Snapshot logging must not affect request execution.
-        }
+        NetworkLogSupport.append(preparedRequest, NetworkLogEventStage.REQUEST_HEADERS_END, formatHeaders());
+        NetworkLogSupport.append(preparedRequest, NetworkLogEventStage.REQUEST_BODY_START, formatBody());
     }
 
     private String formatHeaders() {

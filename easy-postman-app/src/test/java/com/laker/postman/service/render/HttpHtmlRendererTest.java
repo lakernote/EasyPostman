@@ -1,6 +1,7 @@
 package com.laker.postman.service.render;
 
 import com.laker.postman.common.constants.ThemeColors;
+import com.laker.postman.http.runtime.model.HttpEventInfo;
 import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.request.model.HttpHeader;
@@ -175,5 +176,25 @@ public class HttpHtmlRendererTest {
         assertTrue(html.contains("Sent Headers"));
         assertFalse(html.contains("Configured Body"));
         assertFalse(html.contains("configured websocket message"));
+    }
+
+    @Test
+    public void shouldRenderThreadFromEventInfoWhenResponseThreadMissing() {
+        HttpEventInfo eventInfo = new HttpEventInfo();
+        eventInfo.setThreadName("SwingWorker-pool-3-thread-1");
+        eventInfo.setLocalAddress("127.0.0.1:51000");
+        eventInfo.setRemoteAddress("127.0.0.1:8080");
+
+        HttpResponse response = new HttpResponse();
+        response.code = 200;
+        response.protocol = "http/1.1";
+        response.body = "";
+        response.httpEventInfo = eventInfo;
+
+        String html = HttpHtmlRenderer.renderResponse(response);
+
+        assertTrue(html.contains("SwingWorker-pool-3-thread-1"));
+        assertTrue(html.contains("127.0.0.1:51000"));
+        assertTrue(html.contains("127.0.0.1:8080"));
     }
 }

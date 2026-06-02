@@ -53,7 +53,7 @@ public final class HttpExchangeExecutor {
                                          OkHttpClient client,
                                          SseResponseCallback callback) throws IOException {
         MonotonicStopwatch stopwatch = MonotonicStopwatch.start();
-        long startTime = stopwatch.startWallTimeMs();
+        long queueStartMs = stopwatch.startWallTimeMs();
         HttpResponse httpResponse = new HttpResponse();
         ConnectionPool pool = client.connectionPool();
         httpResponse.idleConnectionCount = pool.idleConnectionCount();
@@ -62,7 +62,7 @@ public final class HttpExchangeExecutor {
         try {
             okResponse = call.execute();
         } finally {
-            HttpTraceInfoAttacher.attachTraceInfo(httpResponse, startTime);
+            HttpExchangeTraceSupport.attachToResponse(httpResponse, queueStartMs);
         }
         OkHttpResponseHandler.handleResponse(
                 okResponse,
@@ -75,7 +75,7 @@ public final class HttpExchangeExecutor {
         );
         long elapsedMs = stopwatch.elapsedMs();
         httpResponse.costMs = elapsedMs;
-        httpResponse.endTime = startTime + elapsedMs;
+        httpResponse.endTime = queueStartMs + elapsedMs;
         if (request.notifyCookieChanges) {
             HttpCookieStore.notifyCookieChanged();
         }

@@ -2,7 +2,7 @@ package com.laker.postman.http.runtime.transport;
 
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.runtime.observation.NetworkLogEventStage;
-import com.laker.postman.http.runtime.observation.NetworkLogSink;
+import com.laker.postman.http.runtime.observation.NetworkLogSupport;
 import com.laker.postman.http.runtime.okhttp.OkHttpRequestSnapshotCapture;
 import com.laker.postman.request.model.HttpHeader;
 import okhttp3.Response;
@@ -10,18 +10,17 @@ import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 import okio.ByteString;
 
-final class RequestSnapshotWebSocketListener extends WebSocketListener {
+/**
+ * WebSocket 网络日志装饰器：记录升级握手的实际请求/响应快照，不参与消息处理。
+ */
+final class WebSocketNetworkLogListener extends WebSocketListener {
     private final WebSocketListener delegate;
     private final PreparedRequest preparedRequest;
-    private final NetworkLogSink networkLogSink;
 
-    RequestSnapshotWebSocketListener(WebSocketListener delegate, PreparedRequest preparedRequest) {
+    WebSocketNetworkLogListener(WebSocketListener delegate, PreparedRequest preparedRequest) {
         this.delegate = delegate == null ? new WebSocketListener() {
         } : delegate;
         this.preparedRequest = preparedRequest;
-        this.networkLogSink = preparedRequest == null || preparedRequest.networkLogSink == null
-                ? NetworkLogSink.noop()
-                : preparedRequest.networkLogSink;
     }
 
     @Override
@@ -64,7 +63,8 @@ final class RequestSnapshotWebSocketListener extends WebSocketListener {
         }
         OkHttpRequestSnapshotCapture.capture(preparedRequest, response.request(), false);
         log(NetworkLogEventStage.REQUEST_HEADERS_END, formatRequestHeaders());
-        log(NetworkLogEventStage.RESPONSE_HEADERS_END, formatResponseHeaders(response));
+        log(NetworkLogEventStage.REQUEST_BODY_START, "No request body");
+        log(NetworkLogEventStage.RESPONSE_HEADERS_END, formatResponseSnapshot(response));
     }
 
     private String formatRequestHeaders() {
@@ -78,26 +78,11 @@ final class RequestSnapshotWebSocketListener extends WebSocketListener {
         return sb.toString();
     }
 
-    private String formatResponseHeaders(Response response) {
-        StringBuilder sb = new StringBuilder("\n");
-        sb.append("Status: ").append(response.code()).append("\n");
-        for (int i = 0; i < response.headers().size(); i++) {
-            sb.append(response.headers().name(i))
-                    .append(": ")
-                    .append(response.headers().value(i))
-                    .append("\n");
-        }
-        return sb.toString();
+    private String formatResponseSnapshot(Response response) {
+        return RealtimeHandshakeNetworkLogFormatter.formatResponseSnapshot(preparedRequest, response);
     }
 
     private void log(NetworkLogEventStage stage, String message) {
-        if (preparedRequest == null || !preparedRequest.enableNetworkLog) {
-            return;
-        }
-        try {
-            networkLogSink.append(stage, message, null);
-        } catch (Throwable ignored) {
-            // Logging must not affect WebSocket callbacks.
-        }
+        NetworkLogSupport.append(preparedRequest, stage, message);
     }
 }

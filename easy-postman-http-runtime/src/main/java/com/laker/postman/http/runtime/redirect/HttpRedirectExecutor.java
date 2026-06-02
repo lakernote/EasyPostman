@@ -10,7 +10,7 @@ import com.laker.postman.http.runtime.transport.DefaultHttpTransport;
 import com.laker.postman.http.runtime.transport.HttpExchangeOptions;
 import com.laker.postman.http.runtime.transport.HttpTransport;
 import com.laker.postman.http.runtime.observation.NetworkLogEventStage;
-import com.laker.postman.http.runtime.observation.NetworkLogSink;
+import com.laker.postman.http.runtime.observation.NetworkLogSupport;
 import com.laker.postman.http.runtime.sse.SseResponseCallback;
 import lombok.extern.slf4j.Slf4j;
 
@@ -183,17 +183,12 @@ public class HttpRedirectExecutor {
      * 记录重定向日志
      */
     private static void logRedirect(PreparedRequest request, RedirectInfo info) {
-        if (request == null || !request.enableNetworkLog) {
+        if (!NetworkLogSupport.isEnabled(request)) {
             return;
         }
-        try {
-            String logMessage = String.format("Status: %d, URL: %s, Location: %s",
-                    info.statusCode, info.url, info.location);
-            NetworkLogSink sink = request.networkLogSink == null ? NetworkLogSink.noop() : request.networkLogSink;
-            sink.append(NetworkLogEventStage.REDIRECT, logMessage, null);
-        } catch (Exception e) {
-            // Prevent logging errors from affecting the main redirect flow
-        }
+        String logMessage = String.format("Status: %d, URL: %s, Location: %s",
+                info.statusCode, info.url, info.location);
+        NetworkLogSupport.append(request, NetworkLogEventStage.REDIRECT, logMessage);
     }
 
     private static String extractLocationHeader(HttpResponse resp) {

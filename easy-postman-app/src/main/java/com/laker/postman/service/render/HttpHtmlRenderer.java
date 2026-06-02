@@ -188,8 +188,8 @@ public class HttpHtmlRenderer {
         String statusBadge = "<span style='color:" + statusColor(code) + ";font-weight:bold;padding:1px 6px;"
                 + "border:1px solid " + statusColor(code) + ";border-radius:3px;'>" + code + "</span>";
         sb.append(kvRow(colorSuccess(), "Status",   statusBadge, false));
-        sb.append(kvRow(colorPrimary(), "Protocol", escapeHtml(safeStr(resp.protocol)),   true));
-        sb.append(kvRow(colorPrimary(), "Thread",   escapeHtml(safeStr(resp.threadName)), false));
+        sb.append(kvRow(colorPrimary(), "Protocol", escapeHtml(resolveProtocol(resp)),   true));
+        sb.append(kvRow(colorPrimary(), "Thread",   escapeHtml(resolveThread(resp)), false));
         if (resp.httpEventInfo != null) {
             sb.append(kvRow(colorPrimary(), "Connection",
                     escapeHtml(safeStr(resp.httpEventInfo.getLocalAddress()))
@@ -276,8 +276,8 @@ public class HttpHtmlRenderer {
         String statusBadge = "<span style='color:" + statusColor(code) + ";font-weight:bold;padding:1px 6px;"
                 + "border:1px solid " + statusColor(code) + ";border-radius:3px;'>" + code + "</span>";
         sb.append(kvRow(colorSuccess(), "Status",   statusBadge, false));
-        sb.append(kvRow(colorPrimary(), "Protocol", escapeHtml(safeStr(resp.protocol)),   true));
-        sb.append(kvRow(colorPrimary(), "Thread",   escapeHtml(safeStr(resp.threadName)), false));
+        sb.append(kvRow(colorPrimary(), "Protocol", escapeHtml(resolveProtocol(resp)),   true));
+        sb.append(kvRow(colorPrimary(), "Thread",   escapeHtml(resolveThread(resp)), false));
         if (resp.httpEventInfo != null) {
             sb.append(kvRow(colorPrimary(), "Connection",
                     escapeHtml(safeStr(resp.httpEventInfo.getLocalAddress()))
@@ -324,6 +324,26 @@ public class HttpHtmlRenderer {
                 + "<td style='padding:5px 10px;text-align:center;'>" + icon + "</td>"
                 + "<td style='padding:5px 10px;'>" + msg + "</td>"
                 + "</tr>";
+    }
+
+    private static String resolveProtocol(HttpResponse resp) {
+        if (resp == null) {
+            return "";
+        }
+        if (isNotEmpty(resp.protocol)) {
+            return resp.protocol;
+        }
+        return resp.httpEventInfo != null ? safeStr(resp.httpEventInfo.getProtocol()) : "";
+    }
+
+    private static String resolveThread(HttpResponse resp) {
+        if (resp == null) {
+            return "";
+        }
+        if (isNotEmpty(resp.threadName)) {
+            return resp.threadName;
+        }
+        return resp.httpEventInfo != null ? safeStr(resp.httpEventInfo.getThreadName()) : "";
     }
 
     // Timeline 各阶段语义色（参考 Chrome DevTools Network 面板配色）

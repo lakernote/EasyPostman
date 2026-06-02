@@ -70,24 +70,24 @@ final class RequestStreamUiHelper {
         sseBodyBuilder.append('\n');
     }
 
-    void finalizeSseResponse(HttpResponse response, StringBuilder sseBodyBuilder, long startTime) {
+    void finalizeSseResponse(HttpResponse response, StringBuilder sseBodyBuilder, long queueStartMs) {
         if (response == null) {
             return;
         }
         response.isSse = true;
         response.body = sseBodyBuilder.toString();
         response.bodySize = response.body.getBytes(StandardCharsets.UTF_8).length;
-        response.costMs = System.currentTimeMillis() - startTime;
+        response.costMs = System.currentTimeMillis() - queueStartMs;
         response.endTime = System.currentTimeMillis();
     }
 
-    void finalizeWebSocketResponse(HttpResponse response, StringBuilder webSocketBodyBuilder, long startTime) {
+    void finalizeWebSocketResponse(HttpResponse response, StringBuilder webSocketBodyBuilder, long queueStartMs) {
         if (response == null) {
             return;
         }
         response.body = webSocketBodyBuilder != null ? webSocketBodyBuilder.toString() : "";
         response.bodySize = response.body.getBytes(StandardCharsets.UTF_8).length;
-        response.costMs = System.currentTimeMillis() - startTime;
+        response.costMs = System.currentTimeMillis() - queueStartMs;
         response.endTime = System.currentTimeMillis();
     }
 

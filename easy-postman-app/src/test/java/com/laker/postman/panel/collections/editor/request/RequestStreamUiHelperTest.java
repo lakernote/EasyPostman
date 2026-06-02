@@ -15,11 +15,11 @@ public class RequestStreamUiHelperTest {
         RequestStreamUiHelper helper = new RequestStreamUiHelper(null, DateTimeFormatter.ofPattern("HH:mm:ss"));
         HttpResponse response = new HttpResponse();
         StringBuilder bodyBuilder = new StringBuilder();
-        long startTime = System.currentTimeMillis() - 10;
+        long queueStartMs = System.currentTimeMillis() - 10;
 
         helper.appendWebSocketRawEvent(bodyBuilder, MessageType.CONNECTED, "Switching Protocols");
         helper.appendWebSocketRawEvent(bodyBuilder, MessageType.RECEIVED, "{\"ok\":true}");
-        helper.finalizeWebSocketResponse(response, bodyBuilder, startTime);
+        helper.finalizeWebSocketResponse(response, bodyBuilder, queueStartMs);
 
         assertTrue(response.body.contains("CONNECTED") || response.body.contains(StreamMessageUiMetadata.display(MessageType.CONNECTED)));
         assertTrue(response.body.contains("RECEIVED") || response.body.contains(StreamMessageUiMetadata.display(MessageType.RECEIVED)));

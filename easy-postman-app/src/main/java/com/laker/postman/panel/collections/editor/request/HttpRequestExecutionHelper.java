@@ -51,7 +51,7 @@ final class HttpRequestExecutionHelper {
             HttpResponse resp;
             final boolean expectedSse = HttpRequestProtocol.isSse(req);
             final StringBuilder sseBodyBuilder = new StringBuilder();
-            final long sseStartTime = System.currentTimeMillis();
+            final long sseQueueStartMs = System.currentTimeMillis();
 
             @Override
             protected Void doInBackground() {
@@ -101,7 +101,7 @@ final class HttpRequestExecutionHelper {
 
                         @Override
                         public void onClosed(HttpResponse response) {
-                            requestStreamUiHelper.finalizeSseResponse(response, sseBodyBuilder, sseStartTime);
+                            requestStreamUiHelper.finalizeSseResponse(response, sseBodyBuilder, sseQueueStartMs);
                             SwingUtilities.invokeLater(() -> {
                                 if (executionState.isDisposed()) {
                                     return;
@@ -117,7 +117,7 @@ final class HttpRequestExecutionHelper {
 
                         @Override
                         public void onFailure(String errorMsg, HttpResponse response) {
-                            requestStreamUiHelper.finalizeSseResponse(response, sseBodyBuilder, sseStartTime);
+                            requestStreamUiHelper.finalizeSseResponse(response, sseBodyBuilder, sseQueueStartMs);
                             SwingUtilities.invokeLater(() -> {
                                 if (executionState.isDisposed()) {
                                     return;

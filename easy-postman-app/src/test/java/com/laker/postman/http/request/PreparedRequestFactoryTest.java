@@ -1,13 +1,12 @@
 package com.laker.postman.http.request;
 
 import com.laker.postman.http.runtime.app.AppHttpRuntimeBootstrap;
+import com.laker.postman.http.runtime.model.HttpEventInfo;
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.request.model.AuthType;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.model.TransportAuth;
-
-
 import com.laker.postman.service.setting.SettingManager;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -131,11 +130,23 @@ public class PreparedRequestFactoryTest {
         PreparedRequest req = new PreparedRequest();
         req.name = "Request name";
         req.transportAuth = new TransportAuth(AuthType.DIGEST.getConstant(), "digest-user", "digest-pass");
+        req.exchangeEventInfo = new HttpEventInfo();
 
         req.simplify();
 
         assertNull(req.name);
         assertNull(req.transportAuth);
+        assertNull(req.exchangeEventInfo);
+    }
+
+    @Test
+    public void testPreparedRequestShallowCopyShouldNotCopyExchangeEventInfo() {
+        PreparedRequest req = new PreparedRequest();
+        req.exchangeEventInfo = new HttpEventInfo();
+
+        PreparedRequest copy = req.shallowCopy();
+
+        assertNull(copy.exchangeEventInfo);
     }
 
     @Test

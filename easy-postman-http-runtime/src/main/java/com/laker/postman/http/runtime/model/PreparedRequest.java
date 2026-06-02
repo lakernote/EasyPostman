@@ -6,9 +6,6 @@ import com.laker.postman.request.model.HttpFormData;
 import com.laker.postman.request.model.HttpFormUrlencoded;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.model.TransportAuth;
-
-
-
 import com.laker.postman.http.runtime.interaction.DownloadProgressSinkFactory;
 import com.laker.postman.http.runtime.interaction.ResponseSizeLimitWarningSink;
 import com.laker.postman.http.runtime.observation.HttpLifecycleLogSink;
@@ -61,6 +58,7 @@ public class PreparedRequest {
 
     public List<HttpHeader> sentHeadersList; // 实际发送的请求头快照
     public String sentRequestBody; // 实际发送的请求体内容
+    public transient volatile HttpEventInfo exchangeEventInfo; // 运行期事件信息，仅供 SSE/WS 异步回调读取，不参与持久化
 
     /**
      * 创建当前对象的浅拷贝
@@ -73,6 +71,8 @@ public class PreparedRequest {
         copy.url = this.url;
         copy.method = this.method;
         copy.sentHeadersList = this.sentHeadersList == null ? null : new ArrayList<>(this.sentHeadersList);
+        // 单次发包的运行态 trace 不随请求配置复制，避免重定向/重发带上上一跳连接信息。
+        copy.exchangeEventInfo = null;
         copy.body = this.body;
         copy.bodyType = this.bodyType;
         copy.sentRequestBody = this.sentRequestBody;
@@ -106,7 +106,7 @@ public class PreparedRequest {
     /**
      * 简化对象，将渲染时不需要的字段置为 null，减少内存占用
      * 保留的字段：url, method, sentHeadersList, formDataList, urlencodedList, sentRequestBody
-     * 置为 null 的字段：id, name, body, bodyType, transportAuth, headersList, paramsList
+     * 置为 null 的字段：id, name, body, bodyType, transportAuth, headersList, paramsList, exchangeEventInfo
      */
     public void simplify() {
         this.id = null;
@@ -116,7 +116,8 @@ public class PreparedRequest {
         this.transportAuth = null;
         this.headersList = null;  // 渲染用的是 sentHeadersList
         this.paramsList = null;   // 渲染时不显示
-        // isMultipart, followRedirects, logEvent 是基本类型，不占内存
+        this.exchangeEventInfo = null;
+        // isMultipart, followRedirects 和采集开关是基本类型，不占主要内存
     }
 
     public enum ResponseBodyMode {

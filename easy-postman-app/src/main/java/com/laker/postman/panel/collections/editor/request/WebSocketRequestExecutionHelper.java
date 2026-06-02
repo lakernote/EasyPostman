@@ -5,6 +5,7 @@ import com.laker.postman.stream.MessageType;
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;
 import com.laker.postman.http.runtime.transport.DefaultHttpTransport;
+import com.laker.postman.http.runtime.transport.HttpExchangeTraceSupport;
 import com.laker.postman.http.runtime.transport.HttpTransport;
 import com.laker.postman.http.runtime.transport.RealtimeConnectionOptions;
 import com.laker.postman.http.runtime.transport.RealtimeWebSocketConnection;
@@ -107,7 +108,7 @@ final class WebSocketRequestExecutionHelper {
         private final WebSocketExecutionState executionState = new WebSocketExecutionState(connectionId);
         private final HttpResponse response = new HttpResponse();
         private final StringBuilder bodyBuilder = new StringBuilder();
-        private long startTime;
+        private long queueStartMs;
 
         private WebSocketSession(PreparedRequest req, ScriptExecutionPipeline pipeline) {
             this.req = req;
@@ -119,7 +120,7 @@ final class WebSocketRequestExecutionHelper {
         }
 
         void markStarted() {
-            startTime = System.currentTimeMillis();
+            queueStartMs = System.currentTimeMillis();
         }
 
         WebSocketListener newListener() {
@@ -255,6 +256,7 @@ final class WebSocketRequestExecutionHelper {
             }
             this.response.code = response.code();
             this.response.protocol = response.protocol().toString();
+            HttpExchangeTraceSupport.attachToResponse(this.response, queueStartMs, req);
         }
 
         private void appendTerminalEvent(MessageType type, String text) {
@@ -274,7 +276,7 @@ final class WebSocketRequestExecutionHelper {
         }
 
         private void finalizeResponse() {
-            requestStreamUiHelper.finalizeWebSocketResponse(response, bodyBuilder, startTime);
+            requestStreamUiHelper.finalizeWebSocketResponse(response, bodyBuilder, queueStartMs);
         }
 
         private void runUiTeardown(Runnable afterUiReset) {

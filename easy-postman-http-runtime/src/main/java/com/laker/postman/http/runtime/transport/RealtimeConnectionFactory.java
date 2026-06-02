@@ -4,7 +4,7 @@ import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.runtime.cookie.HttpCookieStore;
 import com.laker.postman.http.runtime.observation.HttpLifecycleLogSink;
 import com.laker.postman.http.runtime.observation.NetworkLogEventStage;
-import com.laker.postman.http.runtime.observation.NetworkLogSink;
+import com.laker.postman.http.runtime.observation.NetworkLogSupport;
 import com.laker.postman.http.runtime.okhttp.WebSocketLifecycleLogListener;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -37,9 +37,10 @@ public final class RealtimeConnectionFactory {
                                 HttpBaseClientProvider baseClientProvider) {
         OkHttpClient customClient = clientResolver.resolveClient(request, baseClientProvider);
         Request okRequest = PreparedOkHttpRequestFactory.build(request);
+        logRealtimeCallStart(request, okRequest);
         EventSourceListener wrappedListener = wrapSseCookieChangeListener(listener, request);
-        if (request != null && request.enableNetworkLog) {
-            wrappedListener = new RequestSnapshotSseEventSourceListener(wrappedListener, request);
+        if (NetworkLogSupport.isEnabled(request)) {
+            wrappedListener = new SseNetworkLogEventSourceListener(wrappedListener, request);
         }
         return EventSources.createFactory(customClient)
                 .newEventSource(okRequest, wrappedListener);
@@ -63,9 +64,9 @@ public final class RealtimeConnectionFactory {
                                     boolean lifecycleLoggingEnabled) {
         OkHttpClient customClient = clientResolver.resolveClient(request, baseClientProvider);
         Request okRequest = PreparedOkHttpRequestFactory.build(request);
-        logWebSocketCallStart(request, okRequest);
-        WebSocketListener snapshotListener = request != null && request.enableNetworkLog
-                ? new RequestSnapshotWebSocketListener(listener, request)
+        logRealtimeCallStart(request, okRequest);
+        WebSocketListener snapshotListener = NetworkLogSupport.isEnabled(request)
+                ? new WebSocketNetworkLogListener(listener, request)
                 : listener;
         WebSocketListener cookieChangeListener = wrapWebSocketCookieChangeListener(snapshotListener, request);
         return customClient.newWebSocket(okRequest, wrapWebSocketListener(
@@ -89,16 +90,11 @@ public final class RealtimeConnectionFactory {
                 : resolvedListener;
     }
 
-    private void logWebSocketCallStart(PreparedRequest request, Request okRequest) {
-        if (request == null || okRequest == null || !request.enableNetworkLog) {
+    private void logRealtimeCallStart(PreparedRequest request, Request okRequest) {
+        if (okRequest == null) {
             return;
         }
-        NetworkLogSink sink = request.networkLogSink == null ? NetworkLogSink.noop() : request.networkLogSink;
-        try {
-            sink.append(NetworkLogEventStage.CALL_START, okRequest.method() + " " + okRequest.url(), null);
-        } catch (Throwable ignored) {
-            // Logging must not affect WebSocket connection startup.
-        }
+        NetworkLogSupport.append(request, NetworkLogEventStage.CALL_START, okRequest.method() + " " + okRequest.url());
     }
 
     private EventSourceListener wrapSseCookieChangeListener(EventSourceListener listener,

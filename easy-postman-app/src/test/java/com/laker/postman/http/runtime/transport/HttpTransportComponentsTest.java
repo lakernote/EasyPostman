@@ -4,6 +4,7 @@ import com.laker.postman.http.runtime.app.AppHttpRuntimeBootstrap;
 import com.laker.postman.http.runtime.model.HttpEventInfo;
 import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.http.runtime.model.PreparedRequest;
+import com.laker.postman.http.runtime.okhttp.OkHttpExchangeEventListener;
 import com.laker.postman.http.runtime.okhttp.WebSocketLifecycleLogListener;
 import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
 import com.laker.postman.service.setting.SettingManager;
@@ -99,9 +100,34 @@ public class HttpTransportComponentsTest {
         HttpResponse response = new HttpResponse();
         response.httpEventInfo = eventInfo;
 
-        long resolvedEnd = HttpTraceInfoAttacher.resolveResponseReceivedEndTime(response, 1_500L);
+        long resolvedEnd = HttpExchangeTraceSupport.resolveResponseReceivedEndTime(response, 1_500L);
 
         assertEquals(resolvedEnd, 1_130L);
+    }
+
+    @Test
+    public void shouldNotBindExchangeTraceToThreadLocalBeforeCallStart() {
+        PreparedRequest request = new PreparedRequest();
+        request.collectMetricsInfo = true;
+        request.collectEventInfo = true;
+        request.enableNetworkLog = true;
+
+        new OkHttpExchangeEventListener(request);
+
+        assertEquals(OkHttpExchangeEventListener.getAndRemove(), null);
+    }
+
+    @Test
+    public void shouldFallbackToCallbackThreadWhenRealtimeTraceThreadIsMissing() {
+        OkHttpExchangeEventListener.getAndRemove();
+        PreparedRequest request = new PreparedRequest();
+        request.exchangeEventInfo = new HttpEventInfo();
+        HttpResponse response = new HttpResponse();
+
+        HttpExchangeTraceSupport.attachToResponse(response, System.currentTimeMillis(), request);
+
+        assertEquals(response.threadName, Thread.currentThread().getName());
+        assertEquals(response.httpEventInfo.getThreadName(), Thread.currentThread().getName());
     }
 
     @Test

@@ -73,14 +73,34 @@ public class OkHttpRequestSnapshotCapture {
         if (description != null) {
             return description;
         }
+        // one-shot/duplex 请求体无法安全重复读取，避免日志预览破坏真实发送。
+        if (body.isDuplex()) {
+            return "[duplex request body omitted]";
+        }
+        if (body.isOneShot()) {
+            return "[one-shot request body omitted]";
+        }
+        long contentLength = safeContentLength(body);
         try {
-            TruncatingBodySink sink = new TruncatingBodySink(MAX_CAPTURE_BODY_BYTES);
+            TruncatingBodySink sink = new TruncatingBodySink(MAX_CAPTURE_BODY_BYTES, contentLength);
             BufferedSink bufferedSink = Okio.buffer(sink);
-            body.writeTo(bufferedSink);
-            bufferedSink.flush();
+            try {
+                body.writeTo(bufferedSink);
+                bufferedSink.flush();
+            } catch (BodyPreviewLimitReachedException ignored) {
+                // 只预览前 2KB，避免大请求体为了日志被完整遍历。
+            }
             return sink.snapshot();
         } catch (Exception e) {
             return "[读取请求体失败: " + e.getMessage() + "]";
+        }
+    }
+
+    private static long safeContentLength(RequestBody body) {
+        try {
+            return body.contentLength();
+        } catch (Exception ignored) {
+            return -1L;
         }
     }
 
@@ -105,11 +125,13 @@ public class OkHttpRequestSnapshotCapture {
     private static final class TruncatingBodySink implements Sink {
         private final Buffer prefix = new Buffer();
         private final long limitBytes;
+        private final long declaredLength;
         private long totalBytes;
         private long remainingBytes;
 
-        private TruncatingBodySink(long limitBytes) {
+        private TruncatingBodySink(long limitBytes, long declaredLength) {
             this.limitBytes = Math.max(0, limitBytes);
+            this.declaredLength = declaredLength;
             this.remainingBytes = this.limitBytes;
         }
 
@@ -124,6 +146,9 @@ public class OkHttpRequestSnapshotCapture {
             long bytesToSkip = byteCount - bytesToKeep;
             if (bytesToSkip > 0) {
                 source.skip(bytesToSkip);
+            }
+            if (remainingBytes == 0 && isKnownOrPotentiallyTruncated()) {
+                throw new BodyPreviewLimitReachedException();
             }
         }
 
@@ -142,11 +167,25 @@ public class OkHttpRequestSnapshotCapture {
 
         private String snapshot() {
             String text = prefix.readUtf8();
-            if (totalBytes <= limitBytes) {
+            if (!isKnownOrPotentiallyTruncated() && totalBytes <= limitBytes) {
                 return text;
             }
-            return text + "\n\n[Truncated request body: " + totalBytes
+            return text + "\n\n[Truncated request body: " + describeTotalBytes()
                     + " bytes, showing first " + (limitBytes / 1024) + "KB]";
         }
+
+        private boolean isKnownOrPotentiallyTruncated() {
+            return declaredLength > limitBytes || (declaredLength < 0 && totalBytes >= limitBytes);
+        }
+
+        private String describeTotalBytes() {
+            if (declaredLength >= 0) {
+                return String.valueOf(declaredLength);
+            }
+            return "at least " + totalBytes;
+        }
+    }
+
+    private static final class BodyPreviewLimitReachedException extends IOException {
     }
 }

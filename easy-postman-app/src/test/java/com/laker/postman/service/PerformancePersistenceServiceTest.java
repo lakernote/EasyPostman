@@ -371,8 +371,8 @@ public class PerformancePersistenceServiceTest {
         assertEquals(loadedRequest.getRequestExecutionScope().getGroupVariable("tenantId"), "persisted-tenant");
     }
 
-    @Test(description = "旧版单计划配置应兼容加载为默认计划")
-    public void shouldLoadLegacySinglePlanConfiguration() throws IOException {
+    @Test(description = "旧版单计划配置不再兼容加载")
+    public void shouldRejectLegacySinglePlanConfiguration() throws IOException {
         Path tempDir = Files.createTempDirectory("performance-persistence-no-csv");
         Path configPath = tempDir.resolve("performance_config.json");
         TestablePerformancePersistenceService service = new TestablePerformancePersistenceService(configPath);
@@ -387,18 +387,11 @@ public class PerformancePersistenceServiceTest {
                     "type": "ROOT",
                     "enabled": true
                   }
-                }
-                """, StandardCharsets.UTF_8);
+	                }
+	                """, StandardCharsets.UTF_8);
 
-        DefaultMutableTreeNode loadedRoot = load(service, "Loaded Plan");
-        PerformancePlanConfiguration loadedConfiguration = service.loadConfiguration();
-
-        assertNotNull(loadedRoot);
-        assertNotNull(loadedConfiguration);
-        assertTrue(loadedConfiguration.isEfficientMode());
-        assertTrue(loadedConfiguration.isTrendEnabled());
-        assertFalse(loadedConfiguration.isReportRealtimeEnabled());
-        assertTrue(Files.exists(configPath));
+        assertNull(service.loadConfiguration());
+        assertFalse(Files.exists(configPath));
     }
 
     @Test(description = "空 CSV 状态不应写出脏数据")

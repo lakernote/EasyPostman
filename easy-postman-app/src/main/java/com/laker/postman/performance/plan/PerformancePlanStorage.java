@@ -134,13 +134,13 @@ public class PerformancePlanStorage {
         List<PerformanceSavedPlan> plans = new ArrayList<>();
         Object plansValue = jsonRoot.get("plans");
         if (!(plansValue instanceof Iterable<?> iterable)) {
-            return deserializeLegacyWorkspace(jsonRoot);
+            throw new IllegalArgumentException("Performance config must contain plans[]");
         }
         for (Object planValue : iterable) {
             if (planValue instanceof JSONObject planJson) {
-                plans.add(deserializePlan(planJson, true));
+                plans.add(deserializePlan(planJson));
             } else if (planValue instanceof Map<?, ?> planMap) {
-                plans.add(deserializePlan(new JSONObject(planMap), true));
+                plans.add(deserializePlan(new JSONObject(planMap)));
             } else {
                 throw new IllegalArgumentException("Performance plan entry must be an object");
             }
@@ -155,52 +155,31 @@ public class PerformancePlanStorage {
                 .build();
     }
 
-    private PerformancePlanWorkspace deserializeLegacyWorkspace(JSONObject jsonRoot) {
-        // 旧版 performance_config.json 没有 plans[]，根对象本身就是唯一计划。
-        PerformanceSavedPlan legacyPlan = deserializePlan(jsonRoot, false);
-        return PerformancePlanWorkspace.builder()
-                .activePlanId(jsonRoot.getStr("activePlanId", legacyPlan.getId()))
-                .plans(List.of(legacyPlan))
-                .build();
-    }
-
-    private PerformanceSavedPlan deserializePlan(JSONObject jsonRoot, boolean strict) {
+    private PerformanceSavedPlan deserializePlan(JSONObject jsonRoot) {
         JSONObject treeJson = jsonRoot.getJSONObject("tree");
-        if (strict && treeJson == null) {
+        if (treeJson == null) {
             throw new IllegalArgumentException("Performance plan must contain tree");
         }
-        PerformancePlanDocument document;
-        if (treeJson == null) {
-            document = defaultDocument();
-        } else {
-            Map<String, Object> treeMap = jsonObjectToMap(treeJson);
-            PerformanceCorePlanNode coreRootNode = corePlanJsonStorage.fromTreeMap(treeMap);
-            if (coreRootNode == null) {
-                if (strict) {
-                    throw new IllegalArgumentException("Performance plan tree is invalid");
-                }
-                document = defaultDocument();
-            } else {
-                document = PerformanceCorePlanAdapter.toAppDocument(new PerformanceCorePlanDocument(coreRootNode));
-            }
-        }
-        if (document == null) {
+        Map<String, Object> treeMap = jsonObjectToMap(treeJson);
+        PerformanceCorePlanNode coreRootNode = corePlanJsonStorage.fromTreeMap(treeMap);
+        if (coreRootNode == null) {
             throw new IllegalArgumentException("Performance plan tree is invalid");
         }
+        PerformancePlanDocument document = PerformanceCorePlanAdapter.toAppDocument(new PerformanceCorePlanDocument(coreRootNode));
 
         PerformancePlanConfiguration configuration = PerformancePlanConfiguration.builder()
                 .planDocument(document)
-                .efficientMode(booleanValue(jsonRoot, "efficientMode", true, strict))
-                .trendEnabled(booleanValue(jsonRoot, "trendEnabled", true, strict))
-                .reportRealtimeEnabled(booleanValue(jsonRoot, "reportRealtimeEnabled", false, strict))
+                .efficientMode(requiredBoolean(jsonRoot, "efficientMode"))
+                .trendEnabled(requiredBoolean(jsonRoot, "trendEnabled"))
+                .reportRealtimeEnabled(requiredBoolean(jsonRoot, "reportRealtimeEnabled"))
                 .remoteWorkerSettings(PerformanceRemoteWorkerSettings.builder()
-                        .enabled(booleanValue(jsonRoot, "remoteExecutionEnabled", false, strict))
-                        .workerEndpoints(stringValue(jsonRoot, "remoteWorkers", "", strict))
+                        .enabled(requiredBoolean(jsonRoot, "remoteExecutionEnabled"))
+                        .workerEndpoints(requiredString(jsonRoot, "remoteWorkers"))
                         .build())
                 .build();
         return PerformanceSavedPlan.fromConfiguration(
-                stringValue(jsonRoot, "id", DEFAULT_PLAN_ID, strict),
-                stringValue(jsonRoot, "name", resolvePlanName(configuration, DEFAULT_PLAN_NAME), strict),
+                requiredString(jsonRoot, "id"),
+                requiredString(jsonRoot, "name"),
                 configuration
         );
     }
@@ -273,20 +252,6 @@ public class PerformancePlanStorage {
             throw new IllegalArgumentException("Missing required performance config field: " + key);
         }
         return value;
-    }
-
-    private String stringValue(JSONObject json, String key, String defaultValue, boolean strict) {
-        return strict ? requiredString(json, key) : json.getStr(key, defaultValue);
-    }
-
-    private boolean booleanValue(JSONObject json, String key, boolean defaultValue, boolean strict) {
-        return strict ? requiredBoolean(json, key) : json.getBool(key, defaultValue);
-    }
-
-    private String resolvePlanName(PerformancePlanConfiguration configuration, String fallback) {
-        PerformancePlanDocument document = configuration == null ? null : configuration.getPlanDocument();
-        String rootName = document == null || document.getRoot() == null ? null : document.getRoot().getName();
-        return rootName == null || rootName.trim().isEmpty() ? fallback : rootName.trim();
     }
 
     private void deleteFile(File file) {

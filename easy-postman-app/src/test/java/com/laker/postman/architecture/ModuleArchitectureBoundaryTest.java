@@ -1050,6 +1050,40 @@ public class ModuleArchitectureBoundaryTest {
     }
 
     @Test
+    public void appExitFlowMustNotCreateLazySingletonPanels() throws IOException {
+        Path root = repositoryRoot();
+        String exitCoordinator = Files.readString(root.resolve(
+                "easy-postman-app/src/main/java/com/laker/postman/panel/lifecycle/AppExitCoordinator.java"));
+        String mainFrame = Files.readString(root.resolve(
+                "easy-postman-app/src/main/java/com/laker/postman/frame/MainFrame.java"));
+
+        assertFalse(exitCoordinator.contains("getInstance(FunctionalPanel.class)"),
+                "Exit flow must not create FunctionalPanel just to save on shutdown; use getExistingInstance");
+        assertFalse(exitCoordinator.contains("getInstance(PerformancePanel.class)"),
+                "Exit flow must not create PerformancePanel just to save on shutdown; use getExistingInstance");
+        assertFalse(mainFrame.contains("getInstance(PerformancePanel.class)"),
+                "Window cleanup must not create PerformancePanel just to dispose timers; use getExistingInstance");
+    }
+
+    @Test
+    public void workspaceSwitchFlowMustNotCreateLazySingletonPanels() throws IOException {
+        Path root = repositoryRoot();
+        String topMenuBar = Files.readString(root.resolve(
+                "easy-postman-app/src/main/java/com/laker/postman/panel/topmenu/TopMenuBar.java"));
+        String workspacePanel = Files.readString(root.resolve(
+                "easy-postman-app/src/main/java/com/laker/postman/panel/workspace/WorkspacePanel.java"));
+
+        assertFalse(topMenuBar.contains("getInstance(FunctionalPanel.class)"),
+                "Workspace switching from top menu must refresh FunctionalPanel only if it already exists");
+        assertFalse(topMenuBar.contains("getInstance(PerformancePanel.class)"),
+                "Workspace switching from top menu must refresh PerformancePanel only if it already exists");
+        assertFalse(workspacePanel.contains("getInstance(FunctionalPanel.class)"),
+                "Workspace switching from workspace panel must refresh FunctionalPanel only if it already exists");
+        assertFalse(workspacePanel.contains("getInstance(PerformancePanel.class)"),
+                "Workspace switching from workspace panel must refresh PerformancePanel only if it already exists");
+    }
+
+    @Test
     public void architectureDocsAndSkillsUseCurrentModuleNames() throws IOException {
         Path root = repositoryRoot();
         List<Path> files = List.of(

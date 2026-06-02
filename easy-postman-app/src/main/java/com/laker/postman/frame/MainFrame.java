@@ -273,9 +273,8 @@ public class MainFrame extends JFrame {
 
         // 清理性能测试面板资源（停止定时器等）
         try {
-            PerformancePanel performancePanel =
-                    UiSingletonFactory.getInstance(PerformancePanel.class);
-            performancePanel.cleanup();
+            UiSingletonFactory.getExistingInstance(PerformancePanel.class)
+                    .ifPresent(PerformancePanel::cleanup);
         } catch (Exception e) {
             log.warn("清理 PerformancePanel 资源时出错: {}", e.getMessage());
         }

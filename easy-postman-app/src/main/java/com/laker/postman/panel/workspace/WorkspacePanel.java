@@ -1,5 +1,11 @@
 package com.laker.postman.panel.workspace;
 
+import com.laker.postman.common.UiSingletonFactory;
+import com.laker.postman.common.UiSingletonPanel;
+import com.laker.postman.common.component.button.ClearButton;
+import com.laker.postman.common.component.button.PlusButton;
+import com.laker.postman.common.component.button.RefreshButton;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.GitAuthType;
 import com.laker.postman.model.GitOperation;
 import com.laker.postman.model.GitOperationResult;
@@ -7,12 +13,6 @@ import com.laker.postman.model.GitRepoSource;
 import com.laker.postman.model.RemoteStatus;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.model.WorkspaceType;
-import com.laker.postman.common.UiSingletonPanel;
-import com.laker.postman.common.UiSingletonFactory;
-import com.laker.postman.common.component.button.ClearButton;
-import com.laker.postman.common.component.button.PlusButton;
-import com.laker.postman.common.component.button.RefreshButton;
-import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.functional.FunctionalPanel;
@@ -478,8 +478,7 @@ public class WorkspacePanel extends UiSingletonPanel {
             // 切换请求集合文件
             UiSingletonFactory.getInstance(CollectionTreePanel.class)
                     .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace), () -> {
-                        UiSingletonFactory.getInstance(PerformancePanel.class).switchWorkspaceAndRefreshUI();
-                        UiSingletonFactory.getInstance(FunctionalPanel.class).switchWorkspaceAndRefreshUI();
+                        refreshExistingWorkspaceScopedPanels();
                         // 更新顶部菜单栏工作区显示
                         UiSingletonFactory.getInstance(TopMenuBar.class).updateWorkspaceDisplay();
                         refreshWorkspaceList();
@@ -492,6 +491,13 @@ public class WorkspacePanel extends UiSingletonPanel {
     private void saveCurrentWorkspaceScopedPanels() {
         UiSingletonFactory.getExistingInstance(FunctionalPanel.class).ifPresent(FunctionalPanel::save);
         UiSingletonFactory.getExistingInstance(PerformancePanel.class).ifPresent(PerformancePanel::save);
+    }
+
+    private void refreshExistingWorkspaceScopedPanels() {
+        UiSingletonFactory.getExistingInstance(FunctionalPanel.class)
+                .ifPresent(FunctionalPanel::switchWorkspaceAndRefreshUI);
+        UiSingletonFactory.getExistingInstance(PerformancePanel.class)
+                .ifPresent(PerformancePanel::switchWorkspaceAndRefreshUI);
     }
 
     /**
@@ -510,8 +516,7 @@ public class WorkspacePanel extends UiSingletonPanel {
             // 刷新 requests 和 env 面板
             UiSingletonFactory.getInstance(CollectionTreePanel.class)
                     .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace), () -> {
-                        UiSingletonFactory.getInstance(FunctionalPanel.class).switchWorkspaceAndRefreshUI();
-                        UiSingletonFactory.getInstance(PerformancePanel.class).switchWorkspaceAndRefreshUI();
+                        refreshExistingWorkspaceScopedPanels();
                         refreshWorkspaceList();
                     });
             UiSingletonFactory.getInstance(EnvironmentPanel.class)
@@ -552,8 +557,7 @@ public class WorkspacePanel extends UiSingletonPanel {
             // 刷新 requests 和 env 面板
             UiSingletonFactory.getInstance(CollectionTreePanel.class)
                     .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace), () -> {
-                        UiSingletonFactory.getInstance(FunctionalPanel.class).switchWorkspaceAndRefreshUI();
-                        UiSingletonFactory.getInstance(PerformancePanel.class).switchWorkspaceAndRefreshUI();
+                        refreshExistingWorkspaceScopedPanels();
                         refreshWorkspaceList();
                     });
             UiSingletonFactory.getInstance(EnvironmentPanel.class)
@@ -575,8 +579,7 @@ public class WorkspacePanel extends UiSingletonPanel {
         if (dialog.isNeedRefresh()) {
             UiSingletonFactory.getInstance(CollectionTreePanel.class)
                     .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace), () -> {
-                        UiSingletonFactory.getInstance(FunctionalPanel.class).switchWorkspaceAndRefreshUI();
-                        UiSingletonFactory.getInstance(PerformancePanel.class).switchWorkspaceAndRefreshUI();
+                        refreshExistingWorkspaceScopedPanels();
                         refreshWorkspaceList();
                     });
             UiSingletonFactory.getInstance(EnvironmentPanel.class)
@@ -647,10 +650,7 @@ public class WorkspacePanel extends UiSingletonPanel {
                                 SystemUtil.getEnvPathForWorkspace(newCurrentWorkspace));
                         // 切换请求集合文件
                         UiSingletonFactory.getInstance(CollectionTreePanel.class).switchWorkspaceAndRefreshUI(
-                                SystemUtil.getCollectionPathForWorkspace(newCurrentWorkspace), () -> {
-                                    UiSingletonFactory.getInstance(FunctionalPanel.class).switchWorkspaceAndRefreshUI();
-                                    UiSingletonFactory.getInstance(PerformancePanel.class).switchWorkspaceAndRefreshUI();
-                                });
+                                SystemUtil.getCollectionPathForWorkspace(newCurrentWorkspace), this::refreshExistingWorkspaceScopedPanels);
 
                     }
                 }

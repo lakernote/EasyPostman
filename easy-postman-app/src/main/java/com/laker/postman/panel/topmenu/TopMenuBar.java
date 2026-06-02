@@ -5,8 +5,8 @@ import com.formdev.flatlaf.extras.FlatDesktop;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.formdev.flatlaf.util.SystemInfo;
 import com.laker.postman.common.IRefreshable;
-import com.laker.postman.common.UiSingletonMenuBar;
 import com.laker.postman.common.UiSingletonFactory;
+import com.laker.postman.common.UiSingletonMenuBar;
 import com.laker.postman.common.component.combobox.EnvironmentComboBox;
 import com.laker.postman.common.component.combobox.WorkspaceComboBox;
 import com.laker.postman.common.constants.ConfigPathConstants;
@@ -26,9 +26,9 @@ import com.laker.postman.panel.topmenu.help.ChangelogDialog;
 import com.laker.postman.panel.topmenu.help.MemoryTuningDialog;
 import com.laker.postman.panel.topmenu.plugin.PluginManagerDialog;
 import com.laker.postman.panel.topmenu.setting.ModernSettingsDialog;
-import com.laker.postman.plugin.manager.PluginManagementService;
 import com.laker.postman.panel.workspace.components.GitOperationDialog;
 import com.laker.postman.panel.workspace.components.GitOperationPresentation;
+import com.laker.postman.plugin.manager.PluginManagementService;
 import com.laker.postman.service.UpdateService;
 import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.service.setting.ShortcutManager;
@@ -543,8 +543,7 @@ public class TopMenuBar extends UiSingletonMenuBar implements IRefreshable {
             // 切换请求集合文件
             UiSingletonFactory.getInstance(CollectionTreePanel.class)
                     .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace), () -> {
-                        UiSingletonFactory.getInstance(PerformancePanel.class).switchWorkspaceAndRefreshUI();
-                        UiSingletonFactory.getInstance(FunctionalPanel.class).switchWorkspaceAndRefreshUI();
+                        refreshExistingWorkspaceScopedPanels();
 
                         // 重新加载菜单栏（根据新工作区类型更新 Git 工具栏显示状态）
                         refresh();
@@ -560,6 +559,13 @@ public class TopMenuBar extends UiSingletonMenuBar implements IRefreshable {
     private void saveCurrentWorkspaceScopedPanels() {
         UiSingletonFactory.getExistingInstance(FunctionalPanel.class).ifPresent(FunctionalPanel::save);
         UiSingletonFactory.getExistingInstance(PerformancePanel.class).ifPresent(PerformancePanel::save);
+    }
+
+    private void refreshExistingWorkspaceScopedPanels() {
+        UiSingletonFactory.getExistingInstance(FunctionalPanel.class)
+                .ifPresent(FunctionalPanel::switchWorkspaceAndRefreshUI);
+        UiSingletonFactory.getExistingInstance(PerformancePanel.class)
+                .ifPresent(PerformancePanel::switchWorkspaceAndRefreshUI);
     }
 
     /**
@@ -717,10 +723,7 @@ public class TopMenuBar extends UiSingletonMenuBar implements IRefreshable {
             // Pull 操作后需要刷新相关面板以显示最新数据
             if (operation == GitOperation.PULL) {
                 UiSingletonFactory.getInstance(CollectionTreePanel.class)
-                        .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace), () -> {
-                            UiSingletonFactory.getInstance(FunctionalPanel.class).switchWorkspaceAndRefreshUI();
-                            UiSingletonFactory.getInstance(PerformancePanel.class).switchWorkspaceAndRefreshUI();
-                        });
+                        .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace), this::refreshExistingWorkspaceScopedPanels);
                 UiSingletonFactory.getInstance(EnvironmentPanel.class)
                         .switchWorkspaceAndRefreshUI(SystemUtil.getEnvPathForWorkspace(workspace));
             }

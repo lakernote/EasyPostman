@@ -28,16 +28,16 @@ public class AppExitCoordinator {
 
         // 保存功能测试配置
         try {
-            FunctionalPanel functionalPanel = UiSingletonFactory.getInstance(FunctionalPanel.class);
-            functionalPanel.save();
+            UiSingletonFactory.getExistingInstance(FunctionalPanel.class)
+                    .ifPresent(FunctionalPanel::save);
         } catch (Exception e) {
             log.error("Failed to save functional test config on exit", e);
         }
 
         // 保存性能测试配置
         try {
-            PerformancePanel performancePanel = UiSingletonFactory.getInstance(PerformancePanel.class);
-            performancePanel.save();
+            UiSingletonFactory.getExistingInstance(PerformancePanel.class)
+                    .ifPresent(PerformancePanel::save);
         } catch (Exception e) {
             log.error("Failed to save performance test config on exit", e);
         }

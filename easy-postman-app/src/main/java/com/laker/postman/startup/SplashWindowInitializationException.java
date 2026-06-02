@@ -1,8 +1,8 @@
-package com.laker.postman.common.window;
+package com.laker.postman.startup;
 
 import java.io.Serial;
 
-public class SplashWindowInitializationException extends RuntimeException {
+class SplashWindowInitializationException extends RuntimeException {
     @Serial
     private static final long serialVersionUID = 1L;
 

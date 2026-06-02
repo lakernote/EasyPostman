@@ -63,6 +63,11 @@ Read `docs/ARCHITECTURE_MODULES_zh.md` first when the task is about module place
 - Theme tokens, semantic colors, icon color strategies, RSyntaxTextArea editor theme XMLs, and reusable UI resources belong in `ui`; FlatLaf installation and theme switching belong in `platform` once decoupled from app-specific wiring. FlatLaf properties tied to app LAF classes can stay in `app` until those classes move.
 - Primary-color buttons must use on-primary icon color. Icons on blue/brand buttons stay white and must not switch with the light/dark theme foreground.
 
+## Code Style And Testability
+
+- Use Lombok for ordinary boilerplate when it makes code smaller and clearer: `@Slf4j`, `@RequiredArgsConstructor`, `@Getter`/`@Setter`, model annotations, and `@UtilityClass` for stateless static helpers. Avoid Lombok only when explicit code is clearer for Swing lifecycle, validation-heavy construction, or framework compatibility.
+- Do not add production hooks, injectable exits, extra state, or abstraction layers only to make a test possible if that makes the production code more complex. Prefer testing observable behavior through existing public/package APIs, focused static architecture tests, or a simpler production fix with a smaller test. Add a seam only when it also improves real design, not just test mechanics.
+
 ## Anti-patterns
 
 - Do not use a vague `common` module as the default destination.

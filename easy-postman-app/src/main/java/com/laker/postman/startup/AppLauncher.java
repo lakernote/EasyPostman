@@ -2,7 +2,6 @@ package com.laker.postman.startup;
 
 import com.formdev.flatlaf.util.SystemInfo;
 import com.laker.postman.common.themes.SimpleThemeManager;
-import com.laker.postman.common.window.SplashWindow;
 import com.laker.postman.http.runtime.app.AppHttpRuntimeBootstrap;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.plugin.runtime.PluginRuntime;

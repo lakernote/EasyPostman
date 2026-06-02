@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
+import java.awt.GraphicsEnvironment;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -16,28 +17,38 @@ import java.util.concurrent.ExecutionException;
 @UtilityClass
 public class StartupFailureHandler {
 
-    public static void showStartupErrorAndExit(Throwable throwable) {
+    public void showStartupErrorAndExit(Throwable throwable) {
         Throwable rootCause = unwrap(throwable);
         log.error("Failed to start application", rootCause);
 
         Runnable showErrorAndExit = () -> {
-            JOptionPane.showMessageDialog(
-                    null,
-                    I18nUtil.getMessage(MessageKeys.SPLASH_ERROR_LOAD_MAIN),
-                    I18nUtil.getMessage(MessageKeys.GENERAL_ERROR),
-                    JOptionPane.ERROR_MESSAGE
-            );
+            if (!GraphicsEnvironment.isHeadless()) {
+                try {
+                    showSwingStartupError();
+                } catch (Exception e) {
+                    log.warn("Failed to show startup error dialog", e);
+                }
+            }
             System.exit(1);
         };
 
-        if (SwingUtilities.isEventDispatchThread()) {
+        if (GraphicsEnvironment.isHeadless() || SwingUtilities.isEventDispatchThread()) {
             showErrorAndExit.run();
             return;
         }
         SwingUtilities.invokeLater(showErrorAndExit);
     }
 
-    private static Throwable unwrap(Throwable throwable) {
+    private void showSwingStartupError() {
+        JOptionPane.showMessageDialog(
+                null,
+                I18nUtil.getMessage(MessageKeys.SPLASH_ERROR_LOAD_MAIN),
+                I18nUtil.getMessage(MessageKeys.GENERAL_ERROR),
+                JOptionPane.ERROR_MESSAGE
+        );
+    }
+
+    private Throwable unwrap(Throwable throwable) {
         if (throwable instanceof ExecutionException executionException && executionException.getCause() != null) {
             return executionException.getCause();
         }

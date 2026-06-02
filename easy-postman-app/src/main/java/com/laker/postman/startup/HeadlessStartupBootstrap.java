@@ -5,21 +5,23 @@ import com.laker.postman.plugin.host.HeadlessRequestCollectionImportService;
 import com.laker.postman.plugin.runtime.PluginRuntime;
 import lombok.experimental.UtilityClass;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 @UtilityClass
 public class HeadlessStartupBootstrap {
-    private static final AtomicBoolean INITIALIZED = new AtomicBoolean(false);
 
-    public static void initRuntime() {
-        if (!INITIALIZED.compareAndSet(false, true)) {
+    public void initRuntime() {
+        if (PluginRuntime.isInitialized()) {
             return;
         }
-        // headless 压测只需要插件脚本扩展，不启动 app IOC，避免把工作区/GUI bean 扫描带入 worker。
-        PluginRuntime.getRegistry().registerService(
-                RequestCollectionImportService.class,
-                new HeadlessRequestCollectionImportService()
-        );
-        PluginRuntime.initialize();
+        synchronized (HeadlessStartupBootstrap.class) {
+            if (PluginRuntime.isInitialized()) {
+                return;
+            }
+            // headless 压测只需要插件脚本扩展，不启动 app IOC，避免把工作区/GUI bean 扫描带入 worker。
+            PluginRuntime.getRegistry().registerService(
+                    RequestCollectionImportService.class,
+                    new HeadlessRequestCollectionImportService()
+            );
+            PluginRuntime.initialize();
+        }
     }
 }

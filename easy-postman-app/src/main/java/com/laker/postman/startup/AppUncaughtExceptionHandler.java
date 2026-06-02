@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
+import java.awt.GraphicsEnvironment;
 import java.awt.Window;
 
 /**
@@ -25,10 +26,18 @@ class AppUncaughtExceptionHandler implements Thread.UncaughtExceptionHandler {
         }
 
         log.error("Uncaught exception in thread: {}", thread.getName(), throwable);
+        if (GraphicsEnvironment.isHeadless()) {
+            log.debug("Skipping uncaught exception UI notification in headless mode");
+            return;
+        }
         SwingUtilities.invokeLater(this::notifyUser);
     }
 
     private void notifyUser() {
+        if (GraphicsEnvironment.isHeadless()) {
+            return;
+        }
+
         String message = I18nUtil.getMessage(MessageKeys.GENERAL_ERROR_MESSAGE);
         if (isMainFrameVisible()) {
             NotificationUtil.showError(message);

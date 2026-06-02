@@ -1,10 +1,8 @@
-package com.laker.postman.common.window;
+package com.laker.postman.startup;
 
 import com.laker.postman.common.constants.Icons;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.frame.MainFrame;
-import com.laker.postman.startup.StartupFailureHandler;
-import com.laker.postman.startup.StartupCoordinator;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -20,7 +18,7 @@ import java.io.Serial;
  * 使用无边框 JFrame 代替 JWindow，降低 macOS 上首次创建顶层窗口的额外开销。
  */
 @Slf4j
-public class SplashWindow extends JFrame {
+class SplashWindow extends JFrame {
     @Serial
     private static final long serialVersionUID = 1L;
     private static final int MIN_DISPLAY_TIME_MS = 350;
@@ -69,7 +67,7 @@ public class SplashWindow extends JFrame {
      * 创建主要内容面板
      */
     private JPanel createContentPanel() {
-        JPanel content = getJPanel();
+        JPanel content = createSplashContentPanel();
 
         content.add(createLogoPanel(), BorderLayout.CENTER);
 
@@ -201,7 +199,7 @@ public class SplashWindow extends JFrame {
         }
     }
 
-    private static JPanel getJPanel() {
+    private static JPanel createSplashContentPanel() {
         JPanel content = new JPanel() { // 自定义面板，绘制渐变背景和圆角
             @Override
             protected void paintComponent(Graphics g) {

@@ -1050,6 +1050,38 @@ public class ModuleArchitectureBoundaryTest {
     }
 
     @Test
+    public void startupSpecificWindowsStayInStartupPackage() {
+        Path root = repositoryRoot();
+        assertTrue(Files.isRegularFile(root.resolve(
+                "easy-postman-app/src/main/java/com/laker/postman/startup/SplashWindow.java")));
+        assertTrue(Files.isRegularFile(root.resolve(
+                "easy-postman-app/src/main/java/com/laker/postman/startup/SplashWindowInitializationException.java")));
+        Path retiredCommonWindowPackage = root.resolve("easy-postman-app/src/main/java/com/laker/postman/common/window");
+        if (Files.exists(retiredCommonWindowPackage)) {
+            try (Stream<Path> files = Files.walk(retiredCommonWindowPackage)) {
+                assertTrue(files.noneMatch(Files::isRegularFile),
+                        "Startup-specific windows must not live under the app common.window package");
+            } catch (IOException e) {
+                throw new IllegalStateException("Failed to inspect " + retiredCommonWindowPackage, e);
+            }
+        }
+    }
+
+    @Test
+    public void staticRuntimeHelpersUseLombokUtilityClass() throws IOException {
+        Path root = repositoryRoot();
+        for (Path helper : List.of(
+                root.resolve("easy-postman-platform/src/main/java/com/laker/postman/ioc/BeanFactory.java"),
+                root.resolve("easy-postman-plugin-runtime/src/main/java/com/laker/postman/plugin/runtime/PluginLoader.java")
+        )) {
+            String source = Files.readString(helper);
+            assertTrue(source.contains("@UtilityClass"), helper + " should use Lombok @UtilityClass for static helpers");
+            assertFalse(source.contains("private " + fileNameWithoutExtension(helper) + "()"),
+                    helper + " should not keep a hand-written private utility constructor");
+        }
+    }
+
+    @Test
     public void appExitFlowMustNotCreateLazySingletonPanels() throws IOException {
         Path root = repositoryRoot();
         String exitCoordinator = Files.readString(root.resolve(
@@ -1322,6 +1354,12 @@ public class ModuleArchitectureBoundaryTest {
                     .filter(path -> path.getFileName().toString().endsWith(".java"))
                     .toList();
         }
+    }
+
+    private static String fileNameWithoutExtension(Path file) {
+        String fileName = file.getFileName().toString();
+        int dotIndex = fileName.lastIndexOf('.');
+        return dotIndex < 0 ? fileName : fileName.substring(0, dotIndex);
     }
 
     private static List<String> sourceContainsViolations(Path file, List<String> forbiddenPatterns) {

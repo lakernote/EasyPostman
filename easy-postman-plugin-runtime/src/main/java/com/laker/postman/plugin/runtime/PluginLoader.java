@@ -3,6 +3,7 @@ package com.laker.postman.plugin.runtime;
 import com.laker.postman.plugin.api.EasyPostmanPlugin;
 import com.laker.postman.plugin.api.PluginContext;
 import com.laker.postman.plugin.api.PluginDescriptor;
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -19,18 +20,16 @@ import java.util.Optional;
  * </p>
  */
 @Slf4j
-final class PluginLoader {
+@UtilityClass
+class PluginLoader {
 
-    private PluginLoader() {
-    }
-
-    static Optional<String> loadPluginJar(Path jarPath,
-                                          PluginDescriptor descriptor,
-                                          PluginRegistry registry,
-                                          List<EasyPostmanPlugin> loadedPlugins,
-                                          List<URLClassLoader> pluginClassLoaders,
-                                          List<PluginFileInfo> loadedPluginFiles,
-                                          ClassLoader parentClassLoader) {
+    Optional<String> loadPluginJar(Path jarPath,
+                                   PluginDescriptor descriptor,
+                                   PluginRegistry registry,
+                                   List<EasyPostmanPlugin> loadedPlugins,
+                                   List<URLClassLoader> pluginClassLoaders,
+                                   List<PluginFileInfo> loadedPluginFiles,
+                                   ClassLoader parentClassLoader) {
         URLClassLoader classLoader = null;
         try {
             log.info("Loading plugin: id={}, version={}, entryClass={}, jar={}",
@@ -55,7 +54,7 @@ final class PluginLoader {
         }
     }
 
-    private static String buildLoadFailureMessage(Throwable throwable) {
+    private String buildLoadFailureMessage(Throwable throwable) {
         Throwable current = throwable;
         while (current.getCause() != null) {
             current = current.getCause();
@@ -67,7 +66,7 @@ final class PluginLoader {
         return current.getClass().getSimpleName() + ": " + message;
     }
 
-    private static void closeFailedClassLoader(URLClassLoader classLoader) {
+    private void closeFailedClassLoader(URLClassLoader classLoader) {
         if (classLoader == null) {
             return;
         }
@@ -78,7 +77,7 @@ final class PluginLoader {
         }
     }
 
-    static void startPlugins(List<EasyPostmanPlugin> plugins) {
+    void startPlugins(List<EasyPostmanPlugin> plugins) {
         for (EasyPostmanPlugin plugin : plugins) {
             try {
                 plugin.onStart();
@@ -89,7 +88,7 @@ final class PluginLoader {
         }
     }
 
-    static void stopPlugins(List<EasyPostmanPlugin> plugins) {
+    void stopPlugins(List<EasyPostmanPlugin> plugins) {
         for (EasyPostmanPlugin plugin : plugins) {
             try {
                 plugin.onStop();
@@ -99,7 +98,7 @@ final class PluginLoader {
         }
     }
 
-    static void closeClassLoaders(List<URLClassLoader> classLoaders) {
+    void closeClassLoaders(List<URLClassLoader> classLoaders) {
         for (URLClassLoader classLoader : classLoaders) {
             try {
                 classLoader.close();

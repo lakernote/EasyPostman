@@ -28,13 +28,33 @@ public class PerformanceTrendAxisConfigurerTest {
     public void timeAxisShouldUseWallClockFormatAndOneSecondTicksForShortRuns() {
         DateAxis axis = new DateAxis("时间");
 
-        PerformanceTrendAxisConfigurer.configureTimeAxis(axis, 10_000L);
+        PerformanceTrendAxisConfigurer.configureTimeAxis(axis, 10_500L);
 
-        assertNotNull(axis.getDateFormatOverride());
-        assertTrue(axis.getDateFormatOverride().format(new Date()).matches("\\d{2}:\\d{2}:\\d{2}"));
+        assertEquals(axis.getDateFormatOverride(), null);
+        assertTrue(axis.getTickUnit().dateToString(new Date()).matches("\\d{2}:\\d{2}:\\d{2}"));
         assertFalse(axis.isAutoTickUnitSelection());
         assertEquals(axis.getTickUnit().getUnitType(), DateTickUnitType.SECOND);
         assertEquals(axis.getTickUnit().getMultiple(), 1);
+    }
+
+    @Test
+    public void timeAxisShouldUseTwoSecondTicksWhenOneSecondLabelsWouldCrowd() {
+        DateAxis axis = new DateAxis("时间");
+
+        PerformanceTrendAxisConfigurer.configureTimeAxis(axis, 14_000L);
+
+        assertEquals(axis.getTickUnit().getUnitType(), DateTickUnitType.SECOND);
+        assertEquals(axis.getTickUnit().getMultiple(), 2);
+    }
+
+    @Test
+    public void timeAxisShouldUseTenSecondTicksForOneMinuteRuns() {
+        DateAxis axis = new DateAxis("时间");
+
+        PerformanceTrendAxisConfigurer.configureTimeAxis(axis, 60_000L);
+
+        assertEquals(axis.getTickUnit().getUnitType(), DateTickUnitType.SECOND);
+        assertEquals(axis.getTickUnit().getMultiple(), 10);
     }
 
     @Test
@@ -45,5 +65,22 @@ public class PerformanceTrendAxisConfigurerTest {
 
         assertEquals(axis.getTickUnit().getUnitType(), DateTickUnitType.SECOND);
         assertEquals(axis.getTickUnit().getMultiple(), 15);
+    }
+
+    @Test
+    public void timeAxisShouldUseThirtyMinuteTicksForTwelveHourRuns() {
+        DateAxis axis = new DateAxis("时间");
+
+        PerformanceTrendAxisConfigurer.configureTimeAxis(axis, 12 * 60 * 60_000L);
+
+        assertEquals(axis.getTickUnit().getUnitType(), DateTickUnitType.HOUR);
+        assertEquals(axis.getTickUnit().getMultiple(), 2);
+        assertTrue(axis.getTickUnit().dateToString(new Date()).matches("\\d{2}:\\d{2}"));
+    }
+
+    @Test
+    public void timeAxisShouldReserveSmallRightPaddingWithoutCreatingLargeBlankTail() {
+        assertEquals(PerformanceTrendAxisConfigurer.domainRightPaddingMs(50_000L), 1_250L);
+        assertEquals(PerformanceTrendAxisConfigurer.domainRightPaddingMs(12 * 60 * 60_000L), 1_080_000L);
     }
 }

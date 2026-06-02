@@ -9,6 +9,10 @@ final class PerformanceTrendSeriesValue {
         return Math.max(0, value);
     }
 
+    static Number activeCount(int value, boolean suppressZero) {
+        return suppressZero ? null : activeCount(value);
+    }
+
     static Number sampleMetric(double value) {
         return Double.isFinite(value) ? value : null;
     }

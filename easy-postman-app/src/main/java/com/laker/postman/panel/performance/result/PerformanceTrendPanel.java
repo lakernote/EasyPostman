@@ -18,6 +18,7 @@ import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.chart.renderer.xy.XYStepRenderer;
 import org.jfree.data.time.DateRange;
 import org.jfree.data.time.RegularTimePeriod;
 import org.jfree.data.time.TimeSeries;
@@ -359,10 +360,19 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
     }
 
     private XYLineAndShapeRenderer createTrendRenderer() {
-        XYLineAndShapeRenderer renderer = new PerformanceTrendSparsePointRenderer();
+        XYLineAndShapeRenderer renderer = new PerformanceTrendSinglePointRenderer();
         renderer.setDefaultShape(new Ellipse2D.Double(-3.0, -3.0, 6.0, 6.0));
         renderer.setDefaultShapesFilled(true);
         renderer.setDrawOutlines(false);
+        return renderer;
+    }
+
+    private XYLineAndShapeRenderer createActiveCountTrendRenderer() {
+        XYStepRenderer renderer = new XYStepRenderer();
+        renderer.setDefaultShapesVisible(false);
+        renderer.setDefaultShapesFilled(false);
+        renderer.setDrawOutlines(false);
+        renderer.setStepPoint(1.0);
         return renderer;
     }
 
@@ -385,9 +395,10 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
         }
         XYPlot plot = chartPanel.getChart().getXYPlot();
         if (plot.getDomainAxis() instanceof DateAxis dateAxis) {
+            long rightPaddingMs = PerformanceTrendAxisConfigurer.domainRightPaddingMs(EMPTY_DOMAIN_WINDOW_MS);
             DateRange resetRange = new DateRange(
                     new Date(Math.max(0, resetTimeMs - EMPTY_DOMAIN_WINDOW_MS)),
-                    new Date(resetTimeMs)
+                    new Date(resetTimeMs + rightPaddingMs)
             );
             dateAxis.setAutoRange(true);
             dateAxis.setRange(resetRange, false, true);
@@ -413,13 +424,16 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
         if (period == null || snapshot == null) {
             return;
         }
+        boolean suppressLeadingIdleActiveCounts = shouldSuppressLeadingIdleActiveCounts(snapshot);
 
-        httpVirtualUsersSeries.addOrUpdate(period, PerformanceTrendSeriesValue.activeCount(snapshot.activeUsers()));
+        httpVirtualUsersSeries.addOrUpdate(period, PerformanceTrendSeriesValue.activeCount(
+                snapshot.activeUsers(), suppressLeadingIdleActiveCounts));
         httpRpsSeries.addOrUpdate(period, PerformanceTrendSeriesValue.sampleMetric(snapshot.http().sampleRate()));
         httpAvgResponseSeries.addOrUpdate(period, PerformanceTrendSeriesValue.sampleMetric(snapshot.http().avgDurationMs()));
         httpErrorRateSeries.addOrUpdate(period, PerformanceTrendSeriesValue.sampleMetric(snapshot.http().failurePercent()));
 
-        wsActiveSeries.addOrUpdate(period, PerformanceTrendSeriesValue.activeCount(snapshot.activeWebSocketConnections()));
+        wsActiveSeries.addOrUpdate(period, PerformanceTrendSeriesValue.activeCount(
+                snapshot.activeWebSocketConnections(), suppressLeadingIdleActiveCounts));
         wsSentRateSeries.addOrUpdate(period, PerformanceTrendSeriesValue.sampleMetric(snapshot.webSocket().sentRate()));
         wsReceivedRateSeries.addOrUpdate(period, PerformanceTrendSeriesValue.sampleMetric(snapshot.webSocket().receivedRate()));
         wsFirstMessageLatencySeries.addOrUpdate(period,
@@ -429,7 +443,8 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
         wsErrorRateSeries.addOrUpdate(period,
                 PerformanceTrendSeriesValue.sampleMetric(snapshot.webSocket().failurePercent()));
 
-        sseActiveSeries.addOrUpdate(period, PerformanceTrendSeriesValue.activeCount(snapshot.activeSseStreams()));
+        sseActiveSeries.addOrUpdate(period, PerformanceTrendSeriesValue.activeCount(
+                snapshot.activeSseStreams(), suppressLeadingIdleActiveCounts));
         sseEventRateSeries.addOrUpdate(period, PerformanceTrendSeriesValue.sampleMetric(snapshot.sse().receivedRate()));
         sseMatchedRateSeries.addOrUpdate(period, PerformanceTrendSeriesValue.sampleMetric(snapshot.sse().matchedRate()));
         sseFirstEventLatencySeries.addOrUpdate(period,
@@ -441,6 +456,21 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
         syncDomainAxes(period);
     }
 
+    private boolean shouldSuppressLeadingIdleActiveCounts(PerformanceTrendSnapshot snapshot) {
+        return trendDomainStartMs == null
+                && snapshot.activeUsers() == 0
+                && snapshot.activeWebSocketConnections() == 0
+                && snapshot.activeSseStreams() == 0
+                && hasNoSamples(snapshot.overview())
+                && hasNoSamples(snapshot.http())
+                && hasNoSamples(snapshot.webSocket())
+                && hasNoSamples(snapshot.sse());
+    }
+
+    private static boolean hasNoSamples(PerformanceTrendSnapshot.ProtocolWindowMetrics metrics) {
+        return metrics == null || metrics.samples() == 0;
+    }
+
     private void syncDomainAxes(RegularTimePeriod period) {
         long periodStart = period.getFirstMillisecond();
         long periodEnd = period.getLastMillisecond();
@@ -449,8 +479,9 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
 
         // 同一次压测的分离图必须共享 X 轴，否则空值较多的指标会自动裁剪到不同时间范围。
         long end = Math.max(trendDomainEndMs, trendDomainStartMs + 1_000L);
-        DateRange range = new DateRange(new Date(trendDomainStartMs), new Date(end));
         long visibleDurationMs = end - trendDomainStartMs;
+        long rightPaddingMs = PerformanceTrendAxisConfigurer.domainRightPaddingMs(visibleDurationMs);
+        DateRange range = new DateRange(new Date(trendDomainStartMs), new Date(end + rightPaddingMs));
         for (TrendView trendView : trendViews) {
             trendView.setDomainRange(range, visibleDurationMs);
         }
@@ -580,10 +611,17 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
             dataset.addSeries(spec.series());
             ChartPanel chartPanel = createChartPanel(dataset, spec.series().getKey().toString(), false, spec.axisFormat());
             chartPanel.setPreferredSize(new Dimension(420, 220));
-            XYLineAndShapeRenderer renderer = createTrendRenderer();
+            XYLineAndShapeRenderer renderer = createSplitTrendRenderer(spec);
             renderer.setSeriesPaint(0, spec.color());
             chartPanel.getChart().getXYPlot().setRenderer(renderer);
             return chartPanel;
+        }
+
+        private XYLineAndShapeRenderer createSplitTrendRenderer(SeriesSpec spec) {
+            if (spec.axisFormat() == AxisFormat.INTEGER) {
+                return createActiveCountTrendRenderer();
+            }
+            return createTrendRenderer();
         }
 
         private void showChartMode(String mode) {

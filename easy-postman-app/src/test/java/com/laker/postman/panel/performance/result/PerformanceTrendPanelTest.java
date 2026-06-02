@@ -12,6 +12,7 @@ import org.jfree.chart.ChartPanel;
 import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.chart.renderer.xy.XYStepRenderer;
 import org.jfree.data.time.Millisecond;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
@@ -154,6 +155,31 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
     }
 
     @Test
+    public void shouldNotDrawLeadingIdlePointForActiveUserSeries() throws Exception {
+        PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
+        panel.clearTrendDataset();
+        TimeSeries activeUsers = getTimeSeries(panel, "httpVirtualUsersSeries");
+        long base = System.currentTimeMillis();
+
+        panel.addOrUpdate(new Millisecond(new Date(base)), PerformanceTrendSnapshot.terminalIdle());
+        panel.addOrUpdate(new Millisecond(new Date(base + 1_000)), snapshotWithAllProtocolMetrics());
+
+        assertNull(activeUsers.getValue(0));
+        assertEquals(activeUsers.getValue(1).intValue(), 5);
+    }
+
+    @Test
+    public void shouldUseStepRendererForActiveUserSplitChart() throws Exception {
+        PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
+        panel.clearTrendDataset();
+        TimeSeries activeUsers = getTimeSeries(panel, "httpVirtualUsersSeries");
+
+        ChartPanel chartPanel = findChartPanelForSeries(panel, activeUsers);
+
+        assertTrue(chartPanel.getChart().getXYPlot().getRenderer() instanceof XYStepRenderer);
+    }
+
+    @Test
     public void shouldSynchronizeSeparateChartDomainRangeAcrossSparseSeries() throws Exception {
         PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
         panel.clearTrendDataset();
@@ -175,6 +201,7 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
 
         assertEquals(qpsDomainAxis.getLowerBound(), activeDomainAxis.getLowerBound(), 0.1);
         assertEquals(qpsDomainAxis.getUpperBound(), activeDomainAxis.getUpperBound(), 0.1);
+        assertTrue(activeDomainAxis.getUpperBound() > base + 10_000);
     }
 
     @Test
@@ -195,7 +222,7 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
     }
 
     @Test
-    public void shouldRenderIsolatedFinitePointInsideSparseTrendSeries() throws Exception {
+    public void shouldHideHistoricalIsolatedPointInsideSparseTrendSeries() throws Exception {
         PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
         panel.clearTrendDataset();
         TimeSeries series = getTimeSeries(panel, "httpAvgResponseSeries");
@@ -209,7 +236,7 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
         ChartPanel chartPanel = findChartPanelForSeries(panel, series);
         XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer) chartPanel.getChart().getXYPlot().getRenderer();
 
-        assertTrue(renderer.getItemShapeVisible(0, 0));
+        assertFalse(renderer.getItemShapeVisible(0, 0));
         assertFalse(renderer.getItemShapeVisible(0, 1));
         assertFalse(renderer.getItemShapeVisible(0, 2));
         assertFalse(renderer.getItemShapeVisible(0, 3));

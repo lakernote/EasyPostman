@@ -20,6 +20,7 @@ public final class CommonMessageKeys {
     public static final String BUTTON_CLEAR = "button.clear";
     public static final String BUTTON_CLOSE = "button.close";
     public static final String BUTTON_CONNECT = "button.connect";
+    public static final String BUTTON_COMPRESS = "button.compress";
     public static final String BUTTON_COPY = "button.copy";
     public static final String BUTTON_DETAIL = "button.detail";
     public static final String BUTTON_DOWNLOAD = "button.download";

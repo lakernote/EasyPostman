@@ -8,6 +8,7 @@ import org.testng.annotations.Test;
 
 import javax.swing.*;
 
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 
 public class RequestBodyPanelTest extends AbstractSwingUiTest {
@@ -19,5 +20,17 @@ public class RequestBodyPanelTest extends AbstractSwingUiTest {
         SwingUtilities.invokeAndWait(() -> holder[0] = new RequestBodyPanel(RequestItemProtocolEnum.HTTP));
 
         assertFalse(holder[0].getBodyArea().getShowMatchedBracketPopup());
+    }
+
+    @Test
+    public void rawBodyShouldPreserveUserWhitespace() throws Exception {
+        RequestBodyPanel[] holder = new RequestBodyPanel[1];
+
+        SwingUtilities.invokeAndWait(() -> {
+            holder[0] = new RequestBodyPanel(RequestItemProtocolEnum.HTTP);
+            holder[0].getBodyArea().setText("  {\"a\":1}\n");
+        });
+
+        assertEquals(holder[0].getRawBody(), "  {\"a\":1}\n");
     }
 }

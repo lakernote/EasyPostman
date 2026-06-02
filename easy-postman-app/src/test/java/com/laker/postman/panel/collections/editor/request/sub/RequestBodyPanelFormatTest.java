@@ -28,4 +28,17 @@ public class RequestBodyPanelFormatTest {
                     "a": 1
                 }""");
     }
+
+    @Test(description = "JSON 压缩对有效对象返回单行文本")
+    public void jsonCompressReturnsCompactTextForValidObject() {
+        Optional<String> compressed = RequestBodyPanel.compressBodyTextForDisplay(
+                RequestBodyPanel.RAW_TYPE_JSON, """
+                        {
+                            "url": "https://chatgpt.com/backend-api/f/conversation",
+                            "chatId": 1
+                        }""");
+
+        assertTrue(compressed.isPresent());
+        assertEquals(compressed.get(), "{\"url\":\"https://chatgpt.com/backend-api/f/conversation\",\"chatId\":1}");
+    }
 }

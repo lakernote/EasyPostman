@@ -8,7 +8,6 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.http.request.HttpRequestProtocol;
 import com.laker.postman.request.util.HttpUrlUtil;
-import com.laker.postman.util.JsonUtil;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -57,9 +56,9 @@ public class CurlImportUtil {
             item.setHeadersList(curlRequest.headersList);
         }
 
-        // Keep imported requests aligned with the editor's default empty-string body state
-        // so opening a saved curl import does not look dirty immediately.
-        item.setBody(formatBodyForDisplay(curlRequest.body));
+        // Preserve cURL body bytes semantically. Signed or challenge-protected requests can fail
+        // if imported JSON is reformatted before sending.
+        item.setBody(curlRequest.body == null ? "" : curlRequest.body);
 
         if (CollUtil.isNotEmpty(curlRequest.paramsList)) {
             item.setParamsList(curlRequest.paramsList);
@@ -92,13 +91,4 @@ public class CurlImportUtil {
         return item;
     }
 
-    private static String formatBodyForDisplay(String body) {
-        if (body == null) {
-            return "";
-        }
-        if (!JsonUtil.isTypeJSON(body)) {
-            return body;
-        }
-        return JsonUtil.toJsonPrettyStr(body);
-    }
 }

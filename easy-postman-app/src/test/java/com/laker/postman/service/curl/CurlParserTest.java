@@ -1274,8 +1274,8 @@ public class CurlParserTest {
         assertEquals(item.getBody(), "");
     }
 
-    @Test(description = "测试 curl 导入请求对象时 JSON body 自动格式化")
-    public void testCurlImportUtilFormatsJsonBodyForDisplay() {
+    @Test(description = "测试 curl 导入请求对象时保留 JSON body 原始内容")
+    public void testCurlImportUtilPreservesJsonBodyFromCurl() {
         String curl = "curl -X POST 'https://example.com/api' " +
                 "-H 'Content-Type: application/json' " +
                 "--data-raw '{\"name\":\"张三\",\"roles\":[\"admin\",\"user\"]}'";
@@ -1283,13 +1283,6 @@ public class CurlParserTest {
         HttpRequestItem item = CurlImportUtil.fromCurl(curl);
 
         assertNotNull(item);
-        assertEquals(item.getBody(), """
-                {
-                    "name": "张三",
-                    "roles": [
-                        "admin",
-                        "user"
-                    ]
-                }""");
+        assertEquals(item.getBody(), "{\"name\":\"张三\",\"roles\":[\"admin\",\"user\"]}");
     }
 }

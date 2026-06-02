@@ -63,6 +63,7 @@ public class RequestBodyPanel extends JPanel {
     private WebSocketSendButton wsSendButton;
     private EditButton bulkEditButton;
     private FormatButton formatButton;
+    private CompressButton compressButton;
     private RequestBodyBulkEditSupport bulkEditSupport;
     private final boolean isWebSocketMode;
 
@@ -143,6 +144,12 @@ public class RequestBodyPanel extends JPanel {
         formatButton.addActionListener(e -> formatBody());
         formatButton.setVisible(isBodyTypeRAW());
         topPanel.add(formatButton);
+        topPanel.add(Box.createHorizontalStrut(1));
+
+        compressButton = new CompressButton();
+        compressButton.addActionListener(e -> compressBody());
+        compressButton.setVisible(isBodyTypeRAW());
+        topPanel.add(compressButton);
         topPanel.add(Box.createHorizontalGlue());
 
         bodyTypePanel.add(topPanel, BorderLayout.NORTH);
@@ -175,6 +182,7 @@ public class RequestBodyPanel extends JPanel {
         leftPanel.add(bodyTypeComboBox);
         rawTypeComboBox = null;
         formatButton = null;
+        compressButton = null;
         bodyTypePanel.add(leftPanel, BorderLayout.WEST);
         add(bodyTypePanel, BorderLayout.NORTH);
         bodyCardLayout = new CardLayout();
@@ -476,6 +484,9 @@ public class RequestBodyPanel extends JPanel {
         if (formatButton != null) {
             formatButton.setVisible(editable && isRaw);
         }
+        if (compressButton != null) {
+            compressButton.setVisible(editable && isRaw);
+        }
         if (searchButton != null) {
             searchButton.setVisible(isRaw);
         }
@@ -532,6 +543,42 @@ public class RequestBodyPanel extends JPanel {
         return Optional.empty();
     }
 
+    private void compressBody() {
+        if (!isBodyTypeRAW()) {
+            JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.REQUEST_BODY_COMPRESS_ONLY_RAW));
+            return;
+        }
+        String bodyText = bodyArea.getText();
+        if (CharSequenceUtil.isBlank(bodyText)) {
+            JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.REQUEST_BODY_COMPRESS_EMPTY));
+            return;
+        }
+        String selectedFormat = (String) rawTypeComboBox.getSelectedItem();
+        Optional<String> compressed = compressBodyTextForDisplay(selectedFormat, bodyText);
+        if (compressed.isPresent()) {
+            bodyArea.setText(compressed.get());
+            return;
+        }
+
+        JOptionPane.showMessageDialog(this, I18nUtil.getMessage(MessageKeys.REQUEST_BODY_COMPRESS_INVALID));
+    }
+
+    static Optional<String> compressBodyTextForDisplay(String selectedFormat, String bodyText) {
+        if (!RAW_TYPE_JSON.equals(selectedFormat)) {
+            log.debug("Unsupported compress type or content is not JSON");
+            return Optional.empty();
+        }
+        if (!JsonUtil.isTypeJSON(bodyText)) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(JsonUtil.cleanJsonComments(bodyText));
+        } catch (RuntimeException ex) {
+            log.debug("JSON body compress failed", ex);
+            return Optional.empty();
+        }
+    }
+
     /**
      * 切换自动换行状态
      */
@@ -549,7 +596,7 @@ public class RequestBodyPanel extends JPanel {
     }
 
     public String getRawBody() {
-        return bodyArea != null ? bodyArea.getText().trim() : null;
+        return bodyArea != null ? bodyArea.getText() : null;
     }
 
     public void setEditable(boolean editable) {
@@ -577,6 +624,10 @@ public class RequestBodyPanel extends JPanel {
         if (formatButton != null) {
             formatButton.setVisible(editable && isBodyTypeRAW());
             formatButton.setEnabled(editable);
+        }
+        if (compressButton != null) {
+            compressButton.setVisible(editable && isBodyTypeRAW());
+            compressButton.setEnabled(editable);
         }
         if (wsClearInputCheckBox != null) {
             wsClearInputCheckBox.setEnabled(editable);

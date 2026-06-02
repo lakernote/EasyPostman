@@ -118,6 +118,25 @@ public class DefaultHttpTransportIntegrationTest {
     }
 
     @Test
+    public void shouldPreserveExplicitJsonContentTypeWhenSendingRawBody() throws Exception {
+        server = createServer();
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody("{\"ok\":true}"));
+
+        PreparedRequest request = createRequest("POST", serverUrl("/echo"));
+        request.body = "{\"chatId\": 1, \"text\": \"hello\"}";
+        request.headersList.add(new HttpHeader(true, "Content-Type", "application/json"));
+        request.headersList.add(new HttpHeader(true, "Accept", "text/event-stream"));
+
+        httpTransport.execute(request, HttpExchangeOptions.defaults());
+        RecordedRequest recordedRequest = server.takeRequest();
+
+        assertEquals(recordedRequest.getHeader("Content-Type"), "application/json");
+        assertEquals(recordedRequest.getBody().readUtf8(), request.body);
+    }
+
+    @Test
     public void shouldCleanJsonCommentsBeforeSendingApplicationJsonBody() throws Exception {
         server = createServer();
         server.enqueue(new MockResponse()

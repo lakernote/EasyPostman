@@ -11,6 +11,8 @@ import lombok.experimental.UtilityClass;
 import okhttp3.*;
 
 import java.io.File;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
 
@@ -125,18 +127,52 @@ public class OkHttpRequestBuilder {
     private static RequestBody createRequestBodyWithContent(String body, String contentType) {
         String actualContentType = contentType != null ? contentType : DEFAULT_JSON_CONTENT_TYPE;
         String processedBody = processBodyContent(body, actualContentType);
+        MediaType mediaType = MediaType.parse(actualContentType);
+        Charset charset = mediaType != null ? mediaType.charset(StandardCharsets.UTF_8) : StandardCharsets.UTF_8;
 
-        return RequestBody.create(processedBody, MediaType.parse(actualContentType));
+        return RequestBody.create(processedBody.getBytes(charset), mediaType);
     }
 
     /**
      * 处理请求体内容（如去除 JSON5 注释）
      */
     private static String processBodyContent(String body, String contentType) {
-        if (isJsonContentType(contentType)) {
+        if (isJsonContentType(contentType) && containsJsonComment(body)) {
             return cleanJsonComments(body);
         }
         return body;
+    }
+
+    private static boolean containsJsonComment(String body) {
+        if (body == null || body.length() < 2) {
+            return false;
+        }
+        boolean inString = false;
+        boolean escaping = false;
+        for (int i = 0; i < body.length(); i++) {
+            char current = body.charAt(i);
+            if (inString) {
+                if (escaping) {
+                    escaping = false;
+                } else if (current == '\\') {
+                    escaping = true;
+                } else if (current == '"') {
+                    inString = false;
+                }
+                continue;
+            }
+            if (current == '"') {
+                inString = true;
+                continue;
+            }
+            if (current == '/' && i + 1 < body.length()) {
+                char next = body.charAt(i + 1);
+                if (next == '/' || next == '*') {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**

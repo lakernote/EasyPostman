@@ -1,6 +1,7 @@
 package com.laker.postman.panel.topmenu.setting;
 
 import com.laker.postman.common.UiSingletonFactory;
+import com.laker.postman.common.component.setting.SettingsHintLabel;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.NotificationPosition;
 import com.laker.postman.panel.sidebar.SidebarTab;
@@ -308,7 +309,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
         row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
         row.setBackground(getCardBackgroundColor());
         row.setAlignmentX(Component.LEFT_ALIGNMENT);
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 230));
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 270));
 
         JLabel label = new JLabel(I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_SIDEBAR_TABS));
         label.setFont(com.laker.postman.util.FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
@@ -335,7 +336,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
         editor.setLayout(new BoxLayout(editor, BoxLayout.Y_AXIS));
         editor.setBackground(getCardBackgroundColor());
         editor.setAlignmentX(Component.LEFT_ALIGNMENT);
-        editor.setMaximumSize(new Dimension(340, 220));
+        editor.setMaximumSize(new Dimension(340, 260));
 
         sidebarTabListModel = new DefaultListModel<>();
         Set<String> hiddenTabs = SettingManager.getHiddenSidebarTabs();
@@ -403,11 +404,11 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
         resetButton.setMaximumSize(new Dimension(116, 32));
         resetButton.addActionListener(e -> resetSidebarTabsToDefault());
 
-        JLabel hintLabel = new JLabel("<html>" + I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_SIDEBAR_TABS_HINT) + "</html>");
-        hintLabel.setFont(com.laker.postman.util.FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
-        hintLabel.setForeground(getTextSecondaryColor());
+        SettingsHintLabel hintLabel = new SettingsHintLabel(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_SIDEBAR_TABS_HINT),
+                320
+        );
         hintLabel.setBorder(new EmptyBorder(8, 0, 0, 0));
-        hintLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         sidebarTabsStateField = new JTextField(buildSidebarTabsStateSnapshot());
 

@@ -1,6 +1,9 @@
 package com.laker.postman.panel.topmenu.setting;
 
 import com.laker.postman.common.component.button.ModernButtonFactory;
+import com.laker.postman.common.component.setting.SettingsCheckBoxRow;
+import com.laker.postman.common.component.setting.SettingsFieldRow;
+import com.laker.postman.common.component.setting.SettingsSectionPanel;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -37,10 +40,6 @@ public abstract class ModernSettingsPanel extends JPanel {
     protected JPanel warningPanel;
     protected JLabel warningLabel;
     private boolean initialized;
-
-    private static final int BORDER_RADIUS = 8;     // 圆角半径
-    private static final int LABEL_WIDTH = 220;     // 标签宽度
-    private static final int FIELD_WIDTH = 300;     // 字段宽度
 
     /**
      * 检查当前是否为暗色主题
@@ -251,115 +250,24 @@ public abstract class ModernSettingsPanel extends JPanel {
      * 创建现代化的区域面板
      */
     protected JPanel createModernSection(String title, String description) {
-        JPanel section = new JPanel();
-        section.setLayout(new BoxLayout(section, BoxLayout.Y_AXIS));
-        section.setBackground(getCardBackgroundColor());
-        section.setBorder(new CompoundBorder(
-                new ModernRoundedBorder(),
-                new EmptyBorder(12, 12, 12, 12)
-        ));
-        section.setAlignmentX(Component.LEFT_ALIGNMENT);
-        // 修复横向滚动条：限制最大宽度，只允许高度自动扩展
-        section.setMaximumSize(new Dimension(Short.MAX_VALUE, Integer.MAX_VALUE));
-
-        // 标题
-        JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
-        titleLabel.setForeground(getTextPrimaryColor());
-        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        // 描述（可选）
-        if (description != null && !description.isEmpty()) {
-            JLabel descLabel = new JLabel("<html><div style='width: 560px;'>" + description + "</div></html>");
-            descLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
-            descLabel.setForeground(getTextSecondaryColor());
-            descLabel.setBorder(new EmptyBorder(4, 0, 8, 0));
-            descLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-            section.add(titleLabel);
-            section.add(descLabel);
-        } else {
-            titleLabel.setBorder(new EmptyBorder(0, 0, 8, 0));
-            section.add(titleLabel);
-        }
-
-        return section;
+        return new SettingsSectionPanel(title, description);
     }
 
     /**
      * 创建现代化的字段行（标签 + 输入框）
      */
     protected JPanel createFieldRow(String labelText, String tooltip, JComponent inputComponent) {
-        JPanel row = new JPanel();
-        row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
-        row.setBackground(getCardBackgroundColor());
-        row.setAlignmentX(Component.LEFT_ALIGNMENT);
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
-
-        // 标签
-        JLabel label = new JLabel(labelText);
-        label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        label.setForeground(getTextPrimaryColor());
-        label.setPreferredSize(new Dimension(LABEL_WIDTH, 32));
-        label.setMinimumSize(new Dimension(LABEL_WIDTH, 32));
-        label.setMaximumSize(new Dimension(LABEL_WIDTH, 32));
-
-        if (tooltip != null && !tooltip.isEmpty()) {
-            label.setToolTipText(tooltip);
-        }
-
-        // 输入组件样式化
         styleInputComponent(inputComponent);
-        inputComponent.setPreferredSize(new Dimension(FIELD_WIDTH, 34));
-        inputComponent.setMaximumSize(new Dimension(FIELD_WIDTH, 34));
-
-        row.add(label);
-        row.add(Box.createHorizontalStrut(16));
-        row.add(inputComponent);
-        row.add(Box.createHorizontalGlue());
-
-        return row;
+        inputComponent.setPreferredSize(new Dimension(SettingsFieldRow.DEFAULT_FIELD_WIDTH, 34));
+        inputComponent.setMaximumSize(new Dimension(SettingsFieldRow.DEFAULT_FIELD_WIDTH, 34));
+        return new SettingsFieldRow(labelText, tooltip, inputComponent);
     }
 
     /**
      * 创建现代化的复选框行
      */
     protected JPanel createCheckBoxRow(JCheckBox checkBox, String tooltip) {
-        JPanel row = new JPanel();
-        row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
-        row.setBackground(getCardBackgroundColor());
-        row.setAlignmentX(Component.LEFT_ALIGNMENT);
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
-
-        // 样式化复选框
-        checkBox.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        checkBox.setForeground(getTextPrimaryColor());
-        checkBox.setBackground(getCardBackgroundColor());
-        checkBox.setFocusPainted(false);
-
-        if (tooltip != null && !tooltip.isEmpty()) {
-            checkBox.setToolTipText(tooltip);
-        }
-
-        // 添加悬停效果
-        checkBox.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                if (checkBox.isEnabled()) {
-                    checkBox.setCursor(new Cursor(Cursor.HAND_CURSOR));
-                }
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                checkBox.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
-            }
-        });
-
-        row.add(checkBox);
-        row.add(Box.createHorizontalGlue());
-
-        return row;
+        return new SettingsCheckBoxRow(checkBox, tooltip);
     }
 
 
@@ -573,48 +481,6 @@ public abstract class ModernSettingsPanel extends JPanel {
                 g2.dispose();
             }
         });
-    }
-
-    /**
-     * 现代化圆角边框
-     */
-    private class ModernRoundedBorder extends AbstractBorder {
-        @Override
-        public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-            // 多层阴影效果
-            int shadowSize = 4;
-            for (int i = shadowSize; i > 0; i--) {
-                int alpha = (int) (8 * (1 - (double) i / shadowSize));
-                g2.setColor(getShadowColor(alpha));
-                g2.fillRoundRect(x + i, y + i, width - i * 2, height - i * 2,
-                        BORDER_RADIUS + 2, BORDER_RADIUS + 2);
-            }
-
-            // 背景（主题适配）
-            g2.setColor(getCardBackgroundColor());
-            g2.fillRoundRect(x + 1, y + 1, width - 2, height - 2, BORDER_RADIUS, BORDER_RADIUS);
-
-            // 边框
-            g2.setColor(getBorderLightColor());
-            g2.setStroke(new BasicStroke(1));
-            g2.drawRoundRect(x + 1, y + 1, width - 3, height - 3, BORDER_RADIUS, BORDER_RADIUS);
-
-            g2.dispose();
-        }
-
-        @Override
-        public Insets getBorderInsets(Component c) {
-            return new Insets(4, 4, 4, 4);
-        }
-
-        @Override
-        public Insets getBorderInsets(Component c, Insets insets) {
-            insets.left = insets.top = insets.right = insets.bottom = 4;
-            return insets;
-        }
     }
 
     /**

@@ -14,34 +14,38 @@ import lombok.Setter;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.table.JTableHeader;
 import javax.swing.table.TableColumn;
 import java.awt.*;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 public class CsvDataSetPropertyPanel extends JPanel {
-    private static final int PREVIEW_ROW_LIMIT = 8;
-    private static final int PREVIEW_COLUMN_WIDTH = 140;
-    private static final int PREVIEW_MIN_HEIGHT = 72;
-    private static final int PREVIEW_MAX_HEIGHT = 220;
+    private static final int PREVIEW_VISIBLE_ROW_LIMIT = 12;
+    private static final int PREVIEW_MIN_COLUMN_WIDTH = 140;
+    private static final int PREVIEW_MIN_HEIGHT = 180;
+    private static final int PREVIEW_VIEWPORT_PADDING = 18;
+    private static final String BODY_EMPTY = "empty";
+    private static final String BODY_PREVIEW = "preview";
 
     private final CsvDataPanel csvDataPanel = new CsvDataPanel();
     private final JLabel statusLabel = new JLabel();
-    private final JLabel sourceLabel = new JLabel();
     private final JButton manageButton;
     private final JButton clearButton;
     private final JTable previewTable;
     private final JScrollPane previewScrollPane;
     private final DefaultTableModel previewModel;
+    private final JPanel bodyPanel;
+    private final CardLayout bodyCardLayout;
     private PerformanceTreeNode currentNode;
     @Setter
     private Runnable changeListener;
     private boolean restoring;
 
     public CsvDataSetPropertyPanel() {
-        setLayout(new BorderLayout());
+        setLayout(new BorderLayout(0, 12));
         setBorder(BorderFactory.createEmptyBorder(12, 16, 12, 16));
 
         csvDataPanel.setContextHelpText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_CSV_DATA_SET_SCOPE_NOTE));
@@ -49,55 +53,62 @@ public class CsvDataSetPropertyPanel extends JPanel {
 
         JPanel contentPanel = new JPanel();
         contentPanel.setOpaque(false);
-        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+        contentPanel.setLayout(new BorderLayout(0, 10));
 
-        JPanel headerPanel = new JPanel(new BorderLayout(12, 0));
+        JPanel headerPanel = new JPanel(new BorderLayout(0, 6));
         headerPanel.setOpaque(false);
-        headerPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JPanel topRow = new JPanel(new BorderLayout(12, 0));
+        topRow.setOpaque(false);
 
         JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         titlePanel.setOpaque(false);
-        JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_CSV_DATA_SET_TITLE));
-        titleLabel.setIcon(IconUtil.createThemed("icons/csv.svg", 18, 18));
-        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 1));
+        JLabel titleLabel = createTitleLabel();
         titlePanel.add(titleLabel);
-
         statusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         statusLabel.setForeground(ModernColors.getTextSecondary());
         titlePanel.add(statusLabel);
-        headerPanel.add(titlePanel, BorderLayout.WEST);
+        topRow.add(titlePanel, BorderLayout.WEST);
 
         JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         actionPanel.setOpaque(false);
 
-        JButton importButton = createActionButton(MessageKeys.CSV_MENU_IMPORT_FILE, "icons/import.svg", true);
+        JButton importButton = createActionButton(
+                MessageKeys.CSV_ACTION_IMPORT,
+                MessageKeys.CSV_MENU_IMPORT_FILE,
+                "icons/import.svg",
+                true);
         importButton.addActionListener(e -> csvDataPanel.importCsvFile());
         actionPanel.add(importButton);
 
-        JButton manualButton = createActionButton(MessageKeys.CSV_MENU_CREATE_MANUAL, "icons/plus.svg", false);
+        JButton manualButton = createActionButton(
+                MessageKeys.CSV_ACTION_CREATE,
+                MessageKeys.CSV_MENU_CREATE_MANUAL,
+                "icons/plus.svg",
+                false);
         manualButton.addActionListener(e -> csvDataPanel.showManualCreateDialog());
         actionPanel.add(manualButton);
 
-        manageButton = createActionButton(MessageKeys.CSV_MENU_MANAGE_DATA, "icons/code.svg", false);
+        manageButton = createActionButton(
+                MessageKeys.CSV_ACTION_MANAGE,
+                MessageKeys.CSV_MENU_MANAGE_DATA,
+                "icons/code.svg",
+                false);
         manageButton.addActionListener(e -> csvDataPanel.showCsvDataManageDialog());
         actionPanel.add(manageButton);
 
-        clearButton = createActionButton(MessageKeys.CSV_MENU_CLEAR_DATA, "icons/clear.svg", false);
+        clearButton = createActionButton(
+                MessageKeys.CSV_ACTION_CLEAR,
+                MessageKeys.CSV_MENU_CLEAR_DATA,
+                "icons/clear.svg",
+                false);
         clearButton.addActionListener(e -> csvDataPanel.clearCsvData());
         actionPanel.add(clearButton);
 
-        headerPanel.add(actionPanel, BorderLayout.EAST);
-        contentPanel.add(headerPanel);
+        topRow.add(actionPanel, BorderLayout.EAST);
+        headerPanel.add(topRow, BorderLayout.NORTH);
 
-        contentPanel.add(Box.createVerticalStrut(8));
-
-        sourceLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        sourceLabel.setForeground(ModernColors.getTextSecondary());
-        sourceLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_CSV_DATA_SET_SCOPE_NOTE));
-        sourceLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        contentPanel.add(sourceLabel);
-
-        contentPanel.add(Box.createVerticalStrut(10));
+        contentPanel.add(headerPanel, BorderLayout.NORTH);
 
         previewModel = new DefaultTableModel() {
             @Override
@@ -106,27 +117,28 @@ public class CsvDataSetPropertyPanel extends JPanel {
             }
         };
         previewTable = new JTable(previewModel);
-        previewTable.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        previewTable.setRowHeight(26);
-        previewTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-        previewTable.setFillsViewportHeight(true);
-        previewTable.setShowVerticalLines(false);
-        previewTable.setGridColor(ModernColors.getBorderLightColor());
-
-        JTableHeader header = previewTable.getTableHeader();
-        header.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -1));
-        header.setReorderingAllowed(false);
+        CsvDataPanel.configureCsvTableAppearance(previewTable);
 
         previewScrollPane = new JScrollPane(previewTable,
                 ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        previewScrollPane.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0,
-                ModernColors.getDividerBorderColor()));
+        previewScrollPane.setBorder(BorderFactory.createLineBorder(ModernColors.getBorderLightColor()));
         previewScrollPane.setPreferredSize(new Dimension(0, PREVIEW_MIN_HEIGHT));
-        previewScrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
-        contentPanel.add(previewScrollPane);
+        previewScrollPane.getViewport().addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                updatePreviewColumnWidths();
+            }
+        });
 
-        add(contentPanel, BorderLayout.NORTH);
+        bodyCardLayout = new CardLayout();
+        bodyPanel = new JPanel(bodyCardLayout);
+        bodyPanel.setOpaque(false);
+        bodyPanel.add(createEmptyStatePanel(), BODY_EMPTY);
+        bodyPanel.add(previewScrollPane, BODY_PREVIEW);
+        contentPanel.add(bodyPanel, BorderLayout.CENTER);
+
+        add(contentPanel, BorderLayout.CENTER);
         refreshStateView();
     }
 
@@ -160,15 +172,76 @@ public class CsvDataSetPropertyPanel extends JPanel {
         }
     }
 
-    private JButton createActionButton(String messageKey, String iconPath, boolean primary) {
+    private JButton createActionButton(String messageKey, String tooltipKey, String iconPath, boolean primary) {
         String text = I18nUtil.getMessage(messageKey);
         JButton button = ModernButtonFactory.createButton(text, primary, iconPath, 16);
         button.setHorizontalAlignment(SwingConstants.CENTER);
+        button.setToolTipText(I18nUtil.getMessage(tooltipKey));
 
         int width = button.getFontMetrics(button.getFont()).stringWidth(text) + 54;
-        button.setPreferredSize(new Dimension(Math.max(96, width), 32));
-        button.setMinimumSize(new Dimension(84, 32));
+        button.setPreferredSize(new Dimension(Math.max(82, width), 32));
+        button.setMinimumSize(new Dimension(76, 32));
         return button;
+    }
+
+    private JLabel createTitleLabel() {
+        JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_CSV_DATA_SET_TITLE));
+        titleLabel.setIcon(IconUtil.createThemed("icons/csv.svg", 18, 18));
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 1));
+        return titleLabel;
+    }
+
+    private JPanel createEmptyStatePanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setOpaque(false);
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(ModernColors.getBorderLightColor()),
+                BorderFactory.createEmptyBorder(28, 24, 28, 24)
+        ));
+
+        JPanel content = new JPanel();
+        content.setOpaque(false);
+        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
+
+        JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_STATUS_NO_DATA));
+        titleLabel.setIcon(IconUtil.createThemed("icons/warning.svg", 18, 18));
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 1));
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        content.add(titleLabel);
+
+        content.add(Box.createVerticalStrut(8));
+
+        JLabel scopeLabel = new JLabel("<html><body style='width:560px;text-align:center'>"
+                + I18nUtil.getMessage(MessageKeys.PERFORMANCE_CSV_DATA_SET_SCOPE_NOTE)
+                + "</body></html>");
+        scopeLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        scopeLabel.setForeground(ModernColors.getTextSecondary());
+        scopeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        content.add(scopeLabel);
+
+        content.add(Box.createVerticalStrut(16));
+
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
+        actions.setOpaque(false);
+        JButton importButton = createActionButton(
+                MessageKeys.CSV_ACTION_IMPORT,
+                MessageKeys.CSV_MENU_IMPORT_FILE,
+                "icons/import.svg",
+                true);
+        importButton.addActionListener(e -> csvDataPanel.importCsvFile());
+        JButton manualButton = createActionButton(
+                MessageKeys.CSV_ACTION_CREATE,
+                MessageKeys.CSV_MENU_CREATE_MANUAL,
+                "icons/plus.svg",
+                false);
+        manualButton.addActionListener(e -> csvDataPanel.showManualCreateDialog());
+        actions.add(importButton);
+        actions.add(manualButton);
+        actions.setAlignmentX(Component.CENTER_ALIGNMENT);
+        content.add(actions);
+
+        panel.add(content);
+        return panel;
     }
 
     private void refreshStateView() {
@@ -177,15 +250,14 @@ public class CsvDataSetPropertyPanel extends JPanel {
 
         manageButton.setEnabled(hasData);
         clearButton.setEnabled(hasData);
-        previewScrollPane.setVisible(hasData);
 
         if (!hasData) {
             statusLabel.setIcon(IconUtil.createThemed("icons/warning.svg", 16, 16));
             statusLabel.setText(I18nUtil.getMessage(MessageKeys.CSV_STATUS_NO_DATA));
             statusLabel.setForeground(ModernColors.getTextHint());
-            sourceLabel.setText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_CSV_DATA_SET_SCOPE_NOTE));
             previewModel.setColumnCount(0);
             previewModel.setRowCount(0);
+            bodyCardLayout.show(bodyPanel, BODY_EMPTY);
             revalidate();
             repaint();
             return;
@@ -196,26 +268,20 @@ public class CsvDataSetPropertyPanel extends JPanel {
         statusLabel.setIcon(IconUtil.createThemed("icons/check.svg", 16, 16));
         statusLabel.setText(I18nUtil.getMessage(MessageKeys.CSV_STATUS_LOADED, rows.size()));
         statusLabel.setForeground(ModernColors.getTextSecondary());
-        sourceLabel.setText(I18nUtil.getMessage(MessageKeys.CSV_DATA_SOURCE_INFO,
-                resolveSourceDisplayName(state),
-                rows.size()));
 
         previewModel.setRowCount(0);
         previewModel.setColumnIdentifiers(headers.toArray());
-        int rowLimit = Math.min(rows.size(), PREVIEW_ROW_LIMIT);
-        for (int i = 0; i < rowLimit; i++) {
-            Map<String, String> row = rows.get(i);
+        for (Map<String, String> row : rows) {
             Object[] values = new Object[headers.size()];
             for (int col = 0; col < headers.size(); col++) {
                 values[col] = row.getOrDefault(headers.get(col), "");
             }
             previewModel.addRow(values);
         }
-        for (int i = 0; i < previewTable.getColumnModel().getColumnCount(); i++) {
-            TableColumn column = previewTable.getColumnModel().getColumn(i);
-            column.setPreferredWidth(PREVIEW_COLUMN_WIDTH);
-        }
-        updatePreviewHeight(rowLimit);
+        updatePreviewHeight(Math.min(rows.size(), PREVIEW_VISIBLE_ROW_LIMIT));
+        updatePreviewColumnWidths();
+        SwingUtilities.invokeLater(this::updatePreviewColumnWidths);
+        bodyCardLayout.show(bodyPanel, BODY_PREVIEW);
 
         revalidate();
         repaint();
@@ -224,8 +290,43 @@ public class CsvDataSetPropertyPanel extends JPanel {
     private void updatePreviewHeight(int visibleRowCount) {
         int headerHeight = previewTable.getTableHeader().getPreferredSize().height;
         int contentHeight = headerHeight + visibleRowCount * previewTable.getRowHeight() + 8;
-        int height = Math.max(PREVIEW_MIN_HEIGHT, Math.min(PREVIEW_MAX_HEIGHT, contentHeight));
+        int height = Math.max(PREVIEW_MIN_HEIGHT, contentHeight);
         previewScrollPane.setPreferredSize(new Dimension(0, height));
+    }
+
+    private void updatePreviewColumnWidths() {
+        int columnCount = previewTable.getColumnModel().getColumnCount();
+        if (columnCount <= 0) {
+            return;
+        }
+
+        int viewportWidth = previewScrollPane.getViewport().getExtentSize().width;
+        if (viewportWidth <= 0) {
+            viewportWidth = previewScrollPane.getViewport().getWidth();
+        }
+        if (viewportWidth <= 0) {
+            viewportWidth = previewScrollPane.getWidth();
+        }
+
+        int usableViewportWidth = Math.max(viewportWidth - PREVIEW_VIEWPORT_PADDING, 0);
+        int minTotalWidth = PREVIEW_MIN_COLUMN_WIDTH * columnCount;
+        if (usableViewportWidth >= minTotalWidth) {
+            previewTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+            int baseWidth = usableViewportWidth / columnCount;
+            int remainder = usableViewportWidth % columnCount;
+            for (int i = 0; i < columnCount; i++) {
+                TableColumn column = previewTable.getColumnModel().getColumn(i);
+                column.setPreferredWidth(baseWidth + (i < remainder ? 1 : 0));
+                column.setMinWidth(PREVIEW_MIN_COLUMN_WIDTH);
+            }
+        } else {
+            previewTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+            for (int i = 0; i < columnCount; i++) {
+                TableColumn column = previewTable.getColumnModel().getColumn(i);
+                column.setPreferredWidth(PREVIEW_MIN_COLUMN_WIDTH);
+                column.setMinWidth(PREVIEW_MIN_COLUMN_WIDTH);
+            }
+        }
     }
 
     private static List<String> resolveHeaders(CsvDataPanel.CsvState state) {
@@ -236,13 +337,6 @@ public class CsvDataSetPropertyPanel extends JPanel {
 
         List<Map<String, String>> rows = state.getRows();
         return rows.isEmpty() ? List.of() : new ArrayList<>(rows.get(0).keySet());
-    }
-
-    private static String resolveSourceDisplayName(CsvDataPanel.CsvState state) {
-        String sourceName = state.getSourceName();
-        return sourceName == null || sourceName.isBlank()
-                ? I18nUtil.getMessage(MessageKeys.CSV_MANUAL_CREATED)
-                : sourceName;
     }
 
     private static CsvDataPanel.CsvState toCsvState(CsvDataSetData data) {

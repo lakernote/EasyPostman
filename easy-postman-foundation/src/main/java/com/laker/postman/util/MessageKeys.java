@@ -1415,6 +1415,10 @@ public final class MessageKeys {
     public static final String CSV_MENU_CREATE_MANUAL = "csv.menu.create_manual";
     public static final String CSV_MENU_MANAGE_DATA = "csv.menu.manage_data";
     public static final String CSV_MENU_CLEAR_DATA = "csv.menu.clear_data";
+    public static final String CSV_ACTION_IMPORT = "csv.action.import";
+    public static final String CSV_ACTION_CREATE = "csv.action.create";
+    public static final String CSV_ACTION_MANAGE = "csv.action.manage";
+    public static final String CSV_ACTION_CLEAR = "csv.action.clear";
     public static final String CSV_DATA_CLEARED = "csv.data.cleared";
     public static final String CSV_DIALOG_MANAGEMENT_TITLE = "csv.dialog.management.title";
     public static final String CSV_DATA_DRIVEN_TEST = "csv.data_driven_test";

@@ -1147,7 +1147,7 @@ public class CsvDataPanel extends JPanel {
         button.setPreferredSize(new Dimension(width, CSV_FOOTER_BUTTON_HEIGHT));
     }
 
-    private void configureCsvTable(JTable table) {
+    public static void configureCsvTableAppearance(JTable table) {
         Color tableBackground = UIManager.getColor("Table.background");
         if (tableBackground == null) {
             tableBackground = Color.WHITE;
@@ -1170,11 +1170,6 @@ public class CsvDataPanel extends JPanel {
         table.setRowMargin(0);
         table.setOpaque(true);
         table.setFillsViewportHeight(true);
-        table.setCellSelectionEnabled(true);
-        table.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-        table.setSurrendersFocusOnKeystroke(true);
-        table.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
-        table.putClientProperty("JTable.autoStartsEdit", Boolean.TRUE);
         table.putClientProperty("csv.hoveredRow", -1);
 
         JTableHeader header = table.getTableHeader();
@@ -1187,6 +1182,16 @@ public class CsvDataPanel extends JPanel {
         header.setPreferredSize(new Dimension(header.getPreferredSize().width, 34));
 
         table.setDefaultRenderer(Object.class, new CsvTableCellRenderer());
+    }
+
+    private void configureCsvTable(JTable table) {
+        configureCsvTableAppearance(table);
+        table.setCellSelectionEnabled(true);
+        table.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        table.setSurrendersFocusOnKeystroke(true);
+        table.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
+        table.putClientProperty("JTable.autoStartsEdit", Boolean.TRUE);
+
         table.setDefaultEditor(Object.class, createCsvCellEditor());
         setupCsvTableKeyboardNavigation(table);
 

@@ -1,5 +1,6 @@
 package com.laker.postman.panel.performance;
 
+import com.laker.postman.common.component.MemoryLabel;
 import com.laker.postman.common.component.placeholder.PerformanceTrendPlaceholderPanel;
 import com.laker.postman.common.component.button.ExportButton;
 import com.laker.postman.common.component.button.HelpButton;
@@ -21,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
@@ -150,6 +152,19 @@ public class PerformancePanelViewFactoryTest extends AbstractSwingUiTest {
         assertNotNull(toolbarSection.usageHelpBtn());
         assertNotNull(toolbarSection.remoteModeCheckBox());
         assertNotNull(toolbarSection.workerEndpointsField());
+        assertNotNull(toolbarSection.progressLabel());
+        assertNotNull(toolbarSection.limitLabel());
+        assertEquals(toolbarSection.progressLabel().getText(), "0/0");
+        assertEquals(toolbarSection.limitLabel().getText(), "");
+        assertFalse(toolbarSection.limitLabel().isVisible());
+        assertNotNull(toolbarSection.progressLabel().getIcon());
+        assertNull(toolbarSection.limitLabel().getIcon());
+        MemoryLabel memoryLabel = findFirst(toolbarSection.topPanel(), MemoryLabel.class);
+        assertNotNull(memoryLabel);
+        assertTrue(memoryLabel.getText().contains("/"));
+        assertFalse(memoryLabel.getText().contains(" / "));
+        assertFalse(memoryLabel.getText().matches(".*\\d+\\.\\d{2,}(MB|GB).*"));
+        memoryLabel.stopAutoRefresh();
         assertTrue(hasComponent(toolbarSection.topPanel(), ExportButton.class));
         assertTrue(hasComponent(toolbarSection.topPanel(), HelpButton.class));
         assertFalse(toolbarSection.remoteModeCheckBox().isSelected());
@@ -195,6 +210,21 @@ public class PerformancePanelViewFactoryTest extends AbstractSwingUiTest {
             }
         }
         return false;
+    }
+
+    private static <T> T findFirst(Component component, Class<T> type) {
+        if (type.isInstance(component)) {
+            return type.cast(component);
+        }
+        if (component instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                T result = findFirst(child, type);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        return null;
     }
 
     private static boolean hasText(Component component, String text) {

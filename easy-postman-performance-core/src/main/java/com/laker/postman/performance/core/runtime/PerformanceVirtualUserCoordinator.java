@@ -12,6 +12,7 @@ public final class PerformanceVirtualUserCoordinator {
     private final AtomicInteger virtualUserCounter = new AtomicInteger(0);
     private final ThreadLocal<Integer> threadVirtualUserIndex = new ThreadLocal<>();
     private final ThreadLocal<Integer> threadIterationIndex = ThreadLocal.withInitial(() -> 0);
+    private final Object progressLock = new Object();
 
     public int getActiveThreads() {
         return activeThreads.get();
@@ -80,16 +81,28 @@ public final class PerformanceVirtualUserCoordinator {
                      Runnable task) {
         threadVirtualUserIndex.set(vuIndex);
         threadIterationIndex.set(0);
-        int active = activeThreads.incrementAndGet();
-        updatePeakActiveThreads(active);
-        updateProgress(progressUpdater, totalThreads);
+        incrementActiveThreads(progressUpdater, totalThreads);
         try {
             task.run();
         } finally {
-            activeThreads.decrementAndGet();
-            updateProgress(progressUpdater, totalThreads);
+            decrementActiveThreads(progressUpdater, totalThreads);
             threadVirtualUserIndex.remove();
             threadIterationIndex.remove();
+        }
+    }
+
+    private void incrementActiveThreads(BiConsumer<Integer, Integer> progressUpdater, int totalThreads) {
+        synchronized (progressLock) {
+            int active = activeThreads.incrementAndGet();
+            updatePeakActiveThreads(active);
+            updateProgress(progressUpdater, totalThreads);
+        }
+    }
+
+    private void decrementActiveThreads(BiConsumer<Integer, Integer> progressUpdater, int totalThreads) {
+        synchronized (progressLock) {
+            activeThreads.decrementAndGet();
+            updateProgress(progressUpdater, totalThreads);
         }
     }
 

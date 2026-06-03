@@ -39,6 +39,7 @@ public final class PerformanceCoreThreadGroupRunner<C> {
     private final IterationContextFactory<C> iterationContextFactory;
     private final IterationExecutor<C> iterationExecutor;
     private final Supplier<PerformanceCoreResultSink> resultSinkSupplier;
+    private final AtomicLong progressSequence = new AtomicLong(0L);
 
     public PerformanceCoreThreadGroupRunner(BooleanSupplier runningSupplier,
                                             LongSupplier startTimeSupplier,
@@ -62,6 +63,7 @@ public final class PerformanceCoreThreadGroupRunner<C> {
         if (!runningSupplier.getAsBoolean() || plan == null) {
             return;
         }
+        progressSequence.set(0L);
 
         List<Thread> threadGroupThreads = new ArrayList<>();
         for (PerformanceThreadGroupPlan threadGroup : plan.getThreadGroups()) {
@@ -629,7 +631,11 @@ public final class PerformanceCoreThreadGroupRunner<C> {
 
     private void publishProgress(int activeThreads, int totalThreads) {
         try {
-            currentResultSink().onProgress(new PerformanceRunProgress(activeThreads, totalThreads));
+            currentResultSink().onProgress(PerformanceRunProgress.sequenced(
+                    activeThreads,
+                    totalThreads,
+                    progressSequence.incrementAndGet()
+            ));
         } catch (Exception e) {
             log.warn("压测进度事件监听器执行失败", e);
         }

@@ -28,7 +28,8 @@ public final class PerformanceRunUiEventBridge implements PerformanceRunListener
         runUiController.updateProgressAsync(
                 progressLabel,
                 progress.getActiveThreads(),
-                progress.getTotalThreads()
+                progress.getTotalThreads(),
+                progress.getSequence()
         );
     }
 

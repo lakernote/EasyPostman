@@ -132,6 +132,7 @@ public class PerformancePanel extends UiSingletonPanel {
     private JCheckBox trendCheckBox; // 趋势采样开关
     private JComboBox<String> reportRefreshModeBox; // 报表刷新模式
     private JLabel progressLabel; // 进度标签
+    private JLabel limitLabel;
     private JPanel topPanel; // 顶部工具栏面板，用于主题切换时更新边框
     private long startTime;
     private final transient PerformanceStatsCollector statsCollector = new PerformanceStatsCollector();
@@ -327,6 +328,7 @@ public class PerformancePanel extends UiSingletonPanel {
         remoteModeCheckBox = toolbarSection.remoteModeCheckBox();
         workerEndpointsField = toolbarSection.workerEndpointsField();
         progressLabel = toolbarSection.progressLabel();
+        limitLabel = toolbarSection.limitLabel();
         installPlanToolbarListeners();
         syncPlanSelectorItems();
         add(topPanel, BorderLayout.NORTH);
@@ -409,7 +411,7 @@ public class PerformancePanel extends UiSingletonPanel {
         );
 
         treeSupport.syncAllRequestStructures((DefaultMutableTreeNode) treeModel.getRoot());
-        runBtn.addActionListener(e -> startRun(progressLabel));
+        runBtn.addActionListener(e -> startRun(progressLabel, limitLabel));
         stopBtn.addActionListener(e -> stopRun());
         for (int i = 0; i < performanceTree.getRowCount(); i++) {
             performanceTree.expandRow(i);
@@ -1036,20 +1038,21 @@ public class PerformancePanel extends UiSingletonPanel {
     }
 
     // ========== 执行与停止核心逻辑 ==========
-    private void startRun(JLabel progressLabel) {
+    private void startRun(JLabel progressLabel, JLabel limitLabel) {
         if (isRemoteExecutionSelected()) {
-            startRemoteRun(progressLabel);
+            startRemoteRun(progressLabel, limitLabel);
             return;
         }
         runThread = runControlSupport.startRun(
                 (DefaultMutableTreeNode) treeModel.getRoot(),
                 progressLabel,
+                limitLabel,
                 efficientMode,
                 value -> efficientMode = value
         );
     }
 
-    private void startRemoteRun(JLabel progressLabel) {
+    private void startRemoteRun(JLabel progressLabel, JLabel limitLabel) {
         PerformanceRemoteWorkerSettings remoteSettings = currentRemoteWorkerSettings();
         List<PerformanceWorkerEndpoint> workers;
         try {
@@ -1085,7 +1088,7 @@ public class PerformancePanel extends UiSingletonPanel {
                 // 远程执行由 worker 轮询刷新趋势和报表，停掉本地 stats 定时器，避免空本地快照覆盖 master 报表。
                 timerManager.stopAll();
             }
-            runThread = remoteRunControlSupport.startRun(runPlan, workers, progressLabel);
+            runThread = remoteRunControlSupport.startRun(runPlan, workers, progressLabel, limitLabel);
         } catch (Exception ex) {
             log.error("Failed to start remote performance run", ex);
             NotificationUtil.showError(I18nUtil.getMessage(

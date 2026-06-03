@@ -287,15 +287,17 @@ final class PerformancePanelViewFactory {
         remotePanel.add(workerStatusLabel);
         topPanel.add(remotePanel);
 
-        JPanel progressPanel = createToolbarGroupPanel("[]8[]");
-        JLabel progressLabel = new JLabel("0/0");
-        progressLabel.setFont(progressLabel.getFont().deriveFont(Font.BOLD));
-        progressLabel.setIcon(new FlatSVGIcon("icons/users.svg", 20, 20)
-                .setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))));
-        progressLabel.setHorizontalTextPosition(SwingConstants.RIGHT);
+        JPanel progressPanel = createToolbarGroupPanel("[]5[]5[]", ", hidemode 3");
+        JLabel progressLabel = createRunStatusLabel("0/0", "icons/users.svg");
+        JLabel limitLabel = createRunStatusLabel("", null);
+        limitLabel.setVisible(false);
+        MemoryLabel memoryLabel = new MemoryLabel(1000, true);
+        memoryLabel.setFont(runStatusFont());
+        memoryLabel.setToolTipText("JVM memory usage. Double-click to run GC.");
         progressPanel.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_PROGRESS_TOOLTIP));
         progressPanel.add(progressLabel);
-        progressPanel.add(new MemoryLabel());
+        progressPanel.add(limitLabel);
+        progressPanel.add(memoryLabel);
         topPanel.add(progressPanel);
 
         return new ToolbarSection(
@@ -312,13 +314,36 @@ final class PerformancePanelViewFactory {
                 deletePlanButton,
                 remoteModeCheckBox,
                 workerEndpointsField,
-                progressLabel
+                progressLabel,
+                limitLabel
         );
     }
 
+    private JLabel createRunStatusLabel(String text, String iconPath) {
+        JLabel label = new JLabel(text);
+        label.setFont(runStatusFont());
+        if (iconPath != null && !iconPath.isBlank()) {
+            label.setIcon(new FlatSVGIcon(iconPath, 18, 18)
+                    .setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))));
+        }
+        label.setHorizontalTextPosition(SwingConstants.RIGHT);
+        label.setIconTextGap(4);
+        label.setHorizontalAlignment(SwingConstants.LEFT);
+        return label;
+    }
+
+    private Font runStatusFont() {
+        Font base = FontsUtil.getDefaultFont(Font.BOLD);
+        return new Font(Font.MONOSPACED, Font.BOLD, base.getSize());
+    }
+
     private JPanel createToolbarGroupPanel(String columnConstraints) {
+        return createToolbarGroupPanel(columnConstraints, "");
+    }
+
+    private JPanel createToolbarGroupPanel(String columnConstraints, String layoutSuffix) {
         JPanel panel = new JPanel(new MigLayout(
-                "insets 0, fillx, novisualpadding, gap 0",
+                "insets 0, fillx, novisualpadding, gap 0" + layoutSuffix,
                 columnConstraints,
                 "[]"
         ));
@@ -672,7 +697,8 @@ final class PerformancePanelViewFactory {
                           JButton deletePlanButton,
                           JCheckBox remoteModeCheckBox,
                           JTextField workerEndpointsField,
-                          JLabel progressLabel) {
+                          JLabel progressLabel,
+                          JLabel limitLabel) {
     }
 
     private record ResultToolbar(JPanel panel,

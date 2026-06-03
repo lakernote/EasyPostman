@@ -133,6 +133,15 @@ public class PerformanceRunControlSupportTest extends AbstractSwingUiTest {
         assertFalse(stopRunBody.contains("markIdle()"));
     }
 
+    @Test
+    public void formatRunDurationShouldUseCompactClockText() {
+        assertEquals(PerformanceRunControlSupport.formatRunDuration(0), "00:00");
+        assertEquals(PerformanceRunControlSupport.formatRunDuration(999), "00:00");
+        assertEquals(PerformanceRunControlSupport.formatRunDuration(23_000), "00:23");
+        assertEquals(PerformanceRunControlSupport.formatRunDuration(60_000), "01:00");
+        assertEquals(PerformanceRunControlSupport.formatRunDuration(3_600_000), "01:00:00");
+    }
+
     private static JTabbedPane createResultTabbedPane(PerformanceResultTablePanel resultTablePanel,
                                                      PerformanceReportPanel reportPanel) {
         JTabbedPane resultTabbedPane = new JTabbedPane();

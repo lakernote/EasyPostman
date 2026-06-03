@@ -73,7 +73,8 @@ final class PerformanceRemoteRunControlSupport {
 
     Thread startRun(PerformanceRunPlan runPlan,
                     List<PerformanceWorkerEndpoint> workers,
-                    JLabel progressLabel) {
+                    JLabel progressLabel,
+                    JLabel limitLabel) {
         if (runningSupplier.getAsBoolean()) {
             return null;
         }
@@ -93,10 +94,11 @@ final class PerformanceRemoteRunControlSupport {
         lastLiveReport = null;
         trendWindowSampler.reset(0L);
         runUiController.initializeProgress(progressLabel, 0);
+        runUiController.updateRunStatus(limitLabel, "0", PerformanceRunUiController.REQUEST_STATUS_ICON);
 
         Thread thread = PerformanceThreadFactory.newDaemonThread(
                 "PerformanceRemoteRun",
-                () -> runToCompletion(runPlan, safeWorkers, progressLabel)
+                () -> runToCompletion(runPlan, safeWorkers, progressLabel, limitLabel)
         );
         thread.start();
         return thread;
@@ -112,7 +114,8 @@ final class PerformanceRemoteRunControlSupport {
 
     private void runToCompletion(PerformanceRunPlan runPlan,
                                  List<PerformanceWorkerEndpoint> workers,
-                                 JLabel progressLabel) {
+                                 JLabel progressLabel,
+                                 JLabel limitLabel) {
         long startTime = System.currentTimeMillis();
         String runId = "gui-" + startTime;
         currentRunId = runId;
@@ -123,18 +126,18 @@ final class PerformanceRemoteRunControlSupport {
             resetRemoteTrendSamplingWindow();
             runUiController.initializeProgress(progressLabel, totalUsers);
             notifyStarted(workers.size(), runId);
-            updateRemoteProgress(progressLabel, RemoteProgressSnapshot.empty(totalUsers));
+            updateRemoteProgress(progressLabel, limitLabel, RemoteProgressSnapshot.empty(totalUsers));
             if (stopping.get()) {
                 sendStopAsync(runId, workers);
             }
-            waitForWorkers(workers, runId, progressLabel, totalUsers);
+            waitForWorkers(workers, runId, progressLabel, limitLabel, totalUsers);
             PerformanceJsonReport report = collectReport(workers, runId);
             List<PerformanceWorkerResultDetail> details = collectDetails(workers, runId);
-            finishRun(report, details, workers.size(), totalUsers, progressLabel);
+            finishRun(report, details, workers.size(), totalUsers, progressLabel, limitLabel);
         } catch (Exception ex) {
             sendStopAsync(runId, workers);
             log.error("Remote performance run failed", ex);
-            finishFailed(ex, progressLabel);
+            finishFailed(ex, progressLabel, limitLabel);
         } finally {
             currentRunId = "";
             currentWorkers = List.of();
@@ -200,12 +203,13 @@ final class PerformanceRemoteRunControlSupport {
     private void waitForWorkers(List<PerformanceWorkerEndpoint> workers,
                                 String runId,
                                 JLabel progressLabel,
+                                JLabel limitLabel,
                                 int totalAssignedUsers) throws Exception {
         long deadline = System.currentTimeMillis() + TIMEOUT_MS;
         while (true) {
             boolean includeTrendSnapshot = shouldRequestStatusTrendSnapshot(System.currentTimeMillis(), false);
             RemoteProgressSnapshot progress = pollProgress(workers, runId, totalAssignedUsers, includeTrendSnapshot);
-            updateRemoteProgress(progressLabel, progress);
+            updateRemoteProgress(progressLabel, limitLabel, progress);
             updateLiveViews(progress, includeTrendSnapshot);
             if (progress.completedWorkers() == workers.size()) {
                 return;
@@ -339,7 +343,8 @@ final class PerformanceRemoteRunControlSupport {
                            List<PerformanceWorkerResultDetail> details,
                            int workerCount,
                            int totalUsers,
-                           JLabel progressLabel) {
+                           JLabel progressLabel,
+                           JLabel limitLabel) {
         SwingUtilities.invokeLater(() -> {
             runningSetter.accept(false);
             runUiController.markIdle();
@@ -350,16 +355,19 @@ final class PerformanceRemoteRunControlSupport {
             updateResultDetails(details);
             if (PerformanceRunStatus.STOPPED.equals(report.getMetadata().getStatus())) {
                 updateCompletionProgress(progressLabel, totalUsers);
+                updateRemoteStatusLabel(limitLabel, report.getSummary().getTotalRequests());
                 updateFinalTrend(report, totalUsers, workerCount);
                 NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_MSG_STOPPED));
             } else if (PerformanceRunStatus.FAILED.equals(report.getMetadata().getStatus())) {
                 updateCompletionProgress(progressLabel, totalUsers);
+                updateRemoteStatusLabel(limitLabel, report.getSummary().getTotalRequests());
                 updateFinalTrend(report, totalUsers, workerCount);
                 NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_MSG_FAILED,
                         report.getMetadata().getError()));
             } else {
                 PerformanceJsonReportSummary summary = report.getSummary();
                 updateCompletionProgress(progressLabel, totalUsers);
+                updateRemoteStatusLabel(limitLabel, summary.getTotalRequests());
                 updateFinalTrend(report, totalUsers, workerCount);
                 NotificationUtil.showSuccess(I18nUtil.getMessage(
                         MessageKeys.PERFORMANCE_REMOTE_MSG_COMPLETED,
@@ -384,12 +392,15 @@ final class PerformanceRemoteRunControlSupport {
         performanceResultTablePanel.flushPendingResults();
     }
 
-    private void finishFailed(Exception ex, JLabel progressLabel) {
+    private void finishFailed(Exception ex,
+                              JLabel progressLabel,
+                              JLabel limitLabel) {
         int totalUsers = currentTotalUsers;
         SwingUtilities.invokeLater(() -> {
             runningSetter.accept(false);
             runUiController.markIdle();
             runUiController.updateProgressAsync(progressLabel, 0, totalUsers);
+            updateRemoteStatusLabel(limitLabel, 0L);
             NotificationUtil.showError(I18nUtil.getMessage(
                     MessageKeys.PERFORMANCE_REMOTE_MSG_FAILED,
                     ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage()
@@ -423,15 +434,25 @@ final class PerformanceRemoteRunControlSupport {
         }
     }
 
-    private void updateRemoteProgress(JLabel progressLabel, RemoteProgressSnapshot progress) {
-        if (progressLabel == null) {
-            return;
+    private void updateRemoteProgress(JLabel progressLabel,
+                                      JLabel limitLabel,
+                                      RemoteProgressSnapshot progress) {
+        if (progressLabel != null) {
+            runUiController.updateProgressAsync(progressLabel, progress.activeUsers(), progress.totalUsers());
         }
-        runUiController.updateProgressAsync(progressLabel, progress.activeUsers(), progress.totalUsers());
+        updateRemoteStatusLabel(limitLabel, progress.totalRequests());
     }
 
     private void updateCompletionProgress(JLabel progressLabel, int totalUsers) {
         runUiController.updateProgressAsync(progressLabel, 0, Math.max(0, totalUsers));
+    }
+
+    private void updateRemoteStatusLabel(JLabel limitLabel, long totalRequests) {
+        runUiController.updateRunStatusAsync(
+                limitLabel,
+                String.format(java.util.Locale.ROOT, "%,d", Math.max(0L, totalRequests)),
+                PerformanceRunUiController.REQUEST_STATUS_ICON
+        );
     }
 
     private void updateLiveViews(RemoteProgressSnapshot progress, boolean forceTrend) {

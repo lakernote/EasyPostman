@@ -47,6 +47,7 @@ public class PerformanceCoreThreadGroupRunnerTest {
         assertEquals(virtualUsers.getActiveThreads(), 0);
         assertTrue(progressEvents.stream().anyMatch(progress ->
                 progress.getActiveThreads() == 1 && progress.getTotalThreads() == 1));
+        assertTrue(progressEvents.stream().allMatch(progress -> progress.getSequence() > 0L));
         assertEquals(progressEvents.get(progressEvents.size() - 1).getActiveThreads(), 0);
     }
 

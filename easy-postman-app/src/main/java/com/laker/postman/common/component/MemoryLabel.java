@@ -6,6 +6,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -14,15 +15,21 @@ import java.util.TimerTask;
  * 支持自动刷新和双击手动GC功能。
  */
 public class MemoryLabel extends JLabel {
+    private static final double BYTES_PER_MB = 1024.0 * 1024.0;
+    private static final double MB_PER_GB = 1024.0;
+    private static final String DEFAULT_SEPARATOR = " / ";
+    private static final String COMPACT_SEPARATOR = "/";
+
     private transient Timer refreshTimer;
     private final int refreshInterval;
+    private final boolean compactSeparator;
     private boolean autoRefresh = true;
 
     /**
      * 创建内存标签，默认1秒刷新一次
      */
     public MemoryLabel() {
-        this(1000);
+        this(1000, false);
     }
 
     /**
@@ -31,8 +38,13 @@ public class MemoryLabel extends JLabel {
      * @param refreshIntervalMs 刷新间隔(毫秒)
      */
     public MemoryLabel(int refreshIntervalMs) {
+        this(refreshIntervalMs, false);
+    }
+
+    public MemoryLabel(int refreshIntervalMs, boolean compactSeparator) {
         super();
         this.refreshInterval = refreshIntervalMs;
+        this.compactSeparator = compactSeparator;
 
         // 设置图标和字体
         setIcon(new FlatSVGIcon("icons/computer.svg", 20, 20));
@@ -64,26 +76,23 @@ public class MemoryLabel extends JLabel {
         Runtime rt = Runtime.getRuntime();
         long used = rt.totalMemory() - rt.freeMemory();
         long max = rt.maxMemory();
-        setText(formatSize(used) + " / " + formatSize(max));
+        String separator = compactSeparator ? COMPACT_SEPARATOR : DEFAULT_SEPARATOR;
+        setText(formatSize(used) + separator + formatSize(max));
     }
 
     /**
      * 格式化内存大小，自动显示为 MB 或 GB
      */
     private String formatSize(long bytes) {
-        double mb = bytes / 1024.0 / 1024;
-        if (mb < 1024) {
-            if (mb == (long) mb) {
-                return String.format("%dMB", (long) mb);
-            } else {
-                return String.format("%.2fMB", mb).replaceAll("\\.0+$", "").replaceAll("(\\.\\d*[1-9])0+$", "$1");
-            }
+        double mb = bytes / BYTES_PER_MB;
+        if (mb < MB_PER_GB) {
+            return String.format(Locale.ROOT, "%dMB", Math.round(mb));
         } else {
-            double gb = mb / 1024.0;
+            double gb = mb / MB_PER_GB;
             if (gb == (long) gb) {
-                return String.format("%dGB", (long) gb);
+                return String.format(Locale.ROOT, "%dGB", (long) gb);
             } else {
-                return String.format("%.2fGB", gb).replaceAll("\\.0+$", "").replaceAll("(\\.\\d*[1-9])0+$", "$1");
+                return String.format(Locale.ROOT, "%.1fGB", gb).replace(".0GB", "GB");
             }
         }
     }

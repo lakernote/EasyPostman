@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -52,9 +53,18 @@ final class PerformanceRunControlSupport {
     private final Runnable clearCachedPerformanceResultsAction;
     private final AtomicBoolean stopping = new AtomicBoolean(false);
     private volatile long expectedTrendEndTimeMs;
+    private Timer runStatusTimer;
 
     Thread startRun(DefaultMutableTreeNode rootNode,
                     JLabel progressLabel,
+                    boolean efficientMode,
+                    Consumer<Boolean> efficientModeSetter) {
+        return startRun(rootNode, progressLabel, null, efficientMode, efficientModeSetter);
+    }
+
+    Thread startRun(DefaultMutableTreeNode rootNode,
+                    JLabel progressLabel,
+                    JLabel limitLabel,
                     boolean efficientMode,
                     Consumer<Boolean> efficientModeSetter) {
         propertyPanelSupport.saveAllPropertyPanelData();
@@ -64,6 +74,7 @@ final class PerformanceRunControlSupport {
         );
 
         long estimatedRequests = executionEngine.estimateTotalRequests(executionPlan);
+        RunLimitDisplay runLimitDisplay = runLimitDisplay(executionPlan, estimatedRequests);
         final int highConcurrencyThreshold = 5000;
         if (estimatedRequests >= highConcurrencyThreshold && !efficientMode) {
             String message = I18nUtil.getMessage(
@@ -101,6 +112,7 @@ final class PerformanceRunControlSupport {
 
         int totalThreads = executionEngine.getTotalThreads(executionPlan);
         runUiController.initializeProgress(progressLabel, totalThreads);
+        startRunStatusTimer(limitLabel, runLimitDisplay);
 
         PerformanceRunHandle runHandle = runSession.start(PerformanceRunRequest.builder()
                 .plan(executionPlan)
@@ -147,6 +159,7 @@ final class PerformanceRunControlSupport {
         stopping.set(false);
         runningSetter.accept(false);
         runUiController.markIdle();
+        stopRunStatusTimer();
         timerManager.stopAll();
 
         flushPendingAndCharts("完成时", true);
@@ -175,8 +188,42 @@ final class PerformanceRunControlSupport {
         stopping.set(false);
         runningSetter.accept(false);
         runUiController.markIdle();
+        stopRunStatusTimer();
         timerManager.stopAll();
         flushUiAfterStop();
+    }
+
+    private void startRunStatusTimer(JLabel limitLabel,
+                                     RunLimitDisplay runLimitDisplay) {
+        if (limitLabel == null) {
+            return;
+        }
+        stopRunStatusTimer();
+        updateRunStatusLabels(limitLabel, runLimitDisplay);
+        runStatusTimer = new Timer(1000, e -> updateRunStatusLabels(
+                limitLabel,
+                runLimitDisplay
+        ));
+        runStatusTimer.setRepeats(true);
+        runStatusTimer.start();
+    }
+
+    private void updateRunStatusLabels(JLabel limitLabel,
+                                       RunLimitDisplay runLimitDisplay) {
+        long now = System.currentTimeMillis();
+        RunStatusText statusText = runStatusText(runLimitDisplay, now);
+        runUiController.updateRunStatus(
+                limitLabel,
+                statusText.text(),
+                statusText.iconPath()
+        );
+    }
+
+    private void stopRunStatusTimer() {
+        if (runStatusTimer != null) {
+            runStatusTimer.stop();
+            runStatusTimer = null;
+        }
     }
 
     private void flushPendingAndCharts(String phase, boolean preferExpectedEndTime) {
@@ -242,5 +289,69 @@ final class PerformanceRunControlSupport {
             case SPIKE -> Math.max(0L, data.spikeDuration);
             case STAIRS -> Math.max(0L, data.stairsDuration);
         };
+    }
+
+    private RunLimitDisplay runLimitDisplay(PerformanceTestPlan plan, long estimatedRequests) {
+        long expectedDurationMs = expectedTrendDurationMs(plan);
+        if (expectedDurationMs > 0L) {
+            return RunLimitDisplay.duration(expectedDurationMs);
+        }
+        return RunLimitDisplay.requests(estimatedRequests);
+    }
+
+    private RunStatusText runStatusText(RunLimitDisplay display, long nowMs) {
+        if (display == null) {
+            return RunStatusText.hidden();
+        }
+        if (display.durationMode()) {
+            long remainingMs = Math.max(0L, startTimeSupplier.getAsLong() + display.durationMs() - nowMs);
+            return RunStatusText.eta(formatRunDuration(remainingMs));
+        }
+        long completed = Math.max(0L, statsCollector.progressSnapshot().totalRequests());
+        String text = display.estimatedRequests() == Long.MAX_VALUE
+                ? formatCount(completed) + "/max"
+                : formatCount(completed) + "/" + formatCount(display.estimatedRequests());
+        return RunStatusText.request(text);
+    }
+
+    static String formatRunDuration(long durationMs) {
+        long totalSeconds = Math.max(0L, durationMs / 1000L);
+        long seconds = totalSeconds % 60L;
+        long minutes = (totalSeconds / 60L) % 60L;
+        long hours = totalSeconds / 3600L;
+        if (hours > 0L) {
+            return String.format(Locale.ROOT, "%02d:%02d:%02d", hours, minutes, seconds);
+        }
+        return String.format(Locale.ROOT, "%02d:%02d", minutes, seconds);
+    }
+
+    private static String formatCount(long value) {
+        return String.format(Locale.ROOT, "%,d", Math.max(0L, value));
+    }
+
+    private record RunLimitDisplay(boolean durationMode,
+                                   long durationMs,
+                                   long estimatedRequests) {
+        private static RunLimitDisplay duration(long durationMs) {
+            return new RunLimitDisplay(true, Math.max(0L, durationMs), 0L);
+        }
+
+        private static RunLimitDisplay requests(long estimatedRequests) {
+            return new RunLimitDisplay(false, 0L, Math.max(0L, estimatedRequests));
+        }
+    }
+
+    private record RunStatusText(String text, String iconPath) {
+        private static RunStatusText hidden() {
+            return new RunStatusText("", null);
+        }
+
+        private static RunStatusText eta(String text) {
+            return new RunStatusText(text, PerformanceRunUiController.ETA_STATUS_ICON);
+        }
+
+        private static RunStatusText request(String text) {
+            return new RunStatusText(text, PerformanceRunUiController.REQUEST_STATUS_ICON);
+        }
     }
 }

@@ -19,6 +19,7 @@ public class PerformanceCoreLifecycleTest {
 
         assertEquals(progress.getActiveThreads(), 3);
         assertEquals(progress.getTotalThreads(), 10);
+        assertEquals(progress.getSequence(), 0L);
         assertEquals(summary.getElapsedTimeMs(), 250);
         assertFalse(summary.isStopped());
     }

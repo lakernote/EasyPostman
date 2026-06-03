@@ -4,7 +4,7 @@ import com.laker.postman.util.I18nUtil;
 
 public final class ClientCertI18n {
 
-    private static final String BUNDLE_NAME = "client-cert-messages";
+    public static final String BUNDLE_NAME = "client-cert-messages";
 
     private ClientCertI18n() {
     }

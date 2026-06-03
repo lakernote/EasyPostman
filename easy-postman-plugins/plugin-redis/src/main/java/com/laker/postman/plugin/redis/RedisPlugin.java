@@ -15,6 +15,7 @@ public class RedisPlugin implements EasyPostmanPlugin {
 
     @Override
     public void onLoad(PluginContext context) {
+        context.registerI18nBundle(RedisI18n.BUNDLE_NAME);
         context.registerScriptApi("redis", ScriptRedisApi::new);
         PluginContributionSupport.registerToolbox(
                 context,

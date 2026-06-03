@@ -3,7 +3,9 @@ package com.laker.postman.service.update.plugin;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.ioc.Component;
-import com.laker.postman.platform.update.model.UpdateCheckFrequency;
+import com.laker.postman.platform.update.model.UpdateCheckState;
+import com.laker.postman.platform.update.model.UpdatePolicy;
+import com.laker.postman.platform.update.model.UpdateTarget;
 import com.laker.postman.panel.topmenu.plugin.PluginManagerDialog;
 import com.laker.postman.panel.update.PluginUpdateNotification;
 import com.laker.postman.plugin.runtime.PluginSettingsStore;
@@ -22,7 +24,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 插件自动更新提示管理器。
@@ -59,20 +60,20 @@ public class PluginUpdateManager {
     }
 
     public void startBackgroundCheck() {
-        if (!SettingManager.isAutoUpdateCheckEnabled()) {
+        UpdatePolicy policy = SettingManager.getPluginUpdatePolicy();
+        if (!policy.enabled()) {
             log.info("Plugin auto-update check is disabled");
             return;
         }
 
-        String frequencyCode = SettingManager.getAutoUpdateCheckFrequency();
-        UpdateCheckFrequency frequency = UpdateCheckFrequency.fromCode(frequencyCode);
         long lastCheckTime = getLastCheckTime();
         long currentTime = System.currentTimeMillis();
+        UpdateCheckState state = getCheckState(lastCheckTime);
 
         log.info("Plugin update check frequency: {}, last check time: {}",
-                frequency.getCode(), lastCheckTime > 0 ? new Date(lastCheckTime) : "never");
+                policy.frequency().getCode(), lastCheckTime > 0 ? new Date(lastCheckTime) : "never");
 
-        if (!shouldCheckForUpdate(lastCheckTime, currentTime, frequency)) {
+        if (!policy.shouldCheck(state, currentTime)) {
             log.info("Skipping plugin update check - not yet time according to frequency settings");
             return;
         }
@@ -139,18 +140,7 @@ public class PluginUpdateManager {
         });
     }
 
-    private boolean shouldCheckForUpdate(long lastCheckTime, long currentTime, UpdateCheckFrequency frequency) {
-        if (frequency.isAlwaysCheck()) {
-            return true;
-        }
-        if (lastCheckTime == 0L) {
-            return true;
-        }
-        long daysSinceLastCheck = TimeUnit.MILLISECONDS.toDays(currentTime - lastCheckTime);
-        return daysSinceLastCheck >= frequency.getDays();
-    }
-
-    private long getLastCheckTime() {
+    public static long getLastCheckTime() {
         String value = PluginSettingsStore.getString(LAST_PLUGIN_UPDATE_CHECK_TIME_KEY);
         if (value == null || value.isBlank()) {
             return 0L;
@@ -162,17 +152,25 @@ public class PluginUpdateManager {
         }
     }
 
-    private void setLastCheckTime(long timestamp) {
+    private static void setLastCheckTime(long timestamp) {
         PluginSettingsStore.putString(LAST_PLUGIN_UPDATE_CHECK_TIME_KEY, String.valueOf(timestamp));
+    }
+
+    private static UpdateCheckState getCheckState(long lastCheckTime) {
+        return UpdateCheckState.of(
+                UpdateTarget.PLUGIN,
+                lastCheckTime,
+                PluginSettingsStore.getStringSet(LAST_PLUGIN_UPDATE_NOTIFIED_KEY)
+        );
     }
 
     private List<PluginUpdateCandidate> filterUnseenCandidates(List<PluginUpdateCandidate> candidates) {
         if (candidates == null || candidates.isEmpty()) {
             return List.of();
         }
-        Set<String> notified = PluginSettingsStore.getStringSet(LAST_PLUGIN_UPDATE_NOTIFIED_KEY);
+        UpdateCheckState state = getCheckState(getLastCheckTime());
         return candidates.stream()
-                .filter(candidate -> !notified.contains(toMarker(candidate)))
+                .filter(candidate -> !state.wasNotified(toMarker(candidate)))
                 .toList();
     }
 

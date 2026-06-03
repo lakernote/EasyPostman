@@ -3,6 +3,7 @@ package com.laker.postman.plugin.runtime;
 import com.laker.postman.plugin.api.EasyPostmanPlugin;
 import com.laker.postman.plugin.api.PluginContext;
 import com.laker.postman.plugin.api.PluginDescriptor;
+import com.laker.postman.util.I18nBundleRegistry;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -40,7 +41,7 @@ class PluginLoader {
             if (!(instance instanceof EasyPostmanPlugin plugin)) {
                 throw new IllegalStateException("Plugin entry class does not implement EasyPostmanPlugin: " + descriptor.entryClass());
             }
-            plugin.onLoad(new PluginContextImpl(descriptor, registry));
+            plugin.onLoad(new PluginContextImpl(descriptor, registry, classLoader));
             loadedPlugins.add(plugin);
             pluginClassLoaders.add(classLoader);
             loadedPluginFiles.add(new PluginFileInfo(descriptor, jarPath, true, true, true));
@@ -111,10 +112,12 @@ class PluginLoader {
     private static final class PluginContextImpl implements PluginContext {
         private final PluginDescriptor descriptor;
         private final PluginRegistry registry;
+        private final ClassLoader classLoader;
 
-        private PluginContextImpl(PluginDescriptor descriptor, PluginRegistry registry) {
+        private PluginContextImpl(PluginDescriptor descriptor, PluginRegistry registry, ClassLoader classLoader) {
             this.descriptor = descriptor;
             this.registry = registry;
+            this.classLoader = classLoader;
         }
 
         @Override
@@ -150,6 +153,11 @@ class PluginLoader {
         @Override
         public void registerSnippet(com.laker.postman.plugin.api.SnippetDefinition definition) {
             registry.registerSnippet(definition);
+        }
+
+        @Override
+        public void registerI18nBundle(String bundleName) {
+            I18nBundleRegistry.registerBundle(descriptor.id(), bundleName, classLoader);
         }
     }
 }

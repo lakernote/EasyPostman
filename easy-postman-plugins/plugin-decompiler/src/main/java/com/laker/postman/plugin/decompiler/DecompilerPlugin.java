@@ -8,6 +8,7 @@ public class DecompilerPlugin implements EasyPostmanPlugin {
 
     @Override
     public void onLoad(PluginContext context) {
+        context.registerI18nBundle(DecompilerI18n.BUNDLE_NAME);
         PluginContributionSupport.registerToolbox(
                 context,
                 "decompiler",

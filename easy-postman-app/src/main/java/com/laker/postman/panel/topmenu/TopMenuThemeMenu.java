@@ -1,6 +1,7 @@
 package com.laker.postman.panel.topmenu;
 
 import com.laker.postman.common.themes.SimpleThemeManager;
+import com.laker.postman.common.themes.ThemeDescriptor;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.experimental.UtilityClass;
@@ -19,23 +20,14 @@ class TopMenuThemeMenu {
         JMenu themeMenu = new JMenu(I18nUtil.getMessage(MessageKeys.MENU_THEME));
         ButtonGroup themeGroup = new ButtonGroup();
 
-        JRadioButtonMenuItem lightItem = new JRadioButtonMenuItem(I18nUtil.getMessage(MessageKeys.MENU_THEME_LIGHT));
-        JRadioButtonMenuItem darkItem = new JRadioButtonMenuItem(I18nUtil.getMessage(MessageKeys.MENU_THEME_DARK));
-
-        themeGroup.add(lightItem);
-        themeGroup.add(darkItem);
-
-        if (SimpleThemeManager.isLightTheme()) {
-            lightItem.setSelected(true);
-        } else {
-            darkItem.setSelected(true);
+        for (ThemeDescriptor theme : SimpleThemeManager.availableThemes()) {
+            JRadioButtonMenuItem themeItem = new JRadioButtonMenuItem(I18nUtil.getMessage(theme.nameKey()));
+            themeItem.setSelected(theme.id().equals(SimpleThemeManager.currentThemeId()));
+            themeItem.addActionListener(e -> SimpleThemeManager.switchTheme(theme.id()));
+            themeGroup.add(themeItem);
+            themeMenu.add(themeItem);
         }
 
-        lightItem.addActionListener(e -> SimpleThemeManager.switchToLightTheme());
-        darkItem.addActionListener(e -> SimpleThemeManager.switchToDarkTheme());
-
-        themeMenu.add(lightItem);
-        themeMenu.add(darkItem);
         return themeMenu;
     }
 }

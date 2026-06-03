@@ -4,7 +4,7 @@ import com.laker.postman.util.I18nUtil;
 
 public final class DecompilerI18n {
 
-    private static final String BUNDLE_NAME = "decompiler-messages";
+    public static final String BUNDLE_NAME = "decompiler-messages";
 
     private DecompilerI18n() {
     }

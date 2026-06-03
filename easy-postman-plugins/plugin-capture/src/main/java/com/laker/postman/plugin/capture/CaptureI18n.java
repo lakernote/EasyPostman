@@ -4,7 +4,7 @@ import com.laker.postman.util.I18nUtil;
 
 public final class CaptureI18n {
 
-    private static final String BUNDLE_NAME = "capture-messages";
+    public static final String BUNDLE_NAME = "capture-messages";
 
     private CaptureI18n() {
     }

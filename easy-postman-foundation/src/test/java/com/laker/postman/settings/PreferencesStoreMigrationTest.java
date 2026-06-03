@@ -9,6 +9,7 @@ import java.util.Properties;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 
 public class PreferencesStoreMigrationTest {
 
@@ -45,5 +46,21 @@ public class PreferencesStoreMigrationTest {
         assertEquals(reloaded.getProperty("update_source_preference"), "github");
         assertEquals(reloaded.getProperty(PreferencesStore.DEFAULT_SCHEMA_VERSION_KEY), "1");
         assertFalse(reloaded.containsKey("old_update_source"));
+    }
+
+    @Test
+    public void shouldReportWhetherTypedKeyIsStored() throws Exception {
+        Path settingsFile = Files.createTempFile("easy-postman-settings", ".properties");
+        PreferencesStore store = PreferencesStore.fileBacked(settingsFile);
+        SettingKey<String> key = SettingKey.stringKey("optional_key", "default");
+
+        store.load();
+        assertFalse(store.contains(key));
+        assertEquals(store.get(key), "default");
+
+        store.put(key, "stored");
+
+        assertTrue(store.contains(key));
+        assertEquals(store.get(key), "stored");
     }
 }

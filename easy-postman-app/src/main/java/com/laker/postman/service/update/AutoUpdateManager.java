@@ -2,8 +2,10 @@ package com.laker.postman.service.update;
 
 import com.laker.postman.ioc.Component;
 import com.laker.postman.platform.update.VersionChecker;
-import com.laker.postman.platform.update.model.UpdateCheckFrequency;
+import com.laker.postman.platform.update.model.UpdateCheckState;
 import com.laker.postman.platform.update.model.UpdateInfo;
+import com.laker.postman.platform.update.model.UpdatePolicy;
+import com.laker.postman.platform.update.model.UpdateTarget;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -16,7 +18,6 @@ import java.util.Date;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 自动更新管理器 - 统一管理所有更新相关功能
@@ -48,27 +49,26 @@ public class AutoUpdateManager {
      * 根据上次检查时间和配置的频率决定是否需要检查更新
      */
     public void startBackgroundCheck() {
-        boolean autoCheckEnabled = SettingManager.isAutoUpdateCheckEnabled();
         String currentVersion = SystemUtil.getCurrentVersion();
         log.info("Current application version: {}", currentVersion);
         String osInfo = SystemUtil.getOsInfo();
         log.info("Detected operating system: \n{} ", osInfo);
 
-        if (!autoCheckEnabled) {
+        UpdatePolicy policy = SettingManager.getAppUpdatePolicy();
+        if (!policy.enabled()) {
             log.info("Auto-update check is disabled");
             return;
         }
 
-        String frequencyCode = SettingManager.getAutoUpdateCheckFrequency();
-        UpdateCheckFrequency frequency = UpdateCheckFrequency.fromCode(frequencyCode);
         long lastCheckTime = SettingManager.getLastUpdateCheckTime();
         long currentTime = System.currentTimeMillis();
+        UpdateCheckState state = SettingManager.getAppUpdateCheckState();
 
         log.info("Update check frequency: {}, last check time: {}",
-                frequency.getCode(), lastCheckTime > 0 ? new Date(lastCheckTime) : "never");
+                policy.frequency().getCode(), lastCheckTime > 0 ? new Date(lastCheckTime) : "never");
 
         // 判断是否需要检查更新
-        if (shouldCheckForUpdate(lastCheckTime, currentTime, frequency)) {
+        if (policy.shouldCheck(state, currentTime)) {
             log.info("Scheduling startup update check...");
             // 使用线程池异步执行，避免阻塞调用线程
             UPDATE_EXECUTOR.submit(() -> {
@@ -81,27 +81,6 @@ public class AutoUpdateManager {
         } else {
             log.info("Skipping update check - not yet time according to frequency settings");
         }
-    }
-
-    /**
-     * 判断是否应该检查更新
-     */
-    private boolean shouldCheckForUpdate(long lastCheckTime, long currentTime, UpdateCheckFrequency frequency) {
-        // 如果设置为每次启动都检查，直接返回true
-        if (frequency.isAlwaysCheck()) {
-            return true;
-        }
-
-        // 如果从未检查过，应该检查
-        if (lastCheckTime == 0) {
-            return true;
-        }
-
-        // 计算距离上次检查的天数
-        long daysSinceLastCheck = TimeUnit.MILLISECONDS.toDays(currentTime - lastCheckTime);
-
-        // 根据频率判断
-        return daysSinceLastCheck >= frequency.getDays();
     }
 
     /**
@@ -146,11 +125,20 @@ public class AutoUpdateManager {
      * @param isManual   是否是手动检查
      */
     public void handleUpdateCheckResult(UpdateInfo updateInfo, boolean isManual) {
+        if (updateInfo == null) {
+            log.warn("Ignoring empty update check result");
+            return;
+        }
         SwingUtilities.invokeLater(() -> {
+            if (!shouldNotify(updateInfo, SettingManager.getAppUpdateCheckState(), isManual)) {
+                log.debug("Skipping already notified app update marker: {}", notificationMarker(updateInfo));
+                return;
+            }
             switch (updateInfo.getStatus()) {
                 case UPDATE_AVAILABLE -> {
                     log.info("Update available: {} -> {}",
                             updateInfo.getCurrentVersion(), updateInfo.getLatestVersion());
+                    rememberNotifiedMarker(updateInfo);
 
                     if (isManual) {
                         // 手动检查直接显示对话框
@@ -163,6 +151,7 @@ public class AutoUpdateManager {
                 case UPDATE_AVAILABLE_NO_ASSET -> {
                     log.info("Update available but no asset for current platform: {} -> {}",
                             updateInfo.getCurrentVersion(), updateInfo.getLatestVersion());
+                    rememberNotifiedMarker(updateInfo);
                     if (isManual) {
                         // 手动检查：直接显示 NoAsset 对话框
                         uiManager.showNoAssetDialog(updateInfo);
@@ -187,6 +176,31 @@ public class AutoUpdateManager {
                 }
             }
         });
+    }
+
+    static boolean shouldNotify(UpdateInfo updateInfo, UpdateCheckState state, boolean isManual) {
+        if (updateInfo == null) {
+            return false;
+        }
+        String marker = notificationMarker(updateInfo);
+        if (marker.isEmpty()) {
+            return true;
+        }
+        return isManual || state == null || !state.wasNotified(marker);
+    }
+
+    static String notificationMarker(UpdateInfo updateInfo) {
+        if (updateInfo == null
+                || updateInfo.getLatestVersion() == null
+                || updateInfo.getLatestVersion().isBlank()
+                || !(updateInfo.isUpdateAvailable() || updateInfo.isUpdateAvailableNoAsset())) {
+            return "";
+        }
+        return UpdateTarget.APP.getId() + "@" + updateInfo.getLatestVersion().trim() + "@" + updateInfo.getStatus();
+    }
+
+    private static void rememberNotifiedMarker(UpdateInfo updateInfo) {
+        SettingManager.rememberAppUpdateNotifiedMarker(notificationMarker(updateInfo));
     }
 
     /**

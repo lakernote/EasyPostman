@@ -4,6 +4,7 @@ import cn.hutool.json.JSONUtil;
 import com.laker.postman.certificate.TrustedCertificateEntry;
 import com.laker.postman.model.NotificationPosition;
 import com.laker.postman.settings.SettingKey;
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -14,7 +15,8 @@ import java.util.Locale;
 import java.util.Set;
 
 @Slf4j
-final class AppSettingKeys {
+@UtilityClass
+class AppSettingKeys {
 
     static final int DEFAULT_MAX_BODY_SIZE = 100 * 1024;
     static final int DEFAULT_REQUEST_TIMEOUT = 0;
@@ -239,10 +241,24 @@ final class AppSettingKeys {
             "auto_update_check_frequency",
             "daily"
     ).normalized(AppSettingKeys::normalizeAutoUpdateFrequency);
+    static final SettingKey<Boolean> PLUGIN_UPDATE_CHECK_ENABLED = SettingKey.booleanKey(
+            "plugin_update_check_enabled",
+            true
+    );
+    static final SettingKey<String> PLUGIN_UPDATE_CHECK_FREQUENCY = SettingKey.stringKey(
+            "plugin_update_check_frequency",
+            "daily"
+    ).normalized(AppSettingKeys::normalizeAutoUpdateFrequency);
     static final SettingKey<Long> LAST_UPDATE_CHECK_TIME = SettingKey.longKey(
             "last_update_check_time",
             0L,
             value -> Math.max(0L, value)
+    );
+    static final SettingKey<Set<String>> APP_UPDATE_NOTIFIED_MARKERS = SettingKey.of(
+            "app_update_notified_markers",
+            Set.of(),
+            AppSettingKeys::parseTrimmedSet,
+            AppSettingKeys::formatCollection
     );
     static final SettingKey<String> UPDATE_SOURCE_PREFERENCE = SettingKey.stringKey(
             "update_source_preference",
@@ -293,9 +309,6 @@ final class AppSettingKeys {
             DEFAULT_UI_FONT_SIZE,
             value -> clamp(value, 10, 24)
     );
-
-    private AppSettingKeys() {
-    }
 
     static int defaultPerformanceJsContextPoolSize() {
         return Math.max(16, Runtime.getRuntime().availableProcessors() * 4);
@@ -393,6 +406,10 @@ final class AppSettingKeys {
 
     private static Set<String> parseUppercaseSet(String value) {
         return normalizeUppercaseSet(parseTrimmedList(value));
+    }
+
+    private static Set<String> parseTrimmedSet(String value) {
+        return new LinkedHashSet<>(parseTrimmedList(value));
     }
 
     private static Set<String> normalizeUppercaseSet(Collection<String> values) {

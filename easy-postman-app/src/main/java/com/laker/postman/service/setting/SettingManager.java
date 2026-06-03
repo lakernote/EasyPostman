@@ -4,9 +4,14 @@ import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.certificate.TrustedCertificateEntry;
 import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
 import com.laker.postman.model.NotificationPosition;
+import com.laker.postman.platform.update.model.UpdateCheckState;
+import com.laker.postman.platform.update.model.UpdateCheckFrequency;
+import com.laker.postman.platform.update.model.UpdatePolicy;
+import com.laker.postman.platform.update.model.UpdateTarget;
 import com.laker.postman.settings.PreferencesStore;
 import com.laker.postman.settings.SettingKey;
 import com.laker.postman.util.NotificationUtil;
+import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
@@ -15,6 +20,7 @@ import java.util.*;
 import java.util.function.Consumer;
 
 @Slf4j
+@UtilityClass
 public class SettingManager {
     private static final String CONFIG_FILE = ConfigPathConstants.EASY_POSTMAN_SETTINGS;
     private static final Object SETTINGS_IO_LOCK = new Object();
@@ -48,18 +54,13 @@ public class SettingManager {
             SETTINGS_IO_LOCK
     );
 
-    // 私有构造函数，防止实例化
-    private SettingManager() {
-        throw new AssertionError("Utility class should not be instantiated");
-    }
-
     static {
         load();
         initializeNotificationPosition();
     }
 
     public static void load() {
-        SETTINGS_STORE.load();
+        SETTINGS_STORE.loadAndMigrate(AppSettingsMigrations.migrations());
     }
 
     /**
@@ -106,6 +107,10 @@ public class SettingManager {
 
     private static <T> void put(SettingKey<T> key, T value) {
         SETTINGS_STORE.put(key, value);
+    }
+
+    private static boolean contains(SettingKey<?> key) {
+        return SETTINGS_STORE.contains(key);
     }
 
     private static void applyProperty(Properties settings, String key, String value) {
@@ -535,6 +540,39 @@ public class SettingManager {
         }
     }
 
+    public static UpdatePolicy getAppUpdatePolicy() {
+        return new UpdatePolicy(
+                UpdateTarget.APP,
+                isAutoUpdateCheckEnabled(),
+                UpdateCheckFrequency.fromCode(getAutoUpdateCheckFrequency())
+        );
+    }
+
+    public static UpdatePolicy getPluginUpdatePolicy() {
+        boolean enabled = contains(AppSettingKeys.PLUGIN_UPDATE_CHECK_ENABLED)
+                ? get(AppSettingKeys.PLUGIN_UPDATE_CHECK_ENABLED)
+                : isAutoUpdateCheckEnabled();
+        String frequencyCode = contains(AppSettingKeys.PLUGIN_UPDATE_CHECK_FREQUENCY)
+                ? get(AppSettingKeys.PLUGIN_UPDATE_CHECK_FREQUENCY)
+                : getAutoUpdateCheckFrequency();
+        return new UpdatePolicy(
+                UpdateTarget.PLUGIN,
+                enabled,
+                UpdateCheckFrequency.fromCode(frequencyCode)
+        );
+    }
+
+    public static void setPluginUpdateCheckEnabled(boolean enabled) {
+        put(AppSettingKeys.PLUGIN_UPDATE_CHECK_ENABLED, enabled);
+    }
+
+    public static void setPluginUpdateCheckFrequency(String frequency) {
+        String normalized = AppSettingKeys.normalizedLowerCode(frequency);
+        if (AppSettingKeys.isSupportedAutoUpdateFrequency(normalized)) {
+            put(AppSettingKeys.PLUGIN_UPDATE_CHECK_FREQUENCY, normalized);
+        }
+    }
+
     /**
      * 获取上次检查更新的时间戳（毫秒）
      */
@@ -547,6 +585,26 @@ public class SettingManager {
      */
     public static void setLastUpdateCheckTime(long timestamp) {
         put(AppSettingKeys.LAST_UPDATE_CHECK_TIME, timestamp);
+    }
+
+    public static UpdateCheckState getAppUpdateCheckState() {
+        return UpdateCheckState.of(
+                UpdateTarget.APP,
+                getLastUpdateCheckTime(),
+                get(AppSettingKeys.APP_UPDATE_NOTIFIED_MARKERS)
+        );
+    }
+
+    public static void rememberAppUpdateNotifiedMarker(String marker) {
+        if (marker == null || marker.isBlank()) {
+            return;
+        }
+        updateAndSaveProperties(settings -> {
+            Set<String> markers = AppSettingKeys.APP_UPDATE_NOTIFIED_MARKERS.read(settings);
+            Set<String> updatedMarkers = new LinkedHashSet<>(markers);
+            updatedMarkers.add(marker.trim());
+            AppSettingKeys.APP_UPDATE_NOTIFIED_MARKERS.write(settings, updatedMarkers);
+        });
     }
 
     /**

@@ -12,6 +12,7 @@ public class KafkaPlugin implements EasyPostmanPlugin {
     public void onLoad(PluginContext context) {
         // 插件入口类本身不做复杂业务，它的核心任务是把“Kafka 能力清单”注册给宿主。
         // 宿主后面会分别把这些能力接到脚本、Toolbox、补全和 Snippet 等不同位置。
+        context.registerI18nBundle(KafkaI18n.BUNDLE_NAME);
         context.registerScriptApi("kafka", ScriptKafkaApi::new);
         PluginContributionSupport.registerToolbox(
                 context,

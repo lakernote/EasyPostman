@@ -4,7 +4,7 @@ import com.laker.postman.util.I18nUtil;
 
 public final class KafkaI18n {
 
-    private static final String BUNDLE_NAME = "kafka-messages";
+    public static final String BUNDLE_NAME = "kafka-messages";
 
     private KafkaI18n() {
     }

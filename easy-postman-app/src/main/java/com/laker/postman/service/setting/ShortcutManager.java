@@ -2,6 +2,8 @@ package com.laker.postman.service.setting;
 
 import com.laker.postman.common.constants.ConfigPathConstants;
 import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.UtilityClass;
 
 import javax.swing.*;
 import java.awt.*;
@@ -19,6 +21,7 @@ import java.util.Properties;
  * 快捷键管理器
  * 管理应用程序的所有快捷键配置，支持用户自定义
  */
+@UtilityClass
 public class ShortcutManager {
     private static final String SHORTCUT_CONFIG_FILE = ConfigPathConstants.SHORTCUTS;
     private static final Properties props = new Properties();
@@ -32,11 +35,6 @@ public class ShortcutManager {
     public static final String CLOSE_OTHER_TABS = "close_other_tabs";
     public static final String CLOSE_ALL_TABS = "close_all_tabs";
     public static final String EXIT_APP = "exit_app";
-
-    // 私有构造函数
-    private ShortcutManager() {
-        throw new AssertionError("Utility class should not be instantiated");
-    }
 
     static {
         initDefaultShortcuts();
@@ -203,7 +201,9 @@ public class ShortcutManager {
     public static class ShortcutConfig {
         private final String id;
         private final String nameKey;
+        @Setter
         private int keyCode;
+        @Setter
         private int modifiers;
         private final String windowsText;
         private final String macText;
@@ -218,40 +218,31 @@ public class ShortcutManager {
             this.macText = macText;
         }
 
-        public void setKeyCode(int keyCode) {
-            this.keyCode = keyCode;
-        }
-
-        public void setModifiers(int modifiers) {
-            this.modifiers = modifiers;
-        }
-
         /**
          * 获取显示文本（根据操作系统）
          */
         public String getDisplayText() {
             boolean isMac = System.getProperty("os.name").toLowerCase().contains("mac");
-            StringBuilder sb = new StringBuilder();
+            StringBuilder displayText = new StringBuilder();
 
             int cmdMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
 
             if ((modifiers & cmdMask) != 0) {
-                sb.append(isMac ? "Cmd+" : "Ctrl+");
+                displayText.append(isMac ? "Cmd+" : "Ctrl+");
             }
             if ((modifiers & InputEvent.SHIFT_DOWN_MASK) != 0) {
-                sb.append("Shift+");
+                displayText.append("Shift+");
             }
             if ((modifiers & InputEvent.ALT_DOWN_MASK) != 0) {
-                sb.append(isMac ? "Option+" : "Alt+");
+                displayText.append(isMac ? "Option+" : "Alt+");
             }
             if ((modifiers & InputEvent.CTRL_DOWN_MASK) != 0 && (modifiers & cmdMask) == 0) {
-                sb.append("Ctrl+");
+                displayText.append("Ctrl+");
             }
 
-            sb.append(KeyEvent.getKeyText(keyCode));
+            displayText.append(KeyEvent.getKeyText(keyCode));
 
-            return sb.toString();
+            return displayText.toString();
         }
     }
 }
-

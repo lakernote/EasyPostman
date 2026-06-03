@@ -85,6 +85,13 @@ public final class PreferencesStore {
         updateAndSave(settings -> key.write(settings, value));
     }
 
+    public boolean contains(SettingKey<?> key) {
+        Objects.requireNonNull(key, "key");
+        synchronized (lock) {
+            return properties.containsKey(key.name());
+        }
+    }
+
     public int getSchemaVersion() {
         synchronized (lock) {
             return readSchemaVersion(properties);

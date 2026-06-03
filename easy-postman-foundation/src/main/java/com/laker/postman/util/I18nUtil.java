@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.Objects;
@@ -21,6 +22,8 @@ import java.util.concurrent.ConcurrentMap;
 public class I18nUtil {
     private static final String BUNDLE_NAME = "messages";
     private static final String COMMON_BUNDLE_NAME = CommonI18n.BUNDLE_NAME;
+    private static final Locale FALLBACK_LOCALE = Locale.ENGLISH;
+    private static final List<Locale> SUPPORTED_LOCALES = List.of(Locale.ENGLISH, Locale.CHINESE);
     private static final ResourceBundle EMPTY_RESOURCE_BUNDLE = new ResourceBundle() {
         @Override
         protected Object handleGetObject(String key) {
@@ -41,13 +44,7 @@ public class I18nUtil {
         String savedLocale = UserSettingsUtil.getLanguage();
         if (savedLocale != null && !savedLocale.isEmpty()) {
             try {
-                if ("zh".equals(savedLocale)) {
-                    currentLocale = Locale.CHINESE;
-                } else if ("en".equals(savedLocale)) {
-                    currentLocale = Locale.ENGLISH;
-                } else {
-                    currentLocale = getSystemDefaultLocale();
-                }
+                currentLocale = normalizeSupportedLocale(Locale.forLanguageTag(savedLocale.replace('_', '-')));
             } catch (Exception e) {
                 log.warn("Failed to parse saved locale: {}", savedLocale, e);
                 currentLocale = getSystemDefaultLocale();
@@ -57,6 +54,8 @@ public class I18nUtil {
         }
 
         loadResourceBundle();
+        I18nBundleRegistry.registerBundle("app", BUNDLE_NAME, I18nUtil.class.getClassLoader());
+        I18nBundleRegistry.registerBundle("foundation", COMMON_BUNDLE_NAME, CommonI18n.class.getClassLoader());
     }
 
     /**
@@ -66,12 +65,26 @@ public class I18nUtil {
         Locale systemLocale = Locale.getDefault();
         String language = systemLocale.getLanguage();
         log.info("Detected system locale: {} ", language);
-        // 支持中文和英文，其他语言默认使用英文
-        if ("zh".equals(language)) {
-            return Locale.CHINESE;
-        } else {
-            return Locale.ENGLISH;
+        return normalizeSupportedLocale(systemLocale);
+    }
+
+    public static List<Locale> supportedLocales() {
+        return SUPPORTED_LOCALES;
+    }
+
+    public static Locale fallbackLocale() {
+        return FALLBACK_LOCALE;
+    }
+
+    public static Locale currentLocale() {
+        return currentLocale;
+    }
+
+    public static Locale normalizeSupportedLocale(Locale locale) {
+        if (locale == null) {
+            return FALLBACK_LOCALE;
         }
+        return "zh".equals(locale.getLanguage()) ? Locale.CHINESE : FALLBACK_LOCALE;
     }
 
     /**
@@ -85,7 +98,7 @@ public class I18nUtil {
             log.error("Failed to load resource bundle for locale: {}", currentLocale, e);
             // 如果加载失败，尝试加载默认的英文资源包
             try {
-                resourceBundle = ResourceBundle.getBundle(BUNDLE_NAME, Locale.ENGLISH);
+                resourceBundle = ResourceBundle.getBundle(BUNDLE_NAME, FALLBACK_LOCALE);
                 log.info("Fallback to English resource bundle");
             } catch (MissingResourceException ex) {
                 log.error("Failed to load fallback English resource bundle", ex);
@@ -124,33 +137,65 @@ public class I18nUtil {
     }
 
     private static String getMessagePattern(String key) {
+        String appMessage = getAppMessageOrNull(key);
+        if (appMessage != null) {
+            return appMessage;
+        }
+
+        String commonMessage = getBundleMessageOrNull(COMMON_BUNDLE_NAME, CommonI18n.class.getClassLoader(), key);
+        if (commonMessage != null) {
+            return commonMessage;
+        }
+
+        log.warn("Missing resource key: {}", key);
+        return "!" + key + "!";
+    }
+
+    private static String getAppMessageOrNull(String key) {
         try {
             return resourceBundle.getString(key);
-        } catch (MissingResourceException e) {
-            try {
-                ResourceBundle commonBundle = getBundle(COMMON_BUNDLE_NAME, currentLocale, CommonI18n.class.getClassLoader());
-                return commonBundle.getString(key);
-            } catch (Exception commonError) {
-                log.warn("Missing resource key: {}", key);
-                return "!" + key + "!";
+        } catch (MissingResourceException ignored) {
+            if (!FALLBACK_LOCALE.getLanguage().equals(currentLocale.getLanguage())) {
+                return getMessageOrNull(BUNDLE_NAME, FALLBACK_LOCALE, I18nUtil.class.getClassLoader(), key);
             }
+            return null;
         } catch (Exception e) {
             log.warn("Failed to load resource key: {}", key, e);
-            return "!" + key + "!";
+            return null;
         }
     }
 
     public static String getMessage(String bundleName, ClassLoader classLoader, String key, Object... args) {
-        String pattern = key;
-        try {
-            ResourceBundle bundle = getBundle(bundleName, currentLocale, classLoader);
-            pattern = bundle.getString(key);
-        } catch (MissingResourceException e) {
+        I18nBundleRegistry.registerBundle(bundleName, bundleName, classLoader);
+        String pattern = getBundleMessageOrNull(bundleName, classLoader, key);
+        if (pattern == null) {
             log.warn("Missing resource key: {} in bundle: {}", key, bundleName);
-        } catch (Exception e) {
-            log.warn("Failed to load resource key: {} in bundle: {}", key, bundleName, e);
+            pattern = key;
         }
         return args == null || args.length == 0 ? pattern : MessageFormat.format(pattern, args);
+    }
+
+    private static String getBundleMessageOrNull(String bundleName, ClassLoader classLoader, String key) {
+        String currentMessage = getMessageOrNull(bundleName, currentLocale, classLoader, key);
+        if (currentMessage != null) {
+            return currentMessage;
+        }
+        if (!FALLBACK_LOCALE.getLanguage().equals(currentLocale.getLanguage())) {
+            return getMessageOrNull(bundleName, FALLBACK_LOCALE, classLoader, key);
+        }
+        return null;
+    }
+
+    private static String getMessageOrNull(String bundleName, Locale locale, ClassLoader classLoader, String key) {
+        try {
+            ResourceBundle bundle = getBundle(bundleName, locale, classLoader);
+            return bundle.getString(key);
+        } catch (MissingResourceException ignored) {
+            return null;
+        } catch (Exception e) {
+            log.warn("Failed to load resource key: {} in bundle: {}", key, bundleName, e);
+            return null;
+        }
     }
 
     /**
@@ -159,16 +204,17 @@ public class I18nUtil {
      * @param locale 语言环境
      */
     public static void setLocale(Locale locale) {
-        if (locale != null && !locale.equals(currentLocale)) {
-            currentLocale = locale;
+        Locale normalizedLocale = normalizeSupportedLocale(locale);
+        if (!normalizedLocale.equals(currentLocale)) {
+            currentLocale = normalizedLocale;
             BUNDLE_CACHE.clear();
             loadResourceBundle();
 
             // 保存到用户设置
-            String localeCode = locale.getLanguage();
+            String localeCode = normalizedLocale.getLanguage();
             UserSettingsUtil.saveLanguage(localeCode);
 
-            log.info("Locale changed to: {}", locale);
+            log.info("Locale changed to: {}", normalizedLocale);
         }
     }
 
@@ -178,12 +224,12 @@ public class I18nUtil {
      * @param languageCode 语言代码 (zh, en)
      */
     public static void setLocale(String languageCode) {
-        Locale locale = switch (languageCode.toLowerCase()) {
-            case "zh", "chinese" -> Locale.CHINESE;
-            case "en", "english" -> Locale.ENGLISH;
+        Locale locale = switch (languageCode == null ? "" : languageCode.toLowerCase(Locale.ROOT)) {
+            case "zh", "zh_cn", "zh-cn", "chinese" -> Locale.CHINESE;
+            case "en", "en_us", "en-us", "english" -> Locale.ENGLISH;
             default -> {
                 log.warn("Unsupported language code: {}, using English as default", languageCode);
-                yield Locale.ENGLISH;
+                yield FALLBACK_LOCALE;
             }
         };
         setLocale(locale);

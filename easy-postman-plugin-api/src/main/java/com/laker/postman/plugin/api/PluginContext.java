@@ -49,4 +49,15 @@ public interface PluginContext {
      * 注册脚本片段。
      */
     void registerSnippet(SnippetDefinition definition);
+
+    /**
+     * 注册插件自有国际化资源包。
+     * <p>
+     * bundleName 使用 {@link java.util.ResourceBundle#getBundle(String)} 的 base name，
+     * 例如 {@code redis-messages}。
+     * </p>
+     */
+    default void registerI18nBundle(String bundleName) {
+        // Runtime implementations can hook this into the shared i18n registry.
+    }
 }

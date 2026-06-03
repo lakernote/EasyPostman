@@ -4,7 +4,7 @@ import com.laker.postman.util.I18nUtil;
 
 public final class RedisI18n {
 
-    private static final String BUNDLE_NAME = "redis-messages";
+    public static final String BUNDLE_NAME = "redis-messages";
 
     private RedisI18n() {
     }

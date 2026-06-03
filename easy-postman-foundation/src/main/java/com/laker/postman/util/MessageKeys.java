@@ -1699,6 +1699,12 @@ public final class MessageKeys {
     public static final String SETTINGS_AUTO_UPDATE_LAST_CHECK_TIME = "settings.auto_update.last_check_time";
     public static final String SETTINGS_AUTO_UPDATE_LAST_CHECK_TIME_TOOLTIP = "settings.auto_update.last_check_time.tooltip";
     public static final String SETTINGS_AUTO_UPDATE_NEVER_CHECKED = "settings.auto_update.never_checked";
+    public static final String SETTINGS_PLUGIN_UPDATE_ENABLED_TOOLTIP = "settings.plugin_update.enabled.tooltip";
+    public static final String SETTINGS_PLUGIN_UPDATE_ENABLED_CHECKBOX = "settings.plugin_update.enabled.checkbox";
+    public static final String SETTINGS_PLUGIN_UPDATE_FREQUENCY = "settings.plugin_update.frequency";
+    public static final String SETTINGS_PLUGIN_UPDATE_FREQUENCY_TOOLTIP = "settings.plugin_update.frequency.tooltip";
+    public static final String SETTINGS_PLUGIN_UPDATE_LAST_CHECK_TIME = "settings.plugin_update.last_check_time";
+    public static final String SETTINGS_PLUGIN_UPDATE_LAST_CHECK_TIME_TOOLTIP = "settings.plugin_update.last_check_time.tooltip";
     public static final String SETTINGS_UPDATE_SOURCE_PREFERENCE = "settings.update_source.preference";
     public static final String SETTINGS_UPDATE_SOURCE_PREFERENCE_TOOLTIP = "settings.update_source.preference.tooltip";
     public static final String SETTINGS_UPDATE_SOURCE_AUTO = "settings.update_source.auto";

@@ -11,6 +11,7 @@ public class CapturePlugin implements EasyPostmanPlugin {
 
     @Override
     public void onLoad(PluginContext context) {
+        context.registerI18nBundle(CaptureI18n.BUNDLE_NAME);
         RequestCollectionImportService importService = context.getService(RequestCollectionImportService.class);
         PluginContributionSupport.registerToolbox(
                 context,

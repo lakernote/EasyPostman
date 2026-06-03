@@ -1,60 +1,35 @@
 package com.laker.postman.service.setting;
 
-import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.constants.ConfigPathConstants;
-import com.laker.postman.model.NotificationPosition;
 import com.laker.postman.certificate.TrustedCertificateEntry;
 import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
+import com.laker.postman.model.NotificationPosition;
+import com.laker.postman.settings.PreferencesStore;
+import com.laker.postman.settings.SettingKey;
 import com.laker.postman.util.NotificationUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Consumer;
 
 @Slf4j
 public class SettingManager {
     private static final String CONFIG_FILE = ConfigPathConstants.EASY_POSTMAN_SETTINGS;
-    private static final String SCRIPT_REMOTE_REQUIRE_ENABLED = "script_remote_require_enabled";
-    private static final String SCRIPT_REMOTE_REQUIRE_ALLOW_HTTP = "script_remote_require_allow_http";
-    private static final String SCRIPT_REMOTE_REQUIRE_ALLOWED_HOSTS = "script_remote_require_allowed_hosts";
-    private static final String SCRIPT_REMOTE_REQUIRE_CONNECT_TIMEOUT_MS = "script_remote_require_connect_timeout_ms";
-    private static final String SCRIPT_REMOTE_REQUIRE_READ_TIMEOUT_MS = "script_remote_require_read_timeout_ms";
-    private static final String SCRIPT_REMOTE_REQUIRE_MAX_BYTES = "script_remote_require_max_bytes";
-    private static final String REQUEST_EDITOR_HIDDEN_TABS_KEY = "request_editor_hidden_tabs";
-    private static final int DEFAULT_SCRIPT_REMOTE_CONNECT_TIMEOUT_MS = 3000;
-    private static final int DEFAULT_SCRIPT_REMOTE_READ_TIMEOUT_MS = 5000;
-    private static final int DEFAULT_SCRIPT_REMOTE_MAX_BYTES = 512 * 1024;
-    private static final int DEFAULT_PERFORMANCE_SLOW_REQUEST_THRESHOLD_MS = 0;
-    private static final int DEFAULT_PERFORMANCE_JS_CONTEXT_ACQUIRE_TIMEOUT_MS = 1_000;
-    private static final int DEFAULT_PERFORMANCE_MAX_IDLE_CONNECTIONS = 100;
-    private static final long DEFAULT_PERFORMANCE_KEEP_ALIVE_SECONDS = 60L;
-    private static final int DEFAULT_PERFORMANCE_MAX_REQUESTS = 1000;
-    private static final int DEFAULT_PERFORMANCE_MAX_REQUESTS_PER_HOST = 1000;
-    private static final String AUTO_UPDATE_CHECK_ENABLED_KEY = "auto_update_check_enabled";
-    private static final String AUTO_UPDATE_CHECK_FREQUENCY_KEY = "auto_update_check_frequency";
-    private static final String LAST_UPDATE_CHECK_TIME_KEY = "last_update_check_time";
-    private static final String UPDATE_SOURCE_PREFERENCE_KEY = "update_source_preference";
-    private static final String PERFORMANCE_MAX_IDLE_CONNECTIONS_KEY = "performance_max_idle_connections";
-    private static final String PERFORMANCE_KEEP_ALIVE_SECONDS_KEY = "performance_keep_alive_seconds";
-    private static final String PERFORMANCE_MAX_REQUESTS_KEY = "performance_max_requests";
-    private static final String PERFORMANCE_MAX_REQUESTS_PER_HOST_KEY = "performance_max_requests_per_host";
-    private static final String PERFORMANCE_SLOW_REQUEST_THRESHOLD_KEY = "performance_slow_request_threshold";
-    private static final String PERFORMANCE_JS_CONTEXT_POOL_SIZE_KEY = "performance_js_context_pool_size";
-    private static final String PERFORMANCE_JS_CONTEXT_ACQUIRE_TIMEOUT_MS_KEY = "performance_js_context_acquire_timeout_ms";
-    private static final String PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB_KEY = "performance_response_body_preview_limit_kb";
-    private static final String PERFORMANCE_RESULT_ROW_LIMIT_KEY = "performance_result_row_limit";
-    private static final String CSV_LAST_IMPORT_DIRECTORY_KEY = "csv_last_import_directory";
     private static final Object SETTINGS_IO_LOCK = new Object();
-    public static final int DEFAULT_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB = 64;
-    public static final int MIN_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB = 1;
-    public static final int MAX_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB = 1024;
-    public static final int DEFAULT_PERFORMANCE_RESULT_ROW_LIMIT = 3_000;
-    public static final int MIN_PERFORMANCE_RESULT_ROW_LIMIT = 100;
-    public static final int MAX_PERFORMANCE_RESULT_ROW_LIMIT = 100_000;
+    public static final int DEFAULT_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB =
+            AppSettingKeys.DEFAULT_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB;
+    public static final int MIN_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB =
+            AppSettingKeys.MIN_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB;
+    public static final int MAX_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB =
+            AppSettingKeys.MAX_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB;
+    public static final int DEFAULT_PERFORMANCE_RESULT_ROW_LIMIT =
+            AppSettingKeys.DEFAULT_PERFORMANCE_RESULT_ROW_LIMIT;
+    public static final int MIN_PERFORMANCE_RESULT_ROW_LIMIT =
+            AppSettingKeys.MIN_PERFORMANCE_RESULT_ROW_LIMIT;
+    public static final int MAX_PERFORMANCE_RESULT_ROW_LIMIT =
+            AppSettingKeys.MAX_PERFORMANCE_RESULT_ROW_LIMIT;
     public static final String PROXY_MODE_MANUAL = "MANUAL";
     public static final String PROXY_MODE_SYSTEM = "SYSTEM";
     public static final String PROXY_TYPE_HTTP = "HTTP";
@@ -67,6 +42,11 @@ public class SettingManager {
     public static final String REQUEST_EDITOR_TAB_SCRIPTS = "SCRIPTS";
     public static final String REQUEST_EDITOR_TAB_SETTINGS = "SETTINGS";
     private static final Properties props = new Properties();
+    private static final PreferencesStore SETTINGS_STORE = PreferencesStore.backedBy(
+            Path.of(CONFIG_FILE),
+            props,
+            SETTINGS_IO_LOCK
+    );
 
     // 私有构造函数，防止实例化
     private SettingManager() {
@@ -79,10 +59,7 @@ public class SettingManager {
     }
 
     public static void load() {
-        synchronized (SETTINGS_IO_LOCK) {
-            props.clear();
-            props.putAll(loadProperties(new File(CONFIG_FILE)));
-        }
+        SETTINGS_STORE.load();
     }
 
     /**
@@ -99,12 +76,7 @@ public class SettingManager {
     }
 
     public static void save() {
-        synchronized (SETTINGS_IO_LOCK) {
-            Properties merged = loadProperties(new File(CONFIG_FILE));
-            merged.putAll(props);
-            storeProperties(merged, new File(CONFIG_FILE));
-            refreshInMemorySettings(merged);
-        }
+        SETTINGS_STORE.save();
     }
 
     static Properties saveProperty(File configFile, String key, String value) {
@@ -125,13 +97,15 @@ public class SettingManager {
     }
 
     private static void updateAndSaveProperties(Consumer<Properties> updater) {
-        synchronized (SETTINGS_IO_LOCK) {
-            Properties merged = loadProperties(new File(CONFIG_FILE));
-            merged.putAll(props);
-            updater.accept(merged);
-            storeProperties(merged, new File(CONFIG_FILE));
-            refreshInMemorySettings(merged);
-        }
+        SETTINGS_STORE.updateAndSave(updater);
+    }
+
+    private static <T> T get(SettingKey<T> key) {
+        return SETTINGS_STORE.get(key);
+    }
+
+    private static <T> void put(SettingKey<T> key, T value) {
+        SETTINGS_STORE.put(key, value);
     }
 
     private static void applyProperty(Properties settings, String key, String value) {
@@ -142,220 +116,124 @@ public class SettingManager {
         }
     }
 
-    private static void refreshInMemorySettings(Properties settings) {
-        props.clear();
-        props.putAll(settings);
-    }
-
     private static Properties loadProperties(File file) {
-        Properties loaded = new Properties();
-        if (file == null || !file.exists()) {
-            return loaded;
-        }
-        try (FileInputStream fis = new FileInputStream(file)) {
-            loaded.load(fis);
-        } catch (IOException e) {
-            log.warn("Failed to load settings from {}", file, e);
-        }
-        return loaded;
+        return PreferencesStore.loadProperties(file == null ? null : file.toPath());
     }
 
     private static void storeProperties(Properties properties, File file) {
-        if (file == null) {
-            return;
-        }
-        File parent = file.getParentFile();
-        if (parent != null && !parent.exists() && !parent.mkdirs()) {
-            log.warn("Failed to create settings directory: {}", parent);
-        }
-        try (FileOutputStream fos = new FileOutputStream(file)) {
-            properties.store(fos, "EasyPostman Settings");
-        } catch (IOException e) {
-            log.warn("Failed to save settings to {}", file, e);
-        }
+        PreferencesStore.storeProperties(properties, file == null ? null : file.toPath());
     }
 
     public static int getMaxBodySize() {
-        String val = props.getProperty("max_body_size");
-        if (val != null) {
-            try {
-                return Integer.parseInt(val);
-            } catch (NumberFormatException e) {
-                return 100 * 1024;
-            }
-        }
-        return 100 * 1024; // 默认100KB
+        return get(AppSettingKeys.MAX_BODY_SIZE);
     }
 
     public static void setMaxBodySize(int size) {
-        setAndSaveProperty("max_body_size", String.valueOf(size));
+        put(AppSettingKeys.MAX_BODY_SIZE, size);
     }
 
     public static int getRequestTimeout() {
-        String val = props.getProperty("request_timeout");
-        if (val != null) {
-            try {
-                return Integer.parseInt(val);
-            } catch (NumberFormatException e) {
-                return 0;
-            }
-        }
-        return 0; // 默认不超时
+        return get(AppSettingKeys.REQUEST_TIMEOUT);
     }
 
     public static void setRequestTimeout(int timeout) {
-        setAndSaveProperty("request_timeout", String.valueOf(timeout));
+        put(AppSettingKeys.REQUEST_TIMEOUT, timeout);
     }
 
     public static int getMaxDownloadSize() {
-        String val = props.getProperty("max_download_size");
-        if (val != null) {
-            try {
-                return Integer.parseInt(val);
-            } catch (NumberFormatException e) {
-                return 0;
-            }
-        }
-        return 0; // 0表示不限制
+        return get(AppSettingKeys.MAX_DOWNLOAD_SIZE);
     }
 
     public static void setMaxDownloadSize(int size) {
-        setAndSaveProperty("max_download_size", String.valueOf(size));
+        put(AppSettingKeys.MAX_DOWNLOAD_SIZE, size);
     }
 
     public static int getPerformanceMaxIdleConnections() {
-        return getPositiveIntSetting(PERFORMANCE_MAX_IDLE_CONNECTIONS_KEY, DEFAULT_PERFORMANCE_MAX_IDLE_CONNECTIONS);
+        return get(AppSettingKeys.PERFORMANCE_MAX_IDLE_CONNECTIONS);
     }
 
     public static void setPerformanceMaxIdleConnections(int maxIdle) {
-        setAndSaveProperty(PERFORMANCE_MAX_IDLE_CONNECTIONS_KEY,
-                String.valueOf(maxIdle > 0 ? maxIdle : DEFAULT_PERFORMANCE_MAX_IDLE_CONNECTIONS));
+        put(AppSettingKeys.PERFORMANCE_MAX_IDLE_CONNECTIONS, maxIdle);
     }
 
     public static long getPerformanceKeepAliveSeconds() {
-        return getPositiveLongSetting(PERFORMANCE_KEEP_ALIVE_SECONDS_KEY, DEFAULT_PERFORMANCE_KEEP_ALIVE_SECONDS);
+        return get(AppSettingKeys.PERFORMANCE_KEEP_ALIVE_SECONDS);
     }
 
     public static void setPerformanceKeepAliveSeconds(long seconds) {
-        setAndSaveProperty(PERFORMANCE_KEEP_ALIVE_SECONDS_KEY,
-                String.valueOf(seconds > 0 ? seconds : DEFAULT_PERFORMANCE_KEEP_ALIVE_SECONDS));
+        put(AppSettingKeys.PERFORMANCE_KEEP_ALIVE_SECONDS, seconds);
     }
 
     public static int getPerformanceMaxRequests() {
-        return getPositiveIntSetting(PERFORMANCE_MAX_REQUESTS_KEY, DEFAULT_PERFORMANCE_MAX_REQUESTS);
+        return get(AppSettingKeys.PERFORMANCE_MAX_REQUESTS);
     }
 
     public static void setPerformanceMaxRequests(int maxRequests) {
-        setAndSaveProperty(PERFORMANCE_MAX_REQUESTS_KEY,
-                String.valueOf(maxRequests > 0 ? maxRequests : DEFAULT_PERFORMANCE_MAX_REQUESTS));
+        put(AppSettingKeys.PERFORMANCE_MAX_REQUESTS, maxRequests);
     }
 
     public static int getPerformanceMaxRequestsPerHost() {
-        return getPositiveIntSetting(PERFORMANCE_MAX_REQUESTS_PER_HOST_KEY, DEFAULT_PERFORMANCE_MAX_REQUESTS_PER_HOST);
+        return get(AppSettingKeys.PERFORMANCE_MAX_REQUESTS_PER_HOST);
     }
 
     public static void setPerformanceMaxRequestsPerHost(int maxRequestsPerHost) {
-        setAndSaveProperty(PERFORMANCE_MAX_REQUESTS_PER_HOST_KEY,
-                String.valueOf(maxRequestsPerHost > 0 ? maxRequestsPerHost : DEFAULT_PERFORMANCE_MAX_REQUESTS_PER_HOST));
+        put(AppSettingKeys.PERFORMANCE_MAX_REQUESTS_PER_HOST, maxRequestsPerHost);
     }
 
     public static int getDefaultPerformanceJsContextPoolSize() {
-        return Math.max(16, Runtime.getRuntime().availableProcessors() * 4);
+        return AppSettingKeys.defaultPerformanceJsContextPoolSize();
     }
 
     public static int getPerformanceJsContextPoolSize() {
-        return getPositiveIntSetting(PERFORMANCE_JS_CONTEXT_POOL_SIZE_KEY, getDefaultPerformanceJsContextPoolSize());
+        return get(AppSettingKeys.PERFORMANCE_JS_CONTEXT_POOL_SIZE);
     }
 
     public static void setPerformanceJsContextPoolSize(int poolSize) {
-        int normalized = poolSize > 0 ? poolSize : getDefaultPerformanceJsContextPoolSize();
-        setAndSaveProperty(PERFORMANCE_JS_CONTEXT_POOL_SIZE_KEY, String.valueOf(normalized));
+        put(AppSettingKeys.PERFORMANCE_JS_CONTEXT_POOL_SIZE, poolSize);
     }
 
     public static int getPerformanceJsContextAcquireTimeoutMs() {
-        return getPositiveIntSetting(
-                PERFORMANCE_JS_CONTEXT_ACQUIRE_TIMEOUT_MS_KEY,
-                DEFAULT_PERFORMANCE_JS_CONTEXT_ACQUIRE_TIMEOUT_MS
-        );
+        return get(AppSettingKeys.PERFORMANCE_JS_CONTEXT_ACQUIRE_TIMEOUT_MS);
     }
 
     public static void setPerformanceJsContextAcquireTimeoutMs(int timeoutMs) {
-        int normalized = timeoutMs > 0 ? timeoutMs : DEFAULT_PERFORMANCE_JS_CONTEXT_ACQUIRE_TIMEOUT_MS;
-        setAndSaveProperty(PERFORMANCE_JS_CONTEXT_ACQUIRE_TIMEOUT_MS_KEY, String.valueOf(normalized));
+        put(AppSettingKeys.PERFORMANCE_JS_CONTEXT_ACQUIRE_TIMEOUT_MS, timeoutMs);
     }
 
     public static int getPerformanceSlowRequestThreshold() {
-        String val = props.getProperty(PERFORMANCE_SLOW_REQUEST_THRESHOLD_KEY);
-        if (val != null) {
-            try {
-                return Math.max(0, Integer.parseInt(val));
-            } catch (NumberFormatException e) {
-                return DEFAULT_PERFORMANCE_SLOW_REQUEST_THRESHOLD_MS;
-            }
-        }
-        return DEFAULT_PERFORMANCE_SLOW_REQUEST_THRESHOLD_MS;
+        return get(AppSettingKeys.PERFORMANCE_SLOW_REQUEST_THRESHOLD);
     }
 
     public static void setPerformanceSlowRequestThreshold(int thresholdMs) {
-        setAndSaveProperty(PERFORMANCE_SLOW_REQUEST_THRESHOLD_KEY, String.valueOf(Math.max(0, thresholdMs)));
+        put(AppSettingKeys.PERFORMANCE_SLOW_REQUEST_THRESHOLD, thresholdMs);
     }
 
     public static int getTrendSamplingIntervalSeconds() {
-        String val = props.getProperty("trend_sampling_interval_seconds");
-        if (val != null) {
-            try {
-                int interval = Integer.parseInt(val);
-                // 限制范围：1-60秒
-                return Math.max(1, Math.min(60, interval));
-            } catch (NumberFormatException e) {
-                return 1;
-            }
-        }
-        return 1; // 默认1秒
+        return get(AppSettingKeys.TREND_SAMPLING_INTERVAL_SECONDS);
     }
 
     public static void setTrendSamplingIntervalSeconds(int seconds) {
-        // 限制范围：1-60秒
-        int interval = Math.max(1, Math.min(60, seconds));
-        setAndSaveProperty("trend_sampling_interval_seconds", String.valueOf(interval));
+        put(AppSettingKeys.TREND_SAMPLING_INTERVAL_SECONDS, seconds);
     }
 
     public static boolean isPerformanceEventLoggingEnabled() {
-        String val = props.getProperty("performance_event_logging_enabled");
-        if (val != null) {
-            return Boolean.parseBoolean(val);
-        }
-        return false; // 默认关闭事件日志（提高性能）
+        return get(AppSettingKeys.PERFORMANCE_EVENT_LOGGING_ENABLED);
     }
 
     public static void setPerformanceEventLoggingEnabled(boolean enabled) {
-        setAndSaveProperty("performance_event_logging_enabled", String.valueOf(enabled));
+        put(AppSettingKeys.PERFORMANCE_EVENT_LOGGING_ENABLED, enabled);
     }
 
     public static int getPerformanceResponseBodyPreviewLimitKb() {
-        String val = props.getProperty(PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB_KEY);
-        if (val != null) {
-            try {
-                return sanitizePerformanceResponseBodyPreviewLimitKb(Integer.parseInt(val));
-            } catch (NumberFormatException e) {
-                return DEFAULT_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB;
-            }
-        }
-        return DEFAULT_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB;
+        return get(AppSettingKeys.PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB);
     }
 
     public static void setPerformanceResponseBodyPreviewLimitKb(int limitKb) {
-        setAndSaveProperty(PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB_KEY,
-                String.valueOf(sanitizePerformanceResponseBodyPreviewLimitKb(limitKb)));
+        put(AppSettingKeys.PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB, limitKb);
     }
 
     public static int sanitizePerformanceResponseBodyPreviewLimitKb(Integer limitKb) {
-        if (limitKb == null
-                || limitKb < MIN_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB
-                || limitKb > MAX_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB) {
-            return DEFAULT_PERFORMANCE_RESPONSE_BODY_PREVIEW_LIMIT_KB;
-        }
-        return limitKb;
+        return AppSettingKeys.sanitizePerformanceResponseBodyPreviewLimitKb(limitKb);
     }
 
     public static int performanceResponseBodyPreviewLimitBytes(int limitKb) {
@@ -363,78 +241,48 @@ public class SettingManager {
     }
 
     public static int getPerformanceResultRowLimit() {
-        String val = props.getProperty(PERFORMANCE_RESULT_ROW_LIMIT_KEY);
-        if (val != null) {
-            try {
-                return sanitizePerformanceResultRowLimit(Integer.parseInt(val));
-            } catch (NumberFormatException e) {
-                return DEFAULT_PERFORMANCE_RESULT_ROW_LIMIT;
-            }
-        }
-        return DEFAULT_PERFORMANCE_RESULT_ROW_LIMIT;
+        return get(AppSettingKeys.PERFORMANCE_RESULT_ROW_LIMIT);
     }
 
     public static void setPerformanceResultRowLimit(int rowLimit) {
-        setAndSaveProperty(PERFORMANCE_RESULT_ROW_LIMIT_KEY,
-                String.valueOf(sanitizePerformanceResultRowLimit(rowLimit)));
+        put(AppSettingKeys.PERFORMANCE_RESULT_ROW_LIMIT, rowLimit);
     }
 
     public static int sanitizePerformanceResultRowLimit(Integer rowLimit) {
-        if (rowLimit == null
-                || rowLimit < MIN_PERFORMANCE_RESULT_ROW_LIMIT
-                || rowLimit > MAX_PERFORMANCE_RESULT_ROW_LIMIT) {
-            return DEFAULT_PERFORMANCE_RESULT_ROW_LIMIT;
-        }
-        return rowLimit;
+        return AppSettingKeys.sanitizePerformanceResultRowLimit(rowLimit);
     }
 
     public static String getCsvLastImportDirectory() {
-        return props.getProperty(CSV_LAST_IMPORT_DIRECTORY_KEY, "");
+        return get(AppSettingKeys.CSV_LAST_IMPORT_DIRECTORY);
     }
 
     public static void setCsvLastImportDirectory(String directory) {
         String normalized = directory == null ? "" : directory.trim();
-        setAndSaveProperty(CSV_LAST_IMPORT_DIRECTORY_KEY, normalized.isEmpty() ? null : normalized);
+        put(AppSettingKeys.CSV_LAST_IMPORT_DIRECTORY, normalized.isEmpty() ? null : normalized);
     }
 
     public static boolean isShowDownloadProgressDialog() {
-        String val = props.getProperty("show_download_progress_dialog");
-        if (val != null) {
-            return Boolean.parseBoolean(val);
-        }
-        return true; // 默认开启
+        return get(AppSettingKeys.SHOW_DOWNLOAD_PROGRESS_DIALOG);
     }
 
     public static void setShowDownloadProgressDialog(boolean show) {
-        setAndSaveProperty("show_download_progress_dialog", String.valueOf(show));
+        put(AppSettingKeys.SHOW_DOWNLOAD_PROGRESS_DIALOG, show);
     }
 
     public static int getDownloadProgressDialogThreshold() {
-        String val = props.getProperty("download_progress_dialog_threshold");
-        if (val != null) {
-            try {
-                return Integer.parseInt(val);
-            } catch (NumberFormatException e) {
-                return 100 * 1024 * 1024;
-            }
-        }
-        return 100 * 1024 * 1024; // 默认100MB
+        return get(AppSettingKeys.DOWNLOAD_PROGRESS_DIALOG_THRESHOLD);
     }
 
     public static void setDownloadProgressDialogThreshold(int threshold) {
-        setAndSaveProperty("download_progress_dialog_threshold", String.valueOf(threshold));
+        put(AppSettingKeys.DOWNLOAD_PROGRESS_DIALOG_THRESHOLD, threshold);
     }
 
     public static boolean isFollowRedirects() {
-        String val = props.getProperty("follow_redirects");
-        if (val != null) {
-            return Boolean.parseBoolean(val);
-        }
-        return true; // 默认自动重定向
+        return get(AppSettingKeys.FOLLOW_REDIRECTS);
     }
 
     public static void setFollowRedirects(boolean follow) {
-        setAndSaveProperty("follow_redirects", String.valueOf(follow));
+        put(AppSettingKeys.FOLLOW_REDIRECTS, follow);
     }
 
     /**
@@ -442,15 +290,11 @@ public class SettingManager {
      * 此设置应用于所有 HTTPS 请求，用于开发测试环境
      */
     public static boolean isRequestSslVerificationDisabled() {
-        String val = props.getProperty("ssl_verification_enabled");
-        if (val != null) {
-            return !Boolean.parseBoolean(val);
-        }
-        return true; // 默认禁用 SSL 验证，提升开发测试体验
+        return !get(AppSettingKeys.REQUEST_SSL_VERIFICATION_ENABLED);
     }
 
     public static void setRequestSslVerificationDisabled(boolean disabled) {
-        setAndSaveProperty("ssl_verification_enabled", String.valueOf(!disabled));
+        put(AppSettingKeys.REQUEST_SSL_VERIFICATION_ENABLED, !disabled);
         // 清除客户端缓存以应用新的 SSL 设置
         OkHttpClientManager.clearClientCache();
     }
@@ -460,38 +304,22 @@ public class SettingManager {
      * 支持的值：http, https
      */
     public static String getDefaultProtocol() {
-        String val = props.getProperty("default_protocol");
-        if (val != null && (val.equals("http") || val.equals("https"))) {
-            return val;
-        }
-        return "http"; // 默认使用 http
+        return get(AppSettingKeys.DEFAULT_PROTOCOL);
     }
 
     public static void setDefaultProtocol(String protocol) {
         if (protocol != null && (protocol.equals("http") || protocol.equals("https"))) {
-            setAndSaveProperty("default_protocol", protocol);
+            put(AppSettingKeys.DEFAULT_PROTOCOL, protocol);
         }
     }
 
     public static Set<String> getHiddenRequestEditorTabs() {
-        String val = props.getProperty(REQUEST_EDITOR_HIDDEN_TABS_KEY);
-        Set<String> hiddenTabs = new LinkedHashSet<>();
-        if (val == null || val.isBlank()) {
-            return hiddenTabs;
-        }
-
-        for (String token : val.split(",")) {
-            String normalized = normalizeRequestEditorTabId(token);
-            if (!normalized.isEmpty()) {
-                hiddenTabs.add(normalized);
-            }
-        }
-        return hiddenTabs;
+        return new LinkedHashSet<>(get(AppSettingKeys.REQUEST_EDITOR_HIDDEN_TABS));
     }
 
     public static void setHiddenRequestEditorTabs(Collection<String> hiddenTabs) {
         if (hiddenTabs == null || hiddenTabs.isEmpty()) {
-            setAndSaveProperty(REQUEST_EDITOR_HIDDEN_TABS_KEY, null);
+            put(AppSettingKeys.REQUEST_EDITOR_HIDDEN_TABS, null);
             return;
         }
 
@@ -502,10 +330,7 @@ public class SettingManager {
                 normalizedTabs.add(normalized);
             }
         }
-        setAndSaveProperty(
-                REQUEST_EDITOR_HIDDEN_TABS_KEY,
-                normalizedTabs.isEmpty() ? null : String.join(",", normalizedTabs)
-        );
+        put(AppSettingKeys.REQUEST_EDITOR_HIDDEN_TABS, normalizedTabs.isEmpty() ? null : normalizedTabs);
     }
 
     public static boolean isRequestEditorTabVisible(String tabId) {
@@ -518,274 +343,168 @@ public class SettingManager {
     }
 
     public static boolean isRemoteJsRequireEnabled() {
-        String val = props.getProperty(SCRIPT_REMOTE_REQUIRE_ENABLED);
-        if (val != null) {
-            return Boolean.parseBoolean(val);
-        }
-        return false;
+        return get(AppSettingKeys.REMOTE_JS_REQUIRE_ENABLED);
     }
 
     public static void setRemoteJsRequireEnabled(boolean enabled) {
-        setAndSaveProperty(SCRIPT_REMOTE_REQUIRE_ENABLED, String.valueOf(enabled));
+        put(AppSettingKeys.REMOTE_JS_REQUIRE_ENABLED, enabled);
     }
 
     public static boolean isInsecureRemoteJsRequireEnabled() {
-        String val = props.getProperty(SCRIPT_REMOTE_REQUIRE_ALLOW_HTTP);
-        if (val != null) {
-            return Boolean.parseBoolean(val);
-        }
-        return false;
+        return get(AppSettingKeys.REMOTE_JS_REQUIRE_ALLOW_HTTP);
     }
 
     public static void setInsecureRemoteJsRequireEnabled(boolean enabled) {
-        setAndSaveProperty(SCRIPT_REMOTE_REQUIRE_ALLOW_HTTP, String.valueOf(enabled));
+        put(AppSettingKeys.REMOTE_JS_REQUIRE_ALLOW_HTTP, enabled);
     }
 
     public static String getRemoteJsRequireAllowedHosts() {
-        String val = props.getProperty(SCRIPT_REMOTE_REQUIRE_ALLOWED_HOSTS);
-        return val != null ? val.trim() : "";
+        return get(AppSettingKeys.REMOTE_JS_REQUIRE_ALLOWED_HOSTS);
     }
 
     public static void setRemoteJsRequireAllowedHosts(String hosts) {
-        setAndSaveProperty(SCRIPT_REMOTE_REQUIRE_ALLOWED_HOSTS, hosts != null ? hosts.trim() : "");
+        put(AppSettingKeys.REMOTE_JS_REQUIRE_ALLOWED_HOSTS, hosts != null ? hosts : "");
     }
 
     public static int getRemoteJsRequireConnectTimeoutMs() {
-        return getPositiveIntSetting(SCRIPT_REMOTE_REQUIRE_CONNECT_TIMEOUT_MS, DEFAULT_SCRIPT_REMOTE_CONNECT_TIMEOUT_MS);
+        return get(AppSettingKeys.REMOTE_JS_REQUIRE_CONNECT_TIMEOUT_MS);
     }
 
     public static void setRemoteJsRequireConnectTimeoutMs(int timeoutMs) {
-        setAndSaveProperty(SCRIPT_REMOTE_REQUIRE_CONNECT_TIMEOUT_MS, String.valueOf(Math.max(1, timeoutMs)));
+        put(AppSettingKeys.REMOTE_JS_REQUIRE_CONNECT_TIMEOUT_MS_TO_WRITE, timeoutMs);
     }
 
     public static int getRemoteJsRequireReadTimeoutMs() {
-        return getPositiveIntSetting(SCRIPT_REMOTE_REQUIRE_READ_TIMEOUT_MS, DEFAULT_SCRIPT_REMOTE_READ_TIMEOUT_MS);
+        return get(AppSettingKeys.REMOTE_JS_REQUIRE_READ_TIMEOUT_MS);
     }
 
     public static void setRemoteJsRequireReadTimeoutMs(int timeoutMs) {
-        setAndSaveProperty(SCRIPT_REMOTE_REQUIRE_READ_TIMEOUT_MS, String.valueOf(Math.max(1, timeoutMs)));
+        put(AppSettingKeys.REMOTE_JS_REQUIRE_READ_TIMEOUT_MS_TO_WRITE, timeoutMs);
     }
 
     public static int getRemoteJsRequireMaxBytes() {
-        return getPositiveIntSetting(SCRIPT_REMOTE_REQUIRE_MAX_BYTES, DEFAULT_SCRIPT_REMOTE_MAX_BYTES);
+        return get(AppSettingKeys.REMOTE_JS_REQUIRE_MAX_BYTES);
     }
 
     public static void setRemoteJsRequireMaxBytes(int maxBytes) {
-        setAndSaveProperty(SCRIPT_REMOTE_REQUIRE_MAX_BYTES, String.valueOf(Math.max(1, maxBytes)));
+        put(AppSettingKeys.REMOTE_JS_REQUIRE_MAX_BYTES_TO_WRITE, maxBytes);
     }
 
     /**
      * 是否启用自定义受信任证书或 truststore。
      */
     public static boolean isCustomTrustMaterialEnabled() {
-        String val = props.getProperty("custom_trust_material_enabled");
-        if (val != null) {
-            return Boolean.parseBoolean(val);
-        }
-        return false;
+        return get(AppSettingKeys.CUSTOM_TRUST_MATERIAL_ENABLED);
     }
 
     public static void setCustomTrustMaterialEnabled(boolean enabled) {
-        setAndSaveProperty("custom_trust_material_enabled", String.valueOf(enabled));
+        put(AppSettingKeys.CUSTOM_TRUST_MATERIAL_ENABLED, enabled);
         OkHttpClientManager.clearClientCache();
     }
 
     public static List<TrustedCertificateEntry> getCustomTrustMaterialEntries() {
-        String json = props.getProperty("custom_trust_material_entries");
-        if (json != null && !json.trim().isEmpty()) {
-            try {
-                List<TrustedCertificateEntry> entries = JSONUtil.toList(
-                        JSONUtil.parseArray(json),
-                        TrustedCertificateEntry.class
-                );
-                if (entries != null) {
-                    return sanitizeTrustedCertificateEntries(entries);
-                }
-            } catch (Exception e) {
-                log.warn("Failed to parse custom trust material entries", e);
-            }
-        }
-        return new ArrayList<>();
+        return new ArrayList<>(get(AppSettingKeys.CUSTOM_TRUST_MATERIAL_ENTRIES));
     }
 
     public static void setCustomTrustMaterialEntries(List<TrustedCertificateEntry> entries) {
         List<TrustedCertificateEntry> sanitizedEntries = sanitizeTrustedCertificateEntries(entries);
-        updateAndSaveProperties(settings -> {
-            if (sanitizedEntries.isEmpty()) {
-                settings.remove("custom_trust_material_entries");
-            } else {
-                settings.setProperty("custom_trust_material_entries", JSONUtil.toJsonStr(sanitizedEntries));
-            }
-        });
+        put(AppSettingKeys.CUSTOM_TRUST_MATERIAL_ENTRIES, sanitizedEntries.isEmpty() ? null : sanitizedEntries);
         OkHttpClientManager.clearClientCache();
     }
 
     private static List<TrustedCertificateEntry> sanitizeTrustedCertificateEntries(List<TrustedCertificateEntry> entries) {
-        List<TrustedCertificateEntry> sanitizedEntries = new ArrayList<>();
-        if (entries == null) {
-            return sanitizedEntries;
-        }
-
-        for (TrustedCertificateEntry entry : entries) {
-            if (entry == null) {
-                continue;
-            }
-            TrustedCertificateEntry sanitized = new TrustedCertificateEntry();
-            sanitized.setEnabled(entry.isEnabled());
-            sanitized.setPath(entry.getPath() != null ? entry.getPath().trim() : "");
-            sanitized.setPassword(entry.getPassword() != null ? entry.getPassword() : "");
-            if (sanitized.hasUsablePath()) {
-                sanitizedEntries.add(sanitized);
-            }
-        }
-        return sanitizedEntries;
+        return AppSettingKeys.sanitizeTrustedCertificateEntries(entries);
     }
 
     public static int getMaxHistoryCount() {
-        String val = props.getProperty("max_history_count");
-        if (val != null) {
-            try {
-                return Integer.parseInt(val);
-            } catch (NumberFormatException e) {
-                return 100;
-            }
-        }
-        return 100; // 默认保存100条历史记录
+        return get(AppSettingKeys.MAX_HISTORY_COUNT);
     }
 
     public static void setMaxHistoryCount(int count) {
-        setAndSaveProperty("max_history_count", String.valueOf(count));
+        put(AppSettingKeys.MAX_HISTORY_COUNT, count);
     }
 
     public static int getMaxOpenedRequestsCount() {
-        String val = props.getProperty("max_opened_requests_count");
-        if (val != null) {
-            try {
-                return Integer.parseInt(val);
-            } catch (NumberFormatException e) {
-                return 10;
-            }
-        }
-        return 10;
+        return get(AppSettingKeys.MAX_OPENED_REQUESTS_COUNT);
     }
 
     public static void setMaxOpenedRequestsCount(int count) {
-        setAndSaveProperty("max_opened_requests_count", String.valueOf(count));
+        put(AppSettingKeys.MAX_OPENED_REQUESTS_COUNT, count);
     }
 
     /**
      * 是否根据响应类型自动格式化响应体
      */
     public static boolean isAutoFormatResponse() {
-        String val = props.getProperty("auto_format_response");
-        if (val != null) {
-            return Boolean.parseBoolean(val);
-        }
-        return true; // 默认自动格式化，提升用户体验
+        return get(AppSettingKeys.AUTO_FORMAT_RESPONSE);
     }
 
     public static void setAutoFormatResponse(boolean autoFormat) {
-        setAndSaveProperty("auto_format_response", String.valueOf(autoFormat));
+        put(AppSettingKeys.AUTO_FORMAT_RESPONSE, autoFormat);
     }
 
     /**
      * 是否在启动时显示欢迎画面
      */
     public static boolean isStartupSplashEnabled() {
-        String val = props.getProperty("startup_splash_enabled");
-        if (val != null) {
-            return Boolean.parseBoolean(val);
-        }
-        return true; // 默认开启
+        return get(AppSettingKeys.STARTUP_SPLASH_ENABLED);
     }
 
     public static void setStartupSplashEnabled(boolean enabled) {
-        setAndSaveProperty("startup_splash_enabled", String.valueOf(enabled));
+        put(AppSettingKeys.STARTUP_SPLASH_ENABLED, enabled);
     }
 
     /**
      * 是否默认展开侧边栏
      */
     public static boolean isSidebarExpanded() {
-        String val = props.getProperty("sidebar_expanded");
-        if (val != null) {
-            return Boolean.parseBoolean(val);
-        }
-        return false; // 默认不展开
+        return get(AppSettingKeys.SIDEBAR_EXPANDED);
     }
 
     public static void setSidebarExpanded(boolean expanded) {
-        setAndSaveProperty("sidebar_expanded", String.valueOf(expanded));
+        put(AppSettingKeys.SIDEBAR_EXPANDED, expanded);
     }
 
     public static List<String> getSidebarTabOrder() {
-        String val = props.getProperty("sidebar_tab_order");
-        List<String> order = new ArrayList<>();
-        if (val == null || val.isBlank()) {
-            return order;
-        }
-
-        for (String token : val.split(",")) {
-            String normalized = token == null ? null : token.trim();
-            if (normalized != null && !normalized.isEmpty()) {
-                order.add(normalized);
-            }
-        }
-        return order;
+        return new ArrayList<>(get(AppSettingKeys.SIDEBAR_TAB_ORDER));
     }
 
     public static void setSidebarTabOrder(Collection<String> tabOrder) {
-        setAndSaveProperty("sidebar_tab_order", tabOrder == null || tabOrder.isEmpty() ? null : String.join(",", tabOrder));
+        put(AppSettingKeys.SIDEBAR_TAB_ORDER, tabOrder == null || tabOrder.isEmpty()
+                ? null
+                : new ArrayList<>(tabOrder));
     }
 
     public static Set<String> getHiddenSidebarTabs() {
-        String val = props.getProperty("sidebar_hidden_tabs");
-        Set<String> hiddenTabs = new LinkedHashSet<>();
-        if (val == null || val.isBlank()) {
-            return hiddenTabs;
-        }
-
-        for (String token : val.split(",")) {
-            String normalized = token == null ? null : token.trim();
-            if (normalized != null && !normalized.isEmpty()) {
-                hiddenTabs.add(normalized.toUpperCase());
-            }
-        }
-        return hiddenTabs;
+        return new LinkedHashSet<>(get(AppSettingKeys.SIDEBAR_HIDDEN_TABS));
     }
 
     public static void setHiddenSidebarTabs(Collection<String> hiddenTabs) {
-        setAndSaveProperty("sidebar_hidden_tabs", hiddenTabs == null || hiddenTabs.isEmpty() ? null : String.join(",", hiddenTabs));
+        put(AppSettingKeys.SIDEBAR_HIDDEN_TABS, hiddenTabs == null || hiddenTabs.isEmpty()
+                ? null
+                : new LinkedHashSet<>(hiddenTabs));
     }
 
     /**
      * 获取布局方向（true=垂直，false=水平）
      */
     public static boolean isLayoutVertical() {
-        String val = props.getProperty("layout_vertical");
-        if (val != null) {
-            return Boolean.parseBoolean(val);
-        }
-        return true; // 默认垂直布局
+        return get(AppSettingKeys.LAYOUT_VERTICAL);
     }
 
     public static void setLayoutVertical(boolean vertical) {
-        setAndSaveProperty("layout_vertical", String.valueOf(vertical));
+        put(AppSettingKeys.LAYOUT_VERTICAL, vertical);
     }
 
     /**
      * 获取通知位置
      */
     public static NotificationPosition getNotificationPosition() {
-        String val = props.getProperty("notification_position");
-        if (val != null) {
-            return NotificationPosition.fromName(val);
-        }
-        return NotificationPosition.BOTTOM_RIGHT; // 默认右下角
+        return get(AppSettingKeys.NOTIFICATION_POSITION);
     }
 
     public static void setNotificationPosition(NotificationPosition position) {
-        setAndSaveProperty("notification_position", position.name());
+        put(AppSettingKeys.NOTIFICATION_POSITION, Objects.requireNonNull(position, "position"));
     }
 
     // ===== 自动更新设置 =====
@@ -794,15 +513,11 @@ public class SettingManager {
      * 是否启用自动检查更新
      */
     public static boolean isAutoUpdateCheckEnabled() {
-        String val = props.getProperty(AUTO_UPDATE_CHECK_ENABLED_KEY);
-        if (val != null) {
-            return Boolean.parseBoolean(val);
-        }
-        return true; // 默认开启
+        return get(AppSettingKeys.AUTO_UPDATE_CHECK_ENABLED);
     }
 
     public static void setAutoUpdateCheckEnabled(boolean enabled) {
-        setAndSaveProperty(AUTO_UPDATE_CHECK_ENABLED_KEY, String.valueOf(enabled));
+        put(AppSettingKeys.AUTO_UPDATE_CHECK_ENABLED, enabled);
     }
 
     /**
@@ -810,17 +525,13 @@ public class SettingManager {
      * 支持的值：startup（每次启动）、daily（每日）、weekly（每周）、monthly（每月）
      */
     public static String getAutoUpdateCheckFrequency() {
-        String val = props.getProperty(AUTO_UPDATE_CHECK_FREQUENCY_KEY);
-        if (val != null && (val.equals("startup") || val.equals("daily") || val.equals("weekly") || val.equals("monthly"))) {
-            return val;
-        }
-        return "daily"; // 默认每日
+        return get(AppSettingKeys.AUTO_UPDATE_CHECK_FREQUENCY);
     }
 
     public static void setAutoUpdateCheckFrequency(String frequency) {
-        String normalized = frequency == null ? "" : frequency.trim().toLowerCase(Locale.ROOT);
-        if (normalized.equals("startup") || normalized.equals("daily") || normalized.equals("weekly") || normalized.equals("monthly")) {
-            setAndSaveProperty(AUTO_UPDATE_CHECK_FREQUENCY_KEY, normalized);
+        String normalized = AppSettingKeys.normalizedLowerCode(frequency);
+        if (AppSettingKeys.isSupportedAutoUpdateFrequency(normalized)) {
+            put(AppSettingKeys.AUTO_UPDATE_CHECK_FREQUENCY, normalized);
         }
     }
 
@@ -828,22 +539,14 @@ public class SettingManager {
      * 获取上次检查更新的时间戳（毫秒）
      */
     public static long getLastUpdateCheckTime() {
-        String val = props.getProperty(LAST_UPDATE_CHECK_TIME_KEY);
-        if (val != null) {
-            try {
-                return Long.parseLong(val);
-            } catch (NumberFormatException e) {
-                return 0L;
-            }
-        }
-        return 0L; // 0表示从未检查过
+        return get(AppSettingKeys.LAST_UPDATE_CHECK_TIME);
     }
 
     /**
      * 设置上次检查更新的时间戳（毫秒）
      */
     public static void setLastUpdateCheckTime(long timestamp) {
-        setAndSaveProperty(LAST_UPDATE_CHECK_TIME_KEY, String.valueOf(timestamp));
+        put(AppSettingKeys.LAST_UPDATE_CHECK_TIME, timestamp);
     }
 
     /**
@@ -854,18 +557,13 @@ public class SettingManager {
      * - "gitee": 始终使用 Gitee
      */
     public static String getUpdateSourcePreference() {
-        String val = props.getProperty(UPDATE_SOURCE_PREFERENCE_KEY);
-        if (val != null && (val.equals("github") || val.equals("gitee") || val.equals("auto"))) {
-            return val;
-        }
-        // 默认自动选择
-        return "auto";
+        return get(AppSettingKeys.UPDATE_SOURCE_PREFERENCE);
     }
 
     public static void setUpdateSourcePreference(String preference) {
-        String normalized = preference == null ? "" : preference.trim().toLowerCase(Locale.ROOT);
-        if (normalized.equals("auto") || normalized.equals("github") || normalized.equals("gitee")) {
-            setAndSaveProperty(UPDATE_SOURCE_PREFERENCE_KEY, normalized);
+        String normalized = AppSettingKeys.normalizedLowerCode(preference);
+        if (AppSettingKeys.isSupportedUpdateSourcePreference(normalized)) {
+            put(AppSettingKeys.UPDATE_SOURCE_PREFERENCE, normalized);
             log.info("Update source preference saved: {}", normalized);
         }
     }
@@ -876,30 +574,22 @@ public class SettingManager {
      * 是否启用网络代理
      */
     public static boolean isProxyEnabled() {
-        String val = props.getProperty("proxy_enabled");
-        if (val != null) {
-            return Boolean.parseBoolean(val);
-        }
-        return false; // 默认关闭代理
+        return get(AppSettingKeys.PROXY_ENABLED);
     }
 
     public static void setProxyEnabled(boolean enabled) {
-        setAndSaveProperty("proxy_enabled", String.valueOf(enabled));
+        put(AppSettingKeys.PROXY_ENABLED, enabled);
     }
 
     /**
      * 代理模式：MANUAL 或 SYSTEM
      */
     public static String getProxyMode() {
-        String val = props.getProperty("proxy_mode");
-        if (PROXY_MODE_SYSTEM.equalsIgnoreCase(val)) {
-            return PROXY_MODE_SYSTEM;
-        }
-        return PROXY_MODE_MANUAL;
+        return get(AppSettingKeys.PROXY_MODE);
     }
 
     public static void setProxyMode(String mode) {
-        setAndSaveProperty("proxy_mode", PROXY_MODE_SYSTEM.equalsIgnoreCase(mode) ? PROXY_MODE_SYSTEM : PROXY_MODE_MANUAL);
+        put(AppSettingKeys.PROXY_MODE, mode);
     }
 
     public static boolean isSystemProxyMode() {
@@ -918,88 +608,63 @@ public class SettingManager {
      * 代理类型：HTTP 或 SOCKS
      */
     public static String getProxyType() {
-        String val = props.getProperty("proxy_type");
-        if (PROXY_TYPE_SOCKS.equalsIgnoreCase(val)) {
-            return PROXY_TYPE_SOCKS;
-        }
-        return PROXY_TYPE_HTTP; // 默认HTTP代理
+        return get(AppSettingKeys.PROXY_TYPE);
     }
 
     public static void setProxyType(String type) {
-        setAndSaveProperty("proxy_type", normalizeProxyType(type));
+        put(AppSettingKeys.PROXY_TYPE, type);
     }
 
     public static String normalizeProxyType(String type) {
-        return PROXY_TYPE_SOCKS.equalsIgnoreCase(type) ? PROXY_TYPE_SOCKS : PROXY_TYPE_HTTP;
+        return AppSettingKeys.normalizeProxyType(type);
     }
 
     /**
      * 代理服务器地址
      */
     public static String getProxyHost() {
-        String val = props.getProperty("proxy_host");
-        if (val != null) {
-            return val;
-        }
-        return ""; // 默认为空
+        return get(AppSettingKeys.PROXY_HOST);
     }
 
     public static void setProxyHost(String host) {
-        setAndSaveProperty("proxy_host", host);
+        put(AppSettingKeys.PROXY_HOST, host);
     }
 
     /**
      * 代理服务器端口
      */
     public static int getProxyPort() {
-        String val = props.getProperty("proxy_port");
-        if (val != null) {
-            try {
-                return Integer.parseInt(val);
-            } catch (NumberFormatException e) {
-                return 8080;
-            }
-        }
-        return 8080; // 默认8080端口
+        return get(AppSettingKeys.PROXY_PORT);
     }
 
     public static String getProxyPortText() {
-        String val = props.getProperty("proxy_port");
-        return val != null ? val : "";
+        return get(AppSettingKeys.PROXY_PORT_TEXT);
     }
 
     public static void setProxyPort(int port) {
-        setAndSaveProperty("proxy_port", String.valueOf(port));
+        put(AppSettingKeys.PROXY_PORT, port);
     }
 
     /**
      * 代理用户名
      */
     public static String getProxyUsername() {
-        String val = props.getProperty("proxy_username");
-        if (val != null) {
-            return val;
-        }
-        return ""; // 默认为空
+        return get(AppSettingKeys.PROXY_USERNAME);
     }
 
     public static void setProxyUsername(String username) {
-        setAndSaveProperty("proxy_username", username);
+        put(AppSettingKeys.PROXY_USERNAME, username);
     }
 
     /**
      * 代理密码
      */
     public static String getProxyPassword() {
-        String val = props.getProperty("proxy_password");
-        if (val != null) {
-            return val;
-        }
-        return ""; // 默认为空
+        return get(AppSettingKeys.PROXY_PASSWORD);
     }
 
     public static void setProxyPassword(String password) {
-        setAndSaveProperty("proxy_password", password);
+        put(AppSettingKeys.PROXY_PASSWORD, password);
     }
 
 
@@ -1008,15 +673,11 @@ public class SettingManager {
      * 此设置专门用于解决代理环境下的 SSL 证书验证问题
      */
     public static boolean isProxySslVerificationDisabled() {
-        String val = props.getProperty("proxy_ssl_verification_disabled");
-        if (val != null) {
-            return Boolean.parseBoolean(val);
-        }
-        return true; // 默认禁用代理 SSL 验证，避免代理环境阻断请求
+        return get(AppSettingKeys.PROXY_SSL_VERIFICATION_DISABLED);
     }
 
     public static void setProxySslVerificationDisabled(boolean disabled) {
-        setAndSaveProperty("proxy_ssl_verification_disabled", String.valueOf(disabled));
+        put(AppSettingKeys.PROXY_SSL_VERIFICATION_DISABLED, disabled);
         // 清除客户端缓存以应用新的 SSL 设置
         OkHttpClientManager.clearClientCache();
     }
@@ -1027,72 +688,21 @@ public class SettingManager {
      * 获取UI字体名称
      */
     public static String getUiFontName() {
-        String val = props.getProperty("ui_font_name");
-        if (val != null && !val.isEmpty()) {
-            return val;
-        }
-        // 默认使用系统字体
-        return ""; // 空字符串表示使用系统默认字体
+        return get(AppSettingKeys.UI_FONT_NAME);
     }
 
     public static void setUiFontName(String fontName) {
-        setAndSaveProperty("ui_font_name", fontName != null ? fontName : "");
+        put(AppSettingKeys.UI_FONT_NAME, fontName != null ? fontName : "");
     }
 
     /**
      * 获取UI字体大小
      */
     public static int getUiFontSize() {
-        String val = props.getProperty("ui_font_size");
-        if (val != null) {
-            try {
-                int size = Integer.parseInt(val);
-                // 限制范围：10-24
-                return Math.max(10, Math.min(24, size));
-            } catch (NumberFormatException e) {
-                return getDefaultFontSize();
-            }
-        }
-        return getDefaultFontSize(); // 根据操作系统返回默认字体大小
-    }
-
-    /**
-     * 获取默认字体大小
-     * 所有平台统一使用 13 号字体
-     */
-    private static int getDefaultFontSize() {
-        return 13; // 所有平台统一默认 13号
+        return get(AppSettingKeys.UI_FONT_SIZE);
     }
 
     public static void setUiFontSize(int size) {
-        // 限制范围：10-24
-        int fontSize = Math.max(10, Math.min(24, size));
-        setAndSaveProperty("ui_font_size", String.valueOf(fontSize));
-    }
-
-    private static int getPositiveIntSetting(String key, int defaultValue) {
-        String val = props.getProperty(key);
-        if (val != null) {
-            try {
-                int parsed = Integer.parseInt(val);
-                return parsed > 0 ? parsed : defaultValue;
-            } catch (NumberFormatException e) {
-                return defaultValue;
-            }
-        }
-        return defaultValue;
-    }
-
-    private static long getPositiveLongSetting(String key, long defaultValue) {
-        String val = props.getProperty(key);
-        if (val != null) {
-            try {
-                long parsed = Long.parseLong(val);
-                return parsed > 0 ? parsed : defaultValue;
-            } catch (NumberFormatException e) {
-                return defaultValue;
-            }
-        }
-        return defaultValue;
+        put(AppSettingKeys.UI_FONT_SIZE, size);
     }
 }

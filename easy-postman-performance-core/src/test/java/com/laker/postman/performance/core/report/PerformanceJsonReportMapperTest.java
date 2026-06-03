@@ -110,6 +110,25 @@ public class PerformanceJsonReportMapperTest {
     }
 
     @Test
+    public void shouldPreserveFirstSeenApiOrderInJsonReport() {
+        PerformanceStatsCollector collector = new PerformanceStatsCollector();
+        collector.record(new RequestResult(1_000, 1_010, true, "2", "2-商品详情", PerformanceProtocol.HTTP));
+        collector.record(new RequestResult(1_010, 1_020, true, "10", "10-订单管理列表", PerformanceProtocol.HTTP));
+        collector.record(new RequestResult(1_020, 1_030, true, "1", "1-商品列表查询", PerformanceProtocol.HTTP));
+
+        PerformanceJsonReport report = PerformanceJsonReportMapper.fromStatsSnapshot(
+                PerformanceJsonReportMetadata.builder().source("local").status("SUCCESS").build(),
+                collector.snapshot()
+        );
+
+        List<String> names = report.getProtocols().get("HTTP").getApis().stream()
+                .map(PerformanceJsonReportApi::getName)
+                .toList();
+
+        assertEquals(names, List.of("2-商品详情", "10-订单管理列表", "1-商品列表查询"));
+    }
+
+    @Test
     public void shouldMergeWorkerReportsWithoutDroppingProtocolDetails() {
         PerformanceStatsCollector left = new PerformanceStatsCollector();
         left.record(new RequestResult(1_000, 1_100, true, "login", "Login", PerformanceProtocol.HTTP));

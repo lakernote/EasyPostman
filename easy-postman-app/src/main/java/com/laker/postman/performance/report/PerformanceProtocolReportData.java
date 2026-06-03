@@ -11,7 +11,6 @@ import com.laker.postman.performance.core.report.PerformanceJsonReportDuration;
 import com.laker.postman.performance.core.report.PerformanceJsonReportProtocol;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -82,7 +81,6 @@ public final class PerformanceProtocolReportData {
                 rows.add(toHttpRow(summary));
             }
         }
-        sortByName(rows);
         PerformanceStatsSnapshot.ApiSummary total = snapshot.totalFor(PerformanceProtocol.HTTP, totalRowName);
         if (total != null && total.total() > 0) {
             rows.add(toHttpRow(total));
@@ -99,7 +97,6 @@ public final class PerformanceProtocolReportData {
         for (PerformanceJsonReportApi api : safeApis(protocolReport)) {
             rows.add(toHttpRow(api, null));
         }
-        sortByName(rows);
         if (protocolReport.getTotal() != null && protocolReport.getTotal().getTotal() > 0) {
             rows.add(toHttpRow(protocolReport.getTotal(), totalRowName));
         }
@@ -125,7 +122,6 @@ public final class PerformanceProtocolReportData {
                 rows.add(toStreamRow(summary));
             }
         }
-        sortByName(rows);
         return rows;
     }
 
@@ -138,7 +134,6 @@ public final class PerformanceProtocolReportData {
         for (PerformanceJsonReportApi api : safeApis(protocolReport)) {
             rows.add(toStreamRow(api, null));
         }
-        sortByName(rows);
         if (protocolReport.getTotal() != null && protocolReport.getTotal().getTotal() > 0) {
             rows.add(toStreamRow(protocolReport.getTotal(), totalRowName));
         }
@@ -168,7 +163,6 @@ public final class PerformanceProtocolReportData {
                 .map(MutableStreamReportRow::toRow)
                 .toList();
         rows = new ArrayList<>(rows);
-        sortByName(rows);
         if (!rows.isEmpty() && shouldAddTotalRow(rows, totalRowName)) {
             rows.add(totalStreamRow(totalRowName, rows));
         }
@@ -220,10 +214,6 @@ public final class PerformanceProtocolReportData {
             return apiId;
         }
         return totalRowName;
-    }
-
-    private static void sortByName(List<? extends NamedReportRow> rows) {
-        rows.sort(Comparator.comparing(NamedReportRow::name, String.CASE_INSENSITIVE_ORDER));
     }
 
     private static PerformanceJsonReportProtocol reportProtocol(PerformanceJsonReport report,

@@ -7,7 +7,6 @@ import com.laker.postman.performance.core.model.PerformanceStatsSnapshot;
 import lombok.experimental.UtilityClass;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -72,7 +71,6 @@ public class PerformanceJsonReportMapper {
                     apis.add(toApi(summary));
                 }
             }
-            apis.sort(Comparator.comparing(PerformanceJsonReportApi::getName, String.CASE_INSENSITIVE_ORDER));
             PerformanceStatsSnapshot.ApiSummary total = snapshot.totalFor(protocol, protocol.name() + " Total");
             protocols.put(protocol.name(), PerformanceJsonReportProtocol.builder()
                     .protocol(protocol.name())
@@ -112,7 +110,6 @@ public class PerformanceJsonReportMapper {
                 }
             }
         }
-        apis.sort(Comparator.comparing(PerformanceJsonReportApi::getName, String.CASE_INSENSITIVE_ORDER));
         protocols.put(protocol.name(), PerformanceJsonReportProtocol.builder()
                 .protocol(protocol.name())
                 .total(toLiveApi(protocol, "", protocol.name() + " Total", snapshot))

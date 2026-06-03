@@ -73,6 +73,25 @@ public class PerformanceProtocolReportDataTest {
     }
 
     @Test
+    public void shouldKeepFirstSeenApiOrderAndTotalLast() {
+        PerformanceStatsCollector collector = new PerformanceStatsCollector();
+        collector.record(new RequestResult(1_000, 1_010, true, "2", "2-商品详情", PerformanceProtocol.HTTP));
+        collector.record(new RequestResult(1_010, 1_020, true, "10", "10-订单管理列表", PerformanceProtocol.HTTP));
+        collector.record(new RequestResult(1_020, 1_030, true, "1", "1-商品列表查询", PerformanceProtocol.HTTP));
+        collector.record(new RequestResult(1_030, 1_040, true, "2", "2-商品详情", PerformanceProtocol.HTTP));
+
+        PerformanceProtocolReportData reportData = PerformanceProtocolReportData.fromStatsSnapshot(
+                collector.snapshot(),
+                "Total"
+        );
+
+        List<String> names = reportData.httpRows().stream()
+                .map(PerformanceProtocolReportData.HttpReportRow::name)
+                .toList();
+        assertEquals(names, List.of("2-商品详情", "10-订单管理列表", "1-商品列表查询", "Total"));
+    }
+
+    @Test
     public void shouldMergeLiveStreamRowsIntoRealtimeReports() {
         PerformanceStatsCollector collector = new PerformanceStatsCollector();
         RequestResult completed = new RequestResult(1_000, 1_500, true, "ws-api", "WS API", PerformanceProtocol.WEBSOCKET);
@@ -231,6 +250,61 @@ public class PerformanceProtocolReportDataTest {
         assertEquals(reportData.webSocketRows().get(0).sentMessages(), 3L);
         assertEquals(reportData.webSocketRows().get(0).avgFirstMessageLatencyMs(), 45L);
         assertEquals(reportData.webSocketRows().get(0).avgDurationMs(), 500L);
+    }
+
+    @Test
+    public void shouldKeepJsonReportApiOrderAndTotalLast() {
+        PerformanceJsonReport report = PerformanceJsonReport.builder()
+                .protocols(Map.of(
+                        "HTTP",
+                        PerformanceJsonReportProtocol.builder()
+                                .protocol("HTTP")
+                                .total(PerformanceJsonReportApi.builder()
+                                        .protocol("HTTP")
+                                        .total(3L)
+                                        .success(3L)
+                                        .durationMs(PerformanceJsonReportDuration.builder().build())
+                                        .bytes(PerformanceJsonReportBytes.builder().build())
+                                        .build())
+                                .apis(List.of(
+                                        PerformanceJsonReportApi.builder()
+                                                .apiId("2")
+                                                .name("2-商品详情")
+                                                .protocol("HTTP")
+                                                .total(1L)
+                                                .success(1L)
+                                                .durationMs(PerformanceJsonReportDuration.builder().build())
+                                                .bytes(PerformanceJsonReportBytes.builder().build())
+                                                .build(),
+                                        PerformanceJsonReportApi.builder()
+                                                .apiId("10")
+                                                .name("10-订单管理列表")
+                                                .protocol("HTTP")
+                                                .total(1L)
+                                                .success(1L)
+                                                .durationMs(PerformanceJsonReportDuration.builder().build())
+                                                .bytes(PerformanceJsonReportBytes.builder().build())
+                                                .build(),
+                                        PerformanceJsonReportApi.builder()
+                                                .apiId("1")
+                                                .name("1-商品列表查询")
+                                                .protocol("HTTP")
+                                                .total(1L)
+                                                .success(1L)
+                                                .durationMs(PerformanceJsonReportDuration.builder().build())
+                                                .bytes(PerformanceJsonReportBytes.builder().build())
+                                                .build()
+                                ))
+                                .build()
+                ))
+                .build();
+
+        PerformanceProtocolReportData reportData = PerformanceProtocolReportData.fromJsonReport(report, "Total");
+
+        List<String> names = reportData.httpRows().stream()
+                .map(PerformanceProtocolReportData.HttpReportRow::name)
+                .toList();
+        assertEquals(names, List.of("2-商品详情", "10-订单管理列表", "1-商品列表查询", "Total"));
     }
 
     private static com.laker.postman.performance.core.model.PerformanceStatsSnapshot statsSnapshot(

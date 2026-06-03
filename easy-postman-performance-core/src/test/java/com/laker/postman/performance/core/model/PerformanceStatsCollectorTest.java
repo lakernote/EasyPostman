@@ -71,6 +71,22 @@ public class PerformanceStatsCollectorTest {
     }
 
     @Test
+    public void shouldExposeApiSummariesInFirstSeenOrder() {
+        PerformanceStatsCollector collector = new PerformanceStatsCollector();
+
+        collector.record(new RequestResult(1_000L, 1_010L, true, "2", "2-商品详情", PerformanceProtocol.HTTP));
+        collector.record(new RequestResult(1_010L, 1_020L, true, "10", "10-订单管理列表", PerformanceProtocol.HTTP));
+        collector.record(new RequestResult(1_020L, 1_030L, true, "1", "1-商品列表查询", PerformanceProtocol.HTTP));
+        collector.record(new RequestResult(1_030L, 1_040L, true, "2", "2-商品详情", PerformanceProtocol.HTTP));
+
+        List<String> names = collector.snapshot().summaries().stream()
+                .map(PerformanceStatsSnapshot.ApiSummary::name)
+                .toList();
+
+        assertEquals(names, List.of("2-商品详情", "10-订单管理列表", "1-商品列表查询"));
+    }
+
+    @Test
     public void statsCollectorShouldOnlyExposeReportAggregationApi() {
         assertFalse(hasMethodNamed(PerformanceStatsCollector.class, "setTrendEnabled"));
         assertFalse(hasMethodNamed(PerformanceStatsCollector.class, "sampleTrendSnapshot"));

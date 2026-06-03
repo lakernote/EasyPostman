@@ -59,6 +59,18 @@ public class AutoUpdateManagerTest {
     }
 
     @Test
+    public void nonUpdateStatusShouldStillPassNotificationGate() {
+        UpdateCheckState state = UpdateCheckState.of(
+                UpdateTarget.APP,
+                123L,
+                Set.of("app@v1.2.0@UPDATE_AVAILABLE")
+        );
+
+        assertTrue(AutoUpdateManager.shouldNotify(UpdateInfo.noUpdateAvailable("ok"), state, true));
+        assertTrue(AutoUpdateManager.shouldNotify(UpdateInfo.checkFailed("bad"), state, true));
+    }
+
+    @Test
     public void nullUpdateInfoShouldNotNotify() {
         assertFalse(AutoUpdateManager.shouldNotify(null, UpdateCheckState.of(UpdateTarget.APP, 0L, Set.of()), false));
     }

@@ -1323,7 +1323,6 @@ public class ElasticsearchPanel extends JPanel {
                     resultArea.setText(JsonUtil.toJsonPrettyStr(resp));
                     resultArea.setCaretPosition(0);
                     addHostHistory(finalUrl);
-                    saveConnectionProfile(finalUrl, user, pass, false);
                     loadIndices();
                     NotificationUtil.showSuccess(MessageFormat.format(
                             I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_CONNECT_SUCCESS), finalUrl));

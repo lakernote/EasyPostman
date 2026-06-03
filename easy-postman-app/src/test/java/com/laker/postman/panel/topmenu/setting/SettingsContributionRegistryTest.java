@@ -1,6 +1,7 @@
 package com.laker.postman.panel.topmenu.setting;
 
 import com.laker.postman.plugin.api.PluginSettingsContribution;
+import com.laker.postman.plugin.api.PluginHostActions;
 import com.laker.postman.plugin.runtime.PluginRuntime;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.test.AbstractSwingUiTest;
@@ -12,6 +13,7 @@ import javax.swing.JLabel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -100,5 +102,51 @@ public class SettingsContributionRegistryTest extends AbstractSwingUiTest {
 
         assertEquals(contribution.resolveTitle(), "Plugin Settings");
         assertTrue(contribution.createPanel(new SettingsContributionContext(null)) instanceof JLabel);
+    }
+
+    @Test
+    public void pluginSettingsContributionShouldOverrideBuiltInContributionWithSameId() {
+        PluginRuntime.getRegistry().registerSettingsContribution(new PluginSettingsContribution(
+                "client-certificates",
+                "plugin.settings.title",
+                700,
+                PluginSettingsContribution.CATEGORY_EXTENSIONS,
+                context -> new JLabel("plugin-client-cert-settings"),
+                "plugin-settings-test-messages",
+                getClass().getClassLoader()
+        ));
+
+        SettingsContributionRegistry registry = SettingsContributionRegistry.defaultRegistry();
+        SettingsContribution contribution = registry.findById("client-certificates").orElseThrow();
+
+        assertEquals(registry.contributions().stream()
+                .filter(item -> item.id().equals("client-certificates"))
+                .count(), 1L);
+        assertEquals(contribution.resolveTitle(), "Plugin Settings");
+        assertTrue(contribution.createPanel(new SettingsContributionContext(null)) instanceof JLabel);
+    }
+
+    @Test
+    public void pluginSettingsContributionsShouldReceiveHostActions() {
+        AtomicReference<PluginHostActions> hostActionsRef = new AtomicReference<>();
+        PluginRuntime.getRegistry().registerSettingsContribution(new PluginSettingsContribution(
+                "plugin-settings-actions",
+                "plugin.settings.title",
+                900,
+                PluginSettingsContribution.CATEGORY_EXTENSIONS,
+                context -> {
+                    hostActionsRef.set(context.hostActions());
+                    return new JLabel("plugin-settings");
+                },
+                "plugin-settings-test-messages",
+                getClass().getClassLoader()
+        ));
+
+        SettingsContribution contribution = SettingsContributionRegistry.defaultRegistry()
+                .findById("plugin-settings-actions")
+                .orElseThrow();
+
+        assertTrue(contribution.createPanel(new SettingsContributionContext(null)) instanceof JLabel);
+        assertTrue(hostActionsRef.get() != PluginHostActions.NOOP);
     }
 }

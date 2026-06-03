@@ -1,8 +1,10 @@
 package com.laker.postman.panel.topmenu.setting;
 
+import com.laker.postman.platform.update.UpdateCenter;
 import com.laker.postman.platform.update.model.UpdatePolicy;
+import com.laker.postman.platform.update.model.UpdateTarget;
 import com.laker.postman.service.setting.SettingManager;
-import com.laker.postman.service.update.plugin.PluginUpdateManager;
+import com.laker.postman.service.update.AppUpdateCenter;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -24,6 +26,7 @@ public class AutoUpdateSettingsPanel extends ModernSettingsPanel {
     private JCheckBox pluginUpdateCheckBox;
     private JComboBox<String> pluginUpdateFrequencyComboBox;
     private JComboBox<String> updateSourceComboBox;
+    private final UpdateCenter updateCenter = AppUpdateCenter.get();
 
     @Override
     protected void buildContent(JPanel contentPanel) {
@@ -34,9 +37,10 @@ public class AutoUpdateSettingsPanel extends ModernSettingsPanel {
         );
 
         // 主程序更新开关
+        UpdatePolicy appPolicy = updateCenter.policy(UpdateTarget.APP);
         appUpdateCheckBox = new JCheckBox(
                 I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_ENABLED_CHECKBOX),
-                SettingManager.isAutoUpdateCheckEnabled()
+                appPolicy.enabled()
         );
         JPanel appUpdateRow = createCheckBoxRow(
                 appUpdateCheckBox,
@@ -50,7 +54,7 @@ public class AutoUpdateSettingsPanel extends ModernSettingsPanel {
         appUpdateFrequencyComboBox = new JComboBox<>(frequencyOptions);
 
         // 根据当前设置选择对应的选项
-        selectFrequency(appUpdateFrequencyComboBox, SettingManager.getAutoUpdateCheckFrequency());
+        selectFrequency(appUpdateFrequencyComboBox, appPolicy.frequency().getCode());
 
         JPanel frequencyRow = createFieldRow(
                 I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_FREQUENCY),
@@ -61,7 +65,9 @@ public class AutoUpdateSettingsPanel extends ModernSettingsPanel {
         autoUpdateSection.add(createVerticalSpace(FIELD_SPACING));
 
         // 上次检查时间
-        JLabel lastCheckTimeLabel = new JLabel(formatCheckTime(SettingManager.getLastUpdateCheckTime()));
+        JLabel lastCheckTimeLabel = new JLabel(formatCheckTime(
+                updateCenter.state(UpdateTarget.APP).lastCheckTimeMillis()
+        ));
         JPanel lastCheckRow = createFieldRow(
                 I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_LAST_CHECK_TIME),
                 I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_LAST_CHECK_TIME_TOOLTIP),
@@ -71,7 +77,7 @@ public class AutoUpdateSettingsPanel extends ModernSettingsPanel {
         autoUpdateSection.add(createVerticalSpace(FIELD_SPACING));
 
         // 插件更新开关
-        UpdatePolicy pluginPolicy = SettingManager.getPluginUpdatePolicy();
+        UpdatePolicy pluginPolicy = updateCenter.policy(UpdateTarget.PLUGIN);
         pluginUpdateCheckBox = new JCheckBox(
                 I18nUtil.getMessage(MessageKeys.SETTINGS_PLUGIN_UPDATE_ENABLED_CHECKBOX),
                 pluginPolicy.enabled()
@@ -93,7 +99,9 @@ public class AutoUpdateSettingsPanel extends ModernSettingsPanel {
         autoUpdateSection.add(pluginFrequencyRow);
         autoUpdateSection.add(createVerticalSpace(FIELD_SPACING));
 
-        JLabel pluginLastCheckTimeLabel = new JLabel(formatCheckTime(PluginUpdateManager.getLastCheckTime()));
+        JLabel pluginLastCheckTimeLabel = new JLabel(formatCheckTime(
+                updateCenter.state(UpdateTarget.PLUGIN).lastCheckTimeMillis()
+        ));
         JPanel pluginLastCheckRow = createFieldRow(
                 I18nUtil.getMessage(MessageKeys.SETTINGS_PLUGIN_UPDATE_LAST_CHECK_TIME),
                 I18nUtil.getMessage(MessageKeys.SETTINGS_PLUGIN_UPDATE_LAST_CHECK_TIME_TOOLTIP),

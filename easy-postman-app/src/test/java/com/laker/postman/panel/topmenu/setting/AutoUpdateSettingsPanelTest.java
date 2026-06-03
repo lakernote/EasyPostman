@@ -12,6 +12,8 @@ import javax.swing.JLabel;
 import javax.swing.SwingUtilities;
 import java.awt.Component;
 import java.awt.Container;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -37,6 +39,16 @@ public class AutoUpdateSettingsPanelTest extends AbstractSwingUiTest {
         assertTrue(texts.contains(I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_FREQUENCY)));
         assertTrue(texts.contains(I18nUtil.getMessage(MessageKeys.SETTINGS_PLUGIN_UPDATE_FREQUENCY)));
         assertEquals(countComponents(panelRef.get(), JComboBox.class), 3);
+    }
+
+    @Test
+    public void shouldReadPluginUpdateStateThroughUnifiedUpdateCenter() throws Exception {
+        String source = Files.readString(Path.of(
+                "src/main/java/com/laker/postman/panel/topmenu/setting/AutoUpdateSettingsPanel.java"
+        ));
+
+        assertTrue(source.contains("UpdateCenter"));
+        assertTrue(!source.contains("PluginUpdateManager"));
     }
 
     private static List<String> collectTexts(Container container) {

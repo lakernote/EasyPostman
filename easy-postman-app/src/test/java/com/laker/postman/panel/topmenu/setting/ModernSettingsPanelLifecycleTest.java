@@ -5,6 +5,7 @@ import org.testng.annotations.Test;
 import javax.swing.*;
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Dimension;
 import java.awt.Point;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
@@ -68,6 +69,24 @@ public class ModernSettingsPanelLifecycleTest {
         assertTrue(scrollPane.getViewport().getView() instanceof Scrollable);
         Scrollable view = (Scrollable) scrollPane.getViewport().getView();
         assertTrue(view.getScrollableTracksViewportWidth());
+    }
+
+    @Test(description = "设置页内容短于 viewport 时应撑满高度，避免底部露出无意义灰色空白")
+    public void settingsPanelContentShouldTrackViewportHeightWhenShorterThanViewport() {
+        SampleSettingsPanel panel = new SampleSettingsPanel();
+        panel.getPreferredSize();
+        JScrollPane scrollPane = findScrollPane(panel);
+
+        JViewport viewport = scrollPane.getViewport();
+        Component viewComponent = viewport.getView();
+        Scrollable view = (Scrollable) viewComponent;
+        Dimension preferredSize = viewComponent.getPreferredSize();
+
+        viewport.setSize(new Dimension(preferredSize.width, preferredSize.height + 80));
+        assertTrue(view.getScrollableTracksViewportHeight());
+
+        viewport.setSize(new Dimension(preferredSize.width, Math.max(1, preferredSize.height - 80)));
+        assertFalse(view.getScrollableTracksViewportHeight());
     }
 
     private static JScrollPane findScrollPane(Container container) {

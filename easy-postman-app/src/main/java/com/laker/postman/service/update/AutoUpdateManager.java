@@ -1,6 +1,7 @@
 package com.laker.postman.service.update;
 
 import com.laker.postman.ioc.Component;
+import com.laker.postman.platform.update.UpdateCenter;
 import com.laker.postman.platform.update.VersionChecker;
 import com.laker.postman.platform.update.model.UpdateCheckState;
 import com.laker.postman.platform.update.model.UpdateInfo;
@@ -29,6 +30,7 @@ public class AutoUpdateManager {
 
     private final VersionChecker versionChecker;
     private final UpdateUIManager uiManager;
+    private final UpdateCenter updateCenter;
 
     /**
      * 专用于更新检查的线程池（单线程，确保更新检查串行执行）
@@ -42,6 +44,7 @@ public class AutoUpdateManager {
     public AutoUpdateManager() {
         this.versionChecker = new VersionChecker(SettingManager::getUpdateSourcePreference);
         this.uiManager = new UpdateUIManager();
+        this.updateCenter = AppUpdateCenter.get();
     }
 
     /**
@@ -54,21 +57,20 @@ public class AutoUpdateManager {
         String osInfo = SystemUtil.getOsInfo();
         log.info("Detected operating system: \n{} ", osInfo);
 
-        UpdatePolicy policy = SettingManager.getAppUpdatePolicy();
+        UpdatePolicy policy = updateCenter.policy(UpdateTarget.APP);
         if (!policy.enabled()) {
             log.info("Auto-update check is disabled");
             return;
         }
 
-        long lastCheckTime = SettingManager.getLastUpdateCheckTime();
+        long lastCheckTime = updateCenter.state(UpdateTarget.APP).lastCheckTimeMillis();
         long currentTime = System.currentTimeMillis();
-        UpdateCheckState state = SettingManager.getAppUpdateCheckState();
 
         log.info("Update check frequency: {}, last check time: {}",
                 policy.frequency().getCode(), lastCheckTime > 0 ? new Date(lastCheckTime) : "never");
 
         // 判断是否需要检查更新
-        if (policy.shouldCheck(state, currentTime)) {
+        if (updateCenter.shouldCheck(UpdateTarget.APP, currentTime)) {
             log.info("Scheduling startup update check...");
             // 使用线程池异步执行，避免阻塞调用线程
             UPDATE_EXECUTOR.submit(() -> {
@@ -92,7 +94,7 @@ public class AutoUpdateManager {
             log.info("Manual update check initiated");
             UpdateInfo updateInfo = versionChecker.checkForUpdate();
             // 手动检查也记录时间
-            SettingManager.setLastUpdateCheckTime(System.currentTimeMillis());
+            updateCenter.recordCheck(UpdateTarget.APP, System.currentTimeMillis());
             log.info("Manual update check completed, timestamp recorded");
             return updateInfo;
         }, UPDATE_EXECUTOR); // 使用统一的更新检查线程池
@@ -106,7 +108,7 @@ public class AutoUpdateManager {
         try {
             UpdateInfo updateInfo = versionChecker.checkForUpdate();
             // 记录检查时间
-            SettingManager.setLastUpdateCheckTime(System.currentTimeMillis());
+            updateCenter.recordCheck(UpdateTarget.APP, System.currentTimeMillis());
             log.info("Update check completed successfully, timestamp recorded");
 
             handleUpdateCheckResult(updateInfo, false);
@@ -114,7 +116,7 @@ public class AutoUpdateManager {
         } catch (Exception e) {
             log.warn("Update check failed: {}", e.getMessage(), e);
             // 即使失败也记录检查时间，避免频繁重试
-            SettingManager.setLastUpdateCheckTime(System.currentTimeMillis());
+            updateCenter.recordCheck(UpdateTarget.APP, System.currentTimeMillis());
         }
     }
 
@@ -130,8 +132,9 @@ public class AutoUpdateManager {
             return;
         }
         SwingUtilities.invokeLater(() -> {
-            if (!shouldNotify(updateInfo, SettingManager.getAppUpdateCheckState(), isManual)) {
-                log.debug("Skipping already notified app update marker: {}", notificationMarker(updateInfo));
+            String marker = notificationMarker(updateInfo);
+            if (!marker.isEmpty() && !updateCenter.shouldNotify(UpdateTarget.APP, marker, isManual)) {
+                log.debug("Skipping already notified app update marker: {}", marker);
                 return;
             }
             switch (updateInfo.getStatus()) {
@@ -183,10 +186,7 @@ public class AutoUpdateManager {
             return false;
         }
         String marker = notificationMarker(updateInfo);
-        if (marker.isEmpty()) {
-            return true;
-        }
-        return isManual || state == null || !state.wasNotified(marker);
+        return marker.isEmpty() || UpdateCenter.shouldNotify(marker, state, isManual);
     }
 
     static String notificationMarker(UpdateInfo updateInfo) {
@@ -199,8 +199,8 @@ public class AutoUpdateManager {
         return UpdateTarget.APP.getId() + "@" + updateInfo.getLatestVersion().trim() + "@" + updateInfo.getStatus();
     }
 
-    private static void rememberNotifiedMarker(UpdateInfo updateInfo) {
-        SettingManager.rememberAppUpdateNotifiedMarker(notificationMarker(updateInfo));
+    private void rememberNotifiedMarker(UpdateInfo updateInfo) {
+        updateCenter.rememberNotifiedMarker(UpdateTarget.APP, notificationMarker(updateInfo));
     }
 
     /**

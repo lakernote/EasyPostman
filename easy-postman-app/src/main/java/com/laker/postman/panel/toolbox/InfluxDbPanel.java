@@ -1489,7 +1489,6 @@ public class InfluxDbPanel extends JPanel {
                     connected = true;
                     btnCardLayout.show(btnCard, DISCONNECT_CARD);
                     addHostHistory(finalBaseUrl);
-                    saveConnectionProfile(finalBaseUrl, false);
                     NotificationUtil.showSuccess(MessageFormat.format(
                             I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_CONNECT_SUCCESS), finalBaseUrl));
                     if (mode == QueryMode.INFLUXQL_V1) {

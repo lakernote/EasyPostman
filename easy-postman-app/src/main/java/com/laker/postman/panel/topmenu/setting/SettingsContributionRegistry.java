@@ -2,6 +2,7 @@ package com.laker.postman.panel.topmenu.setting;
 
 import com.laker.postman.plugin.api.PluginSettingsContribution;
 import com.laker.postman.plugin.api.PluginSettingsContributionContext;
+import com.laker.postman.plugin.host.AppPluginHostActions;
 import com.laker.postman.plugin.host.PluginAccess;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
@@ -55,12 +56,36 @@ public final class SettingsContributionRegistry {
     }
 
     public static List<SettingsContribution> defaultContributions() {
-        List<SettingsContribution> contributions = new ArrayList<>(builtInContributions());
-        Set<String> ids = new HashSet<>();
-        for (SettingsContribution contribution : contributions) {
-            ids.add(contribution.id());
+        List<SettingsContribution> pluginContributions = pluginContributions();
+        Set<String> pluginIds = new HashSet<>();
+        for (SettingsContribution contribution : pluginContributions) {
+            pluginIds.add(contribution.id());
         }
 
+        List<SettingsContribution> contributions = new ArrayList<>();
+        Set<String> ids = new HashSet<>();
+        for (SettingsContribution contribution : builtInContributions()) {
+            if (pluginIds.contains(contribution.id())) {
+                log.info("Plugin settings contribution overrides built-in settings contribution id: {}", contribution.id());
+                continue;
+            }
+            ids.add(contribution.id());
+            contributions.add(contribution);
+        }
+
+        for (SettingsContribution contribution : pluginContributions) {
+            if (!ids.add(contribution.id())) {
+                log.warn("Skip duplicate plugin settings contribution id: {}", contribution.id());
+                continue;
+            }
+            contributions.add(contribution);
+        }
+        return List.copyOf(contributions);
+    }
+
+    private static List<SettingsContribution> pluginContributions() {
+        List<SettingsContribution> contributions = new ArrayList<>();
+        Set<String> ids = new HashSet<>();
         for (PluginSettingsContribution pluginContribution : PluginAccess.getSettingsContributions()) {
             SettingsContribution contribution = adaptPluginContribution(pluginContribution);
             if (!ids.add(contribution.id())) {
@@ -69,7 +94,7 @@ public final class SettingsContributionRegistry {
             }
             contributions.add(contribution);
         }
-        return List.copyOf(contributions);
+        return contributions;
     }
 
     private static List<SettingsContribution> builtInContributions() {
@@ -139,7 +164,10 @@ public final class SettingsContributionRegistry {
                 contribution.titleKey(),
                 contribution.order(),
                 contribution.category(),
-                context -> contribution.createPanel(new PluginSettingsContributionContext(context.parentWindow())),
+                context -> contribution.createPanel(new PluginSettingsContributionContext(
+                        context.parentWindow(),
+                        new AppPluginHostActions(context.parentWindow())
+                )),
                 contribution.titleBundleName(),
                 contribution.titleClassLoader()
         );

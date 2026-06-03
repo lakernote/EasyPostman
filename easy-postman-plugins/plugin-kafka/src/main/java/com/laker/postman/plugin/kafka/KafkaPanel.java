@@ -454,10 +454,8 @@ public class KafkaPanel extends JPanel {
         }
         // 在 EDT 预先读取所有 UI 字段（含 passwordField），避免非 EDT 线程读取 Swing 组件
         final Properties baseProps;
-        final KafkaConnectionProfile profileToSave;
         try {
             baseProps = buildCommonClientProperties();
-            profileToSave = currentConnectionProfile();
         } catch (IllegalArgumentException ex) {
             NotificationUtil.showWarning(rootMessage(ex));
             return;
@@ -509,8 +507,6 @@ public class KafkaPanel extends JPanel {
                     syncPartitionSelector();
                     String status = t(MessageKeys.TOOLBOX_KAFKA_STATUS_CONNECTED, bootstrap);
                     setConnectionStatus(ModernColors.SUCCESS, status);
-                    connectionProfileStore.upsertProfile(profileToSave);
-                    loadSavedConnectionProfiles(profileToSave.getId());
                     connectionPanel.btnCardLayout.show(connectionPanel.btnCard, CARD_DISCONNECT);
                     producerPanel.statusLabel.setText(t(MessageKeys.TOOLBOX_KAFKA_STATUS_TOPICS_LOADED, topics.size()));
                     NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_KAFKA_STATUS_TOPICS_LOADED, topics.size()));

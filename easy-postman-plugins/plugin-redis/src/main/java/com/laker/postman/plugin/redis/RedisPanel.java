@@ -757,7 +757,6 @@ public class RedisPanel extends JPanel {
                     jedis = newClient;
                     connected = true;
                     rememberHostHistory(host);
-                    saveConnectionProfile(host, port, db, user, pass, false);
                     btnCardLayout.show(btnCard, DISCONNECT_CARD);
                     respStatusLabel.setText(t(MessageKeys.TOOLBOX_REDIS_STATUS_CONNECTED_SIMPLE));
                     NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_REDIS_CONNECT_SUCCESS, host, port, db));

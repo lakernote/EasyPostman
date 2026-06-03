@@ -594,6 +594,9 @@ public abstract class ModernSettingsPanel extends JPanel {
 
         @Override
         public boolean getScrollableTracksViewportHeight() {
+            if (getParent() instanceof JViewport viewport) {
+                return getPreferredSize().height < viewport.getHeight();
+            }
             return false;
         }
     }

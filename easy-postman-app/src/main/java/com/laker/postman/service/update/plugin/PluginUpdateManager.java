@@ -3,13 +3,12 @@ package com.laker.postman.service.update.plugin;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.ioc.Component;
-import com.laker.postman.platform.update.model.UpdateCheckState;
+import com.laker.postman.platform.update.UpdateCenter;
 import com.laker.postman.platform.update.model.UpdatePolicy;
 import com.laker.postman.platform.update.model.UpdateTarget;
 import com.laker.postman.panel.topmenu.plugin.PluginManagerDialog;
 import com.laker.postman.panel.update.PluginUpdateNotification;
-import com.laker.postman.plugin.runtime.PluginSettingsStore;
-import com.laker.postman.service.setting.SettingManager;
+import com.laker.postman.service.update.AppUpdateCenter;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -18,9 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import java.util.Date;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -33,9 +30,6 @@ import java.util.concurrent.ScheduledExecutorService;
 @RequiredArgsConstructor
 public class PluginUpdateManager {
 
-    private static final String LAST_PLUGIN_UPDATE_CHECK_TIME_KEY = "plugin.market.lastUpdateCheckTime";
-    private static final String LAST_PLUGIN_UPDATE_NOTIFIED_KEY = "plugin.market.notifiedVersions";
-
     private static final ScheduledExecutorService UPDATE_EXECUTOR = Executors.newSingleThreadScheduledExecutor(r -> {
         Thread thread = new Thread(r, "PluginUpdateChecker");
         thread.setDaemon(true);
@@ -43,37 +37,37 @@ public class PluginUpdateManager {
     });
 
     private final PluginUpdateChecker pluginUpdateChecker;
+    private final UpdateCenter updateCenter = AppUpdateCenter.get();
 
     public CompletableFuture<PluginUpdateCheckResult> checkForUpdateManually() {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 List<PluginUpdateCandidate> candidates = pluginUpdateChecker.checkForUpdates();
-                setLastCheckTime(System.currentTimeMillis());
+                updateCenter.recordCheck(UpdateTarget.PLUGIN, System.currentTimeMillis());
                 rememberNotifiedCandidates(candidates);
                 return PluginUpdateCheckResult.success(candidates);
             } catch (Exception e) {
                 log.warn("Manual plugin update check failed: {}", e.getMessage(), e);
-                setLastCheckTime(System.currentTimeMillis());
+                updateCenter.recordCheck(UpdateTarget.PLUGIN, System.currentTimeMillis());
                 return PluginUpdateCheckResult.failed(e.getMessage());
             }
         }, UPDATE_EXECUTOR);
     }
 
     public void startBackgroundCheck() {
-        UpdatePolicy policy = SettingManager.getPluginUpdatePolicy();
+        UpdatePolicy policy = updateCenter.policy(UpdateTarget.PLUGIN);
         if (!policy.enabled()) {
             log.info("Plugin auto-update check is disabled");
             return;
         }
 
-        long lastCheckTime = getLastCheckTime();
+        long lastCheckTime = updateCenter.state(UpdateTarget.PLUGIN).lastCheckTimeMillis();
         long currentTime = System.currentTimeMillis();
-        UpdateCheckState state = getCheckState(lastCheckTime);
 
         log.info("Plugin update check frequency: {}, last check time: {}",
                 policy.frequency().getCode(), lastCheckTime > 0 ? new Date(lastCheckTime) : "never");
 
-        if (!policy.shouldCheck(state, currentTime)) {
+        if (!updateCenter.shouldCheck(UpdateTarget.PLUGIN, currentTime)) {
             log.info("Skipping plugin update check - not yet time according to frequency settings");
             return;
         }
@@ -90,7 +84,7 @@ public class PluginUpdateManager {
     private void performUpdateCheck() {
         try {
             List<PluginUpdateCandidate> candidates = pluginUpdateChecker.checkForUpdates();
-            setLastCheckTime(System.currentTimeMillis());
+            updateCenter.recordCheck(UpdateTarget.PLUGIN, System.currentTimeMillis());
             log.info("Plugin update check completed successfully, candidates={}", candidates.size());
             List<PluginUpdateCandidate> unseenCandidates = filterUnseenCandidates(candidates);
             if (unseenCandidates.isEmpty()) {
@@ -101,7 +95,7 @@ public class PluginUpdateManager {
             SwingUtilities.invokeLater(() -> showUpdateNotification(unseenCandidates));
         } catch (Exception e) {
             log.warn("Plugin update check failed: {}", e.getMessage(), e);
-            setLastCheckTime(System.currentTimeMillis());
+            updateCenter.recordCheck(UpdateTarget.PLUGIN, System.currentTimeMillis());
         }
     }
 
@@ -140,37 +134,12 @@ public class PluginUpdateManager {
         });
     }
 
-    public static long getLastCheckTime() {
-        String value = PluginSettingsStore.getString(LAST_PLUGIN_UPDATE_CHECK_TIME_KEY);
-        if (value == null || value.isBlank()) {
-            return 0L;
-        }
-        try {
-            return Long.parseLong(value);
-        } catch (NumberFormatException e) {
-            return 0L;
-        }
-    }
-
-    private static void setLastCheckTime(long timestamp) {
-        PluginSettingsStore.putString(LAST_PLUGIN_UPDATE_CHECK_TIME_KEY, String.valueOf(timestamp));
-    }
-
-    private static UpdateCheckState getCheckState(long lastCheckTime) {
-        return UpdateCheckState.of(
-                UpdateTarget.PLUGIN,
-                lastCheckTime,
-                PluginSettingsStore.getStringSet(LAST_PLUGIN_UPDATE_NOTIFIED_KEY)
-        );
-    }
-
     private List<PluginUpdateCandidate> filterUnseenCandidates(List<PluginUpdateCandidate> candidates) {
         if (candidates == null || candidates.isEmpty()) {
             return List.of();
         }
-        UpdateCheckState state = getCheckState(getLastCheckTime());
         return candidates.stream()
-                .filter(candidate -> !state.wasNotified(toMarker(candidate)))
+                .filter(candidate -> updateCenter.shouldNotify(UpdateTarget.PLUGIN, toMarker(candidate), false))
                 .toList();
     }
 
@@ -178,11 +147,9 @@ public class PluginUpdateManager {
         if (candidates == null || candidates.isEmpty()) {
             return;
         }
-        Set<String> notified = new LinkedHashSet<>(PluginSettingsStore.getStringSet(LAST_PLUGIN_UPDATE_NOTIFIED_KEY));
         for (PluginUpdateCandidate candidate : candidates) {
-            notified.add(toMarker(candidate));
+            updateCenter.rememberNotifiedMarker(UpdateTarget.PLUGIN, toMarker(candidate));
         }
-        PluginSettingsStore.putStringSet(LAST_PLUGIN_UPDATE_NOTIFIED_KEY, notified);
     }
 
     private String toMarker(PluginUpdateCandidate candidate) {

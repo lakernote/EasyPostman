@@ -31,6 +31,10 @@ public class PerformanceTreeClipboardSupport {
         return !deletableTopLevelNodes(selectedPaths).isEmpty();
     }
 
+    public int deletableNodeCount(TreePath[] selectedPaths) {
+        return deletableTopLevelNodes(selectedPaths).size();
+    }
+
     public List<DefaultMutableTreeNode> copyNodes(TreePath[] selectedPaths) {
         List<DefaultMutableTreeNode> nodes = copyableTopLevelNodes(selectedPaths);
         List<DefaultMutableTreeNode> copies = new ArrayList<>(nodes.size());

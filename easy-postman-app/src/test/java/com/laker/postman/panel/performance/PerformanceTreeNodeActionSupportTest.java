@@ -37,12 +37,53 @@ public class PerformanceTreeNodeActionSupportTest {
         TreeFixture fixture = new TreeFixture();
         fixture.currentRequest.set(fixture.request);
         fixture.tree.setSelectionPath(new TreePath(fixture.request.getPath()));
+        fixture.actionSupport.setDeleteConfirmationAction(count -> true);
 
         fixture.actionSupport.createDeleteAction().actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "delete"));
 
         assertEquals(fixture.threadGroup.getChildCount(), 0);
         assertEquals(fixture.currentRequest.get(), null);
         assertEquals(fixture.saveCount.get(), 1);
+    }
+
+    @Test
+    public void deleteActionShouldNotDeleteWhenConfirmationRejected() {
+        TreeFixture fixture = new TreeFixture();
+        fixture.tree.setSelectionPath(new TreePath(fixture.request.getPath()));
+        AtomicInteger confirmCount = new AtomicInteger();
+        fixture.actionSupport.setDeleteConfirmationAction(count -> {
+            confirmCount.set(count);
+            return false;
+        });
+
+        fixture.actionSupport.createDeleteAction().actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "delete"));
+
+        assertEquals(confirmCount.get(), 1);
+        assertEquals(fixture.threadGroup.getChildCount(), 1);
+        assertEquals(fixture.saveCount.get(), 0);
+    }
+
+    @Test
+    public void deleteActionShouldConfirmOnlyTopLevelDeletableNodes() {
+        TreeFixture fixture = new TreeFixture();
+        DefaultMutableTreeNode timer = new DefaultMutableTreeNode(new PerformanceTreeNode("timer", NodeType.TIMER));
+        fixture.request.add(timer);
+        fixture.tree.setSelectionPaths(new TreePath[]{
+                new TreePath(fixture.root.getPath()),
+                new TreePath(fixture.request.getPath()),
+                new TreePath(timer.getPath())
+        });
+        AtomicInteger confirmCount = new AtomicInteger();
+        fixture.actionSupport.setDeleteConfirmationAction(count -> {
+            confirmCount.set(count);
+            return false;
+        });
+
+        fixture.actionSupport.createDeleteAction().actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "delete"));
+
+        assertEquals(confirmCount.get(), 1);
+        assertEquals(fixture.threadGroup.getChildCount(), 1);
+        assertEquals(fixture.saveCount.get(), 0);
     }
 
     @Test

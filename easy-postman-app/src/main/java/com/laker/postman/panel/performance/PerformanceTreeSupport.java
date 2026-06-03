@@ -110,6 +110,10 @@ final class PerformanceTreeSupport {
         return clipboardSupport.hasDeletableNodes(selectedPaths);
     }
 
+    int deletableNodeCount(TreePath[] selectedPaths) {
+        return clipboardSupport.deletableNodeCount(selectedPaths);
+    }
+
     List<DefaultMutableTreeNode> copyNodes(TreePath[] selectedPaths) {
         return clipboardSupport.copyNodes(selectedPaths);
     }

@@ -28,6 +28,7 @@ import java.awt.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
 @RequiredArgsConstructor
@@ -47,9 +48,16 @@ final class PerformanceTreeNodeActionSupport {
     private final String requestCard;
 
     private List<DefaultMutableTreeNode> copiedNodes = List.of();
+    private IntPredicate deleteConfirmationAction = this::confirmDelete;
 
     List<DefaultMutableTreeNode> copiedNodes() {
         return copiedNodes;
+    }
+
+    void setDeleteConfirmationAction(IntPredicate deleteConfirmationAction) {
+        this.deleteConfirmationAction = deleteConfirmationAction == null
+                ? this::confirmDelete
+                : deleteConfirmationAction;
     }
 
     void addThreadGroupNode() {
@@ -147,6 +155,10 @@ final class PerformanceTreeNodeActionSupport {
                 if (selectedPaths == null || selectedPaths.length == 0) {
                     return;
                 }
+                int deletableCount = treeSupport.deletableNodeCount(selectedPaths);
+                if (deletableCount == 0 || !deleteConfirmationAction.test(deletableCount)) {
+                    return;
+                }
 
                 DefaultMutableTreeNode currentRequestNode = currentRequestNodeSupplier.get();
                 List<DefaultMutableTreeNode> deletedNodes = treeSupport.deleteNodes(selectedPaths);
@@ -161,6 +173,20 @@ final class PerformanceTreeNodeActionSupport {
                 saveConfigAction.run();
             }
         };
+    }
+
+    private boolean confirmDelete(int count) {
+        String message = count == 1
+                ? I18nUtil.getMessage(MessageKeys.PERFORMANCE_DELETE_CONFIRM)
+                : I18nUtil.getMessage(MessageKeys.PERFORMANCE_DELETE_BATCH_CONFIRM, count);
+        int result = JOptionPane.showConfirmDialog(
+                parentComponent,
+                message,
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_DELETE_CONFIRM_TITLE),
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+        );
+        return result == JOptionPane.YES_OPTION;
     }
 
     Action createCopyAction() {

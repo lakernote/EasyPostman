@@ -263,6 +263,7 @@ final class PerformanceTreeInteractionSupport {
         treeInputMap.put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F2, 0), "renamePerformanceNode");
         treeActionMap.put("renamePerformanceNode", renameAction);
         treeInputMap.put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_DELETE, 0), "deletePerformanceNode");
+        treeInputMap.put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_BACK_SPACE, 0), "deletePerformanceNode");
         treeActionMap.put("deletePerformanceNode", deleteAction);
         treeInputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_C, shortcutMask), "copyPerformanceNode");
         treeActionMap.put("copyPerformanceNode", copyAction);

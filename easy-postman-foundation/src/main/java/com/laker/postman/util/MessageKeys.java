@@ -770,6 +770,9 @@ public final class MessageKeys {
     public static final String PERFORMANCE_EXTRACTOR_PLACEHOLDER_DEFAULT = "performance.extractor.placeholder.default";
     public static final String PERFORMANCE_MENU_RENAME = "performance.menu.rename";
     public static final String PERFORMANCE_MENU_DELETE = "performance.menu.delete";
+    public static final String PERFORMANCE_DELETE_CONFIRM = "performance.delete.confirm";
+    public static final String PERFORMANCE_DELETE_BATCH_CONFIRM = "performance.delete.batch_confirm";
+    public static final String PERFORMANCE_DELETE_CONFIRM_TITLE = "performance.delete.confirm_title";
     public static final String PERFORMANCE_MENU_ENABLE = "performance.menu.enable";
     public static final String PERFORMANCE_MENU_DISABLE = "performance.menu.disable";
     public static final String PERFORMANCE_MENU_COPY = "performance.menu.copy";

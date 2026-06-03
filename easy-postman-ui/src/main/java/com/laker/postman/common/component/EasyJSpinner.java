@@ -5,6 +5,7 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
+import java.text.DecimalFormat;
 import java.text.ParseException;
 
 /**
@@ -53,8 +54,24 @@ public class EasyJSpinner extends JSpinner {
         this.debounceTimer = new Timer(DEBOUNCE_DELAY, e -> commitValue());
         this.debounceTimer.setRepeats(false);
 
+        // 配置参数输入保持原始整数显示，避免默认格式化成 2,000。
+        initNumberFormat();
+
         // 初始化自动提交功能
         initAutoCommit();
+    }
+
+    private void initNumberFormat() {
+        JComponent editor = getEditor();
+        if (!(editor instanceof NumberEditor numberEditor)) {
+            return;
+        }
+
+        DecimalFormat format = numberEditor.getFormat();
+        format.setGroupingUsed(false);
+
+        JFormattedTextField textField = numberEditor.getTextField();
+        textField.setValue(getValue());
     }
 
     /**

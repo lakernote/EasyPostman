@@ -10,7 +10,6 @@ import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.axis.DateAxis;
-import org.jfree.chart.axis.DateTickUnitType;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.Marker;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
@@ -34,7 +33,6 @@ import java.util.ResourceBundle;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
@@ -174,7 +172,7 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
     }
 
     @Test
-    public void shouldMarkRunEndOnAllTrendChartsWhenTerminalIdleAppended() {
+    public void shouldNotMarkRunEndOnTrendChartsWhenTerminalIdleAppended() {
         PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
         panel.clearTrendDataset();
         long base = System.currentTimeMillis();
@@ -183,22 +181,26 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
         panel.addOrUpdate(new Millisecond(new Date(base + 1_000)), PerformanceTrendSnapshot.terminalIdle());
 
         for (ChartPanel chartPanel : findAll(panel, ChartPanel.class)) {
-            assertRunEndMarkerCount(chartPanel, 1);
+            assertNoRunEndMarkers(chartPanel);
         }
     }
 
     @Test
-    public void clearTrendDatasetShouldClearRunEndMarkers() {
+    public void clearTrendDatasetShouldKeepRunEndMarkersAbsent() {
         PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
         panel.clearTrendDataset();
         long base = System.currentTimeMillis();
 
         panel.addOrUpdate(new Millisecond(new Date(base)), snapshotWithAllProtocolMetrics());
         panel.addOrUpdate(new Millisecond(new Date(base + 1_000)), PerformanceTrendSnapshot.terminalIdle());
+        for (ChartPanel chartPanel : findAll(panel, ChartPanel.class)) {
+            assertNoRunEndMarkers(chartPanel);
+        }
+
         panel.clearTrendDataset();
 
         for (ChartPanel chartPanel : findAll(panel, ChartPanel.class)) {
-            assertRunEndMarkerCount(chartPanel, 0);
+            assertNoRunEndMarkers(chartPanel);
         }
     }
 
@@ -228,7 +230,7 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
     }
 
     @Test
-    public void shouldKeepMinimumVisibleDomainWindowForVeryShortRuns() throws Exception {
+    public void shouldUseActualVisibleDomainWindowForVeryShortRuns() throws Exception {
         PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
         panel.clearTrendDataset();
         TimeSeries activeUsers = getTimeSeries(panel, "httpVirtualUsersSeries");
@@ -242,9 +244,9 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
                 .getXYPlot()
                 .getDomainAxis();
 
-        assertTrue(domainAxis.getUpperBound() - domainAxis.getLowerBound() >= 10_000);
-        assertEquals(domainAxis.getTickUnit().getUnitType(), DateTickUnitType.SECOND);
-        assertEquals(domainAxis.getTickUnit().getMultiple(), 1);
+        assertEquals(domainAxis.getLowerBound(), base, 0.1);
+        assertTrue(domainAxis.getUpperBound() > base + 500);
+        assertTrue(domainAxis.getUpperBound() - domainAxis.getLowerBound() < 10_000);
     }
 
     @Test
@@ -547,14 +549,13 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
         field.set(null, bundle);
     }
 
-    private static void assertRunEndMarkerCount(ChartPanel chartPanel, int expectedCount) {
+    private static void assertNoRunEndMarkers(ChartPanel chartPanel) {
         Collection<Marker> markers = chartPanel.getChart().getXYPlot().getDomainMarkers(Layer.FOREGROUND);
         String title = chartPanel.getChart().getTitle().getText();
-        if (expectedCount == 0 && markers == null) {
+        if (markers == null) {
             return;
         }
-        assertNotNull(markers, title);
-        assertEquals(markers.size(), expectedCount, title);
+        assertTrue(markers.isEmpty(), title);
     }
 
     private static void clearSingletonInstance(Class<?> clazz) throws Exception {

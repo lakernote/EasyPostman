@@ -40,6 +40,16 @@ class PluginRuntimePaths {
         return dataRoot().resolve("user_settings.json");
     }
 
+    static Path pluginDataDir(String pluginId) {
+        Path pluginDataDir = dataRoot().resolve("plugins").resolve("data").resolve(sanitizePluginId(pluginId));
+        try {
+            Files.createDirectories(pluginDataDir);
+        } catch (Exception ignored) {
+            // callers will surface actual failures
+        }
+        return pluginDataDir;
+    }
+
     static void resetForTests() {
         cachedDataPath = null;
     }
@@ -72,5 +82,12 @@ class PluginRuntimePaths {
 
     private static boolean isPortableMode() {
         return AppRuntimeLayout.isPortableMode(PluginRuntimePaths.class);
+    }
+
+    private static String sanitizePluginId(String pluginId) {
+        if (pluginId == null || pluginId.isBlank()) {
+            return "unknown";
+        }
+        return pluginId.trim().replaceAll("[^A-Za-z0-9._-]", "_");
     }
 }

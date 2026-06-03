@@ -18,6 +18,13 @@ public interface PluginContext {
     PluginDescriptor descriptor();
 
     /**
+     * 当前插件的私有持久化空间。
+     */
+    default PluginStorage storage() {
+        return PluginStorage.noop();
+    }
+
+    /**
      * 注册脚本 API。
      * 例如插件可以把自己暴露成 pm.plugin("redis") / pm.plugin("kafka")。
      */
@@ -52,6 +59,13 @@ public interface PluginContext {
      */
     default void registerMenuContribution(PluginMenuContribution contribution) {
         // Runtime implementations can expose this through host menus.
+    }
+
+    /**
+     * 注册插件更新元数据扩展。
+     */
+    default void registerUpdateMetadataContribution(PluginUpdateMetadataContribution contribution) {
+        // Runtime implementations can merge this into plugin update checks and the plugin market.
     }
 
     /**

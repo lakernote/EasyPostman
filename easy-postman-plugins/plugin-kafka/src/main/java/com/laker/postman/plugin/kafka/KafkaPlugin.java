@@ -21,7 +21,7 @@ public class KafkaPlugin implements EasyPostmanPlugin {
                 "icons/kafka.svg",
                 MessageKeys.TOOLBOX_GROUP_DATABASE,
                 t(MessageKeys.TOOLBOX_GROUP_DATABASE),
-                KafkaPanel::new,
+                () -> new KafkaPanel(context.storage()),
                 KafkaPlugin.class
         );
         context.registerScriptCompletionContributor(sink -> {

@@ -1,6 +1,7 @@
 package com.laker.postman.plugin.api;
 
 import javax.swing.*;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -98,6 +99,20 @@ public final class PluginContributionSupport {
                 action,
                 titleBundleName,
                 ownerClass == null ? null : ownerClass.getClassLoader()
+        ));
+    }
+
+    public static void registerUpdateMetadataContribution(PluginContext context,
+                                                          String id,
+                                                          int order,
+                                                          Supplier<List<PluginUpdateMetadata>> metadataSupplier) {
+        if (context == null) {
+            return;
+        }
+        context.registerUpdateMetadataContribution(new PluginUpdateMetadataContribution(
+                id,
+                order,
+                metadataSupplier
         ));
     }
 

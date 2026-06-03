@@ -22,7 +22,10 @@ public final class PluginUpdateChecker {
     public List<PluginUpdateCandidate> checkForUpdates() throws Exception {
         String catalogUrl = resolveCatalogUrl();
         List<PluginCatalogEntry> catalogEntries = loadCatalogWithFallback(catalogUrl);
-        return findUpdateCandidates(PluginManagementService.getInstalledPlugins(), catalogEntries);
+        return findUpdateCandidates(
+                PluginManagementService.getInstalledPlugins(),
+                PluginUpdateMetadataResolver.mergeWithContributedMetadata(catalogEntries)
+        );
     }
 
     String resolveCatalogUrl() {
@@ -47,9 +50,11 @@ public final class PluginUpdateChecker {
             return List.of();
         }
 
+        List<PluginCatalogEntry> selectedCatalogEntries =
+                PluginManagementService.selectCatalogEntriesForCurrentHost(catalogEntries);
         Map<String, PluginFileInfo> installedMap = buildInstalledPluginMap(installedPlugins);
         List<PluginUpdateCandidate> candidates = new ArrayList<>();
-        for (PluginCatalogEntry entry : catalogEntries) {
+        for (PluginCatalogEntry entry : selectedCatalogEntries) {
             PluginFileInfo installed = installedMap.get(entry.id());
             if (installed == null || PluginManagementService.isPluginPendingUninstall(installed.descriptor().id())) {
                 continue;

@@ -24,7 +24,7 @@ public class RedisPlugin implements EasyPostmanPlugin {
                 "icons/redis.svg",
                 TOOLBOX_GROUP_DATABASE,
                 t(TOOLBOX_GROUP_DATABASE),
-                RedisPanel::new,
+                () -> new RedisPanel(context.storage()),
                 RedisPlugin.class
         );
         context.registerScriptCompletionContributor(sink -> {

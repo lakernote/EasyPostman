@@ -3,7 +3,9 @@ package com.laker.postman.plugin.runtime;
 import com.laker.postman.plugin.api.EasyPostmanPlugin;
 import com.laker.postman.plugin.api.PluginContext;
 import com.laker.postman.plugin.api.PluginDescriptor;
+import com.laker.postman.plugin.api.PluginStorage;
 import com.laker.postman.util.I18nBundleRegistry;
+import lombok.RequiredArgsConstructor;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -41,7 +43,7 @@ class PluginLoader {
             if (!(instance instanceof EasyPostmanPlugin plugin)) {
                 throw new IllegalStateException("Plugin entry class does not implement EasyPostmanPlugin: " + descriptor.entryClass());
             }
-            plugin.onLoad(new PluginContextImpl(descriptor, registry, classLoader));
+            plugin.onLoad(new PluginContextImpl(descriptor, registry, classLoader, PluginFileStorage.forPlugin(descriptor.id())));
             loadedPlugins.add(plugin);
             pluginClassLoaders.add(classLoader);
             loadedPluginFiles.add(new PluginFileInfo(descriptor, jarPath, true, true, true));
@@ -109,20 +111,21 @@ class PluginLoader {
         }
     }
 
+    @RequiredArgsConstructor
     private static final class PluginContextImpl implements PluginContext {
         private final PluginDescriptor descriptor;
         private final PluginRegistry registry;
         private final ClassLoader classLoader;
-
-        private PluginContextImpl(PluginDescriptor descriptor, PluginRegistry registry, ClassLoader classLoader) {
-            this.descriptor = descriptor;
-            this.registry = registry;
-            this.classLoader = classLoader;
-        }
+        private final PluginStorage storage;
 
         @Override
         public PluginDescriptor descriptor() {
             return descriptor;
+        }
+
+        @Override
+        public PluginStorage storage() {
+            return storage;
         }
 
         @Override
@@ -159,6 +162,12 @@ class PluginLoader {
                     descriptor.id(),
                     contribution == null ? null : contribution.withTitleClassLoader(classLoader)
             );
+        }
+
+        @Override
+        public void registerUpdateMetadataContribution(
+                com.laker.postman.plugin.api.PluginUpdateMetadataContribution contribution) {
+            registry.registerUpdateMetadataContribution(descriptor.id(), contribution);
         }
 
         @Override

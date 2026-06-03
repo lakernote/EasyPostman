@@ -11,6 +11,7 @@ import com.laker.postman.plugin.manager.market.PluginCatalogEntry;
 import com.laker.postman.plugin.runtime.PluginCompatibility;
 import com.laker.postman.plugin.runtime.PluginFileInfo;
 import com.laker.postman.service.update.plugin.PluginCatalogPreferenceResolver;
+import com.laker.postman.service.update.plugin.PluginUpdateMetadataResolver;
 import com.laker.postman.platform.update.version.VersionComparator;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -633,7 +634,12 @@ public class PluginManagerDialog extends JDialog {
             @Override
             protected CatalogLoadResult doInBackground() throws Exception {
                 try {
-                    return new CatalogLoadResult(PluginManagementService.loadCatalog(catalogUrl), false);
+                    return new CatalogLoadResult(
+                            PluginUpdateMetadataResolver.mergeWithContributedMetadata(
+                                    PluginManagementService.loadCatalog(catalogUrl)
+                            ),
+                            false
+                    );
                 } catch (Exception remoteError) {
                     String source = PluginManagementService.detectOfficialCatalogSource(catalogUrl);
                     if (source.isBlank()) {
@@ -642,7 +648,12 @@ public class PluginManagerDialog extends JDialog {
                     log.warn("Failed to load official remote plugin catalog, falling back to bundled catalog: {}",
                             catalogUrl, remoteError);
                     try {
-                        return new CatalogLoadResult(PluginManagementService.loadBundledOfficialCatalog(source), true);
+                        return new CatalogLoadResult(
+                                PluginUpdateMetadataResolver.mergeWithContributedMetadata(
+                                        PluginManagementService.loadBundledOfficialCatalog(source)
+                                ),
+                                true
+                        );
                     } catch (Exception fallbackError) {
                         remoteError.addSuppressed(fallbackError);
                         throw remoteError;

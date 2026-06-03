@@ -3,7 +3,10 @@ package com.laker.postman.panel.topmenu.setting;
 import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.component.setting.SettingsCheckBoxRow;
 import com.laker.postman.common.component.setting.SettingsFieldRow;
+import com.laker.postman.common.component.setting.SettingsInputStyle;
 import com.laker.postman.common.component.setting.SettingsSectionPanel;
+import com.laker.postman.common.component.setting.SettingsTextFieldValidator;
+import com.laker.postman.common.component.setting.SettingsWarningBar;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -11,8 +14,6 @@ import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
 
 import javax.swing.*;
-import javax.swing.border.AbstractBorder;
-import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -31,15 +32,13 @@ public abstract class ModernSettingsPanel extends JPanel {
     @Getter
     protected JButton cancelBtn;
     protected JButton applyBtn;
-    protected final Map<JTextField, Predicate<String>> validators = new HashMap<>();
-    private final Map<JTextField, String> errorMessages = new HashMap<>();
+    protected final Map<JTextField, SettingsTextFieldValidator> validators = new HashMap<>();
     protected final Map<JComponent, Object> originalValues = new HashMap<>();
     private JScrollPane contentScrollPane;
 
     // 状态管理
     protected boolean hasUnsavedChanges = false;
     protected JPanel warningPanel;
-    protected JLabel warningLabel;
     private boolean initialized;
 
     /**
@@ -138,28 +137,6 @@ public abstract class ModernSettingsPanel extends JPanel {
      */
     protected Color getShadowColor(int alpha) {
         return ModernColors.getShadowColor(alpha);
-    }
-
-    /**
-     * 获取主题适配的警告背景色
-     */
-    protected Color getWarningBackgroundColor() {
-        return ModernColors.getWarningBackgroundColor();
-    }
-
-    /**
-     * 获取主题适配的警告边框颜色
-     */
-    protected Color getWarningBorderColor() {
-        return ModernColors.getWarningBorderColor();
-    }
-
-    /**
-     * 获取状态修改图标颜色 - 主题适配
-     * 使用警告色表示有未保存的修改
-     */
-    protected Color getStateModifiedColor() {
-        return ModernColors.getWarning();
     }
 
     protected ModernSettingsPanel() {
@@ -289,45 +266,7 @@ public abstract class ModernSettingsPanel extends JPanel {
      * 样式化输入组件
      */
     private void styleInputComponent(JComponent component) {
-        component.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        component.setBackground(getInputBackgroundColor());
-        component.setForeground(getTextPrimaryColor());
-
-        if (component instanceof JTextField field) {
-            field.setBorder(new CompoundBorder(
-                    new RoundedLineBorder(getBorderMediumColor(), 1, 8),
-                    new EmptyBorder(8, 14, 8, 14)
-            ));
-
-            // 焦点效果
-            field.addFocusListener(new FocusAdapter() {
-                @Override
-                public void focusGained(FocusEvent e) {
-                    // 检查是否有验证错误
-                    if (!hasValidationError(field)) {
-                        field.setBorder(new CompoundBorder(
-                                new RoundedLineBorder(ModernColors.getPrimary(), 2, 8),
-                                new EmptyBorder(7, 13, 7, 13)
-                        ));
-                    }
-                }
-
-                @Override
-                public void focusLost(FocusEvent e) {
-                    // 检查是否有验证错误
-                    if (!hasValidationError(field)) {
-                        field.setBorder(new CompoundBorder(
-                                new RoundedLineBorder(getBorderMediumColor(), 1, 8),
-                                new EmptyBorder(8, 14, 8, 14)
-                        ));
-                    }
-                }
-            });
-        } else if (component instanceof JComboBox comboBox) {
-            comboBox.setBackground(getInputBackgroundColor());
-            comboBox.setForeground(getTextPrimaryColor());
-            comboBox.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        }
+        SettingsInputStyle.apply(component);
     }
 
     /**
@@ -382,62 +321,16 @@ public abstract class ModernSettingsPanel extends JPanel {
      * 设置验证器
      */
     protected void setupValidator(JTextField field, Predicate<String> validator, String errorMessage) {
-        validators.put(field, validator);
-        errorMessages.put(field, errorMessage);
-
-        field.getDocument().addDocumentListener(new DocumentListener() {
-            @Override
-            public void insertUpdate(DocumentEvent e) {
-                validateField();
-            }
-
-            @Override
-            public void removeUpdate(DocumentEvent e) {
-                validateField();
-            }
-
-            @Override
-            public void changedUpdate(DocumentEvent e) {
-                validateField();
-            }
-
-            private void validateField() {
-                String text = field.getText().trim();
-                boolean valid = text.isEmpty() || validator.test(text);
-
-                if (valid) {
-                    // 根据焦点状态设置不同的边框
-                    if (field.hasFocus()) {
-                        field.setBorder(new CompoundBorder(
-                                new RoundedLineBorder(ModernColors.getPrimary(), 2, 8),
-                                new EmptyBorder(7, 13, 7, 13)
-                        ));
-                    } else {
-                        field.setBorder(new CompoundBorder(
-                                new RoundedLineBorder(getBorderMediumColor(), 1, 8),
-                                new EmptyBorder(8, 14, 8, 14)
-                        ));
-                    }
-                    field.setToolTipText(null);
-                } else {
-                    field.setBorder(new CompoundBorder(
-                            new RoundedLineBorder(ModernColors.getError(), 2, 8),
-                            new EmptyBorder(7, 13, 7, 13)
-                    ));
-                    field.setToolTipText(errorMessage);
-                }
-            }
-        });
+        validators.put(field, SettingsTextFieldValidator.install(field, validator, errorMessage));
     }
 
     /**
      * 验证所有字段
      */
     protected boolean validateAllFields() {
-        for (Map.Entry<JTextField, Predicate<String>> entry : validators.entrySet()) {
+        for (Map.Entry<JTextField, SettingsTextFieldValidator> entry : validators.entrySet()) {
             JTextField field = entry.getKey();
-            String text = field.getText().trim();
-            if (!text.isEmpty() && !entry.getValue().test(text)) {
+            if (!entry.getValue().validateNow()) {
                 field.requestFocus();
                 return false;
             }
@@ -497,43 +390,6 @@ public abstract class ModernSettingsPanel extends JPanel {
         });
     }
 
-    /**
-     * 圆角线框边框
-     */
-    private static class RoundedLineBorder extends AbstractBorder {
-        private final Color color;
-        private final int thickness;
-        private final int radius;
-
-        public RoundedLineBorder(Color color, int thickness, int radius) {
-            this.color = color;
-            this.thickness = thickness;
-            this.radius = radius;
-        }
-
-        @Override
-        public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setColor(color);
-            g2.setStroke(new BasicStroke(thickness));
-            g2.drawRoundRect(x + thickness / 2, y + thickness / 2,
-                    width - thickness, height - thickness, radius, radius);
-            g2.dispose();
-        }
-
-        @Override
-        public Insets getBorderInsets(Component c) {
-            return new Insets(thickness, thickness, thickness, thickness);
-        }
-
-        @Override
-        public Insets getBorderInsets(Component c, Insets insets) {
-            insets.left = insets.top = insets.right = insets.bottom = thickness;
-            return insets;
-        }
-    }
-
     // 工具方法
     protected boolean isInteger(String s) {
         try {
@@ -552,12 +408,11 @@ public abstract class ModernSettingsPanel extends JPanel {
      * 检查字段是否有验证错误
      */
     protected boolean hasValidationError(JTextField field) {
-        Predicate<String> validator = validators.get(field);
+        SettingsTextFieldValidator validator = validators.get(field);
         if (validator == null) {
             return false;
         }
-        String text = field.getText().trim();
-        return !text.isEmpty() && !validator.test(text);
+        return validator.hasValidationError();
     }
 
     // ==================== 状态管理方法 ====================
@@ -566,80 +421,17 @@ public abstract class ModernSettingsPanel extends JPanel {
      * 创建未保存更改警告面板
      */
     private JPanel createWarningPanel() {
-        JPanel panel = new JPanel(new BorderLayout(12, 0));
-        panel.setBackground(getWarningBackgroundColor());
-        panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, getWarningBorderColor()),
-                new EmptyBorder(12, 20, 12, 20)
-        ));
-
-        // 警告图标和文本
-        JLabel iconLabel = new JLabel("⚠");
-        iconLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
-        iconLabel.setForeground(getStateModifiedColor());
-
-        warningLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SETTINGS_UNSAVED_CHANGES_WARNING));
-        warningLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
-        warningLabel.setForeground(getTextPrimaryColor());
-
-        // 按钮面板
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        buttonPanel.setOpaque(false);
-
-        JButton discardBtn = createSmallButton(I18nUtil.getMessage(MessageKeys.SETTINGS_DISCARD_CHANGES));
-        discardBtn.addActionListener(e -> discardChanges());
-
-        JButton saveNowBtn = createSmallButton(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_NOW));
-        saveNowBtn.addActionListener(e -> {
-            if (saveBtn != null) {
-                saveBtn.doClick();
-            }
-        });
-
-        buttonPanel.add(discardBtn);
-        buttonPanel.add(saveNowBtn);
-
-        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        leftPanel.setOpaque(false);
-        leftPanel.add(iconLabel);
-        leftPanel.add(warningLabel);
-
-        panel.add(leftPanel, BorderLayout.WEST);
-        panel.add(buttonPanel, BorderLayout.EAST);
-
-        return panel;
-    }
-
-    /**
-     * 创建小型按钮
-     */
-    private JButton createSmallButton(String text) {
-        JButton button = new JButton(text);
-        button.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
-        button.setForeground(getTextPrimaryColor());
-        button.setBackground(getCardBackgroundColor());
-        button.setBorder(new CompoundBorder(
-                new RoundedLineBorder(getBorderMediumColor(), 1, 6),
-                new EmptyBorder(4, 12, 4, 12)
-        ));
-        button.setContentAreaFilled(false);
-        button.setFocusPainted(false);
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        button.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                button.setBackground(getHoverBackgroundColor());
-                button.setOpaque(true);
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                button.setOpaque(false);
-            }
-        });
-
-        return button;
+        return new SettingsWarningBar(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_UNSAVED_CHANGES_WARNING),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_DISCARD_CHANGES),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_NOW),
+                this::discardChanges,
+                () -> {
+                    if (saveBtn != null) {
+                        saveBtn.doClick();
+                    }
+                }
+        );
     }
 
     /**

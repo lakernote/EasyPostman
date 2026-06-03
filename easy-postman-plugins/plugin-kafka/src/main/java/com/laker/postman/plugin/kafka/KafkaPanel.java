@@ -1,6 +1,7 @@
 package com.laker.postman.plugin.kafka;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.laker.postman.plugin.api.PluginStorage;
 import com.laker.postman.plugin.kafka.connection.ui.KafkaConnectionPanel;
 import com.laker.postman.plugin.kafka.consumer.KafkaConsumeStartMode;
 import com.laker.postman.plugin.kafka.consumer.KafkaConsumedMessage;
@@ -50,7 +51,7 @@ public class KafkaPanel extends JPanel {
     private static final String CARD_CONNECT = "connect";
     private static final String CARD_DISCONNECT = "disconnect";
     private static final String TIMEOUT_MS = "3000";
-    private static final String USER_SETTING_KAFKA_BOOTSTRAP = "toolbox.kafka.bootstrapServers";
+    private static final String LEGACY_USER_SETTING_KAFKA_BOOTSTRAP = "toolbox.kafka.bootstrapServers";
 
     private KafkaConnectionPanel connectionPanel;
 
@@ -70,8 +71,16 @@ public class KafkaPanel extends JPanel {
      * 缓存 Producer 对应的配置签名，配置变更时重建
      */
     private volatile String cachedProducerConfigSignature;
+    private final KafkaConnectionProfileStore connectionProfileStore;
+    private final Map<String, KafkaConnectionProfile> connectionProfilesByName = new LinkedHashMap<>();
+    private boolean loadingConnectionProfiles;
 
     public KafkaPanel() {
+        this(PluginStorage.noop());
+    }
+
+    public KafkaPanel(PluginStorage storage) {
+        this.connectionProfileStore = new KafkaConnectionProfileStore(storage);
         initUI();
     }
 
@@ -80,11 +89,14 @@ public class KafkaPanel extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         connectionPanel = new KafkaConnectionPanel(this::loadTopics, this::doDisconnect);
+        connectionPanel.profileCombo.addActionListener(e -> applySelectedConnectionProfile());
+        connectionPanel.newProfileBtn.addActionListener(e -> createNewConnectionProfile());
+        connectionPanel.saveProfileBtn.addActionListener(e -> saveCurrentConnectionProfile(true));
+        connectionPanel.saveAsProfileBtn.addActionListener(e -> saveCurrentConnectionProfileAs());
+        connectionPanel.deleteProfileBtn.addActionListener(e -> deleteSelectedConnectionProfile());
         connectionPanel.securityProtocolCombo.addActionListener(e -> updateSecurityFieldsEnabledState());
-        String savedBootstrap = UserSettingsUtil.getString(USER_SETTING_KAFKA_BOOTSTRAP);
-        if (savedBootstrap != null && !savedBootstrap.isBlank()) {
-            connectionPanel.bootstrapField.setText(savedBootstrap);
-        }
+        registerConnectionProfileShortcuts(connectionPanel);
+        loadSavedConnectionProfiles(null);
         producerPanel = new KafkaProducerPanel(this::sendMessage);
         consumerPanel = new KafkaConsumerPanel(this::startConsuming, this::stopConsuming, this::clearConsumedMessages, this::updateDetailBySelection);
         consumerPanel.messageTablePanel.setViewDataChangedListener(this::updateDetailBySelection);
@@ -168,6 +180,252 @@ public class KafkaPanel extends JPanel {
         connectionPanel.saslMechanismCombo.setEnabled(saslEnabled);
         connectionPanel.usernameField.setEnabled(saslEnabled);
         connectionPanel.passwordField.setEnabled(saslEnabled);
+        connectionPanel.setOptionsVisible(true);
+    }
+
+    private void registerConnectionProfileShortcuts(JComponent component) {
+        KeyStroke saveKey = KeyStroke.getKeyStroke(
+                java.awt.event.KeyEvent.VK_S,
+                Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()
+        );
+        component.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT)
+                .put(saveKey, "saveKafkaConnectionProfile");
+        component.getActionMap().put("saveKafkaConnectionProfile", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                saveCurrentConnectionProfile(true);
+            }
+        });
+    }
+
+    private void loadSavedConnectionProfiles(String preferredProfileId) {
+        loadingConnectionProfiles = true;
+        connectionProfilesByName.clear();
+        DefaultComboBoxModel<String> profileModel = new DefaultComboBoxModel<>();
+        List<KafkaConnectionProfile> profiles = connectionProfileStore.loadProfiles();
+        for (KafkaConnectionProfile profile : profiles) {
+            connectionProfilesByName.put(profile.getName(), profile);
+            profileModel.addElement(profile.getName());
+        }
+        connectionPanel.profileCombo.setModel(profileModel);
+        connectionPanel.profileCombo.setEditable(false);
+        loadingConnectionProfiles = false;
+
+        KafkaConnectionProfile selectedProfile = selectProfile(profiles, preferredProfileId);
+        updateDeleteProfileButton(selectedProfile);
+        if (selectedProfile != null) {
+            connectionPanel.profileCombo.setSelectedItem(selectedProfile.getName());
+            applyConnectionProfile(selectedProfile);
+            return;
+        }
+        String legacyBootstrap = UserSettingsUtil.getString(LEGACY_USER_SETTING_KAFKA_BOOTSTRAP);
+        if (legacyBootstrap != null && !legacyBootstrap.isBlank()) {
+            connectionPanel.bootstrapField.setText(legacyBootstrap);
+        }
+        connectionPanel.setOptionsVisible(true);
+    }
+
+    private KafkaConnectionProfile selectProfile(List<KafkaConnectionProfile> profiles, String preferredProfileId) {
+        if (profiles == null || profiles.isEmpty()) {
+            return null;
+        }
+        String preferredId = defaultString(preferredProfileId).trim();
+        if (!preferredId.isBlank()) {
+            for (KafkaConnectionProfile profile : profiles) {
+                if (preferredId.equals(profile.getId())) {
+                    return profile;
+                }
+            }
+        }
+        return connectionProfileStore.loadActiveProfile().orElse(profiles.get(0));
+    }
+
+    private void applySelectedConnectionProfile() {
+        if (loadingConnectionProfiles) {
+            return;
+        }
+        KafkaConnectionProfile profile = connectionProfilesByName.get(getProfileNameText());
+        if (profile != null) {
+            applyConnectionProfile(profile);
+        }
+        updateDeleteProfileButton(profile);
+    }
+
+    private void applyConnectionProfile(KafkaConnectionProfile profile) {
+        connectionPanel.bootstrapField.setText(defaultIfBlank(profile.getBootstrapServers(), "localhost:9092"));
+        connectionPanel.clientIdField.setText(defaultIfBlank(profile.getClientId(), "easy-postman-toolbox"));
+        selectComboItem(connectionPanel.securityProtocolCombo, defaultIfBlank(profile.getSecurityProtocol(), "PLAINTEXT"));
+        selectComboItem(connectionPanel.saslMechanismCombo, defaultIfBlank(profile.getSaslMechanism(), "PLAIN"));
+        connectionPanel.usernameField.setText(defaultString(profile.getUsername()));
+        connectionPanel.passwordField.setText(defaultString(profile.getPassword()));
+        updateSecurityFieldsEnabledState();
+        connectionPanel.setOptionsVisible(true);
+    }
+
+    private void createNewConnectionProfile() {
+        KafkaConnectionProfile defaultProfile = KafkaConnectionProfileStore.defaultProfile();
+        Optional<String> profileName = promptNewProfileName(uniqueProfileName(t(MessageKeys.TOOLBOX_KAFKA_PROFILE_NEW_DEFAULT)));
+        if (profileName.isEmpty()) {
+            return;
+        }
+        KafkaConnectionProfile newProfile = KafkaConnectionProfile.builder()
+                .id("kafka-" + UUID.randomUUID())
+                .name(profileName.get())
+                .bootstrapServers(defaultProfile.getBootstrapServers())
+                .clientId(defaultProfile.getClientId())
+                .securityProtocol(defaultProfile.getSecurityProtocol())
+                .saslMechanism(defaultProfile.getSaslMechanism())
+                .username(defaultString(defaultProfile.getUsername()))
+                .password(defaultString(defaultProfile.getPassword()))
+                .build();
+        connectionProfileStore.upsertProfile(newProfile);
+        loadSavedConnectionProfiles(newProfile.getId());
+        NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_KAFKA_PROFILE_SAVED, newProfile.getName()));
+        connectionPanel.bootstrapField.requestFocusInWindow();
+    }
+
+    private KafkaConnectionProfile currentConnectionProfile() {
+        String bootstrapServers = connectionPanel.bootstrapField.getText().trim();
+        String profileName = defaultProfileName(bootstrapServers);
+        KafkaConnectionProfile existingProfile = connectionProfilesByName.get(profileName);
+        String profileId = existingProfile == null ? "kafka-" + UUID.randomUUID() : existingProfile.getId();
+        return currentConnectionProfileWithName(profileName, profileId);
+    }
+
+    private void saveCurrentConnectionProfile(boolean notify) {
+        String bootstrapServers = connectionPanel.bootstrapField.getText().trim();
+        if (bootstrapServers.isBlank()) {
+            NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_KAFKA_ERR_HOST_REQUIRED));
+            return;
+        }
+        KafkaConnectionProfile profile = currentConnectionProfile();
+        connectionProfileStore.upsertProfile(profile);
+        loadSavedConnectionProfiles(profile.getId());
+        if (notify) {
+            NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_KAFKA_PROFILE_SAVED, profile.getName()));
+        }
+    }
+
+    private void saveCurrentConnectionProfileAs() {
+        String bootstrapServers = connectionPanel.bootstrapField.getText().trim();
+        if (bootstrapServers.isBlank()) {
+            NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_KAFKA_ERR_HOST_REQUIRED));
+            return;
+        }
+        Optional<String> profileName = promptNewProfileName(uniqueProfileName(connectionProfileNameSuggestion(bootstrapServers)));
+        if (profileName.isEmpty()) {
+            return;
+        }
+        KafkaConnectionProfile profile = currentConnectionProfileWithName(profileName.get(), "kafka-" + UUID.randomUUID());
+        connectionProfileStore.upsertProfile(profile);
+        loadSavedConnectionProfiles(profile.getId());
+        NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_KAFKA_PROFILE_SAVED, profile.getName()));
+    }
+
+    private void deleteSelectedConnectionProfile() {
+        KafkaConnectionProfile profile = connectionProfilesByName.get(getProfileNameText());
+        if (profile == null) {
+            NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_KAFKA_PROFILE_NOT_SELECTED));
+            return;
+        }
+        if (isDefaultProfile(profile)) {
+            updateDeleteProfileButton(profile);
+            NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_KAFKA_PROFILE_DEFAULT_NOT_DELETABLE));
+            return;
+        }
+        int option = JOptionPane.showConfirmDialog(
+                this,
+                t(MessageKeys.TOOLBOX_KAFKA_PROFILE_DELETE_CONFIRM, profile.getName()),
+                t(MessageKeys.TOOLBOX_KAFKA_PROFILE_DELETE_CONFIRM_TITLE),
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+        );
+        if (option != JOptionPane.YES_OPTION) {
+            return;
+        }
+        connectionProfileStore.deleteProfile(profile.getId());
+        loadSavedConnectionProfiles(null);
+        NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_KAFKA_PROFILE_DELETED, profile.getName()));
+    }
+
+    private String getProfileNameText() {
+        Object editor = connectionPanel.profileCombo.getEditor().getEditorComponent();
+        if (editor instanceof JTextField textField) {
+            return textField.getText().trim();
+        }
+        Object item = connectionPanel.profileCombo.getSelectedItem();
+        return item == null ? "" : item.toString().trim();
+    }
+
+    private Optional<String> promptNewProfileName(String initialName) {
+        Object input = JOptionPane.showInputDialog(
+                this,
+                t(MessageKeys.TOOLBOX_KAFKA_PROFILE_SAVE_AS_PROMPT),
+                t(MessageKeys.TOOLBOX_KAFKA_PROFILE_SAVE_AS_TITLE),
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                null,
+                initialName
+        );
+        if (input == null) {
+            return Optional.empty();
+        }
+        String profileName = input.toString().trim();
+        if (profileName.isBlank()) {
+            NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_KAFKA_PROFILE_NAME_REQUIRED));
+            return Optional.empty();
+        }
+        if (connectionProfilesByName.containsKey(profileName)) {
+            NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_KAFKA_PROFILE_NAME_EXISTS, profileName));
+            return Optional.empty();
+        }
+        return Optional.of(profileName);
+    }
+
+    private String defaultProfileName(String bootstrapServers) {
+        String selectedName = getProfileNameText();
+        if (!selectedName.isBlank()) {
+            return selectedName;
+        }
+        return defaultIfBlank(bootstrapServers, "localhost:9092");
+    }
+
+    private String connectionProfileNameSuggestion(String bootstrapServers) {
+        return defaultIfBlank(bootstrapServers, "localhost:9092");
+    }
+
+    private KafkaConnectionProfile currentConnectionProfileWithName(String profileName, String profileId) {
+        return KafkaConnectionProfile.builder()
+                .id(profileId)
+                .name(profileName)
+                .bootstrapServers(connectionPanel.bootstrapField.getText().trim())
+                .clientId(connectionPanel.clientIdField.getText().trim())
+                .securityProtocol(selectedSecurityProtocol())
+                .saslMechanism(selectedSaslMechanism())
+                .username(connectionPanel.usernameField.getText().trim())
+                .password(new String(connectionPanel.passwordField.getPassword()))
+                .build();
+    }
+
+    private String uniqueProfileName(String baseName) {
+        String base = defaultString(baseName).trim();
+        if (base.isBlank()) {
+            base = t(MessageKeys.TOOLBOX_KAFKA_PROFILE_NEW_DEFAULT);
+        }
+        String candidate = base;
+        int suffix = 2;
+        while (connectionProfilesByName.containsKey(candidate)) {
+            candidate = base + " " + suffix++;
+        }
+        return candidate;
+    }
+
+    private void updateDeleteProfileButton(KafkaConnectionProfile profile) {
+        connectionPanel.deleteProfileBtn.setEnabled(profile != null && !isDefaultProfile(profile));
+    }
+
+    private static boolean isDefaultProfile(KafkaConnectionProfile profile) {
+        return profile != null && KafkaConnectionProfileStore.DEFAULT_PROFILE_ID.equals(profile.getId());
     }
 
     private void updateConsumeStartValueEnabledState() {
@@ -194,12 +452,12 @@ public class KafkaPanel extends JPanel {
             NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_KAFKA_ERR_HOST_REQUIRED));
             return;
         }
-        UserSettingsUtil.set(USER_SETTING_KAFKA_BOOTSTRAP, bootstrap);
-
         // 在 EDT 预先读取所有 UI 字段（含 passwordField），避免非 EDT 线程读取 Swing 组件
         final Properties baseProps;
+        final KafkaConnectionProfile profileToSave;
         try {
             baseProps = buildCommonClientProperties();
+            profileToSave = currentConnectionProfile();
         } catch (IllegalArgumentException ex) {
             NotificationUtil.showWarning(rootMessage(ex));
             return;
@@ -251,6 +509,8 @@ public class KafkaPanel extends JPanel {
                     syncPartitionSelector();
                     String status = t(MessageKeys.TOOLBOX_KAFKA_STATUS_CONNECTED, bootstrap);
                     setConnectionStatus(ModernColors.SUCCESS, status);
+                    connectionProfileStore.upsertProfile(profileToSave);
+                    loadSavedConnectionProfiles(profileToSave.getId());
                     connectionPanel.btnCardLayout.show(connectionPanel.btnCard, CARD_DISCONNECT);
                     producerPanel.statusLabel.setText(t(MessageKeys.TOOLBOX_KAFKA_STATUS_TOPICS_LOADED, topics.size()));
                     NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_KAFKA_STATUS_TOPICS_LOADED, topics.size()));
@@ -860,6 +1120,28 @@ public class KafkaPanel extends JPanel {
         return selected == null ? "PLAIN" : selected.toString();
     }
 
+    private static void selectComboItem(JComboBox<String> combo, String value) {
+        for (int i = 0; i < combo.getItemCount(); i++) {
+            String item = combo.getItemAt(i);
+            if (Objects.equals(item, value)) {
+                combo.setSelectedIndex(i);
+                return;
+            }
+        }
+        if (combo.getItemCount() > 0) {
+            combo.setSelectedIndex(0);
+        }
+    }
+
+    private static String defaultIfBlank(String value, String defaultValue) {
+        String normalized = defaultString(value).trim();
+        return normalized.isBlank() ? defaultValue : normalized;
+    }
+
+    private static String defaultString(String value) {
+        return value == null ? "" : value;
+    }
+
     private KafkaConsumeStartMode selectedConsumeStartMode() {
         int idx = consumerPanel.autoOffsetCombo.getSelectedIndex();
         return switch (idx) {
@@ -905,8 +1187,10 @@ public class KafkaPanel extends JPanel {
     }
 
     private void setConnectionStatus(Color color, String message) {
-        connectionPanel.connectionStatusLabel.setForeground(color);
-        connectionPanel.connectionStatusLabel.setToolTipText(message);
+        if (producerPanel != null) {
+            producerPanel.statusLabel.setForeground(color);
+            producerPanel.statusLabel.setText(message);
+        }
     }
 
     private static Throwable unwrapException(Exception ex) {

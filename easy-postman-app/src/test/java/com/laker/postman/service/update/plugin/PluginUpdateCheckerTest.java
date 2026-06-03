@@ -1,6 +1,8 @@
 package com.laker.postman.service.update.plugin;
 
 import com.laker.postman.plugin.api.PluginDescriptor;
+import com.laker.postman.plugin.api.PluginUpdateMetadata;
+import com.laker.postman.plugin.api.PluginUpdateMetadataContribution;
 import com.laker.postman.plugin.manager.market.PluginCatalogEntry;
 import com.laker.postman.plugin.runtime.PluginFileInfo;
 import com.laker.postman.plugin.runtime.PluginRuntime;
@@ -107,6 +109,37 @@ public class PluginUpdateCheckerTest {
         assertEquals(candidates.size(), 1);
         assertEquals(candidates.get(0).installedVersion(), "5.3.20");
         assertEquals(candidates.get(0).latestVersion(), "5.3.21");
+    }
+
+    @Test
+    public void shouldMergePluginContributedUpdateMetadataWithCatalogEntries() {
+        PluginRuntime.getRegistry().registerUpdateMetadataContribution(new PluginUpdateMetadataContribution(
+                "private-plugin-updates",
+                900,
+                () -> List.of(new PluginUpdateMetadata(
+                        "plugin-kafka",
+                        "Kafka Plugin",
+                        "5.3.25",
+                        "Private update source",
+                        "https://example.com/private/plugin-kafka-5.3.25.jar",
+                        "https://example.com/plugin-kafka",
+                        "sha256-5.3.25"
+                ))
+        ));
+
+        List<PluginCatalogEntry> catalogEntries = PluginUpdateMetadataResolver.mergeWithContributedMetadata(
+                List.of(catalogEntry("plugin-kafka", "Kafka Plugin", "5.3.21", "", ""))
+        );
+        List<PluginUpdateCandidate> candidates = PluginUpdateChecker.findUpdateCandidates(
+                List.of(installedPlugin("plugin-kafka", "Kafka Plugin", "5.3.18")),
+                catalogEntries
+        );
+
+        assertEquals(catalogEntries.size(), 1);
+        assertEquals(catalogEntries.get(0).version(), "5.3.25");
+        assertEquals(catalogEntries.get(0).installUrl(), "https://example.com/private/plugin-kafka-5.3.25.jar");
+        assertEquals(candidates.size(), 1);
+        assertEquals(candidates.get(0).latestVersion(), "5.3.25");
     }
 
     private static PluginFileInfo installedPlugin(String id, String name, String version) {

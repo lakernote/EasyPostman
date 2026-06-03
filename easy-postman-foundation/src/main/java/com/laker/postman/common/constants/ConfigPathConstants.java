@@ -66,6 +66,16 @@ public class ConfigPathConstants {
     public static final String PERFORMANCE_CONFIG = getDataRootPath() + "performance_config.json";
 
     /**
+     * Elasticsearch 连接配置文件
+     */
+    public static final String ELASTICSEARCH_CONNECTION_PROFILES = getDataRootPath() + "elasticsearch_connection_profiles.json";
+
+    /**
+     * InfluxDB 连接配置文件
+     */
+    public static final String INFLUXDB_CONNECTION_PROFILES = getDataRootPath() + "influxdb_connection_profiles.json";
+
+    /**
      * 请求历史记录文件
      */
     public static final String REQUEST_HISTORY = getDataRootPath() + "request_history.json";

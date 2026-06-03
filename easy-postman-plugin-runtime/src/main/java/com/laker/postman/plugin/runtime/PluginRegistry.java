@@ -4,6 +4,7 @@ import com.laker.postman.plugin.api.PluginMenuContribution;
 import com.laker.postman.plugin.api.ScriptCompletionContributor;
 import com.laker.postman.plugin.api.SnippetDefinition;
 import com.laker.postman.plugin.api.PluginSettingsContribution;
+import com.laker.postman.plugin.api.PluginUpdateMetadataContribution;
 import com.laker.postman.plugin.api.ToolboxContribution;
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,6 +34,7 @@ public class PluginRegistry {
     private final List<ToolboxContribution> toolboxContributions = new CopyOnWriteArrayList<>();
     private final List<PluginMenuContribution> menuContributions = new CopyOnWriteArrayList<>();
     private final List<PluginSettingsContribution> settingsContributions = new CopyOnWriteArrayList<>();
+    private final List<PluginUpdateMetadataContribution> updateMetadataContributions = new CopyOnWriteArrayList<>();
     private final List<ScriptCompletionContributor> scriptCompletionContributors = new CopyOnWriteArrayList<>();
     private final List<SnippetDefinition> snippetDefinitions = new CopyOnWriteArrayList<>();
 
@@ -140,6 +142,20 @@ public class PluginRegistry {
         return new ArrayList<>(settingsContributions);
     }
 
+    public void registerUpdateMetadataContribution(PluginUpdateMetadataContribution contribution) {
+        registerUpdateMetadataContribution(null, contribution);
+    }
+
+    void registerUpdateMetadataContribution(String pluginId, PluginUpdateMetadataContribution contribution) {
+        if (contribution != null) {
+            updateMetadataContributions.add(contribution);
+        }
+    }
+
+    public List<PluginUpdateMetadataContribution> getUpdateMetadataContributions() {
+        return new ArrayList<>(updateMetadataContributions);
+    }
+
     public void registerScriptCompletionContributor(ScriptCompletionContributor contributor) {
         if (contributor != null) {
             scriptCompletionContributors.add(contributor);
@@ -167,6 +183,7 @@ public class PluginRegistry {
         toolboxContributions.clear();
         menuContributions.clear();
         settingsContributions.clear();
+        updateMetadataContributions.clear();
         scriptCompletionContributors.clear();
         snippetDefinitions.clear();
     }

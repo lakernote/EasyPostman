@@ -2,23 +2,86 @@ package com.laker.postman.panel.toolbox;
 
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.component.SearchableTextArea;
-import com.laker.postman.common.component.button.*;
+import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.common.component.button.ClearButton;
+import com.laker.postman.common.component.button.CopyButton;
+import com.laker.postman.common.component.button.FormatButton;
+import com.laker.postman.common.component.button.PrimaryButton;
+import com.laker.postman.common.component.button.RefreshButton;
+import com.laker.postman.common.component.button.SecondaryButton;
+import com.laker.postman.common.component.connection.ConnectionToolbarUi;
+import com.laker.postman.common.component.table.EnhancedTablePanel;
 import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
-import com.laker.postman.util.*;
+import com.laker.postman.util.EditorThemeUtil;
+import com.laker.postman.util.FontsUtil;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.JsonUtil;
+import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.NotificationUtil;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.miginfocom.swing.MigLayout;
-import okhttp3.*;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import tools.jackson.databind.JsonNode;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.AbstractAction;
+import javax.swing.BorderFactory;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.DefaultListModel;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
+import javax.swing.JSpinner;
+import javax.swing.JSplitPane;
+import javax.swing.JTabbedPane;
+import javax.swing.JTextField;
+import javax.swing.KeyStroke;
+import javax.swing.ListSelectionModel;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
+import javax.swing.UIManager;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
+import java.awt.event.ActionEvent;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.text.MessageFormat;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Deque;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Elasticsearch 可视化 CRUD + DSL 工具面板
@@ -27,14 +90,24 @@ import java.util.List;
 public class ElasticsearchPanel extends JPanel {
 
     // ===== 连接 =====
-    private JComboBox<String> hostCombo;        // 带历史记录的 host 下拉
+    private JComboBox<ElasticsearchConnectionProfile> profileCombo;
+    private JButton newProfileBtn;
+    private JButton saveProfileBtn;
+    private JButton saveAsProfileBtn;
+    private JButton deleteProfileBtn;
+    private JTextField hostField;
     private JTextField usernameField;
     private JPasswordField passwordField;
+    private JComboBox<AuthMode> authModeCombo;
+    private JPanel connectionPanel;
+    private JPanel authRow;
     private JButton connectBtn;
     private JButton disconnectBtn;
-    private JLabel connectionStatusLabel;
     private CardLayout btnCardLayout;   // 用于在 connectBtn/disconnectBtn 之间切换
     private JPanel btnCard;
+    private final ElasticsearchConnectionProfileStore connectionProfileStore =
+            new ElasticsearchConnectionProfileStore();
+    private boolean loadingConnectionProfiles;
 
     // ===== 索引管理 =====
     private DefaultListModel<String> indexListModel;
@@ -58,8 +131,8 @@ public class ElasticsearchPanel extends JPanel {
     private SearchableTextArea searchableDslArea;
 
     // ===== 结果表格 =====
-    private com.laker.postman.common.component.table.EnhancedTablePanel enhancedTable;
-    private com.laker.postman.common.component.table.EnhancedTablePanel aggTable;
+    private EnhancedTablePanel enhancedTable;
+    private EnhancedTablePanel aggTable;
     private JTabbedPane resultTabs;
     private JLabel respStatusLabel;
     private JLabel hitsInfoLabel;
@@ -70,7 +143,7 @@ public class ElasticsearchPanel extends JPanel {
     /**
      * 每条记录格式: "METHOD PATH\nBODY"
      */
-    private final java.util.Deque<HistoryEntry> requestHistory = new java.util.ArrayDeque<>();
+    private final Deque<HistoryEntry> requestHistory = new ArrayDeque<>();
     private DefaultListModel<HistoryEntry> historyListModel;
     private JList<HistoryEntry> historyList;
 
@@ -88,7 +161,6 @@ public class ElasticsearchPanel extends JPanel {
     private static final String HEADER_AUTHORIZATION = "Authorization";
     private static final String CLIENT_PROP_TOTAL_HITS = "es.totalHits";
     private static final String LABEL_DISABLED_FG = "Label.disabledForeground";
-    private static final int MAX_HOST_HISTORY = 5;
     private static final int CONNECT_TIMEOUT_MS = 10_000;
     private static final int READ_TIMEOUT_MS = 30_000;
     private static final int WRITE_TIMEOUT_MS = 30_000;
@@ -98,6 +170,12 @@ public class ElasticsearchPanel extends JPanel {
     private static final String AGG_DOC_COUNT = "doc_count";
     private static final String AGG_VALUE = "value";
     private static final String AGG_BUCKETS = "buckets";
+    private static final String CONNECT_CARD = "connect";
+    private static final String DISCONNECT_CARD = "disconnect";
+    private static final int HOST_FIELD_WIDTH = 280;
+    private static final int AUTH_MODE_WIDTH = 100;
+    private static final int AUTH_FIELD_WIDTH = HOST_FIELD_WIDTH;
+    private static final int CONNECTION_BUTTON_WIDTH = 78;
 
     // ===== 内置 DSL 模板 =====
     private static final String[][] DSL_TEMPLATES = {
@@ -135,22 +213,27 @@ public class ElasticsearchPanel extends JPanel {
     };
 
     // ===== 历史记录条目 =====
+    @RequiredArgsConstructor
     private static class HistoryEntry {
         final String method;
         final String path;
         final String body;
-        final long time;
-
-        HistoryEntry(String method, String path, String body) {
-            this.method = method;
-            this.path = path;
-            this.body = body;
-            this.time = System.currentTimeMillis();
-        }
 
         @Override
         public String toString() {
             return method + "  " + path;
+        }
+    }
+
+    @RequiredArgsConstructor
+    private enum AuthMode {
+        NONE(MessageKeys.TOOLBOX_ES_AUTH_NONE),
+        BASIC(MessageKeys.TOOLBOX_ES_AUTH_BASIC);
+
+        private final String messageKey;
+
+        String displayName() {
+            return I18nUtil.getMessage(messageKey);
         }
     }
 
@@ -177,71 +260,375 @@ public class ElasticsearchPanel extends JPanel {
     // ===== 连接面板 =====
     private JPanel buildConnectionPanel() {
         JPanel panel = new JPanel(new BorderLayout());
+        connectionPanel = panel;
         panel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)),
-                BorderFactory.createEmptyBorder(2, 2, 2, 2)));
+                BorderFactory.createEmptyBorder(3, 6, 3, 6)));
 
-        // Host: 带历史记录的可编辑下拉框
-        hostCombo = new JComboBox<>();
-        hostCombo.setEditable(true);
-        hostCombo.setPreferredSize(new Dimension(240, 32));
-        hostCombo.addItem("http://localhost:9200");
-        JTextField hostEditor = (JTextField) hostCombo.getEditor().getEditorComponent();
-        hostEditor.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT,
+        profileCombo = new JComboBox<>();
+        profileCombo.setEditable(false);
+        ConnectionToolbarUi.compactControl(profileCombo);
+        profileCombo.setPrototypeDisplayValue(ElasticsearchConnectionProfile.builder()
+                .name("Default Elasticsearch")
+                .build());
+        profileCombo.setRenderer(ConnectionToolbarUi.displayRenderer(ElasticsearchConnectionProfile::getName));
+        profileCombo.addActionListener(e -> applySelectedConnectionProfile());
+
+        newProfileBtn = ConnectionToolbarUi.iconButton(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_PROFILE_NEW),
+                "icons/plus.svg", e -> createNewConnectionProfile());
+        saveProfileBtn = ConnectionToolbarUi.iconButton(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_PROFILE_SAVE),
+                "icons/save.svg", e -> saveCurrentConnectionProfile(true));
+        saveAsProfileBtn = ConnectionToolbarUi.iconButton(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_PROFILE_SAVE_AS),
+                "icons/duplicate.svg", e -> saveCurrentConnectionProfileAs());
+        deleteProfileBtn = ConnectionToolbarUi.iconButton(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_PROFILE_DELETE),
+                "icons/delete.svg", e -> deleteSelectedConnectionProfile());
+
+        hostField = new JTextField();
+        ConnectionToolbarUi.compactControl(hostField);
+        hostField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT,
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_HOST_PLACEHOLDER));
-        hostEditor.addActionListener(e -> doConnect());
+        hostField.addActionListener(e -> doConnect());
 
-        usernameField = new JTextField("", 10);
-        usernameField.setPreferredSize(new Dimension(usernameField.getPreferredSize().width, 32));
+        authModeCombo = ConnectionToolbarUi.comboBox(AuthMode.values(), AuthMode::displayName);
+        authModeCombo.addActionListener(e -> setAuthOptionsVisible(getSelectedAuthMode() == AuthMode.BASIC));
+
+        usernameField = new JTextField();
+        ConnectionToolbarUi.compactControl(usernameField);
         usernameField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT,
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_USER_PLACEHOLDER));
 
-        passwordField = new JPasswordField("", 10);
-        passwordField.setPreferredSize(new Dimension(passwordField.getPreferredSize().width, 32));
+        passwordField = new JPasswordField();
+        ConnectionToolbarUi.compactControl(passwordField);
         passwordField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT,
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_PASS_PLACEHOLDER));
         passwordField.addActionListener(e -> doConnect());
 
-        connectionStatusLabel = new JLabel("●");
-        connectionStatusLabel.setForeground(UIManager.getColor(LABEL_DISABLED_FG));
-        connectionStatusLabel.setFont(connectionStatusLabel.getFont().deriveFont(Font.BOLD, 14f));
-        connectionStatusLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_STATUS_NOT_CONNECTED));
-
-        connectBtn = new PrimaryButton(
+        connectBtn = new SecondaryButton(
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_CONNECT), "icons/connect.svg");
+        ConnectionToolbarUi.compactButton(connectBtn, CONNECTION_BUTTON_WIDTH);
         connectBtn.addActionListener(e -> doConnect());
 
         disconnectBtn = new SecondaryButton(
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_DISCONNECT), "icons/ws-close.svg");
+        ConnectionToolbarUi.compactButton(disconnectBtn, CONNECTION_BUTTON_WIDTH);
         disconnectBtn.addActionListener(e -> doDisconnect());
 
         // 用 CardLayout 将 connectBtn / disconnectBtn 叠放在同一格，切换时不留空白
         btnCardLayout = new CardLayout();
         btnCard = new JPanel(btnCardLayout);
         btnCard.setOpaque(false);
-        btnCard.add(connectBtn, "connect");
-        btnCard.add(disconnectBtn, "disconnect");
-        btnCardLayout.show(btnCard, "connect");
+        btnCard.add(connectBtn, CONNECT_CARD);
+        btnCard.add(disconnectBtn, DISCONNECT_CARD);
+        btnCardLayout.show(btnCard, CONNECT_CARD);
 
-
-        // 使用 MigLayout 实现连接配置表单（insets 留出空间避免 FlatLaf focus 高亮被裁剪）
         JPanel form = new JPanel(new MigLayout(
-                "insets 4 0 4 0, fillx",
-                "[][grow,fill]8[][grow,fill]8[][grow,fill]8[]8[]",
-                "[]"
+                "insets 0, fillx, gapy 2, novisualpadding, hidemode 3",
+                "[grow,fill]",
+                "[][]"
         ));
 
-        form.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_HOST)));
-        form.add(hostCombo);
-        form.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_USER)));
-        form.add(usernameField);
-        form.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_PASS)));
-        form.add(passwordField);
-        form.add(btnCard);
-        form.add(connectionStatusLabel);
+        JPanel mainRow = new JPanel(new MigLayout(
+                "insets 0, fillx, novisualpadding, gapx 0",
+                ConnectionToolbarUi.profileActionColumns()
+                        + ConnectionToolbarUi.connectionFieldColumns(HOST_FIELD_WIDTH) + "4"
+                        + ConnectionToolbarUi.connectionFieldColumns(AUTH_MODE_WIDTH)
+                        + "6[" + CONNECTION_BUTTON_WIDTH + "!]push",
+                "[]"
+        ));
+        mainRow.add(ConnectionToolbarUi.label(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_PROFILE)));
+        mainRow.add(profileCombo);
+        mainRow.add(newProfileBtn);
+        mainRow.add(saveProfileBtn);
+        mainRow.add(saveAsProfileBtn);
+        mainRow.add(deleteProfileBtn);
+        mainRow.add(ConnectionToolbarUi.verticalSeparator(),
+                "w 1!, h " + ConnectionToolbarUi.VERTICAL_SEPARATOR_HEIGHT + "!");
+        mainRow.add(ConnectionToolbarUi.label(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_HOST)));
+        mainRow.add(hostField);
+        mainRow.add(ConnectionToolbarUi.label(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_AUTH)));
+        mainRow.add(authModeCombo);
+        mainRow.add(btnCard, "h " + ConnectionToolbarUi.CONNECTION_BUTTON_HEIGHT + "!");
 
+        authRow = new JPanel(new MigLayout(
+                "insets 2 0 2 0, fillx, novisualpadding, gapx 0",
+                ConnectionToolbarUi.profileActionColumns()
+                        + ConnectionToolbarUi.connectionFieldColumns(AUTH_FIELD_WIDTH) + "4"
+                        + ConnectionToolbarUi.connectionFieldColumns(AUTH_FIELD_WIDTH) + "push",
+                "[]"
+        ));
+        authRow.add(ConnectionToolbarUi.label(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_USER)), "skip 7");
+        authRow.add(usernameField);
+        authRow.add(ConnectionToolbarUi.label(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_PASS)));
+        authRow.add(passwordField);
+
+        form.add(mainRow, "growx, wrap");
+        form.add(authRow, "growx");
         panel.add(form, BorderLayout.CENTER);
+        setAuthOptionsVisible(false);
+        ConnectionToolbarUi.registerSaveShortcut(form, () -> saveCurrentConnectionProfile(true));
+        loadSavedConnectionProfiles(null);
+
         return panel;
+    }
+
+    private void loadSavedConnectionProfiles(String preferredProfileId) {
+        loadingConnectionProfiles = true;
+        profileCombo.removeAllItems();
+        List<ElasticsearchConnectionProfile> profiles = connectionProfileStore.loadProfiles();
+        ElasticsearchConnectionProfile activeProfile = connectionProfileStore.loadActiveProfile()
+                .orElse(ElasticsearchConnectionProfileStore.defaultProfile());
+        String selectedProfileId = preferredProfileId == null || preferredProfileId.isBlank()
+                ? activeProfile.getId()
+                : preferredProfileId;
+        ElasticsearchConnectionProfile selectedProfile = null;
+        for (ElasticsearchConnectionProfile profile : profiles) {
+            profileCombo.addItem(profile);
+            if (profile.getId().equals(selectedProfileId)) {
+                selectedProfile = profile;
+            }
+        }
+        if (selectedProfile == null && profileCombo.getItemCount() > 0) {
+            selectedProfile = profileCombo.getItemAt(0);
+        }
+        if (selectedProfile != null) {
+            profileCombo.setSelectedItem(selectedProfile);
+        }
+        loadingConnectionProfiles = false;
+        applyConnectionProfile(selectedProfile);
+        updateProfileActionState();
+    }
+
+    private void applySelectedConnectionProfile() {
+        if (loadingConnectionProfiles) {
+            return;
+        }
+        ElasticsearchConnectionProfile profile = getSelectedConnectionProfile();
+        applyConnectionProfile(profile);
+        if (profile != null) {
+            connectionProfileStore.saveProfiles(connectionProfileStore.loadProfiles(), profile.getId());
+        }
+        updateProfileActionState();
+    }
+
+    private void applyConnectionProfile(ElasticsearchConnectionProfile profile) {
+        if (profile == null) {
+            return;
+        }
+        baseUrl = ElasticsearchConnectionProfileStore.normalizeBaseUrl(profile.getBaseUrl());
+        applyHostHistory(profile);
+        authModeCombo.setSelectedItem(profile.isAuthEnabled() ? AuthMode.BASIC : AuthMode.NONE);
+        usernameField.setText(profile.getUsername() == null ? "" : profile.getUsername());
+        passwordField.setText(profile.getPassword() == null ? "" : profile.getPassword());
+        setAuthOptionsVisible(profile.isAuthEnabled());
+    }
+
+    private void createNewConnectionProfile() {
+        String initialName = uniqueProfileName(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_PROFILE_NEW_DEFAULT));
+        String name = promptProfileName(initialName, null);
+        if (name == null) {
+            return;
+        }
+        ElasticsearchConnectionProfile profile = buildProfile(UUID.randomUUID().toString(), name);
+        connectionProfileStore.upsertProfile(profile);
+        loadSavedConnectionProfiles(profile.getId());
+        NotificationUtil.showSuccess(MessageFormat.format(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_PROFILE_SAVED), profile.getName()));
+    }
+
+    private void saveCurrentConnectionProfile(boolean notify) {
+        ElasticsearchConnectionProfile selectedProfile = getSelectedConnectionProfile();
+        if (selectedProfile == null) {
+            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_PROFILE_NOT_SELECTED));
+            return;
+        }
+        ElasticsearchConnectionProfile profile = buildProfile(selectedProfile.getId(), selectedProfile.getName());
+        connectionProfileStore.upsertProfile(profile);
+        loadSavedConnectionProfiles(profile.getId());
+        if (notify) {
+            NotificationUtil.showSuccess(MessageFormat.format(
+                    I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_PROFILE_SAVED), profile.getName()));
+        }
+    }
+
+    private void saveConnectionProfile(String finalUrl, String user, String pass, boolean notify) {
+        ElasticsearchConnectionProfile selectedProfile = getSelectedConnectionProfile();
+        if (selectedProfile == null) {
+            return;
+        }
+        ElasticsearchConnectionProfile profile = ElasticsearchConnectionProfile.builder()
+                .id(selectedProfile.getId())
+                .name(selectedProfile.getName())
+                .baseUrl(ElasticsearchConnectionProfileStore.normalizeBaseUrl(finalUrl))
+                .authEnabled(getSelectedAuthMode() == AuthMode.BASIC)
+                .username(user == null ? "" : user.trim())
+                .password(pass == null ? "" : pass)
+                .hostHistory(currentHostHistoryWith(finalUrl))
+                .build();
+        connectionProfileStore.upsertProfile(profile);
+        loadSavedConnectionProfiles(profile.getId());
+        if (notify) {
+            NotificationUtil.showSuccess(MessageFormat.format(
+                    I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_PROFILE_SAVED), profile.getName()));
+        }
+    }
+
+    private void saveCurrentConnectionProfileAs() {
+        ElasticsearchConnectionProfile selectedProfile = getSelectedConnectionProfile();
+        String initialName = selectedProfile == null
+                ? connectionProfileNameSuggestion()
+                : uniqueProfileName(selectedProfile.getName());
+        String name = promptProfileName(initialName, null);
+        if (name == null) {
+            return;
+        }
+        ElasticsearchConnectionProfile profile = buildProfile(UUID.randomUUID().toString(), name);
+        connectionProfileStore.upsertProfile(profile);
+        loadSavedConnectionProfiles(profile.getId());
+        NotificationUtil.showSuccess(MessageFormat.format(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_PROFILE_SAVED), profile.getName()));
+    }
+
+    private void deleteSelectedConnectionProfile() {
+        ElasticsearchConnectionProfile selectedProfile = getSelectedConnectionProfile();
+        if (selectedProfile == null) {
+            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_PROFILE_NOT_SELECTED));
+            return;
+        }
+        if (isDefaultProfile(selectedProfile)) {
+            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_PROFILE_DEFAULT_NOT_DELETABLE));
+            return;
+        }
+        int result = JOptionPane.showConfirmDialog(this,
+                MessageFormat.format(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_PROFILE_DELETE_CONFIRM),
+                        selectedProfile.getName()),
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_PROFILE_DELETE_CONFIRM_TITLE),
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+        if (result != JOptionPane.YES_OPTION) {
+            return;
+        }
+        String deletedName = selectedProfile.getName();
+        connectionProfileStore.deleteProfile(selectedProfile.getId());
+        loadSavedConnectionProfiles(ElasticsearchConnectionProfileStore.DEFAULT_PROFILE_ID);
+        NotificationUtil.showInfo(MessageFormat.format(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_PROFILE_DELETED), deletedName));
+    }
+
+    private ElasticsearchConnectionProfile buildProfile(String profileId, String profileName) {
+        String url = ElasticsearchConnectionProfileStore.normalizeBaseUrl(getCurrentHost());
+        return ElasticsearchConnectionProfile.builder()
+                .id(profileId)
+                .name(profileName)
+                .baseUrl(url)
+                .authEnabled(getSelectedAuthMode() == AuthMode.BASIC)
+                .username(usernameField.getText().trim())
+                .password(new String(passwordField.getPassword()))
+                .hostHistory(currentHostHistoryWith(url))
+                .build();
+    }
+
+    private String promptProfileName(String initialValue, String existingProfileId) {
+        Object value = JOptionPane.showInputDialog(this,
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_PROFILE_SAVE_AS_PROMPT),
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_PROFILE_SAVE_AS_TITLE),
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                null,
+                initialValue);
+        if (value == null) {
+            return null;
+        }
+        String name = value.toString().trim();
+        if (name.isBlank()) {
+            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_PROFILE_NAME_REQUIRED));
+            return null;
+        }
+        if (profileNameExists(name, existingProfileId)) {
+            NotificationUtil.showWarning(MessageFormat.format(
+                    I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_PROFILE_NAME_EXISTS), name));
+            return null;
+        }
+        return name;
+    }
+
+    private boolean profileNameExists(String name, String ignoredProfileId) {
+        String normalizedName = name == null ? "" : name.trim();
+        for (ElasticsearchConnectionProfile profile : connectionProfileStore.loadProfiles()) {
+            boolean sameProfile = ignoredProfileId != null && ignoredProfileId.equals(profile.getId());
+            if (!sameProfile && profile.getName().equalsIgnoreCase(normalizedName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String uniqueProfileName(String baseName) {
+        String normalizedBaseName = baseName == null || baseName.isBlank()
+                ? connectionProfileNameSuggestion()
+                : baseName.trim();
+        if (!profileNameExists(normalizedBaseName, null)) {
+            return normalizedBaseName;
+        }
+        for (int i = 2; i < 1000; i++) {
+            String candidate = normalizedBaseName + " " + i;
+            if (!profileNameExists(candidate, null)) {
+                return candidate;
+            }
+        }
+        return normalizedBaseName + " " + System.currentTimeMillis();
+    }
+
+    private String connectionProfileNameSuggestion() {
+        return ElasticsearchConnectionProfileStore.normalizeBaseUrl(getCurrentHost());
+    }
+
+    private ElasticsearchConnectionProfile getSelectedConnectionProfile() {
+        Object selected = profileCombo.getSelectedItem();
+        return selected instanceof ElasticsearchConnectionProfile profile ? profile : null;
+    }
+
+    private boolean isDefaultProfile(ElasticsearchConnectionProfile profile) {
+        return profile != null && ElasticsearchConnectionProfileStore.DEFAULT_PROFILE_ID.equals(profile.getId());
+    }
+
+    private void updateProfileActionState() {
+        ElasticsearchConnectionProfile selectedProfile = getSelectedConnectionProfile();
+        boolean hasProfile = selectedProfile != null;
+        saveProfileBtn.setEnabled(hasProfile);
+        saveAsProfileBtn.setEnabled(hasProfile);
+        deleteProfileBtn.setEnabled(hasProfile && !isDefaultProfile(selectedProfile));
+    }
+
+    private void setAuthOptionsVisible(boolean visible) {
+        if (authRow == null) {
+            return;
+        }
+        authRow.setVisible(visible);
+        ConnectionToolbarUi.lockConnectionPanelHeight(connectionPanel, visible);
+        authRow.revalidate();
+        if (authRow.getParent() != null) {
+            authRow.getParent().revalidate();
+            authRow.getParent().repaint();
+        }
+    }
+
+    private AuthMode getSelectedAuthMode() {
+        Object selected = authModeCombo == null ? null : authModeCombo.getSelectedItem();
+        return selected instanceof AuthMode authMode ? authMode : AuthMode.NONE;
+    }
+
+    private void applyHostHistory(ElasticsearchConnectionProfile profile) {
+        hostField.setText(ElasticsearchConnectionProfileStore.normalizeBaseUrl(profile.getBaseUrl()));
+    }
+
+    private List<String> currentHostHistoryWith(String activeHost) {
+        ElasticsearchConnectionProfile selectedProfile = getSelectedConnectionProfile();
+        List<String> existingHistory = selectedProfile == null ? List.of() : selectedProfile.getHostHistory();
+        return ElasticsearchConnectionProfileStore.normalizeHostHistory(existingHistory, activeHost);
     }
 
     // ===== 左侧面板：索引管理 + 历史记录（JTabbedPane）=====
@@ -275,8 +662,7 @@ public class ElasticsearchPanel extends JPanel {
         titleBar.add(refreshBtn, BorderLayout.EAST);
 
         // 搜索框
-        com.laker.postman.common.component.SearchTextField indexSearchField =
-                new com.laker.postman.common.component.SearchTextField();
+        SearchTextField indexSearchField = new SearchTextField();
         indexSearchField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
         JPanel searchBox = new JPanel(new BorderLayout());
         searchBox.setBorder(BorderFactory.createEmptyBorder(4, 6, 2, 6));
@@ -301,16 +687,16 @@ public class ElasticsearchPanel extends JPanel {
         listScroll.setBorder(BorderFactory.createEmptyBorder());
 
         // 实时过滤
-        indexSearchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+        indexSearchField.getDocument().addDocumentListener(new DocumentListener() {
+            public void insertUpdate(DocumentEvent e) {
                 filterIndices(indexSearchField.getText());
             }
 
-            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+            public void removeUpdate(DocumentEvent e) {
                 filterIndices(indexSearchField.getText());
             }
 
-            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+            public void changedUpdate(DocumentEvent e) {
                 filterIndices(indexSearchField.getText());
             }
         });
@@ -397,9 +783,9 @@ public class ElasticsearchPanel extends JPanel {
         historyList = new JList<>(historyListModel);
         historyList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         historyList.setCellRenderer(new HistoryCellRenderer());
-        historyList.addMouseListener(new java.awt.event.MouseAdapter() {
+        historyList.addMouseListener(new MouseAdapter() {
             @Override
-            public void mouseClicked(java.awt.event.MouseEvent e) {
+            public void mouseClicked(MouseEvent e) {
                 if (SwingUtilities.isLeftMouseButton(e) && e.getClickCount() == 2) {
                     int idx = historyList.locationToIndex(e.getPoint());
                     if (idx >= 0) applyHistory(historyListModel.get(idx));
@@ -475,10 +861,10 @@ public class ElasticsearchPanel extends JPanel {
         for (HistoryEntry e : requestHistory) historyListModel.addElement(e);
     }
 
-    private java.awt.event.MouseAdapter buildIndexListMouseListener() {
-        return new java.awt.event.MouseAdapter() {
+    private MouseAdapter buildIndexListMouseListener() {
+        return new MouseAdapter() {
             @Override
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
+            public void mouseClicked(MouseEvent evt) {
                 if (SwingUtilities.isLeftMouseButton(evt) && evt.getClickCount() == 2) {
                     int idx = indexList.locationToIndex(evt.getPoint());
                     if (idx >= 0) {
@@ -489,18 +875,18 @@ public class ElasticsearchPanel extends JPanel {
             }
 
             @Override
-            public void mousePressed(java.awt.event.MouseEvent evt) {
+            public void mousePressed(MouseEvent evt) {
                 if (evt.isPopupTrigger()) maybeShowIndexPopup(evt);
             }
 
             @Override
-            public void mouseReleased(java.awt.event.MouseEvent evt) {
+            public void mouseReleased(MouseEvent evt) {
                 if (evt.isPopupTrigger()) maybeShowIndexPopup(evt);
             }
         };
     }
 
-    private void maybeShowIndexPopup(java.awt.event.MouseEvent evt) {
+    private void maybeShowIndexPopup(MouseEvent evt) {
         int idx = indexList.locationToIndex(evt.getPoint());
         if (idx >= 0 && !indexList.isSelectedIndex(idx)) indexList.setSelectedIndex(idx);
         List<String> selectedIndices = new ArrayList<>(indexList.getSelectedValuesList());
@@ -644,9 +1030,10 @@ public class ElasticsearchPanel extends JPanel {
 
         templateCombo = new JComboBox<>();
         for (String[] t : DSL_TEMPLATES) templateCombo.addItem(I18nUtil.getMessage(t[0]));
-        templateCombo.setPreferredSize(new Dimension(180, 28));
+        templateCombo.setPreferredSize(new Dimension(180, ConnectionToolbarUi.FORM_CONTROL_HEIGHT));
         SecondaryButton loadTplBtn = new SecondaryButton(
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_LOAD_TEMPLATE), "icons/load.svg");
+        ConnectionToolbarUi.compactButton(loadTplBtn, 104);
         loadTplBtn.addActionListener(e -> applyTemplate(templateCombo.getSelectedIndex()));
 
         FormatButton formatBtn = new FormatButton();
@@ -680,12 +1067,12 @@ public class ElasticsearchPanel extends JPanel {
         // ---- 请求行（MigLayout）----
         JPanel requestRow = new JPanel(new MigLayout("insets 4 2 4 2, fillx", "[90!][grow,fill][]", "[]"));
         methodCombo = new JComboBox<>(new String[]{"GET", "POST", "PUT", HTTP_DELETE, "HEAD"});
-        methodCombo.setPreferredSize(new Dimension(90, 32));
+        methodCombo.setPreferredSize(new Dimension(90, ConnectionToolbarUi.FORM_CONTROL_HEIGHT));
         // Method 颜色渲染
         methodCombo.setRenderer(new MethodComboRenderer());
 
         pathField = new JTextField(CLUSTER_HEALTH_PATH);
-        pathField.setPreferredSize(new Dimension(400, 32));
+        pathField.setPreferredSize(new Dimension(400, ConnectionToolbarUi.FORM_CONTROL_HEIGHT));
         pathField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT,
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_PATH_PLACEHOLDER));
         // 路径框回车执行
@@ -693,6 +1080,7 @@ public class ElasticsearchPanel extends JPanel {
 
         executeBtn = new PrimaryButton(
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_EXECUTE), "icons/send.svg");
+        ConnectionToolbarUi.compactButton(executeBtn, 72);
         executeBtn.addActionListener(e -> executeRequest());
         registerCtrlEnterShortcut(executeBtn);
 
@@ -748,8 +1136,8 @@ public class ElasticsearchPanel extends JPanel {
         respHeader.add(respStatusLabel);
 
         resultTabs = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
-        enhancedTable = new com.laker.postman.common.component.table.EnhancedTablePanel(new String[]{});
-        aggTable = new com.laker.postman.common.component.table.EnhancedTablePanel(new String[]{});
+        enhancedTable = new EnhancedTablePanel(new String[]{});
+        aggTable = new EnhancedTablePanel(new String[]{});
         // 参考 ResponseBodyPanel：不可编辑编辑器使用 SearchableTextArea(area, false) 包装（仅搜索）
         resultArea = createJsonEditor(false);
         resultArea.setLineWrap(false);
@@ -798,12 +1186,11 @@ public class ElasticsearchPanel extends JPanel {
         SwingUtilities.invokeLater(() -> {
             if (dslEditor != null) {
                 dslEditor.getInputMap().put(
-                        KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ENTER,
-                                java.awt.event.InputEvent.CTRL_DOWN_MASK),
+                        KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, InputEvent.CTRL_DOWN_MASK),
                         "executeRequest");
                 dslEditor.getActionMap().put("executeRequest", new AbstractAction() {
                     @Override
-                    public void actionPerformed(java.awt.event.ActionEvent e) {
+                    public void actionPerformed(ActionEvent e) {
                         btn.doClick();
                     }
                 });
@@ -909,11 +1296,14 @@ public class ElasticsearchPanel extends JPanel {
             NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_ERR_HOST_REQUIRED));
             return;
         }
-        if (url.endsWith("/")) url = url.substring(0, url.length() - 1);
+        url = ElasticsearchConnectionProfileStore.normalizeBaseUrl(url);
         baseUrl = url;
         String user = usernameField.getText().trim();
-        String pass = new String(passwordField.getPassword()).trim();
-        authHeader = !user.isEmpty() ? "Basic " + Base64.getEncoder().encodeToString((user + ":" + pass).getBytes()) : null;
+        String pass = new String(passwordField.getPassword());
+        boolean useBasicAuth = getSelectedAuthMode() == AuthMode.BASIC;
+        authHeader = useBasicAuth && !user.isEmpty()
+                ? "Basic " + Base64.getEncoder().encodeToString((user + ":" + pass).getBytes())
+                : null;
 
         connectBtn.setEnabled(false);
         final String finalUrl = baseUrl;
@@ -929,13 +1319,11 @@ public class ElasticsearchPanel extends JPanel {
                 try {
                     String resp = get();
                     connected = true;
-                    connectionStatusLabel.setForeground(new Color(0, 180, 0));
-                    connectionStatusLabel.setToolTipText(MessageFormat.format(
-                            I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_STATUS_CONNECTED), finalUrl));
-                    btnCardLayout.show(btnCard, "disconnect");
+                    btnCardLayout.show(btnCard, DISCONNECT_CARD);
                     resultArea.setText(JsonUtil.toJsonPrettyStr(resp));
                     resultArea.setCaretPosition(0);
                     addHostHistory(finalUrl);
+                    saveConnectionProfile(finalUrl, user, pass, false);
                     loadIndices();
                     NotificationUtil.showSuccess(MessageFormat.format(
                             I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_CONNECT_SUCCESS), finalUrl));
@@ -943,9 +1331,6 @@ public class ElasticsearchPanel extends JPanel {
                     Thread.currentThread().interrupt();
                 } catch (Exception ex) {
                     connected = false;
-                    connectionStatusLabel.setForeground(Color.RED);
-                    connectionStatusLabel.setToolTipText(
-                            I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_STATUS_NOT_CONNECTED));
                     NotificationUtil.showError(MessageFormat.format(
                             I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_ERR_CONNECT_FAILED), ex.getMessage()));
                 }
@@ -957,9 +1342,7 @@ public class ElasticsearchPanel extends JPanel {
         connected = false;
         baseUrl = "http://localhost:9200";
         authHeader = null;
-        connectionStatusLabel.setForeground(UIManager.getColor(LABEL_DISABLED_FG));
-        connectionStatusLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_STATUS_NOT_CONNECTED));
-        btnCardLayout.show(btnCard, "connect");
+        btnCardLayout.show(btnCard, CONNECT_CARD);
         indexListModel.clear();
         indexFilteredModel.clear();
         indexDocCountMap.clear();
@@ -970,26 +1353,15 @@ public class ElasticsearchPanel extends JPanel {
      * 获取当前选中/输入的 host
      */
     private String getCurrentHost() {
-        Object selected = hostCombo.getEditor().getItem();
-        return selected == null ? "" : selected.toString().trim();
+        return hostField.getText().trim();
     }
 
     /**
-     * 将 host 加入历史下拉
+     * 将 host 写回地址输入框，历史由当前 profile 保存。
      */
     private void addHostHistory(String host) {
-        // 先移除已有同名
-        for (int i = 0; i < hostCombo.getItemCount(); i++) {
-            if (host.equals(hostCombo.getItemAt(i))) {
-                hostCombo.removeItemAt(i);
-                break;
-            }
-        }
-        hostCombo.insertItemAt(host, 0);
-        while (hostCombo.getItemCount() > MAX_HOST_HISTORY) {
-            hostCombo.removeItemAt(hostCombo.getItemCount() - 1);
-        }
-        hostCombo.setSelectedItem(host);
+        host = ElasticsearchConnectionProfileStore.normalizeBaseUrl(host);
+        hostField.setText(host);
     }
 
     private void loadIndices() {
@@ -1257,7 +1629,7 @@ public class ElasticsearchPanel extends JPanel {
     }
 
     private void flattenAggregations(String prefix, JsonNode node, List<Object[]> rows) {
-        for (java.util.Map.Entry<String, JsonNode> entry : node.properties()) {
+        for (Map.Entry<String, JsonNode> entry : node.properties()) {
             String aggName = prefix.isEmpty() ? entry.getKey() : prefix + "." + entry.getKey();
             JsonNode aggNode = entry.getValue();
             // buckets 类型（terms、range、date_histogram 等）
@@ -1270,7 +1642,7 @@ public class ElasticsearchPanel extends JPanel {
                     String docCount = nodeText(bucket.get(AGG_DOC_COUNT));
                     rows.add(new Object[]{aggName, key, docCount});
                     // 嵌套 sub-aggregations
-                    for (java.util.Map.Entry<String, JsonNode> sub : bucket.properties()) {
+                    for (Map.Entry<String, JsonNode> sub : bucket.properties()) {
                         String sk = sub.getKey();
                         if (!sk.startsWith("_") && !sk.equals(AGG_DOC_COUNT)
                                 && !sk.equals(AGG_KEY) && !sk.equals(AGG_KEY_AS_STRING)) {
@@ -1333,7 +1705,7 @@ public class ElasticsearchPanel extends JPanel {
             if (!arr.isArray() || arr.isEmpty()) return;
             JsonNode first = arr.get(0);
             List<String> colNames = new ArrayList<>();
-            for (java.util.Map.Entry<String, JsonNode> e : first.properties()) colNames.add(e.getKey());
+            for (Map.Entry<String, JsonNode> e : first.properties()) colNames.add(e.getKey());
             List<Object[]> rows = new ArrayList<>();
             for (JsonNode obj : arr) {
                 Object[] row = new Object[colNames.size()];
@@ -1347,7 +1719,7 @@ public class ElasticsearchPanel extends JPanel {
     }
 
     private void flattenJson(String prefix, JsonNode obj, List<Object[]> rows) {
-        for (java.util.Map.Entry<String, JsonNode> entry : obj.properties()) {
+        for (Map.Entry<String, JsonNode> entry : obj.properties()) {
             String fullKey = prefix.isEmpty() ? entry.getKey() : prefix + "." + entry.getKey();
             JsonNode v = entry.getValue();
             if (v.isObject()) flattenJson(fullKey, v, rows);

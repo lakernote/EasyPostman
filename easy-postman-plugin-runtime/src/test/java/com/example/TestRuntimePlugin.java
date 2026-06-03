@@ -4,6 +4,8 @@ import com.laker.postman.plugin.api.EasyPostmanPlugin;
 import com.laker.postman.plugin.api.PluginContext;
 import com.laker.postman.plugin.api.PluginMenuContribution;
 import com.laker.postman.plugin.api.PluginSettingsContribution;
+import com.laker.postman.plugin.api.PluginUpdateMetadata;
+import com.laker.postman.plugin.api.PluginUpdateMetadataContribution;
 
 import javax.swing.JPanel;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,6 +37,11 @@ public class TestRuntimePlugin implements EasyPostmanPlugin {
     @Override
     public void onLoad(PluginContext context) {
         LOAD_COUNT.incrementAndGet();
+        try {
+            context.storage().writeString("runtime-storage.txt", context.descriptor().id());
+        } catch (java.io.IOException e) {
+            throw new IllegalStateException("Failed to write plugin storage test file", e);
+        }
         context.registerScriptApi("testRuntime", Object::new);
         context.registerSettingsContribution(new PluginSettingsContribution(
                 "test-runtime-settings",
@@ -52,6 +59,19 @@ public class TestRuntimePlugin implements EasyPostmanPlugin {
                 actionContext -> {
                 },
                 "test-runtime-messages"
+        ));
+        context.registerUpdateMetadataContribution(new PluginUpdateMetadataContribution(
+                "test-runtime-update-metadata",
+                900,
+                () -> java.util.List.of(new PluginUpdateMetadata(
+                        context.descriptor().id(),
+                        context.descriptor().name(),
+                        "1.0.1",
+                        "Test runtime plugin update",
+                        "https://example.com/test-runtime-1.0.1.jar",
+                        "https://example.com/test-runtime",
+                        "sha256-test-runtime-1.0.1"
+                ))
         ));
     }
 

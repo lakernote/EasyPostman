@@ -82,6 +82,8 @@ Use this skill when editing Swing form layouts in this repo. The goal is not jus
   - avoid titled section borders
   - reintroduce only plain borders after focus behavior is stable
 - If the user says "it is probably MigLayout", take that seriously and verify MigLayout constraints before touching theme or component code.
+- In dense connection toolbars, `JSpinner`/`EasyJSpinner` can make MigLayout's baseline calculation inflate a row even when the spinner preferred height was manually compacted. If a row mixes text fields, combo boxes, buttons, and spinners, constrain the row height explicitly, for example `[" + ConnectionToolbarUi.FORM_CONTROL_HEIGHT + "!]`, then verify with the real FlatLaf theme and saved UI font size.
+- For multi-row connection forms, reuse the same column specification across rows when fields are expected to line up. Do not switch from the first row's custom columns, such as narrow `port`/`DB` label widths, to generic `connectionFieldColumns(...)` on the second row; labels like username/password will visibly drift.
 
 ## Theme entry points in this repo
 

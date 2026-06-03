@@ -17,6 +17,7 @@ import java.util.jar.JarOutputStream;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertThrows;
 import static org.testng.Assert.assertTrue;
 
 public class PluginRuntimeTest {
@@ -58,6 +59,24 @@ public class PluginRuntimeTest {
 
         assertTrue(managedDir.startsWith(dataDir));
         assertTrue(packageDir.startsWith(dataDir));
+    }
+
+    @Test
+    public void shouldUseConfiguredDataDirectoryOverrideForPluginStorage() {
+        PluginFileStorage storage = PluginFileStorage.forPlugin("plugin:redis");
+
+        assertTrue(storage.dataDirectory().startsWith(dataDir.resolve("plugins").resolve("data")));
+        assertEquals(storage.dataDirectory().getFileName().toString(), "plugin_redis");
+    }
+
+    @Test
+    public void shouldRejectPluginStoragePathTraversal() throws Exception {
+        PluginFileStorage storage = PluginFileStorage.forPlugin("plugin-redis");
+
+        assertThrows(IOException.class, () -> storage.writeString("../escape.txt", "x"));
+        assertThrows(IOException.class, () -> storage.writeString(dataDir.resolve("escape.txt").toString(), "x"));
+        assertFalse(Files.exists(dataDir.resolve("plugins").resolve("escape.txt")));
+        assertFalse(Files.exists(dataDir.resolve("escape.txt")));
     }
 
     @Test
@@ -171,6 +190,33 @@ public class PluginRuntimeTest {
         assertEquals(contributions.size(), 1);
         assertEquals(contributions.get(0).id(), "test-runtime-action");
         assertNotNull(contributions.get(0).titleClassLoader());
+    }
+
+    @Test
+    public void shouldExposeUpdateMetadataContributionsFromLoadedPlugin() throws Exception {
+        Path pluginJar = PluginRuntime.getManagedPluginDir().resolve("plugin-ok-1.0.0.jar");
+        writePluginJar(pluginJar, "plugin-ok", "1.0.0", "com.example.TestRuntimePlugin");
+
+        PluginRuntime.initialize();
+
+        var contributions = PluginRuntime.getRegistry().getUpdateMetadataContributions();
+        assertEquals(contributions.size(), 1);
+        assertEquals(contributions.get(0).id(), "test-runtime-update-metadata");
+        assertEquals(contributions.get(0).loadMetadata().get(0).pluginId(), "plugin-ok");
+        assertEquals(contributions.get(0).loadMetadata().get(0).version(), "1.0.1");
+    }
+
+    @Test
+    public void shouldExposePrivateStorageToLoadedPlugin() throws Exception {
+        Path pluginJar = PluginRuntime.getManagedPluginDir().resolve("plugin-ok-1.0.0.jar");
+        writePluginJar(pluginJar, "plugin-ok", "1.0.0", "com.example.TestRuntimePlugin");
+
+        PluginRuntime.initialize();
+
+        Path storageFile = dataDir.resolve("plugins").resolve("data")
+                .resolve("plugin-ok").resolve("runtime-storage.txt");
+        assertTrue(Files.exists(storageFile));
+        assertEquals(Files.readString(storageFile), "plugin-ok");
     }
 
     @Test

@@ -1,6 +1,8 @@
 package com.laker.postman.panel.topmenu;
 
 import com.laker.postman.panel.topmenu.setting.ModernSettingsDialog;
+import com.laker.postman.panel.topmenu.setting.SettingsContribution;
+import com.laker.postman.panel.topmenu.setting.SettingsContributionRegistry;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.experimental.UtilityClass;
@@ -19,6 +21,8 @@ import java.awt.event.KeyEvent;
 @UtilityClass
 class TopMenuSettingsMenu {
 
+    private static final SettingsContributionRegistry SETTINGS_REGISTRY = SettingsContributionRegistry.defaultRegistry();
+
     JMenu create(Component parent) {
         JMenu settingMenu = new JMenu(I18nUtil.getMessage(MessageKeys.MENU_SETTINGS));
 
@@ -31,14 +35,10 @@ class TopMenuSettingsMenu {
         settingMenu.add(settingsMenuItem);
 
         settingMenu.addSeparator();
-        settingMenu.add(createTabItem(parent, MessageKeys.SETTINGS_GENERAL_TITLE, 0));
-        settingMenu.add(createTabItem(parent, MessageKeys.SETTINGS_REQUEST_TITLE, 1));
-        settingMenu.add(createTabItem(parent, MessageKeys.SETTINGS_PROXY_TITLE, 2));
-        settingMenu.add(createTabItem(parent, MessageKeys.SETTINGS_REQUEST_TRUSTED_MATERIAL_TITLE, 3));
-        settingMenu.add(createTabItem(parent, MessageKeys.SETTINGS_AUTO_UPDATE_TITLE, 4));
-        settingMenu.add(createTabItem(parent, MessageKeys.SETTINGS_PERFORMANCE_TITLE, 5));
-        settingMenu.add(createTabItem(parent, MessageKeys.CERT_TITLE, 6));
-        settingMenu.add(createTabItem(parent, MessageKeys.SETTINGS_SHORTCUTS_TITLE, 7));
+        int tabIndex = 0;
+        for (SettingsContribution contribution : SETTINGS_REGISTRY.contributions()) {
+            settingMenu.add(createTabItem(parent, contribution.titleKey(), tabIndex++));
+        }
 
         return settingMenu;
     }

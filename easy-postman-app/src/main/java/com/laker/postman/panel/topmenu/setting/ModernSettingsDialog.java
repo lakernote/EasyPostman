@@ -11,6 +11,7 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.Objects;
 
 
 /**
@@ -29,6 +30,7 @@ public class ModernSettingsDialog extends JDialog {
     private static final int TAB_PADDING = 4;
 
     private final JTabbedPane tabbedPane;
+    private final SettingsContributionRegistry contributionRegistry;
 
     /**
      * 获取主题适配的背景色
@@ -60,7 +62,12 @@ public class ModernSettingsDialog extends JDialog {
 
 
     public ModernSettingsDialog(Window parent) {
+        this(parent, SettingsContributionRegistry.defaultRegistry());
+    }
+
+    ModernSettingsDialog(Window parent, SettingsContributionRegistry contributionRegistry) {
         super(parent, I18nUtil.getMessage(MessageKeys.SETTINGS_DIALOG_TITLE), ModalityType.APPLICATION_MODAL);
+        this.contributionRegistry = Objects.requireNonNull(contributionRegistry, "contributionRegistry");
         this.tabbedPane = createModernTabbedPane();
         initUI();
         pack();
@@ -96,22 +103,13 @@ public class ModernSettingsDialog extends JDialog {
     }
 
     private void addSettingTabs() {
-        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_TITLE),
-                new UISettingsPanelModern());
-        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_TITLE),
-                new RequestSettingsPanelModern());
-        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_TITLE),
-                new ProxySettingsPanelModern());
-        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_TRUSTED_MATERIAL_TITLE),
-                new TrustedCertificatesSettingsPanelModern());
-        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.SETTINGS_AUTO_UPDATE_TITLE),
-                new AutoUpdateSettingsPanel());
-        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.SETTINGS_PERFORMANCE_TITLE),
-                new PerformanceSettingsPanelModern());
-        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.CERT_TITLE),
-                new ClientCertificateSettingsPanelModern(this));
-        tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.SETTINGS_SHORTCUTS_TITLE),
-                new ShortcutSettingsPanel());
+        SettingsContributionContext context = new SettingsContributionContext(this);
+        for (SettingsContribution contribution : contributionRegistry.contributions()) {
+            tabbedPane.addTab(
+                    I18nUtil.getMessage(contribution.titleKey()),
+                    contribution.createPanel(context)
+            );
+        }
     }
 
     private void setupMainPanel() {

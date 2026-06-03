@@ -2,6 +2,7 @@ package com.laker.postman.plugin.host;
 
 import com.laker.postman.plugin.api.ScriptCompletionContributor;
 import com.laker.postman.plugin.api.SnippetDefinition;
+import com.laker.postman.plugin.api.PluginSettingsContribution;
 import com.laker.postman.plugin.api.ToolboxContribution;
 import com.laker.postman.plugin.runtime.PluginRuntime;
 
@@ -26,6 +27,10 @@ public final class PluginAccess {
 
     public static List<ToolboxContribution> getToolboxContributions() {
         return PluginRuntime.getRegistry().getToolboxContributions();
+    }
+
+    public static List<PluginSettingsContribution> getSettingsContributions() {
+        return PluginRuntime.getRegistry().getSettingsContributions();
     }
 
     public static List<ScriptCompletionContributor> getScriptCompletionContributors() {

@@ -1,5 +1,7 @@
 package com.laker.postman.panel.topmenu.setting;
 
+import com.laker.postman.util.I18nUtil;
+
 import javax.swing.JComponent;
 import java.util.Objects;
 import java.util.function.Function;
@@ -12,8 +14,18 @@ public record SettingsContribution(
         String titleKey,
         int order,
         String category,
-        Function<SettingsContributionContext, ? extends JComponent> panelFactory
+        Function<SettingsContributionContext, ? extends JComponent> panelFactory,
+        String titleBundleName,
+        ClassLoader titleClassLoader
 ) {
+
+    public SettingsContribution(String id,
+                                String titleKey,
+                                int order,
+                                String category,
+                                Function<SettingsContributionContext, ? extends JComponent> panelFactory) {
+        this(id, titleKey, order, category, panelFactory, null, null);
+    }
 
     public SettingsContribution {
         if (id == null || id.isBlank()) {
@@ -26,6 +38,13 @@ public record SettingsContribution(
             throw new IllegalArgumentException("Settings contribution category must not be blank");
         }
         panelFactory = Objects.requireNonNull(panelFactory, "panelFactory");
+    }
+
+    public String resolveTitle() {
+        if (titleBundleName == null || titleBundleName.isBlank()) {
+            return I18nUtil.getMessage(titleKey);
+        }
+        return I18nUtil.getMessage(titleBundleName, titleClassLoader, titleKey);
     }
 
     public JComponent createPanel(SettingsContributionContext context) {

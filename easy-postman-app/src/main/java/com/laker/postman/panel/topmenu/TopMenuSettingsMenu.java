@@ -21,9 +21,8 @@ import java.awt.event.KeyEvent;
 @UtilityClass
 class TopMenuSettingsMenu {
 
-    private static final SettingsContributionRegistry SETTINGS_REGISTRY = SettingsContributionRegistry.defaultRegistry();
-
     JMenu create(Component parent) {
+        SettingsContributionRegistry settingsRegistry = SettingsContributionRegistry.defaultRegistry();
         JMenu settingMenu = new JMenu(I18nUtil.getMessage(MessageKeys.MENU_SETTINGS));
 
         JMenuItem settingsMenuItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.SETTINGS_DIALOG_TITLE));
@@ -36,15 +35,15 @@ class TopMenuSettingsMenu {
 
         settingMenu.addSeparator();
         int tabIndex = 0;
-        for (SettingsContribution contribution : SETTINGS_REGISTRY.contributions()) {
-            settingMenu.add(createTabItem(parent, contribution.titleKey(), tabIndex++));
+        for (SettingsContribution contribution : settingsRegistry.contributions()) {
+            settingMenu.add(createTabItem(parent, contribution, tabIndex++));
         }
 
         return settingMenu;
     }
 
-    private JMenuItem createTabItem(Component parent, String messageKey, int tabIndex) {
-        JMenuItem menuItem = new JMenuItem(I18nUtil.getMessage(messageKey));
+    private JMenuItem createTabItem(Component parent, SettingsContribution contribution, int tabIndex) {
+        JMenuItem menuItem = new JMenuItem(contribution.resolveTitle());
         menuItem.addActionListener(e -> showSettingsDialog(parent, tabIndex));
         return menuItem;
     }

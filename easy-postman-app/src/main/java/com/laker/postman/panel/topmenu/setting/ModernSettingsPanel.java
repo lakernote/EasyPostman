@@ -34,6 +34,7 @@ public abstract class ModernSettingsPanel extends JPanel {
     protected final Map<JTextField, Predicate<String>> validators = new HashMap<>();
     private final Map<JTextField, String> errorMessages = new HashMap<>();
     protected final Map<JComponent, Object> originalValues = new HashMap<>();
+    private JScrollPane contentScrollPane;
 
     // 状态管理
     protected boolean hasUnsavedChanges = false;
@@ -177,6 +178,7 @@ public abstract class ModernSettingsPanel extends JPanel {
     public void addNotify() {
         initializePanel();
         super.addNotify();
+        resetScrollPositionToTop();
     }
 
     @Override
@@ -198,7 +200,7 @@ public abstract class ModernSettingsPanel extends JPanel {
         warningPanel.setVisible(false);
 
         // 主内容区域
-        JPanel contentPanel = new JPanel();
+        JPanel contentPanel = new ViewportWidthTrackingPanel();
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
         contentPanel.setBackground(getBackgroundColor());
         contentPanel.setBorder(new EmptyBorder(12, 12, 12, 12));
@@ -207,16 +209,16 @@ public abstract class ModernSettingsPanel extends JPanel {
         buildContent(contentPanel);
 
         // 滚动面板
-        JScrollPane scrollPane = new JScrollPane(contentPanel);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder());
-        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        customizeScrollBar(scrollPane);
+        contentScrollPane = new JScrollPane(contentPanel);
+        contentScrollPane.setBorder(BorderFactory.createEmptyBorder());
+        contentScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        contentScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        contentScrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        customizeScrollBar(contentScrollPane);
 
         // 组装主容器
         mainContainer.add(warningPanel, BorderLayout.NORTH);
-        mainContainer.add(scrollPane, BorderLayout.CENTER);
+        mainContainer.add(contentScrollPane, BorderLayout.CENTER);
 
         // 底部按钮栏
         JPanel buttonBar = createModernButtonBar();
@@ -234,6 +236,18 @@ public abstract class ModernSettingsPanel extends JPanel {
                 KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
                 JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT
         );
+
+        resetScrollPositionToTop();
+    }
+
+    void resetScrollPositionToTop() {
+        if (contentScrollPane == null) {
+            return;
+        }
+        SwingUtilities.invokeLater(() -> {
+            contentScrollPane.getViewport().setViewPosition(new Point(0, 0));
+            contentScrollPane.getVerticalScrollBar().setValue(0);
+        });
     }
 
     /**
@@ -762,5 +776,33 @@ public abstract class ModernSettingsPanel extends JPanel {
 
     public boolean hasUnsavedChanges() {
         return hasUnsavedChanges;
+    }
+
+    private static final class ViewportWidthTrackingPanel extends JPanel implements Scrollable {
+
+        @Override
+        public Dimension getPreferredScrollableViewportSize() {
+            return getPreferredSize();
+        }
+
+        @Override
+        public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation, int direction) {
+            return 16;
+        }
+
+        @Override
+        public int getScrollableBlockIncrement(Rectangle visibleRect, int orientation, int direction) {
+            return Math.max(16, visibleRect.height - 16);
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportWidth() {
+            return true;
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportHeight() {
+            return false;
+        }
     }
 }

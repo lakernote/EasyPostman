@@ -1,9 +1,14 @@
 package com.laker.postman.panel.topmenu.setting;
 
+import com.laker.postman.plugin.api.PluginSettingsContribution;
+import com.laker.postman.plugin.runtime.PluginRuntime;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.test.AbstractSwingUiTest;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import javax.swing.JLabel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -13,6 +18,16 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class SettingsContributionRegistryTest extends AbstractSwingUiTest {
+
+    @BeforeMethod
+    public void resetPluginRuntimeBeforeTest() {
+        PluginRuntime.resetForTests();
+    }
+
+    @AfterMethod
+    public void resetPluginRuntimeAfterTest() {
+        PluginRuntime.resetForTests();
+    }
 
     @Test
     public void defaultContributionsShouldPreserveExistingTabOrderAndPanels() {
@@ -65,5 +80,25 @@ public class SettingsContributionRegistryTest extends AbstractSwingUiTest {
         assertFalse(source.contains("new PerformanceSettingsPanelModern()"));
         assertFalse(source.contains("new ClientCertificateSettingsPanelModern(this)"));
         assertFalse(source.contains("new ShortcutSettingsPanel()"));
+    }
+
+    @Test
+    public void defaultRegistryShouldIncludePluginSettingsContributions() {
+        PluginRuntime.getRegistry().registerSettingsContribution(new PluginSettingsContribution(
+                "plugin-settings",
+                "plugin.settings.title",
+                900,
+                PluginSettingsContribution.CATEGORY_EXTENSIONS,
+                context -> new JLabel("plugin-settings"),
+                "plugin-settings-test-messages",
+                getClass().getClassLoader()
+        ));
+
+        SettingsContribution contribution = SettingsContributionRegistry.defaultRegistry()
+                .findById("plugin-settings")
+                .orElseThrow();
+
+        assertEquals(contribution.resolveTitle(), "Plugin Settings");
+        assertTrue(contribution.createPanel(new SettingsContributionContext(null)) instanceof JLabel);
     }
 }

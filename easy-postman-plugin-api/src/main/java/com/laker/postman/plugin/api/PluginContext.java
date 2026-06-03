@@ -41,6 +41,13 @@ public interface PluginContext {
     void registerToolboxContribution(ToolboxContribution contribution);
 
     /**
+     * 注册设置页扩展。
+     */
+    default void registerSettingsContribution(PluginSettingsContribution contribution) {
+        // Runtime implementations can expose this through the host settings dialog.
+    }
+
+    /**
      * 注册脚本自动补全扩展。
      */
     void registerScriptCompletionContributor(ScriptCompletionContributor contributor);

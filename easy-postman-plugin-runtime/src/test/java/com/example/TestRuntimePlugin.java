@@ -2,7 +2,9 @@ package com.example;
 
 import com.laker.postman.plugin.api.EasyPostmanPlugin;
 import com.laker.postman.plugin.api.PluginContext;
+import com.laker.postman.plugin.api.PluginSettingsContribution;
 
+import javax.swing.JPanel;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestRuntimePlugin implements EasyPostmanPlugin {
@@ -33,6 +35,14 @@ public class TestRuntimePlugin implements EasyPostmanPlugin {
     public void onLoad(PluginContext context) {
         LOAD_COUNT.incrementAndGet();
         context.registerScriptApi("testRuntime", Object::new);
+        context.registerSettingsContribution(new PluginSettingsContribution(
+                "test-runtime-settings",
+                "test.runtime.settings.title",
+                900,
+                PluginSettingsContribution.CATEGORY_EXTENSIONS,
+                settingsContext -> new JPanel(),
+                "test-runtime-messages"
+        ));
     }
 
     @Override

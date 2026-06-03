@@ -1,5 +1,7 @@
 package com.laker.postman.panel.topmenu.setting;
 
+import com.laker.postman.common.component.setting.SettingsHintLabel;
+import com.laker.postman.common.component.setting.SettingsSectionPanel;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.ClientCertificate;
 import com.laker.postman.panel.topmenu.plugin.PluginManagerDialog;
@@ -125,19 +127,18 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBackground(getCardBackgroundColor());
         panel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
 
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CERT_TITLE));
         titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
         titleLabel.setForeground(getTextPrimaryColor());
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JLabel descLabel = new JLabel("<html>" +
-                I18nUtil.getMessage(MessageKeys.CERT_DESCRIPTION) +
-                "</html>");
-        descLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
-        descLabel.setForeground(getTextSecondaryColor());
+        SettingsHintLabel descLabel = new SettingsHintLabel(
+                I18nUtil.getMessage(MessageKeys.CERT_DESCRIPTION),
+                SettingsSectionPanel.DEFAULT_DESCRIPTION_WIDTH
+        );
         descLabel.setBorder(new EmptyBorder(6, 0, 0, 0));
-        descLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         panel.add(titleLabel);
         panel.add(descLabel);

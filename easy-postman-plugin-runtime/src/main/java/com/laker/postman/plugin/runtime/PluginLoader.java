@@ -146,6 +146,14 @@ class PluginLoader {
         }
 
         @Override
+        public void registerSettingsContribution(com.laker.postman.plugin.api.PluginSettingsContribution contribution) {
+            registry.registerSettingsContribution(
+                    descriptor.id(),
+                    contribution == null ? null : contribution.withTitleClassLoader(classLoader)
+            );
+        }
+
+        @Override
         public void registerScriptCompletionContributor(com.laker.postman.plugin.api.ScriptCompletionContributor contributor) {
             registry.registerScriptCompletionContributor(contributor);
         }

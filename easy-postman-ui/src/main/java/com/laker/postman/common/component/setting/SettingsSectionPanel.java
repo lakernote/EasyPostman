@@ -24,7 +24,7 @@ import java.awt.RenderingHints;
  */
 public class SettingsSectionPanel extends JPanel {
 
-    public static final int DEFAULT_DESCRIPTION_WIDTH = 560;
+    public static final int DEFAULT_DESCRIPTION_WIDTH = 640;
 
     public SettingsSectionPanel(String title, String description) {
         this(title, description, DEFAULT_DESCRIPTION_WIDTH);

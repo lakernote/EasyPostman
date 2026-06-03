@@ -1,6 +1,8 @@
 package com.laker.postman.panel.topmenu.setting;
 
 import cn.hutool.json.JSONUtil;
+import com.laker.postman.common.component.setting.SettingsHintLabel;
+import com.laker.postman.common.component.setting.SettingsSectionPanel;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.certificate.TrustedCertificateEntry;
 import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
@@ -54,13 +56,11 @@ public class TrustedCertificatesSettingsPanelModern extends ModernSettingsPanel 
         ));
         trustedMaterialSection.add(createVerticalSpace(8));
 
-        JLabel hintLabel = new JLabel("<html>" +
-                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_TRUSTED_MATERIAL_HINT) +
-                "</html>");
-        hintLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
-        hintLabel.setForeground(getTextSecondaryColor());
+        SettingsHintLabel hintLabel = new SettingsHintLabel(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_TRUSTED_MATERIAL_HINT),
+                SettingsSectionPanel.DEFAULT_DESCRIPTION_WIDTH
+        );
         hintLabel.setBorder(new EmptyBorder(0, 0, 0, 0));
-        hintLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         trustedMaterialSection.add(hintLabel);
         trustedMaterialSection.add(createVerticalSpace(12));
 
@@ -172,8 +172,8 @@ public class TrustedCertificatesSettingsPanelModern extends ModernSettingsPanel 
 
         JScrollPane scrollPane = new JScrollPane(trustMaterialTable);
         scrollPane.setBorder(BorderFactory.createLineBorder(ModernColors.getBorderLightColor(), 1));
-        scrollPane.setPreferredSize(new Dimension(520, 260));
-        scrollPane.setMaximumSize(new Dimension(640, 340));
+        scrollPane.setPreferredSize(new Dimension(SettingsSectionPanel.DEFAULT_DESCRIPTION_WIDTH, 260));
+        scrollPane.setMaximumSize(new Dimension(SettingsSectionPanel.DEFAULT_DESCRIPTION_WIDTH, 340));
         scrollPane.setMinimumSize(new Dimension(360, 180));
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
@@ -489,11 +489,10 @@ public class TrustedCertificatesSettingsPanelModern extends ModernSettingsPanel 
             gbc.gridwidth = 2;
             formPanel.add(enabledCheckBox, gbc);
 
-            JLabel hintLabel = new JLabel("<html>" +
-                    I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_TRUSTED_MATERIAL_HINT) +
-                    "</html>");
-            hintLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
-            hintLabel.setForeground(ModernColors.getTextSecondary());
+            SettingsHintLabel hintLabel = new SettingsHintLabel(
+                    I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_TRUSTED_MATERIAL_HINT),
+                    520
+            );
             hintLabel.setBorder(new EmptyBorder(4, 0, 0, 0));
             gbc.gridx = 0;
             gbc.gridy = 3;

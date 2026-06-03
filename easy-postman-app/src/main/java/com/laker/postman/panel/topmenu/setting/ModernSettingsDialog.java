@@ -83,10 +83,15 @@ public class ModernSettingsDialog extends JDialog {
 
     private void configureDialog() {
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-        setResizable(true);
+        setResizable(false);
         setMinimumSize(new Dimension(MIN_WIDTH, MIN_HEIGHT));
         setPreferredSize(new Dimension(PREFERRED_WIDTH, PREFERRED_HEIGHT));
         addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowOpened(WindowEvent e) {
+                resetSelectedTabScrollPosition();
+            }
+
             @Override
             public void windowClosing(WindowEvent e) {
                 handleWindowClosing();
@@ -100,13 +105,15 @@ public class ModernSettingsDialog extends JDialog {
                 KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
                 JComponent.WHEN_IN_FOCUSED_WINDOW
         );
+
+        tabbedPane.addChangeListener(e -> resetSelectedTabScrollPosition());
     }
 
     private void addSettingTabs() {
         SettingsContributionContext context = new SettingsContributionContext(this);
         for (SettingsContribution contribution : contributionRegistry.contributions()) {
             tabbedPane.addTab(
-                    I18nUtil.getMessage(contribution.titleKey()),
+                    contribution.resolveTitle(),
                     contribution.createPanel(context)
             );
         }
@@ -276,6 +283,14 @@ public class ModernSettingsDialog extends JDialog {
     private void selectTab(int tabIndex) {
         if (tabIndex >= 0 && tabIndex < tabbedPane.getTabCount()) {
             tabbedPane.setSelectedIndex(tabIndex);
+            resetSelectedTabScrollPosition();
+        }
+    }
+
+    private void resetSelectedTabScrollPosition() {
+        Component component = tabbedPane.getSelectedComponent();
+        if (component instanceof ModernSettingsPanel panel) {
+            panel.resetScrollPositionToTop();
         }
     }
 }

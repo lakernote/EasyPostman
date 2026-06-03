@@ -1,6 +1,7 @@
 package com.laker.postman.plugin.api;
 
 import javax.swing.*;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -32,6 +33,28 @@ public final class PluginContributionSupport {
                 groupId,
                 groupDisplayName,
                 panelSupplier,
+                ownerClass == null ? null : ownerClass.getClassLoader()
+        ));
+    }
+
+    public static void registerSettingsContribution(PluginContext context,
+                                                    String id,
+                                                    String titleKey,
+                                                    int order,
+                                                    String category,
+                                                    String titleBundleName,
+                                                    Function<PluginSettingsContributionContext, ? extends JComponent> panelFactory,
+                                                    Class<?> ownerClass) {
+        if (context == null) {
+            return;
+        }
+        context.registerSettingsContribution(new PluginSettingsContribution(
+                id,
+                titleKey,
+                order,
+                category,
+                panelFactory,
+                titleBundleName,
                 ownerClass == null ? null : ownerClass.getClassLoader()
         ));
     }

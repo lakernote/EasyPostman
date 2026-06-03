@@ -1,7 +1,9 @@
 package com.laker.postman.plugin.runtime;
 
+import com.laker.postman.plugin.api.PluginSettingsContribution;
 import org.testng.annotations.Test;
 
+import javax.swing.JPanel;
 import java.util.Map;
 
 import static org.testng.Assert.assertEquals;
@@ -48,5 +50,22 @@ public class PluginRegistryTest {
         assertEquals(registry.getScriptCompletionContributors().size(), 1);
         registry.getScriptCompletionContributors().get(0).contribute(item ->
                 assertTrue("pm.redis".equals(item.inputText())));
+    }
+
+    @Test
+    public void shouldRegisterSettingsContributions() {
+        PluginRegistry registry = new PluginRegistry();
+        PluginSettingsContribution contribution = new PluginSettingsContribution(
+                "plugin-settings",
+                "plugin.settings.title",
+                900,
+                PluginSettingsContribution.CATEGORY_EXTENSIONS,
+                context -> new JPanel()
+        );
+
+        registry.registerSettingsContribution("plugin-a", contribution);
+
+        assertEquals(registry.getSettingsContributions().size(), 1);
+        assertSame(registry.getSettingsContributions().get(0), contribution);
     }
 }

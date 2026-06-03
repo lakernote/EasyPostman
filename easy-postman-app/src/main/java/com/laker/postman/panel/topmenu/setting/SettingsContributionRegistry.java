@@ -1,6 +1,10 @@
 package com.laker.postman.panel.topmenu.setting;
 
+import com.laker.postman.plugin.api.PluginSettingsContribution;
+import com.laker.postman.plugin.api.PluginSettingsContributionContext;
+import com.laker.postman.plugin.host.PluginAccess;
 import com.laker.postman.util.MessageKeys;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -13,6 +17,7 @@ import java.util.Set;
 /**
  * Registry for settings dialog tabs.
  */
+@Slf4j
 public final class SettingsContributionRegistry {
 
     public static final String CATEGORY_APPLICATION = "application";
@@ -50,6 +55,24 @@ public final class SettingsContributionRegistry {
     }
 
     public static List<SettingsContribution> defaultContributions() {
+        List<SettingsContribution> contributions = new ArrayList<>(builtInContributions());
+        Set<String> ids = new HashSet<>();
+        for (SettingsContribution contribution : contributions) {
+            ids.add(contribution.id());
+        }
+
+        for (PluginSettingsContribution pluginContribution : PluginAccess.getSettingsContributions()) {
+            SettingsContribution contribution = adaptPluginContribution(pluginContribution);
+            if (!ids.add(contribution.id())) {
+                log.warn("Skip duplicate plugin settings contribution id: {}", contribution.id());
+                continue;
+            }
+            contributions.add(contribution);
+        }
+        return List.copyOf(contributions);
+    }
+
+    private static List<SettingsContribution> builtInContributions() {
         return List.of(
                 new SettingsContribution(
                         "general",
@@ -107,6 +130,18 @@ public final class SettingsContributionRegistry {
                         CATEGORY_APPLICATION,
                         context -> new ShortcutSettingsPanel()
                 )
+        );
+    }
+
+    private static SettingsContribution adaptPluginContribution(PluginSettingsContribution contribution) {
+        return new SettingsContribution(
+                contribution.id(),
+                contribution.titleKey(),
+                contribution.order(),
+                contribution.category(),
+                context -> contribution.createPanel(new PluginSettingsContributionContext(context.parentWindow())),
+                contribution.titleBundleName(),
+                contribution.titleClassLoader()
         );
     }
 

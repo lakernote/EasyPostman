@@ -1,10 +1,12 @@
 package com.laker.postman.plugin.runtime;
 
+import com.laker.postman.plugin.api.PluginMenuContribution;
 import com.laker.postman.plugin.api.PluginSettingsContribution;
 import org.testng.annotations.Test;
 
 import javax.swing.JPanel;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
@@ -67,5 +69,24 @@ public class PluginRegistryTest {
 
         assertEquals(registry.getSettingsContributions().size(), 1);
         assertSame(registry.getSettingsContributions().get(0), contribution);
+    }
+
+    @Test
+    public void shouldRegisterMenuContributions() {
+        PluginRegistry registry = new PluginRegistry();
+        AtomicBoolean invoked = new AtomicBoolean(false);
+        PluginMenuContribution contribution = new PluginMenuContribution(
+                "plugin-action",
+                "plugin.action.title",
+                900,
+                context -> invoked.set(true)
+        );
+
+        registry.registerMenuContribution("plugin-a", contribution);
+        registry.getMenuContributions().get(0).perform(null);
+
+        assertEquals(registry.getMenuContributions().size(), 1);
+        assertSame(registry.getMenuContributions().get(0), contribution);
+        assertTrue(invoked.get());
     }
 }

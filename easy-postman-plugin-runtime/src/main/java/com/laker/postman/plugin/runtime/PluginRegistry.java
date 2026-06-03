@@ -1,5 +1,6 @@
 package com.laker.postman.plugin.runtime;
 
+import com.laker.postman.plugin.api.PluginMenuContribution;
 import com.laker.postman.plugin.api.ScriptCompletionContributor;
 import com.laker.postman.plugin.api.SnippetDefinition;
 import com.laker.postman.plugin.api.PluginSettingsContribution;
@@ -30,6 +31,7 @@ public class PluginRegistry {
     private final Map<Class<?>, ServiceRegistration> services = new ConcurrentHashMap<>();
     // Toolbox / 自动补全 / Snippet 都是 UI 侧可扩展点
     private final List<ToolboxContribution> toolboxContributions = new CopyOnWriteArrayList<>();
+    private final List<PluginMenuContribution> menuContributions = new CopyOnWriteArrayList<>();
     private final List<PluginSettingsContribution> settingsContributions = new CopyOnWriteArrayList<>();
     private final List<ScriptCompletionContributor> scriptCompletionContributors = new CopyOnWriteArrayList<>();
     private final List<SnippetDefinition> snippetDefinitions = new CopyOnWriteArrayList<>();
@@ -110,6 +112,20 @@ public class PluginRegistry {
         return new ArrayList<>(toolboxContributions);
     }
 
+    public void registerMenuContribution(PluginMenuContribution contribution) {
+        registerMenuContribution(null, contribution);
+    }
+
+    void registerMenuContribution(String pluginId, PluginMenuContribution contribution) {
+        if (contribution != null) {
+            menuContributions.add(contribution);
+        }
+    }
+
+    public List<PluginMenuContribution> getMenuContributions() {
+        return new ArrayList<>(menuContributions);
+    }
+
     public void registerSettingsContribution(PluginSettingsContribution contribution) {
         registerSettingsContribution(null, contribution);
     }
@@ -149,6 +165,7 @@ public class PluginRegistry {
         scriptApiFactories.clear();
         services.clear();
         toolboxContributions.clear();
+        menuContributions.clear();
         settingsContributions.clear();
         scriptCompletionContributors.clear();
         snippetDefinitions.clear();

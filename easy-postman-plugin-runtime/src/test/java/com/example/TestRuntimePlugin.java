@@ -2,6 +2,7 @@ package com.example;
 
 import com.laker.postman.plugin.api.EasyPostmanPlugin;
 import com.laker.postman.plugin.api.PluginContext;
+import com.laker.postman.plugin.api.PluginMenuContribution;
 import com.laker.postman.plugin.api.PluginSettingsContribution;
 
 import javax.swing.JPanel;
@@ -41,6 +42,15 @@ public class TestRuntimePlugin implements EasyPostmanPlugin {
                 900,
                 PluginSettingsContribution.CATEGORY_EXTENSIONS,
                 settingsContext -> new JPanel(),
+                "test-runtime-messages"
+        ));
+        context.registerMenuContribution(new PluginMenuContribution(
+                "test-runtime-action",
+                PluginMenuContribution.PARENT_MENU_PLUGINS,
+                "test.runtime.action.title",
+                900,
+                actionContext -> {
+                },
                 "test-runtime-messages"
         ));
     }

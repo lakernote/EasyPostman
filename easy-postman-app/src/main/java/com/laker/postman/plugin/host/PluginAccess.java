@@ -1,5 +1,6 @@
 package com.laker.postman.plugin.host;
 
+import com.laker.postman.plugin.api.PluginMenuContribution;
 import com.laker.postman.plugin.api.ScriptCompletionContributor;
 import com.laker.postman.plugin.api.SnippetDefinition;
 import com.laker.postman.plugin.api.PluginSettingsContribution;
@@ -27,6 +28,10 @@ public final class PluginAccess {
 
     public static List<ToolboxContribution> getToolboxContributions() {
         return PluginRuntime.getRegistry().getToolboxContributions();
+    }
+
+    public static List<PluginMenuContribution> getMenuContributions() {
+        return PluginRuntime.getRegistry().getMenuContributions();
     }
 
     public static List<PluginSettingsContribution> getSettingsContributions() {

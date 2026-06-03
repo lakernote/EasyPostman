@@ -161,6 +161,19 @@ public class PluginRuntimeTest {
     }
 
     @Test
+    public void shouldExposeMenuContributionsFromLoadedPlugin() throws Exception {
+        Path pluginJar = PluginRuntime.getManagedPluginDir().resolve("plugin-ok-1.0.0.jar");
+        writePluginJar(pluginJar, "plugin-ok", "1.0.0", "com.example.TestRuntimePlugin");
+
+        PluginRuntime.initialize();
+
+        var contributions = PluginRuntime.getRegistry().getMenuContributions();
+        assertEquals(contributions.size(), 1);
+        assertEquals(contributions.get(0).id(), "test-runtime-action");
+        assertNotNull(contributions.get(0).titleClassLoader());
+    }
+
+    @Test
     public void shouldContinueLoadingOtherPluginsWhenOnePluginFails() throws Exception {
         Path pluginDir = PluginRuntime.getManagedPluginDir();
         writePluginJar(pluginDir.resolve("plugin-broken-1.0.0.jar"),

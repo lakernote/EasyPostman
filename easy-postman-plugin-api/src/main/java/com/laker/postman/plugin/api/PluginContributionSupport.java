@@ -2,6 +2,7 @@ package com.laker.postman.plugin.api;
 
 import javax.swing.*;
 import java.util.function.Function;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -54,6 +55,47 @@ public final class PluginContributionSupport {
                 order,
                 category,
                 panelFactory,
+                titleBundleName,
+                ownerClass == null ? null : ownerClass.getClassLoader()
+        ));
+    }
+
+    public static void registerPluginMenuAction(PluginContext context,
+                                                String id,
+                                                String titleKey,
+                                                int order,
+                                                String titleBundleName,
+                                                Consumer<PluginMenuActionContext> action,
+                                                Class<?> ownerClass) {
+        registerMenuAction(
+                context,
+                id,
+                PluginMenuContribution.PARENT_MENU_PLUGINS,
+                titleKey,
+                order,
+                titleBundleName,
+                action,
+                ownerClass
+        );
+    }
+
+    public static void registerMenuAction(PluginContext context,
+                                          String id,
+                                          String parentMenuId,
+                                          String titleKey,
+                                          int order,
+                                          String titleBundleName,
+                                          Consumer<PluginMenuActionContext> action,
+                                          Class<?> ownerClass) {
+        if (context == null) {
+            return;
+        }
+        context.registerMenuContribution(new PluginMenuContribution(
+                id,
+                parentMenuId,
+                titleKey,
+                order,
+                action,
                 titleBundleName,
                 ownerClass == null ? null : ownerClass.getClassLoader()
         ));

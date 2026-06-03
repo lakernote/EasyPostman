@@ -48,6 +48,13 @@ public interface PluginContext {
     }
 
     /**
+     * 注册菜单动作扩展。
+     */
+    default void registerMenuContribution(PluginMenuContribution contribution) {
+        // Runtime implementations can expose this through host menus.
+    }
+
+    /**
      * 注册脚本自动补全扩展。
      */
     void registerScriptCompletionContributor(ScriptCompletionContributor contributor);

@@ -126,10 +126,9 @@ public class InfluxDbPanel extends JPanel {
     private static final int TOKEN_FIELD_WIDTH = HOST_FIELD_WIDTH;
     private static final int ORG_FIELD_WIDTH = MODE_FIELD_WIDTH;
     private static final int DB_FIELD_WIDTH = HOST_FIELD_WIDTH;
-    private static final int MEASUREMENT_FIELD_WIDTH = 130;
+    private static final int MEASUREMENT_FIELD_WIDTH = 160;
     private static final int AUTH_FIELD_WIDTH = 120;
     private static final int RELOAD_BUTTON_WIDTH = 88;
-    private static final int CONNECTION_BUTTON_WIDTH = 78;
 
     @RequiredArgsConstructor
     private static class HistoryEntry {
@@ -741,11 +740,11 @@ public class InfluxDbPanel extends JPanel {
 
         connectBtn = new SecondaryButton(
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_CONNECT), "icons/connect.svg");
-        ConnectionToolbarUi.compactButton(connectBtn, CONNECTION_BUTTON_WIDTH);
+        ConnectionToolbarUi.compactConnectionButton(connectBtn);
         connectBtn.addActionListener(e -> doConnect());
         disconnectBtn = new SecondaryButton(
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_DISCONNECT), "icons/ws-close.svg");
-        ConnectionToolbarUi.compactButton(disconnectBtn, CONNECTION_BUTTON_WIDTH);
+        ConnectionToolbarUi.compactConnectionButton(disconnectBtn);
         disconnectBtn.addActionListener(e -> doDisconnect());
 
         btnCardLayout = new CardLayout();
@@ -760,7 +759,7 @@ public class InfluxDbPanel extends JPanel {
                 ConnectionToolbarUi.profileActionColumns()
                         + ConnectionToolbarUi.connectionFieldColumns(HOST_FIELD_WIDTH) + "4"
                         + ConnectionToolbarUi.connectionFieldColumns(MODE_FIELD_WIDTH)
-                        + "6[" + CONNECTION_BUTTON_WIDTH + "!]push",
+                        + "6[" + ConnectionToolbarUi.CONNECTION_ACTION_BUTTON_WIDTH + "!]push",
                 "[]"
         ));
         mainRow.add(ConnectionToolbarUi.label(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_PROFILE)));
@@ -825,9 +824,9 @@ public class InfluxDbPanel extends JPanel {
                 "insets 2 0 2 0, fillx, novisualpadding, gapx 0",
                 ConnectionToolbarUi.profileActionColumns()
                         + ConnectionToolbarUi.connectionFieldColumns(DB_FIELD_WIDTH) + "4"
-                        + ConnectionToolbarUi.connectionFieldColumns(MEASUREMENT_FIELD_WIDTH) + "4"
+                        + ConnectionToolbarUi.longConnectionFieldColumns(MEASUREMENT_FIELD_WIDTH) + "4"
                         + ConnectionToolbarUi.connectionFieldColumns(AUTH_FIELD_WIDTH) + "4"
-                        + ConnectionToolbarUi.connectionFieldColumns(AUTH_FIELD_WIDTH)
+                        + ConnectionToolbarUi.wideConnectionFieldColumns(AUTH_FIELD_WIDTH)
                         + "6[" + RELOAD_BUTTON_WIDTH + "!]push",
                 "[]"
         ));

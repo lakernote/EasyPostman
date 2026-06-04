@@ -46,7 +46,6 @@ public class RedisPanel extends JPanel {
     private static final int DB_FIELD_WIDTH = 58;
     private static final int AUTH_MODE_WIDTH = 100;
     private static final int AUTH_FIELD_WIDTH = HOST_FIELD_WIDTH;
-    private static final int CONNECTION_BUTTON_WIDTH = 78;
 
     private static final String CMD_GET = "GET";
     private static final String CMD_SET = "SET";
@@ -78,18 +77,12 @@ public class RedisPanel extends JPanel {
     private static final Pattern ARG_PATTERN = Pattern.compile("\"([^\"]*)\"|'([^']*)'|(\\S+)");
     private static final Pattern SIMPLE_HOST_PORT_PATTERN = Pattern.compile("^([^:]+):(\\d{1,5})$");
 
+    @RequiredArgsConstructor
     private static class HistoryEntry {
         final String command;
         final String key;
         final String args;
         final String value;
-
-        HistoryEntry(String command, String key, String args, String value) {
-            this.command = command;
-            this.key = key;
-            this.args = args;
-            this.value = value;
-        }
     }
 
     private JComboBox<String> profileCombo;
@@ -195,7 +188,7 @@ public class RedisPanel extends JPanel {
 
         profileCombo = new JComboBox<>();
         profileCombo.setEditable(false);
-        compactRedisControl(profileCombo);
+        ConnectionToolbarUi.compactControl(profileCombo);
         profileCombo.setRenderer(ConnectionToolbarUi.displayRenderer(value -> value == null ? "" : value));
         profileCombo.addActionListener(e -> applySelectedConnectionProfile());
 
@@ -210,35 +203,35 @@ public class RedisPanel extends JPanel {
                 "icons/delete.svg", e -> deleteSelectedConnectionProfile());
 
         hostField = new JTextField("localhost");
-        compactRedisControl(hostField);
+        ConnectionToolbarUi.compactControl(hostField);
         hostField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, t(MessageKeys.TOOLBOX_REDIS_HOST_PLACEHOLDER));
         hostField.addActionListener(e -> doConnect());
 
         portSpinner = EasyJSpinner.intSpinner(6379, 1, 65535, 1);
-        compactRedisControl(portSpinner);
+        ConnectionToolbarUi.compactControl(portSpinner);
 
         dbSpinner = EasyJSpinner.intSpinner(0, 0, 15, 1);
-        compactRedisControl(dbSpinner);
+        ConnectionToolbarUi.compactControl(dbSpinner);
 
         usernameField = new JTextField("");
         usernameField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, t(MessageKeys.TOOLBOX_REDIS_USER_PLACEHOLDER));
-        compactRedisControl(usernameField);
+        ConnectionToolbarUi.compactControl(usernameField);
 
         passwordField = new JPasswordField("");
         passwordField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, t(MessageKeys.TOOLBOX_REDIS_PASS_PLACEHOLDER));
-        compactRedisControl(passwordField);
+        ConnectionToolbarUi.compactControl(passwordField);
         passwordField.addActionListener(e -> doConnect());
 
         authModeCombo = ConnectionToolbarUi.comboBox(AuthMode.values(), AuthMode::displayName);
-        compactRedisControl(authModeCombo);
+        ConnectionToolbarUi.compactControl(authModeCombo);
         authModeCombo.addActionListener(e -> setAuthOptionsVisible(getSelectedAuthMode() == AuthMode.BASIC));
 
         connectBtn = new SecondaryButton(t(MessageKeys.TOOLBOX_REDIS_CONNECT), "icons/connect.svg");
-        compactRedisButton(connectBtn);
+        ConnectionToolbarUi.compactConnectionButton(connectBtn);
         connectBtn.addActionListener(e -> doConnect());
 
         disconnectBtn = new SecondaryButton(t(MessageKeys.TOOLBOX_REDIS_DISCONNECT), "icons/ws-close.svg");
-        compactRedisButton(disconnectBtn);
+        ConnectionToolbarUi.compactConnectionButton(disconnectBtn);
         disconnectBtn.addActionListener(e -> doDisconnect());
 
         btnCardLayout = new CardLayout();
@@ -255,7 +248,7 @@ public class RedisPanel extends JPanel {
                         + "[36!,right]4[" + PORT_FIELD_WIDTH + "!,fill]4"
                         + "[28!,right]4[" + DB_FIELD_WIDTH + "!,fill]4"
                         + ConnectionToolbarUi.connectionFieldColumns(AUTH_MODE_WIDTH)
-                        + "6[" + CONNECTION_BUTTON_WIDTH + "!]push",
+                        + "6[" + ConnectionToolbarUi.CONNECTION_ACTION_BUTTON_WIDTH + "!]push",
                 "[" + ConnectionToolbarUi.FORM_CONTROL_HEIGHT + "!]"
         ));
         toolbar.setOpaque(false);
@@ -284,7 +277,7 @@ public class RedisPanel extends JPanel {
                         + "[36!,right]4[" + PORT_FIELD_WIDTH + "!,fill]4"
                         + "[28!,right]4[" + DB_FIELD_WIDTH + "!,fill]4"
                         + ConnectionToolbarUi.connectionFieldColumns(AUTH_MODE_WIDTH)
-                        + "6[" + CONNECTION_BUTTON_WIDTH + "!]push",
+                        + "6[" + ConnectionToolbarUi.CONNECTION_ACTION_BUTTON_WIDTH + "!]push",
                 "[]"
         ));
         authRow.setOpaque(false);
@@ -319,21 +312,6 @@ public class RedisPanel extends JPanel {
         connectionForm.repaint();
         revalidate();
         repaint();
-    }
-
-    private <T extends JComponent> T compactRedisControl(T component) {
-        Dimension preferredSize = component.getPreferredSize();
-        int width = Math.max(preferredSize == null ? 0 : preferredSize.width, 1);
-        component.setPreferredSize(new Dimension(width, ConnectionToolbarUi.FORM_CONTROL_HEIGHT));
-        component.setMinimumSize(new Dimension(1, ConnectionToolbarUi.FORM_CONTROL_HEIGHT));
-        return component;
-    }
-
-    private void compactRedisButton(JButton button) {
-        button.setPreferredSize(new Dimension(CONNECTION_BUTTON_WIDTH, ConnectionToolbarUi.CONNECTION_BUTTON_HEIGHT));
-        button.setMinimumSize(new Dimension(CONNECTION_BUTTON_WIDTH, ConnectionToolbarUi.CONNECTION_BUTTON_HEIGHT));
-        button.setMaximumSize(new Dimension(CONNECTION_BUTTON_WIDTH, ConnectionToolbarUi.CONNECTION_BUTTON_HEIGHT));
-        button.setBorder(BorderFactory.createEmptyBorder(4, 9, 4, 9));
     }
 
     private AuthMode getSelectedAuthMode() {

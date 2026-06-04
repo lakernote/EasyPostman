@@ -175,7 +175,6 @@ public class ElasticsearchPanel extends JPanel {
     private static final int HOST_FIELD_WIDTH = 280;
     private static final int AUTH_MODE_WIDTH = 100;
     private static final int AUTH_FIELD_WIDTH = HOST_FIELD_WIDTH;
-    private static final int CONNECTION_BUTTON_WIDTH = 78;
 
     // ===== 内置 DSL 模板 =====
     private static final String[][] DSL_TEMPLATES = {
@@ -309,12 +308,12 @@ public class ElasticsearchPanel extends JPanel {
 
         connectBtn = new SecondaryButton(
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_CONNECT), "icons/connect.svg");
-        ConnectionToolbarUi.compactButton(connectBtn, CONNECTION_BUTTON_WIDTH);
+        ConnectionToolbarUi.compactConnectionButton(connectBtn);
         connectBtn.addActionListener(e -> doConnect());
 
         disconnectBtn = new SecondaryButton(
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_DISCONNECT), "icons/ws-close.svg");
-        ConnectionToolbarUi.compactButton(disconnectBtn, CONNECTION_BUTTON_WIDTH);
+        ConnectionToolbarUi.compactConnectionButton(disconnectBtn);
         disconnectBtn.addActionListener(e -> doDisconnect());
 
         // 用 CardLayout 将 connectBtn / disconnectBtn 叠放在同一格，切换时不留空白
@@ -336,7 +335,7 @@ public class ElasticsearchPanel extends JPanel {
                 ConnectionToolbarUi.profileActionColumns()
                         + ConnectionToolbarUi.connectionFieldColumns(HOST_FIELD_WIDTH) + "4"
                         + ConnectionToolbarUi.connectionFieldColumns(AUTH_MODE_WIDTH)
-                        + "6[" + CONNECTION_BUTTON_WIDTH + "!]push",
+                        + "6[" + ConnectionToolbarUi.CONNECTION_ACTION_BUTTON_WIDTH + "!]push",
                 "[]"
         ));
         mainRow.add(ConnectionToolbarUi.label(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_PROFILE)));

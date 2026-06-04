@@ -48,6 +48,8 @@ public class KafkaPanel extends JPanel {
 
     private static final String LABEL_DISABLED_FG = "Label.disabledForeground";
     private static final String SEPARATOR_FG = "Separator.foreground";
+    private static final String CARD_CONNECT = "connect";
+    private static final String CARD_DISCONNECT = "disconnect";
     private static final String TIMEOUT_MS = "3000";
     private static final String LEGACY_USER_SETTING_KAFKA_BOOTSTRAP = "toolbox.kafka.bootstrapServers";
 
@@ -178,7 +180,7 @@ public class KafkaPanel extends JPanel {
         connectionPanel.saslMechanismCombo.setEnabled(saslEnabled);
         connectionPanel.usernameField.setEnabled(saslEnabled);
         connectionPanel.passwordField.setEnabled(saslEnabled);
-        connectionPanel.setConnectionOptionsVisible(true);
+        connectionPanel.setOptionsVisible(true);
     }
 
     private void registerConnectionProfileShortcuts(JComponent component) {
@@ -220,7 +222,7 @@ public class KafkaPanel extends JPanel {
         if (legacyBootstrap != null && !legacyBootstrap.isBlank()) {
             connectionPanel.bootstrapField.setText(legacyBootstrap);
         }
-        connectionPanel.setConnectionOptionsVisible(true);
+        connectionPanel.setOptionsVisible(true);
     }
 
     private KafkaConnectionProfile selectProfile(List<KafkaConnectionProfile> profiles, String preferredProfileId) {
@@ -257,7 +259,7 @@ public class KafkaPanel extends JPanel {
         connectionPanel.usernameField.setText(defaultString(profile.getUsername()));
         connectionPanel.passwordField.setText(defaultString(profile.getPassword()));
         updateSecurityFieldsEnabledState();
-        connectionPanel.setConnectionOptionsVisible(true);
+        connectionPanel.setOptionsVisible(true);
     }
 
     private void createNewConnectionProfile() {
@@ -505,7 +507,7 @@ public class KafkaPanel extends JPanel {
                     syncPartitionSelector();
                     String status = t(MessageKeys.TOOLBOX_KAFKA_STATUS_CONNECTED, bootstrap);
                     setConnectionStatus(ModernColors.SUCCESS, status);
-                    connectionPanel.showConnectedState();
+                    connectionPanel.btnCardLayout.show(connectionPanel.btnCard, CARD_DISCONNECT);
                     producerPanel.statusLabel.setText(t(MessageKeys.TOOLBOX_KAFKA_STATUS_TOPICS_LOADED, topics.size()));
                     NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_KAFKA_STATUS_TOPICS_LOADED, topics.size()));
                 } catch (InterruptedException ex) {
@@ -1158,7 +1160,7 @@ public class KafkaPanel extends JPanel {
         topicPanel.topicFilteredModel.clear();
         topicPartitionCountMap.clear();
         consumerPanel.partitionSelector.setAvailablePartitions(Collections.emptyList());
-        connectionPanel.showDisconnectedState();
+        connectionPanel.btnCardLayout.show(connectionPanel.btnCard, CARD_CONNECT);
         setConnectionStatus(UIManager.getColor(LABEL_DISABLED_FG), t(MessageKeys.TOOLBOX_KAFKA_STATUS_NOT_CONNECTED));
         NotificationUtil.showInfo(t(MessageKeys.TOOLBOX_KAFKA_DISCONNECT_SUCCESS));
     }

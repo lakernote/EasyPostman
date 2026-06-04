@@ -34,11 +34,9 @@ public class ConnectionToolbarUi {
     public static final int PROFILE_FIELD_WIDTH = 166;
     public static final int CONNECTION_LABEL_WIDTH = 52;
     public static final int WIDE_CONNECTION_LABEL_WIDTH = 86;
-    public static final int LONG_CONNECTION_LABEL_WIDTH = 112;
     public static final int TOOLBAR_BUTTON_SIZE = 24;
     public static final int FORM_CONTROL_HEIGHT = 28;
     public static final int CONNECTION_BUTTON_HEIGHT = 28;
-    public static final int CONNECTION_ACTION_BUTTON_WIDTH = 112;
     public static final int VERTICAL_SEPARATOR_HEIGHT = 22;
     public static final int SINGLE_ROW_HEIGHT = 38;
     public static final int DOUBLE_ROW_HEIGHT = 70;
@@ -61,10 +59,6 @@ public class ConnectionToolbarUi {
 
     public static String wideConnectionFieldColumns(int fieldWidth) {
         return connectionFieldColumns(WIDE_CONNECTION_LABEL_WIDTH, fieldWidth);
-    }
-
-    public static String longConnectionFieldColumns(int fieldWidth) {
-        return connectionFieldColumns(LONG_CONNECTION_LABEL_WIDTH, fieldWidth);
     }
 
     public static String connectionFieldColumns(int labelWidth, int fieldWidth) {
@@ -112,10 +106,6 @@ public class ConnectionToolbarUi {
         button.setMinimumSize(new Dimension(width, CONNECTION_BUTTON_HEIGHT));
         button.setMaximumSize(new Dimension(width, CONNECTION_BUTTON_HEIGHT));
         button.setBorder(BorderFactory.createEmptyBorder(4, 9, 4, 9));
-    }
-
-    public static void compactConnectionButton(JButton button) {
-        compactButton(button, CONNECTION_ACTION_BUTTON_WIDTH);
     }
 
     public static JLabel label(String text) {

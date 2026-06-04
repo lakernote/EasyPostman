@@ -1,6 +1,6 @@
 {
   "name": "EasyPostman Official Plugin Catalog (GitHub)",
-  "generatedAt": "2026-06-04T06:48:46Z",
+  "generatedAt": "2026-06-04T06:57:24Z",
   "plugins": [
     {
       "id": "plugin-capture",
@@ -48,6 +48,14 @@
       "description": "Java decompiler toolbox panel powered by CFR.",
       "homepage": "https://github.com/lakernote/EasyPostman",
       "releases": [
+        {
+          "version": "6.0.2",
+          "downloadUrl": "https://github.com/lakernote/EasyPostman/releases/download/plugin-decompiler-v6.0.2/easy-postman-6.0.2-plugin-decompiler.jar",
+          "sha256": "b730abdd9bee00cd81976fea3d70203db6c6008883dac8aabea972877f348cbc",
+          "minAppVersion": "6.0.2",
+          "minPlatformVersion": "3.0.0",
+          "maxPlatformVersion": "3.0.0"
+        },
         {
           "version": "5.3.18",
           "downloadUrl": "https://github.com/lakernote/EasyPostman/releases/download/plugin-decompiler-v5.3.18/easy-postman-5.3.18-plugin-decompiler.jar",

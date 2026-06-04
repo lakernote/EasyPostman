@@ -9,14 +9,6 @@
       "homepage": "https://github.com/lakernote/EasyPostman",
       "releases": [
         {
-          "version": "6.0.1",
-          "downloadUrl": "https://github.com/lakernote/EasyPostman/releases/download/plugin-capture-v6.0.1/easy-postman-6.0.1-plugin-capture.jar",
-          "sha256": "86e17ad31a87a446acc81f2aaf62ccc34671f523692ff8657389bc1b07cb08cb",
-          "minAppVersion": "6.0.1",
-          "minPlatformVersion": "3.0.0",
-          "maxPlatformVersion": "3.0.0"
-        },
-        {
           "version": "5.3.23",
           "downloadUrl": "https://github.com/lakernote/EasyPostman/releases/download/plugin-capture-v5.3.23/easy-postman-5.3.23-plugin-capture.jar",
           "sha256": "ecf7369b32ebad0c0431ab9ec01a105f540023be3f08bf929eabbbafdb5384e1",
@@ -32,14 +24,6 @@
       "description": "Client certificate management and mTLS key material loading.",
       "homepage": "https://github.com/lakernote/EasyPostman",
       "releases": [
-        {
-          "version": "6.0.1",
-          "downloadUrl": "https://github.com/lakernote/EasyPostman/releases/download/plugin-client-cert-v6.0.1/easy-postman-6.0.1-plugin-client-cert.jar",
-          "sha256": "4aa33be47cbc6c3f0d0c122916210fdd05e95f86224febf0ed7de6b63455a298",
-          "minAppVersion": "6.0.1",
-          "minPlatformVersion": "3.0.0",
-          "maxPlatformVersion": "3.0.0"
-        },
         {
           "version": "5.3.18",
           "downloadUrl": "https://github.com/lakernote/EasyPostman/releases/download/plugin-client-cert-v5.3.18/easy-postman-5.3.18-plugin-client-cert.jar",
@@ -57,14 +41,6 @@
       "homepage": "https://github.com/lakernote/EasyPostman",
       "releases": [
         {
-          "version": "6.0.1",
-          "downloadUrl": "https://github.com/lakernote/EasyPostman/releases/download/plugin-decompiler-v6.0.1/easy-postman-6.0.1-plugin-decompiler.jar",
-          "sha256": "7aa6ddd2c25ad4640e17095c78f218b751133d1ef216254e3dbc567b7d76f8f1",
-          "minAppVersion": "6.0.1",
-          "minPlatformVersion": "3.0.0",
-          "maxPlatformVersion": "3.0.0"
-        },
-        {
           "version": "5.3.18",
           "downloadUrl": "https://github.com/lakernote/EasyPostman/releases/download/plugin-decompiler-v5.3.18/easy-postman-5.3.18-plugin-decompiler.jar",
           "sha256": "394de9762a4efa0e8bd17fbac8f55d377cf2078b23d7100fd5d1748f45491070",
@@ -80,14 +56,6 @@
       "description": "Kafka toolbox panel, pm.plugin(\"kafka\") script API, completions and snippets.",
       "homepage": "https://github.com/lakernote/EasyPostman",
       "releases": [
-        {
-          "version": "6.0.1",
-          "downloadUrl": "https://github.com/lakernote/EasyPostman/releases/download/plugin-kafka-v6.0.1/easy-postman-6.0.1-plugin-kafka.jar",
-          "sha256": "8ed459388d7dd3633c3c6ad9385f5fc17b06fcc5b1e03af4431e88412b70143b",
-          "minAppVersion": "6.0.1",
-          "minPlatformVersion": "3.0.0",
-          "maxPlatformVersion": "3.0.0"
-        },
         {
           "version": "5.4.26",
           "downloadUrl": "https://github.com/lakernote/EasyPostman/releases/download/plugin-kafka-v5.4.26/easy-postman-5.4.26-plugin-kafka.jar",
@@ -120,14 +88,6 @@
       "description": "Redis toolbox panel, pm.plugin(\"redis\") script API, completions and snippets.",
       "homepage": "https://github.com/lakernote/EasyPostman",
       "releases": [
-        {
-          "version": "6.0.1",
-          "downloadUrl": "https://github.com/lakernote/EasyPostman/releases/download/plugin-redis-v6.0.1/easy-postman-6.0.1-plugin-redis.jar",
-          "sha256": "17a801788d8dec594f946c1e05a2efc887e18e458f31b1e4a739c2aed724e362",
-          "minAppVersion": "6.0.1",
-          "minPlatformVersion": "3.0.0",
-          "maxPlatformVersion": "3.0.0"
-        },
         {
           "version": "5.3.18",
           "downloadUrl": "https://github.com/lakernote/EasyPostman/releases/download/plugin-redis-v5.3.18/easy-postman-5.3.18-plugin-redis.jar",

@@ -20,6 +20,8 @@ import com.laker.postman.request.model.TransportAuth;
 import com.laker.postman.http.runtime.observation.NetworkLogEvent;
 import com.laker.postman.http.runtime.observation.NetworkLogEventStage;
 import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
+import com.laker.postman.http.request.PreparedRequestFactory;
+import com.laker.postman.service.curl.CurlImportUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import okhttp3.HttpUrl;
@@ -1201,9 +1203,9 @@ public class DefaultHttpTransportIntegrationTest {
         String cookie = cookieRequest.getHeader("Cookie");
         assertNotNull(cookie);
         assertTrue(cookie.contains("browser_session=keep"));
-        assertTrue(cookie.contains("__cf_bm=jar-value"));
+        assertTrue(cookie.contains("__cf_bm=old-value"));
         assertTrue(cookie.contains("_cfuvid=jar-fuvid"));
-        assertFalse(cookie.contains("__cf_bm=old-value"));
+        assertFalse(cookie.contains("__cf_bm=jar-value"));
         assertEquals(findHeaderValue(secondRequest.sentHeadersList, "Cookie"), cookie);
         String loggedHeaders = firstEventMessage(secondRequestEvents, NetworkLogEventStage.REQUEST_HEADERS_END);
         assertTrue(loggedHeaders.contains("Cookie: " + cookie), loggedHeaders);
@@ -1241,9 +1243,9 @@ public class DefaultHttpTransportIntegrationTest {
         String cookie = cookieRequest.getHeader("Cookie");
         assertNotNull(cookie);
         assertTrue(cookie.contains("browser_session=keep"));
-        assertTrue(cookie.contains("__cf_bm=jar-value"));
+        assertTrue(cookie.contains("__cf_bm=old-value"));
         assertTrue(cookie.contains("_cfuvid=jar-fuvid"));
-        assertFalse(cookie.contains("__cf_bm=old-value"));
+        assertFalse(cookie.contains("__cf_bm=jar-value"));
     }
 
     @Test
@@ -1277,6 +1279,33 @@ public class DefaultHttpTransportIntegrationTest {
         assertTrue(cookie.contains("theme=api"));
         assertTrue(cookie.contains("jar_token=abc123"));
         assertEquals(countOccurrences(cookie, "theme="), 2);
+    }
+
+    @Test
+    public void shouldSendCurlImportedCookieHeaderWithoutCookieJarOverride() throws Exception {
+        server = createServer();
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .addHeader("Set-Cookie", "session=jar; Path=/")
+                .setBody("cookie-set"));
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody("cookie-check"));
+
+        PreparedRequest firstRequest = createRequest("GET", serverUrl("/cookie/set"));
+        firstRequest.cookieJarEnabled = true;
+
+        httpTransport.execute(firstRequest, HttpExchangeOptions.defaults());
+        server.takeRequest();
+
+        String curl = "curl '" + serverUrl("/cookie/check") + "' "
+                + "-b 'session=curl; browser=1'";
+        PreparedRequest curlRequest = PreparedRequestFactory.buildWithoutInheritance(CurlImportUtil.fromCurl(curl));
+
+        httpTransport.execute(curlRequest, HttpExchangeOptions.defaults());
+        RecordedRequest cookieRequest = server.takeRequest();
+
+        assertEquals(cookieRequest.getHeader("Cookie"), "session=curl; browser=1");
     }
 
     @Test

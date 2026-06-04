@@ -67,18 +67,18 @@ final class CookieHeaderMergeNetworkInterceptor implements Interceptor {
     private String mergeCookieHeaders(String explicitCookie, String actualCookie) {
         List<CookiePair> explicitPairs = parseCookiePairs(explicitCookie);
         List<CookiePair> actualPairs = parseCookiePairs(actualCookie);
-        Set<String> actualNames = new HashSet<>();
-        for (CookiePair pair : actualPairs) {
-            actualNames.add(pair.name().toLowerCase(Locale.ROOT));
+        Set<String> explicitNames = new HashSet<>();
+        for (CookiePair pair : explicitPairs) {
+            explicitNames.add(pair.name().toLowerCase(Locale.ROOT));
         }
 
         List<CookiePair> cookies = new ArrayList<>(explicitPairs.size() + actualPairs.size());
-        for (CookiePair pair : explicitPairs) {
-            if (!actualNames.contains(pair.name().toLowerCase(Locale.ROOT))) {
+        cookies.addAll(explicitPairs);
+        for (CookiePair pair : actualPairs) {
+            if (!explicitNames.contains(pair.name().toLowerCase(Locale.ROOT))) {
                 cookies.add(pair);
             }
         }
-        cookies.addAll(actualPairs);
 
         StringBuilder merged = new StringBuilder();
         for (CookiePair pair : cookies) {

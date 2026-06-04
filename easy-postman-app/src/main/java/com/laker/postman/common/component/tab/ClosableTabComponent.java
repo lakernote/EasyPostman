@@ -7,6 +7,7 @@ import com.laker.postman.request.model.HttpRequestItem;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.panel.collections.editor.RequestEditorEmptyStatePanel;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.panel.collections.editor.request.RequestProtocolUiMetadata;
@@ -303,7 +304,7 @@ public class ClosableTabComponent extends JPanel {
         if (thisIdx < 0) return;
         RequestEditorPanel editPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class);
         for (int i = tabbedPane.getTabCount() - 1; i > thisIdx; i--) {
-            if (!(tabbedPane.getComponentAt(i) instanceof PlusPanel)) {
+            if (!(tabbedPane.getComponentAt(i) instanceof RequestEditorEmptyStatePanel)) {
                 editPanel.removeTabAtWithCleanup(i);
             }
         }

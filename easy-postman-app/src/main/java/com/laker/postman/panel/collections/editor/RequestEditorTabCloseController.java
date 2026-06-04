@@ -1,7 +1,6 @@
 package com.laker.postman.panel.collections.editor;
 
 import com.laker.postman.common.UiSingletonFactory;
-import com.laker.postman.common.component.tab.PlusPanel;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.util.I18nUtil;
@@ -79,7 +78,7 @@ final class RequestEditorTabCloseController {
         List<Component> removableComponents = new ArrayList<>();
         for (int i = 0; i < tabbedPane.getTabCount(); i++) {
             Component component = tabbedPane.getComponentAt(i);
-            if (i != currentIndex && !(component instanceof PlusPanel)) {
+            if (i != currentIndex && !(component instanceof RequestEditorEmptyStatePanel)) {
                 removableComponents.add(component);
             }
         }
@@ -90,7 +89,7 @@ final class RequestEditorTabCloseController {
         List<Component> removableComponents = new ArrayList<>();
         for (int i = 0; i < tabbedPane.getTabCount(); i++) {
             Component component = tabbedPane.getComponentAt(i);
-            if (!(component instanceof PlusPanel)) {
+            if (!(component instanceof RequestEditorEmptyStatePanel)) {
                 removableComponents.add(component);
             }
         }

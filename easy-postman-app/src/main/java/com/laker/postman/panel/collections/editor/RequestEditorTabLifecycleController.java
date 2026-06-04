@@ -2,7 +2,6 @@ package com.laker.postman.panel.collections.editor;
 
 import cn.hutool.core.util.IdUtil;
 import com.laker.postman.common.component.tab.ClosableTabComponent;
-import com.laker.postman.common.component.tab.PlusPanel;
 import com.laker.postman.common.component.tab.PlusTabComponent;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
@@ -45,7 +44,7 @@ final class RequestEditorTabLifecycleController {
             }
             return;
         }
-        tabbedPane.addTab(plusTabTitle, new PlusPanel());
+        tabbedPane.addTab(plusTabTitle, new RequestEditorEmptyStatePanel());
         tabbedPane.setTabComponentAt(tabbedPane.getTabCount() - 1, new PlusTabComponent());
     }
 

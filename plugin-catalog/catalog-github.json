@@ -1,6 +1,6 @@
 {
   "name": "EasyPostman Official Plugin Catalog (GitHub)",
-  "generatedAt": "2026-06-04T06:03:00Z",
+  "generatedAt": "2026-06-04T06:26:55Z",
   "plugins": [
     {
       "id": "plugin-capture",
@@ -96,6 +96,14 @@
       "description": "Redis toolbox panel, pm.plugin(\"redis\") script API, completions and snippets.",
       "homepage": "https://github.com/lakernote/EasyPostman",
       "releases": [
+        {
+          "version": "6.0.2",
+          "downloadUrl": "https://github.com/lakernote/EasyPostman/releases/download/plugin-redis-v6.0.2/easy-postman-6.0.2-plugin-redis.jar",
+          "sha256": "9d9fb2944ad6534579a9ca1d4c29fb0aefcca6c5a00062b81e5cc818a4024fcd",
+          "minAppVersion": "6.0.2",
+          "minPlatformVersion": "3.0.0",
+          "maxPlatformVersion": "3.0.0"
+        },
         {
           "version": "5.3.18",
           "downloadUrl": "https://github.com/lakernote/EasyPostman/releases/download/plugin-redis-v5.3.18/easy-postman-5.3.18-plugin-redis.jar",

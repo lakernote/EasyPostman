@@ -1,6 +1,6 @@
 {
   "name": "EasyPostman Official Plugin Catalog (Gitee)",
-  "generatedAt": "2026-06-04T04:54:31Z",
+  "generatedAt": "2026-06-04T06:03:00Z",
   "plugins": [
     {
       "id": "plugin-capture",
@@ -8,6 +8,14 @@
       "description": "HTTP capture toolbox panel with a local explicit proxy.",
       "homepage": "https://gitee.com/lakernote/easy-postman",
       "releases": [
+        {
+          "version": "6.0.2",
+          "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-capture-v6.0.2/easy-postman-6.0.2-plugin-capture.jar",
+          "sha256": "33ccae1549cb64f69ee5897279a738077da9851d69756e00109a3ef8d1b847ec",
+          "minAppVersion": "6.0.2",
+          "minPlatformVersion": "3.0.0",
+          "maxPlatformVersion": "3.0.0"
+        },
         {
           "version": "5.3.23",
           "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-capture-v5.3.23/easy-postman-5.3.23-plugin-capture.jar",

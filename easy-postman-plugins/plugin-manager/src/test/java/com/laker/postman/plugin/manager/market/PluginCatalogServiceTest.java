@@ -103,10 +103,11 @@ public class PluginCatalogServiceTest {
         assertFalse(githubKafka.version().isBlank());
         assertNotNull(giteeKafka.version());
         assertFalse(giteeKafka.version().isBlank());
-        assertEquals(githubKafka.minPlatformVersion(), "1.0.0");
-        assertEquals(githubKafka.maxPlatformVersion(), "1.0.0");
-        assertEquals(giteeKafka.minPlatformVersion(), "1.0.0");
-        assertEquals(giteeKafka.maxPlatformVersion(), "1.0.0");
+        String expectedPlatformVersion = PluginRuntime.getCurrentPluginPlatformVersion();
+        assertEquals(githubKafka.minPlatformVersion(), expectedPlatformVersion);
+        assertEquals(githubKafka.maxPlatformVersion(), expectedPlatformVersion);
+        assertEquals(giteeKafka.minPlatformVersion(), expectedPlatformVersion);
+        assertEquals(giteeKafka.maxPlatformVersion(), expectedPlatformVersion);
     }
 
     @Test

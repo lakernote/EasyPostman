@@ -2,7 +2,6 @@ package com.laker.postman.common.component;
 
 import lombok.Getter;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
-import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.*;
 import java.awt.*;
@@ -39,7 +38,7 @@ public class SearchableTextArea extends JPanel {
 
     @Getter
     private final RSyntaxTextArea textArea;
-    private final RTextScrollPane scrollPane;
+    private final SyntaxEditorScrollPane scrollPane;
     private final SearchReplacePanel searchPanel;
     private final JPanel overlayPanel;
     private final boolean enableReplace;
@@ -63,8 +62,7 @@ public class SearchableTextArea extends JPanel {
 
         setLayout(new BorderLayout());
 
-        // 创建滚动面板
-        scrollPane = new RTextScrollPane(textArea);
+        scrollPane = new SyntaxEditorScrollPane(textArea);
 
         // 创建搜索替换面板
         searchPanel = new SearchReplacePanel(textArea, enableReplace);

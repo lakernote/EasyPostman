@@ -5,7 +5,10 @@ import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.Theme;
+import org.fife.ui.rtextarea.Gutter;
+import org.fife.ui.rtextarea.RTextScrollPane;
 
+import java.awt.Color;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -16,6 +19,17 @@ import java.io.InputStream;
 @Slf4j
 @UtilityClass
 public class EditorThemeUtil {
+
+    private static final Color DARK_EDITOR_BACKGROUND = new Color(0x3A, 0x3D, 0x3F);
+    private static final Color DARK_GUTTER_BACKGROUND = new Color(0x38, 0x3B, 0x3D);
+    private static final Color DARK_EDITOR_DIVIDER = new Color(0x45, 0x49, 0x4C);
+    private static final Color DARK_LINE_NUMBER = new Color(0x74, 0x7A, 0x82);
+    private static final Color DARK_CURRENT_LINE_NUMBER = new Color(0xA9, 0xB7, 0xC6);
+    private static final Color LIGHT_EDITOR_BACKGROUND = Color.WHITE;
+    private static final Color LIGHT_GUTTER_BACKGROUND = Color.WHITE;
+    private static final Color LIGHT_EDITOR_DIVIDER = new Color(0xE0, 0xE0, 0xE0);
+    private static final Color LIGHT_LINE_NUMBER = new Color(0x99, 0x99, 0x99);
+    private static final Color LIGHT_CURRENT_LINE_NUMBER = new Color(0x66, 0x66, 0x66);
 
     private static volatile String configuredThemeResourcePath;
     private static volatile String configuredFallbackThemeResourcePath;
@@ -49,6 +63,44 @@ public class EditorThemeUtil {
     public static void configureThemeResources(String themeResourcePath, String fallbackThemeResourcePath) {
         configuredThemeResourcePath = normalizeConfiguredPath(themeResourcePath);
         configuredFallbackThemeResourcePath = normalizeConfiguredPath(fallbackThemeResourcePath);
+    }
+
+    /**
+     * Aligns RTextScrollPane chrome with the active editor theme.
+     * <p>
+     * RSyntaxTextArea themes style the editor and gutter, but scroll panes created after
+     * theme application can keep default gutter/border colors. Keep this in the shared
+     * editor utility so request, response, script, and toolbox editors stay consistent.
+     */
+    public static void applyScrollPaneChrome(RTextScrollPane scrollPane) {
+        if (scrollPane == null) {
+            return;
+        }
+
+        Color editorBackground = ModernColors.isDarkTheme() ? DARK_EDITOR_BACKGROUND : LIGHT_EDITOR_BACKGROUND;
+        Color gutterBackground = ModernColors.isDarkTheme() ? DARK_GUTTER_BACKGROUND : LIGHT_GUTTER_BACKGROUND;
+        Color divider = ModernColors.isDarkTheme() ? DARK_EDITOR_DIVIDER : LIGHT_EDITOR_DIVIDER;
+        Color lineNumber = ModernColors.isDarkTheme() ? DARK_LINE_NUMBER : LIGHT_LINE_NUMBER;
+        Color currentLineNumber = ModernColors.isDarkTheme()
+                ? DARK_CURRENT_LINE_NUMBER
+                : LIGHT_CURRENT_LINE_NUMBER;
+
+        scrollPane.setBackground(editorBackground);
+        scrollPane.getViewport().setBackground(editorBackground);
+        scrollPane.setBorder(javax.swing.BorderFactory.createLineBorder(divider));
+
+        Gutter gutter = scrollPane.getGutter();
+        if (gutter == null) {
+            return;
+        }
+        gutter.setBackground(gutterBackground);
+        gutter.setBorderColor(divider);
+        gutter.setLineNumberColor(lineNumber);
+        gutter.setCurrentLineNumberColor(currentLineNumber);
+        gutter.setFoldBackground(gutterBackground);
+        gutter.setArmedFoldBackground(divider);
+        gutter.setFoldIndicatorForeground(lineNumber);
+        gutter.setFoldIndicatorArmedForeground(currentLineNumber);
     }
 
     public static void clearConfiguredThemeResources() {

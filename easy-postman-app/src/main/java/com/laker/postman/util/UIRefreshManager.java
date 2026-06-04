@@ -2,10 +2,12 @@ package com.laker.postman.util;
 
 import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.common.IRefreshable;
+import com.laker.postman.common.component.SyntaxEditorScrollPane;
 import com.laker.postman.frame.MainFrame;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.*;
 import java.awt.*;
@@ -75,6 +77,12 @@ public class UIRefreshManager {
             } catch (Exception e) {
                 log.error("Failed to refresh editor theme: {}", component.getClass().getSimpleName(), e);
             }
+        }
+
+        if (component instanceof SyntaxEditorScrollPane syntaxEditorScrollPane) {
+            syntaxEditorScrollPane.refreshEditorChrome();
+        } else if (component instanceof RTextScrollPane scrollPane) {
+            EditorThemeUtil.applyScrollPaneChrome(scrollPane);
         }
 
         if (component instanceof Container container) {

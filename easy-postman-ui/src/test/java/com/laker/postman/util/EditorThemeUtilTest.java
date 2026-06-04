@@ -2,13 +2,19 @@ package com.laker.postman.util;
 
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLightLaf;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rtextarea.Gutter;
+import org.fife.ui.rtextarea.RTextScrollPane;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import javax.swing.*;
+import javax.swing.border.LineBorder;
+import java.awt.*;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 public class EditorThemeUtilTest {
     private LookAndFeel previousLookAndFeel;
@@ -52,5 +58,45 @@ public class EditorThemeUtilTest {
         EditorThemeUtil.configureThemeResources(" ", " ");
 
         assertEquals(EditorThemeUtil.themeResourcePath(), "/themes/easypostman-light.xml");
+    }
+
+    @Test
+    public void scrollPaneThemeShouldUseComfortableDarkEditorChrome() {
+        FlatDarkLaf.setup();
+        RTextScrollPane scrollPane = new RTextScrollPane(new RSyntaxTextArea());
+
+        EditorThemeUtil.applyScrollPaneChrome(scrollPane);
+
+        Gutter gutter = scrollPane.getGutter();
+        assertEquals(scrollPane.getViewport().getBackground(), new Color(0x3A, 0x3D, 0x3F));
+        assertEquals(gutter.getBackground(), new Color(0x38, 0x3B, 0x3D));
+        assertEquals(gutter.getBorderColor(), new Color(0x45, 0x49, 0x4C));
+        assertEquals(gutter.getLineNumberColor(), new Color(0x74, 0x7A, 0x82));
+        assertEquals(gutter.getCurrentLineNumberColor(), new Color(0xA9, 0xB7, 0xC6));
+        assertLineBorderColor(scrollPane, new Color(0x45, 0x49, 0x4C));
+    }
+
+    @Test
+    public void scrollPaneThemeShouldResetToLightEditorChrome() {
+        RTextScrollPane scrollPane = new RTextScrollPane(new RSyntaxTextArea());
+
+        FlatDarkLaf.setup();
+        EditorThemeUtil.applyScrollPaneChrome(scrollPane);
+        FlatLightLaf.setup();
+        EditorThemeUtil.applyScrollPaneChrome(scrollPane);
+
+        Gutter gutter = scrollPane.getGutter();
+        assertEquals(scrollPane.getViewport().getBackground(), Color.WHITE);
+        assertEquals(gutter.getBackground(), Color.WHITE);
+        assertEquals(gutter.getBorderColor(), new Color(0xE0, 0xE0, 0xE0));
+        assertEquals(gutter.getLineNumberColor(), new Color(0x99, 0x99, 0x99));
+        assertEquals(gutter.getCurrentLineNumberColor(), new Color(0x66, 0x66, 0x66));
+        assertLineBorderColor(scrollPane, new Color(0xE0, 0xE0, 0xE0));
+    }
+
+    private void assertLineBorderColor(RTextScrollPane scrollPane, Color expectedColor) {
+        assertTrue(scrollPane.getBorder() instanceof LineBorder);
+        LineBorder border = (LineBorder) scrollPane.getBorder();
+        assertEquals(border.getLineColor(), expectedColor);
     }
 }

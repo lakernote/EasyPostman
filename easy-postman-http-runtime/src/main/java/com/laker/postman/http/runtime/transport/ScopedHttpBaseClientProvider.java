@@ -4,13 +4,15 @@ import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.runtime.okhttp.HttpClientRuntimeConfig;
 import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
 import com.laker.postman.http.runtime.ssl.SSLConfigurationUtil;
+import okhttp3.ConnectionPool;
 import okhttp3.CookieJar;
-import okhttp3.JavaNetCookieJar;
+import okhttp3.Dispatcher;
 import okhttp3.OkHttpClient;
 
-import java.net.CookieManager;
-import java.net.CookiePolicy;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
@@ -18,28 +20,29 @@ import static com.laker.postman.request.util.HttpUrlUtil.extractBaseUri;
 
 public final class ScopedHttpBaseClientProvider implements HttpBaseClientProvider {
     private final Supplier<HttpClientRuntimeConfig> configSupplier;
-    private final Map<String, OkHttpClient> clients = new ConcurrentHashMap<>();
-    private final CookieJar cookieJar;
-    private final CookieManager cookieManager;
+    private final Supplier<String> cookieScopeSupplier;
+    private final Map<ClientKey, OkHttpClient> baseClients = new ConcurrentHashMap<>();
+    private final Map<ScopedClientKey, OkHttpClient> scopedClients = new ConcurrentHashMap<>();
+    private final CookieJar customCookieJar;
+    private final ScopedCookieJarStore scopedCookieJarStore;
 
     public ScopedHttpBaseClientProvider(Supplier<HttpClientRuntimeConfig> configSupplier) {
-        this(configSupplier, new CookieManager(null, CookiePolicy.ACCEPT_ALL));
+        this(configSupplier, (Supplier<String>) null);
     }
 
-    private ScopedHttpBaseClientProvider(Supplier<HttpClientRuntimeConfig> configSupplier, CookieManager cookieManager) {
-        this(configSupplier, new JavaNetCookieJar(cookieManager), cookieManager);
+    public ScopedHttpBaseClientProvider(Supplier<HttpClientRuntimeConfig> configSupplier,
+                                        Supplier<String> cookieScopeSupplier) {
+        this.configSupplier = configSupplier == null ? HttpClientRuntimeConfig::defaults : configSupplier;
+        this.cookieScopeSupplier = cookieScopeSupplier;
+        this.customCookieJar = null;
+        this.scopedCookieJarStore = new ScopedCookieJarStore();
     }
 
     public ScopedHttpBaseClientProvider(Supplier<HttpClientRuntimeConfig> configSupplier, CookieJar cookieJar) {
-        this(configSupplier, cookieJar, null);
-    }
-
-    private ScopedHttpBaseClientProvider(Supplier<HttpClientRuntimeConfig> configSupplier,
-                                         CookieJar cookieJar,
-                                         CookieManager cookieManager) {
         this.configSupplier = configSupplier == null ? HttpClientRuntimeConfig::defaults : configSupplier;
-        this.cookieJar = cookieJar;
-        this.cookieManager = cookieManager;
+        this.cookieScopeSupplier = null;
+        this.customCookieJar = cookieJar == null ? CookieJar.NO_COOKIES : cookieJar;
+        this.scopedCookieJarStore = null;
     }
 
     @Override
@@ -51,31 +54,30 @@ public final class ScopedHttpBaseClientProvider implements HttpBaseClientProvide
         boolean followRedirects = request.followRedirects;
         SSLConfigurationUtil.SSLVerificationMode sslMode = HttpClientResolver.DEFAULT.resolveSslVerificationMode(request);
         HttpClientRuntimeConfig config = resolveConfig();
-        String key = cacheKey(
+        ClientKey key = new ClientKey(
                 baseUri,
                 followRedirects,
                 sslMode,
                 config,
                 OkHttpClientManager.runtimeSettingsCacheKey(baseUri)
         );
-        return clients.computeIfAbsent(key, ignored ->
-                OkHttpClientManager.createClientForRuntimeConfig(baseUri, followRedirects, sslMode, config, cookieJar)
-        );
+        if (customCookieJar != null) {
+            return baseClients.computeIfAbsent(key, this::createCustomCookieClient);
+        }
+        String cookieScope = ScopedCookieJarStore.normalizeScope(resolveCookieScope());
+        return scopedClients.computeIfAbsent(new ScopedClientKey(key, cookieScope), this::createScopedCookieClient);
     }
 
     public void clear() {
-        for (OkHttpClient client : clients.values()) {
-            client.dispatcher().cancelAll();
-            client.dispatcher().executorService().shutdown();
-            client.connectionPool().evictAll();
-        }
-        clients.clear();
+        shutdownClients();
+        baseClients.clear();
+        scopedClients.clear();
         clearCookies();
     }
 
     public void clearCookies() {
-        if (cookieManager != null) {
-            cookieManager.getCookieStore().removeAll();
+        if (scopedCookieJarStore != null) {
+            scopedCookieJarStore.clear();
         }
     }
 
@@ -84,16 +86,67 @@ public final class ScopedHttpBaseClientProvider implements HttpBaseClientProvide
         return config == null ? HttpClientRuntimeConfig.defaults() : config;
     }
 
-    private static String cacheKey(String baseUri,
-                                   boolean followRedirects,
-                                   SSLConfigurationUtil.SSLVerificationMode sslMode,
-                                   HttpClientRuntimeConfig config,
-                                   String runtimeSettingsCacheKey) {
-        return baseUri + "|" + followRedirects + "|" + sslMode + "|"
-                + config.maxIdleConnections() + "|"
-                + config.keepAliveDurationSeconds() + "|"
-                + config.maxRequests() + "|"
-                + config.maxRequestsPerHost() + "|"
-                + runtimeSettingsCacheKey;
+    private OkHttpClient createCustomCookieClient(ClientKey key) {
+        return OkHttpClientManager.createClientForRuntimeConfig(
+                key.baseUri,
+                key.followRedirects,
+                key.sslMode,
+                key.config,
+                customCookieJar
+        );
+    }
+
+    private OkHttpClient createScopedCookieClient(ScopedClientKey scopedKey) {
+        OkHttpClient baseClient = baseClients.computeIfAbsent(scopedKey.clientKey, this::createBaseClientWithoutCookies);
+        return baseClient.newBuilder()
+                .cookieJar(scopedCookieJarStore.cookieJarForScope(scopedKey.cookieScope))
+                .build();
+    }
+
+    private OkHttpClient createBaseClientWithoutCookies(ClientKey key) {
+        return OkHttpClientManager.createClientForRuntimeConfig(
+                key.baseUri,
+                key.followRedirects,
+                key.sslMode,
+                key.config,
+                CookieJar.NO_COOKIES
+        );
+    }
+
+    private void shutdownClients() {
+        Set<Dispatcher> dispatchers = Collections.newSetFromMap(new IdentityHashMap<>());
+        Set<ConnectionPool> connectionPools = Collections.newSetFromMap(new IdentityHashMap<>());
+        shutdownClients(baseClients.values(), dispatchers, connectionPools);
+        shutdownClients(scopedClients.values(), dispatchers, connectionPools);
+    }
+
+    private void shutdownClients(Iterable<OkHttpClient> clients,
+                                 Set<Dispatcher> dispatchers,
+                                 Set<ConnectionPool> connectionPools) {
+        for (OkHttpClient client : clients) {
+            Dispatcher dispatcher = client.dispatcher();
+            if (dispatchers.add(dispatcher)) {
+                dispatcher.cancelAll();
+                dispatcher.executorService().shutdown();
+            }
+            ConnectionPool connectionPool = client.connectionPool();
+            if (connectionPools.add(connectionPool)) {
+                connectionPool.evictAll();
+            }
+        }
+    }
+
+    private String resolveCookieScope() {
+        return cookieScopeSupplier == null ? null : cookieScopeSupplier.get();
+    }
+
+    private record ClientKey(String baseUri,
+                             boolean followRedirects,
+                             SSLConfigurationUtil.SSLVerificationMode sslMode,
+                             HttpClientRuntimeConfig config,
+                             String runtimeSettingsCacheKey) {
+    }
+
+    private record ScopedClientKey(ClientKey clientKey, String cookieScope) {
     }
 }

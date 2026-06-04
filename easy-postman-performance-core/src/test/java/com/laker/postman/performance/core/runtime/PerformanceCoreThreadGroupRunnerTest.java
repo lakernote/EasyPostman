@@ -7,6 +7,7 @@ import org.testng.annotations.Test;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -49,6 +50,32 @@ public class PerformanceCoreThreadGroupRunnerTest {
                 progress.getActiveThreads() == 1 && progress.getTotalThreads() == 1));
         assertTrue(progressEvents.stream().allMatch(progress -> progress.getSequence() > 0L));
         assertEquals(progressEvents.get(progressEvents.size() - 1).getActiveThreads(), 0);
+    }
+
+    @Test(timeOut = 3000)
+    public void shouldAssignDistinctVirtualUserScopesAcrossThreadGroups() {
+        PerformanceVirtualUserCoordinator virtualUsers = new PerformanceVirtualUserCoordinator();
+        List<String> scopes = new CopyOnWriteArrayList<>();
+        PerformanceCoreThreadGroupRunner<String> runner = new PerformanceCoreThreadGroupRunner<>(
+                () -> true,
+                System::currentTimeMillis,
+                () -> {
+                },
+                virtualUsers,
+                (groupPlan, iterationCount) -> {
+                    scopes.add(virtualUsers.currentVirtualUserScope());
+                    return "ctx";
+                },
+                (groupPlan, iterationContext) -> {
+                },
+                noopSink()
+        );
+
+        runner.run(new PerformanceTestPlan(List.of(fixedGroup("first", 1), fixedGroup("second", 1))), 2);
+
+        assertEquals(scopes.size(), 2);
+        assertEquals(new HashSet<>(scopes).size(), 2);
+        assertTrue(scopes.stream().allMatch(scope -> scope != null && scope.contains(":vu:0")));
     }
 
     @Test(timeOut = 3000)

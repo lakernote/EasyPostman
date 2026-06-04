@@ -3,6 +3,7 @@ package com.laker.postman.performance.core.runtime;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
+import java.util.function.IntFunction;
 import java.util.function.IntSupplier;
 
 public final class PerformanceVirtualUserCoordinator {
@@ -11,6 +12,7 @@ public final class PerformanceVirtualUserCoordinator {
     private final AtomicInteger peakActiveThreads = new AtomicInteger(0);
     private final AtomicInteger virtualUserCounter = new AtomicInteger(0);
     private final ThreadLocal<Integer> threadVirtualUserIndex = new ThreadLocal<>();
+    private final ThreadLocal<String> threadVirtualUserScope = new ThreadLocal<>();
     private final ThreadLocal<Integer> threadIterationIndex = ThreadLocal.withInitial(() -> 0);
     private final Object progressLock = new Object();
 
@@ -36,6 +38,10 @@ public final class PerformanceVirtualUserCoordinator {
         return threadVirtualUserIndex.get();
     }
 
+    public String currentVirtualUserScope() {
+        return threadVirtualUserScope.get();
+    }
+
     public int nextIterationIndex() {
         int iterationIndex = threadIterationIndex.get();
         threadIterationIndex.set(iterationIndex + 1);
@@ -54,7 +60,19 @@ public final class PerformanceVirtualUserCoordinator {
                 int totalThreads,
                 IntSupplier virtualUserIndexSupplier,
                 Runnable task) {
-        executor.submit(() -> run(progressUpdater, totalThreads, nextVirtualUserIndex(virtualUserIndexSupplier), task));
+        submit(executor, progressUpdater, totalThreads, virtualUserIndexSupplier, null, task);
+    }
+
+    void submit(ExecutorService executor,
+                BiConsumer<Integer, Integer> progressUpdater,
+                int totalThreads,
+                IntSupplier virtualUserIndexSupplier,
+                IntFunction<String> virtualUserScopeFactory,
+                Runnable task) {
+        executor.submit(() -> {
+            int vuIndex = nextVirtualUserIndex(virtualUserIndexSupplier);
+            run(progressUpdater, totalThreads, vuIndex, resolveVirtualUserScope(vuIndex, virtualUserScopeFactory), task);
+        });
     }
 
     public Thread newThread(String namePrefix,
@@ -69,17 +87,31 @@ public final class PerformanceVirtualUserCoordinator {
                             int totalThreads,
                             IntSupplier virtualUserIndexSupplier,
                             Runnable task) {
+        return newThread(namePrefix, progressUpdater, totalThreads, virtualUserIndexSupplier, null, task);
+    }
+
+    public Thread newThread(String namePrefix,
+                            BiConsumer<Integer, Integer> progressUpdater,
+                            int totalThreads,
+                            IntSupplier virtualUserIndexSupplier,
+                            IntFunction<String> virtualUserScopeFactory,
+                            Runnable task) {
         return PerformanceThreadFactory.newDaemonThread(
                 namePrefix,
-                () -> run(progressUpdater, totalThreads, nextVirtualUserIndex(virtualUserIndexSupplier), task)
+                () -> {
+                    int vuIndex = nextVirtualUserIndex(virtualUserIndexSupplier);
+                    run(progressUpdater, totalThreads, vuIndex, resolveVirtualUserScope(vuIndex, virtualUserScopeFactory), task);
+                }
         );
     }
 
     private void run(BiConsumer<Integer, Integer> progressUpdater,
                      int totalThreads,
                      int vuIndex,
+                     String vuScope,
                      Runnable task) {
         threadVirtualUserIndex.set(vuIndex);
+        threadVirtualUserScope.set(vuScope);
         threadIterationIndex.set(0);
         incrementActiveThreads(progressUpdater, totalThreads);
         try {
@@ -87,6 +119,7 @@ public final class PerformanceVirtualUserCoordinator {
         } finally {
             decrementActiveThreads(progressUpdater, totalThreads);
             threadVirtualUserIndex.remove();
+            threadVirtualUserScope.remove();
             threadIterationIndex.remove();
         }
     }
@@ -116,5 +149,15 @@ public final class PerformanceVirtualUserCoordinator {
 
     private int nextVirtualUserIndex(IntSupplier virtualUserIndexSupplier) {
         return virtualUserIndexSupplier == null ? virtualUserCounter.getAndIncrement() : virtualUserIndexSupplier.getAsInt();
+    }
+
+    private String resolveVirtualUserScope(int vuIndex, IntFunction<String> virtualUserScopeFactory) {
+        if (virtualUserScopeFactory != null) {
+            String scope = virtualUserScopeFactory.apply(vuIndex);
+            if (scope != null && !scope.isBlank()) {
+                return scope;
+            }
+        }
+        return "vu:" + vuIndex;
     }
 }

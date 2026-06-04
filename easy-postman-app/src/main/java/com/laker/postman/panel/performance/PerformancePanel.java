@@ -30,12 +30,12 @@ import com.laker.postman.panel.performance.control.PerformanceTimerManager;
 import com.laker.postman.panel.performance.config.CsvDataSetPropertyPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
 import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
-import com.laker.postman.performance.execution.DefaultPerformanceNetworkRuntime;
 import com.laker.postman.performance.execution.PerformanceExecutionConfig;
 import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.model.PerformanceResultListener;
 import com.laker.postman.performance.model.PerformanceStatsCollectorListener;
 import com.laker.postman.performance.model.PerformanceTrendWindowCollectorListener;
+import com.laker.postman.http.runtime.okhttp.HttpClientRuntimeConfig;
 import com.laker.postman.performance.plan.PerformancePlanConfiguration;
 import com.laker.postman.performance.plan.PerformancePlanDocument;
 import com.laker.postman.performance.plan.PerformancePlanWorkspace;
@@ -355,14 +355,6 @@ public class PerformancePanel extends UiSingletonPanel {
                         deletePlanButton
                 )
         );
-        DefaultPerformanceNetworkRuntime networkRuntime = new DefaultPerformanceNetworkRuntime(
-                () -> new HttpClientRuntimeConfig(
-                        SettingManager.getPerformanceMaxIdleConnections(),
-                        SettingManager.getPerformanceKeepAliveSeconds(),
-                        SettingManager.getPerformanceMaxRequests(),
-                        SettingManager.getPerformanceMaxRequestsPerHost()
-                )
-        );
         executionEngine = new PerformanceExecutionEngine(
                 () -> running,
                 PerformanceExecutionConfig.uiSupplying(
@@ -372,7 +364,12 @@ public class PerformancePanel extends UiSingletonPanel {
                 ),
                 new PerformanceResultCollector(resultListeners),
                 new PerformanceRunUiEventBridge(this, runUiController, progressLabel),
-                networkRuntime
+                () -> new HttpClientRuntimeConfig(
+                        SettingManager.getPerformanceMaxIdleConnections(),
+                        SettingManager.getPerformanceKeepAliveSeconds(),
+                        SettingManager.getPerformanceMaxRequests(),
+                        SettingManager.getPerformanceMaxRequestsPerHost()
+                )
         );
         PerformanceRunSession runSession = new PerformanceRunSession(
                 () -> running,

@@ -32,11 +32,17 @@ public final class DefaultPerformanceNetworkRuntime implements PerformanceNetwor
     }
 
     public DefaultPerformanceNetworkRuntime(Supplier<HttpClientRuntimeConfig> httpClientConfigSupplier) {
+        this(httpClientConfigSupplier, null);
+    }
+
+    public DefaultPerformanceNetworkRuntime(Supplier<HttpClientRuntimeConfig> httpClientConfigSupplier,
+                                            Supplier<String> cookieScopeSupplier) {
         this(
                 ConcurrentHashMap.newKeySet(),
                 ConcurrentHashMap.newKeySet(),
                 ConcurrentHashMap.newKeySet(),
-                httpClientConfigSupplier
+                httpClientConfigSupplier,
+                cookieScopeSupplier
         );
     }
 
@@ -46,21 +52,23 @@ public final class DefaultPerformanceNetworkRuntime implements PerformanceNetwor
                 ConcurrentHashMap.newKeySet(),
                 activeSseSources,
                 activeWebSockets,
-                HttpClientRuntimeConfig::defaults
+                HttpClientRuntimeConfig::defaults,
+                null
         );
     }
 
     private DefaultPerformanceNetworkRuntime(Set<Call> activeHttpCalls,
                                              Set<RealtimeConnectionHandle> activeSseSources,
                                              Set<RealtimeWebSocketConnection> activeWebSockets,
-                                             Supplier<HttpClientRuntimeConfig> httpClientConfigSupplier) {
+                                             Supplier<HttpClientRuntimeConfig> httpClientConfigSupplier,
+                                             Supplier<String> cookieScopeSupplier) {
         this.activeHttpCalls = activeHttpCalls == null ? ConcurrentHashMap.newKeySet() : activeHttpCalls;
         this.activeSseSources = activeSseSources == null ? ConcurrentHashMap.newKeySet() : activeSseSources;
         this.activeWebSockets = activeWebSockets == null ? ConcurrentHashMap.newKeySet() : activeWebSockets;
         this.httpClientConfigSupplier = httpClientConfigSupplier == null
                 ? HttpClientRuntimeConfig::defaults
                 : httpClientConfigSupplier;
-        this.httpClientProvider = new ScopedHttpBaseClientProvider(this::currentHttpClientConfig);
+        this.httpClientProvider = new ScopedHttpBaseClientProvider(this::currentHttpClientConfig, cookieScopeSupplier);
     }
 
     @Override

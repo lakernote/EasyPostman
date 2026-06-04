@@ -79,6 +79,36 @@ public class DefaultPerformanceNetworkRuntimeTest {
     }
 
     @Test
+    public void shouldIsolateCookiesPerVirtualUserScopeWithoutDuplicatingDispatcher() {
+        AtomicReference<String> virtualUserScope = new AtomicReference<>("vu-1");
+        DefaultPerformanceNetworkRuntime runtime = new DefaultPerformanceNetworkRuntime(
+                () -> new HttpClientRuntimeConfig(7, 11, 13, 17),
+                virtualUserScope::get
+        );
+        PreparedRequest request = preparedRequest("http://example.test/api");
+        HttpUrl url = HttpUrl.get("http://example.test/api");
+
+        OkHttpClient firstUserClient = runtime.getBaseClient(request);
+        firstUserClient.cookieJar().saveFromResponse(url, List.of(cookie("sid", "one")));
+
+        virtualUserScope.set("vu-2");
+        OkHttpClient secondUserClient = runtime.getBaseClient(request);
+
+        assertNotSame(secondUserClient, firstUserClient);
+        assertSame(secondUserClient.dispatcher(), firstUserClient.dispatcher());
+        assertSame(secondUserClient.connectionPool(), firstUserClient.connectionPool());
+        assertTrue(secondUserClient.cookieJar().loadForRequest(url).isEmpty());
+
+        secondUserClient.cookieJar().saveFromResponse(url, List.of(cookie("sid", "two")));
+
+        virtualUserScope.set("vu-1");
+        assertEquals(firstUserClient.cookieJar().loadForRequest(url).get(0).value(), "one");
+
+        virtualUserScope.set("vu-2");
+        assertEquals(secondUserClient.cookieJar().loadForRequest(url).get(0).value(), "two");
+    }
+
+    @Test
     public void shouldSnapshotHttpClientConfigForRun() {
         AtomicReference<HttpClientRuntimeConfig> configRef = new AtomicReference<>(
                 new HttpClientRuntimeConfig(7, 11, 13, 17)
@@ -105,5 +135,14 @@ public class DefaultPerformanceNetworkRuntimeTest {
         request.followRedirects = true;
         request.sslVerificationEnabled = true;
         return request;
+    }
+
+    private static Cookie cookie(String name, String value) {
+        return new Cookie.Builder()
+                .domain("example.test")
+                .path("/")
+                .name(name)
+                .value(value)
+                .build();
     }
 }

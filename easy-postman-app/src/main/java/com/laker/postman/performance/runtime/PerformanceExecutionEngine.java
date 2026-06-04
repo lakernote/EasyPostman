@@ -4,6 +4,7 @@ import com.laker.postman.performance.execution.DefaultPerformanceNetworkRuntime;
 import com.laker.postman.performance.execution.PerformanceExecutionConfig;
 import com.laker.postman.performance.execution.PerformanceNetworkRuntime;
 import com.laker.postman.performance.execution.PerformanceRequestExecutor;
+import com.laker.postman.http.runtime.okhttp.HttpClientRuntimeConfig;
 import com.laker.postman.performance.result.PerformanceResultCollector;
 import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
 import com.laker.postman.performance.core.plan.PerformanceTestPlan;
@@ -15,6 +16,7 @@ import com.laker.postman.service.variable.ExecutionVariableContext;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
+import java.util.function.Supplier;
 
 public final class PerformanceExecutionEngine {
 
@@ -73,7 +75,15 @@ public final class PerformanceExecutionEngine {
                                       PerformanceExecutionConfig executionConfig,
                                       PerformanceResultCollector resultCollector,
                                       PerformanceRunListener runListener) {
-        this(runningSupplier, executionConfig, resultCollector, runListener, new DefaultPerformanceNetworkRuntime());
+        this(runningSupplier, executionConfig, resultCollector, runListener, (PerformanceNetworkRuntime) null);
+    }
+
+    public PerformanceExecutionEngine(BooleanSupplier runningSupplier,
+                                      PerformanceExecutionConfig executionConfig,
+                                      PerformanceResultCollector resultCollector,
+                                      PerformanceRunListener runListener,
+                                      Supplier<HttpClientRuntimeConfig> httpClientConfigSupplier) {
+        this(runningSupplier, executionConfig, resultCollector, runListener, null, httpClientConfigSupplier);
     }
 
     public PerformanceExecutionEngine(BooleanSupplier runningSupplier,
@@ -81,12 +91,23 @@ public final class PerformanceExecutionEngine {
                                       PerformanceResultCollector resultCollector,
                                       PerformanceRunListener runListener,
                                       PerformanceNetworkRuntime networkRuntime) {
-        this.networkRuntime = networkRuntime == null ? new DefaultPerformanceNetworkRuntime() : networkRuntime;
+        this(runningSupplier, executionConfig, resultCollector, runListener, networkRuntime, HttpClientRuntimeConfig::defaults);
+    }
+
+    private PerformanceExecutionEngine(BooleanSupplier runningSupplier,
+                                       PerformanceExecutionConfig executionConfig,
+                                       PerformanceResultCollector resultCollector,
+                                       PerformanceRunListener runListener,
+                                       PerformanceNetworkRuntime networkRuntime,
+                                       Supplier<HttpClientRuntimeConfig> httpClientConfigSupplier) {
+        PerformanceVirtualUserCoordinator virtualUsers = new PerformanceVirtualUserCoordinator();
+        this.networkRuntime = networkRuntime == null
+                ? new DefaultPerformanceNetworkRuntime(httpClientConfigSupplier, virtualUsers::currentVirtualUserScope)
+                : networkRuntime;
         PerformanceExecutionConfig resolvedConfig = executionConfig == null
                 ? PerformanceExecutionConfig.DEFAULT
                 : executionConfig;
         resolvedConfig = resolvedConfig.withScriptExecutorSupplier(this::currentScriptExecutor);
-        PerformanceVirtualUserCoordinator virtualUsers = new PerformanceVirtualUserCoordinator();
         PerformanceRealtimeMetrics realtimeMetrics = new PerformanceRealtimeMetrics();
         PerformanceRequestExecutor requestExecutor = new PerformanceRequestExecutor(
                 runningSupplier,

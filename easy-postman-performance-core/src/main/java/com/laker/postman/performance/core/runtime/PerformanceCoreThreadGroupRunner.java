@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
+import java.util.function.IntFunction;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
@@ -118,7 +119,8 @@ public final class PerformanceCoreThreadGroupRunner<C> {
                 executor.shutdownNow();
                 return;
             }
-            virtualUsers.submit(executor, progressUpdater, totalThreads, groupVirtualUserCounter::getAndIncrement, () -> {
+            virtualUsers.submit(executor, progressUpdater, totalThreads, groupVirtualUserCounter::getAndIncrement,
+                    virtualUserScopeFactory(groupPlan), () -> {
                 if (useTime) {
                     while (System.currentTimeMillis() < endTime && runningSupplier.getAsBoolean()) {
                         runTaskIteration(groupPlan, 0);
@@ -217,7 +219,8 @@ public final class PerformanceCoreThreadGroupRunner<C> {
                     if (!activeWorkerThreads.compareAndSet(current, current + 1)) {
                         continue;
                     }
-                    virtualUsers.submit(executor, progressUpdater, totalThreads, groupVirtualUserCounter::getAndIncrement, () -> {
+                    virtualUsers.submit(executor, progressUpdater, totalThreads, groupVirtualUserCounter::getAndIncrement,
+                            virtualUserScopeFactory(groupPlan), () -> {
                         try {
                             while (runningSupplier.getAsBoolean()
                                     && System.currentTimeMillis() - startTimeSupplier.getAsLong() < totalDuration * 1000L) {
@@ -587,7 +590,7 @@ public final class PerformanceCoreThreadGroupRunner<C> {
                                           AtomicInteger groupVirtualUserCounter,
                                           ConcurrentHashMap<Thread, Long> threadEndTimes) {
         Thread thread = virtualUsers.newThread(threadNamePrefix, progressUpdater, totalThreads,
-                groupVirtualUserCounter::getAndIncrement, () -> {
+                groupVirtualUserCounter::getAndIncrement, virtualUserScopeFactory(groupPlan), () -> {
                     try {
                         Thread currentThread = Thread.currentThread();
                         while (runningSupplier.getAsBoolean()
@@ -602,6 +605,12 @@ public final class PerformanceCoreThreadGroupRunner<C> {
                 });
         threadEndTimes.put(thread, Long.MAX_VALUE);
         thread.start();
+    }
+
+    private static IntFunction<String> virtualUserScopeFactory(PerformanceThreadGroupPlan groupPlan) {
+        int groupIdentity = groupPlan == null ? 0 : System.identityHashCode(groupPlan);
+        int offset = groupPlan == null ? 0 : groupPlan.getVirtualUserIndexOffset();
+        return virtualUserIndex -> "tg:" + groupIdentity + ":offset:" + offset + ":vu:" + virtualUserIndex;
     }
 
     public static int calculateStairsTotalSteps(int startThreads, int endThreads, int step) {

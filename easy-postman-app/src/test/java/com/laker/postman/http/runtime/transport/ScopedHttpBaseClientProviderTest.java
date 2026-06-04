@@ -5,6 +5,7 @@ import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.runtime.okhttp.HttpClientRuntimeConfig;
 import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
 import com.laker.postman.service.setting.SettingManager;
+import okhttp3.CookieJar;
 import okhttp3.OkHttpClient;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -114,6 +115,18 @@ public class ScopedHttpBaseClientProviderTest {
         provider.clear();
 
         assertTrue(dispatcherExecutor.isShutdown());
+    }
+
+    @Test
+    public void nullCustomCookieJarShouldUseNoCookiesInsteadOfScopedStore() {
+        ScopedHttpBaseClientProvider provider = new ScopedHttpBaseClientProvider(
+                () -> new HttpClientRuntimeConfig(7, 11, 13, 17),
+                (CookieJar) null
+        );
+
+        OkHttpClient client = provider.getBaseClient(preparedRequest("http://example.test/api"));
+
+        assertEquals(client.cookieJar(), CookieJar.NO_COOKIES);
     }
 
     private static PreparedRequest preparedRequest(String url) {

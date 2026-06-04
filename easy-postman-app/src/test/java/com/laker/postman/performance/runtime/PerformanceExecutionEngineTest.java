@@ -10,12 +10,14 @@ import com.laker.postman.performance.core.controller.LoopData;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.PerformanceStatsCollector;
 import com.laker.postman.performance.core.model.WebSocketPerformanceData;
+import com.laker.postman.performance.core.plan.PerformanceTimerElement;
 import com.laker.postman.performance.core.plan.PerformanceTestPlan;
 import com.laker.postman.performance.core.plan.PerformanceThreadGroupPlan;
 import com.laker.postman.performance.core.runtime.PerformanceRunListener;
 import com.laker.postman.performance.core.runtime.PerformanceRunProgress;
 import com.laker.postman.performance.core.runtime.PerformanceVirtualUserCoordinator;
 import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
+import com.laker.postman.performance.core.timer.TimerData;
 import com.laker.postman.performance.execution.PerformanceExecutionConfig;
 import com.laker.postman.performance.model.PerformanceStatsCollectorListener;
 import com.laker.postman.performance.model.PerformanceTreeNode;
@@ -23,10 +25,13 @@ import com.laker.postman.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.performance.plan.PerformanceTestPlanCompiler;
 import com.laker.postman.performance.plan.PerformanceTestPlanNode;
 import com.laker.postman.performance.result.PerformanceResultCollector;
+import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
 import org.testng.annotations.Test;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -266,6 +271,70 @@ public class PerformanceExecutionEngineTest {
         }
     }
 
+    @Test(timeOut = 5000)
+    public void defaultExecutionEngineShouldIsolateCookiesPerVirtualUser() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            AtomicInteger loginSequence = new AtomicInteger();
+            CountDownLatch allLoginsReachedServer = new CountDownLatch(2);
+            List<String> checkCookies = new CopyOnWriteArrayList<>();
+            server.setDispatcher(new Dispatcher() {
+                @Override
+                public MockResponse dispatch(RecordedRequest request) {
+                    if (request.getPath().startsWith("/login")) {
+                        int loginId = loginSequence.incrementAndGet();
+                        allLoginsReachedServer.countDown();
+                        try {
+                            if (!allLoginsReachedServer.await(1, TimeUnit.SECONDS)) {
+                                return new MockResponse().setResponseCode(500).setBody("login barrier timed out");
+                            }
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            return new MockResponse().setResponseCode(500).setBody("interrupted");
+                        }
+                        return new MockResponse()
+                                .addHeader("Set-Cookie", "sid=user-" + loginId + "; Path=/")
+                                .setBody("login");
+                    }
+                    if (request.getPath().startsWith("/check")) {
+                        checkCookies.add(request.getHeader("Cookie"));
+                        return new MockResponse().setBody("check");
+                    }
+                    return new MockResponse().setResponseCode(404);
+                }
+            });
+            server.start();
+
+            ThreadGroupData threadGroupData = new ThreadGroupData();
+            threadGroupData.threadMode = ThreadGroupData.ThreadMode.FIXED;
+            threadGroupData.numThreads = 2;
+            threadGroupData.useTime = false;
+            threadGroupData.loops = 1;
+
+            PerformanceTestPlan plan = new PerformanceTestPlan(List.of(
+                    new PerformanceThreadGroupPlan(
+                            "cookie users",
+                            threadGroupData,
+                            List.of(
+                                    timer("cookie barrier", 100),
+                                    requestSampler("login", server.url("/login").toString()),
+                                    requestSampler("check", server.url("/check").toString())
+                            )
+                    )
+            ));
+
+            new PerformanceExecutionEngine(
+                    () -> true,
+                    () -> false,
+                    () -> 4,
+                    emptyResultCollector()
+            ).runTestPlan(plan, 2);
+
+            assertEquals(checkCookies.size(), 2);
+            assertEquals(new HashSet<>(checkCookies).size(), 2);
+            assertTrue(checkCookies.stream().allMatch(cookie -> cookie != null && cookie.startsWith("sid=user-")));
+        }
+    }
+
     @Test
     public void compiledPlanExecutionShouldRunHttpAssertions() throws Exception {
         try (MockWebServer server = new MockWebServer()) {
@@ -482,6 +551,22 @@ public class PerformanceExecutionEngineTest {
         return new PerformanceTestPlanNode(new PerformanceTreeNode("status assertion", NodeType.ASSERTION, assertionData));
     }
 
+    private static PerformanceRequestSampler requestSampler(String name, String url) {
+        HttpRequestItem item = new HttpRequestItem();
+        item.setId(name);
+        item.setName(name);
+        item.setProtocol(RequestItemProtocolEnum.HTTP);
+        item.setMethod("GET");
+        item.setUrl(url);
+        return new PerformanceRequestSampler(name, item, null, List.of());
+    }
+
+    private static PerformanceTimerElement timer(String name, int delayMs) {
+        TimerData timerData = new TimerData();
+        timerData.delayMs = delayMs;
+        return new PerformanceTimerElement(name, timerData);
+    }
+
     private static PerformanceTestPlan compile(PerformanceTestPlanNode root) {
         return PerformanceTestPlanCompiler.compile(root);
     }
@@ -496,16 +581,6 @@ public class PerformanceExecutionEngineTest {
 
     private static PerformanceResultCollector statsResultCollector(PerformanceStatsCollector statsCollector) {
         return new PerformanceResultCollector(List.of(new PerformanceStatsCollectorListener(statsCollector)));
-    }
-
-    private static boolean hasParameterType(Class<?> type, Class<?> parameterType) {
-        boolean methodParameter = java.util.Arrays.stream(type.getMethods())
-                .flatMap(method -> java.util.Arrays.stream(method.getParameterTypes()))
-                .anyMatch(parameterType::equals);
-        boolean constructorParameter = java.util.Arrays.stream(type.getConstructors())
-                .flatMap(constructor -> java.util.Arrays.stream(constructor.getParameterTypes()))
-                .anyMatch(parameterType::equals);
-        return methodParameter || constructorParameter;
     }
 
     private static boolean hasParameterTypeName(Class<?> type, String parameterTypeName) {

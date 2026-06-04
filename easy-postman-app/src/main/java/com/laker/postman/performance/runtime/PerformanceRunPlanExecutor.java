@@ -1,42 +1,24 @@
 package com.laker.postman.performance.runtime;
 
+import com.laker.postman.http.runtime.okhttp.HttpClientRuntimeConfig;
 import com.laker.postman.model.Environment;
 import com.laker.postman.model.Variable;
-import com.laker.postman.performance.execution.DefaultPerformanceNetworkRuntime;
+import com.laker.postman.performance.core.model.PerformanceStatsCollector;
+import com.laker.postman.performance.core.model.PerformanceStatsSnapshot;
+import com.laker.postman.performance.core.model.PerformanceTrendWindowCollector;
+import com.laker.postman.performance.core.plan.PerformanceCorePlanDocumentCompiler;
+import com.laker.postman.performance.core.plan.PerformanceTestPlan;
+import com.laker.postman.performance.core.report.*;
+import com.laker.postman.performance.core.run.*;
+import com.laker.postman.performance.core.runtime.*;
+import com.laker.postman.performance.core.worker.PerformanceWorkerAssignment;
+import com.laker.postman.performance.core.worker.PerformanceWorkerExecutionPlanPartitioner;
 import com.laker.postman.performance.execution.PerformanceExecutionConfig;
 import com.laker.postman.performance.model.PerformanceStatsCollectorListener;
 import com.laker.postman.performance.model.PerformanceTrendWindowCollectorListener;
 import com.laker.postman.performance.plan.PerformanceCorePlanAdapter;
 import com.laker.postman.performance.result.PerformanceMetricsSnapshotService;
 import com.laker.postman.performance.result.PerformanceResultCollector;
-import com.laker.postman.performance.runtime.PerformanceExecutionEngine;
-import com.laker.postman.performance.runtime.PerformanceResultSink;
-import com.laker.postman.performance.runtime.PerformanceRunRequest;
-import com.laker.postman.performance.runtime.PerformanceRunSession;
-import com.laker.postman.performance.core.model.PerformanceStatsCollector;
-import com.laker.postman.performance.core.model.PerformanceStatsSnapshot;
-import com.laker.postman.performance.core.model.PerformanceTrendWindowCollector;
-import com.laker.postman.performance.core.plan.PerformanceCorePlanDocumentCompiler;
-import com.laker.postman.performance.core.plan.PerformanceTestPlan;
-import com.laker.postman.performance.core.report.PerformanceJsonReport;
-import com.laker.postman.performance.core.report.PerformanceJsonReportMapper;
-import com.laker.postman.performance.core.report.PerformanceJsonReportMetadata;
-import com.laker.postman.performance.core.report.PerformanceJsonReportStatusResolver;
-import com.laker.postman.performance.core.report.PerformanceJsonReportSummary;
-import com.laker.postman.performance.core.run.PerformanceRunEnvironment;
-import com.laker.postman.performance.core.run.PerformanceRunPlan;
-import com.laker.postman.performance.core.run.PerformanceRunPlanJsonStorage;
-import com.laker.postman.performance.core.run.PerformanceRunSettings;
-import com.laker.postman.performance.core.run.PerformanceRunVariable;
-import com.laker.postman.performance.core.run.PerformanceRunVariableSet;
-import com.laker.postman.performance.core.runtime.PerformanceRunError;
-import com.laker.postman.performance.core.runtime.PerformanceRunHandle;
-import com.laker.postman.performance.core.runtime.PerformanceRunListener;
-import com.laker.postman.performance.core.runtime.PerformanceRunProgress;
-import com.laker.postman.performance.core.runtime.PerformanceRunSummary;
-import com.laker.postman.performance.core.worker.PerformanceWorkerAssignment;
-import com.laker.postman.performance.core.worker.PerformanceWorkerExecutionPlanPartitioner;
-import com.laker.postman.http.runtime.okhttp.HttpClientRuntimeConfig;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.service.variable.RunScopedVariableContext;
 
@@ -76,10 +58,10 @@ public class PerformanceRunPlanExecutor {
     }
 
     public PerformanceRunExecutionResult execute(PerformanceRunPlan runPlan,
-                                                String planPath,
-                                                PerformanceWorkerAssignment assignment,
-                                                PrintStream scriptOutput,
-                                                PerformanceRunExecutionControl control) throws InterruptedException {
+                                                 String planPath,
+                                                 PerformanceWorkerAssignment assignment,
+                                                 PrintStream scriptOutput,
+                                                 PerformanceRunExecutionControl control) throws InterruptedException {
         if (runPlan == null) {
             throw new IllegalArgumentException("Plan is required");
         }
@@ -98,11 +80,11 @@ public class PerformanceRunPlanExecutor {
     }
 
     private PerformanceRunExecutionResult executeLoadedPlan(PerformanceRunPlan runPlan,
-                                                           String planPath,
-                                                           PerformanceWorkerAssignment assignment,
-                                                           Environment environment,
-                                                           PrintStream scriptOutput,
-                                                           PerformanceRunExecutionControl control) throws InterruptedException {
+                                                            String planPath,
+                                                            PerformanceWorkerAssignment assignment,
+                                                            Environment environment,
+                                                            PrintStream scriptOutput,
+                                                            PerformanceRunExecutionControl control) throws InterruptedException {
         PerformanceTestPlan corePlan = PerformanceCorePlanDocumentCompiler.compile(runPlan.getTestPlan());
         if (assignment != null) {
             corePlan = new PerformanceWorkerExecutionPlanPartitioner().apply(corePlan, assignment);
@@ -152,7 +134,7 @@ public class PerformanceRunPlanExecutor {
                         }
                     }
                 },
-                new DefaultPerformanceNetworkRuntime(() -> httpClientConfig(runPlan.getSettings()))
+                () -> httpClientConfig(runPlan.getSettings())
         );
         control.bindRealtimeMetrics(
                 executionEngine::liveRealtimeMetrics,

@@ -345,6 +345,9 @@ public final class PluginRuntime {
             }
         }
         PluginStateStore.replacePendingUninstallPluginIds(remainingPending);
+        pendingIds.stream()
+                .filter(pluginId -> !remainingPending.contains(pluginId))
+                .forEach(pluginId -> PluginStateStore.setPluginEnabled(pluginId, true));
         if (!remainingPending.isEmpty()) {
             log.info("Pending uninstall plugin(s) still remain after cleanup: {}", remainingPending);
         }

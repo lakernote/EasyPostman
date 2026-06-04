@@ -10,11 +10,24 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @UtilityClass
-public class PluginSettingsStore {
+public class PluginPlatformSettingsStore {
 
+    private static final Set<String> LEGACY_EXACT_KEYS = Set.of(
+            "plugin.disabledIds",
+            "plugin.pendingUninstallIds",
+            "plugin.market.catalogUrl",
+            "plugin.market.lastUpdateCheckTime",
+            "plugin.market.notifiedVersions"
+    );
+    private static final List<String> LEGACY_KEY_PREFIXES = List.of(
+            "plugin.installSource.type.",
+            "plugin.installSource.location."
+    );
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final Object LOCK = new Object();
 
@@ -70,26 +83,53 @@ public class PluginSettingsStore {
 
     private static ObjectNode readSettings() {
         synchronized (LOCK) {
-            Path path = PluginRuntimePaths.userSettingsFile();
-            if (!Files.exists(path)) {
-                return MAPPER.createObjectNode();
+            Path settingsFile = PluginRuntimePaths.pluginPlatformSettingsFile();
+            if (Files.exists(settingsFile)) {
+                return readObject(settingsFile);
             }
-            try {
-                JsonNode node = MAPPER.readTree(Files.readString(path));
-                return node instanceof ObjectNode objectNode ? objectNode : MAPPER.createObjectNode();
-            } catch (Exception e) {
-                return MAPPER.createObjectNode();
+            ObjectNode migratedSettings = migrateLegacyPlatformSettings();
+            if (!migratedSettings.isEmpty()) {
+                writeSettings(migratedSettings);
             }
+            return migratedSettings;
         }
     }
 
     private static void writeSettings(ObjectNode root) {
-        Path path = PluginRuntimePaths.userSettingsFile();
+        Path path = PluginRuntimePaths.pluginPlatformSettingsFile();
         try {
             Files.createDirectories(path.getParent());
             Files.writeString(path, MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(root));
         } catch (IOException e) {
-            throw new IllegalStateException("Failed to persist plugin settings", e);
+            throw new IllegalStateException("Failed to persist plugin platform settings", e);
+        }
+    }
+
+    private static ObjectNode migrateLegacyPlatformSettings() {
+        ObjectNode legacyPreferences = readObject(PluginRuntimePaths.legacyUserPreferencesFile());
+        ObjectNode platformSettings = MAPPER.createObjectNode();
+        for (Map.Entry<String, JsonNode> entry : legacyPreferences.properties()) {
+            String key = entry.getKey();
+            if (key != null && isLegacyPlatformKey(key)) {
+                platformSettings.set(key, entry.getValue().deepCopy());
+            }
+        }
+        return platformSettings;
+    }
+
+    private static boolean isLegacyPlatformKey(String key) {
+        return LEGACY_EXACT_KEYS.contains(key) || LEGACY_KEY_PREFIXES.stream().anyMatch(key::startsWith);
+    }
+
+    private static ObjectNode readObject(Path path) {
+        if (path == null || !Files.exists(path)) {
+            return MAPPER.createObjectNode();
+        }
+        try {
+            JsonNode node = MAPPER.readTree(Files.readString(path));
+            return node instanceof ObjectNode objectNode ? objectNode : MAPPER.createObjectNode();
+        } catch (Exception e) {
+            return MAPPER.createObjectNode();
         }
     }
 }

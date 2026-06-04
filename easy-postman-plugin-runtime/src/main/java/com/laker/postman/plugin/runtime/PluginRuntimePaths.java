@@ -36,7 +36,17 @@ class PluginRuntimePaths {
         return pluginDir;
     }
 
-    static Path userSettingsFile() {
+    static Path pluginPlatformSettingsFile() {
+        Path settingsFile = dataRoot().resolve("plugins").resolve("settings.json");
+        try {
+            Files.createDirectories(settingsFile.getParent());
+        } catch (Exception ignored) {
+            // callers will surface actual failures
+        }
+        return settingsFile;
+    }
+
+    static Path legacyUserPreferencesFile() {
         return dataRoot().resolve("user_settings.json");
     }
 

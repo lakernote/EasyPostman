@@ -4,7 +4,7 @@ import com.laker.postman.platform.update.UpdateStateStore;
 import com.laker.postman.platform.update.model.UpdateCheckState;
 import com.laker.postman.platform.update.model.UpdatePolicy;
 import com.laker.postman.platform.update.model.UpdateTarget;
-import com.laker.postman.plugin.runtime.PluginSettingsStore;
+import com.laker.postman.plugin.runtime.PluginPlatformSettingsStore;
 import com.laker.postman.service.setting.SettingManager;
 
 import java.util.LinkedHashSet;
@@ -33,7 +33,7 @@ public final class AppUpdateStateStore implements UpdateStateStore {
             case PLUGIN -> UpdateCheckState.of(
                     UpdateTarget.PLUGIN,
                     getPluginLastCheckTime(),
-                    PluginSettingsStore.getStringSet(LAST_PLUGIN_UPDATE_NOTIFIED_KEY)
+                    PluginPlatformSettingsStore.getStringSet(LAST_PLUGIN_UPDATE_NOTIFIED_KEY)
             );
         };
     }
@@ -42,7 +42,7 @@ public final class AppUpdateStateStore implements UpdateStateStore {
     public void recordCheck(UpdateTarget target, long timestampMillis) {
         switch (normalizeTarget(target)) {
             case APP -> SettingManager.setLastUpdateCheckTime(timestampMillis);
-            case PLUGIN -> PluginSettingsStore.putString(
+            case PLUGIN -> PluginPlatformSettingsStore.putString(
                     LAST_PLUGIN_UPDATE_CHECK_TIME_KEY,
                     String.valueOf(Math.max(0L, timestampMillis))
             );
@@ -61,7 +61,7 @@ public final class AppUpdateStateStore implements UpdateStateStore {
     }
 
     public static long getPluginLastCheckTime() {
-        String value = PluginSettingsStore.getString(LAST_PLUGIN_UPDATE_CHECK_TIME_KEY);
+        String value = PluginPlatformSettingsStore.getString(LAST_PLUGIN_UPDATE_CHECK_TIME_KEY);
         if (value == null || value.isBlank()) {
             return 0L;
         }
@@ -73,9 +73,9 @@ public final class AppUpdateStateStore implements UpdateStateStore {
     }
 
     private static void rememberPluginNotifiedMarker(String marker) {
-        Set<String> notified = new LinkedHashSet<>(PluginSettingsStore.getStringSet(LAST_PLUGIN_UPDATE_NOTIFIED_KEY));
+        Set<String> notified = new LinkedHashSet<>(PluginPlatformSettingsStore.getStringSet(LAST_PLUGIN_UPDATE_NOTIFIED_KEY));
         notified.add(marker.trim());
-        PluginSettingsStore.putStringSet(LAST_PLUGIN_UPDATE_NOTIFIED_KEY, notified);
+        PluginPlatformSettingsStore.putStringSet(LAST_PLUGIN_UPDATE_NOTIFIED_KEY, notified);
     }
 
     private static UpdateTarget normalizeTarget(UpdateTarget target) {

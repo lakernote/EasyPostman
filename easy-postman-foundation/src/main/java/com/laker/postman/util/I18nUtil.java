@@ -41,7 +41,7 @@ public class I18nUtil {
 
     static {
         // 从用户设置中读取语言设置，默认使用系统语言
-        String savedLocale = UserSettingsUtil.getLanguage();
+        String savedLocale = UserPreferencesStore.getLanguage();
         if (savedLocale != null && !savedLocale.isEmpty()) {
             try {
                 currentLocale = normalizeSupportedLocale(Locale.forLanguageTag(savedLocale.replace('_', '-')));
@@ -212,7 +212,7 @@ public class I18nUtil {
 
             // 保存到用户设置
             String localeCode = normalizedLocale.getLanguage();
-            UserSettingsUtil.saveLanguage(localeCode);
+            UserPreferencesStore.saveLanguage(localeCode);
 
             log.info("Locale changed to: {}", normalizedLocale);
         }

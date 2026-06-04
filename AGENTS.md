@@ -189,7 +189,7 @@ User-visible app strings must use `I18nUtil.getMessage(MessageKeys.SOME_KEY)`. C
 ## Theme & Settings
 
 - Theme is currently applied by `SimpleThemeManager` in the app (light/dark via FlatLaf, animated transitions). Startup/application of theme and font settings belongs in `easy-postman-platform` once those dependencies are extracted cleanly.
-- User settings are persisted to `easy_postman_settings.properties` via `SettingManager` (static Properties file) and `UserSettingsUtil` (foundation module).
+- Application settings are persisted to `easy_postman_settings.properties` via `SettingManager`; lightweight user preferences such as language, theme, and window state are persisted to `user_settings.json` via `UserPreferencesStore` (foundation module).
 - Font size setting key: `ui_font_size` in that properties file.
 - Custom FlatLaf token overrides: `easy-postman-app/src/main/resources/com/laker/postman/common/themes/EasyLightLaf.properties` and `EasyDarkLaf.properties`
 - RSyntaxTextArea editor theme XMLs: `easy-postman-ui/src/main/resources/themes/easypostman-light.xml` and `easypostman-dark.xml`

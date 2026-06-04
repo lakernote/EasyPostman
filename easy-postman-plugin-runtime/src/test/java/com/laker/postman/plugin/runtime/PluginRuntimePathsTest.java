@@ -10,10 +10,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class PluginRuntimePathsTest {
@@ -65,6 +67,36 @@ public class PluginRuntimePathsTest {
     public void shouldKeepInstalledEditionManagedPluginsUnderDataDirectory() {
         assertEquals(PluginRuntime.getManagedPluginDir(), dataDir.resolve("plugins").resolve("installed"));
         assertEquals(PluginRuntime.getPluginPackageDir(), dataDir.resolve("plugins").resolve("packages"));
+    }
+
+    @Test
+    public void shouldStorePluginSettingsInDedicatedPluginFile() {
+        PluginPlatformSettingsStore.putStringSet("plugin.pendingUninstallIds", Set.of("plugin-redis"));
+
+        assertTrue(Files.exists(dataDir.resolve("plugins").resolve("settings.json")));
+        assertFalse(Files.exists(dataDir.resolve("user_settings.json")));
+        assertEquals(PluginPlatformSettingsStore.getStringSet("plugin.pendingUninstallIds"), Set.of("plugin-redis"));
+    }
+
+    @Test
+    public void shouldMigrateLegacyPluginSettingsFromUserSettings() throws IOException {
+        Files.writeString(dataDir.resolve("user_settings.json"), """
+                {
+                  "language": "zh",
+                  "plugin.pendingUninstallIds": [ "plugin-redis" ],
+                  "plugin.market.catalogUrl": "https://example.com/catalog.json",
+                  "plugin.capture.bindHost": "0.0.0.0"
+                }
+                """, StandardCharsets.UTF_8);
+
+        assertEquals(PluginPlatformSettingsStore.getStringSet("plugin.pendingUninstallIds"), Set.of("plugin-redis"));
+        assertEquals(PluginPlatformSettingsStore.getString("plugin.market.catalogUrl"), "https://example.com/catalog.json");
+
+        String pluginSettingsJson = Files.readString(dataDir.resolve("plugins").resolve("settings.json"));
+        assertTrue(pluginSettingsJson.contains("plugin.pendingUninstallIds"));
+        assertTrue(pluginSettingsJson.contains("plugin.market.catalogUrl"));
+        assertFalse(pluginSettingsJson.contains("plugin.capture.bindHost"));
+        assertFalse(pluginSettingsJson.contains("\"language\""));
     }
 
     private static void writeStubPluginJar(Path jarPath, String pluginId, String version) throws IOException {

@@ -1,6 +1,6 @@
 package com.laker.postman.frame;
 
-import com.laker.postman.util.UserSettingsUtil;
+import com.laker.postman.util.UserPreferencesStore;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.JFrame;
@@ -57,7 +57,7 @@ class MainWindowStateController {
     }
 
     boolean hasSavedWindowState() {
-        return UserSettingsUtil.hasWindowState();
+        return UserPreferencesStore.hasWindowState();
     }
 
     void installStateListeners() {
@@ -106,7 +106,7 @@ class MainWindowStateController {
             }
 
             int extendedState = frame.getExtendedState();
-            UserSettingsUtil.saveWindowState(width, height, extendedState);
+            UserPreferencesStore.saveWindowState(width, height, extendedState);
             log.debug("窗口状态已保存: width={}, height={}, extendedState={}", width, height, extendedState);
         } catch (Exception e) {
             log.warn("保存窗口状态失败", e);
@@ -129,7 +129,7 @@ class MainWindowStateController {
         if (!hasSavedWindowState()) {
             return minSize.width;
         }
-        Integer savedWidth = UserSettingsUtil.getWindowWidth();
+        Integer savedWidth = UserPreferencesStore.getWindowWidth();
         return (savedWidth != null && savedWidth > 0) ? Math.max(savedWidth, minSize.width) : minSize.width;
     }
 
@@ -137,15 +137,15 @@ class MainWindowStateController {
         if (!hasSavedWindowState()) {
             return minSize.height;
         }
-        Integer savedHeight = UserSettingsUtil.getWindowHeight();
+        Integer savedHeight = UserPreferencesStore.getWindowHeight();
         return (savedHeight != null && savedHeight > 0) ? Math.max(savedHeight, minSize.height) : minSize.height;
     }
 
     private void restoreWindowState() {
         try {
-            Integer width = UserSettingsUtil.getWindowWidth();
-            Integer height = UserSettingsUtil.getWindowHeight();
-            Integer extendedState = UserSettingsUtil.getWindowExtendedState();
+            Integer width = UserPreferencesStore.getWindowWidth();
+            Integer height = UserPreferencesStore.getWindowHeight();
+            Integer extendedState = UserPreferencesStore.getWindowExtendedState();
 
             Dimension minSize = getMinWindowSize();
             int actualWidth = (width != null && width > 0) ? Math.max(width, minSize.width) : minSize.width;

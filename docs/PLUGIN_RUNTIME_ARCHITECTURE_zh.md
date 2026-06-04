@@ -26,7 +26,7 @@ easy-postman-plugin-runtime
 ├── PluginLoader
 ├── PluginRegistry
 ├── PluginStateStore
-├── PluginSettingsStore
+├── PluginPlatformSettingsStore
 ├── PluginRuntimePaths
 ├── RuntimeVersionResolver
 ├── PluginCompatibility
@@ -57,7 +57,7 @@ easy-postman-plugin-runtime
   - 宿主运行时从这里消费插件能力
 - `PluginStateStore`
   - 维护禁用插件和待卸载插件状态
-- `PluginSettingsStore`
+- `PluginPlatformSettingsStore`
   - 底层 JSON 持久化
 - `PluginRuntimePaths`
   - 统一运行时数据目录、安装目录、包缓存目录
@@ -209,7 +209,7 @@ runtime 测试目前主要在：
   - 暂时只追踪了 script API 和 service
 - 不支持真正的热卸载
   - 当前启用/禁用/卸载仍以“下次启动生效”思路为主
-- `PluginSettingsStore` 还是通用 key-value JSON 包装
+- `PluginPlatformSettingsStore` 还是插件平台状态的 key-value JSON 包装
   - 还没有 typed state model
 
 ## 8. 后续演进建议

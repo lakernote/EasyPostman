@@ -6,11 +6,11 @@ import com.laker.postman.common.component.button.CloseButton;
 import com.laker.postman.common.component.button.CopyButton;
 import com.laker.postman.common.component.table.EnhancedTablePanel;
 import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.plugin.api.PluginStorage;
 import com.laker.postman.plugin.api.service.RequestCollectionImportService;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.NotificationUtil;
-import com.laker.postman.util.UserSettingsUtil;
 import net.miginfocom.swing.MigLayout;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
@@ -67,13 +67,10 @@ import java.util.Map;
 import static com.laker.postman.plugin.capture.CaptureI18n.t;
 
 public class CapturePanel extends JPanel {
-    private static final String SETTING_BIND_HOST = "plugin.capture.bindHost";
-    private static final String SETTING_BIND_PORT = "plugin.capture.bindPort";
-    private static final String SETTING_SYNC_SYSTEM_PROXY = "plugin.capture.syncSystemProxy";
-    private static final String SETTING_CAPTURE_HOST_FILTER = "plugin.capture.hostFilter";
-
     private final CaptureProxyService proxyService = CaptureRuntime.proxyService();
     private final CaptureRequestCollectionImporter requestCollectionImporter;
+    private final CaptureSettingsStore settingsStore;
+    private final CaptureSettings initialSettings;
     private final MacCertificateInstallService macCertificateInstallService = new MacCertificateInstallService();
     private final WindowsCertificateInstallService windowsCertificateInstallService = new WindowsCertificateInstallService();
 
@@ -128,11 +125,13 @@ public class CapturePanel extends JPanel {
     private Timer refreshTimer;
 
     public CapturePanel() {
-        this(null);
+        this(null, PluginStorage.noop());
     }
 
-    CapturePanel(RequestCollectionImportService importService) {
+    CapturePanel(RequestCollectionImportService importService, PluginStorage storage) {
         requestCollectionImporter = new CaptureRequestCollectionImporter(importService);
+        settingsStore = new CaptureSettingsStore(storage == null ? PluginStorage.noop() : storage);
+        initialSettings = settingsStore.load();
         initUI();
         proxyService.sessionStore().addChangeListener(this::scheduleRefreshTable);
         refreshTable();
@@ -407,10 +406,7 @@ public class CapturePanel extends JPanel {
             @Override
             protected StartResult doInBackground() throws Exception {
                 proxyService.start(host, port, syncSystemProxy, captureHostFilter);
-                UserSettingsUtil.set(SETTING_BIND_HOST, host);
-                UserSettingsUtil.set(SETTING_BIND_PORT, port);
-                UserSettingsUtil.set(SETTING_SYNC_SYSTEM_PROXY, syncSystemProxy);
-                UserSettingsUtil.set(SETTING_CAPTURE_HOST_FILTER, captureHostFilter);
+                settingsStore.save(new CaptureSettings(host, port, syncSystemProxy, captureHostFilter));
                 return new StartResult(host, port, proxyService.isSystemProxySynced());
             }
 
@@ -887,22 +883,19 @@ public class CapturePanel extends JPanel {
     }
 
     private String defaultHost() {
-        String saved = UserSettingsUtil.getString(SETTING_BIND_HOST);
-        return saved == null || saved.isBlank() ? "127.0.0.1" : saved;
+        return initialSettings.bindHost();
     }
 
     private int defaultPort() {
-        Integer saved = UserSettingsUtil.getInt(SETTING_BIND_PORT);
-        return saved == null ? 8888 : saved;
+        return initialSettings.bindPort();
     }
 
     private boolean defaultSyncSystemProxy() {
-        return Boolean.TRUE.equals(UserSettingsUtil.getBoolean(SETTING_SYNC_SYSTEM_PROXY));
+        return initialSettings.syncSystemProxy();
     }
 
     private String defaultCaptureHostFilter() {
-        String saved = UserSettingsUtil.getString(SETTING_CAPTURE_HOST_FILTER);
-        return saved == null ? "" : saved;
+        return initialSettings.hostFilter();
     }
 
     private void openCa() {

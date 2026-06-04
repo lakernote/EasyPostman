@@ -31,7 +31,7 @@ public class SimpleThemeManager {
      */
     public static void initTheme() {
         // 从 UserSettings 中读取上次选择的主题
-        String savedTheme = UserSettingsUtil.getString(THEME_SETTING_KEY);
+        String savedTheme = UserPreferencesStore.getString(THEME_SETTING_KEY);
         ThemeDescriptor theme = ThemeRegistry.getOrDefault(savedTheme);
         currentThemeId = theme.id();
         applyTheme(theme, false);
@@ -108,8 +108,7 @@ public class SimpleThemeManager {
                 // Look and Feel 切换会重建 UIDefaults，先恢复用户字体再刷新窗口。
                 FontManager.installSavedFontDefaults();
 
-                // 保存主题设置到 UserSettings
-                UserSettingsUtil.set(THEME_SETTING_KEY, theme.id());
+                UserPreferencesStore.put(THEME_SETTING_KEY, theme.id());
 
                 // 更新所有已打开的窗口
                 updateAllWindows();

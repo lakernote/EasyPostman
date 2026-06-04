@@ -140,6 +140,7 @@ public class PluginRuntimeTest {
 
         assertFalse(Files.exists(pluginJar));
         assertFalse(PluginRuntime.isPluginPendingUninstall("plugin-redis"));
+        assertTrue(PluginRuntime.isPluginEnabled("plugin-redis"));
     }
 
     @Test

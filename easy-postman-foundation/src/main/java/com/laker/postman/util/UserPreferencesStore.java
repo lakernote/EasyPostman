@@ -12,61 +12,64 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * User-level UI preferences stored in {@code user_settings.json}.
+ */
 @Slf4j
 @UtilityClass
-public class UserSettingsUtil {
+public class UserPreferencesStore {
     private static final String KEY_WINDOW_WIDTH = "windowWidth";
     private static final String KEY_WINDOW_HEIGHT = "windowHeight";
     private static final String KEY_WINDOW_EXTENDED_STATE = "windowExtendedState";  // 窗口状态
     private static final String KEY_LANGUAGE = "language";
-    private static final String SETTINGS_PATH = ConfigPathConstants.USER_SETTINGS;
-    private static final Object lock = new Object();
-    private static Map<String, Object> settingsCache = null;
+    private static final String PREFERENCES_PATH = ConfigPathConstants.USER_SETTINGS;
+    private static final Object LOCK = new Object();
+    private static Map<String, Object> preferencesCache = null;
 
-    private static Map<String, Object> readSettings() {
-        synchronized (lock) {
-            if (settingsCache != null) return settingsCache;
-            File file = new File(SETTINGS_PATH);
+    private static Map<String, Object> readPreferences() {
+        synchronized (LOCK) {
+            if (preferencesCache != null) return preferencesCache;
+            File file = new File(PREFERENCES_PATH);
             if (!file.exists()) {
-                settingsCache = new HashMap<>();
-                return settingsCache;
+                preferencesCache = new HashMap<>();
+                return preferencesCache;
             }
             try {
                 String json = FileUtil.readString(file, StandardCharsets.UTF_8);
                 if (json == null || json.isBlank()) {
-                    settingsCache = new HashMap<>();
+                    preferencesCache = new HashMap<>();
                 } else {
-                    settingsCache = JSONUtil.parseObj(json);
+                    preferencesCache = JSONUtil.parseObj(json);
                 }
             } catch (Exception e) {
-                log.warn("读取用户设置失败", e);
-                settingsCache = new HashMap<>();
+                log.warn("读取用户偏好失败", e);
+                preferencesCache = new HashMap<>();
             }
-            return settingsCache;
+            return preferencesCache;
         }
     }
 
-    private static void saveSettings() {
-        synchronized (lock) {
+    private static void writePreferences() {
+        synchronized (LOCK) {
             try {
-                String json = JSONUtil.toJsonPrettyStr(settingsCache);
-                FileUtil.writeString(json, new File(SETTINGS_PATH), StandardCharsets.UTF_8);
+                String json = JSONUtil.toJsonPrettyStr(preferencesCache);
+                FileUtil.writeString(json, new File(PREFERENCES_PATH), StandardCharsets.UTF_8);
             } catch (Exception e) {
-                log.warn("保存用户设置失败", e);
+                log.warn("保存用户偏好失败", e);
             }
         }
     }
 
-    public static void set(String key, Object value) {
-        synchronized (lock) {
-            readSettings();
-            settingsCache.put(key, value);
-            saveSettings();
+    public static void put(String key, Object value) {
+        synchronized (LOCK) {
+            readPreferences();
+            preferencesCache.put(key, value);
+            writePreferences();
         }
     }
 
     public static Object get(String key) {
-        return readSettings().get(key);
+        return readPreferences().get(key);
     }
 
     public static String getString(String key) {
@@ -93,25 +96,25 @@ public class UserSettingsUtil {
     }
 
     public static void remove(String key) {
-        synchronized (lock) {
-            readSettings();
-            settingsCache.remove(key);
-            saveSettings();
+        synchronized (LOCK) {
+            readPreferences();
+            preferencesCache.remove(key);
+            writePreferences();
         }
     }
 
     public static Map<String, Object> getAll() {
-        return Collections.unmodifiableMap(readSettings());
+        return Collections.unmodifiableMap(readPreferences());
     }
 
     // 窗口状态专用方法
     public static void saveWindowState(int width, int height, int extendedState) {
-        synchronized (lock) {
-            readSettings();
-            settingsCache.put(KEY_WINDOW_WIDTH, width);
-            settingsCache.put(KEY_WINDOW_HEIGHT, height);
-            settingsCache.put(KEY_WINDOW_EXTENDED_STATE, extendedState);
-            saveSettings();
+        synchronized (LOCK) {
+            readPreferences();
+            preferencesCache.put(KEY_WINDOW_WIDTH, width);
+            preferencesCache.put(KEY_WINDOW_HEIGHT, height);
+            preferencesCache.put(KEY_WINDOW_EXTENDED_STATE, extendedState);
+            writePreferences();
         }
     }
 
@@ -134,7 +137,7 @@ public class UserSettingsUtil {
 
     // 语言设置专用方法
     public static void saveLanguage(String language) {
-        set(KEY_LANGUAGE, language);
+        put(KEY_LANGUAGE, language);
     }
 
     public static String getLanguage() {

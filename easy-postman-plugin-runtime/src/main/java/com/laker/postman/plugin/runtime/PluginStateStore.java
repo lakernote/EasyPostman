@@ -19,11 +19,11 @@ class PluginStateStore {
     private static final String PENDING_UNINSTALL_PLUGIN_IDS_KEY = "plugin.pendingUninstallIds";
 
     static Set<String> getDisabledPluginIds() {
-        return PluginSettingsStore.getStringSet(DISABLED_PLUGIN_IDS_KEY);
+        return PluginPlatformSettingsStore.getStringSet(DISABLED_PLUGIN_IDS_KEY);
     }
 
     static Set<String> getPendingUninstallPluginIds() {
-        return PluginSettingsStore.getStringSet(PENDING_UNINSTALL_PLUGIN_IDS_KEY);
+        return PluginPlatformSettingsStore.getStringSet(PENDING_UNINSTALL_PLUGIN_IDS_KEY);
     }
 
     static boolean isPluginEnabled(String pluginId) {
@@ -47,7 +47,7 @@ class PluginStateStore {
         } else {
             disabledIds.add(pluginId);
         }
-        PluginSettingsStore.putStringSet(DISABLED_PLUGIN_IDS_KEY, disabledIds);
+        PluginPlatformSettingsStore.putStringSet(DISABLED_PLUGIN_IDS_KEY, disabledIds);
     }
 
     static void markPluginPendingUninstall(String pluginId) {
@@ -56,11 +56,11 @@ class PluginStateStore {
         }
         Set<String> pendingIds = new LinkedHashSet<>(getPendingUninstallPluginIds());
         pendingIds.add(pluginId);
-        PluginSettingsStore.putStringSet(PENDING_UNINSTALL_PLUGIN_IDS_KEY, pendingIds);
+        PluginPlatformSettingsStore.putStringSet(PENDING_UNINSTALL_PLUGIN_IDS_KEY, pendingIds);
 
         Set<String> disabledIds = new LinkedHashSet<>(getDisabledPluginIds());
         disabledIds.add(pluginId);
-        PluginSettingsStore.putStringSet(DISABLED_PLUGIN_IDS_KEY, disabledIds);
+        PluginPlatformSettingsStore.putStringSet(DISABLED_PLUGIN_IDS_KEY, disabledIds);
     }
 
     static void clearPendingUninstall(String pluginId) {
@@ -69,11 +69,11 @@ class PluginStateStore {
         }
         Set<String> pendingIds = new LinkedHashSet<>(getPendingUninstallPluginIds());
         if (pendingIds.remove(pluginId)) {
-            PluginSettingsStore.putStringSet(PENDING_UNINSTALL_PLUGIN_IDS_KEY, pendingIds);
+            PluginPlatformSettingsStore.putStringSet(PENDING_UNINSTALL_PLUGIN_IDS_KEY, pendingIds);
         }
     }
 
     static void replacePendingUninstallPluginIds(Set<String> pluginIds) {
-        PluginSettingsStore.putStringSet(PENDING_UNINSTALL_PLUGIN_IDS_KEY, pluginIds);
+        PluginPlatformSettingsStore.putStringSet(PENDING_UNINSTALL_PLUGIN_IDS_KEY, pluginIds);
     }
 }

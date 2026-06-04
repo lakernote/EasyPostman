@@ -1,7 +1,7 @@
 package com.laker.postman.plugin.manager.market;
 
 import com.laker.postman.plugin.runtime.PluginRuntime;
-import com.laker.postman.plugin.runtime.PluginSettingsStore;
+import com.laker.postman.plugin.runtime.PluginPlatformSettingsStore;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.JsonNode;
@@ -41,12 +41,12 @@ public class PluginCatalogService {
         if (override != null && !override.isBlank()) {
             return override.trim();
         }
-        String saved = PluginSettingsStore.getString(SETTINGS_KEY_CATALOG_URL);
+        String saved = PluginPlatformSettingsStore.getString(SETTINGS_KEY_CATALOG_URL);
         return saved == null ? "" : saved.trim();
     }
 
     public static void saveCatalogUrl(String catalogUrl) {
-        PluginSettingsStore.putString(SETTINGS_KEY_CATALOG_URL, catalogUrl == null ? "" : catalogUrl.trim());
+        PluginPlatformSettingsStore.putString(SETTINGS_KEY_CATALOG_URL, catalogUrl == null ? "" : catalogUrl.trim());
     }
 
     public static String getOfficialCatalogUrl(String source) {

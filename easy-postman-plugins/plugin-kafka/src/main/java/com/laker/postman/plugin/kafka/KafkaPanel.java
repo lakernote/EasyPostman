@@ -218,7 +218,7 @@ public class KafkaPanel extends JPanel {
             applyConnectionProfile(selectedProfile);
             return;
         }
-        String legacyBootstrap = UserSettingsUtil.getString(LEGACY_USER_SETTING_KAFKA_BOOTSTRAP);
+        String legacyBootstrap = UserPreferencesStore.getString(LEGACY_USER_SETTING_KAFKA_BOOTSTRAP);
         if (legacyBootstrap != null && !legacyBootstrap.isBlank()) {
             connectionPanel.bootstrapField.setText(legacyBootstrap);
         }

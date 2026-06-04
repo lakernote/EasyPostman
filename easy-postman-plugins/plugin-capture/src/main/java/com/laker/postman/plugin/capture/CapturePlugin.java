@@ -20,7 +20,7 @@ public class CapturePlugin implements EasyPostmanPlugin {
                 "icons/capture.svg",
                 "toolbox.group.dev",
                 t(MessageKeys.TOOLBOX_GROUP_DEV),
-                () -> new CapturePanel(importService),
+                () -> new CapturePanel(importService, context.storage()),
                 CapturePlugin.class
         );
     }

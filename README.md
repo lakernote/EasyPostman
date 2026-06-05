@@ -13,7 +13,7 @@
 [![Java](https://img.shields.io/badge/Java-17+-ED8B00?style=flat-square&logo=openjdk&logoColor=white)](https://openjdk.org/)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-0078D4?style=flat-square&logo=windows&logoColor=white)](https://github.com/lakernote/easy-postman/releases)
 
-[![GitHub](https://img.shields.io/badge/GitHub-lakernote-181717?style=flat-square&logo=github)](https://github.com/lakernote)
+[![GitHub](https://img.shields.io/badge/GitHub-lakernote-0969DA?style=flat-square&logo=github&logoColor=white)](https://github.com/lakernote)
 [![Gitee](https://img.shields.io/badge/Gitee-lakernote-C71D23?style=flat-square&logo=gitee)](https://gitee.com/lakernote)
 
 [简体中文](README_zh.md) · [English](README.md) · [📦 Download](https://github.com/lakernote/easy-postman/releases) · [📖 Docs](docs/FEATURES.md) · [💬 Discuss](https://github.com/lakernote/easy-postman/discussions)
@@ -102,9 +102,14 @@ EasyPostman provides developers with a **local, privacy-first** API debugging ex
 | 🪟 **Windows (Portable)** | `EasyPostman-{version}-windows-x64-portable.zip` | No install needed |
 | 🐧 **Linux AMD64 (Generic)** | `EasyPostman-{version}-linux-amd64.deb` | For common `x86_64` / `amd64` Linux systems |
 | 🐧 **Linux ARM64 (Generic)** | `EasyPostman-{version}-linux-arm64.deb` | For common `aarch64` / `arm64` Linux systems |
+| 🐧 **Linux ARM64 (Compatibility)** | `EasyPostman-{version}-linux-arm64-compat.deb` | Same app as the generic ARM64 package, repacked for older Debian / Ubuntu `dpkg` environments |
 | 🐧 **RHEL / Rocky / CentOS / Fedora (x64)** | `EasyPostman-{version}-1.x86_64.rpm` | Available on GitHub Releases only |
 | 🐧 **RHEL / Rocky / CentOS / Fedora (ARM64)** | `EasyPostman-{version}-1.aarch64.rpm` | Available on GitHub Releases only |
 | ☕ **Cross-platform JAR** | `easy-postman-{version}.jar` | Requires Java 17+ |
+
+> 🐧 **About the ARM64 Compatibility DEB**
+>
+> The compatibility package contains the same EasyPostman application and runtime as `linux-arm64.deb`. It only changes the DEB archive format to use xz-compressed members, which helps older `dpkg` versions that cannot install packages containing newer compression formats such as `control.tar.zst` or `data.tar.zst`. Prefer `linux-arm64.deb` first; use `linux-arm64-compat.deb` only when the generic package fails during installation because of DEB archive compression compatibility.
 
 > ⚠️ **First Run Notice**
 >
@@ -131,6 +136,7 @@ EasyPostman provides developers with a **local, privacy-first** API debugging ex
 | Windows Portable | Extract ZIP → run `EasyPostman.exe` |
 | Linux DEB (AMD64, Generic) | `sudo dpkg -i EasyPostman-{version}-linux-amd64.deb` |
 | Linux DEB (ARM64, Generic) | `sudo dpkg -i EasyPostman-{version}-linux-arm64.deb` |
+| Linux DEB (ARM64, Compatibility) | `sudo dpkg -i EasyPostman-{version}-linux-arm64-compat.deb` |
 | Linux RPM (x64) | `sudo rpm -ivh EasyPostman-{version}-1.x86_64.rpm` |
 | Linux RPM (ARM64) | `sudo rpm -ivh EasyPostman-{version}-1.aarch64.rpm` |
 | JAR | `java -jar easy-postman-{version}.jar` |
@@ -139,6 +145,7 @@ If you're not sure which Linux package to use, run `uname -m` first:
 
 - `x86_64` -> use `EasyPostman-{version}-linux-amd64.deb` or `x86_64.rpm`
 - `aarch64` -> use `EasyPostman-{version}-linux-arm64.deb`
+- if `dpkg` reports an unsupported archive compression format while installing the generic ARM64 DEB -> use `EasyPostman-{version}-linux-arm64-compat.deb`
 
 ### Option 2: Build from Source
 
@@ -294,7 +301,7 @@ Thanks to these awesome open-source projects:
 
 **Make API debugging easier. Make performance testing more intuitive.**
 
-[![GitHub](https://img.shields.io/badge/GitHub-lakernote-181717?style=flat-square&logo=github)](https://github.com/lakernote)
+[![GitHub](https://img.shields.io/badge/GitHub-lakernote-0969DA?style=flat-square&logo=github&logoColor=white)](https://github.com/lakernote)
 [![Gitee](https://img.shields.io/badge/Gitee-lakernote-C71D23?style=flat-square&logo=gitee)](https://gitee.com/lakernote)
 
 Made with ❤️ by [laker](https://github.com/lakernote)

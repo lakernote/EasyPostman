@@ -1,23 +1,19 @@
 package com.laker.postman.panel.collections.editor.request;
 
 import com.laker.postman.request.model.HttpParam;
-
-
 import com.laker.postman.panel.collections.editor.request.sub.EasyRequestParamsPanel;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 
 import javax.swing.*;
 import java.util.List;
 
-final class RequestUrlSyncHelper {
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+final class RequestUrlParamsSynchronizer {
     private final JTextField urlField;
     private final EasyRequestParamsPanel paramsPanel;
     private boolean updatingFromUrl;
     private boolean updatingFromParams;
-
-    RequestUrlSyncHelper(JTextField urlField, EasyRequestParamsPanel paramsPanel) {
-        this.urlField = urlField;
-        this.paramsPanel = paramsPanel;
-    }
 
     void syncUrlToParams(boolean isLoadingData) {
         if (updatingFromParams || isLoadingData) {
@@ -27,7 +23,7 @@ final class RequestUrlSyncHelper {
         updatingFromUrl = true;
         try {
             List<HttpParam> currentParams = paramsPanel.getParamsList();
-            List<HttpParam> mergedParams = RequestUrlHelper.mergeUrlParamsWithDisabledParams(urlField.getText(), currentParams);
+            List<HttpParam> mergedParams = RequestUrlEditorSupport.mergeUrlParamsWithDisabledParams(urlField.getText(), currentParams);
             if (mergedParams != currentParams) {
                 paramsPanel.setParamsList(mergedParams);
             }
@@ -45,7 +41,7 @@ final class RequestUrlSyncHelper {
         try {
             String currentUrl = urlField.getText().trim();
             List<HttpParam> params = paramsPanel.getParamsList();
-            String newUrl = RequestUrlHelper.rebuildUrlFromParams(currentUrl, params);
+            String newUrl = RequestUrlEditorSupport.rebuildUrlFromParams(currentUrl, params);
             if (!newUrl.equals(currentUrl)) {
                 urlField.setText(newUrl);
                 urlField.setCaretPosition(0);

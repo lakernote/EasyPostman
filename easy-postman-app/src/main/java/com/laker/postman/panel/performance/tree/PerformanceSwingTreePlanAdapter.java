@@ -1,20 +1,16 @@
 package com.laker.postman.panel.performance.tree;
 
+import com.laker.postman.collection.CollectionInheritance;
 import com.laker.postman.collection.model.RequestGroup;
-import com.laker.postman.request.model.HttpRequestItem;
-
-
+import com.laker.postman.panel.collections.tree.adapter.SwingCollectionInheritanceAdapter;
 import com.laker.postman.performance.core.model.NodeType;
-import com.laker.postman.performance.core.request.PerformanceRequestSnapshot;
-
-
 import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.plan.PerformancePlanDataCopies;
 import com.laker.postman.performance.plan.PerformancePlanDocument;
 import com.laker.postman.performance.plan.PerformancePlanNode;
 import com.laker.postman.performance.plan.PerformanceRequestSnapshotMapper;
+import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.service.collections.ActiveCollectionTreeNodeRepository;
-import com.laker.postman.service.collections.GroupInheritanceHelper;
 import com.laker.postman.service.variable.RequestExecutionScope;
 import lombok.experimental.UtilityClass;
 
@@ -135,7 +131,7 @@ public class PerformanceSwingTreePlanAdapter {
         }
         return new ActiveCollectionTreeNodeRepository()
                 .findNodeByRequestId(requestId)
-                .map(GroupInheritanceHelper::getMergedGroupVariables)
+                .map(SwingCollectionInheritanceAdapter::getMergedGroupVariables)
                 .map(RequestExecutionScope::fromVariables)
                 .orElse(null);
     }
@@ -153,16 +149,16 @@ public class PerformanceSwingTreePlanAdapter {
         }
         return new ActiveCollectionTreeNodeRepository()
                 .findNodeByRequestId(requestId)
-                .map(GroupInheritanceHelper::collectGroupChain)
-                .map(groupChain -> mergeGroupSettings(data.httpRequestItem, groupChain))
+                .map(SwingCollectionInheritanceAdapter::collectGroupChain)
+                .map(groupChain -> applyCollectionInheritance(data.httpRequestItem, groupChain))
                 .orElse(data.httpRequestItem);
     }
 
-    private HttpRequestItem mergeGroupSettings(HttpRequestItem item, List<RequestGroup> groupChain) {
+    private HttpRequestItem applyCollectionInheritance(HttpRequestItem item, List<RequestGroup> groupChain) {
         if (groupChain == null || groupChain.isEmpty()) {
             return item;
         }
-        return GroupInheritanceHelper.mergeGroupSettingsWithChain(item, groupChain);
+        return CollectionInheritance.apply(item, groupChain);
     }
 
     private boolean resolveRequestInheritanceSnapshot(PerformanceTreeNode data) {
@@ -178,7 +174,7 @@ public class PerformanceSwingTreePlanAdapter {
         }
         return new ActiveCollectionTreeNodeRepository()
                 .findNodeByRequestId(requestId)
-                .map(GroupInheritanceHelper::collectGroupChain)
+                .map(SwingCollectionInheritanceAdapter::collectGroupChain)
                 .map(groupChain -> !groupChain.isEmpty())
                 .orElse(false);
     }

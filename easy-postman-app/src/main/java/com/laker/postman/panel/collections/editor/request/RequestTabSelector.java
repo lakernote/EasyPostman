@@ -3,8 +3,8 @@ package com.laker.postman.panel.collections.editor.request;
 import javax.swing.*;
 import java.awt.*;
 
-final class RequestTabSelectionHelper {
-    private RequestTabSelectionHelper() {
+final class RequestTabSelector {
+    private RequestTabSelector() {
     }
 
     static void selectFirstVisible(JTabbedPane tabs, Component... preferredComponents) {

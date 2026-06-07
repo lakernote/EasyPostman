@@ -5,13 +5,13 @@ import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertTrue;
 
-public class WebSocketRequestExecutionHelperTest {
+public class WebSocketRequestExecutorTest {
 
     @Test(description = "WebSocket 发送应打开握手请求快照和网络日志，和 HTTP/SSE 保持一致")
     public void shouldEnableNetworkCaptureForWebSocketRequests() {
         PreparedRequest request = new PreparedRequest();
 
-        new WebSocketRequestExecutionHelper(
+        new WebSocketRequestExecutor(
                 null,
                 null,
                 null,

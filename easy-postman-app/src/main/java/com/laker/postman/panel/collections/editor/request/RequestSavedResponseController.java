@@ -27,7 +27,7 @@ import java.util.function.Supplier;
 @RequiredArgsConstructor
 final class RequestSavedResponseController {
     private final Component dialogParent;
-    private final SavedResponseHelper savedResponseHelper;
+    private final SavedResponseActions savedResponseActions;
     private final Supplier<PreparedRequest> lastRequestSupplier;
     private final Supplier<HttpResponse> lastResponseSupplier;
     private final Supplier<HttpRequestItem> originalRequestSupplier;
@@ -52,9 +52,9 @@ final class RequestSavedResponseController {
             return;
         }
 
-        String name = savedResponseHelper.promptResponseName(dialogParent);
+        String name = savedResponseActions.promptResponseName(dialogParent);
         if (name != null && !name.trim().isEmpty()) {
-            savedResponseHelper.saveResponse(name.trim(), lastRequestSupplier.get(), lastResponse, originalRequest);
+            savedResponseActions.saveResponse(name.trim(), lastRequestSupplier.get(), lastResponse, originalRequest);
         }
     }
 
@@ -67,7 +67,7 @@ final class RequestSavedResponseController {
             if (originalRequest != null) {
                 populateOriginalRequest(originalRequest);
             }
-            savedResponseHelper.displaySavedResponse(responsePanel, requestLinePanel, sendAction, savedResponse);
+            savedResponseActions.displaySavedResponse(responsePanel, requestLinePanel, sendAction, savedResponse);
         } catch (Exception ex) {
             log.error("加载保存的响应失败", ex);
             NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.RESPONSE_LOAD_ERROR, ex.getMessage()));

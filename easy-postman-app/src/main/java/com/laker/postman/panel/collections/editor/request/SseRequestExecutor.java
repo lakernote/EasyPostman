@@ -15,32 +15,22 @@ import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import java.util.List;
 
 @Slf4j
-final class SseRequestExecutionHelper {
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+final class SseRequestExecutor {
     private final ResponsePanel responsePanel;
-    private final RequestExecutionUiHelper requestExecutionUiHelper;
-    private final RequestStreamUiHelper requestStreamUiHelper;
-    private final RequestResponseHelper requestResponseHelper;
+    private final RequestExecutionUiUpdater requestExecutionUiUpdater;
+    private final RequestStreamUiAppender requestStreamUiAppender;
+    private final RequestResponseHandler requestResponseHandler;
     private final RequestExecutionState executionState;
-    private final HttpTransport httpTransport;
-
-    SseRequestExecutionHelper(ResponsePanel responsePanel,
-                              RequestExecutionUiHelper requestExecutionUiHelper,
-                              RequestStreamUiHelper requestStreamUiHelper,
-                              RequestResponseHelper requestResponseHelper,
-                              RequestExecutionState executionState) {
-        this.responsePanel = responsePanel;
-        this.requestExecutionUiHelper = requestExecutionUiHelper;
-        this.requestStreamUiHelper = requestStreamUiHelper;
-        this.requestResponseHelper = requestResponseHelper;
-        this.executionState = executionState;
-        this.httpTransport = new DefaultHttpTransport();
-    }
+    private final HttpTransport httpTransport = new DefaultHttpTransport();
 
     SwingWorker<Void, Void> createWorker(PreparedRequest req, ScriptExecutionPipeline pipeline) {
         req.collectBasicInfo = true;
@@ -65,10 +55,10 @@ final class SseRequestExecutionHelper {
                                 if (executionState.isDisposed()) {
                                     return;
                                 }
-                                requestExecutionUiHelper.updateUIForResponse(r);
+                                requestExecutionUiUpdater.updateUIForResponse(r);
                                 responsePanel.setRequestDetails(req);
                                 responsePanel.setResponseDetails(r);
-                                requestStreamUiHelper.appendSseMessage(MessageType.CONNECTED, null, "open", null,
+                                requestStreamUiAppender.appendSseMessage(MessageType.CONNECTED, null, "open", null,
                                         I18nUtil.getMessage(MessageKeys.SSE_STREAM_CONNECTED), null);
                             });
                         }
@@ -79,8 +69,8 @@ final class SseRequestExecutionHelper {
                                 if (executionState.isDisposed()) {
                                     return;
                                 }
-                                List<TestResult> testResults = requestResponseHelper.handleStreamMessage(pipeline, data);
-                                requestStreamUiHelper.appendSseMessage(MessageType.RECEIVED, id, type, null, data, testResults);
+                                List<TestResult> testResults = requestResponseHandler.handleStreamMessage(pipeline, data);
+                                requestStreamUiAppender.appendSseMessage(MessageType.RECEIVED, id, type, null, data, testResults);
                             });
                         }
 
@@ -90,7 +80,7 @@ final class SseRequestExecutionHelper {
                                 if (executionState.isDisposed()) {
                                     return;
                                 }
-                                requestStreamUiHelper.appendSseMessage(MessageType.INFO, null, "retry", retryMs,
+                                requestStreamUiAppender.appendSseMessage(MessageType.INFO, null, "retry", retryMs,
                                         I18nUtil.getMessage(MessageKeys.SSE_RETRY_UPDATED, retryMs), null);
                             });
                         }
@@ -101,11 +91,11 @@ final class SseRequestExecutionHelper {
                                 if (executionState.isDisposed()) {
                                     return;
                                 }
-                                requestExecutionUiHelper.updateUIForResponse(r);
+                                requestExecutionUiUpdater.updateUIForResponse(r);
                                 responsePanel.setRequestDetails(req);
                                 responsePanel.setResponseDetails(r);
-                                requestExecutionUiHelper.resetSendButton();
-                                requestStreamUiHelper.appendSseMessage(MessageType.CLOSED, null, "closed", null,
+                                requestExecutionUiUpdater.resetSendButton();
+                                requestStreamUiAppender.appendSseMessage(MessageType.CLOSED, null, "closed", null,
                                         I18nUtil.getMessage(MessageKeys.SSE_STREAM_CLOSED), null);
                                 executionState.clearCurrentEventSource();
                                 executionState.clearCurrentWorker();
@@ -119,11 +109,11 @@ final class SseRequestExecutionHelper {
                                     return;
                                 }
                                 NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.SSE_FAILED, errorMsg));
-                                requestExecutionUiHelper.updateUIForResponse(r);
+                                requestExecutionUiUpdater.updateUIForResponse(r);
                                 responsePanel.setRequestDetails(req);
                                 responsePanel.setResponseDetails(r);
-                                requestExecutionUiHelper.resetSendButton();
-                                requestStreamUiHelper.appendSseMessage(MessageType.WARNING, null, "failure", null,
+                                requestExecutionUiUpdater.resetSendButton();
+                                requestStreamUiAppender.appendSseMessage(MessageType.WARNING, null, "failure", null,
                                         I18nUtil.getMessage(MessageKeys.SSE_STREAM_FAILED, errorMsg), null);
                                 executionState.clearCurrentEventSource();
                                 executionState.clearCurrentWorker();
@@ -155,7 +145,7 @@ final class SseRequestExecutionHelper {
             @Override
             protected void done() {
                 if (!executionState.isDisposed() && resp != null) {
-                    requestResponseHelper.saveHistory(req, resp, "SSE request");
+                    requestResponseHandler.saveHistory(req, resp, "SSE request");
                 }
             }
         };

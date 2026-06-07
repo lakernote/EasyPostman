@@ -1,8 +1,6 @@
 package com.laker.postman.panel.collections.editor.request;
 
 import com.laker.postman.request.model.RequestItemProtocolEnum;
-
-
 import com.laker.postman.panel.collections.editor.request.sub.AuthTabPanel;
 import com.laker.postman.panel.collections.editor.request.sub.EasyRequestHttpHeadersPanel;
 import com.laker.postman.panel.collections.editor.request.sub.EasyRequestParamsPanel;
@@ -19,32 +17,32 @@ import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.util.function.BooleanSupplier;
 
-final class RequestUiSetupHelper {
-    private RequestUiSetupHelper() {
+final class RequestEditorUiBinder {
+    private RequestEditorUiBinder() {
     }
 
     static void bindUrlField(JTextField urlField,
-                             RequestPreparationFeedbackHelper feedbackHelper,
+                             RequestPreparationFeedbackPresenter feedbackPresenter,
                              Runnable detectAndParseCurl,
                              Runnable parseUrlParamsToParamsPanel,
                              Runnable autoPrependProtocolAction) {
         urlField.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
-                feedbackHelper.clearUrlValidationFeedback(urlField);
+                feedbackPresenter.clearUrlValidationFeedback(urlField);
                 detectAndParseCurl.run();
                 parseUrlParamsToParamsPanel.run();
             }
 
             @Override
             public void removeUpdate(DocumentEvent e) {
-                feedbackHelper.clearUrlValidationFeedback(urlField);
+                feedbackPresenter.clearUrlValidationFeedback(urlField);
                 parseUrlParamsToParamsPanel.run();
             }
 
             @Override
             public void changedUpdate(DocumentEvent e) {
-                feedbackHelper.clearUrlValidationFeedback(urlField);
+                feedbackPresenter.clearUrlValidationFeedback(urlField);
                 detectAndParseCurl.run();
                 parseUrlParamsToParamsPanel.run();
             }
@@ -70,14 +68,14 @@ final class RequestUiSetupHelper {
                                        ActionListener wsSendAction) {
         if (protocol.isWebSocketProtocol()) {
             requestBodyPanel.setWsSendActionListener(wsSendAction);
-            RequestTabSelectionHelper.removeIfPresent(reqTabs, authTabPanel);
-            RequestTabSelectionHelper.selectFirstVisible(reqTabs, requestBodyPanel, paramsPanel);
+            RequestTabSelector.removeIfPresent(reqTabs, authTabPanel);
+            RequestTabSelector.selectFirstVisible(reqTabs, requestBodyPanel, paramsPanel);
             requestBodyPanel.setWebSocketConnected(false);
         } else if (protocol.isSseProtocol()) {
-            RequestTabSelectionHelper.removeIfPresent(reqTabs, authTabPanel);
-            RequestTabSelectionHelper.selectFirstVisible(reqTabs, paramsPanel, requestBodyPanel);
+            RequestTabSelector.removeIfPresent(reqTabs, authTabPanel);
+            RequestTabSelector.selectFirstVisible(reqTabs, paramsPanel, requestBodyPanel);
         } else {
-            RequestTabSelectionHelper.selectFirstVisible(reqTabs, paramsPanel, requestBodyPanel);
+            RequestTabSelector.selectFirstVisible(reqTabs, paramsPanel, requestBodyPanel);
         }
     }
 

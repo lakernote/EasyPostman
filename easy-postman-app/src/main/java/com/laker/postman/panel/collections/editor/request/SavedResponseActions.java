@@ -2,10 +2,8 @@ package com.laker.postman.panel.collections.editor.request;
 
 import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.http.runtime.model.PreparedRequest;
-import com.laker.postman.request.model.SavedResponse;
 import com.laker.postman.request.model.HttpRequestItem;
-
-
+import com.laker.postman.request.model.SavedResponse;
 import com.laker.postman.panel.collections.editor.CollectionTreeEditorGateway;
 import com.laker.postman.panel.collections.editor.request.sub.RequestLinePanel;
 import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;
@@ -24,7 +22,7 @@ import java.util.Date;
 
 @Slf4j
 @RequiredArgsConstructor
-final class SavedResponseHelper {
+final class SavedResponseActions {
     private final CollectionTreeEditorGateway collectionTreeGateway;
 
     String promptResponseName(Component owner) {

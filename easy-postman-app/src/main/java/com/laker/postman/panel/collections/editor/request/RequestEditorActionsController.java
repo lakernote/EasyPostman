@@ -28,7 +28,7 @@ final class RequestEditorActionsController {
     private final EasyRequestHttpHeadersPanel headersPanel;
     private final RequestBodyPanel requestBodyPanel;
     private final RequestLinePanel requestLinePanel;
-    private final RequestStreamUiHelper requestStreamUiHelper;
+    private final RequestStreamUiAppender requestStreamUiAppender;
     private final ResponsePanel responsePanel;
     private final ActionListener sendAction;
     private final Supplier<Boolean> isBaseHttpProtocolSupplier;
@@ -44,7 +44,7 @@ final class RequestEditorActionsController {
     void sendWebSocketMessage() {
         RealtimeWebSocketConnection currentWebSocket = executionState.currentWebSocket();
         if (currentWebSocket == null) {
-            requestStreamUiHelper.appendWebSocketMessage(MessageType.INFO,
+            requestStreamUiAppender.appendWebSocketMessage(MessageType.INFO,
                     I18nUtil.getMessage(MessageKeys.WEBSOCKET_NOT_CONNECTED));
             return;
         }
@@ -52,7 +52,7 @@ final class RequestEditorActionsController {
         String message = requestBodyPanel.getRawBody();
         if (CharSequenceUtil.isNotBlank(message)) {
             currentWebSocket.send(message);
-            requestStreamUiHelper.appendWebSocketMessage(MessageType.SENT, message);
+            requestStreamUiAppender.appendWebSocketMessage(MessageType.SENT, message);
         }
     }
 
@@ -88,7 +88,7 @@ final class RequestEditorActionsController {
 
         if (Boolean.TRUE.equals(isBaseHttpProtocolSupplier.get()) && executionState.isAutoDetectedHttpSseOpen()) {
             responsePanel.switchTabButtonHttpOrSse("sse");
-            requestStreamUiHelper.appendSseMessage(MessageType.CLOSED, null, "closed", null, "User canceled", null);
+            requestStreamUiAppender.appendSseMessage(MessageType.CLOSED, null, "closed", null, "User canceled", null);
         }
     }
 
@@ -109,7 +109,7 @@ final class RequestEditorActionsController {
             return;
         }
 
-        String normalizedUrl = RequestUrlHelper.prependProtocolIfNeeded(
+        String normalizedUrl = RequestUrlEditorSupport.prependProtocolIfNeeded(
                 url,
                 Boolean.TRUE.equals(isEffectiveWebSocketProtocolSupplier.get()),
                 SettingManager.getDefaultProtocol()

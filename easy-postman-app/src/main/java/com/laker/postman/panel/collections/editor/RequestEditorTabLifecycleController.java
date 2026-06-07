@@ -33,7 +33,7 @@ final class RequestEditorTabLifecycleController {
         tabbedPane.setSelectedIndex(tabbedPane.getTabCount() - 1);
 
         addPlusTab();
-        RequestEditorTabController.setTabNewRequest(subPanel, true);
+        RequestEditorTabInserter.setTabNewRequest(subPanel, true);
         return subPanel;
     }
 

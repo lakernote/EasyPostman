@@ -212,7 +212,7 @@ public class RequestEditorPanel extends UiSingletonPanel {
         tabOpenController = new RequestEditorTabOpenController(
                 tabbedPane,
                 previewTabManager,
-                new RequestEditorRequestScopeSynchronizer(),
+                new RequestEditorExecutionScopeSynchronizer(),
                 this::cancelStartupRestoreAutoSelectionIfNeeded,
                 this::addPlusTab,
                 this::isPlusTab,

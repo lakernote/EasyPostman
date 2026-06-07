@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RequiredArgsConstructor
-final class RequestTabStateHelper {
+final class RequestTabStateController {
     private final RequestItemProtocolEnum protocol;
     private final RequestViewComponents view;
 

@@ -29,7 +29,7 @@ final class RequestEditorDataController {
 
     private RequestEditorBinder requestEditorBinder;
     private RequestEditorDefaultTabSelector requestEditorDefaultTabSelector;
-    private Supplier<RequestDirtyStateHelper> dirtyStateHelperSupplier;
+    private Supplier<RequestDirtyStateTracker> dirtyStateTrackerSupplier;
     private RequestSettingsPanel requestSettingsPanel;
 
     RequestEditorDataController(String requestId,
@@ -49,11 +49,11 @@ final class RequestEditorDataController {
 
     void bindEditor(RequestEditorBinder requestEditorBinder,
                     RequestEditorDefaultTabSelector requestEditorDefaultTabSelector,
-                    Supplier<RequestDirtyStateHelper> dirtyStateHelperSupplier,
+                    Supplier<RequestDirtyStateTracker> dirtyStateTrackerSupplier,
                     RequestSettingsPanel requestSettingsPanel) {
         this.requestEditorBinder = requestEditorBinder;
         this.requestEditorDefaultTabSelector = requestEditorDefaultTabSelector;
-        this.dirtyStateHelperSupplier = dirtyStateHelperSupplier;
+        this.dirtyStateTrackerSupplier = dirtyStateTrackerSupplier;
         this.requestSettingsPanel = requestSettingsPanel;
     }
 
@@ -79,9 +79,9 @@ final class RequestEditorDataController {
             requestSettingsPanel.rebaseline();
             return;
         }
-        RequestDirtyStateHelper dirtyStateHelper = dirtyStateHelper();
-        if (dirtyStateHelper != null) {
-            dirtyStateHelper.setOriginalRequestItem(item);
+        RequestDirtyStateTracker dirtyStateTracker = dirtyStateTracker();
+        if (dirtyStateTracker != null) {
+            dirtyStateTracker.setOriginalRequestItem(item);
         }
         requestSettingsPanel.rebaseline();
     }
@@ -90,16 +90,16 @@ final class RequestEditorDataController {
         if (!editorInitialized.getAsBoolean() || performanceSnapshot.getAsBoolean()) {
             return pendingOriginalRequestItem;
         }
-        RequestDirtyStateHelper dirtyStateHelper = dirtyStateHelper();
-        return dirtyStateHelper != null ? dirtyStateHelper.getOriginalRequestItem() : pendingOriginalRequestItem;
+        RequestDirtyStateTracker dirtyStateTracker = dirtyStateTracker();
+        return dirtyStateTracker != null ? dirtyStateTracker.getOriginalRequestItem() : pendingOriginalRequestItem;
     }
 
     boolean isModified() {
         if (!editorInitialized.getAsBoolean() || performanceSnapshot.getAsBoolean()) {
             return false;
         }
-        RequestDirtyStateHelper dirtyStateHelper = dirtyStateHelper();
-        return dirtyStateHelper != null && dirtyStateHelper.isModified();
+        RequestDirtyStateTracker dirtyStateTracker = dirtyStateTracker();
+        return dirtyStateTracker != null && dirtyStateTracker.isModified();
     }
 
     HttpRequestItem currentRequestFromModel() {
@@ -143,9 +143,9 @@ final class RequestEditorDataController {
             applyRequestIdentity(item);
             requestEditorBinder.populate(item);
 
-            RequestDirtyStateHelper dirtyStateHelper = dirtyStateHelper();
-            if (dirtyStateHelper != null) {
-                dirtyStateHelper.setOriginalRequestItem(originalItem);
+            RequestDirtyStateTracker dirtyStateTracker = dirtyStateTracker();
+            if (dirtyStateTracker != null) {
+                dirtyStateTracker.setOriginalRequestItem(originalItem);
             }
             requestSettingsPanel.rebaseline();
 
@@ -183,7 +183,7 @@ final class RequestEditorDataController {
         return pendingRequestItem != null ? pendingRequestItem : pendingOriginalRequestItem;
     }
 
-    private RequestDirtyStateHelper dirtyStateHelper() {
-        return dirtyStateHelperSupplier != null ? dirtyStateHelperSupplier.get() : null;
+    private RequestDirtyStateTracker dirtyStateTracker() {
+        return dirtyStateTrackerSupplier != null ? dirtyStateTrackerSupplier.get() : null;
     }
 }

@@ -99,7 +99,7 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
         JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 1, 0));
         JLabel label = new JLabel("Headers");
 
-        // Create eye button and count label using helper methods
+        // Create eye button and count label with local factory methods
         eyeButton = createEyeButton();
         countLabel = createCountLabel();
 

@@ -3,8 +3,6 @@ package com.laker.postman.panel.collections.editor.request;
 import com.laker.postman.request.defaults.GeneratedRequestHeaderPolicy;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpRequestItem;
-
-
 import com.laker.postman.service.setting.SettingManager;
 import org.testng.annotations.Test;
 
@@ -14,7 +12,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
-public class RequestDirtyStateHelperTest {
+public class RequestDirtyStateTrackerTest {
     private static final String USER_AGENT_VALUE = "EasyPostman/test";
     private static final GeneratedRequestHeaderPolicy GENERATED_HEADER_POLICY =
             GeneratedRequestHeaderPolicy.standard(USER_AGENT_VALUE);
@@ -28,10 +26,10 @@ public class RequestDirtyStateHelperTest {
         current.setHttpVersion(HttpRequestItem.HTTP_VERSION_AUTO);
 
         AtomicReference<HttpRequestItem> ref = new AtomicReference<>(current);
-        RequestDirtyStateHelper helper = newHelper(ref);
-        helper.setOriginalRequestItem(original);
+        RequestDirtyStateTracker tracker = newTracker(ref);
+        tracker.setOriginalRequestItem(original);
 
-        assertFalse(helper.isModified());
+        assertFalse(tracker.isModified());
     }
 
     @Test
@@ -47,10 +45,10 @@ public class RequestDirtyStateHelperTest {
         ));
 
         AtomicReference<HttpRequestItem> ref = new AtomicReference<>(current);
-        RequestDirtyStateHelper helper = newHelper(ref);
-        helper.setOriginalRequestItem(original);
+        RequestDirtyStateTracker tracker = newTracker(ref);
+        tracker.setOriginalRequestItem(original);
 
-        assertFalse(helper.isModified());
+        assertFalse(tracker.isModified());
     }
 
     @Test
@@ -63,10 +61,10 @@ public class RequestDirtyStateHelperTest {
         ));
 
         AtomicReference<HttpRequestItem> ref = new AtomicReference<>(current);
-        RequestDirtyStateHelper helper = newHelper(ref);
-        helper.setOriginalRequestItem(original);
+        RequestDirtyStateTracker tracker = newTracker(ref);
+        tracker.setOriginalRequestItem(original);
 
-        assertTrue(helper.isModified());
+        assertTrue(tracker.isModified());
     }
 
     @Test
@@ -79,10 +77,10 @@ public class RequestDirtyStateHelperTest {
         HttpRequestItem current = createBaseItem();
 
         AtomicReference<HttpRequestItem> ref = new AtomicReference<>(current);
-        RequestDirtyStateHelper helper = newHelper(ref);
-        helper.setOriginalRequestItem(original);
+        RequestDirtyStateTracker tracker = newTracker(ref);
+        tracker.setOriginalRequestItem(original);
 
-        assertTrue(helper.isModified());
+        assertTrue(tracker.isModified());
     }
 
     @Test
@@ -98,10 +96,10 @@ public class RequestDirtyStateHelperTest {
             current.setRequestTimeoutMs(5000);
 
             AtomicReference<HttpRequestItem> ref = new AtomicReference<>(current);
-            RequestDirtyStateHelper helper = newHelper(ref);
-            helper.setOriginalRequestItem(original);
+            RequestDirtyStateTracker tracker = newTracker(ref);
+            tracker.setOriginalRequestItem(original);
 
-            assertTrue(helper.isModified());
+            assertTrue(tracker.isModified());
         } finally {
             SettingManager.setRequestTimeout(oldRequestTimeout);
         }
@@ -120,10 +118,10 @@ public class RequestDirtyStateHelperTest {
             current.setFollowRedirects(Boolean.TRUE);
 
             AtomicReference<HttpRequestItem> ref = new AtomicReference<>(current);
-            RequestDirtyStateHelper helper = newHelper(ref);
-            helper.setOriginalRequestItem(original);
+            RequestDirtyStateTracker tracker = newTracker(ref);
+            tracker.setOriginalRequestItem(original);
 
-            assertTrue(helper.isModified());
+            assertTrue(tracker.isModified());
         } finally {
             SettingManager.setFollowRedirects(oldFollowRedirects);
         }
@@ -138,8 +136,8 @@ public class RequestDirtyStateHelperTest {
         return item;
     }
 
-    private static RequestDirtyStateHelper newHelper(AtomicReference<HttpRequestItem> ref) {
-        return new RequestDirtyStateHelper(ref::get, dirty -> {
+    private static RequestDirtyStateTracker newTracker(AtomicReference<HttpRequestItem> ref) {
+        return new RequestDirtyStateTracker(ref::get, dirty -> {
         }, GENERATED_HEADER_POLICY);
     }
 }

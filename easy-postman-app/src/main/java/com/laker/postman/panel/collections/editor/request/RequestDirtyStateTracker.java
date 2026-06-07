@@ -4,24 +4,19 @@ import com.laker.postman.request.compare.HttpRequestDirtyComparator;
 import com.laker.postman.request.defaults.GeneratedRequestHeaderPolicy;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.util.JsonUtil;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 
 import javax.swing.*;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-final class RequestDirtyStateHelper {
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+final class RequestDirtyStateTracker {
     private final Supplier<HttpRequestItem> currentRequestFromModelSupplier;
     private final Consumer<Boolean> dirtyIndicatorUpdater;
     private final GeneratedRequestHeaderPolicy generatedHeaderPolicy;
     private HttpRequestItem originalRequestItem;
-
-    RequestDirtyStateHelper(Supplier<HttpRequestItem> currentRequestFromModelSupplier,
-                            Consumer<Boolean> dirtyIndicatorUpdater,
-                            GeneratedRequestHeaderPolicy generatedHeaderPolicy) {
-        this.currentRequestFromModelSupplier = currentRequestFromModelSupplier;
-        this.dirtyIndicatorUpdater = dirtyIndicatorUpdater;
-        this.generatedHeaderPolicy = generatedHeaderPolicy;
-    }
 
     HttpRequestItem getOriginalRequestItem() {
         return originalRequestItem;

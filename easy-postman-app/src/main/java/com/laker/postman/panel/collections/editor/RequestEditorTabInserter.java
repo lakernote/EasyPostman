@@ -1,37 +1,29 @@
 package com.laker.postman.panel.collections.editor;
 
-import com.laker.postman.request.model.HttpRequestItem;
-
-
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.tab.ClosableTabComponent;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
-import com.laker.postman.panel.collections.tree.adapter.SwingCollectionTreeQueries;
-import com.laker.postman.service.collections.ActiveCollectionTreeNodeRepository;
-import com.laker.postman.service.collections.GroupInheritanceHelper;
-import com.laker.postman.service.variable.RequestExecutionContext;
-import com.laker.postman.service.variable.RequestExecutionScope;
+import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.experimental.UtilityClass;
 
 import javax.swing.JTabbedPane;
-import javax.swing.tree.DefaultMutableTreeNode;
 import java.awt.Component;
 
 @UtilityClass
-public class RequestEditorTabController {
+public class RequestEditorTabInserter {
 
-    public static RequestEditSubPanel openRequestTab(HttpRequestItem item) {
-        return openRequestTab(item, true, false);
+    public static RequestEditSubPanel insertRequestTab(HttpRequestItem item) {
+        return insertRequestTab(item, true, false);
     }
 
-    public static RequestEditSubPanel openRequestTab(HttpRequestItem item, boolean selectTab) {
-        return openRequestTab(item, selectTab, false);
+    public static RequestEditSubPanel insertRequestTab(HttpRequestItem item, boolean selectTab) {
+        return insertRequestTab(item, selectTab, false);
     }
 
-    public static RequestEditSubPanel openRequestTab(
+    public static RequestEditSubPanel insertRequestTab(
             HttpRequestItem item,
             boolean selectTab,
             boolean deferEditorInitialization) {
@@ -40,15 +32,7 @@ public class RequestEditorTabController {
             throw new IllegalArgumentException("Request item ID cannot be null or empty");
         }
 
-        ActiveCollectionTreeNodeRepository repository = new ActiveCollectionTreeNodeRepository();
-        repository.getRootNode().ifPresent(rootNode -> {
-            DefaultMutableTreeNode requestNode = SwingCollectionTreeQueries.findRequestNodeById(rootNode, id);
-            if (requestNode != null) {
-                RequestExecutionContext.setCurrentScope(RequestExecutionScope.fromVariables(
-                        GroupInheritanceHelper.getMergedGroupVariables(requestNode)
-                ));
-            }
-        });
+        new RequestEditorExecutionScopeSynchronizer().syncScopeForRequest(id);
 
         RequestEditSubPanel subPanel = new RequestEditSubPanel(id, item.getProtocol(), deferEditorInitialization);
         subPanel.initPanelData(item);

@@ -4,12 +4,15 @@ import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.panel.collections.editor.request.sub.RequestBodyPanel;
 import com.laker.postman.panel.collections.editor.request.sub.RequestLinePanel;
 import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 
 import javax.swing.*;
 import java.awt.event.ActionListener;
 import java.util.function.BooleanSupplier;
 
-final class RequestExecutionUiHelper {
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+final class RequestExecutionUiUpdater {
     private final ResponsePanel responsePanel;
     private final RequestLinePanel requestLinePanel;
     private final RequestBodyPanel requestBodyPanel;
@@ -19,26 +22,6 @@ final class RequestExecutionUiHelper {
     private final BooleanSupplier effectiveHttpProtocol;
     private final BooleanSupplier effectiveSseProtocol;
     private final BooleanSupplier effectiveWebSocketProtocol;
-
-    RequestExecutionUiHelper(ResponsePanel responsePanel,
-                             RequestLinePanel requestLinePanel,
-                             RequestBodyPanel requestBodyPanel,
-                             JTabbedPane reqTabs,
-                             ActionListener sendAction,
-                             BooleanSupplier baseHttpProtocol,
-                             BooleanSupplier effectiveHttpProtocol,
-                             BooleanSupplier effectiveSseProtocol,
-                             BooleanSupplier effectiveWebSocketProtocol) {
-        this.responsePanel = responsePanel;
-        this.requestLinePanel = requestLinePanel;
-        this.requestBodyPanel = requestBodyPanel;
-        this.reqTabs = reqTabs;
-        this.sendAction = sendAction;
-        this.baseHttpProtocol = baseHttpProtocol;
-        this.effectiveHttpProtocol = effectiveHttpProtocol;
-        this.effectiveSseProtocol = effectiveSseProtocol;
-        this.effectiveWebSocketProtocol = effectiveWebSocketProtocol;
-    }
 
     void updateUIForRequesting() {
         requestLinePanel.setSendButtonToCancel(sendAction);
@@ -102,7 +85,7 @@ final class RequestExecutionUiHelper {
     }
 
     void activateWebSocketBodyTab() {
-        RequestTabSelectionHelper.selectFirstVisible(reqTabs, requestBodyPanel);
+        RequestTabSelector.selectFirstVisible(reqTabs, requestBodyPanel);
         requestBodyPanel.getWsSendButton().requestFocusInWindow();
     }
 }

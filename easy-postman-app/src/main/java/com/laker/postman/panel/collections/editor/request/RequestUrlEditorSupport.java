@@ -1,8 +1,6 @@
 package com.laker.postman.panel.collections.editor.request;
 
 import com.laker.postman.request.model.HttpParam;
-
-
 import com.laker.postman.request.util.HttpUrlUtil;
 import lombok.experimental.UtilityClass;
 
@@ -11,7 +9,7 @@ import java.util.List;
 import java.util.Objects;
 
 @UtilityClass
-class RequestUrlHelper {
+class RequestUrlEditorSupport {
 
     static List<HttpParam> mergeUrlParamsWithDisabledParams(String url, List<HttpParam> currentParams) {
         List<HttpParam> urlParams = HttpUrlUtil.parseQueryParams(url);

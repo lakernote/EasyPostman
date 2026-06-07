@@ -92,6 +92,26 @@ public class CollectionInheritanceTest {
         assertNull(CollectionInheritance.apply(null, List.of()));
     }
 
+    @Test
+    public void shouldPreserveRequestLevelTransportSettingsWhenApplyingInheritanceChain() {
+        HttpRequestItem request = new HttpRequestItem();
+        request.setId("request-1");
+        request.setName("Request 1");
+        request.setMethod("GET");
+        request.setUrl("https://api.example.com/data");
+        request.setFollowRedirects(Boolean.FALSE);
+        request.setCookieJarEnabled(Boolean.FALSE);
+        request.setHttpVersion(HttpRequestItem.HTTP_VERSION_HTTP_1_1);
+        request.setRequestTimeoutMs(4321);
+
+        HttpRequestItem merged = CollectionInheritance.apply(request, List.of(new RequestGroup("Parent")));
+
+        assertEquals(merged.getFollowRedirects(), Boolean.FALSE);
+        assertEquals(merged.getCookieJarEnabled(), Boolean.FALSE);
+        assertEquals(merged.getHttpVersion(), HttpRequestItem.HTTP_VERSION_HTTP_1_1);
+        assertEquals(merged.getRequestTimeoutMs(), Integer.valueOf(4321));
+    }
+
     private static RequestGroup group(String name, String authType, String token, String headerKey, String headerValue) {
         RequestGroup group = new RequestGroup(name);
         group.setAuthType(authType);

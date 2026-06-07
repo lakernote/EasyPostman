@@ -13,6 +13,8 @@ import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Response;
 import okhttp3.WebSocket;
@@ -25,28 +27,16 @@ import java.util.UUID;
 import java.util.concurrent.CancellationException;
 
 @Slf4j
-final class WebSocketRequestExecutionHelper {
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+final class WebSocketRequestExecutor {
     private static final int WEBSOCKET_NORMAL_CLOSURE = 1000;
 
     private final ResponsePanel responsePanel;
-    private final RequestExecutionUiHelper requestExecutionUiHelper;
-    private final RequestStreamUiHelper requestStreamUiHelper;
-    private final RequestResponseHelper requestResponseHelper;
+    private final RequestExecutionUiUpdater requestExecutionUiUpdater;
+    private final RequestStreamUiAppender requestStreamUiAppender;
+    private final RequestResponseHandler requestResponseHandler;
     private final RequestExecutionState requestExecutionState;
-    private final HttpTransport httpTransport;
-
-    WebSocketRequestExecutionHelper(ResponsePanel responsePanel,
-                                    RequestExecutionUiHelper requestExecutionUiHelper,
-                                    RequestStreamUiHelper requestStreamUiHelper,
-                                    RequestResponseHelper requestResponseHelper,
-                                    RequestExecutionState requestExecutionState) {
-        this.responsePanel = responsePanel;
-        this.requestExecutionUiHelper = requestExecutionUiHelper;
-        this.requestStreamUiHelper = requestStreamUiHelper;
-        this.requestResponseHelper = requestResponseHelper;
-        this.requestExecutionState = requestExecutionState;
-        this.httpTransport = new DefaultHttpTransport();
-    }
+    private final HttpTransport httpTransport = new DefaultHttpTransport();
 
     SwingWorker<Void, Void> createWorker(PreparedRequest req, ScriptExecutionPipeline pipeline) {
         req.collectBasicInfo = true;
@@ -137,15 +127,15 @@ final class WebSocketRequestExecutionHelper {
                         if (!shouldHandleActiveCallback(null)) {
                             return;
                         }
-                        requestExecutionUiHelper.updateUIForResponse(WebSocketSession.this.response);
-                        requestExecutionUiHelper.activateWebSocketBodyTab();
-                        requestExecutionUiHelper.switchSendButtonToClose();
-                        requestExecutionUiHelper.setWebSocketConnected(true);
+                        requestExecutionUiUpdater.updateUIForResponse(WebSocketSession.this.response);
+                        requestExecutionUiUpdater.activateWebSocketBodyTab();
+                        requestExecutionUiUpdater.switchSendButtonToClose();
+                        requestExecutionUiUpdater.setWebSocketConnected(true);
                         responsePanel.setRequestDetails(req);
                         responsePanel.setResponseDetails(WebSocketSession.this.response);
                     });
                     if (shouldHandleActiveCallback(null)) {
-                        requestStreamUiHelper.appendWebSocketMessage(MessageType.CONNECTED, response.message());
+                        requestStreamUiAppender.appendWebSocketMessage(MessageType.CONNECTED, response.message());
                     }
                 }
 
@@ -154,9 +144,9 @@ final class WebSocketRequestExecutionHelper {
                     if (!shouldHandleActiveCallback("onMessage")) {
                         return;
                     }
-                    requestStreamUiHelper.appendWebSocketMessage(
-                            MessageType.RECEIVED, text, requestResponseHelper.handleStreamMessage(pipeline, text));
-                    requestStreamUiHelper.appendWebSocketRawEvent(bodyBuilder, MessageType.RECEIVED, text);
+                    requestStreamUiAppender.appendWebSocketMessage(
+                            MessageType.RECEIVED, text, requestResponseHandler.handleStreamMessage(pipeline, text));
+                    requestStreamUiAppender.appendWebSocketRawEvent(bodyBuilder, MessageType.RECEIVED, text);
                 }
 
                 @Override
@@ -165,8 +155,8 @@ final class WebSocketRequestExecutionHelper {
                         return;
                     }
                     String hex = bytes.hex();
-                    requestStreamUiHelper.appendWebSocketMessage(MessageType.BINARY, hex);
-                    requestStreamUiHelper.appendWebSocketRawEvent(bodyBuilder, MessageType.BINARY, hex);
+                    requestStreamUiAppender.appendWebSocketMessage(MessageType.BINARY, hex);
+                    requestStreamUiAppender.appendWebSocketRawEvent(bodyBuilder, MessageType.BINARY, hex);
                 }
 
                 @Override
@@ -220,15 +210,15 @@ final class WebSocketRequestExecutionHelper {
                 if (requestExecutionState.isDisposed()) {
                     return;
                 }
-                requestExecutionUiHelper.updateUIForResponse(null);
+                requestExecutionUiUpdater.updateUIForResponse(null);
                 NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.WEBSOCKET_ERROR, ex.getMessage()));
-                requestExecutionUiHelper.setWebSocketConnected(false);
+                requestExecutionUiUpdater.setWebSocketConnected(false);
             });
         }
 
         void saveHistoryIfNeeded() {
             if (executionState.shouldSaveHistory(requestExecutionState.isDisposed())) {
-                requestResponseHelper.saveHistory(req, response, "WebSocket request");
+                requestResponseHandler.saveHistory(req, response, "WebSocket request");
             }
         }
 
@@ -260,8 +250,8 @@ final class WebSocketRequestExecutionHelper {
         }
 
         private void appendTerminalEvent(MessageType type, String text) {
-            requestStreamUiHelper.appendWebSocketMessage(type, text);
-            requestStreamUiHelper.appendWebSocketRawEvent(bodyBuilder, type, text);
+            requestStreamUiAppender.appendWebSocketMessage(type, text);
+            requestStreamUiAppender.appendWebSocketRawEvent(bodyBuilder, type, text);
         }
 
         private void finishTerminalResponse(Runnable afterUiReset) {
@@ -276,18 +266,18 @@ final class WebSocketRequestExecutionHelper {
         }
 
         private void finalizeResponse() {
-            requestStreamUiHelper.finalizeWebSocketResponse(response, bodyBuilder, queueStartMs);
+            requestStreamUiAppender.finalizeWebSocketResponse(response, bodyBuilder, queueStartMs);
         }
 
         private void runUiTeardown(Runnable afterUiReset) {
             if (requestExecutionState.isDisposed()) {
                 return;
             }
-            requestExecutionUiHelper.updateUIForResponse(response);
+            requestExecutionUiUpdater.updateUIForResponse(response);
             responsePanel.setRequestDetails(req);
             responsePanel.setResponseDetails(response);
-            requestExecutionUiHelper.resetSendButton();
-            requestExecutionUiHelper.setWebSocketConnected(false);
+            requestExecutionUiUpdater.resetSendButton();
+            requestExecutionUiUpdater.setWebSocketConnected(false);
             afterUiReset.run();
         }
 

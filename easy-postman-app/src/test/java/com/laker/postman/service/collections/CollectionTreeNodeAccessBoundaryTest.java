@@ -12,7 +12,7 @@ import static org.testng.Assert.assertTrue;
 public class CollectionTreeNodeAccessBoundaryTest {
 
     private static final List<String> FILES_THAT_MUST_USE_COLLECTION_TREE_NODES = List.of(
-            "src/main/java/com/laker/postman/panel/collections/editor/request/SavedResponseHelper.java",
+            "src/main/java/com/laker/postman/panel/collections/editor/request/SavedResponseActions.java",
             "src/main/java/com/laker/postman/panel/collections/editor/RequestEditorPanel.java",
             "src/main/java/com/laker/postman/panel/collections/tree/CollectionGroupSelectionDialog.java",
             "src/main/java/com/laker/postman/panel/collections/tree/CollectionTreePanel.java",
@@ -21,8 +21,8 @@ public class CollectionTreeNodeAccessBoundaryTest {
             "src/main/java/com/laker/postman/panel/collections/tree/handler/RequestTreeKeyboardHandler.java",
             "src/main/java/com/laker/postman/panel/collections/tree/handler/RequestTreeMouseHandler.java",
             "src/main/java/com/laker/postman/panel/collections/tree/handler/RequestTreePopupMenu.java",
-            "src/main/java/com/laker/postman/plugin/host/AppRequestCollectionImportService.java",
-            "src/main/java/com/laker/postman/service/collections/GroupInheritanceHelper.java"
+            "src/main/java/com/laker/postman/panel/collections/tree/adapter/SwingCollectionInheritanceAdapter.java",
+            "src/main/java/com/laker/postman/plugin/host/AppRequestCollectionImportService.java"
     );
 
     @Test

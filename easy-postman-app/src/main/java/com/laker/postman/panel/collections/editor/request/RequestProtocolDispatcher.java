@@ -1,39 +1,26 @@
 package com.laker.postman.panel.collections.editor.request;
 
-import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.execution.RequestPreparationResult;
-import com.laker.postman.request.model.RequestItemProtocolEnum;
-
-
-import com.laker.postman.panel.http.runtime.SwingHttpRuntimeInteractionAdapter;
-import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;
 import com.laker.postman.http.request.HttpRequestProtocol;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.runtime.ssl.SSLConfigurationUtil;
+import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;
+import com.laker.postman.panel.http.runtime.SwingHttpRuntimeInteractionAdapter;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 
 import javax.swing.*;
 
-final class RequestProtocolDispatchHelper {
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+final class RequestProtocolDispatcher {
     private final ResponsePanel responsePanel;
-    private final HttpRequestExecutionHelper httpRequestExecutionHelper;
-    private final SseRequestExecutionHelper sseRequestExecutionHelper;
-    private final WebSocketRequestExecutionHelper webSocketRequestExecutionHelper;
+    private final HttpRequestExecutor httpRequestExecutor;
+    private final SseRequestExecutor sseRequestExecutor;
+    private final WebSocketRequestExecutor webSocketRequestExecutor;
     private final RequestExecutionState executionState;
     private final int maxRedirectCount;
-
-    RequestProtocolDispatchHelper(ResponsePanel responsePanel,
-                                  HttpRequestExecutionHelper httpRequestExecutionHelper,
-                                  SseRequestExecutionHelper sseRequestExecutionHelper,
-                                  WebSocketRequestExecutionHelper webSocketRequestExecutionHelper,
-                                  RequestExecutionState executionState,
-                                  int maxRedirectCount) {
-        this.responsePanel = responsePanel;
-        this.httpRequestExecutionHelper = httpRequestExecutionHelper;
-        this.sseRequestExecutionHelper = sseRequestExecutionHelper;
-        this.webSocketRequestExecutionHelper = webSocketRequestExecutionHelper;
-        this.executionState = executionState;
-        this.maxRedirectCount = maxRedirectCount;
-    }
 
     void dispatch(RequestPreparationResult result) {
         RequestItemProtocolEnum protocol = result.getItem().getProtocol();
@@ -46,16 +33,16 @@ final class RequestProtocolDispatchHelper {
         SwingWorker<Void, Void> worker;
         // 这里是协议分发的唯一出口：上游不用关心 HTTP / SSE / WebSocket 的执行细节。
         if (protocol.isWebSocketProtocol()) {
-            worker = webSocketRequestExecutionHelper.createWorker(request, pipeline);
+            worker = webSocketRequestExecutor.createWorker(request, pipeline);
         } else if (protocol.isSseProtocol()) {
-            worker = sseRequestExecutionHelper.createWorker(request, pipeline);
+            worker = sseRequestExecutor.createWorker(request, pipeline);
         } else {
             executionState.clearAutoDetectedHttpSseOpen();
             if (expectedHttpSse) {
                 responsePanel.clearAll();
                 responsePanel.setResponseTabButtonsEnable(false);
             }
-            worker = httpRequestExecutionHelper.createWorker(request, pipeline, maxRedirectCount);
+            worker = httpRequestExecutor.createWorker(request, pipeline, maxRedirectCount);
         }
 
         executionState.startWorker(worker);

@@ -15,6 +15,8 @@ import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -22,29 +24,15 @@ import java.io.InterruptedIOException;
 import java.util.List;
 
 @Slf4j
-final class HttpRequestExecutionHelper {
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+final class HttpRequestExecutor {
     private final ResponsePanel responsePanel;
-    private final RequestExecutionUiHelper requestExecutionUiHelper;
-    private final RequestStreamUiHelper requestStreamUiHelper;
-    private final RequestResponseHelper requestResponseHelper;
-    private final HttpRedirectExecutor redirectExecutor;
+    private final RequestExecutionUiUpdater requestExecutionUiUpdater;
+    private final RequestStreamUiAppender requestStreamUiAppender;
+    private final RequestResponseHandler requestResponseHandler;
+    private final HttpRedirectExecutor redirectExecutor = new HttpRedirectExecutor();
     private final Runnable convertCurrentRequestToSse;
     private final RequestExecutionState executionState;
-
-    HttpRequestExecutionHelper(ResponsePanel responsePanel,
-                               RequestExecutionUiHelper requestExecutionUiHelper,
-                               RequestStreamUiHelper requestStreamUiHelper,
-                               RequestResponseHelper requestResponseHelper,
-                               Runnable convertCurrentRequestToSse,
-                               RequestExecutionState executionState) {
-        this.responsePanel = responsePanel;
-        this.requestExecutionUiHelper = requestExecutionUiHelper;
-        this.requestStreamUiHelper = requestStreamUiHelper;
-        this.requestResponseHelper = requestResponseHelper;
-        this.redirectExecutor = new HttpRedirectExecutor();
-        this.convertCurrentRequestToSse = convertCurrentRequestToSse;
-        this.executionState = executionState;
-    }
 
     SwingWorker<Void, Void> createWorker(PreparedRequest req, ScriptExecutionPipeline pipeline, int maxRedirectCount) {
         return new SwingWorker<>() {
@@ -68,23 +56,23 @@ final class HttpRequestExecutionHelper {
                                 executionState.markAutoDetectedHttpSseOpen();
                                 convertCurrentRequestToSse.run();
                                 responsePanel.switchTabButtonHttpOrSse("sse");
-                                requestExecutionUiHelper.updateUIForResponse(response);
+                                requestExecutionUiUpdater.updateUIForResponse(response);
                                 responsePanel.setRequestDetails(req);
                                 responsePanel.setResponseDetails(response);
-                                requestStreamUiHelper.appendSseMessage(MessageType.CONNECTED, null, "open", null,
+                                requestStreamUiAppender.appendSseMessage(MessageType.CONNECTED, null, "open", null,
                                         I18nUtil.getMessage(MessageKeys.SSE_STREAM_CONNECTED), null);
                             });
                         }
 
                         @Override
                         public void onEvent(String id, String type, String data) {
-                            requestStreamUiHelper.appendSseRawEvent(sseBodyBuilder, id, type, data);
+                            requestStreamUiAppender.appendSseRawEvent(sseBodyBuilder, id, type, data);
                             SwingUtilities.invokeLater(() -> {
                                 if (executionState.isDisposed()) {
                                     return;
                                 }
-                                List<TestResult> testResults = requestResponseHelper.handleStreamMessage(pipeline, data);
-                                requestStreamUiHelper.appendSseMessage(MessageType.RECEIVED, id, type, null, data, testResults);
+                                List<TestResult> testResults = requestResponseHandler.handleStreamMessage(pipeline, data);
+                                requestStreamUiAppender.appendSseMessage(MessageType.RECEIVED, id, type, null, data, testResults);
                             });
                         }
 
@@ -94,40 +82,40 @@ final class HttpRequestExecutionHelper {
                                 if (executionState.isDisposed()) {
                                     return;
                                 }
-                                requestStreamUiHelper.appendSseMessage(MessageType.INFO, null, "retry", retryMs,
+                                requestStreamUiAppender.appendSseMessage(MessageType.INFO, null, "retry", retryMs,
                                         I18nUtil.getMessage(MessageKeys.SSE_RETRY_UPDATED, retryMs), null);
                             });
                         }
 
                         @Override
                         public void onClosed(HttpResponse response) {
-                            requestStreamUiHelper.finalizeSseResponse(response, sseBodyBuilder, sseQueueStartMs);
+                            requestStreamUiAppender.finalizeSseResponse(response, sseBodyBuilder, sseQueueStartMs);
                             SwingUtilities.invokeLater(() -> {
                                 if (executionState.isDisposed()) {
                                     return;
                                 }
                                 executionState.clearAutoDetectedHttpSseOpen();
-                                requestExecutionUiHelper.updateUIForResponse(response);
+                                requestExecutionUiUpdater.updateUIForResponse(response);
                                 responsePanel.setRequestDetails(req);
                                 responsePanel.setResponseDetails(response);
-                                requestStreamUiHelper.appendSseMessage(MessageType.CLOSED, null, "closed", null,
+                                requestStreamUiAppender.appendSseMessage(MessageType.CLOSED, null, "closed", null,
                                         I18nUtil.getMessage(MessageKeys.SSE_STREAM_CLOSED), null);
                             });
                         }
 
                         @Override
                         public void onFailure(String errorMsg, HttpResponse response) {
-                            requestStreamUiHelper.finalizeSseResponse(response, sseBodyBuilder, sseQueueStartMs);
+                            requestStreamUiAppender.finalizeSseResponse(response, sseBodyBuilder, sseQueueStartMs);
                             SwingUtilities.invokeLater(() -> {
                                 if (executionState.isDisposed()) {
                                     return;
                                 }
                                 executionState.clearAutoDetectedHttpSseOpen();
                                 NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.SSE_FAILED, errorMsg));
-                                requestExecutionUiHelper.updateUIForResponse(response);
+                                requestExecutionUiUpdater.updateUIForResponse(response);
                                 responsePanel.setRequestDetails(req);
                                 responsePanel.setResponseDetails(response);
-                                requestStreamUiHelper.appendSseMessage(MessageType.WARNING, null, "failure", null,
+                                requestStreamUiAppender.appendSseMessage(MessageType.WARNING, null, "failure", null,
                                         I18nUtil.getMessage(MessageKeys.SSE_STREAM_FAILED, errorMsg), null);
                             });
                         }
@@ -157,20 +145,20 @@ final class HttpRequestExecutionHelper {
                     boolean keepSseView = (resp != null && resp.isSse)
                             || (isCancelled() && executionState.isAutoDetectedHttpSseOpen());
                     responsePanel.switchTabButtonHttpOrSse(keepSseView ? "sse" : "http");
-                    requestExecutionUiHelper.updateUIForResponse(resp);
+                    requestExecutionUiUpdater.updateUIForResponse(resp);
                     if (resp != null && !resp.isSse) {
-                        requestResponseHelper.handleResponse(pipeline, req, resp);
+                        requestResponseHandler.handleResponse(pipeline, req, resp);
                     } else if (resp != null) {
-                        requestResponseHelper.recordExchange(req, resp);
+                        requestResponseHandler.recordExchange(req, resp);
                         responsePanel.setRequestDetails(req);
                         responsePanel.setResponseDetails(resp);
-                        requestResponseHelper.saveHistory(req, resp, "SSE request");
+                        requestResponseHandler.saveHistory(req, resp, "SSE request");
                     }
                     if (!keepSseView) {
                         executionState.clearAutoDetectedHttpSseOpen();
                     }
                 } finally {
-                    requestExecutionUiHelper.resetSendButton();
+                    requestExecutionUiUpdater.resetSendButton();
                     executionState.clearCurrentWorkerIf(this);
                 }
             }

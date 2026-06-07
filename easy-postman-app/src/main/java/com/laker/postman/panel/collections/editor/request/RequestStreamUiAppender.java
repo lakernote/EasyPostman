@@ -1,30 +1,30 @@
 package com.laker.postman.panel.collections.editor.request;
 
 import com.laker.postman.http.runtime.model.HttpResponse;
-import com.laker.postman.stream.MessageType;
-import com.laker.postman.script.model.TestResult;
 import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;
+import com.laker.postman.script.model.TestResult;
+import com.laker.postman.stream.MessageType;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-final class RequestStreamUiHelper {
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+final class RequestStreamUiAppender {
     private final ResponsePanel responsePanel;
     private final DateTimeFormatter timeFormatter;
-
-    RequestStreamUiHelper(ResponsePanel responsePanel, DateTimeFormatter timeFormatter) {
-        this.responsePanel = responsePanel;
-        this.timeFormatter = timeFormatter;
-    }
 
     void appendWebSocketMessage(MessageType type, String text) {
         appendWebSocketMessage(type, text, null);
     }
 
     void appendWebSocketMessage(MessageType type, String text, List<TestResult> testResults) {
-        if (responsePanel.getProtocol().isWebSocketProtocol() && responsePanel.getWebSocketResponsePanel() != null) {
+        if (responsePanel != null
+                && responsePanel.getProtocol().isWebSocketProtocol()
+                && responsePanel.getWebSocketResponsePanel() != null) {
             String timestamp = currentTimestamp();
             responsePanel.getWebSocketResponsePanel().addMessage(type, timestamp, text, testResults);
         }
@@ -47,7 +47,7 @@ final class RequestStreamUiHelper {
 
     void appendSseMessage(MessageType type, String eventId, String eventType, Long retryMs,
                           String text, List<TestResult> testResults) {
-        if (responsePanel.getSseResponsePanel() == null) {
+        if (responsePanel == null || responsePanel.getSseResponsePanel() == null) {
             return;
         }
         String timestamp = currentTimestamp();
@@ -55,7 +55,7 @@ final class RequestStreamUiHelper {
     }
 
     void appendSseRawEvent(StringBuilder sseBodyBuilder, String id, String type, String data) {
-        if (data == null) {
+        if (sseBodyBuilder == null || data == null) {
             return;
         }
         if (id != null && !id.isBlank()) {
@@ -75,7 +75,7 @@ final class RequestStreamUiHelper {
             return;
         }
         response.isSse = true;
-        response.body = sseBodyBuilder.toString();
+        response.body = sseBodyBuilder != null ? sseBodyBuilder.toString() : "";
         response.bodySize = response.body.getBytes(StandardCharsets.UTF_8).length;
         response.costMs = System.currentTimeMillis() - queueStartMs;
         response.endTime = System.currentTimeMillis();

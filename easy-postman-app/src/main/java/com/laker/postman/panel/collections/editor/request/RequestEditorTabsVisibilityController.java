@@ -19,7 +19,7 @@ final class RequestEditorTabsVisibilityController {
     void updateVisibility() {
         Component selectedComponent = view.reqTabs.getSelectedComponent();
         RequestViewFactory.rebuildRequestTabs(view, protocol);
-        RequestTabSelectionHelper.selectFirstVisible(view.reqTabs, selectedComponent, view.paramsPanel, view.requestBodyPanel);
+        RequestTabSelector.selectFirstVisible(view.reqTabs, selectedComponent, view.paramsPanel, view.requestBodyPanel);
         indicatorUpdater.run();
         view.reqTabs.revalidate();
         view.reqTabs.repaint();

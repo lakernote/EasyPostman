@@ -11,6 +11,8 @@ import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.service.js.ScriptExecutionResult;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -20,21 +22,12 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 @Slf4j
-final class RequestResponseHelper {
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+final class RequestResponseHandler {
     private final Component owner;
     private final ResponsePanel responsePanel;
     private final Consumer<List<TestResult>> testResultsConsumer;
     private final BiConsumer<PreparedRequest, HttpResponse> exchangeRecorder;
-
-    RequestResponseHelper(Component owner,
-                          ResponsePanel responsePanel,
-                          Consumer<List<TestResult>> testResultsConsumer,
-                          BiConsumer<PreparedRequest, HttpResponse> exchangeRecorder) {
-        this.owner = owner;
-        this.responsePanel = responsePanel;
-        this.testResultsConsumer = testResultsConsumer;
-        this.exchangeRecorder = exchangeRecorder;
-    }
 
     void handleResponse(ScriptExecutionPipeline pipeline, PreparedRequest request, HttpResponse response) {
         if (response == null) {

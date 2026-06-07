@@ -15,7 +15,7 @@ final class RequestSendCoordinator {
     private final RequestExecutionState executionState;
     private final Runnable cancelCurrentRequestAction;
     private final JTextField urlField;
-    private final RequestPreparationFeedbackHelper requestPreparationFeedbackHelper;
+    private final RequestPreparationFeedbackPresenter requestPreparationFeedbackPresenter;
     private final RequestLinePanel requestLinePanel;
     private final ActionListener sendAction;
     private final ResponsePanel responsePanel;
@@ -29,7 +29,7 @@ final class RequestSendCoordinator {
             return;
         }
 
-        requestPreparationFeedbackHelper.clearUrlValidationFeedback(urlField);
+        requestPreparationFeedbackPresenter.clearUrlValidationFeedback(urlField);
         // 点击发送后立即切到“请求中”态，保持和实际网络请求一致的即时反馈。
         updateUiForRequestingAction.run();
 
@@ -53,13 +53,13 @@ final class RequestSendCoordinator {
                 // 预处理 worker 只负责准备数据；进入结果分发前，先把当前 worker 归还给主状态机。
                 executionState.clearCurrentWorkerIf(this);
 
-                if (requestPreparationFeedbackHelper.handlePreparationFailure(
+                if (requestPreparationFeedbackPresenter.handlePreparationFailure(
                         preparationResult, urlField, requestLinePanel, sendAction, responsePanel)) {
                     return;
                 }
 
-                requestPreparationFeedbackHelper.showPreparationWarningIfNeeded(preparationResult);
-                if (!requestPreparationFeedbackHelper.confirmContinuationIfNeeded(
+                requestPreparationFeedbackPresenter.showPreparationWarningIfNeeded(preparationResult);
+                if (!requestPreparationFeedbackPresenter.confirmContinuationIfNeeded(
                         preparationResult, requestLinePanel, sendAction, responsePanel)) {
                     return;
                 }

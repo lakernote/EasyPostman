@@ -4,25 +4,17 @@ import com.laker.postman.collection.CollectionInheritance;
 import com.laker.postman.collection.model.CollectionRequestContext;
 import com.laker.postman.collection.model.RequestGroup;
 import com.laker.postman.request.model.HttpRequestItem;
-
-
 import com.laker.postman.service.variable.RequestExecutionContext;
 import com.laker.postman.service.variable.RequestExecutionScope;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
- * 继承服务
- * <p>
- * 设计模式：Facade Pattern（门面模式）
- * <p>
- * 职责：
- * - 统一的继承计算入口
- * - 协调各个组件（Repository, Cache, Helper）
- * - 简化客户端调用
- * <p>
+ * Collection 继承应用服务。
+ *
+ * <p>负责按请求 ID 找到父分组链，刷新本次请求的执行变量作用域，并把 collection-core
+ * 的继承规则应用到最新的请求草稿上。</p>
  *
  * @author laker
  * @since 4.3.22
@@ -44,7 +36,7 @@ public class InheritanceService {
      * 创建继承服务（依赖注入，便于测试）
      *
      * @param requestRepository 请求仓库
-     * @param cache          缓存管理器
+     * @param cache             缓存管理器
      */
     public InheritanceService(CollectionRequestRepository requestRepository, InheritanceCache cache) {
         this.requestRepository = requestRepository;
@@ -67,66 +59,42 @@ public class InheritanceService {
             return null;
         }
 
-        String requestId = item.getId();
-
-        // requestId 为空：不在 Collections 里，直接返回
-        if (requestId == null || requestId.trim().isEmpty()) {
-            return applyInheritanceInternal(item);
-        }
-
-        if (!useCache) {
-            return applyInheritanceInternal(item);
-        }
-
-        // 获取（或计算并缓存）该请求对应的 Group 链
-        List<RequestGroup> groupChain = cache.computeIfAbsent(requestId, id -> {
-            Optional<CollectionRequestContext> requestContext = requestRepository.findRequestContextById(id);
-            if (requestContext.isEmpty()) {
-                return List.of(); // 不在 Collections 树中，空 group 链
-            }
-            return requestContext.get().getGroupChain();
-        });
-        RequestExecutionContext.setCurrentScope(RequestExecutionScope.fromVariables(
-                CollectionInheritance.mergeGroupVariables(groupChain)
-        ));
-
-        // 用最新的 item + 缓存的 group 链合并（每次都重新合并，保证 url/params 最新）
-        if (groupChain.isEmpty()) {
-            log.trace("请求 [{}] 不在 Collections 树中或无父分组，使用原始配置", item.getName());
-            return item;
-        }
-
-        return CollectionInheritance.apply(item, groupChain);
-    }
-
-    /**
-     * 内部方法：不使用缓存，直接从树中查找并合并
-     */
-    private HttpRequestItem applyInheritanceInternal(HttpRequestItem item) {
         try {
-            Optional<CollectionRequestContext> requestContext = requestRepository.findRequestContextById(item.getId());
-
-            if (requestContext.isEmpty()) {
-                log.trace("请求 [{}] 不在 Collections 树中，使用原始配置", item.getName());
+            List<RequestGroup> groupChain = resolveGroupChain(item.getId(), useCache);
+            refreshExecutionScope(groupChain);
+            if (groupChain.isEmpty()) {
+                log.trace("请求 [{}] 不在 Collections 树中或无父分组，使用原始配置", item.getName());
                 return item;
             }
 
-            List<RequestGroup> groupChain = requestContext.get().getGroupChain();
-            RequestExecutionContext.setCurrentScope(RequestExecutionScope.fromVariables(
-                    CollectionInheritance.mergeGroupVariables(groupChain)
-            ));
-            HttpRequestItem result = CollectionInheritance.apply(item, groupChain);
-
-            if (result == item) {
-                log.trace("请求 [{}] 没有父分组，使用原始配置", item.getName());
-            } else {
-                log.debug("为请求 [{}] 应用分组继承", item.getName());
-            }
-            return result;
+            log.debug("为请求 [{}] 应用分组继承", item.getName());
+            return CollectionInheritance.apply(item, groupChain);
         } catch (Exception e) {
             log.debug("应用继承时发生异常（将使用原始配置）: {}", e.getMessage());
             return item;
         }
+    }
+
+    private List<RequestGroup> resolveGroupChain(String requestId, boolean useCache) {
+        if (requestId == null || requestId.trim().isEmpty()) {
+            return List.of();
+        }
+        if (!useCache) {
+            return findGroupChain(requestId);
+        }
+        return cache.computeIfAbsent(requestId, this::findGroupChain);
+    }
+
+    private List<RequestGroup> findGroupChain(String requestId) {
+        return requestRepository.findRequestContextById(requestId)
+                .map(CollectionRequestContext::getGroupChain)
+                .orElseGet(List::of);
+    }
+
+    private void refreshExecutionScope(List<RequestGroup> groupChain) {
+        RequestExecutionContext.setCurrentScope(RequestExecutionScope.fromVariables(
+                CollectionInheritance.mergeGroupVariables(groupChain)
+        ));
     }
 
     /**

@@ -1,26 +1,19 @@
 package com.laker.postman.panel.collections.editor.request;
 
 import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 
 import javax.swing.*;
 import java.util.function.Supplier;
 
-final class RequestSplitLayoutHelper {
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+final class RequestSplitLayoutController {
     private final JSplitPane splitPane;
     private final ResponsePanel responsePanel;
     private final Supplier<Boolean> isEffectiveSseProtocolSupplier;
     private final Supplier<Boolean> isEffectiveWebSocketProtocolSupplier;
     private boolean initialDividerLocationSet;
-
-    RequestSplitLayoutHelper(JSplitPane splitPane,
-                             ResponsePanel responsePanel,
-                             Supplier<Boolean> isEffectiveSseProtocolSupplier,
-                             Supplier<Boolean> isEffectiveWebSocketProtocolSupplier) {
-        this.splitPane = splitPane;
-        this.responsePanel = responsePanel;
-        this.isEffectiveSseProtocolSupplier = isEffectiveSseProtocolSupplier;
-        this.isEffectiveWebSocketProtocolSupplier = isEffectiveWebSocketProtocolSupplier;
-    }
 
     void updateLayoutOrientation(boolean isVertical) {
         int targetOrientation = isVertical ? JSplitPane.VERTICAL_SPLIT : JSplitPane.HORIZONTAL_SPLIT;

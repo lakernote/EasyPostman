@@ -51,29 +51,29 @@ final class RequestEditorDefaultTabSelector {
                                   boolean hasFormData,
         boolean hasParams) {
         if (effectiveProtocol != null && effectiveProtocol.isWebSocketProtocol()) {
-            RequestTabSelectionHelper.selectFirstVisible(view.reqTabs, view.requestBodyPanel, view.paramsPanel);
+            RequestTabSelector.selectFirstVisible(view.reqTabs, view.requestBodyPanel, view.paramsPanel);
             return;
         }
         if (effectiveProtocol != null && effectiveProtocol.isSseProtocol()) {
-            RequestTabSelectionHelper.selectFirstVisible(view.reqTabs, view.paramsPanel, view.requestBodyPanel);
+            RequestTabSelector.selectFirstVisible(view.reqTabs, view.paramsPanel, view.requestBodyPanel);
             return;
         }
         if (CharSequenceUtil.isNotBlank(body) && !RequestBodyPanel.BODY_TYPE_NONE.equals(bodyType)) {
-            RequestTabSelectionHelper.selectFirstVisible(view.reqTabs, view.requestBodyPanel, view.paramsPanel);
+            RequestTabSelector.selectFirstVisible(view.reqTabs, view.requestBodyPanel, view.paramsPanel);
             return;
         }
         if (hasFormData) {
-            RequestTabSelectionHelper.selectFirstVisible(view.reqTabs, view.requestBodyPanel, view.paramsPanel);
+            RequestTabSelector.selectFirstVisible(view.reqTabs, view.requestBodyPanel, view.paramsPanel);
             return;
         }
         if ("POST".equals(method) || "PUT".equals(method) || "PATCH".equals(method)) {
             if (hasParams) {
-                RequestTabSelectionHelper.selectFirstVisible(view.reqTabs, view.paramsPanel, view.requestBodyPanel);
+                RequestTabSelector.selectFirstVisible(view.reqTabs, view.paramsPanel, view.requestBodyPanel);
             } else {
-                RequestTabSelectionHelper.selectFirstVisible(view.reqTabs, view.requestBodyPanel, view.paramsPanel);
+                RequestTabSelector.selectFirstVisible(view.reqTabs, view.requestBodyPanel, view.paramsPanel);
             }
             return;
         }
-        RequestTabSelectionHelper.selectFirstVisible(view.reqTabs, view.paramsPanel, view.requestBodyPanel);
+        RequestTabSelector.selectFirstVisible(view.reqTabs, view.paramsPanel, view.requestBodyPanel);
     }
 }

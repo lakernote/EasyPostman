@@ -14,7 +14,7 @@ import com.laker.postman.util.NotificationUtil;
 import javax.swing.*;
 import java.awt.event.ActionListener;
 
-final class RequestPreparationFeedbackHelper {
+final class RequestPreparationFeedbackPresenter {
 
     void clearUrlValidationFeedback(JTextField urlField) {
         urlField.putClientProperty(FlatClientProperties.OUTLINE, null);

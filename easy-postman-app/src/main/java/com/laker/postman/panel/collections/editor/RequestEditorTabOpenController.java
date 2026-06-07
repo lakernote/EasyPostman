@@ -25,7 +25,7 @@ import java.util.function.IntPredicate;
 final class RequestEditorTabOpenController {
     private final JTabbedPane tabbedPane;
     private final RequestEditorPreviewTabManager previewTabManager;
-    private final RequestEditorRequestScopeSynchronizer requestScopeSynchronizer;
+    private final RequestEditorExecutionScopeSynchronizer executionScopeSynchronizer;
     private final Runnable beforeOpenAction;
     private final Runnable plusTabRestorer;
     private final IntPredicate plusTabPredicate;
@@ -43,7 +43,7 @@ final class RequestEditorTabOpenController {
             return;
         }
 
-        requestScopeSynchronizer.syncScopeForRequest(requestId);
+        executionScopeSynchronizer.syncScopeForRequest(requestId);
         if (switchToExistingRequestTab(requestId)) {
             return;
         }
@@ -63,7 +63,7 @@ final class RequestEditorTabOpenController {
             return;
         }
 
-        requestScopeSynchronizer.syncScopeForRequest(requestId);
+        executionScopeSynchronizer.syncScopeForRequest(requestId);
         if (previewTabManager.isPreviewRequest(requestId)) {
             previewTabManager.promoteToPermanent();
             return;

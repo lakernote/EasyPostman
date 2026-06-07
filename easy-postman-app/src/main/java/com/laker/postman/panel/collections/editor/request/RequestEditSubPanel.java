@@ -37,8 +37,8 @@ public class RequestEditSubPanel extends JPanel {
     private final SavedResponse savedResponse;
 
     private RequestViewComponents view;
-    // 主面板只保留“编排”和“状态持有”，具体行为拆给各个 helper，避免再次演变成巨型类。
-    private final RequestPreparationFeedbackHelper requestPreparationFeedbackHelper = new RequestPreparationFeedbackHelper();
+    // 主面板只保留“编排”和“状态持有”，具体行为拆给各个职责明确的协作者，避免再次演变成巨型类。
+    private final RequestPreparationFeedbackPresenter requestPreparationFeedbackPresenter = new RequestPreparationFeedbackPresenter();
     private final RequestEditorSendPreparationController sendPreparationController =
             RequestEditorSendPreparationController.createDefault(
                     this::ensureEditorInitialized,
@@ -51,10 +51,10 @@ public class RequestEditSubPanel extends JPanel {
     private RequestEditorBinder requestEditorBinder;
     private RequestEditorDefaultTabSelector requestEditorDefaultTabSelector;
     private RequestEditorTabsVisibilityController requestEditorTabsVisibilityController;
-    private RequestTabStateHelper requestTabStateHelper;
-    private RequestUrlSyncHelper requestUrlSyncHelper;
+    private RequestTabStateController requestTabStateController;
+    private RequestUrlParamsSynchronizer requestUrlParamsSynchronizer;
     private RequestEditorRuntimeController runtimeController;
-    private final SavedResponseHelper savedResponseHelper = new SavedResponseHelper(new CollectionTreeEditorGateway());
+    private final SavedResponseActions savedResponseActions = new SavedResponseActions(new CollectionTreeEditorGateway());
     private RequestSavedResponseController savedResponseController;
 
     // 数据加载标志，防止加载时触发自动保存和联动更新
@@ -199,7 +199,7 @@ public class RequestEditSubPanel extends JPanel {
         removeAll();
         view = RequestViewFactory.create(protocol, panelType, this::sendRequest);
         add(view.requestLinePanel, BorderLayout.NORTH);
-        createEditorBindingHelpers();
+        createEditorCollaborators();
         bindBasicEditorInteractions();
 
         if (!isPerformanceSnapshot()) {
@@ -224,25 +224,25 @@ public class RequestEditSubPanel extends JPanel {
 
     private void bindBasicEditorInteractions() {
         if (!isPerformanceSnapshot()) {
-            RequestUiSetupHelper.bindUrlField(
+            RequestEditorUiBinder.bindUrlField(
                     view.urlField,
-                    requestPreparationFeedbackHelper,
+                    requestPreparationFeedbackPresenter,
                     this::detectAndParseCurl,
-                    () -> requestUrlSyncHelper.syncUrlToParams(isLoadingData),
+                    () -> requestUrlParamsSynchronizer.syncUrlToParams(isLoadingData),
                     this::autoPrependHttpsIfNeeded
             );
-            RequestUiSetupHelper.bindParamsSync(view.paramsPanel, () -> requestUrlSyncHelper.syncParamsToUrl(isLoadingData));
+            RequestEditorUiBinder.bindParamsSync(view.paramsPanel, () -> requestUrlParamsSynchronizer.syncParamsToUrl(isLoadingData));
         }
     }
 
-    private void createEditorBindingHelpers() {
-        requestUrlSyncHelper = new RequestUrlSyncHelper(view.urlField, view.paramsPanel);
+    private void createEditorCollaborators() {
+        requestUrlParamsSynchronizer = new RequestUrlParamsSynchronizer(view.urlField, view.paramsPanel);
         requestEditorBinder = new RequestEditorBinder(view);
         requestEditorDefaultTabSelector = new RequestEditorDefaultTabSelector(view);
         dataController.bindEditor(
                 requestEditorBinder,
                 requestEditorDefaultTabSelector,
-                () -> runtimeController != null ? runtimeController.dirtyStateHelper() : null,
+                () -> runtimeController != null ? runtimeController.dirtyStateTracker() : null,
                 view.requestSettingsPanel
         );
         requestEditorTabsVisibilityController = new RequestEditorTabsVisibilityController(
@@ -250,14 +250,14 @@ public class RequestEditSubPanel extends JPanel {
                 view,
                 this::updateTabIndicators
         );
-        requestTabStateHelper = new RequestTabStateHelper(protocol, view);
+        requestTabStateController = new RequestTabStateController(protocol, view);
     }
 
     private void createRuntimeController() {
         runtimeController = RequestEditorRuntimeController.create(new RequestEditorRuntimeController.Config(
                 this,
                 view,
-                requestPreparationFeedbackHelper,
+                requestPreparationFeedbackPresenter,
                 sendPreparationController::prepareForSending,
                 this::sendRequest,
                 this::isBaseHttpProtocol,
@@ -278,7 +278,7 @@ public class RequestEditSubPanel extends JPanel {
 
     private void finishEditorUiInitialization() {
         add(view.editorContent, BorderLayout.CENTER);
-        RequestUiSetupHelper.applyInitialProtocolUi(
+        RequestEditorUiBinder.applyInitialProtocolUi(
                 protocol,
                 view.reqTabs,
                 view.requestBodyPanel,
@@ -287,14 +287,14 @@ public class RequestEditSubPanel extends JPanel {
                 e -> sendWebSocketMessage()
         );
         if (!isPerformanceSnapshot()) {
-            requestTabStateHelper.bindListeners(this::updateTabDirty);
+            requestTabStateController.bindListeners(this::updateTabDirty);
         }
 
         SwingUtilities.invokeLater(this::updateTabIndicators);
-        RequestUiSetupHelper.bindSaveResponseButton(protocol, panelType, view.responsePanel,
+        RequestEditorUiBinder.bindSaveResponseButton(protocol, panelType, view.responsePanel,
                 e -> getSavedResponseController().showSaveDialog());
         if (!isPerformanceSnapshot()) {
-            RequestUiSetupHelper.bindBodyTypeHeaderSync(view.requestBodyPanel, view.headersPanel, () -> isLoadingData);
+            RequestEditorUiBinder.bindBodyTypeHeaderSync(view.requestBodyPanel, view.headersPanel, () -> isLoadingData);
         }
         editorInitialized = true;
     }
@@ -303,10 +303,10 @@ public class RequestEditSubPanel extends JPanel {
      * 更新所有tab的内容指示器
      */
     private void updateTabIndicators() {
-        if (requestTabStateHelper == null) {
+        if (requestTabStateController == null) {
             return;
         }
-        requestTabStateHelper.updateTabIndicators();
+        requestTabStateController.updateTabIndicators();
     }
 
 
@@ -423,7 +423,7 @@ public class RequestEditSubPanel extends JPanel {
         if (savedResponseController == null) {
             savedResponseController = new RequestSavedResponseController(
                     this,
-                    savedResponseHelper,
+                    savedResponseActions,
                     () -> lastRequest,
                     () -> lastResponse,
                     this::getOriginalRequestItem,

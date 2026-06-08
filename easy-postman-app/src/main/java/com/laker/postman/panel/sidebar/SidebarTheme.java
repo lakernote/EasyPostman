@@ -20,7 +20,7 @@ class SidebarTheme {
     }
 
     Color selectedCollapsedTabBackground() {
-        return ModernColors.getPrimary();
+        return ModernColors.getPrimaryDark();
     }
 
     Color selectedTabTitleForeground() {

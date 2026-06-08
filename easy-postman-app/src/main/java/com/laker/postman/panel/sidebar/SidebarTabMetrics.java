@@ -14,9 +14,9 @@ class SidebarTabMetrics {
 
     static final int EXPANDED_SELECTED_BACKGROUND_INSET_HORIZONTAL = 8;
     static final int EXPANDED_SELECTED_BACKGROUND_INSET_VERTICAL = 5;
-    static final int COLLAPSED_SELECTED_BACKGROUND_WIDTH = 38;
-    static final int COLLAPSED_SELECTED_BACKGROUND_HEIGHT = 36;
-    static final int SELECTED_BACKGROUND_ARC = 12;
+    static final int COLLAPSED_SELECTED_BACKGROUND_WIDTH = 34;
+    static final int COLLAPSED_SELECTED_BACKGROUND_HEIGHT = 32;
+    static final int SELECTED_BACKGROUND_ARC = 10;
 
     static final int EXPANDED_TAB_PADDING_VERTICAL = 6;
     static final int EXPANDED_TAB_PADDING_HORIZONTAL = 12;

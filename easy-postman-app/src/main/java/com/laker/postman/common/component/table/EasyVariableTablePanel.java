@@ -279,32 +279,27 @@ public class EasyVariableTablePanel extends AbstractTablePanel<Variable> {
         table.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                if (!editable || !SwingUtilities.isLeftMouseButton(e)) {
+                if (!SwingUtilities.isLeftMouseButton(e)) {
                     return;
                 }
 
                 int column = table.columnAtPoint(e.getPoint());
                 int row = table.rowAtPoint(e.getPoint());
 
-                if (column == COL_DELETE && row >= 0) {
-                    int modelRow = row;
-                    if (table.getRowSorter() != null) {
-                        modelRow = table.getRowSorter().convertRowIndexToModel(row);
-                    }
-
-                    if (modelRow < 0 || modelRow >= tableModel.getRowCount()) {
-                        return;
-                    }
-
-                    int rowCount = tableModel.getRowCount();
-                    if (modelRow == rowCount - 1 && rowCount == 1) {
-                        return;
-                    }
-
-                    stopCellEditing();
-                    tableModel.removeRow(modelRow);
-                    ensureEmptyLastRow();
+                if (!isDeleteActionAvailableAtViewPosition(row, column)) {
+                    return;
                 }
+
+                int modelRow = table.getRowSorter() != null
+                        ? table.getRowSorter().convertRowIndexToModel(row) : row;
+
+                stopCellEditing();
+                tableModel.removeRow(modelRow);
+                ensureEmptyLastRow();
+                hoveredRow = -1;
+                hoveredColumn = -1;
+                table.setCursor(Cursor.getDefaultCursor());
+                table.repaint();
             }
         });
     }
@@ -320,17 +315,8 @@ public class EasyVariableTablePanel extends AbstractTablePanel<Variable> {
                 int column = table.columnAtPoint(e.getPoint());
                 int row = table.rowAtPoint(e.getPoint());
 
-                // 在第一列显示手型光标
-                if (column == COL_DRAG_ENABLE && row >= 0) {
-                    Rectangle cellRect = table.getCellRect(row, column, false);
-                    int relativeX = e.getX() - cellRect.x;
-
-                    // 左侧拖拽区域显示小手指光标，提示用户可以拖拽
-                    if (relativeX < 25) {
-                        table.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-                    } else {
-                        table.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-                    }
+                if ((column == COL_DRAG_ENABLE && row >= 0) || isDeleteActionAvailableAtViewPosition(row, column)) {
+                    table.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
                 } else {
                     table.setCursor(Cursor.getDefaultCursor());
                 }

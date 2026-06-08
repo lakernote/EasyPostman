@@ -29,8 +29,8 @@ public class SidebarTabMetricsTest {
 
     @Test
     public void collapsedSelectedBackgroundShouldStayCompactRoundedRectangle() {
-        assertEquals(SidebarTabMetrics.COLLAPSED_SELECTED_BACKGROUND_WIDTH, 38);
-        assertEquals(SidebarTabMetrics.COLLAPSED_SELECTED_BACKGROUND_HEIGHT, 36);
-        assertEquals(SidebarTabMetrics.SELECTED_BACKGROUND_ARC, 12);
+        assertEquals(SidebarTabMetrics.COLLAPSED_SELECTED_BACKGROUND_WIDTH, 34);
+        assertEquals(SidebarTabMetrics.COLLAPSED_SELECTED_BACKGROUND_HEIGHT, 32);
+        assertEquals(SidebarTabMetrics.SELECTED_BACKGROUND_ARC, 10);
     }
 }

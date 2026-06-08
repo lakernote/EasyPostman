@@ -64,6 +64,11 @@ public abstract class AbstractTablePanel<T> extends JPanel {
      */
     protected int hoveredRow = -1;
 
+    /**
+     * 当前鼠标悬停的列索引（视图索引），-1 表示无悬停
+     */
+    protected int hoveredColumn = -1;
+
     private static final String ACTION_DELETE_ROW = "deleteRow";
     private static final String ACTION_ENTER_NAV  = "enterNav";
 
@@ -262,8 +267,10 @@ public abstract class AbstractTablePanel<T> extends JPanel {
 
             @Override
             public void mouseExited(MouseEvent e) {
-                if (hoveredRow != -1) {
+                if (hoveredRow != -1 || hoveredColumn != -1) {
                     hoveredRow = -1;
+                    hoveredColumn = -1;
+                    updateDeleteButtonCursor(-1, -1);
                     table.repaint();
                 }
             }
@@ -298,8 +305,12 @@ public abstract class AbstractTablePanel<T> extends JPanel {
             @Override
             public void mouseMoved(java.awt.event.MouseEvent e) {
                 int row = table.rowAtPoint(e.getPoint());
-                if (row != hoveredRow) {
-                    hoveredRow = row;
+                int column = table.columnAtPoint(e.getPoint());
+                boolean hoverChanged = row != hoveredRow || column != hoveredColumn;
+                hoveredRow = row;
+                hoveredColumn = column;
+                updateDeleteButtonCursor(row, column);
+                if (hoverChanged) {
                     table.repaint();
                 }
             }
@@ -699,6 +710,47 @@ public abstract class AbstractTablePanel<T> extends JPanel {
         return true;
     }
 
+    /**
+     * 判断指定视图单元格是否是当前可点击的删除按钮。
+     */
+    protected boolean isDeleteActionAvailableAtViewPosition(int viewRow, int viewColumn) {
+        if (viewRow < 0 || viewColumn != getDeleteColumnIndex()) {
+            return false;
+        }
+        int modelRow = (table.getRowSorter() != null)
+                ? table.getRowSorter().convertRowIndexToModel(viewRow) : viewRow;
+        return isDeleteActionAvailableAtModelRow(modelRow);
+    }
+
+    /**
+     * 判断指定模型行是否展示并响应删除按钮。
+     */
+    private boolean isDeleteActionAvailableAtModelRow(int modelRow) {
+        if (!editable || modelRow < 0 || modelRow >= tableModel.getRowCount()) {
+            return false;
+        }
+        if (!isDeletableRow(modelRow)) {
+            return false;
+        }
+
+        int rowCount = tableModel.getRowCount();
+        boolean isLastRow = modelRow == rowCount - 1;
+        boolean isEmpty = !hasContentInRow(modelRow);
+        return !isLastRow || (!isEmpty && rowCount > 1);
+    }
+
+    /**
+     * 删除按钮悬停时由 JTable 自身切换鼠标形态；renderer 组件上的 cursor 不会生效。
+     */
+    private void updateDeleteButtonCursor(int viewRow, int viewColumn) {
+        int cursorType = isDeleteActionAvailableAtViewPosition(viewRow, viewColumn)
+                ? Cursor.HAND_CURSOR
+                : Cursor.DEFAULT_CURSOR;
+        if (table.getCursor().getType() != cursorType) {
+            table.setCursor(Cursor.getPredefinedCursor(cursorType));
+        }
+    }
+
 
     /**
      * 添加右键菜单监听器
@@ -777,29 +829,20 @@ public abstract class AbstractTablePanel<T> extends JPanel {
         int column = table.columnAtPoint(e.getPoint());
         int row    = table.rowAtPoint(e.getPoint());
 
-        if (column != getDeleteColumnIndex() || row < 0) {
+        if (!isDeleteActionAvailableAtViewPosition(row, column)) {
             return;
         }
 
         int modelRow = (table.getRowSorter() != null)
                 ? table.getRowSorter().convertRowIndexToModel(row) : row;
 
-        if (modelRow < 0 || modelRow >= tableModel.getRowCount()) {
-            return;
-        }
-
-        int rowCount = tableModel.getRowCount();
-        if (modelRow == rowCount - 1 && rowCount == 1) {
-            return; // 保留最后一行（始终保持一个空行）
-        }
-
-        if (!isDeletableRow(modelRow)) {
-            return;
-        }
-
         stopCellEditing();
         tableModel.removeRow(modelRow);
         ensureEmptyLastRow();
+        hoveredRow = -1;
+        hoveredColumn = -1;
+        updateDeleteButtonCursor(-1, -1);
+        table.repaint();
     }
 
     /**
@@ -817,6 +860,7 @@ public abstract class AbstractTablePanel<T> extends JPanel {
      */
     public void setEditable(boolean editable) {
         this.editable = editable;
+        updateDeleteButtonCursor(hoveredRow, hoveredColumn);
         table.repaint(); // 刷新显示
     }
 
@@ -929,18 +973,11 @@ public abstract class AbstractTablePanel<T> extends JPanel {
                 modelRow = table.getRowSorter().convertRowIndexToModel(row);
             }
 
-            // Show delete icon for all rows except the last empty row
-            if (modelRow >= 0 && modelRow < tableModel.getRowCount()) {
-                int rowCount = tableModel.getRowCount();
-                boolean isLastRow = (modelRow == rowCount - 1);
-                boolean isEmpty = !hasContentInRow(modelRow);
-
-                // Not the last row: always show; last row: only if has content and there are multiple rows
-                boolean shouldShowIcon = !isLastRow || (!isEmpty && rowCount > 1);
-
-                if (shouldShowIcon && editable) {
-                    setIcon(deleteIcon);
-                    setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            if (isDeleteActionAvailableAtModelRow(modelRow)) {
+                setIcon(deleteIcon);
+                setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                if (!isSelected && row == hoveredRow && column == hoveredColumn) {
+                    setBackground(TableUIConstants.getHoverColor());
                 }
             }
 

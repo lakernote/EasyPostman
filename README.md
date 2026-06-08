@@ -30,6 +30,7 @@
 - [🚀 Quick Start](#-quick-start)
 - [🖼️ Screenshots](#️-screenshots)
 - [🤝 Contributing](#-contributing)
+- [🎨 Third-Party Assets](#-third-party-assets)
 - [📚 Documentation](#-documentation)
 - [❓ FAQ](#-faq)
 - [💖 Support](#-support)
@@ -199,6 +200,12 @@ We welcome all forms of contribution — bug reports, feature requests, code, or
 Every PR triggers automated checks: build, tests, code quality, and format validation.
 
 📖 **[Contributing Guide →](.github/CONTRIBUTING.md)**
+
+---
+
+## 🎨 Third-Party Assets
+
+SVG icons are sourced from [Lucide](https://lucide.dev/) / [lucide-icons/lucide](https://github.com/lucide-icons/lucide), licensed under the [ISC License](https://lucide.dev/license).
 
 ---
 

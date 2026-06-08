@@ -30,6 +30,7 @@
 - [🚀 快速开始](#-快速开始)
 - [🖼️ 截图预览](#️-截图预览)
 - [🤝 贡献指南](#-贡献指南)
+- [🎨 第三方资源](#-第三方资源)
 - [📚 文档](#-文档)
 - [❓ 常见问题](#-常见问题)
 - [💖 支持项目](#-支持项目)
@@ -200,6 +201,12 @@ java -jar target/easy-postman-*.jar
 每个 PR 都会自动触发：构建检查、测试执行、代码质量验证和格式校验。
 
 📖 **[贡献指南 →](.github/CONTRIBUTING.md)**
+
+---
+
+## 🎨 第三方资源
+
+SVG 图标来自 [Lucide](https://lucide.dev/) / [lucide-icons/lucide](https://github.com/lucide-icons/lucide)，许可为 [ISC License](https://lucide.dev/license)。
 
 ---
 

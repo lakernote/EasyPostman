@@ -19,7 +19,7 @@ public class SidebarTabPanelThemeTest {
 
     @BeforeMethod
     public void rememberThemeTokens() {
-        previousThemeTokens = remember(ThemeColors.PRIMARY, ThemeColors.PRIMARY_LIGHT);
+        previousThemeTokens = remember(ThemeColors.PRIMARY, ThemeColors.TEXT_SECONDARY);
     }
 
     @AfterMethod
@@ -28,36 +28,29 @@ public class SidebarTabPanelThemeTest {
     }
 
     @Test
-    public void selectedTabBackgroundShouldReadCurrentPrimaryToken() {
+    public void selectedTabBackgroundShouldUsePrimaryToken() {
         Color primary = new Color(12, 34, 56);
         UIManager.put(ThemeColors.PRIMARY, primary);
+        int expandedAlpha = ModernColors.isDarkTheme() ? 36 : 22;
 
-        assertEquals(SidebarTheme.selectedTabBackground(), ModernColors.withAlpha(primary, 25));
-
-        Color changedPrimary = new Color(72, 82, 92);
-        UIManager.put(ThemeColors.PRIMARY, changedPrimary);
-
-        assertEquals(SidebarTheme.selectedTabBackground(), ModernColors.withAlpha(changedPrimary, 25));
+        assertEquals(SidebarTheme.selectedCollapsedTabBackground(), primary);
+        assertEquals(SidebarTheme.selectedExpandedTabBackground(), ModernColors.withAlpha(primary, expandedAlpha));
     }
 
     @Test
-    public void selectedTabIndicatorShouldReadCurrentThemeTokens() {
-        Color primary = new Color(13, 14, 15);
-        Color primaryLight = new Color(23, 24, 25);
-        UIManager.put(ThemeColors.PRIMARY, primary);
-        UIManager.put(ThemeColors.PRIMARY_LIGHT, primaryLight);
-
-        GradientPaint paint = SidebarTheme.selectedTabIndicatorPaint(42);
-
-        assertEquals(paint.getColor1(), primary);
-        assertEquals(paint.getColor2(), primaryLight);
-    }
-
-    @Test
-    public void selectedTabTitleShouldUsePrimaryThemeColor() {
-        Color primary = new Color(0, 122, 255);
+    public void selectedTabTitleShouldUsePrimaryToken() {
+        Color primary = new Color(72, 82, 92);
         UIManager.put(ThemeColors.PRIMARY, primary);
 
         assertEquals(SidebarTheme.selectedTabTitleForeground(), primary);
+    }
+
+    @Test
+    public void inactiveTabChromeShouldUseThemeSecondaryTextColor() {
+        Color secondaryText = new Color(82, 92, 102);
+        UIManager.put(ThemeColors.TEXT_SECONDARY, secondaryText);
+
+        assertEquals(SidebarTheme.inactiveTabIconForeground(), secondaryText);
+        assertEquals(SidebarTheme.inactiveTabTitleForeground(), secondaryText);
     }
 }

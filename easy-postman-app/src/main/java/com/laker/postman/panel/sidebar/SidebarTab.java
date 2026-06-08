@@ -1,5 +1,6 @@
 package com.laker.postman.panel.sidebar;
 
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.panel.collections.RequestCollectionsPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
@@ -68,7 +69,8 @@ public enum SidebarTab {
 
     // 懒加载缓存
     private Icon icon;
-    private Icon selectedIcon;  // 选中状态的图标（带颜色）
+    private Icon selectedIcon;  // 展开状态的选中图标
+    private Icon selectedOnPrimaryIcon;  // 蓝色选中背景上的图标
     private String title;
     private JPanel panel;
 
@@ -100,15 +102,20 @@ public enum SidebarTab {
      */
     public Icon getIcon() {
         if (icon == null) {
-            icon = IconUtil.createThemed(iconPath, IconUtil.SIZE_TAB, IconUtil.SIZE_TAB);
+            icon = IconUtil.create(iconPath, IconUtil.SIZE_TAB, IconUtil.SIZE_TAB)
+                    .setColorFilter(new FlatSVGIcon.ColorFilter(color ->
+                            SidebarTheme.inactiveTabIconForeground()));
         }
         return icon;
     }
 
-    /**
-     * 获取选中状态的图标（懒加载，带主题色）
-     * 使用 ModernColors.getPrimary() 确保颜色一致性
-     */
+    public Icon getSelectedOnPrimaryIcon() {
+        if (selectedOnPrimaryIcon == null) {
+            selectedOnPrimaryIcon = IconUtil.createOnPrimary(iconPath, IconUtil.SIZE_TAB, IconUtil.SIZE_TAB);
+        }
+        return selectedOnPrimaryIcon;
+    }
+
     public Icon getSelectedIcon() {
         if (selectedIcon == null) {
             selectedIcon = IconUtil.createPrimary(iconPath, IconUtil.SIZE_TAB, IconUtil.SIZE_TAB);

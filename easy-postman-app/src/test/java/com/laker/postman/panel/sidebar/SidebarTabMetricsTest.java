@@ -15,15 +15,20 @@ public class SidebarTabMetricsTest {
 
     @Test
     public void shouldCalculateCollapsedTabWidthFromIconWidth() {
-        assertEquals(SidebarTabMetrics.collapsedWidth(10), 40);
-        assertEquals(SidebarTabMetrics.collapsedWidth(24), 44);
+        assertEquals(SidebarTabMetrics.collapsedWidth(10), 48);
+        assertEquals(SidebarTabMetrics.collapsedWidth(24), 50);
     }
 
     @Test
     public void shouldCalculateTabHeights() {
-        assertEquals(SidebarTabMetrics.expandedHeight(20, 14), 70);
-        assertEquals(SidebarTabMetrics.expandedHeight(40, 24), 97);
-        assertEquals(SidebarTabMetrics.collapsedHeight(20), 52);
-        assertEquals(SidebarTabMetrics.collapsedHeight(40), 68);
+        assertEquals(SidebarTabMetrics.expandedHeight(20, 14), 60);
+        assertEquals(SidebarTabMetrics.expandedHeight(40, 24), 86);
+        assertEquals(SidebarTabMetrics.collapsedHeight(20), 44);
+        assertEquals(SidebarTabMetrics.collapsedHeight(40), 60);
+    }
+
+    @Test
+    public void collapsedSelectedBackgroundShouldStayCompactSquare() {
+        assertEquals(SidebarTabMetrics.COLLAPSED_SELECTED_BACKGROUND_SIZE, 40);
     }
 }

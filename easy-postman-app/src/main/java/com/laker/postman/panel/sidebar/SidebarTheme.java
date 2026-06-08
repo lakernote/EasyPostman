@@ -4,22 +4,34 @@ import com.laker.postman.common.constants.ModernColors;
 import lombok.experimental.UtilityClass;
 
 import java.awt.Color;
-import java.awt.GradientPaint;
 
 @UtilityClass
 class SidebarTheme {
-    Color selectedTabBackground() {
-        return ModernColors.primaryWithAlpha(25);
+    Color railBackground() {
+        return ModernColors.getBackgroundColor();
+    }
+
+    Color hoverTabBackground() {
+        return ModernColors.getHoverBackgroundColor();
+    }
+
+    Color selectedExpandedTabBackground() {
+        return ModernColors.primaryWithAlpha(ModernColors.isDarkTheme() ? 36 : 22);
+    }
+
+    Color selectedCollapsedTabBackground() {
+        return ModernColors.getPrimary();
     }
 
     Color selectedTabTitleForeground() {
         return ModernColors.getPrimary();
     }
 
-    GradientPaint selectedTabIndicatorPaint(int indicatorHeight) {
-        return new GradientPaint(
-                0, 0, ModernColors.getPrimary(),
-                0, indicatorHeight, ModernColors.getPrimaryLight()
-        );
+    Color inactiveTabTitleForeground() {
+        return ModernColors.getTextSecondary();
+    }
+
+    Color inactiveTabIconForeground() {
+        return ModernColors.getTextSecondary();
     }
 }

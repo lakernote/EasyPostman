@@ -38,24 +38,43 @@ final class SidebarTabbedPaneUi extends BasicTabbedPaneUI {
     @Override
     protected void installDefaults() {
         super.installDefaults();
-        tabAreaInsets = new Insets(8, 6, 8, 0);
+        tabAreaInsets = new Insets(
+                SidebarTabMetrics.TAB_AREA_INSET_TOP,
+                SidebarTabMetrics.TAB_AREA_INSET_LEFT,
+                SidebarTabMetrics.TAB_AREA_INSET_BOTTOM,
+                SidebarTabMetrics.TAB_AREA_INSET_RIGHT
+        );
         contentBorderInsets = new Insets(0, 1, 0, 0);
-        tabInsets = new Insets(2, 2, 2, 2);
+        tabInsets = new Insets(1, 0, 1, 0);
         selectedTabPadInsets = new Insets(0, 0, 0, 0);
+    }
+
+    @Override
+    protected void paintTabArea(Graphics g, int tabPlacement, int selectedIndex) {
+        if (tabPlacement == SwingConstants.LEFT && tabPane != null) {
+            int tabAreaWidth = calculateTabAreaWidth(tabPlacement, runCount, maxTabWidth);
+            g.setColor(SidebarTheme.railBackground());
+            g.fillRect(0, 0, tabAreaWidth + 1, tabPane.getHeight());
+        }
+        super.paintTabArea(g, tabPlacement, selectedIndex);
     }
 
     @Override
     protected void paintTabBackground(Graphics g, int tabPlacement, int tabIndex,
                                       int x, int y, int w, int h, boolean isSelected) {
-        if (!isSelected) {
+        boolean hovered = tabIndex == getRolloverTab() && tabPane != null && tabPane.isEnabledAt(tabIndex);
+        if (!isSelected && !hovered) {
             return;
         }
 
         Graphics2D g2 = (Graphics2D) g.create();
         try {
             enableHighQualityRendering(g2);
-            paintSelectedTabBackground(g2, x, y, w, h);
-            paintSelectedTabIndicator(g2, x, y, h);
+            if (isSelected) {
+                paintSelectedTabBackground(g2, x, y, w, h);
+            } else {
+                paintHoverTabBackground(g2, x, y, w, h);
+            }
         } finally {
             g2.dispose();
         }
@@ -64,7 +83,7 @@ final class SidebarTabbedPaneUi extends BasicTabbedPaneUI {
     @Override
     protected void paintTabBorder(Graphics g, int tabPlacement, int tabIndex,
                                   int x, int y, int w, int h, boolean isSelected) {
-        // 侧边栏 tab 不绘制边框，避免和左侧选中指示条抢视觉层级。
+        // 侧边栏 tab 不绘制边框，选中态由圆角背景和图标颜色表达。
     }
 
     @Override
@@ -112,24 +131,59 @@ final class SidebarTabbedPaneUi extends BasicTabbedPaneUI {
     }
 
     private void paintSelectedTabBackground(Graphics2D g2, int x, int y, int w, int h) {
-        g2.setColor(SidebarTheme.selectedTabBackground());
-        g2.fillRect(x, y, w, h);
+        Rectangle bounds = tabStateBounds(x, y, w, h);
+
+        g2.setColor(sidebarExpandedSupplier.getAsBoolean()
+                ? SidebarTheme.selectedExpandedTabBackground()
+                : SidebarTheme.selectedCollapsedTabBackground());
+        g2.fillRoundRect(
+                bounds.x,
+                bounds.y,
+                bounds.width,
+                bounds.height,
+                SidebarTabMetrics.SELECTED_BACKGROUND_ARC,
+                SidebarTabMetrics.SELECTED_BACKGROUND_ARC
+        );
     }
 
-    private void paintSelectedTabIndicator(Graphics2D g2, int x, int y, int h) {
-        int leftMargin = 2;
-        int verticalMargin = 6;
-        int indicatorWidth = 4;
-        int indicatorRadius = 2;
+    private void paintHoverTabBackground(Graphics2D g2, int x, int y, int w, int h) {
+        Rectangle bounds = tabStateBounds(x, y, w, h);
 
-        int indicatorX = x + leftMargin;
-        int indicatorY = y + verticalMargin;
-        int indicatorHeight = h - verticalMargin * 2;
+        g2.setColor(SidebarTheme.hoverTabBackground());
+        g2.fillRoundRect(
+                bounds.x,
+                bounds.y,
+                bounds.width,
+                bounds.height,
+                SidebarTabMetrics.SELECTED_BACKGROUND_ARC,
+                SidebarTabMetrics.SELECTED_BACKGROUND_ARC
+        );
+    }
 
-        g2.setPaint(SidebarTheme.selectedTabIndicatorPaint(indicatorHeight));
-        g2.translate(indicatorX, indicatorY);
-        g2.fillRoundRect(0, 0, indicatorWidth, indicatorHeight, indicatorRadius, indicatorRadius);
-        g2.translate(-indicatorX, -indicatorY);
+    private Rectangle tabStateBounds(int x, int y, int w, int h) {
+        if (!sidebarExpandedSupplier.getAsBoolean()) {
+            return collapsedTabStateBounds(x, y, w, h);
+        }
+
+        int insetX = SidebarTabMetrics.EXPANDED_SELECTED_BACKGROUND_INSET_HORIZONTAL;
+        int insetY = SidebarTabMetrics.EXPANDED_SELECTED_BACKGROUND_INSET_VERTICAL;
+        return new Rectangle(
+                x + insetX,
+                y + insetY,
+                Math.max(0, w - insetX * 2),
+                Math.max(0, h - insetY * 2)
+        );
+    }
+
+    private Rectangle collapsedTabStateBounds(int x, int y, int w, int h) {
+        int side = Math.min(SidebarTabMetrics.COLLAPSED_SELECTED_BACKGROUND_SIZE, Math.min(w, h));
+        side = Math.max(0, side);
+        return new Rectangle(
+                x + Math.max(0, (w - side) / 2),
+                y + Math.max(0, (h - side) / 2),
+                side,
+                side
+        );
     }
 
     private static final class SidebarScrollButton extends BasicArrowButton implements UIResource {
@@ -170,7 +224,7 @@ final class SidebarTabbedPaneUi extends BasicTabbedPaneUI {
 
                 if (hovered || pressed) {
                     Color background = pressed ? ModernColors.getButtonPressedColor() : ModernColors.getHoverBackgroundColor();
-                    g2.setColor(withAlpha(background, 230));
+                    g2.setColor(ModernColors.withAlpha(background, 230));
                     g2.fillRoundRect(inset, inset, width, height, 8, 8);
                 }
 
@@ -223,8 +277,5 @@ final class SidebarTabbedPaneUi extends BasicTabbedPaneUI {
             g2.draw(chevron);
         }
 
-        private Color withAlpha(Color color, int alpha) {
-            return new Color(color.getRed(), color.getGreen(), color.getBlue(), alpha);
-        }
     }
 }

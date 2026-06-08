@@ -1,6 +1,4 @@
 package com.laker.postman.panel.sidebar;
-
-import com.laker.postman.common.constants.ModernColors;
 import lombok.RequiredArgsConstructor;
 
 import javax.swing.BorderFactory;
@@ -51,10 +49,11 @@ final class SidebarTabComponentFactory {
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setOpaque(false);
 
-        if (sidebarExpanded.getAsBoolean()) {
+        boolean expanded = sidebarExpanded.getAsBoolean();
+        if (expanded) {
             addExpandedContent(panel, sidebarTab, title, icon);
         } else {
-            addCollapsedContent(panel, title, icon);
+            addCollapsedContent(panel, sidebarTab, title, icon);
         }
 
         panel.addMouseListener(new MouseAdapter() {
@@ -89,11 +88,9 @@ final class SidebarTabComponentFactory {
     }
 
     private void addExpandedContent(JPanel panel, SidebarTab sidebarTab, String title, Icon icon) {
-        JLabel iconLabel = createIconLabel(icon);
+        JLabel iconLabel = createIconLabel(initialIcon(sidebarTab, icon));
 
-        JLabel titleLabel = new JLabel(title);
-        titleLabel.setName(TITLE_LABEL_NAME);
-        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel titleLabel = createTitleLabel(title);
         applyTitleSelection(titleLabel, isCurrentlySelected(sidebarTab));
 
         panel.add(Box.createVerticalStrut(SidebarTabMetrics.EXPANDED_TAB_SPACING_TOP));
@@ -109,10 +106,10 @@ final class SidebarTabComponentFactory {
         ));
     }
 
-    private void addCollapsedContent(JPanel panel, String title, Icon icon) {
+    private void addCollapsedContent(JPanel panel, SidebarTab sidebarTab, String title, Icon icon) {
         panel.setToolTipText(title);
         panel.add(Box.createVerticalGlue());
-        panel.add(createIconLabel(icon));
+        panel.add(createIconLabel(initialIcon(sidebarTab, icon)));
         panel.add(Box.createVerticalGlue());
         panel.setBorder(BorderFactory.createEmptyBorder(
                 SidebarTabMetrics.COLLAPSED_TAB_PADDING_VERTICAL,
@@ -129,27 +126,50 @@ final class SidebarTabComponentFactory {
         return iconLabel;
     }
 
+    private JLabel createTitleLabel(String title) {
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        titleLabel.setName(TITLE_LABEL_NAME);
+        return titleLabel;
+    }
+
+    private Icon initialIcon(SidebarTab sidebarTab, Icon fallbackIcon) {
+        boolean selected = isCurrentlySelected(sidebarTab);
+        return selected ? selectedIcon(sidebarTab) : fallbackIcon;
+    }
+
     private boolean isCurrentlySelected(SidebarTab sidebarTab) {
         int currentIndex = tabIndexResolver.apply(sidebarTab);
         return currentIndex >= 0 && tabbedPane.getSelectedIndex() == currentIndex;
     }
 
     private void updateTabIcon(JPanel panel, SidebarTab sidebarTab, boolean selected) {
-        for (Component comp : panel.getComponents()) {
-            if (comp instanceof JLabel label && ICON_LABEL_NAME.equals(label.getName())) {
-                label.setIcon(selected ? sidebarTab.getSelectedIcon() : sidebarTab.getIcon());
-                break;
-            }
+        JLabel iconLabel = findNamedLabel(panel, ICON_LABEL_NAME);
+        if (iconLabel != null) {
+            iconLabel.setIcon(selected ? selectedIcon(sidebarTab) : sidebarTab.getIcon());
         }
     }
 
+    private Icon selectedIcon(SidebarTab sidebarTab) {
+        return sidebarExpanded.getAsBoolean()
+                ? sidebarTab.getSelectedIcon()
+                : sidebarTab.getSelectedOnPrimaryIcon();
+    }
+
     private void updateTabTitle(JPanel panel, boolean selected) {
+        JLabel titleLabel = findNamedLabel(panel, TITLE_LABEL_NAME);
+        if (titleLabel != null) {
+            applyTitleSelection(titleLabel, selected);
+        }
+    }
+
+    private JLabel findNamedLabel(JPanel panel, String name) {
         for (Component comp : panel.getComponents()) {
-            if (comp instanceof JLabel label && TITLE_LABEL_NAME.equals(label.getName())) {
-                applyTitleSelection(label, selected);
-                break;
+            if (comp instanceof JLabel label && name.equals(label.getName())) {
+                return label;
             }
         }
+        return null;
     }
 
     private void applyTitleSelection(JLabel label, boolean selected) {
@@ -157,7 +177,7 @@ final class SidebarTabComponentFactory {
             label.setForeground(SidebarTheme.selectedTabTitleForeground());
             label.setFont(boldFontSupplier.get());
         } else {
-            label.setForeground(ModernColors.getTextSecondary());
+            label.setForeground(SidebarTheme.inactiveTabTitleForeground());
             label.setFont(normalFontSupplier.get());
         }
     }

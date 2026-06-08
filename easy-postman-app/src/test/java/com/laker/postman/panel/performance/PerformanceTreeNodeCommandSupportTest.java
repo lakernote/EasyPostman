@@ -19,14 +19,14 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
-public class PerformanceTreeNodeActionSupportTest {
+public class PerformanceTreeNodeCommandSupportTest {
 
     @Test
     public void setSelectedNodesEnabledShouldUpdateNodesAndSaveOnce() {
         TreeFixture fixture = new TreeFixture();
 
         fixture.tree.setSelectionPath(new TreePath(fixture.request.getPath()));
-        fixture.actionSupport.setSelectedNodesEnabled(false);
+        fixture.commandSupport.setSelectedNodesEnabled(false);
 
         assertFalse(((PerformanceTreeNode) fixture.request.getUserObject()).enabled);
         assertEquals(fixture.saveCount.get(), 1);
@@ -37,9 +37,9 @@ public class PerformanceTreeNodeActionSupportTest {
         TreeFixture fixture = new TreeFixture();
         fixture.currentRequest.set(fixture.request);
         fixture.tree.setSelectionPath(new TreePath(fixture.request.getPath()));
-        fixture.actionSupport.setDeleteConfirmationAction(count -> true);
+        fixture.commandSupport.setDeleteConfirmationAction(count -> true);
 
-        fixture.actionSupport.createDeleteAction().actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "delete"));
+        fixture.commandSupport.createDeleteAction().actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "delete"));
 
         assertEquals(fixture.threadGroup.getChildCount(), 0);
         assertEquals(fixture.currentRequest.get(), null);
@@ -51,12 +51,12 @@ public class PerformanceTreeNodeActionSupportTest {
         TreeFixture fixture = new TreeFixture();
         fixture.tree.setSelectionPath(new TreePath(fixture.request.getPath()));
         AtomicInteger confirmCount = new AtomicInteger();
-        fixture.actionSupport.setDeleteConfirmationAction(count -> {
+        fixture.commandSupport.setDeleteConfirmationAction(count -> {
             confirmCount.set(count);
             return false;
         });
 
-        fixture.actionSupport.createDeleteAction().actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "delete"));
+        fixture.commandSupport.createDeleteAction().actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "delete"));
 
         assertEquals(confirmCount.get(), 1);
         assertEquals(fixture.threadGroup.getChildCount(), 1);
@@ -74,12 +74,12 @@ public class PerformanceTreeNodeActionSupportTest {
                 new TreePath(timer.getPath())
         });
         AtomicInteger confirmCount = new AtomicInteger();
-        fixture.actionSupport.setDeleteConfirmationAction(count -> {
+        fixture.commandSupport.setDeleteConfirmationAction(count -> {
             confirmCount.set(count);
             return false;
         });
 
-        fixture.actionSupport.createDeleteAction().actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "delete"));
+        fixture.commandSupport.createDeleteAction().actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "delete"));
 
         assertEquals(confirmCount.get(), 1);
         assertEquals(fixture.threadGroup.getChildCount(), 1);
@@ -91,9 +91,9 @@ public class PerformanceTreeNodeActionSupportTest {
         TreeFixture fixture = new TreeFixture();
         fixture.tree.setSelectionPath(new TreePath(fixture.request.getPath()));
 
-        fixture.actionSupport.createCopyAction().actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "copy"));
+        fixture.commandSupport.createCopyAction().actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "copy"));
         fixture.tree.setSelectionPath(new TreePath(fixture.threadGroup.getPath()));
-        fixture.actionSupport.createPasteAction().actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "paste"));
+        fixture.commandSupport.createPasteAction().actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "paste"));
 
         assertEquals(fixture.persistCount.get(), 2);
         assertEquals(fixture.threadGroup.getChildCount(), 2);
@@ -111,7 +111,7 @@ public class PerformanceTreeNodeActionSupportTest {
         private final AtomicInteger saveCount = new AtomicInteger();
         private final AtomicInteger persistCount = new AtomicInteger();
         private final AtomicReference<DefaultMutableTreeNode> currentRequest = new AtomicReference<>();
-        private final PerformanceTreeNodeActionSupport actionSupport;
+        private final PerformanceTreeNodeCommandSupport commandSupport;
 
         private TreeFixture() {
             root.add(threadGroup);
@@ -119,7 +119,7 @@ public class PerformanceTreeNodeActionSupportTest {
             treeModel = new DefaultTreeModel(root);
             tree = new JTree(treeModel);
             PerformanceTreeSupport treeSupport = new PerformanceTreeSupport(treeModel);
-            actionSupport = new PerformanceTreeNodeActionSupport(
+            commandSupport = new PerformanceTreeNodeCommandSupport(
                     new JPanel(),
                     tree,
                     treeModel,

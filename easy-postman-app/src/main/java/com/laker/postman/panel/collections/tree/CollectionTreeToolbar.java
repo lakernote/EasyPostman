@@ -14,7 +14,7 @@ import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.button.PlusButton;
 import com.laker.postman.common.component.dialog.CurlImportDialog;
 import com.laker.postman.frame.MainFrame;
-import com.laker.postman.panel.collections.tree.action.RequestTreeActions;
+import com.laker.postman.panel.collections.tree.coordinator.RequestTreeCoordinator;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.panel.topmenu.TopMenuBar;
 import com.laker.postman.service.EnvironmentService;
@@ -116,8 +116,8 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
                 IconUtil.create("icons/collection.svg", IconUtil.SIZE_MEDIUM, IconUtil.SIZE_MEDIUM));
         newCollection.addActionListener(e -> {
             CollectionTreePanel leftPanel = UiSingletonFactory.getInstance(CollectionTreePanel.class);
-            RequestTreeActions actions = new RequestTreeActions(leftPanel.getRequestTree(), leftPanel);
-            actions.showAddGroupDialog(leftPanel.getRootTreeNode());
+            RequestTreeCoordinator coordinator = new RequestTreeCoordinator(leftPanel.getRequestTree(), leftPanel);
+            coordinator.showAddGroupDialog(leftPanel.getRootTreeNode());
         });
         menu.add(newCollection);
 

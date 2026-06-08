@@ -361,8 +361,8 @@ public class ModuleArchitectureBoundaryTest {
         assertFalse(Files.exists(root.resolve("easy-postman-app/src/main/java/com/laker/postman/service/update/changelog")),
                 "Changelog fetching/formatting belongs in easy-postman-platform");
 
-        assertTrue(Files.isRegularFile(root.resolve("easy-postman-app/src/main/java/com/laker/postman/service/update/AutoUpdateManager.java")));
-        assertTrue(Files.isRegularFile(root.resolve("easy-postman-app/src/main/java/com/laker/postman/service/update/UpdateUIManager.java")));
+        assertTrue(Files.isRegularFile(root.resolve("easy-postman-app/src/main/java/com/laker/postman/service/update/AppUpdateCheckCoordinator.java")));
+        assertTrue(Files.isRegularFile(root.resolve("easy-postman-app/src/main/java/com/laker/postman/service/update/UpdateUiController.java")));
         assertTrue(Files.isRegularFile(root.resolve("easy-postman-app/src/main/java/com/laker/postman/service/update/UpdateDownloader.java")));
     }
 

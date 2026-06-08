@@ -12,22 +12,22 @@ import java.util.EnumSet;
 import java.util.List;
 
 @RequiredArgsConstructor
-final class PerformanceTreeActionPolicy {
+final class PerformanceTreeCommandPolicy {
 
     private final PerformanceTreeSupport treeSupport;
 
-    EnumSet<PerformanceTreeAction> actionsForSingleSelection(DefaultMutableTreeNode node,
+    EnumSet<PerformanceTreeCommand> commandsForSingleSelection(DefaultMutableTreeNode node,
                                                              List<DefaultMutableTreeNode> copiedNodes) {
-        EnumSet<PerformanceTreeAction> actions = EnumSet.noneOf(PerformanceTreeAction.class);
+        EnumSet<PerformanceTreeCommand> commands = EnumSet.noneOf(PerformanceTreeCommand.class);
         PerformanceTreeNode nodeData = treeNodeData(node);
         if (nodeData == null) {
-            return actions;
+            return commands;
         }
 
         if (nodeData.type == NodeType.ROOT) {
-            actions.add(PerformanceTreeAction.ADD_THREAD_GROUP);
-            addPasteAction(actions, node, copiedNodes);
-            return actions;
+            commands.add(PerformanceTreeCommand.ADD_THREAD_GROUP);
+            addPasteCommand(commands, node, copiedNodes);
+            return commands;
         }
 
         boolean requestContainerLoop = treeSupport.isRequestContainerLoop(node);
@@ -37,61 +37,61 @@ final class PerformanceTreeActionPolicy {
         boolean canManageWsSteps = treeSupport.resolveWebSocketStepParent(node) != null;
 
         if (canAddCsvDataSet) {
-            actions.add(PerformanceTreeAction.ADD_CSV_DATA_SET);
+            commands.add(PerformanceTreeCommand.ADD_CSV_DATA_SET);
         }
         if (nodeData.type == NodeType.THREAD_GROUP || requestContainerLoop) {
-            actions.add(PerformanceTreeAction.ADD_REQUEST);
+            commands.add(PerformanceTreeCommand.ADD_REQUEST);
         }
         if (nodeData.type == NodeType.THREAD_GROUP || requestContainerLoop || canManageWsSteps) {
-            actions.add(PerformanceTreeAction.ADD_LOOP);
+            commands.add(PerformanceTreeCommand.ADD_LOOP);
         }
         if (canManageSseStages) {
-            actions.add(PerformanceTreeAction.ADD_SSE_CONNECT);
-            actions.add(PerformanceTreeAction.ADD_SSE_READ);
+            commands.add(PerformanceTreeCommand.ADD_SSE_CONNECT);
+            commands.add(PerformanceTreeCommand.ADD_SSE_READ);
         }
         if (canManageWsConnect) {
-            actions.add(PerformanceTreeAction.ADD_WS_CONNECT);
+            commands.add(PerformanceTreeCommand.ADD_WS_CONNECT);
         }
         if (canManageWsSteps) {
-            actions.add(PerformanceTreeAction.ADD_WS_SEND);
-            actions.add(PerformanceTreeAction.ADD_WS_READ);
-            actions.add(PerformanceTreeAction.ADD_WS_CLOSE);
+            commands.add(PerformanceTreeCommand.ADD_WS_SEND);
+            commands.add(PerformanceTreeCommand.ADD_WS_READ);
+            commands.add(PerformanceTreeCommand.ADD_WS_CLOSE);
         }
         if (canAddAssertion(nodeData)) {
-            actions.add(PerformanceTreeAction.ADD_ASSERTION);
+            commands.add(PerformanceTreeCommand.ADD_ASSERTION);
         }
         if (canAddExtractor(nodeData)) {
-            actions.add(PerformanceTreeAction.ADD_EXTRACTOR);
+            commands.add(PerformanceTreeCommand.ADD_EXTRACTOR);
         }
         if (nodeData.type == NodeType.REQUEST || requestContainerLoop || canManageWsSteps) {
-            actions.add(PerformanceTreeAction.ADD_TIMER);
+            commands.add(PerformanceTreeCommand.ADD_TIMER);
         }
         if (treeSupport.hasCopyableNodes(singlePath(node))) {
-            actions.add(PerformanceTreeAction.COPY);
+            commands.add(PerformanceTreeCommand.COPY);
         }
-        addPasteAction(actions, node, copiedNodes);
+        addPasteCommand(commands, node, copiedNodes);
         if (canRename(node)) {
-            actions.add(PerformanceTreeAction.RENAME);
+            commands.add(PerformanceTreeCommand.RENAME);
         }
         if (treeSupport.hasDeletableNodes(singlePath(node))) {
-            actions.add(PerformanceTreeAction.DELETE);
+            commands.add(PerformanceTreeCommand.DELETE);
         }
         if (canSetEnabled(node, true)) {
-            actions.add(PerformanceTreeAction.ENABLE);
+            commands.add(PerformanceTreeCommand.ENABLE);
         }
         if (canSetEnabled(node, false)) {
-            actions.add(PerformanceTreeAction.DISABLE);
+            commands.add(PerformanceTreeCommand.DISABLE);
         }
-        return actions;
+        return commands;
     }
 
-    EnumSet<PerformanceTreeAction> actionsForMultiSelection(TreePath[] selectedPaths) {
-        EnumSet<PerformanceTreeAction> actions = EnumSet.noneOf(PerformanceTreeAction.class);
+    EnumSet<PerformanceTreeCommand> commandsForMultiSelection(TreePath[] selectedPaths) {
+        EnumSet<PerformanceTreeCommand> commands = EnumSet.noneOf(PerformanceTreeCommand.class);
         if (treeSupport.hasCopyableNodes(selectedPaths)) {
-            actions.add(PerformanceTreeAction.COPY);
+            commands.add(PerformanceTreeCommand.COPY);
         }
         if (treeSupport.hasDeletableNodes(selectedPaths)) {
-            actions.add(PerformanceTreeAction.DELETE);
+            commands.add(PerformanceTreeCommand.DELETE);
         }
 
         boolean hasDisabled = false;
@@ -113,12 +113,12 @@ final class PerformanceTreeActionPolicy {
             }
         }
         if (hasDisabled) {
-            actions.add(PerformanceTreeAction.ENABLE);
+            commands.add(PerformanceTreeCommand.ENABLE);
         }
         if (hasEnabled) {
-            actions.add(PerformanceTreeAction.DISABLE);
+            commands.add(PerformanceTreeCommand.DISABLE);
         }
-        return actions;
+        return commands;
     }
 
     boolean canRename(DefaultMutableTreeNode node) {
@@ -138,11 +138,11 @@ final class PerformanceTreeActionPolicy {
                 && nodeData.enabled != enabled;
     }
 
-    private void addPasteAction(EnumSet<PerformanceTreeAction> actions,
+    private void addPasteCommand(EnumSet<PerformanceTreeCommand> commands,
                                 DefaultMutableTreeNode node,
                                 List<DefaultMutableTreeNode> copiedNodes) {
         if (treeSupport.canPasteNodes(node, copiedNodes)) {
-            actions.add(PerformanceTreeAction.PASTE);
+            commands.add(PerformanceTreeCommand.PASTE);
         }
     }
 

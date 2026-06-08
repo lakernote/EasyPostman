@@ -18,8 +18,12 @@ import javax.swing.tree.TreeModel;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * GUI 宿主的请求导入服务实现。
+ * 通过 Swing 选择目标集合，并把导入结果同步到集合树和请求编辑器。
+ */
 @Slf4j
-public class AppRequestCollectionImportService implements RequestCollectionImportService {
+public class AppSwingRequestCollectionImportService implements RequestCollectionImportService {
 
     @Override
     public RequestImportResult importRequests(List<RequestImportDraft> requests) {

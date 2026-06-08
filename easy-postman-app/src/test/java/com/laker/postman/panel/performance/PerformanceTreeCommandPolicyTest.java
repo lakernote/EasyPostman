@@ -17,20 +17,20 @@ import java.util.List;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
-public class PerformanceTreeActionPolicyTest {
+public class PerformanceTreeCommandPolicyTest {
 
     @Test
     public void rootSelectionShouldOnlyExposeRootActions() {
         TreeFixture fixture = new TreeFixture(RequestItemProtocolEnum.HTTP);
-        PerformanceTreeActionPolicy policy = new PerformanceTreeActionPolicy(fixture.treeSupport);
+        PerformanceTreeCommandPolicy policy = new PerformanceTreeCommandPolicy(fixture.treeSupport);
 
-        EnumSet<PerformanceTreeAction> actions = policy.actionsForSingleSelection(fixture.root, List.of());
+        EnumSet<PerformanceTreeCommand> commands = policy.commandsForSingleSelection(fixture.root, List.of());
 
-        assertTrue(actions.contains(PerformanceTreeAction.ADD_THREAD_GROUP));
-        assertFalse(actions.contains(PerformanceTreeAction.ENABLE));
-        assertFalse(actions.contains(PerformanceTreeAction.DISABLE));
-        assertFalse(actions.contains(PerformanceTreeAction.RENAME));
-        assertFalse(actions.contains(PerformanceTreeAction.DELETE));
+        assertTrue(commands.contains(PerformanceTreeCommand.ADD_THREAD_GROUP));
+        assertFalse(commands.contains(PerformanceTreeCommand.ENABLE));
+        assertFalse(commands.contains(PerformanceTreeCommand.DISABLE));
+        assertFalse(commands.contains(PerformanceTreeCommand.RENAME));
+        assertFalse(commands.contains(PerformanceTreeCommand.DELETE));
     }
 
     @Test
@@ -38,21 +38,21 @@ public class PerformanceTreeActionPolicyTest {
         TreeFixture fixture = new TreeFixture(RequestItemProtocolEnum.WEBSOCKET);
         DefaultMutableTreeNode wsConnect = node(NodeType.WS_CONNECT, false);
         fixture.request.add(wsConnect);
-        PerformanceTreeActionPolicy policy = new PerformanceTreeActionPolicy(fixture.treeSupport);
+        PerformanceTreeCommandPolicy policy = new PerformanceTreeCommandPolicy(fixture.treeSupport);
 
-        EnumSet<PerformanceTreeAction> actions = policy.actionsForSingleSelection(wsConnect, List.of());
+        EnumSet<PerformanceTreeCommand> commands = policy.commandsForSingleSelection(wsConnect, List.of());
 
-        assertTrue(actions.contains(PerformanceTreeAction.ADD_WS_CONNECT));
-        assertTrue(actions.contains(PerformanceTreeAction.ADD_WS_SEND));
-        assertTrue(actions.contains(PerformanceTreeAction.ADD_WS_READ));
-        assertTrue(actions.contains(PerformanceTreeAction.ADD_WS_CLOSE));
-        assertTrue(actions.contains(PerformanceTreeAction.ADD_LOOP));
-        assertTrue(actions.contains(PerformanceTreeAction.ADD_TIMER));
-        assertTrue(actions.contains(PerformanceTreeAction.COPY));
-        assertTrue(actions.contains(PerformanceTreeAction.DELETE));
-        assertTrue(actions.contains(PerformanceTreeAction.ENABLE));
-        assertFalse(actions.contains(PerformanceTreeAction.DISABLE));
-        assertFalse(actions.contains(PerformanceTreeAction.RENAME));
+        assertTrue(commands.contains(PerformanceTreeCommand.ADD_WS_CONNECT));
+        assertTrue(commands.contains(PerformanceTreeCommand.ADD_WS_SEND));
+        assertTrue(commands.contains(PerformanceTreeCommand.ADD_WS_READ));
+        assertTrue(commands.contains(PerformanceTreeCommand.ADD_WS_CLOSE));
+        assertTrue(commands.contains(PerformanceTreeCommand.ADD_LOOP));
+        assertTrue(commands.contains(PerformanceTreeCommand.ADD_TIMER));
+        assertTrue(commands.contains(PerformanceTreeCommand.COPY));
+        assertTrue(commands.contains(PerformanceTreeCommand.DELETE));
+        assertTrue(commands.contains(PerformanceTreeCommand.ENABLE));
+        assertFalse(commands.contains(PerformanceTreeCommand.DISABLE));
+        assertFalse(commands.contains(PerformanceTreeCommand.RENAME));
         assertTrue(policy.canSetEnabled(wsConnect, true));
         assertFalse(policy.canSetEnabled(wsConnect, false));
         assertFalse(policy.canRename(wsConnect));
@@ -63,17 +63,17 @@ public class PerformanceTreeActionPolicyTest {
         TreeFixture fixture = new TreeFixture(RequestItemProtocolEnum.SSE);
         DefaultMutableTreeNode sseRead = node(NodeType.SSE_READ, true);
         fixture.request.add(sseRead);
-        PerformanceTreeActionPolicy policy = new PerformanceTreeActionPolicy(fixture.treeSupport);
+        PerformanceTreeCommandPolicy policy = new PerformanceTreeCommandPolicy(fixture.treeSupport);
 
-        EnumSet<PerformanceTreeAction> actions = policy.actionsForSingleSelection(sseRead, List.of());
+        EnumSet<PerformanceTreeCommand> commands = policy.commandsForSingleSelection(sseRead, List.of());
 
-        assertTrue(actions.contains(PerformanceTreeAction.ADD_SSE_CONNECT));
-        assertTrue(actions.contains(PerformanceTreeAction.ADD_SSE_READ));
-        assertTrue(actions.contains(PerformanceTreeAction.ADD_ASSERTION));
-        assertTrue(actions.contains(PerformanceTreeAction.ADD_EXTRACTOR));
-        assertTrue(actions.contains(PerformanceTreeAction.DISABLE));
-        assertFalse(actions.contains(PerformanceTreeAction.ENABLE));
-        assertFalse(actions.contains(PerformanceTreeAction.RENAME));
+        assertTrue(commands.contains(PerformanceTreeCommand.ADD_SSE_CONNECT));
+        assertTrue(commands.contains(PerformanceTreeCommand.ADD_SSE_READ));
+        assertTrue(commands.contains(PerformanceTreeCommand.ADD_ASSERTION));
+        assertTrue(commands.contains(PerformanceTreeCommand.ADD_EXTRACTOR));
+        assertTrue(commands.contains(PerformanceTreeCommand.DISABLE));
+        assertFalse(commands.contains(PerformanceTreeCommand.ENABLE));
+        assertFalse(commands.contains(PerformanceTreeCommand.RENAME));
     }
 
     @Test
@@ -81,20 +81,20 @@ public class PerformanceTreeActionPolicyTest {
         TreeFixture fixture = new TreeFixture(RequestItemProtocolEnum.HTTP);
         DefaultMutableTreeNode disabledRequest = node(NodeType.REQUEST, false);
         fixture.threadGroup.add(disabledRequest);
-        PerformanceTreeActionPolicy policy = new PerformanceTreeActionPolicy(fixture.treeSupport);
+        PerformanceTreeCommandPolicy policy = new PerformanceTreeCommandPolicy(fixture.treeSupport);
 
-        EnumSet<PerformanceTreeAction> actions = policy.actionsForMultiSelection(new TreePath[]{
+        EnumSet<PerformanceTreeCommand> commands = policy.commandsForMultiSelection(new TreePath[]{
                 new TreePath(fixture.request.getPath()),
                 new TreePath(disabledRequest.getPath())
         });
 
-        assertTrue(actions.contains(PerformanceTreeAction.COPY));
-        assertTrue(actions.contains(PerformanceTreeAction.DELETE));
-        assertTrue(actions.contains(PerformanceTreeAction.ENABLE));
-        assertTrue(actions.contains(PerformanceTreeAction.DISABLE));
-        assertFalse(actions.contains(PerformanceTreeAction.ADD_REQUEST));
-        assertFalse(actions.contains(PerformanceTreeAction.PASTE));
-        assertFalse(actions.contains(PerformanceTreeAction.RENAME));
+        assertTrue(commands.contains(PerformanceTreeCommand.COPY));
+        assertTrue(commands.contains(PerformanceTreeCommand.DELETE));
+        assertTrue(commands.contains(PerformanceTreeCommand.ENABLE));
+        assertTrue(commands.contains(PerformanceTreeCommand.DISABLE));
+        assertFalse(commands.contains(PerformanceTreeCommand.ADD_REQUEST));
+        assertFalse(commands.contains(PerformanceTreeCommand.PASTE));
+        assertFalse(commands.contains(PerformanceTreeCommand.RENAME));
     }
 
     private static DefaultMutableTreeNode node(NodeType type, boolean enabled) {

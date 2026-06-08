@@ -48,7 +48,7 @@ public class AutoUpdateSettingsPanelTest extends AbstractSwingUiTest {
         ));
 
         assertTrue(source.contains("UpdateCenter"));
-        assertTrue(!source.contains("PluginUpdateManager"));
+        assertTrue(!source.contains("PluginUpdateCheckCoordinator"));
     }
 
     private static List<String> collectTexts(Container container) {

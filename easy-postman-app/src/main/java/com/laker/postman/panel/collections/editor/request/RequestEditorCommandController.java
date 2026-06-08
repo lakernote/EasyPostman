@@ -20,8 +20,12 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+/**
+ * 请求编辑器命令控制器。
+ * 负责发送态命令、协议切换和输入辅助，不承载布局初始化。
+ */
 @RequiredArgsConstructor
-final class RequestEditorActionsController {
+final class RequestEditorCommandController {
     private static final int WEBSOCKET_NORMAL_CLOSURE = 1000;
 
     private final JTextField urlField;

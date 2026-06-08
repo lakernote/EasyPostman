@@ -20,9 +20,12 @@ import java.awt.event.ActionListener;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+/**
+ * 已保存响应相关的 UI 操作控制器。
+ */
 @Slf4j
 @RequiredArgsConstructor
-final class SavedResponseActions {
+final class SavedResponseUiController {
     private final CollectionTreeEditorGateway collectionTreeGateway;
 
     String promptResponseName(Component owner) {

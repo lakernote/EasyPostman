@@ -7,7 +7,7 @@ import com.laker.postman.request.model.HttpRequestItem;
 
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
-import com.laker.postman.panel.collections.tree.action.RequestTreeActions;
+import com.laker.postman.panel.collections.tree.coordinator.RequestTreeCoordinator;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.service.collections.CollectionTreeNodes;
 
@@ -25,12 +25,12 @@ import static com.laker.postman.panel.collections.tree.CollectionTreePanel.*;
 public class RequestTreeKeyboardHandler extends KeyAdapter {
     private final JTree requestTree;
     private final CollectionTreePanel leftPanel;
-    private final RequestTreeActions actions;
+    private final RequestTreeCoordinator coordinator;
 
     public RequestTreeKeyboardHandler(JTree requestTree, CollectionTreePanel leftPanel) {
         this.requestTree = requestTree;
         this.leftPanel = leftPanel;
-        this.actions = new RequestTreeActions(requestTree, leftPanel);
+        this.coordinator = new RequestTreeCoordinator(requestTree, leftPanel);
     }
 
     @Override
@@ -41,14 +41,14 @@ public class RequestTreeKeyboardHandler extends KeyAdapter {
 
         // Ctrl+C / Cmd+C 复制
         if (isKeyWithModifier(e, KeyEvent.VK_C, cmdMask)) {
-            actions.copySelectedRequests();
+            coordinator.copySelectedRequests();
             e.consume();
             return;
         }
 
         // Ctrl+V / Cmd+V 粘贴
         if (isKeyWithModifier(e, KeyEvent.VK_V, cmdMask)) {
-            actions.pasteRequests();
+            coordinator.pasteRequests();
             e.consume();
             return;
         }
@@ -67,11 +67,11 @@ public class RequestTreeKeyboardHandler extends KeyAdapter {
         }
         // F2 重命名（仅单选）
         else if (e.getKeyCode() == KeyEvent.VK_F2 && !isMultipleSelection) {
-            actions.renameSelectedItem();
+            coordinator.renameSelectedItem();
         }
         // Delete 或 Backspace 删除（支持多选）
         else if (e.getKeyCode() == KeyEvent.VK_DELETE || e.getKeyCode() == KeyEvent.VK_BACK_SPACE) {
-            actions.deleteSelectedItem();
+            coordinator.deleteSelectedItem();
         }
     }
 

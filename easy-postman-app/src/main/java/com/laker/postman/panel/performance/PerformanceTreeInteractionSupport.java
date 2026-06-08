@@ -74,11 +74,11 @@ final class PerformanceTreeInteractionSupport {
     private final String wsCloseCard;
 
     private PerformanceTreeSelectionSupport selectionSupport;
-    private PerformanceTreeNodeActionSupport nodeActionSupport;
+    private PerformanceTreeNodeCommandSupport nodeCommandSupport;
 
     void install() {
         selectionSupport = createSelectionSupport();
-        nodeActionSupport = createNodeActionSupport();
+        nodeCommandSupport = createNodeCommandSupport();
         selectionSupport.install();
         installPopupMenu();
     }
@@ -129,8 +129,8 @@ final class PerformanceTreeInteractionSupport {
         );
     }
 
-    private PerformanceTreeNodeActionSupport createNodeActionSupport() {
-        return new PerformanceTreeNodeActionSupport(
+    private PerformanceTreeNodeCommandSupport createNodeCommandSupport() {
+        return new PerformanceTreeNodeCommandSupport(
                 parentComponent,
                 performanceTree,
                 treeModel,
@@ -190,7 +190,7 @@ final class PerformanceTreeInteractionSupport {
         );
         PerformanceTreeMenuVisibilitySupport menuVisibilitySupport = new PerformanceTreeMenuVisibilitySupport(
                 treeSupport,
-                nodeActionSupport::copiedNodes
+                nodeCommandSupport::copiedNodes
         );
         int shortcutMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
         renameNode.setAccelerator(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F2, 0));
@@ -235,9 +235,9 @@ final class PerformanceTreeInteractionSupport {
             separator3.setVisible(hasClipboardGroup && hasEditGroup);
         };
 
-        addThreadGroup.addActionListener(e -> nodeActionSupport.addThreadGroupNode());
+        addThreadGroup.addActionListener(e -> nodeCommandSupport.addThreadGroupNode());
         addCsvDataSet.addActionListener(e -> treeSupport.addCsvDataSetNode(performanceTree, saveConfigAction));
-        addRequest.addActionListener(e -> nodeActionSupport.addRequestNodes());
+        addRequest.addActionListener(e -> nodeCommandSupport.addRequestNodes());
         addLoop.addActionListener(e -> treeSupport.addLoopNode(performanceTree, saveConfigAction));
         addSseConnect.addActionListener(e -> treeSupport.addSseStageNode(performanceTree, NodeType.SSE_CONNECT, saveConfigAction));
         addSseRead.addActionListener(e -> treeSupport.addSseStageNode(performanceTree, NodeType.SSE_READ, saveConfigAction));
@@ -245,14 +245,14 @@ final class PerformanceTreeInteractionSupport {
         addWsSend.addActionListener(e -> treeSupport.addWebSocketStepNode(performanceTree, NodeType.WS_SEND, saveConfigAction));
         addWsRead.addActionListener(e -> treeSupport.addWebSocketStepNode(performanceTree, NodeType.WS_READ, saveConfigAction));
         addWsClose.addActionListener(e -> treeSupport.addWebSocketStepNode(performanceTree, NodeType.WS_CLOSE, saveConfigAction));
-        addAssertion.addActionListener(e -> nodeActionSupport.addAssertionNode());
-        addExtractor.addActionListener(e -> nodeActionSupport.addExtractorNode());
+        addAssertion.addActionListener(e -> nodeCommandSupport.addAssertionNode());
+        addExtractor.addActionListener(e -> nodeCommandSupport.addExtractorNode());
         addTimer.addActionListener(e -> treeSupport.addTimerNode(performanceTree, saveConfigAction));
 
-        Action renameAction = nodeActionSupport.createRenameAction();
-        Action deleteAction = nodeActionSupport.createDeleteAction();
-        Action copyAction = nodeActionSupport.createCopyAction();
-        Action pasteAction = nodeActionSupport.createPasteAction();
+        Action renameAction = nodeCommandSupport.createRenameAction();
+        Action deleteAction = nodeCommandSupport.createDeleteAction();
+        Action copyAction = nodeCommandSupport.createCopyAction();
+        Action pasteAction = nodeCommandSupport.createPasteAction();
         renameNode.addActionListener(renameAction);
         deleteNode.addActionListener(deleteAction);
         copyNode.addActionListener(copyAction);
@@ -270,8 +270,8 @@ final class PerformanceTreeInteractionSupport {
         treeInputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_V, shortcutMask), "pastePerformanceNode");
         treeActionMap.put("pastePerformanceNode", pasteAction);
 
-        enableNode.addActionListener(e -> nodeActionSupport.setSelectedNodesEnabled(true));
-        disableNode.addActionListener(e -> nodeActionSupport.setSelectedNodesEnabled(false));
+        enableNode.addActionListener(e -> nodeCommandSupport.setSelectedNodesEnabled(true));
+        disableNode.addActionListener(e -> nodeCommandSupport.setSelectedNodesEnabled(false));
 
         performanceTree.addMouseListener(new MouseAdapter() {
             @Override

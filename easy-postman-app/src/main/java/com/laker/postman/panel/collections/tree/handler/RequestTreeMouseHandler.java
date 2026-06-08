@@ -8,7 +8,7 @@ import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.tree.RequestTreeCellRenderer;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
-import com.laker.postman.panel.collections.tree.action.RequestTreeActions;
+import com.laker.postman.panel.collections.tree.coordinator.RequestTreeCoordinator;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.service.collections.CollectionTreeNodes;
 import com.laker.postman.util.I18nUtil;
@@ -35,12 +35,12 @@ import static com.laker.postman.panel.collections.tree.CollectionTreePanel.*;
 public class RequestTreeMouseHandler extends MouseAdapter {
     private final JTree requestTree;
     private final RequestTreePopupMenu popupMenu;
-    private final RequestTreeActions actions;
+    private final RequestTreeCoordinator coordinator;
 
     public RequestTreeMouseHandler(JTree requestTree, CollectionTreePanel leftPanel) {
         this.requestTree = requestTree;
         this.popupMenu = new RequestTreePopupMenu(requestTree, leftPanel);
-        this.actions = new RequestTreeActions(requestTree, leftPanel);
+        this.coordinator = new RequestTreeCoordinator(requestTree, leftPanel);
     }
 
     // ==================== hover 追踪 ====================
@@ -196,7 +196,7 @@ public class RequestTreeMouseHandler extends MouseAdapter {
         DefaultMutableTreeNode groupNode = (DefaultMutableTreeNode) path.getLastPathComponent();
         // 不在此处 setSelectionPath(path)，避免 group 选中状态与后续 invokeLater 里的
         // 新请求节点选中产生竞争（addHttpRequestDirectly 内部会定位到新请求节点）
-        actions.addHttpRequestDirectly(groupNode);
+        coordinator.addHttpRequestDirectly(groupNode);
     }
 
     /**
@@ -221,13 +221,13 @@ public class RequestTreeMouseHandler extends MouseAdapter {
         JMenuItem addRequest = new JMenuItem(
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_ADD_REQUEST),
                 IconUtil.createThemed("icons/request.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
-        addRequest.addActionListener(ev -> actions.showAddRequestDialog(groupNode));
+        addRequest.addActionListener(ev -> coordinator.showAddRequestDialog(groupNode));
         menu.add(addRequest);
 
         JMenuItem addGroup = new JMenuItem(
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_ADD_GROUP),
                 IconUtil.create("icons/group.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
-        addGroup.addActionListener(ev -> actions.addGroupUnderSelected());
+        addGroup.addActionListener(ev -> coordinator.addGroupUnderSelected());
         menu.add(addGroup);
 
         menu.addSeparator();
@@ -235,14 +235,14 @@ public class RequestTreeMouseHandler extends MouseAdapter {
         JMenuItem rename = new JMenuItem(
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_RENAME),
                 IconUtil.createThemed("icons/edit.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
-        rename.addActionListener(ev -> actions.renameSelectedItem());
+        rename.addActionListener(ev -> coordinator.renameSelectedItem());
         rename.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F2, 0));
         menu.add(rename);
 
         JMenuItem duplicate = new JMenuItem(
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_DUPLICATE),
                 IconUtil.createThemed("icons/duplicate.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
-        duplicate.addActionListener(ev -> actions.duplicateSelectedGroup());
+        duplicate.addActionListener(ev -> coordinator.duplicateSelectedGroup());
         menu.add(duplicate);
 
         menu.addSeparator();
@@ -250,7 +250,7 @@ public class RequestTreeMouseHandler extends MouseAdapter {
         JMenuItem delete = new JMenuItem(
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_DELETE),
                 IconUtil.createThemed("icons/delete.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
-        delete.addActionListener(ev -> actions.deleteSelectedItem());
+        delete.addActionListener(ev -> coordinator.deleteSelectedItem());
         delete.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0));
         menu.add(delete);
 

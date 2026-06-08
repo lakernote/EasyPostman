@@ -1,4 +1,4 @@
-package com.laker.postman.panel.collections.tree.action;
+package com.laker.postman.panel.collections.tree.coordinator;
 
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.collection.model.RequestGroup;
@@ -14,6 +14,8 @@ import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.tab.ClosableTabComponent;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
+import com.laker.postman.panel.collections.tree.action.TreeNodeCloner;
+import com.laker.postman.panel.collections.tree.action.TreeStateHelper;
 import com.laker.postman.panel.collections.tree.dialog.AddRequestDialog;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
@@ -44,11 +46,11 @@ import java.util.List;
 import static com.laker.postman.panel.collections.tree.CollectionTreePanel.*;
 
 /**
- * 请求树的操作类
- * 集中管理所有的树操作逻辑
+ * 请求树交互协调器。
+ * 集中编排树节点变更、对话框、持久化和相关面板联动。
  */
 @Slf4j
-public class RequestTreeActions {
+public class RequestTreeCoordinator {
     private final JTree requestTree;
     private final CollectionTreePanel leftPanel;
     private final List<HttpRequestItem> copiedRequests = new ArrayList<>();
@@ -60,7 +62,7 @@ public class RequestTreeActions {
      */
     private TreePath pendingSelectPath = null;
 
-    public RequestTreeActions(JTree requestTree, CollectionTreePanel leftPanel) {
+    public RequestTreeCoordinator(JTree requestTree, CollectionTreePanel leftPanel) {
         this.requestTree = requestTree;
         this.leftPanel = leftPanel;
         // 注册选中守卫：只要 pendingSelectPath 不为 null，就拦截任何外部对选中状态的覆盖

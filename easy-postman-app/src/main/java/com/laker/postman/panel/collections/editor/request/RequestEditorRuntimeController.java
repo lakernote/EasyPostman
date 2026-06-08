@@ -31,7 +31,7 @@ final class RequestEditorRuntimeController {
 
     private final RequestExecutionState executionState;
     private final RequestDirtyStateTracker dirtyStateTracker;
-    private final RequestEditorActionsController actionsController;
+    private final RequestEditorCommandController commandController;
     private final RequestSendCoordinator sendCoordinator;
     private final RequestSplitLayoutController splitLayoutController;
 
@@ -55,7 +55,7 @@ final class RequestEditorRuntimeController {
                 config.effectiveWebSocketProtocolSupplier()
         );
         RequestStreamUiAppender streamUiAppender = new RequestStreamUiAppender(view.responsePanel, TIME_FORMATTER);
-        RequestEditorActionsController actionsController = new RequestEditorActionsController(
+        RequestEditorCommandController commandController = new RequestEditorCommandController(
                 view.urlField,
                 view.headersPanel,
                 view.requestBodyPanel,
@@ -84,7 +84,7 @@ final class RequestEditorRuntimeController {
                 executionUiUpdater,
                 streamUiAppender,
                 responseHandler,
-                actionsController::convertCurrentRequestToSse,
+                commandController::convertCurrentRequestToSse,
                 executionState
         );
         SseRequestExecutor sseExecutor = new SseRequestExecutor(
@@ -111,7 +111,7 @@ final class RequestEditorRuntimeController {
         );
         RequestSendCoordinator sendCoordinator = new RequestSendCoordinator(
                 executionState,
-                actionsController::cancelCurrentRequest,
+                commandController::cancelCurrentRequest,
                 view.urlField,
                 config.preparationFeedbackPresenter(),
                 view.requestLinePanel,
@@ -131,7 +131,7 @@ final class RequestEditorRuntimeController {
         return new RequestEditorRuntimeController(
                 executionState,
                 dirtyStateTracker,
-                actionsController,
+                commandController,
                 sendCoordinator,
                 splitLayoutController
         );
@@ -150,7 +150,7 @@ final class RequestEditorRuntimeController {
     }
 
     void sendWebSocketMessage() {
-        actionsController.sendWebSocketMessage();
+        commandController.sendWebSocketMessage();
     }
 
     void disposeOpenConnections() {
@@ -158,11 +158,11 @@ final class RequestEditorRuntimeController {
     }
 
     void autoPrependProtocolIfNeeded() {
-        actionsController.autoPrependProtocolIfNeeded();
+        commandController.autoPrependProtocolIfNeeded();
     }
 
     void detectAndParseCurl(boolean loadingData) {
-        actionsController.detectAndParseCurl(loadingData);
+        commandController.detectAndParseCurl(loadingData);
     }
 
     void updateLayoutOrientation(boolean vertical) {

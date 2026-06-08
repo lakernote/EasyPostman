@@ -52,7 +52,7 @@ Read `docs/ARCHITECTURE_MODULES_zh.md` first when the task is about module place
 ## Update Boundaries
 
 - Put update discovery core in `platform`: `UpdateInfo`, `UpdateCheckFrequency`, `VersionChecker`, `VersionComparator`, `UpdateSourceSelector`, release sources, asset resolvers, changelog service/formatter, and Windows registry/package-mode helpers.
-- Keep concrete update UX in `app`: `AutoUpdateManager`, `UpdateUIManager`, `UpdateDownloader`, update dialogs/notifications, manual-download/open-browser commands, install prompts, and app shutdown for installation.
+- Keep concrete update UX in `app`: `AppUpdateCheckCoordinator`, `UpdateUiController`, `UpdateDownloader`, update dialogs/notifications, manual-download/open-browser commands, install prompts, and app shutdown for installation.
 - `platform` update code must not import app `SettingManager`; inject a minimal provider such as `UpdateSettingsProvider` and adapt it in app with `SettingManager::getUpdateSourcePreference`.
 
 ## I18n, Fonts, Theme

@@ -4,9 +4,9 @@ import com.laker.postman.ioc.Autowired;
 import com.laker.postman.ioc.Component;
 import com.laker.postman.ioc.PreDestroy;
 import com.laker.postman.platform.update.model.UpdateInfo;
-import com.laker.postman.service.update.AutoUpdateManager;
+import com.laker.postman.service.update.AppUpdateCheckCoordinator;
 import com.laker.postman.service.update.plugin.PluginUpdateCheckResult;
-import com.laker.postman.service.update.plugin.PluginUpdateManager;
+import com.laker.postman.service.update.plugin.PluginUpdateCheckCoordinator;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -22,26 +22,26 @@ import java.util.concurrent.CompletableFuture;
 public class UpdateService {
 
     @Autowired
-    private AutoUpdateManager autoUpdateManager;
+    private AppUpdateCheckCoordinator appUpdateCheckCoordinator;
 
     @Autowired
-    private PluginUpdateManager pluginUpdateManager;
+    private PluginUpdateCheckCoordinator pluginUpdateCheckCoordinator;
 
     /**
      * 启动时异步检查更新
      */
     public void checkUpdateOnStartup() {
         // 启动后台更新检查
-        autoUpdateManager.startBackgroundCheck();
-        pluginUpdateManager.startBackgroundCheck();
+        appUpdateCheckCoordinator.startBackgroundCheck();
+        pluginUpdateCheckCoordinator.startBackgroundCheck();
     }
 
     /**
      * 手动检查更新（用于菜单调用）
      */
     public void checkUpdateManually() {
-        CompletableFuture<PluginUpdateCheckResult> pluginUpdateFuture = pluginUpdateManager.checkForUpdateManually();
-        autoUpdateManager.checkForUpdateManually()
+        CompletableFuture<PluginUpdateCheckResult> pluginUpdateFuture = pluginUpdateCheckCoordinator.checkForUpdateManually();
+        appUpdateCheckCoordinator.checkForUpdateManually()
                 .thenCombine(pluginUpdateFuture, (updateInfo, pluginUpdateResult) -> {
                     handleManualCheckResult(updateInfo, pluginUpdateResult);
                     return null;
@@ -63,9 +63,9 @@ public class UpdateService {
         }
 
         if (!(appNoUpdate && pluginHasUpdates)) {
-            autoUpdateManager.handleUpdateCheckResult(updateInfo, true);
+            appUpdateCheckCoordinator.handleUpdateCheckResult(updateInfo, true);
         }
-        pluginUpdateManager.handleManualCheckResult(pluginUpdateResult);
+        pluginUpdateCheckCoordinator.handleManualCheckResult(pluginUpdateResult);
     }
 
 }

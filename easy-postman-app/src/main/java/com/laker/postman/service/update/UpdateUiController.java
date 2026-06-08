@@ -23,16 +23,16 @@ import java.io.File;
 import java.net.URI;
 
 /**
- * 更新UI管理器 - 负责所有更新相关的用户界面
+ * 更新 UI 控制器，负责更新通知、对话框和下载进度界面。
  */
 @Slf4j
-public class UpdateUIManager {
+public class UpdateUiController {
 
     private final UpdateDownloader downloader;
     private final UpdateSourceSelector sourceSelector;
     private final PlatformDownloadUrlResolver downloadUrlResolver;
 
-    public UpdateUIManager() {
+    public UpdateUiController() {
         this.downloader = new UpdateDownloader();
         this.sourceSelector = new UpdateSourceSelector(SettingManager::getUpdateSourcePreference);
         this.downloadUrlResolver = new PlatformDownloadUrlResolver();

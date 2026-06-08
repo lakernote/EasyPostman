@@ -32,7 +32,7 @@ import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
 @RequiredArgsConstructor
-final class PerformanceTreeNodeActionSupport {
+final class PerformanceTreeNodeCommandSupport {
 
     private final Component parentComponent;
     private final JTree performanceTree;
@@ -125,7 +125,7 @@ final class PerformanceTreeNodeActionSupport {
                     return;
                 }
                 Object userObj = node.getUserObject();
-                if (!(userObj instanceof PerformanceTreeNode nodeData) || !actionPolicy().canRename(node)) {
+                if (!(userObj instanceof PerformanceTreeNode nodeData) || !commandPolicy().canRename(node)) {
                     return;
                 }
                 String oldName = nodeData.name;
@@ -229,7 +229,7 @@ final class PerformanceTreeNodeActionSupport {
             return;
         }
         boolean changed = false;
-        PerformanceTreeActionPolicy policy = actionPolicy();
+        PerformanceTreeCommandPolicy policy = commandPolicy();
         for (TreePath path : selectedPaths) {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
             Object userObj = node.getUserObject();
@@ -277,7 +277,7 @@ final class PerformanceTreeNodeActionSupport {
         saveConfigAction.run();
     }
 
-    private PerformanceTreeActionPolicy actionPolicy() {
-        return new PerformanceTreeActionPolicy(treeSupport);
+    private PerformanceTreeCommandPolicy commandPolicy() {
+        return new PerformanceTreeCommandPolicy(treeSupport);
     }
 }

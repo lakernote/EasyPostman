@@ -9,42 +9,42 @@ import java.util.function.Supplier;
 
 final class PerformanceTreeMenuVisibilitySupport {
 
-    private final PerformanceTreeActionPolicy actionPolicy;
+    private final PerformanceTreeCommandPolicy commandPolicy;
     private final Supplier<List<DefaultMutableTreeNode>> copiedNodesSupplier;
 
     PerformanceTreeMenuVisibilitySupport(PerformanceTreeSupport treeSupport,
                                          Supplier<List<DefaultMutableTreeNode>> copiedNodesSupplier) {
-        this.actionPolicy = new PerformanceTreeActionPolicy(treeSupport);
+        this.commandPolicy = new PerformanceTreeCommandPolicy(treeSupport);
         this.copiedNodesSupplier = copiedNodesSupplier;
     }
 
     void configureMultiSelectionMenu(TreePath[] selectedPaths, PerformanceTreeMenuItems items) {
-        applyActionVisibility(items, actionPolicy.actionsForMultiSelection(selectedPaths));
+        applyCommandVisibility(items, commandPolicy.commandsForMultiSelection(selectedPaths));
     }
 
     void configureSingleSelectionMenu(DefaultMutableTreeNode node, PerformanceTreeMenuItems items) {
-        applyActionVisibility(items, actionPolicy.actionsForSingleSelection(node, copiedNodesSupplier.get()));
+        applyCommandVisibility(items, commandPolicy.commandsForSingleSelection(node, copiedNodesSupplier.get()));
     }
 
-    private void applyActionVisibility(PerformanceTreeMenuItems items, EnumSet<PerformanceTreeAction> actions) {
-        items.addThreadGroup().setVisible(actions.contains(PerformanceTreeAction.ADD_THREAD_GROUP));
-        items.addCsvDataSet().setVisible(actions.contains(PerformanceTreeAction.ADD_CSV_DATA_SET));
-        items.addRequest().setVisible(actions.contains(PerformanceTreeAction.ADD_REQUEST));
-        items.addLoop().setVisible(actions.contains(PerformanceTreeAction.ADD_LOOP));
-        items.addSseConnect().setVisible(actions.contains(PerformanceTreeAction.ADD_SSE_CONNECT));
-        items.addSseRead().setVisible(actions.contains(PerformanceTreeAction.ADD_SSE_READ));
-        items.addWsConnect().setVisible(actions.contains(PerformanceTreeAction.ADD_WS_CONNECT));
-        items.addWsSend().setVisible(actions.contains(PerformanceTreeAction.ADD_WS_SEND));
-        items.addWsRead().setVisible(actions.contains(PerformanceTreeAction.ADD_WS_READ));
-        items.addWsClose().setVisible(actions.contains(PerformanceTreeAction.ADD_WS_CLOSE));
-        items.addAssertion().setVisible(actions.contains(PerformanceTreeAction.ADD_ASSERTION));
-        items.addExtractor().setVisible(actions.contains(PerformanceTreeAction.ADD_EXTRACTOR));
-        items.addTimer().setVisible(actions.contains(PerformanceTreeAction.ADD_TIMER));
-        items.enableNode().setVisible(actions.contains(PerformanceTreeAction.ENABLE));
-        items.disableNode().setVisible(actions.contains(PerformanceTreeAction.DISABLE));
-        items.copyNode().setVisible(actions.contains(PerformanceTreeAction.COPY));
-        items.pasteNode().setVisible(actions.contains(PerformanceTreeAction.PASTE));
-        items.renameNode().setVisible(actions.contains(PerformanceTreeAction.RENAME));
-        items.deleteNode().setVisible(actions.contains(PerformanceTreeAction.DELETE));
+    private void applyCommandVisibility(PerformanceTreeMenuItems items, EnumSet<PerformanceTreeCommand> commands) {
+        items.addThreadGroup().setVisible(commands.contains(PerformanceTreeCommand.ADD_THREAD_GROUP));
+        items.addCsvDataSet().setVisible(commands.contains(PerformanceTreeCommand.ADD_CSV_DATA_SET));
+        items.addRequest().setVisible(commands.contains(PerformanceTreeCommand.ADD_REQUEST));
+        items.addLoop().setVisible(commands.contains(PerformanceTreeCommand.ADD_LOOP));
+        items.addSseConnect().setVisible(commands.contains(PerformanceTreeCommand.ADD_SSE_CONNECT));
+        items.addSseRead().setVisible(commands.contains(PerformanceTreeCommand.ADD_SSE_READ));
+        items.addWsConnect().setVisible(commands.contains(PerformanceTreeCommand.ADD_WS_CONNECT));
+        items.addWsSend().setVisible(commands.contains(PerformanceTreeCommand.ADD_WS_SEND));
+        items.addWsRead().setVisible(commands.contains(PerformanceTreeCommand.ADD_WS_READ));
+        items.addWsClose().setVisible(commands.contains(PerformanceTreeCommand.ADD_WS_CLOSE));
+        items.addAssertion().setVisible(commands.contains(PerformanceTreeCommand.ADD_ASSERTION));
+        items.addExtractor().setVisible(commands.contains(PerformanceTreeCommand.ADD_EXTRACTOR));
+        items.addTimer().setVisible(commands.contains(PerformanceTreeCommand.ADD_TIMER));
+        items.enableNode().setVisible(commands.contains(PerformanceTreeCommand.ENABLE));
+        items.disableNode().setVisible(commands.contains(PerformanceTreeCommand.DISABLE));
+        items.copyNode().setVisible(commands.contains(PerformanceTreeCommand.COPY));
+        items.pasteNode().setVisible(commands.contains(PerformanceTreeCommand.PASTE));
+        items.renameNode().setVisible(commands.contains(PerformanceTreeCommand.RENAME));
+        items.deleteNode().setVisible(commands.contains(PerformanceTreeCommand.DELETE));
     }
 }

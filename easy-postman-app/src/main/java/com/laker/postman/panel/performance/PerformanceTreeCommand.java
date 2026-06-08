@@ -1,7 +1,7 @@
 package com.laker.postman.panel.performance;
 
 
-enum PerformanceTreeAction {
+enum PerformanceTreeCommand {
     ADD_THREAD_GROUP,
     ADD_CSV_DATA_SET,
     ADD_REQUEST,

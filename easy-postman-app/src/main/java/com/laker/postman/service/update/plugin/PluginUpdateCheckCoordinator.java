@@ -23,12 +23,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
- * 插件自动更新提示管理器。
+ * 插件更新检查协调器。
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class PluginUpdateManager {
+public class PluginUpdateCheckCoordinator {
 
     private static final ScheduledExecutorService UPDATE_EXECUTOR = Executors.newSingleThreadScheduledExecutor(r -> {
         Thread thread = new Thread(r, "PluginUpdateChecker");

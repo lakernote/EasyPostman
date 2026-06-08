@@ -1,7 +1,7 @@
 package com.laker.postman.panel.collections.tree.handler;
 
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
-import com.laker.postman.panel.collections.tree.action.RequestTreeActions;
+import com.laker.postman.panel.collections.tree.coordinator.RequestTreeCoordinator;
 import com.laker.postman.service.collections.CollectionTreeNodes;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
@@ -21,12 +21,12 @@ import static com.laker.postman.panel.collections.tree.CollectionTreePanel.*;
 public class RequestTreePopupMenu {
     private final JTree requestTree;
     private final CollectionTreePanel leftPanel;
-    private final RequestTreeActions actions;
+    private final RequestTreeCoordinator coordinator;
 
     public RequestTreePopupMenu(JTree requestTree, CollectionTreePanel leftPanel) {
         this.requestTree = requestTree;
         this.leftPanel = leftPanel;
-        this.actions = new RequestTreeActions(requestTree, leftPanel);
+        this.coordinator = new RequestTreeCoordinator(requestTree, leftPanel);
     }
 
     /**
@@ -62,7 +62,7 @@ public class RequestTreePopupMenu {
         }
 
         // 粘贴选项
-        if (!actions.isCopiedRequestsEmpty()) {
+        if (!coordinator.isCopiedRequestsEmpty()) {
             addPasteMenuItem(menu);
         }
 
@@ -84,7 +84,7 @@ public class RequestTreePopupMenu {
         JMenuItem addToFunctional = createMenuItem(
                 MessageKeys.COLLECTIONS_MENU_ADD_TO_FUNCTIONAL,
                 "icons/functional.svg",
-                e -> actions.addSelectedRequestsToFunctionalTest()
+                e -> coordinator.addSelectedRequestsToFunctionalTest()
         );
         menu.add(addToFunctional);
         menu.addSeparator();
@@ -93,7 +93,7 @@ public class RequestTreePopupMenu {
         JMenuItem addRequest = createMenuItem(
                 MessageKeys.COLLECTIONS_MENU_ADD_REQUEST,
                 "icons/request.svg",
-                e -> actions.showAddRequestDialog(selectedNode)
+                e -> coordinator.showAddRequestDialog(selectedNode)
         );
         addRequest.setEnabled(!isMultipleSelection);
         menu.add(addRequest);
@@ -102,7 +102,7 @@ public class RequestTreePopupMenu {
         JMenuItem addGroup = createMenuItem(
                 MessageKeys.COLLECTIONS_MENU_ADD_GROUP,
                 "icons/group.svg",
-                e -> actions.addGroupUnderSelected()
+                e -> coordinator.addGroupUnderSelected()
         );
         addGroup.setEnabled(!isMultipleSelection);
         menu.add(addGroup);
@@ -111,7 +111,7 @@ public class RequestTreePopupMenu {
         JMenuItem duplicate = createMenuItem(
                 MessageKeys.COLLECTIONS_MENU_DUPLICATE,
                 "icons/duplicate.svg",
-                e -> actions.duplicateSelectedGroup()
+                e -> coordinator.duplicateSelectedGroup()
         );
         duplicate.setEnabled(!isMultipleSelection);
         menu.add(duplicate);
@@ -120,7 +120,7 @@ public class RequestTreePopupMenu {
         JMenuItem exportPostman = createMenuItem(
                 MessageKeys.COLLECTIONS_MENU_EXPORT_POSTMAN,
                 "icons/postman.svg",
-                e -> actions.exportGroupAsPostman(selectedNode)
+                e -> coordinator.exportGroupAsPostman(selectedNode)
         );
         exportPostman.setEnabled(!isMultipleSelection);
         menu.add(exportPostman);
@@ -129,7 +129,7 @@ public class RequestTreePopupMenu {
         JMenuItem moveToWorkspace = createMenuItem(
                 MessageKeys.WORKSPACE_TRANSFER_MENU_ITEM,
                 "icons/workspace.svg",
-                e -> actions.moveCollectionToWorkspace(selectedNode)
+                e -> coordinator.moveCollectionToWorkspace(selectedNode)
         );
         moveToWorkspace.setEnabled(!isMultipleSelection);
         menu.add(moveToWorkspace);
@@ -145,7 +145,7 @@ public class RequestTreePopupMenu {
         JMenuItem addToFunctional = createMenuItem(
                 MessageKeys.COLLECTIONS_MENU_ADD_TO_FUNCTIONAL,
                 "icons/functional.svg",
-                e -> actions.addSelectedRequestsToFunctionalTest()
+                e -> coordinator.addSelectedRequestsToFunctionalTest()
         );
         menu.add(addToFunctional);
         menu.addSeparator();
@@ -156,7 +156,7 @@ public class RequestTreePopupMenu {
             JMenuItem addRequest = createMenuItem(
                     MessageKeys.COLLECTIONS_MENU_ADD_REQUEST,
                     "icons/request.svg",
-                    e -> actions.showAddRequestDialog(parentGroup)
+                    e -> coordinator.showAddRequestDialog(parentGroup)
             );
             addRequest.setEnabled(!isMultipleSelection);
             menu.add(addRequest);
@@ -166,7 +166,7 @@ public class RequestTreePopupMenu {
         JMenuItem duplicate = createMenuItem(
                 MessageKeys.COLLECTIONS_MENU_DUPLICATE,
                 "icons/duplicate.svg",
-                e -> actions.duplicateSelectedRequests()
+                e -> coordinator.duplicateSelectedRequests()
         );
         menu.add(duplicate);
 
@@ -174,7 +174,7 @@ public class RequestTreePopupMenu {
         JMenuItem copy = createMenuItem(
                 MessageKeys.COLLECTIONS_MENU_COPY,
                 "icons/copy.svg",
-                e -> actions.copySelectedRequests()
+                e -> coordinator.copySelectedRequests()
         );
         int cmdMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
         copy.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C, cmdMask));
@@ -184,7 +184,7 @@ public class RequestTreePopupMenu {
         JMenuItem copyAsCurl = createMenuItem(
                 MessageKeys.COLLECTIONS_MENU_COPY_CURL,
                 "icons/curl.svg",
-                e -> actions.copySelectedRequestAsCurl()
+                e -> coordinator.copySelectedRequestAsCurl()
         );
         copyAsCurl.setEnabled(!isMultipleSelection);
         menu.add(copyAsCurl);
@@ -199,7 +199,7 @@ public class RequestTreePopupMenu {
         JMenuItem paste = createMenuItem(
                 MessageKeys.COLLECTIONS_MENU_PASTE,
                 "icons/paste.svg",
-                e -> actions.pasteRequests()
+                e -> coordinator.pasteRequests()
         );
         int cmdMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
         paste.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_V, cmdMask));
@@ -215,7 +215,7 @@ public class RequestTreePopupMenu {
         JMenuItem rename = createMenuItem(
                 MessageKeys.COLLECTIONS_MENU_RENAME,
                 "icons/refresh.svg",
-                e -> actions.renameSelectedItem()
+                e -> coordinator.renameSelectedItem()
         );
         rename.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F2, 0));
         rename.setEnabled(!isMultipleSelection);
@@ -232,7 +232,7 @@ public class RequestTreePopupMenu {
 
         JMenuItem delete = new JMenuItem(deleteText,
                 IconUtil.createThemed("icons/close.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
-        delete.addActionListener(e -> actions.deleteSelectedItem());
+        delete.addActionListener(e -> coordinator.deleteSelectedItem());
         delete.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0));
         menu.add(delete);
     }

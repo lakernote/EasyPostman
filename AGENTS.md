@@ -202,7 +202,7 @@ User-visible app strings must use `I18nUtil.getMessage(MessageKeys.SOME_KEY)`. C
 
 Update discovery core lives in `easy-postman-platform` under `com.laker.postman.platform.update`: `UpdateInfo`, `UpdateCheckFrequency`, `VersionChecker`, release sources, version comparison, asset resolution, changelog fetching/formatting, and Windows package/registry helpers.
 
-Concrete update UX stays in `easy-postman-app`: `AutoUpdateManager`, `UpdateUIManager`, `UpdateDownloader`, update dialogs/notifications, browser-opening actions, installer launch, and app shutdown.
+Concrete update UX stays in `easy-postman-app`: `AppUpdateCheckCoordinator`, `UpdateUiController`, `UpdateDownloader`, update dialogs/notifications, browser-opening actions, installer launch, and app shutdown.
 
 Platform update code must not import app `SettingManager`; use `UpdateSettingsProvider` and adapt it from app with `SettingManager::getUpdateSourcePreference`.
 

@@ -11,7 +11,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
-public class AutoUpdateManagerTest {
+public class AppUpdateCheckCoordinatorTest {
 
     @Test
     public void notificationMarkerShouldIncludeAppVersionAndAvailabilityStatus() {
@@ -19,11 +19,11 @@ public class AutoUpdateManagerTest {
         UpdateInfo noAssetInfo = UpdateInfo.updateAvailableNoAsset("1.0.0", "v1.2.0", null);
 
         assertEquals(
-                AutoUpdateManager.notificationMarker(updateInfo),
+                AppUpdateCheckCoordinator.notificationMarker(updateInfo),
                 "app@v1.2.0@UPDATE_AVAILABLE"
         );
         assertEquals(
-                AutoUpdateManager.notificationMarker(noAssetInfo),
+                AppUpdateCheckCoordinator.notificationMarker(noAssetInfo),
                 "app@v1.2.0@UPDATE_AVAILABLE_NO_ASSET"
         );
     }
@@ -37,7 +37,7 @@ public class AutoUpdateManagerTest {
                 Set.of("app@v1.2.0@UPDATE_AVAILABLE")
         );
 
-        assertFalse(AutoUpdateManager.shouldNotify(updateInfo, state, false));
+        assertFalse(AppUpdateCheckCoordinator.shouldNotify(updateInfo, state, false));
     }
 
     @Test
@@ -49,13 +49,13 @@ public class AutoUpdateManagerTest {
                 Set.of("app@v1.2.0@UPDATE_AVAILABLE")
         );
 
-        assertTrue(AutoUpdateManager.shouldNotify(updateInfo, state, true));
+        assertTrue(AppUpdateCheckCoordinator.shouldNotify(updateInfo, state, true));
     }
 
     @Test
     public void nonUpdateStatusShouldNotCreateNotificationMarker() {
-        assertEquals(AutoUpdateManager.notificationMarker(UpdateInfo.noUpdateAvailable("ok")), "");
-        assertEquals(AutoUpdateManager.notificationMarker(UpdateInfo.checkFailed("bad")), "");
+        assertEquals(AppUpdateCheckCoordinator.notificationMarker(UpdateInfo.noUpdateAvailable("ok")), "");
+        assertEquals(AppUpdateCheckCoordinator.notificationMarker(UpdateInfo.checkFailed("bad")), "");
     }
 
     @Test
@@ -66,12 +66,12 @@ public class AutoUpdateManagerTest {
                 Set.of("app@v1.2.0@UPDATE_AVAILABLE")
         );
 
-        assertTrue(AutoUpdateManager.shouldNotify(UpdateInfo.noUpdateAvailable("ok"), state, true));
-        assertTrue(AutoUpdateManager.shouldNotify(UpdateInfo.checkFailed("bad"), state, true));
+        assertTrue(AppUpdateCheckCoordinator.shouldNotify(UpdateInfo.noUpdateAvailable("ok"), state, true));
+        assertTrue(AppUpdateCheckCoordinator.shouldNotify(UpdateInfo.checkFailed("bad"), state, true));
     }
 
     @Test
     public void nullUpdateInfoShouldNotNotify() {
-        assertFalse(AutoUpdateManager.shouldNotify(null, UpdateCheckState.of(UpdateTarget.APP, 0L, Set.of()), false));
+        assertFalse(AppUpdateCheckCoordinator.shouldNotify(null, UpdateCheckState.of(UpdateTarget.APP, 0L, Set.of()), false));
     }
 }

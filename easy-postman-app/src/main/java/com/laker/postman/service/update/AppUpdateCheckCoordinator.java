@@ -21,15 +21,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
- * 自动更新管理器 - 统一管理所有更新相关功能
- * 每次程序启动时检查，根据配置的频率（每日/每周/每月）和上次检查时间决定是否执行检查
+ * 应用更新检查协调器。
+ * 每次程序启动时检查，根据配置频率和上次检查时间决定是否执行检查。
  */
 @Slf4j
 @Component
-public class AutoUpdateManager {
+public class AppUpdateCheckCoordinator {
 
     private final VersionChecker versionChecker;
-    private final UpdateUIManager uiManager;
+    private final UpdateUiController uiController;
     private final UpdateCenter updateCenter;
 
     /**
@@ -41,9 +41,9 @@ public class AutoUpdateManager {
         return thread;
     });
 
-    public AutoUpdateManager() {
+    public AppUpdateCheckCoordinator() {
         this.versionChecker = new VersionChecker(SettingManager::getUpdateSourcePreference);
-        this.uiManager = new UpdateUIManager();
+        this.uiController = new UpdateUiController();
         this.updateCenter = AppUpdateCenter.get();
     }
 
@@ -145,10 +145,10 @@ public class AutoUpdateManager {
 
                     if (isManual) {
                         // 手动检查直接显示对话框
-                        uiManager.showUpdateDialog(updateInfo);
+                        uiController.showUpdateDialog(updateInfo);
                     } else {
                         // 后台检查显示通知
-                        uiManager.showUpdateNotification(updateInfo);
+                        uiController.showUpdateNotification(updateInfo);
                     }
                 }
                 case UPDATE_AVAILABLE_NO_ASSET -> {
@@ -157,10 +157,10 @@ public class AutoUpdateManager {
                     rememberNotifiedMarker(updateInfo);
                     if (isManual) {
                         // 手动检查：直接显示 NoAsset 对话框
-                        uiManager.showNoAssetDialog(updateInfo);
+                        uiController.showNoAssetDialog(updateInfo);
                     } else {
                         // 后台检查：先显示右下角 toast，点击后再弹对话框
-                        uiManager.showNoAssetNotification(updateInfo);
+                        uiController.showNoAssetNotification(updateInfo);
                     }
                 }
                 case NO_UPDATE -> {

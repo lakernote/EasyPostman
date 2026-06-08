@@ -54,7 +54,7 @@ public class RequestEditSubPanel extends JPanel {
     private RequestTabStateController requestTabStateController;
     private RequestUrlParamsSynchronizer requestUrlParamsSynchronizer;
     private RequestEditorRuntimeController runtimeController;
-    private final SavedResponseActions savedResponseActions = new SavedResponseActions(new CollectionTreeEditorGateway());
+    private final SavedResponseUiController savedResponseUiController = new SavedResponseUiController(new CollectionTreeEditorGateway());
     private RequestSavedResponseController savedResponseController;
 
     // 数据加载标志，防止加载时触发自动保存和联动更新
@@ -423,7 +423,7 @@ public class RequestEditSubPanel extends JPanel {
         if (savedResponseController == null) {
             savedResponseController = new RequestSavedResponseController(
                     this,
-                    savedResponseActions,
+                    savedResponseUiController,
                     () -> lastRequest,
                     () -> lastResponse,
                     this::getOriginalRequestItem,

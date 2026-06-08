@@ -1,14 +1,17 @@
 package com.laker.postman.common.component.tab;
 
+import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.HttpRequestItem;
+
+
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.UiSingletonFactory;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.panel.collections.editor.RequestEditorEmptyStatePanel;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.panel.collections.editor.request.RequestProtocolUiMetadata;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
-import com.laker.postman.request.model.HttpRequestItem;
-import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.service.setting.ShortcutManager;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -40,22 +43,19 @@ public class ClosableTabComponent extends JPanel {
 
     // ── 布局常量 ─────────────────────────────────────────────────────────────
     public static final String ELLIPSIS = "...";
-    private static final int MAX_TAB_WIDTH      = 190;
-    private static final int MIN_TAB_WIDTH      = 112;
-    private static final int TAB_HEIGHT         = 30;
-    private static final int TAB_ARC            = 8;
-    private static final int TAB_PLATE_Y        = 2;
-    private static final int CLOSE_DIAMETER     = 14;
-    private static final int CLOSE_MARGIN       = 8;
-    private static final int CLOSE_TEXT_SPACING = 8;
-    private static final int CLOSE_HIT_PADDING  = 4;
-    private static final int LABEL_LEFT_PAD     = 10;
-    private static final int STATE_DOT_DIAMETER = 7;
+    private static final int MAX_TAB_WIDTH     = 160;
+    private static final int MIN_TAB_WIDTH     = 80;
+    private static final int TAB_HEIGHT        = 28;
+    private static final int CLOSE_DIAMETER    = 11;   // 关闭按钮圆圈直径
+    private static final int CLOSE_MARGIN      = 0;    // 关闭按钮距右边距
+    private static final int CLOSE_TEXT_SPACING = 0;   // 关闭按钮与文字间距
+    private static final int CLOSE_HIT_PADDING = 3;    // 扩大关闭按钮命中区域，提升易用性
+    private static final int LABEL_LEFT_PAD    = 4;    // 标题 label 左内边距
 
     // ── 数据 ─────────────────────────────────────────────────────────────────
     private final JLabel label;
+    private final String rawTitle;           // 原始完整标题（用于 dirty/newRequest 重置）
     private final JTabbedPane tabbedPane;
-    private String displayTitle;
 
     // ── 状态 ─────────────────────────────────────────────────────────────────
     @Getter private boolean dirty      = false; // 红点：内容已修改
@@ -72,10 +72,11 @@ public class ClosableTabComponent extends JPanel {
 
     public ClosableTabComponent(String title, RequestItemProtocolEnum protocol, boolean isRoot) {
         this.tabbedPane = UiSingletonFactory.getInstance(RequestEditorPanel.class).getTabbedPane();
+        this.rawTitle = title;
 
         setOpaque(false);
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
+        setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
         setToolTipText(title);
 
         // 计算 Tab 宽度并创建 label
@@ -105,11 +106,10 @@ public class ClosableTabComponent extends JPanel {
     // ── 构造辅助：构建 label ─────────────────────────────────────────────────
 
     private JLabel buildLabel(String title, RequestItemProtocolEnum protocol, boolean isRoot) {
-        Font labelFont = tabFont(Font.PLAIN);
-        FontMetrics fm = getFontMetrics(labelFont);
+        FontMetrics fm = getFontMetrics(getFont());
         int closeSpace = CLOSE_DIAMETER + CLOSE_TEXT_SPACING + CLOSE_MARGIN;
-        int iconSpace  = 22;
-        int padding    = 18;
+        int iconSpace  = 20;
+        int padding    = 20;
 
         int tabWidth = Math.max(
                 Math.min(fm.stringWidth(title) + iconSpace + closeSpace + padding, MAX_TAB_WIDTH),
@@ -117,14 +117,13 @@ public class ClosableTabComponent extends JPanel {
         setPreferredSize(new Dimension(tabWidth, TAB_HEIGHT));
 
         // 文字超长时截断
-        displayTitle = truncate(title, fm, tabWidth - iconSpace - closeSpace - padding);
+        String displayTitle = truncate(title, fm, tabWidth - iconSpace - closeSpace - padding);
 
         // label 本身不消费鼠标事件（避免遮挡关闭按钮）
         JLabel lbl = new JLabel(displayTitle) {
             @Override public boolean contains(int x, int y) { return false; }
         };
-        lbl.setFont(labelFont);
-        lbl.setForeground(RequestEditorTabTheme.titleForeground(false));
+        lbl.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         lbl.setIcon(resolveIcon(protocol, isRoot));
         lbl.setBorder(BorderFactory.createEmptyBorder(0, LABEL_LEFT_PAD, 0, closeSpace + CLOSE_TEXT_SPACING));
         lbl.setHorizontalAlignment(SwingConstants.LEFT);
@@ -195,13 +194,6 @@ public class ClosableTabComponent extends JPanel {
         return new Rectangle(x, y, CLOSE_DIAMETER, CLOSE_DIAMETER);
     }
 
-    private Rectangle stateDotBounds() {
-        Rectangle close = closeButtonBounds();
-        int x = close.x + (close.width - STATE_DOT_DIAMETER) / 2;
-        int y = close.y + (close.height - STATE_DOT_DIAMETER) / 2;
-        return new Rectangle(x, y, STATE_DOT_DIAMETER, STATE_DOT_DIAMETER);
-    }
-
     /** 判断坐标是否在关闭按钮上（供自身和 TabbedPaneDragHandler 使用） */
     public boolean isInCloseButton(int x, int y) {
         Rectangle hitBounds = closeButtonBounds();
@@ -213,81 +205,51 @@ public class ClosableTabComponent extends JPanel {
 
     @Override
     protected void paintComponent(Graphics g) {
-        boolean selected = isSelectedTab();
-        label.setForeground(RequestEditorTabTheme.titleForeground(selected));
-
-        Graphics2D g2 = (Graphics2D) g.create();
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        paintTabPlate(g2, selected);
-
         super.paintComponent(g);
-        paintCloseOrState(g2);
-        g2.dispose();
-    }
-
-    private void paintTabPlate(Graphics2D g2, boolean selected) {
-        if (!selected && !hoverTab) {
-            return;
-        }
-
-        int h = getHeight() - TAB_PLATE_Y - 2;
-        int w = getWidth() - 1;
-        g2.setColor(selected ? RequestEditorTabTheme.selectedTabBackground() : RequestEditorTabTheme.hoverTabBackground());
-        g2.fillRoundRect(0, TAB_PLATE_Y, w, h, TAB_ARC, TAB_ARC);
-        if (!selected) {
-            g2.setColor(RequestEditorTabTheme.hoverTabBorder());
-            g2.drawRoundRect(0, TAB_PLATE_Y, w, h, TAB_ARC, TAB_ARC);
-        }
-    }
-
-    private boolean isSelectedTab() {
-        int idx = tabbedPane.indexOfTabComponent(this);
-        return idx >= 0 && tabbedPane.getSelectedIndex() == idx;
-    }
-
-    private void paintCloseOrState(Graphics2D g2) {
         Rectangle cb = closeButtonBounds();
         int x = cb.x;
         int y = cb.y;
         int r = CLOSE_DIAMETER;
 
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
         if (hoverClose) {
             g2.setColor(closeButtonBg());
-            g2.fillRoundRect(x, y, r, r, 6, 6);
-            g2.setColor(closeButtonHoverFg());
+            g2.fillOval(x, y, r, r);
+            g2.setColor(closeButtonFg());
             g2.setStroke(new BasicStroke(1.5f));
-            int pad = 4;
+            int pad = 2;
             g2.drawLine(x + pad, y + pad, x + r - pad, y + r - pad);
             g2.drawLine(x + r - pad, y + pad, x + pad, y + r - pad);
         } else if (hoverTab) {
             g2.setColor(closeButtonFg());
             g2.setStroke(new BasicStroke(1.5f));
-            int pad = 4;
+            int pad = 2;
             g2.drawLine(x + pad, y + pad, x + r - pad, y + r - pad);
             g2.drawLine(x + r - pad, y + pad, x + pad, y + r - pad);
         } else if (newRequest) {
-            Rectangle dot = stateDotBounds();
-            g2.setColor(newRequestDotColor());
-            g2.fillOval(dot.x, dot.y, dot.width, dot.height);
+            g2.setColor(new Color(255, 204, 0, 180));   // 黄点
+            g2.fillOval(x, y, r, r);
         } else if (dirty) {
-            Rectangle dot = stateDotBounds();
-            g2.setColor(dirtyColor());
-            g2.fillOval(dot.x, dot.y, dot.width, dot.height);
+            g2.setColor(dirtyColor());                   // 红点
+            g2.fillOval(x, y, r, r);
         }
+        g2.dispose();
     }
 
     // ── 主题适配色 ───────────────────────────────────────────────────────────
 
     private Color closeButtonBg() {
-        return RequestEditorTabTheme.closeButtonHoverBackground();
+        Color hoverColor = UIManager.getColor("TabbedPane.hoverColor");
+        if (hoverColor != null) {
+            return ModernColors.withAlpha(hoverColor, 160);
+        }
+        return ModernColors.withAlpha(ModernColors.getHoverBackgroundColor(), 160);
     }
 
     private Color closeButtonFg() {
         return closeButtonForegroundColor();
-    }
-
-    private Color closeButtonHoverFg() {
-        return closeButtonHoverForegroundColor();
     }
 
     private Color dirtyColor() {
@@ -295,19 +257,11 @@ public class ClosableTabComponent extends JPanel {
     }
 
     static Color closeButtonForegroundColor() {
-        return RequestEditorTabTheme.closeButtonForeground();
-    }
-
-    static Color closeButtonHoverForegroundColor() {
-        return RequestEditorTabTheme.closeButtonHoverForeground();
+        return ModernColors.getTextPrimary();
     }
 
     static Color dirtyDotColor() {
-        return RequestEditorTabTheme.dirtyDot();
-    }
-
-    static Color newRequestDotColor() {
-        return RequestEditorTabTheme.newRequestDot();
+        return ModernColors.withAlpha(ModernColors.getError(), 180);
     }
 
     // ── 右键菜单 ─────────────────────────────────────────────────────────────
@@ -360,24 +314,20 @@ public class ClosableTabComponent extends JPanel {
 
     public void setDirty(boolean dirty) {
         this.dirty = dirty;
-        label.setText(displayTitle);
+        label.setText(rawTitle);
         repaint();
     }
 
     public void setNewRequest(boolean newRequest) {
         this.newRequest = newRequest;
-        label.setText(displayTitle);
+        label.setText(rawTitle);
         repaint();
     }
 
     /** 预览模式用斜体提示这是临时 Tab */
     public void setPreviewMode(boolean previewMode) {
         this.previewMode = previewMode;
-        label.setFont(tabFont(previewMode ? Font.ITALIC : Font.PLAIN));
+        label.setFont(FontsUtil.getDefaultFontWithOffset(previewMode ? Font.ITALIC : Font.PLAIN, -1));
         repaint();
-    }
-
-    private static Font tabFont(int style) {
-        return FontsUtil.getDefaultFontWithOffset(style, -1);
     }
 }

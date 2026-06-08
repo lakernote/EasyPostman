@@ -19,11 +19,7 @@ public class ClosableTabComponentThemeTest {
 
     @BeforeMethod
     public void rememberThemeTokens() {
-        previousThemeTokens = remember(
-                ThemeColors.TEXT_PRIMARY,
-                ThemeColors.TEXT_SECONDARY,
-                ThemeColors.ERROR,
-                ThemeColors.WARNING);
+        previousThemeTokens = remember(ThemeColors.TEXT_PRIMARY, ThemeColors.ERROR);
     }
 
     @AfterMethod
@@ -32,19 +28,11 @@ public class ClosableTabComponentThemeTest {
     }
 
     @Test
-    public void closeButtonForegroundShouldUseSemanticTextSecondaryColor() {
-        Color textSecondary = new Color(61, 62, 63);
-        UIManager.put(ThemeColors.TEXT_SECONDARY, textSecondary);
-
-        assertEquals(ClosableTabComponent.closeButtonForegroundColor(), textSecondary);
-    }
-
-    @Test
-    public void closeButtonHoverForegroundShouldUseSemanticTextPrimaryColor() {
+    public void closeButtonForegroundShouldUseSemanticTextPrimaryColor() {
         Color textPrimary = new Color(21, 22, 23);
         UIManager.put(ThemeColors.TEXT_PRIMARY, textPrimary);
 
-        assertEquals(ClosableTabComponent.closeButtonHoverForegroundColor(), textPrimary);
+        assertEquals(ClosableTabComponent.closeButtonForegroundColor(), textPrimary);
     }
 
     @Test
@@ -54,13 +42,4 @@ public class ClosableTabComponentThemeTest {
 
         assertEquals(ClosableTabComponent.dirtyDotColor(), ModernColors.withAlpha(error, 180));
     }
-
-    @Test
-    public void newRequestDotShouldUseSemanticWarningColor() {
-        Color warning = new Color(251, 191, 36);
-        UIManager.put(ThemeColors.WARNING, warning);
-
-        assertEquals(ClosableTabComponent.newRequestDotColor(), ModernColors.withAlpha(warning, 190));
-    }
-
 }

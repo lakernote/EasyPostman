@@ -1,7 +1,6 @@
 package com.laker.postman.panel.collections.editor;
 
 import com.laker.postman.common.UiSingletonPanel;
-import com.laker.postman.common.component.tab.RequestEditorTabTheme;
 import com.laker.postman.common.component.tab.TabbedPaneDragHandler;
 import com.laker.postman.collection.model.RequestGroup;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
@@ -163,16 +162,9 @@ public class RequestEditorPanel extends UiSingletonPanel {
 
     private JTabbedPane createRequestTabbedPane() {
         JTabbedPane tabs = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
-        tabs.setOpaque(true);
-        tabs.setBackground(RequestEditorTabTheme.tabAreaBackground());
-        tabs.putClientProperty(TABBED_PANE_TAB_TYPE, TABBED_PANE_TAB_TYPE_UNDERLINED);
-        tabs.putClientProperty(TABBED_PANE_TAB_WIDTH_MODE, TABBED_PANE_TAB_WIDTH_MODE_PREFERRED);
-        tabs.putClientProperty(TABBED_PANE_SHOW_TAB_SEPARATORS, false);
-        tabs.putClientProperty(TABBED_PANE_SHOW_CONTENT_SEPARATOR, false);
-        tabs.putClientProperty(TABBED_PANE_HAS_FULL_BORDER, false);
-        tabs.putClientProperty(TABBED_PANE_TAB_AREA_INSETS, new Insets(4, 8, 0, 6));
-        tabs.putClientProperty(TABBED_PANE_TAB_INSETS, new Insets(0, 4, 0, 4));
-        tabs.putClientProperty(TABBED_PANE_TAB_HEIGHT, 34);
+        tabs.putClientProperty(TABBED_PANE_TAB_AREA_INSETS, new Insets(0, 0, 0, 5));
+        tabs.putClientProperty(TABBED_PANE_TAB_INSETS, new Insets(3, 5, 3, 5));
+        tabs.putClientProperty(TABBED_PANE_TAB_HEIGHT, 38);
         return tabs;
     }
 

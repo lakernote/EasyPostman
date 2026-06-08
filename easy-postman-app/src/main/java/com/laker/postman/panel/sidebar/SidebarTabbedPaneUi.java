@@ -176,13 +176,15 @@ final class SidebarTabbedPaneUi extends BasicTabbedPaneUI {
     }
 
     private Rectangle collapsedTabStateBounds(int x, int y, int w, int h) {
-        int side = Math.min(SidebarTabMetrics.COLLAPSED_SELECTED_BACKGROUND_SIZE, Math.min(w, h));
-        side = Math.max(0, side);
+        int backgroundWidth = Math.min(SidebarTabMetrics.COLLAPSED_SELECTED_BACKGROUND_WIDTH, w);
+        int backgroundHeight = Math.min(SidebarTabMetrics.COLLAPSED_SELECTED_BACKGROUND_HEIGHT, h);
+        backgroundWidth = Math.max(0, backgroundWidth);
+        backgroundHeight = Math.max(0, backgroundHeight);
         return new Rectangle(
-                x + Math.max(0, (w - side) / 2),
-                y + Math.max(0, (h - side) / 2),
-                side,
-                side
+                x + Math.max(0, (w - backgroundWidth) / 2),
+                y + Math.max(0, (h - backgroundHeight) / 2),
+                backgroundWidth,
+                backgroundHeight
         );
     }
 

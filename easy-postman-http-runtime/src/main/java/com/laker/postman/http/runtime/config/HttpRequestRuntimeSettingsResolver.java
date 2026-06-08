@@ -1,9 +1,7 @@
 package com.laker.postman.http.runtime.config;
 
-import com.laker.postman.request.model.HttpRequestItem;
-import com.laker.postman.http.runtime.config.HttpRuntimeSettings;
-import com.laker.postman.http.runtime.config.HttpRuntimeSettingsProvider;
 import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
+import com.laker.postman.request.model.HttpRequestItem;
 import lombok.experimental.UtilityClass;
 
 /**

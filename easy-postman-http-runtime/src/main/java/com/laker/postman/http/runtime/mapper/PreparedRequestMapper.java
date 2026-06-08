@@ -2,12 +2,7 @@ package com.laker.postman.http.runtime.mapper;
 
 import com.laker.postman.http.runtime.config.HttpRequestRuntimeSettingsResolver;
 import com.laker.postman.http.runtime.model.PreparedRequest;
-import com.laker.postman.request.model.HttpFormData;
-import com.laker.postman.request.model.HttpFormUrlencoded;
-import com.laker.postman.request.model.HttpHeader;
-import com.laker.postman.request.model.HttpParam;
-import com.laker.postman.request.model.HttpRequestItem;
-import com.laker.postman.request.model.TransportAuth;
+import com.laker.postman.request.model.*;
 import com.laker.postman.request.util.HttpUrlUtil;
 import lombok.experimental.UtilityClass;
 
@@ -16,9 +11,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
-import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_BASIC;
-import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_BEARER;
-import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_DIGEST;
+import static com.laker.postman.request.model.RequestAuthTypes.*;
 
 @UtilityClass
 public class PreparedRequestMapper {
@@ -125,7 +118,7 @@ public class PreparedRequestMapper {
     }
 
     private static String resolvePreviewAuthorizationHeaderValue(HttpRequestItem item,
-                                                                Function<String, String> variableResolver) {
+                                                                 Function<String, String> variableResolver) {
         if (item == null || hasEnabledAuthorizationHeader(item.getHeadersList())) {
             return null;
         }
@@ -156,8 +149,8 @@ public class PreparedRequestMapper {
     }
 
     private static HttpHeader createResolvableBasicAuthHeader(String rawUsername,
-                                                             String rawPassword,
-                                                             Function<String, String> variableResolver) {
+                                                              String rawPassword,
+                                                              Function<String, String> variableResolver) {
         String username = resolve(variableResolver, rawUsername);
         if (username == null || username.isEmpty() || containsUnresolvedPlaceholder(username)) {
             return null;
@@ -174,7 +167,7 @@ public class PreparedRequestMapper {
     }
 
     private static HttpHeader createResolvableBearerAuthHeader(String rawToken,
-                                                              Function<String, String> variableResolver) {
+                                                               Function<String, String> variableResolver) {
         String token = resolve(variableResolver, rawToken);
         if (token == null || token.isEmpty() || containsUnresolvedPlaceholder(token)) {
             return null;

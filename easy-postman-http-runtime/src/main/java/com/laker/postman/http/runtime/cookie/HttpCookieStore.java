@@ -1,8 +1,8 @@
 package com.laker.postman.http.runtime.cookie;
 
 import com.laker.postman.http.runtime.interaction.HttpCallbackDispatcher;
-import com.laker.postman.request.model.CookieInfo;
 import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
+import com.laker.postman.request.model.CookieInfo;
 
 import java.net.CookieManager;
 import java.net.CookieStore;

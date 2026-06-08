@@ -19,7 +19,7 @@ public class SidebarTabPanelThemeTest {
 
     @BeforeMethod
     public void rememberThemeTokens() {
-        previousThemeTokens = remember(ThemeColors.PRIMARY, ThemeColors.TEXT_SECONDARY);
+        previousThemeTokens = remember(ThemeColors.PRIMARY, ThemeColors.PRIMARY_DARK, ThemeColors.TEXT_SECONDARY);
     }
 
     @AfterMethod
@@ -30,10 +30,12 @@ public class SidebarTabPanelThemeTest {
     @Test
     public void selectedTabBackgroundShouldUsePrimaryToken() {
         Color primary = new Color(12, 34, 56);
+        Color primaryDark = new Color(10, 24, 48);
         UIManager.put(ThemeColors.PRIMARY, primary);
+        UIManager.put(ThemeColors.PRIMARY_DARK, primaryDark);
         int expandedAlpha = ModernColors.isDarkTheme() ? 36 : 22;
 
-        assertEquals(SidebarTheme.selectedCollapsedTabBackground(), primary);
+        assertEquals(SidebarTheme.selectedCollapsedTabBackground(), primaryDark);
         assertEquals(SidebarTheme.selectedExpandedTabBackground(), ModernColors.withAlpha(primary, expandedAlpha));
     }
 

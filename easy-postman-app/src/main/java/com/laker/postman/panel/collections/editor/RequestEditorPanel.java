@@ -165,7 +165,7 @@ public class RequestEditorPanel extends UiSingletonPanel {
         JTabbedPane tabs = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
         tabs.setOpaque(true);
         tabs.setBackground(RequestEditorTabTheme.tabAreaBackground());
-        tabs.putClientProperty(TABBED_PANE_TAB_TYPE, TABBED_PANE_TAB_TYPE_CARD);
+        tabs.putClientProperty(TABBED_PANE_TAB_TYPE, TABBED_PANE_TAB_TYPE_UNDERLINED);
         tabs.putClientProperty(TABBED_PANE_TAB_WIDTH_MODE, TABBED_PANE_TAB_WIDTH_MODE_PREFERRED);
         tabs.putClientProperty(TABBED_PANE_SHOW_TAB_SEPARATORS, false);
         tabs.putClientProperty(TABBED_PANE_SHOW_CONTENT_SEPARATOR, false);

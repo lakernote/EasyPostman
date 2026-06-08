@@ -20,7 +20,6 @@ public class ClosableTabComponentThemeTest {
     @BeforeMethod
     public void rememberThemeTokens() {
         previousThemeTokens = remember(
-                ThemeColors.PRIMARY,
                 ThemeColors.TEXT_PRIMARY,
                 ThemeColors.TEXT_SECONDARY,
                 ThemeColors.ERROR,
@@ -64,11 +63,4 @@ public class ClosableTabComponentThemeTest {
         assertEquals(ClosableTabComponent.newRequestDotColor(), ModernColors.withAlpha(warning, 190));
     }
 
-    @Test
-    public void selectedTabBorderShouldUseSemanticPrimaryColor() {
-        Color primary = new Color(0, 122, 255);
-        UIManager.put(ThemeColors.PRIMARY, primary);
-
-        assertEquals(ClosableTabComponent.selectedTabBorderColor(), ModernColors.withAlpha(primary, 130));
-    }
 }

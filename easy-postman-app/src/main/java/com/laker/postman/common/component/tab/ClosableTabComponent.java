@@ -234,8 +234,10 @@ public class ClosableTabComponent extends JPanel {
         int w = getWidth() - 1;
         g2.setColor(selected ? RequestEditorTabTheme.selectedTabBackground() : RequestEditorTabTheme.hoverTabBackground());
         g2.fillRoundRect(0, TAB_PLATE_Y, w, h, TAB_ARC, TAB_ARC);
-        g2.setColor(selected ? RequestEditorTabTheme.selectedTabBorder() : RequestEditorTabTheme.hoverTabBorder());
-        g2.drawRoundRect(0, TAB_PLATE_Y, w, h, TAB_ARC, TAB_ARC);
+        if (!selected) {
+            g2.setColor(RequestEditorTabTheme.hoverTabBorder());
+            g2.drawRoundRect(0, TAB_PLATE_Y, w, h, TAB_ARC, TAB_ARC);
+        }
     }
 
     private boolean isSelectedTab() {
@@ -306,10 +308,6 @@ public class ClosableTabComponent extends JPanel {
 
     static Color newRequestDotColor() {
         return RequestEditorTabTheme.newRequestDot();
-    }
-
-    static Color selectedTabBorderColor() {
-        return RequestEditorTabTheme.selectedTabBorder();
     }
 
     // ── 右键菜单 ─────────────────────────────────────────────────────────────

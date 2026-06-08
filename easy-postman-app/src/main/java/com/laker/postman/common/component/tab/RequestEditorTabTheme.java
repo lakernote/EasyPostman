@@ -20,10 +20,6 @@ public class RequestEditorTabTheme {
         return ModernColors.getHoverBackgroundColor();
     }
 
-    public Color selectedTabBorder() {
-        return ModernColors.withAlpha(ModernColors.getPrimary(), 130);
-    }
-
     public Color hoverTabBorder() {
         return ModernColors.getBorderLightColor();
     }

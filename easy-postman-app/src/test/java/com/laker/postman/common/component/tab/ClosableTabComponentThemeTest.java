@@ -19,7 +19,12 @@ public class ClosableTabComponentThemeTest {
 
     @BeforeMethod
     public void rememberThemeTokens() {
-        previousThemeTokens = remember(ThemeColors.TEXT_PRIMARY, ThemeColors.ERROR);
+        previousThemeTokens = remember(
+                ThemeColors.PRIMARY,
+                ThemeColors.TEXT_PRIMARY,
+                ThemeColors.TEXT_SECONDARY,
+                ThemeColors.ERROR,
+                ThemeColors.WARNING);
     }
 
     @AfterMethod
@@ -28,11 +33,19 @@ public class ClosableTabComponentThemeTest {
     }
 
     @Test
-    public void closeButtonForegroundShouldUseSemanticTextPrimaryColor() {
+    public void closeButtonForegroundShouldUseSemanticTextSecondaryColor() {
+        Color textSecondary = new Color(61, 62, 63);
+        UIManager.put(ThemeColors.TEXT_SECONDARY, textSecondary);
+
+        assertEquals(ClosableTabComponent.closeButtonForegroundColor(), textSecondary);
+    }
+
+    @Test
+    public void closeButtonHoverForegroundShouldUseSemanticTextPrimaryColor() {
         Color textPrimary = new Color(21, 22, 23);
         UIManager.put(ThemeColors.TEXT_PRIMARY, textPrimary);
 
-        assertEquals(ClosableTabComponent.closeButtonForegroundColor(), textPrimary);
+        assertEquals(ClosableTabComponent.closeButtonHoverForegroundColor(), textPrimary);
     }
 
     @Test
@@ -41,5 +54,21 @@ public class ClosableTabComponentThemeTest {
         UIManager.put(ThemeColors.ERROR, error);
 
         assertEquals(ClosableTabComponent.dirtyDotColor(), ModernColors.withAlpha(error, 180));
+    }
+
+    @Test
+    public void newRequestDotShouldUseSemanticWarningColor() {
+        Color warning = new Color(251, 191, 36);
+        UIManager.put(ThemeColors.WARNING, warning);
+
+        assertEquals(ClosableTabComponent.newRequestDotColor(), ModernColors.withAlpha(warning, 190));
+    }
+
+    @Test
+    public void selectedTabBorderShouldUseSemanticPrimaryColor() {
+        Color primary = new Color(0, 122, 255);
+        UIManager.put(ThemeColors.PRIMARY, primary);
+
+        assertEquals(ClosableTabComponent.selectedTabBorderColor(), ModernColors.withAlpha(primary, 130));
     }
 }

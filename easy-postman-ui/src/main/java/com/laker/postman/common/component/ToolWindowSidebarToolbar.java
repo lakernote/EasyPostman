@@ -4,14 +4,20 @@ import javax.swing.AbstractButton;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 /**
  * Consistent toolbar used at the top of rounded tool-window sidebars.
  */
 public final class ToolWindowSidebarToolbar extends JPanel {
+    private static final String USER_FOCUS_ACTIVATION_INSTALLED =
+            ToolWindowSidebarToolbar.class.getName() + ".userFocusActivationInstalled";
+
     public static final int HORIZONTAL_PADDING = 8;
     public static final int VERTICAL_PADDING = 6;
     public static final int ACTION_SIZE = 32;
@@ -47,5 +53,21 @@ public final class ToolWindowSidebarToolbar extends JPanel {
         searchField.setMaximumSize(new Dimension(Integer.MAX_VALUE, SEARCH_HEIGHT));
         searchField.setMinimumSize(new Dimension(50, SEARCH_HEIGHT));
         searchField.setAlignmentY(Component.CENTER_ALIGNMENT);
+        installUserActivatedFocus(searchField);
+    }
+
+    private static void installUserActivatedFocus(SearchTextField searchField) {
+        if (Boolean.TRUE.equals(searchField.getClientProperty(USER_FOCUS_ACTIVATION_INSTALLED))) {
+            return;
+        }
+        searchField.putClientProperty(USER_FOCUS_ACTIVATION_INSTALLED, true);
+        searchField.setFocusable(false);
+        searchField.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                searchField.setFocusable(true);
+                SwingUtilities.invokeLater(searchField::requestFocusInWindow);
+            }
+        });
     }
 }

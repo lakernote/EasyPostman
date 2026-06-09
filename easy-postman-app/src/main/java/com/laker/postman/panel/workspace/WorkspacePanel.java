@@ -2,12 +2,13 @@ package com.laker.postman.panel.workspace;
 
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.UiSingletonPanel;
+import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.ToolWindowActionToolbar;
 import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.ToolWindowSidebarToolbar;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.ClearButton;
 import com.laker.postman.common.component.button.PlusButton;
-import com.laker.postman.common.component.button.RefreshButton;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.GitAuthType;
 import com.laker.postman.model.GitOperation;
@@ -27,6 +28,8 @@ import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
@@ -38,6 +41,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * 工作区面板
@@ -52,6 +56,8 @@ public class WorkspacePanel extends UiSingletonPanel {
 
     private JList<Workspace> workspaceList;
     private DefaultListModel<Workspace> listModel;
+    private SearchTextField workspaceSearchField;
+    private List<Workspace> allWorkspaces = new ArrayList<>();
     private JPanel infoPanel;
     private JTextArea logArea;
     private transient WorkspaceService workspaceService;
@@ -98,10 +104,24 @@ public class WorkspacePanel extends UiSingletonPanel {
         JButton newButton = new PlusButton();
         newButton.addActionListener(e -> showCreateWorkspaceDialog());
 
-        // 刷新按钮
-        JButton refreshButton = new RefreshButton();
-        refreshButton.addActionListener(e -> refreshWorkspaceList());
-        return ToolWindowActionToolbar.left(newButton, refreshButton);
+        workspaceSearchField = new SearchTextField();
+        workspaceSearchField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                applyWorkspaceFilter();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                applyWorkspaceFilter();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                applyWorkspaceFilter();
+            }
+        });
+        return new ToolWindowSidebarToolbar(newButton, workspaceSearchField);
     }
 
     /**
@@ -232,7 +252,7 @@ public class WorkspacePanel extends UiSingletonPanel {
 
             @Override
             public boolean canImport(TransferSupport support) {
-                return support.isDrop();
+                return support.isDrop() && !isWorkspaceSearchActive();
             }
 
             @Override
@@ -264,6 +284,10 @@ public class WorkspacePanel extends UiSingletonPanel {
             idOrder.add(listModel.get(i).getId());
         }
         workspaceService.saveWorkspaceOrder(idOrder);
+    }
+
+    private boolean isWorkspaceSearchActive() {
+        return workspaceSearchField != null && !workspaceSearchField.getText().trim().isEmpty();
     }
 
     /**
@@ -748,26 +772,65 @@ public class WorkspacePanel extends UiSingletonPanel {
      */
     private void refreshWorkspaceList() {
         try {
-            List<Workspace> workspaces = workspaceService.getAllWorkspaces();
-            listModel.clear();
-            for (Workspace workspace : workspaces) {
-                listModel.addElement(workspace);
-            }
-
-            // 选中当前工作区
-            Workspace current = workspaceService.getCurrentWorkspace();
-            if (current != null) {
-                for (int i = 0; i < listModel.getSize(); i++) {
-                    if (listModel.getElementAt(i).getId().equals(current.getId())) {
-                        workspaceList.setSelectedIndex(i);
-                        break;
-                    }
-                }
-            }
-
-            updateInfoPanel();
+            allWorkspaces = new ArrayList<>(workspaceService.getAllWorkspaces());
+            applyWorkspaceFilter();
         } catch (Exception e) {
             log.error("Failed to refresh workspace list", e);
+        }
+    }
+
+    private void applyWorkspaceFilter() {
+        if (listModel == null) {
+            return;
+        }
+
+        String query = workspaceSearchField == null ? "" : workspaceSearchField.getText().trim();
+        String normalizedQuery = query.toLowerCase(Locale.ROOT);
+        listModel.clear();
+        for (Workspace workspace : allWorkspaces) {
+            if (normalizedQuery.isEmpty() || matchesWorkspaceSearch(workspace, normalizedQuery)) {
+                listModel.addElement(workspace);
+            }
+        }
+
+        if (workspaceSearchField != null) {
+            workspaceSearchField.setNoResult(!normalizedQuery.isEmpty() && listModel.isEmpty());
+        }
+        if (workspaceList != null) {
+            workspaceList.setDragEnabled(normalizedQuery.isEmpty());
+        }
+        selectCurrentWorkspaceInVisibleList();
+        updateInfoPanel();
+    }
+
+    private boolean matchesWorkspaceSearch(Workspace workspace, String normalizedQuery) {
+        return containsIgnoreCase(workspace.getName(), normalizedQuery)
+                || containsIgnoreCase(workspace.getDescription(), normalizedQuery)
+                || containsIgnoreCase(workspace.getPath(), normalizedQuery)
+                || containsIgnoreCase(workspace.getGitRemoteUrl(), normalizedQuery)
+                || containsIgnoreCase(workspace.getCurrentBranch(), normalizedQuery)
+                || (workspace.getType() != null
+                && workspace.getType().name().toLowerCase(Locale.ROOT).contains(normalizedQuery));
+    }
+
+    private static boolean containsIgnoreCase(String value, String normalizedQuery) {
+        return value != null && value.toLowerCase(Locale.ROOT).contains(normalizedQuery);
+    }
+
+    private void selectCurrentWorkspaceInVisibleList() {
+        if (workspaceList == null) {
+            return;
+        }
+        workspaceList.clearSelection();
+        Workspace current = workspaceService.getCurrentWorkspace();
+        if (current == null) {
+            return;
+        }
+        for (int i = 0; i < listModel.getSize(); i++) {
+            if (listModel.getElementAt(i).getId().equals(current.getId())) {
+                workspaceList.setSelectedIndex(i);
+                break;
+            }
         }
     }
 

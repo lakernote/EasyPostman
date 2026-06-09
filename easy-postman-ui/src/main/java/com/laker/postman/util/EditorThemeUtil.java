@@ -9,6 +9,8 @@ import org.fife.ui.rtextarea.Gutter;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.BorderFactory;
+import javax.swing.JScrollBar;
+import javax.swing.ScrollPaneConstants;
 import java.awt.Color;
 import java.io.IOException;
 import java.io.InputStream;
@@ -89,6 +91,10 @@ public class EditorThemeUtil {
         scrollPane.setBackground(editorBackground);
         scrollPane.getViewport().setBackground(editorBackground);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        applyEditorScrollBar(scrollPane.getVerticalScrollBar(), editorBackground);
+        applyEditorScrollBar(scrollPane.getHorizontalScrollBar(), editorBackground);
 
         Gutter gutter = scrollPane.getGutter();
         if (gutter == null) {
@@ -102,6 +108,14 @@ public class EditorThemeUtil {
         gutter.setArmedFoldBackground(divider);
         gutter.setFoldIndicatorForeground(lineNumber);
         gutter.setFoldIndicatorArmedForeground(currentLineNumber);
+    }
+
+    private static void applyEditorScrollBar(JScrollBar scrollBar, Color background) {
+        if (scrollBar == null) {
+            return;
+        }
+        scrollBar.setOpaque(true);
+        scrollBar.setBackground(background);
     }
 
     public static void clearConfiguredThemeResources() {

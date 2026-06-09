@@ -74,6 +74,7 @@ public class EditorThemeUtilTest {
         assertEquals(gutter.getLineNumberColor(), new Color(0x74, 0x7A, 0x82));
         assertEquals(gutter.getCurrentLineNumberColor(), new Color(0xA9, 0xB7, 0xC6));
         assertEditorScrollPaneBorderless(scrollPane);
+        assertEditorScrollBarsBlendWith(scrollPane, new Color(0x3A, 0x3D, 0x3F));
     }
 
     @Test
@@ -92,9 +93,17 @@ public class EditorThemeUtilTest {
         assertEquals(gutter.getLineNumberColor(), new Color(0x99, 0x99, 0x99));
         assertEquals(gutter.getCurrentLineNumberColor(), new Color(0x66, 0x66, 0x66));
         assertEditorScrollPaneBorderless(scrollPane);
+        assertEditorScrollBarsBlendWith(scrollPane, Color.WHITE);
     }
 
     private void assertEditorScrollPaneBorderless(RTextScrollPane scrollPane) {
         assertTrue(scrollPane.getBorder() instanceof EmptyBorder);
+    }
+
+    private void assertEditorScrollBarsBlendWith(RTextScrollPane scrollPane, Color expectedBackground) {
+        assertEquals(scrollPane.getVerticalScrollBarPolicy(), ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        assertEquals(scrollPane.getHorizontalScrollBarPolicy(), ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        assertEquals(scrollPane.getVerticalScrollBar().getBackground(), expectedBackground);
+        assertEquals(scrollPane.getHorizontalScrollBar().getBackground(), expectedBackground);
     }
 }

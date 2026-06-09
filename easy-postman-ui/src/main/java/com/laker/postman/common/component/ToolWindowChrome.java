@@ -23,30 +23,36 @@ public final class ToolWindowChrome {
     static final String CHROME_BACKGROUND_PROPERTY = "EasyPostman.toolWindowChrome.background";
     static final String CHROME_ROUNDED_PROPERTY = "EasyPostman.toolWindowChrome.rounded";
     static final String CHROME_SPLIT_PROPERTY = "EasyPostman.toolWindowChrome.split";
-    private static final int OUTER_GAP = 6;
+    private static final int OUTER_VERTICAL_GAP = 4;
+    private static final int OUTER_HORIZONTAL_GAP = 6;
     private static final int INNER_GAP = 1;
 
     private ToolWindowChrome() {
     }
 
     public static JComponent wrapLeftToolWindow(Component content) {
-        return wrapToolWindow(content, new Insets(OUTER_GAP, OUTER_GAP, OUTER_GAP, INNER_GAP));
+        return wrapToolWindow(content, new Insets(OUTER_VERTICAL_GAP, OUTER_HORIZONTAL_GAP,
+                OUTER_VERTICAL_GAP, INNER_GAP));
     }
 
     public static JComponent wrapRightToolWindow(Component content) {
-        return wrapToolWindow(content, new Insets(OUTER_GAP, INNER_GAP, OUTER_GAP, OUTER_GAP));
+        return wrapToolWindow(content, new Insets(OUTER_VERTICAL_GAP, INNER_GAP,
+                OUTER_VERTICAL_GAP, OUTER_HORIZONTAL_GAP));
     }
 
     public static JComponent wrapTopToolWindow(Component content) {
-        return wrapToolWindow(content, new Insets(OUTER_GAP, OUTER_GAP, INNER_GAP, OUTER_GAP));
+        return wrapToolWindow(content, new Insets(OUTER_VERTICAL_GAP, OUTER_HORIZONTAL_GAP,
+                INNER_GAP, OUTER_HORIZONTAL_GAP));
     }
 
     public static JComponent wrapBottomToolWindow(Component content) {
-        return wrapToolWindow(content, new Insets(INNER_GAP, OUTER_GAP, OUTER_GAP, OUTER_GAP));
+        return wrapToolWindow(content, new Insets(INNER_GAP, OUTER_HORIZONTAL_GAP,
+                OUTER_VERTICAL_GAP, OUTER_HORIZONTAL_GAP));
     }
 
     public static JComponent wrapToolWindow(Component content) {
-        return wrapToolWindow(content, new Insets(OUTER_GAP, OUTER_GAP, OUTER_GAP, OUTER_GAP));
+        return wrapToolWindow(content, new Insets(OUTER_VERTICAL_GAP, OUTER_HORIZONTAL_GAP,
+                OUTER_VERTICAL_GAP, OUTER_HORIZONTAL_GAP));
     }
 
     public static JComponent wrapDialogToolWindow(Component content) {

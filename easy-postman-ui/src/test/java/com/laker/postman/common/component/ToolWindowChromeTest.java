@@ -43,9 +43,9 @@ public class ToolWindowChromeTest {
         JComponent wrapper = ToolWindowChrome.wrapLeftToolWindow(content);
 
         assertTrue(wrapper.getBorder() instanceof EmptyBorder);
-        assertEquals(wrapper.getInsets().top, 6);
+        assertEquals(wrapper.getInsets().top, 4);
         assertEquals(wrapper.getInsets().left, 6);
-        assertEquals(wrapper.getInsets().bottom, 6);
+        assertEquals(wrapper.getInsets().bottom, 4);
         assertEquals(wrapper.getInsets().right, 1);
         assertTrue(wrapper.getComponent(0) instanceof RoundedToolWindowPanel);
         RoundedToolWindowPanel roundedPanel = (RoundedToolWindowPanel) wrapper.getComponent(0);
@@ -101,10 +101,10 @@ public class ToolWindowChromeTest {
 
         JComponent topWrapper = (JComponent) splitPane.getTopComponent();
         JComponent bottomWrapper = (JComponent) splitPane.getBottomComponent();
-        assertEquals(topWrapper.getInsets().top, 6);
+        assertEquals(topWrapper.getInsets().top, 4);
         assertEquals(topWrapper.getInsets().bottom, 1);
         assertEquals(bottomWrapper.getInsets().top, 1);
-        assertEquals(bottomWrapper.getInsets().bottom, 6);
+        assertEquals(bottomWrapper.getInsets().bottom, 4);
         RoundedToolWindowPanel topCard = (RoundedToolWindowPanel) topWrapper.getComponent(0);
         RoundedToolWindowPanel bottomCard = (RoundedToolWindowPanel) bottomWrapper.getComponent(0);
         assertSame(topCard.getComponent(0), top);
@@ -126,7 +126,7 @@ public class ToolWindowChromeTest {
         assertTrue(splitPane.getBottomComponent() instanceof JComponent);
         JComponent bottomWrapper = (JComponent) splitPane.getBottomComponent();
         assertEquals(bottomWrapper.getInsets().top, 1);
-        assertEquals(bottomWrapper.getInsets().bottom, 6);
+        assertEquals(bottomWrapper.getInsets().bottom, 4);
         RoundedToolWindowPanel bottomCard = (RoundedToolWindowPanel) bottomWrapper.getComponent(0);
         assertSame(bottomCard.getComponent(0), bottom);
     }
@@ -139,9 +139,9 @@ public class ToolWindowChromeTest {
 
         assertTrue(dialogShell.getComponent(0) instanceof JComponent);
         JComponent toolWindowWrapper = (JComponent) dialogShell.getComponent(0);
-        assertEquals(toolWindowWrapper.getInsets().top, 6);
+        assertEquals(toolWindowWrapper.getInsets().top, 4);
         assertEquals(toolWindowWrapper.getInsets().left, 6);
-        assertEquals(toolWindowWrapper.getInsets().bottom, 6);
+        assertEquals(toolWindowWrapper.getInsets().bottom, 4);
         assertEquals(toolWindowWrapper.getInsets().right, 6);
         assertTrue(toolWindowWrapper.getComponent(0) instanceof RoundedToolWindowPanel);
         RoundedToolWindowPanel roundedPanel = (RoundedToolWindowPanel) toolWindowWrapper.getComponent(0);

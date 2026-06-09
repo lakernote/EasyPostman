@@ -29,6 +29,10 @@ import static com.formdev.flatlaf.FlatClientProperties.*;
  */
 public class RequestEditorPanel extends UiSingletonPanel {
     private static final String REQUEST_STRING = I18nUtil.getMessage(MessageKeys.NEW_REQUEST);
+    static final Insets EDITOR_WORKSPACE_INSETS = new Insets(6, 6, 6, 6);
+    static final int REQUEST_TAB_HEIGHT = 34;
+    static final Insets REQUEST_TAB_INSETS = new Insets(2, 5, 2, 5);
+    static final Insets REQUEST_TAB_AREA_INSETS = new Insets(0, 0, 0, 5);
     static final String PLUS_TAB = "+";
     @Getter
     private JTabbedPane tabbedPane; // 使用 JTabbedPane 管理多个请求编辑子面板
@@ -148,6 +152,11 @@ public class RequestEditorPanel extends UiSingletonPanel {
     @Override
     protected void initUI() {
         ToolWindowSurfaceStyle.applyCard(this);
+        setBorder(BorderFactory.createEmptyBorder(
+                EDITOR_WORKSPACE_INSETS.top,
+                EDITOR_WORKSPACE_INSETS.left,
+                EDITOR_WORKSPACE_INSETS.bottom,
+                EDITOR_WORKSPACE_INSETS.right));
         setLayout(new BorderLayout());
         tabbedPane = createRequestTabbedPane();
         tabLifecycleController = new RequestEditorTabLifecycleController(
@@ -165,9 +174,9 @@ public class RequestEditorPanel extends UiSingletonPanel {
     private JTabbedPane createRequestTabbedPane() {
         JTabbedPane tabs = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
         ToolWindowSurfaceStyle.applyTabbedPaneCard(tabs);
-        tabs.putClientProperty(TABBED_PANE_TAB_AREA_INSETS, new Insets(0, 0, 0, 5));
-        tabs.putClientProperty(TABBED_PANE_TAB_INSETS, new Insets(3, 5, 3, 5));
-        tabs.putClientProperty(TABBED_PANE_TAB_HEIGHT, 38);
+        tabs.putClientProperty(TABBED_PANE_TAB_AREA_INSETS, REQUEST_TAB_AREA_INSETS);
+        tabs.putClientProperty(TABBED_PANE_TAB_INSETS, REQUEST_TAB_INSETS);
+        tabs.putClientProperty(TABBED_PANE_TAB_HEIGHT, REQUEST_TAB_HEIGHT);
         return tabs;
     }
 

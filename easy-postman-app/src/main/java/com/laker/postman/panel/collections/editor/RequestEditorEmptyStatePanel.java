@@ -23,6 +23,7 @@ import java.util.Objects;
 public class RequestEditorEmptyStatePanel extends JPanel {
     private static final int CARD_RADIUS = 16;
     private static final int CARD_PADDING = 48;
+    static final Insets EMPTY_STATE_INSETS = new Insets(12, 20, 12, 20);
     private static final int ICON_SIZE = 96;
     private static final int ICON_RING_SIZE = ICON_SIZE + 32;
     private static final Dimension ICON_CONTAINER_SIZE = new Dimension(ICON_SIZE + 48, ICON_SIZE + 48);
@@ -47,7 +48,11 @@ public class RequestEditorEmptyStatePanel extends JPanel {
         this.newRequestAction = Objects.requireNonNull(newRequestAction, "newRequestAction");
         setLayout(new BorderLayout());
         ToolWindowSurfaceStyle.applyCard(this);
-        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        setBorder(BorderFactory.createEmptyBorder(
+                EMPTY_STATE_INSETS.top,
+                EMPTY_STATE_INSETS.left,
+                EMPTY_STATE_INSETS.bottom,
+                EMPTY_STATE_INSETS.right));
         add(createCardPanel(), BorderLayout.CENTER);
     }
 

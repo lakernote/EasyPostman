@@ -39,6 +39,7 @@ public class ToolWindowStyleConventionsTest {
             "easy-postman-app/src/main/java/com/laker/postman/panel/collections/tree/CollectionTreeToolbar.java",
             "easy-postman-app/src/main/java/com/laker/postman/panel/env/EnvironmentPanel.java",
             "easy-postman-app/src/main/java/com/laker/postman/panel/toolbox/ToolboxPanel.java",
+            "easy-postman-app/src/main/java/com/laker/postman/panel/workspace/WorkspacePanel.java",
             "easy-postman-app/src/main/java/com/laker/postman/panel/toolbox/ElasticsearchPanel.java",
             "easy-postman-app/src/main/java/com/laker/postman/panel/toolbox/InfluxDbPanel.java",
             "easy-postman-plugins/plugin-kafka/src/main/java/com/laker/postman/plugin/kafka/ui/KafkaTopicPanel.java",

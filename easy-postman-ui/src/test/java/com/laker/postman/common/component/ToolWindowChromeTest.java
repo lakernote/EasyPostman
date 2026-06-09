@@ -53,6 +53,24 @@ public class ToolWindowChromeTest {
     }
 
     @Test
+    public void shouldWrapInsetToolWindowWithCardContentPadding() {
+        JLabel content = new JLabel("content");
+
+        JComponent wrapper = ToolWindowChrome.wrapInsetToolWindow(content);
+
+        assertTrue(wrapper.getBorder() instanceof EmptyBorder);
+        RoundedToolWindowPanel roundedPanel = (RoundedToolWindowPanel) wrapper.getComponent(0);
+        assertTrue(roundedPanel.getComponent(0) instanceof JComponent);
+        JComponent insetPanel = (JComponent) roundedPanel.getComponent(0);
+        assertTrue(insetPanel.getBorder() instanceof EmptyBorder);
+        assertEquals(insetPanel.getInsets().top, 8);
+        assertEquals(insetPanel.getInsets().left, 10);
+        assertEquals(insetPanel.getInsets().bottom, 8);
+        assertEquals(insetPanel.getInsets().right, 10);
+        assertSame(insetPanel.getComponent(0), content);
+    }
+
+    @Test
     public void shouldCreateBorderlessHorizontalSplitPane() {
         JSplitPane splitPane = ToolWindowChrome.createHorizontalSplitPane(
                 new JLabel("left"),

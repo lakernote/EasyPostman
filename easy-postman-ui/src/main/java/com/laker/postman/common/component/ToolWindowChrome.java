@@ -26,6 +26,7 @@ public final class ToolWindowChrome {
     private static final int OUTER_VERTICAL_GAP = 4;
     private static final int OUTER_HORIZONTAL_GAP = 6;
     private static final int INNER_GAP = 1;
+    private static final Insets DEFAULT_CONTENT_INSETS = new Insets(8, 10, 8, 10);
 
     private ToolWindowChrome() {
     }
@@ -53,6 +54,20 @@ public final class ToolWindowChrome {
     public static JComponent wrapToolWindow(Component content) {
         return wrapToolWindow(content, new Insets(OUTER_VERTICAL_GAP, OUTER_HORIZONTAL_GAP,
                 OUTER_VERTICAL_GAP, OUTER_HORIZONTAL_GAP));
+    }
+
+    public static JComponent wrapInsetToolWindow(Component content) {
+        return wrapToolWindow(createInsetContent(content));
+    }
+
+    public static JComponent createInsetContent(Component content) {
+        return createInsetContent(content, DEFAULT_CONTENT_INSETS);
+    }
+
+    public static JComponent createInsetContent(Component content, Insets contentInsets) {
+        JPanel wrapper = new ContentInsetPanel(contentInsets);
+        wrapper.add(content, BorderLayout.CENTER);
+        return wrapper;
     }
 
     public static JComponent wrapDialogToolWindow(Component content) {
@@ -132,6 +147,25 @@ public final class ToolWindowChrome {
 
         private void refreshBackground() {
             setBackground(ModernColors.getBackgroundColor());
+        }
+    }
+
+    private static final class ContentInsetPanel extends JPanel {
+        private ContentInsetPanel(Insets contentInsets) {
+            super(new BorderLayout());
+            setBorder(new EmptyBorder(contentInsets));
+            setOpaque(true);
+            refreshBackground();
+        }
+
+        @Override
+        public void updateUI() {
+            super.updateUI();
+            refreshBackground();
+        }
+
+        private void refreshBackground() {
+            setBackground(ModernColors.getCardBackgroundColor());
         }
     }
 

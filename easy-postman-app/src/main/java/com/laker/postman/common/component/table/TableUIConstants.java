@@ -4,6 +4,7 @@ import com.laker.postman.common.constants.ModernColors;
 
 import javax.swing.*;
 import javax.swing.border.Border;
+import javax.swing.text.JTextComponent;
 import java.awt.*;
 
 /**
@@ -29,7 +30,7 @@ public class TableUIConstants {
      * 获取边框颜色 - 主题适配
      */
     public static Color getBorderColor() {
-        return ModernColors.getBorderLightColor();
+        return ModernColors.getTableGridColor();
     }
 
     /**
@@ -77,6 +78,82 @@ public class TableUIConstants {
     public static Border createLabelBorder() {
         return BorderFactory.createEmptyBorder(
                 PADDING_TOP, PADDING_LEFT, PADDING_BOTTOM, PADDING_RIGHT);
+    }
+
+    /**
+     * 创建表格编辑态外框。
+     * 直接返回编辑器组件时使用，替代 FlatTextField 默认 focus/underline 效果。
+     */
+    public static Border createCellEditorBorder() {
+        return BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(ModernColors.getPrimaryLight()),
+                BorderFactory.createEmptyBorder(0, PADDING_LEFT - 1, 0, PADDING_RIGHT - 1)
+        );
+    }
+
+    /**
+     * 创建容器内部输入组件的内边距。
+     */
+    public static Border createCellEditorInnerBorder() {
+        return BorderFactory.createEmptyBorder(0, PADDING_LEFT, 0, PADDING_RIGHT);
+    }
+
+    /**
+     * 获取指定行的非选中背景色，保持编辑态和渲染态斑马纹一致。
+     */
+    public static Color getRowBackground(JTable table, int row) {
+        Color base = table.getBackground();
+        return row % 2 == 1 ? EasyTextFieldCellRenderer.stripeBackground(base) : base;
+    }
+
+    /**
+     * 编辑器直接作为 cell editor 返回时使用。
+     */
+    public static void styleTextCellEditor(JTextComponent editor, JTable table, int row) {
+        styleTextCellEditor(editor, table, row, createCellEditorBorder());
+    }
+
+    /**
+     * 编辑器放在带外框的容器内时使用。
+     */
+    public static void styleContainedTextCellEditor(JTextComponent editor, JTable table, int row) {
+        styleTextCellEditor(editor, table, row, createCellEditorInnerBorder());
+    }
+
+    /**
+     * 容器型 cell editor 使用，例如智能多行 editor 和文件 editor。
+     */
+    public static void styleCellEditorContainer(JComponent container, JTable table, int row) {
+        Color background = getRowBackground(table, row);
+        container.setOpaque(true);
+        container.setBackground(background);
+        container.setBorder(createCellEditorBorder());
+    }
+
+    /**
+     * JScrollPane 放在 cell editor 内部时，需要同步 viewport 背景，否则暗色主题会露白。
+     */
+    public static void styleEditorScrollPane(JScrollPane scrollPane, JTable table, int row) {
+        Color background = getRowBackground(table, row);
+        scrollPane.setOpaque(true);
+        scrollPane.setBackground(background);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.setViewportBorder(BorderFactory.createEmptyBorder());
+        if (scrollPane.getViewport() != null) {
+            scrollPane.getViewport().setOpaque(true);
+            scrollPane.getViewport().setBackground(background);
+        }
+    }
+
+    private static void styleTextCellEditor(JTextComponent editor, JTable table, int row, Border border) {
+        Color background = getRowBackground(table, row);
+        editor.setOpaque(true);
+        editor.setBackground(background);
+        editor.setForeground(table.getForeground());
+        editor.setCaretColor(table.getForeground());
+        editor.setBorder(border);
+        editor.putClientProperty("JComponent.outline", null);
+        editor.putClientProperty("FlatLaf.style", null);
     }
 
     /**

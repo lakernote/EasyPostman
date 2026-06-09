@@ -35,7 +35,12 @@ public class ModernColorsTest {
             ThemeColors.TAB_BACKGROUND,
             ThemeColors.TAB_SELECTED_BACKGROUND,
             ThemeColors.TAB_HOVER_BACKGROUND,
-            ThemeColors.TAB_SEPARATOR
+            ThemeColors.TAB_SEPARATOR,
+            "Table.background",
+            "TableHeader.background",
+            "Table.gridColor",
+            "Table.selectionBackground",
+            "Table.selectionForeground"
     );
 
     private Map<String, Object> previousThemeTokens;
@@ -161,5 +166,25 @@ public class ModernColorsTest {
         assertEquals(ModernColors.getTabSelectedBackgroundColor(), selected);
         assertEquals(ModernColors.getTabHoverBackgroundColor(), hover);
         assertEquals(ModernColors.getTabSeparatorColor(), separator);
+    }
+
+    @Test
+    public void shouldReadTableColorsFromFlatLafUiDefaults() {
+        Color background = new Color(255, 255, 255);
+        Color header = new Color(244, 246, 248);
+        Color grid = new Color(232, 235, 239);
+        Color selection = new Color(226, 235, 254);
+        Color selectionText = new Color(15, 23, 42);
+        UIManager.put("Table.background", background);
+        UIManager.put("TableHeader.background", header);
+        UIManager.put("Table.gridColor", grid);
+        UIManager.put("Table.selectionBackground", selection);
+        UIManager.put("Table.selectionForeground", selectionText);
+
+        assertEquals(ModernColors.getTableBackgroundColor(), background);
+        assertEquals(ModernColors.getTableHeaderBackgroundColor(), header);
+        assertEquals(ModernColors.getTableGridColor(), grid);
+        assertEquals(ModernColors.getTableSelectionBackgroundColor(), selection);
+        assertEquals(ModernColors.getTableSelectionForegroundColor(), selectionText);
     }
 }

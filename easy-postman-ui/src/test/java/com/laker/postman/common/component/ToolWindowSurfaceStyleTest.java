@@ -21,6 +21,7 @@ import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
 import javax.swing.plaf.metal.MetalLookAndFeel;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,7 +38,12 @@ public class ToolWindowSurfaceStyleTest {
                 ThemeColors.SURFACE,
                 ThemeColors.INPUT_BACKGROUND,
                 ThemeColors.BACKGROUND,
-                ThemeColors.TAB_BACKGROUND
+                ThemeColors.TAB_BACKGROUND,
+                "Table.background",
+                "Table.gridColor",
+                "Table.selectionBackground",
+                "Table.selectionForeground",
+                "TableHeader.background"
         }) {
             previousTokens.put(key, UIManager.get(key));
         }
@@ -63,9 +69,15 @@ public class ToolWindowSurfaceStyleTest {
     @Test
     public void shouldApplyCardSurfaceToTableScrollPane() {
         Color surface = new Color(250, 251, 252);
-        Color input = new Color(246, 248, 250);
+        Color tableBackground = new Color(255, 255, 255);
+        Color headerBackground = new Color(246, 248, 250);
+        Color grid = new Color(230, 233, 238);
+        Color selection = new Color(226, 235, 254);
         UIManager.put(ThemeColors.SURFACE, surface);
-        UIManager.put(ThemeColors.INPUT_BACKGROUND, input);
+        UIManager.put("Table.background", tableBackground);
+        UIManager.put("TableHeader.background", headerBackground);
+        UIManager.put("Table.gridColor", grid);
+        UIManager.put("Table.selectionBackground", selection);
         JTable table = new JTable(1, 1);
         JScrollPane scrollPane = new JScrollPane(table);
 
@@ -75,8 +87,14 @@ public class ToolWindowSurfaceStyleTest {
         assertTrue(scrollPane.getBorder() instanceof EmptyBorder);
         assertTrue(scrollPane.getViewportBorder() instanceof EmptyBorder);
         assertEquals(scrollPane.getViewport().getBackground(), surface);
-        assertEquals(table.getBackground(), surface);
-        assertEquals(table.getTableHeader().getBackground(), input);
+        assertEquals(scrollPane.getColumnHeader().getBackground(), headerBackground);
+        assertEquals(table.getBackground(), tableBackground);
+        assertEquals(table.getGridColor(), grid);
+        assertEquals(table.getSelectionBackground(), selection);
+        assertEquals(table.getIntercellSpacing(), new Dimension(1, 1));
+        assertEquals(table.getRowMargin(), 1);
+        assertEquals(table.getTableHeader().getBackground(), headerBackground);
+        assertTrue(table.getTableHeader().getPreferredSize().height >= 32);
     }
 
     @Test

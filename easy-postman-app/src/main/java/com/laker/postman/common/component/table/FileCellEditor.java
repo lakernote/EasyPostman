@@ -15,6 +15,7 @@ import java.io.File;
  * 增强版：支持文件预览、文件类型过滤、最近路径记忆
  */
 public class FileCellEditor extends DefaultCellEditor {
+    private static final String BUTTON_BASE_BACKGROUND_PROPERTY = "EasyPostman.fileCellEditor.buttonBaseBackground";
 
     private final JPanel editorPanel;
     private final JButton browseButton;
@@ -51,6 +52,7 @@ public class FileCellEditor extends DefaultCellEditor {
         browseButton.setMargin(new Insets(2, 8, 2, 8));
         browseButton.setFocusPainted(false);
         browseButton.setBackground(tableBackground);
+        browseButton.putClientProperty(BUTTON_BASE_BACKGROUND_PROPERTY, tableBackground);
         browseButton.setForeground(TableUIConstants.getFileButtonTextColor());
         browseButton.setBorder(TableUIConstants.createButtonBorder());
         browseButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -64,7 +66,7 @@ public class FileCellEditor extends DefaultCellEditor {
 
             @Override
             public void mouseExited(MouseEvent e) {
-                browseButton.setBackground(tableBackground);
+                browseButton.setBackground(getButtonBaseBackground());
             }
         });
 
@@ -142,8 +144,14 @@ public class FileCellEditor extends DefaultCellEditor {
     public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
         filePath = value == null ? "" : value.toString();
 
+        TableUIConstants.styleCellEditorContainer(editorPanel, table, row);
+        TableUIConstants.styleContainedTextCellEditor(pathField, table, row);
+        browseButton.putClientProperty(BUTTON_BASE_BACKGROUND_PROPERTY, TableUIConstants.getRowBackground(table, row));
+        browseButton.setBackground(getButtonBaseBackground());
+
         if (filePath.isEmpty() || TableUIConstants.SELECT_FILE_TEXT.equals(filePath)) {
             pathField.setText("");
+            pathField.setToolTipText(null);
         } else {
             pathField.setText(filePath);
             pathField.setToolTipText(filePath);
@@ -159,15 +167,12 @@ public class FileCellEditor extends DefaultCellEditor {
             }
         }
 
-        // 设置面板背景色（使用表格背景色，不再使用斑马纹）
-        Color bgColor = table.getBackground();
-        if (isSelected) {
-            bgColor = table.getSelectionBackground();
-        }
-        editorPanel.setBackground(bgColor);
-        pathField.setBackground(bgColor);
-
         return editorPanel;
+    }
+
+    private Color getButtonBaseBackground() {
+        Object background = browseButton.getClientProperty(BUTTON_BASE_BACKGROUND_PROPERTY);
+        return background instanceof Color color ? color : ModernColors.getTableBackgroundColor();
     }
 
     @Override

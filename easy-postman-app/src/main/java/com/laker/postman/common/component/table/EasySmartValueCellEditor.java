@@ -278,6 +278,7 @@ public class EasySmartValueCellEditor extends AbstractCellEditor implements Tabl
         this.currentRow = row;
         this.currentColumn = column;
         this.originalRowHeight = table.getRowHeight(row);
+        styleEditorComponents(table, row);
         log.debug("[getComponent] originalRowHeight saved={}", this.originalRowHeight);
 
         String text = value == null ? "" : value.toString();
@@ -336,6 +337,17 @@ public class EasySmartValueCellEditor extends AbstractCellEditor implements Tabl
 
         log.debug("[getComponent] END");
         return containerPanel;
+    }
+
+    private void styleEditorComponents(JTable table, int row) {
+        TableUIConstants.styleCellEditorContainer(containerPanel, table, row);
+        TableUIConstants.styleContainedTextCellEditor(textField, table, row);
+        if (textArea != null) {
+            TableUIConstants.styleContainedTextCellEditor(textArea, table, row);
+        }
+        if (scrollPane != null) {
+            TableUIConstants.styleEditorScrollPane(scrollPane, table, row);
+        }
     }
 
     @Override

@@ -1168,23 +1168,20 @@ public class CsvDataPanel extends JPanel {
     }
 
     public static void configureCsvTableAppearance(JTable table) {
-        Color tableBackground = ModernColors.getCardBackgroundColor();
-        Color selectionBackground = UIManager.getColor("Table.selectionBackground");
-        if (selectionBackground == null) {
-            selectionBackground = ModernColors.getConsoleSelectionBg();
-        }
+        Color tableBackground = ModernColors.getTableBackgroundColor();
+        Color selectionBackground = ModernColors.getTableSelectionBackgroundColor();
 
         table.setRowHeight(30);
         table.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         table.setForeground(ModernColors.getTextPrimary());
         table.setBackground(tableBackground);
         table.setSelectionBackground(selectionBackground);
-        table.setSelectionForeground(ModernColors.getTextPrimary());
-        table.setGridColor(ModernColors.getBorderLightColor());
+        table.setSelectionForeground(ModernColors.getTableSelectionForegroundColor());
+        table.setGridColor(ModernColors.getTableGridColor());
         table.setShowHorizontalLines(true);
         table.setShowVerticalLines(true);
         table.setIntercellSpacing(new Dimension(1, 1));
-        table.setRowMargin(0);
+        table.setRowMargin(1);
         table.setOpaque(true);
         table.setFillsViewportHeight(true);
         table.putClientProperty("csv.hoveredRow", -1);
@@ -1193,7 +1190,7 @@ public class CsvDataPanel extends JPanel {
         header.setFont(FontsUtil.getDefaultFont(Font.BOLD));
         header.setReorderingAllowed(false);
         header.setResizingAllowed(true);
-        header.setBackground(ModernColors.getInputBackgroundColor());
+        header.setBackground(ModernColors.getTableHeaderBackgroundColor());
         header.setForeground(ModernColors.getTextPrimary());
         header.setBorder(BorderFactory.createEmptyBorder());
         header.setPreferredSize(new Dimension(header.getPreferredSize().width, 34));

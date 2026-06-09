@@ -3,6 +3,7 @@ package com.laker.postman.common.constants;
 import com.formdev.flatlaf.FlatLaf;
 import lombok.experimental.UtilityClass;
 
+import javax.swing.UIManager;
 import java.awt.*;
 
 /**
@@ -42,6 +43,19 @@ public final class ModernColors {
 
     private static Color color(String key, Color fallback) {
         return ThemeColors.color(key, fallback);
+    }
+
+    private static Color uiColor(String key, Color lightFallback, Color darkFallback) {
+        Color color = UIManager.getColor(key);
+        if (color != null) {
+            return color;
+        }
+        return isDarkTheme() ? darkFallback : lightFallback;
+    }
+
+    private static Color uiColor(String key, Color fallback) {
+        Color color = UIManager.getColor(key);
+        return color != null ? color : fallback;
     }
 
     // ==================== 主色系 ====================
@@ -478,6 +492,42 @@ public final class ModernColors {
      */
     public static Color getSelectionBackgroundColor() {
         return color(ThemeColors.SELECTION_BACKGROUND, new Color(212, 227, 255), new Color(45, 64, 95));
+    }
+
+    /**
+     * 获取表格主体背景色。
+     * 优先读取 FlatLaf 标准 Table token，便于不同主题保持一致。
+     */
+    public static Color getTableBackgroundColor() {
+        return uiColor("Table.background", new Color(255, 255, 255), new Color(25, 26, 28));
+    }
+
+    /**
+     * 获取表头背景色，接近 IntelliJ IDEA 的轻量灰色表头。
+     */
+    public static Color getTableHeaderBackgroundColor() {
+        return uiColor("TableHeader.background", new Color(244, 246, 248), new Color(39, 41, 44));
+    }
+
+    /**
+     * 获取表格网格/分隔线颜色。
+     */
+    public static Color getTableGridColor() {
+        return uiColor("Table.gridColor", new Color(232, 235, 239), new Color(49, 51, 56));
+    }
+
+    /**
+     * 获取表格选中背景色。
+     */
+    public static Color getTableSelectionBackgroundColor() {
+        return uiColor("Table.selectionBackground", getSelectionBackgroundColor());
+    }
+
+    /**
+     * 获取表格选中文字色。
+     */
+    public static Color getTableSelectionForegroundColor() {
+        return uiColor("Table.selectionForeground", getTextPrimary());
     }
 
 

@@ -6,6 +6,7 @@ import javax.swing.AbstractButton;
 import javax.swing.JComponent;
 import javax.swing.BorderFactory;
 import javax.swing.JComboBox;
+import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollBar;
@@ -16,6 +17,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTree;
 import javax.swing.JPopupMenu;
+import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.JViewport;
 import javax.swing.SwingUtilities;
@@ -23,9 +25,11 @@ import javax.swing.text.JTextComponent;
 import javax.swing.plaf.basic.BasicSplitPaneDivider;
 import javax.swing.plaf.basic.BasicSplitPaneUI;
 import javax.swing.table.JTableHeader;
+import javax.swing.table.TableCellRenderer;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Dimension;
 import java.beans.PropertyChangeListener;
 import java.lang.ref.WeakReference;
 import java.util.function.Consumer;
@@ -85,7 +89,11 @@ public final class ToolWindowSurfaceStyle {
     }
 
     public static void applyTableScrollPaneCard(JScrollPane scrollPane, JTable table) {
-        applyScrollPaneCard(scrollPane);
+        if (scrollPane.getColumnHeader() == null && table.getTableHeader() != null) {
+            scrollPane.setColumnHeaderView(table.getTableHeader());
+        }
+        setTableScrollPaneCard(scrollPane);
+        installThemeRefresh(scrollPane, component -> setTableScrollPaneCard((JScrollPane) component));
         applyTableCard(table);
     }
 
@@ -223,15 +231,92 @@ public final class ToolWindowSurfaceStyle {
     }
 
     private static void setTableCard(JTable table) {
-        Color surface = ModernColors.getCardBackgroundColor();
+        Color surface = ModernColors.getTableBackgroundColor();
+        Color grid = ModernColors.getTableGridColor();
         table.setOpaque(true);
         table.setBackground(surface);
-        table.setGridColor(ModernColors.getBorderLightColor());
+        table.setForeground(ModernColors.getTextPrimary());
+        table.setSelectionBackground(ModernColors.getTableSelectionBackgroundColor());
+        table.setSelectionForeground(ModernColors.getTableSelectionForegroundColor());
+        table.setGridColor(grid);
+        table.setShowHorizontalLines(true);
+        table.setShowVerticalLines(true);
+        table.setIntercellSpacing(new Dimension(1, 1));
+        table.setRowMargin(1);
+        if (table.getRowHeight() < 28) {
+            table.setRowHeight(28);
+        }
         JTableHeader header = table.getTableHeader();
         if (header != null) {
             header.setOpaque(true);
-            header.setBackground(ModernColors.getInputBackgroundColor());
+            header.setBackground(ModernColors.getTableHeaderBackgroundColor());
             header.setForeground(ModernColors.getTextPrimary());
+            header.setReorderingAllowed(false);
+            int headerHeight = Math.max(32, header.getPreferredSize().height);
+            header.setPreferredSize(new Dimension(header.getPreferredSize().width, headerHeight));
+            installTableHeaderRenderer(header);
+        }
+    }
+
+    private static void setTableScrollPaneCard(JScrollPane scrollPane) {
+        setCard(scrollPane, true);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.setViewportBorder(BorderFactory.createEmptyBorder());
+        applyViewportCard(scrollPane.getViewport());
+        applyScrollBarCard(scrollPane.getVerticalScrollBar());
+        applyScrollBarCard(scrollPane.getHorizontalScrollBar());
+
+        JViewport columnHeader = scrollPane.getColumnHeader();
+        if (columnHeader != null) {
+            columnHeader.setOpaque(true);
+            columnHeader.setBackground(ModernColors.getTableHeaderBackgroundColor());
+        }
+        setTableCorner(scrollPane, JScrollPane.UPPER_RIGHT_CORNER);
+        setTableCorner(scrollPane, JScrollPane.UPPER_LEFT_CORNER);
+    }
+
+    private static void setTableCorner(JScrollPane scrollPane, String cornerKey) {
+        Component corner = scrollPane.getCorner(cornerKey);
+        if (corner instanceof JComponent component) {
+            component.setOpaque(true);
+            component.setBackground(ModernColors.getTableHeaderBackgroundColor());
+        }
+    }
+
+    private static void installTableHeaderRenderer(JTableHeader header) {
+        TableCellRenderer renderer = header.getDefaultRenderer();
+        if (renderer instanceof IdeaTableHeaderRenderer) {
+            return;
+        }
+        header.setDefaultRenderer(new IdeaTableHeaderRenderer(renderer));
+    }
+
+    private static final class IdeaTableHeaderRenderer implements TableCellRenderer {
+        private final TableCellRenderer delegate;
+
+        private IdeaTableHeaderRenderer(TableCellRenderer delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
+                                                       int row, int column) {
+            Component component = delegate.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            if (component instanceof JComponent jComponent) {
+                jComponent.setOpaque(true);
+                jComponent.setBackground(ModernColors.getTableHeaderBackgroundColor());
+                jComponent.setForeground(ModernColors.getTextPrimary());
+                jComponent.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createMatteBorder(0, 0, 1, 1, ModernColors.getTableGridColor()),
+                        BorderFactory.createEmptyBorder(0, 10, 0, 10)
+                ));
+            }
+            if (component instanceof JLabel label) {
+                label.setFont(table.getTableHeader().getFont());
+                boolean blankHeader = value == null || value.toString().isBlank();
+                label.setHorizontalAlignment(blankHeader ? SwingConstants.CENTER : SwingConstants.LEADING);
+            }
+            return component;
         }
     }
 

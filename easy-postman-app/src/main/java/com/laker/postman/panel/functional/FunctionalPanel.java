@@ -110,7 +110,7 @@ public class FunctionalPanel extends UiSingletonPanel {
                         .setColorFilter(new FlatSVGIcon.ColorFilter(color -> ModernColors.getTextPrimary())),
                 resultsPanel);
 
-        add(ToolWindowChrome.wrapToolWindow(mainTabbedPane), BorderLayout.CENTER);
+        add(ToolWindowChrome.wrapInsetToolWindow(mainTabbedPane), BorderLayout.CENTER);
 
         this.persistenceService = BeanFactory.getBean(FunctionalPersistenceService.class);
         loadSaved();

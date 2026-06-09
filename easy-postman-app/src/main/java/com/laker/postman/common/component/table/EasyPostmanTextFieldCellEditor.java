@@ -21,6 +21,7 @@ public class EasyPostmanTextFieldCellEditor extends AbstractCellEditor implement
     @Override
     public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
         textField.setText(value == null ? "" : value.toString());
+        TableUIConstants.styleTextCellEditor(textField, table, row);
         return textField;
     }
 }

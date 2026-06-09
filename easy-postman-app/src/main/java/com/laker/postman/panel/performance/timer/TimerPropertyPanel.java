@@ -4,7 +4,9 @@ import com.laker.postman.performance.core.timer.TimerData;
 
 
 import com.laker.postman.common.component.EasyJSpinner;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.performance.model.PerformanceTreeNode;
+import com.laker.postman.panel.performance.PerformanceStagePropertyLayout;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -20,7 +22,7 @@ public class TimerPropertyPanel extends JPanel {
         setLayout(new GridBagLayout());
         setMaximumSize(new Dimension(420, 120));
         setPreferredSize(new Dimension(380, 100));
-        setBorder(BorderFactory.createEmptyBorder(18, 24, 18, 24));
+        PerformanceStagePropertyLayout.applyCompactBorder(this);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(6, 6, 6, 6);
         gbc.anchor = GridBagConstraints.CENTER;
@@ -42,10 +44,9 @@ public class TimerPropertyPanel extends JPanel {
         gbc.insets = new Insets(6, 6, 6, 6);
         gbc.anchor = GridBagConstraints.CENTER;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        JLabel helpLabel = new JLabel("<html><span style='color:gray'>"
-                + I18nUtil.getMessage(MessageKeys.PERFORMANCE_TIMER_HINT)
-                + "</span></html>");
+        JLabel helpLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TIMER_HINT));
         helpLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        helpLabel.setForeground(ModernColors.getTextSecondary());
         add(helpLabel, gbc);
         // 占位撑满高度
         gbc.gridy = 2;

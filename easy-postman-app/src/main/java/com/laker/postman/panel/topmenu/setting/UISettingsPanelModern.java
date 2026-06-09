@@ -1,6 +1,7 @@
 package com.laker.postman.panel.topmenu.setting;
 
 import com.laker.postman.common.UiSingletonFactory;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.setting.SettingsHintLabel;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.NotificationPosition;
@@ -251,10 +252,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
         // 字体预览
         fontPreviewLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SETTINGS_UI_FONT_PREVIEW));
         fontPreviewLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        fontPreviewLabel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(getBorderMediumColor(), 1),
-                BorderFactory.createEmptyBorder(10, 10, 10, 10)
-        ));
+        fontPreviewLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         fontPreviewLabel.setOpaque(true);
         fontPreviewLabel.setBackground(getInputBackgroundColor());
         fontPreviewLabel.setForeground(getTextPrimaryColor());
@@ -307,7 +305,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
     private JPanel createSidebarTabsRow() {
         JPanel row = new JPanel();
         row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
-        row.setBackground(getCardBackgroundColor());
+        ToolWindowSurfaceStyle.applyCard(row);
         row.setAlignmentX(Component.LEFT_ALIGNMENT);
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 270));
 
@@ -334,7 +332,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
     private JPanel createSidebarTabsEditor() {
         JPanel editor = new JPanel();
         editor.setLayout(new BoxLayout(editor, BoxLayout.Y_AXIS));
-        editor.setBackground(getCardBackgroundColor());
+        ToolWindowSurfaceStyle.applyCard(editor);
         editor.setAlignmentX(Component.LEFT_ALIGNMENT);
         editor.setMaximumSize(new Dimension(340, 260));
 
@@ -352,8 +350,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
         sidebarTabList.setTransferHandler(new SidebarTabListTransferHandler());
         sidebarTabList.setFixedCellHeight(38);
         sidebarTabList.setVisibleRowCount(Math.min(sidebarTabListModel.size(), 7));
-        sidebarTabList.setOpaque(false);
-        sidebarTabList.setSelectionBackground(getHoverBackgroundColor());
+        sidebarTabList.setSelectionBackground(ModernColors.getSelectionBackgroundColor());
         sidebarTabList.setSelectionForeground(getTextPrimaryColor());
         sidebarTabList.addMouseListener(new MouseAdapter() {
             @Override
@@ -384,12 +381,8 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
 
         JScrollPane scrollPane = new JScrollPane(sidebarTabList);
         scrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
-        scrollPane.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(getBorderMediumColor(), 1),
-                new EmptyBorder(4, 4, 4, 4)
-        ));
-        scrollPane.setBackground(getInputBackgroundColor());
-        scrollPane.getViewport().setBackground(getInputBackgroundColor());
+        ToolWindowSurfaceStyle.applyListScrollPaneCard(scrollPane, sidebarTabList);
+        scrollPane.setBorder(new EmptyBorder(4, 4, 4, 4));
         scrollPane.setPreferredSize(new Dimension(320, 160));
         scrollPane.setMaximumSize(new Dimension(320, 160));
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
@@ -859,7 +852,9 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
             dragHintLabel.setFont(com.laker.postman.util.FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
             dragHintLabel.setForeground(getTextSecondaryColor());
 
-            Color background = isSelected ? getHoverBackgroundColor() : getInputBackgroundColor();
+            Color background = isSelected
+                    ? ModernColors.getSelectionBackgroundColor()
+                    : ModernColors.getCardBackgroundColor();
             setBackground(background);
             return this;
         }

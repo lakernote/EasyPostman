@@ -1,6 +1,7 @@
 package com.laker.postman.panel.topmenu.help;
 
 import com.laker.postman.common.component.button.ModernButtonFactory;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FontsUtil;
@@ -43,7 +44,7 @@ public class MemoryTuningDialog extends JDialog {
 
     private JScrollPane createScrollContent() {
         JPanel content = new ScrollableContentPanel();
-        content.setBackground(ModernColors.getBackgroundColor());
+        ToolWindowSurfaceStyle.applyBackground(content);
         content.setBorder(new EmptyBorder(14, 16, 14, 16));
 
         GridBagConstraints gbc = new GridBagConstraints();
@@ -65,7 +66,8 @@ public class MemoryTuningDialog extends JDialog {
 
         JScrollPane scrollPane = new JScrollPane(content);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
-        scrollPane.getViewport().setBackground(ModernColors.getBackgroundColor());
+        ToolWindowSurfaceStyle.applyBackground(scrollPane);
+        ToolWindowSurfaceStyle.applyBackground(scrollPane.getViewport());
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.setPreferredSize(new Dimension(CONTENT_WIDTH + 60, 540));
         return scrollPane;
@@ -194,7 +196,7 @@ public class MemoryTuningDialog extends JDialog {
     private JPanel createButtonBar() {
         JPanel buttonBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         buttonBar.setBorder(new EmptyBorder(10, 16, 14, 16));
-        buttonBar.setBackground(ModernColors.getBackgroundColor());
+        ToolWindowSurfaceStyle.applyBackground(buttonBar);
 
         JButton okButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK), true);
         okButton.addActionListener(e -> dispose());

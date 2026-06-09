@@ -6,9 +6,12 @@ import com.laker.postman.performance.core.model.PerformanceStatsSnapshot;
 import com.laker.postman.performance.core.report.PerformanceJsonReport;
 
 
+import com.laker.postman.common.component.ToolWindowActionToolbar;
 import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
 import com.laker.postman.common.component.button.SegmentedToggleButton;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.performance.model.PerformanceProtocolLabels;
 import com.laker.postman.performance.report.PerformanceProtocolReportData;
 import com.laker.postman.performance.report.PerformanceReportMarkdownBuilder;
@@ -62,6 +65,7 @@ public class PerformanceReportPanel extends JPanel {
         this.generalRenderer = createGeneralRenderer();
 
         setLayout(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(this);
         setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
 
         reportTableModel = createTableModel(columns);
@@ -72,6 +76,7 @@ public class PerformanceReportPanel extends JPanel {
         JTable sseReportTable = createGenericReportTable(sseReportTableModel);
 
         JPanel reportCards = new JPanel(new CardLayout());
+        ToolWindowSurfaceStyle.applyCard(reportCards);
         reportCards.add(createReportScrollPane(reportTable), PerformanceProtocol.HTTP.name());
         reportCards.add(createReportScrollPane(webSocketReportTable), PerformanceProtocol.WEBSOCKET.name());
         reportCards.add(createReportScrollPane(sseReportTable), PerformanceProtocol.SSE.name());
@@ -81,16 +86,17 @@ public class PerformanceReportPanel extends JPanel {
 
     private JPanel createToolbar(JPanel reportCards) {
         JPanel toolbar = new JPanel(new BorderLayout(8, 0));
+        ToolWindowSurfaceStyle.applyCard(toolbar);
         toolbar.setBorder(BorderFactory.createEmptyBorder(8, 0, 8, 0));
 
-        toolbar.add(createProtocolSwitcher(reportCards), BorderLayout.WEST);
+        toolbar.add(ToolWindowActionToolbar.inlineLeft(createProtocolSwitcher(reportCards)), BorderLayout.WEST);
 
         JButton copyReportButton = ModernButtonFactory.createButton(
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COPY_MARKDOWN_BUTTON),
                 false
         );
         copyReportButton.addActionListener(e -> copyMarkdownReport());
-        toolbar.add(copyReportButton, BorderLayout.EAST);
+        toolbar.add(ToolWindowActionToolbar.inlineRight(copyReportButton), BorderLayout.EAST);
         return toolbar;
     }
 
@@ -171,6 +177,7 @@ public class PerformanceReportPanel extends JPanel {
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        ToolWindowSurfaceStyle.applyTableScrollPaneCard(scrollPane, table);
         return scrollPane;
     }
 
@@ -421,21 +428,21 @@ public class PerformanceReportPanel extends JPanel {
 
     private void applyTotalRowStyle(Component c) {
         c.setFont(c.getFont().deriveFont(Font.BOLD));
-        c.setForeground(UIManager.getColor("Performance.report.totalForeground"));
-        c.setBackground(UIManager.getColor("Performance.report.totalBackground"));
+        c.setForeground(uiColor("Performance.report.totalForeground", ModernColors.getTextPrimary()));
+        c.setBackground(uiColor("Performance.report.totalBackground", ModernColors.getHoverBackgroundColor()));
     }
 
     private void applyFailCellStyle(Component c, Object value) {
         applyFailForeground(c, value);
-        c.setBackground(UIManager.getColor("Table.background"));
+        c.setBackground(ModernColors.getCardBackgroundColor());
     }
 
     private void applyFailForeground(Component c, Object value) {
         try {
             int failCount = Integer.parseInt(value == null ? "0" : value.toString());
-            c.setForeground(failCount > 0 ? Color.RED : UIManager.getColor("Table.foreground"));
+            c.setForeground(failCount > 0 ? ModernColors.getError() : tableForeground());
         } catch (Exception e) {
-            c.setForeground(UIManager.getColor("Table.foreground"));
+            c.setForeground(tableForeground());
         }
     }
 
@@ -443,7 +450,7 @@ public class PerformanceReportPanel extends JPanel {
         try {
             int failCount = Integer.parseInt(value == null ? "0" : value.toString());
             if (failCount > 0) {
-                c.setForeground(Color.RED);
+                c.setForeground(ModernColors.getError());
             }
         } catch (Exception ignored) {
         }
@@ -451,7 +458,7 @@ public class PerformanceReportPanel extends JPanel {
 
     private void applyRateCellStyle(Component c, Object value) {
         applyRateForeground(c, value);
-        c.setBackground(UIManager.getColor("Table.background"));
+        c.setBackground(ModernColors.getCardBackgroundColor());
     }
 
     private void applyRateForeground(Component c, Object value) {
@@ -460,23 +467,32 @@ public class PerformanceReportPanel extends JPanel {
             try {
                 double rate = Double.parseDouble(rateStr.replace("%", ""));
                 if (rate >= SUCCESS_RATE_EXCELLENT) {
-                    c.setForeground(UIManager.getColor("Performance.report.successColor"));
+                    c.setForeground(uiColor("Performance.report.successColor", ModernColors.getSuccess()));
                 } else if (rate >= SUCCESS_RATE_GOOD) {
-                    c.setForeground(UIManager.getColor("Performance.report.warningColor"));
+                    c.setForeground(uiColor("Performance.report.warningColor", ModernColors.getWarningDark()));
                 } else {
-                    c.setForeground(Color.RED);
+                    c.setForeground(ModernColors.getError());
                 }
             } catch (Exception e) {
-                c.setForeground(UIManager.getColor("Table.foreground"));
+                c.setForeground(tableForeground());
             }
         } else {
-            c.setForeground(UIManager.getColor("Table.foreground"));
+            c.setForeground(tableForeground());
         }
     }
 
     private void applyDefaultCellStyle(Component c) {
-        c.setForeground(UIManager.getColor("Table.foreground"));
-        c.setBackground(UIManager.getColor("Table.background"));
+        c.setForeground(tableForeground());
+        c.setBackground(ModernColors.getCardBackgroundColor());
+    }
+
+    private static Color tableForeground() {
+        return uiColor("Table.foreground", ModernColors.getTextPrimary());
+    }
+
+    private static Color uiColor(String key, Color fallback) {
+        Color color = UIManager.getColor(key);
+        return color != null ? color : fallback;
     }
 
 

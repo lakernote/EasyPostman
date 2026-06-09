@@ -35,10 +35,8 @@ public class AutoScrollToggleButton extends JToggleButton {
      */
     private void updateIcon(boolean selected) {
         if (selected) {
-            // 选中状态：使用白色图标
-            setIcon(IconUtil.createColored(ICON_PATH, IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL, Color.WHITE));
+            setIcon(IconUtil.createOnPrimary(ICON_PATH, IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
         } else {
-            // 未选中状态：使用主题适配颜色
             setIcon(IconUtil.createThemed(ICON_PATH, IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
         }
     }

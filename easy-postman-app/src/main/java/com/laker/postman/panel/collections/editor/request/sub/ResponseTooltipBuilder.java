@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.http.runtime.model.HttpEventInfo;
 import com.laker.postman.util.FontsUtil;
@@ -24,8 +25,7 @@ public class ResponseTooltipBuilder {
                                                ResponseSizeCalculator.SizeInfo sizeInfo) {
         JPanel root = new JPanel();
         root.setLayout(new BoxLayout(root, BoxLayout.Y_AXIS));
-        root.setOpaque(true);
-        root.setBackground(ModernColors.getCardBackgroundColor());
+        ToolWindowSurfaceStyle.applyCard(root);
         root.setBorder(new EmptyBorder(10, 12, 10, 14));
 
         // ── Response ──────────────────────────
@@ -139,11 +139,7 @@ public class ResponseTooltipBuilder {
         badge.setOpaque(true);
         Color successColor = ModernColors.getSuccess();
         badge.setBackground(ModernColors.withAlpha(successColor, 24));
-        badge.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(
-                        successColor.getRed(), successColor.getGreen(), successColor.getBlue(), 70), 1, true),
-                BorderFactory.createEmptyBorder(5, 8, 5, 8)
-        ));
+        badge.setBorder(new EmptyBorder(5, 8, 5, 8));
 
         Font f = FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1);
         Font fb = FontsUtil.getDefaultFontWithOffset(Font.BOLD, -1);

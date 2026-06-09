@@ -14,8 +14,9 @@ class SidebarTabMetrics {
 
     static final int EXPANDED_SELECTED_BACKGROUND_INSET_HORIZONTAL = 8;
     static final int EXPANDED_SELECTED_BACKGROUND_INSET_VERTICAL = 5;
-    static final int COLLAPSED_SELECTED_BACKGROUND_WIDTH = 34;
+    static final int COLLAPSED_SELECTED_BACKGROUND_WIDTH = 32;
     static final int COLLAPSED_SELECTED_BACKGROUND_HEIGHT = 32;
+    static final int COLLAPSED_VISUAL_CENTER_OFFSET_X = 0;
     static final int SELECTED_BACKGROUND_ARC = 10;
 
     static final int EXPANDED_TAB_PADDING_VERTICAL = 6;
@@ -51,5 +52,19 @@ class SidebarTabMetrics {
     static int collapsedHeight(int maxIconHeight) {
         int height = maxIconHeight + (COLLAPSED_TAB_PADDING_VERTICAL * 2);
         return Math.max(height, 40);
+    }
+
+    static int collapsedSelectedBackgroundX(int tabX, int tabWidth, int backgroundWidth) {
+        int availableSpace = Math.max(0, tabWidth - backgroundWidth);
+        int centeredX = availableSpace / 2 + COLLAPSED_VISUAL_CENTER_OFFSET_X;
+        return tabX + Math.min(centeredX, availableSpace);
+    }
+
+    static int collapsedIconPaddingLeft() {
+        return COLLAPSED_TAB_PADDING_HORIZONTAL + COLLAPSED_VISUAL_CENTER_OFFSET_X;
+    }
+
+    static int collapsedIconPaddingRight() {
+        return Math.max(0, COLLAPSED_TAB_PADDING_HORIZONTAL - COLLAPSED_VISUAL_CENTER_OFFSET_X);
     }
 }

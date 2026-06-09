@@ -7,7 +7,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import javax.swing.*;
-import javax.swing.border.LineBorder;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 import static org.testng.Assert.assertEquals;
@@ -35,8 +35,6 @@ public class SyntaxEditorScrollPaneTest {
         SyntaxEditorScrollPane scrollPane = new SyntaxEditorScrollPane(new RSyntaxTextArea());
 
         assertEquals(scrollPane.getViewport().getBackground(), new Color(0x3A, 0x3D, 0x3F));
-        assertTrue(scrollPane.getBorder() instanceof LineBorder);
-        LineBorder border = (LineBorder) scrollPane.getBorder();
-        assertEquals(border.getLineColor(), new Color(0x45, 0x49, 0x4C));
+        assertTrue(scrollPane.getBorder() instanceof EmptyBorder);
     }
 }

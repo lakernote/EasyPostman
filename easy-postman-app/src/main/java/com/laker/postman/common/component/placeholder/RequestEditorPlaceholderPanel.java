@@ -1,5 +1,7 @@
 package com.laker.postman.common.component.placeholder;
 
+import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.service.setting.SettingManager;
 
@@ -27,30 +29,24 @@ public class RequestEditorPlaceholderPanel extends AbstractPlaceholderPanel {
 
     private JComponent createRequestLineShell() {
         JPanel shell = createTransparentPanel(new BorderLayout());
-        shell.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()));
+        ToolWindowSurfaceStyle.applySectionHeader(shell);
         shell.setPreferredSize(new Dimension(0, REQUEST_LINE_HEIGHT));
         return shell;
     }
 
     private JComponent createSplitShell() {
         boolean vertical = SettingManager.isLayoutVertical();
-        JSplitPane splitPane = new JSplitPane(
-                vertical ? JSplitPane.VERTICAL_SPLIT : JSplitPane.HORIZONTAL_SPLIT,
-                createRequestShell(),
-                createResponseShell()
-        );
-        splitPane.setDividerSize(4);
-        splitPane.setContinuousLayout(true);
-        splitPane.setBorder(null);
-        splitPane.setOpaque(false);
+        JComponent requestShell = createRequestShell();
+        JComponent responseShell = createResponseShell();
+        JSplitPane splitPane = vertical
+                ? ToolWindowChrome.createVerticalCardSplitPane(requestShell, responseShell, 0)
+                : ToolWindowChrome.createHorizontalCardSplitPane(requestShell, responseShell, 0);
         splitPane.setResizeWeight(vertical ? 0.58 : 0.5);
         if (vertical) {
             splitPane.setDividerLocation(0.58d);
         } else {
             splitPane.setDividerLocation(0.5d);
         }
-        splitPane.getTopComponent().setMinimumSize(new Dimension(0, 0));
-        splitPane.getBottomComponent().setMinimumSize(new Dimension(0, 0));
         splitPane.getLeftComponent().setMinimumSize(new Dimension(0, 0));
         splitPane.getRightComponent().setMinimumSize(new Dimension(0, 0));
         return splitPane;
@@ -171,8 +167,6 @@ public class RequestEditorPlaceholderPanel extends AbstractPlaceholderPanel {
                     fillRoundedBlock(g2, currentX, 12, widths[i], 18, i == 0 ? accentColor() : blockColor(), 8);
                     currentX += widths[i] + 12;
                 }
-                g2.setColor(ModernColors.getDividerBorderColor());
-                g2.drawLine(0, getHeight() - 1, getWidth(), getHeight() - 1);
             } finally {
                 g2.dispose();
             }

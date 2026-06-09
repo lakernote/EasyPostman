@@ -16,6 +16,7 @@ public class FontsUtil {
     private static final int DEFAULT_FONT_SIZE = 13;
     private static final String DEFAULT_FONT_KEY = "defaultFont";
     private static final String LABEL_FONT_KEY = "Label.font";
+    private static final String MONOSPACED_FONT_KEY = "monospaced.font";
 
     private static int getBaseFontSize() {
         return getBaseUiFont().getSize();
@@ -66,5 +67,22 @@ public class FontsUtil {
         int fontSize = getBaseFontSize() + offset;
         fontSize = Math.max(MIN_FONT_SIZE, Math.min(MAX_FONT_SIZE, fontSize));
         return getDefaultFont(style, fontSize);
+    }
+
+    /**
+     * 获取等宽字体，字号跟随用户 UI 字号设置。
+     *
+     * @param style  字体样式 (Font.PLAIN, Font.BOLD, Font.ITALIC)
+     * @param offset 相对于用户设置字体大小的偏移量（可正可负）
+     * @return Font 对象
+     */
+    public static Font getMonospacedFontWithOffset(int style, int offset) {
+        Font baseFont = UIManager.getFont(MONOSPACED_FONT_KEY);
+        if (baseFont == null) {
+            baseFont = new Font(Font.MONOSPACED, Font.PLAIN, getBaseFontSize());
+        }
+        int fontSize = getBaseFontSize() + offset;
+        fontSize = Math.max(MIN_FONT_SIZE, Math.min(MAX_FONT_SIZE, fontSize));
+        return baseFont.deriveFont(style, (float) fontSize);
     }
 }

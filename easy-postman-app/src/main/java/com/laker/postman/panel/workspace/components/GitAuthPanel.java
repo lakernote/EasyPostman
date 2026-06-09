@@ -2,6 +2,8 @@ package com.laker.postman.panel.workspace.components;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.EasyPasswordField;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.GitAuthType;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -42,6 +44,7 @@ public class GitAuthPanel extends JPanel {
         initComponents();
         setupLayout();
         setupEventHandlers();
+        ToolWindowSurfaceStyle.applyPanelTreeCard(this);
     }
 
     private void initComponents() {
@@ -69,9 +72,11 @@ public class GitAuthPanel extends JPanel {
 
     private void setupLayout() {
         setLayout(new GridBagLayout());
+        setOpaque(false);
 
         // 认证类型选择
         JPanel typePanel = new JPanel(new GridBagLayout());
+        typePanel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(4, 5, 4, 5);
         gbc.anchor = GridBagConstraints.WEST;
@@ -104,6 +109,7 @@ public class GitAuthPanel extends JPanel {
                 return super.getPreferredSize();
             }
         };
+        authDetailsPanel.setOpaque(false);
         authDetailsPanel.add(createNoAuthPanel(), GitAuthType.NONE.name());
         authDetailsPanel.add(createPasswordAuthPanel(), GitAuthType.PASSWORD.name());
         authDetailsPanel.add(createTokenAuthPanel(), GitAuthType.TOKEN.name());
@@ -147,15 +153,17 @@ public class GitAuthPanel extends JPanel {
 
     private JPanel createNoAuthPanel() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 2));
+        panel.setOpaque(false);
         JLabel label = new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_AUTH_NONE));
         label.setFont(FontsUtil.getDefaultFontWithOffset(Font.ITALIC, -1));
-        label.setForeground(Color.GRAY);
+        label.setForeground(ModernColors.getTextSecondary());
         panel.add(label);
         return panel;
     }
 
     private JPanel createPasswordAuthPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
+        panel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 8, 5, 8);
         gbc.anchor = GridBagConstraints.WEST;
@@ -183,6 +191,7 @@ public class GitAuthPanel extends JPanel {
 
     private JPanel createTokenAuthPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
+        panel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 8, 5, 8);
         gbc.anchor = GridBagConstraints.WEST;
@@ -210,6 +219,7 @@ public class GitAuthPanel extends JPanel {
 
     private JPanel createSshAuthPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
+        panel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 8, 5, 8);
         gbc.anchor = GridBagConstraints.WEST;

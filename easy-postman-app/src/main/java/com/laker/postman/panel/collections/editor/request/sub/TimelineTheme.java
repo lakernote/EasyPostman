@@ -39,6 +39,10 @@ class TimelineTheme {
         return ModernColors.getDividerBorderColor();
     }
 
+    Color certificateWarning() {
+        return ModernColors.getError();
+    }
+
     Color[] barColors() {
         return new Color[]{
                 ModernColors.getPrimary(),

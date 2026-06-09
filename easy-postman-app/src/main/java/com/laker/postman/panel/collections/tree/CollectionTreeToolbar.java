@@ -11,6 +11,8 @@ import com.laker.postman.collection.model.CollectionDocument;
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.common.component.ToolWindowSidebarToolbar;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.PlusButton;
 import com.laker.postman.common.component.dialog.CurlImportDialog;
 import com.laker.postman.frame.MainFrame;
@@ -71,8 +73,8 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
 
     @Override
     protected void initUI() {
-        setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
-        setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        setLayout(new BorderLayout());
+        setOpaque(false);
 
         plusBtn = new PlusButton();
         plusBtn.setToolTipText("New / Import");
@@ -80,9 +82,7 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
 
         searchField = new SearchTextField();
 
-        add(plusBtn);
-        add(Box.createHorizontalStrut(4));
-        add(searchField);
+        add(new ToolWindowSidebarToolbar(plusBtn, searchField), BorderLayout.CENTER);
     }
 
     /**
@@ -109,6 +109,7 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
 
     private JPopupMenu buildPlusMenu() {
         JPopupMenu menu = new JPopupMenu();
+        ToolWindowSurfaceStyle.applyPopupMenuCard(menu);
 
         // ── 新建集合
         JMenuItem newCollection = new JMenuItem(

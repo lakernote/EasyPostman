@@ -1,12 +1,12 @@
 package com.laker.postman.panel.workspace.components;
 
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
 
 import javax.swing.*;
-import javax.swing.border.TitledBorder;
 import java.awt.*;
 
 /**
@@ -35,22 +35,24 @@ public class ProgressPanel extends JPanel {
     }
 
     private void setupLayout(String title) {
-        setLayout(new BorderLayout());
-        setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createEtchedBorder(),
-                title,
-                TitledBorder.LEFT,
-                TitledBorder.TOP,
-                FontsUtil.getDefaultFont(Font.BOLD)
-        ));
+        setLayout(new BorderLayout(0, 6));
+        ToolWindowSurfaceStyle.applyCard(this);
+        setBorder(BorderFactory.createEmptyBorder(6, 0, 0, 0));
+
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
+        add(titleLabel, BorderLayout.NORTH);
 
         // 状态标签
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        statusPanel.setOpaque(false);
         statusPanel.add(statusLabel);
-        add(statusPanel, BorderLayout.NORTH);
 
-        // 进度条
-        add(progressBar, BorderLayout.CENTER);
+        JPanel contentPanel = new JPanel(new BorderLayout(0, 4));
+        contentPanel.setOpaque(false);
+        contentPanel.add(statusPanel, BorderLayout.NORTH);
+        contentPanel.add(progressBar, BorderLayout.CENTER);
+        add(contentPanel, BorderLayout.CENTER);
     }
 
     /**

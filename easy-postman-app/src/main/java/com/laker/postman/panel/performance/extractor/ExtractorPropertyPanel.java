@@ -5,13 +5,14 @@ import com.laker.postman.performance.core.extractor.ExtractorType;
 
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.panel.performance.PerformanceStagePropertyLayout;
 import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.panel.performance.tree.PerformanceTreeNodeTitleFormatter;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 
-import javax.swing.BorderFactory;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -42,7 +43,7 @@ public class ExtractorPropertyPanel extends JPanel {
         setLayout(new GridBagLayout());
         setMaximumSize(new Dimension(520, 220));
         setPreferredSize(new Dimension(460, 190));
-        setBorder(BorderFactory.createEmptyBorder(18, 24, 18, 24));
+        PerformanceStagePropertyLayout.applyCompactBorder(this);
 
         typeCombo = new JComboBox<>(ExtractorType.values());
         typeCombo.setRenderer(new ExtractorTypeRenderer());
@@ -67,6 +68,7 @@ public class ExtractorPropertyPanel extends JPanel {
         helpGbc.gridwidth = 4;
         JLabel helpLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_EXTRACTOR_HELP));
         helpLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        helpLabel.setForeground(ModernColors.getTextSecondary());
         add(helpLabel, helpGbc);
 
         typeCombo.addActionListener(e -> updateTypeState());

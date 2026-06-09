@@ -1,6 +1,10 @@
 package com.laker.postman.plugin.decompiler;
 
+import com.formdev.flatlaf.FlatClientProperties;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.component.ToolWindowActionToolbar;
+import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
@@ -67,44 +71,46 @@ public class DecompilerPanel extends JPanel {
     private void initUI() {
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        ToolWindowSurfaceStyle.applyCard(this);
 
         // 顶部文件选择面板
         add(createFileSelectionPanel(), BorderLayout.NORTH);
 
         // 中间主要内容区域（分割面板：文件树 | 代码显示）
-        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        splitPane.setLeftComponent(createTreePanel());
-        splitPane.setRightComponent(createCodePanel());
-        splitPane.setDividerLocation(400);
+        JSplitPane splitPane = ToolWindowChrome.createHorizontalCardSplitPane(
+                createTreePanel(),
+                createCodePanel(),
+                400
+        );
         splitPane.setResizeWeight(0.3);
         add(splitPane, BorderLayout.CENTER);
 
         // 底部状态栏
         add(createStatusPanel(), BorderLayout.SOUTH);
+        ToolWindowSurfaceStyle.applyPanelTreeCard(this);
     }
 
     /**
      * 创建文件选择面板 - 优化布局和视觉效果
      */
     private JPanel createFileSelectionPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createTitledBorder(
-                        BorderFactory.createLineBorder(ModernColors.getBorderLightColor(), 1, true),
-                        DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_SELECT_JAR)
-                ),
-                BorderFactory.createEmptyBorder(5, 5, 5, 5)
-        ));
+        JPanel panel = new JPanel(new BorderLayout(10, 6));
+        panel.setOpaque(false);
+        panel.setBorder(BorderFactory.createEmptyBorder(0, 0, 2, 0));
+
+        JLabel sectionTitle = new JLabel(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_SELECT_JAR));
+        sectionTitle.setFont(sectionTitle.getFont().deriveFont(Font.BOLD));
+        panel.add(sectionTitle, BorderLayout.NORTH);
 
         // 文件路径显示区域
         JPanel fileInfoPanel = new JPanel(new BorderLayout(5, 0));
+        fileInfoPanel.setOpaque(false);
         filePathField = new JTextField();
         filePathField.setEditable(false);
         filePathField.setFocusable(false);
+        ToolWindowSurfaceStyle.applyTextComponentInput(filePathField);
         fileInfoPanel.add(filePathField, BorderLayout.CENTER);
 
-        // 按钮面板（浏览按钮和清空按钮）
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
         JButton browseButton = new JButton(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_BROWSE));
         browseButton.setIcon(IconUtil.createThemed("icons/file.svg", 16, 16));
         browseButton.addActionListener(e -> browseFile());
@@ -113,8 +119,7 @@ public class DecompilerPanel extends JPanel {
         clearButton.setIcon(IconUtil.createThemed("icons/clear.svg", 16, 16));
         clearButton.addActionListener(e -> clearAll());
 
-        buttonPanel.add(browseButton);
-        buttonPanel.add(clearButton);
+        JPanel buttonPanel = ToolWindowActionToolbar.inlineRight(browseButton, clearButton);
         fileInfoPanel.add(buttonPanel, BorderLayout.EAST);
 
         panel.add(fileInfoPanel, BorderLayout.CENTER);
@@ -136,9 +141,11 @@ public class DecompilerPanel extends JPanel {
      */
     private JPanel createTreePanel() {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
+        panel.setOpaque(false);
 
         // 顶部面板：标题 + 压缩信息
         JPanel topPanel = new JPanel(new BorderLayout(5, 5));
+        topPanel.setOpaque(false);
 
         JLabel label = new JLabel(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_TREE_TITLE));
         label.setFont(label.getFont().deriveFont(Font.BOLD));
@@ -208,13 +215,11 @@ public class DecompilerPanel extends JPanel {
         });
 
         JScrollPane scrollPane = new JScrollPane(fileTree);
+        ToolWindowSurfaceStyle.applyTreeScrollPaneCard(scrollPane, fileTree);
         panel.add(scrollPane, BorderLayout.CENTER);
 
         // 为树面板添加拖拽支持
         setupDragAndDrop(scrollPane);
-
-        // 树操作工具栏 - 使用紧凑的图标按钮
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 3, 2));
 
         // 展开按钮
         JButton expandAllBtn = new JButton(IconUtil.createThemed("icons/expand.svg", 16, 16));
@@ -244,11 +249,13 @@ public class DecompilerPanel extends JPanel {
         sortBySizeBtn.addActionListener(e -> sortTreeBySize());
         sortBySizeBtn.setFocusPainted(false);
 
-        buttonPanel.add(expandAllBtn);
-        buttonPanel.add(collapseAllBtn);
-        buttonPanel.add(separator1);
-        buttonPanel.add(sortByNameBtn);
-        buttonPanel.add(sortBySizeBtn);
+        JPanel buttonPanel = ToolWindowActionToolbar.inlineLeft(
+                expandAllBtn,
+                collapseAllBtn,
+                separator1,
+                sortByNameBtn,
+                sortBySizeBtn
+        );
         panel.add(buttonPanel, BorderLayout.SOUTH);
 
         return panel;
@@ -259,21 +266,20 @@ public class DecompilerPanel extends JPanel {
      */
     private JPanel createCodePanel() {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
+        panel.setOpaque(false);
 
         // 顶部工具栏 - 标题和操作按钮整合
         JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setOpaque(false);
         JLabel label = new JLabel(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_OUTPUT));
         label.setFont(label.getFont().deriveFont(Font.BOLD));
         headerPanel.add(label, BorderLayout.WEST);
-
-        // 工具按钮
-        JPanel toolPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
 
         JButton copyBtn = new JButton(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_COPY_CODE));
         copyBtn.setIcon(new FlatSVGIcon("icons/copy.svg", 14, 14));
         copyBtn.addActionListener(e -> copyCode());
 
-        toolPanel.add(copyBtn);
+        JPanel toolPanel = ToolWindowActionToolbar.inlineRight(copyBtn);
         headerPanel.add(toolPanel, BorderLayout.EAST);
 
         panel.add(headerPanel, BorderLayout.NORTH);
@@ -295,6 +301,7 @@ public class DecompilerPanel extends JPanel {
         RTextScrollPane scrollPane = new RTextScrollPane(codeArea);
         scrollPane.setFoldIndicatorEnabled(true);
         scrollPane.setLineNumbersEnabled(true);
+        ToolWindowSurfaceStyle.applyScrollPaneCard(scrollPane);
         panel.add(scrollPane, BorderLayout.CENTER);
 
         // 为代码面板添加拖拽支持
@@ -309,10 +316,7 @@ public class DecompilerPanel extends JPanel {
      */
     private JPanel createStatusPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.getBorderLightColor()),
-                BorderFactory.createEmptyBorder(5, 10, 5, 10)
-        ));
+        ToolWindowSurfaceStyle.applySectionHeader(panel, 5, 10, 5, 10);
 
         statusLabel = new JLabel(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_READY));
         statusLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
@@ -332,7 +336,7 @@ public class DecompilerPanel extends JPanel {
                 if (isDragAcceptable(dtde)) {
                     dtde.acceptDrag(DnDConstants.ACTION_COPY);
                     // 添加视觉反馈
-                    component.setBorder(BorderFactory.createLineBorder(ModernColors.PRIMARY, 2));
+                    component.putClientProperty(FlatClientProperties.OUTLINE, ModernColors.getPrimary());
                 } else {
                     dtde.rejectDrag();
                 }
@@ -341,13 +345,13 @@ public class DecompilerPanel extends JPanel {
             @Override
             public void dragExit(DropTargetEvent dte) {
                 // 移除视觉反馈
-                component.setBorder(null);
+                component.putClientProperty(FlatClientProperties.OUTLINE, null);
             }
 
             @Override
             public void drop(DropTargetDropEvent dtde) {
                 // 移除视觉反馈
-                component.setBorder(null);
+                component.putClientProperty(FlatClientProperties.OUTLINE, null);
 
                 try {
                     if (dtde.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {

@@ -6,6 +6,7 @@ import com.laker.postman.request.model.HttpRequestItem;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.UiSingletonFactory;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.panel.collections.editor.RequestEditorEmptyStatePanel;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
@@ -268,6 +269,7 @@ public class ClosableTabComponent extends JPanel {
 
     private JPopupMenu buildPopupMenu() {
         JPopupMenu menu = new JPopupMenu();
+        ToolWindowSurfaceStyle.applyPopupMenuCard(menu);
         RequestEditorPanel editPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class);
 
         JMenuItem closeCurrent = menuItem(MessageKeys.TAB_CLOSE_CURRENT, ShortcutManager.CLOSE_CURRENT_TAB,

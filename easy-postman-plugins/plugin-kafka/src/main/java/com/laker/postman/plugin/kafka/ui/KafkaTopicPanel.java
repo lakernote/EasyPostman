@@ -3,18 +3,18 @@ package com.laker.postman.plugin.kafka.ui;
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.plugin.kafka.MessageKeys;
 import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.common.component.ToolWindowSidebarHeader;
+import com.laker.postman.common.component.ToolWindowSidebarToolbar;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.RefreshButton;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.util.function.Consumer;
 
 import static com.laker.postman.plugin.kafka.KafkaI18n.t;
 
 public class KafkaTopicPanel extends JPanel {
-
-    private static final String SEPARATOR_FG = "Separator.foreground";
 
     public final SearchTextField topicSearchField;
     public final DefaultListModel<KafkaTopicItem> topicListModel;
@@ -23,28 +23,19 @@ public class KafkaTopicPanel extends JPanel {
 
     public KafkaTopicPanel(Runnable refreshAction, Consumer<String> topicSelectionAction) {
         super(new BorderLayout(0, 0));
+        ToolWindowSurfaceStyle.applyCard(this);
         setPreferredSize(new Dimension(230, 0));
 
-        JPanel titleBar = new JPanel(new BorderLayout());
-        titleBar.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)),
-                BorderFactory.createEmptyBorder(6, 10, 6, 6)));
-        JLabel titleLbl = new JLabel(t(MessageKeys.TOOLBOX_KAFKA_TOPIC_MANAGEMENT));
-        titleLbl.setFont(titleLbl.getFont().deriveFont(Font.BOLD, 12f));
         RefreshButton refreshBtn = new RefreshButton();
         refreshBtn.setToolTipText(t(MessageKeys.TOOLBOX_KAFKA_TOPIC_REFRESH));
         refreshBtn.addActionListener(e -> refreshAction.run());
-        titleBar.add(titleLbl, BorderLayout.CENTER);
-        titleBar.add(refreshBtn, BorderLayout.EAST);
+        ToolWindowSidebarHeader titleBar = new ToolWindowSidebarHeader(
+                t(MessageKeys.TOOLBOX_KAFKA_TOPIC_MANAGEMENT), refreshBtn);
 
         topicSearchField = new SearchTextField();
         topicSearchField.putClientProperty(FlatClientProperties.TEXT_FIELD_TRAILING_COMPONENT, null);
         topicSearchField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, t(MessageKeys.TOOLBOX_KAFKA_TOPIC_SEARCH_PLACEHOLDER));
         topicSearchField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
-
-        JPanel searchBox = new JPanel(new BorderLayout());
-        searchBox.setBorder(new EmptyBorder(6, 8, 4, 8));
-        searchBox.add(topicSearchField, BorderLayout.CENTER);
 
         topicListModel = new DefaultListModel<>();
         topicFilteredModel = new DefaultListModel<>();
@@ -86,11 +77,12 @@ public class KafkaTopicPanel extends JPanel {
             }
         });
         JScrollPane topicScroll = new JScrollPane(topicList);
-        topicScroll.setBorder(BorderFactory.createEmptyBorder());
+        ToolWindowSurfaceStyle.applyListScrollPaneCard(topicScroll, topicList);
 
         JPanel top = new JPanel(new BorderLayout());
+        top.setOpaque(false);
         top.add(titleBar, BorderLayout.NORTH);
-        top.add(searchBox, BorderLayout.CENTER);
+        top.add(new ToolWindowSidebarToolbar(null, topicSearchField), BorderLayout.CENTER);
 
         add(top, BorderLayout.NORTH);
         add(topicScroll, BorderLayout.CENTER);

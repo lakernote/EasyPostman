@@ -5,6 +5,7 @@ import com.laker.postman.request.model.RequestAuthTypes;
 
 
 import com.laker.postman.common.component.EasyTextField;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -41,6 +42,7 @@ public class AuthTabPanel extends JPanel {
 
     public AuthTabPanel() {
         setLayout(new BorderLayout(5, 5));
+        ToolWindowSurfaceStyle.applyCard(this);
         setBorder(new EmptyBorder(8, 10, 8, 10));
 
         // 初始化所有字段
@@ -79,6 +81,7 @@ public class AuthTabPanel extends JPanel {
 
         // 顶部：认证类型选择
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 3));
+        topPanel.setOpaque(false);
         JLabel typeLabel = new JLabel(I18nUtil.getMessage(MessageKeys.AUTH_TYPE_LABEL));
         typeLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -1));
         typeLabel.setForeground(ModernColors.getTextPrimary());
@@ -88,6 +91,7 @@ public class AuthTabPanel extends JPanel {
 
         // 中间：各种认证类型的配置面板（使用 CardLayout）
         JPanel cardPanel = new JPanel(new CardLayout());
+        ToolWindowSurfaceStyle.applyCard(cardPanel);
 
         // Inherit Auth Panel
         cardPanel.add(createInheritPanel(), AUTH_TYPE_INHERIT);
@@ -150,32 +154,48 @@ public class AuthTabPanel extends JPanel {
         };
     }
 
+    private JPanel createInfoPanel(String title, String description, boolean muted) {
+        JPanel infoPanel = new JPanel(new BorderLayout(10, 0));
+        ToolWindowSurfaceStyle.applySectionHeader(infoPanel, 8, 12, 8, 12);
+
+        JLabel iconLabel = new JLabel("i");
+        iconLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
+        iconLabel.setForeground(muted ? ModernColors.getTextSecondary() : ModernColors.getPrimary());
+        infoPanel.add(iconLabel, BorderLayout.WEST);
+
+        JPanel textPanel = new JPanel();
+        textPanel.setOpaque(false);
+        textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
+
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -1));
+        titleLabel.setForeground(muted ? ModernColors.getTextPrimary() : ModernColors.getPrimary());
+        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        textPanel.add(titleLabel);
+
+        JLabel descriptionLabel = new JLabel(description);
+        descriptionLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
+        descriptionLabel.setForeground(ModernColors.getTextSecondary());
+        descriptionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        textPanel.add(descriptionLabel);
+
+        infoPanel.add(textPanel, BorderLayout.CENTER);
+        return infoPanel;
+    }
+
     /**
      * 创建 Inherit Auth 面板
      */
     private JPanel createInheritPanel() {
         JPanel panel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(panel);
         panel.setBorder(new EmptyBorder(8, 0, 0, 0));
 
-        JPanel infoPanel = new JPanel(new BorderLayout(10, 0));
-        infoPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(ModernColors.getAccentLight(), 1),
-                new EmptyBorder(8, 12, 8, 12)
-        ));
-
-        JLabel iconLabel = new JLabel("ℹ");
-        iconLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
-        infoPanel.add(iconLabel, BorderLayout.WEST);
-
-        JLabel textLabel = new JLabel(
-                "<html><div style='line-height: 1.5;'>" +
-                        "<b style='color: " + AuthTabTheme.titleColorHex() + "; font-size: 10px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_INHERIT) + "</b><br>" +
-                        "<span style='color: " + AuthTabTheme.descriptionColorHex() + "; font-size: 9px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_INHERIT_DESC) + "</span>" +
-                        "</div></html>"
-        );
-        infoPanel.add(textLabel, BorderLayout.CENTER);
-
-        panel.add(infoPanel, BorderLayout.NORTH);
+        panel.add(createInfoPanel(
+                I18nUtil.getMessage(MessageKeys.AUTH_TYPE_INHERIT),
+                I18nUtil.getMessage(MessageKeys.AUTH_TYPE_INHERIT_DESC),
+                false
+        ), BorderLayout.NORTH);
         return panel;
     }
 
@@ -184,27 +204,14 @@ public class AuthTabPanel extends JPanel {
      */
     private JPanel createNoAuthPanel() {
         JPanel panel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(panel);
         panel.setBorder(new EmptyBorder(8, 0, 0, 0));
 
-        JPanel infoPanel = new JPanel(new BorderLayout(10, 0));
-        infoPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(ModernColors.getBorderMediumColor(), 1),
-                new EmptyBorder(8, 12, 8, 12)
-        ));
-
-        JLabel iconLabel = new JLabel("ℹ");
-        iconLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
-        infoPanel.add(iconLabel, BorderLayout.WEST);
-
-        JLabel textLabel = new JLabel(
-                "<html><div style='line-height: 1.5;'>" +
-                        "<b style='color: " + AuthTabTheme.textColorHex() + "; font-size: 10px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_NONE) + "</b><br>" +
-                        "<span style='color: " + AuthTabTheme.descriptionColorHex() + "; font-size: 9px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_NONE_DESC) + "</span>" +
-                        "</div></html>"
-        );
-        infoPanel.add(textLabel, BorderLayout.CENTER);
-
-        panel.add(infoPanel, BorderLayout.NORTH);
+        panel.add(createInfoPanel(
+                I18nUtil.getMessage(MessageKeys.AUTH_TYPE_NONE),
+                I18nUtil.getMessage(MessageKeys.AUTH_TYPE_NONE_DESC),
+                true
+        ), BorderLayout.NORTH);
         return panel;
     }
 
@@ -213,31 +220,19 @@ public class AuthTabPanel extends JPanel {
      */
     private JPanel createBasicAuthPanel() {
         JPanel panel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(panel);
         panel.setBorder(new EmptyBorder(8, 0, 0, 0));
 
         // 顶部：描述信息
-        JPanel infoPanel = new JPanel(new BorderLayout(10, 0));
-        infoPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(ModernColors.getAccentLight(), 1),
-                new EmptyBorder(8, 12, 8, 12)
-        ));
-
-        JLabel iconLabel = new JLabel("ℹ");
-        iconLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
-        infoPanel.add(iconLabel, BorderLayout.WEST);
-
-        JLabel textLabel = new JLabel(
-                "<html><div style='line-height: 1.5;'>" +
-                        "<b style='color: " + AuthTabTheme.titleColorHex() + "; font-size: 10px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BASIC) + "</b><br>" +
-                        "<span style='color: " + AuthTabTheme.descriptionColorHex() + "; font-size: 9px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BASIC_DESC) + "</span>" +
-                        "</div></html>"
-        );
-        infoPanel.add(textLabel, BorderLayout.CENTER);
-
-        panel.add(infoPanel, BorderLayout.NORTH);
+        panel.add(createInfoPanel(
+                I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BASIC),
+                I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BASIC_DESC),
+                false
+        ), BorderLayout.NORTH);
 
         // 中间：输入字段
         JPanel formPanel = new JPanel(new GridBagLayout());
+        ToolWindowSurfaceStyle.applyCard(formPanel);
         formPanel.setBorder(new EmptyBorder(8, 0, 0, 0));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(4, 6, 4, 6);
@@ -303,31 +298,19 @@ public class AuthTabPanel extends JPanel {
      */
     private JPanel createBearerPanel() {
         JPanel panel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(panel);
         panel.setBorder(new EmptyBorder(8, 0, 0, 0));
 
         // 顶部：描述信息
-        JPanel infoPanel = new JPanel(new BorderLayout(10, 0));
-        infoPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(ModernColors.getAccentLight(), 1),
-                new EmptyBorder(8, 12, 8, 12)
-        ));
-
-        JLabel iconLabel = new JLabel("ℹ");
-        iconLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
-        infoPanel.add(iconLabel, BorderLayout.WEST);
-
-        JLabel textLabel = new JLabel(
-                "<html><div style='line-height: 1.5;'>" +
-                        "<b style='color: " + AuthTabTheme.titleColorHex() + "; font-size: 10px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BEARER) + "</b><br>" +
-                        "<span style='color: " + AuthTabTheme.descriptionColorHex() + "; font-size: 9px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BEARER_DESC) + "</span>" +
-                        "</div></html>"
-        );
-        infoPanel.add(textLabel, BorderLayout.CENTER);
-
-        panel.add(infoPanel, BorderLayout.NORTH);
+        panel.add(createInfoPanel(
+                I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BEARER),
+                I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BEARER_DESC),
+                false
+        ), BorderLayout.NORTH);
 
         // 中间：输入字段
         JPanel formPanel = new JPanel(new GridBagLayout());
+        ToolWindowSurfaceStyle.applyCard(formPanel);
         formPanel.setBorder(new EmptyBorder(8, 0, 0, 0));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(4, 6, 4, 6);
@@ -372,29 +355,17 @@ public class AuthTabPanel extends JPanel {
      */
     private JPanel createDigestAuthPanel() {
         JPanel panel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(panel);
         panel.setBorder(new EmptyBorder(8, 0, 0, 0));
 
-        JPanel infoPanel = new JPanel(new BorderLayout(10, 0));
-        infoPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(ModernColors.getAccentLight(), 1),
-                new EmptyBorder(8, 12, 8, 12)
-        ));
-
-        JLabel iconLabel = new JLabel("ℹ");
-        iconLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN)); // 使用用户设置的字体大小;
-        infoPanel.add(iconLabel, BorderLayout.WEST);
-
-        JLabel textLabel = new JLabel(
-                "<html><div style='line-height: 1.5;'>" +
-                        "<b style='color: " + AuthTabTheme.titleColorHex() + "; font-size: 10px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_DIGEST) + "</b><br>" +
-                        "<span style='color: " + AuthTabTheme.descriptionColorHex() + "; font-size: 9px;'>" + I18nUtil.getMessage(MessageKeys.AUTH_TYPE_DIGEST_DESC) + "</span>" +
-                        "</div></html>"
-        );
-        infoPanel.add(textLabel, BorderLayout.CENTER);
-
-        panel.add(infoPanel, BorderLayout.NORTH);
+        panel.add(createInfoPanel(
+                I18nUtil.getMessage(MessageKeys.AUTH_TYPE_DIGEST),
+                I18nUtil.getMessage(MessageKeys.AUTH_TYPE_DIGEST_DESC),
+                false
+        ), BorderLayout.NORTH);
 
         JPanel formPanel = new JPanel(new GridBagLayout());
+        ToolWindowSurfaceStyle.applyCard(formPanel);
         formPanel.setBorder(new EmptyBorder(8, 0, 0, 0));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(4, 6, 4, 6);

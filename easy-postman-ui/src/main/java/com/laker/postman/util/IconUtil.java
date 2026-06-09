@@ -110,12 +110,12 @@ public class IconUtil {
 
     /**
      * 创建用于主色背景上的图标。
-     * <p>颜色固定为白色，适用于 primary 按钮、选中态按钮等不会随主题前景色切换的场景。</p>
+     * <p>颜色使用主题反色文本，适用于 primary 按钮、选中态按钮等不会随普通前景色切换的场景。</p>
      *
      * @param iconPath 图标路径（如 "icons/import.svg"）
      * @param width    图标宽度
      * @param height   图标高度
-     * @return 配置了白色过滤器的 SVG 图标
+     * @return 配置了反色文本过滤器的 SVG 图标
      */
     public static FlatSVGIcon createOnPrimary(String iconPath, int width, int height) {
         return createOnPrimary(iconPath, width, height, null);
@@ -123,7 +123,7 @@ public class IconUtil {
 
     public static FlatSVGIcon createOnPrimary(String iconPath, int width, int height, ClassLoader classLoader) {
         return create(iconPath, width, height, classLoader)
-                .setColorFilter(new FlatSVGIcon.ColorFilter(color -> Color.WHITE));
+                .setColorFilter(new FlatSVGIcon.ColorFilter(color -> ModernColors.getTextInverse()));
     }
 
     /**
@@ -171,8 +171,8 @@ public class IconUtil {
     public static final int SIZE_LARGE = 24;
 
     /**
-     * 标签栏图标尺寸（22x22）
+     * 标签栏图标尺寸（20x20）
      * <p>适用于：侧边栏标签页图标
      */
-    public static final int SIZE_TAB = 22;
+    public static final int SIZE_TAB = 20;
 }

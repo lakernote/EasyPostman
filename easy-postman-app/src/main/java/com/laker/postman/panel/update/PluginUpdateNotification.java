@@ -175,23 +175,15 @@ public class PluginUpdateNotification {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
-                g2.setColor(UIManager.getColor("Panel.background"));
+                g2.setColor(ModernColors.getNotificationBackground());
                 g2.fillRect(0, 0, getWidth(), getHeight());
                 if (hoverAlpha > 0) {
-                    Color selectionColor = UIManager.getColor("List.selectionBackground");
-                    if (selectionColor != null) {
-                        g2.setColor(new Color(
-                                selectionColor.getRed(),
-                                selectionColor.getGreen(),
-                                selectionColor.getBlue(),
-                                hoverAlpha
-                        ));
-                        g2.fillRect(0, 0, getWidth(), getHeight());
-                    }
+                    g2.setColor(ModernColors.withAlpha(ModernColors.getSelectionBackgroundColor(), hoverAlpha));
+                    g2.fillRect(0, 0, getWidth(), getHeight());
                 }
                 g2.setColor(ModernColors.getInfo());
                 g2.fillRect(0, 0, INDICATOR_WIDTH, getHeight());
-                g2.setColor(ModernColors.getBorderLightColor());
+                g2.setColor(ModernColors.getNotificationBorder());
                 g2.drawRect(0, 0, getWidth() - 1, getHeight() - 1);
                 g2.dispose();
             }
@@ -304,7 +296,7 @@ public class PluginUpdateNotification {
 
     private JButton createCloseButton() {
         JButton button = new JButton("×");
-        button.setFont(new Font("Arial", Font.PLAIN, 18));
+        button.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, 4));
         button.setFocusPainted(false);
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         button.setPreferredSize(new Dimension(22, 22));

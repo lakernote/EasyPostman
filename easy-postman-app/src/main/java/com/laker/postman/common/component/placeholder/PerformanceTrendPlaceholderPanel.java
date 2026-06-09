@@ -15,6 +15,12 @@ public class PerformanceTrendPlaceholderPanel extends AbstractPlaceholderPanel {
     }
 
     @Override
+    public void updateUI() {
+        super.updateUI();
+        configureRoot(getChartPanelBackgroundColor(), new Insets(18, 18, 18, 18));
+    }
+
+    @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g.create();

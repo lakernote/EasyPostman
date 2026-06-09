@@ -1,8 +1,9 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
-import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 /**
@@ -57,8 +58,8 @@ final class ResponseSizeTooltipWindow extends JWindow {
                 return d;
             }
         };
-        wrapper.setBackground(ModernColors.getCardBackgroundColor());
-        wrapper.setBorder(BorderFactory.createLineBorder(ModernColors.getBorderMediumColor(), 1));
+        ToolWindowSurfaceStyle.applyCard(wrapper);
+        wrapper.setBorder(new EmptyBorder(0, 0, 0, 0));
         wrapper.add(content, BorderLayout.CENTER);
         return wrapper;
     }

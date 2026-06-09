@@ -2,7 +2,9 @@ package com.laker.postman.panel.collections.editor.request.sub;
 
 import com.laker.postman.request.model.CookieInfo;
 import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.*;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.panel.http.runtime.SwingHttpRuntimeInteractionAdapter;
 import com.laker.postman.http.runtime.cookie.HttpCookieStore;
 import com.laker.postman.util.FontsUtil;
@@ -32,12 +34,13 @@ public class CookieTablePanel extends JPanel {
     private final DefaultTableModel model;
     private final TableRowSorter<DefaultTableModel> sorter;
     private final SearchTextField searchField = new SearchTextField();
-    private final JLabel emptyLabel;
+    private final JPanel emptyStatePanel;
     private final transient Runnable cookieListener = this::loadCookies;
 
     public CookieTablePanel() {
         setLayout(new BorderLayout(0, 8));
         setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+        ToolWindowSurfaceStyle.applyCard(this);
 
         // 顶部搜索和操作栏
         JPanel topPanel = createTopPanel();
@@ -45,6 +48,7 @@ public class CookieTablePanel extends JPanel {
 
         // 中间表格区域（包含空状态提示）
         JPanel centerPanel = new JPanel(new CardLayout());
+        ToolWindowSurfaceStyle.applyCard(centerPanel);
 
         // 创建表格
         String[] columns = {
@@ -81,11 +85,12 @@ public class CookieTablePanel extends JPanel {
         table.setRowSorter(sorter);
 
         JScrollPane scrollPane = new JScrollPane(table);
+        ToolWindowSurfaceStyle.applyTableScrollPaneCard(scrollPane, table);
         // 空状态提示
-        emptyLabel = createEmptyStateLabel();
+        emptyStatePanel = createEmptyStatePanel();
 
         centerPanel.add(scrollPane, "table");
-        centerPanel.add(emptyLabel, "empty");
+        centerPanel.add(emptyStatePanel, "empty");
         add(centerPanel, BorderLayout.CENTER);
 
         // 双击编辑
@@ -116,6 +121,7 @@ public class CookieTablePanel extends JPanel {
      */
     private JPanel createTopPanel() {
         JPanel topPanel = new JPanel(new BorderLayout(8, 0));
+        ToolWindowSurfaceStyle.applyCard(topPanel);
 
         // 左侧搜索框（SearchTextField 已自带图标、占位符和清除按钮）
         searchField.setPlaceholderText(I18nUtil.getMessage(MessageKeys.COOKIE_SEARCH_PLACEHOLDER));
@@ -139,6 +145,7 @@ public class CookieTablePanel extends JPanel {
 
         // 右侧按钮
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+        btnPanel.setOpaque(false);
 
         PlusButton btnAdd = new PlusButton();
 
@@ -245,25 +252,38 @@ public class CookieTablePanel extends JPanel {
     /**
      * 创建空状态提示标签
      */
-    private JLabel createEmptyStateLabel() {
-        JLabel label = new JLabel(
-                "<html><div style='text-align: center;'>" +
-                        "<p style='font-size: 14px; color: #888;'>" +
-                        I18nUtil.getMessage(MessageKeys.COOKIE_EMPTY_STATE) +
-                        "</p><p style='font-size: 12px; color: #aaa;'>" +
-                        I18nUtil.getMessage(MessageKeys.COOKIE_EMPTY_STATE_HINT) +
-                        "</p></div></html>",
-                SwingConstants.CENTER
-        );
-        label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +2));
+    private JPanel createEmptyStatePanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        ToolWindowSurfaceStyle.applyCard(panel);
+        JPanel content = new JPanel();
+        content.setOpaque(false);
+        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
+
+        JLabel iconLabel = new JLabel();
+        iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         try {
-            label.setIcon(IconUtil.create("icons/cookie.svg", 48, 48));
+            iconLabel.setIcon(IconUtil.create("icons/cookie.svg", 48, 48));
         } catch (Exception e) {
             // 图标加载失败也不影响
         }
-        label.setVerticalTextPosition(SwingConstants.BOTTOM);
-        label.setHorizontalTextPosition(SwingConstants.CENTER);
-        return label;
+
+        JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.COOKIE_EMPTY_STATE), SwingConstants.CENTER);
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 2));
+        titleLabel.setForeground(ModernColors.getTextSecondary());
+
+        JLabel hintLabel = new JLabel(I18nUtil.getMessage(MessageKeys.COOKIE_EMPTY_STATE_HINT), SwingConstants.CENTER);
+        hintLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        hintLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        hintLabel.setForeground(ModernColors.getTextHint());
+
+        content.add(iconLabel);
+        content.add(Box.createVerticalStrut(12));
+        content.add(titleLabel);
+        content.add(Box.createVerticalStrut(4));
+        content.add(hintLabel);
+        panel.add(content);
+        return panel;
     }
 
     /**
@@ -387,6 +407,7 @@ public class CookieTablePanel extends JPanel {
                                   boolean isEdit) {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        ToolWindowSurfaceStyle.applyCard(panel);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(5, 5, 5, 5);
@@ -452,8 +473,9 @@ public class CookieTablePanel extends JPanel {
 
         // 添加说明
         if (isEdit) {
-            JLabel hint = new JLabel("<html><i style='color: #888; font-size: 11px;'>" +
-                    I18nUtil.getMessage(MessageKeys.COOKIE_EDIT_HINT) + "</i></html>");
+            JLabel hint = new JLabel(I18nUtil.getMessage(MessageKeys.COOKIE_EDIT_HINT));
+            hint.setFont(FontsUtil.getDefaultFontWithOffset(Font.ITALIC, -1));
+            hint.setForeground(ModernColors.getTextHint());
             gbc.gridy = 6;
             gbc.insets = new Insets(10, 5, 5, 5);
             panel.add(hint, gbc);

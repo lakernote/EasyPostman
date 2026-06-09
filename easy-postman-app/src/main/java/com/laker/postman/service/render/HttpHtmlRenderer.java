@@ -47,6 +47,7 @@ public class HttpHtmlRenderer {
     private static String colorSuccess() { return toHex(ModernColors.getSuccess()); }
     private static String colorError() { return toHex(ModernColors.getError()); }
     private static String colorWarning() { return toHex(ModernColors.getWarning()); }
+    private static String colorInfo() { return toHex(ModernColors.getInfo()); }
     private static String colorGray() { return toHex(ModernColors.getTextHint()); }
     private static String bgColor() { return toHex(ModernColors.getBackgroundColor()); }
     private static String bgColorAlt() { return toHex(ModernColors.getHoverBackgroundColor()); }
@@ -346,14 +347,14 @@ public class HttpHtmlRenderer {
         return resp.httpEventInfo != null ? safeStr(resp.httpEventInfo.getThreadName()) : "";
     }
 
-    // Timeline 各阶段语义色（参考 Chrome DevTools Network 面板配色）
-    private static final String COLOR_T_QUEUE    = "#9e9e9e"; // 灰   - 排队/阻塞
-    private static final String COLOR_T_DNS      = "#009688"; // 青绿 - DNS 解析
-    private static final String COLOR_T_TCP      = "#e67c00"; // 深橙 - TCP 连接
-    private static final String COLOR_T_SSL      = "#8e24aa"; // 紫   - SSL/TLS
-    private static final String COLOR_T_REQUEST  = "#1565c0"; // 深蓝 - 发送请求
-    private static final String COLOR_T_TTFB     = "#2e7d32"; // 深绿 - 等待响应(TTFB)
-    private static final String COLOR_T_DOWNLOAD = "#00838f"; // 青   - 下载响应体
+    // Timeline 各阶段语义色，统一从主题 token 取色，避免暗色主题下固定色过暗。
+    private static String timelineQueueColor() { return colorGray(); }
+    private static String timelineDnsColor() { return toHex(ModernColors.getAccent()); }
+    private static String timelineTcpColor() { return colorWarning(); }
+    private static String timelineSslColor() { return toHex(ModernColors.getSecondaryDark()); }
+    private static String timelineRequestColor() { return colorPrimary(); }
+    private static String timelineTtfbColor() { return colorSuccess(); }
+    private static String timelineDownloadColor() { return colorInfo(); }
 
     private static String buildTimingHtml(HttpResponse response) {
         HttpEventInfo info = response.httpEventInfo;
@@ -371,14 +372,14 @@ public class HttpHtmlRenderer {
 
         // Total 行不显示 bar（它是基准，显示 100% bar 没意义）
         timingRow(sb, "Total",               calc.getTotal(),        colorError(),   true,  total, true);
-        timingRow(sb, "Queueing",            calc.getQueueing(),     COLOR_T_QUEUE,  false, total, false);
-        timingRow(sb, "Stalled",             calc.getStalled(),      COLOR_T_QUEUE,  false, total, false);
-        timingRow(sb, "  ↳ DNS Lookup",      calc.getDns(),          COLOR_T_DNS,    false, total, false);
-        timingRow(sb, "TCP Connection",      calc.getConnect(),      COLOR_T_TCP,    false, total, false);
-        timingRow(sb, "  ↳ SSL/TLS",         calc.getTls(),          COLOR_T_SSL,    false, total, false);
-        timingRow(sb, "Request Sent",        calc.getRequestSent(),  COLOR_T_REQUEST,false, total, false);
-        timingRow(sb, "Waiting (TTFB)",      calc.getServerCost(),   COLOR_T_TTFB,   true,  total, false);
-        timingRow(sb, "Content Download",    calc.getResponseBody(), COLOR_T_DOWNLOAD,false,total, false);
+        timingRow(sb, "Queueing",            calc.getQueueing(),     timelineQueueColor(),    false, total, false);
+        timingRow(sb, "Stalled",             calc.getStalled(),      timelineQueueColor(),    false, total, false);
+        timingRow(sb, "  ↳ DNS Lookup",      calc.getDns(),          timelineDnsColor(),      false, total, false);
+        timingRow(sb, "TCP Connection",      calc.getConnect(),      timelineTcpColor(),      false, total, false);
+        timingRow(sb, "  ↳ SSL/TLS",         calc.getTls(),          timelineSslColor(),      false, total, false);
+        timingRow(sb, "Request Sent",        calc.getRequestSent(),  timelineRequestColor(),  false, total, false);
+        timingRow(sb, "Waiting (TTFB)",      calc.getServerCost(),   timelineTtfbColor(),     true,  total, false);
+        timingRow(sb, "Content Download",    calc.getResponseBody(), timelineDownloadColor(), false, total, false);
 
         sb.append("<tr><td colspan='3'><hr style='border:0;border-top:1px dashed ").append(borderColor()).append(";margin:4px 0'/></td></tr>");
         appendTimingRow(sb, "Connection Reused", calc.getConnectionReused() ? "Yes" : "No", null, false, -1, total);
@@ -533,6 +534,6 @@ public class HttpHtmlRenderer {
     }
 
     private static String toHex(java.awt.Color color) {
-        return String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
+        return ModernColors.toHtmlColor(color);
     }
 }

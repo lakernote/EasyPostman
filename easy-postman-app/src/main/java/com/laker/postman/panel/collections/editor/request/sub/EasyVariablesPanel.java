@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.EditButton;
 import com.laker.postman.common.component.table.EasyVariableTablePanel;
 import com.laker.postman.common.constants.ModernColors;
@@ -28,11 +29,13 @@ public class EasyVariablesPanel extends JPanel {
 
     private void initializeComponents() {
         setLayout(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(this);
         // 设置边距
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         // Create header panel
         JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 1, 0));
+        ToolWindowSurfaceStyle.applyCard(headerPanel);
         JLabel label = new JLabel("Variables");
 
         // Create Bulk Edit button

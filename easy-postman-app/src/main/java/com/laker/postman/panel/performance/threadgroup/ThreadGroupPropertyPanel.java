@@ -1,6 +1,8 @@
 package com.laker.postman.panel.performance.threadgroup;
 
 import com.laker.postman.common.component.EasyJSpinner;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
 import com.laker.postman.util.I18nUtil;
@@ -57,10 +59,12 @@ public class ThreadGroupPropertyPanel extends JPanel {
 
     public ThreadGroupPropertyPanel() {
         setLayout(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(this);
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         // 顶部模式选择区域
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
+        topPanel.setOpaque(false);
         topPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_MODE_LABEL)));
         modeComboBox = new JComboBox<>(ThreadGroupData.ThreadMode.values());
         modeComboBox.setRenderer(new ThreadModeRenderer());
@@ -69,10 +73,12 @@ public class ThreadGroupPropertyPanel extends JPanel {
 
         // 中间部分：左侧配置面板，右侧预览图
         JPanel mainPanel = new JPanel(new BorderLayout(10, 0));
+        mainPanel.setOpaque(false);
 
         // 中间卡片布局，用于切换不同模式的配置面板
         cardLayout = new CardLayout();
         cardPanel = new JPanel(cardLayout);
+        cardPanel.setOpaque(false);
         // 动态调整配置面板大小以适应不同语言的标签长度
         int configPanelWidth = I18nUtil.isChinese() ? 380 : 480;  // 英文需要更多空间
         cardPanel.setPreferredSize(new Dimension(configPanelWidth, 150));
@@ -80,6 +86,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
         // 初始化所有控件和面板
         // 1. 固定模式面板
         fixedPanel = new JPanel(new GridBagLayout());
+        fixedPanel.setOpaque(false);
         fixedPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         fixedNumThreadsSpinner = threadCountSpinner(1);
         fixedNumThreadsSpinner.setPreferredSize(new Dimension(80, 28));
@@ -91,6 +98,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
 
         // 2. 递增模式面板
         rampUpPanel = new JPanel(new GridBagLayout());
+        rampUpPanel.setOpaque(false);
         rampUpPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         rampUpStartThreadsSpinner = threadCountSpinner(1);
         rampUpStartThreadsSpinner.setPreferredSize(new Dimension(80, 28));
@@ -103,6 +111,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
 
         // 3. 尖刺模式面板
         spikePanel = new JPanel(new GridBagLayout());
+        spikePanel.setOpaque(false);
         spikePanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         spikeMinThreadsSpinner = threadCountSpinner(1);
         spikeMinThreadsSpinner.setPreferredSize(new Dimension(80, 28));
@@ -119,6 +128,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
 
         // 4. 阶梯模式面板
         stairsPanel = new JPanel(new GridBagLayout());
+        stairsPanel.setOpaque(false);
         stairsPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         stairsStartThreadsSpinner = threadCountSpinner(1);
         stairsStartThreadsSpinner.setPreferredSize(new Dimension(80, 28));
@@ -171,10 +181,12 @@ public class ThreadGroupPropertyPanel extends JPanel {
         int previewPanelWidth = I18nUtil.isChinese() ? 500 : 450;  // 英文环境给配置面板更多空间
         previewPanel.setPreferredSize(new Dimension(previewPanelWidth, 180));
         previewPanel.setMinimumSize(new Dimension(400, 180));  // 设置最小尺寸防止过度压缩
-        previewPanel.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.THREADGROUP_PREVIEW_TITLE)));
+        previewPanel.setOpaque(false);
+        previewPanel.setBorder(BorderFactory.createEmptyBorder(18, 8, 8, 8));
 
         // 左侧配置区包装在一个面板中，以便控制布局
         JPanel configPanel = new JPanel(new BorderLayout());
+        configPanel.setOpaque(false);
         configPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 5));
         configPanel.add(cardPanel, BorderLayout.NORTH);
         // 动态调整配置面板宽度以匹配卡片面板
@@ -800,7 +812,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
             }
 
             // 绘制点
-            Color bgColor = UIManager.getColor("Panel.background");
+            Color bgColor = ModernColors.getCardBackgroundColor();
             g2d.setColor(bgColor);
             g2d.setStroke(new BasicStroke(1.0f));
             for (Point p : points) {

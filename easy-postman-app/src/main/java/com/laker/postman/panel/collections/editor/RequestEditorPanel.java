@@ -1,6 +1,7 @@
 package com.laker.postman.panel.collections.editor;
 
 import com.laker.postman.common.UiSingletonPanel;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.tab.TabbedPaneDragHandler;
 import com.laker.postman.collection.model.RequestGroup;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
@@ -146,6 +147,7 @@ public class RequestEditorPanel extends UiSingletonPanel {
 
     @Override
     protected void initUI() {
+        ToolWindowSurfaceStyle.applyCard(this);
         setLayout(new BorderLayout());
         tabbedPane = createRequestTabbedPane();
         tabLifecycleController = new RequestEditorTabLifecycleController(
@@ -162,6 +164,7 @@ public class RequestEditorPanel extends UiSingletonPanel {
 
     private JTabbedPane createRequestTabbedPane() {
         JTabbedPane tabs = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
+        ToolWindowSurfaceStyle.applyTabbedPaneCard(tabs);
         tabs.putClientProperty(TABBED_PANE_TAB_AREA_INSETS, new Insets(0, 0, 0, 5));
         tabs.putClientProperty(TABBED_PANE_TAB_INSETS, new Insets(3, 5, 3, 5));
         tabs.putClientProperty(TABBED_PANE_TAB_HEIGHT, 38);

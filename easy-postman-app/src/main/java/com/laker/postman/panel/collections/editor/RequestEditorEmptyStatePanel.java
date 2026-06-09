@@ -1,6 +1,7 @@
 package com.laker.postman.panel.collections.editor;
 
 import com.laker.postman.common.UiSingletonFactory;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.Icons;
 import com.laker.postman.service.setting.ShortcutManager;
 import com.laker.postman.util.FontsUtil;
@@ -45,7 +46,7 @@ public class RequestEditorEmptyStatePanel extends JPanel {
     RequestEditorEmptyStatePanel(Runnable newRequestAction) {
         this.newRequestAction = Objects.requireNonNull(newRequestAction, "newRequestAction");
         setLayout(new BorderLayout());
-        setOpaque(false);
+        ToolWindowSurfaceStyle.applyCard(this);
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         add(createCardPanel(), BorderLayout.CENTER);
     }

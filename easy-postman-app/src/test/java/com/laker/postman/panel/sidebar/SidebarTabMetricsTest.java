@@ -1,5 +1,6 @@
 package com.laker.postman.panel.sidebar;
 
+import com.laker.postman.util.IconUtil;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
@@ -28,9 +29,28 @@ public class SidebarTabMetricsTest {
     }
 
     @Test
-    public void collapsedSelectedBackgroundShouldStayCompactRoundedRectangle() {
-        assertEquals(SidebarTabMetrics.COLLAPSED_SELECTED_BACKGROUND_WIDTH, 34);
+    public void collapsedSelectedBackgroundShouldStayCompactWithoutInflatingSelectedTab() {
+        assertEquals(SidebarTabMetrics.COLLAPSED_SELECTED_BACKGROUND_WIDTH, 32);
         assertEquals(SidebarTabMetrics.COLLAPSED_SELECTED_BACKGROUND_HEIGHT, 32);
         assertEquals(SidebarTabMetrics.SELECTED_BACKGROUND_ARC, 10);
+    }
+
+    @Test
+    public void collapsedSelectedBackgroundShouldBeGeometricallyCenteredInCollapsedRail() {
+        assertEquals(SidebarTabMetrics.TAB_AREA_INSET_TOP, 4);
+        assertEquals(SidebarTabMetrics.COLLAPSED_VISUAL_CENTER_OFFSET_X, 0);
+        assertEquals(SidebarTabMetrics.collapsedSelectedBackgroundX(4, 44, 32), 10);
+        assertEquals(SidebarTabMetrics.collapsedSelectedBackgroundX(4, 32, 32), 4);
+    }
+
+    @Test
+    public void collapsedIconPaddingShouldStaySymmetricAroundSelectedBackground() {
+        assertEquals(SidebarTabMetrics.collapsedIconPaddingLeft(), 11);
+        assertEquals(SidebarTabMetrics.collapsedIconPaddingRight(), 11);
+    }
+
+    @Test
+    public void sidebarTabIconShouldStayLightweightInCollapsedToolWindowStripe() {
+        assertEquals(IconUtil.SIZE_TAB, 20);
     }
 }

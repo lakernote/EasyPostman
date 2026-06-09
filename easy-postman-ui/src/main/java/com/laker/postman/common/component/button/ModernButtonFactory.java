@@ -135,7 +135,7 @@ public final class ModernButtonFactory {
                 return ModernColors.getPrimaryDarker();
             }
             if (model.isRollover()) {
-                return ModernColors.getPrimaryDark();
+                return ModernColors.getPrimaryLight();
             }
             return ModernColors.getPrimary();
         }
@@ -163,7 +163,7 @@ public final class ModernButtonFactory {
                 return ModernColors.getPrimaryDarker();
             }
             if (model.isRollover()) {
-                return ModernColors.getPrimaryDark();
+                return ModernColors.getPrimaryLight();
             }
             return ModernColors.getPrimary();
         }
@@ -180,10 +180,10 @@ public final class ModernButtonFactory {
         if (!button.isEnabled()) {
             return ModernColors.getTextDisabled();
         }
-        return button.isSelected() ? Color.WHITE : ModernColors.getTextPrimary();
+        return button.isSelected() ? ModernColors.getTextInverse() : ModernColors.getTextPrimary();
     }
 
     private static Color resolveButtonForeground(boolean primary) {
-        return primary ? Color.WHITE : ModernColors.getTextPrimary();
+        return primary ? ModernColors.getTextInverse() : ModernColors.getTextPrimary();
     }
 }

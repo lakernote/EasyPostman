@@ -4,8 +4,10 @@ import cn.hutool.core.util.XmlUtil;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.common.component.SearchableTextArea;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.ViewportClippedTokenPainter;
 import com.laker.postman.common.component.button.*;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.service.setting.SettingManager;
@@ -79,6 +81,7 @@ public class ResponseBodyPanel extends JPanel {
 
     public ResponseBodyPanel(boolean enableSaveButton) {
         setLayout(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(this);
         // 设置边距
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         responseBodyPane = new RSyntaxTextArea();
@@ -105,15 +108,18 @@ public class ResponseBodyPanel extends JPanel {
         imagePreviewLabel.setHorizontalAlignment(SwingConstants.CENTER);
         imagePreviewLabel.setVerticalAlignment(SwingConstants.CENTER);
         JScrollPane imageScrollPane = new JScrollPane(imagePreviewLabel);
+        ToolWindowSurfaceStyle.applyScrollPaneCard(imageScrollPane);
         imageScrollPane.setBorder(BorderFactory.createEmptyBorder());
 
         // 使用 CardLayout 在文本视图和图片视图之间切换
         JPanel centerPanel = new JPanel(new CardLayout());
+        ToolWindowSurfaceStyle.applyCard(centerPanel);
         centerPanel.add(searchableTextArea, CARD_TEXT);
         centerPanel.add(imageScrollPane, CARD_IMAGE);
         add(centerPanel, BorderLayout.CENTER);
 
         JPanel toolBarPanel = new JPanel();
+        ToolWindowSurfaceStyle.applyCard(toolBarPanel);
         toolBarPanel.setLayout(new BoxLayout(toolBarPanel, BoxLayout.X_AXIS));
         toolBarPanel.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
 
@@ -125,7 +131,7 @@ public class ResponseBodyPanel extends JPanel {
 
         // 添加大小提示标签
         sizeWarningLabel = new JLabel();
-        sizeWarningLabel.setForeground(new Color(200, 100, 0));
+        sizeWarningLabel.setForeground(ModernColors.getWarningDark());
         sizeWarningLabel.setVisible(false);
         toolBarPanel.add(sizeWarningLabel);
 
@@ -373,6 +379,7 @@ public class ResponseBodyPanel extends JPanel {
         JMenu foldingMenu = findFoldingMenu(defaultMenu);
 
         JPopupMenu popupMenu = new JPopupMenu();
+        ToolWindowSurfaceStyle.applyPopupMenuCard(popupMenu);
         popupMenu.add(copyKeyItem);
         popupMenu.add(copyValueItem);
         popupMenu.addSeparator();

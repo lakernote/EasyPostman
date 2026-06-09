@@ -5,6 +5,8 @@ import com.laker.postman.performance.core.model.PerformanceTrendSnapshot;
 
 
 import com.laker.postman.common.UiSingletonPanel;
+import com.laker.postman.common.component.ToolWindowActionToolbar;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
 import com.laker.postman.common.component.button.SegmentedToggleButton;
 import com.laker.postman.performance.model.PerformanceProtocolLabels;
@@ -95,7 +97,9 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
     protected void initUI() {
         configureSeriesRetention();
         setLayout(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(this);
         JPanel protocolCards = new JPanel(new CardLayout());
+        ToolWindowSurfaceStyle.applyCard(protocolCards);
         protocolCards.add(createHttpPanel(), PerformanceProtocol.HTTP.name());
         protocolCards.add(createWebSocketPanel(), PerformanceProtocol.WEBSOCKET.name());
         protocolCards.add(createSsePanel(), PerformanceProtocol.SSE.name());
@@ -151,15 +155,17 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
 
     private JPanel createToolbar(JPanel protocolCards) {
         JPanel toolbar = new JPanel(new BorderLayout(8, 0));
+        ToolWindowSurfaceStyle.applyCard(toolbar);
         toolbar.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
-        toolbar.add(createProtocolSwitcher(protocolCards), BorderLayout.WEST);
-        toolbar.add(createModeSwitcher(), BorderLayout.EAST);
+        toolbar.add(ToolWindowActionToolbar.inlineLeft(createProtocolSwitcher(protocolCards)), BorderLayout.WEST);
+        toolbar.add(ToolWindowActionToolbar.inlineRight(createModeSwitcher()), BorderLayout.EAST);
         return toolbar;
     }
 
     private JPanel createProtocolSwitcher(JPanel protocolCards) {
         ButtonGroup protocolGroup = new ButtonGroup();
         JPanel switcher = new SegmentedButtonGroupPanel(FlowLayout.LEFT);
+        switcher.setOpaque(false);
         for (PerformanceProtocol protocol : PerformanceProtocol.values()) {
             JToggleButton button = new SegmentedToggleButton(
                     PerformanceProtocolLabels.displayName(protocol),
@@ -191,6 +197,7 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
         combinedButton.addActionListener(e -> showChartMode(COMBINED_VIEW));
 
         JPanel modePanel = new SegmentedButtonGroupPanel(FlowLayout.RIGHT);
+        modePanel.setOpaque(false);
         modePanel.add(separateButton);
         modePanel.add(combinedButton);
         return modePanel;
@@ -252,6 +259,7 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
         ChartPanel panel = new ChartPanel(chart);
         panel.setMouseWheelEnabled(true);
         panel.setBackground(PerformanceTrendTheme.chartPanelBackground());
+        ToolWindowSurfaceStyle.applyCard(panel);
         panel.setDisplayToolTips(true);
         panel.setMinimumDrawWidth(0);
         panel.setMinimumDrawHeight(0);
@@ -573,12 +581,15 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
 
         private TrendView(String titleKey, SeriesSpec... specs) {
             panel = new JPanel(new BorderLayout(8, 0));
+            ToolWindowSurfaceStyle.applyCard(panel);
             panel.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
 
             JPanel controlsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+            ToolWindowSurfaceStyle.applyCard(controlsPanel);
             controlsPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
             for (SeriesSpec spec : specs) {
                 JCheckBox checkBox = new JCheckBox(spec.series().getKey().toString(), spec.selected());
+                checkBox.setOpaque(false);
                 checkBox.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
                 checkBox.addActionListener(e -> {
                     if (selectedCount() == 0) {
@@ -592,10 +603,11 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
             }
 
             JScrollPane splitScrollPane = new JScrollPane(splitChartsPanel);
-            splitScrollPane.setBorder(BorderFactory.createEmptyBorder());
+            ToolWindowSurfaceStyle.applyScrollPaneCard(splitScrollPane);
             splitScrollPane.getVerticalScrollBar().setUnitIncrement(16);
 
             combinedChartPanel = createChartPanel(combinedDataset, titleKey);
+            ToolWindowSurfaceStyle.applyCard(chartCards);
             chartCards.add(splitScrollPane, SEPARATE_VIEW);
             chartCards.add(combinedChartPanel, COMBINED_VIEW);
 
@@ -642,6 +654,7 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
         private void rebuildSplitCharts() {
             int selectedCount = selectedCount();
             splitChartsPanel.removeAll();
+            ToolWindowSurfaceStyle.applyCard(splitChartsPanel);
             splitChartsPanel.setLayout(new GridLayout(0, selectedCount == 1 ? 1 : 2, 12, 12));
             splitChartsPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
             for (SplitChart splitChart : splitCharts) {

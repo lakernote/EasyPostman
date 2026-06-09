@@ -2,6 +2,7 @@ package com.laker.postman.panel.collections.tree.dialog;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.UiSingletonFactory;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
@@ -49,6 +50,7 @@ public class AddRequestDialog {
         dialog.setSize(400, 260);
         dialog.setLocationRelativeTo(UiSingletonFactory.getInstance(MainFrame.class));
         dialog.setLayout(new BorderLayout());
+        ToolWindowSurfaceStyle.applyBackground((JComponent) dialog.getContentPane());
 
         JPanel mainPanel = createMainPanel();
         JPanel buttonPanel = createButtonPanel();
@@ -63,6 +65,7 @@ public class AddRequestDialog {
      */
     private JPanel createMainPanel() {
         JPanel mainPanel = new JPanel();
+        ToolWindowSurfaceStyle.applyBackground(mainPanel);
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 10, 20));
 
@@ -81,11 +84,13 @@ public class AddRequestDialog {
      */
     private JPanel createNamePanel() {
         JPanel namePanel = new JPanel(new BorderLayout(10, 5));
+        namePanel.setOpaque(false);
         JLabel nameLabel = new JLabel(I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_ADD_REQUEST_NAME));
         nameLabel.setFont(nameLabel.getFont().deriveFont(Font.BOLD));
 
         nameField = new JTextField();
         nameField.setPreferredSize(new Dimension(0, 30));
+        ToolWindowSurfaceStyle.applyTextComponentInput(nameField);
 
         namePanel.add(nameLabel, BorderLayout.NORTH);
         namePanel.add(nameField, BorderLayout.CENTER);
@@ -98,12 +103,14 @@ public class AddRequestDialog {
      */
     private JPanel createProtocolPanel() {
         ButtonGroup protocolGroup;
-        JPanel protocolPanel = new JPanel();
-        protocolPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 5));
-        protocolPanel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createEtchedBorder(),
-                I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_ADD_REQUEST_PROTOCOL)
-        ));
+        JPanel protocolPanel = new JPanel(new BorderLayout(0, 8));
+        protocolPanel.setOpaque(false);
+
+        JLabel protocolLabel = new JLabel(I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_ADD_REQUEST_PROTOCOL));
+        protocolLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
+
+        JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        buttonsPanel.setOpaque(false);
 
         protocolGroup = new ButtonGroup();
         httpBtn = createProtocolButton("HTTP", "icons/http.svg", true);
@@ -114,9 +121,12 @@ public class AddRequestDialog {
         protocolGroup.add(wsBtn);
         protocolGroup.add(sseBtn);
 
-        protocolPanel.add(httpBtn);
-        protocolPanel.add(wsBtn);
-        protocolPanel.add(sseBtn);
+        buttonsPanel.add(httpBtn);
+        buttonsPanel.add(wsBtn);
+        buttonsPanel.add(sseBtn);
+
+        protocolPanel.add(protocolLabel, BorderLayout.NORTH);
+        protocolPanel.add(buttonsPanel, BorderLayout.CENTER);
 
         return protocolPanel;
     }
@@ -141,6 +151,7 @@ public class AddRequestDialog {
      */
     private JPanel createButtonPanel() {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        ToolWindowSurfaceStyle.applyBackground(buttonPanel);
 
         JButton okButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK));
         JButton cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_CANCEL));

@@ -1,5 +1,8 @@
 package com.laker.postman.panel.toolbox;
 
+import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.ToolWindowActionToolbar;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -10,7 +13,6 @@ import javax.swing.*;
 import javax.swing.Timer;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.io.File;
@@ -70,19 +72,15 @@ public class UuidPanel extends JPanel {
     private void initUI() {
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        ToolWindowSurfaceStyle.applyCard(this);
 
         // 主分割面板
-        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+        JSplitPane splitPane = ToolWindowChrome.createHorizontalCardSplitPane(
+                createGeneratorPanel(),
+                createParsePanel(),
+                720
+        );
         splitPane.setResizeWeight(0.6);
-        splitPane.setDividerLocation(0.6);
-
-        // 左侧：生成面板
-        JPanel leftPanel = createGeneratorPanel();
-        splitPane.setLeftComponent(leftPanel);
-
-        // 右侧：解析面板
-        JPanel rightPanel = createParsePanel();
-        splitPane.setRightComponent(rightPanel);
 
         add(splitPane, BorderLayout.CENTER);
     }
@@ -92,21 +90,21 @@ public class UuidPanel extends JPanel {
      */
     private JPanel createGeneratorPanel() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setOpaque(false);
 
         // 顶部配置面板
         JPanel topPanel = new JPanel(new BorderLayout(10, 10));
+        topPanel.setOpaque(false);
 
         // 生成配置面板
         JPanel configPanel = new JPanel();
         configPanel.setLayout(new BoxLayout(configPanel, BoxLayout.Y_AXIS));
-        TitledBorder configBorder = BorderFactory.createTitledBorder(
-                BorderFactory.createEtchedBorder(),
-                I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_BATCH_GENERATE)
-        );
-        configPanel.setBorder(configBorder);
+        configPanel.setOpaque(false);
+        configPanel.add(createSectionTitle(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_BATCH_GENERATE)));
 
         // 第一行：版本和数量
         JPanel row1 = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        row1.setOpaque(false);
         row1.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_VERSION) + ":"));
         versionComboBox = new JComboBox<>(new String[]{
             "UUID v4 (Random)",
@@ -131,6 +129,7 @@ public class UuidPanel extends JPanel {
 
         // 第二行：格式配置
         JPanel row2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        row2.setOpaque(false);
         row2.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_FORMAT) + ":"));
 
         uppercaseCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_UPPERCASE));
@@ -155,6 +154,7 @@ public class UuidPanel extends JPanel {
 
         // 第三行：命名空间和名称（用于 v3 和 v5）
         JPanel row3 = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        row3.setOpaque(false);
         row3.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_NAMESPACE) + ":"));
         JComboBox<String> namespaceCombo = new JComboBox<>(new String[]{
             "DNS", "URL", "OID", "X.500", I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_NAMESPACE_CUSTOM)
@@ -166,11 +166,13 @@ public class UuidPanel extends JPanel {
         namespaceField.setPreferredSize(new Dimension(150, 28));
         namespaceField.setEnabled(false);
         namespaceField.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_NAMESPACE_HINT));
+        ToolWindowSurfaceStyle.applyTextComponentInput(namespaceField);
         row3.add(namespaceField);
 
         row3.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_NAME) + ":"));
         nameField = new JTextField("example.com");
         nameField.setPreferredSize(new Dimension(150, 28));
+        ToolWindowSurfaceStyle.applyTextComponentInput(nameField);
         row3.add(nameField);
         row3.setVisible(false); // 默认隐藏，只在选择 v3/v5 时显示
         configPanel.add(row3);
@@ -178,8 +180,6 @@ public class UuidPanel extends JPanel {
         topPanel.add(configPanel, BorderLayout.CENTER);
 
         // 操作按钮面板
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-
         JButton generateBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_GENERATE));
         generateBtn.setPreferredSize(new Dimension(120, 32));
         generateBtn.setFocusPainted(false);
@@ -200,33 +200,32 @@ public class UuidPanel extends JPanel {
         clearBtn.setPreferredSize(new Dimension(100, 32));
         clearBtn.setFocusPainted(false);
 
-        buttonPanel.add(generateBtn);
-        buttonPanel.add(copyBtn);
-        buttonPanel.add(copyOneBtn);
-        buttonPanel.add(exportBtn);
-        buttonPanel.add(clearBtn);
+        JPanel buttonPanel = ToolWindowActionToolbar.inlineLeft(
+                generateBtn,
+                copyBtn,
+                copyOneBtn,
+                exportBtn,
+                clearBtn
+        );
 
         topPanel.add(buttonPanel, BorderLayout.SOUTH);
         panel.add(topPanel, BorderLayout.NORTH);
 
         // 中间UUID显示区域
         JPanel centerPanel = new JPanel(new BorderLayout(5, 5));
-        TitledBorder centerBorder = BorderFactory.createTitledBorder(
-                BorderFactory.createEtchedBorder(),
-                I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_GENERATED)
-        );
-        centerPanel.setBorder(centerBorder);
+        centerPanel.setOpaque(false);
+        centerPanel.add(createSectionTitle(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_GENERATED)), BorderLayout.NORTH);
 
         uuidArea = new JTextArea();
         uuidArea.setEditable(false);
         uuidArea.setLineWrap(true);
         uuidArea.setWrapStyleWord(false);
         uuidArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1));
-        uuidArea.setForeground(ModernColors.getTextPrimary());
         uuidArea.setMargin(new Insets(10, 10, 10, 10));
+        ToolWindowSurfaceStyle.applyTextComponentCard(uuidArea);
 
         JScrollPane scrollPane = new JScrollPane(uuidArea);
-        scrollPane.setBorder(BorderFactory.createLineBorder(ModernColors.getBorderMediumColor()));
+        ToolWindowSurfaceStyle.applyScrollPaneCard(scrollPane);
         centerPanel.add(scrollPane, BorderLayout.CENTER);
 
         panel.add(centerPanel, BorderLayout.CENTER);
@@ -234,8 +233,10 @@ public class UuidPanel extends JPanel {
         // 底部信息面板
         JPanel bottomPanel = new JPanel(new BorderLayout(10, 5));
         bottomPanel.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
+        bottomPanel.setOpaque(false);
 
         JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        infoPanel.setOpaque(false);
         JLabel infoLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_VERSION_INFO));
         infoLabel.setFont(FontsUtil.getDefaultFont(Font.ITALIC));
         infoLabel.setForeground(ModernColors.getTextSecondary());
@@ -245,6 +246,7 @@ public class UuidPanel extends JPanel {
         statusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         statusLabel.setForeground(ModernColors.getSuccess());
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+        statusPanel.setOpaque(false);
         statusPanel.add(statusLabel);
 
         bottomPanel.add(infoPanel, BorderLayout.WEST);
@@ -321,20 +323,21 @@ public class UuidPanel extends JPanel {
      */
     private JPanel createParsePanel() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setOpaque(false);
 
-        TitledBorder parseBorder = BorderFactory.createTitledBorder(
-                BorderFactory.createEtchedBorder(),
-                I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_PARSE)
-        );
-        panel.setBorder(parseBorder);
+        JPanel topPanel = new JPanel(new BorderLayout(5, 8));
+        topPanel.setOpaque(false);
+        topPanel.add(createSectionTitle(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_PARSE)), BorderLayout.NORTH);
 
         // 顶部输入区域
         JPanel inputPanel = new JPanel(new BorderLayout(5, 5));
+        inputPanel.setOpaque(false);
         inputPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_INPUT) + ":"), BorderLayout.NORTH);
 
         JTextField inputField = new JTextField();
         inputField.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1));
         inputField.setPreferredSize(new Dimension(0, 30));
+        ToolWindowSurfaceStyle.applyTextComponentInput(inputField);
         inputPanel.add(inputField, BorderLayout.CENTER);
 
         JButton parseBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_PARSE));
@@ -342,19 +345,20 @@ public class UuidPanel extends JPanel {
         parseBtn.setFocusPainted(false);
         inputPanel.add(parseBtn, BorderLayout.EAST);
 
-        panel.add(inputPanel, BorderLayout.NORTH);
+        topPanel.add(inputPanel, BorderLayout.CENTER);
+        panel.add(topPanel, BorderLayout.NORTH);
 
         // 解析结果显示区域
         parseArea = new JTextArea();
         parseArea.setEditable(false);
         parseArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        parseArea.setForeground(ModernColors.getTextPrimary());
         parseArea.setMargin(new Insets(10, 10, 10, 10));
         parseArea.setLineWrap(true);
         parseArea.setWrapStyleWord(true);
+        ToolWindowSurfaceStyle.applyTextComponentCard(parseArea);
 
         JScrollPane scrollPane = new JScrollPane(parseArea);
-        scrollPane.setBorder(BorderFactory.createLineBorder(ModernColors.getBorderMediumColor()));
+        ToolWindowSurfaceStyle.applyScrollPaneCard(scrollPane);
         panel.add(scrollPane, BorderLayout.CENTER);
 
         // 解析按钮事件
@@ -364,6 +368,15 @@ public class UuidPanel extends JPanel {
         inputField.addActionListener(e -> parseUuid(inputField.getText().trim()));
 
         return panel;
+    }
+
+    private JLabel createSectionTitle(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 0));
+        label.setForeground(ModernColors.getTextPrimary());
+        label.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+        label.setAlignmentX(Component.LEFT_ALIGNMENT);
+        return label;
     }
 
     /**

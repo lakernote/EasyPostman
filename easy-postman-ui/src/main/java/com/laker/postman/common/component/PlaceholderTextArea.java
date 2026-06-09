@@ -1,5 +1,7 @@
 package com.laker.postman.common.component;
 
+import com.laker.postman.common.constants.ModernColors;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -45,13 +47,10 @@ public class PlaceholderTextArea extends JTextArea {
         try {
             g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-            // 使用与 FlatLaf TextField.placeholderForeground 一致的颜色，回退到灰色
+            // Prefer FlatLaf's placeholder token, then fall back to the app theme semantic color.
             Color placeholderColor = UIManager.getColor("TextField.placeholderForeground");
             if (placeholderColor == null) {
-                placeholderColor = UIManager.getColor("Label.disabledForeground");
-            }
-            if (placeholderColor == null) {
-                placeholderColor = new Color(128, 128, 128);
+                placeholderColor = ModernColors.getTextSecondary();
             }
             g2.setColor(placeholderColor);
             g2.setFont(getFont());
@@ -75,4 +74,3 @@ public class PlaceholderTextArea extends JTextArea {
         }
     }
 }
-

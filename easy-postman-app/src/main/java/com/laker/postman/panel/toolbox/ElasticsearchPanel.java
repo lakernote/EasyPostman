@@ -1,8 +1,13 @@
 package com.laker.postman.panel.toolbox;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.laker.postman.common.component.RequestMethodUiMetadata;
 import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.ToolWindowSidebarHeader;
+import com.laker.postman.common.component.ToolWindowSidebarToolbar;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.ClearButton;
 import com.laker.postman.common.component.button.CopyButton;
 import com.laker.postman.common.component.button.FormatButton;
@@ -11,6 +16,7 @@ import com.laker.postman.common.component.button.RefreshButton;
 import com.laker.postman.common.component.button.SecondaryButton;
 import com.laker.postman.common.component.connection.ConnectionToolbarUi;
 import com.laker.postman.common.component.table.EnhancedTablePanel;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
 import com.laker.postman.util.EditorThemeUtil;
 import com.laker.postman.util.FontsUtil;
@@ -152,7 +158,6 @@ public class ElasticsearchPanel extends JPanel {
     private boolean connected = false;
 
     // ===== 常量 =====
-    private static final String SEPARATOR_FG = "Separator.foreground";
     private static final String SEARCH_PATH = "/{index}/_search";
     private static final String HTTP_DELETE = "DELETE";
     private static final String CLUSTER_HEALTH_PATH = "/_cluster/health";
@@ -160,7 +165,6 @@ public class ElasticsearchPanel extends JPanel {
     private static final String JSON_MIME = "application/json";
     private static final String HEADER_AUTHORIZATION = "Authorization";
     private static final String CLIENT_PROP_TOTAL_HITS = "es.totalHits";
-    private static final String LABEL_DISABLED_FG = "Label.disabledForeground";
     private static final int CONNECT_TIMEOUT_MS = 10_000;
     private static final int READ_TIMEOUT_MS = 30_000;
     private static final int WRITE_TIMEOUT_MS = 30_000;
@@ -244,26 +248,27 @@ public class ElasticsearchPanel extends JPanel {
     private void initUI() {
         setLayout(new BorderLayout(0, 0));
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        ToolWindowSurfaceStyle.applyCard(this);
 
         // 顶部连接栏
         add(buildConnectionPanel(), BorderLayout.NORTH);
 
         // 主内容区：左侧（索引+历史）+ 右侧 DSL
-        JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
-                buildLeftPanel(), buildDslPanel());
+        JSplitPane mainSplit = ToolWindowChrome.createHorizontalCardSplitPane(
+                buildLeftPanel(),
+                buildDslPanel(),
+                240
+        );
         mainSplit.setDividerLocation(240);
-        mainSplit.setDividerSize(3);
-        mainSplit.setContinuousLayout(true);
         add(mainSplit, BorderLayout.CENTER);
+        ToolWindowSurfaceStyle.applyPanelTreeCard(this);
     }
 
     // ===== 连接面板 =====
     private JPanel buildConnectionPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         connectionPanel = panel;
-        panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)),
-                BorderFactory.createEmptyBorder(3, 6, 3, 6)));
+        ToolWindowSurfaceStyle.applySectionHeader(panel, 3, 6, 3, 6);
 
         profileCombo = new JComboBox<>();
         profileCombo.setEditable(false);
@@ -634,9 +639,11 @@ public class ElasticsearchPanel extends JPanel {
     // ===== 左侧面板：索引管理 + 历史记录（JTabbedPane）=====
     private JPanel buildLeftPanel() {
         JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
         wrapper.setPreferredSize(new Dimension(240, 0));
 
         JTabbedPane leftTabs = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
+        ToolWindowSurfaceStyle.applyTabbedPaneCard(leftTabs);
         leftTabs.addTab(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_INDEX_MANAGEMENT), buildIndexPanel());
         leftTabs.addTab(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_HISTORY), buildHistoryPanel());
 
@@ -649,25 +656,14 @@ public class ElasticsearchPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout(0, 0));
         panel.setBorder(BorderFactory.createEmptyBorder());
 
-        // 顶部标题栏 + 刷新按钮
-        JPanel titleBar = new JPanel(new BorderLayout());
-        titleBar.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)),
-                BorderFactory.createEmptyBorder(4, 8, 4, 4)));
-        JLabel titleLbl = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_INDEX_MANAGEMENT));
-        titleLbl.setFont(titleLbl.getFont().deriveFont(Font.BOLD, 12f));
         RefreshButton refreshBtn = new RefreshButton();
         refreshBtn.addActionListener(e -> loadIndices());
-        titleBar.add(titleLbl, BorderLayout.CENTER);
-        titleBar.add(refreshBtn, BorderLayout.EAST);
+        ToolWindowSidebarHeader titleBar = new ToolWindowSidebarHeader(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_INDEX_MANAGEMENT), refreshBtn);
 
         // 搜索框
         SearchTextField indexSearchField = new SearchTextField();
         indexSearchField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
-        JPanel searchBox = new JPanel(new BorderLayout());
-        searchBox.setBorder(BorderFactory.createEmptyBorder(4, 6, 2, 6));
-        searchBox.add(indexSearchField, BorderLayout.CENTER);
-
         // 索引列表
         indexListModel = new DefaultListModel<>();
         indexFilteredModel = new DefaultListModel<>();
@@ -684,7 +680,7 @@ public class ElasticsearchPanel extends JPanel {
         });
         indexList.addMouseListener(buildIndexListMouseListener());
         JScrollPane listScroll = new JScrollPane(indexList);
-        listScroll.setBorder(BorderFactory.createEmptyBorder());
+        ToolWindowSurfaceStyle.applyListScrollPaneCard(listScroll, indexList);
 
         // 实时过滤
         indexSearchField.getDocument().addDocumentListener(new DocumentListener() {
@@ -707,7 +703,7 @@ public class ElasticsearchPanel extends JPanel {
                 "[][grow,fill]",
                 "[]2[]2[]2[]"
         ));
-        createPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, UIManager.getColor(SEPARATOR_FG)));
+        ToolWindowSurfaceStyle.applySectionHeader(createPanel);
 
         newIndexField = new JTextField();
         newIndexField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT,
@@ -728,7 +724,7 @@ public class ElasticsearchPanel extends JPanel {
 
         JPanel topArea = new JPanel(new BorderLayout());
         topArea.add(titleBar, BorderLayout.NORTH);
-        topArea.add(searchBox, BorderLayout.CENTER);
+        topArea.add(new ToolWindowSidebarToolbar(null, indexSearchField), BorderLayout.CENTER);
 
         panel.add(topArea, BorderLayout.NORTH);
         panel.add(listScroll, BorderLayout.CENTER);
@@ -748,8 +744,11 @@ public class ElasticsearchPanel extends JPanel {
             if (value instanceof String name) {
                 Long count = indexDocCountMap.get(name);
                 if (count != null) {
+                    String countColor = ModernColors.toHtmlColor(isSelected
+                            ? lbl.getForeground()
+                            : ModernColors.getTextHint());
                     lbl.setText("<html><b>" + name + "</b>"
-                            + "&nbsp;<font color='" + (isSelected ? "#cce0ff" : "#888888") + "'>"
+                            + "&nbsp;<font color='" + countColor + "'>"
                             + count + "</font></html>");
                 } else {
                     lbl.setText(name);
@@ -763,21 +762,14 @@ public class ElasticsearchPanel extends JPanel {
     private JPanel buildHistoryPanel() {
         JPanel panel = new JPanel(new BorderLayout(0, 0));
 
-        // 标题栏 + 清空按钮
-        JPanel titleBar = new JPanel(new BorderLayout());
-        titleBar.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)),
-                BorderFactory.createEmptyBorder(4, 8, 4, 4)));
-        JLabel titleLbl = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_HISTORY));
-        titleLbl.setFont(titleLbl.getFont().deriveFont(Font.BOLD, 12f));
         ClearButton clearHistBtn = new ClearButton();
         clearHistBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_HISTORY_CLEAR));
         clearHistBtn.addActionListener(e -> {
             requestHistory.clear();
             historyListModel.clear();
         });
-        titleBar.add(titleLbl, BorderLayout.CENTER);
-        titleBar.add(clearHistBtn, BorderLayout.EAST);
+        ToolWindowSidebarHeader titleBar = new ToolWindowSidebarHeader(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_HISTORY), clearHistBtn);
 
         historyListModel = new DefaultListModel<>();
         historyList = new JList<>(historyListModel);
@@ -794,12 +786,12 @@ public class ElasticsearchPanel extends JPanel {
         });
 
         JScrollPane scroll = new JScrollPane(historyList);
-        scroll.setBorder(BorderFactory.createEmptyBorder());
+        ToolWindowSurfaceStyle.applyListScrollPaneCard(scroll, historyList);
 
         JLabel tipLbl = new JLabel("<html><center><small>" +
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_HISTORY_EMPTY) + "</small></center></html>");
         tipLbl.setHorizontalAlignment(SwingConstants.CENTER);
-        tipLbl.setForeground(UIManager.getColor(LABEL_DISABLED_FG));
+        tipLbl.setForeground(ModernColors.getTextSecondary());
         tipLbl.setBorder(BorderFactory.createEmptyBorder(8, 4, 8, 4));
 
         panel.add(titleBar, BorderLayout.NORTH);
@@ -818,12 +810,7 @@ public class ElasticsearchPanel extends JPanel {
             JLabel lbl = (JLabel) super.getListCellRendererComponent(
                     list, value, index, isSelected, cellHasFocus);
             if (value instanceof HistoryEntry h) {
-                String color = switch (h.method) {
-                    case "POST" -> "#e8a000";
-                    case "PUT" -> "#5cacee";
-                    case HTTP_DELETE -> "#e04040";
-                    default -> "#28a745";
-                };
+                String color = RequestMethodUiMetadata.methodColorHex(h.method);
                 String path = h.path.length() > 32 ? h.path.substring(0, 30) + "…" : h.path;
                 lbl.setText("<html><b><font color='" + color + "'>" + h.method + "</font></b> " + path + "</html>");
                 lbl.setToolTipText(h.method + " " + h.path);
@@ -893,6 +880,7 @@ public class ElasticsearchPanel extends JPanel {
         String primarySelected = indexList.getSelectedValue();
 
         JPopupMenu menu = new JPopupMenu();
+        ToolWindowSurfaceStyle.applyPopupMenuCard(menu);
 
         // 复制索引名
         JMenuItem copyNameItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_INDEX_COPY_NAME));
@@ -1021,12 +1009,12 @@ public class ElasticsearchPanel extends JPanel {
     // ===== DSL 编辑 + 结果面板 =====
     private JPanel buildDslPanel() {
         JPanel panel = new JPanel(new BorderLayout(0, 4));
+        panel.setOpaque(false);
         panel.setBorder(BorderFactory.createEmptyBorder(0, 4, 0, 0));
 
         // ---- 工具栏（MigLayout）----
         JPanel toolBar = new JPanel(new MigLayout("insets 4, fillx", "[][][][]8[][]push", "[]"));
-        toolBar.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0,
-                UIManager.getColor(SEPARATOR_FG)));
+        ToolWindowSurfaceStyle.applySectionHeader(toolBar);
 
         templateCombo = new JComboBox<>();
         for (String[] t : DSL_TEMPLATES) templateCombo.addItem(I18nUtil.getMessage(t[0]));
@@ -1089,24 +1077,20 @@ public class ElasticsearchPanel extends JPanel {
         requestRow.add(executeBtn);
 
         JPanel topArea = new JPanel(new BorderLayout(0, 4));
+        topArea.setOpaque(false);
         topArea.add(toolBar, BorderLayout.NORTH);
         topArea.add(requestRow, BorderLayout.CENTER);
         panel.add(topArea, BorderLayout.NORTH);
 
         // ---- 主分割：DSL 编辑器(上) + 结果(下) ----
-        JSplitPane editorSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-        editorSplit.setDividerSize(5);
-        editorSplit.setContinuousLayout(true);
-        editorSplit.setResizeWeight(0.4);
-        editorSplit.setBorder(BorderFactory.createEmptyBorder());
-
         // DSL 编辑器 - 参考 RequestBodyPanel，可编辑，用 SearchableTextArea 包装（启用搜索替换）
         JPanel editorPanel = new JPanel(new BorderLayout());
+        editorPanel.setOpaque(false);
         // DSL 编辑器顶部标题 + 工具按钮（MigLayout）
         JPanel dslHeaderBar = new JPanel(new MigLayout("insets 2 4 2 4, fillx", "[]push", "[]"));
-        dslHeaderBar.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)));
+        ToolWindowSurfaceStyle.applySectionHeader(dslHeaderBar);
         JLabel dslLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_DSL_TITLE));
-        dslLabel.setFont(dslLabel.getFont().deriveFont(Font.BOLD, 11f));
+        dslLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -2));
         dslHeaderBar.add(dslLabel);
 
         dslEditor = createJsonEditor(true);
@@ -1118,24 +1102,26 @@ public class ElasticsearchPanel extends JPanel {
 
         // 结果区（Tab: 表格 + 聚合 + 原始 JSON）
         JPanel resultPanel = new JPanel(new BorderLayout());
+        resultPanel.setOpaque(false);
 
         // 响应标题栏（MigLayout）：标题 + hits 统计 + 状态
         JPanel respHeader = new JPanel(new MigLayout("insets 2 4 2 4, fillx", "[]push[][]", "[]"));
-        respHeader.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)));
+        ToolWindowSurfaceStyle.applySectionHeader(respHeader);
         JLabel respLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_RESPONSE_TITLE));
-        respLabel.setFont(respLabel.getFont().deriveFont(Font.BOLD, 11f));
+        respLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -2));
 
         hitsInfoLabel = new JLabel("");
-        hitsInfoLabel.setFont(hitsInfoLabel.getFont().deriveFont(Font.PLAIN, 11f));
-        hitsInfoLabel.setForeground(new Color(80, 130, 200));
+        hitsInfoLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
+        hitsInfoLabel.setForeground(ModernColors.getPrimary());
         respStatusLabel = new JLabel("");
-        respStatusLabel.setFont(respStatusLabel.getFont().deriveFont(Font.PLAIN, 11f));
-        respStatusLabel.setForeground(UIManager.getColor(LABEL_DISABLED_FG));
+        respStatusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
+        respStatusLabel.setForeground(ModernColors.getTextSecondary());
         respHeader.add(respLabel);
         respHeader.add(hitsInfoLabel);
         respHeader.add(respStatusLabel);
 
         resultTabs = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
+        ToolWindowSurfaceStyle.applyTabbedPaneCard(resultTabs);
         enhancedTable = new EnhancedTablePanel(new String[]{});
         aggTable = new EnhancedTablePanel(new String[]{});
         // 参考 ResponseBodyPanel：不可编辑编辑器使用 SearchableTextArea(area, false) 包装（仅搜索）
@@ -1151,8 +1137,12 @@ public class ElasticsearchPanel extends JPanel {
         resultPanel.add(respHeader, BorderLayout.NORTH);
         resultPanel.add(resultTabs, BorderLayout.CENTER);
 
-        editorSplit.setTopComponent(editorPanel);
-        editorSplit.setBottomComponent(resultPanel);
+        JSplitPane editorSplit = ToolWindowChrome.createVerticalCardSplitPane(
+                editorPanel,
+                resultPanel,
+                260
+        );
+        editorSplit.setResizeWeight(0.4);
 
         panel.add(editorSplit, BorderLayout.CENTER);
         return panel;
@@ -1169,11 +1159,11 @@ public class ElasticsearchPanel extends JPanel {
                     list, value, index, isSelected, cellHasFocus);
             if (!isSelected && value instanceof String method) {
                 Color c = switch (method) {
-                    case "POST" -> new Color(220, 140, 20);
-                    case "PUT" -> new Color(80, 160, 230);
-                    case HTTP_DELETE -> new Color(210, 50, 50);
-                    case "HEAD" -> new Color(130, 100, 200);
-                    default -> new Color(40, 167, 69); // GET
+                    case "POST" -> ModernColors.getWarningDark();
+                    case "PUT" -> ModernColors.getInfo();
+                    case HTTP_DELETE -> ModernColors.getError();
+                    case "HEAD" -> ModernColors.getSecondary();
+                    default -> ModernColors.getSuccess(); // GET
                 };
                 lbl.setForeground(c);
                 lbl.setFont(lbl.getFont().deriveFont(Font.BOLD));
@@ -1478,7 +1468,7 @@ public class ElasticsearchPanel extends JPanel {
         clearTable();
         clearAggTable();
         respStatusLabel.setText(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_STATUS_REQUESTING));
-        respStatusLabel.setForeground(UIManager.getColor(LABEL_DISABLED_FG));
+        respStatusLabel.setForeground(ModernColors.getTextSecondary());
         hitsInfoLabel.setText("");
         executeBtn.setEnabled(false);
         long start = System.currentTimeMillis();
@@ -1509,7 +1499,7 @@ public class ElasticsearchPanel extends JPanel {
                     resultArea.setText("Error: " + msg);
                     respStatusLabel.setText(MessageFormat.format(
                             I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_STATUS_ERROR), elapsed));
-                    respStatusLabel.setForeground(UIManager.getColor("Actions.Red"));
+                    respStatusLabel.setForeground(ModernColors.getError());
                 }
             }
         }.execute();
@@ -1530,10 +1520,10 @@ public class ElasticsearchPanel extends JPanel {
         // 状态码颜色
         int code = rw.code();
         Color statusColor;
-        if (code >= 200 && code < 300) statusColor = new Color(0, 160, 0);
-        else if (code >= 400 && code < 500) statusColor = new Color(210, 130, 0);
-        else if (code >= 500) statusColor = new Color(200, 50, 50);
-        else statusColor = UIManager.getColor(LABEL_DISABLED_FG);
+        if (code >= 200 && code < 300) statusColor = ModernColors.getSuccess();
+        else if (code >= 400 && code < 500) statusColor = ModernColors.getWarningDark();
+        else if (code >= 500) statusColor = ModernColors.getError();
+        else statusColor = ModernColors.getTextSecondary();
 
         String codeStr = code > 0 ? code + " · " : "";
         String statusKey = code >= 200 && code < 300

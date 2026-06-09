@@ -4,6 +4,7 @@ import com.laker.postman.request.model.HttpRequestItem;
 
 
 import com.laker.postman.common.UiSingletonFactory;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.util.I18nUtil;
@@ -49,6 +50,7 @@ public class RequestSelectionDialogSupport {
         }
 
         JScrollPane treeScroll = new JScrollPane(tree);
+        ToolWindowSurfaceStyle.applyTreeScrollPaneCard(treeScroll, tree);
         dialog.add(treeScroll, BorderLayout.CENTER);
 
         JButton okBtn = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK));

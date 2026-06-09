@@ -4,6 +4,7 @@ import com.laker.postman.common.component.MemoryLabel;
 import com.laker.postman.common.component.placeholder.PerformanceTrendPlaceholderPanel;
 import com.laker.postman.common.component.button.ExportButton;
 import com.laker.postman.common.component.button.HelpButton;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.panel.performance.result.LazyPerformanceTrendPanel;
 import com.laker.postman.test.AbstractSwingUiTest;
 import com.laker.postman.util.I18nUtil;
@@ -13,7 +14,10 @@ import org.testng.annotations.Test;
 import javax.swing.AbstractButton;
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
+import javax.swing.JTree;
 import javax.swing.JTextField;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
 import java.awt.Component;
 import java.awt.Container;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,6 +31,18 @@ import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
 public class PerformancePanelViewFactoryTest extends AbstractSwingUiTest {
+
+    @Test
+    public void treeSectionShouldUseThemeAwareTreeSurface() {
+        PerformancePanelViewFactory viewFactory = new PerformancePanelViewFactory();
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode("root");
+
+        PerformancePanelViewFactory.TreeSection treeSection = viewFactory.createTreeSection(new DefaultTreeModel(root));
+
+        JTree tree = treeSection.tree();
+        assertEquals(tree.getBackground(), ModernColors.getCardBackgroundColor());
+        assertEquals(tree.getForeground(), ModernColors.getTextPrimary());
+    }
 
     @Test
     public void resultControlsShouldSwitchLinkedResultTabs() {

@@ -4,7 +4,9 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.ClearButton;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.stream.MessageType;
 import com.laker.postman.panel.collections.editor.request.StreamMessageUiMetadata;
@@ -59,9 +61,11 @@ public class WebSocketResponsePanel extends JPanel {
 
     public WebSocketResponsePanel() {
         setLayout(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(this);
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         // 顶部工具栏
         JPanel toolBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2)); // 左对齐，水平间距5，垂直间距2
+        ToolWindowSurfaceStyle.applyCard(toolBar);
         typeFilterBox = new JComboBox<>(TYPE_FILTERS);
         searchField = new SearchTextField();
         clearButton = new ClearButton();
@@ -150,6 +154,7 @@ public class WebSocketResponsePanel extends JPanel {
                         table.setRowSelectionInterval(row, row);
                         String content = (String) table.getValueAt(row, col);
                         JPopupMenu popupMenu = new JPopupMenu();
+                        ToolWindowSurfaceStyle.applyPopupMenuCard(popupMenu);
                         JMenuItem copyItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.BUTTON_COPY));
                         JMenuItem detailItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.BUTTON_DETAIL));
                         copyItem.addActionListener(ev -> {
@@ -166,16 +171,17 @@ public class WebSocketResponsePanel extends JPanel {
             }
         });
         tableScrollPane = new JScrollPane(table);
+        ToolWindowSurfaceStyle.applyTableScrollPaneCard(tableScrollPane, table);
         tableScrollPane.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
         add(tableScrollPane, BorderLayout.CENTER);
 
         // 美化表格
         JTableHeader header = table.getTableHeader();
         header.setFont(header.getFont().deriveFont(Font.BOLD));
-        table.setGridColor(new Color(220, 225, 235));
+        table.setGridColor(ModernColors.getBorderLightColor());
         table.setShowGrid(true);
         table.setRowHeight(24);
-        table.setBorder(BorderFactory.createLineBorder(new Color(200, 210, 230), 1));
+        table.setBorder(BorderFactory.createEmptyBorder());
         // 选中行加粗
         table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
             @Override

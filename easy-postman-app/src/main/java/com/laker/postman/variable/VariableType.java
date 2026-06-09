@@ -1,5 +1,6 @@
 package com.laker.postman.variable;
 
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
@@ -16,32 +17,32 @@ public enum VariableType {
     /**
      * 执行上下文变量 - 优先级最高，在当前请求或当前运行上下文中有效
      */
-    VARIABLE(MessageKeys.VARIABLE_TYPE_VARIABLE, "V", new Color(255, 152, 0), 1),
+    VARIABLE(MessageKeys.VARIABLE_TYPE_VARIABLE, "V", 1),
 
     /**
      * 迭代数据变量 - 当前 CSV/JSON 行数据
      */
-    ITERATION_DATA(MessageKeys.VARIABLE_TYPE_ITERATION_DATA, "D", new Color(25, 118, 210), 2),
+    ITERATION_DATA(MessageKeys.VARIABLE_TYPE_ITERATION_DATA, "D", 2),
 
     /**
      * 分组变量 - 从请求所在分组继承的变量
      */
-    GROUP(MessageKeys.VARIABLE_TYPE_GROUP, "C", new Color(13, 148, 136), 3),
+    GROUP(MessageKeys.VARIABLE_TYPE_GROUP, "C", 3),
 
     /**
      * 环境变量 - 从当前激活的环境中获取
      */
-    ENVIRONMENT(MessageKeys.VARIABLE_TYPE_ENVIRONMENT, "E", new Color(46, 125, 50), 5),
+    ENVIRONMENT(MessageKeys.VARIABLE_TYPE_ENVIRONMENT, "E", 5),
 
     /**
      * 全局变量 - 应用级共享变量
      */
-    GLOBAL(MessageKeys.VARIABLE_TYPE_GLOBAL, "G", new Color(67, 56, 202), 8),
+    GLOBAL(MessageKeys.VARIABLE_TYPE_GLOBAL, "G", 8),
 
     /**
      * 内置函数 - 动态函数，如 $guid, $timestamp 等
      */
-    BUILT_IN(MessageKeys.VARIABLE_TYPE_BUILT_IN, "$", new Color(156, 39, 176), 10);
+    BUILT_IN(MessageKeys.VARIABLE_TYPE_BUILT_IN, "$", 10);
 
     /**
      * 变量类型的国际化消息键
@@ -54,20 +55,28 @@ public enum VariableType {
     private final String iconSymbol;
 
     /**
-     * UI渲染时使用的颜色
-     */
-    private final Color color;
-
-    /**
      * 优先级（数值越小优先级越高）
      */
     private final int priority;
 
-    VariableType(String displayNameKey, String iconSymbol, Color color, int priority) {
+    VariableType(String displayNameKey, String iconSymbol, int priority) {
         this.displayNameKey = displayNameKey;
         this.iconSymbol = iconSymbol;
-        this.color = color;
         this.priority = priority;
+    }
+
+    /**
+     * UI渲染时使用的主题自适应颜色。
+     */
+    public Color getColor() {
+        return switch (this) {
+            case VARIABLE -> ModernColors.getVariableContextColor();
+            case ITERATION_DATA -> ModernColors.getVariableIterationDataColor();
+            case GROUP -> ModernColors.getVariableGroupColor();
+            case ENVIRONMENT -> ModernColors.getVariableEnvironmentColor();
+            case GLOBAL -> ModernColors.getVariableGlobalColor();
+            case BUILT_IN -> ModernColors.getVariableBuiltInColor();
+        };
     }
 
     /**

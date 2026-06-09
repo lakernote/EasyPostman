@@ -6,6 +6,7 @@ import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.performance.core.model.NodeType;
 
 
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
 import com.laker.postman.panel.performance.config.CsvDataSetPropertyPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
@@ -148,6 +149,7 @@ final class PerformanceTreeInteractionSupport {
 
     private void installPopupMenu() {
         JPopupMenu treeMenu = new JPopupMenu();
+        ToolWindowSurfaceStyle.applyPopupMenuCard(treeMenu);
         JMenuItem addThreadGroup = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_THREAD_GROUP));
         JMenuItem addCsvDataSet = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_CSV_DATA_SET));
         JMenuItem addRequest = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_REQUEST));

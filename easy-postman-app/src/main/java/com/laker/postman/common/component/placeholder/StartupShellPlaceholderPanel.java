@@ -1,5 +1,6 @@
 package com.laker.postman.common.component.placeholder;
 
+import com.laker.postman.common.component.ToolWindowChrome;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.service.setting.SettingManager;
 
@@ -43,17 +44,14 @@ public class StartupShellPlaceholderPanel extends AbstractPlaceholderPanel {
     }
 
     private JComponent createCollectionsShell() {
-        JSplitPane splitPane = new JSplitPane(
-                JSplitPane.HORIZONTAL_SPLIT,
-                createTreeShell(),
-                createRequestWorkspaceShell()
+        JComponent treeShell = createTreeShell();
+        JComponent requestWorkspaceShell = createRequestWorkspaceShell();
+        JSplitPane splitPane = ToolWindowChrome.createHorizontalCardSplitPane(
+                treeShell,
+                requestWorkspaceShell,
+                COLLECTIONS_DIVIDER_LOCATION
         );
-        splitPane.setDividerSize(3);
-        splitPane.setContinuousLayout(true);
-        splitPane.setBorder(null);
-        splitPane.setOpaque(false);
         splitPane.setResizeWeight(0);
-        splitPane.setDividerLocation(COLLECTIONS_DIVIDER_LOCATION);
         splitPane.getLeftComponent().setMinimumSize(new Dimension(220, 0));
         splitPane.getRightComponent().setMinimumSize(new Dimension(0, 0));
         return splitPane;
@@ -86,23 +84,17 @@ public class StartupShellPlaceholderPanel extends AbstractPlaceholderPanel {
         panel.add(requestLineShell, BorderLayout.NORTH);
 
         boolean vertical = SettingManager.isLayoutVertical();
-        JSplitPane splitPane = new JSplitPane(
-                vertical ? JSplitPane.VERTICAL_SPLIT : JSplitPane.HORIZONTAL_SPLIT,
-                createRequestBodyShell(),
-                createResponseShell()
-        );
-        splitPane.setDividerSize(4);
-        splitPane.setContinuousLayout(true);
-        splitPane.setBorder(null);
-        splitPane.setOpaque(false);
+        JComponent requestBodyShell = createRequestBodyShell();
+        JComponent responseShell = createResponseShell();
+        JSplitPane splitPane = vertical
+                ? ToolWindowChrome.createVerticalCardSplitPane(requestBodyShell, responseShell, 0)
+                : ToolWindowChrome.createHorizontalCardSplitPane(requestBodyShell, responseShell, 0);
         splitPane.setResizeWeight(0.5);
         if (vertical) {
             splitPane.setDividerLocation(0.58d);
         } else {
             splitPane.setDividerLocation(0.52d);
         }
-        splitPane.getTopComponent().setMinimumSize(new Dimension(0, 0));
-        splitPane.getBottomComponent().setMinimumSize(new Dimension(0, 0));
         splitPane.getLeftComponent().setMinimumSize(new Dimension(0, 0));
         splitPane.getRightComponent().setMinimumSize(new Dimension(0, 0));
         panel.add(splitPane, BorderLayout.CENTER);
@@ -178,8 +170,6 @@ public class StartupShellPlaceholderPanel extends AbstractPlaceholderPanel {
                     }
                     currentY += height + 10;
                 }
-                g2.setColor(ModernColors.getDividerBorderColor());
-                g2.drawLine(width - 1, 0, width - 1, getHeight());
             } finally {
                 g2.dispose();
             }
@@ -190,7 +180,6 @@ public class StartupShellPlaceholderPanel extends AbstractPlaceholderPanel {
         private CollectionsTreeShell() {
             setOpaque(true);
             setBackground(ModernColors.getBackgroundColor());
-            setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, ModernColors.getDividerBorderColor()));
         }
 
         @Override
@@ -264,8 +253,6 @@ public class StartupShellPlaceholderPanel extends AbstractPlaceholderPanel {
 
                 if (requestTabs) {
                     fillRoundedBlock(g2, getWidth() - 34, 7, 22, 22, blockColor(), 8);
-                    g2.setColor(ModernColors.getDividerBorderColor());
-                    g2.drawLine(0, getHeight() - 1, getWidth(), getHeight() - 1);
                 }
             } finally {
                 g2.dispose();
@@ -277,7 +264,6 @@ public class StartupShellPlaceholderPanel extends AbstractPlaceholderPanel {
         private RequestLineShell() {
             setOpaque(true);
             setBackground(ModernColors.getBackgroundColor());
-            setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()));
         }
 
         @Override
@@ -301,7 +287,6 @@ public class StartupShellPlaceholderPanel extends AbstractPlaceholderPanel {
         private EditorCanvasShell() {
             setOpaque(true);
             setBackground(ModernColors.getCardBackgroundColor());
-            setBorder(BorderFactory.createMatteBorder(0, 0, 0, 0, ModernColors.getDividerBorderColor()));
         }
 
         @Override
@@ -337,7 +322,6 @@ public class StartupShellPlaceholderPanel extends AbstractPlaceholderPanel {
         private ResponseCanvasShell() {
             setOpaque(true);
             setBackground(ModernColors.getCardBackgroundColor());
-            setBorder(BorderFactory.createMatteBorder(0, 0, 0, 0, ModernColors.getDividerBorderColor()));
         }
 
         @Override
@@ -369,8 +353,6 @@ public class StartupShellPlaceholderPanel extends AbstractPlaceholderPanel {
             Graphics2D g2 = (Graphics2D) g.create();
             try {
                 enableAntialias(g2);
-                g2.setColor(ModernColors.getDividerBorderColor());
-                g2.drawLine(0, 0, getWidth(), 0);
                 fillRoundedBlock(g2, 12, 5, 24, 20, blockColor(), 8);
                 fillRoundedBlock(g2, 44, 5, 34, 20, accentColor(), 8);
                 fillRoundedBlock(g2, getWidth() - 160, 5, 84, 20, blockColor(), 8);

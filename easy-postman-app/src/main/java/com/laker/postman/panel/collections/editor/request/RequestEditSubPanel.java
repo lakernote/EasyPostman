@@ -1,7 +1,7 @@
 package com.laker.postman.panel.collections.editor.request;
 
 import com.laker.postman.common.UiSingletonFactory;
-import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.panel.collections.editor.CollectionTreeEditorGateway;
@@ -150,8 +150,7 @@ public class RequestEditSubPanel extends JPanel {
         );
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5)); // 设置边距为5
-        setOpaque(true);
-        setBackground(ModernColors.getBackgroundColor());
+        ToolWindowSurfaceStyle.applyCard(this);
         if (!this.deferEditorInitialization) {
             initializeEditorUiIfNeeded(false);
         } else {

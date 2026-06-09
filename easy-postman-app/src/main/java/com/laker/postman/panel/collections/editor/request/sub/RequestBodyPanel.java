@@ -8,6 +8,7 @@ import com.laker.postman.request.model.RequestItemProtocolEnum;
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.common.component.SearchableTextArea;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.ViewportClippedTokenPainter;
 import com.laker.postman.common.component.button.*;
 import com.laker.postman.common.component.table.FormDataTablePanel;
@@ -84,6 +85,7 @@ public class RequestBodyPanel extends JPanel {
     public RequestBodyPanel(RequestItemProtocolEnum protocol) {
         this.isWebSocketMode = protocol.isWebSocketProtocol();
         setLayout(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(this);
         // 设置边距
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         if (isWebSocketMode) {
@@ -98,7 +100,9 @@ public class RequestBodyPanel extends JPanel {
      */
     private void initHttpBodyPanel() {
         JPanel bodyTypePanel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(bodyTypePanel);
         JPanel topPanel = new JPanel();
+        ToolWindowSurfaceStyle.applyCard(topPanel);
         topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.X_AXIS));
         topPanel.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 0));
 
@@ -157,6 +161,7 @@ public class RequestBodyPanel extends JPanel {
         add(bodyTypePanel, BorderLayout.NORTH);
         bodyCardLayout = new CardLayout();
         bodyCardPanel = new JPanel(bodyCardLayout);
+        ToolWindowSurfaceStyle.applyCard(bodyCardPanel);
         bodyCardPanel.add(createNonePanel(), BODY_TYPE_NONE);
         bodyCardPanel.add(createFormDataPanel(), BODY_TYPE_FORM_DATA);
         bodyCardPanel.add(createFormUrlencodedPanel(), BODY_TYPE_FORM_URLENCODED);
@@ -172,7 +177,9 @@ public class RequestBodyPanel extends JPanel {
      */
     private void initWebSocketBodyPanel() {
         JPanel bodyTypePanel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(bodyTypePanel);
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        leftPanel.setOpaque(false);
         JLabel bodyTypeLabel = new JLabel(I18nUtil.getMessage(MessageKeys.WEBSOCKET_PANEL_LABEL_SEND_MESSAGE));
         leftPanel.add(bodyTypeLabel);
         String[] bodyTypes = new String[]{BODY_TYPE_RAW};
@@ -187,12 +194,14 @@ public class RequestBodyPanel extends JPanel {
         add(bodyTypePanel, BorderLayout.NORTH);
         bodyCardLayout = new CardLayout();
         bodyCardPanel = new JPanel(bodyCardLayout);
+        ToolWindowSurfaceStyle.applyCard(bodyCardPanel);
         JPanel rawPanel = createRawPanel();
         bodyCardPanel.add(rawPanel, BODY_TYPE_RAW);
         add(bodyCardPanel, BorderLayout.CENTER);
         bodyCardLayout.show(bodyCardPanel, BODY_TYPE_RAW);
         // WebSocket底部操作按钮
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 8));
+        ToolWindowSurfaceStyle.applyCard(bottomPanel);
         wsClearInputCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.WEBSOCKET_PANEL_CHECKBOX_CLEAR));
         bottomPanel.add(wsClearInputCheckBox);
         bottomPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.WEBSOCKET_PANEL_LABEL_TIMEOUT)));
@@ -215,6 +224,7 @@ public class RequestBodyPanel extends JPanel {
 
     private JPanel createNonePanel() {
         JPanel nonePanel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(nonePanel);
         nonePanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.REQUEST_BODY_NONE), SwingConstants.CENTER), BorderLayout.CENTER);
         return nonePanel;
     }
@@ -231,6 +241,7 @@ public class RequestBodyPanel extends JPanel {
 
     private JPanel createRawPanel() {
         JPanel panel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(panel);
         bodyArea = new VariableAwareSyntaxTextArea();
         bodyArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON_WITH_COMMENTS); // 默认JSON高亮
         bodyArea.setCodeFoldingEnabled(true); // 启用代码折叠

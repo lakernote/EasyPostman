@@ -7,6 +7,10 @@ import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.common.component.ToolWindowActionToolbar;
+import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.ToolWindowSidebarToolbar;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.EditButton;
 import com.laker.postman.common.component.button.PlusButton;
 import com.laker.postman.common.component.button.SaveButton;
@@ -65,11 +69,14 @@ public class EnvironmentPanel extends UiSingletonPanel {
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
+        ToolWindowSurfaceStyle.applyBackground(this);
         setPreferredSize(new Dimension(700, 400));
 
         // 左侧环境列表面板
         JPanel leftPanel = new JPanel(new BorderLayout());
-        leftPanel.setPreferredSize(new Dimension(250, 200));
+        ToolWindowSurfaceStyle.applyCard(leftPanel);
+        leftPanel.setPreferredSize(new Dimension(ToolWindowChrome.DEFAULT_SIDE_WIDTH, 200));
+        leftPanel.setMinimumSize(new Dimension(220, 160));
         // 顶部搜索和导入导出按钮
         leftPanel.add(getSearchAndImportPanel(), BorderLayout.NORTH);
 
@@ -83,10 +90,12 @@ public class EnvironmentPanel extends UiSingletonPanel {
         environmentList.setVisibleRowCount(-1); // 让JList显示所有行
         JScrollPane envListScroll = new JScrollPane(environmentList);
         envListScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER); // 禁用横向滚动条
+        ToolWindowSurfaceStyle.applyListScrollPaneCard(envListScroll, environmentList);
         leftPanel.add(envListScroll, BorderLayout.CENTER);
 
         // 右侧 导入 导出 变量表格及操作
         JPanel rightPanel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(rightPanel);
         rightPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
 
         // 顶部工具栏：保存按钮和搜索框
@@ -95,16 +104,20 @@ public class EnvironmentPanel extends UiSingletonPanel {
 
         // 变量表格容器，添加边距
         JPanel tableContainer = new JPanel(new BorderLayout());
-        tableContainer.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        ToolWindowSurfaceStyle.applyCard(tableContainer);
+        tableContainer.setBorder(BorderFactory.createEmptyBorder(6, 8, 8, 8));
         variablesTablePanel = new EasyVariableTablePanel();
+        ToolWindowSurfaceStyle.applyCard(variablesTablePanel);
         tableContainer.add(variablesTablePanel, BorderLayout.CENTER);
         rightPanel.add(tableContainer, BorderLayout.CENTER);
 
 
         // 使用 JSplitPane 将左右两个面板组合，支持拖动调整大小
-        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, rightPanel);
-        splitPane.setDividerLocation(250); // 设置分隔条初始位置
-        splitPane.setContinuousLayout(true); // 拖动时实时更新布局
+        JSplitPane splitPane = ToolWindowChrome.createHorizontalCardSplitPane(
+                leftPanel,
+                rightPanel,
+                ToolWindowChrome.DEFAULT_SIDE_WIDTH
+        );
         splitPane.setResizeWeight(0.3); // 设置左侧面板调整权重（30%）
 
         add(splitPane, BorderLayout.CENTER);
@@ -118,38 +131,20 @@ public class EnvironmentPanel extends UiSingletonPanel {
      */
     private JPanel createTableToolbar() {
         SaveButton saveButton;
-        toolbarPanel = new JPanel();
-        toolbarPanel.setLayout(new BoxLayout(toolbarPanel, BoxLayout.X_AXIS));
-        // 加大边距，底部添加分隔线
-        toolbarPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()),
-                BorderFactory.createEmptyBorder(3, 10, 3, 10)
-        ));
-
-        // 左侧弹性空间，将所有控件推到右边
-        toolbarPanel.add(Box.createHorizontalGlue());
 
         // 批量编辑按钮
         EditButton bulkEditButton = new EditButton(IconUtil.SIZE_MEDIUM);
         bulkEditButton.setToolTipText(I18nUtil.getMessage(MessageKeys.ENV_BULK_EDIT));
-        bulkEditButton.setPreferredSize(new Dimension(bulkEditButton.getPreferredSize().width, 32));
-        bulkEditButton.setMaximumSize(new Dimension(bulkEditButton.getMaximumSize().width, 32));
         bulkEditButton.addActionListener(e -> showBulkEditDialog());
-        toolbarPanel.add(bulkEditButton);
-        toolbarPanel.add(Box.createHorizontalStrut(4)); // 按钮间距
 
         // 保存按钮
         saveButton = new SaveButton();
-        saveButton.setPreferredSize(new Dimension(saveButton.getPreferredSize().width, 32));
-        saveButton.setMaximumSize(new Dimension(saveButton.getMaximumSize().width, 32));
         saveButton.addActionListener(e -> saveVariablesManually());
-        toolbarPanel.add(saveButton);
-        toolbarPanel.add(Box.createHorizontalStrut(4)); // 按钮和搜索框之间的间距
 
         // 表格搜索框
         tableSearchField = new SearchTextField();
-        tableSearchField.setPreferredSize(new Dimension(200, 32));
-        tableSearchField.setMaximumSize(new Dimension(200, 32));
+        tableSearchField.setPreferredSize(new Dimension(200, ToolWindowSidebarToolbar.SEARCH_HEIGHT));
+        tableSearchField.setMaximumSize(new Dimension(200, ToolWindowSidebarToolbar.SEARCH_HEIGHT));
         tableSearchField.addActionListener(e -> filterTableRows());
 
         // 监听搜索选项变化，触发重新过滤
@@ -164,7 +159,7 @@ public class EnvironmentPanel extends UiSingletonPanel {
             }
         });
 
-        toolbarPanel.add(tableSearchField);
+        toolbarPanel = ToolWindowActionToolbar.right(bulkEditButton, saveButton, tableSearchField);
 
         return toolbarPanel;
     }
@@ -218,24 +213,18 @@ public class EnvironmentPanel extends UiSingletonPanel {
     }
 
     private JPanel getSearchAndImportPanel() {
-        JPanel topPanel = new JPanel();
-        topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.X_AXIS));
-        topPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-
         plusBtn = new PlusButton();
         plusBtn.setToolTipText("New / Import");
         plusBtn.addActionListener(e -> showPlusMenu());
 
         searchField = new SearchTextField();
 
-        topPanel.add(plusBtn);
-        topPanel.add(Box.createHorizontalStrut(4));
-        topPanel.add(searchField);
-        return topPanel;
+        return new ToolWindowSidebarToolbar(plusBtn, searchField);
     }
 
     private void showPlusMenu() {
         JPopupMenu menu = new JPopupMenu();
+        ToolWindowSurfaceStyle.applyPopupMenuCard(menu);
 
         // ── 新建环境
         JMenuItem newEnvItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_ADD),
@@ -333,18 +322,6 @@ public class EnvironmentPanel extends UiSingletonPanel {
 
     }
 
-    @Override
-    public void updateUI() {
-        super.updateUI();
-        // 更新工具栏边框颜色
-        if (toolbarPanel != null) {
-            toolbarPanel.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()),
-                    BorderFactory.createEmptyBorder(3, 10, 3, 10)
-            ));
-        }
-    }
-
     /**
      * 添加手动保存快捷键（Cmd+S / Ctrl+S）
      * 虽然已有自动保存，但保留手动保存快捷键让用户有主动掌控感
@@ -370,6 +347,7 @@ public class EnvironmentPanel extends UiSingletonPanel {
 
     private void addRightMenuList() {
         JPopupMenu envListMenu = new JPopupMenu();
+        ToolWindowSurfaceStyle.applyPopupMenuCard(envListMenu);
         JMenuItem addItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_ADD),
                 IconUtil.createThemed("icons/environments.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
         addItem.addActionListener(e -> addEnvironment());
@@ -1143,15 +1121,14 @@ public class EnvironmentPanel extends UiSingletonPanel {
         JTextArea textArea = new JTextArea(text.toString());
         textArea.setLineWrap(false);
         textArea.setTabSize(4);
-        // 设置背景色，使其看起来像可编辑区域
-        textArea.setBackground(ModernColors.getInputBackgroundColor());
-        textArea.setForeground(ModernColors.getTextPrimary());
+        ToolWindowSurfaceStyle.applyTextComponentInput(textArea);
         textArea.setCaretColor(ModernColors.getPrimary());
 
         // 将光标定位到文本末尾
         textArea.setCaretPosition(textArea.getDocument().getLength());
 
         JScrollPane scrollPane = new JScrollPane(textArea);
+        ToolWindowSurfaceStyle.applyScrollPaneCard(scrollPane);
         scrollPane.setPreferredSize(new Dimension(600, 400));
 
         // 3. 创建提示标签 - 使用国际化，垂直排列

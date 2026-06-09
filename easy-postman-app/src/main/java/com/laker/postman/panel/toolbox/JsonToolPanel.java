@@ -2,8 +2,13 @@ package com.laker.postman.panel.toolbox;
 
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.component.SearchableTextArea;
+import com.laker.postman.common.component.ToolWindowActionToolbar;
+import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.ViewportClippedTokenPainter;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.EditorThemeUtil;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.JsonUtil;
 import com.laker.postman.util.MessageKeys;
@@ -37,13 +42,12 @@ public class JsonToolPanel extends JPanel {
 
     private void initUI() {
         setLayout(new BorderLayout(5, 5));
+        ToolWindowSurfaceStyle.applyCard(this);
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         // 顶部工具栏
         JPanel topPanel = new JPanel(new BorderLayout());
-
-        // 左侧按钮组
-        JPanel leftBtnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        topPanel.setOpaque(false);
 
         JButton formatBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_FORMAT));
         JButton compressBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_COMPRESS));
@@ -59,16 +63,17 @@ public class JsonToolPanel extends JPanel {
         unescapeBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_TOOLTIP_UNESCAPE));
         sortBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_TOOLTIP_SORT));
 
-        leftBtnPanel.add(formatBtn);
-        leftBtnPanel.add(compressBtn);
-        leftBtnPanel.add(validateBtn);
-        leftBtnPanel.add(new JSeparator(SwingConstants.VERTICAL));
-        leftBtnPanel.add(escapeBtn);
-        leftBtnPanel.add(unescapeBtn);
-        leftBtnPanel.add(sortBtn);
-
-        // 右侧按钮组
-        JPanel rightBtnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 5));
+        JSeparator transformSeparator = new JSeparator(SwingConstants.VERTICAL);
+        transformSeparator.setPreferredSize(new Dimension(1, ToolWindowActionToolbar.ACTION_SIZE));
+        JPanel leftBtnPanel = ToolWindowActionToolbar.inlineLeft(
+                formatBtn,
+                compressBtn,
+                validateBtn,
+                transformSeparator,
+                escapeBtn,
+                unescapeBtn,
+                sortBtn
+        );
 
         JButton copyBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_COPY));
         JButton pasteBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_PASTE));
@@ -80,10 +85,7 @@ public class JsonToolPanel extends JPanel {
         clearBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_TOOLTIP_CLEAR));
         swapBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_TOOLTIP_SWAP));
 
-        rightBtnPanel.add(copyBtn);
-        rightBtnPanel.add(pasteBtn);
-        rightBtnPanel.add(clearBtn);
-        rightBtnPanel.add(swapBtn);
+        JPanel rightBtnPanel = ToolWindowActionToolbar.inlineRight(copyBtn, pasteBtn, clearBtn, swapBtn);
 
         topPanel.add(leftBtnPanel, BorderLayout.WEST);
         topPanel.add(rightBtnPanel, BorderLayout.EAST);
@@ -91,10 +93,9 @@ public class JsonToolPanel extends JPanel {
         add(topPanel, BorderLayout.NORTH);
 
         // 中间分割面板
-        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-
         // 输入区域 - 使用RSyntaxTextArea
         JPanel inputPanel = new JPanel(new BorderLayout(5, 5));
+        inputPanel.setOpaque(false);
         JLabel inputLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_INPUT));
         inputPanel.add(inputLabel, BorderLayout.NORTH);
 
@@ -106,6 +107,7 @@ public class JsonToolPanel extends JPanel {
 
         // 输出区域 - 使用RSyntaxTextArea
         JPanel outputPanel = new JPanel(new BorderLayout(5, 5));
+        outputPanel.setOpaque(false);
         JLabel outputLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_OUTPUT));
         outputPanel.add(outputLabel, BorderLayout.NORTH);
 
@@ -115,17 +117,16 @@ public class JsonToolPanel extends JPanel {
         searchableOutputArea.setLineNumbersEnabled(true);
         outputPanel.add(searchableOutputArea, BorderLayout.CENTER);
 
-        splitPane.setTopComponent(inputPanel);
-        splitPane.setBottomComponent(outputPanel);
-        splitPane.setDividerLocation(300);
+        JSplitPane splitPane = ToolWindowChrome.createVerticalCardSplitPane(inputPanel, outputPanel, 300);
         splitPane.setResizeWeight(0.5); // 平均分配空间
 
         add(splitPane, BorderLayout.CENTER);
 
         // 底部状态栏
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 3));
+        statusPanel.setOpaque(false);
         statusLabel = new JLabel(" ");
-        statusLabel.setFont(statusLabel.getFont().deriveFont(Font.PLAIN, 11f));
+        statusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         statusPanel.add(statusLabel);
         add(statusPanel, BorderLayout.SOUTH);
 
@@ -530,7 +531,7 @@ public class JsonToolPanel extends JPanel {
      */
     private void updateStatus(String message, boolean success) {
         statusLabel.setText(message);
-        statusLabel.setForeground(success ? new Color(0, 128, 0) : new Color(180, 0, 0));
+        statusLabel.setForeground(success ? ModernColors.getSuccess() : ModernColors.getError());
 
         // 3秒后清除状态
         Timer timer = new Timer(3000, e -> statusLabel.setText(" "));

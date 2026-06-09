@@ -73,7 +73,7 @@ class MainWindowChrome {
             return;
         }
 
-        Color titleBarBackground = UIManager.getColor("MenuBar.background");
+        Color titleBarBackground = ModernColors.getWindowChromeBackgroundColor();
         Color titleBarForeground = UIManager.getColor("Menu.foreground");
         rootPane.putClientProperty(FlatClientProperties.TITLE_BAR_BACKGROUND, titleBarBackground);
         rootPane.putClientProperty(FlatClientProperties.TITLE_BAR_FOREGROUND, titleBarForeground);

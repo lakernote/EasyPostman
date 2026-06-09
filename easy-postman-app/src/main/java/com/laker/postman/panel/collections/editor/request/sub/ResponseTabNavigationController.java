@@ -143,6 +143,7 @@ final class ResponseTabNavigationController {
         ensureComboBox();
         refreshTabSelector();
         JPanel comboPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        comboPanel.setOpaque(false);
         comboPanel.add(tabComboBox);
         return comboPanel;
     }

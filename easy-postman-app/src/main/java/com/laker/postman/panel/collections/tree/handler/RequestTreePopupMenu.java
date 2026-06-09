@@ -3,6 +3,7 @@ package com.laker.postman.panel.collections.tree.handler;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.panel.collections.tree.coordinator.RequestTreeCoordinator;
 import com.laker.postman.service.collections.CollectionTreeNodes;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
@@ -34,6 +35,7 @@ public class RequestTreePopupMenu {
      */
     public void show(int x, int y) {
         JPopupMenu menu = new JPopupMenu();
+        ToolWindowSurfaceStyle.applyPopupMenuCard(menu);
         DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) requestTree.getLastSelectedPathComponent();
         TreePath[] selectedPaths = requestTree.getSelectionPaths();
         boolean isMultipleSelection = selectedPaths != null && selectedPaths.length > 1;

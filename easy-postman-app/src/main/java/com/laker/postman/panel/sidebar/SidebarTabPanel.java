@@ -2,6 +2,7 @@ package com.laker.postman.panel.sidebar;
 
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.UiSingletonFactory;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.performance.PerformanceUiWarmup;
@@ -55,6 +56,7 @@ public class SidebarTabPanel extends UiSingletonPanel {
         // 先读取侧边栏展开状态
         sidebarExpanded = SettingManager.isSidebarExpanded();
         setLayout(new BorderLayout());
+        ToolWindowSurfaceStyle.applyBackground(this);
 
         // 创建标签页
         tabbedPane = createSidebarTabbedPane();

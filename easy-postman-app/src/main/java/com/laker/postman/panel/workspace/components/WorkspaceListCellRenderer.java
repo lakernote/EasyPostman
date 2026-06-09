@@ -1,6 +1,7 @@
 package com.laker.postman.panel.workspace.components;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.GitRepoSource;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.model.WorkspaceType;
@@ -54,10 +55,12 @@ public class WorkspaceListCellRenderer extends DefaultListCellRenderer {
 
         Workspace current = WorkspaceService.getInstance().getCurrentWorkspace();
         boolean isCurrent = current != null && current.getId().equals(workspace.getId());
+        String primaryColor = toHex(ModernColors.getPrimary());
+        String secondaryColor = toHex(ModernColors.getTextSecondary());
 
         // 如果是当前工作区，设置文字颜色为主题色
         if (isCurrent) {
-            text.append("<b style='color: #0078d4;'>").append(workspace.getName()).append("</b>");
+            text.append("<b style='color: ").append(primaryColor).append(";'>").append(workspace.getName()).append("</b>");
         } else {
             text.append("<b>").append(workspace.getName()).append("</b>");
         }
@@ -66,9 +69,9 @@ public class WorkspaceListCellRenderer extends DefaultListCellRenderer {
 
         // 描述部分也根据是否为当前工作区设置不同颜色
         if (isCurrent) {
-            text.append("<small style='color: #0078d4;'>");
+            text.append("<small style='color: ").append(primaryColor).append(";'>");
         } else {
-            text.append("<small style='color: gray;'>");
+            text.append("<small style='color: ").append(secondaryColor).append(";'>");
         }
 
         text.append(workspace.getType() == WorkspaceType.LOCAL ?
@@ -105,5 +108,9 @@ public class WorkspaceListCellRenderer extends DefaultListCellRenderer {
         int lineSpacing = 4; // 行间距
 
         return twoLinesHeight + verticalPadding + lineSpacing;
+    }
+
+    private static String toHex(Color color) {
+        return String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
     }
 }

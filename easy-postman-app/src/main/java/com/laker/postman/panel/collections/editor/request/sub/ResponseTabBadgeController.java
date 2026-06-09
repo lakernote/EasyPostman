@@ -1,6 +1,7 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
 import com.laker.postman.script.model.TestResult;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +29,8 @@ final class ResponseTabBadgeController {
         if (count > 0) {
             String countText = " (" + count + ")";
             String countHtml = I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS) +
-                    "<span style='color:#009900;font-weight:bold;'>" + countText + "</span>";
+                    "<span style='color:" + ModernColors.toHtmlColor(ModernColors.getSuccess())
+                            + ";font-weight:bold;'>" + countText + "</span>";
             headersButton.setText("<html>" + countHtml + "</html>");
             return;
         }
@@ -43,7 +45,7 @@ final class ResponseTabBadgeController {
         if (testResults != null && !testResults.isEmpty()) {
             boolean allPassed = testResults.stream().allMatch(r -> r.passed);
             String countText = " (" + testResults.size() + ")";
-            String color = allPassed ? "#009900" : "#d32f2f";
+            String color = ModernColors.toHtmlColor(allPassed ? ModernColors.getSuccess() : ModernColors.getError());
             String countHtml = I18nUtil.getMessage(MessageKeys.TAB_TESTS) +
                     "<span style='color:" + color + ";font-weight:bold;'>" + countText + "</span>";
             testsButton.setText("<html>" + countHtml + "</html>");

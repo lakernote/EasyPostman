@@ -1,6 +1,7 @@
 package com.laker.postman.common.component.connection;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.IconUtil;
 import lombok.experimental.UtilityClass;
 
@@ -16,7 +17,6 @@ import javax.swing.JPanel;
 import javax.swing.KeyStroke;
 import javax.swing.ListCellRenderer;
 import javax.swing.SwingConstants;
-import javax.swing.UIManager;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.HeadlessException;
@@ -41,7 +41,6 @@ public class ConnectionToolbarUi {
     public static final int SINGLE_ROW_HEIGHT = 38;
     public static final int DOUBLE_ROW_HEIGHT = 70;
 
-    private static final String SEPARATOR_FOREGROUND = "Separator.foreground";
     private static final int TOOLBAR_ICON_SIZE = 14;
 
     public static String profileActionColumns() {
@@ -117,7 +116,7 @@ public class ConnectionToolbarUi {
     public static JComponent verticalSeparator() {
         JPanel separator = new JPanel();
         separator.setOpaque(true);
-        separator.setBackground(UIManager.getColor(SEPARATOR_FOREGROUND));
+        separator.setBackground(ModernColors.getDividerBorderColor());
         separator.setPreferredSize(new Dimension(1, VERTICAL_SEPARATOR_HEIGHT));
         separator.setMinimumSize(new Dimension(1, VERTICAL_SEPARATOR_HEIGHT));
         separator.setMaximumSize(new Dimension(1, VERTICAL_SEPARATOR_HEIGHT));

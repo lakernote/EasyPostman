@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.variable.VariableInfo;
 import com.laker.postman.variable.VariableType;
@@ -388,7 +389,7 @@ final class RequestBodyVariableAutocompleteController {
                 g2d.setColor(varType.getColor());
                 g2d.fillOval(2, circleY, circleSize, circleSize);
 
-                g2d.setColor(Color.WHITE);
+                g2d.setColor(ModernColors.getTextInverse());
                 g2d.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -2));
                 FontMetrics symbolFm = g2d.getFontMetrics();
                 String symbol = varType.getIconSymbol();

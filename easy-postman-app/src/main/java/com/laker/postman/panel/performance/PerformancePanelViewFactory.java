@@ -6,6 +6,8 @@ import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.formdev.flatlaf.FlatClientProperties;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.MemoryLabel;
+import com.laker.postman.common.component.ToolWindowActionToolbar;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.CopyButton;
 import com.laker.postman.common.component.button.EditButton;
 import com.laker.postman.common.component.button.ExportButton;
@@ -67,6 +69,7 @@ final class PerformancePanelViewFactory {
 
         JScrollPane treeScroll = new JScrollPane(performanceTree);
         treeScroll.setPreferredSize(new Dimension(260, 300));
+        ToolWindowSurfaceStyle.applyTreeScrollPaneCard(treeScroll, performanceTree);
         return new TreeSection(performanceTree, treeScroll);
     }
 
@@ -86,7 +89,10 @@ final class PerformancePanelViewFactory {
                                           String wsCloseCard) {
         CardLayout propertyCardLayout = new CardLayout();
         JPanel propertyPanel = new JPanel(propertyCardLayout);
-        propertyPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_PROPERTY_SELECT_NODE)), emptyCard);
+        ToolWindowSurfaceStyle.applyCard(propertyPanel);
+        JLabel emptyLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_PROPERTY_SELECT_NODE), SwingConstants.CENTER);
+        emptyLabel.setForeground(ModernColors.getTextHint());
+        propertyPanel.add(emptyLabel, emptyCard);
 
         ThreadGroupPropertyPanel threadGroupPanel = new ThreadGroupPropertyPanel();
         propertyPanel.add(threadGroupPanel, threadGroupCard);
@@ -162,6 +168,7 @@ final class PerformancePanelViewFactory {
         resultTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_REPORT), performanceReportPanel);
         resultTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_RESULT_TREE), performanceResultTablePanel);
         resultTabbedPane.setSelectedIndex(RESULT_TAB_TREND);
+        ToolWindowSurfaceStyle.applyTabbedPaneCard(resultTabbedPane);
 
         ResultToolbar resultToolbar = createResultToolbar(
                 resultTabbedPane,
@@ -178,6 +185,7 @@ final class PerformancePanelViewFactory {
         );
 
         JPanel resultPanel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(resultPanel);
         resultPanel.add(resultToolbar.panel(), BorderLayout.NORTH);
         resultPanel.add(resultTabbedPane, BorderLayout.CENTER);
 
@@ -208,28 +216,24 @@ final class PerformancePanelViewFactory {
                 "[]4[1!]8[]4[1!]8[]push[]",
                 "[]"
         ));
-        topPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()));
+        ToolWindowSurfaceStyle.applyCard(topPanel);
+        topPanel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
 
-        JPanel btnPanel = createToolbarGroupPanel("[]2[]8[]2[]2[]");
         StartButton runBtn = new StartButton();
         StopButton stopBtn = new StopButton();
         stopBtn.setEnabled(false);
-        btnPanel.add(runBtn);
-        btnPanel.add(stopBtn);
 
         ExportButton exportBtn = new ExportButton();
         exportBtn.addActionListener(e -> exportRunPlanAction.run());
-        btnPanel.add(exportBtn);
 
         RefreshButton refreshBtn = new RefreshButton();
         refreshBtn.addActionListener(e -> refreshRequestsAction.run());
-        btnPanel.add(refreshBtn);
 
         HelpButton usageHelpBtn = new HelpButton();
         usageHelpBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_USAGE_HELP_TOOLTIP));
         usageHelpBtn.addActionListener(e -> usageHelpAction.run());
-        btnPanel.add(usageHelpBtn);
 
+        JPanel btnPanel = ToolWindowActionToolbar.inlineLeft(runBtn, stopBtn, exportBtn, refreshBtn, usageHelpBtn);
         topPanel.add(btnPanel);
         topPanel.add(createToolbarSeparator());
 
@@ -324,7 +328,7 @@ final class PerformancePanelViewFactory {
         label.setFont(runStatusFont());
         if (iconPath != null && !iconPath.isBlank()) {
             label.setIcon(new FlatSVGIcon(iconPath, 18, 18)
-                    .setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))));
+                    .setColorFilter(new FlatSVGIcon.ColorFilter(color -> ModernColors.getTextPrimary())));
         }
         label.setHorizontalTextPosition(SwingConstants.RIGHT);
         label.setIconTextGap(4);
@@ -333,8 +337,7 @@ final class PerformancePanelViewFactory {
     }
 
     private Font runStatusFont() {
-        Font base = FontsUtil.getDefaultFont(Font.BOLD);
-        return new Font(Font.MONOSPACED, Font.BOLD, base.getSize());
+        return FontsUtil.getMonospacedFontWithOffset(Font.BOLD, 0);
     }
 
     private JPanel createToolbarGroupPanel(String columnConstraints) {
@@ -458,10 +461,8 @@ final class PerformancePanelViewFactory {
                                               Runnable saveAllPropertyPanelDataAction,
                                               Runnable saveConfigAction) {
         JPanel toolbar = new JPanel(new BorderLayout(8, 0));
-        toolbar.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 1, 0, ModernColors.getDividerBorderColor()),
-                BorderFactory.createEmptyBorder(5, 8, 5, 8)
-        ));
+        ToolWindowSurfaceStyle.applyCard(toolbar);
+        toolbar.setBorder(BorderFactory.createEmptyBorder(5, 8, 5, 8));
 
         JToggleButton resultTableButton = new SegmentedToggleButton(
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_RESULT_TREE),
@@ -489,9 +490,7 @@ final class PerformancePanelViewFactory {
         switcher.add(reportButton);
         switcher.add(resultTableButton);
 
-        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        leftPanel.setOpaque(false);
-        leftPanel.add(switcher);
+        JPanel leftPanel = ToolWindowActionToolbar.inlineLeft(switcher);
         toolbar.add(leftPanel, BorderLayout.WEST);
 
         JCheckBox efficientCheckBox = createCompactDetailsCheckBox(
@@ -585,28 +584,18 @@ final class PerformancePanelViewFactory {
     }
 
     private JPanel createTableContextPanel(JCheckBox efficientCheckBox) {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        panel.setOpaque(false);
-        panel.add(efficientCheckBox);
-        return panel;
+        return ToolWindowActionToolbar.inlineRight(efficientCheckBox);
     }
 
     private JPanel createReportContextPanel(JComboBox<String> reportRefreshModeBox) {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
-        panel.setOpaque(false);
         JLabel label = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_REFRESH_MODE));
         label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         label.setForeground(ModernColors.getTextSecondary());
-        panel.add(label);
-        panel.add(reportRefreshModeBox);
-        return panel;
+        return ToolWindowActionToolbar.inlineRight(label, reportRefreshModeBox);
     }
 
     private JPanel createTrendContextPanel(JCheckBox trendCheckBox) {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        panel.setOpaque(false);
-        panel.add(trendCheckBox);
-        return panel;
+        return ToolWindowActionToolbar.inlineRight(trendCheckBox);
     }
 
     private void selectResultTab(JTabbedPane resultTabbedPane, int index, Runnable reportRefreshAction) {
@@ -645,6 +634,8 @@ final class PerformancePanelViewFactory {
     private RequestEditorSection createRequestEditorSection(RequestEditSubPanel requestEditSubPanel) {
         JPanel wrapper = new JPanel(new BorderLayout());
         JPanel requestEditorHost = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(wrapper);
+        ToolWindowSurfaceStyle.applyCard(requestEditorHost);
         requestEditorHost.add(requestEditSubPanel, BorderLayout.CENTER);
         wrapper.add(requestEditorHost, BorderLayout.CENTER);
         return new RequestEditorSection(wrapper, requestEditorHost);

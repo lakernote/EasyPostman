@@ -177,10 +177,10 @@ public class RequestTreeCellRenderer extends DefaultTreeCellRenderer {
 
         if (protocol.isWebSocketProtocol()) {
             method = "WS";
-            methodColor = "#29cea5";
+            methodColor = ModernColors.toHtmlColor(ModernColors.getAccent());
         } else if (protocol.isSseProtocol()) {
             method = "SSE";
-            methodColor = "#7fbee3";
+            methodColor = ModernColors.toHtmlColor(ModernColors.getSecondaryLight());
         } else {
             method = abbreviateMethod(method);
         }
@@ -209,15 +209,15 @@ public class RequestTreeCellRenderer extends DefaultTreeCellRenderer {
     }
 
     private static String getStatusColor(int code) {
-        if (code >= 200 && code < 300) return "#28a745";
-        else if (code >= 300 && code < 400) return "#17a2b8";
-        else if (code >= 400 && code < 500) return "#ffc107";
-        else if (code >= 500) return "#dc3545";
-        return "#6c757d";
+        if (code >= 200 && code < 300) return ModernColors.toHtmlColor(ModernColors.getSuccess());
+        else if (code >= 300 && code < 400) return ModernColors.toHtmlColor(ModernColors.getInfo());
+        else if (code >= 400 && code < 500) return ModernColors.toHtmlColor(ModernColors.getWarning());
+        else if (code >= 500) return ModernColors.toHtmlColor(ModernColors.getError());
+        return ModernColors.toHtmlColor(ModernColors.getNeutral());
     }
 
     private static String toHex(Color color) {
-        return String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
+        return ModernColors.toHtmlColor(color);
     }
 
     private static String buildSavedResponseText(String name, int code, String timeStr, String statusColor) {
@@ -229,14 +229,15 @@ public class RequestTreeCellRenderer extends DefaultTreeCellRenderer {
         return "<html><nobr>"
                 + "<span style='font-size:" + nameFontSize + "px'>" + safeName + "</span> "
                 + "<span style='color:" + statusColor + ";font-size:" + statusFontSize + "px'>" + code + "</span> "
-                + "<span style='color:#999999;font-size:" + timeFontSize + "px'>" + timeStr + "</span>"
+                + "<span style='color:" + ModernColors.toHtmlColor(ModernColors.getTextHint()) + ";font-size:"
+                + timeFontSize + "px'>" + timeStr + "</span>"
                 + "</nobr></html>";
     }
 
     private static String buildStyledText(String method, String methodColor, String name) {
         String safeMethod = method == null ? "" : escapeHtml(method);
         String safeName = name == null ? "" : escapeHtml(name);
-        String color = methodColor == null ? "#000" : methodColor;
+        String color = methodColor == null ? ModernColors.toHtmlColor(ModernColors.getTextPrimary()) : methodColor;
         int baseFontSize = SettingManager.getUiFontSize();
         int methodFontSize = Math.max(7, baseFontSize - 5);
         int nameFontSize = Math.max(8, baseFontSize - 4);

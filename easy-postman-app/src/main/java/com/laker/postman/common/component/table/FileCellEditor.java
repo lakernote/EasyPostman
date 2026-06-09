@@ -1,6 +1,7 @@
 package com.laker.postman.common.component.table;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.constants.ModernColors;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -33,7 +34,8 @@ public class FileCellEditor extends DefaultCellEditor {
 
         // 创建面板，使用BorderLayout
         editorPanel = new JPanel(new BorderLayout(5, 0));
-        editorPanel.setBackground(Color.WHITE);
+        final Color tableBackground = ModernColors.getCardBackgroundColor();
+        editorPanel.setBackground(tableBackground);
 
         // 创建文本字段显示路径
         pathField = new JTextField();
@@ -43,12 +45,12 @@ public class FileCellEditor extends DefaultCellEditor {
         browseButton = new JButton();
         // 创建图标并设置颜色过滤器以适配主题
         FlatSVGIcon fileIcon = new FlatSVGIcon("icons/file.svg", TableUIConstants.ICON_SIZE, TableUIConstants.ICON_SIZE);
-        fileIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground")));
+        fileIcon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> ModernColors.getTextPrimary()));
         browseButton.setIcon(fileIcon);
         browseButton.setText("Browse");
         browseButton.setMargin(new Insets(2, 8, 2, 8));
         browseButton.setFocusPainted(false);
-        browseButton.setBackground(UIManager.getColor("Table.background"));
+        browseButton.setBackground(tableBackground);
         browseButton.setForeground(TableUIConstants.getFileButtonTextColor());
         browseButton.setBorder(TableUIConstants.createButtonBorder());
         browseButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -62,7 +64,7 @@ public class FileCellEditor extends DefaultCellEditor {
 
             @Override
             public void mouseExited(MouseEvent e) {
-                browseButton.setBackground(UIManager.getColor("Table.background"));
+                browseButton.setBackground(tableBackground);
             }
         });
 
@@ -149,9 +151,9 @@ public class FileCellEditor extends DefaultCellEditor {
             // 设置文本框颜色
             File file = new File(filePath);
             if (!file.exists()) {
-                pathField.setForeground(Color.RED);
+                pathField.setForeground(ModernColors.getError());
             } else if (!file.canRead()) {
-                pathField.setForeground(Color.ORANGE);
+                pathField.setForeground(ModernColors.getWarning());
             } else {
                 pathField.setForeground(TableUIConstants.getFileSelectedTextColor());
             }

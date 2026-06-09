@@ -1,7 +1,8 @@
 package com.laker.postman.panel.sidebar;
 
 import com.laker.postman.common.UiSingletonFactory;
-import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
@@ -28,6 +29,7 @@ final class SidebarConsoleArea {
         this.consolePanel = UiSingletonFactory.getInstance(ConsolePanel.class);
         this.consolePanel.setCloseAction(e -> collapse());
         consoleContainer.setOpaque(false);
+        ToolWindowSurfaceStyle.applyBackground(consoleContainer);
         refreshTheme();
     }
 
@@ -42,7 +44,7 @@ final class SidebarConsoleArea {
     }
 
     void refreshTheme() {
-        consoleContainer.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.getDividerBorderColor()));
+        consoleContainer.setBorder(BorderFactory.createEmptyBorder());
     }
 
     private void collapse() {
@@ -68,8 +70,7 @@ final class SidebarConsoleArea {
         consoleContainer.removeAll();
         consoleContainer.add(consolePanel, BorderLayout.CENTER);
 
-        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, tabbedPane, consoleContainer);
-        splitPane.setDividerSize(3);
+        JSplitPane splitPane = ToolWindowChrome.createVerticalSplitPane(tabbedPane, consoleContainer, 0);
         splitPane.setResizeWeight(1.0);
         splitPane.setMinimumSize(new Dimension(0, 10));
         tabbedPane.setMinimumSize(new Dimension(0, 30));

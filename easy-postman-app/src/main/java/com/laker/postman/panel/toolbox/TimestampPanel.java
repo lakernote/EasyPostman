@@ -1,6 +1,9 @@
 package com.laker.postman.panel.toolbox;
 
 import com.formdev.flatlaf.extras.components.FlatTextField;
+import com.laker.postman.common.component.ToolWindowActionToolbar;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -34,10 +37,12 @@ public class TimestampPanel extends JPanel {
     private void initUI() {
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        ToolWindowSurfaceStyle.applyCard(this);
 
         // 主容器使用垂直布局
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        mainPanel.setOpaque(false);
 
         // 1. 当前时间戳区域
         mainPanel.add(createCurrentTimestampPanel());
@@ -61,19 +66,13 @@ public class TimestampPanel extends JPanel {
      * 创建当前时间戳面板
      */
     private JPanel createCurrentTimestampPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 5));
-        panel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createEtchedBorder(),
-                I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_CURRENT)
-        ));
+        JPanel panel = createSectionPanel(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_CURRENT));
 
         // 时间戳显示标签
         currentLabel = new JLabel(String.valueOf(System.currentTimeMillis()));
         currentLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +4));
+        currentLabel.setForeground(ModernColors.getTextPrimary());
         currentLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-
-        // 按钮面板
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 5));
 
         JButton copyCurrentBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_COPY));
         copyCurrentBtn.addActionListener(e -> {
@@ -84,8 +83,7 @@ public class TimestampPanel extends JPanel {
         JButton refreshBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_REFRESH));
         refreshBtn.addActionListener(e -> currentLabel.setText(String.valueOf(System.currentTimeMillis())));
 
-        btnPanel.add(copyCurrentBtn);
-        btnPanel.add(refreshBtn);
+        JPanel btnPanel = ToolWindowActionToolbar.inlineRight(copyCurrentBtn, refreshBtn);
 
         panel.add(currentLabel, BorderLayout.CENTER);
         panel.add(btnPanel, BorderLayout.EAST);
@@ -100,20 +98,19 @@ public class TimestampPanel extends JPanel {
      * 创建时间戳转日期面板
      */
     private JPanel createTimestampToDatePanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createEtchedBorder(),
-                I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_TO_DATE)
-        ));
+        JPanel panel = createSectionPanel(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_TO_DATE));
 
         // 输入区域
         JPanel inputPanel = new JPanel(new BorderLayout(10, 5));
+        inputPanel.setOpaque(false);
 
         // 输入框和单位选择在同一行
         JPanel fieldPanel = new JPanel(new BorderLayout(5, 0));
+        fieldPanel.setOpaque(false);
         timestampField = new FlatTextField();
         timestampField.setPlaceholderText("1729468800000");
         timestampField.setPreferredSize(new Dimension(300, 32));
+        ToolWindowSurfaceStyle.applyTextComponentInput(timestampField);
 
         unitCombo = new JComboBox<>(new String[]{
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_MILLISECONDS),
@@ -128,10 +125,9 @@ public class TimestampPanel extends JPanel {
         inputPanel.add(fieldPanel, BorderLayout.CENTER);
 
         // 转换按钮
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
         JButton convertBtn = new JButton("🔄 " + I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_TO_DATE));
         convertBtn.addActionListener(e -> convertToDate());
-        btnPanel.add(convertBtn);
+        JPanel btnPanel = ToolWindowActionToolbar.inlineLeft(convertBtn);
 
         panel.add(inputPanel, BorderLayout.NORTH);
         panel.add(btnPanel, BorderLayout.CENTER);
@@ -143,40 +139,36 @@ public class TimestampPanel extends JPanel {
      * 创建日期转时间戳面板
      */
     private JPanel createDateToTimestampPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createEtchedBorder(),
-                I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_DATE_TO_TIMESTAMP)
-        ));
+        JPanel panel = createSectionPanel(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_DATE_TO_TIMESTAMP));
 
         // 输入区域
         JPanel inputPanel = new JPanel(new BorderLayout(10, 5));
+        inputPanel.setOpaque(false);
 
         dateField = new FlatTextField();
         dateField.setPlaceholderText("2025-10-21 12:00:00");
         dateField.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_DATE_FORMAT_HINT));
         dateField.setPreferredSize(new Dimension(300, 32));
+        ToolWindowSurfaceStyle.applyTextComponentInput(dateField);
 
         inputPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_DATE_INPUT) + ":"), BorderLayout.WEST);
         inputPanel.add(dateField, BorderLayout.CENTER);
 
         // 快速填充按钮
-        JPanel quickBtnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         JButton nowBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_NOW_BUTTON));
         nowBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_NOW_TOOLTIP));
         nowBtn.addActionListener(e -> {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             dateField.setText(sdf.format(new Date()));
         });
-        quickBtnPanel.add(nowBtn);
+        JPanel quickBtnPanel = ToolWindowActionToolbar.inlineLeft(nowBtn);
 
         inputPanel.add(quickBtnPanel, BorderLayout.EAST);
 
         // 转换按钮
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
         JButton convertBtn = new JButton("🔄 " + I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_DATE_TO_TIMESTAMP));
         convertBtn.addActionListener(e -> convertToTimestamp());
-        btnPanel.add(convertBtn);
+        JPanel btnPanel = ToolWindowActionToolbar.inlineLeft(convertBtn);
 
         panel.add(inputPanel, BorderLayout.NORTH);
         panel.add(btnPanel, BorderLayout.CENTER);
@@ -188,35 +180,41 @@ public class TimestampPanel extends JPanel {
      * 创建结果显示面板
      */
     private JPanel createResultPanel() {
-        JPanel panel = new JPanel(new BorderLayout(5, 5));
-        panel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createEtchedBorder(),
-                I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_OUTPUT)
-        ));
+        JPanel panel = createSectionPanel(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_OUTPUT));
 
         resultArea = new JTextArea();
         resultArea.setEditable(false);
         resultArea.setRows(12);
         resultArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         resultArea.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        ToolWindowSurfaceStyle.applyTextComponentCard(resultArea);
 
         JScrollPane scrollPane = new JScrollPane(resultArea);
         scrollPane.setPreferredSize(new Dimension(400, 250));
+        ToolWindowSurfaceStyle.applyScrollPaneCard(scrollPane);
 
-        // 按钮面板
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 5));
         JButton copyBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_COPY));
         copyBtn.addActionListener(e -> copyToClipboard());
 
         JButton clearBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_TIMESTAMP_CLEAR_BUTTON));
         clearBtn.addActionListener(e -> resultArea.setText(""));
 
-        btnPanel.add(clearBtn);
-        btnPanel.add(copyBtn);
+        JPanel btnPanel = ToolWindowActionToolbar.inlineRight(clearBtn, copyBtn);
 
         panel.add(scrollPane, BorderLayout.CENTER);
         panel.add(btnPanel, BorderLayout.SOUTH);
 
+        return panel;
+    }
+
+    private JPanel createSectionPanel(String title) {
+        JPanel panel = new JPanel(new BorderLayout(10, 8));
+        panel.setOpaque(false);
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 0));
+        titleLabel.setForeground(ModernColors.getTextPrimary());
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 2, 0));
+        panel.add(titleLabel, BorderLayout.NORTH);
         return panel;
     }
 

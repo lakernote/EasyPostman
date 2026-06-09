@@ -1,6 +1,7 @@
 package com.laker.postman.panel.topmenu.setting;
 
 import cn.hutool.json.JSONUtil;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.setting.SettingsHintLabel;
 import com.laker.postman.common.component.setting.SettingsSectionPanel;
 import com.laker.postman.common.constants.ModernColors;
@@ -104,7 +105,7 @@ public class TrustedCertificatesSettingsPanelModern extends ModernSettingsPanel 
     private JPanel createActionBar() {
         JPanel actionBar = new JPanel();
         actionBar.setLayout(new BoxLayout(actionBar, BoxLayout.X_AXIS));
-        actionBar.setBackground(getCardBackgroundColor());
+        ToolWindowSurfaceStyle.applyCard(actionBar);
         actionBar.setAlignmentX(Component.LEFT_ALIGNMENT);
         actionBar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
 
@@ -137,9 +138,8 @@ public class TrustedCertificatesSettingsPanelModern extends ModernSettingsPanel 
         trustMaterialTable.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         trustMaterialTable.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
         trustMaterialTable.setFillsViewportHeight(true);
-        trustMaterialTable.setBackground(getInputBackgroundColor());
-        trustMaterialTable.setForeground(getTextPrimaryColor());
-        trustMaterialTable.setSelectionBackground(getHoverBackgroundColor());
+        ToolWindowSurfaceStyle.applyTableCard(trustMaterialTable);
+        trustMaterialTable.setSelectionBackground(ModernColors.getHoverBackgroundColor());
 
         trustMaterialTable.getColumnModel().getColumn(0).setPreferredWidth(72);
         trustMaterialTable.getColumnModel().getColumn(0).setMinWidth(68);
@@ -171,7 +171,7 @@ public class TrustedCertificatesSettingsPanelModern extends ModernSettingsPanel 
         });
 
         JScrollPane scrollPane = new JScrollPane(trustMaterialTable);
-        scrollPane.setBorder(BorderFactory.createLineBorder(ModernColors.getBorderLightColor(), 1));
+        ToolWindowSurfaceStyle.applyTableScrollPaneCard(scrollPane, trustMaterialTable);
         scrollPane.setPreferredSize(new Dimension(SettingsSectionPanel.DEFAULT_DESCRIPTION_WIDTH, 260));
         scrollPane.setMaximumSize(new Dimension(SettingsSectionPanel.DEFAULT_DESCRIPTION_WIDTH, 340));
         scrollPane.setMinimumSize(new Dimension(360, 180));

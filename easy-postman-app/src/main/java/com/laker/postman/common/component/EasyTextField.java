@@ -39,10 +39,6 @@ import java.util.List;
  */
 @Slf4j
 public class EasyTextField extends FlatTextField {
-    // 自动补全UI颜色
-    private static final Color POPUP_BACKGROUND = new Color(255, 255, 255);
-    private static final Color POPUP_SELECTION_BG = new Color(232, 242, 252);
-
     private final UndoManager undoManager = new UndoManager();
 
     // 自动补全相关
@@ -179,9 +175,9 @@ public class EasyTextField extends FlatTextField {
         autocompleteList = new JList<>(autocompleteModel);
         autocompleteList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         autocompleteList.setVisibleRowCount(10);
-        autocompleteList.setBackground(POPUP_BACKGROUND);
-        autocompleteList.setSelectionBackground(POPUP_SELECTION_BG);
-        autocompleteList.setSelectionForeground(Color.BLACK);
+        autocompleteList.setBackground(ModernColors.getCardBackgroundColor());
+        autocompleteList.setSelectionBackground(ModernColors.getSelectionBackgroundColor());
+        autocompleteList.setSelectionForeground(ModernColors.getTextPrimary());
         autocompleteList.setFont(getFont());
         // 固定列表宽度，防止内容过长导致横向滚动
         autocompleteList.setFixedCellWidth(384); // 400 - 边框和内边距
@@ -199,9 +195,9 @@ public class EasyTextField extends FlatTextField {
                 panel.setMaximumSize(new Dimension(384, 32));
 
                 if (isSelected) {
-                    panel.setBackground(POPUP_SELECTION_BG);
+                    panel.setBackground(ModernColors.getSelectionBackgroundColor());
                 } else {
-                    panel.setBackground(POPUP_BACKGROUND);
+                    panel.setBackground(ModernColors.getCardBackgroundColor());
                 }
 
                 if (value instanceof VariableInfo varInfo) {
@@ -230,8 +226,7 @@ public class EasyTextField extends FlatTextField {
                             g2d.setColor(varType.getColor());
                             g2d.fillOval(2, circleY, circleSize, circleSize);
 
-                            // 绘制白色符号 - 垂直居中对齐
-                            g2d.setColor(Color.WHITE);
+                            g2d.setColor(ModernColors.getTextInverse());
                             g2d.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -2)); // 比标准字体小2号
                             FontMetrics symbolFm = g2d.getFontMetrics();
                             int symbolWidth = symbolFm.stringWidth(symbol);
@@ -300,7 +295,7 @@ public class EasyTextField extends FlatTextField {
 
                         JLabel valueLabel = new JLabel(displayValue);
                         valueLabel.setFont(getFont().deriveFont(Font.PLAIN, getFont().getSize() - 1));
-                        valueLabel.setForeground(Color.GRAY);
+                        valueLabel.setForeground(ModernColors.getTextSecondary());
 
                         // 为值添加工具提示（显示完整内容）
                         if (!displayValue.equals(fullValue) || fullValue.length() > 20) {
@@ -318,7 +313,9 @@ public class EasyTextField extends FlatTextField {
                     // 为整个面板添加工具提示
                     StringBuilder tooltipBuilder = new StringBuilder("<html>");
                     tooltipBuilder.append("<b>").append(escapeHtml(varName)).append("</b>");
-                    tooltipBuilder.append(" <span style='color:gray'>(").append(varType.getDisplayName()).append(")</span>");
+                    tooltipBuilder.append(" <span style='color:")
+                            .append(ModernColors.toHtmlColor(ModernColors.getTextHint()))
+                            .append("'>(").append(varType.getDisplayName()).append(")</span>");
                     if (varValue != null && !varValue.isEmpty()) {
                         tooltipBuilder.append("<br/>").append(escapeHtml(varValue));
                     }
@@ -335,7 +332,7 @@ public class EasyTextField extends FlatTextField {
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(180, 180, 180), 1),
+                BorderFactory.createLineBorder(ModernColors.getDividerBorderColor(), 1),
                 BorderFactory.createEmptyBorder(2, 2, 2, 2)
         ));
         autocompleteWindow.add(scrollPane);
@@ -682,15 +679,12 @@ public class EasyTextField extends FlatTextField {
 
         if (isDefined) {
             // 使用枚举中的颜色
-            titleColor = String.format("#%02X%02X%02X",
-                    varType.getColor().getRed(),
-                    varType.getColor().getGreen(),
-                    varType.getColor().getBlue());
+            titleColor = ModernColors.toHtmlColor(varType.getColor());
             typeLabel = varType.getDisplayName();
             typeIcon = varType.getIconSymbol();
         } else {
             // 未定义变量
-            titleColor = "#D32F2F";
+            titleColor = ModernColors.toHtmlColor(ModernColors.getError());
             typeLabel = I18nUtil.getMessage(MessageKeys.VARIABLE_TYPE_UNDEFINED);
             typeIcon = "✗";
         }
@@ -708,20 +702,30 @@ public class EasyTextField extends FlatTextField {
         tooltip.append("</b></div>");
 
         // 分隔线
-        tooltip.append("<hr style='border: none; border-top: 1px solid #E0E0E0; margin: 1px 0;'/>");
+        tooltip.append("<hr style='border: none; border-top: 1px solid ")
+                .append(ModernColors.toHtmlColor(ModernColors.getBorderLightColor()))
+                .append("; margin: 1px 0;'/>");
 
         // 内容部分 - 变量值或描述
-        tooltip.append("<div style='margin-top: 1px; color: #424242; font-size: 10px;'>");
+        tooltip.append("<div style='margin-top: 1px; color: ")
+                .append(ModernColors.toHtmlColor(ModernColors.getTextPrimary()))
+                .append("; font-size: 10px;'>");
 
         if (isDefined && varType == VariableType.BUILT_IN) {
             // 内置函数描述
-            tooltip.append("<span style='color: #757575; font-style: italic;'>");
+            tooltip.append("<span style='color: ")
+                    .append(ModernColors.toHtmlColor(ModernColors.getTextHint()))
+                    .append("; font-style: italic;'>");
             tooltip.append(escapeHtml(content));
             tooltip.append("</span>");
         } else if (isDefined) {
             // 其他类型变量值
-            tooltip.append("<span style='color: #757575;'>Value:</span><br/>");
-            tooltip.append("<span style='font-family: Consolas, monospace; background-color: #F5F5F5; ");
+            tooltip.append("<span style='color: ")
+                    .append(ModernColors.toHtmlColor(ModernColors.getTextHint()))
+                    .append(";'>Value:</span><br/>");
+            tooltip.append("<span style='font-family: Consolas, monospace; background-color: ")
+                    .append(ModernColors.toHtmlColor(ModernColors.getInputBackgroundColor()))
+                    .append("; ");
             tooltip.append("padding: 4px 6px; border-radius: 3px; display: inline-block; margin-top: 1px;'>");
 
             // 限制显示长度，超过150字符截断
@@ -730,7 +734,9 @@ public class EasyTextField extends FlatTextField {
             tooltip.append("</span>");
         } else {
             // 未定义变量警告
-            tooltip.append("<span style='color: #D32F2F; font-weight: bold;'>⚠ ");
+            tooltip.append("<span style='color: ")
+                    .append(ModernColors.toHtmlColor(ModernColors.getError()))
+                    .append("; font-weight: bold;'>⚠ ");
             tooltip.append(escapeHtml(content));
             tooltip.append("</span>");
         }

@@ -10,6 +10,8 @@ import com.laker.postman.plugin.kafka.producer.ui.KafkaProducerPanel;
 import com.laker.postman.plugin.kafka.shared.KafkaPanelSupport;
 import com.laker.postman.plugin.kafka.ui.KafkaTopicItem;
 import com.laker.postman.plugin.kafka.ui.KafkaTopicPanel;
+import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
@@ -46,8 +48,6 @@ import static com.laker.postman.plugin.kafka.KafkaI18n.t;
 @Slf4j
 public class KafkaPanel extends JPanel {
 
-    private static final String LABEL_DISABLED_FG = "Label.disabledForeground";
-    private static final String SEPARATOR_FG = "Separator.foreground";
     private static final String CARD_CONNECT = "connect";
     private static final String CARD_DISCONNECT = "disconnect";
     private static final String TIMEOUT_MS = "3000";
@@ -87,6 +87,7 @@ public class KafkaPanel extends JPanel {
     private void initUI() {
         setLayout(new BorderLayout(0, 0));
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        ToolWindowSurfaceStyle.applyCard(this);
 
         connectionPanel = new KafkaConnectionPanel(this::loadTopics, this::doDisconnect);
         connectionPanel.profileCombo.addActionListener(e -> applySelectedConnectionProfile());
@@ -141,16 +142,20 @@ public class KafkaPanel extends JPanel {
 
         add(connectionPanel, BorderLayout.NORTH);
 
-        JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, topicPanel, buildWorkPanel());
+        JSplitPane mainSplit = ToolWindowChrome.createHorizontalCardSplitPane(
+                topicPanel,
+                buildWorkPanel(),
+                240
+        );
         mainSplit.setDividerLocation(240);
-        mainSplit.setDividerSize(3);
         mainSplit.setResizeWeight(0.23);
-        mainSplit.setContinuousLayout(true);
         add(mainSplit, BorderLayout.CENTER);
+        ToolWindowSurfaceStyle.applyPanelTreeCard(this);
     }
 
     private JComponent buildWorkPanel() {
         JTabbedPane workTabs = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
+        ToolWindowSurfaceStyle.applyTabbedPaneCard(workTabs);
         workTabs.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1));
         workTabs.addTab(
                 t(MessageKeys.TOOLBOX_KAFKA_PRODUCER_TITLE),
@@ -462,7 +467,7 @@ public class KafkaPanel extends JPanel {
         }
 
         connectionPanel.connectBtn.setEnabled(false);
-        setConnectionStatus(ModernColors.INFO, t(MessageKeys.TOOLBOX_KAFKA_STATUS_LOADING_TOPICS));
+        setConnectionStatus(ModernColors.getInfo(), t(MessageKeys.TOOLBOX_KAFKA_STATUS_LOADING_TOPICS));
 
         SwingWorker<List<KafkaTopicItem>, Void> worker = new SwingWorker<>() {
             @Override
@@ -506,7 +511,7 @@ public class KafkaPanel extends JPanel {
                     }
                     syncPartitionSelector();
                     String status = t(MessageKeys.TOOLBOX_KAFKA_STATUS_CONNECTED, bootstrap);
-                    setConnectionStatus(ModernColors.SUCCESS, status);
+                    setConnectionStatus(ModernColors.getSuccess(), status);
                     connectionPanel.btnCardLayout.show(connectionPanel.btnCard, CARD_DISCONNECT);
                     producerPanel.statusLabel.setText(t(MessageKeys.TOOLBOX_KAFKA_STATUS_TOPICS_LOADED, topics.size()));
                     NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_KAFKA_STATUS_TOPICS_LOADED, topics.size()));
@@ -515,7 +520,7 @@ public class KafkaPanel extends JPanel {
                     log.warn("Load kafka topics interrupted", ex);
                 } catch (Exception ex) {
                     Throwable cause = unwrapException(ex);
-                    setConnectionStatus(ModernColors.ERROR, t(MessageKeys.TOOLBOX_KAFKA_STATUS_CONNECT_FAILED, rootMessage(cause)));
+                    setConnectionStatus(ModernColors.getError(), t(MessageKeys.TOOLBOX_KAFKA_STATUS_CONNECT_FAILED, rootMessage(cause)));
                     NotificationUtil.showError(t(MessageKeys.TOOLBOX_KAFKA_STATUS_CONNECT_FAILED, rootMessage(cause)));
                     log.warn("Load kafka topics failed", cause);
                 }
@@ -586,7 +591,7 @@ public class KafkaPanel extends JPanel {
         final String producerConfigSignature = buildPropertiesSignature(producerProps);
 
         producerPanel.sendBtn.setEnabled(false);
-        producerPanel.statusLabel.setForeground(UIManager.getColor(LABEL_DISABLED_FG));
+        producerPanel.statusLabel.setForeground(ModernColors.getTextSecondary());
         producerPanel.statusLabel.setText(t(MessageKeys.TOOLBOX_KAFKA_STATUS_SENDING));
 
         SwingWorker<RecordMetadata, Void> worker = new SwingWorker<>() {
@@ -614,7 +619,7 @@ public class KafkaPanel extends JPanel {
                 try {
                     RecordMetadata metadata = get();
                     String msg = t(MessageKeys.TOOLBOX_KAFKA_STATUS_SENT, metadata.partition(), metadata.offset());
-                    producerPanel.statusLabel.setForeground(ModernColors.SUCCESS);
+                    producerPanel.statusLabel.setForeground(ModernColors.getSuccess());
                     producerPanel.statusLabel.setText(msg);
                     NotificationUtil.showSuccess(msg);
                 } catch (InterruptedException ex) {
@@ -624,7 +629,7 @@ public class KafkaPanel extends JPanel {
                     Throwable cause = unwrapException(ex);
                     // 发送失败时关闭缓存的 Producer，下次重建
                     closeAndClearCachedProducer();
-                    producerPanel.statusLabel.setForeground(ModernColors.ERROR);
+                    producerPanel.statusLabel.setForeground(ModernColors.getError());
                     producerPanel.statusLabel.setText(t(MessageKeys.TOOLBOX_KAFKA_STATUS_SEND_FAILED, rootMessage(cause)));
                     NotificationUtil.showError(t(MessageKeys.TOOLBOX_KAFKA_STATUS_SEND_FAILED, rootMessage(cause)));
                     log.warn("Send kafka message failed", cause);
@@ -723,7 +728,7 @@ public class KafkaPanel extends JPanel {
 
         clearConsumedMessages();
         setConsuming(true);
-        consumerPanel.statusLabel.setForeground(UIManager.getColor(LABEL_DISABLED_FG));
+        consumerPanel.statusLabel.setForeground(ModernColors.getTextSecondary());
         consumerPanel.statusLabel.setText(t(MessageKeys.TOOLBOX_KAFKA_STATUS_CONSUMING, topic));
 
         SwingWorker<Void, List<KafkaConsumedMessage>> worker = new SwingWorker<>() {
@@ -793,7 +798,7 @@ public class KafkaPanel extends JPanel {
                 }
                 trimConsumedMessages();
                 refreshMessageTable();
-                consumerPanel.statusLabel.setForeground(ModernColors.INFO);
+                consumerPanel.statusLabel.setForeground(ModernColors.getInfo());
                 consumerPanel.statusLabel.setText(t(MessageKeys.TOOLBOX_KAFKA_STATUS_RECORDS, consumedMessages.size()));
             }
 
@@ -801,20 +806,20 @@ public class KafkaPanel extends JPanel {
             protected void done() {
                 setConsuming(false);
                 if (isCancelled()) {
-                    consumerPanel.statusLabel.setForeground(UIManager.getColor(LABEL_DISABLED_FG));
+                    consumerPanel.statusLabel.setForeground(ModernColors.getTextSecondary());
                     consumerPanel.statusLabel.setText(t(MessageKeys.TOOLBOX_KAFKA_STATUS_STOPPED));
                     return;
                 }
                 try {
                     get();
-                    consumerPanel.statusLabel.setForeground(UIManager.getColor(LABEL_DISABLED_FG));
+                    consumerPanel.statusLabel.setForeground(ModernColors.getTextSecondary());
                     consumerPanel.statusLabel.setText(t(MessageKeys.TOOLBOX_KAFKA_STATUS_STOPPED));
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
                     log.warn("Consume kafka interrupted", ex);
                 } catch (Exception ex) {
                     Throwable cause = unwrapException(ex);
-                    consumerPanel.statusLabel.setForeground(ModernColors.ERROR);
+                    consumerPanel.statusLabel.setForeground(ModernColors.getError());
                     consumerPanel.statusLabel.setText(t(MessageKeys.TOOLBOX_KAFKA_STATUS_CONSUME_FAILED, rootMessage(cause)));
                     NotificationUtil.showError(t(MessageKeys.TOOLBOX_KAFKA_STATUS_CONSUME_FAILED, rootMessage(cause)));
                     log.warn("Consume kafka message failed", cause);
@@ -844,10 +849,10 @@ public class KafkaPanel extends JPanel {
         boolean consuming = worker != null && !worker.isDone();
         if (consuming) {
             String topic = consumerPanel.topicField.getText().trim();
-            consumerPanel.statusLabel.setForeground(ModernColors.INFO);
+            consumerPanel.statusLabel.setForeground(ModernColors.getInfo());
             consumerPanel.statusLabel.setText(t(MessageKeys.TOOLBOX_KAFKA_STATUS_CONSUMING, topic.isBlank() ? "-" : topic));
         } else {
-            consumerPanel.statusLabel.setForeground(UIManager.getColor(LABEL_DISABLED_FG));
+            consumerPanel.statusLabel.setForeground(ModernColors.getTextSecondary());
             consumerPanel.statusLabel.setText(t(MessageKeys.TOOLBOX_KAFKA_CONSUMER_READY));
         }
     }
@@ -1161,7 +1166,7 @@ public class KafkaPanel extends JPanel {
         topicPartitionCountMap.clear();
         consumerPanel.partitionSelector.setAvailablePartitions(Collections.emptyList());
         connectionPanel.btnCardLayout.show(connectionPanel.btnCard, CARD_CONNECT);
-        setConnectionStatus(UIManager.getColor(LABEL_DISABLED_FG), t(MessageKeys.TOOLBOX_KAFKA_STATUS_NOT_CONNECTED));
+        setConnectionStatus(ModernColors.getTextSecondary(), t(MessageKeys.TOOLBOX_KAFKA_STATUS_NOT_CONNECTED));
         NotificationUtil.showInfo(t(MessageKeys.TOOLBOX_KAFKA_DISCONNECT_SUCCESS));
     }
 

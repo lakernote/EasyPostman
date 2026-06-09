@@ -1,6 +1,7 @@
 package com.laker.postman.plugin.kafka.connection.ui;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.SecondaryButton;
 import com.laker.postman.common.component.connection.ConnectionToolbarUi;
 import com.laker.postman.plugin.kafka.MessageKeys;
@@ -13,7 +14,6 @@ import static com.laker.postman.plugin.kafka.KafkaI18n.t;
 
 public class KafkaConnectionPanel extends JPanel {
 
-    private static final String SEPARATOR_FG = "Separator.foreground";
     private static final String CARD_CONNECT = "connect";
     private static final String CARD_DISCONNECT = "disconnect";
     private static final int KAFKA_LABEL_WIDTH = 64;
@@ -42,9 +42,7 @@ public class KafkaConnectionPanel extends JPanel {
 
     public KafkaConnectionPanel(Runnable connectAction, Runnable disconnectAction) {
         super(new BorderLayout());
-        setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)),
-                BorderFactory.createEmptyBorder(3, 6, 3, 6)));
+        ToolWindowSurfaceStyle.applySectionHeader(this, 3, 6, 3, 6);
 
         profileCombo = new JComboBox<>();
         profileCombo.setEditable(false);

@@ -6,7 +6,6 @@ import com.laker.postman.common.IRefreshable;
 import com.laker.postman.common.UiSingletonMenuBar;
 import com.laker.postman.common.component.combobox.EnvironmentComboBox;
 import com.laker.postman.common.component.combobox.WorkspaceComboBox;
-import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.panel.lifecycle.AppExitCoordinator;
 import com.laker.postman.util.I18nUtil;
@@ -28,17 +27,14 @@ public class TopMenuBar extends UiSingletonMenuBar implements IRefreshable {
         initComponents();
     }
 
-    private Border createPanelBorder() {
-        return BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()),
-                BorderFactory.createEmptyBorder(2, 4, 1, 8)
-        );
+    static Border createPanelBorder() {
+        return BorderFactory.createEmptyBorder(2, 4, 1, 8);
     }
 
     @Override
     public void updateUI() {
         super.updateUI();
-        // 主题切换时重新创建边框，确保分隔线颜色更新
+        // 主题切换时重新创建边框，确保菜单栏留白保持稳定。
         setBorder(createPanelBorder());
     }
 

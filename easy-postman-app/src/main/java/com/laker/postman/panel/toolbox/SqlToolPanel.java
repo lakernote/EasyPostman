@@ -1,7 +1,12 @@
 package com.laker.postman.panel.toolbox;
 
 import com.laker.postman.common.component.SearchableTextArea;
+import com.laker.postman.common.component.ToolWindowActionToolbar;
+import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.EditorThemeUtil;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.SqlFormatter;
@@ -41,6 +46,7 @@ public class SqlToolPanel extends JPanel {
 
     private void initUI() {
         setLayout(new BorderLayout(5, 5));
+        ToolWindowSurfaceStyle.applyCard(this);
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         add(createTopPanel(), BorderLayout.NORTH);
@@ -52,6 +58,7 @@ public class SqlToolPanel extends JPanel {
 
     private JPanel createTopPanel() {
         JPanel container = new JPanel(new BorderLayout(0, 6));
+        container.setOpaque(false);
         container.add(createToolbarPanel(), BorderLayout.NORTH);
         container.add(createOptionsPanel(), BorderLayout.SOUTH);
         return container;
@@ -59,8 +66,8 @@ public class SqlToolPanel extends JPanel {
 
     private JPanel createToolbarPanel() {
         JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setOpaque(false);
 
-        JPanel leftBtnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
         JButton formatBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_FORMAT));
         JButton compressBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_COMPRESS));
         JButton validateBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_VALIDATE));
@@ -69,11 +76,8 @@ public class SqlToolPanel extends JPanel {
         compressBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_TOOLTIP_COMPRESS));
         validateBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_TOOLTIP_VALIDATE));
 
-        leftBtnPanel.add(formatBtn);
-        leftBtnPanel.add(compressBtn);
-        leftBtnPanel.add(validateBtn);
+        JPanel leftBtnPanel = ToolWindowActionToolbar.inlineLeft(formatBtn, compressBtn, validateBtn);
 
-        JPanel rightBtnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 5));
         JButton sampleBtn = new JButton("📝 " + I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_SAMPLE));
         JButton copyBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_COPY));
         JButton pasteBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_PASTE));
@@ -86,11 +90,7 @@ public class SqlToolPanel extends JPanel {
         clearBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_TOOLTIP_CLEAR));
         swapBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_TOOLTIP_SWAP));
 
-        rightBtnPanel.add(sampleBtn);
-        rightBtnPanel.add(copyBtn);
-        rightBtnPanel.add(pasteBtn);
-        rightBtnPanel.add(clearBtn);
-        rightBtnPanel.add(swapBtn);
+        JPanel rightBtnPanel = ToolWindowActionToolbar.inlineRight(sampleBtn, copyBtn, pasteBtn, clearBtn, swapBtn);
 
         topPanel.add(leftBtnPanel, BorderLayout.WEST);
         topPanel.add(rightBtnPanel, BorderLayout.EAST);
@@ -109,14 +109,8 @@ public class SqlToolPanel extends JPanel {
 
     private JPanel createOptionsPanel() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 6));
-        Color borderColor = UIManager.getColor("Component.borderColor");
-        if (borderColor == null) {
-            borderColor = UIManager.getColor("Separator.foreground");
-        }
-        panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 1, 0, borderColor),
-                BorderFactory.createEmptyBorder(6, 0, 6, 0)
-        ));
+        panel.setOpaque(false);
+        panel.setBorder(BorderFactory.createEmptyBorder(6, 0, 6, 0));
 
         panel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_SQL_INDENT) + ":"));
         indentSpinner = new JSpinner(new SpinnerNumberModel(2, 0, 8, 1));
@@ -158,23 +152,27 @@ public class SqlToolPanel extends JPanel {
     }
 
     private JPanel createCenterPanel() {
-        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-        splitPane.setTopComponent(createEditorPanel(true));
-        splitPane.setBottomComponent(createEditorPanel(false));
-        splitPane.setDividerLocation(300);
+        JSplitPane splitPane = ToolWindowChrome.createVerticalCardSplitPane(
+                createEditorPanel(true),
+                createEditorPanel(false),
+                300
+        );
         splitPane.setResizeWeight(0.5);
 
         JPanel panel = new JPanel(new BorderLayout());
+        panel.setOpaque(false);
         panel.add(splitPane, BorderLayout.CENTER);
         return panel;
     }
 
     private JPanel createEditorPanel(boolean input) {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
+        panel.setOpaque(false);
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(
                 input ? MessageKeys.TOOLBOX_SQL_INPUT : MessageKeys.TOOLBOX_SQL_OUTPUT));
 
         JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setOpaque(false);
         headerPanel.add(titleLabel, BorderLayout.WEST);
         panel.add(headerPanel, BorderLayout.NORTH);
 
@@ -195,8 +193,9 @@ public class SqlToolPanel extends JPanel {
 
     private JPanel createStatusPanel() {
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 3));
+        statusPanel.setOpaque(false);
         statusLabel = new JLabel(" ");
-        statusLabel.setFont(statusLabel.getFont().deriveFont(Font.PLAIN, 11f));
+        statusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         statusPanel.add(statusLabel);
         return statusPanel;
     }
@@ -424,7 +423,7 @@ public class SqlToolPanel extends JPanel {
 
     private void updateStatus(String message, boolean success) {
         statusLabel.setText(message);
-        statusLabel.setForeground(success ? new Color(0, 128, 0) : new Color(180, 0, 0));
+        statusLabel.setForeground(success ? ModernColors.getSuccess() : ModernColors.getError());
 
         Timer timer = new Timer(3000, e -> statusLabel.setText(" "));
         timer.setRepeats(false);

@@ -4,8 +4,13 @@ import com.formdev.flatlaf.FlatClientProperties;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.ToolWindowSidebarToolbar;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.plugin.api.ToolboxContribution;
 import com.laker.postman.plugin.host.PluginAccess;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
@@ -91,6 +96,7 @@ public class ToolboxPanel extends UiSingletonPanel {
 
     private static JPanel createLoadFailedPanel(String toolDisplayName, Throwable throwable) {
         JPanel panel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(panel);
         JTextArea errorArea = new JTextArea();
         errorArea.setEditable(false);
         errorArea.setLineWrap(true);
@@ -99,7 +105,10 @@ public class ToolboxPanel extends UiSingletonPanel {
                 + throwable.getMessage());
         errorArea.setCaretPosition(0);
         errorArea.setBorder(new EmptyBorder(12, 12, 12, 12));
-        panel.add(new JScrollPane(errorArea), BorderLayout.CENTER);
+        ToolWindowSurfaceStyle.applyTextComponentCard(errorArea);
+        JScrollPane scrollPane = new JScrollPane(errorArea);
+        ToolWindowSurfaceStyle.applyScrollPaneCard(scrollPane);
+        panel.add(scrollPane, BorderLayout.CENTER);
         return panel;
     }
 
@@ -123,16 +132,18 @@ public class ToolboxPanel extends UiSingletonPanel {
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
+        ToolWindowSurfaceStyle.applyBackground(this);
         registerAllTools();
 
         // ---- 左侧：搜索框 + 导航列表 ----
         navPanel = new JPanel();
+        ToolWindowSurfaceStyle.applyCard(navPanel);
         navPanel.setLayout(new BoxLayout(navPanel, BoxLayout.Y_AXIS));
 
         JScrollPane navScroll = new JScrollPane(navPanel,
                 ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        navScroll.setBorder(BorderFactory.createEmptyBorder());
+        ToolWindowSurfaceStyle.applyScrollPaneCard(navScroll);
         navScroll.getVerticalScrollBar().setUnitIncrement(16);
 
         // 复用项目 SearchTextField（带搜索图标、清除按钮、无结果红框）
@@ -155,27 +166,25 @@ public class ToolboxPanel extends UiSingletonPanel {
             }
         });
 
-        JPanel searchBox = new JPanel(new BorderLayout());
-        searchBox.setBorder(new EmptyBorder(6, 6, 4, 6));
-        searchBox.add(searchField, BorderLayout.CENTER);
-
         JPanel leftPanel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(leftPanel);
         leftPanel.setBorder(BorderFactory.createEmptyBorder());
-        leftPanel.setMinimumSize(new Dimension(100, 0));
-        leftPanel.add(searchBox, BorderLayout.NORTH);
+        leftPanel.setMinimumSize(new Dimension(180, 0));
+        leftPanel.add(new ToolWindowSidebarToolbar(null, searchField), BorderLayout.NORTH);
         leftPanel.add(navScroll, BorderLayout.CENTER);
 
         // ---- 右侧：CardLayout 内容区 ----
         cardLayout = new CardLayout();
         contentArea = new JPanel(cardLayout);
+        ToolWindowSurfaceStyle.applyCard(contentArea);
         contentArea.setMinimumSize(new Dimension(200, 0));
 
-        // 可拖动分割线（dividerSize=5，支持拖拽调宽）
-        JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, contentArea);
-        split.setDividerSize(3);
-        split.setDividerLocation(160);
-        split.setContinuousLayout(true);
-        split.setBorder(BorderFactory.createEmptyBorder());
+        // 可拖动分割线，使用背景 gutter 而不是显式线条。
+        JSplitPane split = ToolWindowChrome.createHorizontalCardSplitPane(
+                leftPanel,
+                contentArea,
+                ToolWindowChrome.DEFAULT_SIDE_WIDTH
+        );
         add(split, BorderLayout.CENTER);
 
         applyFilter(); // 初始渲染并选中第一个
@@ -289,8 +298,8 @@ public class ToolboxPanel extends UiSingletonPanel {
 
             ToolEntry firstTool = groupTools.get(0);
             JLabel grpLbl = new JLabel(firstTool.groupDisplayName());
-            grpLbl.setFont(grpLbl.getFont().deriveFont(Font.BOLD, 9.5f));
-            grpLbl.setForeground(UIManager.getColor("Label.disabledForeground"));
+            grpLbl.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -3));
+            grpLbl.setForeground(ModernColors.getTextSecondary());
             grpLbl.setBorder(new EmptyBorder(4, 10, 2, 8));
             grpLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
             navPanel.add(grpLbl);
@@ -334,7 +343,7 @@ public class ToolboxPanel extends UiSingletonPanel {
 
         JLabel lblIcon = new JLabel(icon);
         JLabel lblName = new JLabel(t.displayName());
-        lblName.setFont(lblName.getFont().deriveFont(sel ? Font.BOLD : Font.PLAIN, 12f));
+        lblName.setFont(FontsUtil.getDefaultFontWithOffset(sel ? Font.BOLD : Font.PLAIN, -1));
         if (sel) lblName.setForeground(ToolboxTheme.selectedNavItemForeground());
 
         item.add(lblIcon, BorderLayout.WEST);
@@ -344,9 +353,7 @@ public class ToolboxPanel extends UiSingletonPanel {
             @Override
             public void mouseEntered(MouseEvent e) {
                 if (!t.id().equals(selectedId)) {
-                    Color hover = UIManager.getColor("List.hoverBackground");
-                    if (hover == null) hover = UIManager.getColor("Button.hoverBackground");
-                    item.setBackground(hover);
+                    item.setBackground(ModernColors.getHoverBackgroundColor());
                     item.setOpaque(true);
                     item.repaint();
                 }
@@ -380,7 +387,9 @@ public class ToolboxPanel extends UiSingletonPanel {
             return;
         }
         try {
-            contentArea.add(toolEntry.getOrCreatePanel(), toolEntry.id());
+            JPanel toolPanel = toolEntry.getOrCreatePanel();
+            ToolWindowSurfaceStyle.applyPanelTreeCard(toolPanel);
+            contentArea.add(toolPanel, toolEntry.id());
         } catch (Throwable t) {
             log.error("Failed to initialize toolbox panel: {}", id, t);
             contentArea.add(createLoadFailedPanel(toolEntry.displayName(), t), toolEntry.id());

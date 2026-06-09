@@ -2,6 +2,8 @@ package com.laker.postman.plugin.clientcert;
 
 import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.component.setting.SettingsHintLabel;
+import com.laker.postman.common.component.ToolWindowActionToolbar;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.ClientCertificate;
 import com.laker.postman.plugin.api.service.ClientCertificatePluginService;
@@ -9,7 +11,6 @@ import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.NotificationUtil;
 import lombok.Getter;
 
-import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -36,7 +37,6 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dialog;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -73,7 +73,7 @@ public class ClientCertificateSettingsPanel extends JPanel {
 
     private void initUI() {
         setLayout(new BorderLayout(0, 12));
-        setBackground(ModernColors.getBackgroundColor());
+        ToolWindowSurfaceStyle.applyBackground(this);
         setBorder(new EmptyBorder(24, 24, 16, 24));
 
         add(createDescriptionPanel(), BorderLayout.NORTH);
@@ -101,11 +101,8 @@ public class ClientCertificateSettingsPanel extends JPanel {
 
     private JPanel createTablePanel() {
         JPanel section = new JPanel(new BorderLayout(0, 8));
-        section.setBackground(ModernColors.getCardBackgroundColor());
-        section.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(ModernColors.getBorderLightColor()),
-                new EmptyBorder(14, 14, 14, 14)
-        ));
+        ToolWindowSurfaceStyle.applyCard(section);
+        section.setBorder(new EmptyBorder(14, 14, 14, 14));
 
         JPanel headerPanel = new JPanel(new BorderLayout(10, 0));
         headerPanel.setOpaque(false);
@@ -122,9 +119,6 @@ public class ClientCertificateSettingsPanel extends JPanel {
     }
 
     private JPanel createActionBar() {
-        JPanel actionBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
-        actionBar.setOpaque(false);
-
         JButton addButton = createSizedButton(ClientCertI18n.t(MessageKeys.CERT_ADD), true, ACTION_BUTTON_SIZE);
         editButton = createSizedButton(ClientCertI18n.t(MessageKeys.CERT_EDIT), false, ACTION_BUTTON_SIZE);
         deleteButton = createSizedButton(ClientCertI18n.t(MessageKeys.CERT_DELETE), false, ACTION_BUTTON_SIZE);
@@ -135,11 +129,7 @@ public class ClientCertificateSettingsPanel extends JPanel {
         deleteButton.addActionListener(e -> deleteCertificate());
         helpButton.addActionListener(e -> showHelp());
 
-        actionBar.add(addButton);
-        actionBar.add(editButton);
-        actionBar.add(deleteButton);
-        actionBar.add(helpButton);
-        return actionBar;
+        return ToolWindowActionToolbar.inlineRight(addButton, editButton, deleteButton, helpButton);
     }
 
     private JScrollPane createTableScrollPane() {
@@ -172,20 +162,16 @@ public class ClientCertificateSettingsPanel extends JPanel {
         certificateTable.getColumnModel().getColumn(4).setCellRenderer(centerRenderer);
 
         JScrollPane scrollPane = new JScrollPane(certificateTable);
-        scrollPane.setBorder(BorderFactory.createLineBorder(ModernColors.getBorderLightColor()));
+        ToolWindowSurfaceStyle.applyTableScrollPaneCard(scrollPane, certificateTable);
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         return scrollPane;
     }
 
     private JPanel createFooterPanel() {
-        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        footer.setOpaque(false);
-
         JButton closeButton = createSizedButton(ClientCertI18n.t(MessageKeys.CERT_CLOSE), false, CLOSE_BUTTON_SIZE);
         closeButton.addActionListener(e -> closeParentWindow());
-        footer.add(closeButton);
-        return footer;
+        return ToolWindowActionToolbar.inlineRight(closeButton);
     }
 
     private static JButton createSizedButton(String text, boolean primary, Dimension size) {
@@ -301,12 +287,12 @@ public class ClientCertificateSettingsPanel extends JPanel {
         textArea.setLineWrap(true);
         textArea.setWrapStyleWord(true);
         textArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
-        textArea.setBackground(ModernColors.getBackgroundColor());
-        textArea.setForeground(ModernColors.getTextPrimary());
+        ToolWindowSurfaceStyle.applyTextComponentCard(textArea);
         textArea.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         JScrollPane scrollPane = new JScrollPane(textArea);
         scrollPane.setPreferredSize(new Dimension(600, 350));
+        ToolWindowSurfaceStyle.applyScrollPaneCard(scrollPane);
 
         JOptionPane.showMessageDialog(
                 this,
@@ -473,7 +459,7 @@ public class ClientCertificateSettingsPanel extends JPanel {
             gbc.gridwidth = 1;
             JLabel label = new JLabel(formRow.label());
             if (formRow.required()) {
-                label.setForeground(Color.RED);
+                label.setForeground(ModernColors.getError());
             }
             panel.add(label, gbc);
 
@@ -510,7 +496,7 @@ public class ClientCertificateSettingsPanel extends JPanel {
                     ? MessageKeys.CERT_CERT_PATH
                     : MessageKeys.CERT_KEY_PATH) + ":");
             if (certificatePath) {
-                label.setForeground(Color.RED);
+                label.setForeground(ModernColors.getError());
             }
             panel.add(label, gbc);
 
@@ -543,16 +529,12 @@ public class ClientCertificateSettingsPanel extends JPanel {
         }
 
         private JPanel createDialogButtonPanel() {
-            JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
-
             JButton saveButton = new JButton(ClientCertI18n.t(MessageKeys.CERT_SAVE));
             JButton cancelButton = new JButton(ClientCertI18n.t(MessageKeys.CERT_CANCEL));
             saveButton.addActionListener(e -> save());
             cancelButton.addActionListener(e -> dispose());
 
-            buttonPanel.add(saveButton);
-            buttonPanel.add(cancelButton);
-            return buttonPanel;
+            return ToolWindowActionToolbar.inlineRight(saveButton, cancelButton);
         }
 
         private void updateFieldVisibility() {

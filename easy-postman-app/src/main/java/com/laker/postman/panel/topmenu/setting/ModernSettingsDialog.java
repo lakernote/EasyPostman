@@ -1,5 +1,6 @@
 package com.laker.postman.panel.topmenu.setting;
 
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -31,20 +32,6 @@ public class ModernSettingsDialog extends JDialog {
 
     private final JTabbedPane tabbedPane;
     private final SettingsContributionRegistry contributionRegistry;
-
-    /**
-     * 获取主题适配的背景色
-     */
-    private Color getBackgroundColor() {
-        return ModernColors.getBackgroundColor();
-    }
-
-    /**
-     * 获取主题适配的标签页背景色
-     */
-    private Color getTabBackgroundColor() {
-        return ModernColors.getCardBackgroundColor();
-    }
 
     /**
      * 获取主题适配的文本颜色
@@ -121,7 +108,7 @@ public class ModernSettingsDialog extends JDialog {
 
     private void setupMainPanel() {
         JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.setBackground(getBackgroundColor());
+        ToolWindowSurfaceStyle.applyBackground(mainPanel);
         mainPanel.add(tabbedPane, BorderLayout.CENTER);
         setContentPane(mainPanel);
     }
@@ -140,7 +127,7 @@ public class ModernSettingsDialog extends JDialog {
      */
     private JTabbedPane createModernTabbedPane() {
         JTabbedPane pane = new JTabbedPane(SwingConstants.LEFT);
-        pane.setBackground(getTabBackgroundColor());
+        ToolWindowSurfaceStyle.applyTabbedPaneCard(pane);
         pane.setForeground(getTextColor());
         pane.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         pane.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
@@ -204,7 +191,7 @@ public class ModernSettingsDialog extends JDialog {
                 g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
                         RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
 
-                g2.setColor(isSelected ? Color.WHITE : getTextColor());
+                g2.setColor(isSelected ? ModernColors.getTextInverse() : getTextColor());
                 g2.setFont(isSelected ? font.deriveFont(Font.BOLD) : font);
                 g2.drawString(title, textRect.x, textRect.y + metrics.getAscent());
             } finally {

@@ -1,7 +1,8 @@
 package com.laker.postman.plugin.kafka.shared.ui;
 
 import com.laker.postman.common.component.PlaceholderTextArea;
-import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.util.FontsUtil;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -13,16 +14,17 @@ public class KafkaPropertiesEditorPanel extends JPanel {
 
     public KafkaPropertiesEditorPanel(String title, String hint, String placeholder, Color separatorColor, Color hintColor) {
         super(new BorderLayout(0, 0));
-        setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, separatorColor));
+        ToolWindowSurfaceStyle.applySectionHeader(this);
 
         JPanel header = new JPanel(new BorderLayout());
+        header.setOpaque(false);
         header.setBorder(new EmptyBorder(6, 10, 4, 8));
 
         JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 11f));
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -2));
 
         JLabel hintLabel = new JLabel(hint);
-        hintLabel.setFont(hintLabel.getFont().deriveFont(Font.PLAIN, 10f));
+        hintLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -3));
         hintLabel.setForeground(hintColor);
 
         JPanel labels = new JPanel(new BorderLayout(0, 2));
@@ -33,10 +35,11 @@ public class KafkaPropertiesEditorPanel extends JPanel {
 
         textArea = new PlaceholderTextArea(4, 0);
         textArea.setLineWrap(false);
-        textArea.setBackground(ModernColors.getInputBackgroundColor());
         textArea.setPlaceholder(placeholder);
+        ToolWindowSurfaceStyle.applyTextComponentInput(textArea);
 
         JScrollPane scrollPane = new JScrollPane(textArea);
+        ToolWindowSurfaceStyle.applyScrollPaneCard(scrollPane);
         scrollPane.setBorder(BorderFactory.createEmptyBorder(0, 8, 8, 8));
 
         add(header, BorderLayout.NORTH);

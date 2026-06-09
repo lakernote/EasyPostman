@@ -5,7 +5,9 @@ import com.laker.postman.request.model.RequestItemProtocolEnum;
 
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.component.MarkdownEditorPanel;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.tab.IndicatorTabComponent;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.http.request.AppRequestHeaderDefaults;
 import com.laker.postman.panel.collections.editor.request.sub.*;
 import com.laker.postman.service.setting.SettingManager;
@@ -14,6 +16,9 @@ import com.laker.postman.util.MessageKeys;
 import lombok.experimental.UtilityClass;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.plaf.basic.BasicSplitPaneDivider;
+import javax.swing.plaf.basic.BasicSplitPaneUI;
 import java.awt.*;
 import java.awt.event.ActionListener;
 
@@ -29,9 +34,7 @@ class RequestViewFactory {
         JTextField urlField = requestLinePanel.getUrlField();
 
         JTabbedPane reqTabs = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
-        reqTabs.setMinimumSize(new java.awt.Dimension(0, 0));
-        reqTabs.putClientProperty(FlatClientProperties.TABBED_PANE_HAS_FULL_BORDER, false);
-        reqTabs.putClientProperty(FlatClientProperties.TABBED_PANE_SHOW_CONTENT_SEPARATOR, false);
+        configureRequestTabs(reqTabs);
 
         MarkdownEditorPanel descriptionEditor = new MarkdownEditorPanel();
         EasyRequestParamsPanel paramsPanel = new EasyRequestParamsPanel();
@@ -59,9 +62,7 @@ class RequestViewFactory {
         JComponent editorContent = reqTabs;
         if (!requestOnlySnapshot) {
             splitPane = new JSplitPane(orientation, reqTabs, responsePanel);
-            splitPane.setDividerSize(4);
-            splitPane.setOneTouchExpandable(false);
-            splitPane.setContinuousLayout(true);
+            configureRequestResponseSplitPane(splitPane);
             editorContent = splitPane;
         }
 
@@ -89,6 +90,22 @@ class RequestViewFactory {
         );
         rebuildRequestTabs(components, protocol);
         return components;
+    }
+
+    private static void configureRequestTabs(JTabbedPane reqTabs) {
+        reqTabs.setMinimumSize(new Dimension(0, 0));
+        ToolWindowSurfaceStyle.applyTabbedPaneCard(reqTabs);
+        reqTabs.putClientProperty(FlatClientProperties.TABBED_PANE_HAS_FULL_BORDER, false);
+        reqTabs.putClientProperty(FlatClientProperties.TABBED_PANE_SHOW_CONTENT_SEPARATOR, false);
+    }
+
+    private static void configureRequestResponseSplitPane(JSplitPane splitPane) {
+        splitPane.setUI(new EditorSplitPaneUi());
+        splitPane.setDividerSize(6);
+        splitPane.setOneTouchExpandable(false);
+        splitPane.setContinuousLayout(true);
+        ToolWindowSurfaceStyle.applyBackground(splitPane);
+        splitPane.setBorder(new EmptyBorder(0, 0, 0, 0));
     }
 
     static void rebuildRequestTabs(RequestViewComponents components, RequestItemProtocolEnum protocol) {
@@ -153,6 +170,7 @@ class RequestViewFactory {
                     true
             );
         }
+        applyTabContentSurfaces(tabs);
     }
 
     private static void addTabIfVisible(JTabbedPane tabs,
@@ -167,6 +185,33 @@ class RequestViewFactory {
         tabs.addTab(title, component);
         if (indicator != null) {
             tabs.setTabComponentAt(tabs.getTabCount() - 1, indicator);
+        }
+    }
+
+    private static void applyTabContentSurfaces(JTabbedPane tabs) {
+        for (int i = 0; i < tabs.getTabCount(); i++) {
+            Component component = tabs.getComponentAt(i);
+            if (component instanceof JComponent jComponent) {
+                ToolWindowSurfaceStyle.applyCard(jComponent);
+            }
+        }
+    }
+
+    private static final class EditorSplitPaneUi extends BasicSplitPaneUI {
+        @Override
+        public BasicSplitPaneDivider createDefaultDivider() {
+            return new BasicSplitPaneDivider(this) {
+                @Override
+                public void setBorder(javax.swing.border.Border border) {
+                    super.setBorder(new EmptyBorder(0, 0, 0, 0));
+                }
+
+                @Override
+                public void paint(Graphics g) {
+                    g.setColor(ModernColors.getBackgroundColor());
+                    g.fillRect(0, 0, getWidth(), getHeight());
+                }
+            };
         }
     }
 }

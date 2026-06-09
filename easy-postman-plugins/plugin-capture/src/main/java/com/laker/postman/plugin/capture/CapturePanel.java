@@ -1,7 +1,10 @@
 package com.laker.postman.plugin.capture;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.laker.postman.common.component.ChipLabel;
 import com.laker.postman.common.component.SearchableTextArea;
+import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.CloseButton;
 import com.laker.postman.common.component.button.CopyButton;
 import com.laker.postman.common.component.table.EnhancedTablePanel;
@@ -37,7 +40,6 @@ import javax.swing.ListSelectionModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
-import javax.swing.UIManager;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.ListSelectionEvent;
@@ -141,9 +143,11 @@ public class CapturePanel extends JPanel {
     private void initUI() {
         setLayout(new BorderLayout(0, 0));
         setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
+        ToolWindowSurfaceStyle.applyCard(this);
 
         add(buildTopBar(), BorderLayout.NORTH);
         add(buildContent(), BorderLayout.CENTER);
+        ToolWindowSurfaceStyle.applyPanelTreeCard(this);
     }
 
     private JComponent buildTopBar() {
@@ -151,9 +155,7 @@ public class CapturePanel extends JPanel {
                 "insets 8, fillx, novisualpadding",
                 "[][grow,fill]12[]8[]12[]6[]push[]",
                 "[][][][]"));
-        panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor("Separator.foreground")),
-                BorderFactory.createEmptyBorder(0, 0, 8, 0)));
+        ToolWindowSurfaceStyle.applySectionHeader(panel, 0, 0, 8, 0);
 
         hostField = new JTextField(defaultHost());
         hostField.setColumns(16);
@@ -188,7 +190,7 @@ public class CapturePanel extends JPanel {
         syncSystemProxyCheckBox = new JCheckBox(t(MessageKeys.TOOLBOX_CAPTURE_SYNC_MACOS_PROXY), defaultSyncSystemProxy());
         detailToggleButton = new JToggleButton();
         detailToggleButton.setIcon(IconUtil.createThemed("icons/detail.svg", 16, 16));
-        detailToggleButton.setSelectedIcon(IconUtil.createColored("icons/detail.svg", 16, 16, ModernColors.PRIMARY));
+        detailToggleButton.setSelectedIcon(IconUtil.createColored("icons/detail.svg", 16, 16, ModernColors.getPrimary()));
         detailToggleButton.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL));
         detailToggleButton.setSelected(false);
         detailToggleButton.setPreferredSize(new Dimension(28, 28));
@@ -215,7 +217,7 @@ public class CapturePanel extends JPanel {
 
         captureFilterLabel = new JLabel();
         captureFilterLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
-        captureFilterLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        captureFilterLabel.setForeground(ModernColors.getTextSecondary());
         quickFilterPanel = buildQuickFilterPanel();
         captureTrustChipLabel = new StatusChipLabel();
         captureProxyChipLabel = new StatusChipLabel();
@@ -252,6 +254,7 @@ public class CapturePanel extends JPanel {
 
     private JComponent buildContent() {
         tablePanel = new EnhancedTablePanel(columnNames());
+        ToolWindowSurfaceStyle.applyPanelTreeCard(tablePanel);
         tablePanel.setAutoResizeOnRefresh(false);
         tablePanel.setContextMenuCustomizer(this::appendTableContextMenu);
         JTable table = tablePanel.getTable();
@@ -273,17 +276,18 @@ public class CapturePanel extends JPanel {
         detailTabs.addTab(t(MessageKeys.TOOLBOX_CAPTURE_TAB_RESPONSE), buildResponseDetailTab());
         detailTabs.addTab(t(MessageKeys.TOOLBOX_CAPTURE_TAB_STREAM), buildStreamDetailTab());
         detailTabs.setPreferredSize(new Dimension(360, 200));
+        ToolWindowSurfaceStyle.applyTabbedPaneCard(detailTabs);
 
         JPanel detailHeader = new JPanel(new MigLayout("insets 4 10 4 8, fillx", "[]8[]8[]8[]8[]push[]4[]", "[]"));
-        detailHeader.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor("Separator.foreground")));
-        detailMethodLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_METHOD) + ": -", ModernColors.INFO);
-        detailProtocolLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_PROTOCOL) + ": -", new Color(0, 110, 170));
-        detailStatusLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_STATUS) + ": -", ModernColors.SUCCESS);
-        detailHostLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_HOST) + ": -", new Color(120, 80, 200));
-        detailDurationLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_DURATION) + ": -", new Color(180, 100, 0));
+        ToolWindowSurfaceStyle.applySectionHeader(detailHeader);
+        detailMethodLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_METHOD) + ": -", ModernColors.getInfo());
+        detailProtocolLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_PROTOCOL) + ": -", ModernColors.getSecondary());
+        detailStatusLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_STATUS) + ": -", ModernColors.getSuccess());
+        detailHostLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_HOST) + ": -", ModernColors.getAccent());
+        detailDurationLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_DURATION) + ": -", ModernColors.getWarningDark());
         detailTimeLabel = buildChipLabel("-", null);
         detailTimeLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
-        detailTimeLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        detailTimeLabel.setForeground(ModernColors.getTextSecondary());
 
         CopyButton copyDetailButton = new CopyButton();
         copyDetailButton.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_COPY_DETAIL));
@@ -313,27 +317,27 @@ public class CapturePanel extends JPanel {
         detailHeader.add(closeDetailButton);
 
         JPanel detailPanel = new JPanel(new BorderLayout(0, 0));
+        detailPanel.setOpaque(false);
         detailPanel.setMinimumSize(new Dimension(0, 0));
         detailPanel.add(detailHeader, BorderLayout.NORTH);
         detailPanel.add(detailTabs, BorderLayout.CENTER);
 
-        detailSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, tablePanel, detailPanel);
+        detailSplit = ToolWindowChrome.createVerticalCardSplitPane(tablePanel, detailPanel, 320);
         detailSplit.setResizeWeight(1.0);
-        detailSplit.setDividerSize(3);
-        detailSplit.setContinuousLayout(true);
-        detailSplit.setBorder(BorderFactory.createEmptyBorder());
         SwingUtilities.invokeLater(this::hideDetailPanel);
         return detailSplit;
     }
 
     private void initStatusPopupMenu() {
         statusPopupMenu = new JPopupMenu();
+        ToolWindowSurfaceStyle.applyPopupMenuCard(statusPopupMenu);
 
         JPanel content = new JPanel(new MigLayout(
                 "insets 10, fillx, novisualpadding",
                 "[grow,fill]",
                 "[][][][][]8[]"));
-        content.setBorder(BorderFactory.createLineBorder(UIManager.getColor("Separator.foreground")));
+        ToolWindowSurfaceStyle.applyCard(content);
+        content.setBorder(BorderFactory.createEmptyBorder());
 
         JLabel titleLabel = new JLabel(t(MessageKeys.TOOLBOX_CAPTURE_STATUS_DETAILS));
         titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 0));
@@ -344,8 +348,8 @@ public class CapturePanel extends JPanel {
         statusPopupDetailLabel = new JLabel();
         statusPopupPathLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         statusPopupDetailLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        statusPopupPathLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
-        statusPopupDetailLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        statusPopupPathLabel.setForeground(ModernColors.getTextSecondary());
+        statusPopupDetailLabel.setForeground(ModernColors.getTextSecondary());
         popupSyncSystemProxyCheckBox = new JCheckBox(t(MessageKeys.TOOLBOX_CAPTURE_SYNC_MACOS_PROXY), syncSystemProxyCheckBox.isSelected());
         popupSyncSystemProxyCheckBox.setOpaque(false);
         popupSyncSystemProxyCheckBox.addActionListener(e -> {
@@ -793,15 +797,15 @@ public class CapturePanel extends JPanel {
 
     private Color resolveTrustChipColor(CaptureTrustStatus trustStatus) {
         if (!trustStatus.supported()) {
-            return new Color(120, 120, 120);
+            return ModernColors.getNeutral();
         }
         if (trustStatus.trusted()) {
-            return ModernColors.SUCCESS;
+            return ModernColors.getSuccess();
         }
         if (trustStatus.installed()) {
-            return new Color(180, 100, 0);
+            return ModernColors.getWarningDark();
         }
-        return new Color(160, 60, 60);
+        return ModernColors.getError();
     }
 
     private String resolveProxyChipText() {
@@ -810,15 +814,15 @@ public class CapturePanel extends JPanel {
 
     private Color resolveProxyChipColor() {
         if (!proxyService.isSystemProxySyncSupported()) {
-            return new Color(120, 120, 120);
+            return ModernColors.getNeutral();
         }
         if (proxyService.isSystemProxySynced()) {
-            return ModernColors.INFO;
+            return ModernColors.getInfo();
         }
         if (!proxyService.isRunning() && syncSystemProxyCheckBox != null && syncSystemProxyCheckBox.isSelected()) {
-            return new Color(180, 100, 0);
+            return ModernColors.getWarningDark();
         }
-        return new Color(120, 80, 200);
+        return ModernColors.getAccent();
     }
 
     private CaptureTrustStatus resolveCaptureTrustStatus() throws Exception {
@@ -1176,26 +1180,26 @@ public class CapturePanel extends JPanel {
     }
 
     private JComponent buildRequestDetailTab() {
-        requestPathLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_PATH) + ": -", ModernColors.INFO);
-        requestHeadersLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_HEADERS) + ": -", new Color(120, 80, 200));
-        requestBytesLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_BYTES) + ": -", new Color(20, 150, 100));
-        requestTypeLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_CONTENT_TYPE) + ": -", new Color(180, 100, 0));
+        requestPathLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_PATH) + ": -", ModernColors.getInfo());
+        requestHeadersLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_HEADERS) + ": -", ModernColors.getAccent());
+        requestBytesLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_BYTES) + ": -", ModernColors.getSuccess());
+        requestTypeLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_CONTENT_TYPE) + ": -", ModernColors.getWarningDark());
         return buildDetailTabPanel(requestPathLabel, requestHeadersLabel, requestBytesLabel, requestTypeLabel, requestDetailArea);
     }
 
     private JComponent buildResponseDetailTab() {
-        responseStatusLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_STATUS) + ": -", ModernColors.SUCCESS);
-        responseHeadersLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_HEADERS) + ": -", new Color(120, 80, 200));
-        responseBytesLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_BYTES) + ": -", new Color(20, 150, 100));
-        responseTypeLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_CONTENT_TYPE) + ": -", new Color(180, 100, 0));
+        responseStatusLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_STATUS) + ": -", ModernColors.getSuccess());
+        responseHeadersLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_HEADERS) + ": -", ModernColors.getAccent());
+        responseBytesLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_BYTES) + ": -", ModernColors.getSuccess());
+        responseTypeLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_CONTENT_TYPE) + ": -", ModernColors.getWarningDark());
         return buildDetailTabPanel(responseStatusLabel, responseHeadersLabel, responseBytesLabel, responseTypeLabel, responseDetailArea);
     }
 
     private JComponent buildStreamDetailTab() {
-        streamEventsLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_EVENTS) + ": -", ModernColors.INFO);
-        streamProtocolLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_PROTOCOL) + ": -", new Color(120, 80, 200));
-        JLabel streamBytesLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_BYTES) + ": -", new Color(20, 150, 100));
-        JLabel streamTypeLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_CONTENT_TYPE) + ": -", new Color(180, 100, 0));
+        streamEventsLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_EVENTS) + ": -", ModernColors.getInfo());
+        streamProtocolLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_PROTOCOL) + ": -", ModernColors.getSecondary());
+        JLabel streamBytesLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_BYTES) + ": -", ModernColors.getSuccess());
+        JLabel streamTypeLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_CONTENT_TYPE) + ": -", ModernColors.getWarningDark());
         streamBytesLabel.setVisible(false);
         streamTypeLabel.setVisible(false);
         return buildDetailTabPanel(streamEventsLabel, streamProtocolLabel, streamBytesLabel, streamTypeLabel, streamDetailArea);
@@ -1208,7 +1212,7 @@ public class CapturePanel extends JPanel {
                                            RSyntaxTextArea detailArea) {
         JPanel panel = new JPanel(new BorderLayout(0, 0));
         JPanel header = new JPanel(new MigLayout("insets 6 8 4 8, fillx, novisualpadding", "[]8[]8[]8[]push", "[]"));
-        header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor("Separator.foreground")));
+        ToolWindowSurfaceStyle.applySectionHeader(header);
         header.add(first);
         header.add(second);
         header.add(third);
@@ -1269,32 +1273,7 @@ public class CapturePanel extends JPanel {
     }
 
     private JLabel buildChipLabel(String text, Color bgColor) {
-        JLabel label = new JLabel(text) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                if (bgColor != null) {
-                    Graphics2D g2 = (Graphics2D) g.create();
-                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    g2.setColor(new Color(bgColor.getRed(), bgColor.getGreen(), bgColor.getBlue(), 30));
-                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
-                    g2.setColor(new Color(bgColor.getRed(), bgColor.getGreen(), bgColor.getBlue(), 140));
-                    g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
-                    g2.dispose();
-                }
-                super.paintComponent(g);
-            }
-        };
-        label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        if (bgColor != null) {
-            label.setForeground(ModernColors.isDarkTheme()
-                    ? new Color(Math.min(bgColor.getRed() + 80, 255),
-                    Math.min(bgColor.getGreen() + 80, 255),
-                    Math.min(bgColor.getBlue() + 80, 255))
-                    : bgColor.darker());
-        }
-        label.setBorder(new EmptyBorder(2, 6, 2, 6));
-        label.setOpaque(false);
-        return label;
+        return new ChipLabel(text, bgColor);
     }
 
     private static final class QuickFilterButton extends JToggleButton {
@@ -1324,20 +1303,16 @@ public class CapturePanel extends JPanel {
         }
 
         private void updateColors() {
-            Color borderColor = isSelected() ? ModernColors.PRIMARY : UIManager.getColor("Separator.foreground");
+            Color borderColor = isSelected() ? ModernColors.getPrimary() : ModernColors.getDividerBorderColor();
             if (borderColor == null) {
-                borderColor = ModernColors.NEUTRAL;
+                borderColor = ModernColors.getNeutral();
             }
             if (!isEnabled()) {
-                setForeground(UIManager.getColor("Label.disabledForeground"));
+                setForeground(ModernColors.getTextDisabled());
             } else if (isSelected()) {
-                setForeground(ModernColors.isDarkTheme()
-                        ? new Color(Math.min(borderColor.getRed() + 80, 255),
-                        Math.min(borderColor.getGreen() + 80, 255),
-                        Math.min(borderColor.getBlue() + 80, 255))
-                        : borderColor.darker());
+                setForeground(ChipLabel.foregroundFor(borderColor));
             } else {
-                setForeground(UIManager.getColor("Label.foreground"));
+                setForeground(ModernColors.getTextPrimary());
             }
         }
 
@@ -1345,63 +1320,30 @@ public class CapturePanel extends JPanel {
         protected void paintComponent(Graphics g) {
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            Color borderColor = isSelected() ? ModernColors.PRIMARY : UIManager.getColor("Separator.foreground");
+            Color borderColor = isSelected() ? ModernColors.getPrimary() : ModernColors.getDividerBorderColor();
             if (borderColor == null) {
-                borderColor = ModernColors.NEUTRAL;
+                borderColor = ModernColors.getNeutral();
             }
             Color fillColor;
             if (!isEnabled()) {
-                fillColor = new Color(borderColor.getRed(), borderColor.getGreen(), borderColor.getBlue(), 18);
+                fillColor = ChipLabel.fillFor(borderColor, 18);
             } else if (isSelected()) {
-                fillColor = new Color(borderColor.getRed(), borderColor.getGreen(), borderColor.getBlue(), 40);
+                fillColor = ChipLabel.fillFor(borderColor, 40);
             } else {
-                fillColor = new Color(borderColor.getRed(), borderColor.getGreen(), borderColor.getBlue(), 12);
+                fillColor = ChipLabel.fillFor(borderColor, 12);
             }
             g2.setColor(fillColor);
             g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
-            g2.setColor(new Color(borderColor.getRed(), borderColor.getGreen(), borderColor.getBlue(), isSelected() ? 160 : 90));
+            g2.setColor(ChipLabel.borderFor(borderColor, isSelected() ? 160 : 90));
             g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
             g2.dispose();
             super.paintComponent(g);
         }
     }
 
-    private static final class StatusChipLabel extends JLabel {
-        private Color bgColor;
-
+    private static final class StatusChipLabel extends ChipLabel {
         private StatusChipLabel() {
-            setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-            setBorder(new EmptyBorder(2, 6, 2, 6));
-            setOpaque(false);
-        }
-
-        private void setChip(String text, Color color) {
-            setText(text);
-            bgColor = color;
-            if (bgColor != null) {
-                setForeground(ModernColors.isDarkTheme()
-                        ? new Color(Math.min(bgColor.getRed() + 80, 255),
-                        Math.min(bgColor.getGreen() + 80, 255),
-                        Math.min(bgColor.getBlue() + 80, 255))
-                        : bgColor.darker());
-            } else {
-                setForeground(UIManager.getColor("Label.foreground"));
-            }
-            repaint();
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            if (bgColor != null) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(new Color(bgColor.getRed(), bgColor.getGreen(), bgColor.getBlue(), 30));
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
-                g2.setColor(new Color(bgColor.getRed(), bgColor.getGreen(), bgColor.getBlue(), 140));
-                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
-                g2.dispose();
-            }
-            super.paintComponent(g);
+            super();
         }
     }
 

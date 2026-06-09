@@ -4,6 +4,7 @@ import com.laker.postman.common.component.table.AbstractTablePanel;
 import com.laker.postman.common.component.table.HttpHeaderKeyEasyTextFieldCellEditor;
 import com.laker.postman.common.component.table.EasyTextFieldCellRenderer;
 import com.laker.postman.common.component.table.HttpHeaderValueEasyTextFieldCellEditor;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.request.defaults.HttpRequestDefaults;
 import com.laker.postman.util.HttpHeaderConstants;
 import lombok.extern.slf4j.Slf4j;
@@ -258,6 +259,7 @@ public class EasyRequestHeadersTablePanel extends AbstractTablePanel<Map<String,
     @Override
     protected JPopupMenu createContextPopupMenu(int viewRow) {
         JPopupMenu menu = new JPopupMenu();
+        ToolWindowSurfaceStyle.applyPopupMenuCard(menu);
 
         // Convert view row to model row if needed
         int modelRow = viewRow;

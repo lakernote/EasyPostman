@@ -1,6 +1,7 @@
 package com.laker.postman.panel.collections.tree;
 
 import com.laker.postman.common.UiSingletonFactory;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.tree.CollectionGroupTreeFactory;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.frame.MainFrame;
@@ -27,7 +28,6 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreePath;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -171,7 +171,7 @@ public class CollectionGroupSelectionDialog {
     private static JButton createPrimaryButton() {
         JButton okButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK));
         okButton.setBackground(ModernColors.getPrimary());
-        okButton.setForeground(Color.WHITE);
+        okButton.setForeground(ModernColors.getTextInverse());
         okButton.setFocusPainted(false);
         okButton.setBorderPainted(false);
         okButton.setOpaque(true);
@@ -180,7 +180,7 @@ public class CollectionGroupSelectionDialog {
 
     private static void installButtons(JDialog dialog, JButton cancelButton, JButton okButton, Runnable okAction) {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 12));
-        buttonPanel.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.getDividerBorderColor()));
+        ToolWindowSurfaceStyle.applySectionHeader(buttonPanel);
         cancelButton.setPreferredSize(new Dimension(80, 32));
         okButton.setPreferredSize(new Dimension(80, 32));
         okButton.addActionListener(e -> okAction.run());
@@ -199,10 +199,7 @@ public class CollectionGroupSelectionDialog {
     private static JScrollPane wrapTree(JTree groupTree, int width, int height) {
         JScrollPane treeScroll = new JScrollPane(groupTree);
         treeScroll.setPreferredSize(new Dimension(width, height));
-        treeScroll.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(ModernColors.getDividerBorderColor(), 1),
-                BorderFactory.createEmptyBorder(4, 4, 4, 4)
-        ));
+        ToolWindowSurfaceStyle.applyTreeScrollPaneCard(treeScroll, groupTree);
         return treeScroll;
     }
 

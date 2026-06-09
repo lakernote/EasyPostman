@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.editor;
 
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.common.constants.ThemeColors;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -86,7 +87,7 @@ public class RequestEditorEmptyStateThemeTest {
         assertEquals(RequestEditorEmptyStateTheme.hintForeground(), textPrimary);
         assertEquals(RequestEditorEmptyStateTheme.shortcutForeground(), textHint);
         assertEquals(RequestEditorEmptyStateTheme.hintBackground(), hoverBackground);
-        assertEquals(RequestEditorEmptyStateTheme.hintHoverForeground(), Color.WHITE);
+        assertEquals(RequestEditorEmptyStateTheme.hintHoverForeground(), ModernColors.getTextInverse());
     }
 
     private void assertColorWithAlpha(Color actual, Color expectedRgb, int expectedAlpha) {

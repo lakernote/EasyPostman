@@ -1,6 +1,7 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
 import com.laker.postman.request.model.HttpHeader;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.EditButton;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.request.defaults.GeneratedRequestHeaderPolicy;
@@ -78,7 +79,7 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
         // 设置初始文本（隐藏状态显示数量）
         int count = generatedHeaderPolicy.generatedHeaderCount();
         String countText = "(" + count + ")";
-        String countHtml = "<span style='color:#009900;font-weight:bold;'>" + countText + "</span>";
+        String countHtml = createSuccessCountHtml(countText);
         label.setText("<html>" + countHtml + "</html>");
 
         label.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -93,10 +94,12 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
 
     private void initializeComponents() {
         setLayout(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(this);
         // 设置边距
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         // Create header panel
         JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 1, 0));
+        ToolWindowSurfaceStyle.applyCard(headerPanel);
         JLabel label = new JLabel("Headers");
 
         // Create eye button and count label with local factory methods
@@ -156,7 +159,7 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
         if (!showDefaultHeaders) {
             int hiddenCount = generatedHeaderPolicy.generatedHeaderCount();
             String countText = "(" + hiddenCount + ")";
-            String countHtml = "<span style='color:#009900;font-weight:bold;'>" + countText + "</span>";
+            String countHtml = createSuccessCountHtml(countText);
             countLabel.setText("<html>" + countHtml + "</html>");
             countLabel.setVisible(true);
         } else {
@@ -174,6 +177,11 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
 
         // Apply filter
         applyCurrentFilter();
+    }
+
+    private String createSuccessCountHtml(String countText) {
+        return "<span style='color:" + ModernColors.toHtmlColor(ModernColors.getSuccess())
+                + ";font-weight:bold;'>" + countText + "</span>";
     }
 
     private void applyCurrentFilter() {

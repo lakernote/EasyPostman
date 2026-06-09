@@ -2,6 +2,9 @@ package com.laker.postman.panel.workspace;
 
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.UiSingletonPanel;
+import com.laker.postman.common.component.ToolWindowActionToolbar;
+import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.ClearButton;
 import com.laker.postman.common.component.button.PlusButton;
 import com.laker.postman.common.component.button.RefreshButton;
@@ -24,8 +27,6 @@ import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import javax.swing.border.Border;
-import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
@@ -59,28 +60,28 @@ public class WorkspacePanel extends UiSingletonPanel {
     protected void initUI() {
         workspaceService = WorkspaceService.getInstance();
         setLayout(new BorderLayout());
-
-        // 创建顶部工具栏
-        add(createToolbar(), BorderLayout.NORTH);
+        ToolWindowSurfaceStyle.applyBackground(this);
 
         // 创建主要内容区域 - 垂直分割面板
-        JSplitPane mainSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+        JSplitPane mainSplitPane;
 
         // 上半部分 - 水平分割面板
-        JSplitPane topSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        topSplitPane.setLeftComponent(createWorkspaceListPanel());
-        topSplitPane.setRightComponent(createInfoPanel());
-        topSplitPane.setDividerLocation(300);
-        topSplitPane.setDividerSize(3);
+        JPanel leftPanel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(leftPanel);
+        leftPanel.add(createToolbar(), BorderLayout.NORTH);
+        leftPanel.add(createWorkspaceListPanel(), BorderLayout.CENTER);
+
+        JSplitPane topSplitPane = ToolWindowChrome.createHorizontalCardSplitPane(
+                leftPanel,
+                createInfoPanel(),
+                ToolWindowChrome.DEFAULT_SIDE_WIDTH
+        );
         topSplitPane.setResizeWeight(0.4);
 
         // 下半部分 - 日志区域
         JPanel logPanel = createLogPanel();
 
-        mainSplitPane.setTopComponent(topSplitPane);
-        mainSplitPane.setBottomComponent(logPanel);
-        mainSplitPane.setDividerLocation(400);
-        topSplitPane.setDividerSize(3);
+        mainSplitPane = ToolWindowChrome.createVerticalStackedCardSplitPane(topSplitPane, logPanel, 400);
         mainSplitPane.setResizeWeight(0.7);
 
         add(mainSplitPane, BorderLayout.CENTER);
@@ -93,35 +94,22 @@ public class WorkspacePanel extends UiSingletonPanel {
      * 创建工具栏
      */
     private JPanel createToolbar() {
-        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        toolbar.setBorder(createPanelBorder());
-
         // 新建工作区按钮
         JButton newButton = new PlusButton();
         newButton.addActionListener(e -> showCreateWorkspaceDialog());
-        toolbar.add(newButton);
 
         // 刷新按钮
         JButton refreshButton = new RefreshButton();
         refreshButton.addActionListener(e -> refreshWorkspaceList());
-        toolbar.add(refreshButton);
-
-        return toolbar;
+        return ToolWindowActionToolbar.left(newButton, refreshButton);
     }
-
-    private Border createPanelBorder() {
-        return BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()),
-                BorderFactory.createEmptyBorder(5, 5, 5, 5)
-        );
-    }
-
 
     /**
      * 创建工作区列表面板
      */
     private JScrollPane createWorkspaceListPanel() {
         JPanel panel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(panel);
         // 创建列表模型和列表
         listModel = new DefaultListModel<>();
         workspaceList = new JList<>(listModel);
@@ -166,6 +154,7 @@ public class WorkspacePanel extends UiSingletonPanel {
         setupDragAndDrop();
 
         JScrollPane scrollPane = new JScrollPane(workspaceList);
+        ToolWindowSurfaceStyle.applyListScrollPaneCard(scrollPane, workspaceList);
         panel.add(scrollPane, BorderLayout.CENTER);
 
         return scrollPane;
@@ -176,6 +165,7 @@ public class WorkspacePanel extends UiSingletonPanel {
      */
     private JPanel createInfoPanel() {
         infoPanel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(infoPanel);
         infoPanel.setPreferredSize(new Dimension(400, 0));
 
         JLabel welcomeLabel = new JLabel("<html><center>" +
@@ -183,7 +173,7 @@ public class WorkspacePanel extends UiSingletonPanel {
                 "</center></html>");
         welcomeLabel.setHorizontalAlignment(SwingConstants.CENTER);
         welcomeLabel.setFont(FontsUtil.getDefaultFont(Font.ITALIC));
-        welcomeLabel.setForeground(Color.GRAY);
+        welcomeLabel.setForeground(ModernColors.getTextHint());
 
         infoPanel.add(welcomeLabel, BorderLayout.CENTER);
 
@@ -195,24 +185,25 @@ public class WorkspacePanel extends UiSingletonPanel {
      */
     private JPanel createLogPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        TitledBorder border = BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.MENU_FILE_LOG));
-        panel.setBorder(border);
+        ToolWindowSurfaceStyle.applyCard(panel);
+        panel.setBorder(BorderFactory.createEmptyBorder(6, 8, 8, 8));
         panel.setPreferredSize(new Dimension(0, 150));
 
         // 创建日志文本区域
         logArea = new JTextArea();
         logArea.setEditable(false);
         logArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        ToolWindowSurfaceStyle.applyTextComponentCard(logArea);
 
         JScrollPane logScrollPane = new JScrollPane(logArea);
         logScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        ToolWindowSurfaceStyle.applyScrollPaneCard(logScrollPane);
         panel.add(logScrollPane, BorderLayout.CENTER);
 
         // 添加清空日志按钮
-        JPanel logToolbar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 2));
         ClearButton clearLogButton = new ClearButton();
         clearLogButton.addActionListener(e -> logArea.setText(""));
-        logToolbar.add(clearLogButton);
+        JPanel logToolbar = ToolWindowActionToolbar.right(clearLogButton);
         panel.add(logToolbar, BorderLayout.SOUTH);
 
         return panel;
@@ -307,6 +298,7 @@ public class WorkspacePanel extends UiSingletonPanel {
      */
     private JPopupMenu createWorkspaceContextMenu(Workspace workspace) {
         JPopupMenu menu = new JPopupMenu();
+        ToolWindowSurfaceStyle.applyPopupMenuCard(menu);
 
         addSwitchMenuItem(menu, workspace);
         addGitMenuItems(menu, workspace);
@@ -794,7 +786,7 @@ public class WorkspacePanel extends UiSingletonPanel {
                     "</center>" + HTML_END);
             welcomeLabel.setHorizontalAlignment(SwingConstants.CENTER);
             welcomeLabel.setFont(FontsUtil.getDefaultFont(Font.ITALIC));
-            welcomeLabel.setForeground(Color.GRAY);
+            welcomeLabel.setForeground(ModernColors.getTextSecondary());
             infoPanel.add(welcomeLabel, BorderLayout.CENTER);
         }
 

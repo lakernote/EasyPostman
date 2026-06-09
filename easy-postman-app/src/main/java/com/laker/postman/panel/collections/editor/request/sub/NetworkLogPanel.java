@@ -3,6 +3,7 @@ package com.laker.postman.panel.collections.editor.request.sub;
 import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.runtime.observation.NetworkLogEvent;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -32,23 +33,28 @@ public class NetworkLogPanel extends JPanel {
 
     public NetworkLogPanel() {
         setLayout(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(this);
         // 设置边距
         setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 5));
 
         // 创建 TabbedPane
         tabbedPane = new JTabbedPane(SwingConstants.LEFT);
+        ToolWindowSurfaceStyle.applyTabbedPaneCard(tabbedPane);
 
         // 1. Network Log Tab
         logArea = new JTextPane();
         logArea.setEditable(false);
         logArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        ToolWindowSurfaceStyle.applyTextComponentCard(logArea);
         doc = logArea.getStyledDocument();
         JScrollPane logScroll = new JScrollPane(logArea);
+        ToolWindowSurfaceStyle.applyScrollPaneCard(logScroll);
         tabbedPane.addTab("Log", logScroll);
 
         // 2. Request Details Tab
         requestDetailsPane = createDetailPane();
         JScrollPane requestDetailsScroll = new JScrollPane(requestDetailsPane);
+        ToolWindowSurfaceStyle.applyScrollPaneCard(requestDetailsScroll);
         requestDetailsScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         requestDetailsScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         tabbedPane.addTab("Request", requestDetailsScroll);
@@ -56,6 +62,7 @@ public class NetworkLogPanel extends JPanel {
         // 3. Response Details Tab
         responseDetailsPane = createDetailPane();
         JScrollPane responseDetailsScroll = new JScrollPane(responseDetailsPane);
+        ToolWindowSurfaceStyle.applyScrollPaneCard(responseDetailsScroll);
         responseDetailsScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         responseDetailsScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         tabbedPane.addTab("Response", responseDetailsScroll);
@@ -71,6 +78,7 @@ public class NetworkLogPanel extends JPanel {
         pane.setEditable(false);
         pane.setContentType("text/html");
         pane.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        ToolWindowSurfaceStyle.applyTextComponentCard(pane);
         return pane;
     }
 

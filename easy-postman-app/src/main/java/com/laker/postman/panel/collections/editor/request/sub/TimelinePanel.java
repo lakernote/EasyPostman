@@ -1,6 +1,8 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
 import com.laker.postman.http.runtime.model.HttpEventInfo;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -45,7 +47,7 @@ public class TimelinePanel extends JPanel {
 
     public TimelinePanel(List<Stage> stages, HttpEventInfo httpEventInfo) {
         setLayout(new BorderLayout()); // 明确使用 BorderLayout
-        setOpaque(true); // 设置为不透明
+        ToolWindowSurfaceStyle.applyCard(this);
         this.httpEventInfo = httpEventInfo;
         setStages(stages);
         setupMouseListeners(); // 设置鼠标监听器
@@ -261,7 +263,7 @@ public class TimelinePanel extends JPanel {
         // SSL Certificate Warning - 如果有警告则显示
         if (httpEventInfo != null && httpEventInfo.getSslCertWarning() != null && !httpEventInfo.getSslCertWarning().isEmpty()) {
             g2.setFont(FontsUtil.getDefaultFont(Font.BOLD));
-            g2.setColor(new Color(220, 53, 69)); // 红色警告
+            g2.setColor(TimelineTheme.certificateWarning());
             g2.drawString("Cert Warning:", labelX, infoY);
             g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
 
@@ -441,8 +443,7 @@ public class TimelinePanel extends JPanel {
             g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
             int strW = g2.getFontMetrics().stringWidth(ms);
             if (barW > strW + 12) {
-                // 使用更清晰的白色文字
-                g2.setColor(Color.WHITE);
+                g2.setColor(ModernColors.getTextInverse());
                 g2.drawString(ms, currentX + barW - strW - 6, barY + textYOffset);
             }
             // desc 区域

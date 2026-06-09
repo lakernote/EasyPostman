@@ -1,6 +1,8 @@
 package com.laker.postman.panel.performance.config;
 
 import com.laker.postman.common.component.CsvDataPanel;
+import com.laker.postman.common.component.ToolWindowActionToolbar;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.performance.model.PerformanceTreeNode;
@@ -46,6 +48,7 @@ public class CsvDataSetPropertyPanel extends JPanel {
 
     public CsvDataSetPropertyPanel() {
         setLayout(new BorderLayout(0, 12));
+        ToolWindowSurfaceStyle.applyCard(this);
         setBorder(BorderFactory.createEmptyBorder(12, 16, 12, 16));
 
         csvDataPanel.setContextHelpText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_CSV_DATA_SET_SCOPE_NOTE));
@@ -70,16 +73,12 @@ public class CsvDataSetPropertyPanel extends JPanel {
         titlePanel.add(statusLabel);
         topRow.add(titlePanel, BorderLayout.WEST);
 
-        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        actionPanel.setOpaque(false);
-
         JButton importButton = createActionButton(
                 MessageKeys.CSV_ACTION_IMPORT,
                 MessageKeys.CSV_MENU_IMPORT_FILE,
                 "icons/import.svg",
                 true);
         importButton.addActionListener(e -> csvDataPanel.importCsvFile());
-        actionPanel.add(importButton);
 
         JButton manualButton = createActionButton(
                 MessageKeys.CSV_ACTION_CREATE,
@@ -87,7 +86,6 @@ public class CsvDataSetPropertyPanel extends JPanel {
                 "icons/plus.svg",
                 false);
         manualButton.addActionListener(e -> csvDataPanel.showManualCreateDialog());
-        actionPanel.add(manualButton);
 
         manageButton = createActionButton(
                 MessageKeys.CSV_ACTION_MANAGE,
@@ -95,7 +93,6 @@ public class CsvDataSetPropertyPanel extends JPanel {
                 "icons/code.svg",
                 false);
         manageButton.addActionListener(e -> csvDataPanel.showCsvDataManageDialog());
-        actionPanel.add(manageButton);
 
         clearButton = createActionButton(
                 MessageKeys.CSV_ACTION_CLEAR,
@@ -103,7 +100,12 @@ public class CsvDataSetPropertyPanel extends JPanel {
                 "icons/clear.svg",
                 false);
         clearButton.addActionListener(e -> csvDataPanel.clearCsvData());
-        actionPanel.add(clearButton);
+        JPanel actionPanel = ToolWindowActionToolbar.inlineRight(
+                importButton,
+                manualButton,
+                manageButton,
+                clearButton
+        );
 
         topRow.add(actionPanel, BorderLayout.EAST);
         headerPanel.add(topRow, BorderLayout.NORTH);
@@ -122,7 +124,7 @@ public class CsvDataSetPropertyPanel extends JPanel {
         previewScrollPane = new JScrollPane(previewTable,
                 ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        previewScrollPane.setBorder(BorderFactory.createLineBorder(ModernColors.getBorderLightColor()));
+        ToolWindowSurfaceStyle.applyTableScrollPaneCard(previewScrollPane, previewTable);
         previewScrollPane.setPreferredSize(new Dimension(0, PREVIEW_MIN_HEIGHT));
         previewScrollPane.getViewport().addComponentListener(new ComponentAdapter() {
             @Override
@@ -193,11 +195,8 @@ public class CsvDataSetPropertyPanel extends JPanel {
 
     private JPanel createEmptyStatePanel() {
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setOpaque(false);
-        panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(ModernColors.getBorderLightColor()),
-                BorderFactory.createEmptyBorder(28, 24, 28, 24)
-        ));
+        ToolWindowSurfaceStyle.applyCard(panel);
+        panel.setBorder(BorderFactory.createEmptyBorder(28, 24, 28, 24));
 
         JPanel content = new JPanel();
         content.setOpaque(false);
@@ -221,8 +220,6 @@ public class CsvDataSetPropertyPanel extends JPanel {
 
         content.add(Box.createVerticalStrut(16));
 
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
-        actions.setOpaque(false);
         JButton importButton = createActionButton(
                 MessageKeys.CSV_ACTION_IMPORT,
                 MessageKeys.CSV_MENU_IMPORT_FILE,
@@ -235,8 +232,7 @@ public class CsvDataSetPropertyPanel extends JPanel {
                 "icons/plus.svg",
                 false);
         manualButton.addActionListener(e -> csvDataPanel.showManualCreateDialog());
-        actions.add(importButton);
-        actions.add(manualButton);
+        JPanel actions = ToolWindowActionToolbar.inlineLeft(importButton, manualButton);
         actions.setAlignmentX(Component.CENTER_ALIGNMENT);
         content.add(actions);
 

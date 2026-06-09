@@ -5,6 +5,8 @@ import com.laker.postman.performance.core.assertion.AssertionType;
 
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.panel.performance.PerformanceStagePropertyLayout;
 import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -53,7 +55,7 @@ public class AssertionPropertyPanel extends JPanel {
         setLayout(new GridBagLayout());
         setMaximumSize(new Dimension(820, 112));
         setPreferredSize(new Dimension(560, 96));
-        setBorder(BorderFactory.createEmptyBorder(10, 18, 8, 18));
+        PerformanceStagePropertyLayout.applyCompactBorder(this);
 
         typeCombo = new JComboBox<>(AssertionType.values());
         typeCombo.setRenderer(new AssertionTypeRenderer());
@@ -71,6 +73,7 @@ public class AssertionPropertyPanel extends JPanel {
 
         inputCardLayout = new CardLayout();
         inputPanel = new JPanel(inputCardLayout);
+        inputPanel.setOpaque(false);
         inputPanel.add(createNumericPanel(), CARD_NUMERIC);
         inputPanel.add(createContainsPanel(), CARD_CONTAINS);
         inputPanel.add(createJsonPathPanel(), CARD_JSON_PATH);
@@ -79,6 +82,7 @@ public class AssertionPropertyPanel extends JPanel {
         inputPanel.add(createHeaderEqualsPanel(), CARD_HEADER_EQUALS);
 
         JPanel formRow = new JPanel(new GridBagLayout());
+        formRow.setOpaque(false);
         addToPanel(formRow, 0, 0, new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_TYPE_LABEL)), 0);
         addToPanel(formRow, 1, 0, typeCombo, 0);
         addToPanel(formRow, 2, 0, inputPanel, 1.0);
@@ -89,6 +93,7 @@ public class AssertionPropertyPanel extends JPanel {
 
         hintLabel = new JLabel();
         hintLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        hintLabel.setForeground(ModernColors.getTextSecondary());
         GridBagConstraints hintGbc = baseGbc(0, 1);
         hintGbc.insets = new Insets(2, 6, 0, 6);
         hintGbc.weightx = 1.0;
@@ -221,6 +226,7 @@ public class AssertionPropertyPanel extends JPanel {
 
     private JPanel createNumericPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
+        panel.setOpaque(false);
         addToPanel(panel, 0, 0, new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_ASSERTION_OPERATOR)), 0);
         addToPanel(panel, 1, 0, operatorCombo, 0);
         addToPanel(panel, 2, 0, numericValueLabel, 0);
@@ -297,6 +303,7 @@ public class AssertionPropertyPanel extends JPanel {
 
     private JPanel createSingleFieldPanel(String labelText, Component field) {
         JPanel panel = new JPanel(new GridBagLayout());
+        panel.setOpaque(false);
         addToPanel(panel, 0, 0, new JLabel(labelText), 0);
         addToPanel(panel, 1, 0, field, 1.0);
         return panel;
@@ -307,6 +314,7 @@ public class AssertionPropertyPanel extends JPanel {
                                        String secondLabelText,
                                        Component secondField) {
         JPanel panel = new JPanel(new GridBagLayout());
+        panel.setOpaque(false);
         addToPanel(panel, 0, 0, new JLabel(firstLabelText), 0);
         addToPanel(panel, 1, 0, firstField, 0.52);
         addToPanel(panel, 2, 0, new JLabel(secondLabelText), 0);

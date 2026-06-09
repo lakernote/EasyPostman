@@ -1,6 +1,10 @@
 package com.laker.postman.panel.toolbox;
 
 import com.formdev.flatlaf.extras.components.FlatTextField;
+import com.laker.postman.common.component.ToolWindowActionToolbar;
+import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.CronExpressionUtil;
 import com.laker.postman.util.CronExpressionUtil.CronMode;
 import com.laker.postman.util.FontsUtil;
@@ -9,7 +13,6 @@ import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import javax.swing.border.TitledBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
@@ -62,8 +65,10 @@ public class CronPanel extends JPanel {
     private void initUI() {
         setLayout(new BorderLayout(5, 5));
         setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
+        ToolWindowSurfaceStyle.applyCard(this);
         add(buildModeBar(), BorderLayout.NORTH);
         JTabbedPane tabbedPane = new JTabbedPane();
+        ToolWindowSurfaceStyle.applyTabbedPaneCard(tabbedPane);
         tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_TAB_PARSE), buildParsePanel());
         tabbedPane.addTab(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_TAB_GENERATE), buildGeneratePanel());
         add(tabbedPane, BorderLayout.CENTER);
@@ -74,8 +79,7 @@ public class CronPanel extends JPanel {
     // =========================================================
     private JPanel buildModeBar() {
         JPanel bar = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
-        bar.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0,
-                UIManager.getColor("Separator.foreground")));
+        bar.setOpaque(false);
 
         JLabel lbl = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_MODE_LABEL) + ":");
         lbl.setFont(lbl.getFont().deriveFont(Font.BOLD));
@@ -95,9 +99,9 @@ public class CronPanel extends JPanel {
 
         modeBadge = new JLabel("S  M  H  D  Mo  W  [Y]");
         modeBadge.setOpaque(true);
-        modeBadge.setBackground(new Color(0x4C8CF8));
-        modeBadge.setForeground(Color.WHITE);
-        modeBadge.setFont(modeBadge.getFont().deriveFont(Font.BOLD, 11f));
+        modeBadge.setBackground(ModernColors.getPrimary());
+        modeBadge.setForeground(ModernColors.getTextInverse());
+        modeBadge.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -2));
         modeBadge.setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
         bar.add(Box.createHorizontalStrut(8));
         bar.add(modeBadge);
@@ -113,23 +117,28 @@ public class CronPanel extends JPanel {
     private JPanel buildParsePanel() {
         JPanel panel = new JPanel(new BorderLayout(8, 8));
         panel.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
+        panel.setOpaque(false);
 
         // ── input area ──────────────────────────────────────────────
         JPanel inputPanel = new JPanel(new BorderLayout(5, 4));
+        inputPanel.setOpaque(false);
 
         formatHintLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_FORMAT_SPRING));
-        formatHintLabel.setFont(formatHintLabel.getFont().deriveFont(Font.ITALIC, 11f));
-        formatHintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        formatHintLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.ITALIC, -2));
+        formatHintLabel.setForeground(ModernColors.getTextSecondary());
         inputPanel.add(formatHintLabel, BorderLayout.NORTH);
 
         JPanel fieldRow = new JPanel(new BorderLayout(5, 0));
+        fieldRow.setOpaque(false);
         cronField = new FlatTextField();
         cronField.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +2));
         cronField.setText("0 0 12 * * ?");
         cronField.setPlaceholderText(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_PLACEHOLDER_SPRING));
+        ToolWindowSurfaceStyle.applyTextComponentInput(cronField);
         fieldRow.add(cronField, BorderLayout.CENTER);
 
         JPanel countPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        countPanel.setOpaque(false);
         countPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_NEXT_COUNT) + ":"));
         nextCountSpinner = new JSpinner(new SpinnerNumberModel(10, 1, 50, 1));
         nextCountSpinner.setPreferredSize(new Dimension(60, 24));
@@ -137,36 +146,29 @@ public class CronPanel extends JPanel {
         fieldRow.add(countPanel, BorderLayout.EAST);
         inputPanel.add(fieldRow, BorderLayout.CENTER);
 
-        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 4));
         JButton parseBtn  = createAccentButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_PARSE));
         JButton copyBtn   = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_COPY));
         JButton clearBtn  = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLEAR));
-        btnRow.add(parseBtn);
-        btnRow.add(copyBtn);
-        btnRow.add(clearBtn);
+        JPanel btnRow = ToolWindowActionToolbar.inlineLeft(parseBtn, copyBtn, clearBtn);
         inputPanel.add(btnRow, BorderLayout.SOUTH);
         panel.add(inputPanel, BorderLayout.NORTH);
 
         // ── split: description (top) + execution times (bottom) ─────
-        JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-        split.setResizeWeight(0.4);   // 40% description, 60% table
-        split.setBorder(null);
-
         JPanel descPanel = new JPanel(new BorderLayout(4, 4));
-        descPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(),
-                I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_DESCRIPTION),
-                TitledBorder.LEFT, TitledBorder.TOP));
+        descPanel.setOpaque(false);
+        descPanel.add(createSectionTitle(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_DESCRIPTION)), BorderLayout.NORTH);
         descriptionArea = new JTextArea();
         descriptionArea.setEditable(false);
         descriptionArea.setLineWrap(true);
         descriptionArea.setWrapStyleWord(true);
-        descPanel.add(new JScrollPane(descriptionArea), BorderLayout.CENTER);
-        split.setTopComponent(descPanel);
+        ToolWindowSurfaceStyle.applyTextComponentCard(descriptionArea);
+        JScrollPane descScrollPane = new JScrollPane(descriptionArea);
+        ToolWindowSurfaceStyle.applyScrollPaneCard(descScrollPane);
+        descPanel.add(descScrollPane, BorderLayout.CENTER);
 
         JPanel tablePanel = new JPanel(new BorderLayout(4, 4));
-        tablePanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(),
-                I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_NEXT_EXECUTIONS),
-                TitledBorder.LEFT, TitledBorder.TOP));
+        tablePanel.setOpaque(false);
+        tablePanel.add(createSectionTitle(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_NEXT_EXECUTIONS)), BorderLayout.NORTH);
         String[] cols = {"#", I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_EXECUTION_TIME)};
         tableModel = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
@@ -175,8 +177,12 @@ public class CronPanel extends JPanel {
         nextExecutionTable.getColumnModel().getColumn(0).setMaxWidth(50);
         // Double-click a row → copy the expression back to the input field
         nextExecutionTable.setToolTipText(null);
-        tablePanel.add(new JScrollPane(nextExecutionTable), BorderLayout.CENTER);
-        split.setBottomComponent(tablePanel);
+        JScrollPane tableScrollPane = new JScrollPane(nextExecutionTable);
+        ToolWindowSurfaceStyle.applyTableScrollPaneCard(tableScrollPane, nextExecutionTable);
+        tablePanel.add(tableScrollPane, BorderLayout.CENTER);
+
+        JSplitPane split = ToolWindowChrome.createVerticalCardSplitPane(descPanel, tablePanel, 180);
+        split.setResizeWeight(0.4);   // 40% description, 60% table
         panel.add(split, BorderLayout.CENTER);
 
         // ── events ───────────────────────────────────────────────────
@@ -210,14 +216,17 @@ public class CronPanel extends JPanel {
     private JPanel buildGeneratePanel() {
         JPanel panel = new JPanel(new BorderLayout(8, 8));
         panel.setBorder(BorderFactory.createEmptyBorder(8, 0, 0, 0));
+        panel.setOpaque(false);
 
         JPanel top = new JPanel();
         top.setLayout(new BoxLayout(top, BoxLayout.Y_AXIS));
+        top.setOpaque(false);
 
         JPanel fmtRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 2));
+        fmtRow.setOpaque(false);
         generateFormatLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_FORMAT_SPRING));
-        generateFormatLabel.setFont(generateFormatLabel.getFont().deriveFont(Font.ITALIC, 11f));
-        generateFormatLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        generateFormatLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.ITALIC, -2));
+        generateFormatLabel.setForeground(ModernColors.getTextSecondary());
         fmtRow.add(generateFormatLabel);
         top.add(fmtRow);
         top.add(Box.createVerticalStrut(4));
@@ -239,40 +248,41 @@ public class CronPanel extends JPanel {
         top.add(createFieldRow(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_FIELD_WEEK)   + ":", weekCombo));
 
         yearRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
+        yearRow.setOpaque(false);
         JLabel yearLbl = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_YEAR_OPTIONAL) + ":");
         yearLbl.setPreferredSize(new Dimension(160, 25));
         yearField = new FlatTextField();
         yearField.setColumns(10);
         yearField.setPlaceholderText(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_YEAR_PLACEHOLDER));
+        ToolWindowSurfaceStyle.applyTextComponentInput(yearField);
         yearRow.add(yearLbl);
         yearRow.add(yearField);
         top.add(yearRow);
         top.add(Box.createVerticalStrut(6));
 
-        JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
         JButton generateBtn = createAccentButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_GENERATE));
         JButton copyGenBtn  = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_COPY));
         JButton presetBtn   = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_QUICK_PRESETS) + " ▾");
-        btnRow.add(generateBtn);
-        btnRow.add(copyGenBtn);
-        btnRow.add(presetBtn);
+        JPanel btnRow = ToolWindowActionToolbar.inlineLeft(generateBtn, copyGenBtn, presetBtn);
         top.add(btnRow);
         top.add(Box.createVerticalStrut(4));
 
         // Result row
         JPanel resultRow = new JPanel(new BorderLayout(6, 0));
+        resultRow.setOpaque(false);
         resultRow.setBorder(BorderFactory.createEmptyBorder(0, 4, 2, 4));
         resultRow.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_GENERATED) + ":"), BorderLayout.WEST);
         generatedField = new JTextField();
         generatedField.setEditable(false);
         generatedField.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +2));
+        ToolWindowSurfaceStyle.applyTextComponentCard(generatedField);
         resultRow.add(generatedField, BorderLayout.CENTER);
         top.add(resultRow);
 
         // Live description of generated expression
         generateDescLabel = new JLabel(" ");
-        generateDescLabel.setFont(generateDescLabel.getFont().deriveFont(Font.ITALIC, 11f));
-        generateDescLabel.setForeground(new Color(0x2AA665));
+        generateDescLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.ITALIC, -2));
+        generateDescLabel.setForeground(ModernColors.getSuccess());
         generateDescLabel.setBorder(BorderFactory.createEmptyBorder(0, 6, 4, 4));
         top.add(generateDescLabel);
 
@@ -280,11 +290,13 @@ public class CronPanel extends JPanel {
 
         // Preset panel — double-click to use
         JPanel presetPanel = new JPanel(new BorderLayout(4, 4));
-        presetPanel.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_COMMON_PRESETS)));
+        presetPanel.setOpaque(false);
+        presetPanel.add(createSectionTitle(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_COMMON_PRESETS)), BorderLayout.NORTH);
         presetArea = new JTextArea();
         presetArea.setEditable(false);
-        presetArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        presetArea.setFont(FontsUtil.getMonospacedFontWithOffset(Font.PLAIN, -1));
         presetArea.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_TAB_PARSE) + " ← double-click");
+        ToolWindowSurfaceStyle.applyTextComponentCard(presetArea);
         updatePresetArea();
 
         // Double-click on a preset line → extract expression and use it
@@ -294,7 +306,9 @@ public class CronPanel extends JPanel {
             }
         });
 
-        presetPanel.add(new JScrollPane(presetArea), BorderLayout.CENTER);
+        JScrollPane presetScrollPane = new JScrollPane(presetArea);
+        ToolWindowSurfaceStyle.applyScrollPaneCard(presetScrollPane);
+        presetPanel.add(presetScrollPane, BorderLayout.CENTER);
         panel.add(presetPanel, BorderLayout.CENTER);
 
         // Live-update generated expression and description on any combo change
@@ -353,7 +367,7 @@ public class CronPanel extends JPanel {
         generatedField.setText(cron);
         if (CronExpressionUtil.isValid(cron, currentMode)) {
             generateDescLabel.setText(buildDescription(cron, currentMode));
-            generateDescLabel.setForeground(new Color(0x2AA665));
+            generateDescLabel.setForeground(ModernColors.getSuccess());
         } else {
             generateDescLabel.setText(" ");
         }
@@ -420,7 +434,7 @@ public class CronPanel extends JPanel {
         boolean linux = (currentMode == CronMode.LINUX_CRONTAB);
 
         modeBadge.setText(linux ? "M  H  D  Mo  W" : "S  M  H  D  Mo  W  [Y]");
-        modeBadge.setBackground(linux ? new Color(0x2AA665) : new Color(0x4C8CF8));
+        modeBadge.setBackground(linux ? ModernColors.getSuccess() : ModernColors.getPrimary());
 
         formatHintLabel.setText(linux
                 ? I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_FORMAT_LINUX)
@@ -667,6 +681,7 @@ public class CronPanel extends JPanel {
 
     private void showPresetMenu(JButton anchor, JTextField target) {
         JPopupMenu menu = new JPopupMenu();
+        ToolWindowSurfaceStyle.applyPopupMenuCard(menu);
         if (currentMode == CronMode.LINUX_CRONTAB) {
             addPreset(menu, target, I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_PRESET_EVERY_MINUTE),  "* * * * *");
             addPreset(menu, target, I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_PRESET_EVERY_5MIN),    "*/5 * * * *");
@@ -713,11 +728,20 @@ public class CronPanel extends JPanel {
 
     private JPanel createFieldRow(String label, JComboBox<String> combo) {
         JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
+        row.setOpaque(false);
         JLabel lbl = new JLabel(label);
         lbl.setPreferredSize(new Dimension(160, 25));
         row.add(lbl);
         row.add(combo);
         return row;
+    }
+
+    private JLabel createSectionTitle(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 0));
+        label.setForeground(ModernColors.getTextPrimary());
+        label.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+        return label;
     }
 
     /** Copy text to clipboard and briefly change the button label to give feedback. */

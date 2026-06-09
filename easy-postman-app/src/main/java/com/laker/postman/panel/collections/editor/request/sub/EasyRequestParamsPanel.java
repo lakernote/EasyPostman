@@ -3,6 +3,7 @@ package com.laker.postman.panel.collections.editor.request.sub;
 import com.laker.postman.request.model.HttpParam;
 
 
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.EditButton;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
@@ -31,11 +32,13 @@ public class EasyRequestParamsPanel extends JPanel {
 
     private void initializeComponents() {
         setLayout(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(this);
         // 设置边距
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         // Create header panel
         JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 1, 0));
+        ToolWindowSurfaceStyle.applyCard(headerPanel);
         JLabel label = new JLabel("Params");
 
         // Create Bulk Edit button

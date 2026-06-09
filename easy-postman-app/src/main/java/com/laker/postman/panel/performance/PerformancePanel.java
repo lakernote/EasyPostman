@@ -13,12 +13,13 @@ import com.laker.postman.performance.core.model.PerformanceTrendWindowCollector;
 
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.DebouncedSaveSupport;
+import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.ExportButton;
 import com.laker.postman.common.component.button.RefreshButton;
 import com.laker.postman.common.component.button.StartButton;
 import com.laker.postman.common.component.button.StopButton;
 import com.laker.postman.common.constants.AppConstants;
-import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
@@ -174,6 +175,7 @@ public class PerformancePanel extends UiSingletonPanel {
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
+        ToolWindowSurfaceStyle.applyBackground(this);
         this.persistenceService = BeanFactory.getBean(PerformancePersistenceService.class);
         initTimerManager();
         PerformancePlanWorkspace persistedWorkspace = persistenceService.loadWorkspace();
@@ -293,19 +295,6 @@ public class PerformancePanel extends UiSingletonPanel {
         timerManager.setTrendSamplingCallback(statisticsCoordinator::sampleTrendData);
         timerManager.setReportRefreshCallback(statisticsCoordinator::refreshReport);
 
-        JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, treeSection.scrollPane(), propertyPanel);
-        mainSplit.setDividerLocation(360);
-        mainSplit.setDividerSize(3);
-        mainSplit.setContinuousLayout(true);
-
-        JSplitPane verticalSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, mainSplit, resultSection.resultPanel());
-        verticalSplit.setDividerSize(3);
-        verticalSplit.setContinuousLayout(true);
-        verticalSplit.setDividerLocation(260);
-        mainSplit.setMinimumSize(new Dimension(400, 150));
-        resultSection.resultPanel().setMinimumSize(new Dimension(400, 150));
-        add(verticalSplit, BorderLayout.CENTER);
-
         PerformancePanelViewFactory.ToolbarSection toolbarSection = viewFactory.createToolbarSection(
                 this::exportRunPlan,
                 this::showUsageGuide,
@@ -331,7 +320,31 @@ public class PerformancePanel extends UiSingletonPanel {
         limitLabel = toolbarSection.limitLabel();
         installPlanToolbarListeners();
         syncPlanSelectorItems();
-        add(topPanel, BorderLayout.NORTH);
+
+        JSplitPane verticalSplit = ToolWindowChrome.createVerticalCardSplitPane(
+                propertyPanel,
+                resultSection.resultPanel(),
+                260
+        );
+        verticalSplit.setResizeWeight(0.45);
+        verticalSplit.setDividerLocation(260);
+        propertyPanel.setMinimumSize(new Dimension(400, 150));
+        resultSection.resultPanel().setMinimumSize(new Dimension(400, 150));
+
+        JPanel rightContentPanel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(rightContentPanel);
+        rightContentPanel.add(topPanel, BorderLayout.NORTH);
+        rightContentPanel.add(verticalSplit, BorderLayout.CENTER);
+
+        treeSection.scrollPane().setMinimumSize(new Dimension(220, 150));
+        rightContentPanel.setMinimumSize(new Dimension(400, 300));
+        JSplitPane mainSplit = ToolWindowChrome.createHorizontalCardSplitPane(
+                treeSection.scrollPane(),
+                rightContentPanel,
+                ToolWindowChrome.DEFAULT_SIDE_WIDTH
+        );
+        mainSplit.setResizeWeight(0.18);
+        add(mainSplit, BorderLayout.CENTER);
 
         List<PerformanceResultListener> resultListeners = List.of(
                 new PerformanceStatsCollectorListener(statsCollector),
@@ -861,9 +874,9 @@ public class PerformancePanel extends UiSingletonPanel {
     @Override
     public void updateUI() {
         super.updateUI();
-        // 主题切换时重新设置边框，确保分隔线颜色更新
+        // 主题切换时保持工具栏使用无分隔线的卡片内边距。
         if (topPanel != null) {
-            topPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()));
+            topPanel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
         }
     }
 

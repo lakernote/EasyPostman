@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
@@ -24,6 +25,7 @@ public class ResponseHeadersPanel extends JPanel {
 
     public ResponseHeadersPanel() {
         setLayout(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(this);
         // 设置边距
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         // 表格模型和表格
@@ -39,9 +41,11 @@ public class ResponseHeadersPanel extends JPanel {
         headersTable.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
         headersTable.setRowSorter(new TableRowSorter<>(tableModel));
         JScrollPane scrollPane = new JScrollPane(headersTable);
+        ToolWindowSurfaceStyle.applyTableScrollPaneCard(scrollPane, headersTable);
         add(scrollPane, BorderLayout.CENTER);
         // 右键菜单
         JPopupMenu popupMenu = new JPopupMenu();
+        ToolWindowSurfaceStyle.applyPopupMenuCard(popupMenu);
         JMenuItem copySelected = new JMenuItem(I18nUtil.getMessage(MessageKeys.RESPONSE_HEADERS_COPY_SELECTED));
         JMenuItem copyCell = new JMenuItem(I18nUtil.getMessage(MessageKeys.RESPONSE_HEADERS_COPY_CELL));
         JMenuItem copyAll = new JMenuItem(I18nUtil.getMessage(MessageKeys.RESPONSE_HEADERS_COPY_ALL));

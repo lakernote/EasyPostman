@@ -1,6 +1,7 @@
 package com.laker.postman.panel.update;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
@@ -62,6 +63,7 @@ public class ModernProgressDialog {
 
     private JPanel createContentPanel() {
         JPanel mainPanel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyBackground(mainPanel);
         mainPanel.setBorder(new EmptyBorder(32, 40, 28, 40));
 
         JPanel contentPanel = new JPanel();

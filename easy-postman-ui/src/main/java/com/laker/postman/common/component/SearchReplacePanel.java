@@ -265,7 +265,8 @@ public class SearchReplacePanel extends JPanel {
         }
 
         // 绘制圆角背景
-        g2.setColor(getBackground() != null ? getBackground() : UIManager.getColor("Panel.background"));
+        Color background = getBackground() != null ? getBackground() : ModernColors.getCardBackgroundColor();
+        g2.setColor(background);
         g2.fill(new RoundRectangle2D.Float(
                 SHADOW_SIZE / 2.0f,
                 SHADOW_SIZE / 2.0f,
@@ -276,7 +277,8 @@ public class SearchReplacePanel extends JPanel {
         ));
 
         // 绘制细微的边框
-        g2.setColor(UIManager.getColor("Component.borderColor"));
+        Color borderColor = UIManager.getColor("Component.borderColor");
+        g2.setColor(borderColor != null ? borderColor : ModernColors.getDividerBorderColor());
         g2.draw(new RoundRectangle2D.Float(
                 SHADOW_SIZE / 2.0f,
                 SHADOW_SIZE / 2.0f,

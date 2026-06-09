@@ -1,6 +1,7 @@
 package com.laker.postman.panel.topmenu.setting;
 
 import com.laker.postman.common.component.button.ModernButtonFactory;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.setting.SettingsCheckBoxRow;
 import com.laker.postman.common.component.setting.SettingsFieldRow;
 import com.laker.postman.common.component.setting.SettingsInputStyle;
@@ -166,11 +167,11 @@ public abstract class ModernSettingsPanel extends JPanel {
 
     private void initUI() {
         setLayout(new BorderLayout(0, 0));
-        setBackground(getBackgroundColor());
+        ToolWindowSurfaceStyle.applyBackground(this);
 
         // 创建主容器
         JPanel mainContainer = new JPanel(new BorderLayout(0, 0));
-        mainContainer.setBackground(getBackgroundColor());
+        ToolWindowSurfaceStyle.applyBackground(mainContainer);
 
         // 未保存更改警告面板
         warningPanel = createWarningPanel();
@@ -179,7 +180,7 @@ public abstract class ModernSettingsPanel extends JPanel {
         // 主内容区域
         JPanel contentPanel = new ViewportWidthTrackingPanel();
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
-        contentPanel.setBackground(getBackgroundColor());
+        ToolWindowSurfaceStyle.applyBackground(contentPanel);
         contentPanel.setBorder(new EmptyBorder(12, 12, 12, 12));
 
         // 子类实现具体内容
@@ -191,6 +192,8 @@ public abstract class ModernSettingsPanel extends JPanel {
         contentScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         contentScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         contentScrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        ToolWindowSurfaceStyle.applyBackground(contentScrollPane);
+        ToolWindowSurfaceStyle.applyBackground(contentScrollPane.getViewport());
         customizeScrollBar(contentScrollPane);
 
         // 组装主容器
@@ -274,11 +277,7 @@ public abstract class ModernSettingsPanel extends JPanel {
      */
     private JPanel createModernButtonBar() {
         JPanel buttonBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 12));
-        buttonBar.setBackground(getBackgroundColor());
-        buttonBar.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, getBorderLightColor()),
-                BorderFactory.createEmptyBorder(0, 16, 0, 16)
-        ));
+        ToolWindowSurfaceStyle.applySectionHeader(buttonBar, 0, 16, 0, 16);
 
         cancelBtn = createModernButton(
                 I18nUtil.getMessage(MessageKeys.SETTINGS_DIALOG_CANCEL),

@@ -1,5 +1,6 @@
 package com.laker.postman.panel.workspace.components;
 
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.model.GitAuthType;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.service.WorkspaceService;
@@ -10,7 +11,6 @@ import lombok.Getter;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.*;
-import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.util.List;
 
@@ -77,6 +77,7 @@ public class RemoteConfigDialog extends JDialog {
         setLayout(new BorderLayout());
 
         JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setOpaque(false);
         mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
         // 远程仓库配置面板
@@ -85,6 +86,7 @@ public class RemoteConfigDialog extends JDialog {
 
         // 创建南部面板，包含进度面板和按钮面板
         JPanel southPanel = new JPanel(new BorderLayout());
+        southPanel.setOpaque(false);
 
         // 进度面板
         southPanel.add(progressPanel, BorderLayout.NORTH);
@@ -99,14 +101,13 @@ public class RemoteConfigDialog extends JDialog {
     }
 
     private JPanel createConfigPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createEtchedBorder(),
-                I18nUtil.getMessage(WORKSPACE_REMOTE_CONFIG_TITLE),
-                TitledBorder.LEFT,
-                TitledBorder.TOP,
-                FontsUtil.getDefaultFont(Font.BOLD)
-        ));
+        JPanel panel = new JPanel(new BorderLayout(0, 8));
+        ToolWindowSurfaceStyle.applyCard(panel);
+        panel.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
+
+        JLabel titleLabel = new JLabel(I18nUtil.getMessage(WORKSPACE_REMOTE_CONFIG_TITLE));
+        titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
+        panel.add(titleLabel, BorderLayout.NORTH);
 
         // MigLayout 表单模板：左侧标签，右侧输入框自适应拉伸
         JPanel basicPanel = new JPanel(new MigLayout(
@@ -114,6 +115,7 @@ public class RemoteConfigDialog extends JDialog {
                 "[right][grow,fill]",
                 "[]8[]"
         ));
+        basicPanel.setOpaque(false);
 
         // 远程仓库URL
         basicPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_URL) + ":"));
@@ -123,16 +125,19 @@ public class RemoteConfigDialog extends JDialog {
         basicPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_DETAIL_REMOTE_BRANCH) + ":"));
         basicPanel.add(remoteBranchField, "growx");
 
-        panel.add(basicPanel, BorderLayout.NORTH);
-
+        JPanel contentPanel = new JPanel(new BorderLayout(0, 4));
+        contentPanel.setOpaque(false);
+        contentPanel.add(basicPanel, BorderLayout.NORTH);
         // Git认证面板
-        panel.add(gitAuthPanel, BorderLayout.CENTER);
+        contentPanel.add(gitAuthPanel, BorderLayout.CENTER);
+        panel.add(contentPanel, BorderLayout.CENTER);
 
         return panel;
     }
 
     private JPanel createStandardButtonPanel(String okText) {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        panel.setOpaque(false);
         confirmButton = new JButton(okText);
         cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_CANCEL));
         panel.add(confirmButton);

@@ -50,7 +50,6 @@ class ModernTabButtonTheme {
     }
 
     Color selectedBackground() {
-        Color selectedBackground = UIManager.getColor("TabbedPane.selectedBackground");
-        return selectedBackground != null ? selectedBackground : ModernColors.getHoverBackgroundColor();
+        return ModernColors.withAlpha(ModernColors.getCardBackgroundColor(), 0);
     }
 }

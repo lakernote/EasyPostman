@@ -3,6 +3,7 @@ package com.laker.postman.panel.update;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.json.JSONObject;
 import com.formdev.flatlaf.FlatClientProperties;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.platform.update.model.UpdateInfo;
 import com.laker.postman.util.FontsUtil;
@@ -35,6 +36,7 @@ public class ModernUpdateDialog extends JDialog {
     private void initComponents(UpdateInfo updateInfo) {
         setLayout(new BorderLayout());
         JPanel mainPanel = new JPanel(new BorderLayout(0, 0));
+        ToolWindowSurfaceStyle.applyBackground(mainPanel);
         mainPanel.add(createHeaderPanel(updateInfo), BorderLayout.NORTH);
         mainPanel.add(createChangelogPanel(updateInfo), BorderLayout.CENTER);
         mainPanel.add(createButtonPanel(), BorderLayout.SOUTH);
@@ -101,6 +103,7 @@ public class ModernUpdateDialog extends JDialog {
 
     private JPanel createChangelogPanel(UpdateInfo updateInfo) {
         JPanel mainPanel = new JPanel(new BorderLayout(0, 8));
+        ToolWindowSurfaceStyle.applyBackground(mainPanel);
         mainPanel.setBorder(new EmptyBorder(0, 24, 0, 24));
 
         JLabel titleLabel = new JLabel("📝 " + I18nUtil.getMessage(MessageKeys.UPDATE_WHATS_NEW));
@@ -114,13 +117,13 @@ public class ModernUpdateDialog extends JDialog {
         textArea.setLineWrap(true);
         textArea.setWrapStyleWord(true);
         textArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, 1));
-        // 跟随 LAF，不硬设颜色，主题切换自动适配
         textArea.putClientProperty(FlatClientProperties.STYLE, "");
         textArea.setBorder(new EmptyBorder(12, 12, 12, 12));
         textArea.setCaretPosition(0);
+        ToolWindowSurfaceStyle.applyTextComponentCard(textArea);
 
         JScrollPane scrollPane = new JScrollPane(textArea);
-        scrollPane.setBorder(BorderFactory.createLineBorder(ModernColors.getBorderLightColor(), 1));
+        ToolWindowSurfaceStyle.applyScrollPaneCard(scrollPane);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         scrollPane.setPreferredSize(new Dimension(0, 180));
         mainPanel.add(scrollPane, BorderLayout.CENTER);
@@ -149,6 +152,7 @@ public class ModernUpdateDialog extends JDialog {
 
     private JPanel createButtonPanel() {
         JPanel panel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyBackground(panel);
         panel.setBorder(new EmptyBorder(16, 24, 20, 24));
 
         JLabel tipLabel = new JLabel(I18nUtil.getMessage(MessageKeys.UPDATE_SAVE_TIP));

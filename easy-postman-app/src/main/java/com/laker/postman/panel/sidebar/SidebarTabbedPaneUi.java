@@ -44,7 +44,7 @@ final class SidebarTabbedPaneUi extends BasicTabbedPaneUI {
                 SidebarTabMetrics.TAB_AREA_INSET_BOTTOM,
                 SidebarTabMetrics.TAB_AREA_INSET_RIGHT
         );
-        contentBorderInsets = new Insets(0, 1, 0, 0);
+        contentBorderInsets = new Insets(0, 0, 0, 0);
         tabInsets = new Insets(1, 0, 1, 0);
         selectedTabPadInsets = new Insets(0, 0, 0, 0);
     }
@@ -95,13 +95,7 @@ final class SidebarTabbedPaneUi extends BasicTabbedPaneUI {
 
     @Override
     protected void paintContentBorder(Graphics g, int tabPlacement, int selectedIndex) {
-        if (tabPlacement == SwingConstants.LEFT && tabPane != null) {
-            int height = tabPane.getHeight();
-            int tabAreaWidth = calculateTabAreaWidth(tabPlacement, runCount, maxTabWidth);
-
-            g.setColor(ModernColors.getDividerBorderColor());
-            g.drawLine(tabAreaWidth, 0, tabAreaWidth, height);
-        }
+        // IntelliJ-style tool windows separate regions with spacing and rounded panels, not hard divider lines.
     }
 
     @Override
@@ -181,7 +175,7 @@ final class SidebarTabbedPaneUi extends BasicTabbedPaneUI {
         backgroundWidth = Math.max(0, backgroundWidth);
         backgroundHeight = Math.max(0, backgroundHeight);
         return new Rectangle(
-                x + Math.max(0, (w - backgroundWidth) / 2),
+                SidebarTabMetrics.collapsedSelectedBackgroundX(x, w, backgroundWidth),
                 y + Math.max(0, (h - backgroundHeight) / 2),
                 backgroundWidth,
                 backgroundHeight

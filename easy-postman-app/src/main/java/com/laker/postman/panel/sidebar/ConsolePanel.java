@@ -3,6 +3,8 @@ package com.laker.postman.panel.sidebar;
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.common.component.ToolWindowActionToolbar;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.AutoScrollToggleButton;
 import com.laker.postman.common.component.button.ClearButton;
 import com.laker.postman.common.component.button.CloseButton;
@@ -62,6 +64,7 @@ public class ConsolePanel extends UiSingletonPanel {
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(this);
         createConsolePanel();
     }
 
@@ -75,6 +78,9 @@ public class ConsolePanel extends UiSingletonPanel {
      * 更新控制台颜色以适配当前主题
      */
     private void updateConsoleColors() {
+        if (matchCountLabel != null) {
+            matchCountLabel.setForeground(ConsoleTheme.matchCountForeground());
+        }
         // 刷新显示的日志以应用新的颜色方案
         if (consoleLogArea != null && !allLogs.isEmpty()) {
             refreshDisplayedLogs();
@@ -307,19 +313,17 @@ public class ConsolePanel extends UiSingletonPanel {
         consoleLogArea.setEditable(false);
         consoleLogArea.setFocusable(true);
         consoleLogArea.setCursor(Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR));
+        ToolWindowSurfaceStyle.applyTextComponentCard(consoleLogArea);
         consoleDoc = consoleLogArea.getStyledDocument();
         JScrollPane logScroll = new JScrollPane(consoleLogArea);
         logScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
         logScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        ToolWindowSurfaceStyle.applyScrollPaneCard(logScroll);
 
         // 顶部工具栏
         JPanel topPanel = new JPanel(new BorderLayout(5, 0));
         topPanel.setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
-        topPanel.setOpaque(true);
-
-        // 中间：搜索栏
-        JPanel centerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 3, 0));
-        centerPanel.setOpaque(false);
+        ToolWindowSurfaceStyle.applyCard(topPanel);
 
         logLevelFilter = new JComboBox<>(new String[]{"All", "INFO", "ERROR", "WARN", "DEBUG"});
         logLevelFilter.setPreferredSize(new Dimension(90, 28));
@@ -342,16 +346,15 @@ public class ConsolePanel extends UiSingletonPanel {
         matchCountLabel.setPreferredSize(new Dimension(50, 28));
         matchCountLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
-        centerPanel.add(logLevelFilter);
-        centerPanel.add(searchField);
-        centerPanel.add(prevBtn);
-        centerPanel.add(nextBtn);
-        centerPanel.add(matchCountLabel);
+        JPanel centerPanel = ToolWindowActionToolbar.inlineLeft(
+                logLevelFilter,
+                searchField,
+                prevBtn,
+                nextBtn,
+                matchCountLabel
+        );
 
         // 右侧：工具按钮
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 1, 0));
-        rightPanel.setOpaque(false);
-
         autoScrollBtn = new AutoScrollToggleButton();
 
         ClearButton clearBtn = new ClearButton();
@@ -359,9 +362,7 @@ public class ConsolePanel extends UiSingletonPanel {
 
         closeBtn = new CloseButton();
         closeBtn.setToolTipText("Hide console");
-        rightPanel.add(autoScrollBtn);
-        rightPanel.add(clearBtn);
-        rightPanel.add(closeBtn);
+        JPanel rightPanel = ToolWindowActionToolbar.inlineRight(autoScrollBtn, clearBtn, closeBtn);
 
         topPanel.add(centerPanel, BorderLayout.CENTER);
         topPanel.add(rightPanel, BorderLayout.EAST);

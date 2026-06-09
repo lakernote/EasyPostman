@@ -1,6 +1,6 @@
 package com.laker.postman.panel.workspace.components;
 
-import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -36,6 +36,7 @@ public class ConvertToGitDialog extends JDialog {
     private void initComponents() {
         branchField = new JTextField("master", 20);
         branchField.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        ToolWindowSurfaceStyle.applyTextComponentInput(branchField);
 
         // 添加回车键确认支持
         branchField.addActionListener(e -> onConfirm());
@@ -72,8 +73,10 @@ public class ConvertToGitDialog extends JDialog {
 
     private void setupLayout() {
         setLayout(new BorderLayout());
+        ToolWindowSurfaceStyle.applyBackground((JComponent) getContentPane());
 
         JPanel mainPanel = new JPanel(new BorderLayout(0, 15));
+        ToolWindowSurfaceStyle.applyCard(mainPanel);
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 25, 20, 25));
 
         // 顶部信息区域
@@ -96,10 +99,8 @@ public class ConvertToGitDialog extends JDialog {
      */
     private JPanel createTopPanel() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(ModernColors.getBorderLightColor()),
-                BorderFactory.createEmptyBorder(15, 15, 15, 15)
-        ));
+        ToolWindowSurfaceStyle.applyCard(panel);
+        panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
         // 左侧图标
         JLabel iconLabel = new JLabel(com.laker.postman.util.IconUtil.create(
@@ -111,7 +112,7 @@ public class ConvertToGitDialog extends JDialog {
         infoPanel.setOpaque(false);
 
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_CONVERT_TO_GIT));
-        titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD).deriveFont(14f));
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 1));
         infoPanel.add(titleLabel);
 
         JLabel workspaceLabel = new JLabel("Workspace: " + workspace.getName());
@@ -133,6 +134,7 @@ public class ConvertToGitDialog extends JDialog {
      */
     private JPanel createCenterPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
+        panel.setOpaque(false);
         panel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(8, 0, 8, 0);
@@ -162,10 +164,7 @@ public class ConvertToGitDialog extends JDialog {
      */
     private JPanel createButtonPanel() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.getBorderLightColor()),
-                BorderFactory.createEmptyBorder(15, 0, 0, 0)
-        ));
+        ToolWindowSurfaceStyle.applySectionHeader(panel, 15, 0, 0, 0);
 
         confirmButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK));
         JButton cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_CANCEL));
@@ -255,4 +254,3 @@ public class ConvertToGitDialog extends JDialog {
         );
     }
 }
-

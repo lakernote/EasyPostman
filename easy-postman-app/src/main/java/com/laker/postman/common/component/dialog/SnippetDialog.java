@@ -2,6 +2,9 @@ package com.laker.postman.common.component.dialog;
 
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.snippet.SnippetType;
 import com.laker.postman.snippet.Snippet;
@@ -53,6 +56,7 @@ public class SnippetDialog extends JDialog {
         super(UiSingletonFactory.getInstance(MainFrame.class), I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_TITLE), true);
         Frame owner = UiSingletonFactory.getInstance(MainFrame.class);
         setLayout(new BorderLayout(10, 10));
+        ToolWindowSurfaceStyle.applyBackground((JComponent) getContentPane());
 
         // 初始化片段数据
         snippets = getI18nSnippets();
@@ -61,10 +65,12 @@ public class SnippetDialog extends JDialog {
 
         // 创建北部面板：搜索框和分类选择器
         JPanel northPanel = new JPanel(new BorderLayout(5, 0));
+        northPanel.setOpaque(false);
         northPanel.setBorder(new EmptyBorder(10, 10, 5, 10));
 
         // 搜索框带图标和提示
         JPanel searchPanel = new JPanel(new BorderLayout());
+        searchPanel.setOpaque(false);
         searchField = new SearchTextField();
 
         // 添加搜索图标
@@ -172,15 +178,20 @@ public class SnippetDialog extends JDialog {
         });
 
         JScrollPane listScrollPane = new JScrollPane(snippetList);
-        listScrollPane.setBorder(BorderFactory.createEmptyBorder(0, 10, 15, 0));
+        ToolWindowSurfaceStyle.applyListScrollPaneCard(listScrollPane, snippetList);
 
         // 创建南部面板：预览区域和按钮
         JPanel southPanel = new JPanel(new BorderLayout(5, 5));
+        southPanel.setOpaque(false);
         southPanel.setBorder(new EmptyBorder(5, 10, 10, 10));
 
         // 预览区域
         JPanel previewPanel = new JPanel(new BorderLayout(5, 5));
-        previewPanel.setBorder(BorderFactory.createTitledBorder(I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_PREVIEW_TITLE)));
+        previewPanel.setOpaque(false);
+        JLabel previewTitleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_PREVIEW_TITLE));
+        previewTitleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
+        previewTitleLabel.setForeground(ModernColors.getTextPrimary());
+        previewPanel.add(previewTitleLabel, BorderLayout.NORTH);
 
         previewArea = new JTextArea(8, 40);
         previewArea.setEditable(false);
@@ -189,15 +200,19 @@ public class SnippetDialog extends JDialog {
         previewArea.setTabSize(4);  // 设置 Tab 缩进为 4 个空格
         JScrollPane previewScrollPane = new JScrollPane(previewArea);
         previewScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        ToolWindowSurfaceStyle.applyTextComponentCard(previewArea);
+        ToolWindowSurfaceStyle.applyScrollPaneCard(previewScrollPane);
         previewPanel.add(previewScrollPane, BorderLayout.CENTER);
 
         // 描述标签
         descriptionLabel = new JLabel(" ");
         descriptionLabel.setBorder(new EmptyBorder(5, 0, 0, 0));
+        descriptionLabel.setForeground(ModernColors.getTextSecondary());
         previewPanel.add(descriptionLabel, BorderLayout.SOUTH);
 
         // 按钮面板
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setOpaque(false);
         JButton insertBtn = new JButton(I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_INSERT));
         insertBtn.setPreferredSize(new Dimension(100, 30));
 
@@ -211,13 +226,8 @@ public class SnippetDialog extends JDialog {
         southPanel.add(buttonPanel, BorderLayout.SOUTH);
 
         // 将分割面板添加到主面板
-        JSplitPane splitPane = new JSplitPane(
-                JSplitPane.HORIZONTAL_SPLIT,
-                listScrollPane,
-                southPanel
-        );
+        JSplitPane splitPane = ToolWindowChrome.createHorizontalSplitPane(listScrollPane, southPanel, 230);
         splitPane.setResizeWeight(0.3); // 设置左右比例
-        splitPane.setDividerLocation(230); // 设置初始分割位置
 
         // 添加到对话框
         add(northPanel, BorderLayout.NORTH);

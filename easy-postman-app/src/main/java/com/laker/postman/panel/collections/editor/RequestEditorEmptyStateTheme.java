@@ -49,7 +49,7 @@ class RequestEditorEmptyStateTheme {
     }
 
     Color hintHoverForeground() {
-        return Color.WHITE;
+        return ModernColors.getTextInverse();
     }
 
     Color hintBackground() {

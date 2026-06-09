@@ -1,6 +1,7 @@
 package com.laker.postman.panel.update;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.platform.update.model.UpdateInfo;
 import com.laker.postman.util.FontsUtil;
@@ -40,6 +41,7 @@ public class NoAssetDialog extends JDialog {
     private void initComponents(UpdateInfo updateInfo) {
         setLayout(new BorderLayout());
         JPanel mainPanel = new JPanel(new BorderLayout(0, 0));
+        ToolWindowSurfaceStyle.applyBackground(mainPanel);
         mainPanel.add(createHeaderPanel(updateInfo), BorderLayout.NORTH);
         mainPanel.add(createBodyPanel(updateInfo), BorderLayout.CENTER);
         mainPanel.add(createButtonPanel(), BorderLayout.SOUTH);
@@ -119,6 +121,7 @@ public class NoAssetDialog extends JDialog {
 
     private JPanel createBodyPanel(UpdateInfo updateInfo) {
         JPanel panel = new JPanel(new BorderLayout(0, 10));
+        ToolWindowSurfaceStyle.applyBackground(panel);
         panel.setBorder(new EmptyBorder(18, 24, 6, 24));
 
         // 说明文字（带 HTML 多行支持）
@@ -184,6 +187,7 @@ public class NoAssetDialog extends JDialog {
 
     private JPanel createButtonPanel() {
         JPanel panel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyBackground(panel);
         panel.setBorder(new EmptyBorder(12, 24, 18, 24));
 
         JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));

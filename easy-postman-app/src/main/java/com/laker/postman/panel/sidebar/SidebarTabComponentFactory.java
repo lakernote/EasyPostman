@@ -8,6 +8,8 @@ import javax.swing.Icon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
+import javax.swing.SwingConstants;
+import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
@@ -36,17 +38,20 @@ final class SidebarTabComponentFactory {
     private final Supplier<Font> boldFontSupplier;
 
     Component create(SidebarTab sidebarTab, String title, Icon icon) {
+        int collapsedHeight = SidebarTabMetrics.collapsedHeight(icon != null ? icon.getIconHeight() : 0);
         JPanel panel = new JPanel() {
             @Override
             public Dimension getPreferredSize() {
                 Dimension size = super.getPreferredSize();
-                size.width = sidebarExpanded.getAsBoolean()
-                        ? expandedWidthSupplier.getAsInt()
-                        : collapsedWidthSupplier.getAsInt();
+                if (sidebarExpanded.getAsBoolean()) {
+                    size.width = expandedWidthSupplier.getAsInt();
+                } else {
+                    size.width = collapsedWidthSupplier.getAsInt();
+                    size.height = collapsedHeight;
+                }
                 return size;
             }
         };
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setOpaque(false);
 
         boolean expanded = sidebarExpanded.getAsBoolean();
@@ -88,6 +93,7 @@ final class SidebarTabComponentFactory {
     }
 
     private void addExpandedContent(JPanel panel, SidebarTab sidebarTab, String title, Icon icon) {
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         JLabel iconLabel = createIconLabel(initialIcon(sidebarTab, icon));
 
         JLabel titleLabel = createTitleLabel(title);
@@ -107,20 +113,21 @@ final class SidebarTabComponentFactory {
     }
 
     private void addCollapsedContent(JPanel panel, SidebarTab sidebarTab, String title, Icon icon) {
+        panel.setLayout(new BorderLayout());
         panel.setToolTipText(title);
-        panel.add(Box.createVerticalGlue());
-        panel.add(createIconLabel(initialIcon(sidebarTab, icon)));
-        panel.add(Box.createVerticalGlue());
+        panel.add(createIconLabel(initialIcon(sidebarTab, icon)), BorderLayout.CENTER);
         panel.setBorder(BorderFactory.createEmptyBorder(
                 SidebarTabMetrics.COLLAPSED_TAB_PADDING_VERTICAL,
-                SidebarTabMetrics.COLLAPSED_TAB_PADDING_HORIZONTAL,
+                SidebarTabMetrics.collapsedIconPaddingLeft(),
                 SidebarTabMetrics.COLLAPSED_TAB_PADDING_VERTICAL,
-                SidebarTabMetrics.COLLAPSED_TAB_PADDING_HORIZONTAL
+                SidebarTabMetrics.collapsedIconPaddingRight()
         ));
     }
 
     private JLabel createIconLabel(Icon icon) {
         JLabel iconLabel = new JLabel(icon);
+        iconLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        iconLabel.setVerticalAlignment(SwingConstants.CENTER);
         iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         iconLabel.setName(ICON_LABEL_NAME);
         return iconLabel;

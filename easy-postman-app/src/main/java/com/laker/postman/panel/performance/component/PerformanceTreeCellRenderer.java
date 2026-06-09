@@ -6,6 +6,7 @@ import com.laker.postman.request.model.HttpRequestItem;
 
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.http.request.HttpRequestProtocol;
 import com.laker.postman.util.FontsUtil;
@@ -46,9 +47,8 @@ public class PerformanceTreeCellRenderer extends DefaultTreeCellRenderer {
 
             String text = nodeData.name;
             if (!nodeData.enabled) {
-                Color disabledColor = new Color(150, 150, 150);
                 if (!sel) {
-                    label.setForeground(disabledColor);
+                    label.setForeground(ModernColors.getTextHint());
                 }
                 label.setFont(FontsUtil.getDefaultFont(Font.ITALIC));
                 label.setText("<html><strike>" + text + "</strike></html>");

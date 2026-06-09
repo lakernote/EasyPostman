@@ -1,6 +1,7 @@
 package com.laker.postman.plugin.kafka.consumer.ui;
 
 import com.laker.postman.plugin.kafka.MessageKeys;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.SecondaryButton;
 
 import javax.swing.*;
@@ -28,11 +29,14 @@ public class KafkaPartitionSelector extends JPanel {
         setOpaque(false);
 
         popupMenu = new JPopupMenu();
+        ToolWindowSurfaceStyle.applyPopupMenuCard(popupMenu);
         optionsPanel = new JPanel();
+        ToolWindowSurfaceStyle.applyCard(optionsPanel);
         optionsPanel.setLayout(new BoxLayout(optionsPanel, BoxLayout.Y_AXIS));
         optionsPanel.setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
 
         allPartitionsCheckBox = new JCheckBox(t(MessageKeys.TOOLBOX_KAFKA_ALL_PARTITIONS), true);
+        allPartitionsCheckBox.setOpaque(false);
         allPartitionsCheckBox.addActionListener(e -> {
             if (allPartitionsCheckBox.isSelected()) {
                 setAllPartitionChecksSelected(false);
@@ -45,7 +49,7 @@ public class KafkaPartitionSelector extends JPanel {
         triggerButton.addActionListener(e -> popupMenu.show(triggerButton, 0, triggerButton.getHeight()));
 
         JScrollPane scrollPane = new JScrollPane(optionsPanel);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        ToolWindowSurfaceStyle.applyScrollPaneCard(scrollPane);
         scrollPane.setPreferredSize(new Dimension(220, 180));
         popupMenu.setLayout(new BorderLayout());
         popupMenu.add(scrollPane, BorderLayout.CENTER);
@@ -97,6 +101,7 @@ public class KafkaPartitionSelector extends JPanel {
         optionsPanel.add(Box.createVerticalStrut(4));
         for (Integer partition : partitions) {
             JCheckBox checkBox = new JCheckBox(String.valueOf(partition));
+            checkBox.setOpaque(false);
             checkBox.addActionListener(e -> {
                 if (checkBox.isSelected()) {
                     allPartitionsCheckBox.setSelected(false);

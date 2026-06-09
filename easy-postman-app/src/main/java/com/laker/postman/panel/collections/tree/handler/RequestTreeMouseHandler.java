@@ -6,6 +6,7 @@ import com.laker.postman.request.model.HttpRequestItem;
 
 
 import com.laker.postman.common.UiSingletonFactory;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.tree.RequestTreeCellRenderer;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.panel.collections.tree.coordinator.RequestTreeCoordinator;
@@ -217,6 +218,7 @@ public class RequestTreeMouseHandler extends MouseAdapter {
      */
     private void showGroupActionMenu(DefaultMutableTreeNode groupNode, int x, int y) {
         JPopupMenu menu = new JPopupMenu();
+        ToolWindowSurfaceStyle.applyPopupMenuCard(menu);
 
         JMenuItem addRequest = new JMenuItem(
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_ADD_REQUEST),

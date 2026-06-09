@@ -10,6 +10,7 @@ import cn.hutool.core.collection.CollUtil;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.EasyTextField;
 import com.laker.postman.common.component.MarkdownEditorPanel;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.tab.IndicatorTabComponent;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.panel.collections.editor.request.sub.AuthTabPanel;
@@ -111,6 +112,7 @@ public class GroupEditPanel extends JPanel {
 
     private void initUI() {
         setLayout(new BorderLayout(0, 0));
+        styleCardSurface(this);
 
         // 顶部标题栏
         JPanel headerPanel = createHeaderPanel();
@@ -118,6 +120,7 @@ public class GroupEditPanel extends JPanel {
 
         // 中间内容区域 - 使用 Tabs
         tabbedPane = new JTabbedPane();
+        styleCardSurface(tabbedPane);
         tabbedPane.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1));
 
         // General Tab
@@ -126,15 +129,13 @@ public class GroupEditPanel extends JPanel {
         // Headers Tab - 公共请求头配置
         headersPanel = new EasyRequestHttpHeadersPanel(AppRequestHeaderDefaults.generatedHeaderPolicy());
         JPanel headersWrapperPanel = new JPanel(new BorderLayout());
+        styleCardSurface(headersWrapperPanel);
         headersWrapperPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         headersWrapperPanel.add(headersPanel, BorderLayout.CENTER);
 
         JPanel headersInfoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
-        JLabel headersInfoLabel = new JLabel(
-                "<html><i style='color: #64748b; font-size: 11px;'>ℹ " +
-                        I18nUtil.getMessage(MessageKeys.GROUP_EDIT_HEADERS_INFO) +
-                        "</i></html>"
-        );
+        styleCardSurface(headersInfoPanel);
+        JLabel headersInfoLabel = createInfoLabel(I18nUtil.getMessage(MessageKeys.GROUP_EDIT_HEADERS_INFO), 11);
         headersInfoPanel.add(headersInfoLabel);
         headersWrapperPanel.add(headersInfoPanel, BorderLayout.SOUTH);
 
@@ -145,15 +146,13 @@ public class GroupEditPanel extends JPanel {
         // Variables Tab - 分组级别的变量
         variablesPanel = new EasyVariablesPanel();
         JPanel variablesWrapperPanel = new JPanel(new BorderLayout());
+        styleCardSurface(variablesWrapperPanel);
         variablesWrapperPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         variablesWrapperPanel.add(variablesPanel, BorderLayout.CENTER);
 
         JPanel variablesInfoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
-        JLabel variablesInfoLabel = new JLabel(
-                "<html><i style='color: #64748b; font-size: 11px;'>ℹ " +
-                        I18nUtil.getMessage(MessageKeys.GROUP_EDIT_VARIABLES_INFO) +
-                        "</i></html>"
-        );
+        styleCardSurface(variablesInfoPanel);
+        JLabel variablesInfoLabel = createInfoLabel(I18nUtil.getMessage(MessageKeys.GROUP_EDIT_VARIABLES_INFO), 11);
         variablesInfoPanel.add(variablesInfoLabel);
         variablesWrapperPanel.add(variablesInfoPanel, BorderLayout.SOUTH);
 
@@ -165,14 +164,12 @@ public class GroupEditPanel extends JPanel {
         // Authorization Tab - 复用 AuthTabPanel
         authTabPanel = new AuthTabPanel();
         JPanel authWrapperPanel = new JPanel(new BorderLayout());
+        styleCardSurface(authWrapperPanel);
         authWrapperPanel.add(authTabPanel, BorderLayout.CENTER);
 
         JPanel authInfoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
-        JLabel authInfoLabel = new JLabel(
-                "<html><i style='color: #64748b; font-size: 11px;'>ℹ " +
-                        I18nUtil.getMessage(MessageKeys.GROUP_EDIT_AUTH_INFO) +
-                        "</i></html>"
-        );
+        styleCardSurface(authInfoPanel);
+        JLabel authInfoLabel = createInfoLabel(I18nUtil.getMessage(MessageKeys.GROUP_EDIT_AUTH_INFO), 11);
         authInfoPanel.add(authInfoLabel);
         authWrapperPanel.add(authInfoPanel, BorderLayout.SOUTH);
 
@@ -183,14 +180,12 @@ public class GroupEditPanel extends JPanel {
         // Scripts Tab - 复用 ScriptPanel
         scriptPanel = new ScriptPanel();
         JPanel scriptWrapperPanel = new JPanel(new BorderLayout());
+        styleCardSurface(scriptWrapperPanel);
         scriptWrapperPanel.add(scriptPanel, BorderLayout.CENTER);
 
         JPanel scriptInfoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
-        JLabel scriptInfoLabel = new JLabel(
-                "<html><i style='color: #64748b; font-size: 11px;'>ℹ " +
-                        I18nUtil.getMessage(MessageKeys.GROUP_EDIT_SCRIPT_INFO) +
-                        "</i></html>"
-        );
+        styleCardSurface(scriptInfoPanel);
+        JLabel scriptInfoLabel = createInfoLabel(I18nUtil.getMessage(MessageKeys.GROUP_EDIT_SCRIPT_INFO), 11);
         scriptInfoPanel.add(scriptInfoLabel);
         scriptWrapperPanel.add(scriptInfoPanel, BorderLayout.SOUTH);
 
@@ -204,10 +199,12 @@ public class GroupEditPanel extends JPanel {
 
     private JPanel createHeaderPanel() {
         JPanel headerPanel = new JPanel(new BorderLayout(10, 0));
+        styleCardSurface(headerPanel);
         headerPanel.setBorder(new EmptyBorder(15, 20, 15, 20));
 
         // 左侧：标题
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        leftPanel.setOpaque(false);
 
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.GROUP_EDIT_TITLE));
         titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +6));
@@ -219,6 +216,7 @@ public class GroupEditPanel extends JPanel {
         JSeparator separator = new JSeparator();
         separator.setForeground(ModernColors.getBorderLightColor());
         JPanel separatorPanel = new JPanel(new BorderLayout());
+        separatorPanel.setOpaque(false);
         separatorPanel.add(separator, BorderLayout.SOUTH);
         headerPanel.add(separatorPanel, BorderLayout.SOUTH);
 
@@ -227,9 +225,11 @@ public class GroupEditPanel extends JPanel {
 
     private JPanel createGeneralPanel() {
         JPanel panel = new JPanel(new BorderLayout());
+        styleCardSurface(panel);
         panel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         JPanel formPanel = new JPanel(new GridBagLayout());
+        styleCardSurface(formPanel);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(8, 8, 8, 8);
         gbc.anchor = GridBagConstraints.WEST;
@@ -282,15 +282,25 @@ public class GroupEditPanel extends JPanel {
         gbc.weighty = 0;
         gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.WEST;
-        JLabel hintLabel = new JLabel(
-                "<html><i style='color: #64748b; font-size: 10px;'>ℹ " +
-                        I18nUtil.getMessage(MessageKeys.GROUP_EDIT_DESCRIPTION_PLACEHOLDER) +
-                        "</i></html>"
+        JLabel hintLabel = createInfoLabel(
+                I18nUtil.getMessage(MessageKeys.GROUP_EDIT_DESCRIPTION_PLACEHOLDER),
+                10
         );
         formPanel.add(hintLabel, gbc);
 
         panel.add(formPanel, BorderLayout.CENTER);
         return panel;
+    }
+
+    private void styleCardSurface(JComponent component) {
+        ToolWindowSurfaceStyle.applyCard(component);
+    }
+
+    private JLabel createInfoLabel(String message, int fontSize) {
+        String hintColor = ModernColors.toHtmlColor(ModernColors.getTextHint());
+        return new JLabel("<html><i style='color:" + hintColor + "; font-size:" + fontSize + "px;'>ℹ "
+                + message
+                + "</i></html>");
     }
 
     /**

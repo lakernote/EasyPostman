@@ -4,6 +4,7 @@ import com.laker.postman.request.model.RequestItemProtocolEnum;
 
 
 import com.laker.postman.common.constants.ConfigPathConstants;
+import com.laker.postman.common.constants.ThemeColors;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.test.AbstractSwingUiTest;
 import com.laker.postman.util.I18nUtil;
@@ -11,6 +12,7 @@ import com.laker.postman.util.MessageKeys;
 import org.testng.annotations.Test;
 
 import javax.swing.*;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
 import java.lang.reflect.Field;
@@ -83,6 +85,53 @@ public class RequestViewFactoryTest extends AbstractSwingUiTest {
             assertTrue(hasTab(tabs, I18nUtil.getMessage(MessageKeys.TAB_PARAMS)));
             assertTrue(hasTab(tabs, I18nUtil.getMessage(MessageKeys.TAB_REQUEST_HEADERS)));
         });
+    }
+
+    @Test
+    public void requestEditSubPanelShouldUseCardSurfaceBackgroundInsideToolWindow() throws Exception {
+        Object previousSurface = UIManager.get(ThemeColors.SURFACE);
+        Color surface = new Color(245, 247, 250);
+        UIManager.put(ThemeColors.SURFACE, surface);
+
+        try {
+            RequestEditSubPanel panel = createRequestEditSubPanel(RequestItemProtocolEnum.HTTP);
+
+            assertEquals(panel.getBackground(), surface);
+        } finally {
+            UIManager.put(ThemeColors.SURFACE, previousSurface);
+        }
+    }
+
+    @Test
+    public void requestResponseSplitShouldUseBackgroundGapAndCardSurfaces() throws Exception {
+        Object previousBackground = UIManager.get(ThemeColors.BACKGROUND);
+        Object previousSurface = UIManager.get(ThemeColors.SURFACE);
+        Color background = new Color(233, 234, 238);
+        Color surface = new Color(255, 255, 255);
+        UIManager.put(ThemeColors.BACKGROUND, background);
+        UIManager.put(ThemeColors.SURFACE, surface);
+
+        try {
+            RequestViewComponents components = createView(RequestItemProtocolEnum.HTTP);
+
+            assertNotNull(components.splitPane);
+            assertEquals(components.splitPane.getDividerSize(), 6);
+            assertEquals(components.splitPane.getBackground(), background);
+            assertTrue(components.requestLinePanel.isOpaque());
+            assertEquals(components.requestLinePanel.getBackground(), surface);
+            assertTrue(components.reqTabs.isOpaque());
+            assertEquals(components.reqTabs.getBackground(), surface);
+            for (int i = 0; i < components.reqTabs.getTabCount(); i++) {
+                Component tabContent = components.reqTabs.getComponentAt(i);
+                assertTrue(tabContent instanceof JComponent, tabContent.getClass().getSimpleName());
+                assertEquals(tabContent.getBackground(), surface, tabContent.getClass().getSimpleName());
+            }
+            assertTrue(components.responsePanel.isOpaque());
+            assertEquals(components.responsePanel.getBackground(), surface);
+        } finally {
+            UIManager.put(ThemeColors.BACKGROUND, previousBackground);
+            UIManager.put(ThemeColors.SURFACE, previousSurface);
+        }
     }
 
     private RequestViewComponents createView(RequestItemProtocolEnum protocol) throws Exception {

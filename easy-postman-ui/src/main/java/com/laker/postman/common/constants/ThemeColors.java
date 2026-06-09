@@ -38,6 +38,15 @@ public class ThemeColors {
     public static final String NEUTRAL = "EasyPostman.color.neutral";
     public static final String NEUTRAL_DARK = "EasyPostman.color.neutral.dark";
     public static final String NEUTRAL_DARKER = "EasyPostman.color.neutral.darker";
+    public static final String GIT_COMMIT = "EasyPostman.color.git.commit";
+    public static final String GIT_PUSH = "EasyPostman.color.git.push";
+    public static final String GIT_PULL = "EasyPostman.color.git.pull";
+    public static final String VARIABLE_CONTEXT = "EasyPostman.color.variable.context";
+    public static final String VARIABLE_ITERATION_DATA = "EasyPostman.color.variable.iterationData";
+    public static final String VARIABLE_GROUP = "EasyPostman.color.variable.group";
+    public static final String VARIABLE_ENVIRONMENT = "EasyPostman.color.variable.environment";
+    public static final String VARIABLE_GLOBAL = "EasyPostman.color.variable.global";
+    public static final String VARIABLE_BUILT_IN = "EasyPostman.color.variable.builtIn";
 
     public static final String TEXT_PRIMARY = "EasyPostman.text.primary";
     public static final String TEXT_SECONDARY = "EasyPostman.text.secondary";
@@ -47,7 +56,12 @@ public class ThemeColors {
 
     public static final String BACKGROUND = "EasyPostman.background";
     public static final String SURFACE = "EasyPostman.surface";
+    public static final String WINDOW_CHROME_BACKGROUND = "EasyPostman.window.chrome.background";
     public static final String INPUT_BACKGROUND = "EasyPostman.input.background";
+    public static final String TAB_BACKGROUND = "EasyPostman.tab.background";
+    public static final String TAB_SELECTED_BACKGROUND = "EasyPostman.tab.selected.background";
+    public static final String TAB_HOVER_BACKGROUND = "EasyPostman.tab.hover.background";
+    public static final String TAB_SEPARATOR = "EasyPostman.tab.separator";
     public static final String HOVER_BACKGROUND = "EasyPostman.hover.background";
     public static final String SELECTION_BACKGROUND = "EasyPostman.selection.background";
     public static final String BUTTON_PRESSED_BACKGROUND = "EasyPostman.button.pressed.background";
@@ -107,6 +121,15 @@ public class ThemeColors {
             NEUTRAL,
             NEUTRAL_DARK,
             NEUTRAL_DARKER,
+            GIT_COMMIT,
+            GIT_PUSH,
+            GIT_PULL,
+            VARIABLE_CONTEXT,
+            VARIABLE_ITERATION_DATA,
+            VARIABLE_GROUP,
+            VARIABLE_ENVIRONMENT,
+            VARIABLE_GLOBAL,
+            VARIABLE_BUILT_IN,
             TEXT_PRIMARY,
             TEXT_SECONDARY,
             TEXT_HINT,
@@ -114,7 +137,12 @@ public class ThemeColors {
             TEXT_INVERSE,
             BACKGROUND,
             SURFACE,
+            WINDOW_CHROME_BACKGROUND,
             INPUT_BACKGROUND,
+            TAB_BACKGROUND,
+            TAB_SELECTED_BACKGROUND,
+            TAB_HOVER_BACKGROUND,
+            TAB_SEPARATOR,
             HOVER_BACKGROUND,
             SELECTION_BACKGROUND,
             BUTTON_PRESSED_BACKGROUND,

@@ -1,6 +1,7 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
 import com.laker.postman.common.component.SearchableTextArea;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.HelpButton;
 import com.laker.postman.common.component.button.SnippetButton;
 import com.laker.postman.common.component.dialog.SnippetDialog;
@@ -49,6 +50,7 @@ public class ScriptPanel extends JPanel {
 
     public ScriptPanel() {
         setLayout(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(this);
         // 设置边距
         setBorder(new EmptyBorder(5, 0, 5, 5));
 
@@ -64,6 +66,7 @@ public class ScriptPanel extends JPanel {
 
         // 创建选项卡面板 垂直方向
         tabbedPane = new JTabbedPane(SwingConstants.LEFT);
+        ToolWindowSurfaceStyle.applyTabbedPaneCard(tabbedPane);
 
         // 创建带指示器的 Tab 组件
         preScriptTab = new IndicatorTabComponent("Pre-script");
@@ -89,6 +92,7 @@ public class ScriptPanel extends JPanel {
         helpBtn.addActionListener(e -> showHelpDialog());
 
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 2));
+        ToolWindowSurfaceStyle.applyCard(btnPanel);
         btnPanel.add(helpBtn);
         btnPanel.add(snippetBtn);
         add(btnPanel, BorderLayout.SOUTH);
@@ -124,10 +128,12 @@ public class ScriptPanel extends JPanel {
      */
     private JPanel createHelpPanel() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
+        ToolWindowSurfaceStyle.applyCard(panel);
         panel.setBorder(new EmptyBorder(15, 20, 15, 20));
 
         // 主内容面板
         JPanel contentPanel = new JPanel();
+        ToolWindowSurfaceStyle.applyCard(contentPanel);
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
 
         // 标题
@@ -163,6 +169,7 @@ public class ScriptPanel extends JPanel {
 
         // 将内容面板放入滚动面板
         JScrollPane scrollPane = new JScrollPane(contentPanel);
+        ToolWindowSurfaceStyle.applyScrollPaneCard(scrollPane);
         scrollPane.setBorder(null);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
 

@@ -1,6 +1,7 @@
 package com.laker.postman.panel.topmenu.plugin;
 
 import com.laker.postman.common.component.button.ModernButtonFactory;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.plugin.api.PluginDescriptor;
 import com.laker.postman.plugin.manager.PluginManagementService;
@@ -136,7 +137,7 @@ public class PluginManagerDialog extends JDialog {
                 "[grow,fill]",
                 "[][grow,fill][]"
         ));
-        content.setBackground(ModernColors.getBackgroundColor());
+        ToolWindowSurfaceStyle.applyBackground(content);
         setContentPane(content);
 
         content.add(createHeaderPanel(), "growx, wrap");
@@ -1157,8 +1158,8 @@ public class PluginManagerDialog extends JDialog {
 
     private JScrollPane createListScrollPane(JList<?> list) {
         JScrollPane scrollPane = new JScrollPane(list);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder());
-        scrollPane.getViewport().setBackground(ModernColors.getCardBackgroundColor());
+        ToolWindowSurfaceStyle.applyListScrollPaneCard(scrollPane, list);
+        configureListAppearance(list);
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
@@ -1167,8 +1168,7 @@ public class PluginManagerDialog extends JDialog {
 
     private JPanel createCardPanel(LayoutManager layout) {
         JPanel panel = new JPanel(layout);
-        panel.setOpaque(true);
-        panel.setBackground(ModernColors.getCardBackgroundColor());
+        ToolWindowSurfaceStyle.applyCard(panel);
         panel.setBorder(createCardBorder());
         return panel;
     }
@@ -1177,10 +1177,7 @@ public class PluginManagerDialog extends JDialog {
         JPanel panel = new JPanel(layout);
         panel.setOpaque(true);
         panel.setBackground(ModernColors.getHoverBackgroundColor());
-        panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(ModernColors.getBorderLightColor()),
-                new EmptyBorder(0, 0, 0, 0)
-        ));
+        panel.setBorder(new EmptyBorder(0, 0, 0, 0));
         return panel;
     }
 
@@ -1188,18 +1185,12 @@ public class PluginManagerDialog extends JDialog {
         JPanel panel = new JPanel(layout);
         panel.setOpaque(true);
         panel.setBackground(ModernColors.getHoverBackgroundColor());
-        panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(ModernColors.getBorderLightColor()),
-                new EmptyBorder(0, 0, 0, 0)
-        ));
+        panel.setBorder(new EmptyBorder(0, 0, 0, 0));
         return panel;
     }
 
     private Border createCardBorder() {
-        return BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(ModernColors.getBorderLightColor()),
-                new EmptyBorder(0, 0, 0, 0)
-        );
+        return new EmptyBorder(0, 0, 0, 0);
     }
 
     private static JLabel createHeaderSummaryLabel() {
@@ -1380,7 +1371,7 @@ public class PluginManagerDialog extends JDialog {
     }
 
     private void configureListAppearance(JList<?> list) {
-        list.setBackground(ModernColors.getCardBackgroundColor());
+        ToolWindowSurfaceStyle.applyListCard(list);
         list.setForeground(ModernColors.getTextPrimary());
         list.setSelectionBackground(PluginManagerTheme.listSelectionBackground());
         list.setSelectionForeground(ModernColors.getTextPrimary());
@@ -1555,10 +1546,7 @@ public class PluginManagerDialog extends JDialog {
                     "[grow,fill][pref!]",
                     "[][]"
             ));
-            setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getBorderLightColor()),
-                    new EmptyBorder(0, 0, 0, 0)
-            ));
+            setBorder(new EmptyBorder(0, 0, 0, 0));
             setOpaque(true);
 
             titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 1));
@@ -1601,10 +1589,7 @@ public class PluginManagerDialog extends JDialog {
                     "[grow,fill][pref!]",
                     "[][]"
             ));
-            setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getBorderLightColor()),
-                    new EmptyBorder(0, 0, 0, 0)
-            ));
+            setBorder(new EmptyBorder(0, 0, 0, 0));
             setOpaque(true);
 
             titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 1));

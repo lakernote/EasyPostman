@@ -3,6 +3,8 @@ package com.laker.postman.common.component.table;
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.SearchableTextArea;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -69,10 +71,6 @@ public class EnhancedTablePanel extends JPanel {
      */
     @Setter
     private Runnable viewDataChangedListener;
-
-    // ── UI 常量 ───────────────────────────────────────────────────────────
-    private static final String SEPARATOR_FG = "Separator.foreground";
-    private static final String LABEL_DISABLED = "Label.disabledForeground";
 
     /**
      * 超过此字符数时，单元格显示截断文字 + 省略号，并启用 tooltip
@@ -246,6 +244,7 @@ public class EnhancedTablePanel extends JPanel {
     private void buildUI() {
         setLayout(new BorderLayout(0, 0));
         setBorder(BorderFactory.createEmptyBorder());
+        ToolWindowSurfaceStyle.applyCard(this);
         add(buildToolBar(), BorderLayout.NORTH);
         add(buildTableArea(), BorderLayout.CENTER);
         add(buildPagination(), BorderLayout.SOUTH);
@@ -254,9 +253,10 @@ public class EnhancedTablePanel extends JPanel {
     // ── 工具栏：搜索框 + 列筛选按钮 + 行数提示 ────────────────────────────
     private JPanel buildToolBar() {
         JPanel bar = new JPanel(new BorderLayout(4, 0));
+        ToolWindowSurfaceStyle.applyCard(bar);
         bar.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0,
-                        UIManager.getColor(SEPARATOR_FG)),
+                        ModernColors.getDividerBorderColor()),
                 BorderFactory.createEmptyBorder(4, 6, 4, 6)));
 
         searchField = new SearchTextField();
@@ -305,7 +305,7 @@ public class EnhancedTablePanel extends JPanel {
         });
 
         colFilterBtn = new JButton(UiI18n.get(UiMessageKeys.TABLE_COL_FILTER_BTN));
-        colFilterBtn.setFont(colFilterBtn.getFont().deriveFont(Font.PLAIN, 11f));
+        colFilterBtn.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         colFilterBtn.setFocusPainted(false);
         colFilterBtn.setToolTipText(UiI18n.get(UiMessageKeys.TABLE_COL_FILTER_TOOLTIP));
         colFilterBtn.addActionListener(e -> showColFilterPopup());
@@ -316,8 +316,8 @@ public class EnhancedTablePanel extends JPanel {
         left.add(colFilterBtn);
 
         hintLabel = new JLabel("0" + UiI18n.get(UiMessageKeys.TABLE_ROWS_SUFFIX));
-        hintLabel.setForeground(UIManager.getColor(LABEL_DISABLED));
-        hintLabel.setFont(hintLabel.getFont().deriveFont(Font.PLAIN, 11f));
+        hintLabel.setForeground(ModernColors.getTextSecondary());
+        hintLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         hintLabel.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 0));
 
         bar.add(left, BorderLayout.WEST);
@@ -345,13 +345,15 @@ public class EnhancedTablePanel extends JPanel {
 
     private JPopupMenu buildColFilterPopup() {
         JPopupMenu popup = new JPopupMenu();
+        ToolWindowSurfaceStyle.applyPopupMenuCard(popup);
         popup.setLayout(new BorderLayout(0, 0));
 
         // ── 标题栏 ──────────────────────────────────────────────────────
         JLabel titleLabel = new JLabel(UiI18n.get(UiMessageKeys.TABLE_COL_FILTER_TITLE));
-        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 12f));
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -1));
+        titleLabel.setForeground(ModernColors.getTextPrimary());
         titleLabel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)),
+                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()),
                 BorderFactory.createEmptyBorder(6, 10, 6, 10)));
         popup.add(titleLabel, BorderLayout.NORTH);
 
@@ -363,7 +365,7 @@ public class EnhancedTablePanel extends JPanel {
         for (int i = 0; i < currentColumns.length; i++) {
             boolean checked = (filterCols == null || filterCols.contains(i));
             colFilterBoxes[i] = new JCheckBox(currentColumns[i], checked);
-            colFilterBoxes[i].setFont(colFilterBoxes[i].getFont().deriveFont(Font.PLAIN, 12f));
+            colFilterBoxes[i].setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
             colFilterBoxes[i].setOpaque(false);
             colFilterBoxes[i].setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
             checkPanel.add(colFilterBoxes[i]);
@@ -377,23 +379,24 @@ public class EnhancedTablePanel extends JPanel {
 
         // ── 底部操作栏 ───────────────────────────────────────────────────
         JPanel footer = new JPanel(new BorderLayout(0, 0));
+        ToolWindowSurfaceStyle.applyCard(footer);
         footer.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, UIManager.getColor(SEPARATOR_FG)),
+                BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.getDividerBorderColor()),
                 BorderFactory.createEmptyBorder(6, 10, 6, 10)));
 
         JPanel linkRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         linkRow.setOpaque(false);
         JButton btnAll = makeLinkBtn(UiI18n.get(UiMessageKeys.TABLE_COL_FILTER_SELECT_ALL));
         JLabel sep = new JLabel(" | ");
-        sep.setForeground(UIManager.getColor(LABEL_DISABLED));
-        sep.setFont(sep.getFont().deriveFont(Font.PLAIN, 11f));
+        sep.setForeground(ModernColors.getTextSecondary());
+        sep.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         JButton btnNone = makeLinkBtn(UiI18n.get(UiMessageKeys.TABLE_COL_FILTER_DESELECT_ALL));
         linkRow.add(btnAll);
         linkRow.add(sep);
         linkRow.add(btnNone);
 
         JButton btnOk = new JButton(CommonI18n.get(CommonMessageKeys.GENERAL_OK));
-        btnOk.setFont(btnOk.getFont().deriveFont(Font.PLAIN, 11f));
+        btnOk.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         btnOk.setFocusPainted(false);
 
         footer.add(linkRow, BorderLayout.WEST);
@@ -412,11 +415,11 @@ public class EnhancedTablePanel extends JPanel {
     }
 
     /**
-     * 链接风格的小按钮（无边框、无背景、字体 11f）
+     * 链接风格的小按钮（无边框、无背景、使用紧凑字体）
      */
     private static JButton makeLinkBtn(String text) {
         JButton b = new JButton(text);
-        b.setFont(b.getFont().deriveFont(Font.PLAIN, 11f));
+        b.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         b.setFocusPainted(false);
         b.setBorderPainted(false);
         b.setContentAreaFilled(false);
@@ -461,14 +464,14 @@ public class EnhancedTablePanel extends JPanel {
         } else if (filterCols.isEmpty()) {
             // 全不选：置灰提示用户未指定范围
             colFilterBtn.setText(UiI18n.get(UiMessageKeys.TABLE_COL_FILTER_BTN_N, "0"));
-            colFilterBtn.setForeground(UIManager.getColor(LABEL_DISABLED));
+            colFilterBtn.setForeground(ModernColors.getTextSecondary());
             searchField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT,
                     UiI18n.get(UiMessageKeys.TABLE_SEARCH_PLACEHOLDER_NONE));
         } else {
             // 已选部分列：高亮显示数量，placeholder 显示列名
             colFilterBtn.setText(UiI18n.get(UiMessageKeys.TABLE_COL_FILTER_BTN_N,
                     String.valueOf(filterCols.size())));
-            colFilterBtn.setForeground(UIManager.getColor("Component.accentColor"));
+            colFilterBtn.setForeground(accentColor());
             searchField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT,
                     UiI18n.get(UiMessageKeys.TABLE_SEARCH_PLACEHOLDER_COLS,
                             buildFilterColNames()));
@@ -524,6 +527,7 @@ public class EnhancedTablePanel extends JPanel {
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
         table.setDefaultRenderer(Object.class, new HoverRenderer());
+        ToolWindowSurfaceStyle.applyTableCard(table);
         table.getTableHeader().addMouseListener(buildHeaderMouseListener());
         table.addMouseMotionListener(buildTableMotionListener());
         table.addMouseListener(buildTableMouseListener());
@@ -549,15 +553,15 @@ public class EnhancedTablePanel extends JPanel {
 
     private JScrollPane buildTableScroll() {
         JScrollPane scroll = new JScrollPane(table);
-        scroll.setBorder(BorderFactory.createEmptyBorder());
+        ToolWindowSurfaceStyle.applyTableScrollPaneCard(scroll, table);
         scroll.getVerticalScrollBar().setUnitIncrement(16);
         return scroll;
     }
 
     private JLabel buildEmptyLabel() {
         JLabel label = new JLabel("", SwingConstants.CENTER);
-        label.setFont(label.getFont().deriveFont(Font.PLAIN, 13f));
-        label.setForeground(UIManager.getColor(LABEL_DISABLED));
+        label.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        label.setForeground(ModernColors.getTextSecondary());
         label.setOpaque(false);
         label.setVisible(false);
         return label;
@@ -570,6 +574,7 @@ public class EnhancedTablePanel extends JPanel {
                 for (Component c : getComponents()) c.setBounds(0, 0, getWidth(), getHeight());
             }
         };
+        ToolWindowSurfaceStyle.applyCard(layered);
         layered.add(scroll, JLayeredPane.DEFAULT_LAYER);
         layered.add(overlay, JLayeredPane.PALETTE_LAYER);
         return layered;
@@ -637,14 +642,15 @@ public class EnhancedTablePanel extends JPanel {
     // ── 分页栏 ────────────────────────────────────────────────────────────
     private JPanel buildPagination() {
         JPanel bar = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 3));
+        ToolWindowSurfaceStyle.applyCard(bar);
         bar.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(1, 0, 0, 0,
-                        UIManager.getColor(SEPARATOR_FG)),
+                        ModernColors.getDividerBorderColor()),
                 BorderFactory.createEmptyBorder(2, 4, 2, 4)));
 
         JComboBox<String> pageSizeCombo = new JComboBox<>(SIZE_LABELS);
         pageSizeCombo.setPreferredSize(new Dimension(65, 24));
-        pageSizeCombo.setFont(pageSizeCombo.getFont().deriveFont(Font.PLAIN, 11f));
+        pageSizeCombo.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         pageSizeCombo.addActionListener(e -> {
             pageSize = PAGE_SIZES[pageSizeCombo.getSelectedIndex()];
             currentPage = 0;
@@ -667,12 +673,12 @@ public class EnhancedTablePanel extends JPanel {
         });
 
         pageInfoLabel = new JLabel("0 / 0");
-        pageInfoLabel.setFont(pageInfoLabel.getFont().deriveFont(Font.PLAIN, 11f));
+        pageInfoLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         pageInfoLabel.setPreferredSize(new Dimension(120, 20));
         pageInfoLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         JTextField pageJumpField = new JTextField(3);
-        pageJumpField.setFont(pageJumpField.getFont().deriveFont(Font.PLAIN, 11f));
+        pageJumpField.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         pageJumpField.setHorizontalAlignment(SwingConstants.CENTER);
         pageJumpField.setPreferredSize(new Dimension(40, 24));
         pageJumpField.addActionListener(e -> {
@@ -810,6 +816,7 @@ public class EnhancedTablePanel extends JPanel {
 
     private void showContextMenu(MouseEvent e) {
         JPopupMenu menu = new JPopupMenu();
+        ToolWindowSurfaceStyle.applyPopupMenuCard(menu);
         int r = table.getSelectedRow();
         int c = table.getSelectedColumn();
 
@@ -1005,7 +1012,7 @@ public class EnhancedTablePanel extends JPanel {
 
     private static JButton navBtn(String t) {
         JButton b = new JButton(t);
-        b.setFont(b.getFont().deriveFont(Font.PLAIN, 14f));
+        b.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, 1));
         b.setPreferredSize(new Dimension(28, 24));
         b.setFocusPainted(false);
         b.setMargin(new Insets(0, 2, 0, 2));
@@ -1014,7 +1021,7 @@ public class EnhancedTablePanel extends JPanel {
 
     private static JLabel tiny(String t) {
         JLabel l = new JLabel(t);
-        l.setFont(l.getFont().deriveFont(Font.PLAIN, 11f));
+        l.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         return l;
     }
 
@@ -1053,8 +1060,8 @@ public class EnhancedTablePanel extends JPanel {
         // ── 顶部信息栏 ──────────────────────────────────────────────────
         JLabel lenLabel = new JLabel(UiI18n.get(UiMessageKeys.TABLE_CELL_DETAIL_LENGTH,
                 String.valueOf(text.length())));
-        lenLabel.setForeground(UIManager.getColor(LABEL_DISABLED));
-        lenLabel.setFont(lenLabel.getFont().deriveFont(Font.PLAIN, 11f));
+        lenLabel.setForeground(ModernColors.getTextSecondary());
+        lenLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         lenLabel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
 
         // ── 底部按钮栏 ──────────────────────────────────────────────────
@@ -1113,7 +1120,7 @@ public class EnhancedTablePanel extends JPanel {
 
         JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 4));
         footer.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, UIManager.getColor(SEPARATOR_FG)),
+                BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.getDividerBorderColor()),
                 BorderFactory.createEmptyBorder(2, 4, 2, 4)));
         footer.add(btnFormatJson);
         footer.add(btnCopy);
@@ -1134,6 +1141,30 @@ public class EnhancedTablePanel extends JPanel {
         dialog.setVisible(true);
     }
 
+    private static Color accentColor() {
+        Color accent = UIManager.getColor("Component.accentColor");
+        return accent != null ? accent : ModernColors.getPrimary();
+    }
+
+    private static Color tableBackgroundColor() {
+        return ModernColors.getCardBackgroundColor();
+    }
+
+    private static Color tableHoverBackgroundColor() {
+        Color hover = UIManager.getColor("Table.hoverBackground");
+        return hover != null ? hover : ModernColors.getHoverBackgroundColor();
+    }
+
+    private static Color tableAlternateRowColor() {
+        Color alternate = UIManager.getColor("Table.alternateRowColor");
+        return alternate != null ? alternate : tableBackgroundColor();
+    }
+
+    private static String toCssColor(Color color) {
+        Color resolved = color != null ? color : ModernColors.getTextSecondary();
+        return String.format("#%02x%02x%02x", resolved.getRed(), resolved.getGreen(), resolved.getBlue());
+    }
+
     // ═══════════════════ Renderer ═════════════════════════════════════════
 
     private class HoverRenderer extends DefaultTableCellRenderer {
@@ -1147,7 +1178,7 @@ public class EnhancedTablePanel extends JPanel {
                 tooltip = "<html><body style='width:380px;font-family:monospace;font-size:11px;white-space:pre-wrap'>"
                         + escapeHtml(display.length() > TOOLTIP_MAX_LEN
                         ? display.substring(0, TOOLTIP_MAX_LEN) + "…" : display)
-                        + "<br><br><i style='color:gray'>"
+                        + "<br><br><i style='color:" + toCssColor(ModernColors.getTextSecondary()) + "'>"
                         + UiI18n.get(UiMessageKeys.TABLE_CELL_DETAIL_LENGTH, String.valueOf(display.length()))
                         + " — " + UiI18n.get(UiMessageKeys.TABLE_CELL_DETAIL_DOUBLE_CLICK) + "</i></body></html>";
                 display = display.substring(0, LARGE_CELL_THRESHOLD) + " …";
@@ -1157,13 +1188,9 @@ public class EnhancedTablePanel extends JPanel {
             setBorder(BorderFactory.createEmptyBorder(0, 6, 0, 6));
             if (!sel) {
                 if (row == hoveredRow) {
-                    Color hv = UIManager.getColor("Table.hoverBackground");
-                    setBackground(hv != null ? hv
-                            : UIManager.getColor("Table.selectionBackground").brighter());
+                    setBackground(tableHoverBackgroundColor());
                 } else {
-                    Color alt = UIManager.getColor("Table.alternateRowColor");
-                    setBackground(row % 2 == 0 || alt == null
-                            ? UIManager.getColor("Table.background") : alt);
+                    setBackground(row % 2 == 0 ? tableBackgroundColor() : tableAlternateRowColor());
                 }
             }
             return this;

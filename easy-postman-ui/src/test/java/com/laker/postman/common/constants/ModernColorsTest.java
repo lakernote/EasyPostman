@@ -19,10 +19,23 @@ public class ModernColorsTest {
             ThemeColors.PRIMARY_DARKER,
             ThemeColors.SUCCESS,
             ThemeColors.SELECTION_BACKGROUND,
+            ThemeColors.GIT_COMMIT,
+            ThemeColors.GIT_PUSH,
+            ThemeColors.GIT_PULL,
+            ThemeColors.VARIABLE_CONTEXT,
+            ThemeColors.VARIABLE_ITERATION_DATA,
+            ThemeColors.VARIABLE_GROUP,
+            ThemeColors.VARIABLE_ENVIRONMENT,
+            ThemeColors.VARIABLE_GLOBAL,
+            ThemeColors.VARIABLE_BUILT_IN,
             ThemeColors.SEARCH_HIGHLIGHT_BACKGROUND,
             ThemeColors.SEARCH_CURRENT_HIGHLIGHT_BACKGROUND,
             ThemeColors.SPLASH_GRADIENT_START,
-            ThemeColors.SPLASH_GRADIENT_END
+            ThemeColors.SPLASH_GRADIENT_END,
+            ThemeColors.TAB_BACKGROUND,
+            ThemeColors.TAB_SELECTED_BACKGROUND,
+            ThemeColors.TAB_HOVER_BACKGROUND,
+            ThemeColors.TAB_SEPARATOR
     );
 
     private Map<String, Object> previousThemeTokens;
@@ -67,6 +80,11 @@ public class ModernColorsTest {
     }
 
     @Test
+    public void shouldFormatThemeColorsForHtmlSnippets() {
+        assertEquals(ModernColors.toHtmlColor(new Color(1, 35, 255)), "#0123ff");
+    }
+
+    @Test
     public void shouldReadSelectionAndSearchHighlightColorsFromUiDefaults() {
         Color selection = new Color(21, 22, 23);
         Color highlight = new Color(31, 32, 33);
@@ -81,6 +99,43 @@ public class ModernColorsTest {
     }
 
     @Test
+    public void shouldReadGitOperationColorsFromUiDefaults() {
+        Color commit = new Color(51, 52, 53);
+        Color push = new Color(61, 62, 63);
+        Color pull = new Color(71, 72, 73);
+        UIManager.put(ThemeColors.GIT_COMMIT, commit);
+        UIManager.put(ThemeColors.GIT_PUSH, push);
+        UIManager.put(ThemeColors.GIT_PULL, pull);
+
+        assertEquals(ModernColors.getGitCommit(), commit);
+        assertEquals(ModernColors.getGitPush(), push);
+        assertEquals(ModernColors.getGitPull(), pull);
+    }
+
+    @Test
+    public void shouldReadVariableTypeColorsFromUiDefaults() {
+        Color context = new Color(81, 82, 83);
+        Color iterationData = new Color(91, 92, 93);
+        Color group = new Color(101, 102, 103);
+        Color environment = new Color(111, 112, 113);
+        Color global = new Color(121, 122, 123);
+        Color builtIn = new Color(131, 132, 133);
+        UIManager.put(ThemeColors.VARIABLE_CONTEXT, context);
+        UIManager.put(ThemeColors.VARIABLE_ITERATION_DATA, iterationData);
+        UIManager.put(ThemeColors.VARIABLE_GROUP, group);
+        UIManager.put(ThemeColors.VARIABLE_ENVIRONMENT, environment);
+        UIManager.put(ThemeColors.VARIABLE_GLOBAL, global);
+        UIManager.put(ThemeColors.VARIABLE_BUILT_IN, builtIn);
+
+        assertEquals(ModernColors.getVariableContextColor(), context);
+        assertEquals(ModernColors.getVariableIterationDataColor(), iterationData);
+        assertEquals(ModernColors.getVariableGroupColor(), group);
+        assertEquals(ModernColors.getVariableEnvironmentColor(), environment);
+        assertEquals(ModernColors.getVariableGlobalColor(), global);
+        assertEquals(ModernColors.getVariableBuiltInColor(), builtIn);
+    }
+
+    @Test
     public void shouldReadSplashGradientColorsFromUiDefaults() {
         Color start = new Color(51, 52, 53);
         Color end = new Color(61, 62, 63);
@@ -89,5 +144,22 @@ public class ModernColorsTest {
 
         assertEquals(ModernColors.getSplashGradientStartColor(), start);
         assertEquals(ModernColors.getSplashGradientEndColor(), end);
+    }
+
+    @Test
+    public void shouldReadTabChromeColorsFromUiDefaults() {
+        Color background = new Color(255, 255, 255);
+        Color selected = new Color(226, 235, 254);
+        Color hover = new Color(242, 246, 255);
+        Color separator = new Color(233, 234, 238);
+        UIManager.put(ThemeColors.TAB_BACKGROUND, background);
+        UIManager.put(ThemeColors.TAB_SELECTED_BACKGROUND, selected);
+        UIManager.put(ThemeColors.TAB_HOVER_BACKGROUND, hover);
+        UIManager.put(ThemeColors.TAB_SEPARATOR, separator);
+
+        assertEquals(ModernColors.getTabBackgroundColor(), background);
+        assertEquals(ModernColors.getTabSelectedBackgroundColor(), selected);
+        assertEquals(ModernColors.getTabHoverBackgroundColor(), hover);
+        assertEquals(ModernColors.getTabSeparatorColor(), separator);
     }
 }

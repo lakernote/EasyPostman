@@ -1,7 +1,10 @@
 package com.laker.postman.panel.toolbox;
 
-import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.component.ToolWindowActionToolbar;
+import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
@@ -29,69 +32,76 @@ public class DiffPanel extends JPanel {
 
     private void initUI() {
         setLayout(new BorderLayout(10, 10));
+        ToolWindowSurfaceStyle.applyCard(this);
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         // 顶部工具栏
-        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
         JButton compareBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_DIFF_COMPARE));
         JButton copyBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_COPY));
         JButton clearBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLEAR));
         JButton swapBtn = new JButton("⇄ Swap");
 
-        topPanel.add(compareBtn);
-        topPanel.add(copyBtn);
-        topPanel.add(swapBtn);
-        topPanel.add(clearBtn);
+        JPanel topPanel = ToolWindowActionToolbar.inlineLeft(compareBtn, copyBtn, swapBtn, clearBtn);
 
         add(topPanel, BorderLayout.NORTH);
 
         // 中间：三栏布局
-        JSplitPane topSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-
         // 原始文本
         JPanel originalPanel = new JPanel(new BorderLayout(5, 5));
+        originalPanel.setOpaque(false);
         originalPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_DIFF_ORIGINAL) + ":"), BorderLayout.NORTH);
         originalArea = new JTextArea();
         originalArea.setLineWrap(true);
         originalArea.setWrapStyleWord(true);
-        originalArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
-        originalArea.setBackground(ModernColors.getInputBackgroundColor());
-        originalArea.setForeground(ModernColors.getTextPrimary());
+        originalArea.setFont(FontsUtil.getMonospacedFontWithOffset(Font.PLAIN, 0));
         originalArea.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
-        originalPanel.add(new JScrollPane(originalArea), BorderLayout.CENTER);
+        ToolWindowSurfaceStyle.applyTextComponentInput(originalArea);
+        JScrollPane originalScrollPane = new JScrollPane(originalArea);
+        ToolWindowSurfaceStyle.applyScrollPaneCard(originalScrollPane);
+        originalPanel.add(originalScrollPane, BorderLayout.CENTER);
 
         // 修改后文本
         JPanel modifiedPanel = new JPanel(new BorderLayout(5, 5));
+        modifiedPanel.setOpaque(false);
         modifiedPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_DIFF_MODIFIED) + ":"), BorderLayout.NORTH);
         modifiedArea = new JTextArea();
         modifiedArea.setLineWrap(true);
         modifiedArea.setWrapStyleWord(true);
-        modifiedArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
-        modifiedArea.setBackground(ModernColors.getInputBackgroundColor());
-        modifiedArea.setForeground(ModernColors.getTextPrimary());
+        modifiedArea.setFont(FontsUtil.getMonospacedFontWithOffset(Font.PLAIN, 0));
         modifiedArea.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
-        modifiedPanel.add(new JScrollPane(modifiedArea), BorderLayout.CENTER);
+        ToolWindowSurfaceStyle.applyTextComponentInput(modifiedArea);
+        JScrollPane modifiedScrollPane = new JScrollPane(modifiedArea);
+        ToolWindowSurfaceStyle.applyScrollPaneCard(modifiedScrollPane);
+        modifiedPanel.add(modifiedScrollPane, BorderLayout.CENTER);
 
-        topSplitPane.setLeftComponent(originalPanel);
-        topSplitPane.setRightComponent(modifiedPanel);
+        JSplitPane topSplitPane = ToolWindowChrome.createHorizontalCardSplitPane(
+                originalPanel,
+                modifiedPanel,
+                360
+        );
         topSplitPane.setResizeWeight(0.5); // 平均分配空间
 
         // 整体分割面板
-        JSplitPane mainSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-        mainSplitPane.setTopComponent(topSplitPane);
 
         // 差异结果显示
         JPanel resultPanel = new JPanel(new BorderLayout(5, 5));
+        resultPanel.setOpaque(false);
         resultPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_DIFF_RESULT) + ":"), BorderLayout.NORTH);
         resultPane = new JTextPane();
         resultPane.setEditable(false);
-        resultPane.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
-        resultPane.setForeground(ModernColors.getTextPrimary());
+        resultPane.setFont(FontsUtil.getMonospacedFontWithOffset(Font.PLAIN, 0));
         resultPane.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
-        resultPanel.add(new JScrollPane(resultPane), BorderLayout.CENTER);
+        ToolWindowSurfaceStyle.applyTextComponentCard(resultPane);
+        JScrollPane resultScrollPane = new JScrollPane(resultPane);
+        ToolWindowSurfaceStyle.applyScrollPaneCard(resultScrollPane);
+        resultPanel.add(resultScrollPane, BorderLayout.CENTER);
 
-        mainSplitPane.setBottomComponent(resultPanel);
-        mainSplitPane.setDividerLocation(250);
+        JSplitPane mainSplitPane = ToolWindowChrome.createVerticalCardSplitPane(
+                topSplitPane,
+                resultPanel,
+                250
+        );
+        mainSplitPane.setResizeWeight(0.45);
 
         add(mainSplitPane, BorderLayout.CENTER);
 
@@ -130,18 +140,18 @@ public class DiffPanel extends JPanel {
 
             // 定义样式
             Style defaultStyle = resultPane.addStyle("default", null);
-            StyleConstants.setForeground(defaultStyle, Color.BLACK);
+            StyleConstants.setForeground(defaultStyle, ModernColors.getTextPrimary());
 
             Style addedStyle = resultPane.addStyle("added", null);
-            StyleConstants.setForeground(addedStyle, new Color(0, 128, 0));
-            StyleConstants.setBackground(addedStyle, new Color(200, 255, 200));
+            StyleConstants.setForeground(addedStyle, ModernColors.getSuccess());
+            StyleConstants.setBackground(addedStyle, ModernColors.withAlpha(ModernColors.getSuccess(), ModernColors.isDarkTheme() ? 64 : 36));
 
             Style removedStyle = resultPane.addStyle("removed", null);
-            StyleConstants.setForeground(removedStyle, new Color(200, 0, 0));
-            StyleConstants.setBackground(removedStyle, new Color(255, 200, 200));
+            StyleConstants.setForeground(removedStyle, ModernColors.getError());
+            StyleConstants.setBackground(removedStyle, ModernColors.withAlpha(ModernColors.getError(), ModernColors.isDarkTheme() ? 64 : 36));
 
             Style headerStyle = resultPane.addStyle("header", null);
-            StyleConstants.setForeground(headerStyle, Color.BLUE);
+            StyleConstants.setForeground(headerStyle, ModernColors.getPrimary());
             StyleConstants.setBold(headerStyle, true);
 
             // 统计信息

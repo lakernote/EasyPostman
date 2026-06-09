@@ -1,6 +1,7 @@
 package com.laker.postman.panel.performance.result;
 
 import com.laker.postman.common.UiSingletonFactory;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.placeholder.PerformanceTrendPlaceholderPanel;
 import com.laker.postman.performance.core.model.PerformanceTrendSnapshot;
 import org.jfree.data.time.RegularTimePeriod;
@@ -19,6 +20,7 @@ public class LazyPerformanceTrendPanel extends JPanel implements PerformanceTren
 
     LazyPerformanceTrendPanel(Supplier<PerformanceTrendPanel> trendPanelSupplier) {
         super(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(this);
         this.trendPanelSupplier = trendPanelSupplier == null
                 ? () -> UiSingletonFactory.getInstance(PerformanceTrendPanel.class)
                 : trendPanelSupplier;

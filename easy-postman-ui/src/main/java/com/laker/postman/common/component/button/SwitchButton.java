@@ -12,8 +12,6 @@ import java.awt.*;
 public class SwitchButton extends JToggleButton {
     private static final int DEFAULT_WIDTH = 35;
     private static final int DEFAULT_HEIGHT = 18;
-    private static final Color TRACK_OFF = new Color(196, 201, 208);
-    private static final Color THUMB = Color.WHITE;
 
     private final int trackWidth;
     private final int trackHeight;
@@ -46,9 +44,9 @@ public class SwitchButton extends JToggleButton {
 
         int y = (getHeight() - trackHeight) / 2;
         int arc = trackHeight;
-        Color trackColor = isSelected() ? ModernColors.getPrimary() : TRACK_OFF;
+        Color trackColor = isSelected() ? ModernColors.getPrimary() : trackOffColor();
         if (!isEnabled()) {
-            trackColor = ModernColors.getBorderMediumColor();
+            trackColor = ModernColors.getButtonDisabledBackgroundColor();
         }
 
         g2.setColor(trackColor);
@@ -57,8 +55,16 @@ public class SwitchButton extends JToggleButton {
         int thumbSize = trackHeight - 6;
         int thumbX = isSelected() ? trackWidth - thumbSize - 3 : 3;
         int thumbY = y + 3;
-        g2.setColor(THUMB);
+        g2.setColor(thumbColor());
         g2.fillOval(thumbX, thumbY, thumbSize, thumbSize);
         g2.dispose();
+    }
+
+    static Color trackOffColor() {
+        return ModernColors.getBorderMediumColor();
+    }
+
+    static Color thumbColor() {
+        return ModernColors.getTextInverse();
     }
 }

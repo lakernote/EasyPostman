@@ -1,5 +1,6 @@
 package com.laker.postman.panel.workspace.components;
 
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.model.GitAuthType;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.service.WorkspaceService;
@@ -9,7 +10,6 @@ import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
 
 import javax.swing.*;
-import javax.swing.border.TitledBorder;
 import java.awt.*;
 
 /**
@@ -58,17 +58,16 @@ public class UpdateAuthDialog extends JDialog {
         setLayout(new BorderLayout());
 
         JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setOpaque(false);
         mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
         // Git认证面板
-        JPanel authContainer = new JPanel(new BorderLayout());
-        authContainer.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createEtchedBorder(),
-                I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_AUTH_TYPE),
-                TitledBorder.LEFT,
-                TitledBorder.TOP,
-                FontsUtil.getDefaultFont(Font.BOLD)
-        ));
+        JPanel authContainer = new JPanel(new BorderLayout(0, 8));
+        ToolWindowSurfaceStyle.applyCard(authContainer);
+        authContainer.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
+        JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_AUTH_TYPE));
+        titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
+        authContainer.add(titleLabel, BorderLayout.NORTH);
         authContainer.add(gitAuthPanel, BorderLayout.CENTER);
         mainPanel.add(authContainer, BorderLayout.CENTER);
 
@@ -81,6 +80,7 @@ public class UpdateAuthDialog extends JDialog {
 
     private JPanel createButtonPanel() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        panel.setOpaque(false);
         confirmButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK));
         cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_CANCEL));
         panel.add(confirmButton);

@@ -1,7 +1,7 @@
 package com.laker.postman.panel.workspace.components;
 
 import cn.hutool.core.util.RandomUtil;
-import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.common.exception.WorkspaceCreateException;
 import com.laker.postman.model.GitAuthType;
@@ -14,7 +14,6 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import javax.swing.border.TitledBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
@@ -70,9 +69,9 @@ public class WorkspaceCreateDialog extends ProgressDialog {
         descriptionArea = new JTextArea(2, 10);
         descriptionArea.setLineWrap(true);
         descriptionArea.setWrapStyleWord(true);
-        descriptionArea.setBackground(ModernColors.getInputBackgroundColor());
+        ToolWindowSurfaceStyle.applyTextComponentInput(descriptionArea);
         descriptionScrollPane = new JScrollPane(descriptionArea);
-        descriptionScrollPane.getViewport().setBackground(ModernColors.getInputBackgroundColor());
+        ToolWindowSurfaceStyle.applyScrollPaneCard(descriptionScrollPane);
 
         // 工作区类型
         localTypeRadio = new JRadioButton(I18nUtil.getMessage(MessageKeys.WORKSPACE_TYPE_LOCAL), true);
@@ -289,21 +288,28 @@ public class WorkspaceCreateDialog extends ProgressDialog {
 
     private JPanel createBasicInfoPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createEtchedBorder(),
-                I18nUtil.getMessage(MessageKeys.WORKSPACE_INFO),
-                TitledBorder.LEFT,
-                TitledBorder.TOP,
-                FontsUtil.getDefaultFont(Font.BOLD)
-        ));
+        ToolWindowSurfaceStyle.applyCard(panel);
+        panel.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(6, 8, 6, 8);
         gbc.anchor = GridBagConstraints.WEST;
 
-        // 工作区名称
+        JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_INFO));
+        titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
         gbc.gridx = 0;
         gbc.gridy = 0;
+        gbc.gridwidth = 3;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        panel.add(titleLabel, gbc);
+
+        // 工作区名称
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
         panel.add(new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_NAME) + ":"), gbc);
         gbc.gridx = 1;
         gbc.gridwidth = 2;
@@ -313,7 +319,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
 
         // 描述
         gbc.gridx = 0;
-        gbc.gridy = 1;
+        gbc.gridy = 2;
         gbc.gridwidth = 1;
         gbc.fill = GridBagConstraints.NONE;
         gbc.weightx = 0;
@@ -326,7 +332,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
 
         // 工作区类型
         gbc.gridx = 0;
-        gbc.gridy = 2;
+        gbc.gridy = 3;
         gbc.gridwidth = 1;
         gbc.fill = GridBagConstraints.NONE;
         gbc.weightx = 0;
@@ -338,14 +344,14 @@ public class WorkspaceCreateDialog extends ProgressDialog {
 
         // 自动生成路径选项
         gbc.gridx = 0;
-        gbc.gridy = 3;
+        gbc.gridy = 4;
         gbc.gridwidth = 3;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         panel.add(autoGeneratePathCheckBox, gbc);
 
         // 本地路径
         gbc.gridx = 0;
-        gbc.gridy = 4;
+        gbc.gridy = 5;
         gbc.gridwidth = 1;
         gbc.fill = GridBagConstraints.NONE;
         panel.add(new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_PATH) + ":"), gbc);
@@ -363,13 +369,8 @@ public class WorkspaceCreateDialog extends ProgressDialog {
 
     private JPanel createGitPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createEtchedBorder(),
-                "Git " + I18nUtil.getMessage(MessageKeys.WORKSPACE_INFO),
-                TitledBorder.LEFT,
-                TitledBorder.TOP,
-                FontsUtil.getDefaultFont(Font.BOLD)
-        ));
+        ToolWindowSurfaceStyle.applyCard(panel);
+        panel.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
 
         GridBagConstraints rootGbc = new GridBagConstraints();
         rootGbc.gridx = 0;
@@ -377,17 +378,25 @@ public class WorkspaceCreateDialog extends ProgressDialog {
         rootGbc.fill = GridBagConstraints.HORIZONTAL;
         rootGbc.anchor = GridBagConstraints.NORTHWEST;
 
+        JLabel titleLabel = new JLabel("Git " + I18nUtil.getMessage(MessageKeys.WORKSPACE_INFO));
+        titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
+        rootGbc.gridy = 0;
+        rootGbc.insets = new Insets(6, 8, 2, 8);
+        panel.add(titleLabel, rootGbc);
+
         // Git模式选择
         JPanel modePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        modePanel.setOpaque(false);
         modePanel.add(cloneRadio);
         modePanel.add(Box.createHorizontalStrut(18));
         modePanel.add(initRadio);
-        rootGbc.gridy = 0;
+        rootGbc.gridy = 1;
         rootGbc.insets = new Insets(6, 8, 2, 8);
         panel.add(modePanel, rootGbc);
 
         // Git URL、分支配置
         JPanel gitConfigPanel = new JPanel(new GridBagLayout());
+        gitConfigPanel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(4, 5, 4, 5);
         gbc.anchor = GridBagConstraints.WEST;
@@ -413,17 +422,17 @@ public class WorkspaceCreateDialog extends ProgressDialog {
         gbc.weightx = 1.0;
         gitConfigPanel.add(branchField, gbc);
 
-        rootGbc.gridy = 1;
+        rootGbc.gridy = 2;
         rootGbc.insets = new Insets(0, 8, 2, 8);
         panel.add(gitConfigPanel, rootGbc);
 
         // Git认证面板
-        rootGbc.gridy = 2;
+        rootGbc.gridy = 3;
         rootGbc.insets = new Insets(0, 8, 6, 8);
         panel.add(gitAuthPanel, rootGbc);
 
         // 占位空行，确保内容始终贴顶显示，而不是拉伸中间表单区域
-        rootGbc.gridy = 3;
+        rootGbc.gridy = 4;
         rootGbc.weighty = 1.0;
         rootGbc.fill = GridBagConstraints.BOTH;
         rootGbc.insets = new Insets(0, 0, 0, 0);

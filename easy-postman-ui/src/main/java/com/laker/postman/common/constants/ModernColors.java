@@ -17,10 +17,10 @@ import java.awt.*;
  * - 中性色：Slate（优雅、易读）
  * <p>
  * - 背景、文字、边框等UI元素颜色全部主题自适应
- * 面板背景色（暗色主题 - 主背景色）60, 63, 65
- * @panelBg=#3c3f41
+ * 面板背景色（暗色主题 - 主背景色）25, 26, 28
+ * @panelBg=#191a1c
  * 面板背景色（亮色主题 - 主背景色浅灰色）
- * @panelBg=#f5f7fa
+ * @panelBg=#e9eaee
  *
  */
 @UtilityClass
@@ -47,29 +47,29 @@ public final class ModernColors {
     // ==================== 主色系 ====================
 
     /**
-     * 主色 - Blue-500（iOS蓝）
+     * 主色 - IDEA-inspired Blue
      */
-    public static final Color PRIMARY = new Color(0, 122, 255);
+    public static final Color PRIMARY = new Color(55, 113, 225);
 
     /**
-     * 主色深色 - Blue-600
+     * 主色深色 - IDEA-inspired Blue-600
      */
-    public static final Color PRIMARY_DARK = new Color(0, 102, 221);
+    public static final Color PRIMARY_DARK = new Color(47, 98, 201);
 
     /**
-     * 主色超深 - Blue-700
+     * 主色超深 - IDEA-inspired Blue-700
      */
-    public static final Color PRIMARY_DARKER = new Color(0, 88, 191);
+    public static final Color PRIMARY_DARKER = new Color(40, 84, 173);
 
     /**
-     * 主色浅色 - Blue-400
+     * 主色浅色 - IDEA-inspired Blue-400
      */
-    public static final Color PRIMARY_LIGHT = new Color(51, 153, 255);
+    public static final Color PRIMARY_LIGHT = new Color(94, 143, 240);
 
     /**
-     * 主色超浅 - Blue-100
+     * 主色超浅 - IDEA-inspired Blue-100
      */
-    public static final Color PRIMARY_LIGHTER = new Color(219, 234, 254);
+    public static final Color PRIMARY_LIGHTER = new Color(212, 227, 255);
 
     // ==================== 辅助色系 ====================
 
@@ -186,6 +186,15 @@ public final class ModernColors {
      */
     public static final Color GIT_PULL = new Color(168, 85, 247);  // Purple-500
 
+    // ==================== 变量类型颜色 ====================
+
+    public static final Color VARIABLE_CONTEXT = new Color(255, 152, 0);
+    public static final Color VARIABLE_ITERATION_DATA = new Color(25, 118, 210);
+    public static final Color VARIABLE_GROUP = new Color(13, 148, 136);
+    public static final Color VARIABLE_ENVIRONMENT = new Color(46, 125, 50);
+    public static final Color VARIABLE_GLOBAL = new Color(67, 56, 202);
+    public static final Color VARIABLE_BUILT_IN = new Color(156, 39, 176);
+
     public static Color getPrimary() {
         return color(ThemeColors.PRIMARY, PRIMARY);
     }
@@ -278,6 +287,42 @@ public final class ModernColors {
         return color(ThemeColors.NEUTRAL_DARKER, NEUTRAL_DARKER);
     }
 
+    public static Color getGitCommit() {
+        return color(ThemeColors.GIT_COMMIT, GIT_COMMIT);
+    }
+
+    public static Color getGitPush() {
+        return color(ThemeColors.GIT_PUSH, GIT_PUSH);
+    }
+
+    public static Color getGitPull() {
+        return color(ThemeColors.GIT_PULL, GIT_PULL);
+    }
+
+    public static Color getVariableContextColor() {
+        return color(ThemeColors.VARIABLE_CONTEXT, VARIABLE_CONTEXT);
+    }
+
+    public static Color getVariableIterationDataColor() {
+        return color(ThemeColors.VARIABLE_ITERATION_DATA, VARIABLE_ITERATION_DATA);
+    }
+
+    public static Color getVariableGroupColor() {
+        return color(ThemeColors.VARIABLE_GROUP, VARIABLE_GROUP);
+    }
+
+    public static Color getVariableEnvironmentColor() {
+        return color(ThemeColors.VARIABLE_ENVIRONMENT, VARIABLE_ENVIRONMENT);
+    }
+
+    public static Color getVariableGlobalColor() {
+        return color(ThemeColors.VARIABLE_GLOBAL, VARIABLE_GLOBAL);
+    }
+
+    public static Color getVariableBuiltInColor() {
+        return color(ThemeColors.VARIABLE_BUILT_IN, VARIABLE_BUILT_IN);
+    }
+
     // ==================== 变量徽标颜色 ====================
 
     /**
@@ -359,55 +404,90 @@ public final class ModernColors {
 
     /**
      * 获取主背景色 - 根据主题自适应
-     * 亮色主题：Slate-50 (248, 250, 252)
-     * 暗色主题：深灰色 (60, 63, 65) - 基于 IntelliJ IDEA Darcula，对应 @panelBg
+     * 亮色主题：IDEA-like workspace gray (233, 234, 238)
+     * 暗色主题：IDEA-like workspace gray (39, 41, 44)
      */
     public static Color getBackgroundColor() {
-        return color(ThemeColors.BACKGROUND, new Color(248, 250, 252), new Color(60, 63, 65));
+        return color(ThemeColors.BACKGROUND, new Color(233, 234, 238), new Color(39, 41, 44));
     }
 
     /**
      * 获取卡片/区域背景色 - 根据主题自适应
      * 亮色主题：白色 (255, 255, 255)
-     * 暗色主题：稍浅的深灰色 (55, 57, 59)
+     * 暗色主题：IDEA-like card/editor dark (25, 26, 28)
      */
     public static Color getCardBackgroundColor() {
-        return color(ThemeColors.SURFACE, new Color(255, 255, 255), new Color(55, 57, 59));
+        return color(ThemeColors.SURFACE, new Color(255, 255, 255), new Color(25, 26, 28));
+    }
+
+    /**
+     * 获取窗口顶部 chrome 背景色 - 菜单栏和内嵌标题栏共用。
+     */
+    public static Color getWindowChromeBackgroundColor() {
+        return color(ThemeColors.WINDOW_CHROME_BACKGROUND, new Color(233, 234, 238), new Color(39, 41, 44));
     }
 
     /**
      * 获取输入框背景色 - 根据主题自适应
      * 亮色主题：白色 (255, 255, 255)
-     * 暗色主题：比卡片背景稍亮 (65, 68, 70)
+     * 暗色主题：外层灰上的输入区 (39, 41, 44)
      */
     public static Color getInputBackgroundColor() {
-        return color(ThemeColors.INPUT_BACKGROUND, new Color(255, 255, 255), new Color(65, 68, 70));
+        return color(ThemeColors.INPUT_BACKGROUND, new Color(255, 255, 255), new Color(39, 41, 44));
+    }
+
+    /**
+     * 获取 Tab 区域未选中背景色 - 根据主题自适应。
+     */
+    public static Color getTabBackgroundColor() {
+        return color(ThemeColors.TAB_BACKGROUND, new Color(255, 255, 255), new Color(25, 26, 28));
+    }
+
+    /**
+     * 获取 Tab 选中背景色 - 根据主题自适应。
+     */
+    public static Color getTabSelectedBackgroundColor() {
+        return color(ThemeColors.TAB_SELECTED_BACKGROUND, new Color(226, 235, 254), new Color(39, 41, 44));
+    }
+
+    /**
+     * 获取 Tab 悬停背景色 - 根据主题自适应。
+     */
+    public static Color getTabHoverBackgroundColor() {
+        return color(ThemeColors.TAB_HOVER_BACKGROUND, new Color(242, 246, 255), new Color(34, 36, 40));
+    }
+
+    /**
+     * 获取 Tab 区域分割线颜色 - 根据主题自适应。
+     */
+    public static Color getTabSeparatorColor() {
+        return color(ThemeColors.TAB_SEPARATOR, new Color(233, 234, 238), new Color(49, 51, 56));
     }
 
     /**
      * 获取悬停背景色 - 根据主题自适应
-     * 亮色主题：Slate-100 (241, 245, 249)
-     * 暗色主题：比背景稍亮 (70, 73, 75)
+     * 亮色主题：浅蓝灰 hover
+     * 暗色主题：比卡片稍亮
      */
     public static Color getHoverBackgroundColor() {
-        return color(ThemeColors.HOVER_BACKGROUND, new Color(241, 245, 249), new Color(70, 73, 75));
+        return color(ThemeColors.HOVER_BACKGROUND, new Color(239, 244, 255), new Color(47, 50, 56));
     }
 
     /**
      * 获取通用选中背景色 - 根据主题自适应
      */
     public static Color getSelectionBackgroundColor() {
-        return color(ThemeColors.SELECTION_BACKGROUND, new Color(219, 234, 254), new Color(60, 90, 120));
+        return color(ThemeColors.SELECTION_BACKGROUND, new Color(212, 227, 255), new Color(45, 64, 95));
     }
 
 
     /**
      * 获取按钮按下状态背景 - 根据主题自适应
      * 亮色主题：Slate-200 (226, 232, 240)
-     * 暗色主题：比背景更暗 (50, 52, 54)
+     * 暗色主题：比背景更暗 (34, 36, 39)
      */
     public static Color getButtonPressedColor() {
-        return color(ThemeColors.BUTTON_PRESSED_BACKGROUND, new Color(226, 232, 240), new Color(50, 52, 54));
+        return color(ThemeColors.BUTTON_PRESSED_BACKGROUND, new Color(220, 233, 255), new Color(34, 36, 39));
     }
 
     /**
@@ -424,29 +504,29 @@ public final class ModernColors {
     /**
      * 获取边框颜色（浅色）- 根据主题自适应
      * 亮色主题：Slate-200 (226, 232, 240)
-     * 暗色主题：比背景稍亮 (75, 77, 80) - 对应 @borderColor
+     * 暗色主题：比背景稍亮 (59, 61, 66) - 对应 @borderColor
      */
     public static Color getBorderLightColor() {
-        return color(ThemeColors.BORDER_LIGHT, new Color(226, 232, 240), new Color(75, 77, 80));
+        return color(ThemeColors.BORDER_LIGHT, new Color(211, 218, 230), new Color(59, 61, 66));
     }
 
     /**
      * 获取边框颜色（中等）- 根据主题自适应
      * 亮色主题：Slate-300 (203, 213, 225)
-     * 暗色主题：更明显的边框 (85, 87, 90)
+     * 暗色主题：更明显的边框 (70, 73, 80)
      */
     public static Color getBorderMediumColor() {
-        return color(ThemeColors.BORDER_MEDIUM, new Color(203, 213, 225), new Color(85, 87, 90));
+        return color(ThemeColors.BORDER_MEDIUM, new Color(190, 199, 213), new Color(70, 73, 80));
     }
 
     /**
      * 获取分隔线/边框颜色 - 主题适配
      * 用于面板之间的分隔线、边框等
-     * 亮色主题：浅灰色 (211, 211, 211)
-     * 暗色主题：比背景亮的灰色 (80, 83, 85)
+     * 亮色主题：浅灰色 (213, 216, 222)
+     * 暗色主题：比背景亮的灰色 (49, 51, 56)
      */
     public static Color getDividerBorderColor() {
-        return color(ThemeColors.DIVIDER, new Color(211, 211, 211), new Color(80, 83, 85));
+        return color(ThemeColors.DIVIDER, new Color(213, 216, 222), new Color(49, 51, 56));
     }
 
     /**
@@ -463,28 +543,28 @@ public final class ModernColors {
     /**
      * 获取滚动条轨道颜色 - 根据主题自适应
      * 亮色主题：Slate-50 (245, 247, 250)
-     * 暗色主题：与主背景相同 (60, 63, 65)
+     * 暗色主题：与主背景相同 (25, 26, 28)
      */
     public static Color getScrollbarTrackColor() {
-        return color(ThemeColors.SCROLLBAR_TRACK, new Color(245, 247, 250), new Color(60, 63, 65));
+        return color(ThemeColors.SCROLLBAR_TRACK, new Color(243, 244, 247), new Color(25, 26, 28));
     }
 
     /**
      * 获取滚动条滑块颜色 - 根据主题自适应
-     * 亮色主题：浅灰 (220, 225, 230)
-     * 暗色主题：比背景亮的灰色 (85, 87, 90)
+     * 亮色主题：浅灰 (200, 204, 212)
+     * 暗色主题：比背景亮的灰色 (70, 72, 78)
      */
     public static Color getScrollbarThumbColor() {
-        return color(ThemeColors.SCROLLBAR_THUMB, new Color(220, 225, 230), new Color(85, 87, 90));
+        return color(ThemeColors.SCROLLBAR_THUMB, new Color(200, 204, 212), new Color(70, 72, 78));
     }
 
     /**
      * 获取滚动条滑块悬停颜色 - 根据主题自适应
-     * 亮色主题：中灰 (200, 210, 220)
-     * 暗色主题：更亮的灰色 (100, 102, 105)
+     * 亮色主题：中灰 (183, 189, 200)
+     * 暗色主题：更亮的灰色 (85, 88, 96)
      */
     public static Color getScrollbarThumbHoverColor() {
-        return color(ThemeColors.SCROLLBAR_THUMB_HOVER, new Color(200, 210, 220), new Color(100, 102, 105));
+        return color(ThemeColors.SCROLLBAR_THUMB_HOVER, new Color(183, 189, 200), new Color(85, 88, 96));
     }
 
     // ==================== 警告/提示颜色（主题适配）====================
@@ -526,7 +606,7 @@ public final class ModernColors {
     }
 
     public static Color getSplashGradientEndColor() {
-        return color(ThemeColors.SPLASH_GRADIENT_END, getPrimaryLighter(), new Color(55, 57, 59));
+        return color(ThemeColors.SPLASH_GRADIENT_END, getPrimaryLighter(), new Color(39, 41, 44));
     }
 
     /**
@@ -547,11 +627,11 @@ public final class ModernColors {
 
     /**
      * Console 文本区域背景色 - 根据主题自适应
-     * 亮色主题：浅灰色 (245, 247, 250) - #f5f7fa
-     * 暗色主题：略深的灰色 (55, 57, 59) - #37393b
+     * 亮色主题：浅灰色 (243, 244, 247) - #f3f4f7
+     * 暗色主题：略深的灰色 (39, 41, 44) - #27292c
      */
     public static Color getConsoleTextAreaBg() {
-        return color(ThemeColors.CONSOLE_TEXT_AREA_BACKGROUND, new Color(245, 247, 250), new Color(55, 57, 59));
+        return color(ThemeColors.CONSOLE_TEXT_AREA_BACKGROUND, new Color(243, 244, 247), new Color(39, 41, 44));
     }
 
     /**
@@ -664,6 +744,13 @@ public final class ModernColors {
 
     public static Color withAlpha(Color color, int alpha) {
         return new Color(color.getRed(), color.getGreen(), color.getBlue(), alpha);
+    }
+
+    public static String toHtmlColor(Color color) {
+        if (color == null) {
+            return "#000000";
+        }
+        return "#%02x%02x%02x".formatted(color.getRed(), color.getGreen(), color.getBlue());
     }
 
     /**

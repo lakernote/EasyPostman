@@ -368,7 +368,7 @@ public class NotificationUtil {
                     super.paintComponent(g);
                 }
             };
-            iconLabel.setForeground(Color.WHITE);
+            iconLabel.setForeground(ModernColors.getTextInverse());
             iconLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -2));
             iconLabel.setHorizontalAlignment(SwingConstants.CENTER);
             iconLabel.setVerticalAlignment(SwingConstants.CENTER);
@@ -433,8 +433,8 @@ public class NotificationUtil {
 
         private JButton buildCloseButton() {
             JButton btn = new JButton("×");
-            btn.setFont(btn.getFont().deriveFont(Font.PLAIN, 15f));
-            btn.setForeground(new Color(150, 153, 158, 0));  // 初始完全透明
+            btn.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, 2));
+            btn.setForeground(ModernColors.withAlpha(ModernColors.getTextHint(), 0));
             btn.setContentAreaFilled(false);
             btn.setBorderPainted(false);
             btn.setFocusPainted(false);
@@ -489,7 +489,7 @@ public class NotificationUtil {
             if (!isHovered) return;
             isHovered = false;
             resumeAutoClose();
-            closeButton.setForeground(new Color(150, 153, 158, 0));
+            closeButton.setForeground(ModernColors.withAlpha(ModernColors.getTextHint(), 0));
         }
 
 

@@ -1,5 +1,6 @@
 package com.laker.postman.panel.topmenu.setting;
 
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.setting.SettingsHintLabel;
 import com.laker.postman.common.component.setting.SettingsSectionPanel;
 import com.laker.postman.common.constants.ModernColors;
@@ -125,7 +126,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
     private JPanel createDescriptionSection() {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBackground(getCardBackgroundColor());
+        ToolWindowSurfaceStyle.applyCard(panel);
         panel.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
 
@@ -167,7 +168,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
     private JPanel createActionBar() {
         JPanel actionBar = new JPanel();
         actionBar.setLayout(new BoxLayout(actionBar, BoxLayout.X_AXIS));
-        actionBar.setBackground(getCardBackgroundColor());
+        ToolWindowSurfaceStyle.applyCard(actionBar);
         actionBar.setAlignmentX(Component.LEFT_ALIGNMENT);
         actionBar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
 
@@ -206,6 +207,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         certificateTable.getTableHeader().setReorderingAllowed(false);
         certificateTable.getTableHeader().setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -2));
         certificateTable.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
+        ToolWindowSurfaceStyle.applyTableCard(certificateTable);
 
         // 使用后续列调整模式，让表格填充满可用空间
         certificateTable.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
@@ -258,7 +260,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         });
 
         JScrollPane scrollPane = new JScrollPane(certificateTable);
-        scrollPane.setBorder(BorderFactory.createLineBorder(ModernColors.getBorderLightColor(), 1));
+        ToolWindowSurfaceStyle.applyTableScrollPaneCard(scrollPane, certificateTable);
         scrollPane.setPreferredSize(new Dimension(450, 280));
         scrollPane.setMaximumSize(new Dimension(600, 350));
         scrollPane.setMinimumSize(new Dimension(350, 200));
@@ -351,11 +353,11 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         textArea.setLineWrap(true);
         textArea.setWrapStyleWord(true);
         textArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
-        textArea.setBackground(getBackgroundColor());
-        textArea.setForeground(getTextPrimaryColor());
+        ToolWindowSurfaceStyle.applyTextComponentCard(textArea);
         textArea.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         JScrollPane scrollPane = new JScrollPane(textArea);
+        ToolWindowSurfaceStyle.applyScrollPaneCard(scrollPane);
         scrollPane.setPreferredSize(new Dimension(600, 350));
 
         JOptionPane.showMessageDialog(
@@ -531,7 +533,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
             gbc.weightx = 0;
             gbc.gridwidth = 1;
             JLabel certPathLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CERT_CERT_PATH) + ":");
-            certPathLabel.setForeground(Color.RED);
+            certPathLabel.setForeground(ModernColors.getError());
             formPanel.add(certPathLabel, gbc);
 
             gbc.gridx = 1;
@@ -604,7 +606,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
             gbc.gridwidth = 1;
             JLabel jLabel = new JLabel(label);
             if (required) {
-                jLabel.setForeground(Color.RED);
+                jLabel.setForeground(ModernColors.getError());
             }
             panel.add(jLabel, gbc);
 

@@ -8,6 +8,7 @@ import com.laker.postman.request.model.RequestItemProtocolEnum;
 
 
 import com.laker.postman.common.component.LoadingOverlay;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.service.setting.SettingManager;
@@ -50,7 +51,9 @@ public class ResponsePanel extends JPanel {
     public ResponsePanel(RequestItemProtocolEnum protocol, boolean enableSaveButton) {
         this.protocol = protocol;
         setLayout(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(this);
         tabBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        tabBar.setOpaque(false);
         statusBar = new ResponseStatusBar();
 
         // 根据协议类型初始化相应的面板（使用TabBarBuilder简化）
@@ -61,11 +64,10 @@ public class ResponsePanel extends JPanel {
             tabButtons = TabBarBuilder.createModernTabButtons(tabNames);
             TabBarBuilder.addButtonsToTabBar(tabBar, tabButtons, tabConfig.initialVisibility);
 
-            topResponseBar = new JPanel(new BorderLayout());
-            topResponseBar.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()));
+            topResponseBar = createTopResponseBar();
             topResponseBar.add(tabBar, BorderLayout.WEST);
             topResponseBar.add(statusBar, BorderLayout.EAST);
-            cardPanel = new JPanel(new CardLayout());
+            cardPanel = createCardPanel();
             webSocketResponsePanel = new WebSocketResponsePanel();
             responseHeadersPanel = new ResponseHeadersPanel();
             networkLogPanel = new NetworkLogPanel();
@@ -83,11 +85,10 @@ public class ResponsePanel extends JPanel {
             tabButtons = TabBarBuilder.createModernTabButtons(tabNames);
             TabBarBuilder.addButtonsToTabBar(tabBar, tabButtons, tabConfig.initialVisibility);
 
-            topResponseBar = new JPanel(new BorderLayout());
-            topResponseBar.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()));
+            topResponseBar = createTopResponseBar();
             topResponseBar.add(tabBar, BorderLayout.WEST);
             topResponseBar.add(statusBar, BorderLayout.EAST);
-            cardPanel = new JPanel(new CardLayout());
+            cardPanel = createCardPanel();
             sseResponsePanel = new SSEResponsePanel();
             responseHeadersPanel = new ResponseHeadersPanel();
             networkLogPanel = new NetworkLogPanel();
@@ -105,26 +106,29 @@ public class ResponsePanel extends JPanel {
             tabButtons = TabBarBuilder.createModernTabButtons(tabNames);
             TabBarBuilder.addButtonsToTabBar(tabBar, tabButtons, tabConfig.initialVisibility);
 
-            topResponseBar = new JPanel(new BorderLayout());
-            topResponseBar.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()));
+            topResponseBar = createTopResponseBar();
             topResponseBar.add(tabBar, BorderLayout.WEST);
             topResponseBar.add(statusBar, BorderLayout.EAST);
-            cardPanel = new JPanel(new CardLayout());
+            cardPanel = createCardPanel();
             responseBodyPanel = new ResponseBodyPanel(enableSaveButton); // 根据参数决定是否启用保存按钮
             responseBodyPanel.setEnabled(false);
             responseBodyPanel.setBodyText(null);
             responseHeadersPanel = new ResponseHeadersPanel();
             JPanel testsPanel = new JPanel(new BorderLayout());
+            ToolWindowSurfaceStyle.applyCard(testsPanel);
             // 设置边框
             testsPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
             testsPane = new JEditorPane();
             testsPane.setContentType("text/html");
             testsPane.setEditable(false);
+            ToolWindowSurfaceStyle.applyTextComponentCard(testsPane);
             JScrollPane testsScrollPane = new JScrollPane(testsPane);
+            ToolWindowSurfaceStyle.applyScrollPaneCard(testsScrollPane);
             testsPanel.add(testsScrollPane, BorderLayout.CENTER);
             networkLogPanel = new NetworkLogPanel();
             timelinePanel = new TimelinePanel(new ArrayList<>(), null);
             JScrollPane timelineScrollPanel = new JScrollPane(timelinePanel);
+            ToolWindowSurfaceStyle.applyScrollPaneCard(timelineScrollPanel);
             // 设置边框
             timelineScrollPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
             // 按照指定顺序添加到 cardPanel
@@ -165,12 +169,25 @@ public class ResponsePanel extends JPanel {
         // loading overlay 只覆盖 cardPanel，不遮顶部 tab/status bar。
         // 这样请求执行中仍然可以切换响应标签、查看状态信息。
         JLayeredPane cardLayeredPane = new JLayeredPane();
+        ToolWindowSurfaceStyle.applyCard(cardLayeredPane);
         cardLayeredPane.setLayout(new ResponseCardOverlayLayout());
         cardLayeredPane.add(cardPanel, JLayeredPane.DEFAULT_LAYER);
         cardLayeredPane.add(loadingOverlay, JLayeredPane.PALETTE_LAYER);
 
         add(topResponseBar, BorderLayout.NORTH);
         add(cardLayeredPane, BorderLayout.CENTER);
+    }
+
+    private JPanel createTopResponseBar() {
+        JPanel panel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applySectionHeader(panel);
+        return panel;
+    }
+
+    private JPanel createCardPanel() {
+        JPanel panel = new JPanel(new CardLayout());
+        ToolWindowSurfaceStyle.applyCard(panel);
+        return panel;
     }
 
     public void setResponseTabButtonsEnable(boolean enable) {

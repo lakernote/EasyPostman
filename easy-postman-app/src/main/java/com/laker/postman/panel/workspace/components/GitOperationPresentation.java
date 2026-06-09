@@ -1,5 +1,6 @@
 package com.laker.postman.panel.workspace.components;
 
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.GitOperation;
 import lombok.experimental.UtilityClass;
 
@@ -18,9 +19,9 @@ public class GitOperationPresentation {
 
     public Color getColor(GitOperation operation) {
         return switch (operation) {
-            case COMMIT -> new Color(34, 197, 94);
-            case PUSH -> new Color(59, 130, 246);
-            case PULL -> new Color(168, 85, 247);
+            case COMMIT -> ModernColors.getGitCommit();
+            case PUSH -> ModernColors.getGitPush();
+            case PULL -> ModernColors.getGitPull();
         };
     }
 }

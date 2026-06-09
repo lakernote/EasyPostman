@@ -14,6 +14,9 @@ import com.laker.postman.common.DebouncedSaveSupport;
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.CsvDataPanel;
+import com.laker.postman.common.component.ToolWindowActionToolbar;
+import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.*;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.functional.model.FunctionalConfigRow;
@@ -81,29 +84,33 @@ public class FunctionalPanel extends UiSingletonPanel {
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
+        ToolWindowSurfaceStyle.applyBackground(this);
         // 移除硬编码 setPreferredSize，改用最小尺寸约束，让父容器自适应分配
         setMinimumSize(new Dimension(500, 300));
 
         // 创建主选项卡面板
         mainTabbedPane = new JTabbedPane();
+        ToolWindowSurfaceStyle.applyTabbedPaneCard(mainTabbedPane);
+        mainTabbedPane.setBorder(BorderFactory.createEmptyBorder());
         mainTabbedPane.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1));
 
         JPanel executionPanel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(executionPanel);
         executionPanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         executionPanel.add(createTopPanel(), BorderLayout.NORTH);
         executionPanel.add(createTablePanel(), BorderLayout.CENTER);
         mainTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TAB_REQUEST_CONFIG),
                 new FlatSVGIcon("icons/functional.svg", 16, 16)
-                        .setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))),
+                        .setColorFilter(new FlatSVGIcon.ColorFilter(color -> ModernColors.getTextPrimary())),
                 executionPanel);
 
         resultsPanel = new ExecutionResultsPanel();
         mainTabbedPane.addTab(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TAB_EXECUTION_RESULTS),
                 new FlatSVGIcon("icons/history.svg", 16, 16)
-                        .setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))),
+                        .setColorFilter(new FlatSVGIcon.ColorFilter(color -> ModernColors.getTextPrimary())),
                 resultsPanel);
 
-        add(mainTabbedPane, BorderLayout.CENTER);
+        add(ToolWindowChrome.wrapToolWindow(mainTabbedPane), BorderLayout.CENTER);
 
         this.persistenceService = BeanFactory.getBean(FunctionalPersistenceService.class);
         loadSaved();
@@ -133,7 +140,7 @@ public class FunctionalPanel extends UiSingletonPanel {
         timeLabel = new JLabel("0 ms");
         timeLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
         JLabel timeIcon = new JLabel(new FlatSVGIcon("icons/time.svg", 16, 16)
-                .setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))));
+                .setColorFilter(new FlatSVGIcon.ColorFilter(color -> ModernColors.getTextPrimary())));
         rightPanel.add(timeIcon);
         rightPanel.add(timeLabel);
 
@@ -146,7 +153,7 @@ public class FunctionalPanel extends UiSingletonPanel {
         progressLabel = new JLabel("0/0");
         progressLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
         JLabel taskIcon = new JLabel(new FlatSVGIcon("icons/functional.svg", 16, 16)
-                .setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))));
+                .setColorFilter(new FlatSVGIcon.ColorFilter(color -> ModernColors.getTextPrimary())));
         rightPanel.add(taskIcon);
         rightPanel.add(progressLabel);
 
@@ -155,18 +162,13 @@ public class FunctionalPanel extends UiSingletonPanel {
     }
 
     private JPanel createButtonPanel() {
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
-        btnPanel.setOpaque(false);
-
         JButton loadBtn = new LoadButton();
         loadBtn.addActionListener(e -> showLoadRequestsDialog());
-        btnPanel.add(loadBtn);
 
         runBtn = new StartButton();
         runBtn.addActionListener(e -> {
             runSelectedRequests();
         });
-        btnPanel.add(runBtn);
 
         stopBtn = new StopButton();
         stopBtn.setEnabled(false); // 初始禁用，执行时才启用
@@ -174,11 +176,9 @@ public class FunctionalPanel extends UiSingletonPanel {
             isStopped = true;
             stopBtn.setEnabled(false);
         });
-        btnPanel.add(stopBtn);
 
         JButton refreshBtn = new RefreshButton();
         refreshBtn.addActionListener(e -> refreshRequestsFromCollections());
-        btnPanel.add(refreshBtn);
 
         JButton clearBtn = new ClearButton();
         clearBtn.addActionListener(e -> {
@@ -193,9 +193,8 @@ public class FunctionalPanel extends UiSingletonPanel {
             }
             persistenceService.clear();
         });
-        btnPanel.add(clearBtn);
 
-        return btnPanel;
+        return ToolWindowActionToolbar.inlineLeft(loadBtn, runBtn, stopBtn, refreshBtn, clearBtn);
     }
 
     // 批量运行
@@ -504,7 +503,7 @@ public class FunctionalPanel extends UiSingletonPanel {
         table.setTransferHandler(transferHandler);
 
         JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder(0, 5, 5, 5));
+        ToolWindowSurfaceStyle.applyTableScrollPaneCard(scrollPane, table);
         return scrollPane;
     }
 
@@ -680,6 +679,7 @@ public class FunctionalPanel extends UiSingletonPanel {
      */
     private void showTableContextMenu(java.awt.event.MouseEvent e, int rowIndex) {
         JPopupMenu menu = new JPopupMenu();
+        ToolWindowSurfaceStyle.applyPopupMenuCard(menu);
         RunnerRowData row = tableModel.getRow(rowIndex);
 
         // 查看详情

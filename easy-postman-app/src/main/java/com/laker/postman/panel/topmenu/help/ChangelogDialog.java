@@ -1,5 +1,6 @@
 package com.laker.postman.panel.topmenu.help;
 
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.platform.update.changelog.ChangelogService;
 import com.laker.postman.platform.update.source.UpdateSource;
 import com.laker.postman.service.setting.SettingManager;
@@ -57,7 +58,7 @@ public class ChangelogDialog extends JDialog {
         // 状态标签
         statusLabel = new JLabel(" ");
         statusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        statusLabel.setForeground(Color.GRAY);
+        statusLabel.setForeground(ModernColors.getTextSecondary());
         bottomPanel.add(statusLabel, BorderLayout.WEST);
 
         // 按钮面板

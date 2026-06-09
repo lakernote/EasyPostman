@@ -3,6 +3,7 @@ package com.laker.postman.panel.collections.editor.request.sub;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.EasyTextField;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.PrimaryButton;
 import com.laker.postman.common.component.button.SecondaryButton;
 import com.laker.postman.common.constants.ModernColors;
@@ -63,7 +64,7 @@ public class RequestLinePanel extends JPanel {
      */
     private void setupPanelStyle() {
         setLayout(new BorderLayout(0, 0));
-        setOpaque(true);
+        ToolWindowSurfaceStyle.applyCard(this);
         setBorder(BorderFactory.createEmptyBorder(PANEL_PADDING, PANEL_PADDING, PANEL_PADDING, PANEL_PADDING));
     }
 
@@ -221,7 +222,7 @@ public class RequestLinePanel extends JPanel {
         sendButton.setEnabled(true);
 
         // 重置为默认蓝色
-        updateButtonStyle(sendButton, ModernColors.getPrimary(), ModernColors.getPrimaryDark(),
+        updateButtonStyle(sendButton, ModernColors.getPrimary(), ModernColors.getPrimaryLight(),
                 ModernColors.getPrimaryDarker());
 
         // 添加新监听器

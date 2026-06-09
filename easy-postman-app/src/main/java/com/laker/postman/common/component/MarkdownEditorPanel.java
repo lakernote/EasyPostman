@@ -11,7 +11,6 @@ import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.MatteBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.undo.UndoManager;
@@ -155,13 +154,13 @@ public class MarkdownEditorPanel extends JPanel {
 
     private void initUI() {
         setLayout(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(this);
 
         editorPanelRef = createEditorPanel();
         previewPanelRef = createPreviewPanel();
 
-        splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, editorPanelRef, previewPanelRef);
+        splitPane = ToolWindowChrome.createHorizontalCardSplitPane(editorPanelRef, previewPanelRef, 0);
         splitPane.setResizeWeight(0.5);
-        splitPane.setBorder(null);
 
         toolbarPanel = createEnhancedToolbar();
         add(toolbarPanel, BorderLayout.NORTH);
@@ -179,12 +178,7 @@ public class MarkdownEditorPanel extends JPanel {
      */
     private JPanel createEnhancedToolbar() {
         JPanel toolbarContainer = new JPanel(new WrapLayout(FlowLayout.LEFT, 5, 2));
-        toolbarContainer.setBorder(BorderFactory.createCompoundBorder(
-                new MatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()),
-                new EmptyBorder(3, 5, 3, 5)
-        ));
-        toolbarContainer.setOpaque(true);
-        toolbarContainer.setBackground(UIManager.getColor("Panel.background"));
+        ToolWindowSurfaceStyle.applySectionHeader(toolbarContainer, 3, 5, 3, 5);
 
         undoButton = createFlatButton("↶", I18nUtil.getMessage(MessageKeys.MARKDOWN_UNDO), e -> undo());
         redoButton = createFlatButton("↷", I18nUtil.getMessage(MessageKeys.MARKDOWN_REDO), e -> redo());
@@ -345,6 +339,7 @@ public class MarkdownEditorPanel extends JPanel {
      */
     private JPopupMenu createMoreMenu() {
         JPopupMenu menu = new JPopupMenu();
+        ToolWindowSurfaceStyle.applyPopupMenuCard(menu);
 
         JMenuItem exportItem = new JMenuItem("💾 " + I18nUtil.getMessage(MessageKeys.MARKDOWN_EXPORT_HTML));
         exportItem.addActionListener(e -> exportToHtml());
@@ -408,6 +403,7 @@ public class MarkdownEditorPanel extends JPanel {
      */
     private JPanel createEditorPanel() {
         JPanel panel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(panel);
 
         // 创建 RSyntaxTextArea 用于 Markdown 编辑
         editorArea = new RSyntaxTextArea();
@@ -458,13 +454,15 @@ public class MarkdownEditorPanel extends JPanel {
      */
     private JPanel createPreviewPanel() {
         JPanel panel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(panel);
 
         previewPane = new JTextPane();
         previewPane.setContentType("text/html");
         previewPane.setEditable(false);
         previewPane.setBorder(new EmptyBorder(3, 3, 3, 3));
+        previewPane.setBackground(ModernColors.getCardBackgroundColor());
         JScrollPane scrollPane = new JScrollPane(previewPane);
-        scrollPane.setBorder(BorderFactory.createLineBorder(ModernColors.getBorderLightColor()));
+        ToolWindowSurfaceStyle.applyScrollPaneCard(scrollPane);
 
         panel.add(scrollPane, BorderLayout.CENTER);
         return panel;
@@ -475,11 +473,11 @@ public class MarkdownEditorPanel extends JPanel {
      */
     private JPanel createStatusBar() {
         JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 3));
-        statusBar.setBorder(new MatteBorder(1, 0, 0, 0, ModernColors.getBorderLightColor()));
+        ToolWindowSurfaceStyle.applySectionHeader(statusBar);
 
         JLabel statusLabel = new JLabel(I18nUtil.getMessage(MessageKeys.MARKDOWN_READY));
         statusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        statusLabel.setForeground(Color.GRAY);
+        statusLabel.setForeground(ModernColors.getTextSecondary());
         statusBar.add(statusLabel);
 
         // 字数统计
@@ -487,7 +485,7 @@ public class MarkdownEditorPanel extends JPanel {
                 I18nUtil.getMessage(MessageKeys.MARKDOWN_STATUS_WORDS),
                 I18nUtil.getMessage(MessageKeys.MARKDOWN_STATUS_CHARS)));
         wordCountLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        wordCountLabel.setForeground(Color.GRAY);
+        wordCountLabel.setForeground(ModernColors.getTextSecondary());
         statusBar.add(new JSeparator(SwingConstants.VERTICAL));
         statusBar.add(wordCountLabel);
 
@@ -495,7 +493,7 @@ public class MarkdownEditorPanel extends JPanel {
         JLabel positionLabel = new JLabel(I18nUtil.getMessage(MessageKeys.MARKDOWN_STATUS_LINE) + ": 1, " +
                 I18nUtil.getMessage(MessageKeys.MARKDOWN_STATUS_COLUMN) + ": 1");
         positionLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        positionLabel.setForeground(Color.GRAY);
+        positionLabel.setForeground(ModernColors.getTextSecondary());
         statusBar.add(new JSeparator(SwingConstants.VERTICAL));
         statusBar.add(positionLabel);
 

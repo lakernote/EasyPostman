@@ -14,6 +14,9 @@ import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.common.component.ToolWindowActionToolbar;
+import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.ClearButton;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.ioc.BeanFactory;
@@ -56,7 +59,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 历史记录面板
  */
 public class HistoryPanel extends UiSingletonPanel {
-    private static final int HISTORY_SIDEBAR_WIDTH = 360;
+    private static final int HISTORY_SIDEBAR_WIDTH = ToolWindowChrome.DEFAULT_SIDE_WIDTH;
     private static final int HISTORY_SIDEBAR_INSET = 8;
     private static final int FILTER_DEBOUNCE_MS = 180;
 
@@ -121,8 +124,12 @@ public class HistoryPanel extends UiSingletonPanel {
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
-        add(createHeaderPanel(), BorderLayout.PAGE_START);
-        add(createContentPanel(), BorderLayout.CENTER);
+        ToolWindowSurfaceStyle.applyBackground(this);
+        JPanel content = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(content);
+        content.add(createHeaderPanel(), BorderLayout.PAGE_START);
+        content.add(createContentPanel(), BorderLayout.CENTER);
+        add(ToolWindowChrome.wrapToolWindow(content), BorderLayout.CENTER);
         setMinimumSize(new Dimension(0, 120));
         filterDebounceTimer = new Timer(FILTER_DEBOUNCE_MS, e -> rebuildHistoryListModel(currentSelectedItem));
         filterDebounceTimer.setRepeats(false);
@@ -132,28 +139,24 @@ public class HistoryPanel extends UiSingletonPanel {
 
     private JPanel createHeaderPanel() {
         JPanel headerPanel = new JPanel(new BorderLayout());
-        headerPanel.setOpaque(false);
+        ToolWindowSurfaceStyle.applyCard(headerPanel);
 
         titlePanel = new JPanel(new BorderLayout());
-        titlePanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()),
-                BorderFactory.createEmptyBorder(4, 8, 4, 8)
-        ));
+        ToolWindowSurfaceStyle.applyCard(titlePanel);
+        titlePanel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
 
         JLabel title = new JLabel(I18nUtil.getMessage(MessageKeys.MENU_HISTORY));
         title.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +1));
 
         ClearButton clearBtn = new ClearButton();
         clearBtn.addActionListener(e -> clearRequestHistory());
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        btnPanel.setOpaque(false);
-        btnPanel.add(clearBtn);
+        JPanel btnPanel = ToolWindowActionToolbar.inlineRight(clearBtn);
 
         titlePanel.add(title, BorderLayout.WEST);
         titlePanel.add(btnPanel, BorderLayout.EAST);
 
         JPanel filterPanel = new JPanel(new BorderLayout(10, 0));
-        filterPanel.setOpaque(false);
+        ToolWindowSurfaceStyle.applyCard(filterPanel);
         filterPanel.setBorder(BorderFactory.createEmptyBorder(8, HISTORY_SIDEBAR_INSET, 8, HISTORY_SIDEBAR_INSET));
 
         JPanel searchPanel = new JPanel(new BorderLayout());
@@ -213,25 +216,26 @@ public class HistoryPanel extends UiSingletonPanel {
         historyList.setFixedCellHeight(-1);
         historyList.setCellRenderer(new OptimizedHistoryListCellRenderer());
         historyList.setBorder(BorderFactory.createEmptyBorder(4, 0, 4, 0));
-        historyList.setBackground(ModernColors.getBackgroundColor());
         ToolTipManager.sharedInstance().registerComponent(historyList);
 
         JScrollPane listScroll = new JScrollPane(historyList);
         listScroll.setPreferredSize(new Dimension(HISTORY_SIDEBAR_WIDTH, 240));
         listScroll.setMinimumSize(new Dimension(300, 240));
         listScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        listScroll.getViewport().setBackground(ModernColors.getBackgroundColor());
-        listScroll.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, ModernColors.getDividerBorderColor()));
+        ToolWindowSurfaceStyle.applyListScrollPaneCard(listScroll, historyList);
 
         historyDetailPanel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(historyDetailPanel);
         historyDetailPanel.add(createDetailTopPanel(), BorderLayout.NORTH);
         historyDetailPanel.add(createDetailTabs(), BorderLayout.CENTER);
 
         clearDetailPanes();
 
-        JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, listScroll, historyDetailPanel);
-        split.setDividerLocation(HISTORY_SIDEBAR_WIDTH);
-        split.setDividerSize(3);
+        JSplitPane split = ToolWindowChrome.createHorizontalCardSplitPane(
+                listScroll,
+                historyDetailPanel,
+                HISTORY_SIDEBAR_WIDTH
+        );
         return split;
     }
 
@@ -245,12 +249,8 @@ public class HistoryPanel extends UiSingletonPanel {
 
     private JPanel createDetailHeaderPanel() {
         JPanel detailHeaderPanel = new JPanel(new BorderLayout(12, 0));
-        detailHeaderPanel.setOpaque(true);
-        detailHeaderPanel.setBackground(ModernColors.getCardBackgroundColor());
-        detailHeaderPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()),
-                BorderFactory.createEmptyBorder(8, 12, 8, 12)
-        ));
+        ToolWindowSurfaceStyle.applyCard(detailHeaderPanel);
+        detailHeaderPanel.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
 
         JPanel detailInfoPanel = new JPanel(new BorderLayout(0, 2));
         detailInfoPanel.setOpaque(false);
@@ -265,9 +265,6 @@ public class HistoryPanel extends UiSingletonPanel {
         detailInfoPanel.add(detailTitleLabel, BorderLayout.NORTH);
         detailInfoPanel.add(detailMetaLabel, BorderLayout.CENTER);
 
-        JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        actionsPanel.setOpaque(false);
-
         openRequestButton = createActionButton(
                 I18nUtil.getMessage(MessageKeys.CREATE_NEW_REQUEST),
                 "icons/request.svg"
@@ -280,8 +277,7 @@ public class HistoryPanel extends UiSingletonPanel {
         );
         deleteItemButton.addActionListener(e -> deleteSelectedHistory());
 
-        actionsPanel.add(openRequestButton);
-        actionsPanel.add(deleteItemButton);
+        JPanel actionsPanel = ToolWindowActionToolbar.inlineRight(openRequestButton, deleteItemButton);
 
         detailHeaderPanel.add(detailInfoPanel, BorderLayout.CENTER);
         detailHeaderPanel.add(actionsPanel, BorderLayout.EAST);
@@ -290,12 +286,8 @@ public class HistoryPanel extends UiSingletonPanel {
 
     private JPanel createDetailOverviewPanel() {
         JPanel overviewPanel = new JPanel(new GridLayout(1, 4, 0, 0));
-        overviewPanel.setOpaque(true);
-        overviewPanel.setBackground(ModernColors.getCardBackgroundColor());
-        overviewPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()),
-                BorderFactory.createEmptyBorder(0, 12, 0, 12)
-        ));
+        ToolWindowSurfaceStyle.applyCard(overviewPanel);
+        overviewPanel.setBorder(BorderFactory.createEmptyBorder(0, 12, 0, 12));
 
         overviewPanel.add(createOverviewCard(I18nUtil.getMessage(MessageKeys.HISTORY_OVERVIEW_ENDPOINT_CARD), false, card -> {
             endpointValueLabel = card.valueLabel();
@@ -320,12 +312,7 @@ public class HistoryPanel extends UiSingletonPanel {
                                       java.util.function.Consumer<OverviewCardLabels> binder) {
         JPanel cardPanel = new JPanel(new BorderLayout(0, 2));
         cardPanel.setOpaque(false);
-        cardPanel.setBorder(BorderFactory.createCompoundBorder(
-                withLeadingDivider
-                        ? BorderFactory.createMatteBorder(0, 1, 0, 0, ModernColors.getDividerBorderColor())
-                        : BorderFactory.createEmptyBorder(),
-                BorderFactory.createEmptyBorder(6, 12, 10, 12)
-        ));
+        cardPanel.setBorder(BorderFactory.createEmptyBorder(6, withLeadingDivider ? 16 : 12, 10, 12));
 
         JLabel titleLabel = new JLabel(title);
         titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
@@ -361,6 +348,7 @@ public class HistoryPanel extends UiSingletonPanel {
 
     private JTabbedPane createDetailTabs() {
         JTabbedPane historyDetailTabPane = new JTabbedPane();
+        ToolWindowSurfaceStyle.applyTabbedPaneCard(historyDetailTabPane);
         historyDetailTabPane.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
 
         requestPane = createDetailPane();
@@ -377,6 +365,7 @@ public class HistoryPanel extends UiSingletonPanel {
             JScrollPane scrollPane = (JScrollPane) historyDetailTabPane.getComponentAt(i);
             scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
             scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+            ToolWindowSurfaceStyle.applyScrollPaneCard(scrollPane);
         }
         return historyDetailTabPane;
     }
@@ -386,6 +375,7 @@ public class HistoryPanel extends UiSingletonPanel {
         pane.setEditable(false);
         pane.setContentType("text/html");
         pane.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        ToolWindowSurfaceStyle.applyTextComponentCard(pane);
         return pane;
     }
 
@@ -413,10 +403,7 @@ public class HistoryPanel extends UiSingletonPanel {
 
             itemCardPanel = new JPanel(new BorderLayout(0, 4));
             itemCardPanel.setOpaque(true);
-            itemCardPanel.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(ModernColors.getBorderLightColor()),
-                    BorderFactory.createEmptyBorder(8, 10, 8, 10)
-            ));
+            itemCardPanel.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
 
             titleLabel = new JLabel();
             titleLabel.setFont(boldFont);
@@ -459,16 +446,7 @@ public class HistoryPanel extends UiSingletonPanel {
                 itemCardPanel.setBackground(isSelected
                         ? getSelectionBackground()
                         : hovered ? getHoverBackground() : ModernColors.getCardBackgroundColor());
-                itemCardPanel.setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createMatteBorder(0, isSelected ? 3 : hovered ? 2 : 0, 0, 0,
-                                isSelected ? ModernColors.getPrimary() : hovered ? ModernColors.getPrimaryLight() : list.getBackground()),
-                        BorderFactory.createCompoundBorder(
-                                BorderFactory.createLineBorder(isSelected
-                                        ? ModernColors.getPrimary()
-                                        : hovered ? ModernColors.getPrimaryLight() : ModernColors.getBorderLightColor()),
-                                BorderFactory.createEmptyBorder(8, 10, 8, 10)
-                        )
-                ));
+                itemCardPanel.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
 
                 titleLabel.setForeground(isSelected ? HistoryTheme.selectedTitleForeground() : ModernColors.getTextPrimary());
                 titleLabel.setText("<html>" + arrow + " " + highlightMatches(abbreviateMiddle(endpointGroupHeader.title(), 52))
@@ -504,16 +482,7 @@ public class HistoryPanel extends UiSingletonPanel {
                 itemCardPanel.setBackground(isSelected
                         ? getSelectionBackground()
                         : hovered ? getHoverBackground() : ModernColors.getCardBackgroundColor());
-                itemCardPanel.setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createMatteBorder(0, isSelected ? 3 : hovered ? 2 : 0, 0, 0,
-                                isSelected ? ModernColors.getPrimary() : hovered ? ModernColors.getPrimaryLight() : list.getBackground()),
-                        BorderFactory.createCompoundBorder(
-                                BorderFactory.createLineBorder(isSelected
-                                        ? ModernColors.getPrimary()
-                                        : hovered ? ModernColors.getPrimaryLight() : ModernColors.getBorderLightColor()),
-                        BorderFactory.createEmptyBorder(8, 10, 8, 10)
-                        )
-                ));
+                itemCardPanel.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
 
                 titleLabel.setForeground(isSelected ? HistoryTheme.selectedTitleForeground() : ModernColors.getTextPrimary());
                 titleLabel.setText("<html>" + highlightMatches(abbreviateMiddle(visualInfo.title(), 56)) + "</html>");
@@ -544,16 +513,16 @@ public class HistoryPanel extends UiSingletonPanel {
 
         private static Color resolveStatusColor(int statusCode) {
             if (statusCode >= 200 && statusCode < 400) {
-                return new Color(46, 125, 50);
+                return ModernColors.getSuccess();
             }
             if (statusCode >= 400) {
-                return new Color(198, 40, 40);
+                return ModernColors.getError();
             }
             return ModernColors.getTextSecondary();
         }
 
         private static String toHex(Color color) {
-            return String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
+            return ModernColors.toHtmlColor(color);
         }
 
         private static String escapeHtml(String text) {
@@ -635,8 +604,10 @@ public class HistoryPanel extends UiSingletonPanel {
                     htmlMap.put("timing", HttpHtmlRenderer.renderTimingInfo(item.response));
                     htmlMap.put("event", HttpHtmlRenderer.renderEventInfo(item.response));
                 } catch (Exception e) {
-                    String errorHtml = "<html><body style='font-family:monospace;font-size:9px;'>"
-                            + "<div style='color:#d32f2f;'>渲染详情时出错: " + e.getMessage() + "</div>"
+                    String errorHtml = "<html><body style='font-family:monospace;font-size:9px;color:"
+                            + ModernColors.toHtmlColor(ModernColors.getTextPrimary()) + ";'>"
+                            + "<div style='color:" + ModernColors.toHtmlColor(ModernColors.getError())
+                            + ";'>渲染详情时出错: " + escapeHtml(e.getMessage()) + "</div>"
                             + "</body></html>";
                     htmlMap.put("error", errorHtml);
                 }
@@ -709,10 +680,7 @@ public class HistoryPanel extends UiSingletonPanel {
     public void updateUI() {
         super.updateUI();
         if (titlePanel != null) {
-            titlePanel.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()),
-                    BorderFactory.createEmptyBorder(4, 8, 4, 8)
-            ));
+            titlePanel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
         }
     }
 
@@ -1065,6 +1033,7 @@ public class HistoryPanel extends UiSingletonPanel {
         historyList.setSelectedValue(value, true);
 
         JPopupMenu menu = new JPopupMenu();
+        ToolWindowSurfaceStyle.applyPopupMenuCard(menu);
         JMenuItem openItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.CREATE_NEW_REQUEST),
                 IconUtil.createThemed("icons/request.svg", 14, 14));
         openItem.addActionListener(event -> openSelectedHistoryAsRequest());
@@ -1687,16 +1656,16 @@ public class HistoryPanel extends UiSingletonPanel {
 
     private static Color resolveStatusColor(int statusCode) {
         if (statusCode >= 200 && statusCode < 400) {
-            return new Color(46, 125, 50);
+            return ModernColors.getSuccess();
         }
         if (statusCode >= 400 || statusCode <= 0) {
-            return new Color(198, 40, 40);
+            return ModernColors.getError();
         }
         return ModernColors.getTextSecondary();
     }
 
     private static String toHex(Color color) {
-        return String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
+        return ModernColors.toHtmlColor(color);
     }
 
     private static String escapeHtml(String value) {

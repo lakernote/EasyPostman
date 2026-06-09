@@ -1,5 +1,6 @@
 package com.laker.postman.common.component.table;
 
+import com.laker.postman.common.constants.ModernColors;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
 
@@ -145,11 +146,11 @@ public class FileCellRenderer implements TableCellRenderer {
         File file = new File(path);
 
         if (!file.exists()) {
-            return IconFontSwing.buildIcon(FontAwesome.EXCLAMATION_TRIANGLE, TableUIConstants.ICON_SIZE, Color.RED);
+            return IconFontSwing.buildIcon(FontAwesome.EXCLAMATION_TRIANGLE, TableUIConstants.ICON_SIZE, ModernColors.getError());
         } else if (!file.canRead()) {
-            return IconFontSwing.buildIcon(FontAwesome.LOCK, TableUIConstants.ICON_SIZE, Color.ORANGE);
+            return IconFontSwing.buildIcon(FontAwesome.LOCK, TableUIConstants.ICON_SIZE, ModernColors.getWarning());
         } else {
-            return IconFontSwing.buildIcon(FontAwesome.CHECK_CIRCLE, TableUIConstants.ICON_SIZE, new Color(76, 175, 80));
+            return IconFontSwing.buildIcon(FontAwesome.CHECK_CIRCLE, TableUIConstants.ICON_SIZE, ModernColors.getSuccess());
         }
     }
 }

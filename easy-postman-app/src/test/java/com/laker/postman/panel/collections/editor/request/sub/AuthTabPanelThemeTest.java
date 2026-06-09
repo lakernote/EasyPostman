@@ -1,43 +1,38 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
-import com.laker.postman.common.constants.ThemeColors;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import javax.swing.*;
-import java.awt.*;
-import java.util.Map;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
-import static com.laker.postman.test.ThemeTokenTestSupport.remember;
-import static com.laker.postman.test.ThemeTokenTestSupport.restore;
-import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 
 public class AuthTabPanelThemeTest {
-    private Map<String, Object> previousThemeTokens;
-
-    @BeforeMethod
-    public void rememberThemeTokens() {
-        previousThemeTokens = remember(
-                ThemeColors.ACCENT,
-                ThemeColors.TEXT_HINT,
-                ThemeColors.TEXT_SECONDARY
-        );
-    }
-
-    @AfterMethod
-    public void tearDown() {
-        restore(previousThemeTokens);
-    }
-
     @Test
-    public void htmlTextColorsShouldUseSemanticThemeTokens() {
-        UIManager.put(ThemeColors.ACCENT, new Color(1, 2, 3));
-        UIManager.put(ThemeColors.TEXT_HINT, new Color(11, 12, 13));
-        UIManager.put(ThemeColors.TEXT_SECONDARY, new Color(21, 22, 23));
+    public void infoBlocksShouldUseThemeAwareSwingComponents() throws IOException {
+        String source = Files.readString(findProjectRoot().resolve(
+                "easy-postman-app/src/main/java/com/laker/postman/panel/collections/editor/request/sub/AuthTabPanel.java"
+        ));
 
-        assertEquals(AuthTabTheme.titleColorHex(), "#010203");
-        assertEquals(AuthTabTheme.descriptionColorHex(), "#0b0c0d");
-        assertEquals(AuthTabTheme.textColorHex(), "#151617");
+        assertTrue(source.contains("ToolWindowSurfaceStyle.applySectionHeader(infoPanel"));
+        assertTrue(source.contains("FontsUtil.getDefaultFontWithOffset(Font.BOLD, -1)"));
+        assertTrue(source.contains("FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2)"));
+        assertTrue(source.contains("ModernColors.getPrimary()"));
+        assertTrue(source.contains("ModernColors.getTextSecondary()"));
+        assertFalse(source.contains("AuthTabTheme"));
+        assertFalse(source.contains("font-size"));
+    }
+
+    private static Path findProjectRoot() {
+        Path current = Path.of(System.getProperty("user.dir")).toAbsolutePath();
+        while (current != null) {
+            if (Files.isDirectory(current.resolve("easy-postman-app"))) {
+                return current;
+            }
+            current = current.getParent();
+        }
+        throw new IllegalStateException("Cannot find easy-postman project root");
     }
 }

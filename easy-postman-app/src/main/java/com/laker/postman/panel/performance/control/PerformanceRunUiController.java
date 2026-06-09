@@ -5,11 +5,11 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.button.RefreshButton;
 import com.laker.postman.common.component.button.StartButton;
 import com.laker.postman.common.component.button.StopButton;
+import com.laker.postman.common.constants.ModernColors;
 
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
@@ -138,7 +138,7 @@ public final class PerformanceRunUiController {
             return;
         }
         label.setIcon(new FlatSVGIcon(iconPath, 18, 18)
-                .setColorFilter(new FlatSVGIcon.ColorFilter(color -> UIManager.getColor("Button.foreground"))));
+                .setColorFilter(new FlatSVGIcon.ColorFilter(color -> ModernColors.getTextPrimary())));
         label.putClientProperty(RUN_STATUS_ICON_PROPERTY, iconPath);
     }
 

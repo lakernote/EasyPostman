@@ -8,6 +8,7 @@ import org.fife.ui.rsyntaxtextarea.Theme;
 import org.fife.ui.rtextarea.Gutter;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
+import javax.swing.BorderFactory;
 import java.awt.Color;
 import java.io.IOException;
 import java.io.InputStream;
@@ -87,7 +88,7 @@ public class EditorThemeUtil {
 
         scrollPane.setBackground(editorBackground);
         scrollPane.getViewport().setBackground(editorBackground);
-        scrollPane.setBorder(javax.swing.BorderFactory.createLineBorder(divider));
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
 
         Gutter gutter = scrollPane.getGutter();
         if (gutter == null) {

@@ -2,10 +2,13 @@ package com.laker.postman.common.component.dialog;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.UiSingletonFactory;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.GitRepoSource;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.model.WorkspaceType;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
@@ -33,16 +36,20 @@ public class WorkspaceSelectionDialog extends JDialog {
         setSize(500, 400);
         setLocationRelativeTo(UiSingletonFactory.getInstance(MainFrame.class));
         setLayout(new BorderLayout(10, 10));
+        ToolWindowSurfaceStyle.applyBackground((JComponent) getContentPane());
 
         // 主面板
         JPanel mainPanel = new JPanel(new BorderLayout(5, 5));
+        ToolWindowSurfaceStyle.applyCard(mainPanel);
         mainPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
 
         // 顶部搜索框
         JPanel searchPanel = new JPanel(new BorderLayout(5, 0));
+        searchPanel.setOpaque(false);
         JLabel searchLabel = new JLabel(I18nUtil.getMessage(MessageKeys.GENERAL_SEARCH) + ":");
         searchField = new JTextField();
         searchField.setPreferredSize(new Dimension(0, 30));
+        ToolWindowSurfaceStyle.applyTextComponentInput(searchField);
         searchPanel.add(searchLabel, BorderLayout.WEST);
         searchPanel.add(searchField, BorderLayout.CENTER);
         mainPanel.add(searchPanel, BorderLayout.NORTH);
@@ -59,13 +66,13 @@ public class WorkspaceSelectionDialog extends JDialog {
         workspaceList.setCellRenderer(new WorkspaceListCellRenderer());
 
         JScrollPane scrollPane = new JScrollPane(workspaceList);
-        scrollPane.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+        ToolWindowSurfaceStyle.applyListScrollPaneCard(scrollPane, workspaceList);
         mainPanel.add(scrollPane, BorderLayout.CENTER);
 
         // 说明文字
         JLabel hintLabel = new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_SELECT_HINT));
-        hintLabel.setFont(hintLabel.getFont().deriveFont(Font.ITALIC, 11f));
-        hintLabel.setForeground(Color.GRAY);
+        hintLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.ITALIC, -2));
+        hintLabel.setForeground(ModernColors.getTextSecondary());
         hintLabel.setBorder(new EmptyBorder(5, 0, 0, 0));
         mainPanel.add(hintLabel, BorderLayout.SOUTH);
 
@@ -73,6 +80,7 @@ public class WorkspaceSelectionDialog extends JDialog {
 
         // 按钮面板
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+        buttonPanel.setOpaque(false);
         buttonPanel.setBorder(new EmptyBorder(0, 15, 10, 15));
 
         JButton okButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK));
@@ -221,7 +229,9 @@ public class WorkspaceSelectionDialog extends JDialog {
                 text.append(HTML_START);
                 text.append("<b>").append(workspace.getName()).append("</b>");
                 text.append("<br>");
-                text.append("<small style='color: gray;'>");
+                text.append("<small style='color: ")
+                        .append(ModernColors.toHtmlColor(ModernColors.getTextHint()))
+                        .append(";'>");
 
                 // 显示工作区类型
                 text.append(workspace.getType() == WorkspaceType.LOCAL

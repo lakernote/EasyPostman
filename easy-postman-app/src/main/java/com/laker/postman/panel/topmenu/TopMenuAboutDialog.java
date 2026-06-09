@@ -1,7 +1,6 @@
 package com.laker.postman.panel.topmenu;
 
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.common.themes.SimpleThemeManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.SystemUtil;
@@ -103,10 +102,10 @@ class TopMenuAboutDialog {
     }
 
     private String getThemeLinkColor() {
-        return SimpleThemeManager.isDarkTheme() ? "#60a5fa" : "#1a0dab";
+        return toHex(ModernColors.getPrimary());
     }
 
     private String toHex(Color color) {
-        return String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
+        return ModernColors.toHtmlColor(color);
     }
 }

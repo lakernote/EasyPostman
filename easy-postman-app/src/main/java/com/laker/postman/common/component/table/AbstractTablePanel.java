@@ -1,6 +1,7 @@
 package com.laker.postman.common.component.table;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.IconUtil;
 import lombok.Getter;
@@ -179,9 +180,8 @@ public abstract class AbstractTablePanel<T> extends JPanel {
      */
     protected void initializeComponents() {
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(UIManager.getColor("Table.gridColor")),
-                BorderFactory.createEmptyBorder(4, 4, 4, 4)));
+        ToolWindowSurfaceStyle.applyCard(this);
+        setBorder(BorderFactory.createEmptyBorder(4, 0, 0, 0));
 
         // Initialize table model with custom cell editing logic
         tableModel = new DefaultTableModel(columns, 0) {
@@ -201,6 +201,7 @@ public abstract class AbstractTablePanel<T> extends JPanel {
 
         // Wrap table in JScrollPane to show headers
         JScrollPane scrollPane = new JScrollPane(table);
+        ToolWindowSurfaceStyle.applyTableScrollPaneCard(scrollPane, table);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         add(scrollPane, BorderLayout.CENTER);
     }
@@ -210,9 +211,7 @@ public abstract class AbstractTablePanel<T> extends JPanel {
         super.updateUI();
         // 主题切换时重新设置边框，确保表格网格颜色更新
         if (getBorder() != null) {
-            setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(UIManager.getColor("Table.gridColor")),
-                    BorderFactory.createEmptyBorder(4, 4, 4, 4)));
+            setBorder(BorderFactory.createEmptyBorder(4, 0, 0, 0));
         }
     }
 
@@ -229,7 +228,7 @@ public abstract class AbstractTablePanel<T> extends JPanel {
         table.setShowVerticalLines(true);
         table.setIntercellSpacing(new Dimension(2, 2));
         table.setRowMargin(2);
-        table.setOpaque(false);
+        ToolWindowSurfaceStyle.applyTableCard(table);
         table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         table.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
 
@@ -798,6 +797,7 @@ public abstract class AbstractTablePanel<T> extends JPanel {
      */
     protected JPopupMenu createContextPopupMenu(int viewRow) {
         JPopupMenu menu = new JPopupMenu();
+        ToolWindowSurfaceStyle.applyPopupMenuCard(menu);
 
         JMenuItem addItem = new JMenuItem("Add");
         addItem.addActionListener(e -> addRowAndScroll());

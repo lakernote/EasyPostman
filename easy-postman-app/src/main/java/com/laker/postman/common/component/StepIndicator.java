@@ -92,7 +92,7 @@ public class StepIndicator extends JPanel {
         circle.setPreferredSize(new Dimension(30, 30));
         circle.setOpaque(true);
         circle.setBackground(active ? getActiveCircleBackground() : getInactiveCircleBackground());
-        circle.setForeground(Color.WHITE); // 圆圈内的数字始终使用白色
+        circle.setForeground(ModernColors.getTextInverse());
         circle.setFont(FontsUtil.getDefaultFont(Font.BOLD));
         circle.setBorder(BorderFactory.createLineBorder(getCircleBorderColor(), 2));
 

@@ -5,6 +5,8 @@ import com.laker.postman.request.model.HttpHeader;
 
 
 import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.performance.model.PerformanceInternalHeaders;
 import com.laker.postman.performance.model.PerformanceProtocolLabels;
@@ -111,6 +113,7 @@ public class PerformanceResultTablePanel extends JPanel {
 
     private void initUI() {
         setLayout(new BorderLayout(5, 5));
+        ToolWindowSurfaceStyle.applyCard(this);
         // 设置边距
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
@@ -118,6 +121,7 @@ public class PerformanceResultTablePanel extends JPanel {
         searchField.setPlaceholderText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TREE_SEARCH_PLACEHOLDER));
 
         JPanel searchPanel = new JPanel(new BorderLayout(6, 0));
+        searchPanel.setOpaque(false);
         searchPanel.add(searchField, BorderLayout.CENTER);
 
         tableModel = new ResultTableModel();
@@ -139,16 +143,23 @@ public class PerformanceResultTablePanel extends JPanel {
         configureColumnWidths();
 
         JScrollPane tableScroll = new JScrollPane(table);
+        ToolWindowSurfaceStyle.applyTableScrollPaneCard(tableScroll, table);
 
         JPanel leftPanel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(leftPanel);
         // 设置左侧面板边距
         leftPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 5));
         leftPanel.add(searchPanel, BorderLayout.NORTH);
         leftPanel.add(tableScroll, BorderLayout.CENTER);
 
         detailTabs = new JTabbedPane();
+        ToolWindowSurfaceStyle.applyTabbedPaneCard(detailTabs);
 
-        JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, detailTabs);
+        JSplitPane split = ToolWindowChrome.createHorizontalCardSplitPane(
+                leftPanel,
+                detailTabs,
+                620
+        );
         leftPanel.setMinimumSize(new Dimension(560, 150));
         leftPanel.setPreferredSize(new Dimension(620, 300));
         split.setDividerLocation(620);
@@ -370,7 +381,10 @@ public class PerformanceResultTablePanel extends JPanel {
         pane.setEditable(false);
         pane.setText(html);
         pane.setCaretPosition(0);
-        detailTabs.addTab(title, new JScrollPane(pane));
+        ToolWindowSurfaceStyle.applyTextComponentCard(pane);
+        JScrollPane scrollPane = new JScrollPane(pane);
+        ToolWindowSurfaceStyle.applyScrollPaneCard(scrollPane);
+        detailTabs.addTab(title, scrollPane);
     }
 
     private void clearDetailTabs() {

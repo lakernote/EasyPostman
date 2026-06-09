@@ -23,17 +23,6 @@ abstract class AbstractPlaceholderPanel extends JPanel {
         return panel;
     }
 
-    protected JPanel createCardPanel(LayoutManager layout, Color background, Color borderColor, Insets insets) {
-        JPanel panel = new JPanel(layout);
-        panel.setOpaque(true);
-        panel.setBackground(background);
-        panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(borderColor),
-                BorderFactory.createEmptyBorder(insets.top, insets.left, insets.bottom, insets.right)
-        ));
-        return panel;
-    }
-
     protected JComponent createBlock(int width, int height, Color fillColor) {
         return new PlaceholderBlock(width, height, fillColor, DEFAULT_BLOCK_ARC);
     }

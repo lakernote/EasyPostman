@@ -6,10 +6,11 @@ import lombok.experimental.UtilityClass;
 import java.awt.Color;
 
 @UtilityClass
-class CollectionTreeTheme {
+public class CollectionTreeTheme {
     private static final int HOVER_OVERLAY_ALPHA = 24;
 
-    Color hoverOverlayColor() {
+    public Color hoverOverlayColor() {
         return ModernColors.withAlpha(ModernColors.getTextPrimary(), HOVER_OVERLAY_ALPHA);
     }
+
 }

@@ -2,6 +2,8 @@ package com.laker.postman.panel.workspace.components;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.UiSingletonFactory;
+import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.PrimaryButton;
 import com.laker.postman.common.component.StepIndicator;
 import com.laker.postman.common.constants.ModernColors;
@@ -18,8 +20,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.LineBorder;
-import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -151,6 +151,7 @@ public class GitOperationDialog extends JDialog {
     private void initializeUI() {
         // 创建主面板
         JPanel mainPanel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(mainPanel);
         // 创建各个区域
         JPanel headerPanel = createHeaderPanel();
         JPanel stepPanel = createStepPanel();
@@ -162,6 +163,7 @@ public class GitOperationDialog extends JDialog {
         mainPanel.add(headerPanel, BorderLayout.NORTH);
 
         JPanel centerPanel = new JPanel(new BorderLayout());
+        centerPanel.setOpaque(false);
         centerPanel.add(stepPanel, BorderLayout.NORTH);
         centerPanel.add(summaryPanel, BorderLayout.CENTER);
         centerPanel.add(actionPanel, BorderLayout.SOUTH);
@@ -185,7 +187,12 @@ public class GitOperationDialog extends JDialog {
         leftPanel.setOpaque(false);
 
         // Header uses operation color (colorful), so white icons are appropriate
-        FlatSVGIcon icon = IconUtil.createColored(GitOperationPresentation.getIconName(operation), 32, 32, Color.WHITE);
+        FlatSVGIcon icon = IconUtil.createColored(
+                GitOperationPresentation.getIconName(operation),
+                32,
+                32,
+                ModernColors.getTextInverse()
+        );
         JLabel operationIcon = new JLabel(icon);
         operationIcon.setBorder(new EmptyBorder(0, 0, 0, 15));
 
@@ -194,13 +201,13 @@ public class GitOperationDialog extends JDialog {
 
         JLabel titleLabel = new JLabel(operation.getDisplayName());
         titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +4));
-        // White text on colored background (operation color)
-        titleLabel.setForeground(Color.WHITE);
+        // Inverse text on colored operation background.
+        titleLabel.setForeground(ModernColors.getTextInverse());
 
         JLabel subtitleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_WORKSPACE, workspace.getName()));
         subtitleLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        // White text on colored background (operation color)
-        subtitleLabel.setForeground(Color.WHITE);
+        // Inverse text on colored operation background.
+        subtitleLabel.setForeground(ModernColors.getTextInverse());
 
         textPanel.add(titleLabel);
         textPanel.add(subtitleLabel);
@@ -227,15 +234,15 @@ public class GitOperationDialog extends JDialog {
         JLabel currentBranchLabel = new JLabel(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CURRENT_BRANCH,
                 workspace.getCurrentBranch() != null ? workspace.getCurrentBranch() : I18nUtil.getMessage(MessageKeys.GIT_DIALOG_UNKNOWN)));
         currentBranchLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        // White text on colored background (operation color)
-        currentBranchLabel.setForeground(Color.WHITE);
+        // Inverse text on colored operation background.
+        currentBranchLabel.setForeground(ModernColors.getTextInverse());
         currentBranchLabel.setHorizontalAlignment(SwingConstants.RIGHT);
 
         JLabel remoteBranchLabel = new JLabel(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_BRANCH,
                 workspace.getRemoteBranch() != null ? workspace.getRemoteBranch() : I18nUtil.getMessage(MessageKeys.GIT_DIALOG_NOT_SET)));
         remoteBranchLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        // White text on colored background (operation color)
-        remoteBranchLabel.setForeground(Color.WHITE);
+        // Inverse text on colored operation background.
+        remoteBranchLabel.setForeground(ModernColors.getTextInverse());
         remoteBranchLabel.setHorizontalAlignment(SwingConstants.RIGHT);
 
         panel.add(currentBranchLabel);
@@ -249,6 +256,7 @@ public class GitOperationDialog extends JDialog {
      */
     private JPanel createStepPanel() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        panel.setOpaque(false);
         panel.setBorder(new EmptyBorder(5, 10, 5, 10));
 
         stepIndicator = new StepIndicator();
@@ -262,6 +270,7 @@ public class GitOperationDialog extends JDialog {
      */
     private JPanel createSummaryPanel() {
         JPanel panel = new JPanel(new BorderLayout());
+        panel.setOpaque(false);
         panel.setBorder(new EmptyBorder(5, 20, 5, 20));
 
         // 状态显示区域
@@ -271,10 +280,12 @@ public class GitOperationDialog extends JDialog {
         JPanel filesPanel = createFilesPanel();
 
         // 使用水平分割面板 - 左边状态检查，右边文件变更
-        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, statusPanel, filesPanel);
+        JSplitPane splitPane = ToolWindowChrome.createHorizontalCardSplitPane(
+                statusPanel,
+                filesPanel,
+                ToolWindowChrome.DEFAULT_SIDE_WIDTH
+        );
         splitPane.setResizeWeight(0.5); // 左右各占50%
-        splitPane.setBorder(null);
-        splitPane.setDividerSize(0);
 
         panel.add(splitPane, BorderLayout.CENTER);
 
@@ -285,16 +296,13 @@ public class GitOperationDialog extends JDialog {
      * 创建状态显示面板
      */
     private JPanel createStatusPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(getBorderColor()),
-                I18nUtil.getMessage(MessageKeys.GIT_DIALOG_STATUS_CHECK),
-                TitledBorder.LEFT,
-                TitledBorder.TOP,
-                FontsUtil.getDefaultFont(Font.BOLD)
-        ));
+        JPanel panel = new JPanel(new BorderLayout(0, 6));
+        ToolWindowSurfaceStyle.applyCard(panel);
+        panel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+        panel.add(createSectionTitle(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_STATUS_CHECK)), BorderLayout.NORTH);
 
         JPanel statusInfoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        statusInfoPanel.setOpaque(false);
         // Use theme-adapted icon that automatically adjusts to dark/light theme
         statusIcon = new JLabel(IconUtil.createThemed("icons/refresh.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
         statusMessage = new JLabel(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CHECKING_STATUS));
@@ -303,20 +311,24 @@ public class GitOperationDialog extends JDialog {
         statusInfoPanel.add(statusIcon);
         statusInfoPanel.add(statusMessage);
 
-        panel.add(statusInfoPanel, BorderLayout.NORTH);
-
         detailsArea = new JEditorPane();
         detailsArea.setEditable(false);
-        detailsArea.setFont(detailsArea.getFont().deriveFont(10f)); // 设置较小字体
+        detailsArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -3));
+        detailsArea.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
         detailsArea.setBorder(new EmptyBorder(5, 5, 5, 5));
         detailsArea.setContentType("text/html"); // 支持HTML渲染
+        ToolWindowSurfaceStyle.applyTextComponentCard(detailsArea);
 
         JScrollPane detailsScrollPane = new JScrollPane(detailsArea);
         detailsScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         detailsScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        detailsScrollPane.setBorder(new LineBorder(getBorderColor()));
+        ToolWindowSurfaceStyle.applyScrollPaneCard(detailsScrollPane);
 
-        panel.add(detailsScrollPane, BorderLayout.CENTER);
+        JPanel contentPanel = new JPanel(new BorderLayout(0, 4));
+        contentPanel.setOpaque(false);
+        contentPanel.add(statusInfoPanel, BorderLayout.NORTH);
+        contentPanel.add(detailsScrollPane, BorderLayout.CENTER);
+        panel.add(contentPanel, BorderLayout.CENTER);
 
         return panel;
     }
@@ -325,27 +337,26 @@ public class GitOperationDialog extends JDialog {
      * 创建文件变更面板
      */
     private JPanel createFilesPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(getBorderColor()),
-                I18nUtil.getMessage(MessageKeys.GIT_DIALOG_FILE_CHANGES),
-                TitledBorder.LEFT,
-                TitledBorder.TOP,
-                FontsUtil.getDefaultFont(Font.BOLD)
-        ));
+        JPanel panel = new JPanel(new BorderLayout(0, 6));
+        ToolWindowSurfaceStyle.applyCard(panel);
+        panel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+        panel.add(createSectionTitle(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_FILE_CHANGES)), BorderLayout.NORTH);
 
         JPanel fileChangesPanel = new JPanel(new BorderLayout());
+        fileChangesPanel.setOpaque(false);
 
         fileChangesArea = new JEditorPane();
         fileChangesArea.setEditable(false);
-        fileChangesArea.setFont(fileChangesArea.getFont().deriveFont(10f)); // 设置较小字体
-        fileChangesArea.setText(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_LOADING_FILE_CHANGES));
+        fileChangesArea.setFont(FontsUtil.getMonospacedFontWithOffset(Font.PLAIN, -3));
+        fileChangesArea.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
         fileChangesArea.setContentType("text/html"); // 支持HTML渲染
+        fileChangesArea.setText(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_LOADING_FILE_CHANGES));
+        ToolWindowSurfaceStyle.applyTextComponentCard(fileChangesArea);
 
         JScrollPane scrollPane = new JScrollPane(fileChangesArea);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        scrollPane.setBorder(new LineBorder(getBorderColor()));
+        ToolWindowSurfaceStyle.applyScrollPaneCard(scrollPane);
 
         fileChangesPanel.add(scrollPane, BorderLayout.CENTER);
 
@@ -364,27 +375,24 @@ public class GitOperationDialog extends JDialog {
      * 创建提交信息输入面板
      */
     private JPanel createCommitMessagePanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(getBorderColor()),
-                I18nUtil.getMessage(MessageKeys.GIT_DIALOG_COMMIT_MESSAGE),
-                TitledBorder.LEFT,
-                TitledBorder.TOP,
-                FontsUtil.getDefaultFont(Font.BOLD)
-        ));
+        JPanel panel = new JPanel(new BorderLayout(0, 4));
+        panel.setOpaque(false);
+        panel.setBorder(BorderFactory.createEmptyBorder(6, 0, 0, 0));
+        panel.add(createSectionTitle(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_COMMIT_MESSAGE)), BorderLayout.NORTH);
         panel.setPreferredSize(new Dimension(0, 60)); // 设置固定高度
 
         commitMessageArea = new JTextArea(1, 0);
         commitMessageArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         commitMessageArea.setLineWrap(true);
         commitMessageArea.setWrapStyleWord(true);
+        ToolWindowSurfaceStyle.applyTextComponentInput(commitMessageArea);
         commitMessageArea.setText(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_DEFAULT_COMMIT_MESSAGE,
                 LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))));
 
         JScrollPane scrollPane = new JScrollPane(commitMessageArea);
-        scrollPane.setBorder(new LineBorder(getBorderColor()));
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        ToolWindowSurfaceStyle.applyScrollPaneCard(scrollPane);
 
         panel.add(scrollPane, BorderLayout.CENTER);
 
@@ -396,9 +404,11 @@ public class GitOperationDialog extends JDialog {
      */
     private JPanel createActionPanel() {
         JPanel panel = new JPanel(new BorderLayout());
+        panel.setOpaque(false);
         panel.setBorder(new EmptyBorder(5, 20, 5, 20));
 
         optionsPanel = new JPanel();
+        optionsPanel.setOpaque(false);
         optionsPanel.setLayout(new BoxLayout(optionsPanel, BoxLayout.Y_AXIS));
         optionsPanel.setVisible(false);
 
@@ -412,6 +422,7 @@ public class GitOperationDialog extends JDialog {
      */
     private JPanel createFooterPanel() {
         JPanel panel = new JPanel(new BorderLayout());
+        panel.setOpaque(false);
         panel.setBorder(new EmptyBorder(5, 20, 10, 20));
 
         // 进度条
@@ -453,6 +464,12 @@ public class GitOperationDialog extends JDialog {
         // Git 操作按钮必须保持操作色 hover，避免被 FlatLaf 默认蓝色状态覆盖。
         button.setToolTipText(operation.getDisplayName());
         return button;
+    }
+
+    private JLabel createSectionTitle(String title) {
+        JLabel label = new JLabel(title);
+        label.setFont(FontsUtil.getDefaultFont(Font.BOLD));
+        return label;
     }
 
     private static Color scaleColor(Color color, float factor) {
@@ -538,7 +555,7 @@ public class GitOperationDialog extends JDialog {
      */
     private void displayStatusDetails(GitStatusCheck check) {
         StringBuilder html = new StringBuilder();
-        html.append("<html><body style='font-family: sans-serif; font-size: 8px;'>");
+        html.append("<html><body>");
 
         html.append("<div style='margin-bottom: 10px;'>");
         html.append("<b>").append(escapeHtml(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_STATUS_SUMMARY))).append("</b><br/>");
@@ -790,7 +807,7 @@ public class GitOperationDialog extends JDialog {
         }
 
         StringBuilder html = new StringBuilder();
-        html.append("<html><body style='font-family: monospace; font-size: 8px;'>");
+        html.append("<html><body>");
 
         // 本地变更
         html.append("<div style='margin-bottom: 10px;'>");

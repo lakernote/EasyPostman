@@ -1,6 +1,7 @@
 package com.laker.postman.common.component.table;
 
 import com.laker.postman.common.component.EasyTextField;
+import com.laker.postman.common.constants.ModernColors;
 
 import javax.swing.*;
 import javax.swing.table.TableCellRenderer;
@@ -59,7 +60,7 @@ public class EasyTextFieldCellRenderer extends EasyTextField implements TableCel
                 setBackground(blendColor(base, table.getSelectionBackground(), 0.12f));
             } else if (row % 2 == 1) {
                 // 奇数行斑马纹
-                setBackground(blendColor(base, Color.BLACK, STRIPE_ALPHA));
+                setBackground(stripeBackground(base));
             } else {
                 setBackground(base);
             }
@@ -96,6 +97,10 @@ public class EasyTextFieldCellRenderer extends EasyTextField implements TableCel
         int g = Math.min(255, Math.max(0, Math.round(base.getGreen() * (1 - alpha) + blend.getGreen() * alpha)));
         int b = Math.min(255, Math.max(0, Math.round(base.getBlue()  * (1 - alpha) + blend.getBlue()  * alpha)));
         return new Color(r, g, b);
+    }
+
+    static Color stripeBackground(Color base) {
+        return blendColor(base, ModernColors.getTextPrimary(), STRIPE_ALPHA);
     }
 
     /**

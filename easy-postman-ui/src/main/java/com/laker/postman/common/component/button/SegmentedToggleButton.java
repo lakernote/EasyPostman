@@ -37,7 +37,7 @@ public class SegmentedToggleButton extends JToggleButton {
             g2.fillRoundRect(2, 2, getWidth() - 4, getHeight() - 4, 6, 6);
         }
         g2.dispose();
-        setForeground(isSelected() ? Color.WHITE : getTextColor());
+        setForeground(isSelected() ? ModernColors.getTextInverse() : getTextColor());
         super.paintComponent(g);
     }
 

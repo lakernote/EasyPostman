@@ -21,7 +21,7 @@ public class PrimaryButton extends JButton {
 
     // 缓存颜色，避免每次 paintComponent 都查询 ClientProperty
     private Color cachedBaseColor = ModernColors.getPrimary();
-    private Color cachedHoverColor = ModernColors.getPrimaryDark();
+    private Color cachedHoverColor = ModernColors.getPrimaryLight();
     private Color cachedPressColor = ModernColors.getPrimaryDarker();
     private boolean colorsInitialized = false;
 
@@ -43,8 +43,7 @@ public class PrimaryButton extends JButton {
 
         // 设置字体和样式
         setFont(FontsUtil.getDefaultFont(Font.BOLD));
-        // 文字颜色始终为白色（在蓝色背景上）
-        setForeground(Color.WHITE);
+        setForeground(ModernColors.getTextInverse());
         setContentAreaFilled(false);
         setBorderPainted(false);
         setFocusPainted(false);
@@ -131,7 +130,7 @@ public class PrimaryButton extends JButton {
             Color pressColor = (Color) getClientProperty("pressColor");
 
             cachedBaseColor = baseColor != null ? baseColor : ModernColors.getPrimary();
-            cachedHoverColor = hoverColor != null ? hoverColor : ModernColors.getPrimaryDark();
+            cachedHoverColor = hoverColor != null ? hoverColor : ModernColors.getPrimaryLight();
             cachedPressColor = pressColor != null ? pressColor : ModernColors.getPrimaryDarker();
             colorsInitialized = true;
         }

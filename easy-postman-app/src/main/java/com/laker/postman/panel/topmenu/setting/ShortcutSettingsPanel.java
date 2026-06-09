@@ -1,6 +1,8 @@
 package com.laker.postman.panel.topmenu.setting;
 
 import com.laker.postman.common.UiSingletonFactory;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.panel.topmenu.TopMenuBar;
 import com.laker.postman.service.setting.ShortcutManager;
@@ -29,9 +31,11 @@ public class ShortcutSettingsPanel extends JPanel {
     public ShortcutSettingsPanel() {
         setLayout(new BorderLayout(10, 10));
         setBorder(new EmptyBorder(20, 20, 20, 20));
+        ToolWindowSurfaceStyle.applyCard(this);
 
         // 标题面板
         JPanel titlePanel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(titlePanel);
         titlePanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
 
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SHORTCUT_SETTINGS_TITLE));
@@ -41,7 +45,7 @@ public class ShortcutSettingsPanel extends JPanel {
         // 添加双击编辑提示
         JLabel hintLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SHORTCUT_DOUBLE_CLICK_HINT));
         hintLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        hintLabel.setForeground(new Color(128, 128, 128));
+        hintLabel.setForeground(ModernColors.getTextSecondary());
         titlePanel.add(hintLabel, BorderLayout.SOUTH);
 
         add(titlePanel, BorderLayout.NORTH);
@@ -49,6 +53,7 @@ public class ShortcutSettingsPanel extends JPanel {
         // 创建表格
         tableModel = new ShortcutTableModel();
         shortcutTable = new JTable(tableModel);
+        ToolWindowSurfaceStyle.applyTableCard(shortcutTable);
         shortcutTable.setRowHeight(32);
         shortcutTable.setFocusable(false);
         shortcutTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -73,10 +78,12 @@ public class ShortcutSettingsPanel extends JPanel {
         });
 
         JScrollPane scrollPane = new JScrollPane(shortcutTable);
+        ToolWindowSurfaceStyle.applyTableScrollPaneCard(scrollPane, shortcutTable);
         add(scrollPane, BorderLayout.CENTER);
 
         // 底部按钮面板
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        ToolWindowSurfaceStyle.applyCard(buttonPanel);
 
         JButton editButton = new JButton(I18nUtil.getMessage(MessageKeys.SHORTCUT_EDIT));
         editButton.addActionListener(e -> editShortcut());
@@ -267,9 +274,11 @@ public class ShortcutSettingsPanel extends JPanel {
 
             setLayout(new BorderLayout(10, 10));
             ((JPanel) getContentPane()).setBorder(new EmptyBorder(20, 20, 20, 20));
+            ToolWindowSurfaceStyle.applyCard((JPanel) getContentPane());
 
             // 中心面板
             JPanel centerPanel = new JPanel(new GridLayout(3, 2, 10, 10));
+            ToolWindowSurfaceStyle.applyCard(centerPanel);
 
             centerPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.SHORTCUT_ACTION) + ":"));
             centerPanel.add(new JLabel(item.getActionName()));
@@ -305,6 +314,7 @@ public class ShortcutSettingsPanel extends JPanel {
 
             // 按钮面板
             JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+            ToolWindowSurfaceStyle.applyCard(buttonPanel);
 
             JButton okButton = new JButton(I18nUtil.getMessage(MessageKeys.SETTINGS_DIALOG_SAVE));
             okButton.addActionListener(e -> confirm());
@@ -363,4 +373,3 @@ public class ShortcutSettingsPanel extends JPanel {
 
     }
 }
-

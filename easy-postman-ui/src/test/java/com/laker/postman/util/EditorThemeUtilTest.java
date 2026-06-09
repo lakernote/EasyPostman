@@ -10,7 +10,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import javax.swing.*;
-import javax.swing.border.LineBorder;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 import static org.testng.Assert.assertEquals;
@@ -73,7 +73,7 @@ public class EditorThemeUtilTest {
         assertEquals(gutter.getBorderColor(), new Color(0x45, 0x49, 0x4C));
         assertEquals(gutter.getLineNumberColor(), new Color(0x74, 0x7A, 0x82));
         assertEquals(gutter.getCurrentLineNumberColor(), new Color(0xA9, 0xB7, 0xC6));
-        assertLineBorderColor(scrollPane, new Color(0x45, 0x49, 0x4C));
+        assertEditorScrollPaneBorderless(scrollPane);
     }
 
     @Test
@@ -91,12 +91,10 @@ public class EditorThemeUtilTest {
         assertEquals(gutter.getBorderColor(), new Color(0xE0, 0xE0, 0xE0));
         assertEquals(gutter.getLineNumberColor(), new Color(0x99, 0x99, 0x99));
         assertEquals(gutter.getCurrentLineNumberColor(), new Color(0x66, 0x66, 0x66));
-        assertLineBorderColor(scrollPane, new Color(0xE0, 0xE0, 0xE0));
+        assertEditorScrollPaneBorderless(scrollPane);
     }
 
-    private void assertLineBorderColor(RTextScrollPane scrollPane, Color expectedColor) {
-        assertTrue(scrollPane.getBorder() instanceof LineBorder);
-        LineBorder border = (LineBorder) scrollPane.getBorder();
-        assertEquals(border.getLineColor(), expectedColor);
+    private void assertEditorScrollPaneBorderless(RTextScrollPane scrollPane) {
+        assertTrue(scrollPane.getBorder() instanceof EmptyBorder);
     }
 }

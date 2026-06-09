@@ -2,6 +2,7 @@ package com.laker.postman.panel.collections.editor.request.sub;
 
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.variable.VariableType;
 import lombok.experimental.UtilityClass;
 
@@ -22,7 +23,9 @@ class RequestBodyVariableTooltipBuilder {
     static String listItemTooltip(String varName, String varValue, VariableType varType) {
         StringBuilder tooltipBuilder = new StringBuilder("<html>");
         tooltipBuilder.append("<b>").append(escapeHtml(varName)).append("</b>");
-        tooltipBuilder.append(" <span style='color:gray'>(").append(varType.getDisplayName()).append(")</span>");
+        tooltipBuilder.append(" <span style='color:")
+                .append(ModernColors.toHtmlColor(ModernColors.getTextHint()))
+                .append("'>(").append(varType.getDisplayName()).append(")</span>");
         if (varValue != null && !varValue.isEmpty()) {
             tooltipBuilder.append("<br/>").append(escapeHtml(varValue));
         }
@@ -42,11 +45,11 @@ class RequestBodyVariableTooltipBuilder {
         String typeIcon;
 
         if (defined) {
-            titleColor = toHex(varType.getColor());
+            titleColor = ModernColors.toHtmlColor(varType.getColor());
             typeLabel = varType.getDisplayName();
             typeIcon = varType.getIconSymbol();
         } else {
-            titleColor = "#D32F2F";
+            titleColor = ModernColors.toHtmlColor(ModernColors.getError());
             typeLabel = I18nUtil.getMessage(MessageKeys.VARIABLE_TYPE_UNDEFINED);
             typeIcon = "x";
         }
@@ -105,7 +108,9 @@ class RequestBodyVariableTooltipBuilder {
             return;
         }
 
-        tooltip.append("<span style='color: #D32F2F; font-weight: bold;'>");
+        tooltip.append("<span style='color: ")
+                .append(ModernColors.toHtmlColor(ModernColors.getError()))
+                .append("; font-weight: bold;'>");
         tooltip.append(escapeHtml(content));
         tooltip.append("</span>");
     }

@@ -1,5 +1,6 @@
 package com.laker.postman.common.component.tab;
 
+import com.laker.postman.common.constants.ModernColors;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -296,7 +297,7 @@ public class TabbedPaneDragHandler {
             // 主题自适应颜色：优先取 FlatLaf 焦点色
             Color color = UIManager.getColor("Component.focusColor");
             if (color == null) color = UIManager.getColor("TabbedPane.underlineColor");
-            if (color == null) color = new Color(60, 131, 197); // FlatLaf 默认蓝
+            if (color == null) color = ModernColors.getPrimary();
             g2.setColor(color);
 
             // 竖线
@@ -318,4 +319,3 @@ public class TabbedPaneDragHandler {
         }
     }
 }
-

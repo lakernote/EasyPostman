@@ -4,11 +4,16 @@ import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.component.EasyJSpinner;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.SearchableTextArea;
+import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.ToolWindowSidebarHeader;
+import com.laker.postman.common.component.ToolWindowSidebarToolbar;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.ClearButton;
 import com.laker.postman.common.component.button.PrimaryButton;
 import com.laker.postman.common.component.button.RefreshButton;
 import com.laker.postman.common.component.button.SecondaryButton;
 import com.laker.postman.common.component.connection.ConnectionToolbarUi;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.plugin.api.PluginStorage;
 import com.laker.postman.util.*;
 import lombok.RequiredArgsConstructor;
@@ -35,8 +40,6 @@ import static com.laker.postman.plugin.redis.RedisI18n.t;
 
 @Slf4j
 public class RedisPanel extends JPanel {
-    private static final String LABEL_DISABLED_FG = "Label.disabledForeground";
-    private static final String SEPARATOR_FG = "Separator.foreground";
     private static final int MAX_KEY_SCAN = 2000;
     private static final int MAX_HISTORY = 30;
     private static final String CONNECT_CARD = "connect";
@@ -165,33 +168,35 @@ public class RedisPanel extends JPanel {
     private void initUI() {
         setLayout(new BorderLayout(0, 0));
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        ToolWindowSurfaceStyle.applyCard(this);
 
         add(buildConnectionPanel(), BorderLayout.NORTH);
 
-        mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, buildLeftPanel(), buildMainPanel());
-        mainSplit.setDividerLocation(240);
-        mainSplit.setDividerSize(3);
+        mainSplit = ToolWindowChrome.createHorizontalCardSplitPane(
+                buildLeftPanel(),
+                buildMainPanel(),
+                240
+        );
         mainSplit.setResizeWeight(0.0);
-        mainSplit.setContinuousLayout(true);
         mainSplit.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, e -> {
             int loc = (int) e.getNewValue();
             if (loc > 10) mainSplit.putClientProperty("savedDividerLocation", loc);
         });
         add(mainSplit, BorderLayout.CENTER);
+        ToolWindowSurfaceStyle.applyPanelTreeCard(this);
     }
 
     private JPanel buildConnectionPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         connectionPanel = panel;
-        panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)),
-                BorderFactory.createEmptyBorder(3, 6, 3, 6)));
+        ToolWindowSurfaceStyle.applySectionHeader(panel, 3, 6, 3, 6);
 
         connectionForm = new JPanel(new MigLayout(
                 "insets 0, fillx, gapy 2, novisualpadding, hidemode 3",
                 "[grow,fill]",
                 "[][]"
         ));
+        connectionForm.setOpaque(false);
 
         profileCombo = new JComboBox<>();
         profileCombo.setEditable(false);
@@ -343,10 +348,12 @@ public class RedisPanel extends JPanel {
 
     private JComponent buildLeftPanel() {
         JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
         wrapper.setMinimumSize(new Dimension(120, 0));
         wrapper.setPreferredSize(new Dimension(240, 0));
 
         JTabbedPane leftTabs = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
+        ToolWindowSurfaceStyle.applyTabbedPaneCard(leftTabs);
         leftTabs.addTab(t(MessageKeys.TOOLBOX_REDIS_KEYS_MANAGEMENT), buildKeyPanel());
         leftTabs.addTab(t(MessageKeys.TOOLBOX_REDIS_HISTORY), buildHistoryPanel());
         wrapper.add(leftTabs, BorderLayout.CENTER);
@@ -355,18 +362,13 @@ public class RedisPanel extends JPanel {
 
     private JPanel buildKeyPanel() {
         JPanel panel = new JPanel(new BorderLayout(0, 0));
+        panel.setOpaque(false);
 
-        JPanel titleBar = new JPanel(new BorderLayout());
-        titleBar.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)),
-                BorderFactory.createEmptyBorder(4, 8, 4, 4)));
-        JLabel titleLbl = new JLabel(t(MessageKeys.TOOLBOX_REDIS_KEYS_MANAGEMENT));
-        titleLbl.setFont(titleLbl.getFont().deriveFont(Font.BOLD, 12f));
         RefreshButton refreshBtn = new RefreshButton();
         refreshBtn.setToolTipText(t(MessageKeys.TOOLBOX_REDIS_KEYS_REFRESH));
         refreshBtn.addActionListener(e -> loadKeysAsync());
-        titleBar.add(titleLbl, BorderLayout.CENTER);
-        titleBar.add(refreshBtn, BorderLayout.EAST);
+        ToolWindowSidebarHeader titleBar = new ToolWindowSidebarHeader(
+                t(MessageKeys.TOOLBOX_REDIS_KEYS_MANAGEMENT), refreshBtn);
 
         keySearchField = new SearchTextField();
         keySearchField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, t(MessageKeys.TOOLBOX_REDIS_KEYS_SEARCH_PLACEHOLDER));
@@ -384,10 +386,6 @@ public class RedisPanel extends JPanel {
                 applyKeyFilter();
             }
         });
-
-        JPanel searchBox = new JPanel(new BorderLayout());
-        searchBox.setBorder(BorderFactory.createEmptyBorder(4, 6, 2, 6));
-        searchBox.add(keySearchField, BorderLayout.CENTER);
 
         keyListModel = new DefaultListModel<>();
         keyFilteredModel = new DefaultListModel<>();
@@ -408,11 +406,12 @@ public class RedisPanel extends JPanel {
         keyList.addMouseListener(buildKeyListMouseListener());
 
         JScrollPane listScroll = new JScrollPane(keyList);
-        listScroll.setBorder(BorderFactory.createEmptyBorder());
+        ToolWindowSurfaceStyle.applyListScrollPaneCard(listScroll, keyList);
 
         JPanel top = new JPanel(new BorderLayout());
+        top.setOpaque(false);
         top.add(titleBar, BorderLayout.NORTH);
-        top.add(searchBox, BorderLayout.CENTER);
+        top.add(new ToolWindowSidebarToolbar(null, keySearchField), BorderLayout.CENTER);
 
         panel.add(top, BorderLayout.NORTH);
         panel.add(listScroll, BorderLayout.CENTER);
@@ -421,21 +420,16 @@ public class RedisPanel extends JPanel {
 
     private JPanel buildHistoryPanel() {
         JPanel panel = new JPanel(new BorderLayout(0, 0));
+        panel.setOpaque(false);
 
-        JPanel titleBar = new JPanel(new BorderLayout());
-        titleBar.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)),
-                BorderFactory.createEmptyBorder(4, 8, 4, 4)));
-        JLabel titleLbl = new JLabel(t(MessageKeys.TOOLBOX_REDIS_HISTORY));
-        titleLbl.setFont(titleLbl.getFont().deriveFont(Font.BOLD, 12f));
         ClearButton clearHistBtn = new ClearButton();
         clearHistBtn.setToolTipText(t(MessageKeys.TOOLBOX_REDIS_HISTORY_CLEAR));
         clearHistBtn.addActionListener(e -> {
             requestHistory.clear();
             historyListModel.clear();
         });
-        titleBar.add(titleLbl, BorderLayout.CENTER);
-        titleBar.add(clearHistBtn, BorderLayout.EAST);
+        ToolWindowSidebarHeader titleBar = new ToolWindowSidebarHeader(
+                t(MessageKeys.TOOLBOX_REDIS_HISTORY), clearHistBtn);
 
         historyListModel = new DefaultListModel<>();
         historyList = new JList<>(historyListModel);
@@ -451,11 +445,11 @@ public class RedisPanel extends JPanel {
             }
         });
         JScrollPane scroll = new JScrollPane(historyList);
-        scroll.setBorder(BorderFactory.createEmptyBorder());
+        ToolWindowSurfaceStyle.applyListScrollPaneCard(scroll, historyList);
 
         JLabel tipLbl = new JLabel("<html><center><small>" + t(MessageKeys.TOOLBOX_REDIS_HISTORY_EMPTY) + "</small></center></html>");
         tipLbl.setHorizontalAlignment(SwingConstants.CENTER);
-        tipLbl.setForeground(UIManager.getColor(LABEL_DISABLED_FG));
+        tipLbl.setForeground(ModernColors.getTextSecondary());
         tipLbl.setBorder(BorderFactory.createEmptyBorder(8, 4, 8, 4));
 
         panel.add(titleBar, BorderLayout.NORTH);
@@ -466,15 +460,16 @@ public class RedisPanel extends JPanel {
 
     private JComponent buildMainPanel() {
         JPanel panel = new JPanel(new BorderLayout(0, 0));
+        panel.setOpaque(false);
         panel.setMinimumSize(new Dimension(0, 0));
         panel.add(buildActionBar(), BorderLayout.NORTH);
 
-        JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, buildValuePanel(), buildResultPanel());
-        split.setDividerLocation(210);
-        split.setDividerSize(5);
+        JSplitPane split = ToolWindowChrome.createVerticalCardSplitPane(
+                buildValuePanel(),
+                buildResultPanel(),
+                210
+        );
         split.setResizeWeight(0.36);
-        split.setContinuousLayout(true);
-        split.setBorder(BorderFactory.createEmptyBorder());
         panel.add(split, BorderLayout.CENTER);
         return panel;
     }
@@ -485,7 +480,7 @@ public class RedisPanel extends JPanel {
                 "[]8[grow,fill]8[]push[]6[]6[]",
                 "[][]"
         ));
-        panel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)));
+        ToolWindowSurfaceStyle.applySectionHeader(panel);
 
         templateCombo = new JComboBox<>();
         for (String[] template : TEMPLATES) {
@@ -553,10 +548,11 @@ public class RedisPanel extends JPanel {
 
     private JPanel buildValuePanel() {
         JPanel panel = new JPanel(new BorderLayout());
+        panel.setOpaque(false);
         JPanel header = new JPanel(new MigLayout("insets 2 4 2 4, fillx", "[]push[]", "[]"));
-        header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)));
+        ToolWindowSurfaceStyle.applySectionHeader(header);
         JLabel title = new JLabel(t(MessageKeys.TOOLBOX_REDIS_VALUE_TITLE));
-        title.setFont(title.getFont().deriveFont(Font.BOLD, 11f));
+        title.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -2));
         header.add(title);
 
         JButton formatBtn = new JButton(IconUtil.createThemed("icons/format.svg", 16, 16));
@@ -578,18 +574,19 @@ public class RedisPanel extends JPanel {
 
     private JPanel buildResultPanel() {
         JPanel panel = new JPanel(new BorderLayout());
+        panel.setOpaque(false);
         panel.setMinimumSize(new Dimension(0, 0));
         // title 固定, keyMetaLabel 可伸缩但有最大宽, respStatusLabel 固定右侧
         JPanel header = new JPanel(new MigLayout("insets 2 4 2 4, fillx", "[]8[grow,fill]push[]", "[]"));
-        header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)));
+        ToolWindowSurfaceStyle.applySectionHeader(header);
         JLabel title = new JLabel(t(MessageKeys.TOOLBOX_REDIS_RESPONSE_TITLE));
-        title.setFont(title.getFont().deriveFont(Font.BOLD, 11f));
+        title.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -2));
         keyMetaLabel = new JLabel("");
-        keyMetaLabel.setForeground(new Color(80, 130, 200));
+        keyMetaLabel.setForeground(ModernColors.getPrimary());
         // 超长 key 名用省略号截断，不撑开面板
         keyMetaLabel.setMinimumSize(new Dimension(0, 0));
         respStatusLabel = new JLabel("");
-        respStatusLabel.setForeground(UIManager.getColor(LABEL_DISABLED_FG));
+        respStatusLabel.setForeground(ModernColors.getTextSecondary());
         header.add(title);
         header.add(keyMetaLabel, "growx, wmax 400");
         header.add(respStatusLabel);
@@ -672,6 +669,7 @@ public class RedisPanel extends JPanel {
         String selected = keyList.getSelectedValue();
 
         JPopupMenu menu = new JPopupMenu();
+        ToolWindowSurfaceStyle.applyPopupMenuCard(menu);
         JMenuItem copyNameItem = new JMenuItem(t(MessageKeys.TOOLBOX_REDIS_KEY_COPY));
         copyNameItem.setEnabled(selected != null);
         copyNameItem.addActionListener(e -> {
@@ -1551,7 +1549,9 @@ public class RedisPanel extends JPanel {
             if (value instanceof String key) {
                 Long ttl = keyTtlMap.get(key);
                 if (ttl != null) {
-                    String metaColor = isSelected ? "#cce0ff" : "#888888";
+                    String metaColor = ModernColors.toHtmlColor(isSelected
+                            ? lbl.getForeground()
+                            : ModernColors.getTextHint());
                     lbl.setText("<html>" + escapeHtml(key) + "&nbsp;<font color='" + metaColor + "'>TTL: " + ttlDisplay(ttl) + "</font></html>");
                 } else {
                     lbl.setText(key);
@@ -1569,7 +1569,8 @@ public class RedisPanel extends JPanel {
             if (value instanceof HistoryEntry h) {
                 String key = h.key == null ? "" : h.key;
                 if (key.length() > 36) key = key.substring(0, 35) + "…";
-                lbl.setText("<html><b><font color='#d9822b'>" + h.command + "</font></b> " + escapeHtml(key) + "</html>");
+                String commandColor = ModernColors.toHtmlColor(ModernColors.getWarning());
+                lbl.setText("<html><b><font color='" + commandColor + "'>" + h.command + "</font></b> " + escapeHtml(key) + "</html>");
                 lbl.setToolTipText(h.command + " " + h.key + " " + h.args);
             }
             return lbl;

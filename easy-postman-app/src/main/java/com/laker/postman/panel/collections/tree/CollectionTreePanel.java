@@ -9,6 +9,7 @@ import com.laker.postman.request.model.SavedResponse;
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.async.EasyTaskExecutor;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.tree.RequestTreeCellRenderer;
 import com.laker.postman.common.component.tree.TreeTransferHandler;
 import com.laker.postman.panel.collections.OpenedRequestTabSessionRestorer;
@@ -75,10 +76,12 @@ public class CollectionTreePanel extends UiSingletonPanel {
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
+        setOpaque(false);
         setPreferredSize(new Dimension(200, 200));
 
         // 顶部面板，导入导出按钮在最上方，环境信息在下方
         JPanel topPanel = getTopPanel();
+        topPanel.setOpaque(false);
         add(topPanel, BorderLayout.NORTH);
 
         JScrollPane treeScrollPane = getTreeScrollPane();
@@ -137,6 +140,7 @@ public class CollectionTreePanel extends UiSingletonPanel {
         requestTree.setCellRenderer(new RequestTreeCellRenderer());
         requestTree.setRowHeight(28);
         JScrollPane treeScrollPane = new JScrollPane(requestTree);
+        ToolWindowSurfaceStyle.applyTreeScrollPaneCard(treeScrollPane, requestTree);
         treeScrollPane.getVerticalScrollBar().setUnitIncrement(16); // 设置滚动条增量
         // 启用拖拽排序
         requestTree.setDragEnabled(true);

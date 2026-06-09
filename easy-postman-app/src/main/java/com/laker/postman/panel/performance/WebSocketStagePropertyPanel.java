@@ -7,6 +7,7 @@ import com.laker.postman.common.component.EasyJSpinner;
 import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.common.component.EasyTextField;
 import com.laker.postman.common.component.SearchableTextArea;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.SnippetButton;
 import com.laker.postman.common.component.dialog.SnippetDialog;
 import com.laker.postman.common.component.editor.PostmanJavaScriptTokenMaker;
@@ -252,7 +253,7 @@ public class WebSocketStagePropertyPanel extends JPanel {
         gbc.weighty = 0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         sendHintLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_SEND_HINT));
-        sendHintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        sendHintLabel.setForeground(ModernColors.getTextSecondary());
         add(sendHintLabel, gbc);
     }
 
@@ -318,7 +319,7 @@ public class WebSocketStagePropertyPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout(0, 3));
         panel.setOpaque(false);
         JLabel label = new JLabel(labelText);
-        label.setForeground(UIManager.getColor("Label.disabledForeground"));
+        label.setForeground(ModernColors.getTextSecondary());
         label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         panel.add(label, BorderLayout.NORTH);
         panel.add(field, BorderLayout.CENTER);
@@ -363,7 +364,7 @@ public class WebSocketStagePropertyPanel extends JPanel {
         readHintArea.setOpaque(false);
         readHintArea.setLineWrap(true);
         readHintArea.setWrapStyleWord(true);
-        readHintArea.setForeground(UIManager.getColor("Label.disabledForeground"));
+        readHintArea.setForeground(ModernColors.getTextSecondary());
         formPanel.add(readHintArea, rowGbc);
 
         gbc.gridx = 0;
@@ -380,7 +381,7 @@ public class WebSocketStagePropertyPanel extends JPanel {
         gbc.gridwidth = 2;
         gbc.weightx = 1;
         closeHintLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_CLOSE_HINT));
-        closeHintLabel.setForeground(UIManager.getColor("Label.disabledForeground"));
+        closeHintLabel.setForeground(ModernColors.getTextSecondary());
         add(closeHintLabel, gbc);
     }
 
@@ -396,10 +397,8 @@ public class WebSocketStagePropertyPanel extends JPanel {
 
     private JPanel createRequestBodySourcePanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(ModernColors.getBorderLightColor()),
-                BorderFactory.createEmptyBorder(12, 14, 12, 14)
-        ));
+        ToolWindowSurfaceStyle.applyCard(panel);
+        panel.setBorder(BorderFactory.createEmptyBorder(12, 14, 12, 14));
         JTextArea hint = createHintArea(I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_SEND_REQUEST_BODY_SOURCE_HINT), 3);
         panel.add(hint, BorderLayout.NORTH);
         return panel;
@@ -462,7 +461,7 @@ public class WebSocketStagePropertyPanel extends JPanel {
         area.setOpaque(false);
         area.setLineWrap(true);
         area.setWrapStyleWord(true);
-        area.setForeground(UIManager.getColor("Label.disabledForeground"));
+        area.setForeground(ModernColors.getTextSecondary());
         area.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         return area;
     }

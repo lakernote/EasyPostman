@@ -3,6 +3,9 @@ package com.laker.postman.panel.sidebar.global;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.component.SearchTextField;
+import com.laker.postman.common.component.ToolWindowActionToolbar;
+import com.laker.postman.common.component.ToolWindowSidebarToolbar;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.EditButton;
 import com.laker.postman.common.component.button.SaveButton;
 import com.laker.postman.common.component.table.EasyVariableTablePanel;
@@ -71,7 +74,7 @@ public class GlobalVariablesPanel extends JPanel {
 
     private void initUI() {
         setLayout(new BorderLayout(0, 0));
-        setBackground(ModernColors.getBackgroundColor());
+        ToolWindowSurfaceStyle.applyBackground(this);
         add(createTopPanel(), BorderLayout.NORTH);
 
         JPanel tableContainer = new JPanel(new BorderLayout());
@@ -84,11 +87,7 @@ public class GlobalVariablesPanel extends JPanel {
 
     private JPanel createTopPanel() {
         JPanel topPanel = new JPanel(new BorderLayout(12, 0));
-        topPanel.setOpaque(false);
-        topPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getDividerBorderColor()),
-                BorderFactory.createEmptyBorder(12, 14, 10, 14)
-        ));
+        ToolWindowSurfaceStyle.applySectionHeader(topPanel, 12, 14, 10, 14);
 
         topPanel.add(createHeaderPanel(), BorderLayout.WEST);
         topPanel.add(createToolbar(), BorderLayout.EAST);
@@ -123,26 +122,18 @@ public class GlobalVariablesPanel extends JPanel {
     }
 
     private JPanel createToolbar() {
-        JPanel toolbarPanel = new JPanel();
-        toolbarPanel.setOpaque(false);
-        toolbarPanel.setLayout(new BoxLayout(toolbarPanel, BoxLayout.X_AXIS));
-
         EditButton bulkEditButton = new EditButton();
         bulkEditButton.setToolTipText(I18nUtil.getMessage(MessageKeys.ENV_BULK_EDIT));
-        bulkEditButton.setPreferredSize(new Dimension(bulkEditButton.getPreferredSize().width, 32));
-        bulkEditButton.setMaximumSize(new Dimension(bulkEditButton.getMaximumSize().width, 32));
         bulkEditButton.addActionListener(e -> showBulkEditDialog());
 
         SaveButton saveButton = new SaveButton();
         saveButton.setToolTipText(I18nUtil.getMessage(MessageKeys.BUTTON_SAVE));
-        saveButton.setPreferredSize(new Dimension(saveButton.getPreferredSize().width, 32));
-        saveButton.setMaximumSize(new Dimension(saveButton.getMaximumSize().width, 32));
         saveButton.addActionListener(e -> saveVariablesManually());
 
         tableSearchField.setPlaceholderText(I18nUtil.getMessage(MessageKeys.GLOBAL_VARIABLES_SEARCH_PLACEHOLDER));
-        tableSearchField.setPreferredSize(new Dimension(280, 34));
-        tableSearchField.setMinimumSize(new Dimension(220, 34));
-        tableSearchField.setMaximumSize(new Dimension(320, 34));
+        tableSearchField.setPreferredSize(new Dimension(280, ToolWindowSidebarToolbar.SEARCH_HEIGHT));
+        tableSearchField.setMinimumSize(new Dimension(220, ToolWindowSidebarToolbar.SEARCH_HEIGHT));
+        tableSearchField.setMaximumSize(new Dimension(320, ToolWindowSidebarToolbar.SEARCH_HEIGHT));
         tableSearchField.addActionListener(e -> filterTableRows());
         tableSearchField.getDocument().addDocumentListener(new DocumentListener() {
             @Override
@@ -171,22 +162,12 @@ public class GlobalVariablesPanel extends JPanel {
             }
         });
 
-        toolbarPanel.add(tableSearchField);
-        toolbarPanel.add(Box.createHorizontalStrut(6));
-        toolbarPanel.add(bulkEditButton);
-        toolbarPanel.add(Box.createHorizontalStrut(4));
-        toolbarPanel.add(saveButton);
-
-        return toolbarPanel;
+        return ToolWindowActionToolbar.inlineRight(tableSearchField, bulkEditButton, saveButton);
     }
 
     private JPanel createFooterPanel() {
         JPanel footerPanel = new JPanel(new BorderLayout());
-        footerPanel.setOpaque(false);
-        footerPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.getDividerBorderColor()),
-                BorderFactory.createEmptyBorder(7, 14, 8, 14)
-        ));
+        ToolWindowSurfaceStyle.applySectionHeader(footerPanel, 7, 14, 8, 14);
 
         shortcutHintLabel.setText(I18nUtil.getMessage(MessageKeys.GLOBAL_VARIABLES_SHORTCUT_HINT));
         shortcutHintLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));

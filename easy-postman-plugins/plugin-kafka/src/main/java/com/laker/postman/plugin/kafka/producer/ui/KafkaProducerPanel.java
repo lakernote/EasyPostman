@@ -5,6 +5,8 @@ import com.laker.postman.plugin.kafka.MessageKeys;
 import com.laker.postman.plugin.kafka.shared.ui.KafkaPropertiesEditorPanel;
 import com.laker.postman.common.component.PlaceholderTextArea;
 import com.laker.postman.common.component.SearchableTextArea;
+import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.ClearButton;
 import com.laker.postman.common.component.button.PrimaryButton;
 import com.laker.postman.common.constants.ModernColors;
@@ -23,8 +25,6 @@ import static com.laker.postman.plugin.kafka.KafkaI18n.t;
 
 public class KafkaProducerPanel extends JPanel {
 
-    private static final String SEPARATOR_FG = "Separator.foreground";
-    private static final String LABEL_DISABLED_FG = "Label.disabledForeground";
     private static final String MIG_GROWX = "growx";
     private static final String MIG_GROWX_WRAP = "growx, wrap";
     private static final String ACTION_KAFKA_SEND = "kafka-send";
@@ -41,18 +41,17 @@ public class KafkaProducerPanel extends JPanel {
 
     public KafkaProducerPanel(Runnable sendAction) {
         super(new BorderLayout(0, 0));
+        ToolWindowSurfaceStyle.applyCard(this);
 
         JPanel titleBar = new JPanel(new BorderLayout());
-        titleBar.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)),
-                BorderFactory.createEmptyBorder(6, 10, 6, 10)));
+        ToolWindowSurfaceStyle.applySectionHeader(titleBar, 6, 10, 6, 10);
         JLabel titleLbl = new JLabel(t(MessageKeys.TOOLBOX_KAFKA_PRODUCER_TITLE));
-        titleLbl.setFont(titleLbl.getFont().deriveFont(Font.BOLD, 12f));
+        titleLbl.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -1));
         titleBar.add(titleLbl, BorderLayout.WEST);
 
         JToggleButton advancedToggleBtn = new JToggleButton();
         advancedToggleBtn.setIcon(IconUtil.createThemed("icons/more.svg", 16, 16));
-        advancedToggleBtn.setSelectedIcon(IconUtil.createColored("icons/more.svg", 16, 16, ModernColors.PRIMARY));
+        advancedToggleBtn.setSelectedIcon(IconUtil.createColored("icons/more.svg", 16, 16, ModernColors.getPrimary()));
         advancedToggleBtn.setToolTipText(t(MessageKeys.TOOLBOX_KAFKA_ADVANCED_OPTIONS));
         advancedToggleBtn.setSelected(false);
         advancedToggleBtn.setPreferredSize(new Dimension(28, 28));
@@ -66,6 +65,7 @@ public class KafkaProducerPanel extends JPanel {
                 "[]8[grow,fill]8[]8[grow,fill]",
                 "[]"
         ));
+        form.setOpaque(false);
 
         topicField = new JTextField("");
         topicField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, t(MessageKeys.TOOLBOX_KAFKA_TOPIC_PLACEHOLDER));
@@ -94,32 +94,34 @@ public class KafkaProducerPanel extends JPanel {
                 t(MessageKeys.TOOLBOX_KAFKA_PRODUCER_CUSTOM_PROPERTIES),
                 t(MessageKeys.TOOLBOX_KAFKA_PRODUCER_CUSTOM_PROPERTIES_HINT),
                 t(MessageKeys.TOOLBOX_KAFKA_PRODUCER_CUSTOM_PROPERTIES_PLACEHOLDER),
-                UIManager.getColor(SEPARATOR_FG),
-                UIManager.getColor(LABEL_DISABLED_FG));
+                ModernColors.getDividerBorderColor(),
+                ModernColors.getTextSecondary());
         advancedPanel = customPropsPanel;
         advancedPanel.setVisible(false);
         advancedToggleBtn.addActionListener(e -> advancedPanel.setVisible(advancedToggleBtn.isSelected()));
 
         JPanel headersPanel = new JPanel(new BorderLayout());
+        headersPanel.setOpaque(false);
         JPanel headersHeader = new JPanel(new MigLayout("insets 4 8 4 8, fillx", "[]push", "[]"));
-        headersHeader.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)));
+        ToolWindowSurfaceStyle.applySectionHeader(headersHeader);
         JLabel headersLbl = new JLabel(t(MessageKeys.TOOLBOX_KAFKA_HEADERS));
-        headersLbl.setFont(headersLbl.getFont().deriveFont(Font.BOLD, 11f));
+        headersLbl.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -2));
         headersHeader.add(headersLbl);
 
         headersArea = new PlaceholderTextArea(2, 0);
         headersArea.setLineWrap(false);
-        headersArea.setBackground(ModernColors.getInputBackgroundColor());
         headersArea.setPlaceholder(t(MessageKeys.TOOLBOX_KAFKA_HEADERS_PLACEHOLDER));
+        ToolWindowSurfaceStyle.applyTextComponentInput(headersArea);
         JScrollPane headersScroll = new JScrollPane(headersArea);
-        headersScroll.setBorder(BorderFactory.createEmptyBorder());
+        ToolWindowSurfaceStyle.applyScrollPaneCard(headersScroll);
 
         headersPanel.add(headersHeader, BorderLayout.NORTH);
         headersPanel.add(headersScroll, BorderLayout.CENTER);
 
         JPanel payloadPanel = new JPanel(new BorderLayout());
+        payloadPanel.setOpaque(false);
         JPanel payloadHeader = new JPanel(new MigLayout("insets 4 8 4 8, fillx", "[]push[]", "[]"));
-        payloadHeader.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UIManager.getColor(SEPARATOR_FG)));
+        ToolWindowSurfaceStyle.applySectionHeader(payloadHeader);
         JLabel payloadLbl = new JLabel(t(MessageKeys.TOOLBOX_KAFKA_PAYLOAD));
         payloadLbl.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         ClearButton clearButton = new ClearButton();
@@ -147,21 +149,20 @@ public class KafkaProducerPanel extends JPanel {
         payloadPanel.add(payloadHeader, BorderLayout.NORTH);
         payloadPanel.add(payloadSearchableArea, BorderLayout.CENTER);
 
-        JSplitPane editorSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, headersPanel, payloadPanel);
+        JSplitPane editorSplit = ToolWindowChrome.createVerticalCardSplitPane(headersPanel, payloadPanel, 100);
         editorSplit.setDividerLocation(100);
-        editorSplit.setDividerSize(5);
         editorSplit.setResizeWeight(0.25);
-        editorSplit.setContinuousLayout(true);
-        editorSplit.setBorder(BorderFactory.createEmptyBorder());
 
         statusLabel = new JLabel(t(MessageKeys.TOOLBOX_KAFKA_PRODUCER_READY));
-        statusLabel.setForeground(UIManager.getColor(LABEL_DISABLED_FG));
+        statusLabel.setForeground(ModernColors.getTextSecondary());
         statusLabel.setBorder(new EmptyBorder(4, 8, 4, 8));
 
         add(titleBar, BorderLayout.NORTH);
         JPanel content = new JPanel(new BorderLayout(0, 0));
+        content.setOpaque(false);
         content.add(form, BorderLayout.NORTH);
         JPanel editorContainer = new JPanel(new BorderLayout(0, 0));
+        editorContainer.setOpaque(false);
         editorContainer.add(advancedPanel, BorderLayout.NORTH);
         editorContainer.add(editorSplit, BorderLayout.CENTER);
         content.add(editorContainer, BorderLayout.CENTER);

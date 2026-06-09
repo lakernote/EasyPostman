@@ -1,6 +1,8 @@
 package com.laker.postman.panel.performance;
 
 
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -13,6 +15,7 @@ public final class PerformanceStagePropertyLayout {
     }
 
     public static void applyCompactBorder(JComponent component) {
+        ToolWindowSurfaceStyle.applyCard(component);
         component.setBorder(BorderFactory.createEmptyBorder(8, 20, 8, 20));
     }
 

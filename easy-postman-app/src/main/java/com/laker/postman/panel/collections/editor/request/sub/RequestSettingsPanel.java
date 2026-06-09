@@ -1,6 +1,7 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
 import com.laker.postman.common.component.EasyComboBox;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.SwitchButton;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.request.edit.HttpRequestSettingsDraft;
@@ -38,19 +39,18 @@ public class RequestSettingsPanel extends JScrollPane {
     private final JLabel requestTimeoutHintLabel;
 
     public RequestSettingsPanel() {
+        ToolWindowSurfaceStyle.applyScrollPaneCard(this);
         setBorder(BorderFactory.createEmptyBorder());
         setViewportBorder(BorderFactory.createEmptyBorder());
         setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         getVerticalScrollBar().setUnitIncrement(SCROLL_UNIT_INCREMENT);
-        getViewport().setOpaque(false);
-
         JPanel content = new JPanel(new MigLayout("insets 0, fillx, novisualpadding, gap 0", "[grow,fill]", ""));
-        content.setOpaque(false);
+        ToolWindowSurfaceStyle.applyCard(content);
         content.setBorder(BorderFactory.createEmptyBorder(6, 10, 8, 10));
 
         JPanel viewportContent = new JPanel(new BorderLayout());
-        viewportContent.setOpaque(false);
+        ToolWindowSurfaceStyle.applyCard(viewportContent);
         viewportContent.add(content, BorderLayout.NORTH);
         setViewportView(viewportContent);
 
@@ -180,7 +180,7 @@ public class RequestSettingsPanel extends JScrollPane {
                 "[]"
         ));
         row.setOpaque(false);
-        row.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getBorderLightColor()));
+        row.setBorder(BorderFactory.createEmptyBorder());
 
         JPanel textPanel = new JPanel(new MigLayout("insets 0, fillx, novisualpadding, gap 0", "[grow,fill]", "[]1[]"));
         textPanel.setOpaque(false);

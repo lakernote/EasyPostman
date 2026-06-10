@@ -19,6 +19,7 @@ import java.awt.event.ComponentEvent;
  */
 final class SidebarConsoleArea {
     static final int DEFAULT_EXPANDED_CONSOLE_HEIGHT = 300;
+    static final int EXPANDED_CONSOLE_DIVIDER_SIZE = 3;
     private static final int MIN_EXPANDED_CONSOLE_HEIGHT = 160;
 
     private final JPanel owner;
@@ -76,7 +77,7 @@ final class SidebarConsoleArea {
         consoleContainer.add(consolePanel, BorderLayout.CENTER);
         consoleContainer.setPreferredSize(new Dimension(0, DEFAULT_EXPANDED_CONSOLE_HEIGHT));
 
-        JSplitPane splitPane = AppToolWindowChrome.createVerticalInnerSplitPane(tabbedPane, consoleContainer, 0);
+        JSplitPane splitPane = createExpandedConsoleSplitPane(tabbedPane, consoleContainer);
         splitPane.setResizeWeight(1.0);
         splitPane.setMinimumSize(new Dimension(0, 10));
         tabbedPane.setMinimumSize(new Dimension(0, 30));
@@ -84,6 +85,12 @@ final class SidebarConsoleArea {
 
         owner.add(splitPane, BorderLayout.CENTER);
         installInitialExpandedConsoleDivider(splitPane);
+    }
+
+    static JSplitPane createExpandedConsoleSplitPane(JTabbedPane tabbedPane, JPanel consoleContainer) {
+        JSplitPane splitPane = AppToolWindowChrome.createVerticalInnerSplitPane(tabbedPane, consoleContainer, 0);
+        splitPane.setDividerSize(EXPANDED_CONSOLE_DIVIDER_SIZE);
+        return splitPane;
     }
 
     private void showCollapsedBottomBar() {

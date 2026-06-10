@@ -3,6 +3,10 @@ package com.laker.postman.panel.sidebar;
 import com.laker.postman.common.component.AppToolWindowChrome;
 import org.testng.annotations.Test;
 
+import javax.swing.JPanel;
+import javax.swing.JSplitPane;
+import javax.swing.JTabbedPane;
+
 import static org.testng.Assert.assertEquals;
 
 public class SidebarConsoleAreaTest {
@@ -29,5 +33,12 @@ public class SidebarConsoleAreaTest {
         );
 
         assertEquals(dividerLocation, 155);
+    }
+
+    @Test
+    public void expandedConsoleSplitShouldUseStackedDragGapDivider() {
+        JSplitPane splitPane = SidebarConsoleArea.createExpandedConsoleSplitPane(new JTabbedPane(), new JPanel());
+
+        assertEquals(splitPane.getDividerSize(), SidebarConsoleArea.EXPANDED_CONSOLE_DIVIDER_SIZE);
     }
 }

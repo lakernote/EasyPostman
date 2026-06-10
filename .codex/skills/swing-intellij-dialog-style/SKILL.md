@@ -20,6 +20,7 @@ Use this skill for EasyPostman Swing dialogs that should feel closer to IntelliJ
   - Use `ModernColors.getDialogChromeBackgroundColor()` through `ToolWindowSurfaceStyle.applyDialogWindowChrome(...)`, `applyDialogSurface(...)`, `applyDialogSection(...)`, and `applyDialogFooter(...)`.
   - Do not use or change `ModernColors.getWindowChromeBackgroundColor()` for dialogs; that belongs to the main frame/menu/title chrome.
   - Light dialog chrome is expected to read near `247,248,249`; dark dialog chrome near `25,26,28`.
+- Do not force full dialog window chrome on sidebar pop-out managers that already own their content header, such as Globals or Cookies. Use `ToolWindowSurfaceStyle.skipDialogWindowChrome(dialog)` and set the content panel directly; avoid `ToolWindowChrome.wrapDialogToolWindow(...)` there because it adds an extra titlebar/card shell.
 - Keep the split of responsibility clear:
   - FlatLaf `.properties` and `ModernColors` own theme tokens and standard component defaults.
   - `ToolWindowSurfaceStyle` owns reusable styling for custom composite dialog surfaces, scroll panes, list blank areas, headers, and footers.

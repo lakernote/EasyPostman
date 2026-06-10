@@ -149,7 +149,7 @@ public class SnippetDialog extends JDialog {
                         case TOKEN ->
                                 label.setIcon(IconUtil.createThemed("icons/security.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
                         case COOKIES ->
-                                label.setIcon(IconUtil.create("icons/cookie.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL)); // 彩色图标
+                                label.setIcon(IconUtil.createThemed("icons/cookie.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
 
                         // 内置库分类
                         case CRYPTOJS ->

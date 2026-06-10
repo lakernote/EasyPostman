@@ -18,7 +18,7 @@ import java.awt.event.MouseEvent;
 final class SidebarBottomBar {
     private static final String TOOLTIP_COLLAPSE_SIDEBAR = "Collapse sidebar";
     private static final String TOOLTIP_EXPAND_SIDEBAR = "Expand sidebar";
-    private static final int BOTTOM_BAR_ICON_SIZE = 20;
+    private static final int BOTTOM_BAR_ICON_SIZE = 19;
 
     private final JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
     private final JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
@@ -67,7 +67,7 @@ final class SidebarBottomBar {
         );
         cookieLabel = createActionLabel(
                 I18nUtil.getMessage(MessageKeys.COOKIES_TITLE),
-                IconUtil.create("icons/cookie.svg", BOTTOM_BAR_ICON_SIZE, BOTTOM_BAR_ICON_SIZE),
+                IconUtil.createThemed("icons/cookie.svg", BOTTOM_BAR_ICON_SIZE, BOTTOM_BAR_ICON_SIZE),
                 4,
                 4,
                 openCookieManagerAction
@@ -94,28 +94,26 @@ final class SidebarBottomBar {
     }
 
     void setSidebarExpanded(boolean sidebarExpanded) {
-        sidebarToggleLabel.setToolTipText(sidebarExpanded ? TOOLTIP_COLLAPSE_SIDEBAR : TOOLTIP_EXPAND_SIDEBAR);
+        setActionLabelText(sidebarToggleLabel, sidebarExpanded ? TOOLTIP_COLLAPSE_SIDEBAR : TOOLTIP_EXPAND_SIDEBAR);
     }
 
     void updateLayoutToggleState(boolean isVertical) {
         layoutToggleLabel.setIcon(layoutToggleIcon(isVertical));
-        layoutToggleLabel.setToolTipText(isVertical
+        setActionLabelText(layoutToggleLabel, isVertical
                 ? I18nUtil.getMessage(MessageKeys.LAYOUT_HORIZONTAL_TOOLTIP)
                 : I18nUtil.getMessage(MessageKeys.LAYOUT_VERTICAL_TOOLTIP));
     }
 
     void refreshLocalizedText() {
-        consoleLabel.setText(I18nUtil.getMessage(MessageKeys.CONSOLE_TITLE));
-        globalVariablesLabel.setText(I18nUtil.getMessage(MessageKeys.GLOBAL_VARIABLES_TITLE));
-        cookieLabel.setText(I18nUtil.getMessage(MessageKeys.COOKIES_TITLE));
+        setActionLabelText(consoleLabel, I18nUtil.getMessage(MessageKeys.CONSOLE_TITLE));
+        setActionLabelText(globalVariablesLabel, I18nUtil.getMessage(MessageKeys.GLOBAL_VARIABLES_TITLE));
+        setActionLabelText(cookieLabel, I18nUtil.getMessage(MessageKeys.COOKIES_TITLE));
         updateLayoutToggleState(SettingManager.isLayoutVertical());
     }
 
-    private JLabel createActionLabel(String text, Icon icon, int leftPadding, int rightPadding, Runnable action) {
-        JLabel label = text == null ? new JLabel(icon) : new JLabel(text);
-        if (text != null) {
-            label.setIcon(icon);
-        }
+    private JLabel createActionLabel(String tooltipText, Icon icon, int leftPadding, int rightPadding, Runnable action) {
+        JLabel label = new JLabel(icon);
+        setActionLabelText(label, tooltipText);
         label.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         label.setBorder(BorderFactory.createEmptyBorder(4, leftPadding, 4, rightPadding));
         label.setFocusable(true);
@@ -129,10 +127,15 @@ final class SidebarBottomBar {
         return label;
     }
 
+    private void setActionLabelText(JLabel label, String text) {
+        label.setToolTipText(text);
+        label.getAccessibleContext().setAccessibleName(text);
+    }
+
     private JLabel createVersionLabel() {
         JLabel versionLabel = new JLabel(SystemUtil.getCurrentVersion());
         versionLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        versionLabel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
+        versionLabel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 8));
         return versionLabel;
     }
 

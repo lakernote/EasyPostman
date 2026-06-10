@@ -63,6 +63,13 @@ Read `docs/ARCHITECTURE_MODULES_zh.md` first when the task is about module place
 - Theme tokens, semantic colors, icon color strategies, RSyntaxTextArea editor theme XMLs, and reusable UI resources belong in `ui`; FlatLaf installation and theme switching belong in `platform` once decoupled from app-specific wiring. FlatLaf properties tied to app LAF classes can stay in `app` until those classes move.
 - Primary-color buttons must use on-primary icon color. Icons on blue/brand buttons stay white and must not switch with the light/dark theme foreground.
 
+## SVG Icon Guidance
+
+- `README.md` and `README_zh.md` declare SVG icons are sourced from Lucide / `lucide-icons/lucide` under the ISC license. For new or refreshed generic UI/action/sidebar icons, start from Lucide before inventing custom paths.
+- Keep single-color themeable SVGs as `viewBox="0 0 24 24"`, `fill="none"`, `stroke="currentColor"`, `stroke-width="2"`, `stroke-linecap="round"`, and `stroke-linejoin="round"` to match existing sidebar icons.
+- Use `IconUtil.createThemed(...)` for neutral sidebar/status/tool icons so light and dark themes can recolor them. Use fixed-color SVGs or `IconUtil.create(...)` only for brand, protocol, or status assets that intentionally carry their own colors.
+- Resource ownership still applies: generic actions in `easy-postman-ui`, app/domain icons in app, plugin icons in plugin resources. Do not duplicate `icons/*.svg` names across modules.
+
 ## Code Style And Testability
 
 - Use Lombok for ordinary boilerplate when it makes code smaller and clearer: `@Slf4j`, `@RequiredArgsConstructor`, `@Getter`/`@Setter`, model annotations, and `@UtilityClass` for stateless static helpers. Avoid Lombok only when explicit code is clearer for Swing lifecycle, validation-heavy construction, or framework compatibility.

@@ -262,7 +262,7 @@ public class CookieTablePanel extends JPanel {
         JLabel iconLabel = new JLabel();
         iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         try {
-            iconLabel.setIcon(IconUtil.create("icons/cookie.svg", 48, 48));
+            iconLabel.setIcon(IconUtil.createThemed("icons/cookie.svg", 48, 48));
         } catch (Exception e) {
             // 图标加载失败也不影响
         }

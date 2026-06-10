@@ -35,6 +35,8 @@ import java.util.List;
  */
 @Slf4j
 public class GlobalVariablesPanel extends JPanel {
+    private static final int HEADER_ICON_SIZE = 20;
+    private static final int SEARCH_WIDTH = 320;
 
     private final EasyVariableTablePanel variablesTablePanel = new EasyVariableTablePanel();
     private final SearchTextField tableSearchField = new SearchTextField();
@@ -74,20 +76,21 @@ public class GlobalVariablesPanel extends JPanel {
 
     private void initUI() {
         setLayout(new BorderLayout(0, 0));
-        ToolWindowSurfaceStyle.applyBackground(this);
+        ToolWindowSurfaceStyle.applyCard(this);
         add(createTopPanel(), BorderLayout.NORTH);
 
         JPanel tableContainer = new JPanel(new BorderLayout());
         tableContainer.setOpaque(false);
-        tableContainer.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+        tableContainer.setBorder(BorderFactory.createEmptyBorder(6, 12, 10, 12));
+        variablesTablePanel.setBorder(BorderFactory.createEmptyBorder());
         tableContainer.add(variablesTablePanel, BorderLayout.CENTER);
         add(tableContainer, BorderLayout.CENTER);
         add(createFooterPanel(), BorderLayout.SOUTH);
     }
 
     private JPanel createTopPanel() {
-        JPanel topPanel = new JPanel(new BorderLayout(12, 0));
-        ToolWindowSurfaceStyle.applySectionHeader(topPanel, 12, 14, 10, 14);
+        JPanel topPanel = new JPanel(new BorderLayout(10, 0));
+        ToolWindowSurfaceStyle.applySectionHeader(topPanel, 8, 12, 7, 12);
 
         topPanel.add(createHeaderPanel(), BorderLayout.WEST);
         topPanel.add(createToolbar(), BorderLayout.EAST);
@@ -95,11 +98,10 @@ public class GlobalVariablesPanel extends JPanel {
     }
 
     private JPanel createHeaderPanel() {
-        JPanel headerPanel = new JPanel(new BorderLayout(10, 0));
+        JPanel headerPanel = new JPanel(new BorderLayout(7, 0));
         headerPanel.setOpaque(false);
 
-        JLabel iconLabel = new JLabel(IconUtil.createThemed("icons/global-variables.svg", 22, 22));
-        iconLabel.setBorder(BorderFactory.createEmptyBorder(2, 0, 0, 0));
+        JLabel iconLabel = new JLabel(IconUtil.createThemed("icons/global-variables.svg", HEADER_ICON_SIZE, HEADER_ICON_SIZE));
         headerPanel.add(iconLabel, BorderLayout.WEST);
 
         JPanel textPanel = new JPanel();
@@ -107,16 +109,10 @@ public class GlobalVariablesPanel extends JPanel {
         textPanel.setOpaque(false);
 
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.GLOBAL_VARIABLES_TITLE));
-        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 2));
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 1));
         titleLabel.setForeground(ModernColors.getTextPrimary());
 
-        JLabel subtitleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.GLOBAL_VARIABLES_SUBTITLE));
-        subtitleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        subtitleLabel.setForeground(ModernColors.getTextSecondary());
-
         textPanel.add(titleLabel);
-        textPanel.add(Box.createVerticalStrut(3));
-        textPanel.add(subtitleLabel);
         headerPanel.add(textPanel, BorderLayout.CENTER);
         return headerPanel;
     }
@@ -131,9 +127,9 @@ public class GlobalVariablesPanel extends JPanel {
         saveButton.addActionListener(e -> saveVariablesManually());
 
         tableSearchField.setPlaceholderText(I18nUtil.getMessage(MessageKeys.GLOBAL_VARIABLES_SEARCH_PLACEHOLDER));
-        tableSearchField.setPreferredSize(new Dimension(280, ToolWindowSidebarToolbar.SEARCH_HEIGHT));
+        tableSearchField.setPreferredSize(new Dimension(SEARCH_WIDTH, ToolWindowSidebarToolbar.SEARCH_HEIGHT));
         tableSearchField.setMinimumSize(new Dimension(220, ToolWindowSidebarToolbar.SEARCH_HEIGHT));
-        tableSearchField.setMaximumSize(new Dimension(320, ToolWindowSidebarToolbar.SEARCH_HEIGHT));
+        tableSearchField.setMaximumSize(new Dimension(SEARCH_WIDTH, ToolWindowSidebarToolbar.SEARCH_HEIGHT));
         tableSearchField.addActionListener(e -> filterTableRows());
         tableSearchField.getDocument().addDocumentListener(new DocumentListener() {
             @Override
@@ -167,7 +163,7 @@ public class GlobalVariablesPanel extends JPanel {
 
     private JPanel createFooterPanel() {
         JPanel footerPanel = new JPanel(new BorderLayout());
-        ToolWindowSurfaceStyle.applySectionHeader(footerPanel, 7, 14, 8, 14);
+        ToolWindowSurfaceStyle.applyDialogFooter(footerPanel);
 
         shortcutHintLabel.setText(I18nUtil.getMessage(MessageKeys.GLOBAL_VARIABLES_SHORTCUT_HINT));
         shortcutHintLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));

@@ -4,7 +4,7 @@ import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.ToolWindowActionToolbar;
-import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSidebarToolbar;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.ClearButton;
@@ -81,7 +81,7 @@ public class WorkspacePanel extends UiSingletonPanel {
         leftPanel.add(createToolbar(), BorderLayout.NORTH);
         leftPanel.add(createWorkspaceListPanel(), BorderLayout.CENTER);
 
-        JSplitPane rightSplitPane = ToolWindowChrome.createVerticalInnerSplitPane(
+        JSplitPane rightSplitPane = AppToolWindowChrome.createVerticalInnerSplitPane(
                 createInfoPanel(),
                 createLogPanel(),
                 WORKSPACE_DETAIL_DEFAULT_HEIGHT
@@ -89,10 +89,10 @@ public class WorkspacePanel extends UiSingletonPanel {
         rightSplitPane.setResizeWeight(WORKSPACE_DETAIL_RESIZE_WEIGHT);
         installInitialWorkspaceDetailDivider(rightSplitPane);
 
-        JSplitPane mainSplitPane = ToolWindowChrome.createHorizontalCardSplitPane(
+        JSplitPane mainSplitPane = AppToolWindowChrome.createHorizontalCardSplitPane(
                 leftPanel,
                 rightSplitPane,
-                ToolWindowChrome.DEFAULT_SIDE_WIDTH
+                AppToolWindowChrome.DEFAULT_SIDE_WIDTH
         );
         mainSplitPane.setResizeWeight(0.0);
 

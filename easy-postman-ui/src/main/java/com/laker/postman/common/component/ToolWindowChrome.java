@@ -20,17 +20,31 @@ import java.awt.Insets;
  */
 public final class ToolWindowChrome {
     public static final int DEFAULT_SIDE_WIDTH = 310;
-    public static final int DIVIDER_SIZE = 5;
-    public static final int INNER_DIVIDER_SIZE = 5;
+    public static final int DIVIDER_SIZE = 4;
+    public static final int INNER_DIVIDER_SIZE = 3;
+    static final int DRAG_GAP_DIVIDER_SIZE = 5;
     static final String CHROME_BACKGROUND_PROPERTY = "EasyPostman.toolWindowChrome.background";
     static final String CHROME_ROUNDED_PROPERTY = "EasyPostman.toolWindowChrome.rounded";
     static final String CHROME_SPLIT_PROPERTY = "EasyPostman.toolWindowChrome.split";
     private static final int OUTER_VERTICAL_GAP = 4;
     private static final int OUTER_HORIZONTAL_GAP = 6;
-    private static final int INNER_GAP = 0;
+    private static final int INNER_GAP = 1;
+    private static final int DRAG_GAP_INNER_GAP = 0;
     private static final Insets DEFAULT_CONTENT_INSETS = new Insets(8, 10, 8, 10);
 
     private ToolWindowChrome() {
+    }
+
+    enum SplitDividerStyle {
+        /**
+         * Stable shared default used by plugins and generic tool windows.
+         */
+        DEFAULT,
+
+        /**
+         * Explicit app opt-in: a 5px background-colored drag gap without line or handle.
+         */
+        DRAG_GAP
     }
 
     public static JComponent wrapLeftToolWindow(Component content) {
@@ -94,53 +108,115 @@ public final class ToolWindowChrome {
     }
 
     public static JSplitPane createHorizontalSplitPane(Component left, Component right, int dividerLocation) {
-        return createSplitPane(JSplitPane.HORIZONTAL_SPLIT, left, right, dividerLocation);
+        return createHorizontalSplitPane(left, right, dividerLocation, SplitDividerStyle.DEFAULT);
+    }
+
+    static JSplitPane createHorizontalSplitPane(Component left, Component right, int dividerLocation,
+                                                SplitDividerStyle dividerStyle) {
+        return createSplitPane(JSplitPane.HORIZONTAL_SPLIT, left, right, dividerLocation, dividerStyle);
     }
 
     public static JSplitPane createVerticalSplitPane(Component top, Component bottom, int dividerLocation) {
-        return createSplitPane(JSplitPane.VERTICAL_SPLIT, top, bottom, dividerLocation);
+        return createVerticalSplitPane(top, bottom, dividerLocation, SplitDividerStyle.DEFAULT);
+    }
+
+    static JSplitPane createVerticalSplitPane(Component top, Component bottom, int dividerLocation,
+                                              SplitDividerStyle dividerStyle) {
+        return createSplitPane(JSplitPane.VERTICAL_SPLIT, top, bottom, dividerLocation, dividerStyle);
     }
 
     public static JSplitPane createHorizontalInnerSplitPane(Component left, Component right, int dividerLocation) {
-        return createInnerSplitPane(JSplitPane.HORIZONTAL_SPLIT, left, right, dividerLocation);
+        return createHorizontalInnerSplitPane(left, right, dividerLocation, SplitDividerStyle.DEFAULT);
+    }
+
+    static JSplitPane createHorizontalInnerSplitPane(Component left, Component right, int dividerLocation,
+                                                    SplitDividerStyle dividerStyle) {
+        return createInnerSplitPane(JSplitPane.HORIZONTAL_SPLIT, left, right, dividerLocation, dividerStyle);
     }
 
     public static JSplitPane createVerticalInnerSplitPane(Component top, Component bottom, int dividerLocation) {
-        return createInnerSplitPane(JSplitPane.VERTICAL_SPLIT, top, bottom, dividerLocation);
+        return createVerticalInnerSplitPane(top, bottom, dividerLocation, SplitDividerStyle.DEFAULT);
+    }
+
+    static JSplitPane createVerticalInnerSplitPane(Component top, Component bottom, int dividerLocation,
+                                                  SplitDividerStyle dividerStyle) {
+        return createInnerSplitPane(JSplitPane.VERTICAL_SPLIT, top, bottom, dividerLocation, dividerStyle);
     }
 
     public static JSplitPane createHorizontalCardSplitPane(Component leftContent, Component rightContent,
                                                           int dividerLocation) {
+        return createHorizontalCardSplitPane(leftContent, rightContent, dividerLocation, SplitDividerStyle.DEFAULT);
+    }
+
+    static JSplitPane createHorizontalCardSplitPane(Component leftContent, Component rightContent,
+                                                   int dividerLocation, SplitDividerStyle dividerStyle) {
+        int innerGap = innerGap(dividerStyle);
         return createHorizontalSplitPane(
-                wrapLeftInsetToolWindow(leftContent),
-                wrapRightToolWindow(rightContent),
-                dividerLocation
+                wrapLeftInsetToolWindow(leftContent, innerGap),
+                wrapRightToolWindow(rightContent, innerGap),
+                dividerLocation,
+                dividerStyle
         );
     }
 
     public static JSplitPane createVerticalCardSplitPane(Component topContent, Component bottomContent,
                                                         int dividerLocation) {
+        return createVerticalCardSplitPane(topContent, bottomContent, dividerLocation, SplitDividerStyle.DEFAULT);
+    }
+
+    static JSplitPane createVerticalCardSplitPane(Component topContent, Component bottomContent,
+                                                 int dividerLocation, SplitDividerStyle dividerStyle) {
+        int innerGap = innerGap(dividerStyle);
         return createVerticalSplitPane(
-                wrapTopToolWindow(topContent),
-                wrapBottomToolWindow(bottomContent),
-                dividerLocation
+                wrapTopToolWindow(topContent, innerGap),
+                wrapBottomToolWindow(bottomContent, innerGap),
+                dividerLocation,
+                dividerStyle
         );
     }
 
     public static JSplitPane createVerticalStackedCardSplitPane(Component topToolWindow, Component bottomContent,
                                                                int dividerLocation) {
+        return createVerticalStackedCardSplitPane(topToolWindow, bottomContent, dividerLocation,
+                SplitDividerStyle.DEFAULT);
+    }
+
+    static JSplitPane createVerticalStackedCardSplitPane(Component topToolWindow, Component bottomContent,
+                                                        int dividerLocation, SplitDividerStyle dividerStyle) {
         return createVerticalSplitPane(
                 topToolWindow,
-                wrapBottomToolWindow(bottomContent),
-                dividerLocation
+                wrapBottomToolWindow(bottomContent, innerGap(dividerStyle)),
+                dividerLocation,
+                dividerStyle
         );
     }
 
-    private static JSplitPane createSplitPane(int orientation, Component first, Component second, int dividerLocation) {
-        JSplitPane splitPane = new ToolWindowSplitPane(orientation, first, second);
+    private static JComponent wrapLeftInsetToolWindow(Component content, int innerGap) {
+        return wrapToolWindow(createInsetContent(content), new Insets(OUTER_VERTICAL_GAP, OUTER_HORIZONTAL_GAP,
+                OUTER_VERTICAL_GAP, innerGap));
+    }
+
+    private static JComponent wrapRightToolWindow(Component content, int innerGap) {
+        return wrapToolWindow(content, new Insets(OUTER_VERTICAL_GAP, innerGap,
+                OUTER_VERTICAL_GAP, OUTER_HORIZONTAL_GAP));
+    }
+
+    private static JComponent wrapTopToolWindow(Component content, int innerGap) {
+        return wrapToolWindow(content, new Insets(OUTER_VERTICAL_GAP, OUTER_HORIZONTAL_GAP,
+                innerGap, OUTER_HORIZONTAL_GAP));
+    }
+
+    private static JComponent wrapBottomToolWindow(Component content, int innerGap) {
+        return wrapToolWindow(content, new Insets(innerGap, OUTER_HORIZONTAL_GAP,
+                OUTER_VERTICAL_GAP, OUTER_HORIZONTAL_GAP));
+    }
+
+    private static JSplitPane createSplitPane(int orientation, Component first, Component second, int dividerLocation,
+                                              SplitDividerStyle dividerStyle) {
+        JSplitPane splitPane = new ToolWindowSplitPane(orientation, first, second, normalizeStyle(dividerStyle));
         splitPane.setContinuousLayout(true);
         splitPane.setDividerLocation(dividerLocation);
-        splitPane.setDividerSize(DIVIDER_SIZE);
+        splitPane.setDividerSize(dividerSize(dividerStyle, false));
         splitPane.setBorder(BorderFactory.createEmptyBorder());
         BasicSplitPaneDivider divider = ((BasicSplitPaneUI) splitPane.getUI()).getDivider();
         if (divider != null) {
@@ -150,18 +226,33 @@ public final class ToolWindowChrome {
     }
 
     private static JSplitPane createInnerSplitPane(int orientation, Component first, Component second,
-                                                  int dividerLocation) {
+                                                  int dividerLocation, SplitDividerStyle dividerStyle) {
         // 内部 split 只用于一个圆角卡片内的二级分区：不再套新的圆角卡片。
-        JSplitPane splitPane = new ToolWindowInnerSplitPane(orientation, first, second);
+        JSplitPane splitPane = new ToolWindowInnerSplitPane(orientation, first, second, normalizeStyle(dividerStyle));
         splitPane.setContinuousLayout(true);
         splitPane.setDividerLocation(dividerLocation);
-        splitPane.setDividerSize(INNER_DIVIDER_SIZE);
+        splitPane.setDividerSize(dividerSize(dividerStyle, true));
         splitPane.setBorder(BorderFactory.createEmptyBorder());
         BasicSplitPaneDivider divider = ((BasicSplitPaneUI) splitPane.getUI()).getDivider();
         if (divider != null) {
             divider.setBorder(BorderFactory.createEmptyBorder());
         }
         return splitPane;
+    }
+
+    private static SplitDividerStyle normalizeStyle(SplitDividerStyle dividerStyle) {
+        return dividerStyle == null ? SplitDividerStyle.DEFAULT : dividerStyle;
+    }
+
+    private static int dividerSize(SplitDividerStyle dividerStyle, boolean inner) {
+        if (normalizeStyle(dividerStyle) == SplitDividerStyle.DRAG_GAP) {
+            return DRAG_GAP_DIVIDER_SIZE;
+        }
+        return inner ? INNER_DIVIDER_SIZE : DIVIDER_SIZE;
+    }
+
+    private static int innerGap(SplitDividerStyle dividerStyle) {
+        return normalizeStyle(dividerStyle) == SplitDividerStyle.DRAG_GAP ? DRAG_GAP_INNER_GAP : INNER_GAP;
     }
 
     private static final class BackgroundPanel extends JPanel {
@@ -203,16 +294,21 @@ public final class ToolWindowChrome {
     }
 
     private static final class ToolWindowSplitPane extends JSplitPane {
-        private ToolWindowSplitPane(int orientation, Component first, Component second) {
+        private final SplitDividerStyle dividerStyle;
+
+        private ToolWindowSplitPane(int orientation, Component first, Component second,
+                                    SplitDividerStyle dividerStyle) {
             super(orientation, first, second);
+            this.dividerStyle = dividerStyle;
             putClientProperty(CHROME_SPLIT_PROPERTY, Boolean.TRUE);
             setOpaque(true);
+            updateUI();
             refreshBackground();
         }
 
         @Override
         public void updateUI() {
-            setUI(new BorderlessSplitPaneUi());
+            setUI(new BorderlessSplitPaneUi(dividerStyle));
             refreshBackground();
         }
 
@@ -222,16 +318,21 @@ public final class ToolWindowChrome {
     }
 
     private static final class ToolWindowInnerSplitPane extends JSplitPane {
-        private ToolWindowInnerSplitPane(int orientation, Component first, Component second) {
+        private final SplitDividerStyle dividerStyle;
+
+        private ToolWindowInnerSplitPane(int orientation, Component first, Component second,
+                                         SplitDividerStyle dividerStyle) {
             super(orientation, first, second);
+            this.dividerStyle = dividerStyle;
             putClientProperty(CHROME_SPLIT_PROPERTY, Boolean.TRUE);
             setOpaque(true);
+            updateUI();
             refreshBackground();
         }
 
         @Override
         public void updateUI() {
-            setUI(new InnerDividerSplitPaneUi());
+            setUI(new InnerDividerSplitPaneUi(dividerStyle));
             refreshBackground();
         }
 
@@ -241,6 +342,12 @@ public final class ToolWindowChrome {
     }
 
     private static final class BorderlessSplitPaneUi extends BasicSplitPaneUI {
+        private final SplitDividerStyle dividerStyle;
+
+        private BorderlessSplitPaneUi(SplitDividerStyle dividerStyle) {
+            this.dividerStyle = dividerStyle;
+        }
+
         @Override
         public BasicSplitPaneDivider createDefaultDivider() {
             return new BasicSplitPaneDivider(this) {
@@ -251,6 +358,9 @@ public final class ToolWindowChrome {
 
                 @Override
                 public void paint(Graphics g) {
+                    if (dividerStyle != SplitDividerStyle.DRAG_GAP) {
+                        return;
+                    }
                     Graphics2D g2 = (Graphics2D) g.create();
                     try {
                         g2.setColor(ModernColors.getBackgroundColor());
@@ -264,6 +374,12 @@ public final class ToolWindowChrome {
     }
 
     private static final class InnerDividerSplitPaneUi extends BasicSplitPaneUI {
+        private final SplitDividerStyle dividerStyle;
+
+        private InnerDividerSplitPaneUi(SplitDividerStyle dividerStyle) {
+            this.dividerStyle = dividerStyle;
+        }
+
         @Override
         public BasicSplitPaneDivider createDefaultDivider() {
             return new BasicSplitPaneDivider(this) {
@@ -276,8 +392,21 @@ public final class ToolWindowChrome {
                 public void paint(Graphics g) {
                     Graphics2D g2 = (Graphics2D) g.create();
                     try {
-                        g2.setColor(ModernColors.getBackgroundColor());
+                        if (dividerStyle == SplitDividerStyle.DRAG_GAP) {
+                            g2.setColor(ModernColors.getBackgroundColor());
+                            g2.fillRect(0, 0, getWidth(), getHeight());
+                            return;
+                        }
+                        g2.setColor(ModernColors.getCardBackgroundColor());
                         g2.fillRect(0, 0, getWidth(), getHeight());
+                        g2.setColor(ModernColors.getBorderLightColor());
+                        if (splitPane != null && splitPane.getOrientation() == JSplitPane.HORIZONTAL_SPLIT) {
+                            int x = Math.max(0, getWidth() / 2);
+                            g2.drawLine(x, 0, x, getHeight());
+                        } else {
+                            int y = Math.max(0, getHeight() / 2);
+                            g2.drawLine(0, y, getWidth(), y);
+                        }
                     } finally {
                         g2.dispose();
                     }

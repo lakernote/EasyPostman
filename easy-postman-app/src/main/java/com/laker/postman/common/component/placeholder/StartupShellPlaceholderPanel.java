@@ -1,6 +1,6 @@
 package com.laker.postman.common.component.placeholder;
 
-import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.service.setting.SettingManager;
 
@@ -46,7 +46,7 @@ public class StartupShellPlaceholderPanel extends AbstractPlaceholderPanel {
     private JComponent createCollectionsShell() {
         JComponent treeShell = createTreeShell();
         JComponent requestWorkspaceShell = createRequestWorkspaceShell();
-        JSplitPane splitPane = ToolWindowChrome.createHorizontalCardSplitPane(
+        JSplitPane splitPane = AppToolWindowChrome.createHorizontalCardSplitPane(
                 treeShell,
                 requestWorkspaceShell,
                 COLLECTIONS_DIVIDER_LOCATION
@@ -87,8 +87,8 @@ public class StartupShellPlaceholderPanel extends AbstractPlaceholderPanel {
         JComponent requestBodyShell = createRequestBodyShell();
         JComponent responseShell = createResponseShell();
         JSplitPane splitPane = vertical
-                ? ToolWindowChrome.createVerticalCardSplitPane(requestBodyShell, responseShell, 0)
-                : ToolWindowChrome.createHorizontalCardSplitPane(requestBodyShell, responseShell, 0);
+                ? AppToolWindowChrome.createVerticalCardSplitPane(requestBodyShell, responseShell, 0)
+                : AppToolWindowChrome.createHorizontalCardSplitPane(requestBodyShell, responseShell, 0);
         splitPane.setResizeWeight(0.5);
         if (vertical) {
             splitPane.setDividerLocation(0.58d);

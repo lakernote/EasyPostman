@@ -60,7 +60,7 @@ public class MarkdownEditorPanelThemeTest extends AbstractSwingUiTest {
             MarkdownEditorPanel panel = new MarkdownEditorPanel();
             JSplitPane splitPane = (JSplitPane) readField(panel, "splitPane");
 
-            assertEquals(splitPane.getDividerSize(), ToolWindowChrome.INNER_DIVIDER_SIZE);
+            assertEquals(splitPane.getDividerSize(), AppToolWindowChrome.DIVIDER_SIZE);
             assertSame(splitPane.getLeftComponent(), readField(panel, "editorPanelRef"));
             assertSame(splitPane.getRightComponent(), readField(panel, "previewPanelRef"));
         });

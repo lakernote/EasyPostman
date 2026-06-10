@@ -2,7 +2,7 @@ package com.laker.postman.panel.toolbox;
 
 import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.ToolWindowActionToolbar;
-import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.EditorThemeUtil;
@@ -152,7 +152,7 @@ public class SqlToolPanel extends JPanel {
     }
 
     private JPanel createCenterPanel() {
-        JSplitPane splitPane = ToolWindowChrome.createVerticalInnerSplitPane(
+        JSplitPane splitPane = AppToolWindowChrome.createVerticalInnerSplitPane(
                 createEditorPanel(true),
                 createEditorPanel(false),
                 300

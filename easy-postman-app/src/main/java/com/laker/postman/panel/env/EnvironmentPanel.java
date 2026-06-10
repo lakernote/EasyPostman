@@ -8,7 +8,7 @@ import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.ToolWindowActionToolbar;
-import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSidebarToolbar;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.EditButton;
@@ -75,7 +75,7 @@ public class EnvironmentPanel extends UiSingletonPanel {
         // 左侧环境列表面板
         JPanel leftPanel = new JPanel(new BorderLayout());
         ToolWindowSurfaceStyle.applyCard(leftPanel);
-        leftPanel.setPreferredSize(new Dimension(ToolWindowChrome.DEFAULT_SIDE_WIDTH, 200));
+        leftPanel.setPreferredSize(new Dimension(AppToolWindowChrome.DEFAULT_SIDE_WIDTH, 200));
         leftPanel.setMinimumSize(new Dimension(220, 160));
         // 顶部搜索和导入导出按钮
         leftPanel.add(getSearchAndImportPanel(), BorderLayout.NORTH);
@@ -113,10 +113,10 @@ public class EnvironmentPanel extends UiSingletonPanel {
 
 
         // 使用 JSplitPane 将左右两个面板组合，支持拖动调整大小
-        JSplitPane splitPane = ToolWindowChrome.createHorizontalCardSplitPane(
+        JSplitPane splitPane = AppToolWindowChrome.createHorizontalCardSplitPane(
                 leftPanel,
                 rightPanel,
-                ToolWindowChrome.DEFAULT_SIDE_WIDTH
+                AppToolWindowChrome.DEFAULT_SIDE_WIDTH
         );
         splitPane.setResizeWeight(0.3); // 设置左侧面板调整权重（30%）
 

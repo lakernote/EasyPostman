@@ -1,7 +1,7 @@
 package com.laker.postman.panel.sidebar;
 
 import com.laker.postman.common.UiSingletonFactory;
-import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 
 import javax.swing.BorderFactory;
@@ -76,7 +76,7 @@ final class SidebarConsoleArea {
         consoleContainer.add(consolePanel, BorderLayout.CENTER);
         consoleContainer.setPreferredSize(new Dimension(0, DEFAULT_EXPANDED_CONSOLE_HEIGHT));
 
-        JSplitPane splitPane = ToolWindowChrome.createVerticalInnerSplitPane(tabbedPane, consoleContainer, 0);
+        JSplitPane splitPane = AppToolWindowChrome.createVerticalInnerSplitPane(tabbedPane, consoleContainer, 0);
         splitPane.setResizeWeight(1.0);
         splitPane.setMinimumSize(new Dimension(0, 10));
         tabbedPane.setMinimumSize(new Dimension(0, 30));

@@ -1,7 +1,7 @@
 package com.laker.postman.panel.toolbox;
 
 import com.laker.postman.common.component.ToolWindowActionToolbar;
-import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
@@ -74,7 +74,7 @@ public class DiffPanel extends JPanel {
         ToolWindowSurfaceStyle.applyFramedScrollPaneCard(modifiedScrollPane);
         modifiedPanel.add(modifiedScrollPane, BorderLayout.CENTER);
 
-        JSplitPane topSplitPane = ToolWindowChrome.createHorizontalInnerSplitPane(
+        JSplitPane topSplitPane = AppToolWindowChrome.createHorizontalInnerSplitPane(
                 originalPanel,
                 modifiedPanel,
                 360
@@ -96,7 +96,7 @@ public class DiffPanel extends JPanel {
         ToolWindowSurfaceStyle.applyFramedScrollPaneCard(resultScrollPane);
         resultPanel.add(resultScrollPane, BorderLayout.CENTER);
 
-        JSplitPane mainSplitPane = ToolWindowChrome.createVerticalInnerSplitPane(
+        JSplitPane mainSplitPane = AppToolWindowChrome.createVerticalInnerSplitPane(
                 topSplitPane,
                 resultPanel,
                 250

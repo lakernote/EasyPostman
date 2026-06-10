@@ -2,7 +2,7 @@ package com.laker.postman.panel.toolbox;
 
 import com.formdev.flatlaf.extras.components.FlatTextField;
 import com.laker.postman.common.component.ToolWindowActionToolbar;
-import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -179,7 +179,7 @@ public class CryptoPanel extends JPanel {
         ToolWindowSurfaceStyle.applyFramedScrollPaneCard(outputScrollPane);
         outputPanel.add(outputScrollPane, BorderLayout.CENTER);
 
-        JSplitPane splitPane = ToolWindowChrome.createVerticalInnerSplitPane(inputPanel, outputPanel, 260);
+        JSplitPane splitPane = AppToolWindowChrome.createVerticalInnerSplitPane(inputPanel, outputPanel, 260);
         splitPane.setResizeWeight(0.5);
 
         return splitPane;

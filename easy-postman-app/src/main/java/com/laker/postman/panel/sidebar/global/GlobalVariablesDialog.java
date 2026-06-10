@@ -1,6 +1,6 @@
 package com.laker.postman.panel.sidebar.global;
 
-import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 
@@ -22,7 +22,7 @@ public class GlobalVariablesDialog extends JDialog {
     }
 
     private void initUI() {
-        setContentPane(ToolWindowChrome.wrapDialogToolWindow(globalVariablesPanel));
+        setContentPane(AppToolWindowChrome.wrapDialogToolWindow(globalVariablesPanel));
         setSize(960, 620);
         setMinimumSize(new Dimension(760, 480));
         setResizable(true);

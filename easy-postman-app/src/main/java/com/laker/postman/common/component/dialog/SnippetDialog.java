@@ -3,7 +3,7 @@ package com.laker.postman.common.component.dialog;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.SyntaxEditorScrollPane;
-import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.frame.MainFrame;
@@ -225,11 +225,11 @@ public class SnippetDialog extends JDialog {
         footerPanel.add(buttonPanel, BorderLayout.EAST);
 
         // 代码片段弹窗整体只保留一个外层圆角卡片，列表和预览之间用内部 split 分割。
-        JSplitPane splitPane = ToolWindowChrome.createHorizontalInnerSplitPane(listScrollPane, previewPanel, 260);
+        JSplitPane splitPane = AppToolWindowChrome.createHorizontalInnerSplitPane(listScrollPane, previewPanel, 260);
         splitPane.setResizeWeight(0.28); // 设置左右比例
 
         contentPanel.add(northPanel, BorderLayout.NORTH);
-        contentPanel.add(ToolWindowChrome.wrapToolWindow(splitPane, new Insets(0, 0, 0, 0)), BorderLayout.CENTER);
+        contentPanel.add(AppToolWindowChrome.wrapToolWindow(splitPane, new Insets(0, 0, 0, 0)), BorderLayout.CENTER);
         contentPanel.add(footerPanel, BorderLayout.SOUTH);
         setContentPane(contentPanel);
 

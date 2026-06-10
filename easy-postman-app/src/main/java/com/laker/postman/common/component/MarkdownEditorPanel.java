@@ -158,7 +158,7 @@ public class MarkdownEditorPanel extends JPanel {
         editorPanelRef = createEditorPanel();
         previewPanelRef = createPreviewPanel();
 
-        splitPane = ToolWindowChrome.createHorizontalInnerSplitPane(editorPanelRef, previewPanelRef, 0);
+        splitPane = AppToolWindowChrome.createHorizontalInnerSplitPane(editorPanelRef, previewPanelRef, 0);
         splitPane.setResizeWeight(0.5);
 
         toolbarPanel = createEnhancedToolbar();
@@ -850,7 +850,7 @@ public class MarkdownEditorPanel extends JPanel {
             case MODE_SPLIT:
                 splitPane.setLeftComponent(editorPanelRef);
                 splitPane.setRightComponent(previewPanelRef);
-                splitPane.setDividerSize(ToolWindowChrome.INNER_DIVIDER_SIZE);
+                splitPane.setDividerSize(AppToolWindowChrome.DIVIDER_SIZE);
                 SwingUtilities.invokeLater(() -> splitPane.setDividerLocation(0.5));
                 break;
             case MODE_EDIT_ONLY:

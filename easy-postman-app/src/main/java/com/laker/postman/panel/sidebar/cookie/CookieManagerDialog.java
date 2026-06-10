@@ -1,6 +1,6 @@
 package com.laker.postman.panel.sidebar.cookie;
 
-import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.panel.collections.editor.request.sub.CookieTablePanel;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -21,7 +21,7 @@ public class CookieManagerDialog extends JDialog {
 
     private void initUI() {
         CookieTablePanel cookiePanel = new CookieTablePanel();
-        setContentPane(ToolWindowChrome.wrapDialogToolWindow(cookiePanel));
+        setContentPane(AppToolWindowChrome.wrapDialogToolWindow(cookiePanel));
 
         // 设置对话框属性
         setSize(900, 500);

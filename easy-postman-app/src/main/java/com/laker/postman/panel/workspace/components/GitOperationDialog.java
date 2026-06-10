@@ -2,7 +2,7 @@ package com.laker.postman.panel.workspace.components;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.UiSingletonFactory;
-import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.PrimaryButton;
 import com.laker.postman.common.component.StepIndicator;
@@ -273,10 +273,10 @@ public class GitOperationDialog extends JDialog {
         JPanel filesPanel = createFilesPanel();
 
         // 使用水平分割面板 - 左边状态检查，右边文件变更
-        JSplitPane splitPane = ToolWindowChrome.createHorizontalCardSplitPane(
+        JSplitPane splitPane = AppToolWindowChrome.createHorizontalCardSplitPane(
                 statusPanel,
                 filesPanel,
-                ToolWindowChrome.DEFAULT_SIDE_WIDTH
+                AppToolWindowChrome.DEFAULT_SIDE_WIDTH
         );
         splitPane.setResizeWeight(0.5); // 左右各占50%
 

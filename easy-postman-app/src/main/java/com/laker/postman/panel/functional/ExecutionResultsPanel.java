@@ -2,7 +2,7 @@ package com.laker.postman.panel.functional;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.ToolWindowActionToolbar;
-import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.functional.model.AssertionResult;
@@ -62,10 +62,10 @@ public class ExecutionResultsPanel extends JPanel {
         // 创建分割面板
         createResultsTree();
         createDetailPanel();
-        JSplitPane splitPane = ToolWindowChrome.createHorizontalInnerSplitPane(
+        JSplitPane splitPane = AppToolWindowChrome.createHorizontalInnerSplitPane(
                 createTreePanel(),
                 detailPanel,
-                ToolWindowChrome.DEFAULT_SIDE_WIDTH
+                AppToolWindowChrome.DEFAULT_SIDE_WIDTH
         );
         splitPane.setResizeWeight(0.35);
 

@@ -15,7 +15,7 @@ import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.ToolWindowActionToolbar;
-import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.ClearButton;
 import com.laker.postman.common.constants.ModernColors;
@@ -59,7 +59,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 历史记录面板
  */
 public class HistoryPanel extends UiSingletonPanel {
-    private static final int HISTORY_SIDEBAR_WIDTH = ToolWindowChrome.DEFAULT_SIDE_WIDTH;
+    private static final int HISTORY_SIDEBAR_WIDTH = AppToolWindowChrome.DEFAULT_SIDE_WIDTH;
     private static final int HISTORY_SIDEBAR_INSET = 8;
     private static final int FILTER_DEBOUNCE_MS = 180;
 
@@ -129,7 +129,7 @@ public class HistoryPanel extends UiSingletonPanel {
         ToolWindowSurfaceStyle.applyCard(content);
         content.add(createHeaderPanel(), BorderLayout.PAGE_START);
         content.add(createContentPanel(), BorderLayout.CENTER);
-        add(ToolWindowChrome.wrapToolWindow(content), BorderLayout.CENTER);
+        add(AppToolWindowChrome.wrapToolWindow(content), BorderLayout.CENTER);
         setMinimumSize(new Dimension(0, 120));
         filterDebounceTimer = new Timer(FILTER_DEBOUNCE_MS, e -> rebuildHistoryListModel(currentSelectedItem));
         filterDebounceTimer.setRepeats(false);
@@ -231,7 +231,7 @@ public class HistoryPanel extends UiSingletonPanel {
 
         clearDetailPanes();
 
-        JSplitPane split = ToolWindowChrome.createHorizontalInnerSplitPane(
+        JSplitPane split = AppToolWindowChrome.createHorizontalInnerSplitPane(
                 listScroll,
                 historyDetailPanel,
                 HISTORY_SIDEBAR_WIDTH

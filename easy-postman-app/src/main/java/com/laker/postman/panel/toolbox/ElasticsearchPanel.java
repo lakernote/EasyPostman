@@ -4,7 +4,7 @@ import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.component.RequestMethodUiMetadata;
 import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.SearchTextField;
-import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSidebarHeader;
 import com.laker.postman.common.component.ToolWindowSidebarToolbar;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
@@ -254,7 +254,7 @@ public class ElasticsearchPanel extends JPanel {
         add(buildConnectionPanel(), BorderLayout.NORTH);
 
         // 主内容区：左侧（索引+历史）+ 右侧 DSL
-        JSplitPane mainSplit = ToolWindowChrome.createHorizontalInnerSplitPane(
+        JSplitPane mainSplit = AppToolWindowChrome.createHorizontalInnerSplitPane(
                 buildLeftPanel(),
                 buildDslPanel(),
                 240
@@ -1137,7 +1137,7 @@ public class ElasticsearchPanel extends JPanel {
         resultPanel.add(respHeader, BorderLayout.NORTH);
         resultPanel.add(resultTabs, BorderLayout.CENTER);
 
-        JSplitPane editorSplit = ToolWindowChrome.createVerticalInnerSplitPane(
+        JSplitPane editorSplit = AppToolWindowChrome.createVerticalInnerSplitPane(
                 editorPanel,
                 resultPanel,
                 260

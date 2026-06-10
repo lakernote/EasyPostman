@@ -15,7 +15,7 @@ import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.CsvDataPanel;
 import com.laker.postman.common.component.ToolWindowActionToolbar;
-import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.*;
 import com.laker.postman.common.constants.ModernColors;
@@ -110,7 +110,7 @@ public class FunctionalPanel extends UiSingletonPanel {
                         .setColorFilter(new FlatSVGIcon.ColorFilter(color -> ModernColors.getTextPrimary())),
                 resultsPanel);
 
-        add(ToolWindowChrome.wrapInsetToolWindow(mainTabbedPane), BorderLayout.CENTER);
+        add(AppToolWindowChrome.wrapInsetToolWindow(mainTabbedPane), BorderLayout.CENTER);
 
         this.persistenceService = BeanFactory.getBean(FunctionalPersistenceService.class);
         loadSaved();

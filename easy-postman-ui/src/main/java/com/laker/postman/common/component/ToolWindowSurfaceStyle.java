@@ -49,8 +49,8 @@ import java.util.function.Consumer;
  */
 public final class ToolWindowSurfaceStyle {
     private static final String THEME_REFRESH_LISTENER = "EasyPostman.toolWindowSurfaceStyle.themeRefreshListener";
-    private static final String FRAMED_SCROLL_PANE_CARD =
-            "EasyPostman.toolWindowSurfaceStyle.framedScrollPaneCard";
+    private static final String SCROLL_PANE_CARD_VARIANT =
+            "EasyPostman.toolWindowSurfaceStyle.scrollPaneCardVariant";
     private static final String DIALOG_WINDOW_CHROME_APPLIED =
             "EasyPostman.toolWindowSurfaceStyle.dialogWindowChromeApplied";
     private static boolean globalDialogWindowChromeInstalled;
@@ -226,7 +226,7 @@ public final class ToolWindowSurfaceStyle {
     }
 
     public static void applyScrollPaneCard(JScrollPane scrollPane) {
-        scrollPane.putClientProperty(FRAMED_SCROLL_PANE_CARD, Boolean.FALSE);
+        scrollPane.putClientProperty(SCROLL_PANE_CARD_VARIANT, ScrollPaneCardVariant.PLAIN);
         applyCard(scrollPane);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.setViewportBorder(BorderFactory.createEmptyBorder());
@@ -236,7 +236,7 @@ public final class ToolWindowSurfaceStyle {
     }
 
     public static void applyFramedScrollPaneCard(JScrollPane scrollPane) {
-        scrollPane.putClientProperty(FRAMED_SCROLL_PANE_CARD, Boolean.TRUE);
+        scrollPane.putClientProperty(SCROLL_PANE_CARD_VARIANT, ScrollPaneCardVariant.FRAMED);
         setFramedScrollPaneCard(scrollPane);
         installThemeRefresh(scrollPane, component -> setFramedScrollPaneCard((JScrollPane) component));
     }
@@ -314,7 +314,7 @@ public final class ToolWindowSurfaceStyle {
         }
 
         if (component instanceof JScrollPane scrollPane) {
-            if (Boolean.TRUE.equals(scrollPane.getClientProperty(FRAMED_SCROLL_PANE_CARD))) {
+            if (scrollPane.getClientProperty(SCROLL_PANE_CARD_VARIANT) == ScrollPaneCardVariant.FRAMED) {
                 applyFramedScrollPaneCard(scrollPane);
             } else {
                 applyScrollPaneCard(scrollPane);
@@ -655,5 +655,10 @@ public final class ToolWindowSurfaceStyle {
 
     private record ThemeRefreshRegistration(PropertyChangeListener componentListener,
                                             PropertyChangeListener lookAndFeelListener) {
+    }
+
+    private enum ScrollPaneCardVariant {
+        PLAIN,
+        FRAMED
     }
 }

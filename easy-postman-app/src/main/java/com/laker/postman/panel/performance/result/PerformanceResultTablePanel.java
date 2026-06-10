@@ -5,7 +5,7 @@ import com.laker.postman.request.model.HttpHeader;
 
 
 import com.laker.postman.common.component.SearchTextField;
-import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.performance.model.PerformanceInternalHeaders;
@@ -155,7 +155,7 @@ public class PerformanceResultTablePanel extends JPanel {
         detailTabs = new JTabbedPane();
         ToolWindowSurfaceStyle.applyTabbedPaneCard(detailTabs);
 
-        JSplitPane split = ToolWindowChrome.createHorizontalInnerSplitPane(
+        JSplitPane split = AppToolWindowChrome.createHorizontalInnerSplitPane(
                 leftPanel,
                 detailTabs,
                 620

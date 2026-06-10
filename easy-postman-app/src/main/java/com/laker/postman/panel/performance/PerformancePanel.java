@@ -13,7 +13,7 @@ import com.laker.postman.performance.core.model.PerformanceTrendWindowCollector;
 
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.DebouncedSaveSupport;
-import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.ExportButton;
 import com.laker.postman.common.component.button.RefreshButton;
@@ -321,7 +321,7 @@ public class PerformancePanel extends UiSingletonPanel {
         installPlanToolbarListeners();
         syncPlanSelectorItems();
 
-        JSplitPane verticalSplit = ToolWindowChrome.createVerticalInnerSplitPane(
+        JSplitPane verticalSplit = AppToolWindowChrome.createVerticalInnerSplitPane(
                 propertyPanel,
                 resultSection.resultPanel(),
                 260
@@ -338,13 +338,13 @@ public class PerformancePanel extends UiSingletonPanel {
 
         treeSection.scrollPane().setMinimumSize(new Dimension(220, 150));
         rightContentPanel.setMinimumSize(new Dimension(400, 300));
-        JSplitPane mainSplit = ToolWindowChrome.createHorizontalInnerSplitPane(
+        JSplitPane mainSplit = AppToolWindowChrome.createHorizontalInnerSplitPane(
                 treeSection.scrollPane(),
                 rightContentPanel,
-                ToolWindowChrome.DEFAULT_SIDE_WIDTH
+                AppToolWindowChrome.DEFAULT_SIDE_WIDTH
         );
         mainSplit.setResizeWeight(0.18);
-        add(ToolWindowChrome.wrapToolWindow(mainSplit), BorderLayout.CENTER);
+        add(AppToolWindowChrome.wrapToolWindow(mainSplit), BorderLayout.CENTER);
 
         List<PerformanceResultListener> resultListeners = List.of(
                 new PerformanceStatsCollectorListener(statsCollector),

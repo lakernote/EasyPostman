@@ -4,7 +4,7 @@ import com.formdev.flatlaf.FlatClientProperties;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.component.SearchTextField;
-import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSidebarToolbar;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
@@ -180,10 +180,10 @@ public class ToolboxPanel extends UiSingletonPanel {
         contentArea.setMinimumSize(new Dimension(200, 0));
 
         // 可拖动分割线，左右两侧使用独立圆角卡片，和主请求区保持一致。
-        JSplitPane split = ToolWindowChrome.createHorizontalCardSplitPane(
+        JSplitPane split = AppToolWindowChrome.createHorizontalCardSplitPane(
                 leftPanel,
                 contentArea,
-                ToolWindowChrome.DEFAULT_SIDE_WIDTH
+                AppToolWindowChrome.DEFAULT_SIDE_WIDTH
         );
         add(split, BorderLayout.CENTER);
 

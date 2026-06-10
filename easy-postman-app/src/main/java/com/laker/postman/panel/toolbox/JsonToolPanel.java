@@ -3,7 +3,7 @@ package com.laker.postman.panel.toolbox;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.ToolWindowActionToolbar;
-import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.ViewportClippedTokenPainter;
 import com.laker.postman.common.constants.ModernColors;
@@ -117,7 +117,7 @@ public class JsonToolPanel extends JPanel {
         searchableOutputArea.setLineNumbersEnabled(true);
         outputPanel.add(searchableOutputArea, BorderLayout.CENTER);
 
-        JSplitPane splitPane = ToolWindowChrome.createVerticalInnerSplitPane(inputPanel, outputPanel, 300);
+        JSplitPane splitPane = AppToolWindowChrome.createVerticalInnerSplitPane(inputPanel, outputPanel, 300);
         splitPane.setResizeWeight(0.5); // 平均分配空间
 
         add(splitPane, BorderLayout.CENTER);

@@ -234,7 +234,11 @@ public class ToolWindowStyleConventionsTest {
         List<String> violations = javaSources().filter(path -> {
                     String source = readUnchecked(path);
                     return source.contains("ToolWindowChrome.createHorizontalSplitPane(")
-                            || source.contains("ToolWindowChrome.createVerticalSplitPane(");
+                            || source.contains("ToolWindowChrome.createVerticalSplitPane(")
+                            || source.contains("AppToolWindowChrome.createHorizontalSplitPane(")
+                            || source.contains("AppToolWindowChrome.createVerticalSplitPane(")
+                            || source.contains("ToolWindowChrome.createHorizontalDragGapSplitPane(")
+                            || source.contains("ToolWindowChrome.createVerticalDragGapSplitPane(");
                 })
                 .map(ROOT::relativize)
                 .map(path -> path.toString().replace('\\', '/'))
@@ -360,10 +364,19 @@ public class ToolWindowStyleConventionsTest {
                 .filter(path -> {
                     String source = readUnchecked(ROOT.resolve(path));
                     return !source.contains("ToolWindowChrome.createHorizontalCardSplitPane")
+                            && !source.contains("ToolWindowChrome.createHorizontalDragGapCardSplitPane")
+                            && !source.contains("AppToolWindowChrome.createHorizontalCardSplitPane")
                             && !source.contains("ToolWindowChrome.createVerticalCardSplitPane")
+                            && !source.contains("ToolWindowChrome.createVerticalDragGapCardSplitPane")
+                            && !source.contains("ToolWindowChrome.createVerticalDragGapStackedCardSplitPane")
+                            && !source.contains("AppToolWindowChrome.createVerticalCardSplitPane")
+                            && !source.contains("AppToolWindowChrome.createVerticalStackedCardSplitPane")
                             && !source.contains("ToolWindowChrome.wrapToolWindow")
+                            && !source.contains("AppToolWindowChrome.wrapToolWindow")
                             && !source.contains("ToolWindowChrome.wrapInsetToolWindow")
-                            && !source.contains("ToolWindowChrome.wrapLeftInsetToolWindow");
+                            && !source.contains("AppToolWindowChrome.wrapInsetToolWindow")
+                            && !source.contains("ToolWindowChrome.wrapLeftInsetToolWindow")
+                            && !source.contains("AppToolWindowChrome.wrapLeftInsetToolWindow");
                 })
                 .toList();
 
@@ -373,20 +386,28 @@ public class ToolWindowStyleConventionsTest {
     @Test
     public void primaryHorizontalSplitsShouldUseSharedDefaultSidebarWidth() {
         List<String> violations = PRIMARY_HORIZONTAL_SPLITS.stream()
-                .filter(path -> !readUnchecked(ROOT.resolve(path)).contains("ToolWindowChrome.DEFAULT_SIDE_WIDTH"))
+                .filter(path -> {
+                    String source = readUnchecked(ROOT.resolve(path));
+                    return !source.contains("ToolWindowChrome.DEFAULT_SIDE_WIDTH")
+                            && !source.contains("AppToolWindowChrome.DEFAULT_SIDE_WIDTH");
+                })
                 .toList();
 
-        assertTrue(violations.isEmpty(), "Use ToolWindowChrome.DEFAULT_SIDE_WIDTH for primary side panes: " + violations);
+        assertTrue(violations.isEmpty(), "Use shared default side width for primary side panes: " + violations);
     }
 
     @Test
     public void stackedToolWindowSplitsShouldAvoidDoubleWrappingNestedCards() {
         List<String> violations = STACKED_TOOL_WINDOW_SPLITS.stream()
-                .filter(path -> !readUnchecked(ROOT.resolve(path)).contains("createVerticalStackedCardSplitPane"))
+                .filter(path -> {
+                    String source = readUnchecked(ROOT.resolve(path));
+                    return !source.contains("createVerticalStackedCardSplitPane")
+                            && !source.contains("createVerticalDragGapStackedCardSplitPane");
+                })
                 .toList();
 
         assertTrue(violations.isEmpty(),
-                "Use ToolWindowChrome.createVerticalStackedCardSplitPane when the top pane already has card chrome: "
+                "Use ToolWindowChrome.createVertical*StackedCardSplitPane when the top pane already has card chrome: "
                         + violations);
     }
 
@@ -397,6 +418,8 @@ public class ToolWindowStyleConventionsTest {
                     String source = readUnchecked(ROOT.resolve(path));
                     return !source.contains("ToolWindowChrome.wrapDialogToolWindow")
                             && !source.contains("ToolWindowChrome.wrapDialogInsetToolWindow")
+                            && !source.contains("AppToolWindowChrome.wrapDialogToolWindow")
+                            && !source.contains("AppToolWindowChrome.wrapDialogInsetToolWindow")
                             && !source.contains("ToolWindowSurfaceStyle.applyDialogSurface");
                 })
                 .toList();
@@ -417,6 +440,42 @@ public class ToolWindowStyleConventionsTest {
 
         assertTrue(violations.isEmpty(),
                 "Use shared dialog chrome and do not reset rootPane border/titlebar inset: " + violations);
+    }
+
+    @Test
+    public void appCodeShouldKeepHostSpecificDragGapBehindAppChromeWrapper() throws IOException {
+        List<String> violations = appJavaSources()
+                .filter(path -> !path.endsWith("AppToolWindowChrome.java"))
+                .filter(path -> {
+                    String source = readUnchecked(path);
+                    return source.contains("ToolWindowChrome.DRAG_GAP")
+                            || source.contains("ToolWindowChrome.createHorizontalDragGap")
+                            || source.contains("ToolWindowChrome.createVerticalDragGap")
+                            || source.contains("ToolWindowChrome.SplitDividerStyle.DRAG_GAP");
+                })
+                .map(ROOT::relativize)
+                .map(path -> path.toString().replace('\\', '/'))
+                .toList();
+
+        assertTrue(violations.isEmpty(),
+                "Use AppToolWindowChrome for host-specific drag-gap split chrome: " + violations);
+    }
+
+    @Test
+    public void pluginsShouldNotUseHostSpecificDragGapSplitChrome() throws IOException {
+        List<String> violations = pluginJavaSources()
+                .filter(path -> {
+                    String source = readUnchecked(path);
+                    return source.contains("DragGap")
+                            || source.contains("DRAG_GAP")
+                            || source.contains("SplitDividerStyle.DRAG_GAP");
+                })
+                .map(ROOT::relativize)
+                .map(path -> path.toString().replace('\\', '/'))
+                .toList();
+
+        assertTrue(violations.isEmpty(),
+                "Plugins should use stable ToolWindowChrome defaults, not host-specific drag-gap chrome: " + violations);
     }
 
     @Test
@@ -497,9 +556,20 @@ public class ToolWindowStyleConventionsTest {
     }
 
     private static Stream<Path> javaSources() throws IOException {
-        Stream<Path> appSources = Stream.of(ROOT.resolve("easy-postman-app/src/main/java"));
-        Stream<Path> pluginSources = pluginMainSourceRoots();
-        return Stream.concat(appSources, pluginSources)
+        return Stream.concat(appJavaSources(), pluginJavaSources());
+    }
+
+    private static Stream<Path> appJavaSources() {
+        Path appSourceRoot = ROOT.resolve("easy-postman-app/src/main/java");
+        if (!Files.isDirectory(appSourceRoot)) {
+            return Stream.empty();
+        }
+        return walkUnchecked(appSourceRoot)
+                .filter(path -> path.toString().endsWith(".java"));
+    }
+
+    private static Stream<Path> pluginJavaSources() throws IOException {
+        return pluginMainSourceRoots()
                 .filter(Files::isDirectory)
                 .flatMap(ToolWindowStyleConventionsTest::walkUnchecked)
                 .filter(path -> path.toString().endsWith(".java"));

@@ -1,7 +1,7 @@
 package com.laker.postman.panel.topmenu.plugin;
 
 import com.laker.postman.common.component.button.ModernButtonFactory;
-import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.plugin.api.PluginDescriptor;
@@ -263,9 +263,9 @@ public class PluginManagerDialog extends JDialog {
         left.setMinimumSize(new Dimension(240, 200));
         right.setMinimumSize(new Dimension(420, 200));
 
-        JSplitPane splitPane = ToolWindowChrome.createHorizontalInnerSplitPane(left, right, SIDEBAR_WIDTH);
+        JSplitPane splitPane = AppToolWindowChrome.createHorizontalInnerSplitPane(left, right, SIDEBAR_WIDTH);
         splitPane.setResizeWeight(0.30);
-        return ToolWindowChrome.wrapToolWindow(splitPane, new Insets(0, 0, 0, 0));
+        return AppToolWindowChrome.wrapToolWindow(splitPane, new Insets(0, 0, 0, 0));
     }
 
     private JPanel createInstalledListPanel() {

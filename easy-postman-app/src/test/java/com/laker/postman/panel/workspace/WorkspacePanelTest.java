@@ -1,6 +1,6 @@
 package com.laker.postman.panel.workspace;
 
-import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.AppToolWindowChrome;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
@@ -11,7 +11,7 @@ public class WorkspacePanelTest {
     public void defaultDetailDividerShouldGiveDetailAreaReadableSpaceInTallWindows() {
         assertEquals(WorkspacePanel.defaultWorkspaceDetailDividerLocation(
                 1000,
-                ToolWindowChrome.INNER_DIVIDER_SIZE
+                AppToolWindowChrome.DIVIDER_SIZE
         ), 448);
     }
 
@@ -19,7 +19,7 @@ public class WorkspacePanelTest {
     public void defaultDetailDividerShouldKeepDetailAreaReadableInMediumWindows() {
         assertEquals(WorkspacePanel.defaultWorkspaceDetailDividerLocation(
                 700,
-                ToolWindowChrome.INNER_DIVIDER_SIZE
+                AppToolWindowChrome.DIVIDER_SIZE
         ), 380);
     }
 
@@ -27,7 +27,7 @@ public class WorkspacePanelTest {
     public void defaultDetailDividerShouldPreserveLogAreaWhenWindowIsShort() {
         assertEquals(WorkspacePanel.defaultWorkspaceDetailDividerLocation(
                 520,
-                ToolWindowChrome.INNER_DIVIDER_SIZE
+                AppToolWindowChrome.DIVIDER_SIZE
         ), 335);
     }
 }

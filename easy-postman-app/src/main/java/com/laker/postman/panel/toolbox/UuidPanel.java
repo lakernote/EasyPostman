@@ -1,6 +1,6 @@
 package com.laker.postman.panel.toolbox;
 
-import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowActionToolbar;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
@@ -75,7 +75,7 @@ public class UuidPanel extends JPanel {
         ToolWindowSurfaceStyle.applyCard(this);
 
         // 主分割面板
-        JSplitPane splitPane = ToolWindowChrome.createHorizontalInnerSplitPane(
+        JSplitPane splitPane = AppToolWindowChrome.createHorizontalInnerSplitPane(
                 createGeneratorPanel(),
                 createParsePanel(),
                 0

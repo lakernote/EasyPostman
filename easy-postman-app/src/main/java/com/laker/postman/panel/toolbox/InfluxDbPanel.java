@@ -8,7 +8,7 @@ import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.SearchableTextArea;
-import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSidebarHeader;
 import com.laker.postman.common.component.ToolWindowSidebarToolbar;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
@@ -254,7 +254,7 @@ public class InfluxDbPanel extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         ToolWindowSurfaceStyle.applyCard(this);
         add(buildConnectionPanel(), BorderLayout.NORTH);
-        JSplitPane mainSplit = ToolWindowChrome.createHorizontalInnerSplitPane(
+        JSplitPane mainSplit = AppToolWindowChrome.createHorizontalInnerSplitPane(
                 buildLeftPanel(),
                 buildMainPanel(),
                 240
@@ -1264,7 +1264,7 @@ public class InfluxDbPanel extends JPanel {
         resultPanel.add(respHeader, BorderLayout.NORTH);
         resultPanel.add(resultTabs, BorderLayout.CENTER);
 
-        JSplitPane editorSplit = ToolWindowChrome.createVerticalInnerSplitPane(
+        JSplitPane editorSplit = AppToolWindowChrome.createVerticalInnerSplitPane(
                 queryPanel,
                 resultPanel,
                 180

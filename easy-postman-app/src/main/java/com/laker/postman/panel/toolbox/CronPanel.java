@@ -2,7 +2,7 @@ package com.laker.postman.panel.toolbox;
 
 import com.formdev.flatlaf.extras.components.FlatTextField;
 import com.laker.postman.common.component.ToolWindowActionToolbar;
-import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.CronExpressionUtil;
@@ -181,7 +181,7 @@ public class CronPanel extends JPanel {
         ToolWindowSurfaceStyle.applyTableScrollPaneCard(tableScrollPane, nextExecutionTable);
         tablePanel.add(tableScrollPane, BorderLayout.CENTER);
 
-        JSplitPane split = ToolWindowChrome.createVerticalInnerSplitPane(descPanel, tablePanel, 180);
+        JSplitPane split = AppToolWindowChrome.createVerticalInnerSplitPane(descPanel, tablePanel, 180);
         split.setResizeWeight(0.4);   // 40% description, 60% table
         panel.add(split, BorderLayout.CENTER);
 

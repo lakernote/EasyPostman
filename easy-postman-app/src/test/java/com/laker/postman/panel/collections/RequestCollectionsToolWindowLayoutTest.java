@@ -2,7 +2,7 @@ package com.laker.postman.panel.collections;
 
 import com.laker.postman.common.constants.ThemeColors;
 import com.laker.postman.common.component.RoundedToolWindowPanel;
-import com.laker.postman.common.component.ToolWindowChrome;
+import com.laker.postman.common.component.AppToolWindowChrome;
 import org.testng.annotations.Test;
 
 import javax.swing.JComponent;
@@ -68,7 +68,7 @@ public class RequestCollectionsToolWindowLayoutTest {
 
         JSplitPane splitPane = RequestCollectionsPanel.createCollectionsSplitPane(left, right);
 
-        assertEquals(splitPane.getDividerSize(), ToolWindowChrome.DIVIDER_SIZE);
+        assertEquals(splitPane.getDividerSize(), AppToolWindowChrome.DIVIDER_SIZE);
         assertEquals(splitPane.getDividerLocation(), 310);
         assertTrue(splitPane.getBorder() instanceof EmptyBorder);
         BasicSplitPaneDivider divider = ((BasicSplitPaneUI) splitPane.getUI()).getDivider();
@@ -76,22 +76,34 @@ public class RequestCollectionsToolWindowLayoutTest {
     }
 
     @Test
-    public void splitDividerShouldNotPaintTransientDragLine() {
+    public void splitDividerShouldPaintAppDragGapBackground() {
+        Object previousBackground = UIManager.get(ThemeColors.BACKGROUND);
+        Color background = new Color(238, 242, 247);
+        UIManager.put(ThemeColors.BACKGROUND, background);
+
         JLabel left = new JLabel("collections");
         JLabel right = new JLabel("editor");
         JSplitPane splitPane = RequestCollectionsPanel.createCollectionsSplitPane(left, right);
         BasicSplitPaneDivider divider = ((BasicSplitPaneUI) splitPane.getUI()).getDivider();
-        divider.setSize(ToolWindowChrome.DIVIDER_SIZE, 60);
+        divider.setSize(AppToolWindowChrome.DIVIDER_SIZE, 60);
 
-        BufferedImage image = new BufferedImage(ToolWindowChrome.DIVIDER_SIZE, 60, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2 = image.createGraphics();
-        divider.paint(g2);
-        g2.dispose();
+        try {
+            BufferedImage image = new BufferedImage(
+                    AppToolWindowChrome.DIVIDER_SIZE,
+                    60,
+                    BufferedImage.TYPE_INT_ARGB
+            );
+            Graphics2D g2 = image.createGraphics();
+            divider.paint(g2);
+            g2.dispose();
 
-        for (int y = 0; y < image.getHeight(); y++) {
-            for (int x = 0; x < image.getWidth(); x++) {
-                assertEquals(new Color(image.getRGB(x, y), true).getAlpha(), 0);
+            for (int y = 0; y < image.getHeight(); y++) {
+                for (int x = 0; x < image.getWidth(); x++) {
+                    assertEquals(new Color(image.getRGB(x, y), true), background);
+                }
             }
+        } finally {
+            UIManager.put(ThemeColors.BACKGROUND, previousBackground);
         }
     }
 

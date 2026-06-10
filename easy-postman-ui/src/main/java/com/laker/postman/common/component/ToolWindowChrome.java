@@ -20,8 +20,8 @@ import java.awt.Insets;
  */
 public final class ToolWindowChrome {
     public static final int DEFAULT_SIDE_WIDTH = 310;
-    public static final int DIVIDER_SIZE = 4;
-    public static final int INNER_DIVIDER_SIZE = 3;
+    public static final int DIVIDER_SIZE = 8;
+    public static final int INNER_DIVIDER_SIZE = 8;
     static final String CHROME_BACKGROUND_PROPERTY = "EasyPostman.toolWindowChrome.background";
     static final String CHROME_ROUNDED_PROPERTY = "EasyPostman.toolWindowChrome.rounded";
     static final String CHROME_SPLIT_PROPERTY = "EasyPostman.toolWindowChrome.split";
@@ -270,17 +270,9 @@ public final class ToolWindowChrome {
                 public void paint(Graphics g) {
                     Graphics2D g2 = (Graphics2D) g.create();
                     try {
-                        // 内部分割线要贴合卡片背景，避免把一个大圆角面板切成多个独立卡片。
-                        g2.setColor(ModernColors.getCardBackgroundColor());
+                        // 内部 split 只保留足够宽的拖拽命中区，用主背景形成轻量分隔带。
+                        g2.setColor(ModernColors.getBackgroundColor());
                         g2.fillRect(0, 0, getWidth(), getHeight());
-                        g2.setColor(ModernColors.getBorderLightColor());
-                        if (splitPane != null && splitPane.getOrientation() == JSplitPane.HORIZONTAL_SPLIT) {
-                            int x = Math.max(0, getWidth() / 2);
-                            g2.drawLine(x, 0, x, getHeight());
-                        } else {
-                            int y = Math.max(0, getHeight() / 2);
-                            g2.drawLine(0, y, getWidth(), y);
-                        }
                     } finally {
                         g2.dispose();
                     }

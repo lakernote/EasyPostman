@@ -2,6 +2,7 @@ package com.laker.postman.panel.collections;
 
 import com.laker.postman.common.constants.ThemeColors;
 import com.laker.postman.common.component.RoundedToolWindowPanel;
+import com.laker.postman.common.component.ToolWindowChrome;
 import org.testng.annotations.Test;
 
 import javax.swing.JComponent;
@@ -67,7 +68,7 @@ public class RequestCollectionsToolWindowLayoutTest {
 
         JSplitPane splitPane = RequestCollectionsPanel.createCollectionsSplitPane(left, right);
 
-        assertEquals(splitPane.getDividerSize(), 4);
+        assertEquals(splitPane.getDividerSize(), ToolWindowChrome.DIVIDER_SIZE);
         assertEquals(splitPane.getDividerLocation(), 310);
         assertTrue(splitPane.getBorder() instanceof EmptyBorder);
         BasicSplitPaneDivider divider = ((BasicSplitPaneUI) splitPane.getUI()).getDivider();
@@ -80,9 +81,9 @@ public class RequestCollectionsToolWindowLayoutTest {
         JLabel right = new JLabel("editor");
         JSplitPane splitPane = RequestCollectionsPanel.createCollectionsSplitPane(left, right);
         BasicSplitPaneDivider divider = ((BasicSplitPaneUI) splitPane.getUI()).getDivider();
-        divider.setSize(4, 60);
+        divider.setSize(ToolWindowChrome.DIVIDER_SIZE, 60);
 
-        BufferedImage image = new BufferedImage(4, 60, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage image = new BufferedImage(ToolWindowChrome.DIVIDER_SIZE, 60, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2 = image.createGraphics();
         divider.paint(g2);
         g2.dispose();

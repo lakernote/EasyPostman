@@ -232,9 +232,9 @@ public class ToolWindowChromeTest {
                 ToolWindowChrome.DEFAULT_SIDE_WIDTH
         );
         BasicSplitPaneDivider divider = ((BasicSplitPaneUI) splitPane.getUI()).getDivider();
-        divider.setSize(4, 40);
+        divider.setSize(ToolWindowChrome.DIVIDER_SIZE, 40);
 
-        BufferedImage image = new BufferedImage(4, 40, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage image = new BufferedImage(ToolWindowChrome.DIVIDER_SIZE, 40, BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics = image.createGraphics();
         divider.paint(graphics);
         graphics.dispose();
@@ -247,11 +247,9 @@ public class ToolWindowChromeTest {
     }
 
     @Test
-    public void innerSplitDividerShouldPaintSingleSeparatorLine() {
-        Color surface = new Color(255, 255, 255);
-        Color separator = new Color(211, 218, 230);
-        UIManager.put(ThemeColors.SURFACE, surface);
-        UIManager.put(ThemeColors.BORDER_LIGHT, separator);
+    public void innerSplitDividerShouldPaintBackgroundGapWithoutInnerLine() {
+        Color background = new Color(244, 246, 249);
+        UIManager.put(ThemeColors.BACKGROUND, background);
 
         JSplitPane splitPane = ToolWindowChrome.createHorizontalInnerSplitPane(
                 new JLabel("left"),
@@ -266,9 +264,11 @@ public class ToolWindowChromeTest {
         divider.paint(graphics);
         graphics.dispose();
 
-        assertEquals(new Color(image.getRGB(0, 20), true), surface);
-        assertEquals(new Color(image.getRGB(1, 20), true), separator);
-        assertEquals(new Color(image.getRGB(2, 20), true), surface);
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                assertEquals(new Color(image.getRGB(x, y), true), background);
+            }
+        }
     }
 
     @Test

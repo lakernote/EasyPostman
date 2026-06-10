@@ -33,6 +33,8 @@ import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
@@ -52,6 +54,12 @@ public class WorkspacePanel extends UiSingletonPanel {
 
     private static final String HTML_START = "<html>";
     private static final String HTML_END = "</html>";
+    private static final String WORKSPACE_DETAIL_DIVIDER_APPLIED_PROPERTY =
+            "EasyPostman.workspace.detailDividerApplied";
+    private static final int WORKSPACE_DETAIL_DEFAULT_HEIGHT = 380;
+    private static final int WORKSPACE_DETAIL_MIN_HEIGHT = 360;
+    private static final int WORKSPACE_LOG_MIN_HEIGHT = 180;
+    private static final double WORKSPACE_DETAIL_RESIZE_WEIGHT = 0.45;
     public static final String HH_MM_SS = "HH:mm:ss";
 
     private JList<Workspace> workspaceList;
@@ -76,9 +84,10 @@ public class WorkspacePanel extends UiSingletonPanel {
         JSplitPane rightSplitPane = ToolWindowChrome.createVerticalInnerSplitPane(
                 createInfoPanel(),
                 createLogPanel(),
-                300
+                WORKSPACE_DETAIL_DEFAULT_HEIGHT
         );
-        rightSplitPane.setResizeWeight(0.32);
+        rightSplitPane.setResizeWeight(WORKSPACE_DETAIL_RESIZE_WEIGHT);
+        installInitialWorkspaceDetailDivider(rightSplitPane);
 
         JSplitPane mainSplitPane = ToolWindowChrome.createHorizontalCardSplitPane(
                 leftPanel,
@@ -204,7 +213,8 @@ public class WorkspacePanel extends UiSingletonPanel {
         JPanel panel = new JPanel(new BorderLayout());
         ToolWindowSurfaceStyle.applyCard(panel);
         panel.setBorder(BorderFactory.createEmptyBorder(6, 8, 8, 8));
-        panel.setPreferredSize(new Dimension(0, 150));
+        panel.setMinimumSize(new Dimension(0, WORKSPACE_LOG_MIN_HEIGHT));
+        panel.setPreferredSize(new Dimension(0, WORKSPACE_LOG_MIN_HEIGHT));
 
         // 创建日志文本区域
         logArea = new JTextArea();
@@ -224,6 +234,52 @@ public class WorkspacePanel extends UiSingletonPanel {
         panel.add(logToolbar, BorderLayout.SOUTH);
 
         return panel;
+    }
+
+    private static void installInitialWorkspaceDetailDivider(JSplitPane splitPane) {
+        splitPane.putClientProperty(WORKSPACE_DETAIL_DIVIDER_APPLIED_PROPERTY, Boolean.FALSE);
+        ComponentAdapter listener = new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                if (applyInitialWorkspaceDetailDivider(splitPane)) {
+                    splitPane.removeComponentListener(this);
+                }
+            }
+        };
+        splitPane.addComponentListener(listener);
+        SwingUtilities.invokeLater(() -> {
+            if (applyInitialWorkspaceDetailDivider(splitPane)) {
+                splitPane.removeComponentListener(listener);
+            }
+        });
+    }
+
+    private static boolean applyInitialWorkspaceDetailDivider(JSplitPane splitPane) {
+        if (Boolean.TRUE.equals(splitPane.getClientProperty(WORKSPACE_DETAIL_DIVIDER_APPLIED_PROPERTY))) {
+            return true;
+        }
+        int splitHeight = splitPane.getHeight();
+        if (splitHeight <= 0) {
+            return false;
+        }
+        splitPane.setDividerLocation(defaultWorkspaceDetailDividerLocation(splitHeight, splitPane.getDividerSize()));
+        splitPane.putClientProperty(WORKSPACE_DETAIL_DIVIDER_APPLIED_PROPERTY, Boolean.TRUE);
+        return true;
+    }
+
+    static int defaultWorkspaceDetailDividerLocation(int splitHeight, int dividerSize) {
+        int usableHeight = Math.max(0, splitHeight - Math.max(0, dividerSize));
+        if (usableHeight <= 0) {
+            return WORKSPACE_DETAIL_DEFAULT_HEIGHT;
+        }
+        int ratioLocation = (int) Math.round(usableHeight * WORKSPACE_DETAIL_RESIZE_WEIGHT);
+        int desiredLocation = Math.max(WORKSPACE_DETAIL_DEFAULT_HEIGHT,
+                Math.max(WORKSPACE_DETAIL_MIN_HEIGHT, ratioLocation));
+        int maxLocation = usableHeight - WORKSPACE_LOG_MIN_HEIGHT;
+        if (maxLocation < WORKSPACE_DETAIL_MIN_HEIGHT) {
+            return Math.max(0, maxLocation);
+        }
+        return Math.min(desiredLocation, maxLocation);
     }
 
     /**

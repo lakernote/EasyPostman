@@ -61,19 +61,19 @@ public class EncoderPanel extends JPanel {
         // 中间分割面板
         // 输入区域
         JPanel inputPanel = new JPanel(new BorderLayout(5, 5));
-        ToolWindowSurfaceStyle.applySectionCard(inputPanel);
+        inputPanel.setOpaque(false);
         inputPanel.add(createSectionLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_ENCODER_INPUT)), BorderLayout.NORTH);
         inputArea = new JTextArea();
         inputArea.setLineWrap(true);
         inputArea.setWrapStyleWord(true);
         ToolWindowSurfaceStyle.applyTextComponentInput(inputArea);
         JScrollPane inputScrollPane = new JScrollPane(inputArea);
-        ToolWindowSurfaceStyle.applyScrollPaneCard(inputScrollPane);
+        ToolWindowSurfaceStyle.applyFramedScrollPaneCard(inputScrollPane);
         inputPanel.add(inputScrollPane, BorderLayout.CENTER);
 
         // 输出区域
         JPanel outputPanel = new JPanel(new BorderLayout(5, 5));
-        ToolWindowSurfaceStyle.applySectionCard(outputPanel);
+        outputPanel.setOpaque(false);
         outputPanel.add(createSectionLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_ENCODER_OUTPUT)), BorderLayout.NORTH);
         outputArea = new JTextArea();
         outputArea.setLineWrap(true);
@@ -81,7 +81,7 @@ public class EncoderPanel extends JPanel {
         outputArea.setEditable(false);
         ToolWindowSurfaceStyle.applyTextComponentCard(outputArea);
         JScrollPane outputScrollPane = new JScrollPane(outputArea);
-        ToolWindowSurfaceStyle.applyScrollPaneCard(outputScrollPane);
+        ToolWindowSurfaceStyle.applyFramedScrollPaneCard(outputScrollPane);
         outputPanel.add(outputScrollPane, BorderLayout.CENTER);
 
         JSplitPane splitPane = ToolWindowChrome.createVerticalInnerSplitPane(inputPanel, outputPanel, 220);

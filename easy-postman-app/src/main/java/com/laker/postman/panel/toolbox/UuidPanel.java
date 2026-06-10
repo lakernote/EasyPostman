@@ -226,7 +226,7 @@ public class UuidPanel extends JPanel {
         ToolWindowSurfaceStyle.applyTextComponentCard(uuidArea);
 
         JScrollPane scrollPane = new JScrollPane(uuidArea);
-        ToolWindowSurfaceStyle.applyScrollPaneCard(scrollPane);
+        ToolWindowSurfaceStyle.applyFramedScrollPaneCard(scrollPane);
         centerPanel.add(scrollPane, BorderLayout.CENTER);
 
         panel.add(centerPanel, BorderLayout.CENTER);
@@ -359,7 +359,7 @@ public class UuidPanel extends JPanel {
         ToolWindowSurfaceStyle.applyTextComponentCard(parseArea);
 
         JScrollPane scrollPane = new JScrollPane(parseArea);
-        ToolWindowSurfaceStyle.applyScrollPaneCard(scrollPane);
+        ToolWindowSurfaceStyle.applyFramedScrollPaneCard(scrollPane);
         panel.add(scrollPane, BorderLayout.CENTER);
 
         // 解析按钮事件

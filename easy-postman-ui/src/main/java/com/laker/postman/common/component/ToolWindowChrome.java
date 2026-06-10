@@ -27,7 +27,7 @@ public final class ToolWindowChrome {
     static final String CHROME_SPLIT_PROPERTY = "EasyPostman.toolWindowChrome.split";
     private static final int OUTER_VERTICAL_GAP = 4;
     private static final int OUTER_HORIZONTAL_GAP = 6;
-    private static final int INNER_GAP = 1;
+    private static final int INNER_GAP = 0;
     private static final Insets DEFAULT_CONTENT_INSETS = new Insets(8, 10, 8, 10);
 
     private ToolWindowChrome() {
@@ -151,7 +151,7 @@ public final class ToolWindowChrome {
 
     private static JSplitPane createInnerSplitPane(int orientation, Component first, Component second,
                                                   int dividerLocation) {
-        // 内部 split 只用于一个圆角卡片内的二级分区：不再套新的圆角卡片，只画中间分割线。
+        // 内部 split 只用于一个圆角卡片内的二级分区：不再套新的圆角卡片。
         JSplitPane splitPane = new ToolWindowInnerSplitPane(orientation, first, second);
         splitPane.setContinuousLayout(true);
         splitPane.setDividerLocation(dividerLocation);
@@ -251,7 +251,13 @@ public final class ToolWindowChrome {
 
                 @Override
                 public void paint(Graphics g) {
-                    // 外层 split 的间隔由背景色表达，divider 本身只负责拖拽命中区域。
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    try {
+                        g2.setColor(ModernColors.getBackgroundColor());
+                        g2.fillRect(0, 0, getWidth(), getHeight());
+                    } finally {
+                        g2.dispose();
+                    }
                 }
             };
         }
@@ -270,16 +276,8 @@ public final class ToolWindowChrome {
                 public void paint(Graphics g) {
                     Graphics2D g2 = (Graphics2D) g.create();
                     try {
-                        g2.setColor(ModernColors.getCardBackgroundColor());
+                        g2.setColor(ModernColors.getBackgroundColor());
                         g2.fillRect(0, 0, getWidth(), getHeight());
-                        g2.setColor(ModernColors.getDividerBorderColor());
-                        if (orientation == JSplitPane.HORIZONTAL_SPLIT) {
-                            int x = getWidth() / 2;
-                            g2.drawLine(x, 0, x, getHeight());
-                        } else {
-                            int y = getHeight() / 2;
-                            g2.drawLine(0, y, getWidth(), y);
-                        }
                     } finally {
                         g2.dispose();
                     }

@@ -57,7 +57,7 @@ public class DiffPanel extends JPanel {
         originalArea.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         ToolWindowSurfaceStyle.applyTextComponentInput(originalArea);
         JScrollPane originalScrollPane = new JScrollPane(originalArea);
-        ToolWindowSurfaceStyle.applyScrollPaneCard(originalScrollPane);
+        ToolWindowSurfaceStyle.applyFramedScrollPaneCard(originalScrollPane);
         originalPanel.add(originalScrollPane, BorderLayout.CENTER);
 
         // 修改后文本
@@ -71,7 +71,7 @@ public class DiffPanel extends JPanel {
         modifiedArea.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         ToolWindowSurfaceStyle.applyTextComponentInput(modifiedArea);
         JScrollPane modifiedScrollPane = new JScrollPane(modifiedArea);
-        ToolWindowSurfaceStyle.applyScrollPaneCard(modifiedScrollPane);
+        ToolWindowSurfaceStyle.applyFramedScrollPaneCard(modifiedScrollPane);
         modifiedPanel.add(modifiedScrollPane, BorderLayout.CENTER);
 
         JSplitPane topSplitPane = ToolWindowChrome.createHorizontalInnerSplitPane(
@@ -93,7 +93,7 @@ public class DiffPanel extends JPanel {
         resultPane.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         ToolWindowSurfaceStyle.applyTextComponentCard(resultPane);
         JScrollPane resultScrollPane = new JScrollPane(resultPane);
-        ToolWindowSurfaceStyle.applyScrollPaneCard(resultScrollPane);
+        ToolWindowSurfaceStyle.applyFramedScrollPaneCard(resultScrollPane);
         resultPanel.add(resultScrollPane, BorderLayout.CENTER);
 
         JSplitPane mainSplitPane = ToolWindowChrome.createVerticalInnerSplitPane(

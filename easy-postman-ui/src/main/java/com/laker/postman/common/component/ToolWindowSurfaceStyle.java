@@ -49,6 +49,8 @@ import java.util.function.Consumer;
  */
 public final class ToolWindowSurfaceStyle {
     private static final String THEME_REFRESH_LISTENER = "EasyPostman.toolWindowSurfaceStyle.themeRefreshListener";
+    private static final String FRAMED_SCROLL_PANE_CARD =
+            "EasyPostman.toolWindowSurfaceStyle.framedScrollPaneCard";
     private static final String DIALOG_WINDOW_CHROME_APPLIED =
             "EasyPostman.toolWindowSurfaceStyle.dialogWindowChromeApplied";
     private static boolean globalDialogWindowChromeInstalled;
@@ -224,12 +226,19 @@ public final class ToolWindowSurfaceStyle {
     }
 
     public static void applyScrollPaneCard(JScrollPane scrollPane) {
+        scrollPane.putClientProperty(FRAMED_SCROLL_PANE_CARD, Boolean.FALSE);
         applyCard(scrollPane);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.setViewportBorder(BorderFactory.createEmptyBorder());
         applyViewportCard(scrollPane.getViewport());
         applyScrollBarCard(scrollPane.getVerticalScrollBar());
         applyScrollBarCard(scrollPane.getHorizontalScrollBar());
+    }
+
+    public static void applyFramedScrollPaneCard(JScrollPane scrollPane) {
+        scrollPane.putClientProperty(FRAMED_SCROLL_PANE_CARD, Boolean.TRUE);
+        setFramedScrollPaneCard(scrollPane);
+        installThemeRefresh(scrollPane, component -> setFramedScrollPaneCard((JScrollPane) component));
     }
 
     public static void applyTabbedPaneCard(JTabbedPane tabbedPane) {
@@ -305,7 +314,11 @@ public final class ToolWindowSurfaceStyle {
         }
 
         if (component instanceof JScrollPane scrollPane) {
-            applyScrollPaneCard(scrollPane);
+            if (Boolean.TRUE.equals(scrollPane.getClientProperty(FRAMED_SCROLL_PANE_CARD))) {
+                applyFramedScrollPaneCard(scrollPane);
+            } else {
+                applyScrollPaneCard(scrollPane);
+            }
         } else if (component instanceof JPopupMenu popupMenu) {
             applyPopupMenuCard(popupMenu);
         } else if (component instanceof JTable table) {
@@ -501,6 +514,15 @@ public final class ToolWindowSurfaceStyle {
         }
         setTableCorner(scrollPane, JScrollPane.UPPER_RIGHT_CORNER);
         setTableCorner(scrollPane, JScrollPane.UPPER_LEFT_CORNER);
+    }
+
+    private static void setFramedScrollPaneCard(JScrollPane scrollPane) {
+        setCard(scrollPane, true);
+        scrollPane.setBorder(BorderFactory.createLineBorder(ModernColors.getBorderLightColor()));
+        scrollPane.setViewportBorder(BorderFactory.createEmptyBorder());
+        applyViewportCard(scrollPane.getViewport());
+        applyScrollBarCard(scrollPane.getVerticalScrollBar());
+        applyScrollBarCard(scrollPane.getHorizontalScrollBar());
     }
 
     private static void setTableCorner(JScrollPane scrollPane, String cornerKey) {

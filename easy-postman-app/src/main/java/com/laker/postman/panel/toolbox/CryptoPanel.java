@@ -162,7 +162,7 @@ public class CryptoPanel extends JPanel {
         inputArea.setWrapStyleWord(true);
         ToolWindowSurfaceStyle.applyTextComponentInput(inputArea);
         JScrollPane inputScrollPane = new JScrollPane(inputArea);
-        ToolWindowSurfaceStyle.applyScrollPaneCard(inputScrollPane);
+        ToolWindowSurfaceStyle.applyFramedScrollPaneCard(inputScrollPane);
         inputPanel.add(inputScrollPane, BorderLayout.CENTER);
 
         // 输出区域
@@ -176,7 +176,7 @@ public class CryptoPanel extends JPanel {
         outputArea.setEditable(false);
         ToolWindowSurfaceStyle.applyTextComponentCard(outputArea);
         JScrollPane outputScrollPane = new JScrollPane(outputArea);
-        ToolWindowSurfaceStyle.applyScrollPaneCard(outputScrollPane);
+        ToolWindowSurfaceStyle.applyFramedScrollPaneCard(outputScrollPane);
         outputPanel.add(outputScrollPane, BorderLayout.CENTER);
 
         JSplitPane splitPane = ToolWindowChrome.createVerticalInnerSplitPane(inputPanel, outputPanel, 260);

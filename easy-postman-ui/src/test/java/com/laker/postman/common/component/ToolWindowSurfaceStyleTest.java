@@ -22,6 +22,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 import javax.swing.plaf.basic.BasicSplitPaneDivider;
 import javax.swing.plaf.basic.BasicSplitPaneUI;
 import javax.swing.plaf.metal.MetalLookAndFeel;
@@ -105,6 +106,42 @@ public class ToolWindowSurfaceStyleTest {
         assertEquals(table.getRowMargin(), 1);
         assertEquals(table.getTableHeader().getBackground(), headerBackground);
         assertTrue(table.getTableHeader().getPreferredSize().height >= 32);
+    }
+
+    @Test
+    public void shouldApplyFramedScrollPaneCardWithThinThemeBorder() {
+        Color surface = new Color(250, 251, 252);
+        Color border = new Color(211, 218, 230);
+        UIManager.put(ThemeColors.SURFACE, surface);
+        UIManager.put(ThemeColors.BORDER_LIGHT, border);
+        JScrollPane scrollPane = new JScrollPane(new JPanel());
+
+        ToolWindowSurfaceStyle.applyFramedScrollPaneCard(scrollPane);
+
+        assertEquals(scrollPane.getBackground(), surface);
+        assertEquals(scrollPane.getViewport().getBackground(), surface);
+        assertTrue(scrollPane.getBorder() instanceof LineBorder);
+        assertEquals(((LineBorder) scrollPane.getBorder()).getLineColor(), border);
+        assertTrue(scrollPane.getViewportBorder() instanceof EmptyBorder);
+    }
+
+    @Test
+    public void shouldPreserveFramedScrollPaneCardWhenApplyingPanelTreeCard() {
+        Color surface = new Color(250, 251, 252);
+        Color border = new Color(211, 218, 230);
+        UIManager.put(ThemeColors.SURFACE, surface);
+        UIManager.put(ThemeColors.BORDER_LIGHT, border);
+        JPanel parent = new JPanel();
+        JScrollPane scrollPane = new JScrollPane(new JPanel());
+        parent.add(scrollPane);
+
+        ToolWindowSurfaceStyle.applyFramedScrollPaneCard(scrollPane);
+        ToolWindowSurfaceStyle.applyPanelTreeCard(parent);
+
+        assertEquals(scrollPane.getBackground(), surface);
+        assertEquals(scrollPane.getViewport().getBackground(), surface);
+        assertTrue(scrollPane.getBorder() instanceof LineBorder);
+        assertEquals(((LineBorder) scrollPane.getBorder()).getLineColor(), border);
     }
 
     @Test

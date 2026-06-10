@@ -174,7 +174,7 @@ public class HashPanel extends JPanel {
         });
 
         JScrollPane inputScroll = new JScrollPane(inputArea);
-        ToolWindowSurfaceStyle.applyScrollPaneCard(inputScroll);
+        ToolWindowSurfaceStyle.applyFramedScrollPaneCard(inputScroll);
         inputPanel.add(inputScroll, BorderLayout.CENTER);
 
         // 输出区域
@@ -190,7 +190,7 @@ public class HashPanel extends JPanel {
         ToolWindowSurfaceStyle.applyTextComponentCard(outputArea);
 
         JScrollPane outputScroll = new JScrollPane(outputArea);
-        ToolWindowSurfaceStyle.applyScrollPaneCard(outputScroll);
+        ToolWindowSurfaceStyle.applyFramedScrollPaneCard(outputScroll);
         outputPanel.add(outputScroll, BorderLayout.CENTER);
 
         JSplitPane splitPane = ToolWindowChrome.createVerticalInnerSplitPane(inputPanel, outputPanel, 260);

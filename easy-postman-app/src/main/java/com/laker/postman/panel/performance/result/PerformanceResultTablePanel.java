@@ -7,7 +7,6 @@ import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
-import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.performance.model.PerformanceInternalHeaders;
 import com.laker.postman.performance.model.PerformanceProtocolLabels;
 import com.laker.postman.performance.model.ResultNodeInfo;
@@ -131,6 +130,7 @@ public class PerformanceResultTablePanel extends JPanel {
         table.setAutoCreateRowSorter(false);
         table.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
         table.setFocusable(false);
+        table.setGridColor(PerformanceTheme.resultGridColor());
         // 设置自定义渲染器
         table.setDefaultRenderer(Object.class, new ResultRowRenderer());
 
@@ -214,7 +214,7 @@ public class PerformanceResultTablePanel extends JPanel {
         table.getColumnModel().getColumn(3).setPreferredWidth(112);
         table.getColumnModel().getColumn(3).setMaxWidth(130);
 
-        // Assertion 列 - 显示 "Assertion"（9个字符）+ emoji
+        // Assertion 列 - 显示 "Assertion"（9个字符）+ 状态符号
         table.getColumnModel().getColumn(4).setMinWidth(72);
         table.getColumnModel().getColumn(4).setPreferredWidth(82);
         table.getColumnModel().getColumn(4).setMaxWidth(100);
@@ -537,19 +537,19 @@ public class PerformanceResultTablePanel extends JPanel {
             };
         }
 
-        // 格式化断言列：✅ 通过、❌ 失败、💨 无测试
+        // Keep assertion symbols themeable; color comes from ResultRowRenderer.
         private String formatAssertion(ResultNodeInfo r) {
             // 1. 如果有断言结果
             if (r.testResults != null && !r.testResults.isEmpty()) {
-                return r.hasAssertionFailed() ? "❌" : "✅";
+                return r.hasAssertionFailed() ? "×" : "✓";
             }
 
             // 2. 无断言测试
             if (!r.isActuallySuccessful()) {
-                return "❌";
+                return "×";
             }
 
-            return "💨";
+            return "—";
         }
 
         @Override
@@ -655,7 +655,7 @@ public class PerformanceResultTablePanel extends JPanel {
                 case 1: // 接口名称 - 左对齐
                     setHorizontalAlignment(SwingConstants.LEFT);
                     if (!isSelected && info != null && !info.isActuallySuccessful()) {
-                        setForeground(ModernColors.getErrorDark());
+                        setForeground(PerformanceTheme.resultFailureForeground());
                         setFont(table.getFont().deriveFont(Font.BOLD));
                     }
                     break;
@@ -670,6 +670,9 @@ public class PerformanceResultTablePanel extends JPanel {
                     break;
                 case 4: // 断言 - 居中
                     setHorizontalAlignment(SwingConstants.CENTER);
+                    if (!isSelected && info != null) {
+                        applyAssertionColors(this, info);
+                    }
                     break;
                 default: // 其他列 - 左对齐
                     setHorizontalAlignment(SwingConstants.LEFT);
@@ -694,7 +697,9 @@ public class PerformanceResultTablePanel extends JPanel {
             int leftInset = modelColumn == 1 ? 8 : 6;
 
             if (modelColumn == 1 && info != null && !isSelected) {
-                Color stripeColor = info.isActuallySuccessful() ? ModernColors.getSuccessDark() : ModernColors.getErrorDark();
+                Color stripeColor = info.isActuallySuccessful()
+                        ? PerformanceTheme.resultSuccessStripe()
+                        : PerformanceTheme.resultFailureStripe();
                 return BorderFactory.createCompoundBorder(
                         BorderFactory.createMatteBorder(0, 4, 0, 0, stripeColor),
                         BorderFactory.createEmptyBorder(0, leftInset, 0, 6)
@@ -708,27 +713,39 @@ public class PerformanceResultTablePanel extends JPanel {
          * 根据状态码应用颜色 - 参考 FunctionalRunnerTableModel
          */
         private void applyStatusColors(Component c, String status) {
-            Color foreground = ModernColors.getTextPrimary();
+            Color foreground = PerformanceTheme.tableForeground();
 
             try {
                 int code = Integer.parseInt(status);
                 if (code >= 200 && code < 300) {
                     // 成功：使用绿色
-                    foreground = ModernColors.getSuccessDark();
+                    foreground = PerformanceTheme.resultSuccessForeground();
                 } else if (code >= 400 && code < 500) {
                     // 客户端错误：使用警告色
-                    foreground = ModernColors.getWarningDarker();
+                    foreground = PerformanceTheme.resultWarningForeground();
                 } else if (code >= 500) {
                     // 服务器错误：使用错误色
-                    foreground = ModernColors.getErrorDarker();
+                    foreground = PerformanceTheme.resultFailureForeground();
                 }
             } catch (NumberFormatException e) {
                 // 非数字状态（如错误消息）
-                foreground = ModernColors.getErrorDark();
+                foreground = PerformanceTheme.resultFailureForeground();
             }
 
             // 只设置文字颜色
             c.setForeground(foreground);
+        }
+
+        private void applyAssertionColors(Component c, ResultNodeInfo info) {
+            if (info.testResults == null || info.testResults.isEmpty()) {
+                c.setForeground(info.isActuallySuccessful()
+                        ? PerformanceTheme.resultMutedForeground()
+                        : PerformanceTheme.resultFailureForeground());
+                return;
+            }
+            c.setForeground(info.hasAssertionFailed()
+                    ? PerformanceTheme.resultFailureForeground()
+                    : PerformanceTheme.resultSuccessForeground());
         }
     }
 }

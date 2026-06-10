@@ -24,10 +24,10 @@ import java.io.InputStream;
 public class EditorThemeUtil {
 
     private static final Color DARK_EDITOR_BACKGROUND = new Color(0x1E, 0x1F, 0x22);
-    private static final Color DARK_GUTTER_BACKGROUND = new Color(0x1C, 0x1D, 0x20);
+    private static final Color DARK_GUTTER_BACKGROUND = new Color(0x1E, 0x1F, 0x22);
     private static final Color DARK_EDITOR_DIVIDER = new Color(0x2B, 0x2D, 0x30);
-    private static final Color DARK_LINE_NUMBER = new Color(0x6F, 0x73, 0x7A);
-    private static final Color DARK_CURRENT_LINE_NUMBER = new Color(0xAE, 0xB6, 0xC2);
+    private static final Color DARK_LINE_NUMBER = new Color(0x6C, 0x70, 0x78);
+    private static final Color DARK_CURRENT_LINE_NUMBER = new Color(0xA9, 0xB0, 0xBC);
     private static final Color LIGHT_EDITOR_BACKGROUND = Color.WHITE;
     private static final Color LIGHT_GUTTER_BACKGROUND = Color.WHITE;
     private static final Color LIGHT_EDITOR_DIVIDER = new Color(0xE0, 0xE0, 0xE0);

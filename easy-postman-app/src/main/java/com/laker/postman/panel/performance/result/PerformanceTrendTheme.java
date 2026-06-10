@@ -1,59 +1,52 @@
 package com.laker.postman.panel.performance.result;
 
-import com.laker.postman.common.constants.ModernColors;
 import lombok.experimental.UtilityClass;
 
-import javax.swing.UIManager;
 import java.awt.Color;
 
 @UtilityClass
 class PerformanceTrendTheme {
     Color chartBackground() {
-        return ModernColors.getCardBackgroundColor();
+        return PerformanceTheme.chartBackground();
     }
 
     Color chartPanelBackground() {
-        return ModernColors.getCardBackgroundColor();
+        return PerformanceTheme.chartPanelBackground();
     }
 
     Color gridLine() {
-        return uiColor("Performance.chart.gridColor", ModernColors.getBorderMediumColor());
+        return PerformanceTheme.chartGridLine();
     }
 
     Color text() {
-        return uiColor("Performance.chart.textColor", ModernColors.getTextPrimary());
+        return PerformanceTheme.chartText();
     }
 
     Color chartBorder() {
-        return uiColor("Performance.chart.axisColor", ModernColors.getBorderMediumColor());
+        return PerformanceTheme.chartBorder();
     }
 
     Color threadsLine() {
-        return uiColor("Performance.chart.curveColor", ModernColors.getPrimary());
+        return PerformanceTheme.chartThreadsLine();
     }
 
     Color responseTimeLine() {
-        return ModernColors.getWarning();
+        return PerformanceTheme.chartResponseTimeLine();
     }
 
     Color qpsLine() {
-        return ModernColors.getSuccess();
+        return PerformanceTheme.chartQpsLine();
     }
 
     Color matchedLine() {
-        return ModernColors.getSecondary();
+        return PerformanceTheme.chartMatchedLine();
     }
 
     Color durationLine() {
-        return ModernColors.getInfo();
+        return PerformanceTheme.chartDurationLine();
     }
 
     Color errorRateLine() {
-        return ModernColors.getError();
-    }
-
-    private Color uiColor(String key, Color fallback) {
-        Color color = UIManager.getColor(key);
-        return color != null ? color : fallback;
+        return PerformanceTheme.chartErrorRateLine();
     }
 }

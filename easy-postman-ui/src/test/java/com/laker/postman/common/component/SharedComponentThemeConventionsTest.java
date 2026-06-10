@@ -32,6 +32,14 @@ public class SharedComponentThemeConventionsTest {
                 "Use ModernColors semantic fallbacks in shared UI components: " + violations);
     }
 
+    @Test
+    public void sharedNeutralPlusIconShouldUseCurrentColor() {
+        String svg = read("easy-postman-ui/src/main/resources/icons/plus.svg");
+
+        assertTrue(svg.contains("stroke=\"currentColor\""),
+                "Shared neutral plus icon must use currentColor so IconUtil.createThemed can follow the active theme");
+    }
+
     private static boolean containsLegacyThemeFallback(String relativePath) {
         String source = read(relativePath);
         return source.contains("UIManager.getColor(\"Panel.background\")")

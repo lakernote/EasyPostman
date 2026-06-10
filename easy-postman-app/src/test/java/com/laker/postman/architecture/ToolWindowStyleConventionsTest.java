@@ -337,6 +337,15 @@ public class ToolWindowStyleConventionsTest {
     }
 
     @Test
+    public void environmentNewItemShouldUseThemeAwarePlusIcon() {
+        String source = readUnchecked(ROOT.resolve(
+                "easy-postman-app/src/main/java/com/laker/postman/panel/env/EnvironmentPanel.java"));
+
+        assertTrue(source.contains("IconUtil.createThemed(\"icons/plus.svg\""),
+                "The environment popup's neutral plus icon must use IconUtil.createThemed so it follows light/dark themes");
+    }
+
+    @Test
     public void primaryToolWindowPanelsShouldUseSharedSurfaceStyle() {
         List<String> violations = PRIMARY_TOOL_WINDOW_SURFACES.stream()
                 .filter(path -> {

@@ -11,7 +11,6 @@ import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
 import com.laker.postman.common.component.button.SegmentedToggleButton;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
-import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.performance.model.PerformanceProtocolLabels;
 import com.laker.postman.performance.report.PerformanceProtocolReportData;
 import com.laker.postman.performance.report.PerformanceReportMarkdownBuilder;
@@ -428,19 +427,19 @@ public class PerformanceReportPanel extends JPanel {
 
     private void applyTotalRowStyle(Component c) {
         c.setFont(c.getFont().deriveFont(Font.BOLD));
-        c.setForeground(uiColor("Performance.report.totalForeground", ModernColors.getTextPrimary()));
-        c.setBackground(uiColor("Performance.report.totalBackground", ModernColors.getHoverBackgroundColor()));
+        c.setForeground(PerformanceTheme.reportTotalForeground());
+        c.setBackground(PerformanceTheme.reportTotalBackground());
     }
 
     private void applyFailCellStyle(Component c, Object value) {
         applyFailForeground(c, value);
-        c.setBackground(ModernColors.getCardBackgroundColor());
+        c.setBackground(PerformanceTheme.tableBackground());
     }
 
     private void applyFailForeground(Component c, Object value) {
         try {
             int failCount = Integer.parseInt(value == null ? "0" : value.toString());
-            c.setForeground(failCount > 0 ? ModernColors.getError() : tableForeground());
+            c.setForeground(failCount > 0 ? PerformanceTheme.reportErrorForeground() : tableForeground());
         } catch (Exception e) {
             c.setForeground(tableForeground());
         }
@@ -450,7 +449,7 @@ public class PerformanceReportPanel extends JPanel {
         try {
             int failCount = Integer.parseInt(value == null ? "0" : value.toString());
             if (failCount > 0) {
-                c.setForeground(ModernColors.getError());
+                c.setForeground(PerformanceTheme.reportErrorForeground());
             }
         } catch (Exception ignored) {
         }
@@ -458,7 +457,7 @@ public class PerformanceReportPanel extends JPanel {
 
     private void applyRateCellStyle(Component c, Object value) {
         applyRateForeground(c, value);
-        c.setBackground(ModernColors.getCardBackgroundColor());
+        c.setBackground(PerformanceTheme.tableBackground());
     }
 
     private void applyRateForeground(Component c, Object value) {
@@ -467,11 +466,11 @@ public class PerformanceReportPanel extends JPanel {
             try {
                 double rate = Double.parseDouble(rateStr.replace("%", ""));
                 if (rate >= SUCCESS_RATE_EXCELLENT) {
-                    c.setForeground(uiColor("Performance.report.successColor", ModernColors.getSuccess()));
+                    c.setForeground(PerformanceTheme.reportSuccessForeground());
                 } else if (rate >= SUCCESS_RATE_GOOD) {
-                    c.setForeground(uiColor("Performance.report.warningColor", ModernColors.getWarningDark()));
+                    c.setForeground(PerformanceTheme.reportWarningForeground());
                 } else {
-                    c.setForeground(ModernColors.getError());
+                    c.setForeground(PerformanceTheme.reportErrorForeground());
                 }
             } catch (Exception e) {
                 c.setForeground(tableForeground());
@@ -483,16 +482,11 @@ public class PerformanceReportPanel extends JPanel {
 
     private void applyDefaultCellStyle(Component c) {
         c.setForeground(tableForeground());
-        c.setBackground(ModernColors.getCardBackgroundColor());
+        c.setBackground(PerformanceTheme.tableBackground());
     }
 
     private static Color tableForeground() {
-        return uiColor("Table.foreground", ModernColors.getTextPrimary());
-    }
-
-    private static Color uiColor(String key, Color fallback) {
-        Color color = UIManager.getColor(key);
-        return color != null ? color : fallback;
+        return PerformanceTheme.tableForeground();
     }
 
 

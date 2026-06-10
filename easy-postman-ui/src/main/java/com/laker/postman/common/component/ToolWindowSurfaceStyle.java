@@ -654,16 +654,21 @@ public final class ToolWindowSurfaceStyle {
 
     private static void setListCard(JList<?> list) {
         list.setOpaque(true);
-        list.setBackground(ModernColors.getCardBackgroundColor());
-        list.setForeground(ModernColors.getTextPrimary());
-        list.setSelectionBackground(ModernColors.getSelectionBackgroundColor());
-        list.setSelectionForeground(ModernColors.getTextPrimary());
+        list.setBackground(uiColor("List.background", ModernColors.getCardBackgroundColor()));
+        list.setForeground(uiColor("List.foreground", ModernColors.getTextPrimary()));
+        list.setSelectionBackground(uiColor("List.selectionBackground", ModernColors.getSelectionBackgroundColor()));
+        list.setSelectionForeground(uiColor("List.selectionForeground", ModernColors.getTextPrimary()));
     }
 
     private static void setTreeCard(JTree tree) {
         tree.setOpaque(true);
-        tree.setBackground(ModernColors.getCardBackgroundColor());
-        tree.setForeground(ModernColors.getTextPrimary());
+        tree.setBackground(uiColor("Tree.background", ModernColors.getCardBackgroundColor()));
+        tree.setForeground(uiColor("Tree.foreground", ModernColors.getTextPrimary()));
+    }
+
+    private static Color uiColor(String key, Color fallback) {
+        Color color = UIManager.getColor(key);
+        return color != null ? color : fallback;
     }
 
     private static void setTextComponentCard(JTextComponent textComponent) {

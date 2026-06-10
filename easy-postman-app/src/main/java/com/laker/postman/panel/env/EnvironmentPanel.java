@@ -229,7 +229,7 @@ public class EnvironmentPanel extends UiSingletonPanel {
 
         // ── 新建环境
         JMenuItem newEnvItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.ENV_BUTTON_ADD),
-                IconUtil.create("icons/plus.svg", IconUtil.SIZE_MEDIUM, IconUtil.SIZE_MEDIUM));
+                IconUtil.createThemed("icons/plus.svg", IconUtil.SIZE_MEDIUM, IconUtil.SIZE_MEDIUM));
         newEnvItem.addActionListener(e -> addEnvironment());
         menu.add(newEnvItem);
 

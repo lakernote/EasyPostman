@@ -13,105 +13,105 @@
 
 	<!-- General editor colors - IDEA-like dark editor surface -->
 	<background color="1E1F22" />
-	<caret color="CED0D6" />
-	<selection useFG="false" bg="214283" roundedEdges="true" />  <!-- 蓝色选中背景，圆角 -->
-	<currentLineHighlight color="24262B" fade="true" />  <!-- 当前行高亮 -->
-	<marginLine fg="303238" />  <!-- 边距线，暗色下避免过亮 -->
-	<markAllHighlight color="3C4A32" />  <!-- 标记所有匹配项 -->
-	<markOccurrencesHighlight color="3B4B5F" />  <!-- 标记出现次数 -->
-	<matchedBracket fg="FFEF28" bg="2B4C46" highlightBoth="true" animate="true" />  <!-- 匹配的括号 - 黄色 -->
+	<caret color="C9CCD3" />
+	<selection useFG="false" bg="2B4D7D" roundedEdges="true" />  <!-- 蓝色选中背景，圆角 -->
+	<currentLineHighlight color="25282D" fade="true" />  <!-- 当前行高亮 -->
+	<marginLine fg="2B2D30" />  <!-- 边距线，暗色下避免过亮 -->
+	<markAllHighlight color="364235" />  <!-- 标记所有匹配项 -->
+	<markOccurrencesHighlight color="34475C" />  <!-- 标记出现次数 -->
+	<matchedBracket fg="D6D8DE" bg="2E4A45" highlightBoth="true" animate="true" />  <!-- 匹配的括号 -->
 	<hyperlinks fg="589DF6" />  <!-- 超链接 - 蓝色 -->
 
 	<!-- 多语言支持 -->
 	<secondaryLanguages>
-		<language index="1" bg="202124" />
-		<language index="2" bg="222326" />
-		<language index="3" bg="242529" />
+		<language index="1" bg="1F2023" />
+		<language index="2" bg="212327" />
+		<language index="3" bg="23262A" />
 	</secondaryLanguages>
 
 	<!-- Gutter styling - 行号区域样式 -->
-	<gutterBackground color="1C1D20" />
+	<gutterBackground color="1E1F22" />
 	<gutterBorder color="2B2D30" />
-	<lineNumbers fg="6F737A" currentFG="AEB6C2"/>  <!-- 当前行号更亮 -->
-	<foldIndicator fg="6F737A" armedFg="AEB6C2" iconBg="1C1D20" iconArmedBg="2B2D30" />
+	<lineNumbers fg="6C7078" currentFG="A9B0BC"/>  <!-- 当前行号更亮 -->
+	<foldIndicator fg="6C7078" armedFg="A9B0BC" iconBg="1E1F22" iconArmedBg="2B2D30" />
 	<iconRowHeader activeLineRange="3592C4" />
 
 	<!-- Syntax tokens - 语法高亮配色 -->
 	<tokenStyles>
 		<!-- NULL - 行结束标记 -->
-		<style token="NULL" fg="A9B7C6" />
+		<style token="NULL" fg="C9CCD3" />
 
 		<!-- 注释 - 灰绿色系 -->
-		<style token="COMMENT_EOL" fg="808080" italic="true" />
-		<style token="COMMENT_MULTILINE" fg="808080" italic="true" />
+		<style token="COMMENT_EOL" fg="7A7F87" italic="true" />
+		<style token="COMMENT_MULTILINE" fg="7A7F87" italic="true" />
 		<style token="COMMENT_DOCUMENTATION" fg="629755" italic="true" />
 		<style token="COMMENT_KEYWORD" fg="629755" bold="true" italic="true" />
 		<style token="COMMENT_MARKUP" fg="629755" italic="true" />
 
 		<!-- 关键字 - 橙色系（JavaScript: function, var, const, let, if, else 等）-->
-		<style token="RESERVED_WORD" fg="CC7832" bold="true" />
-		<style token="RESERVED_WORD_2" fg="CC7832" bold="true" />
+		<style token="RESERVED_WORD" fg="CF8E6D" bold="true" />
+		<style token="RESERVED_WORD_2" fg="CF8E6D" bold="true" />
 
 		<!-- 函数/方法 - 亮黄色（JavaScript: console.log, Array.map 等）-->
-		<style token="FUNCTION" fg="FFC66D" />
+		<style token="FUNCTION" fg="56A8F5" />
 
 		<!-- 字面量 - 布尔值 (true, false) -->
-		<style token="LITERAL_BOOLEAN" fg="CC7832" bold="true" />
+		<style token="LITERAL_BOOLEAN" fg="CF8E6D" bold="true" />
 
 		<!-- 字面量 - 数字（所有进制）-->
-		<style token="LITERAL_NUMBER_DECIMAL_INT" fg="6897BB" />
-		<style token="LITERAL_NUMBER_FLOAT" fg="6897BB" />
-		<style token="LITERAL_NUMBER_HEXADECIMAL" fg="6897BB" />
+		<style token="LITERAL_NUMBER_DECIMAL_INT" fg="2AACB8" />
+		<style token="LITERAL_NUMBER_FLOAT" fg="2AACB8" />
+		<style token="LITERAL_NUMBER_HEXADECIMAL" fg="2AACB8" />
 
 		<!-- 字符串 - 绿色（JavaScript 支持多种字符串）-->
-		<style token="LITERAL_STRING_DOUBLE_QUOTE" fg="6A8759" />
-		<style token="LITERAL_CHAR" fg="6A8759" />
-		<style token="LITERAL_BACKQUOTE" fg="6A8759" />  <!-- ES6 模板字符串 -->
+		<style token="LITERAL_STRING_DOUBLE_QUOTE" fg="6AAB73" />
+		<style token="LITERAL_CHAR" fg="6AAB73" />
+		<style token="LITERAL_BACKQUOTE" fg="6AAB73" />  <!-- ES6 模板字符串 -->
 
 		<!-- 数据类型 - 蓝绿色（Java: int, String, void 等）-->
-		<style token="DATA_TYPE" fg="6897BB" bold="true" />
+		<style token="DATA_TYPE" fg="56A8F5" bold="true" />
 
 		<!-- 变量 - 紫色（Java: @Autowired, @Override 等相关）-->
-		<style token="VARIABLE" fg="9876AA" />
+		<style token="VARIABLE" fg="C77DBB" />
 
 		<!-- 正则表达式 - 橙红色 -->
 		<style token="REGEX" fg="D5B778" />
 
 		<!-- 注解 - 金黄色（Java: @Override, @Deprecated 等，用于 request、response 等 Postman 属性）-->
-		<style token="ANNOTATION" fg="BBB529" />
+		<style token="ANNOTATION" fg="B3AE60" />
 
 		<!-- 标识符 - 默认文字（变量名、函数名等）-->
-		<style token="IDENTIFIER" fg="A9B7C6" />
+		<style token="IDENTIFIER" fg="C9CCD3" />
 
 		<!-- 空白 -->
-		<style token="WHITESPACE" fg="A9B7C6" />
+		<style token="WHITESPACE" fg="C9CCD3" />
 
 		<!-- 分隔符 - 橙色（括号、大括号、方括号等：{}[]()）-->
-		<style token="SEPARATOR" fg="CC7832" />
+		<style token="SEPARATOR" fg="BCBEC4" />
 
 		<!-- 操作符 - 浅灰色（+, -, *, /, =, ==, ===, !=, !==, &&, ||, !, ?, : 等）-->
-		<style token="OPERATOR" fg="A9B7C6" />
+		<style token="OPERATOR" fg="BCBEC4" />
 
 		<!-- 预处理器 - 紫色（C/C++: #include, #define 等）-->
-		<style token="PREPROCESSOR" fg="9876AA" />
+		<style token="PREPROCESSOR" fg="C77DBB" />
 
 		<!-- HTML/XML 标签 -->
-		<style token="MARKUP_TAG_DELIMITER" fg="E8BF6A" />
-		<style token="MARKUP_TAG_NAME" fg="E8BF6A" bold="true" />
-		<style token="MARKUP_TAG_ATTRIBUTE" fg="BABABA" />
-		<style token="MARKUP_TAG_ATTRIBUTE_VALUE" fg="6A8759" />
-		<style token="MARKUP_COMMENT" fg="808080" italic="true" />
-		<style token="MARKUP_DTD" fg="9876AA" />
-		<style token="MARKUP_PROCESSING_INSTRUCTION" fg="9876AA" />
-		<style token="MARKUP_CDATA_DELIMITER" fg="9876AA" />
-		<style token="MARKUP_CDATA" fg="BABABA" />
-		<style token="MARKUP_ENTITY_REFERENCE" fg="6897BB" />
+		<style token="MARKUP_TAG_DELIMITER" fg="CF8E6D" />
+		<style token="MARKUP_TAG_NAME" fg="CF8E6D" bold="true" />
+		<style token="MARKUP_TAG_ATTRIBUTE" fg="BCBEC4" />
+		<style token="MARKUP_TAG_ATTRIBUTE_VALUE" fg="6AAB73" />
+		<style token="MARKUP_COMMENT" fg="7A7F87" italic="true" />
+		<style token="MARKUP_DTD" fg="C77DBB" />
+		<style token="MARKUP_PROCESSING_INSTRUCTION" fg="C77DBB" />
+		<style token="MARKUP_CDATA_DELIMITER" fg="C77DBB" />
+		<style token="MARKUP_CDATA" fg="BCBEC4" />
+		<style token="MARKUP_ENTITY_REFERENCE" fg="2AACB8" />
 
 		<!-- 错误标记 - 红色背景 -->
-		<style token="ERROR_IDENTIFIER" fg="FF6B68" bg="52322B" />
-		<style token="ERROR_NUMBER_FORMAT" fg="FF6B68" bg="52322B" />
-		<style token="ERROR_STRING_DOUBLE" fg="FF6B68" bg="52322B" />
-		<style token="ERROR_CHAR" fg="FF6B68" bg="52322B" />
+		<style token="ERROR_IDENTIFIER" fg="DB5860" bg="3A2628" />
+		<style token="ERROR_NUMBER_FORMAT" fg="DB5860" bg="3A2628" />
+		<style token="ERROR_STRING_DOUBLE" fg="DB5860" bg="3A2628" />
+		<style token="ERROR_CHAR" fg="DB5860" bg="3A2628" />
 	</tokenStyles>
 
 </RSyntaxTheme>

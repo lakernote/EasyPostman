@@ -24,7 +24,13 @@ public class PerformanceTrendPanelThemeTest {
                 "Performance.chart.gridColor",
                 "Performance.chart.axisColor",
                 "Performance.chart.textColor",
-                "Performance.chart.curveColor"
+                "Performance.chart.curveColor",
+                "Performance.chart.threadsLine",
+                "Performance.chart.qpsLine",
+                "Performance.chart.responseTimeLine",
+                "Performance.chart.matchedLine",
+                "Performance.chart.durationLine",
+                "Performance.chart.errorRateLine"
         );
     }
 
@@ -52,10 +58,25 @@ public class PerformanceTrendPanelThemeTest {
     }
 
     @Test
-    public void primaryLineShouldUsePerformanceCurveToken() {
-        Color curve = new Color(31, 32, 33);
-        UIManager.put("Performance.chart.curveColor", curve);
+    public void metricLinesShouldUsePerformanceTokens() {
+        Color threads = new Color(31, 32, 33);
+        Color qps = new Color(34, 35, 36);
+        Color responseTime = new Color(37, 38, 39);
+        Color matched = new Color(40, 41, 42);
+        Color duration = new Color(43, 44, 45);
+        Color errorRate = new Color(46, 47, 48);
+        UIManager.put("Performance.chart.threadsLine", threads);
+        UIManager.put("Performance.chart.qpsLine", qps);
+        UIManager.put("Performance.chart.responseTimeLine", responseTime);
+        UIManager.put("Performance.chart.matchedLine", matched);
+        UIManager.put("Performance.chart.durationLine", duration);
+        UIManager.put("Performance.chart.errorRateLine", errorRate);
 
-        assertEquals(PerformanceTrendTheme.threadsLine(), curve);
+        assertEquals(PerformanceTrendTheme.threadsLine(), threads);
+        assertEquals(PerformanceTrendTheme.qpsLine(), qps);
+        assertEquals(PerformanceTrendTheme.responseTimeLine(), responseTime);
+        assertEquals(PerformanceTrendTheme.matchedLine(), matched);
+        assertEquals(PerformanceTrendTheme.durationLine(), duration);
+        assertEquals(PerformanceTrendTheme.errorRateLine(), errorRate);
     }
 }

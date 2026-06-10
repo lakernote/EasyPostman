@@ -172,7 +172,7 @@ public class RedisPanel extends JPanel {
 
         add(buildConnectionPanel(), BorderLayout.NORTH);
 
-        mainSplit = ToolWindowChrome.createHorizontalCardSplitPane(
+        mainSplit = ToolWindowChrome.createHorizontalInnerSplitPane(
                 buildLeftPanel(),
                 buildMainPanel(),
                 240

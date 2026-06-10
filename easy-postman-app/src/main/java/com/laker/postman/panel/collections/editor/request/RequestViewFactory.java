@@ -101,7 +101,7 @@ class RequestViewFactory {
 
     private static void configureRequestResponseSplitPane(JSplitPane splitPane) {
         splitPane.setUI(new EditorSplitPaneUi());
-        splitPane.setDividerSize(6);
+        splitPane.setDividerSize(4);
         splitPane.setOneTouchExpandable(false);
         splitPane.setContinuousLayout(true);
         ToolWindowSurfaceStyle.applyBackground(splitPane);

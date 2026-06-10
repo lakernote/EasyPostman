@@ -48,6 +48,7 @@ public class ToolWindowSurfaceStyleTest {
                 ThemeColors.TAB_SELECTED_BACKGROUND,
                 ThemeColors.TAB_SEPARATOR,
                 ThemeColors.SELECTION_BACKGROUND,
+                ThemeColors.BORDER_LIGHT,
                 "Table.background",
                 "Table.gridColor",
                 "Table.selectionBackground",
@@ -146,6 +147,25 @@ public class ToolWindowSurfaceStyleTest {
         assertEquals(panel.getInsets().left, 2);
         assertEquals(panel.getInsets().bottom, 3);
         assertEquals(panel.getInsets().right, 4);
+    }
+
+    @Test
+    public void shouldApplySectionCardWithThinBorderAndPadding() {
+        Color surface = new Color(250, 251, 252);
+        Color border = new Color(211, 218, 230);
+        UIManager.put(ThemeColors.SURFACE, surface);
+        UIManager.put(ThemeColors.BORDER_LIGHT, border);
+        JPanel panel = new JPanel();
+
+        ToolWindowSurfaceStyle.applySectionCard(panel);
+
+        assertTrue(panel.isOpaque());
+        assertEquals(panel.getBackground(), surface);
+        assertTrue(panel.getBorder() instanceof CompoundBorder);
+        assertEquals(panel.getInsets().top, 9);
+        assertEquals(panel.getInsets().left, 11);
+        assertEquals(panel.getInsets().bottom, 11);
+        assertEquals(panel.getInsets().right, 11);
     }
 
     @Test

@@ -39,25 +39,21 @@ public class TimestampPanel extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
         ToolWindowSurfaceStyle.applyCard(this);
 
-        // 主容器使用垂直布局
-        JPanel mainPanel = new JPanel();
-        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        JPanel mainPanel = new JPanel(new BorderLayout(0, 10));
         mainPanel.setOpaque(false);
 
-        // 1. 当前时间戳区域
-        mainPanel.add(createCurrentTimestampPanel());
-        mainPanel.add(Box.createVerticalStrut(15));
+        JPanel formStack = new JPanel();
+        formStack.setLayout(new BoxLayout(formStack, BoxLayout.Y_AXIS));
+        formStack.setOpaque(false);
 
-        // 2. 时间戳转日期区域
-        mainPanel.add(createTimestampToDatePanel());
-        mainPanel.add(Box.createVerticalStrut(15));
+        formStack.add(createCurrentTimestampPanel());
+        formStack.add(Box.createVerticalStrut(8));
+        formStack.add(createTimestampToDatePanel());
+        formStack.add(Box.createVerticalStrut(8));
+        formStack.add(createDateToTimestampPanel());
 
-        // 3. 日期转时间戳区域
-        mainPanel.add(createDateToTimestampPanel());
-        mainPanel.add(Box.createVerticalStrut(15));
-
-        // 4. 结果显示区域
-        mainPanel.add(createResultPanel());
+        mainPanel.add(formStack, BorderLayout.NORTH);
+        mainPanel.add(createResultPanel(), BorderLayout.CENTER);
 
         add(mainPanel, BorderLayout.CENTER);
     }
@@ -209,7 +205,7 @@ public class TimestampPanel extends JPanel {
 
     private JPanel createSectionPanel(String title) {
         JPanel panel = new JPanel(new BorderLayout(10, 8));
-        panel.setOpaque(false);
+        ToolWindowSurfaceStyle.applySectionCard(panel);
         JLabel titleLabel = new JLabel(title);
         titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 0));
         titleLabel.setForeground(ModernColors.getTextPrimary());

@@ -78,9 +78,10 @@ public class UuidPanel extends JPanel {
         JSplitPane splitPane = ToolWindowChrome.createHorizontalInnerSplitPane(
                 createGeneratorPanel(),
                 createParsePanel(),
-                720
+                0
         );
-        splitPane.setResizeWeight(0.6);
+        splitPane.setResizeWeight(0.64);
+        SwingUtilities.invokeLater(() -> splitPane.setDividerLocation(0.64));
 
         add(splitPane, BorderLayout.CENTER);
     }

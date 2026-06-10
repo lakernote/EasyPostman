@@ -115,7 +115,7 @@ public class RequestViewFactoryTest extends AbstractSwingUiTest {
             RequestViewComponents components = createView(RequestItemProtocolEnum.HTTP);
 
             assertNotNull(components.splitPane);
-            assertEquals(components.splitPane.getDividerSize(), 6);
+            assertEquals(components.splitPane.getDividerSize(), 4);
             assertEquals(components.splitPane.getBackground(), background);
             assertTrue(components.requestLinePanel.isOpaque());
             assertEquals(components.requestLinePanel.getBackground(), surface);

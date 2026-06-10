@@ -12,7 +12,7 @@ public class WorkspacePanelTest {
         assertEquals(WorkspacePanel.defaultWorkspaceDetailDividerLocation(
                 1000,
                 ToolWindowChrome.INNER_DIVIDER_SIZE
-        ), 446);
+        ), 448);
     }
 
     @Test
@@ -28,6 +28,6 @@ public class WorkspacePanelTest {
         assertEquals(WorkspacePanel.defaultWorkspaceDetailDividerLocation(
                 520,
                 ToolWindowChrome.INNER_DIVIDER_SIZE
-        ), 332);
+        ), 335);
     }
 }

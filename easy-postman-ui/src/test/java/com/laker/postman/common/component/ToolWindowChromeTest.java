@@ -31,6 +31,7 @@ public class ToolWindowChromeTest {
         previousTokens.put(ThemeColors.BACKGROUND, UIManager.get(ThemeColors.BACKGROUND));
         previousTokens.put(ThemeColors.SURFACE, UIManager.get(ThemeColors.SURFACE));
         previousTokens.put(ThemeColors.BORDER_LIGHT, UIManager.get(ThemeColors.BORDER_LIGHT));
+        previousTokens.put(ThemeColors.DIVIDER, UIManager.get(ThemeColors.DIVIDER));
     }
 
     @AfterMethod
@@ -247,9 +248,11 @@ public class ToolWindowChromeTest {
     }
 
     @Test
-    public void innerSplitDividerShouldPaintBackgroundGapWithoutInnerLine() {
-        Color background = new Color(244, 246, 249);
-        UIManager.put(ThemeColors.BACKGROUND, background);
+    public void innerSplitDividerShouldPaintThinLineInsideCardGap() {
+        Color surface = new Color(250, 251, 252);
+        Color dividerColor = new Color(213, 216, 222);
+        UIManager.put(ThemeColors.SURFACE, surface);
+        UIManager.put(ThemeColors.DIVIDER, dividerColor);
 
         JSplitPane splitPane = ToolWindowChrome.createHorizontalInnerSplitPane(
                 new JLabel("left"),
@@ -266,7 +269,8 @@ public class ToolWindowChromeTest {
 
         for (int y = 0; y < image.getHeight(); y++) {
             for (int x = 0; x < image.getWidth(); x++) {
-                assertEquals(new Color(image.getRGB(x, y), true), background);
+                Color expected = x == ToolWindowChrome.INNER_DIVIDER_SIZE / 2 ? dividerColor : surface;
+                assertEquals(new Color(image.getRGB(x, y), true), expected);
             }
         }
     }

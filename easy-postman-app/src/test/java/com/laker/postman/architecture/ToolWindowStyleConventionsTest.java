@@ -124,10 +124,8 @@ public class ToolWindowStyleConventionsTest {
             "easy-postman-app/src/main/java/com/laker/postman/panel/performance/PerformancePanel.java",
             "easy-postman-app/src/main/java/com/laker/postman/panel/toolbox/ToolboxPanel.java",
             "easy-postman-app/src/main/java/com/laker/postman/panel/workspace/WorkspacePanel.java",
-            "easy-postman-plugins/plugin-capture/src/main/java/com/laker/postman/plugin/capture/CapturePanel.java",
-            "easy-postman-plugins/plugin-decompiler/src/main/java/com/laker/postman/plugin/decompiler/DecompilerPanel.java",
-            "easy-postman-plugins/plugin-kafka/src/main/java/com/laker/postman/plugin/kafka/KafkaPanel.java",
-            "easy-postman-plugins/plugin-redis/src/main/java/com/laker/postman/plugin/redis/RedisPanel.java"
+            // Toolbox-hosted plugin contributions use inner split lines; standalone decompiler still owns chrome.
+            "easy-postman-plugins/plugin-decompiler/src/main/java/com/laker/postman/plugin/decompiler/DecompilerPanel.java"
     );
     private static final List<String> PRIMARY_HORIZONTAL_SPLITS = List.of(
             "easy-postman-app/src/main/java/com/laker/postman/panel/collections/RequestCollectionsPanel.java",

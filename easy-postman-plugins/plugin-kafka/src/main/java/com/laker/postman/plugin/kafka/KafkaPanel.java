@@ -142,7 +142,7 @@ public class KafkaPanel extends JPanel {
 
         add(connectionPanel, BorderLayout.NORTH);
 
-        JSplitPane mainSplit = ToolWindowChrome.createHorizontalCardSplitPane(
+        JSplitPane mainSplit = ToolWindowChrome.createHorizontalInnerSplitPane(
                 topicPanel,
                 buildWorkPanel(),
                 240

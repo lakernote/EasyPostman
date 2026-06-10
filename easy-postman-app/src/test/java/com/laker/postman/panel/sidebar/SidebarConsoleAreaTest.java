@@ -27,6 +27,6 @@ public class SidebarConsoleAreaTest {
                 ToolWindowChrome.INNER_DIVIDER_SIZE
         );
 
-        assertEquals(dividerLocation, 157);
+        assertEquals(dividerLocation, 155);
     }
 }

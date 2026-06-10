@@ -322,7 +322,7 @@ public class CapturePanel extends JPanel {
         detailPanel.add(detailHeader, BorderLayout.NORTH);
         detailPanel.add(detailTabs, BorderLayout.CENTER);
 
-        detailSplit = ToolWindowChrome.createVerticalCardSplitPane(tablePanel, detailPanel, 320);
+        detailSplit = ToolWindowChrome.createVerticalInnerSplitPane(tablePanel, detailPanel, 320);
         detailSplit.setResizeWeight(1.0);
         SwingUtilities.invokeLater(this::hideDetailPanel);
         return detailSplit;

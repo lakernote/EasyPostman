@@ -107,6 +107,24 @@ public class TableUIConstants {
     }
 
     /**
+     * 获取指定单元格背景色，包含选中、悬停、空值和斑马纹状态。
+     */
+    public static Color getCellBackground(boolean isSelected, boolean isHovered, boolean isEmpty,
+                                          JTable table, int row) {
+        if (isSelected) {
+            return table.getSelectionBackground();
+        } else if (isHovered) {
+            return getHoverColor();
+        } else if (isEmpty) {
+            return ModernColors.getEmptyCellBackground();
+        } else if (row >= 0) {
+            return getRowBackground(table, row);
+        } else {
+            return table.getBackground();
+        }
+    }
+
+    /**
      * 编辑器直接作为 cell editor 返回时使用。
      */
     public static void styleTextCellEditor(JTextComponent editor, JTable table, int row) {
@@ -161,14 +179,6 @@ public class TableUIConstants {
      */
     public static Color getCellBackground(boolean isSelected, boolean isHovered, boolean isEmpty,
                                           JTable table) {
-        if (isSelected) {
-            return table.getSelectionBackground();
-        } else if (isHovered) {
-            return getHoverColor();
-        } else if (isEmpty) {
-            return ModernColors.getEmptyCellBackground();
-        } else {
-            return table.getBackground();
-        }
+        return getCellBackground(isSelected, isHovered, isEmpty, table, -1);
     }
 }

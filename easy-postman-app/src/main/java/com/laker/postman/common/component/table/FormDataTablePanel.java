@@ -210,6 +210,12 @@ public class FormDataTablePanel extends AbstractTablePanel<HttpFormData> {
         public Component getTableCellRendererComponent(JTable table, Object value,
                                                        boolean isSelected, boolean hasFocus, int row, int column) {
             String typeValue = value != null ? value.toString() : HttpFormData.TYPE_TEXT;
+            Color background = TableUIConstants.getCellBackground(isSelected, row == hoveredRow, false, table, row);
+            Color foreground = isSelected ? table.getSelectionForeground() : table.getForeground();
+            setBackground(background);
+            iconLabel.setBackground(background);
+            textLabel.setBackground(background);
+            textLabel.setForeground(foreground);
 
             // 根据类型设置图标和文本
             if (HttpFormData.TYPE_FILE.equalsIgnoreCase(typeValue)) {

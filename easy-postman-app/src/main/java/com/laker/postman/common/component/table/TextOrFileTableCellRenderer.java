@@ -27,9 +27,10 @@ public class TextOrFileTableCellRenderer implements TableCellRenderer {
     public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
         // 从类型列获取单元格类型
         Object type = table.getValueAt(row, typeColumnIndex);
+        boolean isFileType = TableUIConstants.FILE_TYPE.equalsIgnoreCase(String.valueOf(type));
         Component c;
 
-        if (TableUIConstants.FILE_TYPE.equals(type)) {
+        if (isFileType) {
             c = fileRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
         } else {
             c = textRenderer.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
@@ -43,10 +44,10 @@ public class TextOrFileTableCellRenderer implements TableCellRenderer {
         boolean isEmpty = cellValue == null || cellValue.trim().isEmpty();
         boolean isHovered = row == hoverRow;
 
-        c.setBackground(TableUIConstants.getCellBackground(isSelected, isHovered, isEmpty, table));
+        c.setBackground(TableUIConstants.getCellBackground(isSelected, isHovered, isEmpty, table, row));
 
         // 为文本单元格添加内边距
-        if (!(TableUIConstants.FILE_TYPE.equals(type))) {
+        if (!isFileType) {
             if (c instanceof JLabel) {
                 ((JLabel) c).setBorder(TableUIConstants.createLabelBorder());
             }

@@ -267,6 +267,8 @@ public abstract class AbstractTablePanel<T> extends JPanel {
                 if (hoveredRow != -1 || hoveredColumn != -1) {
                     hoveredRow = -1;
                     hoveredColumn = -1;
+                    table.putClientProperty("hoverRow", -1);
+                    table.putClientProperty("hoverColumn", -1);
                     updateDeleteButtonCursor(-1, -1);
                     table.repaint();
                 }
@@ -306,6 +308,8 @@ public abstract class AbstractTablePanel<T> extends JPanel {
                 boolean hoverChanged = row != hoveredRow || column != hoveredColumn;
                 hoveredRow = row;
                 hoveredColumn = column;
+                table.putClientProperty("hoverRow", row);
+                table.putClientProperty("hoverColumn", column);
                 updateDeleteButtonCursor(row, column);
                 if (hoverChanged) {
                     table.repaint();
@@ -953,13 +957,8 @@ public abstract class AbstractTablePanel<T> extends JPanel {
         public Component getTableCellRendererComponent(JTable table, Object value,
                                                        boolean isSelected, boolean hasFocus, int row, int column) {
             // Set background
-            if (isSelected) {
-                setBackground(table.getSelectionBackground());
-                setForeground(table.getSelectionForeground());
-            } else {
-                setBackground(table.getBackground());
-                setForeground(table.getForeground());
-            }
+            setBackground(TableUIConstants.getCellBackground(isSelected, row == hoveredRow, false, table, row));
+            setForeground(isSelected ? table.getSelectionForeground() : table.getForeground());
 
             // Clear icon by default
             setIcon(null);
@@ -975,7 +974,7 @@ public abstract class AbstractTablePanel<T> extends JPanel {
                 setIcon(deleteIcon);
                 setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
                 if (!isSelected && row == hoveredRow && column == hoveredColumn) {
-                    setBackground(TableUIConstants.getHoverColor());
+                    setBackground(TableUIConstants.getCellBackground(false, true, false, table, row));
                 }
             }
 

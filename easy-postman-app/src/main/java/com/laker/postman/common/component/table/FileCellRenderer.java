@@ -30,13 +30,13 @@ public class FileCellRenderer implements TableCellRenderer {
         if (isEmpty) {
             // 未选择文件时显示按钮样式
             JButton button = createFileButton(TableUIConstants.SELECT_FILE_TEXT, true);
-            button.setBackground(TableUIConstants.getCellBackground(isSelected, isHovered, true, table));
+            button.setBackground(TableUIConstants.getCellBackground(isSelected, isHovered, true, table, row));
             return button;
         } else {
             // 已选择文件时显示文件信息
             JPanel panel = new JPanel(new BorderLayout(5, 0));
             panel.setOpaque(true);
-            panel.setBackground(TableUIConstants.getCellBackground(isSelected, isHovered, false, table));
+            panel.setBackground(TableUIConstants.getCellBackground(isSelected, isHovered, false, table, row));
 
             // 创建并添加文件图标
             JLabel iconLabel = new JLabel();

@@ -23,11 +23,11 @@ import java.io.InputStream;
 @UtilityClass
 public class EditorThemeUtil {
 
-    private static final Color DARK_EDITOR_BACKGROUND = new Color(0x3A, 0x3D, 0x3F);
-    private static final Color DARK_GUTTER_BACKGROUND = new Color(0x38, 0x3B, 0x3D);
-    private static final Color DARK_EDITOR_DIVIDER = new Color(0x45, 0x49, 0x4C);
-    private static final Color DARK_LINE_NUMBER = new Color(0x74, 0x7A, 0x82);
-    private static final Color DARK_CURRENT_LINE_NUMBER = new Color(0xA9, 0xB7, 0xC6);
+    private static final Color DARK_EDITOR_BACKGROUND = new Color(0x1E, 0x1F, 0x22);
+    private static final Color DARK_GUTTER_BACKGROUND = new Color(0x1C, 0x1D, 0x20);
+    private static final Color DARK_EDITOR_DIVIDER = new Color(0x2B, 0x2D, 0x30);
+    private static final Color DARK_LINE_NUMBER = new Color(0x6F, 0x73, 0x7A);
+    private static final Color DARK_CURRENT_LINE_NUMBER = new Color(0xAE, 0xB6, 0xC2);
     private static final Color LIGHT_EDITOR_BACKGROUND = Color.WHITE;
     private static final Color LIGHT_GUTTER_BACKGROUND = Color.WHITE;
     private static final Color LIGHT_EDITOR_DIVIDER = new Color(0xE0, 0xE0, 0xE0);

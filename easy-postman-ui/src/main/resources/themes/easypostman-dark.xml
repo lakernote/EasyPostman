@@ -11,29 +11,29 @@
 	<!-- Omitting baseFont will use a system-appropriate monospaced. -->
 	<!--<baseFont family="..." size="13"/>-->
 
-	<!--  General editor colors - 使用与应用主题一致的背景色 -->
-	<background color="3A3D3F" />  <!-- 略低于面板背景，减少大面积灰块的浮躁感 -->
-	<caret color="A9B7C6" />  <!-- 浅灰色光标，易于识别 -->
+	<!-- General editor colors - IDEA-like dark editor surface -->
+	<background color="1E1F22" />
+	<caret color="CED0D6" />
 	<selection useFG="false" bg="214283" roundedEdges="true" />  <!-- 蓝色选中背景，圆角 -->
-	<currentLineHighlight color="414548" fade="true" />  <!-- 当前行高亮 -->
-	<marginLine fg="45494C" />  <!-- 边距线，暗色下避免过亮 -->
-	<markAllHighlight color="4A6B7C" />  <!-- 标记所有匹配项 -->
-	<markOccurrencesHighlight color="4A6B7C" />  <!-- 标记出现次数 -->
-	<matchedBracket fg="FFEF28" bg="3B514D" highlightBoth="true" animate="true" />  <!-- 匹配的括号 - 黄色 -->
+	<currentLineHighlight color="24262B" fade="true" />  <!-- 当前行高亮 -->
+	<marginLine fg="303238" />  <!-- 边距线，暗色下避免过亮 -->
+	<markAllHighlight color="3C4A32" />  <!-- 标记所有匹配项 -->
+	<markOccurrencesHighlight color="3B4B5F" />  <!-- 标记出现次数 -->
+	<matchedBracket fg="FFEF28" bg="2B4C46" highlightBoth="true" animate="true" />  <!-- 匹配的括号 - 黄色 -->
 	<hyperlinks fg="589DF6" />  <!-- 超链接 - 蓝色 -->
 
 	<!-- 多语言支持 -->
 	<secondaryLanguages>
-		<language index="1" bg="2B2B2B" />
-		<language index="2" bg="2D2D2D" />
-		<language index="3" bg="2F2F2F" />
+		<language index="1" bg="202124" />
+		<language index="2" bg="222326" />
+		<language index="3" bg="242529" />
 	</secondaryLanguages>
 
 	<!-- Gutter styling - 行号区域样式 -->
-	<gutterBackground color="383B3D" />
-	<gutterBorder color="45494C" />
-	<lineNumbers fg="747A82" currentFG="A9B7C6"/>  <!-- 当前行号更亮 -->
-	<foldIndicator fg="7E858D" armedFg="B8C0CA" iconBg="383B3D" iconArmedBg="45494C" />
+	<gutterBackground color="1C1D20" />
+	<gutterBorder color="2B2D30" />
+	<lineNumbers fg="6F737A" currentFG="AEB6C2"/>  <!-- 当前行号更亮 -->
+	<foldIndicator fg="6F737A" armedFg="AEB6C2" iconBg="1C1D20" iconArmedBg="2B2D30" />
 	<iconRowHeader activeLineRange="3592C4" />
 
 	<!-- Syntax tokens - 语法高亮配色 -->

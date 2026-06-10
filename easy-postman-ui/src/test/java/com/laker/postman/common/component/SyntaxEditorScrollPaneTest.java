@@ -34,7 +34,7 @@ public class SyntaxEditorScrollPaneTest {
 
         SyntaxEditorScrollPane scrollPane = new SyntaxEditorScrollPane(new RSyntaxTextArea());
 
-        assertEquals(scrollPane.getViewport().getBackground(), new Color(0x3A, 0x3D, 0x3F));
+        assertEquals(scrollPane.getViewport().getBackground(), new Color(0x1E, 0x1F, 0x22));
         assertEquals(scrollPane.getVerticalScrollBarPolicy(), ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         assertEquals(scrollPane.getHorizontalScrollBarPolicy(), ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         assertTrue(scrollPane.getBorder() instanceof EmptyBorder);

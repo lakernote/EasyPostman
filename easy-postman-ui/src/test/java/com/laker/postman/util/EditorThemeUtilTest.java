@@ -61,20 +61,32 @@ public class EditorThemeUtilTest {
     }
 
     @Test
-    public void scrollPaneThemeShouldUseComfortableDarkEditorChrome() {
+    public void loadThemeShouldApplyIdeaLikeDarkEditorSurface() {
+        FlatDarkLaf.setup();
+        RSyntaxTextArea textArea = new RSyntaxTextArea();
+
+        EditorThemeUtil.loadTheme(textArea);
+
+        assertEquals(textArea.getBackground(), new Color(0x1E, 0x1F, 0x22));
+        assertEquals(textArea.getCaretColor(), new Color(0xCE, 0xD0, 0xD6));
+        assertEquals(textArea.getSelectionColor(), new Color(0x21, 0x42, 0x83));
+    }
+
+    @Test
+    public void scrollPaneThemeShouldUseIdeaLikeDarkEditorChrome() {
         FlatDarkLaf.setup();
         RTextScrollPane scrollPane = new RTextScrollPane(new RSyntaxTextArea());
 
         EditorThemeUtil.applyScrollPaneChrome(scrollPane);
 
         Gutter gutter = scrollPane.getGutter();
-        assertEquals(scrollPane.getViewport().getBackground(), new Color(0x3A, 0x3D, 0x3F));
-        assertEquals(gutter.getBackground(), new Color(0x38, 0x3B, 0x3D));
-        assertEquals(gutter.getBorderColor(), new Color(0x45, 0x49, 0x4C));
-        assertEquals(gutter.getLineNumberColor(), new Color(0x74, 0x7A, 0x82));
-        assertEquals(gutter.getCurrentLineNumberColor(), new Color(0xA9, 0xB7, 0xC6));
+        assertEquals(scrollPane.getViewport().getBackground(), new Color(0x1E, 0x1F, 0x22));
+        assertEquals(gutter.getBackground(), new Color(0x1C, 0x1D, 0x20));
+        assertEquals(gutter.getBorderColor(), new Color(0x2B, 0x2D, 0x30));
+        assertEquals(gutter.getLineNumberColor(), new Color(0x6F, 0x73, 0x7A));
+        assertEquals(gutter.getCurrentLineNumberColor(), new Color(0xAE, 0xB6, 0xC2));
         assertEditorScrollPaneBorderless(scrollPane);
-        assertEditorScrollBarsBlendWith(scrollPane, new Color(0x3A, 0x3D, 0x3F));
+        assertEditorScrollBarsBlendWith(scrollPane, new Color(0x1E, 0x1F, 0x22));
     }
 
     @Test

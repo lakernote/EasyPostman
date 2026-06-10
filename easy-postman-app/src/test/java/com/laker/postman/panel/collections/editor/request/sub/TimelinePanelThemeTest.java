@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.common.constants.ThemeColors;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -22,6 +23,7 @@ public class TimelinePanelThemeTest {
                 ThemeColors.SURFACE,
                 ThemeColors.BACKGROUND,
                 ThemeColors.BORDER_LIGHT,
+                ThemeColors.BORDER_MEDIUM,
                 ThemeColors.TEXT_PRIMARY,
                 ThemeColors.TEXT_SECONDARY,
                 ThemeColors.TEXT_HINT,
@@ -50,9 +52,35 @@ public class TimelinePanelThemeTest {
         UIManager.put(ThemeColors.BORDER_LIGHT, border);
 
         assertEquals(TimelineTheme.panelBackground(), surface);
-        assertEquals(TimelineTheme.infoBackground(), background);
-        assertEquals(TimelineTheme.barAreaBackground(), background);
+        Color sectionBackground = ModernColors.blendColors(
+                surface,
+                background,
+                ModernColors.isDarkTheme() ? 0.45f : 0.35f
+        );
+        assertEquals(TimelineTheme.infoBackground(), sectionBackground);
+        assertEquals(TimelineTheme.barAreaBackground(), sectionBackground);
         assertEquals(TimelineTheme.infoBorder(), border);
+    }
+
+    @Test
+    public void trackColorsShouldUseSemanticSurfaceAndDividerTokens() {
+        Color surface = new Color(244, 245, 246);
+        Color background = new Color(34, 35, 36);
+        Color divider = new Color(214, 215, 216);
+        Color border = new Color(224, 225, 226);
+        UIManager.put(ThemeColors.SURFACE, surface);
+        UIManager.put(ThemeColors.BACKGROUND, background);
+        UIManager.put(ThemeColors.DIVIDER, divider);
+        UIManager.put(ThemeColors.BORDER_MEDIUM, border);
+
+        Color base = ModernColors.isDarkTheme() ? background : surface;
+        assertEquals(TimelineTheme.barTrackBackground(),
+                ModernColors.blendColors(base, divider, ModernColors.isDarkTheme() ? 0.36f : 0.28f));
+        assertEquals(TimelineTheme.barTrackBorder(),
+                ModernColors.withAlpha(divider, ModernColors.isDarkTheme() ? 170 : 145));
+        assertEquals(TimelineTheme.gridLine(),
+                ModernColors.withAlpha(divider, ModernColors.isDarkTheme() ? 95 : 105));
+        assertEquals(TimelineTheme.zeroDurationBar(), border);
     }
 
     @Test

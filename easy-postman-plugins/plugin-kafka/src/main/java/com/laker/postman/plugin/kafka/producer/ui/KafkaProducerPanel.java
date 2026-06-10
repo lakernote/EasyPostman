@@ -65,7 +65,7 @@ public class KafkaProducerPanel extends JPanel {
                 "[]8[grow,fill]8[]8[grow,fill]",
                 "[]"
         ));
-        form.setOpaque(false);
+        ToolWindowSurfaceStyle.applySectionCard(form);
 
         topicField = new JTextField("");
         topicField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, t(MessageKeys.TOOLBOX_KAFKA_TOPIC_PLACEHOLDER));
@@ -101,7 +101,7 @@ public class KafkaProducerPanel extends JPanel {
         advancedToggleBtn.addActionListener(e -> advancedPanel.setVisible(advancedToggleBtn.isSelected()));
 
         JPanel headersPanel = new JPanel(new BorderLayout());
-        headersPanel.setOpaque(false);
+        ToolWindowSurfaceStyle.applySectionCard(headersPanel);
         JPanel headersHeader = new JPanel(new MigLayout("insets 4 8 4 8, fillx", "[]push", "[]"));
         ToolWindowSurfaceStyle.applySectionHeader(headersHeader);
         JLabel headersLbl = new JLabel(t(MessageKeys.TOOLBOX_KAFKA_HEADERS));
@@ -119,7 +119,7 @@ public class KafkaProducerPanel extends JPanel {
         headersPanel.add(headersScroll, BorderLayout.CENTER);
 
         JPanel payloadPanel = new JPanel(new BorderLayout());
-        payloadPanel.setOpaque(false);
+        ToolWindowSurfaceStyle.applySectionCard(payloadPanel);
         JPanel payloadHeader = new JPanel(new MigLayout("insets 4 8 4 8, fillx", "[]push[]", "[]"));
         ToolWindowSurfaceStyle.applySectionHeader(payloadHeader);
         JLabel payloadLbl = new JLabel(t(MessageKeys.TOOLBOX_KAFKA_PAYLOAD));
@@ -149,7 +149,7 @@ public class KafkaProducerPanel extends JPanel {
         payloadPanel.add(payloadHeader, BorderLayout.NORTH);
         payloadPanel.add(payloadSearchableArea, BorderLayout.CENTER);
 
-        JSplitPane editorSplit = ToolWindowChrome.createVerticalCardSplitPane(headersPanel, payloadPanel, 100);
+        JSplitPane editorSplit = ToolWindowChrome.createVerticalInnerSplitPane(headersPanel, payloadPanel, 100);
         editorSplit.setDividerLocation(100);
         editorSplit.setResizeWeight(0.25);
 

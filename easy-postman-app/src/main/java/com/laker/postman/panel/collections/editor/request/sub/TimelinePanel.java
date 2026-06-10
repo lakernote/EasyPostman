@@ -2,7 +2,6 @@ package com.laker.postman.panel.collections.editor.request.sub;
 
 import com.laker.postman.http.runtime.model.HttpEventInfo;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
-import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -23,27 +22,29 @@ public class TimelinePanel extends JPanel {
     private int hoveredBarIndex = -1; // 当前鼠标悬停的瀑布条索引
 
     // 瀑布图参数
-    private static final int BAR_HEIGHT = 22; // 瀑布条的高度（增加到22）
-    private static final int BAR_GAP = 6; // 瀑布条之间的垂直间距（增加）
-    private static final int RIGHT_PAD = 32; // 右侧内边距
-    private static final int TOP_PAD = 20; // 顶部内边距（增加）
-    private static final int BOTTOM_PAD = 8; // 底部内边距
-    private static final int BAR_RADIUS = 6; // 瀑布条圆角半径（减小，更现代）
-    private static final int MIN_BAR_WIDTH = 14; // 瀑布条最小宽度
-    private static final int LABEL_LEFT_PAD = 24; // 标签左侧内边距
-    private static final int LABEL_RIGHT_PAD = 14; // 标签右侧内边距（增加）
-    private static final int DESC_LEFT_PAD = 20; // 描述文本左侧内边距（增加）
+    private static final int SECTION_RADIUS = 8;
+    private static final int BAR_HEIGHT = 18;
+    private static final int BAR_GAP = 8;
+    private static final int RIGHT_PAD = 36;
+    private static final int TOP_PAD = 22;
+    private static final int BOTTOM_PAD = 22;
+    private static final int BAR_RADIUS = 5;
+    private static final int MIN_BAR_WIDTH = 14;
+    private static final int LABEL_LEFT_PAD = 26;
+    private static final int LABEL_RIGHT_PAD = 18;
 
     // 信息区参数
-    private static final int INFO_BLOCK_H_GAP = 18; // 信息区块之间的水平间距（增加）
-    private static final int INFO_BLOCK_V_GAP = 6; // 信息区块之间的垂直间距（增加）
-    private static final int INFO_TEXT_LINE_HEIGHT = 20; // 信息文本行高（增加）
+    private static final int INFO_BLOCK_H_GAP = 16;
+    private static final int INFO_BLOCK_V_GAP = 10;
+    private static final int INFO_TEXT_TOP_PAD = 14;
+    private static final int INFO_TEXT_LINE_HEIGHT = 20;
     private static final int INFO_TEXT_EXTRA_GAP = 4; // 信息区每项之间额外空白
-    private static final int INFO_TEXT_BOTTOM_PAD = 24;  // 信息区底部内边距（增加，避免最后一行与边框太近）
-    private static final int INFO_TEXT_LEFT_PAD = 24; // 信息区左侧内边距（增加）
+    private static final int INFO_TEXT_BOTTOM_PAD = 16;
+    private static final int INFO_TEXT_LEFT_PAD = 18;
+    private static final int INFO_VALUE_X_OFFSET = 130;
 
     // 区域间距
-    private static final int AREA_GAP = 10; // 信息区和瀑布条区域之间的间距
+    private static final int AREA_GAP = 12;
 
     public TimelinePanel(List<Stage> stages, HttpEventInfo httpEventInfo) {
         setLayout(new BorderLayout()); // 明确使用 BorderLayout
@@ -104,7 +105,7 @@ public class TimelinePanel extends JPanel {
         }
 
         int infoTextBlockHeight = getInfoBlockHeight();
-        int barY = infoTextBlockHeight + INFO_BLOCK_V_GAP + AREA_GAP + TOP_PAD;
+        int barY = INFO_BLOCK_V_GAP + infoTextBlockHeight + AREA_GAP + TOP_PAD;
 
         for (int i = 0; i < stages.size(); i++) {
             int barBottom = barY + BAR_HEIGHT;
@@ -119,8 +120,8 @@ public class TimelinePanel extends JPanel {
 
     @Override
     public Dimension getPreferredSize() {
-        // 统一计算 label、desc 最大宽度
-        int labelMaxWidth = 80, descMaxWidth = 80;
+        // 统一计算 label 最大宽度；阶段说明只在 tooltip 中展示，不参与瀑布条宽度预算。
+        int labelMaxWidth = 80;
         Graphics g = getGraphics();
         if (g != null) {
             g.setFont(FontsUtil.getDefaultFont(Font.BOLD));
@@ -128,22 +129,14 @@ public class TimelinePanel extends JPanel {
                 int w = g.getFontMetrics().stringWidth(s.label);
                 if (w > labelMaxWidth) labelMaxWidth = w;
             }
-            g.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-            ; // 使用用户设置的字体大小
-            for (Stage s : stages) {
-                if (s.desc != null && !s.desc.isEmpty()) {
-                    int w = g.getFontMetrics().stringWidth(s.desc);
-                    if (w > descMaxWidth) descMaxWidth = w;
-                }
-            }
         }
         int leftPad = LABEL_LEFT_PAD + labelMaxWidth + LABEL_RIGHT_PAD;
         int infoTextBlockHeight = getInfoBlockHeight();
-        int w = leftPad + 150 + DESC_LEFT_PAD + descMaxWidth + RIGHT_PAD;
+        int w = leftPad + 480 + RIGHT_PAD;
         // 总高度 = 顶部间距 + 信息区高度 + 底部间距 + 区域间距 + 顶部内边距 + 瀑布条总高度 + 底部内边距 + 底部间距
-        int barsTotalHeight = stages.size() * BAR_HEIGHT + (stages.size() - 1) * BAR_GAP;
-        int h = INFO_BLOCK_V_GAP + infoTextBlockHeight + INFO_BLOCK_V_GAP + AREA_GAP + TOP_PAD + barsTotalHeight + BOTTOM_PAD + INFO_BLOCK_V_GAP;
-        h = Math.min(h, 450); // 稍微增加最大高度限制
+        int barsTotalHeight = stages.isEmpty() ? 0 : stages.size() * BAR_HEIGHT + (stages.size() - 1) * BAR_GAP;
+        int h = INFO_BLOCK_V_GAP + infoTextBlockHeight + AREA_GAP + TOP_PAD + barsTotalHeight + BOTTOM_PAD + INFO_BLOCK_V_GAP;
+        h = Math.min(h, 430);
         return new Dimension(w, Math.max(h, 150));
     }
 
@@ -151,8 +144,9 @@ public class TimelinePanel extends JPanel {
     private int getInfoBlockHeight() {
         int infoLines = getInfoLinesCount();
         int minLines = 7;
-        // 每行高度加上额外空白
-        return INFO_BLOCK_V_GAP + Math.max(infoLines, minLines) * (INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP) + INFO_TEXT_BOTTOM_PAD;
+        return INFO_TEXT_TOP_PAD
+                + Math.max(infoLines, minLines) * (INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP)
+                + INFO_TEXT_BOTTOM_PAD;
     }
 
     @Override
@@ -168,13 +162,15 @@ public class TimelinePanel extends JPanel {
 
         // 1. 绘制信息区
         int infoTextBlockHeight = getInfoBlockHeight();
+        int sectionX = INFO_BLOCK_H_GAP;
+        int sectionWidth = Math.max(0, getWidth() - 2 * INFO_BLOCK_H_GAP);
         g2.setColor(TimelineTheme.infoBackground());
-        g2.fillRoundRect(INFO_BLOCK_H_GAP, INFO_BLOCK_V_GAP, getWidth() - 2 * INFO_BLOCK_H_GAP, infoTextBlockHeight - 2, 10, 10);
+        g2.fillRoundRect(sectionX, INFO_BLOCK_V_GAP, sectionWidth, infoTextBlockHeight, SECTION_RADIUS, SECTION_RADIUS);
         g2.setColor(TimelineTheme.infoBorder());
         g2.setStroke(new BasicStroke(1.0f));
-        g2.drawRoundRect(INFO_BLOCK_H_GAP, INFO_BLOCK_V_GAP, getWidth() - 2 * INFO_BLOCK_H_GAP, infoTextBlockHeight - 2, 10, 10);
-        int infoY = INFO_BLOCK_V_GAP + INFO_TEXT_LINE_HEIGHT - 3;
+        g2.drawRoundRect(sectionX, INFO_BLOCK_V_GAP, sectionWidth, infoTextBlockHeight, SECTION_RADIUS, SECTION_RADIUS);
         g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        int infoY = INFO_BLOCK_V_GAP + INFO_TEXT_TOP_PAD + g2.getFontMetrics().getAscent();
         g2.setColor(TimelineTheme.infoText());
         // 动态渲染字段并在remote address/cipher name下方画线
         String protocol = null, localAddr = null, remoteAddr = null, tls = null, cipher = null, certCN = null, issuerCN = null, validUntil = null;
@@ -193,71 +189,84 @@ public class TimelinePanel extends JPanel {
                 }
             }
         }
-        int labelX = INFO_TEXT_LEFT_PAD;
-        int valueXOffset = 110;
-        int lineStartX = INFO_TEXT_LEFT_PAD;
-        int lineEndX = getWidth() - INFO_TEXT_LEFT_PAD;
+        int labelX = sectionX + INFO_TEXT_LEFT_PAD;
+        int valueX = labelX + INFO_VALUE_X_OFFSET;
+        int lineStartX = labelX;
+        int lineEndX = getWidth() - INFO_BLOCK_H_GAP - INFO_TEXT_LEFT_PAD;
         int remoteLineY = -1, cipherLineY = -1;
         // HTTP Version
         g2.setFont(FontsUtil.getDefaultFont(Font.BOLD));
-        g2.setColor(TimelineTheme.infoText());
+        g2.setColor(TimelineTheme.labelText());
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_HTTP_VERSION), labelX, infoY);
         g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        g2.drawString(protocol != null ? protocol : "-", labelX + valueXOffset, infoY);
+        g2.setColor(TimelineTheme.infoText());
+        g2.drawString(protocol != null ? protocol : "-", valueX, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // Local Address
         g2.setFont(FontsUtil.getDefaultFont(Font.BOLD));
+        g2.setColor(TimelineTheme.labelText());
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_LOCAL_ADDRESS), labelX, infoY);
         g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        g2.drawString(localAddr != null ? localAddr : "-", labelX + valueXOffset, infoY);
+        g2.setColor(TimelineTheme.infoText());
+        g2.drawString(localAddr != null ? localAddr : "-", valueX, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // Remote Address
         g2.setFont(FontsUtil.getDefaultFont(Font.BOLD));
+        g2.setColor(TimelineTheme.labelText());
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_REMOTE_ADDRESS), labelX, infoY);
         g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        g2.drawString(remoteAddr != null ? remoteAddr : "-", labelX + valueXOffset, infoY);
+        g2.setColor(TimelineTheme.infoText());
+        g2.drawString(remoteAddr != null ? remoteAddr : "-", valueX, infoY);
         if (remoteAddr != null && !remoteAddr.isEmpty()) remoteLineY = infoY + 5;
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         if (remoteLineY > 0) {
             g2.setColor(TimelineTheme.separator());
             g2.drawLine(lineStartX, remoteLineY, lineEndX, remoteLineY);
-            g2.setColor(TimelineTheme.infoText());
         }
         // TLS Protocol
         g2.setFont(FontsUtil.getDefaultFont(Font.BOLD));
+        g2.setColor(TimelineTheme.labelText());
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_TLS_PROTOCOL), labelX, infoY);
         g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        g2.drawString(tls != null ? tls : "-", labelX + valueXOffset, infoY);
+        g2.setColor(TimelineTheme.infoText());
+        g2.drawString(tls != null ? tls : "-", valueX, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // Cipher Name
         g2.setFont(FontsUtil.getDefaultFont(Font.BOLD));
+        g2.setColor(TimelineTheme.labelText());
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_CIPHER_NAME), labelX, infoY);
         g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        g2.drawString(cipher != null ? cipher : "-", labelX + valueXOffset, infoY);
+        g2.setColor(TimelineTheme.infoText());
+        g2.drawString(cipher != null ? cipher : "-", valueX, infoY);
         if (cipher != null && !cipher.isEmpty()) cipherLineY = infoY + 5;
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         if (cipherLineY > 0) {
             g2.setColor(TimelineTheme.separator());
             g2.drawLine(lineStartX, cipherLineY, lineEndX, cipherLineY);
-            g2.setColor(TimelineTheme.infoText());
         }
         // Certificate CN
         g2.setFont(FontsUtil.getDefaultFont(Font.BOLD));
+        g2.setColor(TimelineTheme.labelText());
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_CERTIFICATE_CN), labelX, infoY);
         g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        g2.drawString(certCN != null ? certCN : "-", labelX + valueXOffset, infoY);
+        g2.setColor(TimelineTheme.infoText());
+        g2.drawString(certCN != null ? certCN : "-", valueX, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // Issuer CN
         g2.setFont(FontsUtil.getDefaultFont(Font.BOLD));
+        g2.setColor(TimelineTheme.labelText());
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_ISSUER_CN), labelX, infoY);
         g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        g2.drawString(issuerCN != null ? issuerCN : "-", labelX + valueXOffset, infoY);
+        g2.setColor(TimelineTheme.infoText());
+        g2.drawString(issuerCN != null ? issuerCN : "-", valueX, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         // Valid Until
         g2.setFont(FontsUtil.getDefaultFont(Font.BOLD));
+        g2.setColor(TimelineTheme.labelText());
         g2.drawString(I18nUtil.getMessage(MessageKeys.WATERFALL_VALID_UNTIL), labelX, infoY);
         g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        g2.drawString(validUntil != null ? validUntil : "-", labelX + valueXOffset, infoY);
+        g2.setColor(TimelineTheme.infoText());
+        g2.drawString(validUntil != null ? validUntil : "-", valueX, infoY);
         infoY += INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
 
         // SSL Certificate Warning - 如果有警告则显示
@@ -269,7 +278,7 @@ public class TimelinePanel extends JPanel {
 
             // 处理过长的警告文本，可能需要换行或截断
             String warning = httpEventInfo.getSslCertWarning();
-            int maxWarningWidth = getWidth() - INFO_TEXT_LEFT_PAD - valueXOffset - 30;
+            int maxWarningWidth = Math.max(0, lineEndX - valueX - 12);
             FontMetrics fm = g2.getFontMetrics();
 
             if (fm.stringWidth(warning) > maxWarningWidth) {
@@ -278,47 +287,43 @@ public class TimelinePanel extends JPanel {
                 while (fm.stringWidth(truncated + "...") > maxWarningWidth && !truncated.isEmpty()) {
                     truncated = truncated.substring(0, truncated.length() - 1);
                 }
-                g2.drawString(truncated + "...", labelX + valueXOffset, infoY);
+                g2.drawString(truncated + "...", valueX, infoY);
             } else {
-                g2.drawString(warning, labelX + valueXOffset, infoY);
+                g2.drawString(warning, valueX, infoY);
             }
             g2.setColor(TimelineTheme.infoText()); // 恢复默认颜色
         }
 
         // 2. 绘制瀑布条区域背景和边框
-        int barAreaTop = infoTextBlockHeight + INFO_BLOCK_V_GAP + AREA_GAP;
-        int barAreaHeight = getHeight() - barAreaTop - INFO_BLOCK_V_GAP;
+        int n = stages.size();
+        int barsTotalHeight = n > 0 ? n * BAR_HEIGHT + (n - 1) * BAR_GAP : 0;
+        int barAreaTop = INFO_BLOCK_V_GAP + infoTextBlockHeight + AREA_GAP;
+        int barAreaHeight = TOP_PAD + barsTotalHeight + BOTTOM_PAD;
 
         // 绘制瀑布条区域背景
         g2.setColor(TimelineTheme.barAreaBackground());
-        g2.fillRoundRect(INFO_BLOCK_H_GAP, barAreaTop, getWidth() - 2 * INFO_BLOCK_H_GAP, barAreaHeight, 10, 10);
+        g2.fillRoundRect(sectionX, barAreaTop, sectionWidth, barAreaHeight, SECTION_RADIUS, SECTION_RADIUS);
 
         // 绘制瀑布条区域边框（与信息区边框一致）
         g2.setColor(TimelineTheme.infoBorder());
         g2.setStroke(new BasicStroke(1.0f));
-        g2.drawRoundRect(INFO_BLOCK_H_GAP, barAreaTop, getWidth() - 2 * INFO_BLOCK_H_GAP, barAreaHeight, 10, 10);
+        g2.drawRoundRect(sectionX, barAreaTop, sectionWidth, barAreaHeight, SECTION_RADIUS, SECTION_RADIUS);
 
         // 3. 绘制瀑布条
-        int gapBetweenBarAndDesc = 20;
         int labelMaxWidth = 0;
-        int descMaxWidth = 0;
         g2.setFont(FontsUtil.getDefaultFont(Font.BOLD));
         for (Stage s : stages) {
             int w = g2.getFontMetrics().stringWidth(s.label);
             if (w > labelMaxWidth) labelMaxWidth = w;
         }
-        g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        for (Stage s : stages) {
-            if (s.desc != null && !s.desc.isEmpty()) {
-                int w = g2.getFontMetrics().stringWidth(s.desc);
-                if (w > descMaxWidth) descMaxWidth = w;
-            }
-        }
-        int leftPad = LABEL_LEFT_PAD + labelMaxWidth + LABEL_RIGHT_PAD;
+        int stageLabelX = sectionX + LABEL_LEFT_PAD;
+        int barStartX = stageLabelX + labelMaxWidth + LABEL_RIGHT_PAD;
         int panelW = getWidth();
-        int n = stages.size();
         int minBarSum = MIN_BAR_WIDTH * n;
-        int availableBarSum = panelW - leftPad - gapBetweenBarAndDesc - descMaxWidth - RIGHT_PAD;
+        int availableBarSum = Math.max(
+                minBarSum,
+                panelW - barStartX - RIGHT_PAD
+        );
         int totalBarSum = 0;
         long totalDuration = total > 0 ? total : 1;
         int[] barWidths = new int[n];
@@ -345,8 +350,11 @@ public class TimelinePanel extends JPanel {
 
         // 绘制
         // 瀑布条Y坐标 = 信息区高度 + 信息区底部间距 + 区域间距 + 瀑布条区域顶部内边距
-        int barY = infoTextBlockHeight + INFO_BLOCK_V_GAP + AREA_GAP + TOP_PAD;
-        int currentX = leftPad;
+        int barY = barAreaTop + TOP_PAD;
+        int currentX = barStartX;
+        int trackRightX = Math.max(barStartX + MIN_BAR_WIDTH, panelW - RIGHT_PAD);
+        int trackWidth = Math.max(MIN_BAR_WIDTH, trackRightX - barStartX);
+        setToolTipText(null);
 
         // 计算文字垂直居中的位置
         g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
@@ -363,7 +371,7 @@ public class TimelinePanel extends JPanel {
             boolean isHovered = (i == hoveredBarIndex);
             if (isHovered) {
                 g2.setColor(TimelineTheme.hoveredBarBackground());
-                g2.fillRoundRect(INFO_BLOCK_H_GAP + 8, barY - 3, getWidth() - 2 * INFO_BLOCK_H_GAP - 16, BAR_HEIGHT + 6, 6, 6);
+                g2.fillRoundRect(sectionX + 8, barY - 4, Math.max(0, sectionWidth - 16), BAR_HEIGHT + 8, 6, 6);
             }
 
             // label 区域
@@ -382,7 +390,7 @@ public class TimelinePanel extends JPanel {
                     }
                 }
             }
-            g2.drawString(label, labelX, barY + textYOffset);
+            g2.drawString(label, stageLabelX, barY + textYOffset);
 
             // 设置 tooltip 显示完整信息
             if (isHovered) {
@@ -393,14 +401,25 @@ public class TimelinePanel extends JPanel {
                 setToolTipText(s.label);
             }
 
+            // 先绘制整行时间轨道，让瀑布条不再悬浮在大块背景上。
+            g2.setStroke(new BasicStroke(1.0f));
+            g2.setColor(TimelineTheme.barTrackBackground());
+            g2.fillRoundRect(barStartX, barY, trackWidth, BAR_HEIGHT, BAR_RADIUS, BAR_RADIUS);
+            g2.setColor(TimelineTheme.barTrackBorder());
+            g2.drawRoundRect(barStartX, barY, trackWidth, BAR_HEIGHT, BAR_RADIUS, BAR_RADIUS);
+            g2.setColor(TimelineTheme.gridLine());
+            for (int grid = 1; grid < 4; grid++) {
+                int gridX = barStartX + trackWidth * grid / 4;
+                g2.drawLine(gridX, barY + 2, gridX, barY + BAR_HEIGHT - 2);
+            }
+
             // bar 区域 - 优化渐变和阴影效果
             if (barW <= 3) {
-                // 非常窄的条使用纯色
-                g2.setColor(color);
-                g2.fillRect(currentX, barY, barW, BAR_HEIGHT);
+                g2.setColor(TimelineTheme.zeroDurationBar());
+                g2.fillRoundRect(currentX, barY + 2, Math.max(2, barW), BAR_HEIGHT - 4, 3, 3);
             } else {
                 g2.setColor(TimelineTheme.barShadow());
-                g2.fillRoundRect(currentX + 1, barY + 2, barW, BAR_HEIGHT, BAR_RADIUS, BAR_RADIUS);
+                g2.fillRoundRect(currentX + 1, barY + 1, barW, BAR_HEIGHT, BAR_RADIUS, BAR_RADIUS);
 
                 // 使用垂直渐变，从稍亮到稍暗
                 float brightnessMultiplier = 1.1f;
@@ -422,12 +441,7 @@ public class TimelinePanel extends JPanel {
                 g2.setPaint(gp);
                 g2.fillRoundRect(currentX, barY, barW, BAR_HEIGHT, BAR_RADIUS, BAR_RADIUS);
 
-                // 添加高光效果（顶部细线）
-                int highlightAlpha = 40;
-                if (isHovered) {
-                    highlightAlpha = 60;
-                }
-                g2.setColor(new Color(255, 255, 255, highlightAlpha));
+                g2.setColor(TimelineTheme.barHighlight(isHovered));
                 g2.fillRoundRect(currentX, barY, barW, 2, BAR_RADIUS, BAR_RADIUS);
 
                 // 悬停时添加外边框高亮
@@ -443,33 +457,8 @@ public class TimelinePanel extends JPanel {
             g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
             int strW = g2.getFontMetrics().stringWidth(ms);
             if (barW > strW + 12) {
-                g2.setColor(ModernColors.getTextInverse());
+                g2.setColor(TimelineTheme.barText());
                 g2.drawString(ms, currentX + barW - strW - 6, barY + textYOffset);
-            }
-            // desc 区域
-            if (s.desc != null && !s.desc.isEmpty()) {
-                g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-                g2.setColor(TimelineTheme.descriptionText());
-                int descX = currentX + barW + DESC_LEFT_PAD;
-                int maxDescW = panelW - descX - RIGHT_PAD;
-                String desc = s.desc;
-                int descW = g2.getFontMetrics().stringWidth(desc);
-                boolean descTruncated = false;
-                if (descW > maxDescW && maxDescW > 10) {
-                    for (int cut = desc.length(); cut > 0; cut--) {
-                        String sub = desc.substring(0, cut) + "...";
-                        if (g2.getFontMetrics().stringWidth(sub) <= maxDescW) {
-                            desc = sub;
-                            descTruncated = true;
-                            break;
-                        }
-                    }
-                }
-                g2.drawString(desc, descX, barY + textYOffset);
-                // 设置 desc 悬浮提示
-                if (descTruncated) {
-                    setToolTipText(s.desc);
-                }
             }
             // 只有非0ms阶段才递增currentX
             if (barW > 3) {

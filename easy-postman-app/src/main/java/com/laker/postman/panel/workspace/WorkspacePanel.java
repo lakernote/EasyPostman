@@ -68,27 +68,24 @@ public class WorkspacePanel extends UiSingletonPanel {
         setLayout(new BorderLayout());
         ToolWindowSurfaceStyle.applyBackground(this);
 
-        // 创建主要内容区域 - 垂直分割面板
-        JSplitPane mainSplitPane;
-
-        // 上半部分 - 水平分割面板
         JPanel leftPanel = new JPanel(new BorderLayout());
         ToolWindowSurfaceStyle.applyCard(leftPanel);
         leftPanel.add(createToolbar(), BorderLayout.NORTH);
         leftPanel.add(createWorkspaceListPanel(), BorderLayout.CENTER);
 
-        JSplitPane topSplitPane = ToolWindowChrome.createHorizontalCardSplitPane(
-                leftPanel,
+        JSplitPane rightSplitPane = ToolWindowChrome.createVerticalInnerSplitPane(
                 createInfoPanel(),
+                createLogPanel(),
+                300
+        );
+        rightSplitPane.setResizeWeight(0.32);
+
+        JSplitPane mainSplitPane = ToolWindowChrome.createHorizontalCardSplitPane(
+                leftPanel,
+                rightSplitPane,
                 ToolWindowChrome.DEFAULT_SIDE_WIDTH
         );
-        topSplitPane.setResizeWeight(0.4);
-
-        // 下半部分 - 日志区域
-        JPanel logPanel = createLogPanel();
-
-        mainSplitPane = ToolWindowChrome.createVerticalStackedCardSplitPane(topSplitPane, logPanel, 400);
-        mainSplitPane.setResizeWeight(0.7);
+        mainSplitPane.setResizeWeight(0.0);
 
         add(mainSplitPane, BorderLayout.CENTER);
 

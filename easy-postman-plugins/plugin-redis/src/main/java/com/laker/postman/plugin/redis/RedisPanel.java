@@ -464,7 +464,7 @@ public class RedisPanel extends JPanel {
         panel.setMinimumSize(new Dimension(0, 0));
         panel.add(buildActionBar(), BorderLayout.NORTH);
 
-        JSplitPane split = ToolWindowChrome.createVerticalCardSplitPane(
+        JSplitPane split = ToolWindowChrome.createVerticalInnerSplitPane(
                 buildValuePanel(),
                 buildResultPanel(),
                 210
@@ -480,7 +480,7 @@ public class RedisPanel extends JPanel {
                 "[]8[grow,fill]8[]push[]6[]6[]",
                 "[][]"
         ));
-        ToolWindowSurfaceStyle.applySectionHeader(panel);
+        ToolWindowSurfaceStyle.applySectionCard(panel);
 
         templateCombo = new JComboBox<>();
         for (String[] template : TEMPLATES) {
@@ -548,7 +548,7 @@ public class RedisPanel extends JPanel {
 
     private JPanel buildValuePanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setOpaque(false);
+        ToolWindowSurfaceStyle.applySectionCard(panel);
         JPanel header = new JPanel(new MigLayout("insets 2 4 2 4, fillx", "[]push[]", "[]"));
         ToolWindowSurfaceStyle.applySectionHeader(header);
         JLabel title = new JLabel(t(MessageKeys.TOOLBOX_REDIS_VALUE_TITLE));
@@ -574,7 +574,7 @@ public class RedisPanel extends JPanel {
 
     private JPanel buildResultPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setOpaque(false);
+        ToolWindowSurfaceStyle.applySectionCard(panel);
         panel.setMinimumSize(new Dimension(0, 0));
         // title 固定, keyMetaLabel 可伸缩但有最大宽, respStatusLabel 固定右侧
         JPanel header = new JPanel(new MigLayout("insets 2 4 2 4, fillx", "[]8[grow,fill]push[]", "[]"));

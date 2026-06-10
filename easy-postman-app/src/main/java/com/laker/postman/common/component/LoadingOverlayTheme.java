@@ -8,18 +8,23 @@ import java.awt.Color;
 @UtilityClass
 class LoadingOverlayTheme {
     Color overlay() {
-        return ModernColors.withAlpha(ModernColors.getBackgroundColor(), 230);
+        return ModernColors.withAlpha(
+                ModernColors.getBackgroundColor(),
+                ModernColors.isDarkTheme() ? 152 : 124
+        );
     }
 
     Color spinner() {
         return ModernColors.getPrimary();
     }
 
-    Color spinnerBackground() {
-        return ModernColors.getBorderMediumColor();
-    }
-
-    Color messageForeground() {
-        return ModernColors.getTextSecondary();
+    Color spinnerSegment(int fadeIndex, int segmentCount) {
+        int maxAlpha = ModernColors.isDarkTheme() ? 220 : 205;
+        int minAlpha = ModernColors.isDarkTheme() ? 50 : 36;
+        float progress = segmentCount <= 1
+                ? 1.0f
+                : 1.0f - Math.min(Math.max(fadeIndex, 0), segmentCount - 1) / (segmentCount - 1.0f);
+        int alpha = minAlpha + Math.round((maxAlpha - minAlpha) * progress * progress);
+        return ModernColors.withAlpha(spinner(), alpha);
     }
 }

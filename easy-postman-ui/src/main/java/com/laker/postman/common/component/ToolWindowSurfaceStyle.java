@@ -98,6 +98,11 @@ public final class ToolWindowSurfaceStyle {
         installThemeRefresh(component, ToolWindowSurfaceStyle::setOpaqueCard);
     }
 
+    public static void applySectionCard(JComponent component) {
+        setSectionCard(component);
+        installThemeRefresh(component, ToolWindowSurfaceStyle::setSectionCard);
+    }
+
     public static void applyDialogFooter(JComponent component) {
         setDialogFooter(component);
         installThemeRefresh(component, ToolWindowSurfaceStyle::setDialogFooter);
@@ -403,6 +408,14 @@ public final class ToolWindowSurfaceStyle {
 
     private static void setDialogSurface(JComponent component) {
         setWindowChromeBackground(component, true);
+    }
+
+    private static void setSectionCard(JComponent component) {
+        setCard(component, true);
+        component.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(ModernColors.getBorderLightColor()),
+                BorderFactory.createEmptyBorder(8, 10, 10, 10)
+        ));
     }
 
     private static void setDialogList(JList<?> list) {

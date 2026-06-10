@@ -18,7 +18,10 @@ public class LoadingOverlayTest {
 
     @BeforeMethod
     public void rememberThemeTokens() {
-        previousThemeTokens = remember(ThemeColors.BACKGROUND, ThemeColors.BORDER_MEDIUM);
+        previousThemeTokens = remember(
+                ThemeColors.BACKGROUND,
+                ThemeColors.PRIMARY
+        );
     }
 
     @AfterMethod
@@ -33,16 +36,28 @@ public class LoadingOverlayTest {
 
         Color overlay = LoadingOverlayTheme.overlay();
 
-        assertEquals(overlay, new Color(background.getRed(), background.getGreen(), background.getBlue(), 230));
+        assertEquals(overlay, new Color(background.getRed(), background.getGreen(), background.getBlue(), 124));
     }
 
     @Test
-    public void spinnerBackgroundShouldUseSemanticBorderMediumColor() {
-        Color spinnerBackground = new Color(31, 32, 33);
-        UIManager.put(ThemeColors.BORDER_MEDIUM, spinnerBackground);
+    public void activeSpinnerSegmentShouldUseSemanticPrimaryColor() {
+        Color primary = new Color(31, 75, 199);
+        UIManager.put(ThemeColors.PRIMARY, primary);
 
-        Color actual = LoadingOverlayTheme.spinnerBackground();
+        Color actual = LoadingOverlayTheme.spinnerSegment(0, 12);
 
-        assertEquals(actual, spinnerBackground);
+        assertEquals(actual, new Color(primary.getRed(), primary.getGreen(), primary.getBlue(), 205));
+    }
+
+    @Test
+    public void fadedSpinnerSegmentShouldUseLowerAlphaThanActiveSegment() {
+        Color primary = new Color(31, 75, 199);
+        UIManager.put(ThemeColors.PRIMARY, primary);
+
+        Color active = LoadingOverlayTheme.spinnerSegment(0, 12);
+        Color faded = LoadingOverlayTheme.spinnerSegment(11, 12);
+
+        assertEquals(active.getAlpha(), 205);
+        assertEquals(faded.getAlpha(), 36);
     }
 }

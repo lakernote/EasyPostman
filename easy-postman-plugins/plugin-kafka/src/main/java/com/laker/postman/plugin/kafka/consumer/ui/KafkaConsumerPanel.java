@@ -113,7 +113,7 @@ public class KafkaConsumerPanel extends JPanel {
                 "[]8[grow,fill]8[]",
                 "[]"
         ));
-        mainControls.setOpaque(false);
+        ToolWindowSurfaceStyle.applySectionCard(mainControls);
 
         topicField = new JTextField("");
         topicField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, t(MessageKeys.TOOLBOX_KAFKA_TOPIC_PLACEHOLDER));
@@ -137,7 +137,7 @@ public class KafkaConsumerPanel extends JPanel {
         mainControls.add(consumeBtnCard);
 
         JPanel advancedPanel = new JPanel(new BorderLayout(0, 0));
-        ToolWindowSurfaceStyle.applySectionHeader(advancedPanel);
+        ToolWindowSurfaceStyle.applySectionCard(advancedPanel);
 
         JPanel advancedRowPanel = new JPanel(new MigLayout(
                 "insets 4 10 6 8, fillx",
@@ -226,7 +226,7 @@ public class KafkaConsumerPanel extends JPanel {
         });
 
         JPanel detailPanel = new JPanel(new BorderLayout(0, 0));
-        detailPanel.setOpaque(false);
+        ToolWindowSurfaceStyle.applySectionCard(detailPanel);
         detailPanel.setMinimumSize(new Dimension(0, 0));
 
         JPanel detailHeader = new JPanel(new MigLayout("insets 4 10 4 8, fillx", "[]8[]8[]8[]8[]push[]4[]", "[]2[]"));
@@ -279,7 +279,7 @@ public class KafkaConsumerPanel extends JPanel {
         detailPanel.add(detailHeader, BorderLayout.NORTH);
         detailPanel.add(searchableDetail, BorderLayout.CENTER);
 
-        detailSplit = ToolWindowChrome.createVerticalCardSplitPane(messageTablePanel, detailPanel, 320);
+        detailSplit = ToolWindowChrome.createVerticalInnerSplitPane(messageTablePanel, detailPanel, 320);
         detailSplit.setResizeWeight(1.0);
         SwingUtilities.invokeLater(() -> detailSplit.setDividerLocation(1.0));
 

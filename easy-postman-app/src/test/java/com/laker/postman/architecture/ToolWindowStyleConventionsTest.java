@@ -139,9 +139,7 @@ public class ToolWindowStyleConventionsTest {
             "easy-postman-app/src/main/java/com/laker/postman/panel/workspace/WorkspacePanel.java",
             "easy-postman-app/src/main/java/com/laker/postman/panel/workspace/components/GitOperationDialog.java"
     );
-    private static final List<String> STACKED_TOOL_WINDOW_SPLITS = List.of(
-            "easy-postman-app/src/main/java/com/laker/postman/panel/workspace/WorkspacePanel.java"
-    );
+    private static final List<String> STACKED_TOOL_WINDOW_SPLITS = List.of();
     private static final List<String> TOOL_WINDOW_DIALOG_SHELLS = List.of(
             "easy-postman-app/src/main/java/com/laker/postman/common/component/dialog/SnippetDialog.java",
             "easy-postman-app/src/main/java/com/laker/postman/panel/sidebar/cookie/CookieManagerDialog.java",

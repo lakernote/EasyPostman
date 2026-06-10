@@ -435,10 +435,17 @@ public final class ModernColors {
     }
 
     /**
-     * 获取窗口顶部 chrome 背景色 - 菜单栏和内嵌标题栏共用。
+     * 获取窗口顶部 chrome 背景色 - 菜单栏和主窗口 TitlePane 共用。
      */
     public static Color getWindowChromeBackgroundColor() {
         return color(ThemeColors.WINDOW_CHROME_BACKGROUND, new Color(233, 234, 238), new Color(39, 41, 44));
+    }
+
+    /**
+     * 获取 Dialog chrome 背景色 - 仅用于 JDialog 标题栏、背景和 footer。
+     */
+    public static Color getDialogChromeBackgroundColor() {
+        return color(ThemeColors.DIALOG_CHROME_BACKGROUND, new Color(247, 248, 249), new Color(25, 26, 28));
     }
 
     /**

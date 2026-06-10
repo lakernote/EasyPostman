@@ -4,6 +4,7 @@ import com.laker.postman.request.model.CookieInfo;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.*;
+import com.laker.postman.common.component.setting.SettingsInputStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.panel.http.runtime.SwingHttpRuntimeInteractionAdapter;
 import com.laker.postman.http.runtime.cookie.HttpCookieStore;
@@ -11,6 +12,7 @@ import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import net.miginfocom.swing.MigLayout;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -40,7 +42,7 @@ public class CookieTablePanel extends JPanel {
     public CookieTablePanel() {
         setLayout(new BorderLayout(0, 8));
         setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
-        ToolWindowSurfaceStyle.applyCard(this);
+        ToolWindowSurfaceStyle.applyDialogSurface(this);
 
         // 顶部搜索和操作栏
         JPanel topPanel = createTopPanel();
@@ -48,7 +50,7 @@ public class CookieTablePanel extends JPanel {
 
         // 中间表格区域（包含空状态提示）
         JPanel centerPanel = new JPanel(new CardLayout());
-        ToolWindowSurfaceStyle.applyCard(centerPanel);
+        ToolWindowSurfaceStyle.applyDialogSurface(centerPanel);
 
         // 创建表格
         String[] columns = {
@@ -121,7 +123,7 @@ public class CookieTablePanel extends JPanel {
      */
     private JPanel createTopPanel() {
         JPanel topPanel = new JPanel(new BorderLayout(8, 0));
-        ToolWindowSurfaceStyle.applyCard(topPanel);
+        ToolWindowSurfaceStyle.applyDialogSurface(topPanel);
 
         // 左侧搜索框（SearchTextField 已自带图标、占位符和清除按钮）
         searchField.setPlaceholderText(I18nUtil.getMessage(MessageKeys.COOKIE_SEARCH_PLACEHOLDER));
@@ -254,7 +256,7 @@ public class CookieTablePanel extends JPanel {
      */
     private JPanel createEmptyStatePanel() {
         JPanel panel = new JPanel(new GridBagLayout());
-        ToolWindowSurfaceStyle.applyCard(panel);
+        ToolWindowSurfaceStyle.applyDialogSurface(panel);
         JPanel content = new JPanel();
         content.setOpaque(false);
         content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
@@ -405,88 +407,54 @@ public class CookieTablePanel extends JPanel {
     private void showCookieDialog(String defaultName, String defaultValue, String defaultDomain,
                                   String defaultPath, boolean defaultSecure, boolean defaultHttpOnly,
                                   boolean isEdit) {
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        ToolWindowSurfaceStyle.applyCard(panel);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(5, 5, 5, 5);
-
-        // Name 字段
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.weightx = 0;
-        panel.add(new JLabel(I18nUtil.getMessage(MessageKeys.COOKIE_FIELD_NAME) + ":"), gbc);
+        JPanel panel = new JPanel(new MigLayout(
+                "insets 14 16 14 16, fillx, wrap 2, novisualpadding",
+                "[right]12[grow,fill]",
+                "[]8[]8[]8[]12[]4[]"
+        ));
+        ToolWindowSurfaceStyle.applyDialogSurface(panel);
 
         JTextField nameField = new JTextField(defaultName, 20);
-        nameField.setEnabled(!isEdit); // 编辑模式下名称不可修改
-        gbc.gridx = 1;
-        gbc.weightx = 1.0;
-        panel.add(nameField, gbc);
-
-        // Value 字段
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.weightx = 0;
-        panel.add(new JLabel(I18nUtil.getMessage(MessageKeys.COOKIE_FIELD_VALUE) + ":"), gbc);
-
         JTextField valueField = new JTextField(defaultValue, 20);
-        gbc.gridx = 1;
-        gbc.weightx = 1.0;
-        panel.add(valueField, gbc);
-
-        // Domain 字段
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        gbc.weightx = 0;
-        panel.add(new JLabel(I18nUtil.getMessage(MessageKeys.COOKIE_FIELD_DOMAIN) + ":"), gbc);
-
         JTextField domainField = new JTextField(defaultDomain, 20);
-        domainField.setEnabled(!isEdit); // 编辑模式下域名不可修改
-        gbc.gridx = 1;
-        gbc.weightx = 1.0;
-        panel.add(domainField, gbc);
-
-        // Path 字段
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        gbc.weightx = 0;
-        panel.add(new JLabel(I18nUtil.getMessage(MessageKeys.COOKIE_FIELD_PATH) + ":"), gbc);
-
         JTextField pathField = new JTextField(defaultPath, 20);
-        pathField.setEnabled(!isEdit); // 编辑模式下路径不可修改
-        gbc.gridx = 1;
-        gbc.weightx = 1.0;
-        panel.add(pathField, gbc);
+        for (JTextField field : List.of(nameField, valueField, domainField, pathField)) {
+            SettingsInputStyle.apply(field);
+        }
+        nameField.setEditable(!isEdit); // 编辑模式下名称不可修改
+        domainField.setEditable(!isEdit); // 编辑模式下域名不可修改
+        pathField.setEditable(!isEdit); // 编辑模式下路径不可修改
+
+        panel.add(createFormLabel(I18nUtil.getMessage(MessageKeys.COOKIE_FIELD_NAME) + ":"));
+        panel.add(nameField, "growx");
+        panel.add(createFormLabel(I18nUtil.getMessage(MessageKeys.COOKIE_FIELD_VALUE) + ":"));
+        panel.add(valueField, "growx");
+        panel.add(createFormLabel(I18nUtil.getMessage(MessageKeys.COOKIE_FIELD_DOMAIN) + ":"));
+        panel.add(domainField, "growx");
+        panel.add(createFormLabel(I18nUtil.getMessage(MessageKeys.COOKIE_FIELD_PATH) + ":"));
+        panel.add(pathField, "growx");
 
         // Secure 和 HttpOnly 复选框
         JCheckBox secureBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.COOKIE_FIELD_SECURE), defaultSecure);
         JCheckBox httpOnlyBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.COOKIE_FIELD_HTTPONLY), defaultHttpOnly);
-
-        gbc.gridx = 0;
-        gbc.gridy = 4;
-        gbc.gridwidth = 2;
-        panel.add(secureBox, gbc);
-
-        gbc.gridy = 5;
-        panel.add(httpOnlyBox, gbc);
+        secureBox.setOpaque(false);
+        httpOnlyBox.setOpaque(false);
+        panel.add(secureBox, "span 2, growx");
+        panel.add(httpOnlyBox, "span 2, growx");
 
         // 添加说明
         if (isEdit) {
             JLabel hint = new JLabel(I18nUtil.getMessage(MessageKeys.COOKIE_EDIT_HINT));
             hint.setFont(FontsUtil.getDefaultFontWithOffset(Font.ITALIC, -1));
             hint.setForeground(ModernColors.getTextHint());
-            gbc.gridy = 6;
-            gbc.insets = new Insets(10, 5, 5, 5);
-            panel.add(hint, gbc);
+            panel.add(hint, "span 2, growx, gaptop 6");
         }
 
         String title = isEdit ?
                 I18nUtil.getMessage(MessageKeys.COOKIE_DIALOG_EDIT_TITLE) :
                 I18nUtil.getMessage(MessageKeys.COOKIE_DIALOG_ADD_TITLE);
 
-        int result = JOptionPane.showConfirmDialog(this, panel, title,
-                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        int result = showCookieFormDialog(panel, title);
 
         if (result == JOptionPane.OK_OPTION) {
             String name = nameField.getText().trim();
@@ -512,6 +480,49 @@ public class CookieTablePanel extends JPanel {
 
             HttpCookieStore.addCookie(name, value, domain, path, secure, httpOnly);
         }
+    }
+
+    private JLabel createFormLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        return label;
+    }
+
+    private int showCookieFormDialog(JPanel formPanel, String title) {
+        Window owner = SwingUtilities.getWindowAncestor(this);
+        JDialog dialog = new JDialog(owner, title, Dialog.ModalityType.APPLICATION_MODAL);
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(dialog);
+
+        JPanel rootPanel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyDialogSurface(rootPanel);
+        rootPanel.add(formPanel, BorderLayout.CENTER);
+
+        JPanel footerPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        ToolWindowSurfaceStyle.applyDialogFooter(footerPanel);
+        JButton cancelButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.GENERAL_CANCEL), false);
+        JButton okButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK), true);
+        final int[] result = {JOptionPane.CANCEL_OPTION};
+        cancelButton.addActionListener(e -> dialog.dispose());
+        okButton.addActionListener(e -> {
+            result[0] = JOptionPane.OK_OPTION;
+            dialog.dispose();
+        });
+        footerPanel.add(cancelButton);
+        footerPanel.add(okButton);
+        rootPanel.add(footerPanel, BorderLayout.SOUTH);
+
+        dialog.setContentPane(rootPanel);
+        dialog.getRootPane().setDefaultButton(okButton);
+        dialog.getRootPane().registerKeyboardAction(
+                e -> dialog.dispose(),
+                KeyStroke.getKeyStroke("ESCAPE"),
+                JComponent.WHEN_IN_FOCUSED_WINDOW
+        );
+        dialog.pack();
+        dialog.setMinimumSize(new Dimension(420, dialog.getHeight()));
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
+        return result[0];
     }
 
     @Override

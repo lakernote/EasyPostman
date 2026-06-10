@@ -23,7 +23,7 @@ import java.util.Date;
 public class WorkspaceDetailPanel extends JPanel {
 
     public WorkspaceDetailPanel(Workspace workspace) {
-        setLayout(new BorderLayout(0, 16));
+        setLayout(new GridBagLayout());
         ToolWindowSurfaceStyle.applyCard(this);
         setBorder(BorderFactory.createEmptyBorder(14, 18, 18, 18));
 
@@ -41,12 +41,39 @@ public class WorkspaceDetailPanel extends JPanel {
         addRow(infoGrid, row, I18nUtil.getMessage(MessageKeys.WORKSPACE_DETAIL_CREATED_TIME) + ":",
                 new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(workspace.getCreatedAt())));
 
-        add(createSection(I18nUtil.getMessage(MessageKeys.WORKSPACE_DETAIL_BASIC_INFO), infoGrid), BorderLayout.NORTH);
+        int sectionRow = 0;
+        addSection(sectionRow++, createSection(I18nUtil.getMessage(MessageKeys.WORKSPACE_DETAIL_BASIC_INFO), infoGrid),
+                new Insets(0, 0, 0, 0));
 
         if (workspace.getType() == WorkspaceType.GIT) {
-            add(createSection(I18nUtil.getMessage(MessageKeys.WORKSPACE_DETAIL_GIT_INFO), createGitInfoPanel(workspace)),
-                    BorderLayout.CENTER);
+            addSection(sectionRow++, createSection(
+                    I18nUtil.getMessage(MessageKeys.WORKSPACE_DETAIL_GIT_INFO),
+                    createGitInfoPanel(workspace)
+            ), new Insets(14, 0, 0, 0));
         }
+        addVerticalFiller(sectionRow);
+    }
+
+    private void addSection(int row, JPanel section, Insets insets) {
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.gridx = 0;
+        constraints.gridy = row;
+        constraints.weightx = 1.0;
+        constraints.weighty = 0.0;
+        constraints.fill = GridBagConstraints.HORIZONTAL;
+        constraints.anchor = GridBagConstraints.NORTHWEST;
+        constraints.insets = insets;
+        add(section, constraints);
+    }
+
+    private void addVerticalFiller(int row) {
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.gridx = 0;
+        constraints.gridy = row;
+        constraints.weightx = 1.0;
+        constraints.weighty = 1.0;
+        constraints.fill = GridBagConstraints.BOTH;
+        add(Box.createVerticalGlue(), constraints);
     }
 
     private static JPanel createSection(String title, JComponent body) {

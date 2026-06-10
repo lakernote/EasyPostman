@@ -2,6 +2,7 @@ package com.laker.postman.panel.update;
 
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.platform.update.model.UpdateInfo;
 import com.laker.postman.util.FontsUtil;
@@ -40,8 +41,9 @@ public class NoAssetDialog extends JDialog {
 
     private void initComponents(UpdateInfo updateInfo) {
         setLayout(new BorderLayout());
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(this);
         JPanel mainPanel = new JPanel(new BorderLayout(0, 0));
-        ToolWindowSurfaceStyle.applyBackground(mainPanel);
+        ToolWindowSurfaceStyle.applyDialogSurface(mainPanel);
         mainPanel.add(createHeaderPanel(updateInfo), BorderLayout.NORTH);
         mainPanel.add(createBodyPanel(updateInfo), BorderLayout.CENTER);
         mainPanel.add(createButtonPanel(), BorderLayout.SOUTH);
@@ -121,7 +123,7 @@ public class NoAssetDialog extends JDialog {
 
     private JPanel createBodyPanel(UpdateInfo updateInfo) {
         JPanel panel = new JPanel(new BorderLayout(0, 10));
-        ToolWindowSurfaceStyle.applyBackground(panel);
+        ToolWindowSurfaceStyle.applyDialogSurface(panel);
         panel.setBorder(new EmptyBorder(18, 24, 6, 24));
 
         // 说明文字（带 HTML 多行支持）
@@ -173,8 +175,8 @@ public class NoAssetDialog extends JDialog {
         bar.setBorder(new EmptyBorder(10, 14, 10, 14));
 
         String tipText = I18nUtil.isChinese()
-                ? "💡 也可以在「设置 → 更新源」中切换为 GitHub，程序会直接从 GitHub 获取下载链接。"
-                : "💡 You can also switch the update source to GitHub in Settings → Update Source.";
+                ? "也可以在「设置 → 更新源」中切换为 GitHub，程序会直接从 GitHub 获取下载链接。"
+                : "You can also switch the update source to GitHub in Settings → Update Source.";
 
         JLabel tipLabel = new JLabel("<html><body style='width:410px'>" + tipText + "</body></html>");
         tipLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
@@ -187,20 +189,17 @@ public class NoAssetDialog extends JDialog {
 
     private JPanel createButtonPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        ToolWindowSurfaceStyle.applyBackground(panel);
-        panel.setBorder(new EmptyBorder(12, 24, 18, 24));
+        ToolWindowSurfaceStyle.applyDialogFooter(panel);
 
         JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
-        buttonsPanel.setOpaque(false);
+        ToolWindowSurfaceStyle.applyDialogSurface(buttonsPanel);
 
-        JButton laterButton = new JButton(I18nUtil.getMessage(MessageKeys.UPDATE_LATER));
+        JButton laterButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.UPDATE_LATER), false);
         laterButton.putClientProperty(FlatClientProperties.BUTTON_TYPE,
                 FlatClientProperties.BUTTON_TYPE_BORDERLESS);
-        laterButton.setBorder(new EmptyBorder(8, 16, 8, 16));
         laterButton.addActionListener(e -> dispose());
 
-        JButton goButton = new JButton(I18nUtil.getMessage(MessageKeys.UPDATE_AVAILABLE_NO_ASSET_GO_GITHUB));
-        goButton.setBorder(new EmptyBorder(8, 20, 8, 20));
+        JButton goButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.UPDATE_AVAILABLE_NO_ASSET_GO_GITHUB), true);
         // 用警告色做主按钮（区别于普通更新对话框的蓝色）
         goButton.setBackground(ModernColors.getWarning());
         goButton.setForeground(ModernColors.getTextInverse());

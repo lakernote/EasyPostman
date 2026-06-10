@@ -52,6 +52,13 @@ public class HttpHtmlRenderer {
     private static String surfaceColor() { return toHex(ModernColors.getCardBackgroundColor()); }
     private static String textColor() { return toHex(ModernColors.getTextPrimary()); }
     private static String borderColor() { return toHex(ModernColors.getBorderLightColor()); }
+    private static String rowDividerColor() {
+        return toHex(ModernColors.blendColors(
+                ModernColors.getCardBackgroundColor(),
+                ModernColors.getBorderLightColor(),
+                ModernColors.isDarkTheme() ? 0.55f : 0.36f
+        ));
+    }
     private static String codeBgColor() { return toHex(ModernColors.getHoverBackgroundColor()); }
 
     private static String statusColor(int code) {
@@ -80,8 +87,8 @@ public class HttpHtmlRenderer {
 
     /** key: value 行。详情页使用单一白色内容面，避免灰色条块切碎视线。 */
     private static String kvRow(String keyColor, String key, String value, boolean alt) {
-        return "<div style='padding:4px 4px 5px 4px;"
-                + "border-bottom:1px solid " + borderColor() + ";"
+        return "<div style='padding:3px 4px 4px 4px;"
+                + "line-height:1.35;"
                 + "word-break:break-all;'>"
                 + "<span style='color:" + keyColor + ";font-weight:bold;'>" + key + "</span>"
                 + "<span style='color:" + colorGray() + ";'> : </span>"
@@ -234,7 +241,7 @@ public class HttpHtmlRenderer {
 
         StringBuilder sb = new StringBuilder();
         sb.append("<table style='border-collapse:collapse;width:100%;'>")
-                .append("<tr style='font-weight:bold;border-bottom:2px solid ").append(borderColor()).append(";'>")
+                .append("<tr style='font-weight:bold;border-bottom:1px solid ").append(rowDividerColor()).append(";'>")
                 .append("<th style='padding:5px 10px;text-align:left;'>Name</th>")
                 .append("<th style='padding:5px 10px;text-align:center;width:60px;'>Result</th>")
                 .append("<th style='padding:5px 10px;text-align:left;'>Message</th>")
@@ -328,7 +335,7 @@ public class HttpHtmlRenderer {
         String msg = isNotEmpty(r.message)
                 ? "<span style='color:" + colorError() + ";white-space:pre-wrap;word-break:break-all;'>" + escapeHtml(r.message) + "</span>"
                 : "";
-        return "<tr style='border-bottom:1px solid " + borderColor() + ";'>"
+        return "<tr style='border-bottom:1px solid " + rowDividerColor() + ";'>"
                 + "<td style='padding:5px 10px;'>" + escapeHtml(r.name) + "</td>"
                 + "<td style='padding:5px 10px;text-align:center;'>" + icon + "</td>"
                 + "<td style='padding:5px 10px;'>" + msg + "</td>"
@@ -373,7 +380,7 @@ public class HttpHtmlRenderer {
         StringBuilder sb = new StringBuilder();
         sb.append(sectionTitle(colorPrimary(), "Timeline"));
         sb.append("<table style='border-collapse:collapse;width:100%;table-layout:fixed;'>");
-        sb.append("<tr style='font-weight:bold;border-bottom:2px solid ").append(borderColor()).append(";color:").append(colorGray()).append(";'>")
+        sb.append("<tr style='font-weight:bold;border-bottom:1px solid ").append(rowDividerColor()).append(";color:").append(colorGray()).append(";'>")
                 .append("<th style='padding:4px 6px;text-align:left;width:30%;'>Phase</th>")
                 .append("<th style='padding:4px 6px;text-align:right;width:16%;'>Time</th>")
                 .append("<th style='padding:4px 6px;width:54%;'>Bar</th>")
@@ -390,7 +397,8 @@ public class HttpHtmlRenderer {
         timingRow(sb, "Waiting (TTFB)",      calc.getServerCost(),   timelineTtfbColor(),     true,  total, false);
         timingRow(sb, "Content Download",    calc.getResponseBody(), timelineDownloadColor(), false, total, false);
 
-        sb.append("<tr><td colspan='3'><hr style='border:0;border-top:1px dashed ").append(borderColor()).append(";margin:4px 0'/></td></tr>");
+        sb.append("<tr><td colspan='3' style='padding:5px 0 3px 0;border-top:1px solid ")
+                .append(rowDividerColor()).append("'></td></tr>");
         appendTimingRow(sb, "Connection Reused", calc.getConnectionReused() ? "Yes" : "No", null, false, -1, total);
         appendTimingRow(sb, "Idle Connections",  String.valueOf(response.idleConnectionCount), null, false, -1, total);
         appendTimingRow(sb, "Total Connections", String.valueOf(response.connectionCount),     null, false, -1, total);
@@ -432,7 +440,7 @@ public class HttpHtmlRenderer {
                     + "<span style='color:" + colorGray() + ";font-size:" + fsSmall() + ";'>" + pct + "%</span>";
         }
 
-        sb.append("<tr style='border-bottom:1px solid ").append(borderColor()).append(";'>")
+        sb.append("<tr>")
                 .append("<td style='padding:3px 6px;").append(nameStyle).append("'>").append(name).append("</td>")
                 .append("<td style='padding:3px 6px;text-align:right;").append(valStyle).append("'>").append(val).append("</td>")
                 .append("<td style='padding:3px 6px;'>").append(bar).append("</td>")
@@ -455,7 +463,7 @@ public class HttpHtmlRenderer {
 
         sb.append(sectionTitle(colorPrimary(), "Event Timestamps"));
         sb.append("<table style='border-collapse:collapse;width:100%;'>");
-        sb.append("<tr style='font-weight:bold;border-bottom:2px solid ").append(borderColor()).append(";color:").append(colorGray()).append(";'>")
+        sb.append("<tr style='font-weight:bold;border-bottom:1px solid ").append(rowDividerColor()).append(";color:").append(colorGray()).append(";'>")
                 .append("<th style='padding:3px 8px;text-align:left;width:40%;'>Event</th>")
                 .append("<th style='padding:3px 8px;text-align:left;'>Time</th>")
                 .append("</tr>");
@@ -488,7 +496,7 @@ public class HttpHtmlRenderer {
     }
 
     private static void eventRow(StringBuilder sb, String label, String value, boolean alt) {
-        sb.append("<tr style='border-bottom:1px solid ").append(borderColor()).append(";'>")
+        sb.append("<tr>")
                 .append("<td style='width:35%;color:").append(colorGray()).append(";padding:3px 8px;'>").append(label).append("</td>")
                 .append("<td style='width:65%;padding:3px 8px;word-break:break-all;'>").append(value).append("</td>")
                 .append("</tr>");
@@ -498,7 +506,7 @@ public class HttpHtmlRenderer {
     private static void appendEventTimingRowIfSet(StringBuilder sb, String label, long millis, String color, boolean alt) {
         if (millis <= 0) return;
         String style = color != null ? "color:" + color + ";" : "";
-        sb.append("<tr style='border-bottom:1px solid ").append(borderColor()).append(";'>")
+        sb.append("<tr>")
                 .append("<td style='padding:3px 8px;").append(style).append("width:40%;'>").append(label).append("</td>")
                 .append("<td style='padding:3px 8px;width:60%;'>").append(formatMillis(millis)).append("</td>")
                 .append("</tr>");

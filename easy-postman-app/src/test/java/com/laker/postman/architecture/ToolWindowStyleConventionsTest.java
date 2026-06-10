@@ -342,7 +342,8 @@ public class ToolWindowStyleConventionsTest {
                 .filter(path -> {
                     String source = readUnchecked(ROOT.resolve(path));
                     return !source.contains("ToolWindowSurfaceStyle.applyBackground(this)")
-                            && !source.contains("ToolWindowSurfaceStyle.applyCard(this)");
+                            && !source.contains("ToolWindowSurfaceStyle.applyCard(this)")
+                            && !source.contains("ToolWindowSurfaceStyle.applyDialogSurface(this)");
                 })
                 .toList();
 

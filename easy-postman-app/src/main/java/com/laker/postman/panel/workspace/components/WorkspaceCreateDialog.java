@@ -2,6 +2,7 @@ package com.laker.postman.panel.workspace.components;
 
 import cn.hutool.core.util.RandomUtil;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.component.setting.SettingsInputStyle;
 import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.common.exception.WorkspaceCreateException;
 import com.laker.postman.model.GitAuthType;
@@ -66,12 +67,13 @@ public class WorkspaceCreateDialog extends ProgressDialog {
     private void initComponents() {
         // 基本信息
         nameField = new JTextField(10);
+        SettingsInputStyle.apply(nameField);
         descriptionArea = new JTextArea(2, 10);
         descriptionArea.setLineWrap(true);
         descriptionArea.setWrapStyleWord(true);
         ToolWindowSurfaceStyle.applyTextComponentInput(descriptionArea);
         descriptionScrollPane = new JScrollPane(descriptionArea);
-        ToolWindowSurfaceStyle.applyScrollPaneCard(descriptionScrollPane);
+        ToolWindowSurfaceStyle.applyFramedScrollPaneCard(descriptionScrollPane);
 
         // 工作区类型
         localTypeRadio = new JRadioButton(I18nUtil.getMessage(MessageKeys.WORKSPACE_TYPE_LOCAL), true);
@@ -82,6 +84,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
 
         // 路径选择 - 设置默认工作区目录
         pathField = new JTextField(15);
+        SettingsInputStyle.apply(pathField);
         setDefaultWorkspacePath(); // 设置默认路径
 
         browseButton = new JButton(I18nUtil.getMessage(MessageKeys.WORKSPACE_SELECT_PATH));
@@ -99,11 +102,13 @@ public class WorkspaceCreateDialog extends ProgressDialog {
         gitModeGroup.add(initRadio);
 
         gitUrlField = new JTextField(15);
+        SettingsInputStyle.apply(gitUrlField);
         gitAuthPanel = new GitAuthPanel();
 
         // 初始化分支字段
         branchField = new JTextField(15);
         branchField.setText(DEFAULT_BRANCH);
+        SettingsInputStyle.apply(branchField);
 
         // 进度相关组件
         progressPanel = new ProgressPanel("Progress");
@@ -154,10 +159,12 @@ public class WorkspaceCreateDialog extends ProgressDialog {
 
         // 创建主容器面板
         JPanel containerPanel = new JPanel(new BorderLayout());
-        containerPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 10, 15));
+        ToolWindowSurfaceStyle.applyDialogSurface(containerPanel);
+        containerPanel.setBorder(BorderFactory.createEmptyBorder(16, 18, 0, 18));
 
         // 创建内容面板 - 使用滚动面板以适应不同屏幕大小
         JPanel contentPanel = new JPanel(new GridBagLayout());
+        ToolWindowSurfaceStyle.applyDialogSurface(contentPanel);
         GridBagConstraints contentGbc = new GridBagConstraints();
         contentGbc.gridx = 0;
         contentGbc.weightx = 1.0;
@@ -185,7 +192,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
 
         // 为内容面板添加滚动支持
         JScrollPane scrollPane = new JScrollPane(contentPanel);
-        scrollPane.setBorder(null);
+        ToolWindowSurfaceStyle.applyDialogScrollPane(scrollPane);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 
@@ -193,7 +200,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
 
         // 底部面板：进度条 + 按钮
         JPanel bottomPanel = new JPanel(new BorderLayout());
-        bottomPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 5, 0));
+        ToolWindowSurfaceStyle.applyDialogSurface(bottomPanel);
 
         // 进度面板
         bottomPanel.add(progressPanel, BorderLayout.NORTH);
@@ -288,8 +295,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
 
     private JPanel createBasicInfoPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
-        ToolWindowSurfaceStyle.applyCard(panel);
-        panel.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
+        ToolWindowSurfaceStyle.applyDialogSection(panel);
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(6, 8, 6, 8);
@@ -369,8 +375,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
 
     private JPanel createGitPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
-        ToolWindowSurfaceStyle.applyCard(panel);
-        panel.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
+        ToolWindowSurfaceStyle.applyDialogSection(panel);
 
         GridBagConstraints rootGbc = new GridBagConstraints();
         rootGbc.gridx = 0;

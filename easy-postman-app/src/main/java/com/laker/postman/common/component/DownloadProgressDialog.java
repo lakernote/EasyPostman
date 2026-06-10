@@ -1,6 +1,7 @@
 package com.laker.postman.common.component;
 
 import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FileSizeDisplayUtil;
 import com.laker.postman.util.FontsUtil;
@@ -50,11 +51,14 @@ public class DownloadProgressDialog extends JDialog {
         setSize(550, 350); // 加大窗口尺寸以容纳图表
         setLocationRelativeTo(null);
         setResizable(true);
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(this);
 
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
+        ToolWindowSurfaceStyle.applyDialogSurface(mainPanel);
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         JLabel iconLabel = new JLabel(IconUtil.createThemed("icons/download.svg", 24, 24));
         JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        ToolWindowSurfaceStyle.applyDialogSurface(titlePanel);
         titlePanel.add(iconLabel);
         JLabel titleLabel = new JLabel(title);
         titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
@@ -64,6 +68,7 @@ public class DownloadProgressDialog extends JDialog {
         speedLabel = new JLabel("Speed: 0 KB/s");
         timeLabel = new JLabel("Time left: Calculating...");
         JPanel infoPanel = new JPanel(new GridLayout(3, 1, 5, 0));
+        ToolWindowSurfaceStyle.applyDialogSurface(infoPanel);
         infoPanel.add(detailsLabel);
         infoPanel.add(speedLabel);
         infoPanel.add(timeLabel);
@@ -142,22 +147,24 @@ public class DownloadProgressDialog extends JDialog {
         chartPanel.setMouseWheelEnabled(true);
 
         // 取消按钮
-        cancelButton = new JButton("Cancel", IconUtil.createThemed("icons/cancel.svg", 16, 16));
+        cancelButton = ModernButtonFactory.createButton("Cancel", false, "icons/cancel.svg", 16);
         cancelButton.addActionListener(e -> {
             cancelled = true;
             dispose();
         });
 
         // 关闭按钮（下载完成后可见）
-        closeButton = new JButton("Close", IconUtil.createThemed("icons/check.svg", 16, 16));
+        closeButton = ModernButtonFactory.createButton("Close", true, "icons/check.svg", 16);
         closeButton.setVisible(false); // 初始不可见
         closeButton.addActionListener(e -> dispose());
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+        ToolWindowSurfaceStyle.applyDialogFooter(buttonPanel);
         buttonPanel.add(closeButton);
         buttonPanel.add(cancelButton);
 
         JPanel southPanel = new JPanel();
+        ToolWindowSurfaceStyle.applyDialogSurface(southPanel);
         southPanel.setLayout(new BoxLayout(southPanel, BoxLayout.Y_AXIS));
         southPanel.add(infoPanel);
         southPanel.add(Box.createVerticalStrut(10));

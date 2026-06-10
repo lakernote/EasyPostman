@@ -32,6 +32,8 @@ public class ModernColorsTest {
             ThemeColors.SEARCH_CURRENT_HIGHLIGHT_BACKGROUND,
             ThemeColors.SPLASH_GRADIENT_START,
             ThemeColors.SPLASH_GRADIENT_END,
+            ThemeColors.WINDOW_CHROME_BACKGROUND,
+            ThemeColors.DIALOG_CHROME_BACKGROUND,
             ThemeColors.TAB_BACKGROUND,
             ThemeColors.TAB_SELECTED_BACKGROUND,
             ThemeColors.TAB_HOVER_BACKGROUND,
@@ -166,6 +168,17 @@ public class ModernColorsTest {
         assertEquals(ModernColors.getTabSelectedBackgroundColor(), selected);
         assertEquals(ModernColors.getTabHoverBackgroundColor(), hover);
         assertEquals(ModernColors.getTabSeparatorColor(), separator);
+    }
+
+    @Test
+    public void shouldReadWindowAndDialogChromeColorsFromSeparateUiDefaults() {
+        Color windowChrome = new Color(233, 234, 238);
+        Color dialogChrome = new Color(247, 248, 249);
+        UIManager.put(ThemeColors.WINDOW_CHROME_BACKGROUND, windowChrome);
+        UIManager.put(ThemeColors.DIALOG_CHROME_BACKGROUND, dialogChrome);
+
+        assertEquals(ModernColors.getWindowChromeBackgroundColor(), windowChrome);
+        assertEquals(ModernColors.getDialogChromeBackgroundColor(), dialogChrome);
     }
 
     @Test

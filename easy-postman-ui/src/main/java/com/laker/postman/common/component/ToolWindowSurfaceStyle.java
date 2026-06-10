@@ -115,12 +115,41 @@ public final class ToolWindowSurfaceStyle {
         installThemeRefresh(component, ToolWindowSurfaceStyle::setDialogSurface);
     }
 
+    public static void applyDialogSection(JComponent component) {
+        setDialogSection(component);
+        installThemeRefresh(component, ToolWindowSurfaceStyle::setDialogSection);
+    }
+
+    public static void applyDialogHeader(JComponent component, int top, int left, int bottom, int right) {
+        setDialogHeader(component, top, left, bottom, right);
+        installThemeRefresh(component, target -> setDialogHeader(target, top, left, bottom, right));
+    }
+
+    public static void applyDialogBottomSeparator(JComponent component) {
+        setDialogBottomSeparator(component);
+        installThemeRefresh(component, ToolWindowSurfaceStyle::setDialogBottomSeparator);
+    }
+
+    public static void applyDialogTopSeparator(JComponent component, int top, int left, int bottom, int right) {
+        setDialogTopSeparator(component, top, left, bottom, right);
+        installThemeRefresh(component, target -> setDialogTopSeparator(target, top, left, bottom, right));
+    }
+
+    public static void applyDialogFrame(JComponent component) {
+        setDialogFrame(component);
+        installThemeRefresh(component, ToolWindowSurfaceStyle::setDialogFrame);
+    }
+
+    public static void applyDialogInputBorder(JComponent component, boolean focused) {
+        setDialogInputBorder(component, focused);
+    }
+
     public static void applyDialogWindowChrome(Window window) {
         if (window == null) {
             return;
         }
 
-        Color chrome = ModernColors.getWindowChromeBackgroundColor();
+        Color chrome = ModernColors.getDialogChromeBackgroundColor();
         window.setBackground(chrome);
         if (window instanceof RootPaneContainer rootPaneContainer) {
             rootPaneContainer.getRootPane().putClientProperty(DIALOG_WINDOW_CHROME_APPLIED, Boolean.TRUE);
@@ -157,10 +186,10 @@ public final class ToolWindowSurfaceStyle {
         if (rootPane == null) {
             return;
         }
-        setWindowChromeBackground(rootPane, true);
+        setDialogChromeBackground(rootPane, true);
         rootPane.putClientProperty(
                 FlatClientProperties.TITLE_BAR_BACKGROUND,
-                ModernColors.getWindowChromeBackgroundColor()
+                ModernColors.getDialogChromeBackgroundColor()
         );
         rootPane.putClientProperty(FlatClientProperties.TITLE_BAR_FOREGROUND, UIManager.getColor("Menu.foreground"));
         applyMacDialogWindowChrome(rootPane);
@@ -179,8 +208,8 @@ public final class ToolWindowSurfaceStyle {
         if (component == null) {
             return;
         }
-        setWindowChromeBackground(component, true);
-        installThemeRefresh(component, ToolWindowSurfaceStyle::setOpaqueWindowChromeBackground);
+        setDialogChromeBackground(component, true);
+        installThemeRefresh(component, ToolWindowSurfaceStyle::setOpaqueDialogChromeBackground);
     }
 
     private static void applyMacDialogWindowChrome(JRootPane rootPane) {
@@ -308,6 +337,11 @@ public final class ToolWindowSurfaceStyle {
         installThemeRefresh(textComponent, component -> setTextComponentInput((JTextComponent) component));
     }
 
+    public static void applyTextComponentDialogSurface(JTextComponent textComponent) {
+        setTextComponentDialogSurface(textComponent);
+        installThemeRefresh(textComponent, component -> setTextComponentDialogSurface((JTextComponent) component));
+    }
+
     public static void applyPanelTreeCard(Component component) {
         if (component == null || isControl(component)) {
             return;
@@ -367,16 +401,16 @@ public final class ToolWindowSurfaceStyle {
         if (viewport == null) {
             return;
         }
-        setWindowChromeBackground(viewport, true);
-        installThemeRefresh(viewport, ToolWindowSurfaceStyle::setOpaqueWindowChromeBackground);
+        setDialogChromeBackground(viewport, true);
+        installThemeRefresh(viewport, ToolWindowSurfaceStyle::setOpaqueDialogChromeBackground);
     }
 
     private static void applyScrollBarWindowChrome(JScrollBar scrollBar) {
         if (scrollBar == null) {
             return;
         }
-        setWindowChromeBackground(scrollBar, true);
-        installThemeRefresh(scrollBar, ToolWindowSurfaceStyle::setOpaqueWindowChromeBackground);
+        setDialogChromeBackground(scrollBar, true);
+        installThemeRefresh(scrollBar, ToolWindowSurfaceStyle::setOpaqueDialogChromeBackground);
     }
 
     private static void applyPanelCardPreservingOpacity(JPanel panel) {
@@ -407,12 +441,12 @@ public final class ToolWindowSurfaceStyle {
         setBackground(component, true);
     }
 
-    private static void setOpaqueWindowChromeBackground(JComponent component) {
-        setWindowChromeBackground(component, true);
+    private static void setOpaqueDialogChromeBackground(JComponent component) {
+        setDialogChromeBackground(component, true);
     }
 
     private static void setDialogFooter(JComponent component) {
-        setWindowChromeBackground(component, true);
+        setDialogChromeBackground(component, true);
         component.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.getTabSeparatorColor()),
                 BorderFactory.createEmptyBorder(10, 16, 10, 16)
@@ -420,7 +454,49 @@ public final class ToolWindowSurfaceStyle {
     }
 
     private static void setDialogSurface(JComponent component) {
-        setWindowChromeBackground(component, true);
+        setDialogChromeBackground(component, true);
+    }
+
+    private static void setDialogSection(JComponent component) {
+        setDialogChromeBackground(component, true);
+        component.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(ModernColors.getTabSeparatorColor()),
+                BorderFactory.createEmptyBorder(8, 10, 10, 10)
+        ));
+    }
+
+    private static void setDialogHeader(JComponent component, int top, int left, int bottom, int right) {
+        setDialogChromeBackground(component, true);
+        component.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getTabSeparatorColor()),
+                BorderFactory.createEmptyBorder(top, left, bottom, right)
+        ));
+    }
+
+    private static void setDialogBottomSeparator(JComponent component) {
+        setDialogChromeBackground(component, true);
+        component.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getTabSeparatorColor()));
+    }
+
+    private static void setDialogTopSeparator(JComponent component, int top, int left, int bottom, int right) {
+        setDialogChromeBackground(component, true);
+        component.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.getTabSeparatorColor()),
+                BorderFactory.createEmptyBorder(top, left, bottom, right)
+        ));
+    }
+
+    private static void setDialogFrame(JComponent component) {
+        setDialogChromeBackground(component, true);
+        component.setBorder(BorderFactory.createLineBorder(ModernColors.getTabSeparatorColor()));
+    }
+
+    private static void setDialogInputBorder(JComponent component, boolean focused) {
+        Color borderColor = focused ? ModernColors.getPrimary() : ModernColors.getBorderMediumColor();
+        component.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(borderColor),
+                BorderFactory.createEmptyBorder(1, 1, 1, 1)
+        ));
     }
 
     private static void setSectionCard(JComponent component) {
@@ -432,21 +508,21 @@ public final class ToolWindowSurfaceStyle {
     }
 
     private static void setDialogList(JList<?> list) {
-        setWindowChromeBackground(list, true);
+        setDialogChromeBackground(list, true);
         list.setForeground(ModernColors.getTextPrimary());
         list.setSelectionBackground(ModernColors.getTabSelectedBackgroundColor());
         list.setSelectionForeground(ModernColors.getTextPrimary());
     }
 
     private static void setDialogSplitPane(JSplitPane splitPane) {
-        setWindowChromeBackground(splitPane, true);
+        setDialogChromeBackground(splitPane, true);
         splitPane.setBorder(BorderFactory.createEmptyBorder());
         BasicSplitPaneUI ui = splitPane.getUI() instanceof BasicSplitPaneUI basicUi ? basicUi : null;
         if (ui != null) {
             BasicSplitPaneDivider divider = ui.getDivider();
             if (divider != null) {
                 divider.setBorder(BorderFactory.createEmptyBorder());
-                divider.setBackground(ModernColors.getWindowChromeBackgroundColor());
+                divider.setBackground(ModernColors.getDialogChromeBackgroundColor());
             }
         }
     }
@@ -466,9 +542,9 @@ public final class ToolWindowSurfaceStyle {
         component.setBackground(ModernColors.getBackgroundColor());
     }
 
-    private static void setWindowChromeBackground(JComponent component, boolean opaque) {
+    private static void setDialogChromeBackground(JComponent component, boolean opaque) {
         component.setOpaque(opaque);
-        component.setBackground(ModernColors.getWindowChromeBackgroundColor());
+        component.setBackground(ModernColors.getDialogChromeBackgroundColor());
     }
 
     private static void setTableCard(JTable table) {
@@ -593,6 +669,11 @@ public final class ToolWindowSurfaceStyle {
     private static void setTextComponentInput(JTextComponent textComponent) {
         textComponent.setOpaque(true);
         textComponent.setBackground(ModernColors.getInputBackgroundColor());
+        textComponent.setForeground(ModernColors.getTextPrimary());
+    }
+
+    private static void setTextComponentDialogSurface(JTextComponent textComponent) {
+        setDialogChromeBackground(textComponent, true);
         textComponent.setForeground(ModernColors.getTextPrimary());
     }
 

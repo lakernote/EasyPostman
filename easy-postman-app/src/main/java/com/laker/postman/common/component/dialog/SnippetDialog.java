@@ -5,6 +5,8 @@ import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.SyntaxEditorScrollPane;
 import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.component.button.ModernButtonFactory;
+import com.laker.postman.common.component.setting.SettingsInputStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.plugin.host.PluginAccess;
@@ -58,6 +60,7 @@ public class SnippetDialog extends JDialog {
 
     public SnippetDialog() {
         super(UiSingletonFactory.getInstance(MainFrame.class), I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_TITLE), true);
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(this);
         Frame owner = UiSingletonFactory.getInstance(MainFrame.class);
         JPanel contentPanel = new JPanel(new BorderLayout(0, 0));
         ToolWindowSurfaceStyle.applyDialogSurface(contentPanel);
@@ -87,6 +90,7 @@ public class SnippetDialog extends JDialog {
         categoryCombo = new JComboBox<>(categories);
         categoryCombo.setPreferredSize(new Dimension(160, 32));
         categoryCombo.setFocusable(false);
+        SettingsInputStyle.apply(categoryCombo);
 
         northPanel.add(searchPanel, BorderLayout.CENTER);
         northPanel.add(categoryCombo, BorderLayout.EAST);
@@ -203,24 +207,20 @@ public class SnippetDialog extends JDialog {
         previewPanel.add(previewScrollPane, BorderLayout.CENTER);
 
         // 按钮面板
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         buttonPanel.setOpaque(false);
-        JButton insertBtn = new JButton(I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_INSERT));
-        insertBtn.setPreferredSize(new Dimension(100, 30));
+        JButton closeBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CLOSE), false);
+        JButton insertBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_INSERT), true);
 
-        JButton closeBtn = new JButton(I18nUtil.getMessage(MessageKeys.SNIPPET_DIALOG_CLOSE));
-        closeBtn.setPreferredSize(new Dimension(100, 30));
-
-        buttonPanel.add(insertBtn);
         buttonPanel.add(closeBtn);
+        buttonPanel.add(insertBtn);
 
         // 描述标签
         descriptionLabel = new JLabel(" ");
         descriptionLabel.setForeground(ModernColors.getTextSecondary());
 
         JPanel footerPanel = new JPanel(new BorderLayout(12, 0));
-        ToolWindowSurfaceStyle.applyDialogSurface(footerPanel);
-        footerPanel.setBorder(new EmptyBorder(8, 0, 0, 0));
+        ToolWindowSurfaceStyle.applyDialogFooter(footerPanel);
         footerPanel.add(descriptionLabel, BorderLayout.CENTER);
         footerPanel.add(buttonPanel, BorderLayout.EAST);
 
@@ -232,6 +232,7 @@ public class SnippetDialog extends JDialog {
         contentPanel.add(AppToolWindowChrome.wrapToolWindow(splitPane, new Insets(0, 0, 0, 0)), BorderLayout.CENTER);
         contentPanel.add(footerPanel, BorderLayout.SOUTH);
         setContentPane(contentPanel);
+        getRootPane().setDefaultButton(insertBtn);
 
         // 绑定事件监听器
 

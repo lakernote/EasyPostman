@@ -2,6 +2,7 @@ package com.laker.postman.panel.update;
 
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
@@ -39,6 +40,7 @@ public class ModernProgressDialog {
 
     public ModernProgressDialog(JFrame parent) {
         dialog = new JDialog(parent, I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOADING), true);
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(dialog);
         dialog.setResizable(false);
         // 点窗口 × 等价于点"取消下载"，而不是 DO_NOTHING
         dialog.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
@@ -63,12 +65,12 @@ public class ModernProgressDialog {
 
     private JPanel createContentPanel() {
         JPanel mainPanel = new JPanel(new BorderLayout());
-        ToolWindowSurfaceStyle.applyBackground(mainPanel);
+        ToolWindowSurfaceStyle.applyDialogSurface(mainPanel);
         mainPanel.setBorder(new EmptyBorder(32, 40, 28, 40));
 
         JPanel contentPanel = new JPanel();
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
-        contentPanel.setOpaque(false);
+        ToolWindowSurfaceStyle.applyDialogSurface(contentPanel);
 
         // 图标
         JLabel iconLabel = new JLabel(IconUtil.createThemed("icons/download.svg", 48, 48));
@@ -113,7 +115,7 @@ public class ModernProgressDialog {
 
     private JPanel createDetailsPanel() {
         JPanel panel = new JPanel(new GridLayout(2, 2, 20, 8));
-        panel.setOpaque(false);
+        ToolWindowSurfaceStyle.applyDialogSurface(panel);
         panel.setPreferredSize(new Dimension(400, 60));
         panel.setMaximumSize(new Dimension(400, 60));
 
@@ -141,10 +143,8 @@ public class ModernProgressDialog {
     }
 
     private JButton createCancelButton() {
-        JButton button = new JButton(I18nUtil.getMessage(MessageKeys.UPDATE_CANCEL_DOWNLOAD));
+        JButton button = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.UPDATE_CANCEL_DOWNLOAD), false);
         button.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, 1));
-        button.setFocusPainted(false);
-        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         button.setBorder(new EmptyBorder(8, 24, 8, 24));
         button.putClientProperty(FlatClientProperties.BUTTON_TYPE,
                 FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);

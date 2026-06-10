@@ -4,6 +4,7 @@ import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.*;
 import lombok.Getter;
@@ -1035,8 +1036,10 @@ public class EnhancedTablePanel extends JPanel {
         JDialog dialog = (owner instanceof Frame f)
                 ? new JDialog(f, UiI18n.get(UiMessageKeys.TABLE_CELL_DETAIL_TITLE) + " — " + colName, true)
                 : new JDialog((Dialog) owner, UiI18n.get(UiMessageKeys.TABLE_CELL_DETAIL_TITLE) + " — " + colName, true);
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(dialog);
         dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         dialog.setLayout(new BorderLayout(0, 0));
+        ToolWindowSurfaceStyle.applyDialogSurface((JPanel) dialog.getContentPane());
 
         // ── RSyntaxTextArea ─────────────────────────────────────────────
         RSyntaxTextArea textArea = new RSyntaxTextArea();
@@ -1062,12 +1065,12 @@ public class EnhancedTablePanel extends JPanel {
                 String.valueOf(text.length())));
         lenLabel.setForeground(ModernColors.getTextSecondary());
         lenLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
-        lenLabel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+        ToolWindowSurfaceStyle.applyDialogHeader(lenLabel, 4, 8, 4, 8);
 
         // ── 底部按钮栏 ──────────────────────────────────────────────────
-        JButton btnFormatJson = new JButton(UiI18n.get(UiMessageKeys.TABLE_CELL_DETAIL_FORMAT_JSON));
-        JButton btnCopy = new JButton(CommonI18n.get(CommonMessageKeys.BUTTON_COPY));
-        JButton btnClose = new JButton(CommonI18n.get(CommonMessageKeys.BUTTON_CLOSE));
+        JButton btnFormatJson = ModernButtonFactory.createButton(UiI18n.get(UiMessageKeys.TABLE_CELL_DETAIL_FORMAT_JSON), false);
+        JButton btnCopy = ModernButtonFactory.createButton(CommonI18n.get(CommonMessageKeys.BUTTON_COPY), false);
+        JButton btnClose = ModernButtonFactory.createButton(CommonI18n.get(CommonMessageKeys.BUTTON_CLOSE), true);
 
         btnFormatJson.setEnabled(isJson);
         if (!isJson) btnFormatJson.setToolTipText(UiI18n.get(UiMessageKeys.TABLE_INVALID_JSON));
@@ -1119,9 +1122,7 @@ public class EnhancedTablePanel extends JPanel {
         }
 
         JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 4));
-        footer.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.getDividerBorderColor()),
-                BorderFactory.createEmptyBorder(2, 4, 2, 4)));
+        ToolWindowSurfaceStyle.applyDialogFooter(footer);
         footer.add(btnFormatJson);
         footer.add(btnCopy);
         footer.add(btnClose);

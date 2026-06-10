@@ -1,5 +1,7 @@
 package com.laker.postman.panel.topmenu.help;
 
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.platform.update.changelog.ChangelogService;
 import com.laker.postman.platform.update.source.UpdateSource;
@@ -34,6 +36,8 @@ public class ChangelogDialog extends JDialog {
         this.changelogService = new ChangelogService(SettingManager::getUpdateSourcePreference);
 
         setLayout(new BorderLayout(10, 10));
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(this);
+        ToolWindowSurfaceStyle.applyDialogSurface((JPanel) getContentPane());
         ((JPanel) getContentPane()).setBorder(new EmptyBorder(15, 15, 15, 15));
 
         // 顶部面板：当前版本信息
@@ -47,13 +51,16 @@ public class ChangelogDialog extends JDialog {
         contentArea.setLineWrap(true);
         contentArea.setWrapStyleWord(true);
         contentArea.setText(I18nUtil.getMessage(MessageKeys.CHANGELOG_LOADING));
+        ToolWindowSurfaceStyle.applyTextComponentDialogSurface(contentArea);
 
         JScrollPane scrollPane = new JScrollPane(contentArea);
+        ToolWindowSurfaceStyle.applyDialogScrollPane(scrollPane);
         scrollPane.setPreferredSize(new Dimension(700, 500));
         add(scrollPane, BorderLayout.CENTER);
 
         // 底部面板：按钮
         JPanel bottomPanel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyDialogFooter(bottomPanel);
 
         // 状态标签
         statusLabel = new JLabel(" ");
@@ -63,17 +70,18 @@ public class ChangelogDialog extends JDialog {
 
         // 按钮面板
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        ToolWindowSurfaceStyle.applyDialogSurface(buttonPanel);
 
-        refreshButton = new JButton(I18nUtil.getMessage(MessageKeys.CHANGELOG_REFRESH));
+        refreshButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.CHANGELOG_REFRESH), false);
         refreshButton.addActionListener(e -> loadChangelog());
 
-        JButton githubButton = new JButton(I18nUtil.getMessage(MessageKeys.CHANGELOG_VIEW_ON_GITHUB));
+        JButton githubButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.CHANGELOG_VIEW_ON_GITHUB), false);
         githubButton.addActionListener(e -> openGitHubWeb());
 
-        JButton giteeButton = new JButton(I18nUtil.getMessage(MessageKeys.CHANGELOG_VIEW_ON_GITEE));
+        JButton giteeButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.CHANGELOG_VIEW_ON_GITEE), false);
         giteeButton.addActionListener(e -> openGiteeWeb());
 
-        JButton closeButton = new JButton(I18nUtil.getMessage(MessageKeys.CHANGELOG_CLOSE));
+        JButton closeButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.CHANGELOG_CLOSE), true);
         closeButton.addActionListener(e -> dispose());
 
         buttonPanel.add(refreshButton);
@@ -98,6 +106,7 @@ public class ChangelogDialog extends JDialog {
      */
     private JPanel createTopPanel() {
         JPanel panel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyDialogSurface(panel);
         panel.setBorder(new EmptyBorder(0, 0, 10, 0));
 
         String currentVersion = SystemUtil.getCurrentVersion();

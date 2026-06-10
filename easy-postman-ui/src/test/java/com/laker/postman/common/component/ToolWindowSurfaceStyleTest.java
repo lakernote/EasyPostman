@@ -45,6 +45,7 @@ public class ToolWindowSurfaceStyleTest {
                 ThemeColors.INPUT_BACKGROUND,
                 ThemeColors.BACKGROUND,
                 ThemeColors.WINDOW_CHROME_BACKGROUND,
+                ThemeColors.DIALOG_CHROME_BACKGROUND,
                 ThemeColors.TAB_BACKGROUND,
                 ThemeColors.TAB_SELECTED_BACKGROUND,
                 ThemeColors.TAB_SEPARATOR,
@@ -207,8 +208,8 @@ public class ToolWindowSurfaceStyleTest {
 
     @Test
     public void shouldApplyDialogSurfaceToDialogRoot() {
-        Color chrome = new Color(236, 237, 240);
-        UIManager.put(ThemeColors.WINDOW_CHROME_BACKGROUND, chrome);
+        Color chrome = new Color(247, 248, 249);
+        UIManager.put(ThemeColors.DIALOG_CHROME_BACKGROUND, chrome);
         JPanel panel = new JPanel();
 
         ToolWindowSurfaceStyle.applyDialogSurface(panel);
@@ -219,9 +220,9 @@ public class ToolWindowSurfaceStyleTest {
 
     @Test
     public void shouldApplyDialogFooterBackgroundAndSeparatorPadding() {
-        Color chrome = new Color(236, 237, 240);
+        Color chrome = new Color(247, 248, 249);
         Color separator = new Color(233, 234, 238);
-        UIManager.put(ThemeColors.WINDOW_CHROME_BACKGROUND, chrome);
+        UIManager.put(ThemeColors.DIALOG_CHROME_BACKGROUND, chrome);
         UIManager.put(ThemeColors.TAB_SEPARATOR, separator);
         JPanel panel = new JPanel();
 
@@ -238,8 +239,8 @@ public class ToolWindowSurfaceStyleTest {
 
     @Test
     public void shouldApplyDialogBackgroundToScrollPaneAndViewport() {
-        Color chrome = new Color(236, 237, 240);
-        UIManager.put(ThemeColors.WINDOW_CHROME_BACKGROUND, chrome);
+        Color chrome = new Color(247, 248, 249);
+        UIManager.put(ThemeColors.DIALOG_CHROME_BACKGROUND, chrome);
         JScrollPane scrollPane = new JScrollPane(new JPanel());
 
         ToolWindowSurfaceStyle.applyDialogScrollPane(scrollPane);
@@ -252,9 +253,9 @@ public class ToolWindowSurfaceStyleTest {
 
     @Test
     public void shouldApplyDialogBackgroundToDialogList() {
-        Color chrome = new Color(236, 237, 240);
+        Color chrome = new Color(247, 248, 249);
         Color selected = new Color(226, 235, 254);
-        UIManager.put(ThemeColors.WINDOW_CHROME_BACKGROUND, chrome);
+        UIManager.put(ThemeColors.DIALOG_CHROME_BACKGROUND, chrome);
         UIManager.put(ThemeColors.TAB_SELECTED_BACKGROUND, selected);
         JList<String> list = new JList<>(new String[]{"one"});
         JScrollPane scrollPane = new JScrollPane(list);
@@ -269,8 +270,8 @@ public class ToolWindowSurfaceStyleTest {
 
     @Test
     public void shouldApplyDialogBackgroundToDialogSplitPane() {
-        Color chrome = new Color(236, 237, 240);
-        UIManager.put(ThemeColors.WINDOW_CHROME_BACKGROUND, chrome);
+        Color chrome = new Color(247, 248, 249);
+        UIManager.put(ThemeColors.DIALOG_CHROME_BACKGROUND, chrome);
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new JPanel(), new JPanel());
 
         ToolWindowSurfaceStyle.applyDialogSplitPane(splitPane);
@@ -284,9 +285,11 @@ public class ToolWindowSurfaceStyleTest {
 
     @Test
     public void shouldApplyDialogWindowChromeToRootPaneAndTitleBar() {
-        Color chrome = new Color(236, 237, 240);
+        Color chrome = new Color(247, 248, 249);
+        Color windowChrome = new Color(233, 234, 238);
         Color foreground = new Color(12, 13, 14);
-        UIManager.put(ThemeColors.WINDOW_CHROME_BACKGROUND, chrome);
+        UIManager.put(ThemeColors.DIALOG_CHROME_BACKGROUND, chrome);
+        UIManager.put(ThemeColors.WINDOW_CHROME_BACKGROUND, windowChrome);
         UIManager.put("Menu.foreground", foreground);
         JRootPane rootPane = new JRootPane();
 

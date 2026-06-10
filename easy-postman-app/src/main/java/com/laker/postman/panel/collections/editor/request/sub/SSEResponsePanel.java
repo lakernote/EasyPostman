@@ -6,6 +6,7 @@ import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.ClearButton;
+import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.stream.MessageType;
@@ -331,21 +332,26 @@ public class SSEResponsePanel extends JPanel {
     private void showContentDialog(MessageRow row) {
         JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(this),
                 I18nUtil.getMessage(MessageKeys.SSE_DETAIL_TITLE), Dialog.ModalityType.APPLICATION_MODAL);
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(dialog);
         dialog.setSize(600, 400);
         dialog.setLocationRelativeTo(this);
 
         JPanel panel = new JPanel(new BorderLayout(5, 5));
+        ToolWindowSurfaceStyle.applyDialogSurface(panel);
         JTextArea textArea = new JTextArea();
         textArea.setEditable(false);
         textArea.setLineWrap(true);
+        ToolWindowSurfaceStyle.applyTextComponentDialogSurface(textArea);
         JScrollPane scrollPane = new JScrollPane(textArea);
+        ToolWindowSurfaceStyle.applyDialogScrollPane(scrollPane);
         panel.add(scrollPane, BorderLayout.CENTER);
 
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton copyBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_COPY));
-        JButton formatBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_FORMAT));
-        JButton rawBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_RAW));
-        JButton cancelBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL));
+        ToolWindowSurfaceStyle.applyDialogFooter(btnPanel);
+        JButton copyBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.BUTTON_COPY), false);
+        JButton formatBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.BUTTON_FORMAT), false);
+        JButton rawBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.BUTTON_RAW), false);
+        JButton cancelBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL), false);
         btnPanel.add(copyBtn);
         btnPanel.add(formatBtn);
         btnPanel.add(rawBtn);

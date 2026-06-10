@@ -1,6 +1,7 @@
 package com.laker.postman.panel.update;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.platform.update.model.UpdateInfo;
 import com.laker.postman.util.FontsUtil;
@@ -57,6 +58,7 @@ public class AutoUpdateNotification {
         dialog.setFocusableWindowState(false);
         dialog.setType(Window.Type.UTILITY);
         dialog.setOpacity(0f);
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(dialog);
 
         JPanel contentPanel = createNotificationPanel(updateInfo, onAction, variant);
         dialog.setContentPane(contentPanel);
@@ -71,27 +73,50 @@ public class AutoUpdateNotification {
 
     /** 普通更新通知（蓝色） */
     public static void show(JFrame parent, UpdateInfo updateInfo, Consumer<UpdateInfo> onViewDetails) {
-        showInternal(parent, updateInfo, onViewDetails, Variant.NORMAL);
+        show(parent, updateInfo, onViewDetails, () -> {
+        });
+    }
+
+    public static void show(JFrame parent,
+                            UpdateInfo updateInfo,
+                            Consumer<UpdateInfo> onViewDetails,
+                            Runnable onShown) {
+        showInternal(parent, updateInfo, onViewDetails, Variant.NORMAL, onShown);
     }
 
     /** 有新版本但无安装包通知（橙色） */
     public static void showNoAsset(JFrame parent, UpdateInfo updateInfo, Consumer<UpdateInfo> onAction) {
-        showInternal(parent, updateInfo, onAction, Variant.NO_ASSET);
+        showNoAsset(parent, updateInfo, onAction, () -> {
+        });
+    }
+
+    public static void showNoAsset(JFrame parent,
+                                   UpdateInfo updateInfo,
+                                   Consumer<UpdateInfo> onAction,
+                                   Runnable onShown) {
+        showInternal(parent, updateInfo, onAction, Variant.NO_ASSET, onShown);
     }
 
     private static void showInternal(JFrame parent, UpdateInfo updateInfo,
-                                     Consumer<UpdateInfo> onAction, Variant variant) {
+                                     Consumer<UpdateInfo> onAction, Variant variant, Runnable onShown) {
         SwingUtilities.invokeLater(() -> {
             if (parent == null || !parent.isVisible()) {
-                log.debug("Parent window is not visible, skip showing notification");
+                log.info("Parent window is not visible, skip showing update notification");
                 return;
             }
             if (!parent.isFocused() && !parent.isActive()) {
-                log.debug("Parent window is not active, skip showing notification");
+                log.info("Parent window is not active, skip showing update notification");
                 return;
             }
             new AutoUpdateNotification(parent, updateInfo, onAction, variant).display();
+            runOnShown(onShown);
         });
+    }
+
+    private static void runOnShown(Runnable onShown) {
+        if (onShown != null) {
+            onShown.run();
+        }
     }
 
     private void display() {

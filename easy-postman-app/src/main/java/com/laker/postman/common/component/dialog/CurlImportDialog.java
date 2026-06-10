@@ -1,6 +1,8 @@
 package com.laker.postman.common.component.dialog;
 
 import com.laker.postman.common.component.SyntaxEditorScrollPane;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.util.EditorThemeUtil;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -26,21 +28,25 @@ public class CurlImportDialog extends JDialog {
     }
 
     private void initComponents(String message, String defaultText) {
-        setLayout(new BorderLayout(10, 10));
-        addMessageLabel(message);
-        add(createEditorPanel(defaultText), BorderLayout.CENTER);
-        add(createButtonPanel(), BorderLayout.SOUTH);
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(this);
+        JPanel rootPanel = new JPanel(new BorderLayout(10, 10));
+        ToolWindowSurfaceStyle.applyDialogSurface(rootPanel);
+        setContentPane(rootPanel);
+
+        addMessageLabel(rootPanel, message);
+        rootPanel.add(createEditorPanel(defaultText), BorderLayout.CENTER);
+        rootPanel.add(createButtonPanel(), BorderLayout.SOUTH);
         configureDialogShortcuts();
 
         setPreferredSize(DIALOG_SIZE);
         pack();
     }
 
-    private void addMessageLabel(String message) {
+    private void addMessageLabel(JPanel rootPanel, String message) {
         if (message != null && !message.isEmpty()) {
             JLabel messageLabel = new JLabel(message);
-            messageLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 5, 10));
-            add(messageLabel, BorderLayout.NORTH);
+            ToolWindowSurfaceStyle.applyDialogHeader(messageLabel, 10, 10, 5, 10);
+            rootPanel.add(messageLabel, BorderLayout.NORTH);
         }
     }
 
@@ -54,6 +60,7 @@ public class CurlImportDialog extends JDialog {
         SyntaxEditorScrollPane scrollPane = new SyntaxEditorScrollPane(curlArea);
         scrollPane.setLineNumbersEnabled(true);
         JPanel editorWrapper = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyDialogSurface(editorWrapper);
         editorWrapper.setBorder(BorderFactory.createEmptyBorder(
                 CONTENT_PADDING.top,
                 CONTENT_PADDING.left,
@@ -81,8 +88,9 @@ public class CurlImportDialog extends JDialog {
 
     private JPanel createButtonPanel() {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
-        JButton okButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK));
-        JButton cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL));
+        ToolWindowSurfaceStyle.applyDialogFooter(buttonPanel);
+        JButton okButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK), true);
+        JButton cancelButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL), false);
 
         okButton.setPreferredSize(ACTION_BUTTON_SIZE);
         cancelButton.setPreferredSize(ACTION_BUTTON_SIZE);

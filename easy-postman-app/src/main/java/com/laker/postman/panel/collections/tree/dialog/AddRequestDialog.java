@@ -3,6 +3,8 @@ package com.laker.postman.panel.collections.tree.dialog;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.component.button.ModernButtonFactory;
+import com.laker.postman.common.component.setting.SettingsInputStyle;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
@@ -50,7 +52,8 @@ public class AddRequestDialog {
         dialog.setSize(400, 260);
         dialog.setLocationRelativeTo(UiSingletonFactory.getInstance(MainFrame.class));
         dialog.setLayout(new BorderLayout());
-        ToolWindowSurfaceStyle.applyBackground((JComponent) dialog.getContentPane());
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(dialog);
+        ToolWindowSurfaceStyle.applyDialogSurface((JComponent) dialog.getContentPane());
 
         JPanel mainPanel = createMainPanel();
         JPanel buttonPanel = createButtonPanel();
@@ -65,7 +68,7 @@ public class AddRequestDialog {
      */
     private JPanel createMainPanel() {
         JPanel mainPanel = new JPanel();
-        ToolWindowSurfaceStyle.applyBackground(mainPanel);
+        ToolWindowSurfaceStyle.applyDialogSurface(mainPanel);
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 10, 20));
 
@@ -90,7 +93,7 @@ public class AddRequestDialog {
 
         nameField = new JTextField();
         nameField.setPreferredSize(new Dimension(0, 30));
-        ToolWindowSurfaceStyle.applyTextComponentInput(nameField);
+        SettingsInputStyle.apply(nameField);
 
         namePanel.add(nameLabel, BorderLayout.NORTH);
         namePanel.add(nameField, BorderLayout.CENTER);
@@ -151,10 +154,10 @@ public class AddRequestDialog {
      */
     private JPanel createButtonPanel() {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        ToolWindowSurfaceStyle.applyBackground(buttonPanel);
+        ToolWindowSurfaceStyle.applyDialogFooter(buttonPanel);
 
-        JButton okButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK));
-        JButton cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_CANCEL));
+        JButton okButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK), true);
+        JButton cancelButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.GENERAL_CANCEL), false);
 
         okButton.addActionListener(e -> handleOk());
         cancelButton.addActionListener(e -> dialog.dispose());

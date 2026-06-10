@@ -1,5 +1,6 @@
 package com.laker.postman.panel.history;
 
+import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.history.RequestHistoryItem;
@@ -350,6 +351,8 @@ public class HistoryPanel extends UiSingletonPanel {
         JTabbedPane historyDetailTabPane = new JTabbedPane();
         ToolWindowSurfaceStyle.applyTabbedPaneCard(historyDetailTabPane);
         historyDetailTabPane.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        historyDetailTabPane.putClientProperty(FlatClientProperties.TABBED_PANE_HAS_FULL_BORDER, false);
+        historyDetailTabPane.putClientProperty(FlatClientProperties.TABBED_PANE_SHOW_CONTENT_SEPARATOR, false);
 
         requestPane = createDetailPane();
         responsePane = createDetailPane();
@@ -366,6 +369,7 @@ public class HistoryPanel extends UiSingletonPanel {
             scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
             scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
             ToolWindowSurfaceStyle.applyScrollPaneCard(scrollPane);
+            scrollPane.setBorder(BorderFactory.createEmptyBorder(6, 0, 0, 0));
         }
         return historyDetailTabPane;
     }

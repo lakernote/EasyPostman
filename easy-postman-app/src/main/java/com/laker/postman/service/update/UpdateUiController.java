@@ -42,8 +42,13 @@ public class UpdateUiController {
      * 显示后台更新通知（右下角弹窗）
      */
     public void showUpdateNotification(UpdateInfo updateInfo) {
+        showUpdateNotification(updateInfo, () -> {
+        });
+    }
+
+    public void showUpdateNotification(UpdateInfo updateInfo, Runnable onShown) {
         MainFrame mainFrame = UiSingletonFactory.getInstance(MainFrame.class);
-        AutoUpdateNotification.show(mainFrame, updateInfo, this::showUpdateDialog);
+        AutoUpdateNotification.show(mainFrame, updateInfo, this::showUpdateDialog, onShown);
     }
 
     /**
@@ -84,8 +89,13 @@ public class UpdateUiController {
      * 用户点击「前往 GitHub」后再弹 NoAssetDialog
      */
     public void showNoAssetNotification(UpdateInfo updateInfo) {
+        showNoAssetNotification(updateInfo, () -> {
+        });
+    }
+
+    public void showNoAssetNotification(UpdateInfo updateInfo, Runnable onShown) {
         MainFrame mainFrame = UiSingletonFactory.getInstance(MainFrame.class);
-        AutoUpdateNotification.showNoAsset(mainFrame, updateInfo, this::showNoAssetDialog);
+        AutoUpdateNotification.showNoAsset(mainFrame, updateInfo, this::showNoAssetDialog, onShown);
     }
 
     /**

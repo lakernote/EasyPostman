@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import java.util.Date;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -42,9 +43,21 @@ public class AppUpdateCheckCoordinator {
     });
 
     public AppUpdateCheckCoordinator() {
-        this.versionChecker = new VersionChecker(SettingManager::getUpdateSourcePreference);
-        this.uiController = new UpdateUiController();
-        this.updateCenter = AppUpdateCenter.get();
+        this(new VersionChecker(SettingManager::getUpdateSourcePreference),
+                new UpdateUiController(),
+                AppUpdateCenter.get());
+    }
+
+    AppUpdateCheckCoordinator(UpdateUiController uiController, UpdateCenter updateCenter) {
+        this(new VersionChecker(SettingManager::getUpdateSourcePreference), uiController, updateCenter);
+    }
+
+    AppUpdateCheckCoordinator(VersionChecker versionChecker,
+                              UpdateUiController uiController,
+                              UpdateCenter updateCenter) {
+        this.versionChecker = Objects.requireNonNull(versionChecker, "versionChecker");
+        this.uiController = Objects.requireNonNull(uiController, "uiController");
+        this.updateCenter = Objects.requireNonNull(updateCenter, "updateCenter");
     }
 
     /**
@@ -134,33 +147,33 @@ public class AppUpdateCheckCoordinator {
         SwingUtilities.invokeLater(() -> {
             String marker = notificationMarker(updateInfo);
             if (!marker.isEmpty() && !updateCenter.shouldNotify(UpdateTarget.APP, marker, isManual)) {
-                log.debug("Skipping already notified app update marker: {}", marker);
+                log.info("Skipping app update notification because marker was already notified: {}", marker);
                 return;
             }
             switch (updateInfo.getStatus()) {
                 case UPDATE_AVAILABLE -> {
                     log.info("Update available: {} -> {}",
                             updateInfo.getCurrentVersion(), updateInfo.getLatestVersion());
-                    rememberNotifiedMarker(updateInfo);
 
                     if (isManual) {
                         // 手动检查直接显示对话框
+                        rememberNotifiedMarker(updateInfo);
                         uiController.showUpdateDialog(updateInfo);
                     } else {
                         // 后台检查显示通知
-                        uiController.showUpdateNotification(updateInfo);
+                        uiController.showUpdateNotification(updateInfo, () -> rememberNotifiedMarker(updateInfo));
                     }
                 }
                 case UPDATE_AVAILABLE_NO_ASSET -> {
                     log.info("Update available but no asset for current platform: {} -> {}",
                             updateInfo.getCurrentVersion(), updateInfo.getLatestVersion());
-                    rememberNotifiedMarker(updateInfo);
                     if (isManual) {
                         // 手动检查：直接显示 NoAsset 对话框
+                        rememberNotifiedMarker(updateInfo);
                         uiController.showNoAssetDialog(updateInfo);
                     } else {
                         // 后台检查：先显示右下角 toast，点击后再弹对话框
-                        uiController.showNoAssetNotification(updateInfo);
+                        uiController.showNoAssetNotification(updateInfo, () -> rememberNotifiedMarker(updateInfo));
                     }
                 }
                 case NO_UPDATE -> {

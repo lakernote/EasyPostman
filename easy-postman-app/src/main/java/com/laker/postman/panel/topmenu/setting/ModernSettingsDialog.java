@@ -45,6 +45,14 @@ public class ModernSettingsDialog extends JDialog {
         return ModernColors.getTabHoverBackgroundColor();
     }
 
+    private Color getNavigationSelectedBackgroundColor() {
+        return ModernColors.getSelectionBackgroundColor();
+    }
+
+    private Color getNavigationSelectedForegroundColor() {
+        return ModernColors.getTextPrimary();
+    }
+
 
     public ModernSettingsDialog(Window parent) {
         this(parent, SettingsContributionRegistry.defaultRegistry());
@@ -145,14 +153,14 @@ public class ModernSettingsDialog extends JDialog {
             super.installDefaults();
             tabAreaInsets = new Insets(12, 0, 12, 0);
             contentBorderInsets = new Insets(0, 0, 0, 0);
-            tabInsets = new Insets(8, 16, 8, 16);
+            tabInsets = new Insets(8, 24, 8, 16);
             selectedTabPadInsets = new Insets(0, 0, 0, 0);
         }
 
         @Override
         protected void paintTabArea(Graphics g, int tabPlacement, int selectedIndex) {
             int tabAreaWidth = calculateTabAreaWidth(tabPlacement, runCount, maxTabWidth);
-            g.setColor(ModernColors.getWindowChromeBackgroundColor());
+            g.setColor(ModernColors.getDialogChromeBackgroundColor());
             g.fillRect(0, 0, tabAreaWidth, tabPane.getHeight());
             super.paintTabArea(g, tabPlacement, selectedIndex);
             // 左侧导航的竖线属于整个 tabArea，而不是某个 tab，避免选中项重绘时出现断线。
@@ -178,13 +186,14 @@ public class ModernSettingsDialog extends JDialog {
                                           int x, int y, int w, int h, boolean isSelected) {
             Graphics2D g2 = (Graphics2D) g.create();
             try {
+                int tabAreaWidth = calculateTabAreaWidth(tabPlacement, runCount, maxTabWidth);
                 if (isSelected) {
-                    g2.setColor(ModernColors.getTabSelectedBackgroundColor());
-                    // 选中背景少画 1px，给右侧固定分割线留出位置。
-                    g2.fillRect(x, y, Math.max(0, w - 1), h);
+                    g2.setColor(getNavigationSelectedBackgroundColor());
+                    // 左侧导航选中态要贴齐固定分割线，避免 BasicTabbedPaneUI 的 tab rect 留白造成视觉错位。
+                    g2.fillRect(0, y, Math.max(0, tabAreaWidth - 1), h);
                 } else if (getRolloverTab() == tabIndex) {
                     g2.setColor(getHoverBackgroundColor());
-                    g2.fillRect(x, y, Math.max(0, w - 1), h);
+                    g2.fillRect(0, y, Math.max(0, tabAreaWidth - 1), h);
                 }
             } finally {
                 g2.dispose();
@@ -212,9 +221,19 @@ public class ModernSettingsDialog extends JDialog {
                 g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
                         RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
 
-                g2.setColor(getTextColor());
-                g2.setFont(isSelected ? font.deriveFont(Font.BOLD) : font);
-                g2.drawString(title, textRect.x, textRect.y + metrics.getAscent());
+                g2.setColor(isSelected ? getNavigationSelectedForegroundColor() : getTextColor());
+                Font textFont = isSelected ? font.deriveFont(Font.BOLD) : font;
+                g2.setFont(textFont);
+                FontMetrics actualMetrics = g2.getFontMetrics();
+                int tabAreaWidth = calculateTabAreaWidth(tabPlacement, runCount, maxTabWidth);
+                int textWidth = actualMetrics.stringWidth(title);
+                int textX = Math.max(8, (tabAreaWidth - 1 - textWidth) / 2);
+                int textY = textRect.y + actualMetrics.getAscent();
+                if (rects != null && tabIndex >= 0 && tabIndex < rects.length) {
+                    Rectangle tabRect = rects[tabIndex];
+                    textY = tabRect.y + (tabRect.height - actualMetrics.getHeight()) / 2 + actualMetrics.getAscent();
+                }
+                g2.drawString(title, textX, textY);
             } finally {
                 g2.dispose();
             }

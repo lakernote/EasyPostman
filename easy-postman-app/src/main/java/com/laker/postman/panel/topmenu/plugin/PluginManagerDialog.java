@@ -1,7 +1,6 @@
 package com.laker.postman.panel.topmenu.plugin;
 
 import com.laker.postman.common.component.button.ModernButtonFactory;
-import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.plugin.api.PluginDescriptor;
@@ -126,6 +125,7 @@ public class PluginManagerDialog extends JDialog {
     }
 
     private void initUI() {
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(this);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setResizable(false);
         setMinimumSize(DIALOG_SIZE);
@@ -198,7 +198,7 @@ public class PluginManagerDialog extends JDialog {
                 "[grow,fill][pref!]",
                 "[]"
         ));
-        ToolWindowSurfaceStyle.applySectionHeader(panel);
+        ToolWindowSurfaceStyle.applyDialogBottomSeparator(panel);
 
         panel.add(createHeaderMainPanel(), "growx, pushx, wmin 0");
         panel.add(createHeaderActionPanel(), "alignx right, aligny top, shrink 0");
@@ -263,9 +263,14 @@ public class PluginManagerDialog extends JDialog {
         left.setMinimumSize(new Dimension(240, 200));
         right.setMinimumSize(new Dimension(420, 200));
 
-        JSplitPane splitPane = AppToolWindowChrome.createHorizontalInnerSplitPane(left, right, SIDEBAR_WIDTH);
-        splitPane.setResizeWeight(0.30);
-        return AppToolWindowChrome.wrapToolWindow(splitPane, new Insets(0, 0, 0, 0));
+        JPanel panel = createSurfacePanel(new MigLayout(
+                "fill, insets 0, gap 12, novisualpadding",
+                "[" + SIDEBAR_WIDTH + "!,fill][grow,fill]",
+                "[grow,fill]"
+        ));
+        panel.add(left, "grow, pushy");
+        panel.add(right, "grow, push");
+        return panel;
     }
 
     private JPanel createInstalledListPanel() {
@@ -440,7 +445,7 @@ public class PluginManagerDialog extends JDialog {
                 "[grow,fill][]",
                 "[]"
         ));
-        panel.setOpaque(false);
+        ToolWindowSurfaceStyle.applyDialogFooter(panel);
 
         JButton closeButton = ModernButtonFactory.createButton(
                 I18nUtil.getMessage(MessageKeys.BUTTON_CLOSE), false);
@@ -1168,9 +1173,7 @@ public class PluginManagerDialog extends JDialog {
 
     private JPanel createSoftCard(LayoutManager layout) {
         JPanel panel = new JPanel(layout);
-        panel.setOpaque(true);
-        panel.setBackground(ModernColors.getTableHeaderBackgroundColor());
-        panel.setBorder(new EmptyBorder(0, 0, 0, 0));
+        ToolWindowSurfaceStyle.applyDialogFrame(panel);
         return panel;
     }
 
@@ -1360,7 +1363,7 @@ public class PluginManagerDialog extends JDialog {
     }
 
     private void configureListAppearance(JList<?> list) {
-        ToolWindowSurfaceStyle.applyListCard(list);
+        ToolWindowSurfaceStyle.applyDialogList(list);
         list.setForeground(ModernColors.getTextPrimary());
         list.setSelectionBackground(PluginManagerTheme.listSelectionBackground());
         list.setSelectionForeground(ModernColors.getTextPrimary());

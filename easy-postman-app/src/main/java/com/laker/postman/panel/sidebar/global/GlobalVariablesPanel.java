@@ -6,6 +6,7 @@ import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.ToolWindowActionToolbar;
 import com.laker.postman.common.component.ToolWindowSidebarToolbar;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.component.button.EditButton;
 import com.laker.postman.common.component.button.SaveButton;
 import com.laker.postman.common.component.table.EasyVariableTablePanel;
@@ -76,7 +77,7 @@ public class GlobalVariablesPanel extends JPanel {
 
     private void initUI() {
         setLayout(new BorderLayout(0, 0));
-        ToolWindowSurfaceStyle.applyCard(this);
+        ToolWindowSurfaceStyle.applyDialogSurface(this);
         add(createTopPanel(), BorderLayout.NORTH);
 
         JPanel tableContainer = new JPanel(new BorderLayout());
@@ -90,7 +91,7 @@ public class GlobalVariablesPanel extends JPanel {
 
     private JPanel createTopPanel() {
         JPanel topPanel = new JPanel(new BorderLayout(10, 0));
-        ToolWindowSurfaceStyle.applySectionHeader(topPanel, 8, 12, 7, 12);
+        ToolWindowSurfaceStyle.applyDialogHeader(topPanel, 8, 12, 7, 12);
 
         topPanel.add(createHeaderPanel(), BorderLayout.WEST);
         topPanel.add(createToolbar(), BorderLayout.EAST);
@@ -402,12 +403,13 @@ public class GlobalVariablesPanel extends JPanel {
         JTextArea textArea = new JTextArea(text.toString());
         textArea.setLineWrap(false);
         textArea.setTabSize(4);
-        textArea.setBackground(ModernColors.getInputBackgroundColor());
-        textArea.setForeground(ModernColors.getTextPrimary());
+        ToolWindowSurfaceStyle.applyTextComponentInput(textArea);
         textArea.setCaretColor(ModernColors.getPrimary());
         textArea.setCaretPosition(textArea.getDocument().getLength());
 
         JScrollPane scrollPane = new JScrollPane(textArea);
+        ToolWindowSurfaceStyle.applyDialogScrollPane(scrollPane);
+        ToolWindowSurfaceStyle.applyDialogInputBorder(scrollPane, false);
         scrollPane.setPreferredSize(new Dimension(600, 400));
 
         JPanel hintPanel = new JPanel();
@@ -429,19 +431,22 @@ public class GlobalVariablesPanel extends JPanel {
         hintPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         JPanel contentPanel = new JPanel(new BorderLayout(0, 5));
+        ToolWindowSurfaceStyle.applyDialogSurface(contentPanel);
         contentPanel.add(hintPanel, BorderLayout.NORTH);
         contentPanel.add(scrollPane, BorderLayout.CENTER);
-        contentPanel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(14, 16, 14, 16));
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
-        JButton okButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK));
-        JButton cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL));
-        buttonPanel.add(okButton);
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        ToolWindowSurfaceStyle.applyDialogFooter(buttonPanel);
+        JButton cancelButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL), false);
+        JButton okButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK), true);
         buttonPanel.add(cancelButton);
+        buttonPanel.add(okButton);
 
         Window window = SwingUtilities.getWindowAncestor(this);
         JDialog dialog = new JDialog(window, I18nUtil.getMessage(MessageKeys.GLOBAL_VARIABLES_BULK_EDIT_TITLE),
                 Dialog.ModalityType.APPLICATION_MODAL);
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(dialog);
         dialog.setLayout(new BorderLayout());
         dialog.add(contentPanel, BorderLayout.CENTER);
         dialog.add(buttonPanel, BorderLayout.SOUTH);

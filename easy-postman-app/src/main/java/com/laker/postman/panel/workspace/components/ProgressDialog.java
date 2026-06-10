@@ -1,6 +1,7 @@
 package com.laker.postman.panel.workspace.components;
 
-import com.laker.postman.util.FontsUtil;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
@@ -34,6 +35,7 @@ public abstract class ProgressDialog extends JDialog {
      * 初始化对话框
      */
     protected void initDialog() {
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(this);
         setupLayout();
         setupEventHandlers();
         pack();
@@ -102,15 +104,13 @@ public abstract class ProgressDialog extends JDialog {
      * 创建标准按钮面板
      */
     protected JPanel createStandardButtonPanel(String confirmText) {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        ToolWindowSurfaceStyle.applyDialogFooter(panel);
 
-        cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL));
-        cancelButton.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        cancelButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL), false);
         cancelButton.addActionListener(this::handleCancel);
 
-        confirmButton = new JButton(confirmText);
-        confirmButton.setFont(FontsUtil.getDefaultFont(Font.BOLD));
+        confirmButton = ModernButtonFactory.createButton(confirmText, true);
         confirmButton.addActionListener(this::handleConfirm);
 
         panel.add(cancelButton);

@@ -1,6 +1,9 @@
 package com.laker.postman.panel.workspace.components;
 
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.component.button.ModernButtonFactory;
+import com.laker.postman.common.component.setting.SettingsInputStyle;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.GitAuthType;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.service.WorkspaceService;
@@ -55,9 +58,11 @@ public class RemoteConfigDialog extends JDialog {
     }
 
     private void initComponents() {
-        remoteUrlField = new JTextField(30);
-        remoteBranchField = new JTextField(15);
+        remoteUrlField = new JTextField(24);
+        SettingsInputStyle.apply(remoteUrlField);
+        remoteBranchField = new JTextField(12);
         remoteBranchField.setText("master"); // 默认远程分支
+        SettingsInputStyle.apply(remoteBranchField);
 
         gitAuthPanel = new GitAuthPanel();
 
@@ -70,23 +75,26 @@ public class RemoteConfigDialog extends JDialog {
         setupLayout();
         setupEventHandlers();
         pack();
+        setMinimumSize(new Dimension(560, getHeight()));
+        if (getWidth() < 560) {
+            setSize(560, getHeight());
+        }
         setLocationRelativeTo(getParent());
     }
 
     private void setupLayout() {
         setLayout(new BorderLayout());
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(this);
 
         JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.setOpaque(false);
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        ToolWindowSurfaceStyle.applyDialogSurface(mainPanel);
 
         // 远程仓库配置面板
-        JPanel configPanel = createConfigPanel();
-        mainPanel.add(configPanel, BorderLayout.CENTER);
+        mainPanel.add(createConfigPanel(), BorderLayout.CENTER);
 
         // 创建南部面板，包含进度面板和按钮面板
         JPanel southPanel = new JPanel(new BorderLayout());
-        southPanel.setOpaque(false);
+        ToolWindowSurfaceStyle.applyDialogSurface(southPanel);
 
         // 进度面板
         southPanel.add(progressPanel, BorderLayout.NORTH);
@@ -101,48 +109,59 @@ public class RemoteConfigDialog extends JDialog {
     }
 
     private JPanel createConfigPanel() {
-        JPanel panel = new JPanel(new BorderLayout(0, 8));
-        ToolWindowSurfaceStyle.applyCard(panel);
-        panel.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
-
-        JLabel titleLabel = new JLabel(I18nUtil.getMessage(WORKSPACE_REMOTE_CONFIG_TITLE));
-        titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
-        panel.add(titleLabel, BorderLayout.NORTH);
+        JPanel panel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyDialogSurface(panel);
+        panel.setBorder(BorderFactory.createEmptyBorder(14, 16, 14, 16));
 
         // MigLayout 表单模板：左侧标签，右侧输入框自适应拉伸
         JPanel basicPanel = new JPanel(new MigLayout(
-                "insets 8, fillx, wrap 2",
-                "[right][grow,fill]",
-                "[]8[]"
+                "insets 0, fillx, wrap 2, novisualpadding",
+                "[right]12[grow,fill]",
+                "[]10[]"
         ));
         basicPanel.setOpaque(false);
 
         // 远程仓库URL
-        basicPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_URL) + ":"));
+        basicPanel.add(createFormLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_URL) + ":"));
         basicPanel.add(remoteUrlField, "growx");
 
         // 远程分支
-        basicPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_DETAIL_REMOTE_BRANCH) + ":"));
+        basicPanel.add(createFormLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_DETAIL_REMOTE_BRANCH) + ":"));
         basicPanel.add(remoteBranchField, "growx");
 
-        JPanel contentPanel = new JPanel(new BorderLayout(0, 4));
-        contentPanel.setOpaque(false);
-        contentPanel.add(basicPanel, BorderLayout.NORTH);
+        JPanel formPanel = new JPanel(new MigLayout(
+                "insets 0, fillx, novisualpadding",
+                "[grow,fill]",
+                "[]10[]10[]"
+        ));
+        formPanel.setOpaque(false);
+        formPanel.add(basicPanel, "cell 0 0, growx");
+        JSeparator separator = new JSeparator();
+        separator.setForeground(ModernColors.getTabSeparatorColor());
+        separator.setBackground(ModernColors.getTabSeparatorColor());
+        formPanel.add(separator, "cell 0 1, growx");
         // Git认证面板
-        contentPanel.add(gitAuthPanel, BorderLayout.CENTER);
-        panel.add(contentPanel, BorderLayout.CENTER);
+        formPanel.add(gitAuthPanel, "cell 0 2, growx");
+        panel.add(formPanel, BorderLayout.CENTER);
 
         return panel;
     }
 
     private JPanel createStandardButtonPanel(String okText) {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        panel.setOpaque(false);
-        confirmButton = new JButton(okText);
-        cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_CANCEL));
-        panel.add(confirmButton);
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        ToolWindowSurfaceStyle.applyDialogFooter(panel);
+        cancelButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.GENERAL_CANCEL), false);
+        confirmButton = ModernButtonFactory.createButton(okText, true);
         panel.add(cancelButton);
+        panel.add(confirmButton);
+        getRootPane().setDefaultButton(confirmButton);
         return panel;
+    }
+
+    private JLabel createFormLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        return label;
     }
 
     private void setupEventHandlers() {

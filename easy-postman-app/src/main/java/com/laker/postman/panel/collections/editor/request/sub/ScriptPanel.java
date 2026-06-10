@@ -3,6 +3,7 @@ package com.laker.postman.panel.collections.editor.request.sub;
 import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.HelpButton;
+import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.component.button.SnippetButton;
 import com.laker.postman.common.component.dialog.SnippetDialog;
 import com.laker.postman.common.component.editor.PostmanJavaScriptTokenMaker;
@@ -113,6 +114,7 @@ public class ScriptPanel extends JPanel {
     private void showHelpDialog() {
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),
                 I18nUtil.getMessage(MessageKeys.SCRIPT_HELP_TITLE), true);
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(dialog);
         dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 
         JPanel helpPanel = createHelpPanel();
@@ -128,12 +130,12 @@ public class ScriptPanel extends JPanel {
      */
     private JPanel createHelpPanel() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
-        ToolWindowSurfaceStyle.applyCard(panel);
+        ToolWindowSurfaceStyle.applyDialogSurface(panel);
         panel.setBorder(new EmptyBorder(15, 20, 15, 20));
 
         // 主内容面板
         JPanel contentPanel = new JPanel();
-        ToolWindowSurfaceStyle.applyCard(contentPanel);
+        ToolWindowSurfaceStyle.applyDialogSurface(contentPanel);
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
 
         // 标题
@@ -169,7 +171,7 @@ public class ScriptPanel extends JPanel {
 
         // 将内容面板放入滚动面板
         JScrollPane scrollPane = new JScrollPane(contentPanel);
-        ToolWindowSurfaceStyle.applyScrollPaneCard(scrollPane);
+        ToolWindowSurfaceStyle.applyDialogScrollPane(scrollPane);
         scrollPane.setBorder(null);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
 
@@ -187,7 +189,7 @@ public class ScriptPanel extends JPanel {
         area.setLineWrap(true);
         area.setWrapStyleWord(true);
         area.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        area.setBackground(getBackground());
+        ToolWindowSurfaceStyle.applyTextComponentDialogSurface(area);
         area.setBorder(null);
         return area;
     }

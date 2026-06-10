@@ -2,8 +2,9 @@ package com.laker.postman.panel.collections.tree;
 
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.component.button.ModernButtonFactory;
+import com.laker.postman.common.component.setting.SettingsInputStyle;
 import com.laker.postman.common.component.tree.CollectionGroupTreeFactory;
-import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.collection.model.RequestGroup;
 import com.laker.postman.service.collections.CollectionTreeNodes;
@@ -71,6 +72,7 @@ public class CollectionGroupSelectionDialog {
             nameField.setText(defaultName);
             nameField.selectAll();
         }
+        SettingsInputStyle.apply(nameField);
         mainPanel.add(nameField, gbc);
 
         gbc.gridy = 2;
@@ -90,8 +92,8 @@ public class CollectionGroupSelectionDialog {
         JDialog dialog = createDialog(I18nUtil.getMessage(MessageKeys.SAVE_REQUEST), mainPanel);
         AtomicReference<RequestNameSelection> result = new AtomicReference<>();
 
-        JButton cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL));
-        JButton okButton = createPrimaryButton();
+        JButton cancelButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL), false);
+        JButton okButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK), true);
         Runnable okAction = () -> {
             String requestName = nameField.getText();
             if (requestName == null || requestName.trim().isEmpty()) {
@@ -138,8 +140,8 @@ public class CollectionGroupSelectionDialog {
 
         JDialog dialog = createDialog(I18nUtil.getMessage(MessageKeys.SELECT_GROUP), mainPanel);
         AtomicReference<RequestGroup> result = new AtomicReference<>();
-        JButton cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL));
-        JButton okButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK));
+        JButton cancelButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL), false);
+        JButton okButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK), true);
         Runnable okAction = () -> {
             Optional<RequestGroup> selectedGroup = selectedGroup(groupTree);
             if (selectedGroup.isEmpty()) {
@@ -164,23 +166,16 @@ public class CollectionGroupSelectionDialog {
     private static JDialog createDialog(String title, JPanel mainPanel) {
         JDialog dialog = new JDialog(UiSingletonFactory.getInstance(MainFrame.class), title, true);
         dialog.setLayout(new BorderLayout());
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(dialog);
+        ToolWindowSurfaceStyle.applyDialogSurface((JPanel) dialog.getContentPane());
+        ToolWindowSurfaceStyle.applyDialogSurface(mainPanel);
         dialog.add(mainPanel, BorderLayout.CENTER);
         return dialog;
     }
 
-    private static JButton createPrimaryButton() {
-        JButton okButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK));
-        okButton.setBackground(ModernColors.getPrimary());
-        okButton.setForeground(ModernColors.getTextInverse());
-        okButton.setFocusPainted(false);
-        okButton.setBorderPainted(false);
-        okButton.setOpaque(true);
-        return okButton;
-    }
-
     private static void installButtons(JDialog dialog, JButton cancelButton, JButton okButton, Runnable okAction) {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 12));
-        ToolWindowSurfaceStyle.applySectionHeader(buttonPanel);
+        ToolWindowSurfaceStyle.applyDialogFooter(buttonPanel);
         cancelButton.setPreferredSize(new Dimension(80, 32));
         okButton.setPreferredSize(new Dimension(80, 32));
         okButton.addActionListener(e -> okAction.run());

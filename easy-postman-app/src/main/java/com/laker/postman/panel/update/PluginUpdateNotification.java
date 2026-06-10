@@ -1,6 +1,7 @@
 package com.laker.postman.panel.update;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.service.update.plugin.PluginUpdateCandidate;
 import com.laker.postman.util.FontsUtil;
@@ -50,6 +51,7 @@ public class PluginUpdateNotification {
         dialog.setFocusableWindowState(false);
         dialog.setType(Window.Type.UTILITY);
         dialog.setOpacity(0f);
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(dialog);
 
         JPanel contentPanel = createNotificationPanel(updates, onAction);
         dialog.setContentPane(contentPanel);

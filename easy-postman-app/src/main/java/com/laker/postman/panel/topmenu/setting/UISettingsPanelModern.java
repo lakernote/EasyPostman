@@ -352,6 +352,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
         sidebarTabList.setTransferHandler(new SidebarTabListTransferHandler());
         sidebarTabList.setFixedCellHeight(38);
         sidebarTabList.setVisibleRowCount(Math.min(sidebarTabListModel.size(), 7));
+        ToolWindowSurfaceStyle.applyDialogList(sidebarTabList);
         sidebarTabList.setSelectionBackground(ModernColors.getTabSelectedBackgroundColor());
         sidebarTabList.setSelectionForeground(getTextPrimaryColor());
         sidebarTabList.addMouseListener(new MouseAdapter() {
@@ -855,9 +856,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
             dragHintLabel.setFont(com.laker.postman.util.FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
             dragHintLabel.setForeground(getTextSecondaryColor());
 
-            Color background = isSelected
-                    ? ModernColors.getTabSelectedBackgroundColor()
-                    : ModernColors.getBackgroundColor();
+            Color background = isSelected ? list.getSelectionBackground() : list.getBackground();
             setBackground(background);
             return this;
         }

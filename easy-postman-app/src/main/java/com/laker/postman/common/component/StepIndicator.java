@@ -19,7 +19,7 @@ public class StepIndicator extends JPanel {
     public StepIndicator() {
         this.steps = getStepsForOperation();
 
-        setLayout(new FlowLayout(FlowLayout.CENTER, 20, 0));
+        setLayout(new FlowLayout(FlowLayout.CENTER, 10, 0));
         setOpaque(false);
 
         initSteps();
@@ -43,7 +43,7 @@ public class StepIndicator extends JPanel {
      * 获取圆圈边框颜色（主题适配）
      */
     private Color getCircleBorderColor() {
-        return ModernColors.getCardBackgroundColor();
+        return ModernColors.getBorderMediumColor();
     }
 
     /**
@@ -57,7 +57,7 @@ public class StepIndicator extends JPanel {
      * 获取非激活状态的文本颜色（主题适配）
      */
     private Color getInactiveTextColor() {
-        return ModernColors.getTextSecondary();
+        return ModernColors.getTextHint();
     }
 
     /**
@@ -84,21 +84,18 @@ public class StepIndicator extends JPanel {
     }
 
     private JPanel createStepCircle(int number, String text, boolean active) {
-        JPanel panel = new JPanel(new BorderLayout());
+        JPanel panel = new JPanel(new BorderLayout(0, 2));
         panel.setOpaque(false);
 
-        // 圆圈 - 使用主题适配的颜色
-        JLabel circle = new JLabel(String.valueOf(number), SwingConstants.CENTER);
-        circle.setPreferredSize(new Dimension(30, 30));
-        circle.setOpaque(true);
+        JLabel circle = new StepBadge(String.valueOf(number));
+        circle.setPreferredSize(new Dimension(22, 22));
         circle.setBackground(active ? getActiveCircleBackground() : getInactiveCircleBackground());
-        circle.setForeground(ModernColors.getTextInverse());
+        circle.setForeground(active ? ModernColors.getTextInverse() : getInactiveTextColor());
         circle.setFont(FontsUtil.getDefaultFont(Font.BOLD));
-        circle.setBorder(BorderFactory.createLineBorder(getCircleBorderColor(), 2));
 
         // 文本 - 使用主题适配的颜色
         JLabel label = new JLabel(text, SwingConstants.CENTER);
-        label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
+        label.setFont(FontsUtil.getDefaultFontWithOffset(active ? Font.BOLD : Font.PLAIN, -3));
         label.setForeground(active ? getActiveTextColor() : getInactiveTextColor());
 
         panel.add(circle, BorderLayout.CENTER);
@@ -108,8 +105,8 @@ public class StepIndicator extends JPanel {
     }
 
     private JLabel createArrow() {
-        JLabel arrow = new JLabel("→");
-        arrow.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, 4)); // 比标准字体大4号
+        JLabel arrow = new JLabel("›");
+        arrow.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, 2)); // 比标准字体大2号
         arrow.setForeground(getArrowColor()); // 使用主题适配的箭头颜色
         return arrow;
     }
@@ -120,5 +117,31 @@ public class StepIndicator extends JPanel {
         initSteps();
         revalidate();
         repaint();
+    }
+
+    private final class StepBadge extends JLabel {
+        private StepBadge(String text) {
+            super(text, SwingConstants.CENTER);
+            setOpaque(false);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            int width = getWidth();
+            int height = getHeight();
+            int size = Math.min(width, height);
+            int x = (width - size) / 2;
+            int y = (height - size) / 2;
+
+            g2.setColor(getBackground());
+            g2.fillRoundRect(x, y, size - 1, size - 1, size, size);
+            g2.setColor(getCircleBorderColor());
+            g2.drawRoundRect(x, y, size - 1, size - 1, size, size);
+            g2.dispose();
+
+            super.paintComponent(g);
+        }
     }
 }

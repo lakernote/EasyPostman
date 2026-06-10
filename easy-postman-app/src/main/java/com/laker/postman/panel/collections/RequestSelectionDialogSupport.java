@@ -5,6 +5,7 @@ import com.laker.postman.request.model.HttpRequestItem;
 
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.util.I18nUtil;
@@ -39,6 +40,8 @@ public class RequestSelectionDialogSupport {
         dialog.setResizable(false);
         dialog.setLocationRelativeTo(null);
         dialog.setLayout(new BorderLayout());
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(dialog);
+        ToolWindowSurfaceStyle.applyDialogSurface((JPanel) dialog.getContentPane());
 
         JTree tree = requestCollectionsLeftPanel.createRequestSelectionTree();
         tree.getSelectionModel().setSelectionMode(TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION);
@@ -53,7 +56,7 @@ public class RequestSelectionDialogSupport {
         ToolWindowSurfaceStyle.applyTreeScrollPaneCard(treeScroll, tree);
         dialog.add(treeScroll, BorderLayout.CENTER);
 
-        JButton okBtn = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK));
+        JButton okBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK), true);
         okBtn.addActionListener(e -> {
             List<HttpRequestItem> selected = requestCollectionsLeftPanel.getSelectedRequestsFromTree(tree);
             if (selected.isEmpty()) {
@@ -66,9 +69,10 @@ public class RequestSelectionDialogSupport {
             onSelected.accept(selected);
             dialog.dispose();
         });
-        JButton cancelBtn = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_CANCEL));
+        JButton cancelBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.GENERAL_CANCEL), false);
         cancelBtn.addActionListener(e -> dialog.dispose());
         JPanel btns = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        ToolWindowSurfaceStyle.applyDialogFooter(btns);
         btns.add(okBtn);
         btns.add(cancelBtn);
         dialog.add(btns, BorderLayout.SOUTH);

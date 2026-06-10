@@ -3,6 +3,8 @@ package com.laker.postman.common.component.dialog;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.component.button.ModernButtonFactory;
+import com.laker.postman.common.component.setting.SettingsInputStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.model.GitRepoSource;
@@ -36,11 +38,12 @@ public class WorkspaceSelectionDialog extends JDialog {
         setSize(500, 400);
         setLocationRelativeTo(UiSingletonFactory.getInstance(MainFrame.class));
         setLayout(new BorderLayout(10, 10));
-        ToolWindowSurfaceStyle.applyBackground((JComponent) getContentPane());
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(this);
+        ToolWindowSurfaceStyle.applyDialogSurface((JComponent) getContentPane());
 
         // 主面板
         JPanel mainPanel = new JPanel(new BorderLayout(5, 5));
-        ToolWindowSurfaceStyle.applyCard(mainPanel);
+        ToolWindowSurfaceStyle.applyDialogSurface(mainPanel);
         mainPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
 
         // 顶部搜索框
@@ -49,7 +52,7 @@ public class WorkspaceSelectionDialog extends JDialog {
         JLabel searchLabel = new JLabel(I18nUtil.getMessage(MessageKeys.GENERAL_SEARCH) + ":");
         searchField = new JTextField();
         searchField.setPreferredSize(new Dimension(0, 30));
-        ToolWindowSurfaceStyle.applyTextComponentInput(searchField);
+        SettingsInputStyle.apply(searchField);
         searchPanel.add(searchLabel, BorderLayout.WEST);
         searchPanel.add(searchField, BorderLayout.CENTER);
         mainPanel.add(searchPanel, BorderLayout.NORTH);
@@ -66,7 +69,7 @@ public class WorkspaceSelectionDialog extends JDialog {
         workspaceList.setCellRenderer(new WorkspaceListCellRenderer());
 
         JScrollPane scrollPane = new JScrollPane(workspaceList);
-        ToolWindowSurfaceStyle.applyListScrollPaneCard(scrollPane, workspaceList);
+        ToolWindowSurfaceStyle.applyDialogListScrollPane(scrollPane, workspaceList);
         mainPanel.add(scrollPane, BorderLayout.CENTER);
 
         // 说明文字
@@ -80,11 +83,10 @@ public class WorkspaceSelectionDialog extends JDialog {
 
         // 按钮面板
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
-        buttonPanel.setOpaque(false);
-        buttonPanel.setBorder(new EmptyBorder(0, 15, 10, 15));
+        ToolWindowSurfaceStyle.applyDialogFooter(buttonPanel);
 
-        JButton okButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK));
-        JButton cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_CANCEL));
+        JButton okButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK), true);
+        JButton cancelButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.GENERAL_CANCEL), false);
 
         okButton.setPreferredSize(new Dimension(80, 30));
         cancelButton.setPreferredSize(new Dimension(80, 30));

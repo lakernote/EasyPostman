@@ -57,6 +57,7 @@ public class ThemeColors {
     public static final String BACKGROUND = "EasyPostman.background";
     public static final String SURFACE = "EasyPostman.surface";
     public static final String WINDOW_CHROME_BACKGROUND = "EasyPostman.window.chrome.background";
+    public static final String DIALOG_CHROME_BACKGROUND = "EasyPostman.dialog.chrome.background";
     public static final String INPUT_BACKGROUND = "EasyPostman.input.background";
     public static final String TAB_BACKGROUND = "EasyPostman.tab.background";
     public static final String TAB_SELECTED_BACKGROUND = "EasyPostman.tab.selected.background";
@@ -138,6 +139,7 @@ public class ThemeColors {
             BACKGROUND,
             SURFACE,
             WINDOW_CHROME_BACKGROUND,
+            DIALOG_CHROME_BACKGROUND,
             INPUT_BACKGROUND,
             TAB_BACKGROUND,
             TAB_SELECTED_BACKGROUND,

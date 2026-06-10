@@ -1,18 +1,21 @@
 package com.laker.postman.panel.workspace.components;
 
 import com.laker.postman.common.component.button.RefreshButton;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.component.button.ModernButtonFactory;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.GitCommitInfo;
 import com.laker.postman.model.GitOperationResult;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
@@ -51,26 +54,48 @@ public class GitHistoryDialog extends JDialog {
     }
 
     private void initUI() {
-        setSize(700, 400);
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(this);
+        setSize(760, 440);
+        setMinimumSize(new Dimension(680, 360));
         setLocationRelativeTo(getOwner());
-        setLayout(new BorderLayout(0, 0)); // 移除边距
+        setLayout(new BorderLayout(0, 0));
+
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyDialogSurface(mainPanel);
 
         // 创建工具栏
-        add(createToolbar(), BorderLayout.NORTH);
+        mainPanel.add(createToolbar(), BorderLayout.NORTH);
 
         // 创建表格
-        add(createTablePanel(), BorderLayout.CENTER);
+        JPanel contentPanel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyDialogSurface(contentPanel);
+        contentPanel.setBorder(new EmptyBorder(0, 18, 16, 18));
+        contentPanel.add(createTablePanel(), BorderLayout.CENTER);
+        mainPanel.add(contentPanel, BorderLayout.CENTER);
 
         // 创建按钮面板
-        add(createButtonPanel(), BorderLayout.SOUTH);
+        mainPanel.add(createButtonPanel(), BorderLayout.SOUTH);
+        setContentPane(mainPanel);
     }
 
     private JPanel createToolbar() {
-        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 3));
-        toolbar.setBorder(BorderFactory.createEmptyBorder(8, 10, 3, 10)); // 减少下边距
+        JPanel toolbar = new JPanel(new BorderLayout(12, 0));
+        ToolWindowSurfaceStyle.applyDialogHeader(toolbar, 10, 18, 10, 18);
+
+        JPanel titlePanel = new JPanel(new GridLayout(2, 1, 0, 2));
+        titlePanel.setOpaque(false);
+        JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.GIT_HISTORY_TITLE));
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 1));
+        JLabel workspaceLabel = new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_NAME) + ": " + workspace.getName());
+        workspaceLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        workspaceLabel.setForeground(ModernColors.getTextSecondary());
+        titlePanel.add(titleLabel);
+        titlePanel.add(workspaceLabel);
+        toolbar.add(titlePanel, BorderLayout.WEST);
+
         RefreshButton refreshButton = new RefreshButton();
         refreshButton.addActionListener(e -> loadHistory());
-        toolbar.add(refreshButton);
+        toolbar.add(refreshButton, BorderLayout.EAST);
 
         return toolbar;
     }
@@ -92,6 +117,8 @@ public class GitHistoryDialog extends JDialog {
 
         historyTable = new JTable(tableModel);
         historyTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        historyTable.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        historyTable.setRowHeight(28);
         historyTable.getTableHeader().setFont(FontsUtil.getDefaultFont(Font.BOLD));
 
         // 设置列宽
@@ -117,29 +144,40 @@ public class GitHistoryDialog extends JDialog {
         });
 
         JScrollPane scrollPane = new JScrollPane(historyTable);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder(0, 10, 8, 10)); // 优化边距
+        ToolWindowSurfaceStyle.applyTableScrollPaneCard(scrollPane, historyTable);
+        ToolWindowSurfaceStyle.applyDialogFrame(scrollPane);
         return scrollPane;
     }
 
     private JPanel createButtonPanel() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 3));
-        panel.setBorder(BorderFactory.createEmptyBorder(3, 10, 10, 10)); // 优化边距，减少上边距
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        ToolWindowSurfaceStyle.applyDialogFooter(panel);
 
-        viewDetailsButton = new JButton(I18nUtil.getMessage(MessageKeys.GIT_HISTORY_VIEW_DETAILS));
-        viewDetailsButton.setIcon(IconUtil.createThemed("icons/detail.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+        JButton closeButton = ModernButtonFactory.createButton(
+                I18nUtil.getMessage(MessageKeys.GIT_HISTORY_CLOSE),
+                false,
+                "icons/close.svg"
+        );
+        closeButton.addActionListener(e -> dispose());
+        panel.add(closeButton);
+
+        viewDetailsButton = ModernButtonFactory.createButton(
+                I18nUtil.getMessage(MessageKeys.GIT_HISTORY_VIEW_DETAILS),
+                false,
+                "icons/detail.svg"
+        );
         viewDetailsButton.setEnabled(false); // 初始状态禁用
         viewDetailsButton.addActionListener(e -> viewCommitDetails());
         panel.add(viewDetailsButton);
 
-        restoreButton = new JButton(I18nUtil.getMessage(MessageKeys.GIT_HISTORY_RESTORE));
-        restoreButton.setIcon(IconUtil.createThemed("icons/history.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+        restoreButton = ModernButtonFactory.createButton(
+                I18nUtil.getMessage(MessageKeys.GIT_HISTORY_RESTORE),
+                true,
+                "icons/history.svg"
+        );
         restoreButton.setEnabled(false); // 初始状态禁用
         restoreButton.addActionListener(e -> restoreToCommit());
         panel.add(restoreButton);
-        JButton closeButton = new JButton(I18nUtil.getMessage(MessageKeys.GIT_HISTORY_CLOSE));
-        closeButton.setIcon(IconUtil.createThemed("icons/close.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
-        closeButton.addActionListener(e -> dispose());
-        panel.add(closeButton);
 
         // 添加表格选择监听器，根据选择状态启用/禁用按钮
         historyTable.getSelectionModel().addListSelectionListener(e -> {
@@ -239,8 +277,13 @@ public class GitHistoryDialog extends JDialog {
                     JTextArea textArea = new JTextArea(details);
                     textArea.setEditable(false);
                     textArea.setCaretPosition(0);
+                    textArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+                    textArea.setBorder(new EmptyBorder(8, 10, 8, 10));
+                    ToolWindowSurfaceStyle.applyTextComponentDialogSurface(textArea);
 
                     JScrollPane scrollPane = new JScrollPane(textArea);
+                    ToolWindowSurfaceStyle.applyDialogScrollPane(scrollPane);
+                    ToolWindowSurfaceStyle.applyDialogFrame(scrollPane);
                     scrollPane.setPreferredSize(new Dimension(700, 500));
 
                     JOptionPane.showMessageDialog(

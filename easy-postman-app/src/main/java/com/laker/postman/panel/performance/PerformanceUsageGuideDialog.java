@@ -1,5 +1,6 @@
 package com.laker.postman.panel.performance;
 
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -29,6 +30,7 @@ final class PerformanceUsageGuideDialog {
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_USAGE_HELP_TITLE),
                 Dialog.ModalityType.APPLICATION_MODAL
         );
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(dialog);
         dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         dialog.setContentPane(createContent());
         dialog.setSize(760, 560);
@@ -38,6 +40,7 @@ final class PerformanceUsageGuideDialog {
 
     private static JComponent createContent() {
         JPanel panel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyDialogSurface(panel);
         panel.setBorder(BorderFactory.createEmptyBorder(14, 16, 14, 16));
 
         JTextArea textArea = new JTextArea(I18nUtil.getMessage(MessageKeys.PERFORMANCE_USAGE_HELP_CONTENT));
@@ -46,8 +49,10 @@ final class PerformanceUsageGuideDialog {
         textArea.setWrapStyleWord(false);
         textArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         textArea.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
+        ToolWindowSurfaceStyle.applyTextComponentDialogSurface(textArea);
 
         JScrollPane scrollPane = new JScrollPane(textArea);
+        ToolWindowSurfaceStyle.applyDialogScrollPane(scrollPane);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         panel.add(scrollPane, BorderLayout.CENTER);
         return panel;

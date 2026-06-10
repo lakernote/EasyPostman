@@ -1,6 +1,7 @@
 package com.laker.postman.plugin.clientcert;
 
 import com.laker.postman.common.component.button.ModernButtonFactory;
+import com.laker.postman.common.component.setting.SettingsInputStyle;
 import com.laker.postman.common.component.setting.SettingsHintLabel;
 import com.laker.postman.common.component.ToolWindowActionToolbar;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
@@ -37,6 +38,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dialog;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -403,8 +405,10 @@ public class ClientCertificateSettingsPanel extends JPanel {
         }
 
         private void initUI() {
+            ToolWindowSurfaceStyle.applyDialogWindowChrome(this);
             setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
             setLayout(new BorderLayout(10, 10));
+            ToolWindowSurfaceStyle.applyDialogSurface((JPanel) getContentPane());
             ((JPanel) getContentPane()).setBorder(new EmptyBorder(20, 20, 20, 20));
             add(createFormPanel(), BorderLayout.CENTER);
             add(createDialogButtonPanel(), BorderLayout.SOUTH);
@@ -412,7 +416,7 @@ public class ClientCertificateSettingsPanel extends JPanel {
 
         private JPanel createFormPanel() {
             JPanel formPanel = new JPanel(new GridBagLayout());
-            formPanel.setOpaque(false);
+            ToolWindowSurfaceStyle.applyDialogSurface(formPanel);
             GridBagConstraints gbc = new GridBagConstraints();
             gbc.insets = new Insets(8, 8, 8, 8);
             gbc.anchor = GridBagConstraints.WEST;
@@ -440,7 +444,7 @@ public class ClientCertificateSettingsPanel extends JPanel {
             addPathRow(formPanel, gbc, row++, false);
             addFormRow(formPanel, gbc, row++, new FormRow(
                     ClientCertI18n.t(MessageKeys.CERT_PASSWORD) + ":",
-                    passwordField = new JPasswordField(30),
+                    passwordField = createPasswordField(30),
                     false
             ));
             addFormRow(formPanel, gbc, row, new FormRow(
@@ -483,6 +487,7 @@ public class ClientCertificateSettingsPanel extends JPanel {
                     ClientCertI18n.t(MessageKeys.CERT_TYPE_PFX),
                     ClientCertI18n.t(MessageKeys.CERT_TYPE_PEM)
             });
+            SettingsInputStyle.apply(certTypeCombo);
             certTypeCombo.addActionListener(e -> updateFieldVisibility());
             panel.add(certTypeCombo, gbc);
         }
@@ -515,26 +520,37 @@ public class ClientCertificateSettingsPanel extends JPanel {
 
             gbc.gridx = 2;
             gbc.weightx = 0;
-            JButton selectButton = new JButton(ClientCertI18n.t(MessageKeys.CERT_SELECT_FILE));
+            JButton selectButton = ModernButtonFactory.createButton(ClientCertI18n.t(MessageKeys.CERT_SELECT_FILE), false);
             selectButton.addActionListener(e -> selectFile(field));
             panel.add(selectButton, gbc);
         }
 
         private JTextField createTextField(int columns, String placeholder) {
             JTextField field = new JTextField(columns);
+            SettingsInputStyle.apply(field);
             if (placeholder != null && !placeholder.isEmpty()) {
                 field.setToolTipText(placeholder);
             }
             return field;
         }
 
+        private JPasswordField createPasswordField(int columns) {
+            JPasswordField field = new JPasswordField(columns);
+            SettingsInputStyle.apply(field);
+            return field;
+        }
+
         private JPanel createDialogButtonPanel() {
-            JButton saveButton = new JButton(ClientCertI18n.t(MessageKeys.CERT_SAVE));
-            JButton cancelButton = new JButton(ClientCertI18n.t(MessageKeys.CERT_CANCEL));
+            JButton cancelButton = ModernButtonFactory.createButton(ClientCertI18n.t(MessageKeys.CERT_CANCEL), false);
+            JButton saveButton = ModernButtonFactory.createButton(ClientCertI18n.t(MessageKeys.CERT_SAVE), true);
             saveButton.addActionListener(e -> save());
             cancelButton.addActionListener(e -> dispose());
 
-            return ToolWindowActionToolbar.inlineRight(saveButton, cancelButton);
+            JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+            ToolWindowSurfaceStyle.applyDialogFooter(buttonPanel);
+            buttonPanel.add(cancelButton);
+            buttonPanel.add(saveButton);
+            return buttonPanel;
         }
 
         private void updateFieldVisibility() {

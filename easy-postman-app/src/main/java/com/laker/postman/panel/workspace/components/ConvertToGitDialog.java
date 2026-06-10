@@ -1,6 +1,8 @@
 package com.laker.postman.panel.workspace.components;
 
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.component.button.ModernButtonFactory;
+import com.laker.postman.common.component.setting.SettingsInputStyle;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -8,6 +10,7 @@ import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 
@@ -36,7 +39,7 @@ public class ConvertToGitDialog extends JDialog {
     private void initComponents() {
         branchField = new JTextField("master", 20);
         branchField.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        ToolWindowSurfaceStyle.applyTextComponentInput(branchField);
+        SettingsInputStyle.apply(branchField);
 
         // 添加回车键确认支持
         branchField.addActionListener(e -> onConfirm());
@@ -73,19 +76,23 @@ public class ConvertToGitDialog extends JDialog {
 
     private void setupLayout() {
         setLayout(new BorderLayout());
-        ToolWindowSurfaceStyle.applyBackground((JComponent) getContentPane());
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(this);
 
-        JPanel mainPanel = new JPanel(new BorderLayout(0, 15));
-        ToolWindowSurfaceStyle.applyCard(mainPanel);
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 25, 20, 25));
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyDialogSurface(mainPanel);
+
+        JPanel contentPanel = new JPanel(new BorderLayout(0, 12));
+        ToolWindowSurfaceStyle.applyDialogSurface(contentPanel);
+        contentPanel.setBorder(new EmptyBorder(16, 18, 16, 18));
 
         // 顶部信息区域
         JPanel topPanel = createTopPanel();
-        mainPanel.add(topPanel, BorderLayout.NORTH);
+        contentPanel.add(topPanel, BorderLayout.NORTH);
 
         // 中间输入区域
         JPanel centerPanel = createCenterPanel();
-        mainPanel.add(centerPanel, BorderLayout.CENTER);
+        contentPanel.add(centerPanel, BorderLayout.CENTER);
+        mainPanel.add(contentPanel, BorderLayout.CENTER);
 
         // 底部按钮区域
         JPanel buttonPanel = createButtonPanel();
@@ -98,25 +105,25 @@ public class ConvertToGitDialog extends JDialog {
      * 创建顶部信息面板
      */
     private JPanel createTopPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        ToolWindowSurfaceStyle.applyCard(panel);
-        panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        JPanel panel = new JPanel(new BorderLayout(10, 0));
+        panel.setOpaque(false);
+        panel.setBorder(new EmptyBorder(0, 0, 4, 0));
 
         // 左侧图标
         JLabel iconLabel = new JLabel(com.laker.postman.util.IconUtil.create(
-                "icons/git.svg", 32, 32));
+                "icons/git.svg", 24, 24));
         panel.add(iconLabel, BorderLayout.WEST);
 
         // 右侧信息
-        JPanel infoPanel = new JPanel(new GridLayout(3, 1, 0, 5));
+        JPanel infoPanel = new JPanel(new GridLayout(3, 1, 0, 3));
         infoPanel.setOpaque(false);
 
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_CONVERT_TO_GIT));
         titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 1));
         infoPanel.add(titleLabel);
 
-        JLabel workspaceLabel = new JLabel("Workspace: " + workspace.getName());
-        workspaceLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        JLabel workspaceLabel = new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_NAME) + ": " + workspace.getName());
+        workspaceLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         infoPanel.add(workspaceLabel);
 
         // 添加提示信息
@@ -133,27 +140,17 @@ public class ConvertToGitDialog extends JDialog {
      * 创建中间输入面板
      */
     private JPanel createCenterPanel() {
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setOpaque(false);
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 0, 8, 0);
-        gbc.anchor = GridBagConstraints.WEST;
+        JPanel panel = new JPanel(new BorderLayout(0, 8));
+        ToolWindowSurfaceStyle.applyDialogTopSeparator(panel, 10, 0, 0, 0);
 
         // 分支名称标签
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 2;
         JLabel branchLabel = new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_CONVERT_BRANCH_PROMPT) + ":");
-        branchLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        panel.add(branchLabel, gbc);
+        branchLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        panel.add(branchLabel, BorderLayout.NORTH);
 
         // 分支输入框
-        gbc.gridy = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 1.0;
-        branchField.setPreferredSize(new Dimension(300, 28));
-        panel.add(branchField, gbc);
+        branchField.setPreferredSize(new Dimension(320, branchField.getPreferredSize().height));
+        panel.add(branchField, BorderLayout.CENTER);
 
 
         return panel;
@@ -164,17 +161,10 @@ public class ConvertToGitDialog extends JDialog {
      */
     private JPanel createButtonPanel() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        ToolWindowSurfaceStyle.applySectionHeader(panel, 15, 0, 0, 0);
+        ToolWindowSurfaceStyle.applyDialogFooter(panel);
 
-        confirmButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK));
-        JButton cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_CANCEL));
-
-        confirmButton.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        cancelButton.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-
-        // 设置按钮样式
-        confirmButton.setPreferredSize(new Dimension(80, 30));
-        cancelButton.setPreferredSize(new Dimension(80, 30));
+        confirmButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK), true);
+        JButton cancelButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.GENERAL_CANCEL), false);
 
         confirmButton.addActionListener(e -> onConfirm());
         cancelButton.addActionListener(e -> dispose());

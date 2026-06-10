@@ -1,10 +1,10 @@
 package com.laker.postman.panel.workspace.components;
 
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.model.GitAuthType;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.service.WorkspaceService;
-import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
@@ -49,27 +49,22 @@ public class UpdateAuthDialog extends JDialog {
     private void initDialog() {
         setupLayout();
         setupEventHandlers();
-        setSize(430, 230); // 设置对话框
-        setMinimumSize(new Dimension(430, 230)); // 设置最小尺寸
+        pack();
+        setMinimumSize(new Dimension(520, getHeight()));
+        if (getWidth() < 520) {
+            setSize(520, getHeight());
+        }
         setLocationRelativeTo(getParent());
     }
 
     private void setupLayout() {
         setLayout(new BorderLayout());
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(this);
 
         JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.setOpaque(false);
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        ToolWindowSurfaceStyle.applyDialogSurface(mainPanel);
 
-        // Git认证面板
-        JPanel authContainer = new JPanel(new BorderLayout(0, 8));
-        ToolWindowSurfaceStyle.applyCard(authContainer);
-        authContainer.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
-        JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_AUTH_TYPE));
-        titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
-        authContainer.add(titleLabel, BorderLayout.NORTH);
-        authContainer.add(gitAuthPanel, BorderLayout.CENTER);
-        mainPanel.add(authContainer, BorderLayout.CENTER);
+        mainPanel.add(createAuthPanel(), BorderLayout.CENTER);
 
         // 按钮面板
         JPanel buttonPanel = createButtonPanel();
@@ -79,12 +74,26 @@ public class UpdateAuthDialog extends JDialog {
     }
 
     private JPanel createButtonPanel() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        panel.setOpaque(false);
-        confirmButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK));
-        cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_CANCEL));
-        panel.add(confirmButton);
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        ToolWindowSurfaceStyle.applyDialogFooter(panel);
+        cancelButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.GENERAL_CANCEL), false);
+        confirmButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK), true);
         panel.add(cancelButton);
+        panel.add(confirmButton);
+        getRootPane().setDefaultButton(confirmButton);
+        return panel;
+    }
+
+    private JPanel createAuthPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyDialogSurface(panel);
+        panel.setBorder(BorderFactory.createEmptyBorder(14, 16, 14, 16));
+
+        JPanel bodyPanel = new JPanel(new BorderLayout());
+        bodyPanel.setOpaque(false);
+        bodyPanel.add(gitAuthPanel, BorderLayout.NORTH);
+        panel.add(bodyPanel, BorderLayout.CENTER);
+
         return panel;
     }
 

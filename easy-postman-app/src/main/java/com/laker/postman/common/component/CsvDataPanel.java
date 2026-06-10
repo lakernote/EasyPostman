@@ -287,13 +287,16 @@ public class CsvDataPanel extends JPanel {
                 I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_DIALOG_TITLE), true);
         dialog.setLayout(new BorderLayout());
         dialog.setResizable(false);
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(dialog);
 
         JPanel rootPanel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyDialogSurface(rootPanel);
         rootPanel.setBorder(BorderFactory.createEmptyBorder(18, 22, 14, 22));
         dialog.add(rootPanel, BorderLayout.CENTER);
 
         // 顶部说明面板
         JPanel topPanel = new JPanel(new BorderLayout(0, 8));
+        ToolWindowSurfaceStyle.applyDialogSurface(topPanel);
 
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_DIALOG_TITLE));
         titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +2));
@@ -309,6 +312,7 @@ public class CsvDataPanel extends JPanel {
 
         // 中间内容面板
         JPanel contentPanel = new JPanel(new GridBagLayout());
+        ToolWindowSurfaceStyle.applyDialogSurface(contentPanel);
         contentPanel.setBorder(BorderFactory.createEmptyBorder(12, 0, 12, 0));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -329,6 +333,7 @@ public class CsvDataPanel extends JPanel {
         headersField.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         headersField.setText("username,password,email");
         headersField.setColumns(36);
+        ToolWindowSurfaceStyle.applyTextComponentInput(headersField);
         contentPanel.add(headersField, gbc);
 
         // 占位符提示
@@ -343,7 +348,7 @@ public class CsvDataPanel extends JPanel {
 
         // 底部按钮面板
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        bottomPanel.setBorder(BorderFactory.createEmptyBorder(4, 0, 0, 0));
+        ToolWindowSurfaceStyle.applyDialogFooter(bottomPanel);
 
         JButton createBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK), true);
         createBtn.addActionListener(e -> {
@@ -439,11 +444,12 @@ public class CsvDataPanel extends JPanel {
         dialog.setResizable(false);
         dialog.setLocationRelativeTo(UiSingletonFactory.getInstance(MainFrame.class));
         dialog.setLayout(new BorderLayout());
-        ToolWindowSurfaceStyle.applyBackground((JComponent) dialog.getContentPane());
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(dialog);
+        ToolWindowSurfaceStyle.applyDialogSurface((JComponent) dialog.getContentPane());
 
         // ── NORTH：标题 + 可滚动说明文字 ──
         JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.setOpaque(false);
+        ToolWindowSurfaceStyle.applyDialogSurface(topPanel);
         topPanel.setBorder(BorderFactory.createEmptyBorder(14, 16, 0, 16));
 
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_DATA_DRIVEN_TEST));
@@ -461,10 +467,11 @@ public class CsvDataPanel extends JPanel {
         descArea.setCaretPosition(0);
         descArea.setLineWrap(true);
         descArea.setWrapStyleWord(true);
+        ToolWindowSurfaceStyle.applyTextComponentDialogSurface(descArea);
         JScrollPane descScroll = new JScrollPane(descArea,
                 ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        ToolWindowSurfaceStyle.applyScrollPaneCard(descScroll);
+        ToolWindowSurfaceStyle.applyDialogScrollPane(descScroll);
         descScroll.setPreferredSize(new Dimension(0, 180));
         descScroll.getVerticalScrollBar().setUnitIncrement(10);
         topPanel.add(descScroll, BorderLayout.CENTER);
@@ -473,7 +480,7 @@ public class CsvDataPanel extends JPanel {
 
         // ── CENTER：当前状态 + 操作按钮（固定，始终可见）──
         JPanel fixedPanel = new JPanel();
-        fixedPanel.setOpaque(false);
+        ToolWindowSurfaceStyle.applyDialogSurface(fixedPanel);
         fixedPanel.setLayout(new BoxLayout(fixedPanel, BoxLayout.Y_AXIS));
         fixedPanel.setBorder(BorderFactory.createEmptyBorder(8, 16, 4, 16));
 
@@ -573,7 +580,7 @@ public class CsvDataPanel extends JPanel {
 
         // ── SOUTH：关闭按钮（固定，始终可见）──
         JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 8));
-        ToolWindowSurfaceStyle.applySectionHeader(bottomPanel);
+        ToolWindowSurfaceStyle.applyDialogFooter(bottomPanel);
         JButton closeBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLOSE), false);
         closeBtn.addActionListener(e -> dialog.dispose());
         bottomPanel.add(closeBtn);
@@ -584,7 +591,7 @@ public class CsvDataPanel extends JPanel {
 
     private JPanel createDialogSection(String title) {
         JPanel section = new JPanel(new BorderLayout(0, 6));
-        section.setOpaque(false);
+        ToolWindowSurfaceStyle.applyDialogSurface(section);
         JLabel titleLabel = new JLabel(title);
         titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
         titleLabel.setForeground(ModernColors.getTextPrimary());
@@ -607,11 +614,12 @@ public class CsvDataPanel extends JPanel {
         manageDialog.setMinimumSize(new Dimension(CSV_MANAGE_DIALOG_MIN_WIDTH, CSV_MANAGE_DIALOG_MIN_HEIGHT));
         manageDialog.setLocationRelativeTo(UiSingletonFactory.getInstance(MainFrame.class));
         manageDialog.setLayout(new BorderLayout());
-        ToolWindowSurfaceStyle.applyBackground((JComponent) manageDialog.getContentPane());
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(manageDialog);
+        ToolWindowSurfaceStyle.applyDialogSurface((JComponent) manageDialog.getContentPane());
 
         // 顶部信息面板
         JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.setOpaque(false);
+        ToolWindowSurfaceStyle.applyDialogSurface(topPanel);
         topPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         JLabel infoLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_DATA_SOURCE_INFO,
@@ -675,7 +683,7 @@ public class CsvDataPanel extends JPanel {
 
         // 创建表格容器面板，应用背景色
         JPanel tablePanel = new JPanel(new BorderLayout());
-        tablePanel.setOpaque(false);
+        ToolWindowSurfaceStyle.applyDialogSurface(tablePanel);
         tablePanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 8, 10));
         tablePanel.add(scrollPane, BorderLayout.CENTER);
 
@@ -683,12 +691,12 @@ public class CsvDataPanel extends JPanel {
 
         // 底部面板
         JPanel bottomPanel = new JPanel(new BorderLayout(0, 10));
-        bottomPanel.setOpaque(false);
+        ToolWindowSurfaceStyle.applyDialogSurface(bottomPanel);
         bottomPanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
 
         // 工具栏
         JPanel toolPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        toolPanel.setOpaque(false);
+        ToolWindowSurfaceStyle.applyDialogSurface(toolPanel);
 
         JButton bulkEditBtn = ModernButtonFactory.createButton(
                 I18nUtil.getMessage(MessageKeys.CSV_BULK_EDIT), false, "icons/edit.svg", 16);
@@ -825,17 +833,18 @@ public class CsvDataPanel extends JPanel {
         helpText.setForeground(ModernColors.getTextSecondary());
         helpText.setLineWrap(true);
         helpText.setWrapStyleWord(true);
+        ToolWindowSurfaceStyle.applyTextComponentDialogSurface(helpText);
         JScrollPane helpScrollPane = new JScrollPane(helpText,
                 ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        ToolWindowSurfaceStyle.applyScrollPaneCard(helpScrollPane);
+        ToolWindowSurfaceStyle.applyDialogScrollPane(helpScrollPane);
         helpScrollPane.setPreferredSize(new Dimension(0, 112));
         helpPanel.add(helpScrollPane, BorderLayout.CENTER);
         bottomPanel.add(helpPanel, BorderLayout.CENTER);
 
         // 按钮面板
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setOpaque(false);
+        ToolWindowSurfaceStyle.applyDialogFooter(buttonPanel);
 
         JButton saveBtn = ModernButtonFactory.createButton(
                 I18nUtil.getMessage(MessageKeys.BUTTON_SAVE), true, "icons/save.svg", 16);
@@ -952,14 +961,15 @@ public class CsvDataPanel extends JPanel {
         textArea.setLineWrap(false);
         textArea.setTabSize(4);
         textArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        textArea.setBackground(ModernColors.getInputBackgroundColor());
-        textArea.setForeground(ModernColors.getTextPrimary());
+        ToolWindowSurfaceStyle.applyTextComponentInput(textArea);
         textArea.setCaretColor(ModernColors.getPrimary());
 
         // 将光标定位到文本末尾
         textArea.setCaretPosition(textArea.getDocument().getLength());
 
         JScrollPane scrollPane = new JScrollPane(textArea);
+        ToolWindowSurfaceStyle.applyDialogScrollPane(scrollPane);
+        ToolWindowSurfaceStyle.applyDialogInputBorder(scrollPane, false);
         scrollPane.setPreferredSize(new Dimension(700, 450));
 
         // 3. 创建提示标签 - 使用国际化，垂直排列
@@ -985,20 +995,23 @@ public class CsvDataPanel extends JPanel {
 
         // 4. 组装内容面板
         JPanel contentPanel = new JPanel(new BorderLayout(0, 5));
+        ToolWindowSurfaceStyle.applyDialogSurface(contentPanel);
         contentPanel.add(hintPanel, BorderLayout.NORTH);
         contentPanel.add(scrollPane, BorderLayout.CENTER);
-        contentPanel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(14, 16, 14, 16));
 
         // 5. 创建按钮面板
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
-        JButton okButton = new JButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK));
-        JButton cancelButton = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL));
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        ToolWindowSurfaceStyle.applyDialogFooter(buttonPanel);
+        JButton cancelButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL), false);
+        JButton okButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.GENERAL_OK), true);
 
-        buttonPanel.add(okButton);
         buttonPanel.add(cancelButton);
+        buttonPanel.add(okButton);
 
         // 6. 创建对话框
         JDialog dialog = new JDialog(parentWindow, I18nUtil.getMessage(MessageKeys.CSV_BULK_EDIT), Dialog.ModalityType.APPLICATION_MODAL);
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(dialog);
         dialog.setLayout(new BorderLayout());
         dialog.add(contentPanel, BorderLayout.CENTER);
         dialog.add(buttonPanel, BorderLayout.SOUTH);

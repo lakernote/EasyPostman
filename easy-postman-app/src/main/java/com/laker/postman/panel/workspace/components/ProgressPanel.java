@@ -36,11 +36,10 @@ public class ProgressPanel extends JPanel {
 
     private void setupLayout(String title) {
         setLayout(new BorderLayout(0, 6));
-        ToolWindowSurfaceStyle.applyCard(this);
-        setBorder(BorderFactory.createEmptyBorder(6, 0, 0, 0));
+        ToolWindowSurfaceStyle.applyDialogTopSeparator(this, 8, 16, 8, 16);
 
         JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -1));
         add(titleLabel, BorderLayout.NORTH);
 
         // 状态标签

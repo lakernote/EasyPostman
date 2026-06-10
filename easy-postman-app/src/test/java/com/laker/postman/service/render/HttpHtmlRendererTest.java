@@ -116,7 +116,8 @@ public class HttpHtmlRendererTest {
 
         String html = HttpHtmlRenderer.renderRequest(request);
 
-        assertTrue(html.contains("border-bottom:1px solid"));
+        assertTrue(html.contains("line-height:1.35"));
+        assertFalse(html.contains("border-bottom:1px solid"));
         assertFalse(html.contains("padding:3px 8px;background:"));
     }
 
@@ -146,7 +147,9 @@ public class HttpHtmlRendererTest {
         assertTrue(html.contains("Timeline"));
         assertTrue(html.contains("background:#0a0b0c"));
         assertTrue(html.contains("background:#0d0e0f"));
-        assertTrue(html.contains("border-bottom:1px solid #101112"));
+        assertTrue(html.contains("border-bottom:1px solid"));
+        assertTrue(html.contains("border-top:1px solid"));
+        assertFalse(html.contains("border-bottom:1px solid #101112"));
         assertFalse(html.contains("background:#101112;height:8px"));
     }
 

@@ -8,11 +8,19 @@ import static org.testng.Assert.assertEquals;
 public class WorkspacePanelTest {
 
     @Test
-    public void defaultDetailDividerShouldGiveDetailAreaReadableSpaceInTallWindows() {
+    public void defaultDetailDividerShouldNotOverstretchDetailAreaInTallWindows() {
+        assertEquals(WorkspacePanel.defaultWorkspaceDetailDividerLocation(
+                1400,
+                AppToolWindowChrome.DIVIDER_SIZE
+        ), 400);
+    }
+
+    @Test
+    public void defaultDetailDividerShouldGiveDetailAreaReadableSpaceInLargeWindows() {
         assertEquals(WorkspacePanel.defaultWorkspaceDetailDividerLocation(
                 1000,
                 AppToolWindowChrome.DIVIDER_SIZE
-        ), 448);
+        ), 360);
     }
 
     @Test
@@ -20,7 +28,7 @@ public class WorkspacePanelTest {
         assertEquals(WorkspacePanel.defaultWorkspaceDetailDividerLocation(
                 700,
                 AppToolWindowChrome.DIVIDER_SIZE
-        ), 380);
+        ), 360);
     }
 
     @Test

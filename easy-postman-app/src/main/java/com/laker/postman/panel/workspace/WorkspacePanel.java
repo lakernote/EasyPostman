@@ -56,10 +56,11 @@ public class WorkspacePanel extends UiSingletonPanel {
     private static final String HTML_END = "</html>";
     private static final String WORKSPACE_DETAIL_DIVIDER_APPLIED_PROPERTY =
             "EasyPostman.workspace.detailDividerApplied";
-    private static final int WORKSPACE_DETAIL_DEFAULT_HEIGHT = 380;
-    private static final int WORKSPACE_DETAIL_MIN_HEIGHT = 360;
+    private static final int WORKSPACE_DETAIL_DEFAULT_HEIGHT = 360;
+    private static final int WORKSPACE_DETAIL_MIN_HEIGHT = 320;
+    private static final int WORKSPACE_DETAIL_MAX_HEIGHT = 400;
     private static final int WORKSPACE_LOG_MIN_HEIGHT = 180;
-    private static final double WORKSPACE_DETAIL_RESIZE_WEIGHT = 0.45;
+    private static final double WORKSPACE_DETAIL_RESIZE_WEIGHT = 0.34;
     public static final String HH_MM_SS = "HH:mm:ss";
 
     private JList<Workspace> workspaceList;
@@ -223,7 +224,7 @@ public class WorkspacePanel extends UiSingletonPanel {
         ToolWindowSurfaceStyle.applyTextComponentCard(logArea);
 
         JScrollPane logScrollPane = new JScrollPane(logArea);
-        logScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        logScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         ToolWindowSurfaceStyle.applyScrollPaneCard(logScrollPane);
         panel.add(logScrollPane, BorderLayout.CENTER);
 
@@ -275,6 +276,7 @@ public class WorkspacePanel extends UiSingletonPanel {
         int ratioLocation = (int) Math.round(usableHeight * WORKSPACE_DETAIL_RESIZE_WEIGHT);
         int desiredLocation = Math.max(WORKSPACE_DETAIL_DEFAULT_HEIGHT,
                 Math.max(WORKSPACE_DETAIL_MIN_HEIGHT, ratioLocation));
+        desiredLocation = Math.min(desiredLocation, WORKSPACE_DETAIL_MAX_HEIGHT);
         int maxLocation = usableHeight - WORKSPACE_LOG_MIN_HEIGHT;
         if (maxLocation < WORKSPACE_DETAIL_MIN_HEIGHT) {
             return Math.max(0, maxLocation);

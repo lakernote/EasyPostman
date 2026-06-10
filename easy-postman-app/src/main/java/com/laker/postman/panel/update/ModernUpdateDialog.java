@@ -4,6 +4,7 @@ import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.json.JSONObject;
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.platform.update.model.UpdateInfo;
 import com.laker.postman.util.FontsUtil;
@@ -35,8 +36,9 @@ public class ModernUpdateDialog extends JDialog {
 
     private void initComponents(UpdateInfo updateInfo) {
         setLayout(new BorderLayout());
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(this);
         JPanel mainPanel = new JPanel(new BorderLayout(0, 0));
-        ToolWindowSurfaceStyle.applyBackground(mainPanel);
+        ToolWindowSurfaceStyle.applyDialogSurface(mainPanel);
         mainPanel.add(createHeaderPanel(updateInfo), BorderLayout.NORTH);
         mainPanel.add(createChangelogPanel(updateInfo), BorderLayout.CENTER);
         mainPanel.add(createButtonPanel(), BorderLayout.SOUTH);
@@ -103,10 +105,10 @@ public class ModernUpdateDialog extends JDialog {
 
     private JPanel createChangelogPanel(UpdateInfo updateInfo) {
         JPanel mainPanel = new JPanel(new BorderLayout(0, 8));
-        ToolWindowSurfaceStyle.applyBackground(mainPanel);
+        ToolWindowSurfaceStyle.applyDialogSurface(mainPanel);
         mainPanel.setBorder(new EmptyBorder(0, 24, 0, 24));
 
-        JLabel titleLabel = new JLabel("📝 " + I18nUtil.getMessage(MessageKeys.UPDATE_WHATS_NEW));
+        JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.UPDATE_WHATS_NEW));
         titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 3));
         titleLabel.setForeground(ModernColors.getTextPrimary());
         mainPanel.add(titleLabel, BorderLayout.NORTH);
@@ -120,10 +122,10 @@ public class ModernUpdateDialog extends JDialog {
         textArea.putClientProperty(FlatClientProperties.STYLE, "");
         textArea.setBorder(new EmptyBorder(12, 12, 12, 12));
         textArea.setCaretPosition(0);
-        ToolWindowSurfaceStyle.applyTextComponentCard(textArea);
+        ToolWindowSurfaceStyle.applyTextComponentDialogSurface(textArea);
 
         JScrollPane scrollPane = new JScrollPane(textArea);
-        ToolWindowSurfaceStyle.applyScrollPaneCard(scrollPane);
+        ToolWindowSurfaceStyle.applyDialogScrollPane(scrollPane);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         scrollPane.setPreferredSize(new Dimension(0, 180));
         mainPanel.add(scrollPane, BorderLayout.CENTER);
@@ -152,8 +154,7 @@ public class ModernUpdateDialog extends JDialog {
 
     private JPanel createButtonPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        ToolWindowSurfaceStyle.applyBackground(panel);
-        panel.setBorder(new EmptyBorder(16, 24, 20, 24));
+        ToolWindowSurfaceStyle.applyDialogFooter(panel);
 
         JLabel tipLabel = new JLabel(I18nUtil.getMessage(MessageKeys.UPDATE_SAVE_TIP));
         tipLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
@@ -161,7 +162,7 @@ public class ModernUpdateDialog extends JDialog {
         panel.add(tipLabel, BorderLayout.WEST);
 
         JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
-        buttonsPanel.setOpaque(false);
+        ToolWindowSurfaceStyle.applyDialogSurface(buttonsPanel);
 
         JButton laterButton = createSecondaryButton(I18nUtil.getMessage(MessageKeys.UPDATE_LATER));
         laterButton.addActionListener(e -> { userChoice = 2; dispose(); });
@@ -183,14 +184,14 @@ public class ModernUpdateDialog extends JDialog {
 
     /** 主要操作按钮 — 不设 BUTTON_TYPE，FlatLaf 默认渲染为 accent 色（蓝底白字） */
     private JButton createPrimaryButton(String text) {
-        JButton button = new JButton(text);
+        JButton button = ModernButtonFactory.createButton(text, true);
         button.setBorder(new EmptyBorder(8, 20, 8, 20));
         return button;
     }
 
     /** 次要操作按钮 — 无填充无边框，点击有 ripple 效果 */
     private JButton createSecondaryButton(String text) {
-        JButton button = new JButton(text);
+        JButton button = ModernButtonFactory.createButton(text, false);
         button.putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_BORDERLESS);
         button.setBorder(new EmptyBorder(8, 16, 8, 16));
         return button;
